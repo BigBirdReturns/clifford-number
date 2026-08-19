@@ -1,0 +1,339 @@
+{
+  "schema_version": "m05-answerable-power-s03-l7-intel-realization-provenance-object-custody-contract@1",
+  "object_class": "bounded_retrievable_provenance_object_custody_contract",
+  "program_id": "M-05",
+  "sprint_id": "M05-SPRINT-03",
+  "leg_id": "S03-L7",
+  "issue": 345,
+  "as_of": "2026-08-18",
+  "status": "intel_realization_provenance_object_custody_contract_frozen",
+  "title": "Intel realization retrievable provenance-object custody contract",
+  "question": "Which independently retrievable authority-resolution, origin-evidence, and acquisition-receipt objects must exist before a source-provenance digest can qualify any Intel realization stage?",
+  "canonical_base": {
+    "branch": "main",
+    "sha": "9f6f700f18c4eb1fcbbbe67f41a23369c5a1db6b",
+    "tree_sha": "d205abcc8d41a41faa12b75d4570fc498e39f20e",
+    "preceding_pull_request": 2184,
+    "preceding_merge_commit": "9f6f700f18c4eb1fcbbbe67f41a23369c5a1db6b"
+  },
+  "bindings": {
+    "source_provenance_amendment": {
+      "path": "data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-source-provenance-amendment.json",
+      "blob_sha": "893fbd3a2d50ccfd09a4d357b070af848f66b5d8",
+      "semantic_sha256": "4cdd9995e964073b830ab006b5f4a660009535b5420f0b6cb67bb4c4d94e1444",
+      "schema_version": "m05-answerable-power-s03-l7-intel-realization-source-provenance-amendment@1",
+      "pull_request": 2184,
+      "merge_commit": "9f6f700f18c4eb1fcbbbe67f41a23369c5a1db6b"
+    },
+    "source_provenance_validator": {
+      "path": "tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-source-provenance-amendment.mjs",
+      "blob_sha": "4439f12738ab2ab92bc1c4a9a8068bff82284f6e",
+      "control_class": "independent_source_provenance_git_blob_and_semantic_checksum_validator",
+      "pull_request": 2184,
+      "merge_commit": "9f6f700f18c4eb1fcbbbe67f41a23369c5a1db6b"
+    }
+  },
+  "predecessor_gap": {
+    "gap_class": "digest_only_provenance_object_custody",
+    "origin_evidence_sha256_required": true,
+    "origin_evidence_retrievable_object_required": false,
+    "acquisition_receipt_sha256_required": true,
+    "acquisition_receipt_retrievable_object_required": false,
+    "source_authority_identifier_required": true,
+    "authority_identifier_scheme_required": false,
+    "authority_resolution_receipt_required": false,
+    "digest_alone_is_retrievable_custody": false,
+    "self_declared_authority_identifier_is_verified_authority": false
+  },
+  "stage_order": [
+    "transaction",
+    "federal_cash_custody",
+    "public_account_booking",
+    "distribution"
+  ],
+  "receipt_registry": {
+    "path": "data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-registry.json",
+    "schema_version": "m05-answerable-power-s03-l7-intel-realization-stage-receipt-registry@1",
+    "receipt_object_path_prefix": "receipts/m05/intel-realization/",
+    "receipt_objects_must_be_repository_files": true,
+    "receipt_object_paths_must_not_escape_repository_root": true,
+    "duplicate_receipt_ids_allowed": false,
+    "duplicate_event_stage_pairs_allowed": false,
+    "symlinked_receipt_objects_allowed": false
+  },
+  "stage_receipt_required_fields": [
+    "receipt_id",
+    "event_chain_id",
+    "stage",
+    "predecessor_stage_receipt_id",
+    "source_authority",
+    "authority_identifier_scheme",
+    "source_authority_identifier",
+    "source_record_identifier",
+    "source_record_class",
+    "source_origin_body_sha256",
+    "source_custody_body_sha256",
+    "origin_evidence_sha256",
+    "acquisition_receipt_sha256",
+    "source_body_custody",
+    "authority_resolution_receipt",
+    "origin_evidence_receipt",
+    "acquisition_receipt",
+    "provenance_object_custody_complete",
+    "stage_admissible"
+  ],
+  "provenance_object_bindings": {
+    "source_body_custody": {
+      "binding_required_fields": [
+        "path",
+        "blob_sha",
+        "body_sha256",
+        "content_type"
+      ],
+      "path_must_use_receipt_object_prefix": true,
+      "exact_file_bytes_must_match_body_sha256": true,
+      "exact_git_blob_must_match_blob_sha": true,
+      "content_type_must_match_origin_and_acquisition_receipts": true
+    },
+    "authority_resolution_receipt": {
+      "schema_version": "m05-answerable-power-s03-l7-intel-authority-resolution-receipt@1",
+      "object_class": "source_authority_resolution_receipt",
+      "binding_required_fields": [
+        "path",
+        "blob_sha",
+        "body_sha256",
+        "schema_version"
+      ],
+      "required_fields": [
+        "schema_version",
+        "object_class",
+        "source_authority",
+        "authority_identifier_scheme",
+        "source_authority_identifier",
+        "verification_method",
+        "official_origin_hosts",
+        "official_record_system_identifiers",
+        "evidence_items",
+        "observed_at_utc"
+      ],
+      "allowed_identifier_schemes": [
+        "us_federal_agency_domain_and_record_system",
+        "sec_cik_and_edgar_filing_system",
+        "treasury_accounting_entity_and_cars_origin",
+        "congressional_positive_law_authority",
+        "official_program_or_ledger_authority"
+      ],
+      "allowed_verification_methods": [
+        "official_domain_and_record_system",
+        "signed_official_record",
+        "official_filing_system",
+        "official_archive_chain",
+        "dual_official_and_repository_verification"
+      ],
+      "evidence_item_required_fields": [
+        "evidence_role",
+        "source_url",
+        "source_locator",
+        "body_binding"
+      ],
+      "self_declaration_alone_qualifies": false,
+      "official_looking_hostname_alone_qualifies": false,
+      "evidence_item_body_binding_required_fields": [
+        "path",
+        "blob_sha",
+        "body_sha256",
+        "content_type"
+      ]
+    },
+    "origin_evidence_receipt": {
+      "schema_version": "m05-answerable-power-s03-l7-intel-origin-evidence-receipt@1",
+      "object_class": "source_origin_evidence_receipt",
+      "binding_required_fields": [
+        "path",
+        "blob_sha",
+        "body_sha256",
+        "schema_version"
+      ],
+      "required_fields": [
+        "schema_version",
+        "object_class",
+        "source_authority",
+        "authority_identifier_scheme",
+        "source_authority_identifier",
+        "source_record_identifier",
+        "source_record_class",
+        "source_origin_url",
+        "source_origin_observed_at_utc",
+        "source_origin_content_type",
+        "source_origin_body_sha256",
+        "origin_verification_mode",
+        "authority_resolution_receipt_body_sha256",
+        "origin_evidence_items"
+      ],
+      "origin_evidence_items_each_require_exact_body_hash": true,
+      "authority_resolution_receipt_must_cross_bind": true,
+      "origin_evidence_item_required_fields": [
+        "evidence_role",
+        "source_url",
+        "source_locator",
+        "body_binding"
+      ],
+      "origin_evidence_item_body_binding_required_fields": [
+        "path",
+        "blob_sha",
+        "body_sha256",
+        "content_type"
+      ],
+      "allowed_origin_verification_modes": [
+        "official_https_retrieval_with_transport_receipt",
+        "official_immutable_record_identifier",
+        "official_archive_capture",
+        "source_native_signature_or_digest",
+        "cross_published_official_record"
+      ]
+    },
+    "acquisition_receipt": {
+      "schema_version": "m05-answerable-power-s03-l7-intel-acquisition-receipt@1",
+      "object_class": "source_acquisition_receipt",
+      "binding_required_fields": [
+        "path",
+        "blob_sha",
+        "body_sha256",
+        "schema_version"
+      ],
+      "required_fields": [
+        "schema_version",
+        "object_class",
+        "requested_url",
+        "resolved_url",
+        "redirect_chain",
+        "response_status",
+        "request_method",
+        "request_headers_custody",
+        "response_headers_custody",
+        "tls_peer_certificate_custody",
+        "request_contains_credentials",
+        "observed_at_utc",
+        "content_type",
+        "body_length_bytes",
+        "source_origin_body_sha256",
+        "acquisition_method",
+        "acquisition_tool",
+        "acquisition_tool_version",
+        "authority_resolution_receipt_body_sha256",
+        "origin_evidence_receipt_body_sha256"
+      ],
+      "allowed_acquisition_methods": [
+        "direct_official_retrieval",
+        "official_api_or_feed",
+        "official_document_repository",
+        "official_archive_retrieval",
+        "source_native_filing_system"
+      ],
+      "self_declared_digest_without_retrievable_receipt_qualifies": false,
+      "screenshot_or_ocr_alone_qualifies": false,
+      "transport_evidence_binding_required_fields": [
+        "path",
+        "blob_sha",
+        "body_sha256",
+        "content_type"
+      ],
+      "allowed_request_methods": [
+        "GET"
+      ],
+      "request_must_be_public_and_credential_free": true,
+      "request_headers_content_type": "application/http-request-headers",
+      "response_headers_content_type": "application/http-response-headers",
+      "tls_peer_certificate_content_type": "application/pem-certificate-chain"
+    }
+  },
+  "source_identity_rules": {
+    "allowed_source_record_classes": [
+      "official_primary_record",
+      "source_native_primary_record",
+      "official_financial_record",
+      "positive_law_official_record",
+      "official_adjudicative_record"
+    ],
+    "source_record_class_must_match_registry_and_origin_receipt": true,
+    "source_authority_must_match_registry_and_all_receipts": true,
+    "authority_identifier_scheme_must_be_explicit": true,
+    "authority_resolution_receipt_must_bind_identifier_and_official_record_system": true
+  },
+  "cross_object_rules": {
+    "declared_body_sha256_must_equal_exact_file_bytes": true,
+    "declared_blob_sha_must_equal_exact_git_blob": true,
+    "declared_schema_version_must_equal_parsed_object_schema": true,
+    "authority_identity_must_match_across_registry_and_all_objects": true,
+    "authority_resolution_body_sha256_must_cross_bind_origin_and_acquisition_receipts": true,
+    "origin_evidence_body_sha256_must_cross_bind_registry_and_acquisition_receipt": true,
+    "acquisition_receipt_body_sha256_must_equal_registry_acquisition_receipt_sha256": true,
+    "origin_body_sha256_must_equal_custody_body_sha256": true,
+    "acquisition_origin_body_sha256_must_equal_registry_origin_body_sha256": true,
+    "one_digest_may_not_stand_for_multiple_distinct_objects": true,
+    "provenance_object_custody_is_empirical_stage_admission": false,
+    "all_four_retrievable_objects_required_for_each_stage_receipt": true,
+    "source_body_custody_binding_must_match_registry_origin_and_custody_hashes": true,
+    "acquisition_transport_evidence_objects_must_be_retrievable": true,
+    "acquisition_transport_evidence_digests_must_match_exact_file_bytes": true,
+    "later_stage_receipt_requires_immediate_prior_stage_receipt_in_same_event_chain": true
+  },
+  "current_state": {
+    "registered_stage_receipts": 0,
+    "retrievable_authority_resolution_receipts": 0,
+    "retrievable_origin_evidence_receipts": 0,
+    "retrievable_acquisition_receipts": 0,
+    "transaction_admissible": false,
+    "federal_cash_custody_admissible": false,
+    "public_account_booking_admissible": false,
+    "distribution_admissible": false,
+    "answer_change_authorized": false
+  },
+  "guardrails": {
+    "digest_without_object_path_is_complete": false,
+    "digest_without_retrievable_file_is_complete": false,
+    "repository_blob_without_official_origin_is_authentic": false,
+    "authority_name_without_resolution_receipt_is_verified": false,
+    "authority_identifier_without_scheme_is_verified": false,
+    "self_declared_acquisition_receipt_is_independent_evidence": false,
+    "provenance_object_custody_is_empirical_receipt": false,
+    "registry_entry_is_stage_admission": false,
+    "bounded_validation_is_exhaustive_nonexistence_finding": false,
+    "digest_only_transport_metadata_is_complete": false,
+    "symlinked_receipt_object_is_complete": false
+  },
+  "expected_result": {
+    "controlled_stages": 4,
+    "minimum_retrievable_objects_per_stage_receipt": 7,
+    "registered_stage_receipts": 0,
+    "retrievable_provenance_objects": 0,
+    "transaction_admissible": false,
+    "federal_cash_custody_admissible": false,
+    "public_account_booking_admissible": false,
+    "distribution_admissible": false,
+    "candidate_evidence_records": 5,
+    "repository_promotions": 5,
+    "advanced_answer_dimensions": 1,
+    "effective_answers": 0,
+    "qualifying_jurisdictions": 0,
+    "answer_effectiveness": false,
+    "cross_domain_regression_completed": false,
+    "graph_effect": "none",
+    "issue_345_may_close": false
+  },
+  "boundaries": {
+    "changes_predecessor_bytes": false,
+    "creates_new_empirical_receipt": false,
+    "claims_intel_transaction": false,
+    "claims_federal_cash_receipt": false,
+    "claims_public_account_booking": false,
+    "claims_public_or_affected_party_distribution": false,
+    "claims_answer_effectiveness": false,
+    "claims_cross_domain_completion": false,
+    "graph_effect": "none",
+    "conclusion_generated": false,
+    "project_complete": false,
+    "issue_345_may_close": false
+  },
+  "contract_sha256": "b775a0253219f33fd5fc04ff79088a178577ea264ee7fa6af38a717d99c8ec74"
+}
