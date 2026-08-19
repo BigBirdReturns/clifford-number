@@ -73,6 +73,109 @@ jobs:
           node tools/crawl-industrial-exhaust.mjs --dry-run --strict
           node tools/hydrate-industrial-exhaust.mjs --dry-run --strict --limit=20
 
+  repair-pr2190-balanced-wrapper:
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.head.ref == 'agent/pr2176-postmerge-wrapper-balance-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Check out the live repair branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/pr2176-postmerge-wrapper-balance-v1
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Apply, validate, and publish the balanced-wrapper repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          target_branch='agent/pr2176-postmerge-wrapper-balance-v1'
+          clean_workflow_head='88b4d9cefa8b5fc22f646b13bba1e7956bb23f7a'
+          expected_remote_head="$(git rev-parse HEAD)"
+
+          python - <<'PY'
+          from pathlib import Path
+          from textwrap import dedent
+
+          library_path = Path('tools/lib/industrial-exhaust.mjs')
+          library = library_path.read_text(encoding='utf-8')
+          sentinel = 'const unmatchedTrailingWrapper = normalizedCandidate.endsWith'
+          if sentinel not in library:
+              old = "    return redactPhoneSubspans(candidate, prefix, suffix, allowInitialGroup);"
+              if library.count(old) != 1:
+                  raise RuntimeError(f'phone-redaction return anchor count was {library.count(old)}, expected 1')
+              new = (
+                  "    const redacted = redactPhoneSubspans(candidate, prefix, suffix, allowInitialGroup);\n"
+                  "    const normalizedCandidate = candidate.normalize('NFKC');\n"
+                  "    const openingParentheses = (normalizedCandidate.match(/\\(/gu) ?? []).length;\n"
+                  "    const closingParentheses = (normalizedCandidate.match(/\\)/gu) ?? []).length;\n"
+                  "    const unmatchedTrailingWrapper = normalizedCandidate.endsWith(')')\n"
+                  "      && closingParentheses > openingParentheses;\n"
+                  "    const trailingWrapper = unmatchedTrailingWrapper ? candidate.at(-1) : '';\n"
+                  "    return trailingWrapper && redacted !== candidate && !redacted.endsWith(trailingWrapper)\n"
+                  "      ? `${redacted}${trailingWrapper}`\n"
+                  "      : redacted;"
+              )
+              library = library.replace(old, new, 1)
+              library_path.write_text(library, encoding='utf-8')
+
+          test_path = Path('test/industrial-exhaust.test.js')
+          tests = test_path.read_text(encoding='utf-8')
+          test_sentinel = 'plus-prefixed phones inside narrative parentheses must retain balanced ASCII wrappers'
+          if test_sentinel not in tests:
+              marker = "\nconsole.log('industrial-exhaust tests passed');"
+              if tests.count(marker) != 1:
+                  raise RuntimeError(f'test trailer marker count was {tests.count(marker)}, expected 1')
+              block = dedent(r'''
+
+              assert.equal(
+                redactContactData('Phone (+81 3 6216 5111)'),
+                'Phone ([contact omitted])',
+                'plus-prefixed phones inside narrative parentheses must retain balanced ASCII wrappers'
+              );
+              assert.equal(
+                redactContactData('電話（＋８１ ３ ６２１６ ５１１１）'),
+                '電話（[contact omitted]）',
+                'plus-prefixed phones inside narrative parentheses must retain balanced fullwidth wrappers'
+              );
+              assert.equal(
+                redactContactData('Phone (+44 (0)20 7123 4567)'),
+                'Phone ([contact omitted])',
+                'an outer narrative wrapper must remain balanced around a phone with an internal trunk wrapper'
+              );
+              ''')
+              tests = tests.replace(marker, f'{block}{marker}', 1)
+              test_path.write_text(tests, encoding='utf-8')
+          PY
+
+          node --check tools/lib/industrial-exhaust.mjs
+          node --check tools/lib/industrial-exhaust-artifacts.mjs
+          node --check tools/crawl-industrial-exhaust.mjs
+          node --check tools/hydrate-industrial-exhaust.mjs
+          node --check test/industrial-exhaust.test.js
+          node --check test/industrial-exhaust-artifacts.test.js
+          node test/industrial-exhaust.test.js
+          node test/industrial-exhaust-artifacts.test.js
+          git diff --check
+
+          git checkout "${clean_workflow_head}" -- .github/workflows/crawl-industrial-exhaust.yml
+          rm .github/workflows/temporary-pr2176-postmerge-wrapper-balance.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add tools/lib/industrial-exhaust.mjs \
+            test/industrial-exhaust.test.js \
+            .github/workflows/crawl-industrial-exhaust.yml \
+            .github/workflows/temporary-pr2176-postmerge-wrapper-balance.yml
+          git diff --cached --check
+          git commit -m 'fix(crawler): preserve balanced phone wrappers'
+          git push --force-with-lease="refs/heads/${target_branch}:${expected_remote_head}" \
+            origin "HEAD:refs/heads/${target_branch}"
+
   crawl:
     if: github.event_name != 'pull_request'
     needs: validate
