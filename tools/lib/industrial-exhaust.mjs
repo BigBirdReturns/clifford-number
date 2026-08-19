@@ -457,7 +457,16 @@ export function redactContactData(value) {
     const suffix = input.slice(offset + candidate.length, offset + candidate.length + 64);
     const adjacentCharacter = Array.from(input.slice(0, contactOffset)).at(-1) ?? '';
     const allowInitialGroup = !/[\p{L}\p{N}]/u.test(adjacentCharacter) || hasPhoneLabelPrefix(prefix);
-    return redactPhoneSubspans(candidate, prefix, suffix, allowInitialGroup);
+    const redacted = redactPhoneSubspans(candidate, prefix, suffix, allowInitialGroup);
+    const normalizedCandidate = candidate.normalize('NFKC');
+    const openingParentheses = (normalizedCandidate.match(/\(/gu) ?? []).length;
+    const closingParentheses = (normalizedCandidate.match(/\)/gu) ?? []).length;
+    const unmatchedTrailingWrapper = normalizedCandidate.endsWith(')')
+      && closingParentheses > openingParentheses;
+    const trailingWrapper = unmatchedTrailingWrapper ? candidate.at(-1) : '';
+    return trailingWrapper && redacted !== candidate && !redacted.endsWith(trailingWrapper)
+      ? `${redacted}${trailingWrapper}`
+      : redacted;
   });
   return phoneRedacted.replace(PHONE_EXTENSION_PATTERN, (candidate, marker, offset, input) =>
     redactPhoneExtensionCandidate(candidate, marker, offset, input));

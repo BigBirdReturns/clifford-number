@@ -757,4 +757,21 @@ assert.equal(
   'a parenthesized two-digit tail without narrative continuation may remain contact formatting'
 );
 
+
+assert.equal(
+  redactContactData('Phone (+81 3 6216 5111)'),
+  'Phone ([contact omitted])',
+  'plus-prefixed phones inside narrative parentheses must retain balanced ASCII wrappers'
+);
+assert.equal(
+  redactContactData('電話（＋８１ ３ ６２１６ ５１１１）'),
+  '電話（[contact omitted]）',
+  'plus-prefixed phones inside narrative parentheses must retain balanced fullwidth wrappers'
+);
+assert.equal(
+  redactContactData('Phone (+44 (0)20 7123 4567)'),
+  'Phone ([contact omitted])',
+  'an outer narrative wrapper must remain balanced around a phone with an internal trunk wrapper'
+);
+
 console.log('industrial-exhaust tests passed');
