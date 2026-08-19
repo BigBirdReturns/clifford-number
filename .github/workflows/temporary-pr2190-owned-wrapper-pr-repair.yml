@@ -1,0 +1,230 @@
+name: Temporary PR2190 observable wrapper boundary repair
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/temporary-pr2190-owned-wrapper-pr-repair.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temporary-pr2190-observable-wrapper-repair
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    if: github.event.pull_request.head.ref == 'agent/pr2176-postmerge-wrapper-balance-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out the exact PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/pr2176-postmerge-wrapper-balance-v1
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Apply, validate, and publish wrapper ownership repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          target_branch='agent/pr2176-postmerge-wrapper-balance-v1'
+          expected_parent='d94ed55075ff6608ab0f825483201c784d857101'
+          clean_workflow_head='88b4d9cefa8b5fc22f646b13bba1e7956bb23f7a'
+          self='.github/workflows/temporary-pr2190-owned-wrapper-pr-repair.yml'
+          earlier='.github/workflows/temporary-pr2190-owned-wrapper-repair.yml'
+          expected_remote_head="$(git rev-parse HEAD)"
+
+          test "$(git rev-parse HEAD^)" = "${expected_parent}"
+          test "$(git diff --name-only HEAD^ HEAD)" = "${self}"
+          test "$(git hash-object tools/lib/industrial-exhaust.mjs)" = '99ed69afd14b965f2763125e53e51c1743c195fe'
+          test "$(git hash-object test/industrial-exhaust.test.js)" = 'f38d4407e46ef66a0080735eaffda726aebb4ee6'
+          test -f "${earlier}"
+          grep -q 'repair-pr2190-terminal-wrapper-v2' .github/workflows/crawl-industrial-exhaust.yml
+
+          python - <<'PY'
+          from pathlib import Path
+          from textwrap import dedent
+
+          library_path = Path('tools/lib/industrial-exhaust.mjs')
+          library = library_path.read_text(encoding='utf-8')
+
+          helper_anchor = "\nexport function redactContactData(value) {"
+          helper = dedent(r'''
+
+          function findOwnedNarrativePhoneWrapper(candidate, input, offset, contactOffset) {
+            if (!/[+＋]/u.test(input[contactOffset] ?? '')) return null;
+
+            let openerIndex = contactOffset - 1;
+            while (openerIndex >= 0 && /\s/u.test(input[openerIndex])) openerIndex -= 1;
+            if (!/[（(]/u.test(input[openerIndex] ?? '')) return null;
+
+            let depth = 1;
+            const candidateEnd = offset + candidate.length;
+            for (let index = contactOffset; index < candidateEnd; index += 1) {
+              const normalized = input[index].normalize('NFKC');
+              if (normalized === '(') depth += 1;
+              else if (normalized === ')') {
+                depth -= 1;
+                if (depth === 0) {
+                  return {
+                    closeIndex: index - offset,
+                    closer: input[index]
+                  };
+                }
+                if (depth < 0) return null;
+              }
+            }
+            return null;
+          }
+          ''').rstrip()
+          if library.count(helper_anchor) != 1:
+              raise RuntimeError(f'wrapper helper anchor count was {library.count(helper_anchor)}, expected 1')
+          if 'function findOwnedNarrativePhoneWrapper(' in library:
+              raise RuntimeError('wrapper helper already exists on the guarded predecessor')
+          library = library.replace(helper_anchor, f'{helper}{helper_anchor}', 1)
+
+          old_callback = "\n".join([
+              "    const redacted = redactPhoneSubspans(candidate, prefix, suffix, allowInitialGroup);",
+              "    const normalizedCandidate = candidate.normalize('NFKC');",
+              "    const openingParentheses = (normalizedCandidate.match(/\\(/gu) ?? []).length;",
+              "    const closingParentheses = (normalizedCandidate.match(/\\)/gu) ?? []).length;",
+              "    const unmatchedTrailingWrapper = normalizedCandidate.endsWith(')')",
+              "      && closingParentheses > openingParentheses;",
+              "    const trailingWrapper = unmatchedTrailingWrapper ? candidate.at(-1) : '';",
+              "    return trailingWrapper && redacted !== candidate && !redacted.endsWith(trailingWrapper)",
+              "      ? `${redacted}${trailingWrapper}`",
+              "      : redacted;"
+          ])
+          new_callback = "\n".join([
+              "    const ownedWrapper = findOwnedNarrativePhoneWrapper(",
+              "      candidate,",
+              "      input,",
+              "      offset,",
+              "      contactOffset",
+              "    );",
+              "    if (ownedWrapper) {",
+              "      const phoneCandidate = candidate.slice(0, ownedWrapper.closeIndex);",
+              "      const afterWrapper = candidate.slice(",
+              "        ownedWrapper.closeIndex + ownedWrapper.closer.length",
+              "      );",
+              "      const redactedPhone = redactPhoneSubspans(",
+              "        phoneCandidate,",
+              "        prefix,",
+              "        `${ownedWrapper.closer}${afterWrapper}${suffix}`,",
+              "        allowInitialGroup",
+              "      );",
+              "      if (redactedPhone !== phoneCandidate) {",
+              "        const redactedAfter = redactPhoneSubspans(",
+              "          afterWrapper,",
+              "          `${prefix}${redactedPhone}${ownedWrapper.closer}`,",
+              "          suffix,",
+              "          true",
+              "        );",
+              "        return `${redactedPhone}${ownedWrapper.closer}${redactedAfter}`;",
+              "      }",
+              "    }",
+              "    return redactPhoneSubspans(candidate, prefix, suffix, allowInitialGroup);"
+          ])
+          if library.count(old_callback) != 1:
+              raise RuntimeError(f'reviewed wrapper callback count was {library.count(old_callback)}, expected 1')
+          library = library.replace(old_callback, new_callback, 1)
+          library_path.write_text(library, encoding='utf-8')
+
+          test_path = Path('test/industrial-exhaust.test.js')
+          tests = test_path.read_text(encoding='utf-8')
+          marker = "\nconsole.log('industrial-exhaust tests passed');"
+          sentinel = 'an owned narrative close must be preserved before a numeric observation'
+          if sentinel in tests:
+              raise RuntimeError('new wrapper-boundary tests already exist on the guarded predecessor')
+          if tests.count(marker) != 1:
+              raise RuntimeError(f'test trailer marker count was {tests.count(marker)}, expected 1')
+          block = dedent(r'''
+
+          for (const [input, expected] of [
+            ['Phone +81 3 6216 5111)', 'Phone [contact omitted]'],
+            ['電話＋８１ ３ ６２１６ ５１１１）', '電話[contact omitted]'],
+            ['Phone +81) 3 6216 (5111)', 'Phone [contact omitted]']
+          ]) {
+            assert.equal(
+              redactContactData(input),
+              expected,
+              'an unmatched phone-format closer without an adjacent narrative opener must not be restored'
+            );
+          }
+
+          for (const observation of ['90 people', '2026-08-17', '12:30', '3.14']) {
+            assert.equal(
+              redactContactData(`Phone (+81 3 6216 5111) ${observation}`),
+              `Phone ([contact omitted]) ${observation}`,
+              'an owned narrative close must be preserved before a numeric observation'
+            );
+          }
+
+          assert.equal(
+            redactContactData('電話（＋８１ ３ ６２１６ ５１１１） ９０ people'),
+            '電話（[contact omitted]） ９０ people',
+            'fullwidth narrative wrappers must remain balanced before a numeric observation'
+          );
+          assert.equal(
+            redactContactData('Phone ( +81 3 6216 5111 )'),
+            'Phone ( [contact omitted] )',
+            'whitespace between a narrative opener and the plus marker must be preserved'
+          );
+          assert.equal(
+            redactContactData('Phone ((+81 3 6216 5111))'),
+            'Phone (([contact omitted]))',
+            'nested narrative wrappers must remain balanced'
+          );
+          assert.equal(
+            redactContactData('Phone (+44 (0)20 7123 4567) 90 people'),
+            'Phone ([contact omitted]) 90 people',
+            'an owned wrapper must remain balanced around internal trunk notation and a trailing observation'
+          );
+          assert.equal(
+            redactContactData('Phone (+81 3 6216 5111). Ext. 1234'),
+            'Phone ([contact omitted]). Ext. [contact omitted]',
+            'marked extensions after a balanced wrapper must still be redacted'
+          );
+          assert.equal(
+            redactContactData('Phone (+81 3 6216 5111) or 090-1234-5678'),
+            'Phone ([contact omitted]) or [contact omitted]',
+            'a later independently bounded phone must still be redacted after wrapper preservation'
+          );
+          assert.equal(
+            redactContactData('referenceA+81 3 6216 5111)'),
+            'referenceA+81 3 6216 5111)',
+            'an unchanged attached identifier must retain its original punctuation without synthetic restoration'
+          );
+          ''')
+          tests = tests.replace(marker, f'{block}{marker}', 1)
+          test_path.write_text(tests, encoding='utf-8')
+          PY
+
+          node --check tools/lib/industrial-exhaust.mjs
+          node --check tools/lib/industrial-exhaust-artifacts.mjs
+          node --check tools/crawl-industrial-exhaust.mjs
+          node --check tools/hydrate-industrial-exhaust.mjs
+          node --check test/industrial-exhaust.test.js
+          node --check test/industrial-exhaust-artifacts.test.js
+          node test/industrial-exhaust.test.js
+          node test/industrial-exhaust-artifacts.test.js
+          git diff --check
+
+          git checkout "${clean_workflow_head}" -- .github/workflows/crawl-industrial-exhaust.yml
+          rm "${self}" "${earlier}"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add tools/lib/industrial-exhaust.mjs \
+            test/industrial-exhaust.test.js \
+            .github/workflows/crawl-industrial-exhaust.yml \
+            "${self}" "${earlier}"
+          git diff --cached --check
+          git commit -m 'fix(crawler): bind wrapper ownership to phone boundaries'
+          git push --force-with-lease="refs/heads/${target_branch}:${expected_remote_head}" \
+            origin "HEAD:refs/heads/${target_branch}"
