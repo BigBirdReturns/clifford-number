@@ -161,9 +161,13 @@ function phoneCandidateScore(candidate, prefix) {
   if (numericUrlContext) return 0;
   const international = isInternationalPhoneCandidate(normalized);
   const parenthesized = /\(\s*\d{1,5}\s*\)/u.test(normalized);
+  const compactIdentifierContext = /(?:(?:^|\b)(?:guid|identifier|reference|revision|release(?:\s+id)?|record(?:\s+id)?|receipt|sha(?:-?256)?|hash|ticket|case|invoice|order|code)|(?:識別子|参照(?:番号)?|管理番号|受付番号|注文番号|案件番号|コード))\s*[:：=#＃-]?\s*$/iu.test(
+    prefix.normalize('NFKC').slice(-80)
+  );
   const compactDomestic = groups.length === 1
     && (/^0[1-9]\d{8}$/u.test(groups[0])
-      || /^0(?:50|70|80|90)\d{8}$/u.test(groups[0]));
+      || /^0(?:50|70|80|90)\d{8}$/u.test(groups[0]))
+    && !compactIdentifierContext;
   const domesticPairGrouped = groups.length >= 4
       && groups.length <= 6
       && /^0\d$/u.test(groups[0])

@@ -153,6 +153,24 @@ for (const compactDomestic of [
     'compact domestic telephone numbers must be redacted at clean token boundaries'
   );
 }
+
+for (const labelledCompactIdentifier of [
+  'GUID: 09012345678',
+  'release id 0817020000',
+  'reference 0362168041',
+  '管理番号：０９０１２３４５６７８'
+]) {
+  assert.equal(
+    redactContactData(labelledCompactIdentifier),
+    labelledCompactIdentifier,
+    'explicit English and Japanese identifier labels must protect compact numeric identifiers'
+  );
+}
+assert.equal(
+  redactContactData('Phone: 09012345678'),
+  'Phone: [contact omitted]',
+  'phone labels must continue to redact compact domestic numbers'
+);
 for (const compactNumericIdentifier of [
   '1234567890',
   '00012345678',
