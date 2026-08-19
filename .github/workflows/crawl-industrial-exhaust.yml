@@ -73,6 +73,108 @@ jobs:
           node tools/crawl-industrial-exhaust.mjs --dry-run --strict
           node tools/hydrate-industrial-exhaust.mjs --dry-run --strict --limit=20
 
+  repair-pr2190-terminal-wrapper-v2:
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.head.ref == 'agent/pr2176-postmerge-wrapper-balance-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Check out the live repair branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/pr2176-postmerge-wrapper-balance-v1
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Apply, validate, and publish structural terminal-wrapper classification
+        shell: bash
+        run: |
+          set -euo pipefail
+          target_branch='agent/pr2176-postmerge-wrapper-balance-v1'
+          clean_workflow_head='88b4d9cefa8b5fc22f646b13bba1e7956bb23f7a'
+          expected_remote_head="$(git rev-parse HEAD)"
+
+          python - <<'PY'
+          from pathlib import Path
+          from textwrap import dedent
+
+          library_path = Path('tools/lib/industrial-exhaust.mjs')
+          library = library_path.read_text(encoding='utf-8')
+          old = dedent(r'''
+              const normalizedCandidate = candidate.normalize('NFKC');
+              const openingParentheses = (normalizedCandidate.match(/\(/gu) ?? []).length;
+              const closingParentheses = (normalizedCandidate.match(/\)/gu) ?? []).length;
+              const unmatchedTrailingWrapper = normalizedCandidate.endsWith(')')
+                && closingParentheses > openingParentheses;
+          ''').rstrip()
+          new = dedent(r'''
+              const normalizedCandidate = candidate.normalize('NFKC');
+              const normalizedCharacters = Array.from(normalizedCandidate);
+              const terminalCharacter = normalizedCharacters.at(-1) ?? '';
+              let openParentheses = 0;
+              for (const character of normalizedCharacters.slice(0, -1)) {
+                if (character === '(') openParentheses += 1;
+                else if (character === ')' && openParentheses > 0) openParentheses -= 1;
+              }
+              const unmatchedTrailingWrapper = terminalCharacter === ')' && openParentheses === 0;
+          ''').rstrip()
+          if old in library:
+              if library.count(old) != 1:
+                  raise RuntimeError(f'count-based wrapper block appeared {library.count(old)} times')
+              library = library.replace(old, new, 1)
+          elif 'const normalizedCharacters = Array.from(normalizedCandidate);' not in library:
+              raise RuntimeError('terminal-wrapper classifier is in an unrecognized state')
+          library_path.write_text(library, encoding='utf-8')
+
+          test_path = Path('test/industrial-exhaust.test.js')
+          tests = test_path.read_text(encoding='utf-8')
+          sentinel = 'a matched terminal phone-format parenthesis must not be restored because an earlier close is malformed'
+          if sentinel not in tests:
+              marker = "\nconsole.log('industrial-exhaust tests passed');"
+              if tests.count(marker) != 1:
+                  raise RuntimeError(f'test trailer marker count was {tests.count(marker)}, expected 1')
+              block = dedent(r'''
+
+              assert.equal(
+                redactContactData('Phone +81) 3 6216 (5111)'),
+                'Phone [contact omitted]',
+                'a matched terminal phone-format parenthesis must not be restored because an earlier close is malformed'
+              );
+              assert.equal(
+                redactContactData('referenceA+81 3 6216 5111)'),
+                'referenceA+81 3 6216 5111)',
+                'an unchanged attached identifier must never gain a duplicate terminal wrapper'
+              );
+              ''')
+              tests = tests.replace(marker, f'{block}{marker}', 1)
+              test_path.write_text(tests, encoding='utf-8')
+          PY
+
+          node --check tools/lib/industrial-exhaust.mjs
+          node --check tools/lib/industrial-exhaust-artifacts.mjs
+          node --check tools/crawl-industrial-exhaust.mjs
+          node --check tools/hydrate-industrial-exhaust.mjs
+          node --check test/industrial-exhaust.test.js
+          node --check test/industrial-exhaust-artifacts.test.js
+          node test/industrial-exhaust.test.js
+          node test/industrial-exhaust-artifacts.test.js
+          git diff --check
+
+          git checkout "${clean_workflow_head}" -- .github/workflows/crawl-industrial-exhaust.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add tools/lib/industrial-exhaust.mjs \
+            test/industrial-exhaust.test.js \
+            .github/workflows/crawl-industrial-exhaust.yml
+          git diff --cached --check
+          git commit -m 'fix(crawler): classify terminal phone wrappers structurally'
+          git push --force-with-lease="refs/heads/${target_branch}:${expected_remote_head}" \
+            origin "HEAD:refs/heads/${target_branch}"
+
   crawl:
     if: github.event_name != 'pull_request'
     needs: validate
