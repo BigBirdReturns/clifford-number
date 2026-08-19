@@ -12,12 +12,12 @@ permissions:
   contents: write
 
 concurrency:
-  group: m05-observation-time-reconciliation-materializer-macos-v2-${{ github.ref }}
+  group: m05-observation-time-reconciliation-materializer-arm-v3-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
   repair:
-    runs-on: macos-14
+    runs-on: ubuntu-24.04-arm
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
