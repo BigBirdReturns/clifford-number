@@ -9,7 +9,7 @@ on:
       - 'tools/temporary-pr2196-current-main-spacing-trigger.txt'
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: pr2196-current-main-spacing-reproduction
@@ -21,15 +21,20 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: agent/pr2196-current-main-spacing-reproduction-v1
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Reproduce historical spacing cases on canonical implementation
+      - name: Reproduce and record historical spacing cases
         shell: bash
         run: |
-          set -euo pipefail
-          node --check tools/lib/industrial-exhaust.mjs
-          node --input-type=module <<'NODE'
+          set -uo pipefail
+          mkdir -p receipts/qualification
+          set +e
+          {
+            node --check tools/lib/industrial-exhaust.mjs
+            node --input-type=module <<'NODE'
           import assert from 'node:assert/strict';
           import { redactContactData } from './tools/lib/industrial-exhaust.mjs';
 
@@ -58,5 +63,24 @@ jobs:
             assert.equal(actual, expected);
           }
           NODE
-          node test/industrial-exhaust.test.js
-          node test/industrial-exhaust-artifacts.test.js
+            node test/industrial-exhaust.test.js
+            node test/industrial-exhaust-artifacts.test.js
+          } > /tmp/pr2196-current-main-spacing.log 2>&1
+          status=$?
+          set -e
+
+          {
+            printf 'base_commit=%s\n' '8321004b1bb03d0d119272f9f9694a6b121b470d'
+            printf 'tested_commit=%s\n' "$(git rev-parse HEAD)"
+            printf 'status=%s\n' "${status}"
+            printf '%s\n' '--- output ---'
+            cat /tmp/pr2196-current-main-spacing.log
+          } > receipts/qualification/pr2196-current-main-spacing.txt
+
+          cat receipts/qualification/pr2196-current-main-spacing.txt
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- receipts/qualification/pr2196-current-main-spacing.txt
+          git commit -m 'test(crawler): record current-main wrapper-spacing reproduction'
+          git push origin HEAD:refs/heads/agent/pr2196-current-main-spacing-reproduction-v1
+          exit "${status}"
