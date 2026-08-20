@@ -23,6 +23,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          echo 'qualification generation 2'
           node --check tools/lib/industrial-exhaust.mjs
           node --input-type=module <<'NODE'
           import assert from 'node:assert/strict';
