@@ -1,4 +1,4 @@
-name: PR2208 plural-base and title-clause launcher v2
+name: PR2208 plural-base and title-clause launcher v3
 
 on:
   pull_request:
@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: pr2208-plural-title-launcher-v2-${{ github.event.pull_request.head.sha }}
+  group: pr2208-plural-title-launcher-v3-${{ github.event.pull_request.head.sha }}
   cancel-in-progress: false
 
 jobs:
@@ -23,6 +23,7 @@ jobs:
     env:
       CONTROLLER_BRANCH: agent/pr2194-fresh-sentence-followup-controller-v1
       RESULT_BRANCH: agent/pr2194-fresh-sentence-followup-v1
+      ANCHOR_BRANCH: agent/pr2208-plural-title-product-anchor-v1
       EXPECTED_RESULT_HEAD: 5d872f183572fa3538856a6b97f4a9a4b4845b92
       EXPECTED_TRIGGER_HEAD: ${{ github.event.pull_request.head.sha }}
     steps:
@@ -33,7 +34,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Execute the guarded finalizer payload
+      - name: Execute and anchor the guarded finalizer payload
         shell: bash
         run: |
           set -euo pipefail
@@ -53,3 +54,11 @@ jobs:
           Path('/tmp/pr2208-finalizer.sh').write_text(script, encoding='utf-8')
           PY
           bash /tmp/pr2208-finalizer.sh
+
+          product_sha="$(git rev-parse HEAD)"
+          product_tree="$(git rev-parse 'HEAD^{tree}')"
+          test "$(git rev-parse HEAD^)" = "$(git rev-parse refs/remotes/origin/main)"
+          git push --force origin "HEAD:refs/heads/$ANCHOR_BRANCH"
+          test "$(git ls-remote origin "refs/heads/$ANCHOR_BRANCH" | cut -f1)" = "$product_sha"
+          printf 'PR2208_PRODUCT_SHA=%s\nPR2208_PRODUCT_TREE=%s\n' \
+            "$product_sha" "$product_tree"
