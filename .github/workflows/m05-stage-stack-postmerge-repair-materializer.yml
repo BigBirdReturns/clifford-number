@@ -1,0 +1,123 @@
+name: M-05 stage-stack post-merge repair materializer
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.tmp/m05-stage-stack-postmerge-repair-v1/**'
+      - '.github/workflows/m05-stage-stack-postmerge-repair-materializer.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: m05-stage-stack-postmerge-repair-materializer-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Reconstruct, qualify, and publish exact non-workflow product
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BASE_SHA: eef55693745f299330323296b700d8c4f7a2c23a
+          BASE_TREE: 4d2df1163e7d4c2c7c36897540fb1ad86f18df1b
+          PRODUCT_BRANCH: agent/m05-s03-l7-stage-stack-postmerge-repair-v1
+          ARCHIVE_SHA256: de9bb819172e65a1556340b371a9c58beb739064637d2d2f8304b504ca626b7e
+          CONTRACT_BLOB: bf8b53a6f8aa84e9a93da650d26c759c3cb0344b
+          VALIDATOR_BLOB: 761349a80add266ccc7a1aca77b2d0c97efa0512
+          TEST_BLOB: 84541cd95340eaacdb8483144ae76ac59ab9c798
+          WORKFLOW_BLOB: a97748f0a84c7f5a020b5c6e59aa471fcb5cd0de
+        shell: bash
+        run: |
+          set -euo pipefail
+          payload="$RUNNER_TEMP/product.b64"
+          archive="$RUNNER_TEMP/product.tar.xz"
+          extract="$RUNNER_TEMP/product"
+          qualify="$RUNNER_TEMP/qualify"
+          publish="$RUNNER_TEMP/publish"
+          cat .tmp/m05-stage-stack-postmerge-repair-v1/payload.part-* > "$payload"
+          base64 --decode "$payload" > "$archive"
+          printf '%s  %s\n' "$ARCHIVE_SHA256" "$archive" | sha256sum -c -
+          mkdir -p "$extract"
+          mapfile -t actual_paths < <(tar -tJf "$archive" | sed 's#^\./##' | sort)
+          mapfile -t expected_paths < <(printf '%s\n' \
+            '.github/workflows/m05-intel-realization-stage-receipt-control-stack-amendment.yml' \
+            'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-postmerge-repair.json' \
+            'test/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.test.js' \
+            'tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.mjs' | sort)
+          test "$(printf '%s\n' "${actual_paths[@]}")" = "$(printf '%s\n' "${expected_paths[@]}")"
+          tar -xJf "$archive" -C "$extract" --no-same-owner --no-same-permissions
+          test "$(git hash-object "$extract/data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-postmerge-repair.json")" = "$CONTRACT_BLOB"
+          test "$(git hash-object "$extract/tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.mjs")" = "$VALIDATOR_BLOB"
+          test "$(git hash-object "$extract/test/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.test.js")" = "$TEST_BLOB"
+          test "$(git hash-object "$extract/.github/workflows/m05-intel-realization-stage-receipt-control-stack-amendment.yml")" = "$WORKFLOW_BLOB"
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$BASE_SHA"
+          test "$(git rev-parse "$BASE_SHA^{tree}")" = "$BASE_TREE"
+          test -z "$(git ls-remote origin "refs/heads/$PRODUCT_BRANCH" | cut -f1)"
+
+          git worktree add --detach "$qualify" "$BASE_SHA"
+          for rel in "${expected_paths[@]}"; do
+            mkdir -p "$qualify/$(dirname "$rel")"
+            cp "$extract/$rel" "$qualify/$rel"
+          done
+          cd "$qualify"
+          node --check tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.mjs
+          node --check test/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.test.js
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-provenance-object-custody.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-intel-realization-provenance-object-custody.test.js
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-connection-authentication-custody-amendment.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-intel-realization-connection-authentication-custody-amendment.test.js
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-observation-time-custody-amendment.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-intel-realization-observation-time-custody-amendment.test.js
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-temporal-reconciliation-admission-amendment.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-intel-realization-temporal-reconciliation-admission-amendment.test.js
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.test.js
+          npm run release:check
+          cd "$GITHUB_WORKSPACE"
+          git worktree remove --force "$qualify"
+
+          git worktree add --detach "$publish" "$BASE_SHA"
+          for rel in "${expected_paths[@]}"; do
+            mkdir -p "$publish/$(dirname "$rel")"
+            cp "$extract/$rel" "$publish/$rel"
+          done
+          cd "$publish"
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.test.js
+          git add -- \
+            data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-postmerge-repair.json \
+            tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.mjs \
+            test/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.test.js
+          mapfile -t staged < <(git diff --cached --name-only | sort)
+          mapfile -t expected_staged < <(printf '%s\n' \
+            'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-postmerge-repair.json' \
+            'test/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.test.js' \
+            'tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.mjs' | sort)
+          test "$(printf '%s\n' "${staged[@]}")" = "$(printf '%s\n' "${expected_staged[@]}")"
+          git config user.name 'BigBirdReturns'
+          git config user.email 'bigbirdreturns@proton.me'
+          git commit -m '[M-05 S03-L7] Repair stage-receipt full-stack admission'
+          product_head="$(git rev-parse HEAD)"
+          product_tree="$(git rev-parse HEAD^{tree})"
+          mapfile -t committed < <(git diff-tree --no-commit-id --name-only -r HEAD | sort)
+          test "$(printf '%s\n' "${committed[@]}")" = "$(printf '%s\n' "${expected_staged[@]}")"
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$BASE_SHA"
+          test "$(git rev-parse "$BASE_SHA^{tree}")" = "$BASE_TREE"
+          test -z "$(git ls-remote origin "refs/heads/$PRODUCT_BRANCH" | cut -f1)"
+          git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push origin "HEAD:refs/heads/$PRODUCT_BRANCH"
+          printf 'product_head=%s\nproduct_tree=%s\n' "$product_head" "$product_tree"
