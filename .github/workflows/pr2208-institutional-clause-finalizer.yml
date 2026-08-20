@@ -1,4 +1,4 @@
-name: PR2208 institutional-clause boundary finalizer
+name: PR2208 labelled-title casing finalizer
 
 on:
   pull_request:
@@ -10,11 +10,11 @@ permissions:
   contents: read
 
 concurrency:
-  group: pr2208-institutional-clause-finalizer-${{ github.event.pull_request.head.sha }}
+  group: pr2208-labelled-title-${{ github.event.pull_request.head.sha }}
   cancel-in-progress: false
 
 jobs:
-  qualify-and-publish:
+  patch-qualify-publish:
     if: ${{ github.event.pull_request.head.ref == 'agent/pr2194-fresh-sentence-followup-controller-v1' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -23,7 +23,7 @@ jobs:
     env:
       CONTROLLER_BRANCH: agent/pr2194-fresh-sentence-followup-controller-v1
       RESULT_BRANCH: agent/pr2194-fresh-sentence-followup-v1
-      EXPECTED_RESULT_HEAD: f24a88798c2bc004ad0581e9c784287bb12dcd01
+      EXPECTED_RESULT_HEAD: af7f247c31fac9bd5d1c10881dc9828807c74b77
       EXPECTED_TRIGGER_HEAD: ${{ github.event.pull_request.head.sha }}
     steps:
       - uses: actions/checkout@v4
@@ -46,16 +46,16 @@ jobs:
           test "$(git rev-parse refs/remotes/origin/$RESULT_BRANCH)" = "$EXPECTED_RESULT_HEAD"
 
           prior_base="$(git rev-parse "$EXPECTED_RESULT_HEAD^")"
-          test "$(git rev-list --count "$prior_base..$EXPECTED_RESULT_HEAD")" = 1
-          prior_paths="$(git diff --name-only "$prior_base..$EXPECTED_RESULT_HEAD" | sort)"
           expected_paths="$(printf '%s\n' \
             test/industrial-exhaust.test.js \
             tools/lib/industrial-exhaust.mjs | sort)"
-          test "$prior_paths" = "$expected_paths"
+          test "$(git diff --name-only "$prior_base..$EXPECTED_RESULT_HEAD" | sort)" = "$expected_paths"
 
           base_sha="$(git rev-parse refs/remotes/origin/main)"
-          git checkout -B pr2208-institutional-clause-candidate "$base_sha"
-          test "$(git rev-parse HEAD)" = "$base_sha"
+          git diff --quiet "$prior_base" "$base_sha" -- \
+            test/industrial-exhaust.test.js \
+            tools/lib/industrial-exhaust.mjs
+          git checkout -B pr2208-labelled-title-candidate "$base_sha"
           git cherry-pick --no-commit "$EXPECTED_RESULT_HEAD"
           test "$(git diff --name-only | sort)" = "$expected_paths"
 
@@ -65,109 +65,107 @@ jobs:
           source_path = Path('tools/lib/industrial-exhaust.mjs')
           source = source_path.read_text(encoding='utf-8')
 
-          entity_marker = "function isLikelyNamedEntityContinuation(value) {"
-          assert source.count(entity_marker) == 1, 'entity-classifier marker changed'
-          assert 'function isBoundedSentencePredicate(value) {' not in source, 'predicate helper already exists'
+          old_predicate_gate = r"""  const predicate = tokens[predicateIndex];
+            if (isStrongFiniteSentencePredicate(predicate)) return true;
 
-          declaration_marker = "  const predicatePattern = /^(?:am|"
-          declaration_start = source.index(declaration_marker)
-          declaration_end = source.index(";\n  return followingTokens.some(token =>", declaration_start)
-          predicate_literal = source[
-            declaration_start + len("  const predicatePattern = "):declaration_end
-          ]
-          block_end = source.index("  );\n}", declaration_end) + len("  );")
-          old_predicate_block = source[declaration_start:block_end]
-          expected_tail = (
-            "  const predicatePattern = " + predicate_literal + ";\n"
-            "  return followingTokens.some(token =>\n"
-            "    predicatePattern.test(token.toLocaleLowerCase('en-US'))\n"
-            "  );"
-          )
-          assert old_predicate_block == expected_tail, 'predicate block changed'
+            const lowerPredicate = predicate.toLocaleLowerCase('en-US');
+            const auxiliaryPattern = /^(?:am|is|are|was|were|have|has|had|will|would|shall|should|can|could|may|might|must|do|does|did)$/u;
+            return auxiliaryPattern.test(lowerPredicate)
+              && tokens.slice(predicateIndex + 1).some(isBoundedSentencePredicate);"""
+          new_predicate_gate = r"""  const predicate = tokens[predicateIndex];
+            const postPredicateTokens = tokens.slice(predicateIndex + 1);
+            if (postPredicateTokens.some(token =>
+              /^(?:a|an|the|my|our|your|his|her|its|their|this|that|these|those)$/u.test(
+                token.toLocaleLowerCase('en-US')
+              )
+            )) return true;
+            if (isStrongFiniteSentencePredicate(predicate)) return true;
 
-          helper = (
-            "function isBoundedSentencePredicate(value) {\n"
-            f"  return {predicate_literal}.test(\n"
-            "    value.toLocaleLowerCase('en-US')\n"
-            "  );\n"
-            "}\n\n"
-          )
-          source = source.replace(entity_marker, helper + entity_marker, 1)
-          source = source.replace(
-            old_predicate_block,
-            "  return followingTokens.some(isBoundedSentencePredicate);",
-            1
-          )
+            const lowerPredicate = predicate.toLocaleLowerCase('en-US');
+            const auxiliaryPattern = /^(?:am|is|are|was|were|have|has|had|will|would|shall|should|can|could|may|might|must|do|does|did)$/u;
+            return auxiliaryPattern.test(lowerPredicate)
+              && postPredicateTokens.some(isBoundedSentencePredicate);"""
+          assert source.count(old_predicate_gate) == 1, 'strong-clause predicate gate changed'
+          source = source.replace(old_predicate_gate, new_predicate_gate, 1)
 
-          old_suffix_gate = (
-            "  if (hasInstitutionalSuffix) return true;\n"
-            "\n"
-            "  const hasMixedCaseTitleToken = words.slice(1).some(word =>"
-          )
-          new_suffix_gate = (
-            "  if (hasInstitutionalSuffix) {\n"
-            "    const normalizedWords = words.map(word =>\n"
-            "      word.toLocaleLowerCase('en-US')\n"
-            "    );\n"
-            "    const lead = normalizedWords[0];\n"
-            "    const predicateIndex = normalizedWords\n"
-            "      .slice(1, 5)\n"
-            "      .findIndex(isBoundedSentencePredicate) + 1;\n"
-            "    const hasPostPredicateDeterminer = predicateIndex > 0\n"
-            "      && normalizedWords\n"
-            "        .slice(predicateIndex + 1, -1)\n"
-            "        .some(word =>\n"
-            "          /^(?:a|an|the|my|our|your|his|her|its|their|this|that|these|those)$/u.test(word)\n"
-            "        );\n"
-            "    if (\n"
-            "      /^(?:i|we|you|he|she|they|it|this|that|these|those)$/u.test(lead)\n"
-            "      && hasPostPredicateDeterminer\n"
-            "    ) {\n"
-            "      return false;\n"
-            "    }\n"
-            "    return true;\n"
-            "  }\n"
-            "\n"
-            "  const hasMixedCaseTitleToken = words.slice(1).some(word =>"
-          )
+          old_suffix_gate = r"""  if (hasInstitutionalSuffix) {
+            // A suffix alone is not decisive when an all-caps pronoun clause
+            // contains high-confidence finite or auxiliary-chain evidence.
+            if (isStrongPronounClauseWithinInstitutionalPhrase(phrase)) return false;
+            return true;
+          }"""
+          new_suffix_gate = r"""  if (hasInstitutionalSuffix) {
+            const casedWords = words.filter(word => /\p{L}/u.test(word));
+            const allCapsPhrase = casedWords.length > 0 && casedWords.every(word => {
+              const lower = word.toLocaleLowerCase('en-US');
+              const upper = word.toLocaleUpperCase('en-US');
+              return lower === upper || word === upper;
+            });
+            // Override the suffix only for unlabelled all-caps clauses. A
+            // terminal phone label and title casing are affirmative name evidence.
+            if (!labelMatch
+                && allCapsPhrase
+                && isStrongPronounClauseWithinInstitutionalPhrase(phrase)) {
+              return false;
+            }
+            return true;
+          }"""
           assert source.count(old_suffix_gate) == 1, 'institutional suffix gate changed'
-          source = source.replace(old_suffix_gate, new_suffix_gate, 1)
-          source_path.write_text(source, encoding='utf-8')
+          source_path.write_text(source.replace(old_suffix_gate, new_suffix_gate, 1), encoding='utf-8')
 
           test_path = Path('test/industrial-exhaust.test.js')
           tests = test_path.read_text(encoding='utf-8')
-          old_test_tail = (
-            "  [\n"
-            "    'Broken (He moved to the U.S. THIS COMPANY CALLED +81 3 6216 5111)',\n"
-            "    'Broken (He moved to the U.S. THIS COMPANY CALLED [contact omitted]'\n"
-            "  ]\n"
-            "]) {"
-          )
-          new_test_tail = (
-            "  [\n"
-            "    'Broken (He moved to the U.S. THIS COMPANY CALLED +81 3 6216 5111)',\n"
-            "    'Broken (He moved to the U.S. THIS COMPANY CALLED [contact omitted]'\n"
-            "  ],\n"
-            "  [\n"
-            "    'Broken (He moved to the U.S. WE CALLED THE COMPANY +81 3 6216 5111)',\n"
-            "    'Broken (He moved to the U.S. WE CALLED THE COMPANY [contact omitted]'\n"
-            "  ],\n"
-            "  [\n"
-            "    'Broken (He moved to the U.S. We Called the Company +81 3 6216 5111)',\n"
-            "    'Broken (He moved to the U.S. We Called the Company [contact omitted]'\n"
-            "  ],\n"
-            "  [\n"
-            "    'Broken (He moved to the U.S. THEY CONTACTED OUR DEPARTMENT +81 3 6216 5111)',\n"
-            "    'Broken (He moved to the U.S. THEY CONTACTED OUR DEPARTMENT [contact omitted]'\n"
-            "  ],\n"
-            "  [\n"
-            "    'Broken (He moved to the U.S. THIS IS THE FOUNDATION +81 3 6216 5111)',\n"
-            "    'Broken (He moved to the U.S. THIS IS THE FOUNDATION [contact omitted]'\n"
-            "  ]\n"
-            "]) {"
-          )
-          assert tests.count(old_test_tail) == 1, 'fresh-sentence test tail changed'
-          test_path.write_text(tests.replace(old_test_tail, new_test_tail, 1), encoding='utf-8')
+          marker = '// period abbreviation classification must remain lexical and context-bounded'
+          assert tests.count(marker) == 1, 'test insertion marker changed'
+          additions = r"""
+          for (const [input, expected] of [
+            [
+              'Broken (He moved to the U.S. THIS IS THE FOUNDATION +81 3 6216 5111)',
+              'Broken (He moved to the U.S. THIS IS THE FOUNDATION [contact omitted]'
+            ],
+            [
+              'Broken (He moved to the U.S. WE SUPPORT THE FOUNDATION +81 3 6216 5111)',
+              'Broken (He moved to the U.S. WE SUPPORT THE FOUNDATION [contact omitted]'
+            ],
+            [
+              'Broken（He moved to the Ｕ．Ｓ． ＴＨＩＳ ＩＳ ＴＨＥ ＦＯＵＮＤＡＴＩＯＮ ＋８１ ３ ６２１６ ５１１１）',
+              'Broken（He moved to the Ｕ．Ｓ． ＴＨＩＳ ＩＳ ＴＨＥ ＦＯＵＮＤＡＴＩＯＮ [contact omitted]'
+            ]
+          ]) {
+            assert.equal(
+              redactContactData(input),
+              expected,
+              'unlabelled all-caps pronoun clauses must outrank institutional suffixes'
+            );
+          }
+
+          for (const [input, expected] of [
+            [
+              "Context (U.S. It's a Small World Foundation Phone: +1 253 477 8777)",
+              "Context (U.S. It's a Small World Foundation Phone: [contact omitted])"
+            ],
+            [
+              'Context (U.S. We Can Do It Foundation Phone: +1 253 477 8777)',
+              'Context (U.S. We Can Do It Foundation Phone: [contact omitted])'
+            ],
+            [
+              'Context (U.S. WE CAN DO IT FOUNDATION Phone: +1 253 477 8777)',
+              'Context (U.S. WE CAN DO IT FOUNDATION Phone: [contact omitted])'
+            ],
+            [
+              'Context（Ｕ．Ｓ． Ｗｅ Ｃａｎ Ｄｏ Ｉｔ Ｆｏｕｎｄａｔｉｏｎ Phone: ＋１ ２５３ ４７７ ８７７７）',
+              'Context（Ｕ．Ｓ． Ｗｅ Ｃａｎ Ｄｏ Ｉｔ Ｆｏｕｎｄａｔｉｏｎ Phone: [contact omitted]）'
+            ]
+          ]) {
+            assert.equal(
+              redactContactData(input),
+              expected,
+              'labelled title-cased and all-caps institutions must retain their owned closer'
+            );
+          }
+
+          """
+          test_path.write_text(tests.replace(marker, additions + marker, 1), encoding='utf-8')
           PY
 
           node --check tools/lib/industrial-exhaust.mjs
@@ -176,14 +174,12 @@ jobs:
           node test/industrial-exhaust-artifacts.test.js
           git diff --check
 
-          changed="$(git diff --name-only | sort)"
-          test "$changed" = "$expected_paths"
-
+          test "$(git diff --name-only | sort)" = "$expected_paths"
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -- test/industrial-exhaust.test.js tools/lib/industrial-exhaust.mjs
           test "$(git diff --cached --name-only | sort)" = "$expected_paths"
-          git commit -m 'fix(crawler): let clause evidence outrank institutional suffixes'
+          git commit -m 'fix(crawler): preserve labelled title-shaped institutions'
           test "$(git rev-parse HEAD^)" = "$base_sha"
           git push \
             --force-with-lease="refs/heads/$RESULT_BRANCH:$EXPECTED_RESULT_HEAD" \
