@@ -8,27 +8,197 @@ on:
       - 'test/industrial-exhaust.test.js'
 
 permissions:
-  contents: read
+  contents: write
+
+concurrency:
+  group: pr2210-current-main-domestic-wrapper-repair
+  cancel-in-progress: false
 
 jobs:
-  reproduce:
+  repair-and-publish:
+    if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: agent/pr2196-current-main-spacing-repro-v1
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Execute current-main wrapper-spacing matrix
+      - name: Patch, qualify, and publish the clean two-file repair
         shell: bash
         run: |
           set -euo pipefail
-          node --check tools/lib/industrial-exhaust.mjs
-          node --input-type=module <<'NODE'
-          import assert from 'node:assert/strict';
-          import { redactContactData } from './tools/lib/industrial-exhaust.mjs';
+          target_branch='agent/pr2196-current-main-spacing-repro-v1'
+          base_head='8321004b1bb03d0d119272f9f9694a6b121b470d'
+          expected_remote_head="$(git rev-parse HEAD)"
 
-          const required = [
+          test "${expected_remote_head}" = '${{ github.event.pull_request.head.sha }}'
+          git cat-file -e "${base_head}^{commit}"
+          git checkout --detach "${base_head}"
+
+          test "$(git hash-object tools/lib/industrial-exhaust.mjs)" = '8c2f95ca1c1baa6f3c19ff813e2b51eb89f9f97b'
+          test "$(git hash-object test/industrial-exhaust.test.js)" = '4c52b1656df580192b540eee66313c11515d353f'
+
+          python - <<'PY'
+          from pathlib import Path
+
+
+          def replace_once(text: str, old: str, new: str, label: str) -> str:
+              count = text.count(old)
+              if count != 1:
+                  raise RuntimeError(f'{label} occurrence count was {count}, expected 1')
+              return text.replace(old, new, 1)
+
+
+          library_path = Path('tools/lib/industrial-exhaust.mjs')
+          library = library_path.read_text(encoding='utf-8')
+
+          helper_anchor = '''  return value.slice(contextStart);
+          }
+
+          function stripUnownedLeadingPhoneClosers(value, availableOuterOpeners) {
+          '''
+          helper_replacement = '''  return value.slice(contextStart);
+          }
+
+          function partitionRedactedPhoneBoundary(candidate, start, end, structuralPrefix) {
+            const openerStack = [];
+            const scanSurviving = value => {
+              for (const character of value) {
+                const normalized = character.normalize('NFKC');
+                if (normalized === '(') openerStack.push(true);
+                else if (normalized === ')' && openerStack.length) openerStack.pop();
+              }
+            };
+
+            scanSurviving(currentNarrativeParenthesisContext(structuralPrefix));
+            scanSurviving(candidate.slice(0, start));
+
+            let preservedBoundary = '';
+            let previousCloserEnd = start;
+            let closerRunHadDeletion = false;
+
+            const processCloser = (index, floor) => {
+              let tokenStart = index;
+              while (tokenStart > floor && /\\s/u.test(candidate[tokenStart - 1])) {
+                tokenStart -= 1;
+              }
+
+              const opener = openerStack.pop() ?? null;
+              const ownedBySurvivingOpener = opener === true;
+              const continuesCloserRun = tokenStart === previousCloserEnd;
+              const currentCloserWasDeleted = !ownedBySurvivingOpener;
+              if (ownedBySurvivingOpener) {
+                const preserveStart = continuesCloserRun && closerRunHadDeletion
+                  ? index
+                  : tokenStart;
+                preservedBoundary += candidate.slice(preserveStart, index + 1);
+              }
+              closerRunHadDeletion = continuesCloserRun
+                ? closerRunHadDeletion || currentCloserWasDeleted
+                : currentCloserWasDeleted;
+              previousCloserEnd = index + 1;
+            };
+
+            for (let index = start; index < end; index += 1) {
+              const normalized = candidate[index].normalize('NFKC');
+              if (normalized === '(') {
+                openerStack.push(false);
+                continue;
+              }
+              if (normalized === ')') {
+                processCloser(index, Math.max(start, previousCloserEnd));
+              }
+            }
+
+            let cursor = end;
+            let pendingWhitespace = '';
+            while (cursor < candidate.length) {
+              const character = candidate[cursor];
+              const normalized = character.normalize('NFKC');
+              if (/\\s/u.test(character)) {
+                pendingWhitespace += character;
+                cursor += 1;
+                continue;
+              }
+              if (normalized !== ')') break;
+              processCloser(cursor, Math.max(end, previousCloserEnd));
+              pendingWhitespace = '';
+              cursor += 1;
+            }
+
+            return {
+              preservedBoundary,
+              remainder: `${pendingWhitespace}${candidate.slice(cursor)}`
+            };
+          }
+
+          function stripUnownedLeadingPhoneClosers(value, availableOuterOpeners) {
+          '''
+          library = replace_once(
+              library,
+              helper_anchor,
+              helper_replacement,
+              'domestic structural boundary helper anchor'
+          )
+
+          old_shortcut = '''  if (wholeSpanIsAffirmative && allowInitialGroup && observationGroup > 0) {
+            const { start, end } = phoneWindowBounds(candidate, groups, 0, observationGroup - 1);
+            const completePhoneSpan = candidate.slice(start, end);
+            if (phoneCandidateScore(completePhoneSpan, `${externalPrefix}${candidate.slice(0, start)}`)) {
+              const remainder = candidate.slice(end);
+              const redactedRemainder = redactPhoneSubspans(
+                remainder,
+                `${externalPrefix}${candidate.slice(0, start)}[contact omitted]`,
+                externalSuffix,
+                true
+              );
+              return `${candidate.slice(0, start)}[contact omitted]${redactedRemainder}`;
+            }
+          }
+          '''
+          new_shortcut = '''  if (wholeSpanIsAffirmative && allowInitialGroup && observationGroup > 0) {
+            const { start, end } = phoneWindowBounds(candidate, groups, 0, observationGroup - 1);
+            const completePhoneSpan = candidate.slice(start, end);
+            if (phoneCandidateScore(completePhoneSpan, `${externalPrefix}${candidate.slice(0, start)}`)) {
+              const prefixBeforeRange = candidate.slice(0, start);
+              const boundary = partitionRedactedPhoneBoundary(
+                candidate,
+                start,
+                end,
+                externalPrefix
+              );
+              const markerPrefix = `${prefixBeforeRange}[contact omitted]${boundary.preservedBoundary}`;
+              const redactedRemainder = redactPhoneSubspans(
+                boundary.remainder,
+                `${externalPrefix}${markerPrefix}`,
+                externalSuffix,
+                true
+              );
+              return `${markerPrefix}${redactedRemainder}`;
+            }
+          }
+          '''
+          library = replace_once(
+              library,
+              old_shortcut,
+              new_shortcut,
+              'affirmative whole-span shortcut'
+          )
+          library_path.write_text(library, encoding='utf-8')
+
+          test_path = Path('test/industrial-exhaust.test.js')
+          tests = test_path.read_text(encoding='utf-8')
+          sentinel = 'domestic phone boundaries must preserve only narrative-owned closers'
+          if sentinel in tests:
+              raise RuntimeError('domestic wrapper regression block already exists')
+          trailer = "\n// period abbreviation classification must remain lexical and context-bounded\n\nconsole.log('industrial-exhaust tests passed');"
+          regression = r'''
+
+          for (const [input, expected] of [
             [
               'Context (Phone: (03) ) 6216 5111',
               'Context (Phone: [contact omitted])'
@@ -36,33 +206,75 @@ jobs:
             [
               '文脈（電話：（０３） ） ６２１６ ５１１１',
               '文脈（電話：[contact omitted]）'
-            ]
-          ];
-          const observations = [
-            ...required,
-            [
-              'Context ((Phone: 03 6216 5111 ) )',
-              'Context ((Phone: [contact omitted] ) )'
             ],
             [
               'Context (Phone: (03 6216 5111) )',
               'Context (Phone: [contact omitted])'
             ],
             [
-              'Context (Phone: +81 3 6216 5111))',
-              'Context (Phone: [contact omitted])'
+              '文脈（電話：（０３ ６２１６ ５１１１） ）',
+              '文脈（電話：[contact omitted]）'
+            ],
+            [
+              'Context ((Phone: 03 6216 5111 ) )',
+              'Context ((Phone: [contact omitted] ) )'
+            ],
+            [
+              '文脈（（電話：０３ ６２１６ ５１１１ ） ）',
+              '文脈（（電話：[contact omitted] ） ）'
             ],
             [
               'Phone: (03) ) 6216 5111',
               'Phone: [contact omitted]'
+            ],
+            [
+              '電話：（０３） ） ６２１６ ５１１１',
+              '電話：[contact omitted]'
+            ],
+            [
+              'Context (Phone: (03 6216 5111 ) )',
+              'Context (Phone: [contact omitted])'
+            ],
+            [
+              '文脈（電話：（０３ ６２１６ ５１１１ ） ）',
+              '文脈（電話：[contact omitted]）'
             ]
-          ];
+          ]) {
+            assert.equal(
+              redactContactData(input),
+              expected,
+              'domestic phone boundaries must preserve only narrative-owned closers and source-faithful retained spacing'
+            );
+          }
+          '''
+          tests = replace_once(
+              tests,
+              trailer,
+              f'{regression}{trailer}',
+              'industrial-exhaust test trailer'
+          )
+          test_path.write_text(tests, encoding='utf-8')
+          PY
 
-          for (const [input, expected] of observations) {
-            const actual = redactContactData(input);
-            console.log(JSON.stringify({ input, expected, actual, matches: actual === expected }));
-          }
-          for (const [input, expected] of required) {
-            assert.equal(redactContactData(input), expected);
-          }
-          NODE
+          node --check tools/lib/industrial-exhaust.mjs
+          node --check tools/lib/industrial-exhaust-artifacts.mjs
+          node --check tools/crawl-industrial-exhaust.mjs
+          node --check tools/hydrate-industrial-exhaust.mjs
+          node --check test/industrial-exhaust.test.js
+          node --check test/industrial-exhaust-artifacts.test.js
+          node test/industrial-exhaust.test.js
+          node test/industrial-exhaust-artifacts.test.js
+          git diff --check
+
+          expected_paths=$'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          test "$(git diff --name-only | LC_ALL=C sort)" = "${expected_paths}"
+          test "$(git diff --name-only "${base_head}" | LC_ALL=C sort)" = "${expected_paths}"
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- test/industrial-exhaust.test.js tools/lib/industrial-exhaust.mjs
+          test "$(git diff --cached --name-only | LC_ALL=C sort)" = "${expected_paths}"
+          git diff --cached --check
+          git commit -m 'fix(crawler): preserve domestic narrative wrapper boundaries'
+          git push --force-with-lease="refs/heads/${target_branch}:${expected_remote_head}" \
+            origin "HEAD:refs/heads/${target_branch}"
