@@ -459,6 +459,103 @@ function unmatchedOpeningParenthesisDepth(value) {
   return depth;
 }
 
+function localNarrativeConstructTail(value) {
+  const normalized = value.normalize('NFKC');
+  let start = 0;
+  for (let index = 0; index < normalized.length; index += 1) {
+    if (/[\r\n([{<:;|]/u.test(normalized[index])) start = index + 1;
+  }
+  return normalized.slice(start).trim();
+}
+
+function isIsolatedTelephoneLabelConstruct(value, contextStart, periodIndex) {
+  const local = value.slice(contextStart).normalize('NFKC');
+  const relativePeriodIndex = value.slice(contextStart, periodIndex).normalize('NFKC').length;
+  const labelMatch = local.match(
+    /(?:tel(?:ephone)?|phone|mobile|cell|fax|contact)(?:\s*\.\s*)?(?:\s*(?:number|no)(?:\s*\.\s*)?)?\s*$/iu
+  );
+  if (!labelMatch || relativePeriodIndex < labelMatch.index) return false;
+
+  const beforeLabel = local.slice(0, labelMatch.index);
+  if (!/\S/u.test(beforeLabel)) return true;
+  if (/[\r\n]\s*$/u.test(beforeLabel)) return true;
+  return /[([{<:;|]\s*$/u.test(beforeLabel);
+}
+
+function isDomainLikeNarrativeToken(token, prefixBeforeToken) {
+  if (/^(?:[\p{L}\p{N}](?:[\p{L}\p{N}-]{0,61}[\p{L}\p{N}])?\.)+[\p{L}]{2,63}$/iu.test(token)) {
+    return true;
+  }
+  if (!/^(?:[\p{L}\p{N}-]+\.)+[\p{L}\p{N}-]+$/u.test(token)) return false;
+  return /(?:^|[\s([{<:;|])(?:visit|browse|open|see|site|website|domain|host|url|at)(?:\s*[:=#-]\s*|\s+)$/iu.test(
+    prefixBeforeToken
+  );
+}
+
+function isMultiPeriodNarrativeAbbreviation(token, prefixBeforeToken) {
+  if (isDomainLikeNarrativeToken(token, prefixBeforeToken)) return false;
+  if (/^(?:\p{L}\.)+\p{L}$/u.test(token)) return true;
+  return /^(?:ph|ed|sc|th|litt)\.d$/iu.test(token);
+}
+
+function isTelephoneLabelRemainder(value) {
+  return /^(?:tel(?:ephone)?|phone|mobile|cell|fax|contact)(?:\s+(?:number|no))?\s*[:.]?\s*$/iu.test(
+    value.normalize('NFKC').trim()
+  );
+}
+
+function isSimpleEntityPrefix(value) {
+  const local = localNarrativeConstructTail(value);
+  if (!local) return false;
+  const words = local.split(/\s+/u);
+  if (words.length > 4) return false;
+  return words.every(word =>
+    /^[\p{Lu}\p{Lt}\d][\p{L}\p{N}&'’\-]*$/u.test(word)
+  );
+}
+
+function isNarrativePeriodAbbreviation(value, contextStart, periodIndex, boundaryEnd) {
+  if (isIsolatedTelephoneLabelConstruct(value, contextStart, periodIndex)) return true;
+
+  const normalizedPrefix = value.slice(contextStart, periodIndex).normalize('NFKC');
+  const tokenMatch = normalizedPrefix.match(/[\p{L}\p{N}]+(?:\.[\p{L}\p{N}]+)*$/u);
+  const token = tokenMatch?.[0] ?? '';
+  if (!token) return false;
+
+  const prefixBeforeToken = normalizedPrefix.slice(0, tokenMatch.index);
+  const singlePeriodAbbreviation = /^(?:no|dr|mr|mrs|ms|prof|inc|ltd|co|corp|st|vs|etc)$/iu.test(token);
+  const multiPeriodAbbreviation = isMultiPeriodNarrativeAbbreviation(token, prefixBeforeToken);
+  if (!singlePeriodAbbreviation && !multiPeriodAbbreviation) return false;
+
+  const remainder = value.slice(boundaryEnd);
+  const hasRemainder = /\S/u.test(remainder);
+  if (hasRemainder && !isTelephoneLabelRemainder(remainder)) return true;
+
+  if (!localNarrativeConstructTail(prefixBeforeToken)) return true;
+  if (/^(?:inc|ltd|co|corp)$/iu.test(token) && isSimpleEntityPrefix(prefixBeforeToken)) return true;
+  return false;
+}
+
+function currentNarrativeParenthesisContext(value) {
+  let contextStart = 0;
+  for (const match of value.matchAll(/\r?\n[ \t]*\r?\n/gu)) {
+    contextStart = Math.max(contextStart, match.index + match[0].length);
+  }
+
+  const boundaryPattern = /[!?。！？][ \t\r\n]*|[.．](?:["'”’»›」』〟＂]*)(?:[ \t\r\n]+|(?=(?:(?:tel(?:ephone)?|phone|mobile|cell|fax|contact)\b|(?:電話(?:番号)?|携帯(?:電話)?|ファックス|連絡先|お問い合わせ先))))/giu;
+  for (const match of value.matchAll(boundaryPattern)) {
+    const boundaryEnd = match.index + match[0].length;
+    if (boundaryEnd <= contextStart) continue;
+    const normalizedMark = match[0].normalize('NFKC').trimStart()[0] ?? '';
+    if (normalizedMark === '.'
+        && isNarrativePeriodAbbreviation(value, contextStart, match.index, boundaryEnd)) {
+      continue;
+    }
+    contextStart = boundaryEnd;
+  }
+  return value.slice(contextStart);
+}
+
 function stripUnownedLeadingPhoneClosers(value, availableOuterOpeners) {
   let preservedClosers = 0;
   let cursor = 0;
@@ -496,11 +593,10 @@ function findOwnedNarrativePhoneWrapper(candidate, input, offset, contactOffset)
     firstOpenerIndex = scanIndex;
     scanIndex -= 1;
   }
-  if (!adjacentOpeners) return null;
-
   const availableOuterOpeners = unmatchedOpeningParenthesisDepth(
-    input.slice(0, firstOpenerIndex)
+    currentNarrativeParenthesisContext(input.slice(0, firstOpenerIndex))
   );
+  if (!adjacentOpeners && !availableOuterOpeners) return null;
   let internalDepth = 0;
   const candidateEnd = offset + candidate.length;
   for (let index = contactOffset; index < candidateEnd; index += 1) {
