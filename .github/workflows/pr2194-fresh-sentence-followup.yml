@@ -55,10 +55,22 @@ jobs:
           source = source_path.read_text()
 
           function_marker = "function isNarrativePeriodAbbreviation(value, contextStart, periodIndex, boundaryEnd) {"
-          helper = r"""function startsFreshSentenceAfterAbbreviation(value) {
-            const lead = (value.normalize('NFKC').trimStart().match(/^[\p{L}]+/u)?.[0] ?? '')
-              .toLocaleLowerCase('en-US');
-            return /^(?:then|please|afterward|meanwhile|however|therefore|otherwise|instead|finally|i|we|you|he|she|they|it|this|that|these|those)$/u.test(
+          helper = r"""function isPronounISentenceLead(value) {
+            const match = value.normalize('NFKC').trimStart().match(/^I\s+([\p{L}]+)/u);
+            if (!match) return false;
+            const nextToken = match[1];
+            const normalizedNext = nextToken.toLocaleLowerCase('en-US');
+            if (nextToken === normalizedNext) return true;
+            return /^(?:am|was|have|had|will|would|shall|should|can|could|may|might|must|do|did|say|said|call|called|ask|asked|need|needed|want|wanted|use|used|see|saw|think|thought|move|moved|live|lived|work|worked|send|sent|contact|contacted|email|emailed|text|texted|dial|dialed|reply|replied|write|wrote|read|found|find|got|get)$/u.test(
+              normalizedNext
+            );
+          }
+
+          function startsFreshSentenceAfterAbbreviation(value) {
+            const normalized = value.normalize('NFKC').trimStart();
+            const lead = (normalized.match(/^[\p{L}]+/u)?.[0] ?? '').toLocaleLowerCase('en-US');
+            if (lead === 'i') return isPronounISentenceLead(normalized);
+            return /^(?:then|please|afterward|meanwhile|however|therefore|otherwise|instead|finally|we|you|he|she|they|it|this|that|these|those)$/u.test(
               lead
             );
           }
@@ -115,6 +127,14 @@ jobs:
             [
               'Broken (At 9 a.m. HOWEVER CONTACT +81 3 6216 5111)',
               'Broken (At 9 a.m. HOWEVER CONTACT [contact omitted]'
+            ],
+            [
+              'Broken (He moved to the U.S. I called +81 3 6216 5111)',
+              'Broken (He moved to the U.S. I called [contact omitted]'
+            ],
+            [
+              'Broken (He moved to the U.S. I CALLED +81 3 6216 5111)',
+              'Broken (He moved to the U.S. I CALLED [contact omitted]'
             ]
           ]) {
             assert.equal(
@@ -148,12 +168,20 @@ jobs:
             [
               'Context (U.S. Open Phone: +81 3 6216 5111)',
               'Context (U.S. Open Phone: [contact omitted])'
+            ],
+            [
+              'Context (U.S. I Corps Phone: +1 253 477 8777)',
+              'Context (U.S. I Corps Phone: [contact omitted])'
+            ],
+            [
+              'Context (U.S. I CORPS Phone: +1 253 477 8777)',
+              'Context (U.S. I CORPS Phone: [contact omitted])'
             ]
           ]) {
             assert.equal(
               redactContactData(input),
               expected,
-              'ordinary abbreviation continuations and noun phrases must retain their legitimately owned wrapper closer'
+              'ordinary abbreviation continuations, noun phrases, and Roman-numeral entities must retain their legitimately owned wrapper closer'
             );
           }
 
@@ -177,6 +205,6 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -- test/industrial-exhaust.test.js tools/lib/industrial-exhaust.mjs
           test "$(git diff --cached --name-only | sort)" = "$expected"
-          git commit -m 'fix(crawler): narrow abbreviation-led sentence boundaries'
+          git commit -m 'fix(crawler): distinguish pronoun and Roman-numeral sentence leads'
           test "$(git rev-parse HEAD^)" = "$base_sha"
           git push --force origin "HEAD:refs/heads/$RESULT_BRANCH"
