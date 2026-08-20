@@ -81,7 +81,7 @@ jobs:
             let previousCloserEnd = start;
             let closerRunHadDeletion = false;
 
-            const processCloser = (index, floor) => {
+            const processCloser = (index, floor, forceDropWhitespace = false) => {
               let tokenStart = index;
               while (tokenStart > floor && /\\s/u.test(candidate[tokenStart - 1])) {
                 tokenStart -= 1;
@@ -92,7 +92,8 @@ jobs:
               const continuesCloserRun = tokenStart === previousCloserEnd;
               const currentCloserWasDeleted = !ownedBySurvivingOpener;
               if (ownedBySurvivingOpener) {
-                const preserveStart = continuesCloserRun && closerRunHadDeletion
+                const preserveStart = forceDropWhitespace
+                  || (continuesCloserRun && closerRunHadDeletion)
                   ? index
                   : tokenStart;
                 preservedBoundary += candidate.slice(preserveStart, index + 1);
@@ -125,7 +126,13 @@ jobs:
                 continue;
               }
               if (normalized !== ')') break;
-              processCloser(cursor, previousCloserEnd);
+              const dropLeadingWhitespace = pendingWhitespace.length > 0
+                && closerRunHadDeletion;
+              processCloser(
+                cursor,
+                previousCloserEnd,
+                dropLeadingWhitespace
+              );
               pendingWhitespace = '';
               cursor += 1;
             }
