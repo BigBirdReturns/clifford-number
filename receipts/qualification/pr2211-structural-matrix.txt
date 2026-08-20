@@ -1,0 +1,24 @@
+product_head=18c5e3d0ea816adfc15ed9e858747e6c0aca3bf7
+matrix_carrier=a823e225573fc9822d7651726117a0f0f1415345
+status=0
+--- output ---
+{"input":"Context (Phone: 03-6216-8041)090-1234-5678","expected":"Context (Phone: [contact omitted])[contact omitted]","actual":"Context (Phone: [contact omitted])[contact omitted]"}
+{"input":"文脈（電話：０３－６２１６－８０４１）０９０－１２３４－５６７８","expected":"文脈（電話：[contact omitted]）[contact omitted]","actual":"文脈（電話：[contact omitted]）[contact omitted]"}
+{"input":"Context ((Phone: 03-6216-8041)090-1234-5678))","expected":"Context ((Phone: [contact omitted])[contact omitted])","actual":"Context ((Phone: [contact omitted])[contact omitted])"}
+{"input":"文脈（（電話：０３－６２１６－８０４１）０９０－１２３４－５６７８））","expected":"文脈（（電話：[contact omitted]）[contact omitted]）","actual":"文脈（（電話：[contact omitted]）[contact omitted]）"}
+{"input":"Context (Phone: 03-6216-8041))090-1234-5678","expected":"Context (Phone: [contact omitted])[contact omitted]","actual":"Context (Phone: [contact omitted])[contact omitted]"}
+{"input":"Context (Phone: 03-6216-8041) )090-1234-5678","expected":"Context (Phone: [contact omitted])[contact omitted]","actual":"Context (Phone: [contact omitted])[contact omitted]"}
+{"input":"Outer (Context (Phone: 03-6216-8041)090-1234-5678))","expected":"Outer (Context (Phone: [contact omitted])[contact omitted])","actual":"Outer (Context (Phone: [contact omitted])[contact omitted])"}
+{"input":"Context (Phone: (03) )6216-8041)090-1234-5678","expected":"Context (Phone: [contact omitted])[contact omitted]","actual":"Context (Phone: [contact omitted])[contact omitted]"}
+{"input":"Phone: 03-6216-8041)090-1234-5678","expected":"Phone: [contact omitted][contact omitted]","actual":"Phone: [contact omitted][contact omitted]"}
+{"input":"Phone: 03-6216-8041) 090-1234-5678","expected":"Phone: [contact omitted] [contact omitted]","actual":"Phone: [contact omitted] [contact omitted]"}
+{"input":"Context (Phone: 03-6216-8041)090-1234-5678 90 people","expected":"Context (Phone: [contact omitted])[contact omitted] 90 people","actual":"Context (Phone: [contact omitted])[contact omitted] 90 people"}
+{"input":"Context (Phone: 03-6216-8041)090-1234-5678 ext 1234","expected":"Context (Phone: [contact omitted])[contact omitted] ext [contact omitted]","actual":"Context (Phone: [contact omitted])[contact omitted] ext [contact omitted]"}
+{"input":"Context (((Phone: 03-6216-8041)090-1234-5678)))","actual":"Context (((Phone: [contact omitted])[contact omitted]))"}
+{"input":"Context (Phone: ((03) 6216 5111)090-1234-5678)","actual":"Context (Phone: ([contact omitted])[contact omitted])"}
+{"input":"文脈（電話：（（０３） ６２１６ ５１１１）０９０－１２３４－５６７８）","actual":"文脈（電話：（[contact omitted]）[contact omitted]）"}
+{"input":"Context (Phone: 03-6216-8041)090-1234-5678)080-1111-2222","actual":"Context (Phone: [contact omitted])[contact omitted][contact omitted]"}
+{"input":"Context ((Phone: 03-6216-8041))090-1234-5678","actual":"Context ((Phone: [contact omitted]))[contact omitted]"}
+{"input":"Outer (Context (Phone: (03) )6216-8041)090-1234-5678)","actual":"Outer (Context (Phone: [contact omitted]))[contact omitted]"}
+industrial-exhaust tests passed
+industrial-exhaust artifact tests passed
