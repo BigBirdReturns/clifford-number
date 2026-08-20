@@ -1,0 +1,79 @@
+diff --git a/test/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.test.js b/test/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.test.js
+index 84541cd..ce83565 100644
+--- a/test/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.test.js
++++ b/test/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.test.js
+@@ -6,7 +6,7 @@ import os from 'node:os';
+ import path from 'node:path';
+ import {spawnSync} from 'node:child_process';
+ import {fileURLToPath} from 'node:url';
+-import {parseUtc,validateStageStack} from '../tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.mjs';
++import {createObjectClaimLedger,parseUtc,validateProvenancePredecessor,validateStageStack} from '../tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.mjs';
+ 
+ const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
+ const REPAIR_PATH=path.join(ROOT,'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-postmerge-repair.json');
+@@ -27,6 +27,17 @@ const HEX64='a'.repeat(64);
+ assert.equal(parseUtc('2026-08-27T00:00:00Z'),BigInt(Date.UTC(2026,7,27))*1_000_000n);
+ assert.ok(parseUtc('2026-08-27T00:00:00.000000001Z')<parseUtc('2026-08-27T00:00:00.000000002Z'));
+ for(const invalid of ['2026-13-01T00:00:00Z','2026-02-30T00:00:00Z','2026-08-27T24:00:00Z','not-a-time',null])assert.equal(parseUtc(invalid),null);
++validateProvenancePredecessor('transaction',null,null);
++assert.throws(()=>validateProvenancePredecessor('transaction','prov-prior',null));
++validateProvenancePredecessor('federal_cash_custody','prov-prior','prov-prior');
++assert.throws(()=>validateProvenancePredecessor('federal_cash_custody',null,'prov-prior'));
++assert.throws(()=>validateProvenancePredecessor('federal_cash_custody','other','prov-prior'));
++const claimLedger=createObjectClaimLedger();
++claimLedger.setOwner('event-1\0transaction');
++claimLedger.claim('receipts/m05/intel-realization/source/nested.json','1'.repeat(40),'2'.repeat(64),'nested object');
++claimLedger.claimOrReference('receipts/m05/intel-realization/source/nested.json','1'.repeat(40),'2'.repeat(64),'nested object');
++claimLedger.setOwner('event-2\0transaction');
++assert.throws(()=>claimLedger.claimOrReference('receipts/m05/intel-realization/source/nested.json','1'.repeat(40),'2'.repeat(64),'nested object'));
+ 
+ const contracts=()=>{
+   const provenanceFields=[
+@@ -241,7 +252,7 @@ const writeFixture=(options={})=>{
+   const acquisition=writeJson('acquisition',acquisitionValue);
+   const provenanceValue={
+     ...overlay('provenance_object_custody',options.provenanceId??'prov-1'),
+-    predecessor_stage_receipt_id:null,source_authority:'US Department of Commerce',
++    predecessor_stage_receipt_id:options.provenancePredecessor??null,source_authority:'US Department of Commerce',
+     authority_identifier_scheme:'us_federal_agency_domain_and_record_system',
+     source_authority_identifier:'commerce.gov',source_record_identifier:'record-1',
+     source_record_class:'official_primary_record',source_origin_body_sha256:sourceBody.body_sha256,
+@@ -272,7 +283,8 @@ const writeFixture=(options={})=>{
+     certificate_not_before_utc:'2026-01-01T00:00:00Z',certificate_not_after_utc:'2027-01-01T00:00:00Z',revocation_evidence_state:options.tlsEvidenceFail?'revoked':'good',certificate_transparency_evidence_state:'included',
+     tls_transcript_sha256:transcript.body_sha256,tls_transcript_custody_locator:transcript.path
+   });
+-  const protocol=writeJson('protocol',{negotiated_http_version:'h2',http1_host_header_if_used:null,http2_or_http3_pseudo_headers_if_used:{':method':'GET',':scheme':'https',':authority':'www.commerce.gov',':path':'/record'},pseudo_header_projection_sha256:HEX64,request_envelope_reconciliation_result:'pass',connection_coalescing_state:'new_connection',authenticated_origin_set:['https://www.commerce.gov'],connection_reuse_predecessor_receipt_id:null,application_protocol_receipt_sha256:HEX64,application_protocol_custody_locator:'receipt'});
++  const protocolEvidence=writeRaw('application-protocol-evidence','application protocol evidence');
++  const protocol=writeJson('protocol',{negotiated_http_version:'h2',http1_host_header_if_used:null,http2_or_http3_pseudo_headers_if_used:{':method':'GET',':scheme':'https',':authority':options.protocolAuthorityMismatch?'other.example':'www.commerce.gov',':path':'/record'},pseudo_header_projection_sha256:HEX64,request_envelope_reconciliation_result:'pass',connection_coalescing_state:'new_connection',authenticated_origin_set:['https://www.commerce.gov'],connection_reuse_predecessor_receipt_id:null,application_protocol_receipt_sha256:options.protocolCustodyMismatch?HEX64:protocolEvidence.body_sha256,application_protocol_custody_locator:protocolEvidence.path});
+   const connectionSummary=writeRaw('connection-summary','connection summary');
+   const connectionValue={
+     ...overlay('connection_authentication',options.connectionId??'conn-1'),
+@@ -299,14 +311,53 @@ const writeFixture=(options={})=>{
+   const mappingEvidence=writeRaw('mapping-evidence','mapping evidence');
+   const mapping=writeJson('mapping',{mapping_version:'1',monotonic_clock_identifier:'mono',monotonic_sample_start:1,monotonic_sample_end:2,wall_clock_start_utc:'2026-08-27T00:00:01Z',wall_clock_end_utc:'2026-08-27T00:00:02Z',offset_seconds:0,uncertainty_seconds:0.001,mapping_body_sha256:mappingEvidence.body_sha256,mapping_custody_locator:mappingEvidence.path});
+   const freshnessPolicyEvidence=writeRaw('freshness-policy-evidence','freshness policy evidence');
+-  const freshness=writeJson('freshness',{policy_id:'freshness-1',policy_version:'1',time_role:'source_origin_observation',maximum_age_seconds:3600,reference_time_role:'freshness_evaluation',uncertainty_treatment:'interval_bounds',failure_action:'fail_closed',policy_body_sha256:freshnessPolicyEvidence.body_sha256,policy_custody_locator:freshnessPolicyEvidence.path});
++  const freshness=writeJson('freshness',{policy_id:'freshness-1',policy_version:'1',time_role:'source_origin_observation',maximum_age_seconds:options.freshnessMaximumTooSmall?0:3600,reference_time_role:'freshness_evaluation',uncertainty_treatment:'interval_bounds',failure_action:'fail_closed',policy_body_sha256:freshnessPolicyEvidence.body_sha256,policy_custody_locator:freshnessPolicyEvidence.path});
+   const freshnessEvaluationEvidence=writeRaw('freshness-evaluation-evidence','freshness evaluation evidence');
+-  const freshnessEvaluation={policy_id:'freshness-1',subject_receipt_id:'source-observation-1',reference_receipt_id:'time-1',subject_interval:{lower_bound_utc:options.freshnessIntervalInversion?'2026-08-27T00:00:01.100000001Z':'2026-08-27T00:00:00.900000000Z',upper_bound_utc:'2026-08-27T00:00:01.100000000Z'},reference_interval:{lower_bound_utc:'2026-08-27T00:00:02.900000000Z',upper_bound_utc:'2026-08-27T00:00:03.100000000Z'},computed_age_lower_bound_seconds:1.8,computed_age_upper_bound_seconds:2.2,result:'pass',evaluated_at_utc:'2026-08-27T00:00:03Z',evaluation_body_sha256:freshnessEvaluationEvidence.body_sha256,evaluation_custody_locator:freshnessEvaluationEvidence.path};
++  const freshnessEvaluation={policy_id:'freshness-1',subject_receipt_id:'source-observation-1',reference_receipt_id:'time-1',subject_interval:{lower_bound_utc:options.freshnessIntervalInversion?'2026-08-27T00:00:01.100000001Z':'2026-08-27T00:00:00.900000000Z',upper_bound_utc:'2026-08-27T00:00:01.100000000Z'},reference_interval:{lower_bound_utc:'2026-08-27T00:00:02.900000000Z',upper_bound_utc:'2026-08-27T00:00:03.100000000Z'},computed_age_lower_bound_seconds:options.freshnessAgeMismatch?1.7:1.8,computed_age_upper_bound_seconds:2.2,result:'pass',evaluated_at_utc:'2026-08-27T00:00:03Z',evaluation_body_sha256:freshnessEvaluationEvidence.body_sha256,evaluation_custody_locator:freshnessEvaluationEvidence.path};
+   const exactBinding=(written,schema)=>({path:written.path,blob_sha:written.blob_sha,body_sha256:written.body_sha256,content_type:written.content_type,schema_version:schema});
+-  const sourceObservationEvidence=writeRaw('source-observation-evidence','source observation evidence');
++  const roleTimes={
++    source_origin_observation:['2026-08-27T00:00:01.900000000Z','2026-08-27T00:00:02.100000000Z'],
++    dns_observation:['2026-08-27T00:00:00.900000000Z','2026-08-27T00:00:01.100000000Z'],
++    dns_expiry:['2026-08-27T00:10:00.900000000Z','2026-08-27T00:10:01.100000000Z'],
++    connection_started:['2026-08-27T00:00:00.900000000Z','2026-08-27T00:00:01.100000000Z'],
++    connection_established:['2026-08-27T00:00:01.900000000Z','2026-08-27T00:00:02.100000000Z'],
++    tls_validation:['2026-08-27T00:00:03.900000000Z','2026-08-27T00:00:04.100000000Z'],
++    certificate_validity_check:['2026-08-27T00:00:03.900000000Z','2026-08-27T00:00:04.100000000Z'],
++    revocation_evidence_observation:['2026-08-27T00:00:03.900000000Z','2026-08-27T00:00:04.100000000Z'],
++    certificate_transparency_evidence_observation:['2026-08-27T00:00:03.900000000Z','2026-08-27T00:00:04.100000000Z'],
++    request_sent:options.requestBeforeConnection?['2026-08-27T00:00:01.000000000Z','2026-08-27T00:00:01.100000000Z']:['2026-08-27T00:00:03.000000000Z','2026-08-27T00:00:03.100000000Z'],
++    response_headers_received:['2026-08-27T00:00:04.000000000Z','2026-08-27T00:00:04.100000000Z'],
++    response_body_completed:['2026-08-27T00:00:04.500000000Z','2026-08-27T00:00:04.600000000Z'],
++    connection_closed:['2026-08-27T00:00:05.000000000Z','2026-08-27T00:00:05.100000000Z'],
++    freshness_evaluation:['2026-08-27T00:00:02.900000000Z','2026-08-27T00:00:03.100000000Z']
++  };
++  const requestEvidence=writeRaw('request-sent-evidence','request sent evidence');
++  const responseHeadersEvidence=writeRaw('response-headers
