@@ -57,6 +57,8 @@ jobs:
             tools/lib/industrial-exhaust.mjs
           git checkout -B pr2208-labelled-title-candidate "$base_sha"
           git cherry-pick --no-commit "$EXPECTED_RESULT_HEAD"
+          test "$(git diff --cached --name-only | sort)" = "$expected_paths"
+          git reset
           test "$(git diff --name-only | sort)" = "$expected_paths"
 
           python - <<'PY'
