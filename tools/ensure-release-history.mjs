@@ -44,18 +44,24 @@ function addBranchRefspec(refspecs, branch) {
   }
 }
 
+function addPullRefspecs(refspecs, pullNumber, refKind) {
+  refspecs.push(`+refs/pull/${pullNumber}/head:refs/remotes/pull/${pullNumber}/head`);
+  if (refKind === 'merge') {
+    refspecs.push(`+refs/pull/${pullNumber}/merge:refs/remotes/pull/${pullNumber}/merge`);
+  }
+}
+
 export function buildHistoryRefspecs(env = process.env) {
   const refspecs = [MAIN_HISTORY_REFSPEC];
   const githubRef = env.GITHUB_REF;
 
   addBranchRefspec(refspecs, env.GITHUB_BASE_REF);
-  addBranchRefspec(refspecs, env.GITHUB_HEAD_REF);
 
   const pullMatch = typeof githubRef === 'string'
     ? githubRef.match(/^refs\/pull\/(\d+)\/(merge|head)$/u)
     : null;
   if (pullMatch) {
-    refspecs.push(`+${githubRef}:refs/remotes/pull/${pullMatch[1]}/${pullMatch[2]}`);
+    addPullRefspecs(refspecs, pullMatch[1], pullMatch[2]);
   }
 
   if (typeof githubRef === 'string' && githubRef.startsWith('refs/heads/')) {
