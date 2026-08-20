@@ -1,0 +1,68 @@
+:00:03.900000000Z','2026-08-27T00:00:04.100000000Z'],
++    revocation_evidence_observation:['2026-08-27T00:00:03.900000000Z','2026-08-27T00:00:04.100000000Z'],
++    certificate_transparency_evidence_observation:['2026-08-27T00:00:03.900000000Z','2026-08-27T00:00:04.100000000Z'],
++    request_sent:options.requestBeforeConnection?['2026-08-27T00:00:01.000000000Z','2026-08-27T00:00:01.100000000Z']:['2026-08-27T00:00:03.000000000Z','2026-08-27T00:00:03.100000000Z'],
++    response_headers_received:['2026-08-27T00:00:04.000000000Z','2026-08-27T00:00:04.100000000Z'],
++    response_body_completed:['2026-08-27T00:00:04.500000000Z','2026-08-27T00:00:04.600000000Z'],
++    connection_closed:['2026-08-27T00:00:05.000000000Z','2026-08-27T00:00:05.100000000Z'],
++    freshness_evaluation:['2026-08-27T00:00:02.900000000Z','2026-08-27T00:00:03.100000000Z']
++  };
++  const requestEvidence=writeRaw('request-sent-evidence','request sent evidence');
++  const responseHeadersEvidence=writeRaw('response-headers-received-evidence','response headers received evidence');
++  const responseBodyEvidence=writeRaw('response-body-completed-evidence','response body completed evidence');
++  const roleEvidence={
++    source_origin_observation:{written:origin,observed_at_utc:originValue.source_origin_observed_at_utc},
++    dns_observation:{written:dns,observed_at_utc:dnsValue.observed_at_utc},
++    dns_expiry:{written:dns,observed_at_utc:dnsValue.expires_at_utc},
++    connection_started:{written:endpoint,observed_at_utc:'2026-08-27T00:00:01Z'},
++    connection_established:{written:endpoint,observed_at_utc:'2026-08-27T00:00:02Z'},
++    tls_validation:{written:tls,observed_at_utc:'2026-08-27T00:00:04Z'},
++    certificate_validity_check:{written:tls,observed_at_utc:'2026-08-27T00:00:04Z'},
++    revocation_evidence_observation:{written:tls,observed_at_utc:'2026-08-27T00:00:04Z'},
++    certificate_transparency_evidence_observation:{written:tls,observed_at_utc:'2026-08-27T00:00:04Z'},
++    request_sent:{written:requestEvidence,observed_at_utc:options.requestBeforeConnection?'2026-08-27T00:00:01.050000000Z':'2026-08-27T00:00:03.050000000Z'},
++    response_headers_received:{written:responseHeadersEvidence,observed_at_utc:'2026-08-27T00:00:04.050000000Z'},
++    response_body_completed:{written:responseBodyEvidence,observed_at_utc:'2026-08-27T00:00:04.550000000Z'},
++    connection_closed:{written:endpoint,observed_at_utc:'2026-08-27T00:00:05Z'},
++    freshness_evaluation:{written:freshnessEvaluationEvidence,observed_at_utc:freshnessEvaluation.evaluated_at_utc}
++  };
++  const completeSourceObservationBindings=c.oc.temporal_reconciliation_rules.required_time_roles.map((role,index)=>({
++    role,receipt_id:`time-evidence-${index+1}`,observed_at_utc:roleEvidence[role].observed_at_utc,
++    body_sha256:roleEvidence[role].written.body_sha256,custody_locator:roleEvidence[role].written.path
++  }));
++  const sourceObservationBindings=options.missingSourceObservationRole?completeSourceObservationBindings.filter(binding=>binding.role!=='freshness_evaluation'):completeSourceObservationBindings;
+   const timeValue={};
+   for(const field of c.oc.time_receipt_contract.required_fields)timeValue[field]=null;
+-  Object.assign(timeValue,{schema_version:c.oc.time_receipt_contract.schema_version,object_class:c.oc.time_receipt_contract.object_class,receipt_id:options.observationId??'time-1',event_chain_id:event,stage,clock_source_class:'authenticated_nts_ntp_clock',clock_source_identifier:'clock',clock_source_authority:'time authority',clock_source_authority_identifier:'time.example',clock_source_receipt_binding:exactBinding(clock,'fixture-clock-source@1'),synchronization_state:'synchronized',synchronization_receipt_binding:exactBinding(sync,'fixture-synchronization@1'),clock_resolution_seconds:0.001,clock_offset_seconds:0,clock_uncertainty_seconds:0.001,clock_drift_bound_ppm:1,holdover_started_at_utc:null,monotonic_clock_identifier:'mono',monotonic_sample_start:1,monotonic_sample_end:2,wall_clock_start_utc:'2026-08-27T00:00:01Z',wall_clock_end_utc:'2026-08-27T00:00:02Z',wall_to_monotonic_mapping_binding:exactBinding(mapping,'fixture-wall-monotonic-mapping@1'),clock_adjustment_events:[],leap_second_state:'no_pending_leap',leap_smear_policy:'none',source_observation_bindings:[{role:'source_origin_observation',receipt_id:'source-observation-1',observed_at_utc:'2026-08-27T00:00:00.200000000Z',body_sha256:sourceObservationEvidence.body_sha256,custody_locator:sourceObservationEvidence.path}],freshness_policy_binding:exactBinding(freshness,'fixture-freshness-policy@1'),freshness_evaluations:[freshnessEvaluation],temporal_order_reconciliation:{result:'pass'},observed_at_utc:'2026-08-27T00:00:03Z'});
++  Object.assign(timeValue,{schema_version:c.oc.time_receipt_contract.schema_version,object_class:c.oc.time_receipt_contract.object_class,receipt_id:options.observationId??'time-1',event_chain_id:event,stage,clock_source_class:'authenticated_nts_ntp_clock',clock_source_identifier:'clock',clock_source_authority:'time authority',clock_source_authority_identifier:'time.example',clock_source_receipt_binding:exactBinding(clock,'fixture-clock-source@1'),synchronization_state:'synchronized',synchronization_receipt_binding:exactBinding(sync,'fixture-synchronization@1'),clock_resolution_seconds:0.001,clock_offset_seconds:0,clock_uncertainty_seconds:0.001,clock_drift_bound_ppm:1,holdover_started_at_utc:null,monotonic_clock_identifier:'mono',monotonic_sample_start:1,monotonic_sample_end:2,wall_clock_start_utc:'2026-08-27T00:00:01Z',wall_clock_end_utc:'2026-08-27T00:00:02Z',wall_to_monotonic_mapping_binding:exactBinding(mapping,'fixture-wall-monotonic-mapping@1'),clock_adjustment_events:[],leap_second_state:'no_pending_leap',leap_smear_policy:'none',source_observation_bindings:sourceObservationBindings,freshness_policy_binding:exactBinding(freshness,'fixture-freshness-policy@1'),freshness_evaluations:[freshnessEvaluation],temporal_order_reconciliation:{result:'pass'},observed_at_utc:'2026-08-27T00:00:03Z'});
+   if(options.nullTimeBinding)timeValue.clock_source_receipt_binding=null;
+   if(options.nullSourceObservationBinding)timeValue.source_observation_bindings[0].custody_locator=null;
+   const time=writeJson('time',timeValue);
+@@ -326,25 +377,14 @@ const writeFixture=(options={})=>{
+   const observation=writeJson('observation',observationValue);
+ 
+   const temporalPolicy=writeJson('temporal-policy',{temporal_reconciliation_policy_identifier:'temporal-policy-1',result:'pass'});
+-  const roleTimes={
+-    source_origin_observation:['2026-08-27T00:00:00.100000000Z','2026-08-27T00:00:00.200000000Z'],
+-    dns_observation:['2026-08-27T00:00:01.000000000Z','2026-08-27T00:00:01.100000000Z'],
+-    dns_expiry:['2026-08-27T00:10:01.000000000Z','2026-08-27T00:10:01.100000000Z'],
+-    connection_started:['2026-08-27T00:00:01.100000000Z','2026-08-27T00:00:01.200000000Z'],
+-    connection_established:['2026-08-27T00:00:02.000000000Z','2026-08-27T00:00:02.100000000Z'],
+-    tls_validation:['2026-08-27T00:00:02.100000000Z','2026-08-27T00:00:02.200000000Z'],
+-    certificate_validity_check:['2026-08-27T00:00:02.100000000Z','2026-08-27T00:00:02.200000000Z'],
+-    revocation_evidence_observation:['2026-08-27T00:00:02.100000000Z','2026-08-27T00:00:02.200000000Z'],
+-    certificate_transparency_evidence_observation:['2026-08-27T00:00:02.100000000Z','2026-08-27T00:00:02.200000000Z'],
+-    request_sent:options.requestBeforeConnection?['2026-08-27T00:00:01.000000000Z','2026-08-27T00:00:01.100000000Z']:['2026-08-27T00:00:03.000000000Z','2026-08-27T00:00:03.100000000Z'],
+-    response_headers_received:['2026-08-27T00:00:04.000000000Z','2026-08-27T00:00:04.100000000Z'],
+-    response_body_completed:['2026-08-27T00:00:04.500000000Z','2026-08-27T00:00:04.600000000Z'],
+-    connection_closed:['2026-08-27T00:00:05.000000000Z','2026-08-27T00:00:05.100000000Z'],
+-    freshness_evaluation:['2026-08-27T00:00:05.200000000Z','2026-08-27T00:00:05.300000000Z']
+-  };
+-  let temporalIntervals=c.oc.temporal_reconciliation_rules.required_time_roles.map(role=>({role,lower_bound_utc:roleTimes[role][0],upper_bound_utc:roleTimes[role][1]}));
++  const sourceBindingByRole=Object.fromEntries(completeSourceObservationBindings.map(binding=>[binding.role,binding]));
++  let temporalIntervals=c.oc.temporal_reconciliation_rules.required_time_roles.map(role=>({
++    role,lower_bound_utc:roleTimes[role][0],upper_bound_utc:roleTimes[role][1],
++    evidence_binding:{path:sourceBindingByRole[role].custody_locator,body_sha256:sourceBindingByRole[role].body_sha256,receipt_id:sourceBindingByRole[role].receipt_id,observed_at_utc:sourceBindingByRole[role].observed_at_utc}
++  }));
+   if(options.missingTemporalRole)temporalIntervals=temporalIntervals.filter(row=>row.role!=='freshness_evaluation');
+   if(options.fractionalInversion){const row=temporalIntervals.find(item=>item.role==='request_sent');row.lower_bound_utc='2026-08-27T00:00:03.000000002Z';row.upper_bound_utc='2026-08-27T00:00:0
