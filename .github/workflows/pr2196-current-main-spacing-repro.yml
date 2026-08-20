@@ -48,7 +48,7 @@ jobs:
           }
 
           function partitionRedactedPhoneBoundary(candidate, start, end, structuralPrefix) {
-            const debug = candidate.normalize('NFKC').includes('(03) ) 6216 5111');
+            const debug = candidate.normalize('NFKC').includes('(03');
             const openerStack = [];
             const scanSurviving = value => {
               for (const character of value) {
@@ -214,13 +214,17 @@ jobs:
           PY
 
           node --check tools/lib/industrial-exhaust.mjs
+          echo '--- transformed lines 660-700 ---'
+          nl -ba tools/lib/industrial-exhaust.mjs | sed -n '660,700p'
+          echo '--- transformed input references 650-710 ---'
+          sed -n '650,710p' tools/lib/industrial-exhaust.mjs | grep -n '\binput\b' || true
           node --input-type=module <<'NODE'
           import { redactContactData } from './tools/lib/industrial-exhaust.mjs';
 
-          for (const input of [
+          for (const sourceText of [
             'Context (Phone: (03) ) 6216 5111',
             'Context (Phone: (03 6216 5111) )'
           ]) {
-            console.log(`RESULT ${JSON.stringify({ input, actual: redactContactData(input) })}`);
+            console.log(`RESULT ${JSON.stringify({ sourceText, actual: redactContactData(sourceText) })}`);
           }
           NODE
