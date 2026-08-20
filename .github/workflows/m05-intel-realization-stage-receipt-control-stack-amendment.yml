@@ -1,0 +1,76 @@
+name: M-05 Intel realization stage receipt control stack amendment
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.json'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-live-registry-contract.json'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-registry.json'
+      - 'tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.mjs'
+      - 'test/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.test.js'
+      - '.github/workflows/m05-intel-realization-stage-receipt-control-stack-amendment.yml'
+      - 'receipts/m05/intel-realization/**'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-registry.json'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-provenance-object-custody-contract.json'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-connection-authentication-custody-amendment.json'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-observation-time-custody-amendment.json'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-temporal-reconciliation-admission-amendment.json'
+  push:
+    branches: [main]
+    paths:
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.json'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-live-registry-contract.json'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-registry.json'
+      - 'tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.mjs'
+      - 'test/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.test.js'
+      - '.github/workflows/m05-intel-realization-stage-receipt-control-stack-amendment.yml'
+      - 'receipts/m05/intel-realization/**'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-registry.json'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-provenance-object-custody-contract.json'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-connection-authentication-custody-amendment.json'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-observation-time-custody-amendment.json'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-temporal-reconciliation-admission-amendment.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: m05-intel-stage-control-stack-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Validate predecessor controls and live registry overlay
+        run: |
+          node --check tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.mjs
+          node --check test/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.test.js
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-provenance-object-custody.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-intel-realization-provenance-object-custody.test.js
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-connection-authentication-custody-amendment.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-intel-realization-connection-authentication-custody-amendment.test.js
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-observation-time-custody-amendment.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-intel-realization-observation-time-custody-amendment.test.js
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-temporal-reconciliation-admission-amendment.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-intel-realization-temporal-reconciliation-admission-amendment.test.js
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.test.js
+      - name: Run complete repository release gate
+        run: npm run release:check
+      - name: Prove deterministic live-registry state
+        run: |
+          git restore --staged --worktree .
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.test.js
+          git diff --exit-code
