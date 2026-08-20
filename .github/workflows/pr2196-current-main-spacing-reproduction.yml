@@ -1,0 +1,62 @@
+name: PR2196 current-main spacing reproduction
+
+on:
+  push:
+    branches:
+      - 'agent/pr2196-current-main-spacing-reproduction-v1'
+    paths:
+      - '.github/workflows/pr2196-current-main-spacing-reproduction.yml'
+      - 'tools/temporary-pr2196-current-main-spacing-trigger.txt'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr2196-current-main-spacing-reproduction
+  cancel-in-progress: true
+
+jobs:
+  reproduce:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Reproduce historical spacing cases on canonical implementation
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check tools/lib/industrial-exhaust.mjs
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { redactContactData } from './tools/lib/industrial-exhaust.mjs';
+
+          const cases = [
+            [
+              'Context (Phone: (03) ) 6216 5111',
+              'Context (Phone: [contact omitted])'
+            ],
+            [
+              '文脈（電話：（０３） ） ６２１６ ５１１１',
+              '文脈（電話：[contact omitted]）'
+            ],
+            [
+              'Context ((Phone: 03 6216 5111 ) )',
+              'Context ((Phone: [contact omitted] ) )'
+            ],
+            [
+              '文脈（（電話：０３ ６２１６ ５１１１ ） ）',
+              '文脈（（電話：[contact omitted] ） ）'
+            ]
+          ];
+
+          for (const [input, expected] of cases) {
+            const actual = redactContactData(input);
+            console.log(JSON.stringify({ input, expected, actual }));
+            assert.equal(actual, expected);
+          }
+          NODE
+          node test/industrial-exhaust.test.js
+          node test/industrial-exhaust-artifacts.test.js
