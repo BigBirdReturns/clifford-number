@@ -1,0 +1,190 @@
+name: PR2208 institutional-clause boundary finalizer
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/pr2208-institutional-clause-finalizer.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr2208-institutional-clause-finalizer-${{ github.event.pull_request.head.sha }}
+  cancel-in-progress: false
+
+jobs:
+  qualify-and-publish:
+    if: ${{ github.event.pull_request.head.ref == 'agent/pr2194-fresh-sentence-followup-controller-v1' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    env:
+      CONTROLLER_BRANCH: agent/pr2194-fresh-sentence-followup-controller-v1
+      RESULT_BRANCH: agent/pr2194-fresh-sentence-followup-v1
+      EXPECTED_RESULT_HEAD: f24a88798c2bc004ad0581e9c784287bb12dcd01
+      EXPECTED_TRIGGER_HEAD: ${{ github.event.pull_request.head.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Rebase, repair, qualify, and publish the exact two-file product
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_TRIGGER_HEAD"
+          git fetch origin \
+            'refs/heads/main:refs/remotes/origin/main' \
+            "refs/heads/$CONTROLLER_BRANCH:refs/remotes/origin/$CONTROLLER_BRANCH" \
+            "refs/heads/$RESULT_BRANCH:refs/remotes/origin/$RESULT_BRANCH"
+          test "$(git rev-parse refs/remotes/origin/$CONTROLLER_BRANCH)" = "$EXPECTED_TRIGGER_HEAD"
+          test "$(git rev-parse refs/remotes/origin/$RESULT_BRANCH)" = "$EXPECTED_RESULT_HEAD"
+
+          prior_base="$(git rev-parse "$EXPECTED_RESULT_HEAD^")"
+          test "$(git rev-list --count "$prior_base..$EXPECTED_RESULT_HEAD")" = 1
+          prior_paths="$(git diff --name-only "$prior_base..$EXPECTED_RESULT_HEAD" | sort)"
+          expected_paths="$(printf '%s\n' \
+            test/industrial-exhaust.test.js \
+            tools/lib/industrial-exhaust.mjs | sort)"
+          test "$prior_paths" = "$expected_paths"
+
+          base_sha="$(git rev-parse refs/remotes/origin/main)"
+          git checkout -B pr2208-institutional-clause-candidate "$base_sha"
+          test "$(git rev-parse HEAD)" = "$base_sha"
+          git cherry-pick --no-commit "$EXPECTED_RESULT_HEAD"
+          test "$(git diff --name-only | sort)" = "$expected_paths"
+
+          python - <<'PY'
+          from pathlib import Path
+
+          source_path = Path('tools/lib/industrial-exhaust.mjs')
+          source = source_path.read_text(encoding='utf-8')
+
+          entity_marker = "function isLikelyNamedEntityContinuation(value) {"
+          assert source.count(entity_marker) == 1, 'entity-classifier marker changed'
+          assert 'function isBoundedSentencePredicate(value) {' not in source, 'predicate helper already exists'
+
+          declaration_marker = "  const predicatePattern = /^(?:am|"
+          declaration_start = source.index(declaration_marker)
+          declaration_end = source.index(";\n  return followingTokens.some(token =>", declaration_start)
+          predicate_literal = source[
+            declaration_start + len("  const predicatePattern = "):declaration_end
+          ]
+          block_end = source.index("  );\n}", declaration_end) + len("  );")
+          old_predicate_block = source[declaration_start:block_end]
+          expected_tail = (
+            "  const predicatePattern = " + predicate_literal + ";\n"
+            "  return followingTokens.some(token =>\n"
+            "    predicatePattern.test(token.toLocaleLowerCase('en-US'))\n"
+            "  );"
+          )
+          assert old_predicate_block == expected_tail, 'predicate block changed'
+
+          helper = (
+            "function isBoundedSentencePredicate(value) {\n"
+            f"  return {predicate_literal}.test(\n"
+            "    value.toLocaleLowerCase('en-US')\n"
+            "  );\n"
+            "}\n\n"
+          )
+          source = source.replace(entity_marker, helper + entity_marker, 1)
+          source = source.replace(
+            old_predicate_block,
+            "  return followingTokens.some(isBoundedSentencePredicate);",
+            1
+          )
+
+          old_suffix_gate = (
+            "  if (hasInstitutionalSuffix) return true;\n"
+            "\n"
+            "  const hasMixedCaseTitleToken = words.slice(1).some(word =>"
+          )
+          new_suffix_gate = (
+            "  if (hasInstitutionalSuffix) {\n"
+            "    const normalizedWords = words.map(word =>\n"
+            "      word.toLocaleLowerCase('en-US')\n"
+            "    );\n"
+            "    const lead = normalizedWords[0];\n"
+            "    const predicateIndex = normalizedWords\n"
+            "      .slice(1, 5)\n"
+            "      .findIndex(isBoundedSentencePredicate) + 1;\n"
+            "    const hasPostPredicateDeterminer = predicateIndex > 0\n"
+            "      && normalizedWords\n"
+            "        .slice(predicateIndex + 1, -1)\n"
+            "        .some(word =>\n"
+            "          /^(?:a|an|the|my|our|your|his|her|its|their|this|that|these|those)$/u.test(word)\n"
+            "        );\n"
+            "    if (\n"
+            "      /^(?:i|we|you|he|she|they|it|this|that|these|those)$/u.test(lead)\n"
+            "      && hasPostPredicateDeterminer\n"
+            "    ) {\n"
+            "      return false;\n"
+            "    }\n"
+            "    return true;\n"
+            "  }\n"
+            "\n"
+            "  const hasMixedCaseTitleToken = words.slice(1).some(word =>"
+          )
+          assert source.count(old_suffix_gate) == 1, 'institutional suffix gate changed'
+          source = source.replace(old_suffix_gate, new_suffix_gate, 1)
+          source_path.write_text(source, encoding='utf-8')
+
+          test_path = Path('test/industrial-exhaust.test.js')
+          tests = test_path.read_text(encoding='utf-8')
+          old_test_tail = (
+            "  [\n"
+            "    'Broken (He moved to the U.S. THIS COMPANY CALLED +81 3 6216 5111)',\n"
+            "    'Broken (He moved to the U.S. THIS COMPANY CALLED [contact omitted]'\n"
+            "  ]\n"
+            "]) {"
+          )
+          new_test_tail = (
+            "  [\n"
+            "    'Broken (He moved to the U.S. THIS COMPANY CALLED +81 3 6216 5111)',\n"
+            "    'Broken (He moved to the U.S. THIS COMPANY CALLED [contact omitted]'\n"
+            "  ],\n"
+            "  [\n"
+            "    'Broken (He moved to the U.S. WE CALLED THE COMPANY +81 3 6216 5111)',\n"
+            "    'Broken (He moved to the U.S. WE CALLED THE COMPANY [contact omitted]'\n"
+            "  ],\n"
+            "  [\n"
+            "    'Broken (He moved to the U.S. We Called the Company +81 3 6216 5111)',\n"
+            "    'Broken (He moved to the U.S. We Called the Company [contact omitted]'\n"
+            "  ],\n"
+            "  [\n"
+            "    'Broken (He moved to the U.S. THEY CONTACTED OUR DEPARTMENT +81 3 6216 5111)',\n"
+            "    'Broken (He moved to the U.S. THEY CONTACTED OUR DEPARTMENT [contact omitted]'\n"
+            "  ],\n"
+            "  [\n"
+            "    'Broken (He moved to the U.S. THIS IS THE FOUNDATION +81 3 6216 5111)',\n"
+            "    'Broken (He moved to the U.S. THIS IS THE FOUNDATION [contact omitted]'\n"
+            "  ]\n"
+            "]) {"
+          )
+          assert tests.count(old_test_tail) == 1, 'fresh-sentence test tail changed'
+          test_path.write_text(tests.replace(old_test_tail, new_test_tail, 1), encoding='utf-8')
+          PY
+
+          node --check tools/lib/industrial-exhaust.mjs
+          node --check test/industrial-exhaust.test.js
+          node test/industrial-exhaust.test.js
+          node test/industrial-exhaust-artifacts.test.js
+          git diff --check
+
+          changed="$(git diff --name-only | sort)"
+          test "$changed" = "$expected_paths"
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- test/industrial-exhaust.test.js tools/lib/industrial-exhaust.mjs
+          test "$(git diff --cached --name-only | sort)" = "$expected_paths"
+          git commit -m 'fix(crawler): let clause evidence outrank institutional suffixes'
+          test "$(git rev-parse HEAD^)" = "$base_sha"
+          git push \
+            --force-with-lease="refs/heads/$RESULT_BRANCH:$EXPECTED_RESULT_HEAD" \
+            origin "HEAD:refs/heads/$RESULT_BRANCH"
