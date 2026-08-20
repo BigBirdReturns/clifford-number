@@ -1,0 +1,169 @@
+name: PR 2194 final three-P2 qualification
+
+on:
+  push:
+    branches:
+      - agent/pr2194-three-p2-controller-v1
+
+permissions:
+  contents: write
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SOURCE_HEAD: b03b6ba54856e5e0a9422a7d844e77af15f126a8
+      QUALIFIED_BASE: c68834a20b59ac252c1f4f2620d2e3ca128d56f9
+      SOURCE_BRANCH: agent/pr2190-nonadjacent-wrapper-v1
+      RESULT_BRANCH: agent/pr2194-three-p2-qualified-v1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Rebuild, repair, and qualify the two-file candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin \
+            'refs/heads/main:refs/remotes/origin/main' \
+            "refs/heads/$SOURCE_BRANCH:refs/remotes/origin/$SOURCE_BRANCH"
+          test "$(git rev-parse refs/remotes/origin/$SOURCE_BRANCH)" = "$SOURCE_HEAD"
+
+          overlap="$(git diff --name-only "$QUALIFIED_BASE"..refs/remotes/origin/main -- \
+            tools/lib/industrial-exhaust.mjs test/industrial-exhaust.test.js)"
+          test -z "$overlap"
+          base_sha="$(git rev-parse refs/remotes/origin/main)"
+
+          git checkout -B pr2194-qualified refs/remotes/origin/main
+          git checkout "$SOURCE_HEAD" -- \
+            tools/lib/industrial-exhaust.mjs \
+            test/industrial-exhaust.test.js
+
+          python - <<'PY'
+          from pathlib import Path
+
+          source_path = Path('tools/lib/industrial-exhaust.mjs')
+          source = source_path.read_text()
+
+          old_domain = r"""  return /(?:^|[\s([{<:;|])(?:visit|browse|open|see|site|website|domain|host|url|at)\s*$/iu.test(
+              prefixBeforeToken
+            );"""
+          new_domain = r"""  return /(?:^|[\s([{<:;|])(?:visit|browse|open|see|site|website|domain|host|url|at)(?:\s*[:：=#＃-]\s*|\s+)$/iu.test(
+              prefixBeforeToken
+            );"""
+          assert source.count(old_domain) == 1, 'domain-context classifier shape changed'
+          source = source.replace(old_domain, new_domain, 1)
+
+          old_remainder = r"""  const remainder = value.slice(boundaryEnd);
+            if (!isTelephoneLabelRemainder(remainder)) return true;
+
+            if (!localNarrativeConstructTail(prefixBeforeToken)) return true;"""
+          new_remainder = r"""  const remainder = value.slice(boundaryEnd);
+            const hasRemainder = /\S/u.test(remainder);
+            const phoneLabelRemainder = isTelephoneLabelRemainder(remainder);
+            if (hasRemainder && !phoneLabelRemainder) return true;
+
+            if (!localNarrativeConstructTail(prefixBeforeToken)) return true;"""
+          assert source.count(old_remainder) == 1, 'abbreviation remainder gate shape changed'
+          source = source.replace(old_remainder, new_remainder, 1)
+
+          old_boundary = r"""  const boundaryPattern = /[!?。！？][ \t\r\n]*|[.．](?:["'”’»›」』〟＂]*)(?:[ \t\r\n]+|(?=(?:tel(?:ephone)?|phone|mobile|cell|fax|contact)\b))/giu;"""
+          new_boundary = r"""  const boundaryPattern = /[!?。！？][ \t\r\n]*|[.．](?:["'”’»›」』〟＂]*)(?:[ \t\r\n]+|(?=(?:(?:tel(?:ephone)?|phone|mobile|cell|fax|contact)\b|(?:電話(?:番号)?|携帯(?:電話)?|ファックス|連絡先|お問い合わせ先))))/giu;"""
+          assert source.count(old_boundary) == 1, 'narrative boundary scanner shape changed'
+          source = source.replace(old_boundary, new_boundary, 1)
+          source_path.write_text(source)
+
+          test_path = Path('test/industrial-exhaust.test.js')
+          tests = test_path.read_text()
+          marker = '// period abbreviation classification must remain lexical and context-bounded'
+          assert tests.count(marker) == 1
+          additions = r"""
+          for (const [input, expected] of [
+            [
+              'Broken (He moved to the U.S. +81 3 6216 5111)',
+              'Broken (He moved to the U.S. [contact omitted]'
+            ],
+            [
+              'Broken (I said no. +81 3 6216 5111)',
+              'Broken (I said no. [contact omitted]'
+            ],
+            [
+              'Broken（He moved to the Ｕ．Ｓ． ＋８１ ３ ６２１６ ５１１１）',
+              'Broken（He moved to the Ｕ．Ｓ． [contact omitted]'
+            ]
+          ]) {
+            assert.equal(
+              redactContactData(input),
+              expected,
+              'a sentence-final abbreviation must reset wrapper ownership before an unlabeled phone'
+            );
+          }
+
+          for (const [input, expected] of [
+            [
+              'Broken (URL: a.b. Phone: +81 3 6216 5111)',
+              'Broken (URL: a.b. Phone: [contact omitted]'
+            ],
+            [
+              'Broken（URL： a．b． Phone: ＋８１ ３ ６２１６ ５１１１）',
+              'Broken（URL： a．b． Phone: [contact omitted]'
+            ]
+          ]) {
+            assert.equal(
+              redactContactData(input),
+              expected,
+              'a dotted token after an explicit URL field marker must remain domain prose'
+            );
+          }
+
+          for (const [input, expected] of [
+            [
+              '壊れた（彼は「止まれ．」電話：＋８１ ３ ６２１６ ５１１１）',
+              '壊れた（彼は「止まれ．」電話：[contact omitted]'
+            ],
+            [
+              '壊れた（彼は「止まれ．」携帯電話：＋８１ ９０ １２３４ ５６７８）',
+              '壊れた（彼は「止まれ．」携帯電話：[contact omitted]'
+            ]
+          ]) {
+            assert.equal(
+              redactContactData(input),
+              expected,
+              'a quoted Japanese sentence-final period must reset ownership before a Japanese phone label'
+            );
+          }
+
+          assert.equal(
+            redactContactData('Context (U.S. +81 3 6216 5111)'),
+            'Context (U.S. [contact omitted])',
+            'an abbreviation at the current structural start must remain inside its legitimate wrapper'
+          );
+
+          """
+          test_path.write_text(tests.replace(marker, additions + marker, 1))
+          PY
+
+          node --check tools/lib/industrial-exhaust.mjs
+          node --check test/industrial-exhaust.test.js
+          node test/industrial-exhaust.test.js
+          node test/industrial-exhaust-artifacts.test.js
+          git diff --check
+
+          changed="$(git diff --name-only | sort)"
+          expected="$(printf '%s\n' \
+            test/industrial-exhaust.test.js \
+            tools/lib/industrial-exhaust.mjs | sort)"
+          test "$changed" = "$expected"
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- test/industrial-exhaust.test.js tools/lib/industrial-exhaust.mjs
+          staged="$(git diff --cached --name-only | sort)"
+          test "$staged" = "$expected"
+          git commit -m 'fix(crawler): close final narrative-period gaps'
+          test "$(git rev-parse HEAD^)" = "$base_sha"
+          git push --force origin "HEAD:refs/heads/$RESULT_BRANCH"
