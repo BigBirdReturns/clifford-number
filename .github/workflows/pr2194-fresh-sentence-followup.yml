@@ -55,22 +55,42 @@ jobs:
           source = source_path.read_text()
 
           function_marker = "function isNarrativePeriodAbbreviation(value, contextStart, periodIndex, boundaryEnd) {"
-          helper = r"""function isPronounISentenceLead(value) {
-            const match = value.normalize('NFKC').trimStart().match(/^I\s+([\p{L}]+)/u);
+          helper = r"""function isBoundedSentenceVerb(value) {
+            return /^(?:am|is|are|was|were|be|been|being|have|has|had|will|would|shall|should|can|could|may|might|must|do|does|did|say|says|said|call|calls|called|ask|asks|asked|need|needs|needed|want|wants|wanted|use|uses|used|see|sees|saw|think|thinks|thought|move|moves|moved|live|lives|lived|work|works|worked|send|sends|sent|contact|contacts|contacted|email|emails|emailed|text|texts|texted|dial|dials|dialed|reply|replies|replied|write|writes|wrote|read|reads|found|find|finds|get|gets|got)$/u.test(
+              value.toLocaleLowerCase('en-US')
+            );
+          }
+
+          function isPronounISentenceLead(value) {
+            const normalized = value.normalize('NFKC').trimStart();
+            if (/^I['’](?:m|ve|ll|d)\b/iu.test(normalized)) return true;
+            const match = normalized.match(/^I\s+([\p{L}]+)/u);
             if (!match) return false;
             const nextToken = match[1];
-            const normalizedNext = nextToken.toLocaleLowerCase('en-US');
-            if (nextToken === normalizedNext) return true;
-            return /^(?:am|was|have|had|will|would|shall|should|can|could|may|might|must|do|did|say|said|call|called|ask|asked|need|needed|want|wanted|use|used|see|saw|think|thought|move|moved|live|lived|work|worked|send|sent|contact|contacted|email|emailed|text|texted|dial|dialed|reply|replied|write|wrote|read|found|find|got|get)$/u.test(
-              normalizedNext
-            );
+            if (nextToken === nextToken.toLocaleLowerCase('en-US')) return true;
+            return isBoundedSentenceVerb(nextToken);
+          }
+
+          function isAllCapsPronounSentenceLead(value, leadToken) {
+            const remainder = value.slice(leadToken.length);
+            const nextToken = remainder.match(/^\s+([\p{L}]+)/u)?.[1] ?? '';
+            if (!nextToken) return false;
+            if (nextToken === nextToken.toLocaleLowerCase('en-US')) return true;
+            return isBoundedSentenceVerb(nextToken);
           }
 
           function startsFreshSentenceAfterAbbreviation(value) {
             const normalized = value.normalize('NFKC').trimStart();
-            const lead = (normalized.match(/^[\p{L}]+/u)?.[0] ?? '').toLocaleLowerCase('en-US');
+            const leadToken = normalized.match(/^[\p{L}]+/u)?.[0] ?? '';
+            const lead = leadToken.toLocaleLowerCase('en-US');
             if (lead === 'i') return isPronounISentenceLead(normalized);
-            return /^(?:then|please|afterward|meanwhile|however|therefore|otherwise|instead|finally|we|you|he|she|they|it|this|that|these|those)$/u.test(
+            if (/^(?:we|you|he|she|they|it|this|that|these|those)$/u.test(lead)) {
+              const isAllCaps = leadToken.length > 1
+                && leadToken === leadToken.toLocaleUpperCase('en-US')
+                && leadToken !== leadToken.toLocaleLowerCase('en-US');
+              return !isAllCaps || isAllCapsPronounSentenceLead(normalized, leadToken);
+            }
+            return /^(?:then|please|afterward|meanwhile|however|therefore|otherwise|instead|finally)$/u.test(
               lead
             );
           }
@@ -96,92 +116,45 @@ jobs:
           assert tests.count(marker) == 1, 'test insertion marker changed'
           additions = r"""
           for (const [input, expected] of [
-            [
-              'Broken (He moved to the U.S. Then call +81 3 6216 5111)',
-              'Broken (He moved to the U.S. Then call [contact omitted]'
-            ],
-            [
-              'Broken (I said no. Please call +81 3 6216 5111)',
-              'Broken (I said no. Please call [contact omitted]'
-            ],
-            [
-              'Broken (Ask Dr. Then call +81 3 6216 5111)',
-              'Broken (Ask Dr. Then call [contact omitted]'
-            ],
-            [
-              'Broken (At 9 a.m. However contact +81 3 6216 5111)',
-              'Broken (At 9 a.m. However contact [contact omitted]'
-            ],
-            [
-              'Broken（He moved to the Ｕ．Ｓ． Then call ＋８１ ３ ６２１６ ５１１１）',
-              'Broken（He moved to the Ｕ．Ｓ． Then call [contact omitted]'
-            ],
-            [
-              'Broken (He moved to the U.S. THEN CALL +81 3 6216 5111)',
-              'Broken (He moved to the U.S. THEN CALL [contact omitted]'
-            ],
-            [
-              'Broken (I said no. PLEASE CALL +81 3 6216 5111)',
-              'Broken (I said no. PLEASE CALL [contact omitted]'
-            ],
-            [
-              'Broken (At 9 a.m. HOWEVER CONTACT +81 3 6216 5111)',
-              'Broken (At 9 a.m. HOWEVER CONTACT [contact omitted]'
-            ],
-            [
-              'Broken (He moved to the U.S. I called +81 3 6216 5111)',
-              'Broken (He moved to the U.S. I called [contact omitted]'
-            ],
-            [
-              'Broken (He moved to the U.S. I CALLED +81 3 6216 5111)',
-              'Broken (He moved to the U.S. I CALLED [contact omitted]'
-            ]
+            ['Broken (He moved to the U.S. Then call +81 3 6216 5111)', 'Broken (He moved to the U.S. Then call [contact omitted]'],
+            ['Broken (I said no. Please call +81 3 6216 5111)', 'Broken (I said no. Please call [contact omitted]'],
+            ['Broken (Ask Dr. Then call +81 3 6216 5111)', 'Broken (Ask Dr. Then call [contact omitted]'],
+            ['Broken (At 9 a.m. However contact +81 3 6216 5111)', 'Broken (At 9 a.m. However contact [contact omitted]'],
+            ['Broken（He moved to the Ｕ．Ｓ． Then call ＋８１ ３ ６２１６ ５１１１）', 'Broken（He moved to the Ｕ．Ｓ． Then call [contact omitted]'],
+            ['Broken (He moved to the U.S. THEN CALL +81 3 6216 5111)', 'Broken (He moved to the U.S. THEN CALL [contact omitted]'],
+            ['Broken (I said no. PLEASE CALL +81 3 6216 5111)', 'Broken (I said no. PLEASE CALL [contact omitted]'],
+            ['Broken (At 9 a.m. HOWEVER CONTACT +81 3 6216 5111)', 'Broken (At 9 a.m. HOWEVER CONTACT [contact omitted]'],
+            ['Broken (He moved to the U.S. I called +81 3 6216 5111)', 'Broken (He moved to the U.S. I called [contact omitted]'],
+            ['Broken (He moved to the U.S. I CALLED +81 3 6216 5111)', 'Broken (He moved to the U.S. I CALLED [contact omitted]'],
+            ["Broken (He moved to the U.S. I'm calling +81 3 6216 5111)", "Broken (He moved to the U.S. I'm calling [contact omitted]"],
+            ['Broken (He moved to the U.S. I’m calling +81 3 6216 5111)', 'Broken (He moved to the U.S. I’m calling [contact omitted]'],
+            ["Broken (He moved to the U.S. I'VE CALLED +81 3 6216 5111)", "Broken (He moved to the U.S. I'VE CALLED [contact omitted]"],
+            ['Broken (He moved to the U.S. IT CALLED +81 3 6216 5111)', 'Broken (He moved to the U.S. IT CALLED [contact omitted]']
           ]) {
             assert.equal(
               redactContactData(input),
               expected,
-              'a strong fresh-sentence lead after an abbreviation must reset wrapper ownership before the phone'
+              'a strong or disambiguated pronoun sentence lead after an abbreviation must reset wrapper ownership'
             );
           }
 
           for (const [input, expected] of [
-            [
-              'Context (U.S. Treasury Phone: +81 3 6216 5111)',
-              'Context (U.S. Treasury Phone: [contact omitted])'
-            ],
-            [
-              'Context (At 9 a.m. meeting Phone: +81 3 6216 5111)',
-              'Context (At 9 a.m. meeting Phone: [contact omitted])'
-            ],
-            [
-              'Context (Acme Inc. office Phone: +81 3 6216 5111)',
-              'Context (Acme Inc. office Phone: [contact omitted])'
-            ],
-            [
-              'Context (Acme Inc. Contact Center Phone: +81 3 6216 5111)',
-              'Context (Acme Inc. Contact Center Phone: [contact omitted])'
-            ],
-            [
-              'Context (Acme Inc. Call Center Phone: +81 3 6216 5111)',
-              'Context (Acme Inc. Call Center Phone: [contact omitted])'
-            ],
-            [
-              'Context (U.S. Open Phone: +81 3 6216 5111)',
-              'Context (U.S. Open Phone: [contact omitted])'
-            ],
-            [
-              'Context (U.S. I Corps Phone: +1 253 477 8777)',
-              'Context (U.S. I Corps Phone: [contact omitted])'
-            ],
-            [
-              'Context (U.S. I CORPS Phone: +1 253 477 8777)',
-              'Context (U.S. I CORPS Phone: [contact omitted])'
-            ]
+            ['Context (U.S. Treasury Phone: +81 3 6216 5111)', 'Context (U.S. Treasury Phone: [contact omitted])'],
+            ['Context (At 9 a.m. meeting Phone: +81 3 6216 5111)', 'Context (At 9 a.m. meeting Phone: [contact omitted])'],
+            ['Context (Acme Inc. office Phone: +81 3 6216 5111)', 'Context (Acme Inc. office Phone: [contact omitted])'],
+            ['Context (Acme Inc. Contact Center Phone: +81 3 6216 5111)', 'Context (Acme Inc. Contact Center Phone: [contact omitted])'],
+            ['Context (Acme Inc. Call Center Phone: +81 3 6216 5111)', 'Context (Acme Inc. Call Center Phone: [contact omitted])'],
+            ['Context (U.S. Open Phone: +81 3 6216 5111)', 'Context (U.S. Open Phone: [contact omitted])'],
+            ['Context (U.S. I Corps Phone: +1 253 477 8777)', 'Context (U.S. I Corps Phone: [contact omitted])'],
+            ['Context (U.S. I CORPS Phone: +1 253 477 8777)', 'Context (U.S. I CORPS Phone: [contact omitted])'],
+            ['Context (U.S. IT Department Phone: +1 253 477 8777)', 'Context (U.S. IT Department Phone: [contact omitted])'],
+            ['Context (U.S. IT DEPARTMENT Phone: +1 253 477 8777)', 'Context (U.S. IT DEPARTMENT Phone: [contact omitted])'],
+            ['Context (Acme Inc. WE Charity Phone: +1 253 477 8777)', 'Context (Acme Inc. WE Charity Phone: [contact omitted])']
           ]) {
             assert.equal(
               redactContactData(input),
               expected,
-              'ordinary abbreviation continuations, noun phrases, and Roman-numeral entities must retain their legitimately owned wrapper closer'
+              'ordinary abbreviation continuations, noun phrases, and acronym-shaped entities must retain their owned closer'
             );
           }
 
@@ -205,6 +178,6 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -- test/industrial-exhaust.test.js tools/lib/industrial-exhaust.mjs
           test "$(git diff --cached --name-only | sort)" = "$expected"
-          git commit -m 'fix(crawler): distinguish pronoun and Roman-numeral sentence leads'
+          git commit -m 'fix(crawler): disambiguate pronoun contractions and acronym leads'
           test "$(git rev-parse HEAD^)" = "$base_sha"
           git push --force origin "HEAD:refs/heads/$RESULT_BRANCH"
