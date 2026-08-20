@@ -1345,4 +1345,42 @@ for (const [input, expected] of [
   );
 }
 
+
+for (const [input, expected] of [
+  [
+    'Phone: ((03) 6216 5111)',
+    'Phone: ([contact omitted])'
+  ],
+  [
+    '電話：（（０３） ６２１６ ５１１１）',
+    '電話：（[contact omitted]）'
+  ],
+  [
+    'Context (Phone: ((03) 6216 5111))',
+    'Context (Phone: ([contact omitted]))'
+  ],
+  [
+    '文脈（電話：（（０３） ６２１６ ５１１１））',
+    '文脈（電話：（[contact omitted]））'
+  ],
+  [
+    'Context (Phone: 03 6216 5111) )',
+    'Context (Phone: [contact omitted])'
+  ],
+  [
+    '文脈（電話：０３ ６２１６ ５１１１） ）',
+    '文脈（電話：[contact omitted]）'
+  ],
+  [
+    'Context (Phone: 03 6216 5111) ) 90 people',
+    'Context (Phone: [contact omitted]) 90 people'
+  ]
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    'nested domestic candidate wrappers and surplus-close spacing must remain structural'
+  );
+}
+
 console.log('industrial-exhaust tests passed');

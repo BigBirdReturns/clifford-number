@@ -618,7 +618,21 @@ function redactPhoneCandidateAcrossOwnedOuterClosers(
   narrativeContext
 ) {
   const availableOuterOpeners = unmatchedOpeningParenthesisDepth(narrativeContext);
-  if (!availableOuterOpeners) return null;
+  let leadingCursor = 0;
+  while (leadingCursor < candidate.length && /\s/u.test(candidate[leadingCursor])) {
+    leadingCursor += 1;
+  }
+  const leadingOpeners = [];
+  while (leadingCursor < candidate.length
+      && candidate[leadingCursor].normalize('NFKC') === '(') {
+    leadingOpeners.push(leadingCursor);
+    leadingCursor += 1;
+    while (leadingCursor < candidate.length && /\s/u.test(candidate[leadingCursor])) {
+      leadingCursor += 1;
+    }
+  }
+  const structuralOpeningIndexes = new Set(leadingOpeners.slice(0, -1));
+  if (!availableOuterOpeners && !structuralOpeningIndexes.size) return null;
 
   const openerStack = Array.from({ length: availableOuterOpeners }, () => true);
   const sanitizedCharacters = [];
@@ -629,9 +643,12 @@ function redactPhoneCandidateAcrossOwnedOuterClosers(
     const character = candidate[index];
     const normalized = character.normalize('NFKC');
     if (normalized === '(') {
-      openerStack.push(false);
-      sanitizedCharacters.push(character);
-      originalIndexes.push(index);
+      const survivesRedaction = structuralOpeningIndexes.has(index);
+      openerStack.push(survivesRedaction);
+      if (!survivesRedaction) {
+        sanitizedCharacters.push(character);
+        originalIndexes.push(index);
+      }
       continue;
     }
     if (normalized === ')') {
@@ -694,9 +711,21 @@ function redactPhoneCandidateAcrossOwnedOuterClosers(
     return { ...range, replacement };
   });
 
-  for (const closer of closerEvents) {
+  for (let index = 0; index < closerEvents.length; index += 1) {
+    const closer = closerEvents[index];
     if (!consumedClosers.has(closer.index) && !closer.owned) {
-      events.push({ start: closer.index, end: closer.index + 1, replacement: '' });
+      let deletionStart = closer.index;
+      const previousCloser = closerEvents[index - 1] ?? null;
+      if (previousCloser) {
+        const between = candidate.slice(previousCloser.index + 1, closer.index);
+        if (/^\s*$/u.test(between)) deletionStart = previousCloser.index + 1;
+      }
+      for (const range of mappedRanges) {
+        if (deletionStart < range.end && closer.index >= range.end) {
+          deletionStart = range.end;
+        }
+      }
+      events.push({ start: deletionStart, end: closer.index + 1, replacement: '' });
     }
   }
   events.sort((left, right) => left.start - right.start || right.end - left.end);
