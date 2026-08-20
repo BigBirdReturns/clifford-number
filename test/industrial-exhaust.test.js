@@ -1288,4 +1288,125 @@ for (const [input, expected] of [
 
 // period abbreviation classification must remain lexical and context-bounded
 
+
+for (const [input, expected] of [
+  [
+    'Context (Phone: (03) ) 6216 5111',
+    'Context (Phone: [contact omitted])'
+  ],
+  [
+    '文脈（電話：（０３） ） ６２１６ ５１１１',
+    '文脈（電話：[contact omitted]）'
+  ],
+  [
+    'Outer (Context (Phone: (03) ) 6216 5111)',
+    'Outer (Context (Phone: [contact omitted]))'
+  ],
+  [
+    '外側（文脈（電話：（０３） ） ６２１６ ５１１１）',
+    '外側（文脈（電話：[contact omitted]））'
+  ],
+  [
+    'Context (Phone: (03) )) 6216 5111',
+    'Context (Phone: [contact omitted])'
+  ],
+  [
+    'Context (Phone: (03) ) 6216 5111 090-1234-5678',
+    'Context (Phone: [contact omitted]) [contact omitted]'
+  ],
+  [
+    'Context (Phone: (03) ) 6216 5111 90 people',
+    'Context (Phone: [contact omitted]) 90 people'
+  ]
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    'domestic phones crossing owned outer closers must preserve canonical balance'
+  );
+}
+
+for (const [input, expected] of [
+  ['Phone: (03) ) 6216 5111', 'Phone: [contact omitted]'],
+  ['電話：（０３） ） ６２１６ ５１１１', '電話：[contact omitted]'],
+  [
+    'Context ((Phone: 03 6216 5111 ) )',
+    'Context ((Phone: [contact omitted] ) )'
+  ],
+  [
+    '文脈（（電話：０３ ６２１６ ５１１１ ） ）',
+    '文脈（（電話：[contact omitted] ） ）'
+  ]
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    'ownerless domestic closers must remain omitted while retained wrapper spacing stays source-faithful'
+  );
+}
+
+
+for (const [input, expected] of [
+  [
+    'Phone: ((03) 6216 5111)',
+    'Phone: ([contact omitted])'
+  ],
+  [
+    '電話：（（０３） ６２１６ ５１１１）',
+    '電話：（[contact omitted]）'
+  ],
+  [
+    'Context (Phone: ((03) 6216 5111))',
+    'Context (Phone: ([contact omitted]))'
+  ],
+  [
+    '文脈（電話：（（０３） ６２１６ ５１１１））',
+    '文脈（電話：（[contact omitted]））'
+  ],
+  [
+    'Context (Phone: 03 6216 5111) )',
+    'Context (Phone: [contact omitted])'
+  ],
+  [
+    '文脈（電話：０３ ６２１６ ５１１１） ）',
+    '文脈（電話：[contact omitted]）'
+  ],
+  [
+    'Context (Phone: 03 6216 5111) ) 90 people',
+    'Context (Phone: [contact omitted]) 90 people'
+  ]
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    'nested domestic candidate wrappers and surplus-close spacing must remain structural'
+  );
+}
+
+
+for (const [input, expected] of [
+  [
+    'Context (Phone: 03-6216-8041)090-1234-5678',
+    'Context (Phone: [contact omitted])[contact omitted]'
+  ],
+  [
+    '文脈（電話：０３－６２１６－８０４１）０９０－１２３４－５６７８',
+    '文脈（電話：[contact omitted]）[contact omitted]'
+  ],
+  [
+    'Outer (Context (Phone: 03-6216-8041)090-1234-5678)',
+    'Outer (Context (Phone: [contact omitted])[contact omitted])'
+  ],
+  [
+    'Context (Phone: (03) )6216-8041)090-1234-5678',
+    'Context (Phone: [contact omitted])[contact omitted]'
+  ]
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    'a removed structural closer must remain a classification boundary between adjacent phones'
+  );
+}
+
 console.log('industrial-exhaust tests passed');

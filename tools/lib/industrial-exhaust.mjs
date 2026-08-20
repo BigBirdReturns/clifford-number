@@ -321,7 +321,12 @@ function canStartIndependentPhone(candidate, groups, first, externalPrefix) {
   return false;
 }
 
-function redactAttachedInternationalSuffix(candidate, groups, externalPrefix, externalSuffix) {
+function redactAttachedInternationalSuffixRanges(
+  candidate,
+  groups,
+  externalPrefix,
+  externalSuffix
+) {
   let best = null;
   for (let index = 1; index < groups.length; index += 1) {
     const previousEnd = groups[index - 1].index + groups[index - 1][0].length;
@@ -335,20 +340,22 @@ function redactAttachedInternationalSuffix(candidate, groups, externalPrefix, ex
     const prefixScore = phoneCandidateScore(protectedPrefix.trimEnd(), externalPrefix);
     if (!prefixScore) continue;
 
-    const suffix = candidate.slice(start);
-    const redactedSuffix = redactPhoneSubspans(
-      suffix,
+    const suffixRanges = phoneRedactionRanges(
+      candidate.slice(start),
       `${externalPrefix}${protectedPrefix}`,
       externalSuffix,
       true
     );
-    if (redactedSuffix === suffix) continue;
+    if (!suffixRanges.length) continue;
 
     const protectedDigits = normalizedPrefix.replace(/\D/gu, '').length;
     const proposal = {
       prefixScore,
       protectedDigits,
-      output: `${protectedPrefix}${redactedSuffix}`
+      ranges: suffixRanges.map(range => ({
+        start: range.start + start,
+        end: range.end + start
+      }))
     };
     if (!best
         || proposal.protectedDigits > best.protectedDigits
@@ -357,7 +364,7 @@ function redactAttachedInternationalSuffix(candidate, groups, externalPrefix, ex
       best = proposal;
     }
   }
-  return best?.output ?? candidate;
+  return best?.ranges ?? [];
 }
 
 function redactionPrefixContext(input, offset) {
@@ -368,28 +375,49 @@ function redactionPrefixContext(input, offset) {
   return preceding.slice(Math.min(boundedStart, tokenStart));
 }
 
-function redactPhoneSubspans(candidate, externalPrefix, externalSuffix, allowInitialGroup = true) {
+function phoneRedactionRanges(
+  candidate,
+  externalPrefix,
+  externalSuffix,
+  allowInitialGroup = true
+) {
   const groups = [...candidate.matchAll(DIGIT_RUN_PATTERN)];
-  if (!groups.length) return candidate;
+  if (!groups.length) return [];
 
-  const observationGroup = trailingObservationGroup(candidate, groups, externalPrefix, externalSuffix);
+  const observationGroup = trailingObservationGroup(
+    candidate,
+    groups,
+    externalPrefix,
+    externalSuffix
+  );
   const normalizedCandidate = candidate.trim().normalize('NFKC');
-  const wholeSpanIsAffirmative = isInternationalPhoneCandidate(normalizedCandidate) || hasPhoneLabelPrefix(externalPrefix);
+  const wholeSpanIsAffirmative = isInternationalPhoneCandidate(normalizedCandidate)
+    || hasPhoneLabelPrefix(externalPrefix);
   if (!allowInitialGroup && isInternationalPhoneCandidate(normalizedCandidate)) {
-    return redactAttachedInternationalSuffix(candidate, groups, externalPrefix, externalSuffix);
+    return redactAttachedInternationalSuffixRanges(
+      candidate,
+      groups,
+      externalPrefix,
+      externalSuffix
+    );
   }
   if (wholeSpanIsAffirmative && allowInitialGroup && observationGroup > 0) {
     const { start, end } = phoneWindowBounds(candidate, groups, 0, observationGroup - 1);
     const completePhoneSpan = candidate.slice(start, end);
-    if (phoneCandidateScore(completePhoneSpan, `${externalPrefix}${candidate.slice(0, start)}`)) {
-      const remainder = candidate.slice(end);
-      const redactedRemainder = redactPhoneSubspans(
-        remainder,
+    if (phoneCandidateScore(
+      completePhoneSpan,
+      `${externalPrefix}${candidate.slice(0, start)}`
+    )) {
+      const remainderRanges = phoneRedactionRanges(
+        candidate.slice(end),
         `${externalPrefix}${candidate.slice(0, start)}[contact omitted]`,
         externalSuffix,
         true
-      );
-      return `${candidate.slice(0, start)}[contact omitted]${redactedRemainder}`;
+      ).map(range => ({
+        start: range.start + end,
+        end: range.end + end
+      }));
+      return [{ start, end }, ...remainderRanges];
     }
   }
 
@@ -400,10 +428,15 @@ function redactPhoneSubspans(candidate, externalPrefix, externalSuffix, allowIni
       const previousEnd = groups[first - 1].index + groups[first - 1][0].length;
       if (!/\s/u.test(candidate.slice(previousEnd, groups[first].index))) continue;
     }
-    for (let last = first; last < groups.length && last < first + MAX_PHONE_DIGIT_GROUPS; last += 1) {
+    for (let last = first;
+      last < groups.length && last < first + MAX_PHONE_DIGIT_GROUPS;
+      last += 1) {
       const { start, end } = phoneWindowBounds(candidate, groups, first, last);
       const slice = candidate.slice(start, end);
-      let score = phoneCandidateScore(slice, `${externalPrefix}${candidate.slice(0, start)}`);
+      let score = phoneCandidateScore(
+        slice,
+        `${externalPrefix}${candidate.slice(0, start)}`
+      );
       if (!score) continue;
 
       if (first < observationGroup && last >= observationGroup) continue;
@@ -421,24 +454,32 @@ function redactPhoneSubspans(candidate, externalPrefix, externalSuffix, allowIni
     let choice = best[index + 1];
     for (const interval of intervals[index]) {
       const tail = best[interval.last + 1];
-      const redactedDigits = interval.slice.normalize('NFKC').replace(/\D/gu, '').length + tail.redactedDigits;
+      const redactedDigits = interval.slice.normalize('NFKC').replace(/\D/gu, '').length
+        + tail.redactedDigits;
       const proposal = {
         score: interval.score + tail.score,
         redactedDigits,
         ranges: [interval, ...tail.ranges]
       };
       if (proposal.score > choice.score
-          || (proposal.score === choice.score && proposal.redactedDigits < choice.redactedDigits)) {
+          || (proposal.score === choice.score
+            && proposal.redactedDigits < choice.redactedDigits)) {
         choice = proposal;
       }
     }
     best[index] = choice;
   }
 
-  if (!best[0].ranges.length) return candidate;
+  return [...best[0].ranges]
+    .sort((left, right) => left.start - right.start)
+    .map(({ start, end }) => ({ start, end }));
+}
+
+function renderPhoneRedactionRanges(candidate, ranges) {
+  if (!ranges.length) return candidate;
   let cursor = 0;
   let output = '';
-  for (const range of [...best[0].ranges].sort((a, b) => a.start - b.start)) {
+  for (const range of ranges) {
     if (range.start < cursor) continue;
     output += candidate.slice(cursor, range.start);
     output += '[contact omitted]';
@@ -446,6 +487,19 @@ function redactPhoneSubspans(candidate, externalPrefix, externalSuffix, allowIni
   }
   return `${output}${candidate.slice(cursor)}`;
 }
+
+function redactPhoneSubspans(candidate, externalPrefix, externalSuffix, allowInitialGroup = true) {
+  return renderPhoneRedactionRanges(
+    candidate,
+    phoneRedactionRanges(
+      candidate,
+      externalPrefix,
+      externalSuffix,
+      allowInitialGroup
+    )
+  );
+}
+
 
 
 
@@ -554,6 +608,140 @@ function currentNarrativeParenthesisContext(value) {
     contextStart = boundaryEnd;
   }
   return value.slice(contextStart);
+}
+
+function redactPhoneCandidateAcrossOwnedOuterClosers(
+  candidate,
+  externalPrefix,
+  externalSuffix,
+  allowInitialGroup,
+  narrativeContext
+) {
+  const availableOuterOpeners = unmatchedOpeningParenthesisDepth(narrativeContext);
+  let leadingCursor = 0;
+  while (leadingCursor < candidate.length && /\s/u.test(candidate[leadingCursor])) {
+    leadingCursor += 1;
+  }
+  const leadingOpeners = [];
+  while (leadingCursor < candidate.length
+      && candidate[leadingCursor].normalize('NFKC') === '(') {
+    leadingOpeners.push(leadingCursor);
+    leadingCursor += 1;
+    while (leadingCursor < candidate.length && /\s/u.test(candidate[leadingCursor])) {
+      leadingCursor += 1;
+    }
+  }
+  const structuralOpeningIndexes = new Set(leadingOpeners.slice(0, -1));
+  if (!availableOuterOpeners && !structuralOpeningIndexes.size) return null;
+
+  const openerStack = Array.from({ length: availableOuterOpeners }, () => true);
+  const sanitizedCharacters = [];
+  const originalIndexes = [];
+  const closerEvents = [];
+
+  for (let index = 0; index < candidate.length; index += 1) {
+    const character = candidate[index];
+    const normalized = character.normalize('NFKC');
+    if (normalized === '(') {
+      const survivesRedaction = structuralOpeningIndexes.has(index);
+      openerStack.push(survivesRedaction);
+      if (!survivesRedaction) {
+        sanitizedCharacters.push(character);
+        originalIndexes.push(index);
+      }
+      continue;
+    }
+    if (normalized === ')') {
+      const openerSurvives = openerStack.pop();
+      if (openerSurvives === false) {
+        sanitizedCharacters.push(character);
+        originalIndexes.push(index);
+      } else {
+        closerEvents.push({
+          index,
+          glyph: character,
+          owned: openerSurvives === true
+        });
+        sanitizedCharacters.push(' ');
+        originalIndexes.push(index);
+      }
+      continue;
+    }
+    sanitizedCharacters.push(character);
+    originalIndexes.push(index);
+  }
+
+  if (!closerEvents.some(event => event.owned)) return null;
+  const sanitizedCandidate = sanitizedCharacters.join('');
+  const ranges = phoneRedactionRanges(
+    sanitizedCandidate,
+    externalPrefix,
+    externalSuffix,
+    allowInitialGroup
+  );
+  if (!ranges.length) return null;
+
+  const mappedRanges = ranges.map(range => ({
+    start: range.start < originalIndexes.length
+      ? originalIndexes[range.start]
+      : candidate.length,
+    end: range.end > range.start
+      ? originalIndexes[range.end - 1] + 1
+      : (range.start < originalIndexes.length ? originalIndexes[range.start] : candidate.length)
+  }));
+
+  const consumedClosers = new Set();
+  const events = mappedRanges.map(range => {
+    const containedClosers = closerEvents
+      .filter(event => event.index >= range.start && event.index < range.end)
+      .sort((left, right) => left.index - right.index);
+    let replacement = '[contact omitted]';
+    let previousOwned = null;
+    for (const closer of containedClosers) {
+      consumedClosers.add(closer.index);
+      if (!closer.owned) {
+        previousOwned = null;
+        continue;
+      }
+      if (previousOwned) {
+        const between = candidate.slice(previousOwned.index + 1, closer.index);
+        if (/^\s*$/u.test(between)) replacement += between;
+      }
+      replacement += closer.glyph;
+      previousOwned = closer;
+    }
+    return { ...range, replacement };
+  });
+
+  for (let index = 0; index < closerEvents.length; index += 1) {
+    const closer = closerEvents[index];
+    if (!consumedClosers.has(closer.index) && !closer.owned) {
+      let deletionStart = closer.index;
+      const previousCloser = closerEvents[index - 1] ?? null;
+      if (previousCloser) {
+        const between = candidate.slice(previousCloser.index + 1, closer.index);
+        if (/^\s*$/u.test(between)) deletionStart = previousCloser.index + 1;
+      }
+      for (const range of mappedRanges) {
+        if (deletionStart < range.end && closer.index >= range.end) {
+          deletionStart = range.end;
+        }
+      }
+      events.push({ start: deletionStart, end: closer.index + 1, replacement: '' });
+    }
+  }
+  events.sort((left, right) => left.start - right.start || right.end - left.end);
+
+  let cursor = 0;
+  let output = '';
+  for (const event of events) {
+    if (event.start < cursor) continue;
+    output += candidate.slice(cursor, event.start);
+    output += event.replacement;
+    cursor = event.end;
+  }
+  output += candidate.slice(cursor);
+  return output === candidate ? null : output;
 }
 
 function stripUnownedLeadingPhoneClosers(value, availableOuterOpeners) {
@@ -680,6 +868,16 @@ if (ownedWrapper) {
     return `${redactedPhone}${ownedWrapper.closers}${redactedAfter}`;
   }
 }
+    if (!/[+＋]/u.test(input[contactOffset] ?? '')) {
+      const outerCloserRedaction = redactPhoneCandidateAcrossOwnedOuterClosers(
+        candidate,
+        prefix,
+        suffix,
+        allowInitialGroup,
+        currentNarrativeParenthesisContext(input.slice(0, contactOffset))
+      );
+      if (outerCloserRedaction !== null) return outerCloserRedaction;
+    }
     return redactPhoneSubspans(candidate, prefix, suffix, allowInitialGroup);
   });
   return phoneRedacted.replace(PHONE_EXTENSION_PATTERN, (candidate, marker, offset, input) =>
