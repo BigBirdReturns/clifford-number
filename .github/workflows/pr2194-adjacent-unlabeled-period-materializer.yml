@@ -1,0 +1,173 @@
+name: PR 2194 adjacent unlabeled-period follow-up materializer
+
+on:
+  push:
+    branches:
+      - agent/pr2194-adjacent-unlabeled-period-controller-v1
+    paths:
+      - .github/workflows/pr2194-adjacent-unlabeled-period-materializer.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pr2194-adjacent-unlabeled-period-materializer
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CONTROLLER_BRANCH: agent/pr2194-adjacent-unlabeled-period-controller-v1
+      CONTROLLER_BASE: 7734189f3778009dff035adf77b884f4a1319b4b
+      PRODUCT_BRANCH: agent/pr2194-adjacent-unlabeled-period-v1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/pr2194-adjacent-unlabeled-period-controller-v1
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Reproduce, repair, qualify, and publish exact two-file product candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF_NAME" = "$CONTROLLER_BRANCH"
+          test "$(git rev-parse HEAD^)" = "$CONTROLLER_BASE"
+          controller_paths="$(git diff --name-only "$CONTROLLER_BASE"..HEAD | sort)"
+          test "$controller_paths" = '.github/workflows/pr2194-adjacent-unlabeled-period-materializer.yml'
+
+          git fetch origin \
+            'refs/heads/main:refs/remotes/origin/main'
+          overlap="$(git diff --name-only "$CONTROLLER_BASE"..refs/remotes/origin/main -- \
+            tools/lib/industrial-exhaust.mjs test/industrial-exhaust.test.js)"
+          test -z "$overlap"
+          base_sha="$(git rev-parse refs/remotes/origin/main)"
+
+          git checkout -B pr2194-adjacent-unlabeled-period refs/remotes/origin/main
+
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { redactContactData } from './tools/lib/industrial-exhaust.mjs';
+
+          for (const [input, desired] of [
+            [
+              'Broken (He moved to the U.S.+81 3 6216 5111)',
+              'Broken (He moved to the U.S.[contact omitted]'
+            ],
+            [
+              'Broken (I said no.+81 3 6216 5111)',
+              'Broken (I said no.[contact omitted]'
+            ],
+            [
+              'Broken（He moved to the Ｕ．Ｓ．＋８１ ３ ６２１６ ５１１１）',
+              'Broken（He moved to the Ｕ．Ｓ．[contact omitted]'
+            ],
+            [
+              '壊れた（彼は「止まれ．」＋８１ ３ ６２１６ ５１１１）',
+              '壊れた（彼は「止まれ．」[contact omitted]'
+            ]
+          ]) {
+            assert.notEqual(
+              redactContactData(input),
+              desired,
+              'baseline must still exhibit the adjacent unlabeled-number boundary defect'
+            );
+          }
+          NODE
+
+          python - <<'PY'
+          from pathlib import Path
+
+          source_path = Path('tools/lib/industrial-exhaust.mjs')
+          source = source_path.read_text()
+          old = r'''  const boundaryPattern = /[!?。！？][ \t\r\n]*|[.．](?:["'”’»›」』〟＂]*)(?:[ \t\r\n]+|(?=(?:(?:tel(?:ephone)?|phone|mobile|cell|fax|contact)\b|(?:電話(?:番号)?|携帯(?:電話)?|ファックス|連絡先|お問い合わせ先))))/giu;'''
+          new = r'''  const boundaryPattern = /[!?。！？][ \t\r\n]*|[.．](?:["'”’»›」』〟＂]*)(?:[ \t\r\n]+|$|(?=(?:(?:tel(?:ephone)?|phone|mobile|cell|fax|contact)\b|(?:電話(?:番号)?|携帯(?:電話)?|ファックス|連絡先|お問い合わせ先))))/giu;'''
+          assert source.count(old) == 1, 'narrative boundary scanner shape changed'
+          source_path.write_text(source.replace(old, new, 1))
+
+          test_path = Path('test/industrial-exhaust.test.js')
+          tests = test_path.read_text()
+          marker = '// period abbreviation classification must remain lexical and context-bounded'
+          assert tests.count(marker) == 1
+          additions = r'''
+          for (const [input, expected] of [
+            [
+              'Broken (He moved to the U.S.+81 3 6216 5111)',
+              'Broken (He moved to the U.S.[contact omitted]'
+            ],
+            [
+              'Broken (I said no.+81 3 6216 5111)',
+              'Broken (I said no.[contact omitted]'
+            ],
+            [
+              'Broken (Ask Dr.+81 3 6216 5111)',
+              'Broken (Ask Dr.[contact omitted]'
+            ],
+            [
+              'Broken（He moved to the Ｕ．Ｓ．＋８１ ３ ６２１６ ５１１１）',
+              'Broken（He moved to the Ｕ．Ｓ．[contact omitted]'
+            ],
+            [
+              '壊れた（彼は「止まれ．」＋８１ ３ ６２１６ ５１１１）',
+              '壊れた（彼は「止まれ．」[contact omitted]'
+            ]
+          ]) {
+            assert.equal(
+              redactContactData(input),
+              expected,
+              'a period touching an unlabeled phone must still reset ownership when it ends the preceding sentence'
+            );
+          }
+
+          for (const [input, expected] of [
+            [
+              'Context (U.S.+81 3 6216 5111)',
+              'Context (U.S.[contact omitted])'
+            ],
+            [
+              'Context (Phone No.+81 3 6216 5111)',
+              'Context (Phone No.[contact omitted])'
+            ],
+            [
+              'Context (Tel. No.+81 3 6216 5111)',
+              'Context (Tel. No.[contact omitted])'
+            ],
+            [
+              'Context（Ｕ．Ｓ．＋８１ ３ ６２１６ ５１１１）',
+              'Context（Ｕ．Ｓ．[contact omitted]）'
+            ]
+          ]) {
+            assert.equal(
+              redactContactData(input),
+              expected,
+              'an abbreviation or isolated compound label at the current structural start must retain its owned closer'
+            );
+          }
+
+          '''
+          test_path.write_text(tests.replace(marker, additions + marker, 1))
+          PY
+
+          node --check tools/lib/industrial-exhaust.mjs
+          node --check test/industrial-exhaust.test.js
+          node test/industrial-exhaust.test.js
+          node test/industrial-exhaust-artifacts.test.js
+          git diff --check
+
+          changed="$(git diff --name-only | sort)"
+          expected="$(printf '%s\n' \
+            test/industrial-exhaust.test.js \
+            tools/lib/industrial-exhaust.mjs | sort)"
+          test "$changed" = "$expected"
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- test/industrial-exhaust.test.js tools/lib/industrial-exhaust.mjs
+          staged="$(git diff --cached --name-only | sort)"
+          test "$staged" = "$expected"
+          git commit -m 'fix(crawler): scan touching unlabeled phone boundaries'
+          test "$(git rev-parse HEAD^)" = "$base_sha"
+          git push --force origin "HEAD:refs/heads/$PRODUCT_BRANCH"
