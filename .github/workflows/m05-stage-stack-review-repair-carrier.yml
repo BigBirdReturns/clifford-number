@@ -1,0 +1,82 @@
+name: M-05 stage-receipt stack review repair carrier
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.tmp/m05-stage-stack-review-repair/**'
+      - '.github/workflows/m05-stage-stack-review-repair-carrier.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: m05-stage-stack-review-repair
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Replace, qualify, and publish the bounded two-file repair
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PRODUCT_BRANCH: agent/m05-s03-l7-intel-stage-receipt-control-stack-v1
+          EXPECTED_HEAD: b3f005029756e663ece344f214b8fe2fb4d66fda
+          PAYLOAD_SHA256: 83eb584e5be803f23aa592243d162d1185537f553ed5479633ebf63996893e69
+          VALIDATOR_BLOB: 21255dd4f8638739e6a7548d65a5dec061ffa5d6
+          TEST_BLOB: 66f932717567b71dee9b6321f95f996251dc15b6
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin "$PRODUCT_BRANCH"
+          test "$(git rev-parse FETCH_HEAD)" = "$EXPECTED_HEAD"
+          git switch --detach "$EXPECTED_HEAD"
+
+          base64 --decode .tmp/m05-stage-stack-review-repair/payload.b64 > /tmp/stage-stack-repair.tar.gz
+          echo "$PAYLOAD_SHA256  /tmp/stage-stack-repair.tar.gz" | sha256sum --check -
+          tar -xzf /tmp/stage-stack-repair.tar.gz -C .
+
+          VALIDATOR='tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.mjs'
+          TEST='test/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.test.js'
+          test "$(git hash-object "$VALIDATOR")" = "$VALIDATOR_BLOB"
+          test "$(git hash-object "$TEST")" = "$TEST_BLOB"
+          git diff --check
+          node --check "$VALIDATOR"
+          node --check "$TEST"
+
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-provenance-object-custody.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-intel-realization-provenance-object-custody.test.js
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-connection-authentication-custody-amendment.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-intel-realization-connection-authentication-custody-amendment.test.js
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-observation-time-custody-amendment.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-intel-realization-observation-time-custody-amendment.test.js
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-temporal-reconciliation-admission-amendment.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-intel-realization-temporal-reconciliation-admission-amendment.test.js
+          node "$VALIDATOR"
+          node "$TEST"
+          npm run release:check
+
+          git restore --staged .
+          git add -- "$VALIDATOR" "$TEST"
+          test "$(git diff --cached --name-only | wc -l)" -eq 2
+          test "$(git diff --cached --name-only | sort | tr '\n' ' ')" = "$(printf '%s\n' "$TEST" "$VALIDATOR" | sort | tr '\n' ' ')"
+          git config user.name 'BigBirdReturns'
+          git config user.email 'bigbirdreturns@proton.me'
+          git commit -m '[M-05 S03-L7] Enforce semantic source-receipt validation'
+          new_head="$(git rev-parse HEAD)"
+          test "$(git rev-parse HEAD^)" = "$EXPECTED_HEAD"
+          remote_head="$(git ls-remote origin "refs/heads/$PRODUCT_BRANCH" | cut -f1)"
+          test "$remote_head" = "$EXPECTED_HEAD"
+          git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push origin "HEAD:refs/heads/$PRODUCT_BRANCH"
+          printf 'product_head=%s\nproduct_tree=%s\n' "$new_head" "$(git rev-parse HEAD^{tree})"
