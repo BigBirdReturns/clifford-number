@@ -861,4 +861,376 @@ for (const [input, expected] of [
   );
 }
 
+
+
+for (const [input, expected] of [
+  [
+    'Context (Phone: +81 3 6216 5111)',
+    'Context (Phone: [contact omitted])'
+  ],
+  [
+    'Context (Phone: +81 3 6216 5111))',
+    'Context (Phone: [contact omitted])'
+  ],
+  [
+    'Context ((Phone: +81 3 6216 5111)))',
+    'Context ((Phone: [contact omitted]))'
+  ],
+  [
+    '文脈（電話：＋８１ ３ ６２１６ ５１１１）',
+    '文脈（電話：[contact omitted]）'
+  ],
+  [
+    '文脈（電話：＋８１ ３ ６２１６ ５１１１））',
+    '文脈（電話：[contact omitted]）'
+  ],
+  [
+    'Context (Phone: +44 (0)20 7123 4567))',
+    'Context (Phone: [contact omitted])'
+  ],
+  [
+    'Context (Phone: (+81 3 6216 5111)))',
+    'Context (Phone: ([contact omitted]))'
+  ]
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    'non-adjacent narrative openers must retain only their owned terminal closers'
+  );
+}
+
+for (const [input, expected] of [
+  [
+    'Context (Phone: +81 3 6216 5111)) 90 people',
+    'Context (Phone: [contact omitted]) 90 people'
+  ],
+  [
+    'Context (Phone: +81 3 6216 5111)). Ext. 1234',
+    'Context (Phone: [contact omitted]). Ext. [contact omitted]'
+  ],
+  [
+    'Context (Phone: +81 3 6216 5111)) or 090-1234-5678',
+    'Context (Phone: [contact omitted]) or [contact omitted]'
+  ]
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    'non-adjacent wrapper cleanup must preserve independently classified suffix evidence'
+  );
+}
+
+assert.equal(
+  redactContactData('Phone: +81 3 6216 5111))'),
+  'Phone: [contact omitted]',
+  'ownerless terminal closers must still be discarded'
+);
+assert.equal(
+  redactContactData('Context (referenceA+81 3 6216 5111))'),
+  'Context (referenceA+81 3 6216 5111))',
+  'outer context must not weaken attached-identifier protection'
+);
+
+
+
+for (const [input, expected] of [
+  [
+    'Broken ( sentence. Phone: +81 3 6216 5111)',
+    'Broken ( sentence. Phone: [contact omitted]'
+  ],
+  [
+    'Broken ( sentence. +81 3 6216 5111)',
+    'Broken ( sentence. [contact omitted]'
+  ],
+  [
+    'Broken ( paragraph\n\nPhone: +81 3 6216 5111)',
+    'Broken ( paragraph\n\nPhone: [contact omitted]'
+  ],
+  [
+    'Broken ( paragraph\r\n \r\nPhone: +81 3 6216 5111)',
+    'Broken ( paragraph\r\n \r\nPhone: [contact omitted]'
+  ],
+  [
+    '壊れた（文。 電話：＋８１ ３ ６２１６ ５１１１）',
+    '壊れた（文。 電話：[contact omitted]'
+  ]
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    'wrapper ownership must not cross narrative context boundaries'
+  );
+}
+
+for (const [input, expected] of [
+  [
+    'Context (Tel. +81 3 6216 5111)',
+    'Context (Tel. [contact omitted])'
+  ],
+  [
+    'Context (Phone No. +81 3 6216 5111)',
+    'Context (Phone No. [contact omitted])'
+  ],
+  [
+    'Context (Phone: +81 3 6216 5111)',
+    'Context (Phone: [contact omitted])'
+  ]
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    'current-context label punctuation must not sever legitimate outer ownership'
+  );
+}
+
+
+
+for (const [input, expected] of [
+  [
+    '壊れた（文。電話：＋８１ ３ ６２１６ ５１１１）',
+    '壊れた（文。電話：[contact omitted]'
+  ],
+  [
+    '壊れた（文！電話：＋８１ ３ ６２１６ ５１１１）',
+    '壊れた（文！電話：[contact omitted]'
+  ],
+  [
+    '壊れた（文？電話：＋８１ ３ ６２１６ ５１１１）',
+    '壊れた（文？電話：[contact omitted]'
+  ],
+  [
+    'Broken (What?Phone: +81 3 6216 5111)',
+    'Broken (What?Phone: [contact omitted]'
+  ]
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    'unspaced sentence terminators must reset wrapper ownership'
+  );
+}
+
+for (const labelWord of ['contact', 'phone', 'fax', 'mobile']) {
+  assert.equal(
+    redactContactData(`Broken (Use another ${labelWord}. Phone: +81 3 6216 5111)`),
+    `Broken (Use another ${labelWord}. Phone: [contact omitted]`,
+    'ordinary label words at sentence end must not suppress a real boundary'
+  );
+}
+
+for (const abbreviation of ['U.S.', 'U.K.', 'a.m.', 'p.m.', 'Ph.D.', 'e.g.']) {
+  assert.equal(
+    redactContactData(`Context (${abbreviation} Phone: +81 3 6216 5111)`),
+    `Context (${abbreviation} Phone: [contact omitted])`,
+    'common multi-period abbreviations must remain in the current wrapper context'
+  );
+}
+
+for (const label of ['Tel.', 'Telephone.', 'Phone.', 'Mobile.', 'Cell.', 'Fax.', 'Contact.']) {
+  assert.equal(
+    redactContactData(`Context (${label} +81 3 6216 5111)`),
+    `Context (${label} [contact omitted])`,
+    'an immediately adjacent label period must remain part of the current context'
+  );
+}
+
+
+for (const labelWord of ['contact', 'phone', 'fax', 'mobile']) {
+  assert.equal(
+    redactContactData(`Broken (Use another ${labelWord}. +81 3 6216 5111)`),
+    `Broken (Use another ${labelWord}. [contact omitted]`,
+    'a phone-label suffix inside ordinary prose must not bridge a sentence boundary'
+  );
+  assert.equal(
+    redactContactData(`Broken（Use another ${labelWord}． ＋８１ ３ ６２１６ ５１１１）`),
+    `Broken（Use another ${labelWord}． [contact omitted]`,
+    'fullwidth sentence punctuation must not turn a prose suffix into a local telephone label'
+  );
+}
+
+for (const [domain, fullwidthDomain] of [
+  ['example.com', 'example．com'],
+  ['foo.bar', 'foo．bar'],
+  ['a.co', 'a．co']
+]) {
+  assert.equal(
+    redactContactData(`Broken (Visit ${domain}. Phone: +81 3 6216 5111)`),
+    `Broken (Visit ${domain}. Phone: [contact omitted]`,
+    'a dotted domain must not be treated as a narrative abbreviation'
+  );
+  assert.equal(
+    redactContactData(`Broken（Visit ${fullwidthDomain}． Phone: ＋８１ ３ ６２１６ ５１１１）`),
+    `Broken（Visit ${fullwidthDomain}． Phone: [contact omitted]`,
+    'a fullwidth dotted domain must not bridge a genuine sentence boundary'
+  );
+}
+
+for (const abbreviation of ['Dr.', 'Mr.', 'Prof.', 'Inc.', 'U.S.', 'U.K.', 'a.m.', 'p.m.', 'Ph.D.', 'e.g.']) {
+  assert.equal(
+    redactContactData(`Context (${abbreviation} Phone: +81 3 6216 5111)`),
+    `Context (${abbreviation} Phone: [contact omitted])`,
+    'leading wrapper punctuation must not hide a genuine narrative abbreviation'
+  );
+}
+
+for (const label of ['Tel.', 'Telephone.', 'Phone.', 'Mobile.', 'Cell.', 'Fax.', 'Contact.', 'Phone No.']) {
+  assert.equal(
+    redactContactData(`Context (${label} +81 3 6216 5111)`),
+    `Context (${label} [contact omitted])`,
+    'an exact local telephone label may retain its current wrapper context'
+  );
+}
+
+for (const [input, expected] of [
+  [
+    'Context（Dr． Phone: ＋８１ ３ ６２１６ ５１１１）',
+    'Context（Dr． Phone: [contact omitted]）'
+  ],
+  [
+    'Context（Ｕ．Ｓ． Phone: ＋８１ ３ ６２１６ ５１１１）',
+    'Context（Ｕ．Ｓ． Phone: [contact omitted]）'
+  ],
+  [
+    'Context（Phone． ＋８１ ３ ６２１６ ５１１１）',
+    'Context（Phone． [contact omitted]）'
+  ]
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    'fullwidth wrapper and period forms must preserve only genuine abbreviations or isolated labels'
+  );
+}
+
+assert.equal(
+  redactContactData('Context (\nPhone. +81 3 6216 5111)'),
+  'Context (\nPhone. [contact omitted])',
+  'a telephone label after a structural line break may retain the current wrapper context'
+);
+
+for (const [input, expected] of [
+  [
+    'Context (Tel. No. +81 3 6216 5111)',
+    'Context (Tel. No. [contact omitted])'
+  ],
+  [
+    'Context (Phone. No. +81 3 6216 5111)',
+    'Context (Phone. No. [contact omitted])'
+  ],
+  [
+    'Context（Tel． No． ＋８１ ３ ６２１６ ５１１１）',
+    'Context（Tel． No． [contact omitted]）'
+  ]
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    'periods inside an isolated compound telephone label must retain current wrapper ownership'
+  );
+}
+
+for (const [input, expected] of [
+  [
+    'Broken (He moved to the U.S. Phone: +81 3 6216 5111)',
+    'Broken (He moved to the U.S. Phone: [contact omitted]'
+  ],
+  [
+    'Broken (I said no. Phone: +81 3 6216 5111)',
+    'Broken (I said no. Phone: [contact omitted]'
+  ],
+  [
+    'Broken (He said “stop.” Phone: +81 3 6216 5111)',
+    'Broken (He said “stop.” Phone: [contact omitted]'
+  ],
+  [
+    'Broken（He said 「stop．」Phone: ＋８１ ３ ６２１６ ５１１１）',
+    'Broken（He said 「stop．」Phone: [contact omitted]'
+  ],
+  [
+    'Broken (Visit a.b. Phone: +81 3 6216 5111)',
+    'Broken (Visit a.b. Phone: [contact omitted]'
+  ],
+  [
+    'Broken（Visit a．b． Phone: ＋８１ ３ ６２１６ ５１１１）',
+    'Broken（Visit a．b． Phone: [contact omitted]'
+  ]
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    'sentence-final abbreviations, quoted periods, and domain-context dotted tokens must reset wrapper ownership'
+  );
+}
+
+for (const [input, expected] of [
+  [
+    'Context (U.S. Phone: +81 3 6216 5111)',
+    'Context (U.S. Phone: [contact omitted])'
+  ],
+  [
+    'Context (Dr. Smith Phone: +81 3 6216 5111)',
+    'Context (Dr. Smith Phone: [contact omitted])'
+  ],
+  [
+    'Context (Acme Inc. Phone: +81 3 6216 5111)',
+    'Context (Acme Inc. Phone: [contact omitted])'
+  ],
+  [
+    'Context (Ph.D. Phone: +81 3 6216 5111)',
+    'Context (Ph.D. Phone: [contact omitted])'
+  ]
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    'genuine continuing abbreviations must retain current wrapper ownership'
+  );
+}
+
+
+for (const [input, expected] of [
+  ['Broken (He moved to the U.S. +81 3 6216 5111)', 'Broken (He moved to the U.S. [contact omitted]'],
+  ['Broken (I said no. +81 3 6216 5111)', 'Broken (I said no. [contact omitted]'],
+  ['Broken（He moved to the Ｕ．Ｓ． ＋８１ ３ ６２１６ ５１１１）', 'Broken（He moved to the Ｕ．Ｓ． [contact omitted]']
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    'a sentence-final abbreviation must reset wrapper ownership before an unlabeled phone'
+  );
+}
+
+assert.equal(
+  redactContactData('Context (U.S. +81 3 6216 5111)'),
+  'Context (U.S. [contact omitted])',
+  'an abbreviation at the current structural start must remain inside its legitimate wrapper'
+);
+
+for (const [input, expected] of [
+  ['Broken (URL: a.b. Phone: +81 3 6216 5111)', 'Broken (URL: a.b. Phone: [contact omitted]'],
+  ['Broken (domain=a.b. Phone: +81 3 6216 5111)', 'Broken (domain=a.b. Phone: [contact omitted]'],
+  ['Broken（URL： a．b． Phone: ＋８１ ３ ６２１６ ５１１１）', 'Broken（URL： a．b． Phone: [contact omitted]']
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    'punctuated explicit domain markers must keep dotted tokens out of abbreviation treatment'
+  );
+}
+
+for (const [input, expected] of [
+  ['壊れた（彼は「止まれ．」電話：＋８１ ３ ６２１６ ５１１１）', '壊れた（彼は「止まれ．」電話：[contact omitted]'],
+  ['壊れた（彼は「止まれ．」携帯電話：＋８１ ９０ １２３４ ５６７８）', '壊れた（彼は「止まれ．」携帯電話：[contact omitted]'],
+  ['壊れた（彼は「止まれ．」連絡先：＋８１ ３ ６２１６ ５１１１）', '壊れた（彼は「止まれ．」連絡先：[contact omitted]']
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    'a quoted Japanese sentence-final period must reset ownership before a Japanese phone label'
+  );
+}
+
+// period abbreviation classification must remain lexical and context-bounded
+
 console.log('industrial-exhaust tests passed');
