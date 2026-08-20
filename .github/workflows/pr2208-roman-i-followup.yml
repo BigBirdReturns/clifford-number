@@ -1,4 +1,4 @@
-name: PR2208 contracted-I and IT boundary repair
+name: PR2208 pronoun-title boundary repair
 
 on:
   pull_request:
@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: pr2208-final-boundary-${{ github.event.pull_request.head.sha }}
+  group: pr2208-pronoun-title-${{ github.event.pull_request.head.sha }}
   cancel-in-progress: false
 
 jobs:
@@ -24,7 +24,7 @@ jobs:
       CONTROLLER_BRANCH: agent/pr2194-fresh-sentence-followup-controller-v1
       RESULT_BRANCH: agent/pr2194-fresh-sentence-followup-v1
       EXPECTED_BASE_HEAD: eef55693745f299330323296b700d8c4f7a2c23a
-      EXPECTED_PRODUCT_HEAD: 35502a634334ff7cb74044e61c3cf210153ade4a
+      EXPECTED_PRODUCT_HEAD: c80f3ab9ebaca6ac38aaef97fb978b655ad5cc3e
       EXPECTED_TRIGGER_HEAD: ${{ github.event.pull_request.head.sha }}
     steps:
       - uses: actions/checkout@v4
@@ -47,7 +47,7 @@ jobs:
           test "$(git rev-parse refs/remotes/origin/$CONTROLLER_BRANCH)" = "$EXPECTED_TRIGGER_HEAD"
           test "$(git rev-parse refs/remotes/origin/$RESULT_BRANCH)" = "$EXPECTED_PRODUCT_HEAD"
 
-          git checkout -B pr2208-final-candidate refs/remotes/origin/main
+          git checkout -B pr2208-pronoun-title-candidate refs/remotes/origin/main
           test "$(git rev-parse HEAD)" = "$EXPECTED_BASE_HEAD"
 
           python - <<'PY'
@@ -58,35 +58,70 @@ jobs:
           helper_marker = "\nfunction isNarrativePeriodAbbreviation(value, contextStart, periodIndex, boundaryEnd) {"
           assert source.count(helper_marker) == 1, 'narrative abbreviation helper marker changed'
           helpers = r"""
-          function isPronounISentenceLead(value) {
-            const normalized = value.normalize('NFKC').trimStart();
-            if (/^I['’](?:m|ve|ll|d)(?=$|[^\p{L}])/iu.test(normalized)) return true;
-            const match = normalized.match(/^I\s+([\p{L}]+)/u);
-            if (!match) return false;
-            const nextToken = match[1];
-            const normalizedNext = nextToken.toLocaleLowerCase('en-US');
-            if (nextToken === normalizedNext) return true;
-            return /^(?:am|was|have|had|will|would|shall|should|can|could|may|might|must|do|did|say|said|call|called|ask|asked|need|needed|want|wanted|use|used|see|saw|think|thought|move|moved|live|lived|work|worked|send|sent|contact|contacted|email|emailed|text|texted|dial|dialed|reply|replied|write|wrote|read|found|find|got|get)$/u.test(
-              normalizedNext
+          function isLikelyNamedEntityContinuation(value) {
+            const normalized = value.normalize('NFKC').trim();
+            const labelMatch = normalized.match(
+              /(?:\s+(?:tel(?:ephone)?|phone|mobile|cell|fax|contact)(?:\s+(?:number|no))?\s*[:.]?\s*|(?:電話(?:番号)?|携帯(?:電話)?|ファックス|連絡先|お問い合わせ先)\s*[:.]?\s*)$/iu
             );
+            const phrase = (labelMatch
+              ? normalized.slice(0, labelMatch.index)
+              : normalized).trim();
+            if (!phrase || /[.!?。！？]/u.test(phrase)) return false;
+
+            const words = phrase.split(/\s+/u);
+            if (words.length < 2 || words.length > 10) return false;
+            const connectorPattern = /^(?:a|an|and|at|by|for|from|in|of|on|the|to|with|&)$/iu;
+            const nameTokenPattern = /^[\p{Lu}\p{Lt}\d][\p{L}\p{M}\p{N}&'’\-]*$/u;
+            if (!words.every(word => connectorPattern.test(word) || nameTokenPattern.test(word))) {
+              return false;
+            }
+
+            const suffix = words.at(-1).toLocaleLowerCase('en-US');
+            const hasInstitutionalSuffix = /^(?:academy|agency|army|association|bank|battalion|brigade|center|centre|club|collective|command|company|corp|corporation|council|department|district|division|fleet|force|foundation|fund|group|holdings|initiative|institute|institution|lab|labs|laboratory|media|museum|network|office|organization|organisation|partners|people|project|records|regiment|services|society|solutions|squadron|studio|systems|team|trust|ventures|wing|works)$/u.test(
+              suffix
+            );
+            if (hasInstitutionalSuffix) return true;
+
+            const hasMixedCaseTitleToken = words.slice(1).some(word =>
+              nameTokenPattern.test(word) && /\p{Ll}/u.test(word)
+            );
+            return Boolean(labelMatch) && words.length >= 3 && hasMixedCaseTitleToken;
           }
 
-          function isAllCapsItSentenceLead(value) {
+          function isPronounSentenceLead(value) {
             const normalized = value.normalize('NFKC').trimStart();
-            if (/^IT['’]S(?=$|[^\p{L}])/u.test(normalized)) return true;
-            const nextToken = normalized.match(/^IT\s+([\p{L}]+)/u)?.[1] ?? '';
-            return /^(?:is|was|has|had|will|would|shall|should|can|could|may|might|must|does|did)$/u.test(
-              nextToken.toLocaleLowerCase('en-US')
+            if (/^(?:i|we|you|he|she|they|it|this|that|these|those)['’](?:m|s|re|ve|ll|d)(?=$|[^\p{L}])/iu.test(normalized)) {
+              return true;
+            }
+
+            const leadMatch = normalized.match(
+              /^(?:i|we|you|he|she|they|it|this|that|these|those)(?:\s+|$)/iu
+            );
+            if (!leadMatch) return false;
+            const followingTokens = normalized.slice(leadMatch[0].length)
+              .match(/[\p{L}]+/gu)?.slice(0, 4) ?? [];
+            if (!followingTokens.length) return false;
+
+            const firstToken = followingTokens[0];
+            const normalizedFirst = firstToken.toLocaleLowerCase('en-US');
+            if (firstToken === normalizedFirst) return true;
+
+            const predicatePattern = /^(?:am|are|is|was|were|be|been|being|have|has|had|having|will|would|shall|should|can|could|may|might|must|do|does|did|doing|say|says|said|saying|call|calls|called|calling|ask|asks|asked|asking|need|needs|needed|needing|want|wants|wanted|wanting|use|uses|used|using|see|sees|saw|seen|seeing|think|thinks|thought|thinking|move|moves|moved|moving|live|lives|lived|living|work|works|worked|working|send|sends|sent|sending|contact|contacts|contacted|contacting|email|emails|emailed|emailing|text|texts|texted|texting|dial|dials|dialed|dialing|reply|replies|replied|replying|write|writes|wrote|written|writing|read|reads|reading|find|finds|found|finding|get|gets|got|getting|care|cares|cared|caring|help|helps|helped|helping|lead|leads|led|leading|provide|provides|provided|providing|offer|offers|offered|offering|remain|remains|remained|remaining|matter|matters|mattered|mattering|seem|seems|seemed|seeming|become|becomes|became|becoming|make|makes|made|making|take|takes|took|taken|taking|give|gives|gave|given|giving|know|knows|knew|known|knowing|look|looks|looked|looking|come|comes|came|coming|go|goes|went|gone|going|keep|keeps|kept|keeping|let|lets|letting|support|supports|supported|supporting|serve|serves|served|serving|build|builds|built|building|run|runs|ran|running)$/u;
+            return followingTokens.some(token =>
+              predicatePattern.test(token.toLocaleLowerCase('en-US'))
             );
           }
 
           function startsFreshSentenceAfterAbbreviation(value) {
             const normalized = value.normalize('NFKC').trimStart();
-            const rawLead = normalized.match(/^[\p{L}]+/u)?.[0] ?? '';
-            const lead = rawLead.toLocaleLowerCase('en-US');
-            if (lead === 'i') return isPronounISentenceLead(normalized);
-            if (rawLead === 'IT') return isAllCapsItSentenceLead(normalized);
-            return /^(?:then|please|afterward|meanwhile|however|therefore|otherwise|instead|finally|we|you|he|she|they|it|this|that|these|those)$/u.test(
+            if (isLikelyNamedEntityContinuation(normalized)) return false;
+
+            const lead = (normalized.match(/^[\p{L}]+/u)?.[0] ?? '')
+              .toLocaleLowerCase('en-US');
+            if (/^(?:i|we|you|he|she|they|it|this|that|these|those)$/u.test(lead)) {
+              return isPronounSentenceLead(normalized);
+            }
+            return /^(?:then|please|afterward|meanwhile|however|therefore|otherwise|instead|finally)$/u.test(
               lead
             );
           }
@@ -166,18 +201,34 @@ jobs:
               'Broken（He moved to the Ｕ．Ｓ． Ｉ＇ｍ calling [contact omitted]'
             ],
             [
-              'Broken (He moved to the U.S. IT IS AVAILABLE AT +81 3 6216 5111)',
-              'Broken (He moved to the U.S. IT IS AVAILABLE AT [contact omitted]'
+              "Broken (He moved to the U.S. We're calling +81 3 6216 5111)",
+              "Broken (He moved to the U.S. We're calling [contact omitted]"
             ],
             [
-              "Broken (He moved to the U.S. IT'S AVAILABLE AT +81 3 6216 5111)",
-              "Broken (He moved to the U.S. IT'S AVAILABLE AT [contact omitted]"
+              "Broken (He moved to the U.S. THEY'LL CALL +81 3 6216 5111)",
+              "Broken (He moved to the U.S. THEY'LL CALL [contact omitted]"
+            ],
+            [
+              'Broken (He moved to the U.S. SHE CALLED +81 3 6216 5111)',
+              'Broken (He moved to the U.S. SHE CALLED [contact omitted]'
+            ],
+            [
+              'Broken (He moved to the U.S. WE CARE +81 3 6216 5111)',
+              'Broken (He moved to the U.S. WE CARE [contact omitted]'
+            ],
+            [
+              'Broken (He moved to the U.S. IT WORKS AT +81 3 6216 5111)',
+              'Broken (He moved to the U.S. IT WORKS AT [contact omitted]'
+            ],
+            [
+              'Broken (He moved to the U.S. THIS COMPANY CALLED +81 3 6216 5111)',
+              'Broken (He moved to the U.S. THIS COMPANY CALLED [contact omitted]'
             ]
           ]) {
             assert.equal(
               redactContactData(input),
               expected,
-              'a strong fresh-sentence lead after an abbreviation must reset wrapper ownership before the phone'
+              'a grammatical fresh-sentence lead after an abbreviation must reset wrapper ownership before the phone'
             );
           }
 
@@ -237,12 +288,40 @@ jobs:
             [
               'Context（Ｕ．Ｓ． ＩＴ Department Phone: ＋１ ２５３ ４７７ ８７７７）',
               'Context（Ｕ．Ｓ． ＩＴ Department Phone: [contact omitted]）'
+            ],
+            [
+              'Context (Acme Inc. We Care Center Phone: +1 253 477 8777)',
+              'Context (Acme Inc. We Care Center Phone: [contact omitted])'
+            ],
+            [
+              'Context (U.S. We the People Foundation Phone: +1 253 477 8777)',
+              'Context (U.S. We the People Foundation Phone: [contact omitted])'
+            ],
+            [
+              'Context (U.S. She Leads Africa Phone: +1 253 477 8777)',
+              'Context (U.S. She Leads Africa Phone: [contact omitted])'
+            ],
+            [
+              'Context (U.S. This Is Us Foundation Phone: +1 253 477 8777)',
+              'Context (U.S. This Is Us Foundation Phone: [contact omitted])'
+            ],
+            [
+              'Context (U.S. Please Touch Museum Phone: +1 253 477 8777)',
+              'Context (U.S. Please Touch Museum Phone: [contact omitted])'
+            ],
+            [
+              'Context (Acme Inc. WE CARE CENTER Phone: +1 253 477 8777)',
+              'Context (Acme Inc. WE CARE CENTER Phone: [contact omitted])'
+            ],
+            [
+              'Context（Acme Inc. Ｗｅ Ｃａｒｅ Ｃｅｎｔｅｒ Phone: ＋１ ２５３ ４７７ ８７７７）',
+              'Context（Acme Inc. Ｗｅ Ｃａｒｅ Ｃｅｎｔｅｒ Phone: [contact omitted]）'
             ]
           ]) {
             assert.equal(
               redactContactData(input),
               expected,
-              'ordinary abbreviation continuations, noun phrases, Roman numerals, and IT entities must retain their owned closer'
+              'named entities and ordinary abbreviation continuations must retain their legitimately owned wrapper closer'
             );
           }
 
@@ -266,7 +345,7 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -- test/industrial-exhaust.test.js tools/lib/industrial-exhaust.mjs
           test "$(git diff --cached --name-only | sort)" = "$expected"
-          git commit -m 'fix(crawler): disambiguate pronoun and entity sentence leads'
+          git commit -m 'fix(crawler): distinguish pronoun clauses from entity titles'
           test "$(git rev-parse HEAD^)" = "$EXPECTED_BASE_HEAD"
           git push \
             --force-with-lease="refs/heads/$RESULT_BRANCH:$EXPECTED_PRODUCT_HEAD" \
