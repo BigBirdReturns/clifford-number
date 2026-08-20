@@ -1,0 +1,157 @@
+name: PR2194 fresh-sentence boundary follow-up
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/pr2194-fresh-sentence-followup.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr2194-fresh-sentence-followup-${{ github.event.pull_request.head.sha }}
+  cancel-in-progress: false
+
+jobs:
+  qualify-and-publish:
+    if: ${{ github.event.pull_request.head.ref == 'agent/pr2194-fresh-sentence-followup-controller-v1' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    env:
+      CONTROLLER_BRANCH: agent/pr2194-fresh-sentence-followup-controller-v1
+      RESULT_BRANCH: agent/pr2194-fresh-sentence-followup-v1
+      EXPECTED_TRIGGER_HEAD: ${{ github.event.pull_request.head.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Reconstruct, qualify, and publish exact two-file candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_TRIGGER_HEAD"
+          git fetch origin \
+            'refs/heads/main:refs/remotes/origin/main' \
+            "refs/heads/$CONTROLLER_BRANCH:refs/remotes/origin/$CONTROLLER_BRANCH"
+          test "$(git rev-parse refs/remotes/origin/$CONTROLLER_BRANCH)" = "$EXPECTED_TRIGGER_HEAD"
+
+          controller_paths="$(git diff --name-only refs/remotes/origin/main...HEAD | sort)"
+          test "$controller_paths" = '.github/workflows/pr2194-fresh-sentence-followup.yml'
+          base_sha="$(git rev-parse refs/remotes/origin/main)"
+
+          git checkout -B pr2194-fresh-sentence-candidate refs/remotes/origin/main
+
+          python - <<'PY'
+          from pathlib import Path
+
+          source_path = Path('tools/lib/industrial-exhaust.mjs')
+          source = source_path.read_text()
+
+          function_marker = "function isNarrativePeriodAbbreviation(value, contextStart, periodIndex, boundaryEnd) {"
+          helper = r"""function startsFreshSentenceAfterAbbreviation(value) {
+            const lead = value.normalize('NFKC').trimStart().match(/^[\p{L}]+/u)?.[0] ?? '';
+            return /^(?:Then|Next|Please|Call|Dial|Contact|Reach|Use|Ask|Text|Email|Visit|Open|See|Now|Later|Afterward|Meanwhile|However|Therefore|Otherwise|Instead|Finally|I|We|You|He|She|They|It|This|That|These|Those)$/u.test(
+              lead
+            );
+          }
+
+          """
+          assert source.count(function_marker) == 1, 'period-classifier function marker changed'
+          source = source.replace(function_marker, helper + function_marker, 1)
+
+          old_gate = r"""  const remainder = value.slice(boundaryEnd);
+            const hasRemainder = /\S/u.test(remainder);
+            if (hasRemainder && !isTelephoneLabelRemainder(remainder)) return true;"""
+          new_gate = r"""  const remainder = value.slice(boundaryEnd);
+            const hasRemainder = /\S/u.test(remainder);
+            if (hasRemainder && startsFreshSentenceAfterAbbreviation(remainder)) return false;
+            if (hasRemainder && !isTelephoneLabelRemainder(remainder)) return true;"""
+          assert source.count(old_gate) == 1, 'abbreviation remainder gate changed'
+          source = source.replace(old_gate, new_gate, 1)
+          source_path.write_text(source)
+
+          test_path = Path('test/industrial-exhaust.test.js')
+          tests = test_path.read_text()
+          marker = '// period abbreviation classification must remain lexical and context-bounded'
+          assert tests.count(marker) == 1, 'test insertion marker changed'
+          additions = r"""
+          for (const [input, expected] of [
+            [
+              'Broken (He moved to the U.S. Then call +81 3 6216 5111)',
+              'Broken (He moved to the U.S. Then call [contact omitted]'
+            ],
+            [
+              'Broken (I said no. Please call +81 3 6216 5111)',
+              'Broken (I said no. Please call [contact omitted]'
+            ],
+            [
+              'Broken (Ask Dr. Then call +81 3 6216 5111)',
+              'Broken (Ask Dr. Then call [contact omitted]'
+            ],
+            [
+              'Broken (At 9 a.m. However contact +81 3 6216 5111)',
+              'Broken (At 9 a.m. However contact [contact omitted]'
+            ],
+            [
+              'Broken（He moved to the Ｕ．Ｓ． Then call ＋８１ ３ ６２１６ ５１１１）',
+              'Broken（He moved to the Ｕ．Ｓ． Then call [contact omitted]'
+            ]
+          ]) {
+            assert.equal(
+              redactContactData(input),
+              expected,
+              'a strong fresh-sentence lead after an abbreviation must reset wrapper ownership before the phone'
+            );
+          }
+
+          for (const [input, expected] of [
+            [
+              'Context (U.S. Treasury Phone: +81 3 6216 5111)',
+              'Context (U.S. Treasury Phone: [contact omitted])'
+            ],
+            [
+              'Context (At 9 a.m. meeting Phone: +81 3 6216 5111)',
+              'Context (At 9 a.m. meeting Phone: [contact omitted])'
+            ],
+            [
+              'Context (Acme Inc. office Phone: +81 3 6216 5111)',
+              'Context (Acme Inc. office Phone: [contact omitted])'
+            ]
+          ]) {
+            assert.equal(
+              redactContactData(input),
+              expected,
+              'ordinary abbreviation continuations must retain their legitimately owned wrapper closer'
+            );
+          }
+
+          """
+          test_path.write_text(tests.replace(marker, additions + marker, 1))
+          PY
+
+          node --check tools/lib/industrial-exhaust.mjs
+          node --check test/industrial-exhaust.test.js
+          node test/industrial-exhaust.test.js
+          node test/industrial-exhaust-artifacts.test.js
+          git diff --check
+
+          changed="$(git diff --name-only | sort)"
+          expected="$(printf '%s\n' \
+            test/industrial-exhaust.test.js \
+            tools/lib/industrial-exhaust.mjs | sort)"
+          test "$changed" = "$expected"
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- test/industrial-exhaust.test.js tools/lib/industrial-exhaust.mjs
+          test "$(git diff --cached --name-only | sort)" = "$expected"
+          git commit -m 'fix(crawler): reset abbreviation-led sentence boundaries'
+          test "$(git rev-parse HEAD^)" = "$base_sha"
+          git push --force origin "HEAD:refs/heads/$RESULT_BRANCH"
