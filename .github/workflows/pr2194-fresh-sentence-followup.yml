@@ -56,8 +56,9 @@ jobs:
 
           function_marker = "function isNarrativePeriodAbbreviation(value, contextStart, periodIndex, boundaryEnd) {"
           helper = r"""function startsFreshSentenceAfterAbbreviation(value) {
-            const lead = value.normalize('NFKC').trimStart().match(/^[\p{L}]+/u)?.[0] ?? '';
-            return /^(?:Then|Next|Please|Call|Dial|Contact|Reach|Use|Ask|Text|Email|Visit|Open|See|Now|Later|Afterward|Meanwhile|However|Therefore|Otherwise|Instead|Finally|I|We|You|He|She|They|It|This|That|These|Those)$/u.test(
+            const lead = (value.normalize('NFKC').trimStart().match(/^[\p{L}]+/u)?.[0] ?? '')
+              .toLocaleLowerCase('en-US');
+            return /^(?:then|please|afterward|meanwhile|however|therefore|otherwise|instead|finally|i|we|you|he|she|they|it|this|that|these|those)$/u.test(
               lead
             );
           }
@@ -102,6 +103,18 @@ jobs:
             [
               'Broken（He moved to the Ｕ．Ｓ． Then call ＋８１ ３ ６２１６ ５１１１）',
               'Broken（He moved to the Ｕ．Ｓ． Then call [contact omitted]'
+            ],
+            [
+              'Broken (He moved to the U.S. THEN CALL +81 3 6216 5111)',
+              'Broken (He moved to the U.S. THEN CALL [contact omitted]'
+            ],
+            [
+              'Broken (I said no. PLEASE CALL +81 3 6216 5111)',
+              'Broken (I said no. PLEASE CALL [contact omitted]'
+            ],
+            [
+              'Broken (At 9 a.m. HOWEVER CONTACT +81 3 6216 5111)',
+              'Broken (At 9 a.m. HOWEVER CONTACT [contact omitted]'
             ]
           ]) {
             assert.equal(
@@ -123,12 +136,24 @@ jobs:
             [
               'Context (Acme Inc. office Phone: +81 3 6216 5111)',
               'Context (Acme Inc. office Phone: [contact omitted])'
+            ],
+            [
+              'Context (Acme Inc. Contact Center Phone: +81 3 6216 5111)',
+              'Context (Acme Inc. Contact Center Phone: [contact omitted])'
+            ],
+            [
+              'Context (Acme Inc. Call Center Phone: +81 3 6216 5111)',
+              'Context (Acme Inc. Call Center Phone: [contact omitted])'
+            ],
+            [
+              'Context (U.S. Open Phone: +81 3 6216 5111)',
+              'Context (U.S. Open Phone: [contact omitted])'
             ]
           ]) {
             assert.equal(
               redactContactData(input),
               expected,
-              'ordinary abbreviation continuations must retain their legitimately owned wrapper closer'
+              'ordinary abbreviation continuations and noun phrases must retain their legitimately owned wrapper closer'
             );
           }
 
@@ -152,6 +177,6 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -- test/industrial-exhaust.test.js tools/lib/industrial-exhaust.mjs
           test "$(git diff --cached --name-only | sort)" = "$expected"
-          git commit -m 'fix(crawler): reset abbreviation-led sentence boundaries'
+          git commit -m 'fix(crawler): narrow abbreviation-led sentence boundaries'
           test "$(git rev-parse HEAD^)" = "$base_sha"
           git push --force origin "HEAD:refs/heads/$RESULT_BRANCH"
