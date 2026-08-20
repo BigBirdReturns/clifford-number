@@ -90,30 +90,31 @@ jobs:
           assert source.count(old_predicate_gate) == 1, 'strong-clause predicate gate changed'
           source = source.replace(old_predicate_gate, new_predicate_gate, 1)
 
-          old_suffix_gate = r"""  if (hasInstitutionalSuffix) {
-            // A suffix alone is not decisive when an all-caps pronoun clause
-            // contains high-confidence finite or auxiliary-chain evidence.
-            if (isStrongPronounClauseWithinInstitutionalPhrase(phrase)) return false;
-            return true;
-          }"""
-          new_suffix_gate = r"""  if (hasInstitutionalSuffix) {
-            const casedWords = words.filter(word => /\p{L}/u.test(word));
-            const allCapsPhrase = casedWords.length > 0 && casedWords.every(word => {
-              const lower = word.toLocaleLowerCase('en-US');
-              const upper = word.toLocaleUpperCase('en-US');
-              return lower === upper || word === upper;
-            });
-            // Override the suffix only for unlabelled all-caps clauses. A
-            // terminal phone label and title casing are affirmative name evidence.
-            if (!labelMatch
-                && allCapsPhrase
-                && isStrongPronounClauseWithinInstitutionalPhrase(phrase)) {
-              return false;
-            }
-            return true;
-          }"""
-          assert source.count(old_suffix_gate) == 1, 'institutional suffix gate changed'
-          source_path.write_text(source.replace(old_suffix_gate, new_suffix_gate, 1), encoding='utf-8')
+          suffix_start_marker = "  if (hasInstitutionalSuffix) {"
+          suffix_end_marker = "\n  }\n\n  const hasMixedCaseTitleToken"
+          assert source.count(suffix_start_marker) == 1, 'institutional suffix gate changed'
+          suffix_start = source.index(suffix_start_marker)
+          suffix_end = source.index(suffix_end_marker, suffix_start) + len("\n  }")
+          new_suffix_gate = "\n".join([
+            "  if (hasInstitutionalSuffix) {",
+            r"    const casedWords = words.filter(word => /\p{L}/u.test(word));",
+            "    const allCapsPhrase = casedWords.length > 0 && casedWords.every(word => {",
+            "      const lower = word.toLocaleLowerCase('en-US');",
+            "      const upper = word.toLocaleUpperCase('en-US');",
+            "      return lower === upper || word === upper;",
+            "    });",
+            "    // Override the suffix only for unlabelled all-caps clauses. A",
+            "    // terminal phone label and title casing are affirmative name evidence.",
+            "    if (!labelMatch",
+            "        && allCapsPhrase",
+            "        && isStrongPronounClauseWithinInstitutionalPhrase(phrase)) {",
+            "      return false;",
+            "    }",
+            "    return true;",
+            "  }",
+          ])
+          source = source[:suffix_start] + new_suffix_gate + source[suffix_end:]
+          source_path.write_text(source, encoding='utf-8')
 
           test_path = Path('test/industrial-exhaust.test.js')
           tests = test_path.read_text(encoding='utf-8')
