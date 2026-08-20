@@ -1,11 +1,11 @@
-name: PR 2196 current-main spacing reproduction
+name: Current-main industrial-exhaust spacing qualification
 
 on:
-  push:
-    branches:
-      - 'agent/pr2196-current-main-spacing-repro-v1'
+  pull_request:
     paths:
       - '.github/workflows/pr2196-current-main-spacing-repro.yml'
+      - 'tools/lib/industrial-exhaust.mjs'
+      - 'test/industrial-exhaust.test.js'
 
 permissions:
   contents: read
@@ -23,7 +23,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          echo 'qualification generation 2'
           node --check tools/lib/industrial-exhaust.mjs
           node --input-type=module <<'NODE'
           import assert from 'node:assert/strict';
