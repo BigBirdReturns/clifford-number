@@ -542,7 +542,7 @@ function currentNarrativeParenthesisContext(value) {
     contextStart = Math.max(contextStart, match.index + match[0].length);
   }
 
-  const boundaryPattern = /[!?。！？][ \t\r\n]*|[.．](?:["'”’»›」』〟＂]*)(?:[ \t\r\n]+|(?=(?:(?:tel(?:ephone)?|phone|mobile|cell|fax|contact)\b|(?:電話(?:番号)?|携帯(?:電話)?|ファックス|連絡先|お問い合わせ先))))/giu;
+  const boundaryPattern = /[!?。！？][ \t\r\n]*|[.．](?:["'”’»›」』〟＂]*)(?:[ \t\r\n]+|$|(?=(?:(?:tel(?:ephone)?|phone|mobile|cell|fax|contact)\b|(?:電話(?:番号)?|携帯(?:電話)?|ファックス|連絡先|お問い合わせ先))))/giu;
   for (const match of value.matchAll(boundaryPattern)) {
     const boundaryEnd = match.index + match[0].length;
     if (boundaryEnd <= contextStart) continue;

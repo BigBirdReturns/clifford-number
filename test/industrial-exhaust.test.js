@@ -1231,6 +1231,61 @@ for (const [input, expected] of [
   );
 }
 
+
+for (const [input, expected] of [
+  [
+    'Broken (He moved to the U.S.+81 3 6216 5111)',
+    'Broken (He moved to the U.S.[contact omitted]'
+  ],
+  [
+    'Broken (I said no.+81 3 6216 5111)',
+    'Broken (I said no.[contact omitted]'
+  ],
+  [
+    'Broken (Ask Dr.+81 3 6216 5111)',
+    'Broken (Ask Dr.[contact omitted]'
+  ],
+  [
+    'Broken（He moved to the Ｕ．Ｓ．＋８１ ３ ６２１６ ５１１１）',
+    'Broken（He moved to the Ｕ．Ｓ．[contact omitted]'
+  ],
+  [
+    '壊れた（彼は「止まれ．」＋８１ ３ ６２１６ ５１１１）',
+    '壊れた（彼は「止まれ．」[contact omitted]'
+  ]
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    'a period touching an unlabeled phone must still reset ownership when it ends the preceding sentence'
+  );
+}
+
+for (const [input, expected] of [
+  [
+    'Context (U.S.+81 3 6216 5111)',
+    'Context (U.S.[contact omitted])'
+  ],
+  [
+    'Context (Phone No.+81 3 6216 5111)',
+    'Context (Phone No.[contact omitted])'
+  ],
+  [
+    'Context (Tel. No.+81 3 6216 5111)',
+    'Context (Tel. No.[contact omitted])'
+  ],
+  [
+    'Context（Ｕ．Ｓ．＋８１ ３ ６２１６ ５１１１）',
+    'Context（Ｕ．Ｓ．[contact omitted]）'
+  ]
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    'an abbreviation or isolated compound label at the current structural start must retain its owned closer'
+  );
+}
+
 // period abbreviation classification must remain lexical and context-bounded
 
 console.log('industrial-exhaust tests passed');
