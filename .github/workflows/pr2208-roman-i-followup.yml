@@ -1,0 +1,142 @@
+name: PR2208 Roman-numeral I follow-up
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/pr2208-roman-i-followup.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr2208-roman-i-${{ github.event.pull_request.head.sha }}
+  cancel-in-progress: false
+
+jobs:
+  patch-qualify-publish:
+    if: ${{ github.event.pull_request.head.ref == 'agent/pr2194-fresh-sentence-followup-controller-v1' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    env:
+      CONTROLLER_BRANCH: agent/pr2194-fresh-sentence-followup-controller-v1
+      RESULT_BRANCH: agent/pr2194-fresh-sentence-followup-v1
+      EXPECTED_PRODUCT_HEAD: bb23e30ca2ba42d93d81e2453c60c1cd8130ae2f
+      EXPECTED_TRIGGER_HEAD: ${{ github.event.pull_request.head.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Patch the exact product head and rerun focused qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_TRIGGER_HEAD"
+          git fetch origin \
+            "refs/heads/$CONTROLLER_BRANCH:refs/remotes/origin/$CONTROLLER_BRANCH" \
+            "refs/heads/$RESULT_BRANCH:refs/remotes/origin/$RESULT_BRANCH"
+          test "$(git rev-parse refs/remotes/origin/$CONTROLLER_BRANCH)" = "$EXPECTED_TRIGGER_HEAD"
+          test "$(git rev-parse refs/remotes/origin/$RESULT_BRANCH)" = "$EXPECTED_PRODUCT_HEAD"
+
+          git checkout -B pr2208-roman-i-candidate "refs/remotes/origin/$RESULT_BRANCH"
+
+          python - <<'PY'
+          from pathlib import Path
+
+          source_path = Path('tools/lib/industrial-exhaust.mjs')
+          source = source_path.read_text()
+          old_helper = r"""function startsFreshSentenceAfterAbbreviation(value) {
+            const lead = (value.normalize('NFKC').trimStart().match(/^[\p{L}]+/u)?.[0] ?? '')
+              .toLocaleLowerCase('en-US');
+            return /^(?:then|please|afterward|meanwhile|however|therefore|otherwise|instead|finally|i|we|you|he|she|they|it|this|that|these|those)$/u.test(
+              lead
+            );
+          }"""
+          new_helper = r"""function startsFreshSentenceAfterAbbreviation(value) {
+            const normalized = value.normalize('NFKC').trimStart();
+            const lead = (normalized.match(/^[\p{L}]+/u)?.[0] ?? '')
+              .toLocaleLowerCase('en-US');
+            if (lead === 'i'
+                && /^I\s+(?:corps|army|brigade|division|battalion|regiment|wing|command|squadron|fleet|force|group|district)\b/iu.test(normalized)) {
+              return false;
+            }
+            return /^(?:then|please|afterward|meanwhile|however|therefore|otherwise|instead|finally|i|we|you|he|she|they|it|this|that|these|those)$/u.test(
+              lead
+            );
+          }"""
+          assert source.count(old_helper) == 1, 'fresh-sentence helper shape changed'
+          source_path.write_text(source.replace(old_helper, new_helper, 1))
+
+          test_path = Path('test/industrial-exhaust.test.js')
+          tests = test_path.read_text()
+          marker = '// period abbreviation classification must remain lexical and context-bounded'
+          assert tests.count(marker) == 1, 'test insertion marker changed'
+          additions = r"""
+          for (const [input, expected] of [
+            [
+              'Context (U.S. I Corps Phone: +1 253 477 8777)',
+              'Context (U.S. I Corps Phone: [contact omitted])'
+            ],
+            [
+              'Context (U.S. I Army Phone: +1 703 695 0640)',
+              'Context (U.S. I Army Phone: [contact omitted])'
+            ],
+            [
+              'Context（Ｕ．Ｓ． Ｉ Corps Phone: ＋１ ２５３ ４７７ ８７７７）',
+              'Context（Ｕ．Ｓ． Ｉ Corps Phone: [contact omitted]）'
+            ]
+          ]) {
+            assert.equal(
+              redactContactData(input),
+              expected,
+              'Roman-numeral entity names beginning with I must remain abbreviation continuations'
+            );
+          }
+
+          for (const [input, expected] of [
+            [
+              'Broken (He moved to the U.S. I called +81 3 6216 5111)',
+              'Broken (He moved to the U.S. I called [contact omitted]'
+            ],
+            [
+              'Broken (He moved to the U.S. I WILL CALL +81 3 6216 5111)',
+              'Broken (He moved to the U.S. I WILL CALL [contact omitted]'
+            ]
+          ]) {
+            assert.equal(
+              redactContactData(input),
+              expected,
+              'pronoun I must remain a fresh-sentence lead'
+            );
+          }
+
+          """
+          test_path.write_text(tests.replace(marker, additions + marker, 1))
+          PY
+
+          node --check tools/lib/industrial-exhaust.mjs
+          node --check test/industrial-exhaust.test.js
+          node test/industrial-exhaust.test.js
+          node test/industrial-exhaust-artifacts.test.js
+          git diff --check
+
+          changed="$(git diff --name-only | sort)"
+          expected="$(printf '%s\n' \
+            test/industrial-exhaust.test.js \
+            tools/lib/industrial-exhaust.mjs | sort)"
+          test "$changed" = "$expected"
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- test/industrial-exhaust.test.js tools/lib/industrial-exhaust.mjs
+          test "$(git diff --cached --name-only | sort)" = "$expected"
+          git commit -m 'fix(crawler): distinguish pronoun I from Roman numerals'
+          git push \
+            --force-with-lease="refs/heads/$RESULT_BRANCH:$EXPECTED_PRODUCT_HEAD" \
+            origin "HEAD:refs/heads/$RESULT_BRANCH"
