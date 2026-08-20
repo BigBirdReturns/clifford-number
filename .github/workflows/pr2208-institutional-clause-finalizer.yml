@@ -66,11 +66,36 @@ jobs:
 
           source_path = Path('tools/lib/industrial-exhaust.mjs')
           source = source_path.read_text(encoding='utf-8')
+          for sentinel in (
+              'const sentenceObjectMarkerPattern =',
+              'function isLikelyRegularFiniteSentencePredicate(',
+              'terminal phone-label delimiters must remain outside title classification',
+          ):
+              assert sentinel not in source, f'already transformed: {sentinel}'
 
-          old_clause_helpers = r"""function isStrongFiniteSentencePredicate(value) {
+          clause_start = source.index('function isStrongPronounClauseWithinInstitutionalPhrase(')
+          entity_start = source.index('function isLikelyNamedEntityContinuation(', clause_start)
+          clause_helpers = r"""const sentenceObjectMarkerPattern = /^(?:a|an|the|my|our|your|his|her|its|their|this|that|these|those)$/u;
+          const sentenceAuxiliaryPattern = /^(?:am|is|are|was|were|have|has|had|will|would|shall|should|can|could|may|might|must|do|does|did)$/u;
+          const institutionalSuffixPattern = /^(?:academy|agency|army|association|bank|battalion|brigade|center|centre|club|collective|command|company|corp|corporation|council|department|district|division|fleet|force|foundation|fund|group|holdings|initiative|institute|institution|lab|labs|laboratory|media|museum|network|office|organization|organisation|partners|people|project|records|regiment|services|society|solutions|squadron|studio|systems|team|trust|ventures|wing|works)$/u;
+          const titleConnectorPattern = /^(?:a|an|and|at|by|for|from|in|of|on|the|to|with|&)$/iu;
+
+          function isLikelyRegularFiniteSentencePredicate(value, lead, followingTokens) {
             const lower = value.toLocaleLowerCase('en-US');
-            if (!isBoundedSentencePredicate(lower)) return false;
-            return !/^(?:be|been|being|having|doing|saying|calling|asking|needing|wanting|using|seen|seeing|thinking|moving|living|working|sending|contacting|emailing|texting|dialing|replying|written|writing|reading|finding|getting|caring|helping|leading|providing|offering|remaining|mattering|seeming|becoming|making|taken|taking|given|giving|known|knowing|looking|coming|gone|going|keeping|letting|supporting|serving|building|running)$/u.test(lower);
+            if (!/^\p{L}{3,}$/u.test(lower) || followingTokens.length === 0) return false;
+
+            if (/^(?:\p{L}+ed|\p{L}*[^aeiou]ied)$/u.test(lower)) {
+              return followingTokens.length >= 2
+                || sentenceObjectMarkerPattern.test(followingTokens[0].toLocaleLowerCase('en-US'));
+            }
+
+            const normalizedLead = lead.toLocaleLowerCase('en-US');
+            if (/^(?:he|she|this|that)$/u.test(normalizedLead)
+                && /^(?:\p{L}{2,}(?:s|es)|\p{L}*[^aeiou]ies)$/u.test(lower)) {
+              return followingTokens.length >= 2;
+            }
+
+            return false;
           }
 
           function isStrongPronounClauseWithinInstitutionalPhrase(value) {
@@ -83,97 +108,83 @@ jobs:
               /^(?:i|we|you|he|she|they|it|this|that|these|those)(?:\s+|$)/iu
             );
             if (!leadMatch) return false;
+            const lead = leadMatch[0].trim();
             const tokens = normalized.slice(leadMatch[0].length)
               .match(/[\p{L}]+/gu)?.slice(0, 8) ?? [];
-            const predicateIndex = tokens.findIndex(isBoundedSentencePredicate);
-            if (predicateIndex < 0) return false;
+            if (tokens.length === 0) return false;
 
-            const predicate = tokens[predicateIndex];
-            const postPredicateTokens = tokens.slice(predicateIndex + 1);
-            if (postPredicateTokens.some(token =>
-              /^(?:a|an|the|my|our|your|his|her|its|their|this|that|these|those)$/u.test(
-                token.toLocaleLowerCase('en-US')
-              )
-            )) return true;
-            if (isStrongFiniteSentencePredicate(predicate)) return true;
+            const likelyPredicate = (token, index) => {
+              const followingTokens = tokens.slice(index + 1);
+              return isBoundedSentencePredicate(token)
+                || isLikelyRegularFiniteSentencePredicate(token, lead, followingTokens);
+            };
+            const predicateIndex = tokens.findIndex(likelyPredicate);
 
-            const lowerPredicate = predicate.toLocaleLowerCase('en-US');
-            const auxiliaryPattern = /^(?:am|is|are|was|were|have|has|had|will|would|shall|should|can|could|may|might|must|do|does|did)$/u;
-            return auxiliaryPattern.test(lowerPredicate)
-              && postPredicateTokens.some(isBoundedSentencePredicate);
-          }"""
-          new_clause_helpers = r"""function isAllCapsPronounClauseWithinInstitutionalPhrase(value) {
-            const normalized = value.normalize('NFKC').trim();
-            if (/^(?:i|we|you|he|she|they|it|this|that|these|those)['’](?:m|s|re|ve|ll|d)(?=$|[^\p{L}])/iu.test(normalized)) {
-              return true;
+            if (predicateIndex >= 0) {
+              const predicate = tokens[predicateIndex];
+              const postPredicateTokens = tokens.slice(predicateIndex + 1);
+              if (postPredicateTokens.some(token =>
+                sentenceObjectMarkerPattern.test(token.toLocaleLowerCase('en-US'))
+              )) return true;
+
+              const lowerPredicate = predicate.toLocaleLowerCase('en-US');
+              if (sentenceAuxiliaryPattern.test(lowerPredicate)) {
+                return postPredicateTokens.some((token, index) =>
+                  isBoundedSentencePredicate(token)
+                  || isLikelyRegularFiniteSentencePredicate(
+                    token,
+                    lead,
+                    postPredicateTokens.slice(index + 1)
+                  )
+                ) || postPredicateTokens.length >= 2;
+              }
+
+              if (predicateIndex > 0) return isStrongFiniteSentencePredicate(predicate);
+              if (postPredicateTokens.length >= 2) return true;
             }
 
-            const tokens = normalized.match(/[\p{L}\p{M}\p{N}&'’\-]+/gu) ?? [];
-            if (tokens.length < 2) return false;
-            const lead = tokens[0].toLocaleLowerCase('en-US');
-            if (!/^(?:i|we|you|he|she|they|it|this|that|these|those)$/u.test(lead)) {
-              return false;
-            }
+            const first = tokens[0]?.toLocaleLowerCase('en-US') ?? '';
+            const last = tokens.at(-1)?.toLocaleLowerCase('en-US') ?? '';
+            return tokens.length >= 3
+              && !titleConnectorPattern.test(first)
+              && !sentenceObjectMarkerPattern.test(first)
+              && institutionalSuffixPattern.test(last);
+          }
 
-            const next = tokens[1].toLocaleLowerCase('en-US');
-            if (/^(?:a|an|the|of|and|&)$/u.test(next)) return false;
-            if (tokens[0] === 'I'
-                && /^(?:army|brigade|command|corps|division|regiment)$/u.test(next)) {
-              return false;
-            }
-            if (tokens[0] === 'IT'
-                && /^(?:department|group|lab|labs|network|office|services|solutions|systems|team)$/u.test(next)) {
-              return false;
-            }
+          """
+          source = source[:clause_start] + clause_helpers + source[entity_start:]
 
-            // Within an unlabelled all-caps institutional-suffix phrase, the
-            // pronoun-plus-predicate reading is the safer structural default.
-            // This avoids making correctness depend on an exhaustive verb list.
-            return true;
-          }"""
-          assert source.count(old_clause_helpers) == 1, 'clause helper block changed'
-          source = source.replace(old_clause_helpers, new_clause_helpers, 1)
+          entity_start = source.index('function isLikelyNamedEntityContinuation(')
+          label_start = source.index('  const labelMatch = normalized.match(', entity_start)
+          phrase_start = source.index('  const phrase =', label_start)
+          label_block = r"""  const labelMatch = normalized.match(
+            /(?:^|[\s,;:·•\-‐‑‒–—―−|/\\]+)(?:(?:tel(?:ephone)?|phone|mobile|cell|fax|contact)(?:(?:\s+(?:number|no)(?:\s*\.)?)|\s*#)?\s*[:.]?\s*|(?:電話(?:番号)?|携帯(?:電話)?|ファックス|連絡先|お問い合わせ先)\s*[:.]?\s*)$/iu
+          );
+          """
+          source = source[:label_start] + label_block + source[phrase_start:]
 
-          old_phrase = r"""  const phrase = (labelMatch
-            ? normalized.slice(0, labelMatch.index)
-            : normalized).trim();"""
-          new_phrase = r"""  const phrase = (labelMatch
-            ? normalized.slice(0, labelMatch.index)
-              .replace(/\s*(?:[-‐‑‒–—−－|｜/／]+)\s*$/u, '')
-            : normalized).trim();"""
-          assert source.count(old_phrase) == 1, 'labelled phrase extraction changed'
-          source = source.replace(old_phrase, new_phrase, 1)
+          suffix_start = source.index('  const hasInstitutionalSuffix =', entity_start)
+          suffix_end = source.index('  if (hasInstitutionalSuffix)', suffix_start)
+          source = (
+              source[:suffix_start]
+              + "  const hasInstitutionalSuffix = institutionalSuffixPattern.test(suffix);\n"
+              + source[suffix_end:]
+          )
 
-          old_suffix_gate = r"""    if (!labelMatch
-                && allCapsPhrase
-                && isStrongPronounClauseWithinInstitutionalPhrase(phrase)) {
-              return false;
-            }"""
-          new_suffix_gate = r"""    if (!labelMatch
-                && allCapsPhrase
-                && isAllCapsPronounClauseWithinInstitutionalPhrase(phrase)) {
-              return false;
-            }"""
-          assert source.count(old_suffix_gate) == 1, 'institutional suffix gate changed'
-          source = source.replace(old_suffix_gate, new_suffix_gate, 1)
-
-          old_title_return = r"""  const hasMixedCaseTitleToken = words.slice(1).some(word =>
+          tail_start = source.index('  const hasMixedCaseTitleToken =', entity_start)
+          pronoun_start = source.index('function isPronounSentenceLead(', tail_start)
+          entity_tail = r"""  const hasMixedCaseTitleToken = words.slice(1).some(word =>
             nameTokenPattern.test(word) && /\p{Ll}/u.test(word)
           );
-          return Boolean(labelMatch) && words.length >= 3 && hasMixedCaseTitleToken;"""
-          new_title_return = r"""  const casedWords = words.filter(word => /\p{L}/u.test(word));
-          const hasMixedCaseTitleToken = words.slice(1).some(word =>
-            nameTokenPattern.test(word) && /\p{Ll}/u.test(word)
-          );
-          const titleCasedPhrase = casedWords.length >= 3
-            && casedWords.filter(word => /\p{Ll}/u.test(word)).length >= 2;
-          return words.length >= 3
-            && hasMixedCaseTitleToken
-            && (Boolean(labelMatch) || titleCasedPhrase);"""
-          assert source.count(old_title_return) == 1, 'title continuation return changed'
-          source = source.replace(old_title_return, new_title_return, 1)
+          return words.length >= 3 && hasMixedCaseTitleToken;
+          }
 
-          old_pronoun_lead = r"""function isPronounSentenceLead(value) {
+          """
+          source = source[:tail_start] + entity_tail + source[pronoun_start:]
+
+          pronoun_start = source.index('function isPronounSentenceLead(')
+          sentence_start = source.index('function startsFreshSentenceAfterAbbreviation(', pronoun_start)
+          pronoun_function = r"""function isPronounSentenceLead(value) {
             const normalized = value.normalize('NFKC').trimStart();
             if (/^(?:i|we|you|he|she|they|it|this|that|these|those)['’](?:m|s|re|ve|ll|d)(?=$|[^\p{L}])/iu.test(normalized)) {
               return true;
@@ -183,63 +194,21 @@ jobs:
               /^(?:i|we|you|he|she|they|it|this|that|these|those)(?:\s+|$)/iu
             );
             if (!leadMatch) return false;
+            const lead = leadMatch[0].trim();
             const followingTokens = normalized.slice(leadMatch[0].length)
               .match(/[\p{L}]+/gu)?.slice(0, 4) ?? [];
-            return followingTokens.some(isBoundedSentencePredicate);
-          }"""
-          new_pronoun_lead = r"""function isPronounSentenceLead(value) {
-            const normalized = value.normalize('NFKC').trimStart();
-            if (/^(?:i|we|you|he|she|they|it|this|that|these|those)['’](?:m|s|re|ve|ll|d)(?=$|[^\p{L}])/iu.test(normalized)) {
-              return true;
-            }
-
-            const leadToken = normalized.match(/^[\p{L}]+/u)?.[0] ?? '';
-            const leadMatch = normalized.match(
-              /^(?:i|we|you|he|she|they|it|this|that|these|those)(?:\s+|$)/iu
-            );
-            if (!leadMatch) return false;
-            const followingTokens = normalized.slice(leadMatch[0].length)
-              .match(/[\p{L}]+/gu)?.slice(0, 6) ?? [];
-            if (followingTokens.some(isBoundedSentencePredicate)) return true;
-            if (!followingTokens.length) return false;
-
-            const first = followingTokens[0];
-            const lowerFirst = first.toLocaleLowerCase('en-US');
-            if (leadToken === 'I'
-                && /^(?:army|brigade|command|corps|division|regiment)$/u.test(lowerFirst)) {
-              return false;
-            }
-            if (leadToken === 'IT'
-                && /^(?:department|group|lab|labs|network|office|services|solutions|systems|team)$/u.test(lowerFirst)) {
-              return false;
-            }
-
-            const upperFirst = first.toLocaleUpperCase('en-US');
-            if (first === lowerFirst && lowerFirst !== upperFirst) return true;
-            if (/(?:ed|ied|ing|en|ifies|ified|ify|ises|ised|ise|izes|ized|ize|ates|ated|ate|s)$/u.test(lowerFirst)
-                && lowerFirst.length > 3) {
-              return true;
-            }
-
-            const determinerIndex = followingTokens.findIndex((token, index) =>
-              index > 0 && /^(?:a|an|the|my|our|your|his|her|its|their|this|that|these|those)$/u.test(
-                token.toLocaleLowerCase('en-US')
+            return followingTokens.some((token, index) =>
+              isBoundedSentencePredicate(token)
+              || isLikelyRegularFiniteSentencePredicate(
+                token,
+                lead,
+                followingTokens.slice(index + 1)
               )
-            );
-            if (determinerIndex > 0) return true;
+            ) || isStrongPronounClauseWithinInstitutionalPhrase(normalized);
+          }
 
-            const phraseTokens = [leadToken, ...followingTokens];
-            const allCapsPhrase = phraseTokens.every(token => {
-              const lower = token.toLocaleLowerCase('en-US');
-              const upper = token.toLocaleUpperCase('en-US');
-              return lower === upper || token === upper;
-            });
-            return allCapsPhrase
-              && followingTokens.length >= 2
-              && !/^(?:a|an|the|of|and)$/u.test(lowerFirst);
-          }"""
-          assert source.count(old_pronoun_lead) == 1, 'pronoun sentence lead changed'
-          source = source.replace(old_pronoun_lead, new_pronoun_lead, 1)
+          """
+          source = source[:pronoun_start] + pronoun_function + source[sentence_start:]
           source_path.write_text(source, encoding='utf-8')
 
           test_path = Path('test/industrial-exhaust.test.js')
@@ -250,26 +219,11 @@ jobs:
           assert sentinel not in tests, 'final regressions already inserted'
           additions = r"""
           for (const [input, expected] of [
-            [
-              'Context (U.S. We Care Foundation - Phone: +1 253 477 8777)',
-              'Context (U.S. We Care Foundation - Phone: [contact omitted])'
-            ],
-            [
-              'Context (U.S. We Care Foundation — Phone: +1 253 477 8777)',
-              'Context (U.S. We Care Foundation — Phone: [contact omitted])'
-            ],
-            [
-              'Context (U.S. We Care Foundation | Phone #: +1 253 477 8777)',
-              'Context (U.S. We Care Foundation | Phone #: [contact omitted])'
-            ],
-            [
-              'Context (U.S. We Care Foundation / Contact: +1 253 477 8777)',
-              'Context (U.S. We Care Foundation / Contact: [contact omitted])'
-            ],
-            [
-              'Context（Ｕ．Ｓ． Ｗｅ Ｃａｒｅ Ｆｏｕｎｄａｔｉｏｎ ｜ Ｐｈｏｎｅ ＃： ＋１ ２５３ ４７７ ８７７７）',
-              'Context（Ｕ．Ｓ． Ｗｅ Ｃａｒｅ Ｆｏｕｎｄａｔｉｏｎ ｜ Ｐｈｏｎｅ ＃： [contact omitted]）'
-            ]
+            ['Context (U.S. We Care Foundation - Phone: +1 253 477 8777)', 'Context (U.S. We Care Foundation - Phone: [contact omitted])'],
+            ['Context (U.S. We Care Foundation — Phone: +1 253 477 8777)', 'Context (U.S. We Care Foundation — Phone: [contact omitted])'],
+            ['Context (U.S. We Care Foundation | Phone #: +1 253 477 8777)', 'Context (U.S. We Care Foundation | Phone #: [contact omitted])'],
+            ['Context (U.S. We Care Foundation / Contact: +1 253 477 8777)', 'Context (U.S. We Care Foundation / Contact: [contact omitted])'],
+            ['Context（Ｕ．Ｓ． Ｗｅ Ｃａｒｅ Ｆｏｕｎｄａｔｉｏｎ ｜ Ｐｈｏｎｅ ＃： ＋１ ２５３ ４７７ ８７７７）', 'Context（Ｕ．Ｓ． Ｗｅ Ｃａｒｅ Ｆｏｕｎｄａｔｉｏｎ ｜ Ｐｈｏｎｅ ＃： [contact omitted]）']
           ]) {
             assert.equal(
               redactContactData(input),
@@ -279,55 +233,31 @@ jobs:
           }
 
           for (const [input, expected] of [
-            [
-              'Context (U.S. She Leads Africa +1 253 477 8777)',
-              'Context (U.S. She Leads Africa [contact omitted])'
-            ],
-            [
-              'Context (U.S. This Is Us +1 253 477 8777)',
-              'Context (U.S. This Is Us [contact omitted])'
-            ],
-            [
-              'Context（Ｕ．Ｓ． Ｓｈｅ Ｌｅａｄｓ Ａｆｒｉｃａ ＋１ ２５３ ４７７ ８７７７）',
-              'Context（Ｕ．Ｓ． Ｓｈｅ Ｌｅａｄｓ Ａｆｒｉｃａ [contact omitted]）'
-            ],
-            [
-              'Context (U.S. IT DEPARTMENT +1 253 477 8777)',
-              'Context (U.S. IT DEPARTMENT [contact omitted])'
-            ],
-            [
-              'Context (U.S. WE THE PEOPLE FOUNDATION +1 253 477 8777)',
-              'Context (U.S. WE THE PEOPLE FOUNDATION [contact omitted])'
-            ]
+            ['Context (U.S. She Leads Africa +1 253 477 8777)', 'Context (U.S. She Leads Africa [contact omitted])'],
+            ['Context (U.S. This Is Us +1 253 477 8777)', 'Context (U.S. This Is Us [contact omitted])'],
+            ['Context（Ｕ．Ｓ． Ｓｈｅ Ｌｅａｄｓ Ａｆｒｉｃａ ＋１ ２５３ ４７７ ８７７７）', 'Context（Ｕ．Ｓ． Ｓｈｅ Ｌｅａｄｓ Ａｆｒｉｃａ [contact omitted]）'],
+            ['Context (U.S. WE CARE CENTER +1 253 477 8777)', 'Context (U.S. WE CARE CENTER [contact omitted])'],
+            ['Context (U.S. WE CALL CENTER +1 253 477 8777)', 'Context (U.S. WE CALL CENTER [contact omitted])'],
+            ['Context (U.S. THIS CALL CENTER +1 253 477 8777)', 'Context (U.S. THIS CALL CENTER [contact omitted])'],
+            ['Context (U.S. WE THE PEOPLE FOUNDATION +1 253 477 8777)', 'Context (U.S. WE THE PEOPLE FOUNDATION [contact omitted])'],
+            ['Context (U.S. IT DEPARTMENT +1 253 477 8777)', 'Context (U.S. IT DEPARTMENT [contact omitted])']
           ]) {
             assert.equal(
               redactContactData(input),
               expected,
-              'title-shaped unlabelled institutions must retain their owned closer'
+              'unlabelled title-shaped institutions must retain their owned closer'
             );
           }
 
           for (const [input, expected] of [
-            [
-              'Broken (He moved to the U.S. He visited the company +1 253 477 8777)',
-              'Broken (He moved to the U.S. He visited the company [contact omitted]'
-            ],
-            [
-              'Broken (He moved to the U.S. HE VISITED THE COMPANY +1 253 477 8777)',
-              'Broken (He moved to the U.S. HE VISITED THE COMPANY [contact omitted]'
-            ],
-            [
-              'Broken (He moved to the U.S. THEY ACQUIRE ACME FOUNDATION +1 253 477 8777)',
-              'Broken (He moved to the U.S. THEY ACQUIRE ACME FOUNDATION [contact omitted]'
-            ],
-            [
-              'Broken (He moved to the U.S. WE REVIEWED THE FOUNDATION +1 253 477 8777)',
-              'Broken (He moved to the U.S. WE REVIEWED THE FOUNDATION [contact omitted]'
-            ],
-            [
-              'Broken（He moved to the Ｕ．Ｓ． ＨＥ ＶＩＳＩＴＥＤ ＴＨＥ ＣＯＭＰＡＮＹ ＋１ ２５３ ４７７ ８７７７）',
-              'Broken（He moved to the Ｕ．Ｓ． ＨＥ ＶＩＳＩＴＥＤ ＴＨＥ ＣＯＭＰＡＮＹ [contact omitted]'
-            ]
+            ['Broken (He moved to the U.S. He visited the company +1 253 477 8777)', 'Broken (He moved to the U.S. He visited the company [contact omitted]'],
+            ['Broken (He moved to the U.S. HE VISITED THE COMPANY +1 253 477 8777)', 'Broken (He moved to the U.S. HE VISITED THE COMPANY [contact omitted]'],
+            ['Broken (He moved to the U.S. HE VISITS ACME COMPANY +1 253 477 8777)', 'Broken (He moved to the U.S. HE VISITS ACME COMPANY [contact omitted]'],
+            ['Broken (He moved to the U.S. THEY VISIT ACME FOUNDATION +1 253 477 8777)', 'Broken (He moved to the U.S. THEY VISIT ACME FOUNDATION [contact omitted]'],
+            ['Broken (He moved to the U.S. WE WILL VISIT ACME COMPANY +1 253 477 8777)', 'Broken (He moved to the U.S. WE WILL VISIT ACME COMPANY [contact omitted]'],
+            ['Broken (He moved to the U.S. WE SUPPORT ACME FOUNDATION +1 253 477 8777)', 'Broken (He moved to the U.S. WE SUPPORT ACME FOUNDATION [contact omitted]'],
+            ['Broken (He moved to the U.S. WE BUILD THE SYSTEMS +1 253 477 8777)', 'Broken (He moved to the U.S. WE BUILD THE SYSTEMS [contact omitted]'],
+            ['Broken（He moved to the Ｕ．Ｓ． ＨＥ ＶＩＳＩＴＥＤ ＴＨＥ ＣＯＭＰＡＮＹ ＋１ ２５３ ４７７ ８７７７）', 'Broken（He moved to the Ｕ．Ｓ． ＨＥ ＶＩＳＩＴＥＤ ＴＨＥ ＣＯＭＰＡＮＹ [contact omitted]']
           ]) {
             assert.equal(
               redactContactData(input),
