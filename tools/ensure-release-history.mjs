@@ -38,9 +38,18 @@ function isSafeBranchName(value) {
     !value.split('/').some((part) => !part || part.endsWith('.lock'));
 }
 
+function addBranchRefspec(refspecs, branch) {
+  if (branch !== 'main' && isSafeBranchName(branch)) {
+    refspecs.push(`+refs/heads/${branch}:refs/remotes/origin/${branch}`);
+  }
+}
+
 export function buildHistoryRefspecs(env = process.env) {
   const refspecs = [MAIN_HISTORY_REFSPEC];
   const githubRef = env.GITHUB_REF;
+
+  addBranchRefspec(refspecs, env.GITHUB_BASE_REF);
+  addBranchRefspec(refspecs, env.GITHUB_HEAD_REF);
 
   const pullMatch = typeof githubRef === 'string'
     ? githubRef.match(/^refs\/pull\/(\d+)\/(merge|head)$/u)
@@ -50,13 +59,28 @@ export function buildHistoryRefspecs(env = process.env) {
   }
 
   if (typeof githubRef === 'string' && githubRef.startsWith('refs/heads/')) {
-    const branch = githubRef.slice('refs/heads/'.length);
-    if (branch !== 'main' && isSafeBranchName(branch)) {
-      refspecs.push(`+${githubRef}:refs/remotes/origin/${branch}`);
-    }
+    addBranchRefspec(refspecs, githubRef.slice('refs/heads/'.length));
   }
 
   return [...new Set(refspecs)];
+}
+
+function sourceRefFromRefspec(refspec) {
+  if (typeof refspec !== 'string') return '';
+  const separator = refspec.indexOf(':');
+  const source = separator === -1 ? refspec : refspec.slice(0, separator);
+  return source.replace(/^\+/u, '');
+}
+
+export function isVolatilePullMergeRefspec(refspec) {
+  return /^refs\/pull\/\d+\/merge$/u.test(sourceRefFromRefspec(refspec));
+}
+
+export function isUnavailableOptionalRef(refspec, result) {
+  if (!isVolatilePullMergeRefspec(refspec)) return false;
+  const source = sourceRefFromRefspec(refspec);
+  const detail = String(result?.stderr || result?.stdout || '');
+  return detail.includes(`couldn't find remote ref ${source}`);
 }
 
 function readShallowState(git) {
@@ -90,16 +114,23 @@ export function ensureReleaseHistory({
   }
 
   const refspecs = buildHistoryRefspecs(env);
-  const fetched = git([
-    'fetch',
-    '--no-tags',
-    '--prune',
-    '--quiet',
-    `--depth=${FULL_HISTORY_DEPTH}`,
-    'origin',
-    ...refspecs
-  ]);
-  if (fetched.status !== 0) {
+  const skippedRefspecs = [];
+  for (const refspec of refspecs) {
+    const fetched = git([
+      'fetch',
+      '--no-tags',
+      '--prune',
+      '--quiet',
+      `--depth=${FULL_HISTORY_DEPTH}`,
+      'origin',
+      refspec
+    ]);
+    if (fetched.status === 0) continue;
+    if (isUnavailableOptionalRef(refspec, fetched)) {
+      skippedRefspecs.push(refspec);
+      log(`ensure-release-history: skipped unavailable optional refspec ${refspec}`);
+      continue;
+    }
     throw new Error(`cannot acquire complete release history${formatFailure(fetched)}`);
   }
 
@@ -129,7 +160,10 @@ export function ensureReleaseHistory({
     throw new Error('repository remains shallow after bounded release-history acquisition');
   }
 
-  log(`ensure-release-history: complete history acquired for ${refspecs.length} refspec(s)`);
+  const skipped = skippedRefspecs.length > 0
+    ? `; skipped ${skippedRefspecs.length} unavailable optional refspec(s)`
+    : '';
+  log(`ensure-release-history: complete history acquired for ${refspecs.length} refspec(s)${skipped}`);
   return { fetched: true, refspecs };
 }
 
