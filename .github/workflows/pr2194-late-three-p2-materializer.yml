@@ -1,0 +1,245 @@
+name: PR 2194 late three-P2 materializer
+
+on:
+  push:
+    branches:
+      - agent/pr2194-late-three-p2-controller-v1
+    paths:
+      - .github/workflows/pr2194-late-three-p2-materializer.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pr2194-late-three-p2-materializer
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CONTROLLER_BRANCH: agent/pr2194-late-three-p2-controller-v1
+      CONTROLLER_BASE: 03994e5093e5d6abb01ea7bc7f19f5279abace64
+      PRODUCT_BRANCH: agent/pr2194-late-three-p2-v1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/pr2194-late-three-p2-controller-v1
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Reproduce, repair, qualify, and publish the exact two-file candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF_NAME" = "$CONTROLLER_BRANCH"
+          test "$(git rev-parse HEAD^)" = "$CONTROLLER_BASE"
+          controller_paths="$(git diff --name-only "$CONTROLLER_BASE"..HEAD | sort)"
+          test "$controller_paths" = '.github/workflows/pr2194-late-three-p2-materializer.yml'
+
+          git fetch origin 'refs/heads/main:refs/remotes/origin/main'
+          overlap="$(git diff --name-only "$CONTROLLER_BASE"..refs/remotes/origin/main -- \
+            tools/lib/industrial-exhaust.mjs test/industrial-exhaust.test.js)"
+          test -z "$overlap"
+          base_sha="$(git rev-parse refs/remotes/origin/main)"
+          git checkout -B pr2194-late-three-p2 refs/remotes/origin/main
+
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { redactContactData } from './tools/lib/industrial-exhaust.mjs';
+
+          for (const [input, desired] of [
+            [
+              'Broken (He moved to the U.S. 電話：＋８１ ３ ６２１６ ５１１１)',
+              'Broken (He moved to the U.S. 電話：[contact omitted]'
+            ],
+            [
+              'Broken (See note [deprecated.] Phone: +81 3 6216 5111)',
+              'Broken (See note [deprecated.] Phone: [contact omitted]'
+            ],
+            [
+              'Context (John Jr. Phone: +81 3 6216 5111)',
+              'Context (John Jr. Phone: [contact omitted])'
+            ]
+          ]) {
+            assert.notEqual(
+              redactContactData(input),
+              desired,
+              'baseline must exhibit each late PR 2194 review defect'
+            );
+          }
+          NODE
+
+          python - <<'PY'
+          from pathlib import Path
+
+          source_path = Path('tools/lib/industrial-exhaust.mjs')
+          source = source_path.read_text()
+
+          old_remainder = r'''function isTelephoneLabelRemainder(value) {
+            return /^(?:tel(?:ephone)?|phone|mobile|cell|fax|contact)(?:\s+(?:number|no))?\s*[:.]?\s*$/iu.test(
+              value.normalize('NFKC').trim()
+            );
+          }'''
+          new_remainder = r'''function isTelephoneLabelRemainder(value) {
+            return /^(?:(?:tel(?:ephone)?|phone|mobile|cell|fax|contact)(?:\s+(?:number|no))?|(?:電話(?:番号)?|携帯(?:電話)?|ファックス|連絡先|お問い合わせ先))\s*[:.]?\s*$/iu.test(
+              value.normalize('NFKC').trim()
+            );
+          }'''
+          assert source.count(old_remainder) == 1, 'telephone-label remainder shape changed'
+          source = source.replace(old_remainder, new_remainder, 1)
+
+          old_single = r'''  const singlePeriodAbbreviation = /^(?:no|dr|mr|mrs|ms|prof|inc|ltd|co|corp|st|vs|etc)$/iu.test(token);'''
+          new_single = r'''  const singlePeriodAbbreviation = /^(?:no|dr|mr|mrs|ms|prof|jr|sr|inc|ltd|co|corp|st|vs|etc)$/iu.test(token);'''
+          assert source.count(old_single) == 1, 'single-period abbreviation shape changed'
+          source = source.replace(old_single, new_single, 1)
+
+          old_simple = r'''  if (/^(?:inc|ltd|co|corp)$/iu.test(token) && isSimpleEntityPrefix(prefixBeforeToken)) return true;'''
+          new_simple = r'''  if (/^(?:jr|sr|inc|ltd|co|corp)$/iu.test(token) && isSimpleEntityPrefix(prefixBeforeToken)) return true;'''
+          assert source.count(old_simple) == 1, 'simple-entity abbreviation guard shape changed'
+          source = source.replace(old_simple, new_simple, 1)
+
+          old_boundary = r'''  const boundaryPattern = /[!?。！？][ \t\r\n]*|[.．](?:["'”’»›」』〟＂]*)(?:[ \t\r\n]+|$|(?=(?:(?:tel(?:ephone)?|phone|mobile|cell|fax|contact)\b|(?:電話(?:番号)?|携帯(?:電話)?|ファックス|連絡先|お問い合わせ先))))/giu;'''
+          new_boundary = r'''  const boundaryPattern = /[!?。！？][ \t\r\n]*|[.．](?:["'”’»›」』〟＂)\]}>）］｝〉》】〕〗〙〛]*)(?:[ \t\r\n]+|$|(?=(?:(?:tel(?:ephone)?|phone|mobile|cell|fax|contact)\b|(?:電話(?:番号)?|携帯(?:電話)?|ファックス|連絡先|お問い合わせ先))))/giu;'''
+          assert source.count(old_boundary) == 1, 'narrative period boundary shape changed'
+          source = source.replace(old_boundary, new_boundary, 1)
+          source_path.write_text(source)
+
+          test_path = Path('test/industrial-exhaust.test.js')
+          tests = test_path.read_text()
+          marker = '// period abbreviation classification must remain lexical and context-bounded'
+          assert tests.count(marker) == 1
+          additions = r'''
+          for (const [input, expected] of [
+            [
+              'Broken (He moved to the U.S. 電話：＋８１ ３ ６２１６ ５１１１)',
+              'Broken (He moved to the U.S. 電話：[contact omitted]'
+            ],
+            [
+              'Broken (I said no. 連絡先：＋８１ ３ ６２１６ ５１１１)',
+              'Broken (I said no. 連絡先：[contact omitted]'
+            ],
+            [
+              'Broken（He moved to the Ｕ．Ｓ．電話：＋８１ ３ ６２１６ ５１１１）',
+              'Broken（He moved to the Ｕ．Ｓ．電話：[contact omitted]'
+            ],
+            [
+              'Broken（I said no．お問い合わせ先：＋８１ ３ ６２１６ ５１１１）',
+              'Broken（I said no．お問い合わせ先：[contact omitted]'
+            ]
+          ]) {
+            assert.equal(
+              redactContactData(input),
+              expected,
+              'a Japanese phone label after a sentence-final abbreviation must reset prior wrapper ownership'
+            );
+          }
+
+          for (const [input, expected] of [
+            [
+              'Context (U.S. 電話：＋８１ ３ ６２１６ ５１１１)',
+              'Context (U.S. 電話：[contact omitted])'
+            ],
+            [
+              'Context（Ｕ．Ｓ．電話：＋８１ ３ ６２１６ ５１１１）',
+              'Context（Ｕ．Ｓ．電話：[contact omitted]）'
+            ]
+          ]) {
+            assert.equal(
+              redactContactData(input),
+              expected,
+              'a Japanese phone label after a current-context abbreviation must preserve its owned closer'
+            );
+          }
+
+          for (const [input, expected] of [
+            [
+              'Broken (See note [deprecated.] Phone: +81 3 6216 5111)',
+              'Broken (See note [deprecated.] Phone: [contact omitted]'
+            ],
+            [
+              'Broken (See note {deprecated.} Phone: +81 3 6216 5111)',
+              'Broken (See note {deprecated.} Phone: [contact omitted]'
+            ],
+            [
+              '壊れた（注記【停止．】電話：＋８１ ３ ６２１６ ５１１１）',
+              '壊れた（注記【停止．】電話：[contact omitted]'
+            ]
+          ]) {
+            assert.equal(
+              redactContactData(input),
+              expected,
+              'a sentence-final period before a closing delimiter must reset prior wrapper ownership'
+            );
+          }
+
+          assert.equal(
+            redactContactData('Context ([U.S.] Phone: +81 3 6216 5111)'),
+            'Context ([U.S.] Phone: [contact omitted])',
+            'a bracketed current-context abbreviation must preserve the outer owned closer'
+          );
+
+          for (const [input, expected] of [
+            [
+              'Context (John Jr. Phone: +81 3 6216 5111)',
+              'Context (John Jr. Phone: [contact omitted])'
+            ],
+            [
+              'Context (Jane Sr. Phone: +81 3 6216 5111)',
+              'Context (Jane Sr. Phone: [contact omitted])'
+            ],
+            [
+              'Context（John Jr． 電話：＋８１ ３ ６２１６ ５１１１）',
+              'Context（John Jr． 電話：[contact omitted]）'
+            ]
+          ]) {
+            assert.equal(
+              redactContactData(input),
+              expected,
+              'a personal suffix in a simple name construct must preserve the current wrapper closer'
+            );
+          }
+
+          for (const [input, expected] of [
+            [
+              'Broken (I spoke to John Jr. Phone: +81 3 6216 5111)',
+              'Broken (I spoke to John Jr. Phone: [contact omitted]'
+            ],
+            [
+              'Broken (We contacted Jane Sr. Phone: +81 3 6216 5111)',
+              'Broken (We contacted Jane Sr. Phone: [contact omitted]'
+            ]
+          ]) {
+            assert.equal(
+              redactContactData(input),
+              expected,
+              'a personal suffix after ordinary prose must remain a genuine sentence boundary'
+            );
+          }
+
+          '''
+          test_path.write_text(tests.replace(marker, additions + marker, 1))
+          PY
+
+          node --check tools/lib/industrial-exhaust.mjs
+          node --check test/industrial-exhaust.test.js
+          node test/industrial-exhaust.test.js
+          node test/industrial-exhaust-artifacts.test.js
+          git diff --check
+
+          changed="$(git diff --name-only | sort)"
+          expected="$(printf '%s\n' \
+            test/industrial-exhaust.test.js \
+            tools/lib/industrial-exhaust.mjs | sort)"
+          test "$changed" = "$expected"
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- test/industrial-exhaust.test.js tools/lib/industrial-exhaust.mjs
+          staged="$(git diff --cached --name-only | sort)"
+          test "$staged" = "$expected"
+          git commit -m 'fix(crawler): close late narrative-period review gaps'
+          test "$(git rev-parse HEAD^)" = "$base_sha"
+          git push --force origin "HEAD:refs/heads/$PRODUCT_BRANCH"
