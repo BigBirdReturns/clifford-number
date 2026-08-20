@@ -662,6 +662,8 @@ function redactPhoneCandidateAcrossOwnedOuterClosers(
           glyph: character,
           owned: openerSurvives === true
         });
+        sanitizedCharacters.push(' ');
+        originalIndexes.push(index);
       }
       continue;
     }

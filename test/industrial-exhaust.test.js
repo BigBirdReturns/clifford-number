@@ -1383,4 +1383,30 @@ for (const [input, expected] of [
   );
 }
 
+
+for (const [input, expected] of [
+  [
+    'Context (Phone: 03-6216-8041)090-1234-5678',
+    'Context (Phone: [contact omitted])[contact omitted]'
+  ],
+  [
+    '文脈（電話：０３－６２１６－８０４１）０９０－１２３４－５６７８',
+    '文脈（電話：[contact omitted]）[contact omitted]'
+  ],
+  [
+    'Outer (Context (Phone: 03-6216-8041)090-1234-5678)',
+    'Outer (Context (Phone: [contact omitted])[contact omitted])'
+  ],
+  [
+    'Context (Phone: (03) )6216-8041)090-1234-5678',
+    'Context (Phone: [contact omitted])[contact omitted]'
+  ]
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    'a removed structural closer must remain a classification boundary between adjacent phones'
+  );
+}
+
 console.log('industrial-exhaust tests passed');
