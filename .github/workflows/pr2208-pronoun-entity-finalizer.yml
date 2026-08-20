@@ -1,0 +1,205 @@
+name: PR2208 pronoun-entity boundary finalizer
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/pr2208-pronoun-entity-finalizer.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr2208-pronoun-entity-finalizer-${{ github.event.pull_request.head.sha }}
+  cancel-in-progress: false
+
+jobs:
+  qualify-and-publish:
+    if: ${{ github.event.pull_request.head.ref == 'agent/pr2194-fresh-sentence-followup-controller-v1' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    env:
+      CONTROLLER_BRANCH: agent/pr2194-fresh-sentence-followup-controller-v1
+      RESULT_BRANCH: agent/pr2194-fresh-sentence-followup-v1
+      EXPECTED_RESULT_HEAD: c80f3ab9ebaca6ac38aaef97fb978b655ad5cc3e
+      EXPECTED_TRIGGER_HEAD: ${{ github.event.pull_request.head.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Rebuild, qualify, and publish the exact two-file repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_TRIGGER_HEAD"
+          git fetch origin \
+            'refs/heads/main:refs/remotes/origin/main' \
+            "refs/heads/$CONTROLLER_BRANCH:refs/remotes/origin/$CONTROLLER_BRANCH" \
+            "refs/heads/$RESULT_BRANCH:refs/remotes/origin/$RESULT_BRANCH"
+          test "$(git rev-parse refs/remotes/origin/$CONTROLLER_BRANCH)" = "$EXPECTED_TRIGGER_HEAD"
+          test "$(git rev-parse refs/remotes/origin/$RESULT_BRANCH)" = "$EXPECTED_RESULT_HEAD"
+
+          base_sha="$(git rev-parse refs/remotes/origin/main)"
+          git checkout -B pr2208-pronoun-entity-candidate refs/remotes/origin/main
+          test "$(git rev-parse HEAD)" = "$base_sha"
+
+          python - <<'PY'
+          from pathlib import Path
+
+          source_path = Path('tools/lib/industrial-exhaust.mjs')
+          source = source_path.read_text(encoding='utf-8')
+          function_marker = "function isNarrativePeriodAbbreviation(value, contextStart, periodIndex, boundaryEnd) {"
+          assert source.count(function_marker) == 1, 'period-classifier marker changed'
+          assert 'function startsFreshSentenceAfterAbbreviation(' not in source, 'fresh-sentence helper already exists'
+
+          helpers = r"""function isBoundedSentenceVerb(value) {
+            return /^(?:am|is|are|was|were|be|been|being|have|has|had|will|would|shall|should|can|could|may|might|must|do|does|did|say|says|said|call|calls|called|ask|asks|asked|need|needs|needed|want|wants|wanted|use|uses|used|see|sees|saw|think|thinks|thought|move|moves|moved|live|lives|lived|work|works|worked|send|sends|sent|contact|contacts|contacted|email|emails|emailed|text|texts|texted|dial|dials|dialed|reply|replies|replied|write|writes|wrote|read|reads|found|find|finds|get|gets|got|care|cares|cared|mean|means|meant|remain|remains|remained|become|becomes|became)$/u.test(
+              value.toLocaleLowerCase('en-US')
+            );
+          }
+
+          function isBoundedSentenceAuxiliary(value) {
+            return /^(?:am|is|are|was|were|have|has|had|will|would|shall|should|can|could|may|might|must|do|does|did)$/u.test(
+              value.toLocaleLowerCase('en-US')
+            );
+          }
+
+          function isPronounISentenceLead(value) {
+            const normalized = value.normalize('NFKC').trimStart();
+            if (/^I['’](?:m|ve|ll|d)(?=$|[^\p{L}])/iu.test(normalized)) return true;
+            const nextToken = normalized.match(/^I\s+([\p{L}]+)/u)?.[1] ?? '';
+            return Boolean(nextToken) && isBoundedSentenceVerb(nextToken);
+          }
+
+          function isPronounSentenceLead(value, leadToken) {
+            const normalized = value.normalize('NFKC').trimStart();
+            const contractionPattern = /^(?:we|you|they|these|those)['’](?:re|ve|ll|d)(?=$|[^\p{L}])|^(?:he|she|it|this|that)['’](?:s|ll|d)(?=$|[^\p{L}])/iu;
+            if (contractionPattern.test(normalized)) return true;
+
+            const nextToken = normalized
+              .slice(leadToken.length)
+              .match(/^\s+([\p{L}]+)/u)?.[1] ?? '';
+            if (!nextToken) return false;
+
+            const lower = nextToken.toLocaleLowerCase('en-US');
+            const upper = nextToken.toLocaleUpperCase('en-US');
+            if (nextToken === lower) return isBoundedSentenceVerb(nextToken);
+            if (nextToken === upper && lower !== upper) {
+              return isBoundedSentenceAuxiliary(nextToken);
+            }
+
+            // Title-cased predicate-shaped words are ambiguous with entity names
+            // such as "We Care Center" and "This Is Us Foundation".
+            return false;
+          }
+
+          function startsFreshSentenceAfterAbbreviation(value) {
+            const normalized = value.normalize('NFKC').trimStart();
+            const leadToken = normalized.match(/^[\p{L}]+/u)?.[0] ?? '';
+            const lead = leadToken.toLocaleLowerCase('en-US');
+            if (lead === 'i') return isPronounISentenceLead(normalized);
+            if (/^(?:we|you|he|she|they|it|this|that|these|those)$/u.test(lead)) {
+              return isPronounSentenceLead(normalized, leadToken);
+            }
+            return /^(?:then|please|afterward|meanwhile|however|therefore|otherwise|instead|finally)$/u.test(
+              lead
+            );
+          }
+
+          """
+          source = source.replace(function_marker, helpers + function_marker, 1)
+
+          old_gate = r"""  const remainder = value.slice(boundaryEnd);
+            const hasRemainder = /\S/u.test(remainder);
+            if (hasRemainder && !isTelephoneLabelRemainder(remainder)) return true;"""
+          new_gate = r"""  const remainder = value.slice(boundaryEnd);
+            const hasRemainder = /\S/u.test(remainder);
+            if (hasRemainder && startsFreshSentenceAfterAbbreviation(remainder)) return false;
+            if (hasRemainder && !isTelephoneLabelRemainder(remainder)) return true;"""
+          assert source.count(old_gate) == 1, 'abbreviation remainder gate changed'
+          source_path.write_text(source.replace(old_gate, new_gate, 1), encoding='utf-8')
+
+          test_path = Path('test/industrial-exhaust.test.js')
+          tests = test_path.read_text(encoding='utf-8')
+          marker = '// period abbreviation classification must remain lexical and context-bounded'
+          assert tests.count(marker) == 1, 'test insertion marker changed'
+          additions = r"""
+          for (const [input, expected] of [
+            ['Broken (He moved to the U.S. Then call +81 3 6216 5111)', 'Broken (He moved to the U.S. Then call [contact omitted]'],
+            ['Broken (I said no. Please call +81 3 6216 5111)', 'Broken (I said no. Please call [contact omitted]'],
+            ['Broken (At 9 a.m. However contact +81 3 6216 5111)', 'Broken (At 9 a.m. However contact [contact omitted]'],
+            ['Broken (He moved to the U.S. I called +81 3 6216 5111)', 'Broken (He moved to the U.S. I called [contact omitted]'],
+            ['Broken (He moved to the U.S. I CALLED +81 3 6216 5111)', 'Broken (He moved to the U.S. I CALLED [contact omitted]'],
+            ["Broken (He moved to the U.S. I'm calling +81 3 6216 5111)", "Broken (He moved to the U.S. I'm calling [contact omitted]"],
+            ['Broken (He moved to the U.S. We called +81 3 6216 5111)', 'Broken (He moved to the U.S. We called [contact omitted]'],
+            ['Broken (He moved to the U.S. We are calling +81 3 6216 5111)', 'Broken (He moved to the U.S. We are calling [contact omitted]'],
+            ["Broken (He moved to the U.S. We've called +81 3 6216 5111)", "Broken (He moved to the U.S. We've called [contact omitted]"],
+            ['Broken (He moved to the U.S. WE ARE CALLING +81 3 6216 5111)', 'Broken (He moved to the U.S. WE ARE CALLING [contact omitted]'],
+            ['Broken (He moved to the U.S. He called +81 3 6216 5111)', 'Broken (He moved to the U.S. He called [contact omitted]'],
+            ['Broken (He moved to the U.S. They will call +81 3 6216 5111)', 'Broken (He moved to the U.S. They will call [contact omitted]'],
+            ['Broken (He moved to the U.S. This works at +81 3 6216 5111)', 'Broken (He moved to the U.S. This works at [contact omitted]'],
+            ['Broken (He moved to the U.S. Those are available at +81 3 6216 5111)', 'Broken (He moved to the U.S. Those are available at [contact omitted]'],
+            ['Broken (He moved to the U.S. IT IS AVAILABLE AT +81 3 6216 5111)', 'Broken (He moved to the U.S. IT IS AVAILABLE AT [contact omitted]'],
+            ["Broken (He moved to the U.S. IT'S AVAILABLE AT +81 3 6216 5111)", "Broken (He moved to the U.S. IT'S AVAILABLE AT [contact omitted]"]
+          ]) {
+            assert.equal(
+              redactContactData(input),
+              expected,
+              'a grammatically bounded sentence lead after an abbreviation must reset wrapper ownership'
+            );
+          }
+
+          for (const [input, expected] of [
+            ['Context (U.S. Treasury Phone: +81 3 6216 5111)', 'Context (U.S. Treasury Phone: [contact omitted])'],
+            ['Context (Acme Inc. Contact Center Phone: +81 3 6216 5111)', 'Context (Acme Inc. Contact Center Phone: [contact omitted])'],
+            ['Context (Acme Inc. Call Center Phone: +81 3 6216 5111)', 'Context (Acme Inc. Call Center Phone: [contact omitted])'],
+            ['Context (U.S. Open Phone: +81 3 6216 5111)', 'Context (U.S. Open Phone: [contact omitted])'],
+            ['Context (U.S. I Corps Phone: +1 253 477 8777)', 'Context (U.S. I Corps Phone: [contact omitted])'],
+            ['Context (U.S. IT Department Phone: +1 253 477 8777)', 'Context (U.S. IT Department Phone: [contact omitted])'],
+            ['Context (U.S. IT Services Phone: +1 253 477 8777)', 'Context (U.S. IT Services Phone: [contact omitted])'],
+            ['Context (Acme Inc. We Care Center Phone: +1 253 477 8777)', 'Context (Acme Inc. We Care Center Phone: [contact omitted])'],
+            ['Context (U.S. We the People Foundation Phone: +1 253 477 8777)', 'Context (U.S. We the People Foundation Phone: [contact omitted])'],
+            ['Context (Acme Inc. You & Me Foundation Phone: +1 253 477 8777)', 'Context (Acme Inc. You & Me Foundation Phone: [contact omitted])'],
+            ['Context (U.S. This Is Us Foundation Phone: +1 253 477 8777)', 'Context (U.S. This Is Us Foundation Phone: [contact omitted])'],
+            ['Context (U.S. THEY Department Phone: +1 253 477 8777)', 'Context (U.S. THEY Department Phone: [contact omitted])'],
+            ['Context（Ｕ．Ｓ． ＩＴ Department Phone: ＋１ ２５３ ４７７ ８７７７）', 'Context（Ｕ．Ｓ． ＩＴ Department Phone: [contact omitted]）'],
+            ['Context（Acme Inc． We Care Center Phone: ＋１ ２５３ ４７７ ８７７７）', 'Context（Acme Inc． We Care Center Phone: [contact omitted]）']
+          ]) {
+            assert.equal(
+              redactContactData(input),
+              expected,
+              'pronoun-shaped entity names and institutional continuations must retain their owned closer'
+            );
+          }
+
+          """
+          test_path.write_text(tests.replace(marker, additions + marker, 1), encoding='utf-8')
+          PY
+
+          node --check tools/lib/industrial-exhaust.mjs
+          node --check test/industrial-exhaust.test.js
+          node test/industrial-exhaust.test.js
+          node test/industrial-exhaust-artifacts.test.js
+          git diff --check
+
+          changed="$(git diff --name-only | sort)"
+          expected="$(printf '%s\n' \
+            test/industrial-exhaust.test.js \
+            tools/lib/industrial-exhaust.mjs | sort)"
+          test "$changed" = "$expected"
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- test/industrial-exhaust.test.js tools/lib/industrial-exhaust.mjs
+          test "$(git diff --cached --name-only | sort)" = "$expected"
+          git commit -m 'fix(crawler): disambiguate pronoun-led entity continuations'
+          test "$(git rev-parse HEAD^)" = "$base_sha"
+          git push \
+            --force-with-lease="refs/heads/$RESULT_BRANCH:$EXPECTED_RESULT_HEAD" \
+            origin "HEAD:refs/heads/$RESULT_BRANCH"
