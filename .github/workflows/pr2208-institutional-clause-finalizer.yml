@@ -1,4 +1,4 @@
-name: PR2208 delimiter, title, and structural-clause finalizer
+name: PR2208 plural-base and title-clause finalizer
 
 on:
   pull_request:
@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: pr2208-delimiter-title-clause-${{ github.event.pull_request.head.sha }}
+  group: pr2208-plural-title-clause-${{ github.event.pull_request.head.sha }}
   cancel-in-progress: false
 
 jobs:
@@ -23,7 +23,7 @@ jobs:
     env:
       CONTROLLER_BRANCH: agent/pr2194-fresh-sentence-followup-controller-v1
       RESULT_BRANCH: agent/pr2194-fresh-sentence-followup-v1
-      EXPECTED_RESULT_HEAD: ad97cd3024d2f6df6293abd52e3a53ef19fbb36a
+      EXPECTED_RESULT_HEAD: 5d872f183572fa3538856a6b97f4a9a4b4845b92
       EXPECTED_TRIGGER_HEAD: ${{ github.event.pull_request.head.sha }}
     steps:
       - uses: actions/checkout@v4
@@ -55,7 +55,7 @@ jobs:
           git diff --quiet "$prior_base" "$base_sha" -- \
             test/industrial-exhaust.test.js \
             tools/lib/industrial-exhaust.mjs
-          git checkout -B pr2208-delimiter-title-clause-candidate "$base_sha"
+          git checkout -B pr2208-plural-title-clause-candidate "$base_sha"
           git cherry-pick --no-commit "$EXPECTED_RESULT_HEAD"
           test "$(git diff --cached --name-only | sort)" = "$expected_paths"
           git reset
@@ -66,21 +66,8 @@ jobs:
 
           source_path = Path('tools/lib/industrial-exhaust.mjs')
           source = source_path.read_text(encoding='utf-8')
-          for sentinel in (
-              'const sentenceObjectMarkerPattern =',
-              'function isLikelyRegularFiniteSentencePredicate(',
-              'terminal phone-label delimiters must remain outside title classification',
-          ):
-              assert sentinel not in source, f'already transformed: {sentinel}'
 
-          clause_start = source.index('function isStrongPronounClauseWithinInstitutionalPhrase(')
-          entity_start = source.index('function isLikelyNamedEntityContinuation(', clause_start)
-          clause_helpers = r"""const sentenceObjectMarkerPattern = /^(?:a|an|the|my|our|your|his|her|its|their|this|that|these|those)$/u;
-          const sentenceAuxiliaryPattern = /^(?:am|is|are|was|were|have|has|had|will|would|shall|should|can|could|may|might|must|do|does|did)$/u;
-          const institutionalSuffixPattern = /^(?:academy|agency|army|association|bank|battalion|brigade|center|centre|club|collective|command|company|corp|corporation|council|department|district|division|fleet|force|foundation|fund|group|holdings|initiative|institute|institution|lab|labs|laboratory|media|museum|network|office|organization|organisation|partners|people|project|records|regiment|services|society|solutions|squadron|studio|systems|team|trust|ventures|wing|works)$/u;
-          const titleConnectorPattern = /^(?:a|an|and|at|by|for|from|in|of|on|the|to|with|&)$/iu;
-
-          function isLikelyRegularFiniteSentencePredicate(value, lead, followingTokens) {
+          old_regular = r"""function isLikelyRegularFiniteSentencePredicate(value, lead, followingTokens) {
             const lower = value.toLocaleLowerCase('en-US');
             if (!/^\p{L}{3,}$/u.test(lower) || followingTokens.length === 0) return false;
 
@@ -96,181 +83,155 @@ jobs:
             }
 
             return false;
-          }
+          }"""
+          new_regular = r"""function isLikelyRegularFiniteSentencePredicate(value, lead, followingTokens) {
+            const lower = value.toLocaleLowerCase('en-US');
+            if (!/^\p{L}{3,}$/u.test(lower) || followingTokens.length === 0) return false;
 
-          function isStrongPronounClauseWithinInstitutionalPhrase(value) {
-            const normalized = value.normalize('NFKC').trim();
-            if (/^(?:i|we|you|he|she|they|it|this|that|these|those)['’](?:m|s|re|ve|ll|d)(?=$|[^\p{L}])/iu.test(normalized)) {
-              return true;
+            if (/^(?:\p{L}+ed|\p{L}*[^aeiou]ied)$/u.test(lower)) {
+              return followingTokens.length >= 2
+                || sentenceObjectMarkerPattern.test(followingTokens[0].toLocaleLowerCase('en-US'));
             }
 
+            const normalizedLead = lead.toLocaleLowerCase('en-US');
+            if (/^(?:he|she|this|that)$/u.test(normalizedLead)
+                && /^(?:\p{L}{2,}(?:s|es)|\p{L}*[^aeiou]ies)$/u.test(lower)) {
+              return followingTokens.length >= 2;
+            }
+
+            const upper = value.toLocaleUpperCase('en-US');
+            const hasCase = lower !== upper;
+            const ordinaryOrAllCapsToken = /\p{Ll}/u.test(value) || (hasCase && value === upper);
+            if (/^(?:we|you|they|these|those)$/u.test(normalizedLead)
+                && ordinaryOrAllCapsToken
+                && !isBoundedSentencePredicate(value)
+                && !sentenceAuxiliaryPattern.test(lower)
+                && !sentenceObjectMarkerPattern.test(lower)
+                && !titleConnectorPattern.test(value)
+                && !institutionalSuffixPattern.test(lower)
+                && !/(?:ed|ing)$/u.test(lower)) {
+              const firstFollowing = followingTokens[0].toLocaleLowerCase('en-US');
+              if (sentenceObjectMarkerPattern.test(firstFollowing)) {
+                return followingTokens.length >= 2;
+              }
+              return !titleConnectorPattern.test(followingTokens[0]);
+            }
+
+            return false;
+          }"""
+          assert source.count(old_regular) == 1, 'regular finite predicate helper changed'
+          source = source.replace(old_regular, new_regular, 1)
+
+          helper_marker = 'function isStrongPronounClauseWithinInstitutionalPhrase(value) {'
+          assert source.count(helper_marker) == 1, 'pronoun clause helper marker changed'
+          assert 'function isTitleCasedPronounObjectClause(value) {' not in source
+          title_clause_helper = r"""function isTitleCasedPronounObjectClause(value) {
+            const normalized = value.normalize('NFKC').trim();
             const leadMatch = normalized.match(
               /^(?:i|we|you|he|she|they|it|this|that|these|those)(?:\s+|$)/iu
             );
             if (!leadMatch) return false;
+
+            const words = normalized.split(/\s+/u);
+            const titleCasedPhrase = words.every((word, index) => {
+              if (titleConnectorPattern.test(word)) return true;
+              if (index === 0 && /^I$/u.test(word)) return true;
+              return /^[\p{Lu}\p{Lt}][\p{Ll}\p{M}\p{N}&'’\-]*$/u.test(word);
+            });
+            if (!titleCasedPhrase) return false;
+
             const lead = leadMatch[0].trim();
             const tokens = normalized.slice(leadMatch[0].length)
               .match(/[\p{L}]+/gu)?.slice(0, 8) ?? [];
-            if (tokens.length === 0) return false;
+            if (tokens.length < 3) return false;
 
-            const likelyPredicate = (token, index) => {
-              const followingTokens = tokens.slice(index + 1);
-              return isBoundedSentencePredicate(token)
-                || isLikelyRegularFiniteSentencePredicate(token, lead, followingTokens);
-            };
-            const predicateIndex = tokens.findIndex(likelyPredicate);
-
-            if (predicateIndex >= 0) {
-              const predicate = tokens[predicateIndex];
-              const postPredicateTokens = tokens.slice(predicateIndex + 1);
-              if (postPredicateTokens.some(token =>
-                sentenceObjectMarkerPattern.test(token.toLocaleLowerCase('en-US'))
-              )) return true;
-
-              const lowerPredicate = predicate.toLocaleLowerCase('en-US');
-              if (sentenceAuxiliaryPattern.test(lowerPredicate)) {
-                return postPredicateTokens.some((token, index) =>
-                  isBoundedSentencePredicate(token)
-                  || isLikelyRegularFiniteSentencePredicate(
-                    token,
-                    lead,
-                    postPredicateTokens.slice(index + 1)
-                  )
-                ) || postPredicateTokens.length >= 2;
-              }
-
-              if (predicateIndex > 0) return isStrongFiniteSentencePredicate(predicate);
-              if (postPredicateTokens.length >= 2) return true;
-            }
-
-            const first = tokens[0]?.toLocaleLowerCase('en-US') ?? '';
-            const last = tokens.at(-1)?.toLocaleLowerCase('en-US') ?? '';
-            return tokens.length >= 3
-              && !titleConnectorPattern.test(first)
-              && !sentenceObjectMarkerPattern.test(first)
-              && institutionalSuffixPattern.test(last);
-          }
-
-          """
-          source = source[:clause_start] + clause_helpers + source[entity_start:]
-
-          entity_start = source.index('function isLikelyNamedEntityContinuation(')
-          label_start = source.index('  const labelMatch = normalized.match(', entity_start)
-          phrase_start = source.index('  const phrase =', label_start)
-          label_block = r"""  const labelMatch = normalized.match(
-            /(?:^|[\s,;:·•\-‐‑‒–—―−|/\\]+)(?:(?:tel(?:ephone)?|phone|mobile|cell|fax|contact)(?:(?:\s+(?:number|no)(?:\s*\.)?)|\s*#)?\s*[:.]?\s*|(?:電話(?:番号)?|携帯(?:電話)?|ファックス|連絡先|お問い合わせ先)\s*[:.]?\s*)$/iu
-          );
-          """
-          source = source[:label_start] + label_block + source[phrase_start:]
-
-          suffix_start = source.index('  const hasInstitutionalSuffix =', entity_start)
-          suffix_end = source.index('  if (hasInstitutionalSuffix)', suffix_start)
-          source = (
-              source[:suffix_start]
-              + "  const hasInstitutionalSuffix = institutionalSuffixPattern.test(suffix);\n"
-              + source[suffix_end:]
-          )
-
-          tail_start = source.index('  const hasMixedCaseTitleToken =', entity_start)
-          pronoun_start = source.index('function isPronounSentenceLead(', tail_start)
-          entity_tail = r"""  const hasMixedCaseTitleToken = words.slice(1).some(word =>
-            nameTokenPattern.test(word) && /\p{Ll}/u.test(word)
-          );
-          return words.length >= 3 && hasMixedCaseTitleToken;
-          }
-
-          """
-          source = source[:tail_start] + entity_tail + source[pronoun_start:]
-
-          pronoun_start = source.index('function isPronounSentenceLead(')
-          sentence_start = source.index('function startsFreshSentenceAfterAbbreviation(', pronoun_start)
-          pronoun_function = r"""function isPronounSentenceLead(value) {
-            const normalized = value.normalize('NFKC').trimStart();
-            if (/^(?:i|we|you|he|she|they|it|this|that|these|those)['’](?:m|s|re|ve|ll|d)(?=$|[^\p{L}])/iu.test(normalized)) {
-              return true;
-            }
-
-            const leadMatch = normalized.match(
-              /^(?:i|we|you|he|she|they|it|this|that|these|those)(?:\s+|$)/iu
-            );
-            if (!leadMatch) return false;
-            const lead = leadMatch[0].trim();
-            const followingTokens = normalized.slice(leadMatch[0].length)
-              .match(/[\p{L}]+/gu)?.slice(0, 4) ?? [];
-            return followingTokens.some((token, index) =>
-              isBoundedSentencePredicate(token)
-              || isLikelyRegularFiniteSentencePredicate(
-                token,
-                lead,
-                followingTokens.slice(index + 1)
+            const predicate = tokens[0];
+            const postPredicateTokens = tokens.slice(1);
+            return (isStrongFiniteSentencePredicate(predicate)
+                || isLikelyRegularFiniteSentencePredicate(
+                  predicate,
+                  lead,
+                  postPredicateTokens
+                ))
+              && sentenceObjectMarkerPattern.test(
+                postPredicateTokens[0].toLocaleLowerCase('en-US')
               )
-            ) || isStrongPronounClauseWithinInstitutionalPhrase(normalized);
+              && postPredicateTokens.length >= 2;
           }
 
           """
-          source = source[:pronoun_start] + pronoun_function + source[sentence_start:]
+          source = source.replace(helper_marker, title_clause_helper + helper_marker, 1)
+
+          old_suffix_gate = r"""    if (!labelMatch
+        && allCapsPhrase
+        && isStrongPronounClauseWithinInstitutionalPhrase(phrase)) {
+      return false;
+    }"""
+          new_suffix_gate = r"""    if (!labelMatch
+        && (allCapsPhrase || isTitleCasedPronounObjectClause(phrase))
+        && isStrongPronounClauseWithinInstitutionalPhrase(phrase)) {
+      return false;
+    }"""
+          assert source.count(old_suffix_gate) == 1, 'institutional suffix clause gate changed'
+          source = source.replace(old_suffix_gate, new_suffix_gate, 1)
+
+          old_entity_tail = r"""  const hasMixedCaseTitleToken = words.slice(1).some(word =>
+  nameTokenPattern.test(word) && /\p{Ll}/u.test(word)
+);
+return words.length >= 3 && hasMixedCaseTitleToken;"""
+          new_entity_tail = r"""  const hasMixedCaseTitleToken = words.slice(1).some(word =>
+  nameTokenPattern.test(word) && /\p{Ll}/u.test(word)
+);
+if (!labelMatch && isTitleCasedPronounObjectClause(phrase)) return false;
+return words.length >= 3 && hasMixedCaseTitleToken;"""
+          assert source.count(old_entity_tail) == 1, 'non-suffix title gate changed'
+          source = source.replace(old_entity_tail, new_entity_tail, 1)
           source_path.write_text(source, encoding='utf-8')
 
           test_path = Path('test/industrial-exhaust.test.js')
           tests = test_path.read_text(encoding='utf-8')
           marker = '// period abbreviation classification must remain lexical and context-bounded'
           assert tests.count(marker) == 1, 'test insertion marker changed'
-          sentinel = 'delimiter-aware labels and structural clause evidence must preserve wrapper ownership'
-          assert sentinel not in tests, 'final regressions already inserted'
+          sentinel = 'plural-subject base-form predicates must reset wrapper ownership'
+          assert sentinel not in tests, 'plural/title-clause regressions already inserted'
           additions = r"""
           for (const [input, expected] of [
-            ['Context (U.S. We Care Foundation - Phone: +1 253 477 8777)', 'Context (U.S. We Care Foundation - Phone: [contact omitted])'],
-            ['Context (U.S. We Care Foundation — Phone: +1 253 477 8777)', 'Context (U.S. We Care Foundation — Phone: [contact omitted])'],
-            ['Context (U.S. We Care Foundation | Phone #: +1 253 477 8777)', 'Context (U.S. We Care Foundation | Phone #: [contact omitted])'],
-            ['Context (U.S. We Care Foundation / Contact: +1 253 477 8777)', 'Context (U.S. We Care Foundation / Contact: [contact omitted])'],
-            ['Context（Ｕ．Ｓ． Ｗｅ Ｃａｒｅ Ｆｏｕｎｄａｔｉｏｎ ｜ Ｐｈｏｎｅ ＃： ＋１ ２５３ ４７７ ８７７７）', 'Context（Ｕ．Ｓ． Ｗｅ Ｃａｒｅ Ｆｏｕｎｄａｔｉｏｎ ｜ Ｐｈｏｎｅ ＃： [contact omitted]）']
+            ['Broken (He moved to the U.S. THEY PURCHASE TICKETS +1 253 477 8777)', 'Broken (He moved to the U.S. THEY PURCHASE TICKETS [contact omitted]'],
+            ['Broken (He moved to the U.S. WE ACQUIRE ASSETS +1 253 477 8777)', 'Broken (He moved to the U.S. WE ACQUIRE ASSETS [contact omitted]'],
+            ['Broken (He moved to the U.S. YOU PURCHASE THE TICKETS +1 253 477 8777)', 'Broken (He moved to the U.S. YOU PURCHASE THE TICKETS [contact omitted]'],
+            ['Broken（He moved to the Ｕ．Ｓ． ＴＨＥＹ ＰＵＲＣＨＡＳＥ ＴＩＣＫＥＴＳ ＋１ ２５３ ４７７ ８７７７）', 'Broken（He moved to the Ｕ．Ｓ． ＴＨＥＹ ＰＵＲＣＨＡＳＥ ＴＩＣＫＥＴＳ [contact omitted]']
           ]) {
             assert.equal(
               redactContactData(input),
               expected,
-              'terminal phone-label delimiters must remain outside title classification'
+              'plural-subject base-form predicates must reset wrapper ownership'
             );
           }
 
           for (const [input, expected] of [
-            ['Context (U.S. She Leads Africa +1 253 477 8777)', 'Context (U.S. She Leads Africa [contact omitted])'],
-            ['Context (U.S. This Is Us +1 253 477 8777)', 'Context (U.S. This Is Us [contact omitted])'],
-            ['Context（Ｕ．Ｓ． Ｓｈｅ Ｌｅａｄｓ Ａｆｒｉｃａ ＋１ ２５３ ４７７ ８７７７）', 'Context（Ｕ．Ｓ． Ｓｈｅ Ｌｅａｄｓ Ａｆｒｉｃａ [contact omitted]）'],
-            ['Context (U.S. WE CARE CENTER +1 253 477 8777)', 'Context (U.S. WE CARE CENTER [contact omitted])'],
-            ['Context (U.S. WE CALL CENTER +1 253 477 8777)', 'Context (U.S. WE CALL CENTER [contact omitted])'],
-            ['Context (U.S. THIS CALL CENTER +1 253 477 8777)', 'Context (U.S. THIS CALL CENTER [contact omitted])'],
-            ['Context (U.S. WE THE PEOPLE FOUNDATION +1 253 477 8777)', 'Context (U.S. WE THE PEOPLE FOUNDATION [contact omitted])'],
-            ['Context (U.S. IT DEPARTMENT +1 253 477 8777)', 'Context (U.S. IT DEPARTMENT [contact omitted])']
+            ['Broken (He moved to the U.S. He Visited The Company +1 253 477 8777)', 'Broken (He moved to the U.S. He Visited The Company [contact omitted]'],
+            ['Broken (He moved to the U.S. She Leads The Foundation +1 253 477 8777)', 'Broken (He moved to the U.S. She Leads The Foundation [contact omitted]'],
+            ['Broken（He moved to the Ｕ．Ｓ． Ｈｅ Ｖｉｓｉｔｅｄ Ｔｈｅ Ｃｏｍｐａｎｙ ＋１ ２５３ ４７７ ８７７７）', 'Broken（He moved to the Ｕ．Ｓ． Ｈｅ Ｖｉｓｉｔｅｄ Ｔｈｅ Ｃｏｍｐａｎｙ [contact omitted]']
           ]) {
             assert.equal(
               redactContactData(input),
               expected,
-              'unlabelled title-shaped institutions must retain their owned closer'
+              'unlabelled title-case object clauses must outrank institutional suffixes'
             );
           }
 
           for (const [input, expected] of [
-            ['Broken (He moved to the U.S. He visited the company +1 253 477 8777)', 'Broken (He moved to the U.S. He visited the company [contact omitted]'],
-            ['Broken (He moved to the U.S. HE VISITED THE COMPANY +1 253 477 8777)', 'Broken (He moved to the U.S. HE VISITED THE COMPANY [contact omitted]'],
-            ['Broken (He moved to the U.S. HE VISITS ACME COMPANY +1 253 477 8777)', 'Broken (He moved to the U.S. HE VISITS ACME COMPANY [contact omitted]'],
-            ['Broken (He moved to the U.S. THEY VISIT ACME FOUNDATION +1 253 477 8777)', 'Broken (He moved to the U.S. THEY VISIT ACME FOUNDATION [contact omitted]'],
-            ['Broken (He moved to the U.S. WE WILL VISIT ACME COMPANY +1 253 477 8777)', 'Broken (He moved to the U.S. WE WILL VISIT ACME COMPANY [contact omitted]'],
-            ['Broken (He moved to the U.S. WE SUPPORT ACME FOUNDATION +1 253 477 8777)', 'Broken (He moved to the U.S. WE SUPPORT ACME FOUNDATION [contact omitted]'],
-            ['Broken (He moved to the U.S. WE BUILD THE SYSTEMS +1 253 477 8777)', 'Broken (He moved to the U.S. WE BUILD THE SYSTEMS [contact omitted]'],
-            ['Broken（He moved to the Ｕ．Ｓ． ＨＥ ＶＩＳＩＴＥＤ ＴＨＥ ＣＯＭＰＡＮＹ ＋１ ２５３ ４７７ ８７７７）', 'Broken（He moved to the Ｕ．Ｓ． ＨＥ ＶＩＳＩＴＥＤ ＴＨＥ ＣＯＭＰＡＮＹ [contact omitted]']
+            ['Context (U.S. This Is Us Foundation +1 253 477 8777)', 'Context (U.S. This Is Us Foundation [contact omitted])'],
+            ['Context (U.S. We Care Center +1 253 477 8777)', 'Context (U.S. We Care Center [contact omitted])'],
+            ['Context (U.S. He Visited The Company Phone: +1 253 477 8777)', 'Context (U.S. He Visited The Company Phone: [contact omitted])'],
+            ['Context (U.S. THEY PURCHASE TICKETS FOUNDATION Phone: +1 253 477 8777)', 'Context (U.S. THEY PURCHASE TICKETS FOUNDATION Phone: [contact omitted])']
           ]) {
             assert.equal(
               redactContactData(input),
               expected,
-              'ordinary predicates outside the bounded lexicon must reset wrapper ownership'
+              'title-shaped or terminally labelled institutions must remain protected'
             );
           }
-
-          assert.equal(
-            redactContactData('Context (U.S. We Care Foundation - Phone: +1 253 477 8777)'),
-            'Context (U.S. We Care Foundation - Phone: [contact omitted])',
-            'delimiter-aware labels and structural clause evidence must preserve wrapper ownership'
-          );
 
           """
           test_path.write_text(tests.replace(marker, additions + marker, 1), encoding='utf-8')
@@ -287,7 +248,7 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -- test/industrial-exhaust.test.js tools/lib/industrial-exhaust.mjs
           test "$(git diff --cached --name-only | sort)" = "$expected_paths"
-          git commit -m 'fix(crawler): harden title and clause boundaries'
+          git commit -m 'fix(crawler): classify plural and title-case clauses'
           test "$(git rev-parse HEAD^)" = "$base_sha"
           git push \
             --force-with-lease="refs/heads/$RESULT_BRANCH:$EXPECTED_RESULT_HEAD" \
