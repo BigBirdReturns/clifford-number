@@ -125,7 +125,7 @@ jobs:
                 continue;
               }
               if (normalized !== ')') break;
-              processCloser(cursor, Math.max(end, previousCloserEnd));
+              processCloser(cursor, previousCloserEnd);
               pendingWhitespace = '';
               cursor += 1;
             }
