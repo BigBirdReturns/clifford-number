@@ -1,0 +1,68 @@
+name: PR 2196 current-main spacing reproduction
+
+on:
+  push:
+    branches:
+      - 'agent/pr2196-current-main-spacing-repro-v1'
+    paths:
+      - '.github/workflows/pr2196-current-main-spacing-repro.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  reproduce:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Execute current-main wrapper-spacing matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check tools/lib/industrial-exhaust.mjs
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { redactContactData } from './tools/lib/industrial-exhaust.mjs';
+
+          const required = [
+            [
+              'Context (Phone: (03) ) 6216 5111',
+              'Context (Phone: [contact omitted])'
+            ],
+            [
+              '文脈（電話：（０３） ） ６２１６ ５１１１',
+              '文脈（電話：[contact omitted]）'
+            ]
+          ];
+          const observations = [
+            ...required,
+            [
+              'Context ((Phone: 03 6216 5111 ) )',
+              'Context ((Phone: [contact omitted] ) )'
+            ],
+            [
+              'Context (Phone: (03 6216 5111) )',
+              'Context (Phone: [contact omitted])'
+            ],
+            [
+              'Context (Phone: +81 3 6216 5111))',
+              'Context (Phone: [contact omitted])'
+            ],
+            [
+              'Phone: (03) ) 6216 5111',
+              'Phone: [contact omitted]'
+            ]
+          ];
+
+          for (const [input, expected] of observations) {
+            const actual = redactContactData(input);
+            console.log(JSON.stringify({ input, expected, actual, matches: actual === expected }));
+          }
+          for (const [input, expected] of required) {
+            assert.equal(redactContactData(input), expected);
+          }
+          NODE
