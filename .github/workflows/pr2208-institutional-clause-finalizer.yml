@@ -168,8 +168,9 @@ jobs:
       return false;
     }"""
           new_suffix_gate = r"""    if (!labelMatch
-        && (allCapsPhrase || isTitleCasedPronounObjectClause(phrase))
-        && isStrongPronounClauseWithinInstitutionalPhrase(phrase)) {
+        && (isTitleCasedPronounObjectClause(phrase)
+            || (allCapsPhrase
+                && isStrongPronounClauseWithinInstitutionalPhrase(phrase)))) {
       return false;
     }"""
           assert source.count(old_suffix_gate) == 1, 'institutional suffix clause gate changed'
