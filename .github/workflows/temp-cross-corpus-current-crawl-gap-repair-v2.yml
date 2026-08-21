@@ -1,0 +1,267 @@
+name: TEMP repair current cross-corpus crawl gap map v2
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.tmp/cross-corpus-current-crawl-gap-repair-v2/trigger.json'
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      EXPECTED_MAIN: bd885ff47b0256d0aba1cb3ff1e61ef7285b206e
+      EXPECTED_MAP_BLOB: e5489908cc80ea2bfdb022c76b081a67b9d5b734
+      EXPECTED_STATE_BLOB: d4fc48e7b17d2dbe5adda57c969d64e4b154ebf9
+      WORKFLOW_PATH: .github/workflows/temp-cross-corpus-current-crawl-gap-repair-v2.yml
+      TRIGGER_PATH: .tmp/cross-corpus-current-crawl-gap-repair-v2/trigger.json
+      MAP_PATH: data/research/clifford-cross-corpus-public-interest-map.json
+      STATE_PATH: data/crawl/state.json
+      PRODUCT_BRANCH: agent/cross-corpus-current-crawl-gap-repair-v2
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Build and qualify exact one-file repair
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+        run: |
+          set -Eeuo pipefail
+          OUT="${RUNNER_TEMP}/cross-corpus-current-crawl-gap-repair-v2"
+          WORK="${RUNNER_TEMP}/cross-corpus-current-crawl-gap-work-v2"
+          rm -rf "$OUT" "$WORK"
+          mkdir -p "$OUT"
+          printf '%s\n' topology > "$OUT/STAGE"
+          printf '%s\n' 1 > "$OUT/EXIT_CODE"
+
+          fail() {
+            local stage="$1" reason="$2"
+            printf '%s\n' "$stage" > "$OUT/STAGE"
+            python - "$OUT/receipt.json" "$stage" "$reason" <<'PY'
+          import json, sys
+          path, stage, reason = sys.argv[1:]
+          obj = {
+            "schema_version": "cross-corpus-current-crawl-gap-repair-receipt@2",
+            "state": "failed_closed",
+            "failed_or_final_stage": stage,
+            "exit_code": 1,
+            "reason": reason,
+            "source_requests": 0,
+            "graph_effect": "none",
+            "product_branch_created": False,
+            "permanent_paths": 0
+          }
+          open(path, "w", encoding="utf-8").write(json.dumps(obj, indent=2, sort_keys=True) + "\n")
+          PY
+            (cd "$OUT" && find . -maxdepth 1 -type f ! -name SHA256SUMS -printf '%P\0' | sort -z | xargs -0 sha256sum > SHA256SUMS)
+            exit 1
+          }
+
+          test "${{ github.event_name }}" = pull_request || fail topology event_not_pull_request
+          test "$HEAD_REPO" = "$GITHUB_REPOSITORY" || fail topology head_repository_mismatch
+          test "$(git rev-parse HEAD)" = "$HEAD_SHA" || fail topology checkout_head_mismatch
+          test "$(git rev-parse HEAD^)" = "$BASE_SHA" || fail topology head_parent_mismatch
+          test "$(git rev-parse "$BASE_SHA^")" = "$EXPECTED_MAIN" || fail topology base_parent_mismatch
+
+          mapfile -t base_paths < <(git diff --name-only "$EXPECTED_MAIN" "$BASE_SHA")
+          mapfile -t trigger_paths < <(git diff --name-only "$BASE_SHA" "$HEAD_SHA")
+          test "${#base_paths[@]}" = 1 || fail topology base_path_count_mismatch
+          test "${base_paths[0]}" = "$WORKFLOW_PATH" || fail topology base_path_mismatch
+          test "${#trigger_paths[@]}" = 1 || fail topology trigger_path_count_mismatch
+          test "${trigger_paths[0]}" = "$TRIGGER_PATH" || fail topology trigger_path_mismatch
+
+          git fetch --quiet origin main
+          test "$(git rev-parse origin/main)" = "$EXPECTED_MAIN" || fail topology live_main_moved
+          test "$(git rev-parse "$EXPECTED_MAIN:$MAP_PATH")" = "$EXPECTED_MAP_BLOB" || fail topology map_blob_moved
+          test "$(git rev-parse "$EXPECTED_MAIN:$STATE_PATH")" = "$EXPECTED_STATE_BLOB" || fail topology state_blob_moved
+
+          git worktree add --detach "$WORK" "$EXPECTED_MAIN"
+          python - "$WORK/$MAP_PATH" "$WORK/$STATE_PATH" "$OUT/repair-input.json" <<'PY'
+          import json, sys
+          from pathlib import Path
+
+          map_path, state_path, input_path = map(Path, sys.argv[1:])
+          state = json.loads(state_path.read_text(encoding="utf-8"))
+          sources = state["sources"]
+          sam = sources["sam-opportunities"]
+          federal = sources["federal-register"]
+
+          assert sam["status"] == "skipped_missing_credential"
+          assert sam["credential_env"] == "SAM_API_KEY"
+          assert federal["status"] == "partial"
+          assert federal["records_seen"] == 11
+          assert len(federal["errors"]) == 1
+          assert "503" in federal["errors"][0]
+
+          doc = json.loads(map_path.read_text(encoding="utf-8"))
+          assert doc["generated_at"] == "2026-08-13"
+          lanes = [lane for lane in doc["lanes"] if lane.get("lane_id") == "official-research-fanout"]
+          assert len(lanes) == 1
+          lane = lanes[0]
+          assert lane["counts"]["crawl_source_gaps"] == 1
+          assert lane["crawl_source_gap_states"] == [{
+            "source_id": "sam-opportunities",
+            "status": "skipped_missing_credential",
+            "interpretation": "Acquisition did not run; this is not a zero result."
+          }]
+
+          doc["generated_at"] = "2026-08-21"
+          lane["counts"]["crawl_source_gaps"] = 2
+          lane["crawl_source_gap_states"] = [
+            {
+              "source_id": "sam-opportunities",
+              "status": "skipped_missing_credential",
+              "interpretation": "Acquisition did not run; this is not a zero result."
+            },
+            {
+              "source_id": "federal-register",
+              "status": "partial",
+              "records_seen": federal["records_seen"],
+              "failed_queries": len(federal["errors"]),
+              "failure_class": "upstream_503",
+              "interpretation": "Coverage is incomplete; failed queries are not negative results."
+            }
+          ]
+          lane["what_the_data_shows"] = (
+            "The repository generated at least 316 inspectable research tasks; the live target branch may contain more as official-record intake advances. "
+            "Batch count varies with the configured batch size and is presentation geometry, not a research-data count. Rejections, failed routes, source gaps, "
+            "and inferred scout findings remain part of the discovery map rather than disappearing from it. The current committed crawl exposes two source gaps: "
+            "SAM.gov did not execute because its credential is unavailable, and the Federal Register run is partial because one configured query returned an "
+            "upstream 503 while eleven records were still observed. Neither state supports a zero-result interpretation or evidence of absence."
+          )
+
+          map_path.write_text(json.dumps(doc, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+          input_path.write_text(json.dumps({
+            "sam_status": sam["status"],
+            "sam_credential_env": sam["credential_env"],
+            "federal_register_status": federal["status"],
+            "federal_register_records_seen": federal["records_seen"],
+            "federal_register_failed_queries": len(federal["errors"]),
+            "expected_gap_count": 2
+          }, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+          PY
+
+          printf '%s\n' qualify > "$OUT/STAGE"
+          (
+            cd "$WORK"
+            npm run release:check > "$OUT/release-check.log" 2>&1
+          ) || fail qualify release_check_failed
+
+          cp "$WORK/$MAP_PATH" "$OUT/product-map.json"
+          PRODUCT_MAP_BYTES="$(stat -c %s "$OUT/product-map.json")"
+          PRODUCT_MAP_SHA256="$(sha256sum "$OUT/product-map.json" | awk '{print $1}')"
+          PRODUCT_MAP_BLOB="$(git hash-object "$OUT/product-map.json")"
+
+          git -C "$WORK" reset --hard "$EXPECTED_MAIN"
+          git -C "$WORK" clean -fdx
+          cp "$OUT/product-map.json" "$WORK/$MAP_PATH"
+          mapfile -t product_paths < <(git -C "$WORK" diff --name-only "$EXPECTED_MAIN")
+          test "${#product_paths[@]}" = 1 || fail qualify product_path_count_mismatch
+          test "${product_paths[0]}" = "$MAP_PATH" || fail qualify product_path_mismatch
+          git -C "$WORK" diff --check
+          test "$(git -C "$WORK" hash-object "$MAP_PATH")" = "$PRODUCT_MAP_BLOB" || fail qualify product_blob_drift
+
+          git -C "$WORK" config user.name github-actions[bot]
+          git -C "$WORK" config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git -C "$WORK" add -- "$MAP_PATH"
+          git -C "$WORK" commit -m "Reconcile current two-source crawl gap"
+          PRODUCT_COMMIT="$(git -C "$WORK" rev-parse HEAD)"
+          PRODUCT_TREE="$(git -C "$WORK" rev-parse HEAD^{tree})"
+          test "$(git -C "$WORK" rev-parse HEAD^)" = "$EXPECTED_MAIN" || fail publish product_parent_mismatch
+          test "$(git -C "$WORK" diff-tree --no-commit-id --name-only -r HEAD | wc -l)" = 1 || fail publish product_commit_path_count_mismatch
+          test "$(git -C "$WORK" diff-tree --no-commit-id --name-only -r HEAD)" = "$MAP_PATH" || fail publish product_commit_path_mismatch
+
+          printf '%s\n' publish > "$OUT/STAGE"
+          if gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/${PRODUCT_BRANCH}" > "$OUT/existing-ref.json" 2>/dev/null; then
+            EXISTING="$(jq -r .object.sha "$OUT/existing-ref.json")"
+            test "$EXISTING" = "$PRODUCT_COMMIT" || fail publish product_branch_collision
+          else
+            git -C "$WORK" push origin "HEAD:refs/heads/${PRODUCT_BRANCH}"
+          fi
+          test "$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/${PRODUCT_BRANCH}" --jq .object.sha)" = "$PRODUCT_COMMIT" || fail publish product_ref_mismatch
+
+          python - "$OUT/receipt.json" "$PRODUCT_COMMIT" "$PRODUCT_TREE" "$PRODUCT_MAP_BYTES" "$PRODUCT_MAP_SHA256" "$PRODUCT_MAP_BLOB" <<'PY'
+          import json, sys
+          path, commit, tree, bytes_, sha256, blob = sys.argv[1:]
+          obj = {
+            "schema_version": "cross-corpus-current-crawl-gap-repair-receipt@2",
+            "state": "qualified_product_branch_published",
+            "failed_or_final_stage": "complete",
+            "exit_code": 0,
+            "canonical_parent": "bd885ff47b0256d0aba1cb3ff1e61ef7285b206e",
+            "product_branch": "agent/cross-corpus-current-crawl-gap-repair-v2",
+            "product_commit": commit,
+            "product_tree": tree,
+            "permanent_paths": 1,
+            "permanent_path": "data/research/clifford-cross-corpus-public-interest-map.json",
+            "product_map_bytes": int(bytes_),
+            "product_map_sha256": sha256,
+            "product_map_git_blob": blob,
+            "crawl_source_gaps_before": 1,
+            "crawl_source_gaps_after": 2,
+            "gap_source_ids": ["sam-opportunities", "federal-register"],
+            "federal_register_records_seen": 11,
+            "federal_register_failed_queries": 1,
+            "release_check": "success",
+            "source_requests": 0,
+            "graph_effect": "none",
+            "product_branch_created": True
+          }
+          open(path, "w", encoding="utf-8").write(json.dumps(obj, indent=2, sort_keys=True) + "\n")
+          PY
+          printf '%s\n' complete > "$OUT/STAGE"
+          printf '%s\n' 0 > "$OUT/EXIT_CODE"
+          (cd "$OUT" && find . -maxdepth 1 -type f ! -name SHA256SUMS -printf '%P\0' | sort -z | xargs -0 sha256sum > SHA256SUMS)
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+
+      - name: Preserve qualified repair receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cross-corpus-current-crawl-gap-repair-v2
+          path: ${{ runner.temp }}/cross-corpus-current-crawl-gap-repair-v2
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Enforce qualified product publication
+        run: |
+          set -Eeuo pipefail
+          OUT="${RUNNER_TEMP}/cross-corpus-current-crawl-gap-repair-v2"
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          test "$(cat "$OUT/STAGE")" = complete
+          jq -e '
+            .state == "qualified_product_branch_published" and
+            .failed_or_final_stage == "complete" and
+            .exit_code == 0 and
+            .canonical_parent == "bd885ff47b0256d0aba1cb3ff1e61ef7285b206e" and
+            .product_branch == "agent/cross-corpus-current-crawl-gap-repair-v2" and
+            .permanent_paths == 1 and
+            .permanent_path == "data/research/clifford-cross-corpus-public-interest-map.json" and
+            .crawl_source_gaps_before == 1 and
+            .crawl_source_gaps_after == 2 and
+            .gap_source_ids == ["sam-opportunities", "federal-register"] and
+            .federal_register_records_seen == 11 and
+            .federal_register_failed_queries == 1 and
+            .release_check == "success" and
+            .source_requests == 0 and
+            .graph_effect == "none" and
+            .product_branch_created == true
+          ' "$OUT/receipt.json" > /dev/null
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
