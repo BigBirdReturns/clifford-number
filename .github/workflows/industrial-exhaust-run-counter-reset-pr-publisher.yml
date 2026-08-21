@@ -5,6 +5,7 @@ on:
     branches:
       - main
     paths:
+      - '.github/industrial-exhaust-run-counter-reset.patch'
       - '.github/workflows/industrial-exhaust-run-counter-reset-publisher.yml'
       - '.github/workflows/industrial-exhaust-run-counter-reset-pr-publisher.yml'
       - '.industrial-exhaust-run-counter-reset-trigger'
@@ -29,10 +30,9 @@ jobs:
           EXPECTED_BASE: bd885ff47b0256d0aba1cb3ff1e61ef7285b206e
         run: |
           set -euo pipefail
-          awk '/^[[:space:]]+PATCH_B64: / { sub(/^[[:space:]]+PATCH_B64: /, ""); print; exit }' \
-            .github/workflows/industrial-exhaust-run-counter-reset-publisher.yml \
-            | base64 --decode > /tmp/counter-reset.patch
+          cp .github/industrial-exhaust-run-counter-reset.patch /tmp/counter-reset.patch
           test -s /tmp/counter-reset.patch
+          test "$(sha256sum /tmp/counter-reset.patch | awk '{print $1}')" = "ec3d2da50e360eb4464abfd459cbe181403680e03522de325577677fd8019e0b"
           git checkout --detach "$EXPECTED_BASE"
           test "$(git rev-parse HEAD)" = "$EXPECTED_BASE"
           git apply --check --recount /tmp/counter-reset.patch
