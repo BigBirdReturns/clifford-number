@@ -1,0 +1,82 @@
+name: Industrial exhaust run-counter reset PR publisher
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/industrial-exhaust-run-counter-reset-publisher.yml'
+      - '.github/workflows/industrial-exhaust-run-counter-reset-pr-publisher.yml'
+      - '.industrial-exhaust-run-counter-reset-trigger'
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    if: github.head_ref == 'agent/industrial-exhaust-run-counter-reset-controller-v1'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Recover qualified patch and reset to exact product base
+        env:
+          EXPECTED_BASE: bd885ff47b0256d0aba1cb3ff1e61ef7285b206e
+        run: |
+          set -euo pipefail
+          awk '/^[[:space:]]+PATCH_B64: / { sub(/^[[:space:]]+PATCH_B64: /, ""); print; exit }' \
+            .github/workflows/industrial-exhaust-run-counter-reset-publisher.yml \
+            | base64 --decode > /tmp/counter-reset.patch
+          test -s /tmp/counter-reset.patch
+          git checkout --detach "$EXPECTED_BASE"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_BASE"
+          git apply --check --recount /tmp/counter-reset.patch
+          git apply --recount /tmp/counter-reset.patch
+      - name: Validate exact five-file product surface
+        run: |
+          set -euo pipefail
+          node --check tools/crawl-industrial-exhaust.mjs
+          node --check tools/hydrate-industrial-exhaust.mjs
+          node test/industrial-exhaust.test.js
+          node test/industrial-exhaust-artifacts.test.js
+          node -e "JSON.parse(require('node:fs').readFileSync('data/exhaust/state.json', 'utf8'))"
+          git diff --check
+          actual="$(git diff --name-only | LC_ALL=C sort)"
+          expected="$(printf '%s\n' \
+            data/exhaust/state.json \
+            test/industrial-exhaust-artifacts.test.js \
+            test/industrial-exhaust.test.js \
+            tools/crawl-industrial-exhaust.mjs \
+            tools/hydrate-industrial-exhaust.mjs | LC_ALL=C sort)"
+          test "$actual" = "$expected"
+          test "$(node -e 'const s=require("./data/exhaust/state.json"); console.log(Object.values(s.sources).filter(x=>x.last_status==="not_modified" && x.new_observation_count!==0).length)')" = "0"
+      - name: Publish carrier product commit
+        env:
+          PRODUCT_BRANCH: agent/industrial-exhaust-run-counter-reset-v1
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- \
+            data/exhaust/state.json \
+            test/industrial-exhaust-artifacts.test.js \
+            test/industrial-exhaust.test.js \
+            tools/crawl-industrial-exhaust.mjs \
+            tools/hydrate-industrial-exhaust.mjs
+          git commit -m "fix(exhaust): reset run-scoped acquisition counters"
+          local_tree="$(git rev-parse HEAD^{tree})"
+          if remote_line="$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH")" && test -n "$remote_line"; then
+            remote_sha="${remote_line%%$'\t'*}"
+            git fetch --no-tags origin "$remote_sha"
+            remote_tree="$(git rev-parse "$remote_sha^{tree}")"
+            test "$remote_tree" = "$local_tree"
+            echo "Existing product branch already carries the qualified tree: $remote_sha"
+            exit 0
+          fi
+          git push origin "HEAD:refs/heads/$PRODUCT_BRANCH"
+          echo "Published product carrier $(git rev-parse HEAD) with tree $local_tree"
