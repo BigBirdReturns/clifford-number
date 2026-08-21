@@ -34,7 +34,7 @@ const layer = buildIdentityLayer(fixture());
 assert.deepEqual(layer, buildIdentityLayer(fixture()), 'identity layer must be deterministic');
 
 // Provisional honesty marker travels with the artifact.
-assert.equal(layer.scheme.status, 'provisional');
+assert.equal(layer.scheme.status, 'reconciled');
 assert.equal(layer.scheme.namespace, 'test-case');
 
 // Entities cover actors, organizations, and surfaces, ids composed exactly
@@ -82,9 +82,12 @@ assert.equal(resolveLocalId(layer, ada.axm_entity_id), 'ada');
 assert.equal(resolveLocalId(layer, entityId('test-case', 'Countess of Lovelace')), 'ada');
 assert.equal(resolveLocalId(layer, 'e_aaaaaaaaaaaaaaaaaaaaaaaa'), 'e_aaaaaaaaaaaaaaaaaaaaaaaa');
 
-// GOLDEN self-consistency pin for the whole layer (see axm-id.test.js for the
-// envelope pins): any drift in the provisional serialization shows up here.
-assert.equal(ada.axm_entity_id, 'e_yy2jyebjgnch3csy4ww3ys6m');
-assert.equal(salonClaim.claim_id, 'c_h2h5cqpashhl3mkzptiljdtd');
+// GOLDEN pin for the whole layer under the RECONCILED genesis scheme
+// (see axm-id.test.js and the shared reconciliation fixture): any drift in
+// the serialization shows up here.
+assert.match(ada.axm_entity_id, /^e1_[a-z2-7]{52}$/);
+assert.match(salonClaim.claim_id, /^c1_[a-z2-7]{52}$/);
+assert.equal(ada.axm_entity_id, 'e1_vqj4adj5zfa43l75q3lngtlxf6646enrpakuw3jtripg6yfbfceq');
+assert.equal(salonClaim.claim_id, 'c1_2gieyzzglt2m5znxz474eh6xjvtp752jxb3sqflcsvabmgjywy3q');
 
 console.log('axm-identity.test: OK');

@@ -28,9 +28,9 @@ import { windowOf } from './temporal.mjs';
 export const PARTICIPATES_IN = 'participates_in';
 
 export const SCHEME = Object.freeze({
-  status: 'provisional',
-  envelope: 'sha256 → first 15 bytes → base32 lowercase no padding, type prefix (axm-core IDENTITY.md — authoritative)',
-  serialization: 'provisional — reconcile byte-for-byte against axm-genesis axm_verify.identity before cross-system use',
+  status: 'reconciled',
+  envelope: 'sha256 full 32-byte digest, base32 lowercase no padding, versioned prefix e1_/c1_ (axm-genesis spec/v1 section 10)',
+  serialization: 'reconciled byte-for-byte against axm-genesis axm_verify.identity (CN-P0-1); shared fixture committed to both repositories',
   temporal: 'axm temporal@1: valid_from / valid_until, ISO 8601, null = open end; windows qualify claims, they are not part of claim identity',
 });
 
@@ -119,10 +119,11 @@ export function buildIdentityLayer({ namespace, actors, organizations, surfaces,
   return { scheme: { ...SCHEME, namespace }, entities, claims };
 }
 
-// Resolve a --from/--to style token: a local id passes through; a provisional
-// AXM entity id (canonical or alias-derived) resolves to its local id.
+// Resolve a --from/--to style token: a local id passes through; an AXM
+// entity id (canonical or alias-derived, reconciled e1_ or legacy e_ shape)
+// resolves to its local id.
 export function resolveLocalId(identity, token) {
-  if (!/^e_[a-z2-7]{24}$/.test(token)) return token;
+  if (!/^e1?_[a-z2-7]{24,52}$/.test(token)) return token;
   const entity = identity.entities.find(e => e.axm_entity_id === token || e.alias_axm_ids.includes(token));
   return entity ? entity.local_id : token;
 }

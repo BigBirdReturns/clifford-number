@@ -280,7 +280,7 @@ assert((scores.chains ?? []).some(c => c.laundering_chain_score >= 3), 'expected
 // artifact, or one silently stripped of the caveat, fails the release.
 {
   const identity = readJson('build/axm-identity.json');
-  assert(identity.scheme?.status === 'provisional', 'axm-identity scheme.status must remain "provisional" until reconciled against axm-genesis');
+  assert(identity.scheme?.status === 'reconciled', 'axm-identity scheme.status must be "reconciled" (CN-P0-1 closed the gate against axm-genesis; the shared fixture pins parity)');
   assert(identity.scheme?.namespace === readJson('cases.json').default_case_id, `axm-identity namespace ${identity.scheme?.namespace} does not match the default case id`);
   const recomputed = buildIdentityLayer({
     namespace: readJson('cases.json').default_case_id,
@@ -292,10 +292,10 @@ assert((scores.chains ?? []).some(c => c.laundering_chain_score >= 3), 'expected
   });
   assert(JSON.stringify({ scheme: identity.scheme, entities: identity.entities, claims: identity.claims }) === JSON.stringify(recomputed),
     'build/axm-identity.json does not match the identity layer recomputed from the ledger — rebuild (npm run build:hops)');
-  const idRe = /^e_[a-z2-7]{24}$/;
+  const idRe = /^e1_[a-z2-7]{52}$/;  // reconciled genesis shape (CN-P0-1)
   for (const e of identity.entities) assert(idRe.test(e.axm_entity_id), `entity ${e.local_id} has malformed axm id ${e.axm_entity_id}`);
   for (const c of identity.claims) {
-    assert(/^c_[a-z2-7]{24}$/.test(c.claim_id), `claim ${c.claim_id} is malformed`);
+    assert(/^c1_[a-z2-7]{52}$/.test(c.claim_id), `claim ${c.claim_id} is malformed`);
     assert(c.windows.length > 0, `claim ${c.claim_id} carries no temporal windows`);
     for (const w of c.windows) {
       assert(w.dated === Boolean(w.valid_from || w.valid_until), `claim ${c.claim_id} window dated flag disagrees with its bounds`);
