@@ -84,6 +84,67 @@ const secondMerge = mergeDiscoveryRecords({
 });
 assert.equal(secondMerge.added.length, 0);
 
+const revisedIndex = parseHtmlLinkIndex(
+  indexHtml.replace(
+    'Dentsu Partners With Evidenza To Integrate Synthetic Audiences',
+    'Dentsu Partners With Evidenza Revision'
+  ),
+  config.indexes[0]
+);
+const recurrentDiscoveryKey = parsedIndex.items.find(item => item.canonical_url.includes('partners-with-evidenza')).source_record_key;
+const initialDiscovery = firstMerge.records.find(item => item.source_record_key === recurrentDiscoveryKey);
+const discoveryRevisionMerge = mergeDiscoveryRecords({
+  records: firstMerge.records,
+  source: config.indexes[0],
+  parsedIndex: revisedIndex,
+  capturedAt: '2026-08-18T12:00:00.000Z',
+  indexReceiptPath: 'receipts/index-b.json'
+});
+assert.equal(discoveryRevisionMerge.added.length, 1);
+const discoveryRevision = discoveryRevisionMerge.added[0];
+const discoveryRevertMerge = mergeDiscoveryRecords({
+  records: discoveryRevisionMerge.records,
+  source: config.indexes[0],
+  parsedIndex,
+  capturedAt: '2026-08-18T13:00:00.000Z',
+  indexReceiptPath: 'receipts/index-a-repeat.json'
+});
+assert.equal(discoveryRevertMerge.added.length, 1, 'A → B → A must append a new discovery occurrence');
+const revertedDiscovery = discoveryRevertMerge.added[0];
+assert.equal(revertedDiscovery.content_sha256, initialDiscovery.content_sha256);
+assert.notEqual(
+  revertedDiscovery.discovery_id,
+  initialDiscovery.discovery_id,
+  'reverted discovery content must not reuse the first occurrence identifier'
+);
+assert.equal(revertedDiscovery.revision_of, discoveryRevision.discovery_id);
+assert.equal(revertedDiscovery.revision_number, 3);
+
+const discoveryRepeatMerge = mergeDiscoveryRecords({
+  records: discoveryRevertMerge.records,
+  source: config.indexes[0],
+  parsedIndex: revisedIndex,
+  capturedAt: '2026-08-18T14:00:00.000Z',
+  indexReceiptPath: 'receipts/index-b-repeat.json'
+});
+assert.equal(discoveryRepeatMerge.added.length, 1, 'A → B → A → B must append a fourth discovery occurrence');
+const repeatedDiscovery = discoveryRepeatMerge.added[0];
+assert.equal(repeatedDiscovery.content_sha256, discoveryRevision.content_sha256);
+assert.notEqual(
+  repeatedDiscovery.discovery_id,
+  discoveryRevision.discovery_id,
+  'repeated discovery content must not reuse the earlier revised occurrence identifier'
+);
+assert.equal(repeatedDiscovery.revision_of, revertedDiscovery.discovery_id);
+assert.equal(repeatedDiscovery.revision_number, 4);
+assert.equal(
+  new Set(discoveryRepeatMerge.records
+    .filter(item => item.source_record_key === recurrentDiscoveryKey)
+    .map(item => item.discovery_id)).size,
+  4,
+  'every discovery revision occurrence must retain a unique identifier'
+);
+
 const articleHtml = `<!doctype html><html><head>
 <title>Dentsu B2B</title><meta property="article:published_time" content="2024-08-26T07:00:00Z">
 <meta name="description" content="Dentsu B2B intent data service">
@@ -218,6 +279,71 @@ const semanticChangeMerge = mergeArtifactProjection({
 });
 assert.ok(semanticChangeMerge.added, 'changed normalized content must create a revision');
 assert.equal(semanticChangeMerge.added.revision_number, 2);
+
+const semanticRevertMerge = mergeArtifactProjection({
+  artifacts: semanticChangeMerge.artifacts,
+  candidate,
+  sourceProjection: projection,
+  capturedAt: '2026-08-18T14:30:00.000Z',
+  bodyReceiptPath: 'receipts/article-semantic-revert.json',
+  bodySha256: 'e'.repeat(64),
+  responseHeaders: {
+    content_type: 'text/html',
+    etag: 'semantic-revert',
+    last_modified: null,
+    final_url: candidate.canonical_url,
+    redirect_chain: [],
+    watch_config: watchConfig
+  }
+});
+assert.ok(semanticRevertMerge.added, 'A → B → A must append a new artifact occurrence');
+const revertedArtifact = semanticRevertMerge.added;
+assert.equal(revertedArtifact.projection_sha256, artifactMerge.added.projection_sha256);
+assert.notEqual(
+  revertedArtifact.artifact_id,
+  artifactMerge.added.artifact_id,
+  'reverted semantic content must not reuse the first artifact occurrence identifier'
+);
+assert.equal(revertedArtifact.revision_of, semanticChangeMerge.added.artifact_id);
+assert.equal(revertedArtifact.revision_number, 3);
+
+const semanticRepeatMerge = mergeArtifactProjection({
+  artifacts: semanticRevertMerge.artifacts,
+  candidate,
+  sourceProjection: {
+    ...projection,
+    normalized_text: changedText,
+    normalized_text_sha256: crypto.createHash('sha256').update(changedText).digest('hex')
+  },
+  capturedAt: '2026-08-18T14:45:00.000Z',
+  bodyReceiptPath: 'receipts/article-semantic-repeat.json',
+  bodySha256: 'f'.repeat(64),
+  responseHeaders: {
+    content_type: 'text/html; charset=utf-8',
+    etag: 'semantic-repeat',
+    last_modified: null,
+    final_url: candidate.canonical_url,
+    redirect_chain: [],
+    watch_config: watchConfig
+  }
+});
+assert.ok(semanticRepeatMerge.added, 'A → B → A → B must append a fourth artifact occurrence');
+const repeatedArtifact = semanticRepeatMerge.added;
+assert.equal(repeatedArtifact.projection_sha256, semanticChangeMerge.added.projection_sha256);
+assert.notEqual(
+  repeatedArtifact.artifact_id,
+  semanticChangeMerge.added.artifact_id,
+  'repeated semantic content must not reuse the earlier revised artifact occurrence identifier'
+);
+assert.equal(repeatedArtifact.revision_of, revertedArtifact.artifact_id);
+assert.equal(repeatedArtifact.revision_number, 4);
+assert.equal(
+  new Set(semanticRepeatMerge.artifacts
+    .filter(item => item.artifact_record_key === artifactMerge.added.artifact_record_key)
+    .map(item => item.artifact_id)).size,
+  4,
+  'every artifact revision occurrence must retain a unique identifier'
+);
 
 const pdfCandidate = {
   ...candidate,

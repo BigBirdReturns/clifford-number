@@ -1394,6 +1394,13 @@ export function classifyEventHints(record) {
   return hints.length ? hints : ['unknown'];
 }
 
+function revisionOccurrenceId(prefix, stableParts, previousId, contentSha256) {
+  const parts = Array.isArray(stableParts) ? stableParts : [stableParts];
+  return previousId
+    ? contentId(prefix, ...parts, previousId, contentSha256)
+    : contentId(prefix, ...parts, contentSha256);
+}
+
 function latestObservationIndex(observations) {
   const index = new Map();
   for (const observation of observations) {
@@ -1416,7 +1423,12 @@ export function mergeFeedItems({ observations, source, parsedFeed, capturedAt, f
     const revisionNumber = previous ? Number(previous.revision_number ?? 1) + 1 : 1;
     const observation = {
       schema_version: EXHAUST_SCHEMA_VERSION,
-      observation_id: contentId('xobs', source.id, item.source_record_key, item.content_sha256),
+      observation_id: revisionOccurrenceId(
+        'xobs',
+        [source.id, item.source_record_key],
+        previous?.observation_id ?? null,
+        item.content_sha256
+      ),
       source_id: source.id,
       source_class: SOURCE_CLASS,
       publisher: source.publisher,

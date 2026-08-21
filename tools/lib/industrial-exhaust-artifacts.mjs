@@ -170,7 +170,12 @@ export function mergeDiscoveryRecords({ records, source, parsedIndex, capturedAt
     const revisionNumber = previous ? Number(previous.revision_number ?? 1) + 1 : 1;
     const record = {
       schema_version: ARTIFACT_SCHEMA_VERSION,
-      discovery_id: contentId('xdiscover', source.id, item.source_record_key, item.content_sha256),
+      discovery_id: revisionOccurrenceId(
+        'xdiscover',
+        [source.id, item.source_record_key],
+        previous?.discovery_id ?? null,
+        item.content_sha256
+      ),
       source_id: source.id,
       source_class: SOURCE_CLASS,
       publisher: source.publisher,
@@ -374,6 +379,13 @@ export function selectHydrationCandidates(candidates, state, limit) {
     .slice(0, limit);
 }
 
+function revisionOccurrenceId(prefix, stableParts, previousId, contentSha256) {
+  const parts = Array.isArray(stableParts) ? stableParts : [stableParts];
+  return previousId
+    ? contentId(prefix, ...parts, previousId, contentSha256)
+    : contentId(prefix, ...parts, contentSha256);
+}
+
 function artifactProjectionIdentity({ bodyRecord, bodySha256, contentType }) {
   const mediaType = String(contentType ?? '')
     .toLowerCase()
@@ -429,7 +441,12 @@ export function mergeArtifactProjection({ artifacts, candidate, sourceProjection
   const revisionNumber = previous ? Number(previous.revision_number ?? 1) + 1 : 1;
   const artifact = {
     schema_version: ARTIFACT_SCHEMA_VERSION,
-    artifact_id: contentId('xartifact', recordKey, projectionSha256),
+    artifact_id: revisionOccurrenceId(
+      'xartifact',
+      recordKey,
+      previous?.artifact_id ?? null,
+      projectionSha256
+    ),
     artifact_record_key: recordKey,
     source_id: candidate.source_id,
     source_class: SOURCE_CLASS,

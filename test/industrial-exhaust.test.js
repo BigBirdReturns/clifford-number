@@ -79,6 +79,50 @@ assert.equal(revisionMerge.added.length, 1);
 assert.equal(revisionMerge.added[0].revision_number, 2);
 assert.equal(revisionMerge.added[0].revision_of, firstMerge.observations.find(item => item.source_record_id === 'release-1').observation_id);
 
+const initialReleaseObservation = firstMerge.observations.find(item => item.source_record_id === 'release-1');
+const revertedMerge = mergeFeedItems({
+  observations: revisionMerge.observations,
+  source,
+  parsedFeed: parsed,
+  capturedAt: '2026-07-17T09:00:00.000Z',
+  feedReceiptPath: `receipts/exhaust/${source.id}/${parsed.feed_sha256}.json`
+});
+assert.equal(revertedMerge.added.length, 1, 'A → B → A must append a new observation occurrence');
+const revertedObservation = revertedMerge.added[0];
+assert.equal(revertedObservation.content_sha256, initialReleaseObservation.content_sha256);
+assert.notEqual(
+  revertedObservation.observation_id,
+  initialReleaseObservation.observation_id,
+  'reverted feed content must not reuse the first occurrence identifier'
+);
+assert.equal(revertedObservation.revision_of, revisionMerge.added[0].observation_id);
+assert.equal(revertedObservation.revision_number, 3);
+
+const repeatedRevisionMerge = mergeFeedItems({
+  observations: revertedMerge.observations,
+  source,
+  parsedFeed: revised,
+  capturedAt: '2026-07-18T09:00:00.000Z',
+  feedReceiptPath: `receipts/exhaust/${source.id}/${revised.feed_sha256}.json`
+});
+assert.equal(repeatedRevisionMerge.added.length, 1, 'A → B → A → B must append a fourth occurrence');
+const repeatedRevision = repeatedRevisionMerge.added[0];
+assert.equal(repeatedRevision.content_sha256, revisionMerge.added[0].content_sha256);
+assert.notEqual(
+  repeatedRevision.observation_id,
+  revisionMerge.added[0].observation_id,
+  'repeated revised content must not reuse the earlier revised occurrence identifier'
+);
+assert.equal(repeatedRevision.revision_of, revertedObservation.observation_id);
+assert.equal(repeatedRevision.revision_number, 4);
+assert.equal(
+  new Set(repeatedRevisionMerge.observations
+    .filter(item => item.source_record_id === 'release-1')
+    .map(item => item.observation_id)).size,
+  4,
+  'every feed revision occurrence must retain a unique identifier'
+);
+
 const alerts = buildAlerts(revisionMerge.observations, watch);
 assert.equal(alerts.length, 1, 'unmatched entries remain captured without becoming alerts');
 assert.deepEqual(alerts[0].matched_terms, ['b2b', 'evidenza', 'synthetic_audience']);
