@@ -1,0 +1,239 @@
+name: Industrial exhaust semantic revision publisher
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/industrial-exhaust-semantic-revision-publisher.yml'
+      - '.industrial-exhaust-semantic-revision-trigger'
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    if: github.head_ref == 'agent/industrial-exhaust-semantic-revision-controller-v1'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Materialize semantic revision repair on exact base
+        env:
+          EXPECTED_BASE: bfe68686dace323a683a01aae1690804f570af59
+        run: |
+          set -euo pipefail
+          git checkout --detach "$EXPECTED_BASE"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_BASE"
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+
+          function replaceExact(path, before, after, expectedMatches = 1) {
+            const current = fs.readFileSync(path, 'utf8');
+            const matches = current.split(before).length - 1;
+            if (matches !== expectedMatches) {
+              throw new Error(`${path}: expected ${expectedMatches} exact match(es), found ${matches}`);
+            }
+            fs.writeFileSync(path, current.replace(before, after));
+          }
+
+          replaceExact(
+            'tools/lib/industrial-exhaust-artifacts.mjs',
+            `  const bodyRecord = {
+              title: sourceProjection.title || candidate.title || '',
+              description: sourceProjection.description ?? '',
+              normalized_text: sourceProjection.normalized_text ?? '',
+              normalized_text_sha256: sourceProjection.normalized_text_sha256 ?? null,
+              published_at: sourceProjection.published_at ?? null,
+              body_sha256: bodySha256
+            };
+            const projectionSha256 = sha256(bodyRecord);
+            if (previous?.projection_sha256 === projectionSha256) return { artifacts: merged, added: null, unchanged: previous };
+          `.replace(/^ {10}/gmu, ''),
+            `  const bodyRecord = {
+              title: sourceProjection.title || candidate.title || '',
+              description: sourceProjection.description ?? '',
+              normalized_text: sourceProjection.normalized_text ?? '',
+              normalized_text_sha256: sourceProjection.normalized_text_sha256 ?? null,
+              published_at: sourceProjection.published_at ?? null
+            };
+            const transportDefinesProjection = String(responseHeaders.content_type ?? '')
+              .toLowerCase()
+              .split(';', 1)[0]
+              .trim() === 'application/pdf';
+            const projectionIdentity = transportDefinesProjection
+              ? { ...bodyRecord, body_sha256: bodySha256 }
+              : bodyRecord;
+            const projectionSha256 = sha256(projectionIdentity);
+            if (previous) {
+              const previousBodyRecord = {
+                title: previous.title ?? '',
+                description: previous.description ?? '',
+                normalized_text: previous.normalized_text ?? '',
+                normalized_text_sha256: previous.normalized_text_sha256 ?? null,
+                published_at: previous.published_at ?? null
+              };
+              const previousProjectionIdentity = transportDefinesProjection
+                ? { ...previousBodyRecord, body_sha256: previous.body_sha256 ?? null }
+                : previousBodyRecord;
+              if (sha256(previousProjectionIdentity) === projectionSha256) {
+                return { artifacts: merged, added: null, unchanged: previous };
+              }
+            }
+          `.replace(/^ {10}/gmu, '')
+          );
+
+          replaceExact(
+            'test/industrial-exhaust-artifacts.test.js',
+            `assert.equal(unchangedMerge.added, null);
+            assert.equal(unchangedMerge.artifacts.length, 1);
+            const routingOnlyCandidate = {
+            `.replace(/^ {12}/gmu, ''),
+            `assert.equal(unchangedMerge.added, null);
+            assert.equal(unchangedMerge.artifacts.length, 1);
+
+            const transportOnlyMerge = mergeArtifactProjection({
+              artifacts: artifactMerge.artifacts,
+              candidate,
+              sourceProjection: projection,
+              capturedAt: '2026-08-18T12:00:00.000Z',
+              bodyReceiptPath: 'receipts/article-transport-churn.json',
+              bodySha256: 'b'.repeat(64),
+              responseHeaders: {
+                content_type: 'text/html',
+                etag: 'transport-only-change',
+                last_modified: 'Tue, 18 Aug 2026 12:00:00 GMT',
+                final_url: candidate.canonical_url,
+                redirect_chain: [],
+                watch_config: watchConfig
+              }
+            });
+            assert.equal(transportOnlyMerge.added, null, 'transport-only HTML churn must not create a semantic revision');
+            assert.equal(transportOnlyMerge.artifacts.length, 1);
+            assert.equal(transportOnlyMerge.unchanged.artifact_id, artifactMerge.added.artifact_id);
+
+            const legacyProjectionArtifact = {
+              ...artifactMerge.added,
+              projection_sha256: 'f'.repeat(64)
+            };
+            const legacyTransportOnlyMerge = mergeArtifactProjection({
+              artifacts: [legacyProjectionArtifact],
+              candidate,
+              sourceProjection: projection,
+              capturedAt: '2026-08-18T13:00:00.000Z',
+              bodyReceiptPath: 'receipts/article-legacy-transport-churn.json',
+              bodySha256: 'c'.repeat(64),
+              responseHeaders: {
+                content_type: 'text/html',
+                etag: 'legacy-transport-only-change',
+                last_modified: null,
+                final_url: candidate.canonical_url,
+                redirect_chain: [],
+                watch_config: watchConfig
+              }
+            });
+            assert.equal(
+              legacyTransportOnlyMerge.added,
+              null,
+              'legacy body-bound projection hashes must migrate without one synthetic revision'
+            );
+
+            const changedText = `${projection.normalized_text} A substantive publisher statement changed.`;
+            const semanticChangeMerge = mergeArtifactProjection({
+              artifacts: artifactMerge.artifacts,
+              candidate,
+              sourceProjection: {
+                ...projection,
+                normalized_text: changedText,
+                normalized_text_sha256: crypto.createHash('sha256').update(changedText).digest('hex')
+              },
+              capturedAt: '2026-08-18T14:00:00.000Z',
+              bodyReceiptPath: 'receipts/article-semantic-change.json',
+              bodySha256: 'd'.repeat(64),
+              responseHeaders: {
+                content_type: 'text/html',
+                etag: 'semantic-change',
+                last_modified: null,
+                final_url: candidate.canonical_url,
+                redirect_chain: [],
+                watch_config: watchConfig
+              }
+            });
+            assert.ok(semanticChangeMerge.added, 'changed normalized content must create a revision');
+            assert.equal(semanticChangeMerge.added.revision_number, 2);
+
+            const pdfCandidate = {
+              ...candidate,
+              canonical_url: 'https://www.dentsu.com/news-releases/binary-release.pdf'
+            };
+            const pdfProjection = {
+              title: 'Binary release',
+              description: '',
+              normalized_text: '',
+              normalized_text_sha256: null,
+              published_at: null
+            };
+            const firstPdfMerge = mergeArtifactProjection({
+              artifacts: [],
+              candidate: pdfCandidate,
+              sourceProjection: pdfProjection,
+              capturedAt: '2026-08-18T15:00:00.000Z',
+              bodyReceiptPath: 'receipts/binary-release-a.json',
+              bodySha256: 'a'.repeat(64),
+              responseHeaders: { content_type: 'application/pdf', watch_config: watchConfig }
+            });
+            const changedPdfMerge = mergeArtifactProjection({
+              artifacts: firstPdfMerge.artifacts,
+              candidate: pdfCandidate,
+              sourceProjection: pdfProjection,
+              capturedAt: '2026-08-18T16:00:00.000Z',
+              bodyReceiptPath: 'receipts/binary-release-b.json',
+              bodySha256: 'b'.repeat(64),
+              responseHeaders: { content_type: 'application/pdf', watch_config: watchConfig }
+            });
+            assert.ok(changedPdfMerge.added, 'an unparsed PDF body change must remain revision-significant');
+            assert.equal(changedPdfMerge.added.revision_number, 2);
+
+            const routingOnlyCandidate = {
+            `.replace(/^ {12}/gmu, '')
+          );
+          NODE
+      - name: Validate exact two-file product surface
+        run: |
+          set -euo pipefail
+          node --check tools/lib/industrial-exhaust-artifacts.mjs
+          node test/industrial-exhaust-artifacts.test.js
+          node test/industrial-exhaust.test.js
+          git diff --check
+          actual="$(git diff --name-only | LC_ALL=C sort)"
+          expected="$(printf '%s\n' \
+            test/industrial-exhaust-artifacts.test.js \
+            tools/lib/industrial-exhaust-artifacts.mjs | LC_ALL=C sort)"
+          test "$actual" = "$expected"
+      - name: Publish qualified product commit
+        env:
+          PRODUCT_BRANCH: agent/industrial-exhaust-semantic-revision-v1
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- \
+            test/industrial-exhaust-artifacts.test.js \
+            tools/lib/industrial-exhaust-artifacts.mjs
+          git commit -m "fix(exhaust): separate semantic revisions from transport churn"
+          local_tree="$(git rev-parse HEAD^{tree})"
+          if remote_line="$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH")" && test -n "$remote_line"; then
+            remote_sha="${remote_line%%$'\t'*}"
+            git fetch --no-tags origin "$remote_sha"
+            remote_tree="$(git rev-parse "$remote_sha^{tree}")"
+            test "$remote_tree" = "$local_tree"
+            echo "Existing product branch already carries the qualified tree: $remote_sha"
+            exit 0
+          fi
+          git push origin "HEAD:refs/heads/$PRODUCT_BRANCH"
+          echo "Published product carrier $(git rev-parse HEAD) with tree $local_tree"
