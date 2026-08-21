@@ -1696,4 +1696,19 @@ for (const [input, expected] of [
   );
 }
 
+const crawlerRuntimeSource = fs.readFileSync(
+  new URL('../tools/crawl-industrial-exhaust.mjs', import.meta.url),
+  'utf8'
+);
+assert.match(
+  crawlerRuntimeSource,
+  /last_status: 'not_modified',\s+last_error: null,\s+new_observation_count: 0/u,
+  'a 304 response must reset the current-run observation count'
+);
+assert.match(
+  crawlerRuntimeSource,
+  /last_status: 'error',\s+last_error: error\.message,\s+new_observation_count: 0/u,
+  'an acquisition error must reset the current-run observation count'
+);
+
 console.log('industrial-exhaust tests passed');
