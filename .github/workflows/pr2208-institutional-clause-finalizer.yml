@@ -1,4 +1,4 @@
-name: PR2208 title-evidence and lexical-ing finalizer
+name: PR2208 title-evidence and lexical-ing finalizer v2
 
 on:
   pull_request:
@@ -7,262 +7,259 @@ on:
       - '.github/workflows/pr2208-institutional-clause-finalizer.yml'
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
-  group: pr2208-title-evidence-${{ github.event.pull_request.head.sha }}
+  group: pr2208-title-evidence-finalizer-v2
   cancel-in-progress: false
+
+env:
+  RESULT_BRANCH: agent/pr2194-fresh-sentence-followup-v1
+  ANCHOR_BRANCH: agent/pr2208-title-evidence-product-anchor-v2
+  EXPECTED_RESULT_HEAD: b9340415683780bdf2248201d52c39262ea9522f
 
 jobs:
   patch-qualify-publish:
-    if: ${{ github.event.pull_request.head.ref == 'agent/pr2194-fresh-sentence-followup-controller-v1' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    permissions:
-      contents: write
-    env:
-      CONTROLLER_BRANCH: agent/pr2194-fresh-sentence-followup-controller-v1
-      RESULT_BRANCH: agent/pr2194-fresh-sentence-followup-v1
-      EXPECTED_RESULT_HEAD: b9340415683780bdf2248201d52c39262ea9522f
-      EXPECTED_TRIGGER_HEAD: ${{ github.event.pull_request.head.sha }}
+    if: github.event.pull_request.head.ref == 'agent/pr2194-fresh-sentence-followup-controller-v1'
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
+
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: 22
+
       - name: Reconstruct, repair, qualify, and publish the exact two-file product
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "$EXPECTED_TRIGGER_HEAD"
-          git fetch origin \
-            'refs/heads/main:refs/remotes/origin/main' \
-            "refs/heads/$CONTROLLER_BRANCH:refs/remotes/origin/$CONTROLLER_BRANCH" \
-            "refs/heads/$RESULT_BRANCH:refs/remotes/origin/$RESULT_BRANCH"
-          test "$(git rev-parse refs/remotes/origin/$CONTROLLER_BRANCH)" = "$EXPECTED_TRIGGER_HEAD"
-          test "$(git rev-parse refs/remotes/origin/$RESULT_BRANCH)" = "$EXPECTED_RESULT_HEAD"
 
-          prior_base="$(git rev-parse "$EXPECTED_RESULT_HEAD^")"
-          expected_paths="$(printf '%s\n' \
-            test/industrial-exhaust.test.js \
-            tools/lib/industrial-exhaust.mjs | sort)"
-          test "$(git diff --name-only "$prior_base..$EXPECTED_RESULT_HEAD" | sort)" = "$expected_paths"
+          git fetch --prune origin \
+            "+refs/heads/main:refs/remotes/origin/main" \
+            "+refs/heads/$RESULT_BRANCH:refs/remotes/origin/$RESULT_BRANCH"
 
-          base_sha="$(git rev-parse refs/remotes/origin/main)"
-          git diff --quiet "$prior_base" "$base_sha" -- \
-            test/industrial-exhaust.test.js \
-            tools/lib/industrial-exhaust.mjs
-          git checkout -B pr2208-title-evidence-candidate "$base_sha"
-          git cherry-pick --no-commit "$EXPECTED_RESULT_HEAD"
-          test "$(git diff --cached --name-only | sort)" = "$expected_paths"
-          git reset
-          test "$(git diff --name-only | sort)" = "$expected_paths"
+          result_head="$(git rev-parse "refs/remotes/origin/$RESULT_BRANCH")"
+          test "$result_head" = "$EXPECTED_RESULT_HEAD"
+          product_parent="$(git rev-parse "$result_head^")"
+
+          mapfile -t product_files < <(
+            git diff --name-only "$product_parent" "$result_head" | LC_ALL=C sort
+          )
+          test "${#product_files[@]}" -eq 2
+          test "${product_files[0]}" = "test/industrial-exhaust.test.js"
+          test "${product_files[1]}" = "tools/lib/industrial-exhaust.mjs"
+
+          git switch --force-create pr2208-title-evidence-final "refs/remotes/origin/main"
+          git cherry-pick --no-commit "$result_head"
 
           python - <<'PY'
           from pathlib import Path
 
           source_path = Path('tools/lib/industrial-exhaust.mjs')
-          source = source_path.read_text(encoding='utf-8')
-
-          pattern_marker = r"""const titleConnectorPattern = /^(?:a|an|and|at|by|for|from|in|of|on|the|to|with|&)$/iu;
-          """
-          pattern_replacement = r"""const titleConnectorPattern = /^(?:a|an|and|at|by|for|from|in|of|on|the|to|with|&)$/iu;
-          const lexicalIngBasePredicatePattern = /^(?:bring|cling|ding|fling|ping|ring|sing|sling|spring|sting|string|swing|wing|wring)$/u;
-          const copularPredicatePattern = /^(?:am|is|are|was|were)$/u;
-          const compactNamedObjectPattern = /^(?:[\p{Lu}\p{Lt}][\p{Ll}\p{M}\p{N}&'’\-]*|[\p{Lu}\d]{2,4})$/u;
-          """
-          assert source.count(pattern_marker) == 1, 'sentence evidence patterns changed'
-          source = source.replace(pattern_marker, pattern_replacement, 1)
-
-          old_plural_gate = r"""  const upper = value.toLocaleUpperCase('en-US');
-            const hasCase = lower !== upper;
-            const ordinaryOrAllCapsToken = /\p{Ll}/u.test(value) || (hasCase && value === upper);
-            if (/^(?:we|you|they|these|those)$/u.test(normalizedLead)
-                && ordinaryOrAllCapsToken
-                && !isBoundedSentencePredicate(value)
-                && !sentenceAuxiliaryPattern.test(lower)
-                && !sentenceObjectMarkerPattern.test(lower)
-                && !titleConnectorPattern.test(value)
-                && !institutionalSuffixPattern.test(lower)
-                && !/(?:ed|ing)$/u.test(lower)) {
-              const firstFollowing = followingTokens[0].toLocaleLowerCase('en-US');
-              if (sentenceObjectMarkerPattern.test(firstFollowing)) {
-                return followingTokens.length >= 2;
-              }
-              return !titleConnectorPattern.test(followingTokens[0]);
-            }"""
-          new_plural_gate = r"""  const upper = value.toLocaleUpperCase('en-US');
-            const hasCase = lower !== upper;
-            const ordinaryOrAllCapsToken = /\p{Ll}/u.test(value) || (hasCase && value === upper);
-            if (/^(?:we|you|they|these|those)$/u.test(normalizedLead)
-                && ordinaryOrAllCapsToken
-                && !isBoundedSentencePredicate(value)
-                && !sentenceAuxiliaryPattern.test(lower)
-                && !sentenceObjectMarkerPattern.test(lower)
-                && !titleConnectorPattern.test(value)
-                && !institutionalSuffixPattern.test(lower)
-                && !/ed$/u.test(lower)
-                && (!/ing$/u.test(lower)
-                    || lexicalIngBasePredicatePattern.test(lower))) {
-              const firstFollowing = followingTokens[0].toLocaleLowerCase('en-US');
-              if (sentenceObjectMarkerPattern.test(firstFollowing)) {
-                return followingTokens.length >= 2;
-              }
-              if (titleConnectorPattern.test(followingTokens[0])) return false;
-
-              const finalFollowing = followingTokens.at(-1).toLocaleLowerCase('en-US');
-              if (institutionalSuffixPattern.test(finalFollowing)) {
-                return followingTokens.length === 2
-                  && !institutionalSuffixPattern.test(firstFollowing)
-                  && compactNamedObjectPattern.test(followingTokens[0]);
-              }
-              return true;
-            }"""
-          assert source.count(old_plural_gate) == 1, 'plural finite predicate gate changed'
-          source = source.replace(old_plural_gate, new_plural_gate, 1)
-
-          helper_marker = 'function isTitleCasedPronounObjectClause(value) {'
-          assert source.count(helper_marker) == 1, 'title-case helper marker changed'
-          copular_helper = r"""function isCopularInstitutionTitleShape(predicate, postPredicateTokens) {
-            return copularPredicatePattern.test(predicate.toLocaleLowerCase('en-US'))
-              && postPredicateTokens.length >= 3
-              && sentenceObjectMarkerPattern.test(
-                postPredicateTokens[0].toLocaleLowerCase('en-US')
-              )
-              && institutionalSuffixPattern.test(
-                postPredicateTokens.at(-1).toLocaleLowerCase('en-US')
-              );
-          }
-
-          """
-          assert 'function isCopularInstitutionTitleShape(' not in source
-          source = source.replace(helper_marker, copular_helper + helper_marker, 1)
-
-          old_title_return = r"""  const predicate = tokens[0];
-            const postPredicateTokens = tokens.slice(1);
-            return (isStrongFiniteSentencePredicate(predicate)
-                || isLikelyRegularFiniteSentencePredicate(
-                  predicate,
-                  lead,
-                  postPredicateTokens
-                ))
-              && sentenceObjectMarkerPattern.test(
-                postPredicateTokens[0].toLocaleLowerCase('en-US')
-              )
-              && postPredicateTokens.length >= 2;"""
-          new_title_return = r"""  const predicate = tokens[0];
-            const postPredicateTokens = tokens.slice(1);
-            if (isCopularInstitutionTitleShape(predicate, postPredicateTokens)) {
-              return false;
-            }
-            return (isStrongFiniteSentencePredicate(predicate)
-                || isLikelyRegularFiniteSentencePredicate(
-                  predicate,
-                  lead,
-                  postPredicateTokens
-                ))
-              && sentenceObjectMarkerPattern.test(
-                postPredicateTokens[0].toLocaleLowerCase('en-US')
-              )
-              && postPredicateTokens.length >= 2;"""
-          assert source.count(old_title_return) == 1, 'title-case clause return changed'
-          source = source.replace(old_title_return, new_title_return, 1)
-
-          old_strong_clause = r"""  if (predicateIndex >= 0) {
-              const predicate = tokens[predicateIndex];
-              const postPredicateTokens = tokens.slice(predicateIndex + 1);
-              if (postPredicateTokens.some(token =>
-                sentenceObjectMarkerPattern.test(token.toLocaleLowerCase('en-US'))
-              )) return true;"""
-          new_strong_clause = r"""  if (predicateIndex >= 0) {
-              const predicate = tokens[predicateIndex];
-              const postPredicateTokens = tokens.slice(predicateIndex + 1);
-              if (predicateIndex === 0
-                  && isCopularInstitutionTitleShape(predicate, postPredicateTokens)) {
-                return false;
-              }
-              if (postPredicateTokens.some(token =>
-                sentenceObjectMarkerPattern.test(token.toLocaleLowerCase('en-US'))
-              )) return true;"""
-          assert source.count(old_strong_clause) == 1, 'strong pronoun clause gate changed'
-          source = source.replace(old_strong_clause, new_strong_clause, 1)
-
-          old_fallback = r"""  const first = tokens[0]?.toLocaleLowerCase('en-US') ?? '';
-            const last = tokens.at(-1)?.toLocaleLowerCase('en-US') ?? '';
-            return tokens.length >= 3
-              && !titleConnectorPattern.test(first)
-              && !sentenceObjectMarkerPattern.test(first)
-              && institutionalSuffixPattern.test(last);"""
-          new_fallback = r"""  return false;"""
-          assert source.count(old_fallback) == 1, 'unbounded institutional suffix fallback changed'
-          source = source.replace(old_fallback, new_fallback, 1)
-          source_path.write_text(source, encoding='utf-8')
-
           test_path = Path('test/industrial-exhaust.test.js')
+          source = source_path.read_text(encoding='utf-8')
           tests = test_path.read_text(encoding='utf-8')
-          marker = '// period abbreviation classification must remain lexical and context-bounded'
-          assert tests.count(marker) == 1, 'test insertion marker changed'
-          sentinel = 'lexical base verbs ending in ing must reset wrapper ownership'
-          assert sentinel not in tests, 'title-evidence regressions already inserted'
-          additions = r"""
-          for (const [input, expected] of [
-            ['Broken (He moved to the U.S. THEY SING SONGS +1 253 477 8777)', 'Broken (He moved to the U.S. THEY SING SONGS [contact omitted]'],
-            ['Broken (He moved to the U.S. WE BRING SUPPLIES +1 253 477 8777)', 'Broken (He moved to the U.S. WE BRING SUPPLIES [contact omitted]'],
-            ['Broken (He moved to the U.S. YOU SWING THE BAT +1 253 477 8777)', 'Broken (He moved to the U.S. YOU SWING THE BAT [contact omitted]'],
-            ['Broken（He moved to the Ｕ．Ｓ． ＴＨＥＹ ＳＩＮＧ ＳＯＮＧＳ ＋１ ２５３ ４７７ ８７７７）', 'Broken（He moved to the Ｕ．Ｓ． ＴＨＥＹ ＳＩＮＧ ＳＯＮＧＳ [contact omitted]']
-          ]) {
-            assert.equal(
-              redactContactData(input),
-              expected,
-              'lexical base verbs ending in ing must reset wrapper ownership'
-            );
-          }
 
-          for (const [input, expected] of [
-            ['Context (U.S. WE INSPIRE YOUNG PEOPLE FOUNDATION +1 253 477 8777)', 'Context (U.S. WE INSPIRE YOUNG PEOPLE FOUNDATION [contact omitted])'],
-            ['Context (U.S. WE INSPIRE PEOPLE FOUNDATION +1 253 477 8777)', 'Context (U.S. WE INSPIRE PEOPLE FOUNDATION [contact omitted])'],
-            ['Context (U.S. THEY PURCHASING TICKETS FOUNDATION +1 253 477 8777)', 'Context (U.S. THEY PURCHASING TICKETS FOUNDATION [contact omitted])'],
-            ['Context（Ｕ．Ｓ． ＷＥ ＩＮＳＰＩＲＥ ＹＯＵＮＧ ＰＥＯＰＬＥ ＦＯＵＮＤＡＴＩＯＮ ＋１ ２５３ ４７７ ８７７７）', 'Context（Ｕ．Ｓ． ＷＥ ＩＮＳＰＩＲＥ ＹＯＵＮＧ ＰＥＯＰＬＥ ＦＯＵＮＤＡＴＩＯＮ [contact omitted]）']
-          ]) {
-            assert.equal(
-              redactContactData(input),
-              expected,
-              'unbounded plural morphology must not override institutional title evidence'
-            );
-          }
+          def replace_once(text: str, old: str, new: str, label: str) -> str:
+              count = text.count(old)
+              assert count == 1, f'{label}: expected one match, found {count}'
+              return text.replace(old, new, 1)
 
-          for (const [input, expected] of [
-            ['Context (U.S. We Are The World Foundation +1 253 477 8777)', 'Context (U.S. We Are The World Foundation [contact omitted])'],
-            ['Context (U.S. WE ARE THE WORLD FOUNDATION +1 253 477 8777)', 'Context (U.S. WE ARE THE WORLD FOUNDATION [contact omitted])'],
-            ['Context（Ｕ．Ｓ． Ｗｅ Ａｒｅ Ｔｈｅ Ｗｏｒｌｄ Ｆｏｕｎｄａｔｉｏｎ ＋１ ２５３ ４７７ ８７７７）', 'Context（Ｕ．Ｓ． Ｗｅ Ａｒｅ Ｔｈｅ Ｗｏｒｌｄ Ｆｏｕｎｄａｔｉｏｎ [contact omitted]）']
-          ]) {
-            assert.equal(
-              redactContactData(input),
-              expected,
-              'copular title-shaped institutions must retain their owned closer'
-            );
-          }
+          constants_anchor = r"""const titleConnectorPattern = /^(?:a|an|and|at|by|for|from|in|of|on|the|to|with|&)$/iu;
 
-          """
-          test_path.write_text(tests.replace(marker, additions + marker, 1), encoding='utf-8')
+function isLikelyRegularFiniteSentencePredicate(value, lead, followingTokens) {"""
+          constants_replacement = r"""const titleConnectorPattern = /^(?:a|an|and|at|by|for|from|in|of|on|the|to|with|&)$/iu;
+const lexicalIngBasePredicatePattern = /^(?:bring|cling|fling|ring|sing|sling|spring|sting|string|swing|wring)$/u;
+
+function hasInstitutionalTitleTail(tokens) {
+  const lowerTokens = tokens.map(token =>
+    token.toLocaleLowerCase('en-US')
+  );
+  if (lowerTokens.length < 3) return false;
+  if (!institutionalSuffixPattern.test(lowerTokens.at(-1))) return false;
+  return lowerTokens.slice(0, -1).some(token =>
+    institutionalSuffixPattern.test(token)
+    || titleConnectorPattern.test(token)
+  );
+}
+
+function isLikelyRegularFiniteSentencePredicate(value, lead, followingTokens) {"""
+          source = replace_once(
+              source,
+              constants_anchor,
+              constants_replacement,
+              'predicate helper anchor changed'
+          )
+
+          source = replace_once(
+              source,
+              "      && !/(?:ed|ing)$/u.test(lower)) {",
+              "      && (!/(?:ed|ing)$/u.test(lower)\n        || lexicalIngBasePredicatePattern.test(lower))) {",
+              'plural lexical-ing exclusion changed'
+          )
+
+          generic_following_anchor = r"""    const firstFollowing = followingTokens[0].toLocaleLowerCase('en-US');
+    if (sentenceObjectMarkerPattern.test(firstFollowing)) {"""
+          generic_following_replacement = r"""    const firstFollowing = followingTokens[0].toLocaleLowerCase('en-US');
+    if (hasInstitutionalTitleTail(followingTokens)
+        && !sentenceObjectMarkerPattern.test(firstFollowing)) {
+      return false;
+    }
+    if (sentenceObjectMarkerPattern.test(firstFollowing)) {"""
+          source = replace_once(
+              source,
+              generic_following_anchor,
+              generic_following_replacement,
+              'plural following-token gate changed'
+          )
+
+          title_clause_anchor = r"""  const predicate = tokens[0];
+  const postPredicateTokens = tokens.slice(1);
+  return (isStrongFiniteSentencePredicate(predicate)"""
+          title_clause_replacement = r"""  const predicate = tokens[0];
+  const postPredicateTokens = tokens.slice(1);
+  const firstPostPredicate = postPredicateTokens[0]
+    ?.toLocaleLowerCase('en-US') ?? '';
+  if (hasInstitutionalTitleTail(postPredicateTokens)
+      && sentenceObjectMarkerPattern.test(firstPostPredicate)) {
+    return false;
+  }
+  return (isStrongFiniteSentencePredicate(predicate)"""
+          source = replace_once(
+              source,
+              title_clause_anchor,
+              title_clause_replacement,
+              'title-case clause gate changed'
+          )
+
+          suffix_fallback_anchor = r"""  const first = tokens[0]?.toLocaleLowerCase('en-US') ?? '';
+  const last = tokens.at(-1)?.toLocaleLowerCase('en-US') ?? '';
+  return tokens.length >= 3
+    && !titleConnectorPattern.test(first)
+    && !sentenceObjectMarkerPattern.test(first)
+    && institutionalSuffixPattern.test(last);"""
+          suffix_fallback_replacement = r"""  const first = tokens[0]?.toLocaleLowerCase('en-US') ?? '';
+  const last = tokens.at(-1)?.toLocaleLowerCase('en-US') ?? '';
+  const titleTail = hasInstitutionalTitleTail(tokens.slice(1))
+    && !sentenceObjectMarkerPattern.test(
+      tokens[1]?.toLocaleLowerCase('en-US') ?? ''
+    );
+  return tokens.length >= 3
+    && !titleTail
+    && !titleConnectorPattern.test(first)
+    && !sentenceObjectMarkerPattern.test(first)
+    && institutionalSuffixPattern.test(last);"""
+          source = replace_once(
+              source,
+              suffix_fallback_anchor,
+              suffix_fallback_replacement,
+              'institutional suffix fallback changed'
+          )
+
+          regression_block = r"""
+
+for (const [input, expected] of [
+  [
+    'Context (U.S. WE INSPIRE YOUNG PEOPLE FOUNDATION +1 253 477 8777)',
+    'Context (U.S. WE INSPIRE YOUNG PEOPLE FOUNDATION [contact omitted])'
+  ],
+  [
+    'Context（Ｕ．Ｓ． ＷＥ ＩＮＳＰＩＲＥ ＹＯＵＮＧ ＰＥＯＰＬＥ ＦＯＵＮＤＡＴＩＯＮ ＋１ ２５３ ４７７ ８７７７）',
+    'Context（Ｕ．Ｓ． ＷＥ ＩＮＳＰＩＲＥ ＹＯＵＮＧ ＰＥＯＰＬＥ ＦＯＵＮＤＡＴＩＯＮ [contact omitted]）'
+  ],
+  [
+    'Context (U.S. We Are The World Foundation +1 253 477 8777)',
+    'Context (U.S. We Are The World Foundation [contact omitted])'
+  ],
+  [
+    'Context（Ｕ．Ｓ． Ｗｅ Ａｒｅ Ｔｈｅ Ｗｏｒｌｄ Ｆｏｕｎｄａｔｉｏｎ ＋１ ２５３ ４７７ ８７７７）',
+    'Context（Ｕ．Ｓ． Ｗｅ Ａｒｅ Ｔｈｅ Ｗｏｒｌｄ Ｆｏｕｎｄａｔｉｏｎ [contact omitted]）'
+  ],
+  [
+    'Context (U.S. They Serve The People Foundation +1 253 477 8777)',
+    'Context (U.S. They Serve The People Foundation [contact omitted])'
+  ]
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    'title-shaped institutional continuations must retain their owned wrapper closer'
+  );
+}
+
+for (const [input, expected] of [
+  [
+    'Broken (He moved to the U.S. WE INSPIRE THE PUBLIC +1 253 477 8777)',
+    'Broken (He moved to the U.S. WE INSPIRE THE PUBLIC [contact omitted]'
+  ],
+  [
+    'Broken (He moved to the U.S. THEY SING SONGS +1 253 477 8777)',
+    'Broken (He moved to the U.S. THEY SING SONGS [contact omitted]'
+  ],
+  [
+    'Broken（He moved to the Ｕ．Ｓ． ＷＥ ＢＲＩＮＧ ＳＵＰＰＬＩＥＳ ＋１ ２５３ ４７７ ８７７７）',
+    'Broken（He moved to the Ｕ．Ｓ． ＷＥ ＢＲＩＮＧ ＳＵＰＰＬＩＥＳ [contact omitted]'
+  ],
+  [
+    'Broken (He moved to the U.S. YOU SWING BATS +1 253 477 8777)',
+    'Broken (He moved to the U.S. YOU SWING BATS [contact omitted]'
+  ],
+  [
+    'Broken (He moved to the U.S. THEY VISIT ACME FOUNDATION +1 253 477 8777)',
+    'Broken (He moved to the U.S. THEY VISIT ACME FOUNDATION [contact omitted]'
+  ],
+  [
+    'Broken (He moved to the U.S. He Visited The Company +1 253 477 8777)',
+    'Broken (He moved to the U.S. He Visited The Company [contact omitted]'
+  ],
+  [
+    'Broken (He moved to the U.S. She Leads The Foundation +1 253 477 8777)',
+    'Broken (He moved to the U.S. She Leads The Foundation [contact omitted]'
+  ]
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    'finite pronoun clauses must reset wrapper ownership despite casing or suffix ambiguity'
+  );
+}
+"""
+          assert 'WE INSPIRE YOUNG PEOPLE FOUNDATION' not in tests, 'new regressions already present'
+          tests = tests.rstrip() + regression_block + '\n'
+
+          source_path.write_text(source, encoding='utf-8')
+          test_path.write_text(tests, encoding='utf-8')
           PY
 
           node --check tools/lib/industrial-exhaust.mjs
-          node --check test/industrial-exhaust.test.js
           node test/industrial-exhaust.test.js
-          node test/industrial-exhaust-artifacts.test.js
-          git diff --check
 
-          test "$(git diff --name-only | sort)" = "$expected_paths"
+          mapfile -t changed_files < <(
+            git diff --name-only | LC_ALL=C sort
+          )
+          test "${#changed_files[@]}" -eq 2
+          test "${changed_files[0]}" = "test/industrial-exhaust.test.js"
+          test "${changed_files[1]}" = "tools/lib/industrial-exhaust.mjs"
+
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -- test/industrial-exhaust.test.js tools/lib/industrial-exhaust.mjs
-          test "$(git diff --cached --name-only | sort)" = "$expected_paths"
-          git commit -m 'fix(crawler): bound title and lexical-ing evidence'
-          test "$(git rev-parse HEAD^)" = "$base_sha"
+          git add test/industrial-exhaust.test.js tools/lib/industrial-exhaust.mjs
+          git commit -m 'fix(crawler): preserve titles and lexical ing predicates'
+
+          product_sha="$(git rev-parse HEAD)"
+          product_tree="$(git rev-parse 'HEAD^{tree}')"
+          main_sha="$(git rev-parse refs/remotes/origin/main)"
+          test "$(git rev-parse HEAD^)" = "$main_sha"
+          test "$(git rev-list --count "$main_sha..HEAD")" -eq 1
+
+          git push --force origin "HEAD:refs/heads/$ANCHOR_BRANCH"
           git push \
             --force-with-lease="refs/heads/$RESULT_BRANCH:$EXPECTED_RESULT_HEAD" \
             origin "HEAD:refs/heads/$RESULT_BRANCH"
+
+          test "$(git ls-remote origin "refs/heads/$RESULT_BRANCH" | cut -f1)" = "$product_sha"
+          printf 'PR2208_PRODUCT_SHA=%s\nPR2208_PRODUCT_TREE=%s\nPR2208_PRODUCT_PARENT=%s\n' \
+            "$product_sha" "$product_tree" "$main_sha"
