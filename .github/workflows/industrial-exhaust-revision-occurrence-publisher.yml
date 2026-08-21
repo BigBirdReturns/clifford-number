@@ -1,0 +1,119 @@
+name: Industrial exhaust revision-occurrence publisher
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/industrial-exhaust-revision-occurrence-publisher.yml'
+      - '.industrial-exhaust-revision-occurrence-trigger'
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    if: github.head_ref == 'agent/industrial-exhaust-revision-occurrence-controller-v1'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Materialize revision-occurrence repair on exact base
+        env:
+          EXPECTED_BASE: cdc9d3670fb226e92ff90952c3f8a4392c532a26
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$EXPECTED_BASE"
+          git checkout --detach "$EXPECTED_BASE"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_BASE"
+          base64 -d <<'PAYLOAD' | gzip -d > /tmp/revision-occurrence-patch.py
+          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
+          PAYLOAD
+          python /tmp/revision-occurrence-patch.py
+      - name: Validate exact four-file product surface
+        run: |
+          set -euo pipefail
+          node --check tools/lib/industrial-exhaust.mjs
+          node --check tools/lib/industrial-exhaust-artifacts.mjs
+          node test/industrial-exhaust.test.js
+          node test/industrial-exhaust-artifacts.test.js
+          git diff --check
+          actual="$(git diff --name-only | LC_ALL=C sort)"
+          expected="$(printf '%s\n' \
+            test/industrial-exhaust-artifacts.test.js \
+            test/industrial-exhaust.test.js \
+            tools/lib/industrial-exhaust-artifacts.mjs \
+            tools/lib/industrial-exhaust.mjs | LC_ALL=C sort)"
+          test "$actual" = "$expected"
+      - name: Publish qualified product commit
+        env:
+          EXPECTED_BASE: cdc9d3670fb226e92ff90952c3f8a4392c532a26
+          PRODUCT_BRANCH: agent/industrial-exhaust-revision-occurrence-v1
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$EXPECTED_BASE"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- \
+            test/industrial-exhaust-artifacts.test.js \
+            test/industrial-exhaust.test.js \
+            tools/lib/industrial-exhaust-artifacts.mjs \
+            tools/lib/industrial-exhaust.mjs
+          git commit -m "fix(exhaust): bind recurring content to revision occurrences"
+          local_tree="$(git rev-parse HEAD^{tree})"
+          if remote_line="$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH")" && test -n "$remote_line"; then
+            remote_sha="${remote_line%%$'\t'*}"
+            git fetch --no-tags origin "$remote_sha"
+            remote_tree="$(git rev-parse "$remote_sha^{tree}")"
+            test "$remote_tree" = "$local_tree"
+            echo "Existing product branch already carries the qualified tree: $remote_sha"
+            exit 0
+          fi
+          git push origin "HEAD:refs/heads/$PRODUCT_BRANCH"
+          echo "Published product carrier $(git rev-parse HEAD) with tree $local_tree"
