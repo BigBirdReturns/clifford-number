@@ -1,0 +1,78 @@
+name: NEVER MERGE repair M-05 repository-tree index custody
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/m05-stage-tree-custody-index-fix-materializer.yml'
+      - '.m05-stage-tree-custody-index-fix/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: m05-stage-tree-custody-index-fix-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      TARGET: agent/m05-s03-l7-stage-receipt-repository-tree-custody-v1
+      EXPECTED_PRODUCT_HEAD: 0a73f9ee6f5990b44f5e04ad90579a815a8fcd9f
+      PAYLOAD_SHA256: f19049974a36e2fb9fb94fc02ad8e86e4ff01a122933f1a6e57013429686e511
+      CONTRACT: data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-repository-tree-custody-amendment.json
+      VALIDATOR: tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-repository-tree-custody-amendment.mjs
+      TEST: test/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-repository-tree-custody-amendment.test.js
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - name: Verify product lease and reconstruct corrected objects
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --prune origin "$TARGET"
+          test "$(git rev-parse origin/$TARGET)" = "$EXPECTED_PRODUCT_HEAD"
+          rm -rf /tmp/m05-stage-tree-index-fix
+          mkdir -p /tmp/m05-stage-tree-index-fix
+          cat .m05-stage-tree-custody-index-fix/fix-*.b64 | tr -d '\n' | base64 --decode > /tmp/m05-stage-tree-index-fix/payload.zip
+          echo "$PAYLOAD_SHA256  /tmp/m05-stage-tree-index-fix/payload.zip" | sha256sum -c -
+          unzip -t /tmp/m05-stage-tree-index-fix/payload.zip
+          unzip -q /tmp/m05-stage-tree-index-fix/payload.zip -d /tmp/m05-stage-tree-index-fix/product
+          test "$(git hash-object /tmp/m05-stage-tree-index-fix/product/$CONTRACT)" = '60d10c87d38e4782d75bd5657353649c5e61af81'
+          test "$(git hash-object /tmp/m05-stage-tree-index-fix/product/$VALIDATOR)" = '9224c8f563765886f827b8181a474833d4c18983'
+          test "$(git hash-object /tmp/m05-stage-tree-index-fix/product/$TEST)" = '46457b890a4af8e26d84fe590b6498216b107dab'
+          node --check "/tmp/m05-stage-tree-index-fix/product/$VALIDATOR"
+          node --check "/tmp/m05-stage-tree-index-fix/product/$TEST"
+      - name: Build exact three-path successor commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git switch --detach "origin/$TARGET"
+          git switch -c m05-stage-tree-index-fix
+          cp -a /tmp/m05-stage-tree-index-fix/product/. .
+          git add -- "$CONTRACT" "$VALIDATOR" "$TEST"
+          mapfile -t ACTUAL < <(git diff --cached --name-only | LC_ALL=C sort)
+          EXPECTED=("$CONTRACT" "$TEST" "$VALIDATOR")
+          mapfile -t EXPECTED_SORTED < <(printf '%s\n' "${EXPECTED[@]}" | LC_ALL=C sort)
+          test "${#ACTUAL[@]}" -eq 3
+          test "$(printf '%s\n' "${ACTUAL[@]}")" = "$(printf '%s\n' "${EXPECTED_SORTED[@]}")"
+          git diff --cached --check
+          git commit -m '[M-05 S03-L7] Enforce exact stage-0 index custody'
+          test "$(git rev-parse HEAD^)" = "$EXPECTED_PRODUCT_HEAD"
+          test "$(git rev-parse HEAD:$CONTRACT)" = '60d10c87d38e4782d75bd5657353649c5e61af81'
+          test "$(git rev-parse HEAD:$VALIDATOR)" = '9224c8f563765886f827b8181a474833d4c18983'
+          test "$(git rev-parse HEAD:$TEST)" = '46457b890a4af8e26d84fe590b6498216b107dab'
+      - name: Fast-forward product branch under exact lease
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --prune origin "$TARGET"
+          test "$(git rev-parse origin/$TARGET)" = "$EXPECTED_PRODUCT_HEAD"
+          git push origin "HEAD:refs/heads/$TARGET"
