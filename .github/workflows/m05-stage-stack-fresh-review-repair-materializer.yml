@@ -52,7 +52,7 @@ jobs:
           printf '%s  %s\n' "$ARCHIVE_SHA256" "$archive" | sha256sum -c -
 
           mkdir -p "$extract"
-          mapfile -t actual_paths < <(tar -tJf "$archive" | sed 's#^\./##' | sort)
+          mapfile -t actual_paths < <(tar -tJf "$archive" | sed 's#^\./##' | grep -v '/$' | sort)
           mapfile -t expected_paths < <(printf '%s\n' \
             'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-postmerge-repair.json' \
             'test/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.test.js' \
