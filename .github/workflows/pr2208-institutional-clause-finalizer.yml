@@ -172,21 +172,21 @@ jobs:
           source = source.replace(old_title_return, new_title_return, 1)
 
           old_strong_clause = r"""  if (predicateIndex >= 0) {
-            const predicate = tokens[predicateIndex];
-            const postPredicateTokens = tokens.slice(predicateIndex + 1);
-            if (postPredicateTokens.some(token =>
-              sentenceObjectMarkerPattern.test(token.toLocaleLowerCase('en-US'))
-            )) return true;"""
+              const predicate = tokens[predicateIndex];
+              const postPredicateTokens = tokens.slice(predicateIndex + 1);
+              if (postPredicateTokens.some(token =>
+                sentenceObjectMarkerPattern.test(token.toLocaleLowerCase('en-US'))
+              )) return true;"""
           new_strong_clause = r"""  if (predicateIndex >= 0) {
-            const predicate = tokens[predicateIndex];
-            const postPredicateTokens = tokens.slice(predicateIndex + 1);
-            if (predicateIndex === 0
-                && isCopularInstitutionTitleShape(predicate, postPredicateTokens)) {
-              return false;
-            }
-            if (postPredicateTokens.some(token =>
-              sentenceObjectMarkerPattern.test(token.toLocaleLowerCase('en-US'))
-            )) return true;"""
+              const predicate = tokens[predicateIndex];
+              const postPredicateTokens = tokens.slice(predicateIndex + 1);
+              if (predicateIndex === 0
+                  && isCopularInstitutionTitleShape(predicate, postPredicateTokens)) {
+                return false;
+              }
+              if (postPredicateTokens.some(token =>
+                sentenceObjectMarkerPattern.test(token.toLocaleLowerCase('en-US'))
+              )) return true;"""
           assert source.count(old_strong_clause) == 1, 'strong pronoun clause gate changed'
           source = source.replace(old_strong_clause, new_strong_clause, 1)
 
