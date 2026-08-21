@@ -33,174 +33,215 @@ jobs:
           node --input-type=module <<'NODE'
           import fs from 'node:fs';
 
-          function replaceExact(path, before, after, expectedMatches = 1) {
+          function replaceExact(path, before, after) {
             const current = fs.readFileSync(path, 'utf8');
             const matches = current.split(before).length - 1;
-            if (matches !== expectedMatches) {
-              throw new Error(`${path}: expected ${expectedMatches} exact match(es), found ${matches}`);
+            if (matches !== 1) {
+              throw new Error(`${path}: expected 1 exact match, found ${matches}`);
             }
             fs.writeFileSync(path, current.replace(before, after));
           }
 
-          replaceExact(
-            'tools/lib/industrial-exhaust-artifacts.mjs',
-            `  const bodyRecord = {
-              title: sourceProjection.title || candidate.title || '',
-              description: sourceProjection.description ?? '',
-              normalized_text: sourceProjection.normalized_text ?? '',
-              normalized_text_sha256: sourceProjection.normalized_text_sha256 ?? null,
-              published_at: sourceProjection.published_at ?? null,
-              body_sha256: bodySha256
-            };
-            const projectionSha256 = sha256(bodyRecord);
-            if (previous?.projection_sha256 === projectionSha256) return { artifacts: merged, added: null, unchanged: previous };
-          `.replace(/^ {10}/gmu, ''),
-            `  const bodyRecord = {
-              title: sourceProjection.title || candidate.title || '',
-              description: sourceProjection.description ?? '',
-              normalized_text: sourceProjection.normalized_text ?? '',
-              normalized_text_sha256: sourceProjection.normalized_text_sha256 ?? null,
-              published_at: sourceProjection.published_at ?? null
-            };
-            const transportDefinesProjection = String(responseHeaders.content_type ?? '')
-              .toLowerCase()
-              .split(';', 1)[0]
-              .trim() === 'application/pdf';
-            const projectionIdentity = transportDefinesProjection
-              ? { ...bodyRecord, body_sha256: bodySha256 }
-              : bodyRecord;
-            const projectionSha256 = sha256(projectionIdentity);
-            if (previous) {
-              const previousBodyRecord = {
-                title: previous.title ?? '',
-                description: previous.description ?? '',
-                normalized_text: previous.normalized_text ?? '',
-                normalized_text_sha256: previous.normalized_text_sha256 ?? null,
-                published_at: previous.published_at ?? null
-              };
-              const previousProjectionIdentity = transportDefinesProjection
-                ? { ...previousBodyRecord, body_sha256: previous.body_sha256 ?? null }
-                : previousBodyRecord;
-              if (sha256(previousProjectionIdentity) === projectionSha256) {
-                return { artifacts: merged, added: null, unchanged: previous };
-              }
+          function replaceRange(path, startMarker, endMarker, replacement) {
+            const current = fs.readFileSync(path, 'utf8');
+            const start = current.indexOf(startMarker);
+            if (start < 0) throw new Error(`${path}: start marker not found`);
+            if (current.indexOf(startMarker, start + startMarker.length) >= 0) {
+              throw new Error(`${path}: start marker is not unique`);
             }
-          `.replace(/^ {10}/gmu, '')
+            const endStart = current.indexOf(endMarker, start);
+            if (endStart < 0) throw new Error(`${path}: end marker not found after start marker`);
+            const end = endStart + endMarker.length;
+            fs.writeFileSync(path, current.slice(0, start) + replacement + current.slice(end));
+          }
+
+          const functionStart = [
+            'export function mergeArtifactProjection({ artifacts, candidate, sourceProjection, capturedAt, bodyReceiptPath, bodySha256, responseHeaders }) {',
+            ''
+          ].join('\n');
+          const comparisonEnd = "  if (previous?.projection_sha256 === projectionSha256) return { artifacts: merged, added: null, unchanged: previous };";
+          const replacement = [
+            'function artifactProjectionIdentity({ bodyRecord, bodySha256, contentType }) {',
+            "  const mediaType = String(contentType ?? '')",
+            '    .toLowerCase()',
+            "    .split(';', 1)[0]",
+            '    .trim();',
+            "  const projectionMode = mediaType === 'application/pdf' ? 'opaque_body' : 'semantic_text';",
+            "  return projectionMode === 'opaque_body'",
+            '    ? { projection_mode: projectionMode, ...bodyRecord, body_sha256: bodySha256 ?? null }',
+            '    : { projection_mode: projectionMode, ...bodyRecord };',
+            '}',
+            '',
+            'export function mergeArtifactProjection({ artifacts, candidate, sourceProjection, capturedAt, bodyReceiptPath, bodySha256, responseHeaders }) {',
+            '  const merged = [...artifacts];',
+            '  const recordKey = sha256(candidate.canonical_url);',
+            "  const latest = latestBy(merged, 'artifact_record_key');",
+            '  const previous = latest.get(recordKey) ?? null;',
+            '  const bodyRecord = {',
+            "    title: sourceProjection.title || candidate.title || '',",
+            "    description: sourceProjection.description ?? '',",
+            "    normalized_text: sourceProjection.normalized_text ?? '',",
+            '    normalized_text_sha256: sourceProjection.normalized_text_sha256 ?? null,',
+            '    published_at: sourceProjection.published_at ?? null',
+            '  };',
+            '  const projectionIdentity = artifactProjectionIdentity({',
+            '    bodyRecord,',
+            '    bodySha256,',
+            '    contentType: responseHeaders.content_type',
+            '  });',
+            '  const projectionSha256 = sha256(projectionIdentity);',
+            '  if (previous) {',
+            '    const previousBodyRecord = {',
+            "      title: previous.title ?? '',",
+            "      description: previous.description ?? '',",
+            "      normalized_text: previous.normalized_text ?? '',",
+            '      normalized_text_sha256: previous.normalized_text_sha256 ?? null,',
+            '      published_at: previous.published_at ?? null',
+            '    };',
+            '    const previousProjectionIdentity = artifactProjectionIdentity({',
+            '      bodyRecord: previousBodyRecord,',
+            '      bodySha256: previous.body_sha256 ?? null,',
+            '      contentType: previous.content_type',
+            '    });',
+            '    if (sha256(previousProjectionIdentity) === projectionSha256) {',
+            '      return { artifacts: merged, added: null, unchanged: previous };',
+            '    }',
+            '  }'
+          ].join('\n');
+          replaceRange(
+            'tools/lib/industrial-exhaust-artifacts.mjs',
+            functionStart,
+            comparisonEnd,
+            replacement
           );
 
+          const testAnchor = [
+            'assert.equal(unchangedMerge.added, null);',
+            'assert.equal(unchangedMerge.artifacts.length, 1);',
+            'const routingOnlyCandidate = {'
+          ].join('\n');
+          const testReplacement = [
+            'assert.equal(unchangedMerge.added, null);',
+            'assert.equal(unchangedMerge.artifacts.length, 1);',
+            '',
+            'const transportOnlyMerge = mergeArtifactProjection({',
+            '  artifacts: artifactMerge.artifacts,',
+            '  candidate,',
+            '  sourceProjection: projection,',
+            "  capturedAt: '2026-08-18T12:00:00.000Z',",
+            "  bodyReceiptPath: 'receipts/article-transport-churn.json',",
+            "  bodySha256: 'b'.repeat(64),",
+            '  responseHeaders: {',
+            "    content_type: 'text/html',",
+            "    etag: 'transport-only-change',",
+            "    last_modified: 'Tue, 18 Aug 2026 12:00:00 GMT',",
+            '    final_url: candidate.canonical_url,',
+            '    redirect_chain: [],',
+            '    watch_config: watchConfig',
+            '  }',
+            '});',
+            "assert.equal(transportOnlyMerge.added, null, 'transport-only HTML churn must not create a semantic revision');",
+            'assert.equal(transportOnlyMerge.artifacts.length, 1);',
+            'assert.equal(transportOnlyMerge.unchanged.artifact_id, artifactMerge.added.artifact_id);',
+            '',
+            'const legacyProjectionArtifact = {',
+            '  ...artifactMerge.added,',
+            "  projection_sha256: 'f'.repeat(64)",
+            '};',
+            'const legacyTransportOnlyMerge = mergeArtifactProjection({',
+            '  artifacts: [legacyProjectionArtifact],',
+            '  candidate,',
+            '  sourceProjection: projection,',
+            "  capturedAt: '2026-08-18T13:00:00.000Z',",
+            "  bodyReceiptPath: 'receipts/article-legacy-transport-churn.json',",
+            "  bodySha256: 'c'.repeat(64),",
+            '  responseHeaders: {',
+            "    content_type: 'text/html; charset=utf-8',",
+            "    etag: 'legacy-transport-only-change',",
+            '    last_modified: null,',
+            '    final_url: candidate.canonical_url,',
+            '    redirect_chain: [],',
+            '    watch_config: watchConfig',
+            '  }',
+            '});',
+            'assert.equal(',
+            '  legacyTransportOnlyMerge.added,',
+            '  null,',
+            "  'legacy body-bound projection hashes must migrate without one synthetic revision'",
+            ');',
+            '',
+            'const changedText = `${projection.normalized_text} A substantive publisher statement changed.`;',
+            'const semanticChangeMerge = mergeArtifactProjection({',
+            '  artifacts: artifactMerge.artifacts,',
+            '  candidate,',
+            '  sourceProjection: {',
+            '    ...projection,',
+            '    normalized_text: changedText,',
+            "    normalized_text_sha256: crypto.createHash('sha256').update(changedText).digest('hex')",
+            '  },',
+            "  capturedAt: '2026-08-18T14:00:00.000Z',",
+            "  bodyReceiptPath: 'receipts/article-semantic-change.json',",
+            "  bodySha256: 'd'.repeat(64),",
+            '  responseHeaders: {',
+            "    content_type: 'text/html',",
+            "    etag: 'semantic-change',",
+            '    last_modified: null,',
+            '    final_url: candidate.canonical_url,',
+            '    redirect_chain: [],',
+            '    watch_config: watchConfig',
+            '  }',
+            '});',
+            "assert.ok(semanticChangeMerge.added, 'changed normalized content must create a revision');",
+            'assert.equal(semanticChangeMerge.added.revision_number, 2);',
+            '',
+            'const pdfCandidate = {',
+            '  ...candidate,',
+            "  canonical_url: 'https://www.dentsu.com/news-releases/binary-release.pdf'",
+            '};',
+            'const pdfProjection = {',
+            "  title: 'Binary release',",
+            "  description: '',",
+            "  normalized_text: '',",
+            '  normalized_text_sha256: null,',
+            '  published_at: null',
+            '};',
+            'const firstPdfMerge = mergeArtifactProjection({',
+            '  artifacts: [],',
+            '  candidate: pdfCandidate,',
+            '  sourceProjection: pdfProjection,',
+            "  capturedAt: '2026-08-18T15:00:00.000Z',",
+            "  bodyReceiptPath: 'receipts/binary-release-a.json',",
+            "  bodySha256: 'a'.repeat(64),",
+            "  responseHeaders: { content_type: 'application/pdf', watch_config: watchConfig }",
+            '});',
+            'const samePdfMerge = mergeArtifactProjection({',
+            '  artifacts: firstPdfMerge.artifacts,',
+            '  candidate: pdfCandidate,',
+            '  sourceProjection: pdfProjection,',
+            "  capturedAt: '2026-08-18T15:30:00.000Z',",
+            "  bodyReceiptPath: 'receipts/binary-release-a-again.json',",
+            "  bodySha256: 'a'.repeat(64),",
+            "  responseHeaders: { content_type: 'application/pdf; version=1.7', etag: 'new-transport', watch_config: watchConfig }",
+            '});',
+            "assert.equal(samePdfMerge.added, null, 'an unchanged opaque PDF body must deduplicate');",
+            'const changedPdfMerge = mergeArtifactProjection({',
+            '  artifacts: firstPdfMerge.artifacts,',
+            '  candidate: pdfCandidate,',
+            '  sourceProjection: pdfProjection,',
+            "  capturedAt: '2026-08-18T16:00:00.000Z',",
+            "  bodyReceiptPath: 'receipts/binary-release-b.json',",
+            "  bodySha256: 'b'.repeat(64),",
+            "  responseHeaders: { content_type: 'application/pdf', watch_config: watchConfig }",
+            '});',
+            "assert.ok(changedPdfMerge.added, 'an unparsed PDF body change must remain revision-significant');",
+            'assert.equal(changedPdfMerge.added.revision_number, 2);',
+            '',
+            'const routingOnlyCandidate = {'
+          ].join('\n');
           replaceExact(
             'test/industrial-exhaust-artifacts.test.js',
-            `assert.equal(unchangedMerge.added, null);
-            assert.equal(unchangedMerge.artifacts.length, 1);
-            const routingOnlyCandidate = {
-            `.replace(/^ {12}/gmu, ''),
-            `assert.equal(unchangedMerge.added, null);
-            assert.equal(unchangedMerge.artifacts.length, 1);
-
-            const transportOnlyMerge = mergeArtifactProjection({
-              artifacts: artifactMerge.artifacts,
-              candidate,
-              sourceProjection: projection,
-              capturedAt: '2026-08-18T12:00:00.000Z',
-              bodyReceiptPath: 'receipts/article-transport-churn.json',
-              bodySha256: 'b'.repeat(64),
-              responseHeaders: {
-                content_type: 'text/html',
-                etag: 'transport-only-change',
-                last_modified: 'Tue, 18 Aug 2026 12:00:00 GMT',
-                final_url: candidate.canonical_url,
-                redirect_chain: [],
-                watch_config: watchConfig
-              }
-            });
-            assert.equal(transportOnlyMerge.added, null, 'transport-only HTML churn must not create a semantic revision');
-            assert.equal(transportOnlyMerge.artifacts.length, 1);
-            assert.equal(transportOnlyMerge.unchanged.artifact_id, artifactMerge.added.artifact_id);
-
-            const legacyProjectionArtifact = {
-              ...artifactMerge.added,
-              projection_sha256: 'f'.repeat(64)
-            };
-            const legacyTransportOnlyMerge = mergeArtifactProjection({
-              artifacts: [legacyProjectionArtifact],
-              candidate,
-              sourceProjection: projection,
-              capturedAt: '2026-08-18T13:00:00.000Z',
-              bodyReceiptPath: 'receipts/article-legacy-transport-churn.json',
-              bodySha256: 'c'.repeat(64),
-              responseHeaders: {
-                content_type: 'text/html',
-                etag: 'legacy-transport-only-change',
-                last_modified: null,
-                final_url: candidate.canonical_url,
-                redirect_chain: [],
-                watch_config: watchConfig
-              }
-            });
-            assert.equal(
-              legacyTransportOnlyMerge.added,
-              null,
-              'legacy body-bound projection hashes must migrate without one synthetic revision'
-            );
-
-            const changedText = `${projection.normalized_text} A substantive publisher statement changed.`;
-            const semanticChangeMerge = mergeArtifactProjection({
-              artifacts: artifactMerge.artifacts,
-              candidate,
-              sourceProjection: {
-                ...projection,
-                normalized_text: changedText,
-                normalized_text_sha256: crypto.createHash('sha256').update(changedText).digest('hex')
-              },
-              capturedAt: '2026-08-18T14:00:00.000Z',
-              bodyReceiptPath: 'receipts/article-semantic-change.json',
-              bodySha256: 'd'.repeat(64),
-              responseHeaders: {
-                content_type: 'text/html',
-                etag: 'semantic-change',
-                last_modified: null,
-                final_url: candidate.canonical_url,
-                redirect_chain: [],
-                watch_config: watchConfig
-              }
-            });
-            assert.ok(semanticChangeMerge.added, 'changed normalized content must create a revision');
-            assert.equal(semanticChangeMerge.added.revision_number, 2);
-
-            const pdfCandidate = {
-              ...candidate,
-              canonical_url: 'https://www.dentsu.com/news-releases/binary-release.pdf'
-            };
-            const pdfProjection = {
-              title: 'Binary release',
-              description: '',
-              normalized_text: '',
-              normalized_text_sha256: null,
-              published_at: null
-            };
-            const firstPdfMerge = mergeArtifactProjection({
-              artifacts: [],
-              candidate: pdfCandidate,
-              sourceProjection: pdfProjection,
-              capturedAt: '2026-08-18T15:00:00.000Z',
-              bodyReceiptPath: 'receipts/binary-release-a.json',
-              bodySha256: 'a'.repeat(64),
-              responseHeaders: { content_type: 'application/pdf', watch_config: watchConfig }
-            });
-            const changedPdfMerge = mergeArtifactProjection({
-              artifacts: firstPdfMerge.artifacts,
-              candidate: pdfCandidate,
-              sourceProjection: pdfProjection,
-              capturedAt: '2026-08-18T16:00:00.000Z',
-              bodyReceiptPath: 'receipts/binary-release-b.json',
-              bodySha256: 'b'.repeat(64),
-              responseHeaders: { content_type: 'application/pdf', watch_config: watchConfig }
-            });
-            assert.ok(changedPdfMerge.added, 'an unparsed PDF body change must remain revision-significant');
-            assert.equal(changedPdfMerge.added.revision_number, 2);
-
-            const routingOnlyCandidate = {
-            `.replace(/^ {12}/gmu, '')
+            testAnchor,
+            testReplacement
           );
           NODE
       - name: Validate exact two-file product surface
