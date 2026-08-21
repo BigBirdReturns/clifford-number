@@ -56,8 +56,8 @@ jobs:
           );
           replaceExact(
             'tools/hydrate-industrial-exhaust.mjs',
-            "last_status: 'not_modified',\nlast_error: null,\nresolved_url: fetched.finalUrl,",
-            "last_status: 'not_modified',\nlast_error: null,\nnew_discovery_count: 0,\nresolved_url: fetched.finalUrl,"
+            "        state.indexes[source.id] = {\n...prior,\nlast_checked_at: capturedAt,\nlast_status: 'not_modified',\nlast_error: null,\nresolved_url: fetched.finalUrl,\nredirect_chain: fetched.redirectChain\n        };",
+            "        state.indexes[source.id] = {\n...prior,\nlast_checked_at: capturedAt,\nlast_status: 'not_modified',\nlast_error: null,\nnew_discovery_count: 0,\nresolved_url: fetched.finalUrl,\nredirect_chain: fetched.redirectChain\n        };"
           );
           replaceExact(
             'tools/hydrate-industrial-exhaust.mjs',
