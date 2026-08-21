@@ -24,28 +24,25 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
-      - name: Replace product bytes with the hardened exact revision
+      - name: Publish hardened product objects on a workflow-free branch
         shell: bash
         run: |
           set -euo pipefail
           EXPECTED_BASE='cdc9d3670fb226e92ff90952c3f8a4392c532a26'
           EXPECTED_TREE='55ce861e8971bfc258b206acb4eb6a911c5ef0be'
-          TARGET='agent/m05-s03-l7-stage-receipt-repository-tree-custody-v1'
+          TARGET='agent/m05-s03-l7-stage-receipt-tree-custody-hardening-objects-v1'
           PAYLOAD_SHA256='880e334718428a184594feee380c4e3f84a072d07781fb8d7d23e66bc914536f'
           CONTRACT='data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-repository-tree-custody-amendment.json'
           TEST='test/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-repository-tree-custody-amendment.test.js'
           VALIDATOR='tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-repository-tree-custody-amendment.mjs'
-          REGISTRY='data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-registry.json'
-          WORKFLOW='.github/workflows/m05-intel-realization-stage-receipt-repository-tree-custody-amendment.yml'
 
-          git fetch --prune origin main "$TARGET"
+          git fetch --prune origin main
           test "$(git rev-parse origin/main)" = "$EXPECTED_BASE"
           test "$(git rev-parse origin/main^{tree})" = "$EXPECTED_TREE"
-          test "$(git rev-parse origin/$TARGET:$REGISTRY)" = '6d5a7f263e50716835af457b6fa82927711459fa'
-          test "$(git rev-parse origin/$TARGET:$WORKFLOW)" = 'dc5bf79d77ad15d0ea9692d0b24a6636e6e93b15'
-          test "$(git rev-parse origin/$TARGET:$CONTRACT)" = 'c5bbabaf13d61d2cee4095d5e88bed83664010ab'
-          test "$(git rev-parse origin/$TARGET:$VALIDATOR)" = '9278910e81798b2e004fe576a1ce0c6cf2a35a93'
-          test "$(git rev-parse origin/$TARGET:$TEST)" = '82af0716569874da53498bbd1338242d8aa54a28'
+          if git ls-remote --exit-code --heads origin "$TARGET" >/dev/null 2>&1; then
+            echo "temporary object branch already exists" >&2
+            exit 1
+          fi
 
           mkdir -p /tmp/m05-stage-tree-custody-hardening
           cat .m05-stage-tree-custody-hardening/payload-*.b64 | tr -d '\n' | base64 --decode > /tmp/m05-stage-tree-custody-hardening/payload.zip
@@ -57,7 +54,8 @@ jobs:
 
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git switch -C "$TARGET" "origin/$TARGET"
+          git switch --detach "$EXPECTED_BASE"
+          git switch -c "$TARGET"
           cp -a /tmp/m05-stage-tree-custody-hardening/product/. .
           git add -- "$CONTRACT" "$TEST" "$VALIDATOR"
           printf '%s\n' "$CONTRACT" "$TEST" "$VALIDATOR" | LC_ALL=C sort > /tmp/expected
@@ -67,5 +65,6 @@ jobs:
           node --check "$VALIDATOR"
           node --check "$TEST"
           node "$TEST"
-          git commit -m '[M-05 S03-L7] Harden repository-tree custody admission'
+          git commit -m '[M-05 S03-L7] Publish hardened repository-tree custody objects'
+          test "$(git rev-parse HEAD^)" = "$EXPECTED_BASE"
           git push origin "HEAD:refs/heads/$TARGET"
