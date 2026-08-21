@@ -526,7 +526,7 @@ function isIsolatedTelephoneLabelConstruct(value, contextStart, periodIndex) {
   const local = value.slice(contextStart).normalize('NFKC');
   const relativePeriodIndex = value.slice(contextStart, periodIndex).normalize('NFKC').length;
   const labelMatch = local.match(
-    /(?:tel(?:ephone)?|phone|mobile|cell|fax|contact)(?:\s*\.\s*)?(?:\s*(?:number|no)(?:\s*\.\s*)?)?\s*$/iu
+    /(?:tel(?:ephone)?|phone|mobile|cell|fax|contact)(?:\s*\.\s*)?(?:(?:\s+(?:number|no)(?:\s*\.\s*)?)|\s*#)?\s*$/iu
   );
   if (!labelMatch || relativePeriodIndex < labelMatch.index) return false;
 
@@ -553,7 +553,7 @@ function isMultiPeriodNarrativeAbbreviation(token, prefixBeforeToken) {
 }
 
 function isTelephoneLabelRemainder(value) {
-  return /^(?:tel(?:ephone)?|phone|mobile|cell|fax|contact)(?:\s+(?:number|no))?\s*[:.]?\s*$/iu.test(
+  return /^(?:tel(?:ephone)?|phone|mobile|cell|fax|contact)(?:(?:\s+(?:number|no)(?:\s*\.)?)|\s*#)?\s*[:.]?\s*$/iu.test(
     value.normalize('NFKC').trim()
   );
 }
@@ -565,6 +565,228 @@ function isSimpleEntityPrefix(value) {
   if (words.length > 4) return false;
   return words.every(word =>
     /^[\p{Lu}\p{Lt}\d][\p{L}\p{N}&'’\-]*$/u.test(word)
+  );
+}
+
+function isBoundedSentencePredicate(value) {
+  return /^(?:am|is|are|was|were|be|been|being|have|has|had|having|will|would|shall|should|can|could|may|might|must|do|does|did|doing|say|says|said|saying|call|calls|called|calling|ask|asks|asked|asking|need|needs|needed|needing|want|wants|wanted|wanting|use|uses|used|using|see|sees|saw|seen|seeing|think|thinks|thought|thinking|move|moves|moved|moving|live|lives|lived|living|work|works|worked|working|send|sends|sent|sending|contact|contacts|contacted|contacting|email|emails|emailed|emailing|text|texts|texted|texting|dial|dials|dialed|dialing|reply|replies|replied|replying|write|writes|wrote|written|writing|read|reads|reading|find|finds|found|finding|get|gets|got|getting|care|cares|cared|caring|help|helps|helped|helping|lead|leads|led|leading|provide|provides|provided|providing|offer|offers|offered|offering|remain|remains|remained|remaining|matter|matters|mattered|mattering|seem|seems|seemed|seeming|become|becomes|became|becoming|make|makes|made|making|take|takes|took|taken|taking|give|gives|gave|given|giving|know|knows|knew|known|knowing|look|looks|looked|looking|come|comes|came|coming|go|goes|went|gone|going|keep|keeps|kept|keeping|let|lets|letting|support|supports|supported|supporting|serve|serves|served|serving|build|builds|built|building|run|runs|ran|running)$/u.test(
+    value.toLocaleLowerCase('en-US')
+  );
+}
+
+function isStrongFiniteSentencePredicate(value) {
+  const lower = value.toLocaleLowerCase('en-US');
+  if (!isBoundedSentencePredicate(lower)) return false;
+  return !/^(?:be|been|being|having|doing|saying|calling|asking|needing|wanting|using|seen|seeing|thinking|moving|living|working|sending|contacting|emailing|texting|dialing|replying|written|writing|reading|finding|getting|caring|helping|leading|providing|offering|remaining|mattering|seeming|becoming|making|taken|taking|given|giving|known|knowing|looking|coming|gone|going|keeping|letting|supporting|serving|building|running)$/u.test(lower);
+}
+
+const sentenceObjectMarkerPattern = /^(?:a|an|the|my|our|your|his|her|its|their|this|that|these|those)$/u;
+const sentenceAuxiliaryPattern = /^(?:am|is|are|was|were|have|has|had|will|would|shall|should|can|could|may|might|must|do|does|did)$/u;
+const institutionalSuffixPattern = /^(?:academy|agency|army|association|bank|battalion|brigade|center|centre|club|collective|command|company|corp|corporation|council|department|district|division|fleet|force|foundation|fund|group|holdings|initiative|institute|institution|lab|labs|laboratory|media|museum|network|office|organization|organisation|partners|people|project|records|regiment|services|society|solutions|squadron|studio|systems|team|trust|ventures|wing|works)$/u;
+const titleConnectorPattern = /^(?:a|an|and|at|by|for|from|in|of|on|the|to|with|&)$/iu;
+
+function isLikelyRegularFiniteSentencePredicate(value, lead, followingTokens) {
+  const lower = value.toLocaleLowerCase('en-US');
+  if (!/^\p{L}{3,}$/u.test(lower) || followingTokens.length === 0) return false;
+
+  if (/^(?:\p{L}+ed|\p{L}*[^aeiou]ied)$/u.test(lower)) {
+    return followingTokens.length >= 2
+      || sentenceObjectMarkerPattern.test(followingTokens[0].toLocaleLowerCase('en-US'));
+  }
+
+  const normalizedLead = lead.toLocaleLowerCase('en-US');
+  if (/^(?:he|she|this|that)$/u.test(normalizedLead)
+      && /^(?:\p{L}{2,}(?:s|es)|\p{L}*[^aeiou]ies)$/u.test(lower)) {
+    return followingTokens.length >= 2;
+  }
+
+  const upper = value.toLocaleUpperCase('en-US');
+  const hasCase = lower !== upper;
+  const ordinaryOrAllCapsToken = /\p{Ll}/u.test(value) || (hasCase && value === upper);
+  if (/^(?:we|you|they|these|those)$/u.test(normalizedLead)
+      && ordinaryOrAllCapsToken
+      && !isBoundedSentencePredicate(value)
+      && !sentenceAuxiliaryPattern.test(lower)
+      && !sentenceObjectMarkerPattern.test(lower)
+      && !titleConnectorPattern.test(value)
+      && !institutionalSuffixPattern.test(lower)
+      && !/(?:ed|ing)$/u.test(lower)) {
+    const firstFollowing = followingTokens[0].toLocaleLowerCase('en-US');
+    if (sentenceObjectMarkerPattern.test(firstFollowing)) {
+      return followingTokens.length >= 2;
+    }
+    return !titleConnectorPattern.test(followingTokens[0]);
+  }
+
+  return false;
+}
+
+function isTitleCasedPronounObjectClause(value) {
+  const normalized = value.normalize('NFKC').trim();
+  const leadMatch = normalized.match(
+    /^(?:i|we|you|he|she|they|it|this|that|these|those)(?:\s+|$)/iu
+  );
+  if (!leadMatch) return false;
+
+  const words = normalized.split(/\s+/u);
+  const titleCasedPhrase = words.every((word, index) => {
+    if (titleConnectorPattern.test(word)) return true;
+    if (index === 0 && /^I$/u.test(word)) return true;
+    return /^[\p{Lu}\p{Lt}][\p{Ll}\p{M}\p{N}&'’\-]*$/u.test(word);
+  });
+  if (!titleCasedPhrase) return false;
+
+  const lead = leadMatch[0].trim();
+  const tokens = normalized.slice(leadMatch[0].length)
+    .match(/[\p{L}]+/gu)?.slice(0, 8) ?? [];
+  if (tokens.length < 3) return false;
+
+  const predicate = tokens[0];
+  const postPredicateTokens = tokens.slice(1);
+  return (isStrongFiniteSentencePredicate(predicate)
+      || isLikelyRegularFiniteSentencePredicate(
+        predicate,
+        lead,
+        postPredicateTokens
+      ))
+    && sentenceObjectMarkerPattern.test(
+      postPredicateTokens[0].toLocaleLowerCase('en-US')
+    )
+    && postPredicateTokens.length >= 2;
+}
+
+function isStrongPronounClauseWithinInstitutionalPhrase(value) {
+  const normalized = value.normalize('NFKC').trim();
+  if (/^(?:i|we|you|he|she|they|it|this|that|these|those)['’](?:m|s|re|ve|ll|d)(?=$|[^\p{L}])/iu.test(normalized)) {
+    return true;
+  }
+
+  const leadMatch = normalized.match(
+    /^(?:i|we|you|he|she|they|it|this|that|these|those)(?:\s+|$)/iu
+  );
+  if (!leadMatch) return false;
+  const lead = leadMatch[0].trim();
+  const tokens = normalized.slice(leadMatch[0].length)
+    .match(/[\p{L}]+/gu)?.slice(0, 8) ?? [];
+  if (tokens.length === 0) return false;
+
+  const likelyPredicate = (token, index) => {
+    const followingTokens = tokens.slice(index + 1);
+    return isBoundedSentencePredicate(token)
+      || isLikelyRegularFiniteSentencePredicate(token, lead, followingTokens);
+  };
+  const predicateIndex = tokens.findIndex(likelyPredicate);
+
+  if (predicateIndex >= 0) {
+    const predicate = tokens[predicateIndex];
+    const postPredicateTokens = tokens.slice(predicateIndex + 1);
+    if (postPredicateTokens.some(token =>
+      sentenceObjectMarkerPattern.test(token.toLocaleLowerCase('en-US'))
+    )) return true;
+
+    const lowerPredicate = predicate.toLocaleLowerCase('en-US');
+    if (sentenceAuxiliaryPattern.test(lowerPredicate)) {
+      return postPredicateTokens.some((token, index) =>
+        isBoundedSentencePredicate(token)
+        || isLikelyRegularFiniteSentencePredicate(
+          token,
+          lead,
+          postPredicateTokens.slice(index + 1)
+        )
+      ) || postPredicateTokens.length >= 2;
+    }
+
+    if (predicateIndex > 0) return isStrongFiniteSentencePredicate(predicate);
+    if (postPredicateTokens.length >= 2) return true;
+  }
+
+  const first = tokens[0]?.toLocaleLowerCase('en-US') ?? '';
+  const last = tokens.at(-1)?.toLocaleLowerCase('en-US') ?? '';
+  return tokens.length >= 3
+    && !titleConnectorPattern.test(first)
+    && !sentenceObjectMarkerPattern.test(first)
+    && institutionalSuffixPattern.test(last);
+}
+
+function isLikelyNamedEntityContinuation(value) {
+  const normalized = value.normalize('NFKC').trim();
+  const labelMatch = normalized.match(
+  /(?:^|[\s,;:·•\-‐‑‒–—―−|/\\]+)(?:(?:tel(?:ephone)?|phone|mobile|cell|fax|contact)(?:(?:\s+(?:number|no)(?:\s*\.)?)|\s*#)?\s*[:.]?\s*|(?:電話(?:番号)?|携帯(?:電話)?|ファックス|連絡先|お問い合わせ先)\s*[:.]?\s*)$/iu
+);
+  const phrase = (labelMatch
+    ? normalized.slice(0, labelMatch.index)
+    : normalized).trim();
+  if (!phrase || /[.!?。！？]/u.test(phrase)) return false;
+
+  const words = phrase.split(/\s+/u);
+  if (words.length < 2 || words.length > 10) return false;
+  const connectorPattern = /^(?:a|an|and|at|by|for|from|in|of|on|the|to|with|&)$/iu;
+  const nameTokenPattern = /^[\p{Lu}\p{Lt}\d][\p{L}\p{M}\p{N}&'’\-]*$/u;
+  if (!words.every(word => connectorPattern.test(word) || nameTokenPattern.test(word))) {
+    return false;
+  }
+
+  const suffix = words.at(-1).toLocaleLowerCase('en-US');
+  const hasInstitutionalSuffix = institutionalSuffixPattern.test(suffix);
+  if (hasInstitutionalSuffix) {
+    const casedWords = words.filter(word => /\p{L}/u.test(word));
+    const allCapsPhrase = casedWords.length > 0 && casedWords.every(word => {
+      const lower = word.toLocaleLowerCase('en-US');
+      const upper = word.toLocaleUpperCase('en-US');
+      return lower === upper || word === upper;
+    });
+    // Override the suffix only for unlabelled all-caps clauses. A
+    // terminal phone label and title casing are affirmative name evidence.
+    if (!labelMatch
+        && (isTitleCasedPronounObjectClause(phrase)
+  || (allCapsPhrase
+      && isStrongPronounClauseWithinInstitutionalPhrase(phrase)))) {
+      return false;
+    }
+    return true;
+  }
+
+  const hasMixedCaseTitleToken = words.slice(1).some(word =>
+  nameTokenPattern.test(word) && /\p{Ll}/u.test(word)
+);
+if (!labelMatch && isTitleCasedPronounObjectClause(phrase)) return false;
+return words.length >= 3 && hasMixedCaseTitleToken;
+}
+
+function isPronounSentenceLead(value) {
+  const normalized = value.normalize('NFKC').trimStart();
+  if (/^(?:i|we|you|he|she|they|it|this|that|these|those)['’](?:m|s|re|ve|ll|d)(?=$|[^\p{L}])/iu.test(normalized)) {
+    return true;
+  }
+
+  const leadMatch = normalized.match(
+    /^(?:i|we|you|he|she|they|it|this|that|these|those)(?:\s+|$)/iu
+  );
+  if (!leadMatch) return false;
+  const lead = leadMatch[0].trim();
+  const followingTokens = normalized.slice(leadMatch[0].length)
+    .match(/[\p{L}]+/gu)?.slice(0, 4) ?? [];
+  return followingTokens.some((token, index) =>
+    isBoundedSentencePredicate(token)
+    || isLikelyRegularFiniteSentencePredicate(
+      token,
+      lead,
+      followingTokens.slice(index + 1)
+    )
+  ) || isStrongPronounClauseWithinInstitutionalPhrase(normalized);
+}
+
+function startsFreshSentenceAfterAbbreviation(value) {
+  const normalized = value.normalize('NFKC').trimStart();
+  if (isLikelyNamedEntityContinuation(normalized)) return false;
+
+  const lead = (normalized.match(/^[\p{L}]+/u)?.[0] ?? '')
+    .toLocaleLowerCase('en-US');
+  if (/^(?:i|we|you|he|she|they|it|this|that|these|those)$/u.test(lead)) {
+    return isPronounSentenceLead(normalized);
+  }
+  return /^(?:then|please|afterward|meanwhile|however|therefore|otherwise|instead|finally)$/u.test(
+    lead
   );
 }
 
@@ -583,6 +805,7 @@ function isNarrativePeriodAbbreviation(value, contextStart, periodIndex, boundar
 
   const remainder = value.slice(boundaryEnd);
   const hasRemainder = /\S/u.test(remainder);
+  if (hasRemainder && startsFreshSentenceAfterAbbreviation(remainder)) return false;
   if (hasRemainder && !isTelephoneLabelRemainder(remainder)) return true;
 
   if (!localNarrativeConstructTail(prefixBeforeToken)) return true;
