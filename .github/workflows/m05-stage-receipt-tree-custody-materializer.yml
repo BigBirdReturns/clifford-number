@@ -5,7 +5,7 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/m05-stage-receipt-tree-custody-materializer.yml'
-      - '.m05-stage-tree-custody-materializer/**'
+      - '.m05-stage-tree-custody-hardening/**'
   workflow_dispatch:
 
 permissions:
@@ -19,92 +19,53 @@ jobs:
   materialize:
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    env:
-      EXPECTED_BASE: cdc9d3670fb226e92ff90952c3f8a4392c532a26
-      EXPECTED_TREE: 55ce861e8971bfc258b206acb4eb6a911c5ef0be
-      TARGET: agent/m05-s03-l7-stage-receipt-repository-tree-custody-v1
-      PAYLOAD_SHA256: 728c393fbbb527481424758f73876a563b69970b66dc3d6d31e7f4758d469ee2
-      REGISTRY: data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-registry.json
-      CONTRACT: data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-repository-tree-custody-amendment.json
-      TEST: test/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-repository-tree-custody-amendment.test.js
-      VALIDATOR: tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-repository-tree-custody-amendment.mjs
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
-
-      - name: Verify canonical lease and target absence
+      - name: Replace product bytes with the hardened exact revision
         shell: bash
         run: |
           set -euo pipefail
-          git fetch --prune origin main
+          EXPECTED_BASE='cdc9d3670fb226e92ff90952c3f8a4392c532a26'
+          EXPECTED_TREE='55ce861e8971bfc258b206acb4eb6a911c5ef0be'
+          TARGET='agent/m05-s03-l7-stage-receipt-repository-tree-custody-v1'
+          PAYLOAD_SHA256='880e334718428a184594feee380c4e3f84a072d07781fb8d7d23e66bc914536f'
+          CONTRACT='data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-repository-tree-custody-amendment.json'
+          TEST='test/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-repository-tree-custody-amendment.test.js'
+          VALIDATOR='tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-repository-tree-custody-amendment.mjs'
+          REGISTRY='data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-registry.json'
+          WORKFLOW='.github/workflows/m05-intel-realization-stage-receipt-repository-tree-custody-amendment.yml'
+
+          git fetch --prune origin main "$TARGET"
           test "$(git rev-parse origin/main)" = "$EXPECTED_BASE"
           test "$(git rev-parse origin/main^{tree})" = "$EXPECTED_TREE"
-          if git ls-remote --exit-code --heads origin "$TARGET" >/dev/null 2>&1; then
-            echo "target branch already exists" >&2
-            exit 1
-          fi
+          test "$(git rev-parse origin/$TARGET:$REGISTRY)" = '6d5a7f263e50716835af457b6fa82927711459fa'
+          test "$(git rev-parse origin/$TARGET:$WORKFLOW)" = 'dc5bf79d77ad15d0ea9692d0b24a6636e6e93b15'
+          test "$(git rev-parse origin/$TARGET:$CONTRACT)" = 'c5bbabaf13d61d2cee4095d5e88bed83664010ab'
+          test "$(git rev-parse origin/$TARGET:$VALIDATOR)" = '9278910e81798b2e004fe576a1ce0c6cf2a35a93'
+          test "$(git rev-parse origin/$TARGET:$TEST)" = '82af0716569874da53498bbd1338242d8aa54a28'
 
-      - name: Reconstruct checksum-bound payload
-        shell: bash
-        run: |
-          set -euo pipefail
-          rm -rf /tmp/m05-stage-tree-custody
-          mkdir -p /tmp/m05-stage-tree-custody
-          cat \
-            .m05-stage-tree-custody-materializer/payload-00.b64 \
-            .m05-stage-tree-custody-materializer/payload-01.b64 \
-            .m05-stage-tree-custody-materializer/tail-*.b64 \
-            | tr -d '\n' | base64 --decode > /tmp/m05-stage-tree-custody/payload.zip
-          sha256sum /tmp/m05-stage-tree-custody/payload.zip
-          echo "$PAYLOAD_SHA256  /tmp/m05-stage-tree-custody/payload.zip" | sha256sum -c -
+          mkdir -p /tmp/m05-stage-tree-custody-hardening
+          cat .m05-stage-tree-custody-hardening/payload-*.b64 | tr -d '\n' | base64 --decode > /tmp/m05-stage-tree-custody-hardening/payload.zip
+          echo "$PAYLOAD_SHA256  /tmp/m05-stage-tree-custody-hardening/payload.zip" | sha256sum -c -
+          unzip -q /tmp/m05-stage-tree-custody-hardening/payload.zip -d /tmp/m05-stage-tree-custody-hardening/product
+          test "$(git hash-object /tmp/m05-stage-tree-custody-hardening/product/$CONTRACT)" = '353266ad3412f415b227f16bf4a1bdb342b51f15'
+          test "$(git hash-object /tmp/m05-stage-tree-custody-hardening/product/$VALIDATOR)" = '54b27caceeeb18b90ef0a15cde003ea8716699c7'
+          test "$(git hash-object /tmp/m05-stage-tree-custody-hardening/product/$TEST)" = 'ccd1d313e3e653dfa05676736962acfc48ab4ee6'
 
-      - name: Verify archive and exact product objects
-        shell: bash
-        run: |
-          set -euo pipefail
-          unzip -t /tmp/m05-stage-tree-custody/payload.zip
-          unzip -q /tmp/m05-stage-tree-custody/payload.zip -d /tmp/m05-stage-tree-custody/product
-          test "$(git hash-object /tmp/m05-stage-tree-custody/product/$REGISTRY)" = '6d5a7f263e50716835af457b6fa82927711459fa'
-          test "$(git hash-object /tmp/m05-stage-tree-custody/product/$CONTRACT)" = 'c5bbabaf13d61d2cee4095d5e88bed83664010ab'
-          test "$(git hash-object /tmp/m05-stage-tree-custody/product/$TEST)" = '82af0716569874da53498bbd1338242d8aa54a28'
-          test "$(git hash-object /tmp/m05-stage-tree-custody/product/$VALIDATOR)" = '9278910e81798b2e004fe576a1ce0c6cf2a35a93'
-          node --check "/tmp/m05-stage-tree-custody/product/$VALIDATOR"
-          node --check "/tmp/m05-stage-tree-custody/product/$TEST"
-
-      - name: Build exact sole-parent product commit
-        shell: bash
-        run: |
-          set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git switch --detach "$EXPECTED_BASE"
-          git switch -c "$TARGET"
-          cp -a /tmp/m05-stage-tree-custody/product/. .
-          git add -- "$REGISTRY" "$CONTRACT" "$TEST" "$VALIDATOR"
-          mapfile -t ACTUAL < <(git diff --cached --name-only | LC_ALL=C sort)
-          EXPECTED=("$CONTRACT" "$REGISTRY" "$TEST" "$VALIDATOR")
-          mapfile -t EXPECTED_SORTED < <(printf '%s\n' "${EXPECTED[@]}" | LC_ALL=C sort)
-          test "${#ACTUAL[@]}" -eq 4
-          test "$(printf '%s\n' "${ACTUAL[@]}")" = "$(printf '%s\n' "${EXPECTED_SORTED[@]}")"
+          git switch -C "$TARGET" "origin/$TARGET"
+          cp -a /tmp/m05-stage-tree-custody-hardening/product/. .
+          git add -- "$CONTRACT" "$TEST" "$VALIDATOR"
+          printf '%s\n' "$CONTRACT" "$TEST" "$VALIDATOR" | LC_ALL=C sort > /tmp/expected
+          git diff --cached --name-only | LC_ALL=C sort > /tmp/actual
+          diff -u /tmp/expected /tmp/actual
           git diff --cached --check
-          git commit -m '[M-05 S03-L7] Materialize repository-tree custody product'
-          test "$(git rev-parse HEAD^)" = "$EXPECTED_BASE"
-          test "$(git rev-parse HEAD:$REGISTRY)" = '6d5a7f263e50716835af457b6fa82927711459fa'
-          test "$(git rev-parse HEAD:$CONTRACT)" = 'c5bbabaf13d61d2cee4095d5e88bed83664010ab'
-          test "$(git rev-parse HEAD:$TEST)" = '82af0716569874da53498bbd1338242d8aa54a28'
-          test "$(git rev-parse HEAD:$VALIDATOR)" = '9278910e81798b2e004fe576a1ce0c6cf2a35a93'
-
-      - name: Publish exact product branch
-        shell: bash
-        run: |
-          set -euo pipefail
-          git fetch --prune origin main
-          test "$(git rev-parse origin/main)" = "$EXPECTED_BASE"
-          test "$(git rev-parse origin/main^{tree})" = "$EXPECTED_TREE"
-          if git ls-remote --exit-code --heads origin "$TARGET" >/dev/null 2>&1; then
-            echo "target branch appeared during qualification" >&2
-            exit 1
-          fi
+          node --check "$VALIDATOR"
+          node --check "$TEST"
+          node "$TEST"
+          git commit -m '[M-05 S03-L7] Harden repository-tree custody admission'
           git push origin "HEAD:refs/heads/$TARGET"
