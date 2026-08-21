@@ -1,0 +1,131 @@
+diff --git a/tools/crawl-industrial-exhaust.mjs b/tools/crawl-industrial-exhaust.mjs
+index 22c4cc8..0000000 100755
+--- a/tools/crawl-industrial-exhaust.mjs
++++ b/tools/crawl-industrial-exhaust.mjs
+@@ -91,7 +91,8 @@ async function main() {
+           ...prior,
+           last_checked_at: capturedAt,
+           last_status: 'not_modified',
+-          last_error: null
++          last_error: null,
++          new_observation_count: 0
+         };
+         summaries.push({ source_id: source.id, status: 'not_modified', added: 0 });
+         continue;
+@@ -135,7 +136,8 @@ async function main() {
+         publisher: source.publisher,
+         last_checked_at: capturedAt,
+         last_status: 'error',
+-        last_error: error.message
++        last_error: error.message,
++        new_observation_count: 0
+       };
+       summaries.push({ source_id: source.id, status: 'error', error: error.message });
+     }
+diff --git a/tools/hydrate-industrial-exhaust.mjs b/tools/hydrate-industrial-exhaust.mjs
+index 24aa808..0000000 100755
+--- a/tools/hydrate-industrial-exhaust.mjs
++++ b/tools/hydrate-industrial-exhaust.mjs
+@@ -158,6 +158,7 @@ last_checked_at: capturedAt,
+ last_status: 'not_modified',
+ last_error: null,
++new_discovery_count: 0,
+ resolved_url: fetched.finalUrl,
+ redirect_chain: fetched.redirectChain
+         };
+@@ -191,7 +192,7 @@ redirect_chain: headers.redirect_chain
+       }
+     } catch (error) {
+       failures.push({ stage: 'index', source_id: source.id, error: error.message });
+-      state.indexes[source.id] = { ...prior, index_url: source.index_url, publisher: source.publisher, last_checked_at: capturedAt, last_status: 'error', last_error: error.message };
++      state.indexes[source.id] = { ...prior, index_url: source.index_url, publisher: source.publisher, last_checked_at: capturedAt, last_status: 'error', last_error: error.message, new_discovery_count: 0 };
+       indexSummaries.push({ source_id: source.id, status: 'error', error: error.message });
+     }
+   }
+diff --git a/test/industrial-exhaust.test.js b/test/industrial-exhaust.test.js
+index 1004a6b..0000000 100644
+--- a/test/industrial-exhaust.test.js
++++ b/test/industrial-exhaust.test.js
+@@ -1661,4 +1661,18 @@ for (const [input, expected] of [
+   );
+ }
+ 
++const crawlerRuntimeSource = fs.readFileSync(
++  new URL('../tools/crawl-industrial-exhaust.mjs', import.meta.url),
++  'utf8'
++);
++assert.match(
++  crawlerRuntimeSource,
++  /last_status: 'not_modified',\s+last_error: null,\s+new_observation_count: 0/u,
++  'a 304 response must reset the current-run observation count'
++);
++assert.match(
++  crawlerRuntimeSource,
++  /last_status: 'error',\s+last_error: error\.message,\s+new_observation_count: 0/u,
++  'an acquisition error must reset the current-run observation count'
++);
++
+ console.log('industrial-exhaust tests passed');
+diff --git a/test/industrial-exhaust-artifacts.test.js b/test/industrial-exhaust-artifacts.test.js
+index c2e8bf9..0000000 100644
+--- a/test/industrial-exhaust-artifacts.test.js
++++ b/test/industrial-exhaust-artifacts.test.js
+@@ -283,4 +283,18 @@ assert.throws(() => assertAllowedArtifactUrl('https://user@www.dentsu.com/news-r
+ assert.throws(() => validateArtifactConfig({ ...config, graph_effect: 'edge' }), /may not authorize/u);
+ 
++const hydratorRuntimeSource = fs.readFileSync(
++  new URL('../tools/hydrate-industrial-exhaust.mjs', import.meta.url),
++  'utf8'
++);
++assert.match(
++  hydratorRuntimeSource,
++  /last_status: 'not_modified',\s+last_error: null,\s+new_discovery_count: 0/u,
++  'a 304 index response must reset the current-run discovery count'
++);
++assert.match(
++  hydratorRuntimeSource,
++  /last_status: 'error',\s+last_error: error\.message,\s+new_discovery_count: 0/u,
++  'an index acquisition error must reset the current-run discovery count'
++);
++
+ console.log('industrial-exhaust artifact tests passed');
+diff --git a/data/exhaust/state.json b/data/exhaust/state.json
+index 242f16e..5d03d49 100644
+--- a/data/exhaust/state.json
++++ b/data/exhaust/state.json
+@@ -12,7 +12,7 @@
+       "last_error": null,
+       "feed_sha256": "7d6f5ae36f6749a50477c9936762959fad1dbffe0ef04abc35a275855749a8c9",
+       "feed_item_count": 100,
+-      "new_observation_count": 100,
++      "new_observation_count": 0,
+       "etag": "\"e63a-6585a586b6c80\"",
+       "last_modified": "Thu, 06 Aug 2026 05:41:54 GMT"
+     },
+@@ -25,7 +25,7 @@
+       "last_error": null,
+       "feed_sha256": "a30e691a4c1449e8b1d4777cce195562fe829c6caa85603ade173f0fe24eac18",
+       "feed_item_count": 100,
+-      "new_observation_count": 1,
++      "new_observation_count": 0,
+       "etag": "\"15aea-65946ed1dcd40\"",
+       "last_modified": "Mon, 17 Aug 2026 23:57:01 GMT"
+     },
+@@ -38,7 +38,7 @@
+       "last_error": null,
+       "feed_sha256": "ad33da8dd44b75b2f4c415451cb2ab281d3ef341ea7fa57d0c649cbc9d71a904",
+       "feed_item_count": 100,
+-      "new_observation_count": 100,
++      "new_observation_count": 0,
+       "etag": "\"eaf2-658d3a6337d80\"",
+       "last_modified": "Wed, 12 Aug 2026 06:25:10 GMT"
+     },
+@@ -51,7 +51,7 @@
+       "last_error": null,
+       "feed_sha256": "4f31178bdceb9606d52f5bc8678d01fbc7d3a59f2dd500e0ad24ac6db54ec24b",
+       "feed_item_count": 100,
+-      "new_observation_count": 100,
++      "new_observation_count": 0,
+       "etag": "\"1542c-658d39545fe80\"",
+       "last_modified": "Wed, 12 Aug 2026 06:20:26 GMT"
+     },
