@@ -25,18 +25,108 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Recover qualified patch and reset to exact product base
+      - name: Materialize qualified repair on exact product base
         env:
           EXPECTED_BASE: bd885ff47b0256d0aba1cb3ff1e61ef7285b206e
         run: |
           set -euo pipefail
-          cp .github/industrial-exhaust-run-counter-reset.patch /tmp/counter-reset.patch
-          test -s /tmp/counter-reset.patch
-          test "$(sha256sum /tmp/counter-reset.patch | awk '{print $1}')" = "ec3d2da50e360eb4464abfd459cbe181403680e03522de325577677fd8019e0b"
           git checkout --detach "$EXPECTED_BASE"
           test "$(git rev-parse HEAD)" = "$EXPECTED_BASE"
-          git apply --check --recount /tmp/counter-reset.patch
-          git apply --recount /tmp/counter-reset.patch
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+
+          function replaceExact(path, before, after, expectedMatches = 1) {
+            const current = fs.readFileSync(path, 'utf8');
+            const matches = current.split(before).length - 1;
+            if (matches !== expectedMatches) {
+              throw new Error(`${path}: expected ${expectedMatches} exact match(es), found ${matches}`);
+            }
+            fs.writeFileSync(path, current.replaceAll(before, after));
+          }
+
+          replaceExact(
+            'tools/crawl-industrial-exhaust.mjs',
+            "          last_status: 'not_modified',\n          last_error: null\n",
+            "          last_status: 'not_modified',\n          last_error: null,\n          new_observation_count: 0\n"
+          );
+          replaceExact(
+            'tools/crawl-industrial-exhaust.mjs',
+            "        last_status: 'error',\n        last_error: error.message\n",
+            "        last_status: 'error',\n        last_error: error.message,\n        new_observation_count: 0\n"
+          );
+          replaceExact(
+            'tools/hydrate-industrial-exhaust.mjs',
+            "last_status: 'not_modified',\nlast_error: null,\nresolved_url: fetched.finalUrl,",
+            "last_status: 'not_modified',\nlast_error: null,\nnew_discovery_count: 0,\nresolved_url: fetched.finalUrl,"
+          );
+          replaceExact(
+            'tools/hydrate-industrial-exhaust.mjs',
+            "state.indexes[source.id] = { ...prior, index_url: source.index_url, publisher: source.publisher, last_checked_at: capturedAt, last_status: 'error', last_error: error.message };",
+            "state.indexes[source.id] = { ...prior, index_url: source.index_url, publisher: source.publisher, last_checked_at: capturedAt, last_status: 'error', last_error: error.message, new_discovery_count: 0 };"
+          );
+
+          const crawlerTestMarker = "console.log('industrial-exhaust tests passed');";
+          const crawlerTestInsert = [
+            "const crawlerRuntimeSource = fs.readFileSync(",
+            "  new URL('../tools/crawl-industrial-exhaust.mjs', import.meta.url),",
+            "  'utf8'",
+            ");",
+            "assert.match(",
+            "  crawlerRuntimeSource,",
+            "  /last_status: 'not_modified',\\s+last_error: null,\\s+new_observation_count: 0/u,",
+            "  'a 304 response must reset the current-run observation count'",
+            ");",
+            "assert.match(",
+            "  crawlerRuntimeSource,",
+            "  /last_status: 'error',\\s+last_error: error\\.message,\\s+new_observation_count: 0/u,",
+            "  'an acquisition error must reset the current-run observation count'",
+            ");",
+            ""
+          ].join('\n');
+          replaceExact(
+            'test/industrial-exhaust.test.js',
+            crawlerTestMarker,
+            `${crawlerTestInsert}\n${crawlerTestMarker}`
+          );
+
+          const hydratorTestMarker = "console.log('industrial-exhaust artifact tests passed');";
+          const hydratorTestInsert = [
+            "const hydratorRuntimeSource = fs.readFileSync(",
+            "  new URL('../tools/hydrate-industrial-exhaust.mjs', import.meta.url),",
+            "  'utf8'",
+            ");",
+            "assert.match(",
+            "  hydratorRuntimeSource,",
+            "  /last_status: 'not_modified',\\s+last_error: null,\\s+new_discovery_count: 0/u,",
+            "  'a 304 index response must reset the current-run discovery count'",
+            ");",
+            "assert.match(",
+            "  hydratorRuntimeSource,",
+            "  /last_status: 'error',\\s+last_error: error\\.message,\\s+new_discovery_count: 0/u,",
+            "  'an index acquisition error must reset the current-run discovery count'",
+            ");",
+            ""
+          ].join('\n');
+          replaceExact(
+            'test/industrial-exhaust-artifacts.test.js',
+            hydratorTestMarker,
+            `${hydratorTestInsert}\n${hydratorTestMarker}`
+          );
+
+          const statePath = 'data/exhaust/state.json';
+          const state = JSON.parse(fs.readFileSync(statePath, 'utf8'));
+          let resetCount = 0;
+          for (const source of Object.values(state.sources ?? {})) {
+            if (source.last_status === 'not_modified' && source.new_observation_count !== 0) {
+              source.new_observation_count = 0;
+              resetCount += 1;
+            }
+          }
+          if (resetCount !== 4) {
+            throw new Error(`${statePath}: expected to normalize 4 stale counters, normalized ${resetCount}`);
+          }
+          fs.writeFileSync(statePath, `${JSON.stringify(state, null, 2)}\n`);
+          NODE
       - name: Validate exact five-file product surface
         run: |
           set -euo pipefail
