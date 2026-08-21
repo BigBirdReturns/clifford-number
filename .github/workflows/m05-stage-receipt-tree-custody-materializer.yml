@@ -1,0 +1,81 @@
+name: NEVER MERGE materialize M-05 repository-tree custody
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/m05-stage-receipt-tree-custody-materializer.yml'
+      - '.m05-stage-tree-custody-hardening/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: m05-stage-tree-custody-materializer-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - name: Publish hardened product objects from an isolated worktree
+        shell: bash
+        run: |
+          set -euo pipefail
+          EXPECTED_BASE='cdc9d3670fb226e92ff90952c3f8a4392c532a26'
+          EXPECTED_TREE='55ce861e8971bfc258b206acb4eb6a911c5ef0be'
+          TARGET='agent/m05-s03-l7-stage-receipt-repository-tree-custody-v1'
+          PAYLOAD_SHA256='880e334718428a184594feee380c4e3f84a072d07781fb8d7d23e66bc914536f'
+          CONTRACT='data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-repository-tree-custody-amendment.json'
+          TEST='test/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-repository-tree-custody-amendment.test.js'
+          VALIDATOR='tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-repository-tree-custody-amendment.mjs'
+          SUCCESSOR_WORKFLOW='.github/workflows/m05-intel-realization-stage-receipt-repository-tree-custody-amendment.yml'
+          WORKTREE='/tmp/m05-stage-tree-custody-worktree'
+
+          git fetch --prune origin main
+          test "$(git rev-parse origin/main)" = "$EXPECTED_BASE"
+          test "$(git rev-parse origin/main^{tree})" = "$EXPECTED_TREE"
+          REMOTE_TARGET="$(git ls-remote --heads origin "$TARGET" | awk '{print $1}')"
+          test "$REMOTE_TARGET" = "$EXPECTED_BASE"
+
+          mkdir -p /tmp/m05-stage-tree-custody-hardening
+          cat .m05-stage-tree-custody-hardening/payload-*.b64 | tr -d '\n' | base64 --decode > /tmp/m05-stage-tree-custody-hardening/payload.zip
+          echo "$PAYLOAD_SHA256  /tmp/m05-stage-tree-custody-hardening/payload.zip" | sha256sum -c -
+          unzip -q /tmp/m05-stage-tree-custody-hardening/payload.zip -d /tmp/m05-stage-tree-custody-hardening/product
+          test "$(git hash-object /tmp/m05-stage-tree-custody-hardening/product/$CONTRACT)" = '353266ad3412f415b227f16bf4a1bdb342b51f15'
+          test "$(git hash-object /tmp/m05-stage-tree-custody-hardening/product/$VALIDATOR)" = '54b27caceeeb18b90ef0a15cde003ea8716699c7'
+          test "$(git hash-object /tmp/m05-stage-tree-custody-hardening/product/$TEST)" = 'ccd1d313e3e653dfa05676736962acfc48ab4ee6'
+
+          rm -rf "$WORKTREE"
+          git worktree add --detach "$WORKTREE" "$EXPECTED_BASE"
+          cd "$WORKTREE"
+          git switch -c "$TARGET"
+          test ! -e "$SUCCESSOR_WORKFLOW"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          cp -a /tmp/m05-stage-tree-custody-hardening/product/. .
+          git add -- "$CONTRACT" "$TEST" "$VALIDATOR"
+          printf '%s\n' "$CONTRACT" "$TEST" "$VALIDATOR" | LC_ALL=C sort > /tmp/expected
+          git diff --cached --name-only | LC_ALL=C sort > /tmp/actual
+          diff -u /tmp/expected /tmp/actual
+          test ! -e "$SUCCESSOR_WORKFLOW"
+          git diff --cached --check
+          node --check "$VALIDATOR"
+          node --check "$TEST"
+          node "$TEST"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m '[M-05 S03-L7] Publish hardened repository-tree custody objects'
+          test "$(git rev-parse HEAD^)" = "$EXPECTED_BASE"
+          git diff-tree --no-commit-id --name-only -r HEAD | LC_ALL=C sort > /tmp/committed
+          diff -u /tmp/expected /tmp/committed
+          if git cat-file -e "HEAD:$SUCCESSOR_WORKFLOW" 2>/dev/null; then
+            echo 'successor workflow unexpectedly entered the hardened object commit' >&2
+            exit 1
+          fi
+          git push origin "HEAD:refs/heads/$TARGET"
