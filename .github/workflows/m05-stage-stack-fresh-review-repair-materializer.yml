@@ -27,13 +27,15 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Reconstruct, qualify, and publish exact three-path successor
+      - name: Reconstruct, qualify, restore, and publish exact four-path successor
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BASE_SHA: bd885ff47b0256d0aba1cb3ff1e61ef7285b206e
           BASE_TREE: 98b03809a0ea23ba1c7267580e668317cd90ddac
           PRODUCT_BRANCH: agent/m05-s03-l7-stage-stack-postmerge-repair-v1
-          PRODUCT_HEAD: ee68b2e1bf5ac11eb993f9a3b8909846933aa87c
+          PRODUCT_HEAD: c9aad96393724d531417077b999cc902ddc184a3
+          CLEAN_PARENT: ee68b2e1bf5ac11eb993f9a3b8909846933aa87c
+          WORKFLOW_PATH: .github/workflows/m05-intel-realization-stage-receipt-control-stack-amendment.yml
           ARCHIVE_SHA256: 64889da1e8f32f12b8cb52223c77a4eb1b3c283025b49a95bf3dff08921933e3
           CONTRACT_BLOB: 14decc6ed12383ca7395551c025edac06c446c5c
           VALIDATOR_BLOB: f011ce212a5b94a8d2557b8a88f12f30740b010e
@@ -52,12 +54,17 @@ jobs:
           printf '%s  %s\n' "$ARCHIVE_SHA256" "$archive" | sha256sum -c -
 
           mkdir -p "$extract"
-          mapfile -t actual_paths < <(tar -tJf "$archive" | sed 's#^\./##' | grep -v '/$' | sort)
-          mapfile -t expected_paths < <(printf '%s\n' \
+          mapfile -t archive_paths < <(tar -tJf "$archive" | sed 's#^\./##' | grep -v '/$' | sort)
+          mapfile -t expected_archive_paths < <(printf '%s\n' \
             'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-postmerge-repair.json' \
             'test/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.test.js' \
             'tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.mjs' | sort)
-          test "$(printf '%s\n' "${actual_paths[@]}")" = "$(printf '%s\n' "${expected_paths[@]}")"
+          mapfile -t expected_product_paths < <(printf '%s\n' \
+            '.github/workflows/m05-intel-realization-stage-receipt-control-stack-amendment.yml' \
+            'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-postmerge-repair.json' \
+            'test/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.test.js' \
+            'tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.mjs' | sort)
+          test "$(printf '%s\n' "${archive_paths[@]}")" = "$(printf '%s\n' "${expected_archive_paths[@]}")"
           tar -xJf "$archive" -C "$extract" --no-same-owner --no-same-permissions
 
           test "$(git hash-object "$extract/data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-postmerge-repair.json")" = "$CONTRACT_BLOB"
@@ -68,15 +75,18 @@ jobs:
           test "$(git rev-parse origin/main)" = "$BASE_SHA"
           test "$(git rev-parse "$BASE_SHA^{tree}")" = "$BASE_TREE"
           test "$(git rev-parse "origin/$PRODUCT_BRANCH")" = "$PRODUCT_HEAD"
-          test "$(git ls-tree "$PRODUCT_HEAD" .github/workflows/m05-intel-realization-stage-receipt-control-stack-amendment.yml | awk '{print $3}')" = "$WORKFLOW_BLOB"
+          test "$(git rev-parse "$PRODUCT_HEAD^")" = "$CLEAN_PARENT"
+          test "$(git ls-tree "$CLEAN_PARENT" "$WORKFLOW_PATH" | awk '{print $3}')" = "$WORKFLOW_BLOB"
 
           git worktree add --detach "$worktree" "$PRODUCT_HEAD"
-          for rel in "${expected_paths[@]}"; do
+          for rel in "${expected_archive_paths[@]}"; do
             mkdir -p "$worktree/$(dirname "$rel")"
             cp "$extract/$rel" "$worktree/$rel"
           done
+          git show "$CLEAN_PARENT:$WORKFLOW_PATH" > "$worktree/$WORKFLOW_PATH"
           cd "$worktree"
 
+          test "$(git hash-object "$WORKFLOW_PATH")" = "$WORKFLOW_BLOB"
           node --check tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.mjs
           node --check test/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.test.js
           node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-provenance-object-custody.mjs
@@ -92,15 +102,13 @@ jobs:
           npm run release:check
           git diff --check
 
-          git add -- \
-            data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-postmerge-repair.json \
-            tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.mjs \
-            test/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.test.js
+          git add -- "${expected_product_paths[@]}"
           mapfile -t staged < <(git diff --cached --name-only | sort)
-          test "$(printf '%s\n' "${staged[@]}")" = "$(printf '%s\n' "${expected_paths[@]}")"
+          test "$(printf '%s\n' "${staged[@]}")" = "$(printf '%s\n' "${expected_product_paths[@]}")"
           test "$(git hash-object data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-postmerge-repair.json)" = "$CONTRACT_BLOB"
           test "$(git hash-object tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.mjs)" = "$VALIDATOR_BLOB"
           test "$(git hash-object test/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.test.js)" = "$TEST_BLOB"
+          test "$(git hash-object "$WORKFLOW_PATH")" = "$WORKFLOW_BLOB"
 
           git config user.name 'BigBirdReturns'
           git config user.email 'bigbirdreturns@proton.me'
@@ -108,7 +116,7 @@ jobs:
           successor_head="$(git rev-parse HEAD)"
           successor_tree="$(git rev-parse HEAD^{tree})"
           mapfile -t committed < <(git diff-tree --no-commit-id --name-only -r HEAD | sort)
-          test "$(printf '%s\n' "${committed[@]}")" = "$(printf '%s\n' "${expected_paths[@]}")"
+          test "$(printf '%s\n' "${committed[@]}")" = "$(printf '%s\n' "${expected_product_paths[@]}")"
 
           git fetch --no-tags origin main "$PRODUCT_BRANCH"
           test "$(git rev-parse origin/main)" = "$BASE_SHA"
