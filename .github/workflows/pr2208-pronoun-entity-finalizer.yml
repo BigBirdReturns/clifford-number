@@ -1,4 +1,4 @@
-name: PR2208 plural-base and title-clause launcher v3
+name: PR2208 plural-base and title-clause launcher v4
 
 on:
   pull_request:
@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: pr2208-plural-title-launcher-v3-${{ github.event.pull_request.head.sha }}
+  group: pr2208-plural-title-launcher-v4-${{ github.event.pull_request.head.sha }}
   cancel-in-progress: false
 
 jobs:
@@ -45,8 +45,14 @@ jobs:
           source = workflow.read_text(encoding='utf-8')
           marker = '        run: |\n'
           assert source.count(marker) == 1, 'finalizer payload marker changed'
-          payload = source.split(marker, 1)[1]
-          lines = payload.splitlines()
+
+          lines = []
+          for line in source.split(marker, 1)[1].splitlines():
+              if line.strip() and not line.startswith('          '):
+                  break
+              lines.append(line)
+
+          assert lines and any(line.strip() for line in lines), 'finalizer payload missing'
           assert all(not line.strip() or line.startswith('          ') for line in lines), (
               'finalizer payload escaped its YAML block'
           )
