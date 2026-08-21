@@ -276,4 +276,19 @@ assert.throws(() => assertAllowedArtifactUrl('https://www.dentsu.com:8443/news-r
 assert.throws(() => assertAllowedArtifactUrl('https://user@www.dentsu.com/news-releases/example', config), /credentials/u);
 assert.throws(() => validateArtifactConfig({ ...config, graph_effect: 'edge' }), /may not authorize/u);
 
+const hydratorRuntimeSource = fs.readFileSync(
+  new URL('../tools/hydrate-industrial-exhaust.mjs', import.meta.url),
+  'utf8'
+);
+assert.match(
+  hydratorRuntimeSource,
+  /last_status: 'not_modified',\s+last_error: null,\s+new_discovery_count: 0/u,
+  'a 304 index response must reset the current-run discovery count'
+);
+assert.match(
+  hydratorRuntimeSource,
+  /last_status: 'error',\s+last_error: error\.message,\s+new_discovery_count: 0/u,
+  'an index acquisition error must reset the current-run discovery count'
+);
+
 console.log('industrial-exhaust artifact tests passed');

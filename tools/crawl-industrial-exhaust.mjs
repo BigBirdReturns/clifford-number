@@ -92,7 +92,8 @@ async function main() {
           ...prior,
           last_checked_at: capturedAt,
           last_status: 'not_modified',
-          last_error: null
+          last_error: null,
+          new_observation_count: 0
         };
         summaries.push({ source_id: source.id, status: 'not_modified', added: 0 });
         continue;
@@ -137,7 +138,8 @@ async function main() {
         publisher: source.publisher,
         last_checked_at: capturedAt,
         last_status: 'error',
-        last_error: error.message
+        last_error: error.message,
+        new_observation_count: 0
       };
       summaries.push({ source_id: source.id, status: 'error', error: error.message });
     }

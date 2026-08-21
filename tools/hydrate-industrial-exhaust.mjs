@@ -181,6 +181,7 @@ async function main() {
 last_checked_at: capturedAt,
 last_status: 'not_modified',
 last_error: null,
+new_discovery_count: 0,
 resolved_url: fetched.finalUrl,
 redirect_chain: fetched.redirectChain
         };
@@ -213,7 +214,7 @@ redirect_chain: fetched.redirectChain
       indexSummaries.push({ source_id: source.id, status: 'ok', items: parsed.item_count, added: merged.added.length });
     } catch (error) {
       failures.push({ stage: 'index', source_id: source.id, error: error.message });
-      state.indexes[source.id] = { ...prior, index_url: source.index_url, publisher: source.publisher, last_checked_at: capturedAt, last_status: 'error', last_error: error.message };
+      state.indexes[source.id] = { ...prior, index_url: source.index_url, publisher: source.publisher, last_checked_at: capturedAt, last_status: 'error', last_error: error.message, new_discovery_count: 0 };
       indexSummaries.push({ source_id: source.id, status: 'error', error: error.message });
     }
   }
