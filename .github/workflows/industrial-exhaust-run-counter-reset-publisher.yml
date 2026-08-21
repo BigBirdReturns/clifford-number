@@ -1,0 +1,74 @@
+name: Industrial exhaust run-counter reset publisher
+
+on:
+  push:
+    branches:
+      - agent/industrial-exhaust-run-counter-reset-controller-v1
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: bd885ff47b0256d0aba1cb3ff1e61ef7285b206e
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Verify exact base and apply qualified patch
+        env:
+          EXPECTED_BASE: bd885ff47b0256d0aba1cb3ff1e61ef7285b206e
+          PATCH_B64: ZGlmZiAtLWdpdCBhL3Rvb2xzL2NyYXdsLWluZHVzdHJpYWwtZXhoYXVzdC5tanMgYi90b29scy9jcmF3bC1pbmR1c3RyaWFsLWV4aGF1c3QubWpzCmluZGV4IDIyYzRjYzguLjAwMDAwMDAgMTAwNzU1Ci0tLSBhL3Rvb2xzL2NyYXdsLWluZHVzdHJpYWwtZXhoYXVzdC5tanMKKysrIGIvdG9vbHMvY3Jhd2wtaW5kdXN0cmlhbC1leGhhdXN0Lm1qcwpAQCAtOTEsNyArOTEsOCBAQCBhc3luYyBmdW5jdGlvbiBtYWluKCkgewogICAgICAgICAgIC4uLnByaW9yLAogICAgICAgICAgIGxhc3RfY2hlY2tlZF9hdDogY2FwdHVyZWRBdCwKICAgICAgICAgICBsYXN0X3N0YXR1czogJ25vdF9tb2RpZmllZCcsCi0gICAgICAgICAgbGFzdF9lcnJvcjogbnVsbAorICAgICAgICAgIGxhc3RfZXJyb3I6IG51bGwsCisgICAgICAgICAgbmV3X29ic2VydmF0aW9uX2NvdW50OiAwCiAgICAgICAgIH07CiAgICAgICAgIHN1bW1hcmllcy5wdXNoKHsgc291cmNlX2lkOiBzb3VyY2UuaWQsIHN0YXR1czogJ25vdF9tb2RpZmllZCcsIGFkZGVkOiAwIH0pOwogICAgICAgICBjb250aW51ZTsKQEAgLTEzNSw3ICsxMzYsOCBAQCBhc3luYyBmdW5jdGlvbiBtYWluKCkgewogICAgICAgICBwdWJsaXNoZXI6IHNvdXJjZS5wdWJsaXNoZXIsCiAgICAgICAgIGxhc3RfY2hlY2tlZF9hdDogY2FwdHVyZWRBdCwKICAgICAgICAgbGFzdF9zdGF0dXM6ICdlcnJvcicsCi0gICAgICAgIGxhc3RfZXJyb3I6IGVycm9yLm1lc3NhZ2UKKyAgICAgICAgbGFzdF9lcnJvcjogZXJyb3IubWVzc2FnZSwKKyAgICAgICAgbmV3X29ic2VydmF0aW9uX2NvdW50OiAwCiAgICAgICB9OwogICAgICAgc3VtbWFyaWVzLnB1c2goeyBzb3VyY2VfaWQ6IHNvdXJjZS5pZCwgc3RhdHVzOiAnZXJyb3InLCBlcnJvcjogZXJyb3IubWVzc2FnZSB9KTsKICAgICB9CmRpZmYgLS1naXQgYS90b29scy9oeWRyYXRlLWluZHVzdHJpYWwtZXhoYXVzdC5tanMgYi90b29scy9oeWRyYXRlLWluZHVzdHJpYWwtZXhoYXVzdC5tanMKaW5kZXggMjRhYTgwOC4uMDAwMDAwMCAxMDA3NTUKLS0tIGEvdG9vbHMvaHlkcmF0ZS1pbmR1c3RyaWFsLWV4aGF1c3QubWpzCisrKyBiL3Rvb2xzL2h5ZHJhdGUtaW5kdXN0cmlhbC1leGhhdXN0Lm1qcwpAQCAtMTU4LDYgKzE1OCw3IEBAIGxhc3RfY2hlY2tlZF9hdDogY2FwdHVyZWRBdCwKIGxhc3Rfc3RhdHVzOiAnbm90X21vZGlmaWVkJywKIGxhc3RfZXJyb3I6IG51bGwsCituZXdfZGlzY292ZXJ5X2NvdW50OiAwLAogcmVzb2x2ZWRfdXJsOiBmZXRjaGVkLmZpbmFsVXJsLAogcmVkaXJlY3RfY2hhaW46IGZldGNoZWQucmVkaXJlY3RDaGFpbgogICAgICAgICB9OwpAQCAtMTkxLDcgKzE5Miw3IEBAIHJlZGlyZWN0X2NoYWluOiBoZWFkZXJzLnJlZGlyZWN0X2NoYWluCiAgICAgICB9CiAgICAgfSBjYXRjaCAoZXJyb3IpIHsKICAgICAgIGZhaWx1cmVzLnB1c2goeyBzdGFnZTogJ2luZGV4Jywgc291cmNlX2lkOiBzb3VyY2UuaWQsIGVycm9yOiBlcnJvci5tZXNzYWdlIH0pOwotICAgICAgc3RhdGUuaW5kZXhlc1tzb3VyY2UuaWRdID0geyAuLi5wcmlvciwgaW5kZXhfdXJsOiBzb3VyY2UuaW5kZXhfdXJsLCBwdWJsaXNoZXI6IHNvdXJjZS5wdWJsaXNoZXIsIGxhc3RfY2hlY2tlZF9hdDogY2FwdHVyZWRBdCwgbGFzdF9zdGF0dXM6ICdlcnJvcicsIGxhc3RfZXJyb3I6IGVycm9yLm1lc3NhZ2UgfTsKKyAgICAgIHN0YXRlLmluZGV4ZXNbc291cmNlLmlkXSA9IHsgLi4ucHJpb3IsIGluZGV4X3VybDogc291cmNlLmluZGV4X3VybCwgcHVibGlzaGVyOiBzb3VyY2UucHVibGlzaGVyLCBsYXN0X2NoZWNrZWRfYXQ6IGNhcHR1cmVkQXQsIGxhc3Rfc3RhdHVzOiAnZXJyb3InLCBsYXN0X2Vycm9yOiBlcnJvci5tZXNzYWdlLCBuZXdfZGlzY292ZXJ5X2NvdW50OiAwIH07CiAgICAgICBpbmRleFN1bW1hcmllcy5wdXNoKHsgc291cmNlX2lkOiBzb3VyY2UuaWQsIHN0YXR1czogJ2Vycm9yJywgZXJyb3I6IGVycm9yLm1lc3NhZ2UgfSk7CiAgICAgfQogICB9CmRpZmYgLS1naXQgYS90ZXN0L2luZHVzdHJpYWwtZXhoYXVzdC50ZXN0LmpzIGIvdGVzdC9pbmR1c3RyaWFsLWV4aGF1c3QudGVzdC5qcwppbmRleCAxMDA0YTZiLi4wMDAwMDAwIDEwMDY0NAotLS0gYS90ZXN0L2luZHVzdHJpYWwtZXhoYXVzdC50ZXN0LmpzCisrKyBiL3Rlc3QvaW5kdXN0cmlhbC1leGhhdXN0LnRlc3QuanMKQEAgLTE2NjEsNCArMTY2MSwxOCBAQCBmb3IgKGNvbnN0IFtpbnB1dCwgZXhwZWN0ZWRdIG9mIFsKICAgKTsKIH0KIAorY29uc3QgY3Jhd2xlclJ1bnRpbWVTb3VyY2UgPSBmcy5yZWFkRmlsZVN5bmMoCisgIG5ldyBVUkwoJy4uL3Rvb2xzL2NyYXdsLWluZHVzdHJpYWwtZXhoYXVzdC5tanMnLCBpbXBvcnQubWV0YS51cmwpLAorICAndXRmOCcKKyk7Cithc3NlcnQubWF0Y2goCisgIGNyYXdsZXJSdW50aW1lU291cmNlLAorICAvbGFzdF9zdGF0dXM6ICdub3RfbW9kaWZpZWQnLFxzK2xhc3RfZXJyb3I6IG51bGwsXHMrbmV3X29ic2VydmF0aW9uX2NvdW50OiAwL3UsCisgICdhIDMwNCByZXNwb25zZSBtdXN0IHJlc2V0IHRoZSBjdXJyZW50LXJ1biBvYnNlcnZhdGlvbiBjb3VudCcKKyk7Cithc3NlcnQubWF0Y2goCisgIGNyYXdsZXJSdW50aW1lU291cmNlLAorICAvbGFzdF9zdGF0dXM6ICdlcnJvcicsXHMrbGFzdF9lcnJvcjogZXJyb3JcLm1lc3NhZ2UsXHMrbmV3X29ic2VydmF0aW9uX2NvdW50OiAwL3UsCisgICdhbiBhY3F1aXNpdGlvbiBlcnJvciBtdXN0IHJlc2V0IHRoZSBjdXJyZW50LXJ1biBvYnNlcnZhdGlvbiBjb3VudCcKKyk7CisKIGNvbnNvbGUubG9nKCdpbmR1c3RyaWFsLWV4aGF1c3QgdGVzdHMgcGFzc2VkJyk7CmRpZmYgLS1naXQgYS90ZXN0L2luZHVzdHJpYWwtZXhoYXVzdC1hcnRpZmFjdHMudGVzdC5qcyBiL3Rlc3QvaW5kdXN0cmlhbC1leGhhdXN0LWFydGlmYWN0cy50ZXN0LmpzCmluZGV4IGMyZThiZjkuLjAwMDAwMDAgMTAwNjQ0Ci0tLSBhL3Rlc3QvaW5kdXN0cmlhbC1leGhhdXN0LWFydGlmYWN0cy50ZXN0LmpzCisrKyBiL3Rlc3QvaW5kdXN0cmlhbC1leGhhdXN0LWFydGlmYWN0cy50ZXN0LmpzCkBAIC0yODMsNCArMjgzLDE4IEBAIGFzc2VydC50aHJvd3MoKCkgPT4gYXNzZXJ0QWxsb3dlZEFydGlmYWN0VXJsKCdodHRwczovL3VzZXJAd3d3LmRlbnRzdS5jb20vbmV3cy1yCiBhc3NlcnQudGhyb3dzKCgpID0+IHZhbGlkYXRlQXJ0aWZhY3RDb25maWcoeyAuLi5jb25maWcsIGdyYXBoX2VmZmVjdDogJ2VkZ2UnIH0pLCAvbWF5IG5vdCBhdXRob3JpemUvdSk7CiAKK2NvbnN0IGh5ZHJhdG9yUnVudGltZVNvdXJjZSA9IGZzLnJlYWRGaWxlU3luYygKKyAgbmV3IFVSTCgnLi4vdG9vbHMvaHlkcmF0ZS1pbmR1c3RyaWFsLWV4aGF1c3QubWpzJywgaW1wb3J0Lm1ldGEudXJsKSwKKyAgJ3V0ZjgnCispOworYXNzZXJ0Lm1hdGNoKAorICBoeWRyYXRvclJ1bnRpbWVTb3VyY2UsCisgIC9sYXN0X3N0YXR1czogJ25vdF9tb2RpZmllZCcsXHMrbGFzdF9lcnJvcjogbnVsbCxccytuZXdfZGlzY292ZXJ5X2NvdW50OiAwL3UsCisgICdhIDMwNCBpbmRleCByZXNwb25zZSBtdXN0IHJlc2V0IHRoZSBjdXJyZW50LXJ1biBkaXNjb3ZlcnkgY291bnQnCispOworYXNzZXJ0Lm1hdGNoKAorICBoeWRyYXRvclJ1bnRpbWVTb3VyY2UsCisgIC9sYXN0X3N0YXR1czogJ2Vycm9yJyxccytsYXN0X2Vycm9yOiBlcnJvclwubWVzc2FnZSxccytuZXdfZGlzY292ZXJ5X2NvdW50OiAwL3UsCisgICdhbiBpbmRleCBhY3F1aXNpdGlvbiBlcnJvciBtdXN0IHJlc2V0IHRoZSBjdXJyZW50LXJ1biBkaXNjb3ZlcnkgY291bnQnCispOworCiBjb25zb2xlLmxvZygnaW5kdXN0cmlhbC1leGhhdXN0IGFydGlmYWN0IHRlc3RzIHBhc3NlZCcpOwpkaWZmIC0tZ2l0IGEvZGF0YS9leGhhdXN0L3N0YXRlLmpzb24gYi9kYXRhL2V4aGF1c3Qvc3RhdGUuanNvbgppbmRleCAyNDJmMTZlLi41ZDAzZDQ5IDEwMDY0NAotLS0gYS9kYXRhL2V4aGF1c3Qvc3RhdGUuanNvbgorKysgYi9kYXRhL2V4aGF1c3Qvc3RhdGUuanNvbgpAQCAtMTIsNyArMTIsNyBAQAogICAgICAgImxhc3RfZXJyb3IiOiBudWxsLAogICAgICAgImZlZWRfc2hhMjU2IjogIjdkNmY1YWUzNmY2NzQ5YTUwNDc3Yzk5MzY3NjI5NTlmYWQxZGJmZmUwZWYwNGFiYzM1YTI3NTg1NTc0OWE4YzkiLAogICAgICAgImZlZWRfaXRlbV9jb3VudCI6IDEwMCwKLSAgICAgICJuZXdfb2JzZXJ2YXRpb25fY291bnQiOiAxMDAsCisgICAgICAibmV3X29ic2VydmF0aW9uX2NvdW50IjogMCwKICAgICAgICJldGFnIjogIlwiZTYzYS02NTg1YTU4NmI2YzgwXCIiLAogICAgICAgImxhc3RfbW9kaWZpZWQiOiAiVGh1LCAwNiBBdWcgMjAyNiAwNTo0MTo1NCBHTVQiCiAgICAgfSwKQEAgLTI1LDcgKzI1LDcgQEAKICAgICAgICJsYXN0X2Vycm9yIjogbnVsbCwKICAgICAgICJmZWVkX3NoYTI1NiI6ICJhMzBlNjkxYTRjMTQ0OWU4YjFkNDc3N2NjZTE5NTU2MmZlODI5YzZjYWE4NTYwM2FkZTE3M2YwZmUyNGVhYzE4IiwKICAgICAgICJmZWVkX2l0ZW1fY291bnQiOiAxMDAsCi0gICAgICAibmV3X29ic2VydmF0aW9uX2NvdW50IjogMSwKKyAgICAgICJuZXdfb2JzZXJ2YXRpb25fY291bnQiOiAwLAogICAgICAgImV0YWciOiAiXCIxNWFlYS02NTk0NmVkMWRjZDQwXCIiLAogICAgICAgImxhc3RfbW9kaWZpZWQiOiAiTW9uLCAxNyBBdWcgMjAyNiAyMzo1NzowMSBHTVQiCiAgICAgfSwKQEAgLTM4LDcgKzM4LDcgQEAKICAgICAgICJsYXN0X2Vycm9yIjogbnVsbCwKICAgICAgICJmZWVkX3NoYTI1NiI6ICJhZDMzZGE4ZGQ0NGI3NWIyZjRjNDE1NDUxY2IyYWIyODFkM2VmMzQxZWE3ZmE1N2QwYzY0OWNiYzlkNzFhOTA0IiwKICAgICAgICJmZWVkX2l0ZW1fY291bnQiOiAxMDAsCi0gICAgICAibmV3X29ic2VydmF0aW9uX2NvdW50IjogMTAwLAorICAgICAgIm5ld19vYnNlcnZhdGlvbl9jb3VudCI6IDAsCiAgICAgICAiZXRhZyI6ICJcImVhZjItNjU4ZDNhNjMzN2Q4MFwiIiwKICAgICAgICJsYXN0X21vZGlmaWVkIjogIldlZCwgMTIgQXVnIDIwMjYgMDY6MjU6MTAgR01UIgogICAgIH0sCkBAIC01MSw3ICs1MSw3IEBACiAgICAgICAibGFzdF9lcnJvciI6IG51bGwsCiAgICAgICAiZmVlZF9zaGEyNTYiOiAiNGYzMTE3OGJkY2ViOTYwNmQ1MmY1YmM4Njc4ZDAxZmJjN2QzYTU5ZjJkZDUwMGUwYWQyNGFjNmRiNTRlYzI0YiIsCiAgICAgICAiZmVlZF9pdGVtX2NvdW50IjogMTAwLAotICAgICAgIm5ld19vYnNlcnZhdGlvbl9jb3VudCI6IDEwMCwKKyAgICAgICJuZXdfb2JzZXJ2YXRpb25fY291bnQiOiAwLAogICAgICAgImV0YWciOiAiXCIxNTQyYy02NThkMzk1NDVmZTgwXCIiLAogICAgICAgImxhc3RfbW9kaWZpZWQiOiAiV2VkLCAxMiBBdWcgMjAyNiAwNjoyMDoyNiBHTVQiCiAgICAgfSwK
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_BASE"
+          printf '%s' "$PATCH_B64" | base64 --decode > /tmp/counter-reset.patch
+          git apply --check --recount /tmp/counter-reset.patch
+          git apply --recount /tmp/counter-reset.patch
+      - name: Validate exact five-file product surface
+        run: |
+          set -euo pipefail
+          node --check tools/crawl-industrial-exhaust.mjs
+          node --check tools/hydrate-industrial-exhaust.mjs
+          node test/industrial-exhaust.test.js
+          node test/industrial-exhaust-artifacts.test.js
+          node -e "JSON.parse(require('node:fs').readFileSync('data/exhaust/state.json', 'utf8'))"
+          git diff --check
+          actual="$(git diff --name-only | LC_ALL=C sort)"
+          expected="$(printf '%s\n' \
+            data/exhaust/state.json \
+            test/industrial-exhaust-artifacts.test.js \
+            test/industrial-exhaust.test.js \
+            tools/crawl-industrial-exhaust.mjs \
+            tools/hydrate-industrial-exhaust.mjs | LC_ALL=C sort)"
+          test "$actual" = "$expected"
+          test "$(node -e 'const s=require("./data/exhaust/state.json"); console.log(Object.values(s.sources).filter(x=>x.last_status==="not_modified" && x.new_observation_count!==0).length)')" = "0"
+      - name: Publish carrier product commit
+        env:
+          PRODUCT_BRANCH: agent/industrial-exhaust-run-counter-reset-v1
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- \
+            data/exhaust/state.json \
+            test/industrial-exhaust-artifacts.test.js \
+            test/industrial-exhaust.test.js \
+            tools/crawl-industrial-exhaust.mjs \
+            tools/hydrate-industrial-exhaust.mjs
+          git commit -m "fix(exhaust): reset run-scoped acquisition counters"
+          local_tree="$(git rev-parse HEAD^{tree})"
+          if remote_line="$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH")" && test -n "$remote_line"; then
+            remote_sha="${remote_line%%$'\t'*}"
+            git fetch --no-tags origin "$remote_sha"
+            remote_tree="$(git rev-parse "$remote_sha^{tree}")"
+            test "$remote_tree" = "$local_tree"
+            echo "Existing product branch already carries the qualified tree: $remote_sha"
+            exit 0
+          fi
+          git push origin "HEAD:refs/heads/$PRODUCT_BRANCH"
+          echo "Published product carrier $(git rev-parse HEAD) with tree $local_tree"
