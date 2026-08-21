@@ -1,10 +1,9 @@
-name: M-05 stage-stack review-fix materializer v2
+name: M-05 stage-stack review-fix materializer v3
 
 on:
   pull_request:
     branches: [main]
     paths:
-      - '.tmp/m05-stage-stack-reviewfix-v2/**'
       - '.github/workflows/m05-stage-stack-reviewfix-materializer-v2.yml'
   workflow_dispatch:
 
@@ -12,58 +11,238 @@ permissions:
   contents: write
 
 concurrency:
-  group: m05-stage-stack-reviewfix-v2-${{ github.ref }}
+  group: m05-stage-stack-reviewfix-v3-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
   materialize:
-    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.ref == 'agent/m05-s03-l7-stage-stack-reviewfix-materializer-v2'
+    runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Reconstruct, qualify, and publish the exact two-file successor
+      - name: Repair, qualify, and publish the exact two-file successor
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PRODUCT_BRANCH: agent/m05-s03-l7-stage-stack-postmerge-repair-v1
-          PRODUCT_HEAD: 17d3d0eb865adda1b0d84ec9fbd83dcb82074317
-          ARCHIVE_SHA256: 18a470b160ee301e14413edd41f596fb5c9624a8601c5054fe51456ef4edcb38
-          VALIDATOR_BLOB: c29a806f15d05413499d07ff6dd186dfc542b150
-          TEST_BLOB: 499272ec9f42f4fe6fd2d8d129d573bd2069dac7
+          PRODUCT_HEAD: ee68b2e1bf5ac11eb993f9a3b8909846933aa87c
+          MAIN_HEAD: 9fa0827e2b9cbf6e105469b48128c58f1a30d532
         shell: bash
         run: |
           set -euo pipefail
-          payload="$RUNNER_TEMP/reviewfix.b64"
-          archive="$RUNNER_TEMP/reviewfix.tar.xz"
-          extract="$RUNNER_TEMP/reviewfix"
           work="$RUNNER_TEMP/product"
-          cat .tmp/m05-stage-stack-reviewfix-v2/payload.part-* > "$payload"
-          base64 --decode "$payload" > "$archive"
-          printf '%s  %s\n' "$ARCHIVE_SHA256" "$archive" | sha256sum -c -
-          mkdir -p "$extract"
-          mapfile -t actual < <(tar -tJf "$archive" | sed 's#^\./##' | grep -v '/$' | sort)
-          mapfile -t expected < <(printf '%s\n' \
-            'test/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.test.js' \
-            'tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.mjs' | sort)
-          test "$(printf '%s\n' "${actual[@]}")" = "$(printf '%s\n' "${expected[@]}")"
-          tar -xJf "$archive" -C "$extract" --no-same-owner --no-same-permissions
-          test "$(git hash-object "$extract/tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.mjs")" = "$VALIDATOR_BLOB"
-          test "$(git hash-object "$extract/test/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.test.js")" = "$TEST_BLOB"
-
-          remote_head="$(git ls-remote origin "refs/heads/$PRODUCT_BRANCH" | cut -f1)"
-          test "$remote_head" = "$PRODUCT_HEAD"
-          git fetch --no-tags origin "refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/m05-product"
-          test "$(git rev-parse refs/remotes/origin/m05-product)" = "$PRODUCT_HEAD"
+          git fetch --no-tags origin \
+            "+refs/heads/main:refs/remotes/origin/main" \
+            "+refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/product"
+          test "$(git rev-parse refs/remotes/origin/main)" = "$MAIN_HEAD"
+          test "$(git rev-parse refs/remotes/origin/product)" = "$PRODUCT_HEAD"
           git worktree add --detach "$work" "$PRODUCT_HEAD"
-          for rel in "${expected[@]}"; do
-            cp "$extract/$rel" "$work/$rel"
-          done
           cd "$work"
+
+          python - <<'PY'
+          from pathlib import Path
+
+          validator_path = Path('tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.mjs')
+          test_path = Path('test/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.test.js')
+          validator = validator_path.read_text(encoding='utf-8')
+          tests = test_path.read_text(encoding='utf-8')
+
+          def replace_once(text, old, new, label):
+              count = text.count(old)
+              assert count == 1, f'{label}: expected one match, found {count}'
+              return text.replace(old, new, 1)
+
+          validator = replace_once(
+              validator,
+              """const inside=(root,target)=>target===root||target.startsWith(`${root}${path.sep}`);
+const realRoot=root=>{
+  if(!fs.existsSync(root))fail(`receipt root missing: ${root}`);
+  const stat=fs.lstatSync(root);
+  if(stat.isSymbolicLink()||!stat.isDirectory())fail('receipt root must be a non-symlink directory');
+  return fs.realpathSync(root);
+};""",
+              """const inside=(root,target)=>target===root||target.startsWith(`${root}${path.sep}`);
+const ensureNoSymlinkedAbsoluteAncestors=(target,label)=>{
+  const absolute=path.resolve(target);
+  const parsed=path.parse(absolute);
+  let current=parsed.root;
+  for(const segment of path.relative(parsed.root,absolute).split(path.sep).filter(Boolean)){
+    current=path.join(current,segment);
+    if(!fs.existsSync(current))fail(`${label} missing: ${absolute}`);
+    const stat=fs.lstatSync(current);
+    if(stat.isSymbolicLink())fail(`${label} contains symlink ancestor: ${absolute}`);
+  }
+};
+const realRoot=(root,label='receipt root')=>{
+  ensureNoSymlinkedAbsoluteAncestors(root,label);
+  const stat=fs.lstatSync(root);
+  if(!stat.isDirectory())fail(`${label} must be a directory`);
+  return fs.realpathSync(root);
+};""",
+              'absolute ancestor validation anchor changed'
+          )
+
+          validator = replace_once(
+              validator,
+              """  requireBindingIdentity(time.freshness_policy_binding,'trusted-time freshness-policy binding',freshnessLoaded,receipt.freshness_policy_custody_locator);
+  if(time.freshness_evaluations.length===0)fail('trusted-time receipt requires at least one freshness evaluation');""",
+              """  requireBindingIdentity(time.freshness_policy_binding,'trusted-time freshness-policy binding',freshnessLoaded,receipt.freshness_policy_custody_locator);
+  const freshnessSubjectObservation=sourceObservations.get(freshness.time_role);
+  const freshnessReferenceObservation=sourceObservations.get(freshness.reference_time_role);
+  if(!freshnessSubjectObservation||!freshnessReferenceObservation)fail('freshness policy names an unbound observation-time role');
+  if(time.freshness_evaluations.length===0)fail('trusted-time receipt requires at least one freshness evaluation');""",
+              'freshness role selection anchor changed'
+          )
+
+          validator = replace_once(
+              validator,
+              """    if(subjectUpper<subjectLower||referenceUpper<referenceLower)fail(`freshness evaluation ${index} interval inverted`);
+    const computedLower=secondsBetween(referenceLower,subjectUpper),computedUpper=secondsBetween(referenceUpper,subjectLower);""",
+              """    if(subjectUpper<subjectLower||referenceUpper<referenceLower)fail(`freshness evaluation ${index} interval inverted`);
+    if(evaluation.subject_receipt_id!==freshnessSubjectObservation.receiptId||evaluation.reference_receipt_id!==freshnessReferenceObservation.receiptId)fail(`freshness evaluation ${index} receipt IDs do not match the policy roles`);
+    if(freshnessSubjectObservation.observed<subjectLower||freshnessSubjectObservation.observed>subjectUpper)fail(`freshness evaluation ${index} subject interval does not contain the policy-bound observation`);
+    if(freshnessReferenceObservation.observed<referenceLower||freshnessReferenceObservation.observed>referenceUpper)fail(`freshness evaluation ${index} reference interval does not contain the policy-bound observation`);
+    const computedLower=secondsBetween(referenceLower,subjectUpper),computedUpper=secondsBetween(referenceUpper,subjectLower);""",
+              'freshness evaluation role join anchor changed'
+          )
+
+          validator = replace_once(
+              validator,
+              """  const objectPathOwners=new Map(),objectBlobOwners=new Map(),objectBodyOwners=new Map(),receiptIdOwners=new Map();
+  const claim=(map,value,label,owner)=>{
+    const prior=map.get(value);
+    if(prior&&prior!==owner)fail(`${label} reused across control roles or stacks`);
+    map.set(value,owner);
+  };
+  const ctx={
+    repair,pc,cc,oc,tc,receiptRoot,sourcePrefix,stackPrefix,currentOwner:null,
+    claimObject:(relative,blobValue,bodyValue,label)=>{
+      if(!ctx.currentOwner)fail(`internal owner missing while claiming ${label}`);
+      claim(objectPathOwners,relative,`${label} path`,ctx.currentOwner);
+      claim(objectBlobOwners,blobValue,`${label} blob`,ctx.currentOwner);
+      claim(objectBodyOwners,bodyValue,`${label} body digest`,ctx.currentOwner);
+    },
+    claimReceiptId:(value,label)=>{
+      if(!ctx.currentOwner)fail(`internal owner missing while claiming ${label}`);
+      claim(receiptIdOwners,value,label,ctx.currentOwner);
+    }
+  };""",
+              """  const objectPathOwners=new Map(),objectBlobOwners=new Map(),objectBodyOwners=new Map(),receiptIdOwners=new Map();
+  const claimUniqueObject=(map,value,label,owner)=>{
+    const prior=map.get(value);
+    if(prior)fail(`${label} reused; first claimed as ${prior.label} by ${prior.owner}`);
+    map.set(value,{owner,label});
+  };
+  const claimOwnedIdentity=(map,value,label,owner)=>{
+    const prior=map.get(value);
+    if(prior&&prior!==owner)fail(`${label} reused across control roles or stacks`);
+    map.set(value,owner);
+  };
+  const ctx={
+    repair,pc,cc,oc,tc,receiptRoot,sourcePrefix,stackPrefix,currentOwner:null,
+    claimObject:(relative,blobValue,bodyValue,label)=>{
+      if(!ctx.currentOwner)fail(`internal owner missing while claiming ${label}`);
+      claimUniqueObject(objectPathOwners,relative,`${label} path`,ctx.currentOwner);
+      claimUniqueObject(objectBlobOwners,blobValue,`${label} blob`,ctx.currentOwner);
+      claimUniqueObject(objectBodyOwners,bodyValue,`${label} body digest`,ctx.currentOwner);
+    },
+    claimReceiptId:(value,label)=>{
+      if(!ctx.currentOwner)fail(`internal owner missing while claiming ${label}`);
+      claimOwnedIdentity(receiptIdOwners,value,label,ctx.currentOwner);
+    }
+  };""",
+              'global object uniqueness anchor changed'
+          )
+
+          tests = replace_once(
+              tests,
+              """  const freshnessEvaluationEvidence=writeRaw('freshness-evaluation-evidence','freshness evaluation evidence');
+  const freshnessEvaluation={policy_id:'freshness-1',subject_receipt_id:'source-observation-1',reference_receipt_id:'time-1',subject_interval:{lower_bound_utc:options.freshnessIntervalInversion?'2026-08-27T00:00:01.100000001Z':'2026-08-27T00:00:00.900000000Z',upper_bound_utc:'2026-08-27T00:00:01.100000000Z'},reference_interval:{lower_bound_utc:'2026-08-27T00:00:02.900000000Z',upper_bound_utc:'2026-08-27T00:00:03.100000000Z'},computed_age_lower_bound_seconds:1.8,computed_age_upper_bound_seconds:2.2,result:'pass',evaluated_at_utc:'2026-08-27T00:00:03.200000000Z',evaluation_body_sha256:freshnessEvaluationEvidence.body_sha256,evaluation_custody_locator:freshnessEvaluationEvidence.path};""",
+              """  const freshnessEvaluationEvidence=writeRaw('freshness-evaluation-evidence','freshness evaluation evidence');
+  const freshnessRoleBindingMismatch=options.freshnessRoleBindingMismatch===true;
+  const freshnessEvaluation={
+    policy_id:'freshness-1',
+    subject_receipt_id:freshnessRoleBindingMismatch?'source-observation-dns_observation':'source-observation-source_origin_observation',
+    reference_receipt_id:options.freshnessReferenceBindingMismatch?'source-observation-dns_observation':'source-observation-freshness_evaluation',
+    subject_interval:freshnessRoleBindingMismatch
+      ? {lower_bound_utc:'2026-08-27T00:00:00.900000000Z',upper_bound_utc:'2026-08-27T00:00:01.100000000Z'}
+      : {lower_bound_utc:options.freshnessIntervalInversion?'2026-08-27T00:00:02.100000001Z':'2026-08-27T00:00:01.900000000Z',upper_bound_utc:'2026-08-27T00:00:02.100000000Z'},
+    reference_interval:{lower_bound_utc:'2026-08-27T00:00:03.100000000Z',upper_bound_utc:'2026-08-27T00:00:03.200000000Z'},
+    computed_age_lower_bound_seconds:freshnessRoleBindingMismatch?2.0:1.0,
+    computed_age_upper_bound_seconds:freshnessRoleBindingMismatch?2.3:1.3,
+    result:'pass',evaluated_at_utc:'2026-08-27T00:00:03.200000000Z',
+    evaluation_body_sha256:freshnessEvaluationEvidence.body_sha256,
+    evaluation_custody_locator:freshnessEvaluationEvidence.path
+  };""",
+              'freshness fixture anchor changed'
+          )
+
+          tests = replace_once(
+              tests,
+              """  const dnsWire=writeRaw('dns-wire','wire');
+  const dnsCanonical=writeRaw('dns-canonical','canonical');
+  const dnsValue={query_name:options.nullNestedDns?null:'www.commerce.gov.',query_type:'A',query_class:'IN',resolver_identity:'resolver',resolver_transport:'dns_over_https',response_rcode:'NOERROR',cname_chain:[],answer_rrsets:options.nullDnsAnswer?[null]:[{address:'192.0.2.1'}],dnssec_state:'validated',observed_at_utc:'2026-08-27T00:00:01Z',expires_at_utc:'2026-08-27T00:10:01Z',wire_response_sha256:dnsWire.body_sha256,wire_response_length_bytes:4,wire_response_custody_locator:dnsWire.path,canonical_response_sha256:dnsCanonical.body_sha256,canonical_response_custody_locator:dnsCanonical.path};""",
+              """  const dnsWire=writeRaw('dns-wire','wire');
+  const dnsCanonical=writeRaw('dns-canonical','canonical');
+  const dnsCanonicalBinding=options.duplicateNestedObjectSameRole?dnsWire:dnsCanonical;
+  const dnsValue={query_name:options.nullNestedDns?null:'www.commerce.gov.',query_type:'A',query_class:'IN',resolver_identity:'resolver',resolver_transport:'dns_over_https',response_rcode:'NOERROR',cname_chain:[],answer_rrsets:options.nullDnsAnswer?[null]:[{address:'192.0.2.1'}],dnssec_state:'validated',observed_at_utc:'2026-08-27T00:00:01Z',expires_at_utc:'2026-08-27T00:10:01Z',wire_response_sha256:dnsWire.body_sha256,wire_response_length_bytes:4,wire_response_custody_locator:dnsWire.path,canonical_response_sha256:dnsCanonicalBinding.body_sha256,canonical_response_custody_locator:dnsCanonicalBinding.path};""",
+              'same-role nested reuse fixture anchor changed'
+          )
+
+          tests = replace_once(
+              tests,
+              """  if(options.stackRootSymlink){
+    const realStack=path.join(root,'receipts/m05/intel-realization/control-stack-real');
+    fs.renameSync(stackDir,realStack);
+    fs.symlinkSync(realStack,stackDir,'dir');
+  }
+  return{c,root,stackDir,registry,cleanup:()=>fs.rmSync(root,{recursive:true,force:true})};""",
+              """  if(options.stackRootSymlink){
+    const realStack=path.join(root,'receipts/m05/intel-realization/control-stack-real');
+    fs.renameSync(stackDir,realStack);
+    fs.symlinkSync(realStack,stackDir,'dir');
+  }
+  let effectiveRoot=root,effectiveStackDir=stackDir,receiptRootAncestorLink=null;
+  if(options.receiptRootAncestorSymlink){
+    receiptRootAncestorLink=path.join(os.tmpdir(),`m05-stage-stack-root-link-${crypto.randomUUID()}`);
+    fs.symlinkSync(path.dirname(root),receiptRootAncestorLink,'dir');
+    effectiveRoot=path.join(receiptRootAncestorLink,path.basename(root));
+    effectiveStackDir=path.join(effectiveRoot,'receipts/m05/intel-realization/control-stack');
+  }
+  return{c,root:effectiveRoot,stackDir:effectiveStackDir,registry,cleanup:()=>{
+    if(receiptRootAncestorLink)fs.unlinkSync(receiptRootAncestorLink);
+    fs.rmSync(root,{recursive:true,force:true});
+  }};""",
+              'receipt-root ancestor fixture anchor changed'
+          )
+
+          tests = replace_once(
+              tests,
+              """  {freshnessPolicyTooStrict:true},
+  {temporalSourceBindingMismatch:true},
+  {stackRootSymlink:true}
+]){""",
+              """  {freshnessPolicyTooStrict:true},
+  {freshnessRoleBindingMismatch:true},
+  {freshnessReferenceBindingMismatch:true},
+  {duplicateNestedObjectSameRole:true},
+  {temporalSourceBindingMismatch:true},
+  {stackRootSymlink:true},
+  {receiptRootAncestorSymlink:true}
+]){""",
+              'adversarial matrix anchor changed'
+          )
+
+          validator_path.write_text(validator,encoding='utf-8')
+          test_path.write_text(tests,encoding='utf-8')
+          PY
 
           node --check tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.mjs
           node --check test/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.test.js
@@ -80,22 +259,27 @@ jobs:
           npm run release:check
           git diff --check
 
-          git add -- \
-            tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.mjs \
-            test/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.test.js
-          mapfile -t staged < <(git diff --cached --name-only | sort)
-          test "$(printf '%s\n' "${staged[@]}")" = "$(printf '%s\n' "${expected[@]}")"
-          test "$(git hash-object tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.mjs)" = "$VALIDATOR_BLOB"
-          test "$(git hash-object test/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.test.js)" = "$TEST_BLOB"
+          mapfile -t changed < <(git diff --name-only | LC_ALL=C sort)
+          test "${#changed[@]}" -eq 2
+          test "${changed[0]}" = "test/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.test.js"
+          test "${changed[1]}" = "tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.mjs"
+
           git config user.name 'BigBirdReturns'
           git config user.email 'bigbirdreturns@proton.me'
-          git commit -m '[M-05 S03-L7] Close stage-stack positive-path review seams'
+          git add -- \
+            test/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.test.js \
+            tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.mjs
+          git commit -m '[M-05 S03-L7] Bind freshness roles and strict custody uniqueness'
           new_head="$(git rev-parse HEAD)"
           new_tree="$(git rev-parse HEAD^{tree})"
           test "$(git rev-parse HEAD^)" = "$PRODUCT_HEAD"
 
-          remote_head="$(git ls-remote origin "refs/heads/$PRODUCT_BRANCH" | cut -f1)"
-          test "$remote_head" = "$PRODUCT_HEAD"
+          remote_main="$(git ls-remote origin refs/heads/main | cut -f1)"
+          remote_product="$(git ls-remote origin "refs/heads/$PRODUCT_BRANCH" | cut -f1)"
+          test "$remote_main" = "$MAIN_HEAD"
+          test "$remote_product" = "$PRODUCT_HEAD"
           git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          git push origin "HEAD:refs/heads/$PRODUCT_BRANCH"
+          git push \
+            --force-with-lease="refs/heads/$PRODUCT_BRANCH:$PRODUCT_HEAD" \
+            origin "HEAD:refs/heads/$PRODUCT_BRANCH"
           printf 'published_head=%s\npublished_tree=%s\n' "$new_head" "$new_tree"
