@@ -1,4 +1,4 @@
-name: PR2208 plural-base and title-clause launcher v4
+name: PR2208 plural-base and title-clause launcher v5
 
 on:
   pull_request:
@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: pr2208-plural-title-launcher-v4-${{ github.event.pull_request.head.sha }}
+  group: pr2208-plural-title-launcher-v5-${{ github.event.pull_request.head.sha }}
   cancel-in-progress: false
 
 jobs:
@@ -44,19 +44,19 @@ jobs:
           workflow = Path('.github/workflows/pr2208-institutional-clause-finalizer.yml')
           source = workflow.read_text(encoding='utf-8')
           marker = '        run: |\n'
+          end_marker = '            origin "HEAD:refs/heads/$RESULT_BRANCH"'
           assert source.count(marker) == 1, 'finalizer payload marker changed'
 
-          lines = []
-          for line in source.split(marker, 1)[1].splitlines():
-              if line.strip() and not line.startswith('          '):
-                  break
-              lines.append(line)
-
+          tail = source.split(marker, 1)[1]
+          assert tail.count(end_marker) == 1, 'finalizer payload end marker changed'
+          payload = tail.split(end_marker, 1)[0] + end_marker + '\n'
+          lines = payload.splitlines()
           assert lines and any(line.strip() for line in lines), 'finalizer payload missing'
-          assert all(not line.strip() or line.startswith('          ') for line in lines), (
-              'finalizer payload escaped its YAML block'
-          )
-          script = '\n'.join(line[10:] if line else '' for line in lines) + '\n'
+
+          script = '\n'.join(
+              line[10:] if line.startswith('          ') else line
+              for line in lines
+          ) + '\n'
           Path('/tmp/pr2208-finalizer.sh').write_text(script, encoding='utf-8')
           PY
           bash /tmp/pr2208-finalizer.sh
