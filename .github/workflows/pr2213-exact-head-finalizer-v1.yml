@@ -1,0 +1,260 @@
+name: PR2213 exact-head finalizer v1
+
+on:
+  push:
+    branches:
+      - agent/m05-s03-l7-stage-stack-reviewfix-materializer-v2
+    paths:
+      - '.github/workflows/pr2213-exact-head-finalizer-v1.yml'
+
+permissions:
+  actions: read
+  checks: read
+  contents: write
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: pr2213-exact-head-finalizer-v1
+  cancel-in-progress: false
+
+env:
+  REPO: BigBirdReturns/clifford-number
+  PR_NUMBER: '2213'
+  PRODUCT_BRANCH: agent/m05-s03-l7-stage-stack-postmerge-repair-v1
+  ORIGINAL_WORKFLOW_BLOB: a97748f0a84c7f5a020b5c6e59aa471fcb5cd0de
+  REQUIRED_PATHS: '.github/workflows/m05-intel-realization-stage-receipt-control-stack-amendment.yml|data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-postmerge-repair.json|test/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.test.js|tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.mjs'
+  THREAD_IDS: 'PRRT_kwDOTGqftc6bBzun|PRRT_kwDOTGqftc6bBzuq|PRRT_kwDOTGqftc6bBzut'
+
+jobs:
+  finalize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 330
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Wait, qualify, review, merge, and audit
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.REPO_PAT || secrets.GH_PAT || secrets.GITHUB_PAT || github.token }}
+          EVENT_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os, pathlib, shutil, subprocess, tempfile, time, urllib.error, urllib.request
+
+          repo=os.environ['REPO']; pr_number=int(os.environ['PR_NUMBER'])
+          expected_paths=sorted(os.environ['REQUIRED_PATHS'].split('|'))
+          thread_ids=os.environ['THREAD_IDS'].split('|')
+          token=os.environ['GH_TOKEN']
+          api='https://api.github.com'
+          headers={'Accept':'application/vnd.github+json','Authorization':f'Bearer {token}','User-Agent':'pr2213-finalizer','X-GitHub-Api-Version':'2022-11-28'}
+
+          def request(method,path,payload=None,allow=()):
+            data=None if payload is None else json.dumps(payload).encode()
+            req=urllib.request.Request(api+path,data=data,method=method,headers=headers)
+            try:
+              with urllib.request.urlopen(req,timeout=60) as response:
+                raw=response.read()
+                return json.loads(raw) if raw else None
+            except urllib.error.HTTPError as exc:
+              raw=exc.read().decode(errors='replace')
+              if exc.code in allow:return {'_status':exc.code,'_body':raw}
+              raise RuntimeError(f'{method} {path}: {exc.code}: {raw}') from exc
+
+          def graphql(query,variables):
+            result=request('POST','/graphql',{'query':query,'variables':variables})
+            if result.get('errors'):raise RuntimeError(f'graphql errors: {result["errors"]}')
+            return result['data']
+
+          def sh(*args,cwd=None,timeout=1800):
+            subprocess.run(args,cwd=cwd,check=True,timeout=timeout)
+
+          def pr():return request('GET',f'/repos/{repo}/pulls/{pr_number}')
+          def files():
+            out=[]; page=1
+            while True:
+              batch=request('GET',f'/repos/{repo}/pulls/{pr_number}/files?per_page=100&page={page}')
+              out.extend(item['filename'] for item in batch)
+              if len(batch)<100:return sorted(out)
+              page+=1
+
+          def runs(head):
+            data=request('GET',f'/repos/{repo}/actions/runs?head_sha={head}&per_page=100')
+            return data.get('workflow_runs',[])
+
+          required_names={
+            'M-05 intel-realization stage-receipt control-stack amendment',
+            'Release checks','M-05 story ecology','Core thesis','No magic human gate'
+          }
+
+          # Wait for the product publisher to replace the temporary workflow head.
+          deadline=time.time()+90*60
+          candidate=None
+          while time.time()<deadline:
+            live=pr()
+            if live['state']!='open' or live.get('merged'):
+              raise RuntimeError('PR closed before this finalizer acquired the transaction')
+            head=live['head']['sha']
+            if live['head']['ref']!=os.environ['PRODUCT_BRANCH']:
+              raise RuntimeError('unexpected PR head branch')
+            if files()!=expected_paths:
+              time.sleep(20); continue
+            workflow=request('GET',f'/repos/{repo}/contents/{expected_paths[0]}?ref={head}')
+            validator=request('GET',f'/repos/{repo}/contents/{expected_paths[3]}?ref={head}')
+            tests=request('GET',f'/repos/{repo}/contents/{expected_paths[2]}?ref={head}')
+            if workflow.get('sha')!=os.environ['ORIGINAL_WORKFLOW_BLOB']:
+              time.sleep(20); continue
+            raw_validator=urllib.request.urlopen(urllib.request.Request(validator['download_url'],headers={'User-Agent':'pr2213-finalizer'}),timeout=60).read().decode()
+            raw_tests=urllib.request.urlopen(urllib.request.Request(tests['download_url'],headers={'User-Agent':'pr2213-finalizer'}),timeout=60).read().decode()
+            markers=(
+              'contains symlink ancestor' in raw_validator,
+              'reused across custody claims' in raw_validator,
+              'receipt identifiers do not match temporal policy roles' in raw_validator,
+              'freshnessRoleBindingMismatch' in raw_tests,
+              'sameRoleNestedObjectReuse' in raw_tests,
+              'receiptRootAncestorSymlink' in raw_tests,
+            )
+            if all(markers):
+              candidate=head; break
+            time.sleep(20)
+          if not candidate:raise RuntimeError('publisher did not produce the sealed three-gap candidate')
+
+          # Independent reconstruction and executable qualification.
+          work=pathlib.Path(tempfile.mkdtemp(prefix='pr2213-finalizer-'))
+          try:
+            sh('git','clone','--filter=blob:none',f'https://github.com/{repo}.git',str(work/'repo'))
+            checkout=work/'repo'
+            sh('git','checkout','--detach',candidate,cwd=checkout)
+            sh('node','--check',expected_paths[3],cwd=checkout)
+            sh('node','--check',expected_paths[2],cwd=checkout)
+            sh('node',expected_paths[2],cwd=checkout)
+            sh('npm','run','release:check',cwd=checkout,timeout=2400)
+            sh('git','diff','--check',f'{candidate}^',candidate,cwd=checkout)
+          finally:
+            shutil.rmtree(work,ignore_errors=True)
+
+          # Require all repository workflows on one unchanged exact head.
+          run_deadline=time.time()+150*60
+          selected={}
+          while time.time()<run_deadline:
+            if pr()['head']['sha']!=candidate:raise RuntimeError('PR head changed during exact-head workflow wait')
+            current=runs(candidate)
+            for run in current:
+              if run.get('name') in required_names:
+                prior=selected.get(run['name'])
+                if not prior or run['id']>prior['id']:selected[run['name']]=run
+            if required_names<=selected.keys():
+              terminal=all(selected[name]['status']=='completed' for name in required_names)
+              if terminal:
+                bad={name:selected[name].get('conclusion') for name in required_names if selected[name].get('conclusion')!='success'}
+                if bad:raise RuntimeError(f'exact-head workflow failure: {bad}')
+                break
+            time.sleep(30)
+          else:raise RuntimeError(f'exact-head workflow timeout; observed {selected}')
+
+          # Post exact-head dispositions, resolve only the three authorized threads, and request fresh review.
+          thread_query='''query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){pullRequest(number:$number){id reviewThreads(first:100){nodes{id isResolved isOutdated comments(first:20){nodes{id databaseId body author{login}}}}}}}}'''
+          owner,name=repo.split('/',1)
+          data=graphql(thread_query,{'owner':owner,'name':name,'number':pr_number})
+          pull=data['repository']['pullRequest']; nodes=pull['reviewThreads']['nodes']
+          by_id={node['id']:node for node in nodes}
+          dispositions={
+            thread_ids[0]:'Freshness evaluations now bind both receipt identifiers and exact intervals to the policy-selected source-observation and temporal roles. The direct role-substitution regression fails closed.',
+            thread_ids[1]:'Custody claims now reject every second path, blob, or body claim, including reuse by the same role. Cross-reference identity checks remain separate. The DNS wire/canonical same-role reuse regression fails closed.',
+            thread_ids[2]:'Receipt-root resolution now walks every absolute path component from the filesystem root and rejects a symlinked ancestor before canonicalization. The intermediate-ancestor regression fails closed.'
+          }
+          reply_mut='''mutation($id:ID!,$body:String!){addPullRequestReviewThreadReply(input:{pullRequestReviewThreadId:$id,body:$body}){comment{id}}}'''
+          resolve_mut='''mutation($id:ID!){resolveReviewThread(input:{threadId:$id}){thread{id isResolved}}}'''
+          run_receipt=', '.join(f"{name} #{selected[name]['run_number']}" for name in sorted(required_names))
+          for tid in thread_ids:
+            node=by_id.get(tid)
+            if not node:raise RuntimeError(f'authorized thread absent: {tid}')
+            if not node['isResolved']:
+              body=f"Addressed at exact head `{candidate}`. {dispositions[tid]} Qualification passed locally and through {run_receipt}. The four-path PR scope is unchanged."
+              graphql(reply_mut,{'id':tid,'body':body})
+              graphql(resolve_mut,{'id':tid})
+
+          request('POST',f'/repos/{repo}/issues/{pr_number}/comments',{'body':f'@codex review\n\nExact-head review requested for `{candidate}` after the three authorized dispositions and all five repository gates passed.'})
+          review_requested_at=time.time()
+
+          # Wait for a new exact-head Codex review or a fresh positive Codex reaction, plus ledger quiescence.
+          review_deadline=time.time()+120*60
+          last_fingerprint=None; stable_since=None; review_evidence=False
+          while time.time()<review_deadline:
+            live=pr()
+            if live['head']['sha']!=candidate:raise RuntimeError('PR head changed during review barrier')
+            reviews=request('GET',f'/repos/{repo}/pulls/{pr_number}/reviews?per_page=100')
+            comments=request('GET',f'/repos/{repo}/issues/{pr_number}/comments?per_page=100')
+            reactions=request('GET',f'/repos/{repo}/issues/{pr_number}/reactions?per_page=100')
+            thread_data=graphql(thread_query,{'owner':owner,'name':name,'number':pr_number})
+            threads=thread_data['repository']['pullRequest']['reviewThreads']['nodes']
+            unresolved=[t for t in threads if not t['isResolved'] and not t['isOutdated']]
+            if unresolved:raise RuntimeError(f'unresolved active review threads: {[t["id"] for t in unresolved]}')
+            changes=[r for r in reviews if r.get('state')=='CHANGES_REQUESTED' and (r.get('commit_id')==candidate or not r.get('commit_id'))]
+            if changes:raise RuntimeError('changes-requested review blocks merge')
+            for r in reviews:
+              login=(r.get('user') or {}).get('login','').lower()
+              submitted=r.get('submitted_at') or ''
+              if 'codex' in login and r.get('commit_id')==candidate and submitted:
+                review_evidence=True
+            for reaction in reactions:
+              login=(reaction.get('user') or {}).get('login','').lower()
+              created=reaction.get('created_at') or ''
+              if 'codex' in login and reaction.get('content') in ('+1','heart','hooray') and created:
+                review_evidence=True
+            fingerprint=json.dumps({
+              'reviews':[(r.get('id'),r.get('state'),r.get('commit_id'),r.get('submitted_at')) for r in reviews],
+              'threads':[(t['id'],t['isResolved'],t['isOutdated']) for t in threads],
+              'comments':[(c.get('id'),c.get('updated_at')) for c in comments],
+              'reactions':[(x.get('id'),x.get('content'),(x.get('user') or {}).get('login')) for x in reactions]
+            },sort_keys=True)
+            if fingerprint!=last_fingerprint:
+              last_fingerprint=fingerprint; stable_since=time.time()
+            if review_evidence and stable_since and time.time()-stable_since>=120:
+              break
+            time.sleep(30)
+          else:raise RuntimeError('fresh Codex review barrier timed out')
+
+          # Final invariant readback and exact-SHA merge commit.
+          if pr()['head']['sha']!=candidate:raise RuntimeError('PR head changed before merge')
+          if files()!=expected_paths:raise RuntimeError('PR path set changed before merge')
+          final_threads=graphql(thread_query,{'owner':owner,'name':name,'number':pr_number})['repository']['pullRequest']['reviewThreads']['nodes']
+          if any(not t['isResolved'] and not t['isOutdated'] for t in final_threads):raise RuntimeError('review ledger reopened before merge')
+          merged=request('PUT',f'/repos/{repo}/pulls/{pr_number}/merge',{'sha':candidate,'merge_method':'merge','commit_title':'Merge PR #2213: repair stage-receipt full-stack admission'})
+          if not merged.get('merged'):raise RuntimeError(f'merge rejected: {merged}')
+          merge_sha=merged['sha']
+
+          # Canonical tree and parent audit.
+          merge_commit=request('GET',f'/repos/{repo}/commits/{merge_sha}')
+          candidate_commit=request('GET',f'/repos/{repo}/commits/{candidate}')
+          parents=[p['sha'] for p in merge_commit['parents']]
+          if candidate not in parents:raise RuntimeError('canonical merge does not parent the qualified head')
+          if merge_commit['commit']['tree']['sha']!=candidate_commit['commit']['tree']['sha']:
+            raise RuntimeError('canonical merge tree differs from qualified candidate tree')
+          canonical_paths=sorted(f['filename'] for f in merge_commit.get('files',[]))
+          if canonical_paths!=expected_paths:raise RuntimeError(f'canonical path mismatch: {canonical_paths}')
+
+          # Allow only a direct crawler descendant confined to exhaust data and receipts.
+          time.sleep(90)
+          main=request('GET',f'/repos/{repo}/branches/main')['commit']['sha']
+          post={'classification':'merge_tip','main_sha':main,'paths':[]}
+          if main!=merge_sha:
+            compare=request('GET',f'/repos/{repo}/compare/{merge_sha}...{main}')
+            if compare.get('ahead_by')!=1 or compare.get('behind_by')!=0:
+              raise RuntimeError('live main advanced beyond one auditable descendant')
+            paths=sorted(f['filename'] for f in compare.get('files',[]))
+            if any(not (p.startswith('data/exhaust/') or p.startswith('receipts/exhaust/')) for p in paths):
+              raise RuntimeError(f'post-merge descendant escaped crawler paths: {paths}')
+            post={'classification':'crawler_only_descendant','main_sha':main,'paths':paths}
+
+          receipt={'status':'merged','candidate':candidate,'merge_sha':merge_sha,'tree':candidate_commit['commit']['tree']['sha'],'paths':expected_paths,'workflows':{name:{'id':selected[name]['id'],'run_number':selected[name]['run_number']} for name in sorted(required_names)},'postmerge':post}
+          pathlib.Path('/tmp/pr2213-final-receipt.json').write_text(json.dumps(receipt,indent=2)+'\n')
+          print(json.dumps(receipt,indent=2))
+          PY
