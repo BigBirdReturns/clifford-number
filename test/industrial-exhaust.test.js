@@ -1286,6 +1286,293 @@ for (const [input, expected] of [
   );
 }
 
+
+for (const [input, expected] of [
+  ['Broken (He moved to the U.S. Then call +81 3 6216 5111)', 'Broken (He moved to the U.S. Then call [contact omitted]'],
+  ['Broken (I said no. Please call +81 3 6216 5111)', 'Broken (I said no. Please call [contact omitted]'],
+  ['Broken (At 9 a.m. However contact +81 3 6216 5111)', 'Broken (At 9 a.m. However contact [contact omitted]'],
+  ['Broken (He moved to the U.S. I called +81 3 6216 5111)', 'Broken (He moved to the U.S. I called [contact omitted]'],
+  ['Broken (He moved to the U.S. I CALLED +81 3 6216 5111)', 'Broken (He moved to the U.S. I CALLED [contact omitted]'],
+  ["Broken (He moved to the U.S. I'm calling +81 3 6216 5111)", "Broken (He moved to the U.S. I'm calling [contact omitted]"],
+  ['Broken (He moved to the U.S. I’ve called +81 3 6216 5111)', 'Broken (He moved to the U.S. I’ve called [contact omitted]'],
+  ['Broken (He moved to the U.S. We called +81 3 6216 5111)', 'Broken (He moved to the U.S. We called [contact omitted]'],
+  ['Broken (He moved to the U.S. We are calling +81 3 6216 5111)', 'Broken (He moved to the U.S. We are calling [contact omitted]'],
+  ["Broken (He moved to the U.S. We've called +81 3 6216 5111)", "Broken (He moved to the U.S. We've called [contact omitted]"],
+  ['Broken (He moved to the U.S. WE ARE CALLING +81 3 6216 5111)', 'Broken (He moved to the U.S. WE ARE CALLING [contact omitted]'],
+  ['Broken (He moved to the U.S. He called +81 3 6216 5111)', 'Broken (He moved to the U.S. He called [contact omitted]'],
+  ['Broken (He moved to the U.S. They will call +81 3 6216 5111)', 'Broken (He moved to the U.S. They will call [contact omitted]'],
+  ['Broken (He moved to the U.S. This works at +81 3 6216 5111)', 'Broken (He moved to the U.S. This works at [contact omitted]'],
+  ['Broken (He moved to the U.S. Those are available at +81 3 6216 5111)', 'Broken (He moved to the U.S. Those are available at [contact omitted]'],
+  ['Broken (He moved to the U.S. IT IS AVAILABLE AT +81 3 6216 5111)', 'Broken (He moved to the U.S. IT IS AVAILABLE AT [contact omitted]'],
+  ["Broken (He moved to the U.S. IT'S AVAILABLE AT +81 3 6216 5111)", "Broken (He moved to the U.S. IT'S AVAILABLE AT [contact omitted]"],
+  ['Broken (He moved to the U.S. THIS COMPANY CALLED +81 3 6216 5111)', 'Broken (He moved to the U.S. THIS COMPANY CALLED [contact omitted]'],
+  ['Broken (He moved to the U.S. WE CARE +81 3 6216 5111)', 'Broken (He moved to the U.S. WE CARE [contact omitted]'],
+  ['Broken (He moved to the U.S. WE CALLED THE COMPANY +81 3 6216 5111)', 'Broken (He moved to the U.S. WE CALLED THE COMPANY [contact omitted]'],
+  ['Broken (He moved to the U.S. THEY CONTACTED OUR FOUNDATION +81 3 6216 5111)', 'Broken (He moved to the U.S. THEY CONTACTED OUR FOUNDATION [contact omitted]'],
+  ['Broken (He moved to the U.S. WE WILL CALL THE COMPANY +81 3 6216 5111)', 'Broken (He moved to the U.S. WE WILL CALL THE COMPANY [contact omitted]'],
+  ['Broken（He moved to the Ｕ．Ｓ． ＷＥ ＣＡＬＬＥＤ ＴＨＥ ＣＯＭＰＡＮＹ ＋８１ ３ ６２１６ ５１１１）', 'Broken（He moved to the Ｕ．Ｓ． ＷＥ ＣＡＬＬＥＤ ＴＨＥ ＣＯＭＰＡＮＹ [contact omitted]']
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    'a grammatical fresh-sentence lead after an abbreviation must reset wrapper ownership'
+  );
+}
+
+for (const [input, expected] of [
+  ['Context (U.S. Treasury Phone: +81 3 6216 5111)', 'Context (U.S. Treasury Phone: [contact omitted])'],
+  ['Context (Acme Inc. Contact Center Phone: +81 3 6216 5111)', 'Context (Acme Inc. Contact Center Phone: [contact omitted])'],
+  ['Context (Acme Inc. Call Center Phone: +81 3 6216 5111)', 'Context (Acme Inc. Call Center Phone: [contact omitted])'],
+  ['Context (U.S. Open Phone: +81 3 6216 5111)', 'Context (U.S. Open Phone: [contact omitted])'],
+  ['Context (U.S. I Corps Phone: +1 253 477 8777)', 'Context (U.S. I Corps Phone: [contact omitted])'],
+  ['Context (U.S. I Army Phone: +1 703 695 0640)', 'Context (U.S. I Army Phone: [contact omitted])'],
+  ['Context (U.S. IT Department Phone: +1 253 477 8777)', 'Context (U.S. IT Department Phone: [contact omitted])'],
+  ['Context (U.S. IT Services Phone: +1 253 477 8777)', 'Context (U.S. IT Services Phone: [contact omitted])'],
+  ['Context (Acme Inc. We Care Center Phone: +1 253 477 8777)', 'Context (Acme Inc. We Care Center Phone: [contact omitted])'],
+  ['Context (U.S. We the People Foundation Phone: +1 253 477 8777)', 'Context (U.S. We the People Foundation Phone: [contact omitted])'],
+  ['Context (U.S. She Leads Africa Phone: +1 253 477 8777)', 'Context (U.S. She Leads Africa Phone: [contact omitted])'],
+  ['Context (U.S. This Is Us Foundation Phone: +1 253 477 8777)', 'Context (U.S. This Is Us Foundation Phone: [contact omitted])'],
+  ['Context (U.S. Please Touch Museum Phone: +1 253 477 8777)', 'Context (U.S. Please Touch Museum Phone: [contact omitted])'],
+  ['Context (Acme Inc. You & Me Foundation Phone: +1 253 477 8777)', 'Context (Acme Inc. You & Me Foundation Phone: [contact omitted])'],
+  ['Context (Acme Inc. WE CARE CENTER Phone: +1 253 477 8777)', 'Context (Acme Inc. WE CARE CENTER Phone: [contact omitted])'],
+  ['Context (U.S. THEY Department Phone: +1 253 477 8777)', 'Context (U.S. THEY Department Phone: [contact omitted])'],
+  ['Context（Ｕ．Ｓ． ＩＴ Department Phone: ＋１ ２５３ ４７７ ８７７７）', 'Context（Ｕ．Ｓ． ＩＴ Department Phone: [contact omitted]）'],
+  ['Context（Acme Inc． Ｗｅ Ｃａｒｅ Ｃｅｎｔｅｒ Phone: ＋１ ２５３ ４７７ ８７７７）', 'Context（Acme Inc． Ｗｅ Ｃａｒｅ Ｃｅｎｔｅｒ Phone: [contact omitted]）']
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    'named entities and institutional continuations must retain their owned closer'
+  );
+}
+
+
+for (const [input, expected] of [
+  [
+    'Broken (He moved to the U.S. THIS IS THE FOUNDATION +81 3 6216 5111)',
+    'Broken (He moved to the U.S. THIS IS THE FOUNDATION [contact omitted]'
+  ],
+  [
+    'Broken (He moved to the U.S. WE SUPPORT THE FOUNDATION +81 3 6216 5111)',
+    'Broken (He moved to the U.S. WE SUPPORT THE FOUNDATION [contact omitted]'
+  ],
+  [
+    'Broken（He moved to the Ｕ．Ｓ． ＴＨＩＳ ＩＳ ＴＨＥ ＦＯＵＮＤＡＴＩＯＮ ＋８１ ３ ６２１６ ５１１１）',
+    'Broken（He moved to the Ｕ．Ｓ． ＴＨＩＳ ＩＳ ＴＨＥ ＦＯＵＮＤＡＴＩＯＮ [contact omitted]'
+  ]
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    'unlabelled all-caps pronoun clauses must outrank institutional suffixes'
+  );
+}
+
+for (const [input, expected] of [
+  [
+    "Context (U.S. It's a Small World Foundation Phone: +1 253 477 8777)",
+    "Context (U.S. It's a Small World Foundation Phone: [contact omitted])"
+  ],
+  [
+    'Context (U.S. We Can Do It Foundation Phone: +1 253 477 8777)',
+    'Context (U.S. We Can Do It Foundation Phone: [contact omitted])'
+  ],
+  [
+    'Context (U.S. WE CAN DO IT FOUNDATION Phone: +1 253 477 8777)',
+    'Context (U.S. WE CAN DO IT FOUNDATION Phone: [contact omitted])'
+  ],
+  [
+    'Context（Ｕ．Ｓ． Ｗｅ Ｃａｎ Ｄｏ Ｉｔ Ｆｏｕｎｄａｔｉｏｎ Phone: ＋１ ２５３ ４７７ ８７７７）',
+    'Context（Ｕ．Ｓ． Ｗｅ Ｃａｎ Ｄｏ Ｉｔ Ｆｏｕｎｄａｔｉｏｎ Phone: [contact omitted]）'
+  ]
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    'labelled title-cased and all-caps institutions must retain their owned closer'
+  );
+}
+
+
+for (const [input, expected] of [
+  [
+    'Broken (He moved to the U.S. HE CALLS ACME COMPANY +81 3 6216 5111)',
+    'Broken (He moved to the U.S. HE CALLS ACME COMPANY [contact omitted]'
+  ],
+  [
+    'Broken (He moved to the U.S. THEY CONTACT ACME FOUNDATION +81 3 6216 5111)',
+    'Broken (He moved to the U.S. THEY CONTACT ACME FOUNDATION [contact omitted]'
+  ],
+  [
+    'Broken（He moved to the Ｕ．Ｓ． ＴＨＥＹ ＣＯＮＴＡＣＴ ＡＣＭＥ ＦＯＵＮＤＡＴＩＯＮ ＋８１ ３ ６２１６ ５１１１）',
+    'Broken（He moved to the Ｕ．Ｓ． ＴＨＥＹ ＣＯＮＴＡＣＴ ＡＣＭＥ ＦＯＵＮＤＡＴＩＯＮ [contact omitted]'
+  ]
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    'present finite pronoun clauses must outrank institutional suffixes'
+  );
+}
+
+for (const [input, expected] of [
+  [
+    'Context (U.S. WE CARE FOUNDATION Phone #: +1 253 477 8777)',
+    'Context (U.S. WE CARE FOUNDATION Phone #: [contact omitted])'
+  ],
+  [
+    'Context (U.S. Phone #: +1 253 477 8777)',
+    'Context (U.S. Phone #: [contact omitted])'
+  ],
+  [
+    'Context（Ｕ．Ｓ． ＷＥ ＣＡＲＥ ＦＯＵＮＤＡＴＩＯＮ Ｐｈｏｎｅ ＃： ＋１ ２５３ ４７７ ８７７７）',
+    'Context（Ｕ．Ｓ． ＷＥ ＣＡＲＥ ＦＯＵＮＤＡＴＩＯＮ Ｐｈｏｎｅ ＃： [contact omitted]）'
+  ],
+  [
+    'Context（Ｕ．Ｓ． Ｐｈｏｎｅ ＃： ＋１ ２５３ ４７７ ８７７７）',
+    'Context（Ｕ．Ｓ． Ｐｈｏｎｅ ＃： [contact omitted]）'
+  ]
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    'hash-style telephone labels must provide affirmative wrapper ownership evidence'
+  );
+}
+
+
+for (const [input, expected] of [
+  ['Context (U.S. We Care Foundation - Phone: +1 253 477 8777)', 'Context (U.S. We Care Foundation - Phone: [contact omitted])'],
+  ['Context (U.S. We Care Foundation — Phone: +1 253 477 8777)', 'Context (U.S. We Care Foundation — Phone: [contact omitted])'],
+  ['Context (U.S. We Care Foundation | Phone #: +1 253 477 8777)', 'Context (U.S. We Care Foundation | Phone #: [contact omitted])'],
+  ['Context (U.S. We Care Foundation / Contact: +1 253 477 8777)', 'Context (U.S. We Care Foundation / Contact: [contact omitted])'],
+  ['Context（Ｕ．Ｓ． Ｗｅ Ｃａｒｅ Ｆｏｕｎｄａｔｉｏｎ ｜ Ｐｈｏｎｅ ＃： ＋１ ２５３ ４７７ ８７７７）', 'Context（Ｕ．Ｓ． Ｗｅ Ｃａｒｅ Ｆｏｕｎｄａｔｉｏｎ ｜ Ｐｈｏｎｅ ＃： [contact omitted]）']
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    'terminal phone-label delimiters must remain outside title classification'
+  );
+}
+
+for (const [input, expected] of [
+  ['Context (U.S. She Leads Africa +1 253 477 8777)', 'Context (U.S. She Leads Africa [contact omitted])'],
+  ['Context (U.S. This Is Us +1 253 477 8777)', 'Context (U.S. This Is Us [contact omitted])'],
+  ['Context（Ｕ．Ｓ． Ｓｈｅ Ｌｅａｄｓ Ａｆｒｉｃａ ＋１ ２５３ ４７７ ８７７７）', 'Context（Ｕ．Ｓ． Ｓｈｅ Ｌｅａｄｓ Ａｆｒｉｃａ [contact omitted]）'],
+  ['Context (U.S. WE CARE CENTER +1 253 477 8777)', 'Context (U.S. WE CARE CENTER [contact omitted])'],
+  ['Context (U.S. WE CALL CENTER +1 253 477 8777)', 'Context (U.S. WE CALL CENTER [contact omitted])'],
+  ['Context (U.S. THIS CALL CENTER +1 253 477 8777)', 'Context (U.S. THIS CALL CENTER [contact omitted])'],
+  ['Context (U.S. WE THE PEOPLE FOUNDATION +1 253 477 8777)', 'Context (U.S. WE THE PEOPLE FOUNDATION [contact omitted])'],
+  ['Context (U.S. IT DEPARTMENT +1 253 477 8777)', 'Context (U.S. IT DEPARTMENT [contact omitted])']
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    'unlabelled title-shaped institutions must retain their owned closer'
+  );
+}
+
+for (const [input, expected] of [
+  ['Broken (He moved to the U.S. He visited the company +1 253 477 8777)', 'Broken (He moved to the U.S. He visited the company [contact omitted]'],
+  ['Broken (He moved to the U.S. HE VISITED THE COMPANY +1 253 477 8777)', 'Broken (He moved to the U.S. HE VISITED THE COMPANY [contact omitted]'],
+  ['Broken (He moved to the U.S. HE VISITS ACME COMPANY +1 253 477 8777)', 'Broken (He moved to the U.S. HE VISITS ACME COMPANY [contact omitted]'],
+  ['Broken (He moved to the U.S. THEY VISIT ACME FOUNDATION +1 253 477 8777)', 'Broken (He moved to the U.S. THEY VISIT ACME FOUNDATION [contact omitted]'],
+  ['Broken (He moved to the U.S. WE WILL VISIT ACME COMPANY +1 253 477 8777)', 'Broken (He moved to the U.S. WE WILL VISIT ACME COMPANY [contact omitted]'],
+  ['Broken (He moved to the U.S. WE SUPPORT ACME FOUNDATION +1 253 477 8777)', 'Broken (He moved to the U.S. WE SUPPORT ACME FOUNDATION [contact omitted]'],
+  ['Broken (He moved to the U.S. WE BUILD THE SYSTEMS +1 253 477 8777)', 'Broken (He moved to the U.S. WE BUILD THE SYSTEMS [contact omitted]'],
+  ['Broken（He moved to the Ｕ．Ｓ． ＨＥ ＶＩＳＩＴＥＤ ＴＨＥ ＣＯＭＰＡＮＹ ＋１ ２５３ ４７７ ８７７７）', 'Broken（He moved to the Ｕ．Ｓ． ＨＥ ＶＩＳＩＴＥＤ ＴＨＥ ＣＯＭＰＡＮＹ [contact omitted]']
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    'ordinary predicates outside the bounded lexicon must reset wrapper ownership'
+  );
+}
+
+assert.equal(
+  redactContactData('Context (U.S. We Care Foundation - Phone: +1 253 477 8777)'),
+  'Context (U.S. We Care Foundation - Phone: [contact omitted])',
+  'delimiter-aware labels and structural clause evidence must preserve wrapper ownership'
+);
+
+
+for (const [input, expected] of [
+  ['Broken (He moved to the U.S. THEY PURCHASE TICKETS +1 253 477 8777)', 'Broken (He moved to the U.S. THEY PURCHASE TICKETS [contact omitted]'],
+  ['Broken (He moved to the U.S. WE ACQUIRE ASSETS +1 253 477 8777)', 'Broken (He moved to the U.S. WE ACQUIRE ASSETS [contact omitted]'],
+  ['Broken (He moved to the U.S. YOU PURCHASE THE TICKETS +1 253 477 8777)', 'Broken (He moved to the U.S. YOU PURCHASE THE TICKETS [contact omitted]'],
+  ['Broken（He moved to the Ｕ．Ｓ． ＴＨＥＹ ＰＵＲＣＨＡＳＥ ＴＩＣＫＥＴＳ ＋１ ２５３ ４７７ ８７７７）', 'Broken（He moved to the Ｕ．Ｓ． ＴＨＥＹ ＰＵＲＣＨＡＳＥ ＴＩＣＫＥＴＳ [contact omitted]']
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    'plural-subject base-form predicates must reset wrapper ownership'
+  );
+}
+
+for (const [input, expected] of [
+  ['Broken (He moved to the U.S. He Visited The Company +1 253 477 8777)', 'Broken (He moved to the U.S. He Visited The Company [contact omitted]'],
+  ['Broken (He moved to the U.S. She Leads The Foundation +1 253 477 8777)', 'Broken (He moved to the U.S. She Leads The Foundation [contact omitted]'],
+  ['Broken（He moved to the Ｕ．Ｓ． Ｈｅ Ｖｉｓｉｔｅｄ Ｔｈｅ Ｃｏｍｐａｎｙ ＋１ ２５３ ４７７ ８７７７）', 'Broken（He moved to the Ｕ．Ｓ． Ｈｅ Ｖｉｓｉｔｅｄ Ｔｈｅ Ｃｏｍｐａｎｙ [contact omitted]']
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    'unlabelled title-case object clauses must outrank institutional suffixes'
+  );
+}
+
+for (const [input, expected] of [
+  ['Context (U.S. This Is Us Foundation +1 253 477 8777)', 'Context (U.S. This Is Us Foundation [contact omitted])'],
+  ['Context (U.S. We Care Center +1 253 477 8777)', 'Context (U.S. We Care Center [contact omitted])'],
+  ['Context (U.S. He Visited The Company Phone: +1 253 477 8777)', 'Context (U.S. He Visited The Company Phone: [contact omitted])'],
+  ['Context (U.S. THEY PURCHASE TICKETS FOUNDATION Phone: +1 253 477 8777)', 'Context (U.S. THEY PURCHASE TICKETS FOUNDATION Phone: [contact omitted])']
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    'title-shaped or terminally labelled institutions must remain protected'
+  );
+}
+
+
+for (const [input, expected] of [
+  ['Broken (He moved to the U.S. THEY SING SONGS +1 253 477 8777)', 'Broken (He moved to the U.S. THEY SING SONGS [contact omitted]'],
+  ['Broken (He moved to the U.S. WE BRING SUPPLIES +1 253 477 8777)', 'Broken (He moved to the U.S. WE BRING SUPPLIES [contact omitted]'],
+  ['Broken (He moved to the U.S. YOU SWING THE BAT +1 253 477 8777)', 'Broken (He moved to the U.S. YOU SWING THE BAT [contact omitted]'],
+  ['Broken（He moved to the Ｕ．Ｓ． ＴＨＥＹ ＳＩＮＧ ＳＯＮＧＳ ＋１ ２５３ ４７７ ８７７７）', 'Broken（He moved to the Ｕ．Ｓ． ＴＨＥＹ ＳＩＮＧ ＳＯＮＧＳ [contact omitted]']
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    'lexical base verbs ending in ing must reset wrapper ownership'
+  );
+}
+
+for (const [input, expected] of [
+  ['Context (U.S. WE INSPIRE YOUNG PEOPLE FOUNDATION +1 253 477 8777)', 'Context (U.S. WE INSPIRE YOUNG PEOPLE FOUNDATION [contact omitted])'],
+  ['Context (U.S. WE INSPIRE PEOPLE FOUNDATION +1 253 477 8777)', 'Context (U.S. WE INSPIRE PEOPLE FOUNDATION [contact omitted])'],
+  ['Context (U.S. THEY PURCHASING TICKETS FOUNDATION +1 253 477 8777)', 'Context (U.S. THEY PURCHASING TICKETS FOUNDATION [contact omitted])'],
+  ['Context（Ｕ．Ｓ． ＷＥ ＩＮＳＰＩＲＥ ＹＯＵＮＧ ＰＥＯＰＬＥ ＦＯＵＮＤＡＴＩＯＮ ＋１ ２５３ ４７７ ８７７７）', 'Context（Ｕ．Ｓ． ＷＥ ＩＮＳＰＩＲＥ ＹＯＵＮＧ ＰＥＯＰＬＥ ＦＯＵＮＤＡＴＩＯＮ [contact omitted]）']
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    'unbounded plural morphology must not override institutional title evidence'
+  );
+}
+
+for (const [input, expected] of [
+  ['Context (U.S. We Are The World Foundation +1 253 477 8777)', 'Context (U.S. We Are The World Foundation [contact omitted])'],
+  ['Context (U.S. WE ARE THE WORLD FOUNDATION +1 253 477 8777)', 'Context (U.S. WE ARE THE WORLD FOUNDATION [contact omitted])'],
+  ['Context（Ｕ．Ｓ． Ｗｅ Ａｒｅ Ｔｈｅ Ｗｏｒｌｄ Ｆｏｕｎｄａｔｉｏｎ ＋１ ２５３ ４７７ ８７７７）', 'Context（Ｕ．Ｓ． Ｗｅ Ａｒｅ Ｔｈｅ Ｗｏｒｌｄ Ｆｏｕｎｄａｔｉｏｎ [contact omitted]）']
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    'copular title-shaped institutions must retain their owned closer'
+  );
+}
+
 // period abbreviation classification must remain lexical and context-bounded
 
 
