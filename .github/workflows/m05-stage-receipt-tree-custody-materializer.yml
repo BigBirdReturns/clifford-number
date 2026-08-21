@@ -24,7 +24,7 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
-      - name: Publish hardened product objects on a workflow-free branch
+      - name: Publish hardened product objects from an isolated worktree
         shell: bash
         run: |
           set -euo pipefail
@@ -35,6 +35,8 @@ jobs:
           CONTRACT='data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-repository-tree-custody-amendment.json'
           TEST='test/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-repository-tree-custody-amendment.test.js'
           VALIDATOR='tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-repository-tree-custody-amendment.mjs'
+          SUCCESSOR_WORKFLOW='.github/workflows/m05-intel-realization-stage-receipt-repository-tree-custody-amendment.yml'
+          WORKTREE='/tmp/m05-stage-tree-custody-worktree'
 
           git fetch --prune origin main
           test "$(git rev-parse origin/main)" = "$EXPECTED_BASE"
@@ -52,19 +54,27 @@ jobs:
           test "$(git hash-object /tmp/m05-stage-tree-custody-hardening/product/$VALIDATOR)" = '54b27caceeeb18b90ef0a15cde003ea8716699c7'
           test "$(git hash-object /tmp/m05-stage-tree-custody-hardening/product/$TEST)" = 'ccd1d313e3e653dfa05676736962acfc48ab4ee6'
 
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git switch --detach "$EXPECTED_BASE"
+          rm -rf "$WORKTREE"
+          git worktree add --detach "$WORKTREE" "$EXPECTED_BASE"
+          cd "$WORKTREE"
           git switch -c "$TARGET"
+          test ! -e "$SUCCESSOR_WORKFLOW"
+          git status --porcelain=v1 --untracked-files=all | test ! -s /dev/stdin
           cp -a /tmp/m05-stage-tree-custody-hardening/product/. .
           git add -- "$CONTRACT" "$TEST" "$VALIDATOR"
           printf '%s\n' "$CONTRACT" "$TEST" "$VALIDATOR" | LC_ALL=C sort > /tmp/expected
           git diff --cached --name-only | LC_ALL=C sort > /tmp/actual
           diff -u /tmp/expected /tmp/actual
+          test ! -e "$SUCCESSOR_WORKFLOW"
           git diff --cached --check
           node --check "$VALIDATOR"
           node --check "$TEST"
           node "$TEST"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git commit -m '[M-05 S03-L7] Publish hardened repository-tree custody objects'
           test "$(git rev-parse HEAD^)" = "$EXPECTED_BASE"
+          git diff-tree --no-commit-id --name-only -r HEAD | LC_ALL=C sort > /tmp/committed
+          diff -u /tmp/expected /tmp/committed
+          test "$(git cat-file -e "HEAD:$SUCCESSOR_WORKFLOW" 2>/dev/null; echo $?)" != '0'
           git push origin "HEAD:refs/heads/$TARGET"
