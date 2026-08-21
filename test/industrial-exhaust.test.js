@@ -177,6 +177,39 @@ for (const labelledCompactPhone of ['Phone: 06012345678', 'Phone: 09012345678'])
     'phone labels must continue to redact compact domestic numbers'
   );
 }
+for (const labelledIdentifier of [
+  'ID: 09012345678',
+  'ＩＤ：０９０１２３４５６７８',
+  'GUID: 03-6216-8041',
+  'reference: +81 3 6216 5111',
+  'reference: +1 212 555 1234',
+  'ID: +44 (0)20 7123 4567',
+  '管理番号：03-6216-8041',
+  '識別子：+81 3 6216 5111'
+]) {
+  assert.equal(
+    redactContactData(labelledIdentifier),
+    labelledIdentifier,
+    'explicit identifier labels must protect every phone-shaped candidate and subspan'
+  );
+}
+for (const [labelledPhone, expected] of [
+  ['Phone: ID: 09012345678', 'Phone: ID: [contact omitted]'],
+  ['Phone ID: 09012345678', 'Phone ID: [contact omitted]'],
+  ['電話番号 ＩＤ：０９０１２３４５６７８', '電話番号 ＩＤ：[contact omitted]']
+]) {
+  assert.equal(
+    redactContactData(labelledPhone),
+    expected,
+    'an affirmative phone label must override a trailing identifier label'
+  );
+}
+assert.equal(
+  redactContactData('ID: 09012345678 Phone: 03-6216-8041'),
+  'ID: 09012345678 Phone: [contact omitted]',
+  'identifier protection must not suppress a later independently labelled phone'
+);
+
 for (const compactNumericIdentifier of [
   '1234567890',
   '00012345678',

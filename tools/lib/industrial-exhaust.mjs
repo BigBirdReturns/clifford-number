@@ -16,6 +16,7 @@ const PHONE_EXTENSION_SUFFIX_PATTERN = /^\s*[,;:()（）.．。\-–—]*(?:(?:e
 const FORMATTED_NUMERIC_OBSERVATION_PATTERN = /^(?:\d{1,9}\.\d{1,6}|\d{1,3}(?:,\d{3})+(?:\.\d{1,6})?|\d{1,3},\d{1,2}|\d{1,9}\s*[-–—]\s*\d{1,9}|\d{1,2}:\d{2}(?::\d{2})?)(?=$|[^0-9])/u;
 const NUMERIC_OBSERVATION_PATTERN = /^\d{1,9}(?:,\d{3})*(?:\.\d{1,6})?(?:\s*[-–—]\s*\d{1,9}(?:,\d{3})*(?:\.\d{1,6})?)?\s*(?:(?:people|persons?|users?|customers?|employees?|impressions?|views?|visits?|clicks?|downloads?|yen|dollars?|pounds?|euros?|percent(?:age)?|million|billion|thousand|points?|basis points?|countries|markets|offices|stores|years?|months?|days?|hours?)(?=$|[^\p{L}\p{N}])|(?:人|名|件|回|円|社|国|地域|市場|拠点|店舗|%|％))/iu;
 const PHONE_LABEL_PATTERN = /(?:(?:^|\b)(?:tel(?:ephone)?|phone|mobile|cell|fax|contact)\s*(?:number\s*)?(?:is\s*)?[:.]?\s*|(?:電話(?:番号)?|携帯(?:電話)?|ファックス|連絡先|お問い合わせ先)\s*[:.]?\s*)$/iu;
+const EXPLICIT_IDENTIFIER_LABEL_PATTERN = /(?:(?:^|\b)(?:id|guid|identifier|reference|revision|release(?:\s+id)?|record(?:\s+id)?|receipt|sha(?:-?256)?|hash|ticket|case|invoice|order|code)|(?:識別子|参照(?:番号)?|管理番号|受付番号|注文番号|案件番号|コード))\s*[:：=#＃-]?\s*$/iu;
 const DATE_LIKE_PATTERN = /^(?:\d{4}[-/.]\d{1,2}[-/.]\d{1,2}|\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4})$/u;
 const DIGIT_RUN_PATTERN = /[0-9０-９]+/gu;
 const MAX_PHONE_DIGIT_GROUPS = 17;
@@ -141,12 +142,29 @@ function hasInternationalTrunkPrefix(value, accessPrefixDigits) {
   return /^\s*\d{1,3}\s*\(\s*0\s*\)/u.test(remainder);
 }
 
+function explicitIdentifierLabelMatch(normalizedPrefix) {
+  return normalizedPrefix.slice(-128).match(EXPLICIT_IDENTIFIER_LABEL_PATTERN);
+}
+
+function hasExplicitIdentifierPrefixNormalized(normalizedPrefix) {
+  return Boolean(explicitIdentifierLabelMatch(normalizedPrefix));
+}
+
+function hasPhoneLabelPrefixNormalized(normalizedPrefix) {
+  if (PHONE_LABEL_PATTERN.test(normalizedPrefix.slice(-48))) return true;
+  const identifierMatch = explicitIdentifierLabelMatch(normalizedPrefix);
+  if (!identifierMatch || identifierMatch.index == null) return false;
+  const window = normalizedPrefix.slice(-128);
+  return PHONE_LABEL_PATTERN.test(window.slice(0, identifierMatch.index).slice(-48));
+}
+
 function hasPhoneLabelPrefix(prefix) {
-  return PHONE_LABEL_PATTERN.test(prefix.normalize('NFKC').slice(-48));
+  return hasPhoneLabelPrefixNormalized(prefix.normalize('NFKC'));
 }
 
 function phoneCandidateScore(candidate, prefix) {
   const normalized = candidate.trim().normalize('NFKC');
+  const normalizedPrefix = prefix.normalize('NFKC');
   const digits = normalized.replace(/\D/gu, '');
   if (DATE_LIKE_PATTERN.test(normalized)) return 0;
 
@@ -161,20 +179,18 @@ function phoneCandidateScore(candidate, prefix) {
   if (normalized.startsWith('+') && !/^[1-9]/u.test(digits)) return 0;
   if (!normalized.startsWith('+') && accessPrefixCandidates.length && !accessPrefixDigits) return 0;
 
-  const labelled = hasPhoneLabelPrefix(prefix);
+  const labelled = hasPhoneLabelPrefixNormalized(normalizedPrefix);
   const numericUrlContext = /(?:(?:https?:)?\/\/|www\.|(?:[\p{L}\p{N}](?:[\p{L}\p{N}-]*[\p{L}\p{N}])?\.)+(?:[\p{L}]{2,}|xn--[\p{L}\p{N}-]{2,})(?=[:/?#])|(?:\d{1,3}\.){3}\d{1,3}(?=[:/?#]))[^\s]*$/iu.test(
-    prefix.normalize('NFKC')
+    normalizedPrefix
   );
   if (numericUrlContext) return 0;
   const international = isInternationalPhoneCandidate(normalized);
   const parenthesized = /\(\s*\d{1,5}\s*\)/u.test(normalized);
-  const compactIdentifierContext = /(?:(?:^|\b)(?:guid|identifier|reference|revision|release(?:\s+id)?|record(?:\s+id)?|receipt|sha(?:-?256)?|hash|ticket|case|invoice|order|code)|(?:識別子|参照(?:番号)?|管理番号|受付番号|注文番号|案件番号|コード))\s*[:：=#＃-]?\s*$/iu.test(
-    prefix.normalize('NFKC').slice(-80)
-  );
+  const explicitIdentifierContext = hasExplicitIdentifierPrefixNormalized(normalizedPrefix);
+  if (explicitIdentifierContext && !labelled) return 0;
   const compactDomestic = groups.length === 1
     && (/^0[1-9]\d{8}$/u.test(groups[0])
-      || /^0(?:50|60|70|80|90)\d{8}$/u.test(groups[0]))
-    && !compactIdentifierContext;
+      || /^0(?:50|60|70|80|90)\d{8}$/u.test(groups[0]));
   const domesticPairGrouped = groups.length >= 4
       && groups.length <= 6
       && /^0\d$/u.test(groups[0])
@@ -384,6 +400,12 @@ function phoneRedactionRanges(
   const groups = [...candidate.matchAll(DIGIT_RUN_PATTERN)];
   if (!groups.length) return [];
 
+  const normalizedExternalPrefix = externalPrefix.normalize('NFKC');
+  const phoneLabelContext = hasPhoneLabelPrefixNormalized(normalizedExternalPrefix);
+  if (hasExplicitIdentifierPrefixNormalized(normalizedExternalPrefix) && !phoneLabelContext) {
+    return [];
+  }
+
   const observationGroup = trailingObservationGroup(
     candidate,
     groups,
@@ -392,7 +414,7 @@ function phoneRedactionRanges(
   );
   const normalizedCandidate = candidate.trim().normalize('NFKC');
   const wholeSpanIsAffirmative = isInternationalPhoneCandidate(normalizedCandidate)
-    || hasPhoneLabelPrefix(externalPrefix);
+    || phoneLabelContext;
   if (!allowInitialGroup && isInternationalPhoneCandidate(normalizedCandidate)) {
     return redactAttachedInternationalSuffixRanges(
       candidate,
