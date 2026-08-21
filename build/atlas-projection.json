@@ -1,0 +1,6340 @@
+{
+  "scheme": {
+    "generator": "tools/build-atlas-projection.mjs",
+    "schema_version": "atlas-projection@1",
+    "governing_design_note": "docs/atlas-representation-ladder.md",
+    "disposability_notice": "This file is a derived, disposable display projection of the compiled ledger artifacts. It is never canonical truth and never alters ledger identity, hop counts, hop eligibility, dense-surface exclusions, or evidence semantics, which remain governed exclusively by BUILD-INSTRUCTIONS.md Section 1 and tools/build-hop-graph.mjs. Safe to delete and regenerate at any time with `node tools/build-atlas-projection.mjs`.",
+    "source_artifacts": [
+      "build/surface-graph.json",
+      "build/hop-graph.json",
+      "build/receipt-graph.json",
+      "build/scores.json",
+      "cases.json",
+      "data/canonical/surface-types.json"
+    ],
+    "graph_effect_derivation_rule": "graph_effect is copied/derived only from surface.hop_eligible (declared in the ledger surface record) and build/hop-graph.json rejected_hop_surfaces[].reason (computed by tools/lib/hops.mjs deriveHopEdges, never re-derived here):   hop_eligible=true, no rejection reason            -> \"hop-eligible\"   hop_eligible=true, reason=broad_institution_context_only -> \"context-only\"   hop_eligible=true, reason=fewer_than_two_actor_participants     or reason=density_limit_exceeded                -> \"none\" (structurally cannot hop)   hop_eligible=false, status is a scouted/candidate status     (candidate_pending_contract_receipt, seeded_from_public_post) -> \"scout-only\"   hop_eligible=false, any other declared status       -> \"none\" No graph_effect value is ever inferred from anything other than these source fields.",
+    "region_membership_basis": "cases.json is the authoritative declared case list. build/surface-graph.json carries no per-surface case_id tag yet (a future ladder step), so every bounded surface is attributed to cases.json.default_case_id until finer per-surface case tagging exists. Regions for any other declared case are reported with an honest zero population, not guessed membership.",
+    "determinism_notice": "No Date.now(), no Math.random(), no locale-dependent formatting. All arrays are sorted by stable string ids before serialization; all layout positions are seeded FNV-1a hashes of namespaced stable ids. Running this builder twice against an unchanged input tree produces byte-identical output."
+  },
+  "regions": [
+    {
+      "case_id": "template",
+      "label": "Template Case",
+      "description": "Reusable case shell for future public-interest topology maps.",
+      "is_default_case": false,
+      "membership_basis": "cases.json is the authoritative declared case list. build/surface-graph.json carries no per-surface case_id tag yet (a future ladder step), so every bounded surface is attributed to cases.json.default_case_id until finer per-surface case tagging exists. Regions for any other declared case are reported with an honest zero population, not guessed membership.",
+      "surface_ids": [],
+      "surface_count": {
+        "metric": "surfaces_in_region",
+        "count": 0,
+        "denominator": 14,
+        "source_ids": []
+      },
+      "evidence_composition": {
+        "population": 0,
+        "by_class": {
+          "official": 0,
+          "primary_public": 0,
+          "reported": 0,
+          "derived": 0,
+          "judgment": 0,
+          "open": 0
+        },
+        "source_ids": []
+      },
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 0
+      },
+      "receipt_ids": [],
+      "position": {
+        "x": 902.03,
+        "y": 698.73
+      }
+    },
+    {
+      "case_id": "uk-ai-policy",
+      "label": "UK AI Policy Machine",
+      "description": "Seed public graph for evidenced institutional adjacency around UK AI policy.",
+      "is_default_case": true,
+      "membership_basis": "cases.json is the authoritative declared case list. build/surface-graph.json carries no per-surface case_id tag yet (a future ladder step), so every bounded surface is attributed to cases.json.default_case_id until finer per-surface case tagging exists. Regions for any other declared case are reported with an honest zero population, not guessed membership.",
+      "surface_ids": [
+        "ai-opportunities-action-plan-2025",
+        "detachment-201-commissioning-2025",
+        "dialog-society-membership",
+        "electric-twin-ethics-board-2026",
+        "electric-twin-founder-2023",
+        "electric-twin-funding-surface-2023-2026",
+        "electric-twin-newsuk-synthetic-audience",
+        "faculty-investor-employee-2015-2019",
+        "gartner-synthetic-population-category-2026",
+        "no10-digital-data-advisory-2019-2021",
+        "simon-case-cabinet-secretary-2020-2024",
+        "strategic-defence-review-2024-2025",
+        "team-barrow-public-private-fund-2026",
+        "vote-leave-data-science-2016"
+      ],
+      "surface_count": {
+        "metric": "surfaces_in_region",
+        "count": 14,
+        "denominator": 14,
+        "source_ids": [
+          "ai-opportunities-action-plan-2025",
+          "detachment-201-commissioning-2025",
+          "dialog-society-membership",
+          "electric-twin-ethics-board-2026",
+          "electric-twin-founder-2023",
+          "electric-twin-funding-surface-2023-2026",
+          "electric-twin-newsuk-synthetic-audience",
+          "faculty-investor-employee-2015-2019",
+          "gartner-synthetic-population-category-2026",
+          "no10-digital-data-advisory-2019-2021",
+          "simon-case-cabinet-secretary-2020-2024",
+          "strategic-defence-review-2024-2025",
+          "team-barrow-public-private-fund-2026",
+          "vote-leave-data-science-2016"
+        ]
+      },
+      "evidence_composition": {
+        "population": 164,
+        "by_class": {
+          "official": 20,
+          "primary_public": 120,
+          "reported": 21,
+          "derived": 0,
+          "judgment": 3,
+          "open": 0
+        },
+        "source_ids": [
+          "army-detachment-201",
+          "businesscloud-electric-twin-founders",
+          "companies-house-electric-twin",
+          "dialog-directory-extract",
+          "gov-ai-opportunities-action-plan",
+          "gov-pm-ai-blueprint-2025",
+          "gov-sdr-2025-publication",
+          "gov-sdr-terms-of-reference",
+          "master-doc-v3",
+          "official-no10-ben-warner",
+          "sandhu-comment-newsuk-2026-06-29",
+          "times-case-electric-twin-2026",
+          "warner-linkedin-gartner-2026-06-29",
+          "warner-surface-audit-2026-06-29",
+          "wired-dialog-leak"
+        ]
+      },
+      "graph_effect_composition": {
+        "hop-eligible": 7,
+        "context-only": 2,
+        "scout-only": 2,
+        "none": 3
+      },
+      "receipt_ids": [
+        "army-detachment-201",
+        "businesscloud-electric-twin-founders",
+        "companies-house-electric-twin",
+        "dialog-directory-extract",
+        "dialog-human-layer",
+        "gov-sdr-2025-publication",
+        "gov-sdr-terms-of-reference",
+        "guardian-faculty-sage",
+        "master-doc-v3",
+        "official-no10-ben-warner",
+        "reuters-defense-procurement",
+        "sandhu-comment-newsuk-2026-06-29",
+        "times-case-electric-twin-2026",
+        "warner-linkedin-gartner-2026-06-29",
+        "warner-surface-audit-2026-06-29",
+        "wired-dialog-leak",
+        "wired-dialog-misconfig"
+      ],
+      "position": {
+        "x": 1263.9,
+        "y": 180.35
+      }
+    }
+  ],
+  "machines": [
+    {
+      "organization_id": "atomico",
+      "label": "Atomico",
+      "kind": "fund",
+      "declared_surface_factory": false,
+      "surfaces_by_type": [
+        {
+          "surface_type": "employment_investment_surface",
+          "surface_ids": [
+            "electric-twin-funding-surface-2023-2026"
+          ]
+        }
+      ],
+      "surface_ids": [
+        "electric-twin-funding-surface-2023-2026"
+      ],
+      "surface_count": {
+        "metric": "surfaces_generated",
+        "count": 1,
+        "denominator": 14,
+        "source_ids": [
+          "electric-twin-funding-surface-2023-2026"
+        ]
+      },
+      "evidence_composition": {
+        "population": 7,
+        "by_class": {
+          "official": 0,
+          "primary_public": 0,
+          "reported": 7,
+          "derived": 0,
+          "judgment": 0,
+          "open": 0
+        },
+        "source_ids": [
+          "master-doc-v3"
+        ]
+      },
+      "graph_effect_composition": {
+        "hop-eligible": 1,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 0
+      },
+      "receipt_ids": [
+        "master-doc-v3"
+      ],
+      "position": {
+        "x": 149.95,
+        "y": 433.27
+      }
+    },
+    {
+      "organization_id": "bae-systems",
+      "label": "BAE Systems",
+      "kind": "defence_company",
+      "declared_surface_factory": false,
+      "surfaces_by_type": [
+        {
+          "surface_type": "public_private_fund_surface",
+          "surface_ids": [
+            "team-barrow-public-private-fund-2026"
+          ]
+        }
+      ],
+      "surface_ids": [
+        "team-barrow-public-private-fund-2026"
+      ],
+      "surface_count": {
+        "metric": "surfaces_generated",
+        "count": 1,
+        "denominator": 14,
+        "source_ids": [
+          "team-barrow-public-private-fund-2026"
+        ]
+      },
+      "evidence_composition": {
+        "population": 4,
+        "by_class": {
+          "official": 0,
+          "primary_public": 0,
+          "reported": 4,
+          "derived": 0,
+          "judgment": 0,
+          "open": 0
+        },
+        "source_ids": [
+          "master-doc-v3"
+        ]
+      },
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 1,
+        "scout-only": 0,
+        "none": 0
+      },
+      "receipt_ids": [
+        "master-doc-v3"
+      ],
+      "position": {
+        "x": 90.79,
+        "y": 545.52
+      }
+    },
+    {
+      "organization_id": "cabinet-office",
+      "label": "Cabinet Office",
+      "kind": "agency",
+      "declared_surface_factory": false,
+      "surfaces_by_type": [
+        {
+          "surface_type": "government_advisory_surface",
+          "surface_ids": [
+            "simon-case-cabinet-secretary-2020-2024"
+          ]
+        }
+      ],
+      "surface_ids": [
+        "simon-case-cabinet-secretary-2020-2024"
+      ],
+      "surface_count": {
+        "metric": "surfaces_generated",
+        "count": 1,
+        "denominator": 14,
+        "source_ids": [
+          "simon-case-cabinet-secretary-2020-2024"
+        ]
+      },
+      "evidence_composition": {
+        "population": 2,
+        "by_class": {
+          "official": 2,
+          "primary_public": 0,
+          "reported": 0,
+          "derived": 0,
+          "judgment": 0,
+          "open": 0
+        },
+        "source_ids": [
+          "master-doc-v3"
+        ]
+      },
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 1,
+        "scout-only": 0,
+        "none": 0
+      },
+      "receipt_ids": [
+        "master-doc-v3"
+      ],
+      "position": {
+        "x": 1182.33,
+        "y": 168.15
+      }
+    },
+    {
+      "organization_id": "dialog",
+      "label": "Dialog",
+      "kind": "directory",
+      "declared_surface_factory": true,
+      "surfaces_by_type": [
+        {
+          "surface_type": "directory_roster_surface",
+          "surface_ids": [
+            "dialog-society-membership"
+          ]
+        }
+      ],
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": {
+        "metric": "surfaces_generated",
+        "count": 1,
+        "denominator": 14,
+        "source_ids": [
+          "dialog-society-membership"
+        ]
+      },
+      "evidence_composition": {
+        "population": 116,
+        "by_class": {
+          "official": 0,
+          "primary_public": 111,
+          "reported": 5,
+          "derived": 0,
+          "judgment": 0,
+          "open": 0
+        },
+        "source_ids": [
+          "dialog-directory-extract",
+          "wired-dialog-leak"
+        ]
+      },
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "dialog-human-layer",
+        "wired-dialog-leak",
+        "wired-dialog-misconfig"
+      ],
+      "position": {
+        "x": 622.62,
+        "y": 423.22
+      }
+    },
+    {
+      "organization_id": "dsit",
+      "label": "Department for Science, Innovation and Technology (DSIT)",
+      "kind": "agency",
+      "declared_surface_factory": false,
+      "surfaces_by_type": [
+        {
+          "surface_type": "policy_document_surface",
+          "surface_ids": [
+            "ai-opportunities-action-plan-2025"
+          ]
+        }
+      ],
+      "surface_ids": [
+        "ai-opportunities-action-plan-2025"
+      ],
+      "surface_count": {
+        "metric": "surfaces_generated",
+        "count": 1,
+        "denominator": 14,
+        "source_ids": [
+          "ai-opportunities-action-plan-2025"
+        ]
+      },
+      "evidence_composition": {
+        "population": 3,
+        "by_class": {
+          "official": 3,
+          "primary_public": 0,
+          "reported": 0,
+          "derived": 0,
+          "judgment": 0,
+          "open": 0
+        },
+        "source_ids": [
+          "gov-ai-opportunities-action-plan",
+          "gov-pm-ai-blueprint-2025",
+          "master-doc-v3"
+        ]
+      },
+      "graph_effect_composition": {
+        "hop-eligible": 1,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 0
+      },
+      "receipt_ids": [
+        "master-doc-v3"
+      ],
+      "position": {
+        "x": 390.63,
+        "y": 725.39
+      }
+    },
+    {
+      "organization_id": "electric-twin",
+      "label": "Electric Twin",
+      "kind": "company",
+      "declared_surface_factory": true,
+      "surfaces_by_type": [
+        {
+          "surface_type": "board_advisory_surface",
+          "surface_ids": [
+            "electric-twin-ethics-board-2026"
+          ]
+        },
+        {
+          "surface_type": "category_formation_surface",
+          "surface_ids": [
+            "gartner-synthetic-population-category-2026"
+          ]
+        },
+        {
+          "surface_type": "customer_vendor_surface",
+          "surface_ids": [
+            "electric-twin-newsuk-synthetic-audience"
+          ]
+        },
+        {
+          "surface_type": "employment_investment_surface",
+          "surface_ids": [
+            "electric-twin-funding-surface-2023-2026"
+          ]
+        },
+        {
+          "surface_type": "founder_officer_surface",
+          "surface_ids": [
+            "electric-twin-founder-2023"
+          ]
+        }
+      ],
+      "surface_ids": [
+        "electric-twin-ethics-board-2026",
+        "electric-twin-founder-2023",
+        "electric-twin-funding-surface-2023-2026",
+        "electric-twin-newsuk-synthetic-audience",
+        "gartner-synthetic-population-category-2026"
+      ],
+      "surface_count": {
+        "metric": "surfaces_generated",
+        "count": 5,
+        "denominator": 14,
+        "source_ids": [
+          "electric-twin-ethics-board-2026",
+          "electric-twin-founder-2023",
+          "electric-twin-funding-surface-2023-2026",
+          "electric-twin-newsuk-synthetic-audience",
+          "gartner-synthetic-population-category-2026"
+        ]
+      },
+      "evidence_composition": {
+        "population": 18,
+        "by_class": {
+          "official": 0,
+          "primary_public": 8,
+          "reported": 9,
+          "derived": 0,
+          "judgment": 1,
+          "open": 0
+        },
+        "source_ids": [
+          "businesscloud-electric-twin-founders",
+          "companies-house-electric-twin",
+          "master-doc-v3",
+          "sandhu-comment-newsuk-2026-06-29",
+          "times-case-electric-twin-2026",
+          "warner-linkedin-gartner-2026-06-29"
+        ]
+      },
+      "graph_effect_composition": {
+        "hop-eligible": 2,
+        "context-only": 0,
+        "scout-only": 2,
+        "none": 1
+      },
+      "receipt_ids": [
+        "businesscloud-electric-twin-founders",
+        "companies-house-electric-twin",
+        "master-doc-v3",
+        "sandhu-comment-newsuk-2026-06-29",
+        "times-case-electric-twin-2026",
+        "warner-linkedin-gartner-2026-06-29"
+      ],
+      "position": {
+        "x": 961.63,
+        "y": 762.88
+      }
+    },
+    {
+      "organization_id": "gartner",
+      "label": "Gartner",
+      "kind": "analyst_firm",
+      "declared_surface_factory": false,
+      "surfaces_by_type": [
+        {
+          "surface_type": "category_formation_surface",
+          "surface_ids": [
+            "gartner-synthetic-population-category-2026"
+          ]
+        }
+      ],
+      "surface_ids": [
+        "gartner-synthetic-population-category-2026"
+      ],
+      "surface_count": {
+        "metric": "surfaces_generated",
+        "count": 1,
+        "denominator": 14,
+        "source_ids": [
+          "gartner-synthetic-population-category-2026"
+        ]
+      },
+      "evidence_composition": {
+        "population": 3,
+        "by_class": {
+          "official": 0,
+          "primary_public": 3,
+          "reported": 0,
+          "derived": 0,
+          "judgment": 0,
+          "open": 0
+        },
+        "source_ids": [
+          "warner-linkedin-gartner-2026-06-29"
+        ]
+      },
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 1,
+        "none": 0
+      },
+      "receipt_ids": [
+        "warner-linkedin-gartner-2026-06-29"
+      ],
+      "position": {
+        "x": 972.53,
+        "y": 629.4
+      }
+    },
+    {
+      "organization_id": "local-council",
+      "label": "Local council",
+      "kind": "public_body",
+      "declared_surface_factory": false,
+      "surfaces_by_type": [
+        {
+          "surface_type": "public_private_fund_surface",
+          "surface_ids": [
+            "team-barrow-public-private-fund-2026"
+          ]
+        }
+      ],
+      "surface_ids": [
+        "team-barrow-public-private-fund-2026"
+      ],
+      "surface_count": {
+        "metric": "surfaces_generated",
+        "count": 1,
+        "denominator": 14,
+        "source_ids": [
+          "team-barrow-public-private-fund-2026"
+        ]
+      },
+      "evidence_composition": {
+        "population": 4,
+        "by_class": {
+          "official": 0,
+          "primary_public": 0,
+          "reported": 4,
+          "derived": 0,
+          "judgment": 0,
+          "open": 0
+        },
+        "source_ids": [
+          "master-doc-v3"
+        ]
+      },
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 1,
+        "scout-only": 0,
+        "none": 0
+      },
+      "receipt_ids": [
+        "master-doc-v3"
+      ],
+      "position": {
+        "x": 736.64,
+        "y": 566.14
+      }
+    },
+    {
+      "organization_id": "localglobe",
+      "label": "LocalGlobe",
+      "kind": "fund",
+      "declared_surface_factory": false,
+      "surfaces_by_type": [
+        {
+          "surface_type": "employment_investment_surface",
+          "surface_ids": [
+            "electric-twin-funding-surface-2023-2026"
+          ]
+        }
+      ],
+      "surface_ids": [
+        "electric-twin-funding-surface-2023-2026"
+      ],
+      "surface_count": {
+        "metric": "surfaces_generated",
+        "count": 1,
+        "denominator": 14,
+        "source_ids": [
+          "electric-twin-funding-surface-2023-2026"
+        ]
+      },
+      "evidence_composition": {
+        "population": 7,
+        "by_class": {
+          "official": 0,
+          "primary_public": 0,
+          "reported": 7,
+          "derived": 0,
+          "judgment": 0,
+          "open": 0
+        },
+        "source_ids": [
+          "master-doc-v3"
+        ]
+      },
+      "graph_effect_composition": {
+        "hop-eligible": 1,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 0
+      },
+      "receipt_ids": [
+        "master-doc-v3"
+      ],
+      "position": {
+        "x": 164.79,
+        "y": 636.5
+      }
+    },
+    {
+      "organization_id": "mod",
+      "label": "Ministry of Defence (MoD)",
+      "kind": "agency",
+      "declared_surface_factory": false,
+      "surfaces_by_type": [
+        {
+          "surface_type": "policy_document_surface",
+          "surface_ids": [
+            "strategic-defence-review-2024-2025"
+          ]
+        }
+      ],
+      "surface_ids": [
+        "strategic-defence-review-2024-2025"
+      ],
+      "surface_count": {
+        "metric": "surfaces_generated",
+        "count": 1,
+        "denominator": 14,
+        "source_ids": [
+          "strategic-defence-review-2024-2025"
+        ]
+      },
+      "evidence_composition": {
+        "population": 6,
+        "by_class": {
+          "official": 6,
+          "primary_public": 0,
+          "reported": 0,
+          "derived": 0,
+          "judgment": 0,
+          "open": 0
+        },
+        "source_ids": [
+          "gov-sdr-2025-publication",
+          "gov-sdr-terms-of-reference"
+        ]
+      },
+      "graph_effect_composition": {
+        "hop-eligible": 1,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 0
+      },
+      "receipt_ids": [
+        "gov-sdr-2025-publication",
+        "gov-sdr-terms-of-reference"
+      ],
+      "position": {
+        "x": 1270.82,
+        "y": 735.1
+      }
+    },
+    {
+      "organization_id": "news-uk",
+      "label": "News UK / The Times",
+      "kind": "media_company",
+      "declared_surface_factory": false,
+      "surfaces_by_type": [
+        {
+          "surface_type": "customer_vendor_surface",
+          "surface_ids": [
+            "electric-twin-newsuk-synthetic-audience"
+          ]
+        }
+      ],
+      "surface_ids": [
+        "electric-twin-newsuk-synthetic-audience"
+      ],
+      "surface_count": {
+        "metric": "surfaces_generated",
+        "count": 1,
+        "denominator": 14,
+        "source_ids": [
+          "electric-twin-newsuk-synthetic-audience"
+        ]
+      },
+      "evidence_composition": {
+        "population": 3,
+        "by_class": {
+          "official": 0,
+          "primary_public": 2,
+          "reported": 0,
+          "derived": 0,
+          "judgment": 1,
+          "open": 0
+        },
+        "source_ids": [
+          "sandhu-comment-newsuk-2026-06-29",
+          "warner-linkedin-gartner-2026-06-29"
+        ]
+      },
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 1,
+        "none": 0
+      },
+      "receipt_ids": [
+        "sandhu-comment-newsuk-2026-06-29",
+        "warner-linkedin-gartner-2026-06-29"
+      ],
+      "position": {
+        "x": 689.13,
+        "y": 756.53
+      }
+    },
+    {
+      "organization_id": "openai",
+      "label": "OpenAI",
+      "kind": "company",
+      "declared_surface_factory": false,
+      "surfaces_by_type": [
+        {
+          "surface_type": "laundering_chain_connector",
+          "surface_ids": [
+            "detachment-201-commissioning-2025"
+          ]
+        }
+      ],
+      "surface_ids": [
+        "detachment-201-commissioning-2025"
+      ],
+      "surface_count": {
+        "metric": "surfaces_generated",
+        "count": 1,
+        "denominator": 14,
+        "source_ids": [
+          "detachment-201-commissioning-2025"
+        ]
+      },
+      "evidence_composition": {
+        "population": 3,
+        "by_class": {
+          "official": 3,
+          "primary_public": 0,
+          "reported": 0,
+          "derived": 0,
+          "judgment": 0,
+          "open": 0
+        },
+        "source_ids": [
+          "army-detachment-201"
+        ]
+      },
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "receipt_ids": [
+        "army-detachment-201",
+        "reuters-defense-procurement"
+      ],
+      "position": {
+        "x": 1232.07,
+        "y": 190.32
+      }
+    },
+    {
+      "organization_id": "palantir",
+      "label": "Palantir Technologies",
+      "kind": "company",
+      "declared_surface_factory": false,
+      "surfaces_by_type": [
+        {
+          "surface_type": "laundering_chain_connector",
+          "surface_ids": [
+            "detachment-201-commissioning-2025"
+          ]
+        }
+      ],
+      "surface_ids": [
+        "detachment-201-commissioning-2025"
+      ],
+      "surface_count": {
+        "metric": "surfaces_generated",
+        "count": 1,
+        "denominator": 14,
+        "source_ids": [
+          "detachment-201-commissioning-2025"
+        ]
+      },
+      "evidence_composition": {
+        "population": 3,
+        "by_class": {
+          "official": 3,
+          "primary_public": 0,
+          "reported": 0,
+          "derived": 0,
+          "judgment": 0,
+          "open": 0
+        },
+        "source_ids": [
+          "army-detachment-201"
+        ]
+      },
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "receipt_ids": [
+        "army-detachment-201",
+        "reuters-defense-procurement"
+      ],
+      "position": {
+        "x": 1228.02,
+        "y": 186.51
+      }
+    },
+    {
+      "organization_id": "uk-government",
+      "label": "UK Government",
+      "kind": "government",
+      "declared_surface_factory": false,
+      "surfaces_by_type": [
+        {
+          "surface_type": "public_private_fund_surface",
+          "surface_ids": [
+            "team-barrow-public-private-fund-2026"
+          ]
+        }
+      ],
+      "surface_ids": [
+        "team-barrow-public-private-fund-2026"
+      ],
+      "surface_count": {
+        "metric": "surfaces_generated",
+        "count": 1,
+        "denominator": 14,
+        "source_ids": [
+          "team-barrow-public-private-fund-2026"
+        ]
+      },
+      "evidence_composition": {
+        "population": 4,
+        "by_class": {
+          "official": 0,
+          "primary_public": 0,
+          "reported": 4,
+          "derived": 0,
+          "judgment": 0,
+          "open": 0
+        },
+        "source_ids": [
+          "master-doc-v3"
+        ]
+      },
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 1,
+        "scout-only": 0,
+        "none": 0
+      },
+      "receipt_ids": [
+        "master-doc-v3"
+      ],
+      "position": {
+        "x": 121.48,
+        "y": 794.72
+      }
+    },
+    {
+      "organization_id": "us-army",
+      "label": "US Army (Detachment 201, Executive Innovation Corps)",
+      "kind": "military",
+      "declared_surface_factory": false,
+      "surfaces_by_type": [
+        {
+          "surface_type": "laundering_chain_connector",
+          "surface_ids": [
+            "detachment-201-commissioning-2025"
+          ]
+        }
+      ],
+      "surface_ids": [
+        "detachment-201-commissioning-2025"
+      ],
+      "surface_count": {
+        "metric": "surfaces_generated",
+        "count": 1,
+        "denominator": 14,
+        "source_ids": [
+          "detachment-201-commissioning-2025"
+        ]
+      },
+      "evidence_composition": {
+        "population": 3,
+        "by_class": {
+          "official": 3,
+          "primary_public": 0,
+          "reported": 0,
+          "derived": 0,
+          "judgment": 0,
+          "open": 0
+        },
+        "source_ids": [
+          "army-detachment-201"
+        ]
+      },
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "receipt_ids": [
+        "army-detachment-201",
+        "reuters-defense-procurement"
+      ],
+      "position": {
+        "x": 1117.62,
+        "y": 360.78
+      }
+    },
+    {
+      "organization_id": "vote-leave",
+      "label": "Vote Leave",
+      "kind": "campaign",
+      "declared_surface_factory": false,
+      "surfaces_by_type": [
+        {
+          "surface_type": "campaign_surface",
+          "surface_ids": [
+            "vote-leave-data-science-2016"
+          ]
+        }
+      ],
+      "surface_ids": [
+        "vote-leave-data-science-2016"
+      ],
+      "surface_count": {
+        "metric": "surfaces_generated",
+        "count": 1,
+        "denominator": 14,
+        "source_ids": [
+          "vote-leave-data-science-2016"
+        ]
+      },
+      "evidence_composition": {
+        "population": 4,
+        "by_class": {
+          "official": 2,
+          "primary_public": 0,
+          "reported": 2,
+          "derived": 0,
+          "judgment": 0,
+          "open": 0
+        },
+        "source_ids": [
+          "warner-surface-audit-2026-06-29"
+        ]
+      },
+      "graph_effect_composition": {
+        "hop-eligible": 1,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 0
+      },
+      "receipt_ids": [
+        "master-doc-v3",
+        "warner-surface-audit-2026-06-29"
+      ],
+      "position": {
+        "x": 1287.29,
+        "y": 653.28
+      }
+    }
+  ],
+  "surface_clusters": [
+    {
+      "cluster_id": "board_advisory_surface",
+      "label": "Board / Advisory Surface",
+      "description": "A bounded board, ethics board, advisory board, steering group, or oversight surface.",
+      "hop_eligible_default": true,
+      "surface_ids": [
+        "electric-twin-ethics-board-2026"
+      ],
+      "surface_count": {
+        "metric": "surfaces_of_type",
+        "count": 1,
+        "denominator": 14,
+        "source_ids": [
+          "electric-twin-ethics-board-2026"
+        ]
+      },
+      "evidence_composition": {
+        "population": 2,
+        "by_class": {
+          "official": 0,
+          "primary_public": 0,
+          "reported": 2,
+          "derived": 0,
+          "judgment": 0,
+          "open": 0
+        },
+        "source_ids": [
+          "times-case-electric-twin-2026"
+        ]
+      },
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "receipt_ids": [
+        "master-doc-v3",
+        "times-case-electric-twin-2026"
+      ]
+    },
+    {
+      "cluster_id": "campaign_surface",
+      "label": "Campaign Surface",
+      "description": "A bounded political campaign, campaign vendor, or campaign data operation surface.",
+      "hop_eligible_default": true,
+      "surface_ids": [
+        "vote-leave-data-science-2016"
+      ],
+      "surface_count": {
+        "metric": "surfaces_of_type",
+        "count": 1,
+        "denominator": 14,
+        "source_ids": [
+          "vote-leave-data-science-2016"
+        ]
+      },
+      "evidence_composition": {
+        "population": 4,
+        "by_class": {
+          "official": 2,
+          "primary_public": 0,
+          "reported": 2,
+          "derived": 0,
+          "judgment": 0,
+          "open": 0
+        },
+        "source_ids": [
+          "warner-surface-audit-2026-06-29"
+        ]
+      },
+      "graph_effect_composition": {
+        "hop-eligible": 1,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 0
+      },
+      "receipt_ids": [
+        "master-doc-v3",
+        "warner-surface-audit-2026-06-29"
+      ]
+    },
+    {
+      "cluster_id": "category_formation_surface",
+      "label": "Category Formation Surface",
+      "description": "A bounded analyst, market, policy, or industry-category surface that makes a previously fringe capability legible as infrastructure.",
+      "hop_eligible_default": false,
+      "surface_ids": [
+        "gartner-synthetic-population-category-2026"
+      ],
+      "surface_count": {
+        "metric": "surfaces_of_type",
+        "count": 1,
+        "denominator": 14,
+        "source_ids": [
+          "gartner-synthetic-population-category-2026"
+        ]
+      },
+      "evidence_composition": {
+        "population": 3,
+        "by_class": {
+          "official": 0,
+          "primary_public": 3,
+          "reported": 0,
+          "derived": 0,
+          "judgment": 0,
+          "open": 0
+        },
+        "source_ids": [
+          "warner-linkedin-gartner-2026-06-29"
+        ]
+      },
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 1,
+        "none": 0
+      },
+      "receipt_ids": [
+        "warner-linkedin-gartner-2026-06-29"
+      ]
+    },
+    {
+      "cluster_id": "customer_vendor_surface",
+      "label": "Customer / Vendor Surface",
+      "description": "A bounded customer, vendor, deployment, integration, or commercial-use surface.",
+      "hop_eligible_default": false,
+      "surface_ids": [
+        "electric-twin-newsuk-synthetic-audience"
+      ],
+      "surface_count": {
+        "metric": "surfaces_of_type",
+        "count": 1,
+        "denominator": 14,
+        "source_ids": [
+          "electric-twin-newsuk-synthetic-audience"
+        ]
+      },
+      "evidence_composition": {
+        "population": 3,
+        "by_class": {
+          "official": 0,
+          "primary_public": 2,
+          "reported": 0,
+          "derived": 0,
+          "judgment": 1,
+          "open": 0
+        },
+        "source_ids": [
+          "sandhu-comment-newsuk-2026-06-29",
+          "warner-linkedin-gartner-2026-06-29"
+        ]
+      },
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 1,
+        "none": 0
+      },
+      "receipt_ids": [
+        "sandhu-comment-newsuk-2026-06-29",
+        "warner-linkedin-gartner-2026-06-29"
+      ]
+    },
+    {
+      "cluster_id": "directory_roster_surface",
+      "label": "Directory / Roster Surface",
+      "description": "A bounded roster, directory, cohort, or listed-membership surface.",
+      "hop_eligible_default": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": {
+        "metric": "surfaces_of_type",
+        "count": 1,
+        "denominator": 14,
+        "source_ids": [
+          "dialog-society-membership"
+        ]
+      },
+      "evidence_composition": {
+        "population": 116,
+        "by_class": {
+          "official": 0,
+          "primary_public": 111,
+          "reported": 5,
+          "derived": 0,
+          "judgment": 0,
+          "open": 0
+        },
+        "source_ids": [
+          "dialog-directory-extract",
+          "wired-dialog-leak"
+        ]
+      },
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "dialog-human-layer",
+        "wired-dialog-leak",
+        "wired-dialog-misconfig"
+      ]
+    },
+    {
+      "cluster_id": "employment_investment_surface",
+      "label": "Employment / Investment Surface",
+      "description": "A bounded company surface where employees, officers, founders, investors, or advisers are documented on the same company/investment object.",
+      "hop_eligible_default": true,
+      "surface_ids": [
+        "electric-twin-funding-surface-2023-2026",
+        "faculty-investor-employee-2015-2019"
+      ],
+      "surface_count": {
+        "metric": "surfaces_of_type",
+        "count": 2,
+        "denominator": 14,
+        "source_ids": [
+          "electric-twin-funding-surface-2023-2026",
+          "faculty-investor-employee-2015-2019"
+        ]
+      },
+      "evidence_composition": {
+        "population": 10,
+        "by_class": {
+          "official": 1,
+          "primary_public": 1,
+          "reported": 8,
+          "derived": 0,
+          "judgment": 0,
+          "open": 0
+        },
+        "source_ids": [
+          "master-doc-v3",
+          "warner-surface-audit-2026-06-29"
+        ]
+      },
+      "graph_effect_composition": {
+        "hop-eligible": 2,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 0
+      },
+      "receipt_ids": [
+        "guardian-faculty-sage",
+        "master-doc-v3",
+        "warner-surface-audit-2026-06-29"
+      ]
+    },
+    {
+      "cluster_id": "founder_officer_surface",
+      "label": "Founder / Officer Surface",
+      "description": "A bounded company formation, officer, founder, director, or official company-role surface.",
+      "hop_eligible_default": true,
+      "surface_ids": [
+        "electric-twin-founder-2023"
+      ],
+      "surface_count": {
+        "metric": "surfaces_of_type",
+        "count": 1,
+        "denominator": 14,
+        "source_ids": [
+          "electric-twin-founder-2023"
+        ]
+      },
+      "evidence_composition": {
+        "population": 3,
+        "by_class": {
+          "official": 0,
+          "primary_public": 3,
+          "reported": 0,
+          "derived": 0,
+          "judgment": 0,
+          "open": 0
+        },
+        "source_ids": [
+          "businesscloud-electric-twin-founders",
+          "companies-house-electric-twin"
+        ]
+      },
+      "graph_effect_composition": {
+        "hop-eligible": 1,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 0
+      },
+      "receipt_ids": [
+        "businesscloud-electric-twin-founders",
+        "companies-house-electric-twin",
+        "master-doc-v3"
+      ]
+    },
+    {
+      "cluster_id": "government_advisory_surface",
+      "label": "Government Advisory Surface",
+      "description": "A bounded government advisory, staff, appointment, or operating surface with identifiable participants and dates.",
+      "hop_eligible_default": true,
+      "surface_ids": [
+        "no10-digital-data-advisory-2019-2021",
+        "simon-case-cabinet-secretary-2020-2024"
+      ],
+      "surface_count": {
+        "metric": "surfaces_of_type",
+        "count": 2,
+        "denominator": 14,
+        "source_ids": [
+          "no10-digital-data-advisory-2019-2021",
+          "simon-case-cabinet-secretary-2020-2024"
+        ]
+      },
+      "evidence_composition": {
+        "population": 7,
+        "by_class": {
+          "official": 5,
+          "primary_public": 0,
+          "reported": 0,
+          "derived": 0,
+          "judgment": 2,
+          "open": 0
+        },
+        "source_ids": [
+          "master-doc-v3",
+          "official-no10-ben-warner",
+          "warner-surface-audit-2026-06-29"
+        ]
+      },
+      "graph_effect_composition": {
+        "hop-eligible": 1,
+        "context-only": 1,
+        "scout-only": 0,
+        "none": 0
+      },
+      "receipt_ids": [
+        "master-doc-v3",
+        "official-no10-ben-warner",
+        "warner-surface-audit-2026-06-29"
+      ]
+    },
+    {
+      "cluster_id": "laundering_chain_connector",
+      "label": "Laundering Chain Connector",
+      "description": "A surface that sits at the intersection of policy creation, procurement capture, personnel movement, and commercialization, enabling actor-agnostic outcome transfer. It expresses chain position only and never creates a Clifford Number hop by itself.",
+      "hop_eligible_default": false,
+      "surface_ids": [
+        "detachment-201-commissioning-2025"
+      ],
+      "surface_count": {
+        "metric": "surfaces_of_type",
+        "count": 1,
+        "denominator": 14,
+        "source_ids": [
+          "detachment-201-commissioning-2025"
+        ]
+      },
+      "evidence_composition": {
+        "population": 3,
+        "by_class": {
+          "official": 3,
+          "primary_public": 0,
+          "reported": 0,
+          "derived": 0,
+          "judgment": 0,
+          "open": 0
+        },
+        "source_ids": [
+          "army-detachment-201"
+        ]
+      },
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "receipt_ids": [
+        "army-detachment-201",
+        "reuters-defense-procurement"
+      ]
+    },
+    {
+      "cluster_id": "policy_document_surface",
+      "label": "Policy Document Surface",
+      "description": "A bounded authored, commissioned, accepted, or implementation policy document surface.",
+      "hop_eligible_default": true,
+      "surface_ids": [
+        "ai-opportunities-action-plan-2025",
+        "strategic-defence-review-2024-2025"
+      ],
+      "surface_count": {
+        "metric": "surfaces_of_type",
+        "count": 2,
+        "denominator": 14,
+        "source_ids": [
+          "ai-opportunities-action-plan-2025",
+          "strategic-defence-review-2024-2025"
+        ]
+      },
+      "evidence_composition": {
+        "population": 9,
+        "by_class": {
+          "official": 9,
+          "primary_public": 0,
+          "reported": 0,
+          "derived": 0,
+          "judgment": 0,
+          "open": 0
+        },
+        "source_ids": [
+          "gov-ai-opportunities-action-plan",
+          "gov-pm-ai-blueprint-2025",
+          "gov-sdr-2025-publication",
+          "gov-sdr-terms-of-reference",
+          "master-doc-v3"
+        ]
+      },
+      "graph_effect_composition": {
+        "hop-eligible": 2,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 0
+      },
+      "receipt_ids": [
+        "gov-sdr-2025-publication",
+        "gov-sdr-terms-of-reference",
+        "master-doc-v3"
+      ]
+    },
+    {
+      "cluster_id": "public_private_fund_surface",
+      "label": "Public / Private Fund Surface",
+      "description": "A bounded funding, development, investment, or regeneration surface containing both public and private institutional participants.",
+      "hop_eligible_default": true,
+      "surface_ids": [
+        "team-barrow-public-private-fund-2026"
+      ],
+      "surface_count": {
+        "metric": "surfaces_of_type",
+        "count": 1,
+        "denominator": 14,
+        "source_ids": [
+          "team-barrow-public-private-fund-2026"
+        ]
+      },
+      "evidence_composition": {
+        "population": 4,
+        "by_class": {
+          "official": 0,
+          "primary_public": 0,
+          "reported": 4,
+          "derived": 0,
+          "judgment": 0,
+          "open": 0
+        },
+        "source_ids": [
+          "master-doc-v3"
+        ]
+      },
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 1,
+        "scout-only": 0,
+        "none": 0
+      },
+      "receipt_ids": [
+        "master-doc-v3"
+      ]
+    }
+  ],
+  "surface_nodes": [
+    {
+      "surface_id": "ai-opportunities-action-plan-2025",
+      "label": "AI Opportunities Action Plan surface, 2025",
+      "surface_type": "policy_document_surface",
+      "secondary_surface_types": [
+        "policy_to_procurement_surface"
+      ],
+      "status": "seeded_from_master",
+      "graph_effect": "hop-eligible",
+      "graph_effect_basis": {
+        "hop_eligible": true,
+        "rejected_hop_reason": null
+      },
+      "window": {
+        "time_start": "2024-07",
+        "time_end": "2025-01"
+      },
+      "dense": false,
+      "bounded_by": [
+        "GOV.UK publication",
+        "commissioned author role",
+        "government acceptance/implementation"
+      ],
+      "notes": "Clifford policy spine surface.",
+      "actor_participant_count": {
+        "metric": "actor_participants",
+        "count": 2,
+        "denominator": 3,
+        "source_ids": [
+          "keir-starmer",
+          "matt-clifford"
+        ]
+      },
+      "organization_participant_count": {
+        "metric": "organization_participants",
+        "count": 1,
+        "denominator": 3,
+        "source_ids": [
+          "dsit"
+        ]
+      },
+      "distinct_actor_count": 2,
+      "evidence_composition": {
+        "population": 3,
+        "by_class": {
+          "official": 3,
+          "primary_public": 0,
+          "reported": 0,
+          "derived": 0,
+          "judgment": 0,
+          "open": 0
+        },
+        "source_ids": [
+          "gov-ai-opportunities-action-plan",
+          "gov-pm-ai-blueprint-2025",
+          "master-doc-v3"
+        ]
+      },
+      "receipt_ids": [
+        "master-doc-v3"
+      ],
+      "actor_ids": [
+        "keir-starmer",
+        "matt-clifford"
+      ],
+      "organization_ids": [
+        "dsit"
+      ]
+    },
+    {
+      "surface_id": "detachment-201-commissioning-2025",
+      "label": "Detachment 201 Executive Innovation Corps commissioning surface, 2025",
+      "surface_type": "laundering_chain_connector",
+      "secondary_surface_types": [
+        "defence_industrial_surface",
+        "policy_to_procurement_surface"
+      ],
+      "status": "non_hop_chain_context",
+      "graph_effect": "none",
+      "graph_effect_basis": {
+        "hop_eligible": false,
+        "rejected_hop_reason": "surface_not_hop_eligible"
+      },
+      "window": {
+        "time_start": "2025-06",
+        "time_end": ""
+      },
+      "dense": false,
+      "bounded_by": [
+        "US Army public affairs announcement",
+        "named commissioning cohort",
+        "public-role/appointment facts only"
+      ],
+      "notes": "Non-hop chain connector. Senior technology-company executives commissioned as US Army Reserve officers. Sits at the procurement-corridor stage of the policy-to-deployment chain. It does NOT create a Clifford hop: there is no bounded surface with shared Clifford participation, only policy lineage and procurement corridor.",
+      "actor_participant_count": {
+        "metric": "actor_participants",
+        "count": 0,
+        "denominator": 3,
+        "source_ids": []
+      },
+      "organization_participant_count": {
+        "metric": "organization_participants",
+        "count": 3,
+        "denominator": 3,
+        "source_ids": [
+          "openai",
+          "palantir",
+          "us-army"
+        ]
+      },
+      "distinct_actor_count": 0,
+      "evidence_composition": {
+        "population": 3,
+        "by_class": {
+          "official": 3,
+          "primary_public": 0,
+          "reported": 0,
+          "derived": 0,
+          "judgment": 0,
+          "open": 0
+        },
+        "source_ids": [
+          "army-detachment-201"
+        ]
+      },
+      "receipt_ids": [
+        "army-detachment-201",
+        "reuters-defense-procurement"
+      ],
+      "actor_ids": [],
+      "organization_ids": [
+        "openai",
+        "palantir",
+        "us-army"
+      ]
+    },
+    {
+      "surface_id": "dialog-society-membership",
+      "label": "Dialog Society public directory / roster surface (2026)",
+      "surface_type": "directory_roster_surface",
+      "secondary_surface_types": [
+        "governance_continuity_surface"
+      ],
+      "status": "corrected_listing_semantics",
+      "graph_effect": "none",
+      "graph_effect_basis": {
+        "hop_eligible": false,
+        "rejected_hop_reason": "surface_not_hop_eligible"
+      },
+      "window": {
+        "time_start": "2026",
+        "time_end": ""
+      },
+      "dense": true,
+      "bounded_by": [
+        "WIRED reporting on exposed roster",
+        "dialog.org public directory extract",
+        "named invite-only society"
+      ],
+      "notes": "Bounded public-directory co-listing. The underlying directory includes multiple role types; a listed name is not automatically a member or attendee. The roster remains scorable context but cannot create pairwise Clifford Number hops because its 116 names exceed the density limit. No attendance, relationship, agreement, endorsement, coordination, or wrongdoing is asserted.",
+      "actor_participant_count": {
+        "metric": "actor_participants",
+        "count": 115,
+        "denominator": 116,
+        "source_ids": [
+          "adam-d-angelo",
+          "adam-grant",
+          "alexus-grynkewich",
+          "ali-jehangir-siddiqui",
+          "anne-marie-slaughter",
+          "astro-teller",
+          "atul-gawande",
+          "auren-hoffman",
+          "barry-silbert",
+          "benj-pasek",
+          "bob-cialdini",
+          "bob-jain",
+          "bret-stephens",
+          "bryan-johnson",
+          "cesar-carvalho",
+          "chamath-palihapitiya",
+          "charles-duhigg",
+          "charlie-songhurst",
+          "cory-booker",
+          "dan-driscoll",
+          "daniel-pink",
+          "demet-mutlu",
+          "drew-scott",
+          "elizabeth-blackburn",
+          "elon-musk",
+          "eric-schmidt",
+          "ezra-klein",
+          "fatima-kardar",
+          "garry-kasparov",
+          "gaurva-kapadia",
+          "greg-brockman",
+          "gretchen-rubin",
+          "grover-norquist",
+          "henry-kravis",
+          "howie-liu",
+          "immad-akhund",
+          "jared-kushner",
+          "jared-polis",
+          "jason-kwon",
+          "jens-spahn",
+          "jim-himes",
+          "joe-lonsdale",
+          "john-arnold",
+          "john-townsend",
+          "jonathan-haidt",
+          "jonathan-levin",
+          "jonathan-ross",
+          "joseph-gordon-levitt",
+          "josh-brolin",
+          "julian-castro",
+          "kaja-kallas",
+          "karen-karniol-tambour",
+          "kim-scott",
+          "lawrence-summers",
+          "leonard-leo",
+          "lisa-gevelber",
+          "lisa-monaco",
+          "manuel-bronstein",
+          "marcos-galperin",
+          "mario-schlosser",
+          "matt-clifford",
+          "matt-cohler",
+          "micky-malka",
+          "mike-cannon-brookes",
+          "mike-novogratz",
+          "mitch-daniels",
+          "neal-katyal",
+          "neal-mohan",
+          "nick-thompson",
+          "nicolas-berggruen",
+          "peggy-hamburg",
+          "pete-briger",
+          "pete-shadbolt",
+          "peter-brown",
+          "peter-thiel",
+          "preet-bharara",
+          "rachel-brand",
+          "raffi-grinberg",
+          "randy-kroszner",
+          "reema-al-saud",
+          "reid-hoffman",
+          "rick-warren",
+          "robert-hur",
+          "robert-rubin",
+          "sam-harris",
+          "sarah-bond",
+          "scott-belsky",
+          "scott-bessent",
+          "scott-cook",
+          "scott-stephenson",
+          "severin-hacker",
+          "shahid-khaqan-abbasi",
+          "sheikh-nawaf-saud-nasir-al-sabah",
+          "shivon-zilis",
+          "shmuel-abramzon",
+          "sophia-bush",
+          "stan-mcchrystal",
+          "steve-ells",
+          "steven-pinker",
+          "strauss-zelnick",
+          "susan-athey",
+          "taro-kono",
+          "ted-cruz",
+          "thasunda-brown-duckett",
+          "tim-ferriss",
+          "tim-urban",
+          "tom-goldstein",
+          "tom-lue",
+          "tom-tugendhat",
+          "turki-al-faisal-al-saud",
+          "tyler-cowen",
+          "vas-narasimhan",
+          "wences-casares",
+          "wes-moore",
+          "will-scharf"
+        ]
+      },
+      "organization_participant_count": {
+        "metric": "organization_participants",
+        "count": 1,
+        "denominator": 116,
+        "source_ids": [
+          "dialog"
+        ]
+      },
+      "distinct_actor_count": 115,
+      "evidence_composition": {
+        "population": 116,
+        "by_class": {
+          "official": 0,
+          "primary_public": 111,
+          "reported": 5,
+          "derived": 0,
+          "judgment": 0,
+          "open": 0
+        },
+        "source_ids": [
+          "dialog-directory-extract",
+          "wired-dialog-leak"
+        ]
+      },
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "dialog-human-layer",
+        "wired-dialog-leak",
+        "wired-dialog-misconfig"
+      ],
+      "actor_ids": [
+        "adam-d-angelo",
+        "adam-grant",
+        "alexus-grynkewich",
+        "ali-jehangir-siddiqui",
+        "anne-marie-slaughter",
+        "astro-teller",
+        "atul-gawande",
+        "auren-hoffman",
+        "barry-silbert",
+        "benj-pasek",
+        "bob-cialdini",
+        "bob-jain",
+        "bret-stephens",
+        "bryan-johnson",
+        "cesar-carvalho",
+        "chamath-palihapitiya",
+        "charles-duhigg",
+        "charlie-songhurst",
+        "cory-booker",
+        "dan-driscoll",
+        "daniel-pink",
+        "demet-mutlu",
+        "drew-scott",
+        "elizabeth-blackburn",
+        "elon-musk",
+        "eric-schmidt",
+        "ezra-klein",
+        "fatima-kardar",
+        "garry-kasparov",
+        "gaurva-kapadia",
+        "greg-brockman",
+        "gretchen-rubin",
+        "grover-norquist",
+        "henry-kravis",
+        "howie-liu",
+        "immad-akhund",
+        "jared-kushner",
+        "jared-polis",
+        "jason-kwon",
+        "jens-spahn",
+        "jim-himes",
+        "joe-lonsdale",
+        "john-arnold",
+        "john-townsend",
+        "jonathan-haidt",
+        "jonathan-levin",
+        "jonathan-ross",
+        "joseph-gordon-levitt",
+        "josh-brolin",
+        "julian-castro",
+        "kaja-kallas",
+        "karen-karniol-tambour",
+        "kim-scott",
+        "lawrence-summers",
+        "leonard-leo",
+        "lisa-gevelber",
+        "lisa-monaco",
+        "manuel-bronstein",
+        "marcos-galperin",
+        "mario-schlosser",
+        "matt-clifford",
+        "matt-cohler",
+        "micky-malka",
+        "mike-cannon-brookes",
+        "mike-novogratz",
+        "mitch-daniels",
+        "neal-katyal",
+        "neal-mohan",
+        "nick-thompson",
+        "nicolas-berggruen",
+        "peggy-hamburg",
+        "pete-briger",
+        "pete-shadbolt",
+        "peter-brown",
+        "peter-thiel",
+        "preet-bharara",
+        "rachel-brand",
+        "raffi-grinberg",
+        "randy-kroszner",
+        "reema-al-saud",
+        "reid-hoffman",
+        "rick-warren",
+        "robert-hur",
+        "robert-rubin",
+        "sam-harris",
+        "sarah-bond",
+        "scott-belsky",
+        "scott-bessent",
+        "scott-cook",
+        "scott-stephenson",
+        "severin-hacker",
+        "shahid-khaqan-abbasi",
+        "sheikh-nawaf-saud-nasir-al-sabah",
+        "shivon-zilis",
+        "shmuel-abramzon",
+        "sophia-bush",
+        "stan-mcchrystal",
+        "steve-ells",
+        "steven-pinker",
+        "strauss-zelnick",
+        "susan-athey",
+        "taro-kono",
+        "ted-cruz",
+        "thasunda-brown-duckett",
+        "tim-ferriss",
+        "tim-urban",
+        "tom-goldstein",
+        "tom-lue",
+        "tom-tugendhat",
+        "turki-al-faisal-al-saud",
+        "tyler-cowen",
+        "vas-narasimhan",
+        "wences-casares",
+        "wes-moore",
+        "will-scharf"
+      ],
+      "organization_ids": [
+        "dialog"
+      ]
+    },
+    {
+      "surface_id": "electric-twin-ethics-board-2026",
+      "label": "Electric Twin ethics board surface, 2026-present",
+      "surface_type": "board_advisory_surface",
+      "secondary_surface_types": [
+        "democratic_input_replacement",
+        "model_governance_surface"
+      ],
+      "status": "seeded_from_master",
+      "graph_effect": "none",
+      "graph_effect_basis": {
+        "hop_eligible": true,
+        "rejected_hop_reason": "fewer_than_two_actor_participants"
+      },
+      "window": {
+        "time_start": "2026-06",
+        "time_end": ""
+      },
+      "dense": false,
+      "bounded_by": [
+        "The Times reporting",
+        "company/advisory role reporting"
+      ],
+      "notes": "Bounded advisory/ethics board surface bringing Simon Case onto Electric Twin.",
+      "actor_participant_count": {
+        "metric": "actor_participants",
+        "count": 1,
+        "denominator": 2,
+        "source_ids": [
+          "simon-case"
+        ]
+      },
+      "organization_participant_count": {
+        "metric": "organization_participants",
+        "count": 1,
+        "denominator": 2,
+        "source_ids": [
+          "electric-twin"
+        ]
+      },
+      "distinct_actor_count": 1,
+      "evidence_composition": {
+        "population": 2,
+        "by_class": {
+          "official": 0,
+          "primary_public": 0,
+          "reported": 2,
+          "derived": 0,
+          "judgment": 0,
+          "open": 0
+        },
+        "source_ids": [
+          "times-case-electric-twin-2026"
+        ]
+      },
+      "receipt_ids": [
+        "master-doc-v3",
+        "times-case-electric-twin-2026"
+      ],
+      "actor_ids": [
+        "simon-case"
+      ],
+      "organization_ids": [
+        "electric-twin"
+      ]
+    },
+    {
+      "surface_id": "electric-twin-founder-2023",
+      "label": "Electric Twin founder / officer surface, 2023-present",
+      "surface_type": "founder_officer_surface",
+      "secondary_surface_types": [
+        "democratic_input_replacement",
+        "model_governance_surface"
+      ],
+      "status": "seeded_from_master",
+      "graph_effect": "hop-eligible",
+      "graph_effect_basis": {
+        "hop_eligible": true,
+        "rejected_hop_reason": null
+      },
+      "window": {
+        "time_start": "2023-09",
+        "time_end": ""
+      },
+      "dense": false,
+      "bounded_by": [
+        "Companies House",
+        "company website",
+        "funding reports"
+      ],
+      "notes": "Bounded company formation/officer surface for Electric Twin.",
+      "actor_participant_count": {
+        "metric": "actor_participants",
+        "count": 2,
+        "denominator": 3,
+        "source_ids": [
+          "alex-cooper",
+          "ben-warner"
+        ]
+      },
+      "organization_participant_count": {
+        "metric": "organization_participants",
+        "count": 1,
+        "denominator": 3,
+        "source_ids": [
+          "electric-twin"
+        ]
+      },
+      "distinct_actor_count": 2,
+      "evidence_composition": {
+        "population": 3,
+        "by_class": {
+          "official": 0,
+          "primary_public": 3,
+          "reported": 0,
+          "derived": 0,
+          "judgment": 0,
+          "open": 0
+        },
+        "source_ids": [
+          "businesscloud-electric-twin-founders",
+          "companies-house-electric-twin"
+        ]
+      },
+      "receipt_ids": [
+        "businesscloud-electric-twin-founders",
+        "companies-house-electric-twin",
+        "master-doc-v3"
+      ],
+      "actor_ids": [
+        "alex-cooper",
+        "ben-warner"
+      ],
+      "organization_ids": [
+        "electric-twin"
+      ]
+    },
+    {
+      "surface_id": "electric-twin-funding-surface-2023-2026",
+      "label": "Electric Twin funding / angel investor surface",
+      "surface_type": "employment_investment_surface",
+      "secondary_surface_types": [
+        "surface_factory_capital_layer"
+      ],
+      "status": "seeded_from_master",
+      "graph_effect": "hop-eligible",
+      "graph_effect_basis": {
+        "hop_eligible": true,
+        "rejected_hop_reason": null
+      },
+      "window": {
+        "time_start": "2023",
+        "time_end": "2026"
+      },
+      "dense": false,
+      "bounded_by": [
+        "funding reports",
+        "investor list in master doc"
+      ],
+      "notes": "Capital surface for Electric Twin: Atomico, LocalGlobe, Mercuri, Samos, Marc Andreessen, Cal Henderson, Tom Shinner, Louis Mosley.",
+      "actor_participant_count": {
+        "metric": "actor_participants",
+        "count": 4,
+        "denominator": 7,
+        "source_ids": [
+          "cal-henderson",
+          "louis-mosley",
+          "marc-andreessen",
+          "tom-shinner"
+        ]
+      },
+      "organization_participant_count": {
+        "metric": "organization_participants",
+        "count": 3,
+        "denominator": 7,
+        "source_ids": [
+          "atomico",
+          "electric-twin",
+          "localglobe"
+        ]
+      },
+      "distinct_actor_count": 4,
+      "evidence_composition": {
+        "population": 7,
+        "by_class": {
+          "official": 0,
+          "primary_public": 0,
+          "reported": 7,
+          "derived": 0,
+          "judgment": 0,
+          "open": 0
+        },
+        "source_ids": [
+          "master-doc-v3"
+        ]
+      },
+      "receipt_ids": [
+        "master-doc-v3"
+      ],
+      "actor_ids": [
+        "cal-henderson",
+        "louis-mosley",
+        "marc-andreessen",
+        "tom-shinner"
+      ],
+      "organization_ids": [
+        "atomico",
+        "electric-twin",
+        "localglobe"
+      ]
+    },
+    {
+      "surface_id": "electric-twin-newsuk-synthetic-audience",
+      "label": "Electric Twin / News UK synthetic audience surface",
+      "surface_type": "customer_vendor_surface",
+      "secondary_surface_types": [
+        "democratic_input_replacement",
+        "model_governance_surface"
+      ],
+      "status": "candidate_pending_contract_receipt",
+      "graph_effect": "scout-only",
+      "graph_effect_basis": {
+        "hop_eligible": false,
+        "rejected_hop_reason": "surface_not_hop_eligible"
+      },
+      "window": {
+        "time_start": "2026-06",
+        "time_end": ""
+      },
+      "dense": false,
+      "bounded_by": [
+        "public statement",
+        "named customer",
+        "product integration description"
+      ],
+      "notes": "Scorable non-hop surface: synthetic audience infrastructure substituting modeled audience feedback for real subscriber consultation.",
+      "actor_participant_count": {
+        "metric": "actor_participants",
+        "count": 1,
+        "denominator": 3,
+        "source_ids": [
+          "ben-warner"
+        ]
+      },
+      "organization_participant_count": {
+        "metric": "organization_participants",
+        "count": 2,
+        "denominator": 3,
+        "source_ids": [
+          "electric-twin",
+          "news-uk"
+        ]
+      },
+      "distinct_actor_count": 1,
+      "evidence_composition": {
+        "population": 3,
+        "by_class": {
+          "official": 0,
+          "primary_public": 2,
+          "reported": 0,
+          "derived": 0,
+          "judgment": 1,
+          "open": 0
+        },
+        "source_ids": [
+          "sandhu-comment-newsuk-2026-06-29",
+          "warner-linkedin-gartner-2026-06-29"
+        ]
+      },
+      "receipt_ids": [
+        "sandhu-comment-newsuk-2026-06-29",
+        "warner-linkedin-gartner-2026-06-29"
+      ],
+      "actor_ids": [
+        "ben-warner"
+      ],
+      "organization_ids": [
+        "electric-twin",
+        "news-uk"
+      ]
+    },
+    {
+      "surface_id": "faculty-investor-employee-2015-2019",
+      "label": "Faculty employment / investor surface, 2015-2019",
+      "surface_type": "employment_investment_surface",
+      "secondary_surface_types": [
+        "public_private_ai_infrastructure"
+      ],
+      "status": "corrected_after_receipt_audit",
+      "graph_effect": "hop-eligible",
+      "graph_effect_basis": {
+        "hop_eligible": true,
+        "rejected_hop_reason": null
+      },
+      "window": {
+        "time_start": "2015",
+        "time_end": "2019"
+      },
+      "dense": false,
+      "bounded_by": [
+        "employment record",
+        "company history",
+        "reported investor surface"
+      ],
+      "notes": "Faculty employee/founder and separately reported-investor surface. Matt Clifford's prior investor participation was removed from the authoritative ledger because it rested on an unrecoverable analysis note and was not supported by the master investor list; the candidate is preserved in the Clifford-Thiel-Trump wrap-up.",
+      "actor_participant_count": {
+        "metric": "actor_participants",
+        "count": 3,
+        "denominator": 3,
+        "source_ids": [
+          "ben-warner",
+          "marc-warner",
+          "saul-klein"
+        ]
+      },
+      "organization_participant_count": {
+        "metric": "organization_participants",
+        "count": 0,
+        "denominator": 3,
+        "source_ids": []
+      },
+      "distinct_actor_count": 3,
+      "evidence_composition": {
+        "population": 3,
+        "by_class": {
+          "official": 1,
+          "primary_public": 1,
+          "reported": 1,
+          "derived": 0,
+          "judgment": 0,
+          "open": 0
+        },
+        "source_ids": [
+          "master-doc-v3",
+          "warner-surface-audit-2026-06-29"
+        ]
+      },
+      "receipt_ids": [
+        "guardian-faculty-sage",
+        "warner-surface-audit-2026-06-29"
+      ],
+      "actor_ids": [
+        "ben-warner",
+        "marc-warner",
+        "saul-klein"
+      ],
+      "organization_ids": []
+    },
+    {
+      "surface_id": "gartner-synthetic-population-category-2026",
+      "label": "Gartner synthetic population category surface, 2026",
+      "surface_type": "category_formation_surface",
+      "secondary_surface_types": [
+        "democratic_input_replacement"
+      ],
+      "status": "seeded_from_public_post",
+      "graph_effect": "scout-only",
+      "graph_effect_basis": {
+        "hop_eligible": false,
+        "rejected_hop_reason": "surface_not_hop_eligible"
+      },
+      "window": {
+        "time_start": "2026-06",
+        "time_end": ""
+      },
+      "dense": false,
+      "bounded_by": [
+        "Gartner category chart as described by Warner",
+        "public LinkedIn post"
+      ],
+      "notes": "Category formation surface: fringe synthetic audience capability becomes tracked market infrastructure.",
+      "actor_participant_count": {
+        "metric": "actor_participants",
+        "count": 1,
+        "denominator": 3,
+        "source_ids": [
+          "ben-warner"
+        ]
+      },
+      "organization_participant_count": {
+        "metric": "organization_participants",
+        "count": 2,
+        "denominator": 3,
+        "source_ids": [
+          "electric-twin",
+          "gartner"
+        ]
+      },
+      "distinct_actor_count": 1,
+      "evidence_composition": {
+        "population": 3,
+        "by_class": {
+          "official": 0,
+          "primary_public": 3,
+          "reported": 0,
+          "derived": 0,
+          "judgment": 0,
+          "open": 0
+        },
+        "source_ids": [
+          "warner-linkedin-gartner-2026-06-29"
+        ]
+      },
+      "receipt_ids": [
+        "warner-linkedin-gartner-2026-06-29"
+      ],
+      "actor_ids": [
+        "ben-warner"
+      ],
+      "organization_ids": [
+        "electric-twin",
+        "gartner"
+      ]
+    },
+    {
+      "surface_id": "no10-digital-data-advisory-2019-2021",
+      "label": "No. 10 Chief Adviser on Digital and Data surface, 2019-2021",
+      "surface_type": "government_advisory_surface",
+      "secondary_surface_types": [
+        "model_governance_surface"
+      ],
+      "status": "seeded_from_master",
+      "graph_effect": "hop-eligible",
+      "graph_effect_basis": {
+        "hop_eligible": true,
+        "rejected_hop_reason": null
+      },
+      "window": {
+        "time_start": "2019-12",
+        "time_end": "2021-05"
+      },
+      "dense": false,
+      "bounded_by": [
+        "official role biography",
+        "COVID inquiry testimony reference",
+        "No. 10 / Cabinet Office role description"
+      ],
+      "notes": "Bounded role surface for Warner's No. 10 / Cabinet Office digital and data advisory work.",
+      "actor_participant_count": {
+        "metric": "actor_participants",
+        "count": 5,
+        "denominator": 5,
+        "source_ids": [
+          "ben-henshall",
+          "ben-warner",
+          "dan-rosenfield",
+          "dominic-cummings",
+          "laura-gilbert"
+        ]
+      },
+      "organization_participant_count": {
+        "metric": "organization_participants",
+        "count": 0,
+        "denominator": 5,
+        "source_ids": []
+      },
+      "distinct_actor_count": 5,
+      "evidence_composition": {
+        "population": 5,
+        "by_class": {
+          "official": 3,
+          "primary_public": 0,
+          "reported": 0,
+          "derived": 0,
+          "judgment": 2,
+          "open": 0
+        },
+        "source_ids": [
+          "official-no10-ben-warner",
+          "warner-surface-audit-2026-06-29"
+        ]
+      },
+      "receipt_ids": [
+        "official-no10-ben-warner",
+        "warner-surface-audit-2026-06-29"
+      ],
+      "actor_ids": [
+        "ben-henshall",
+        "ben-warner",
+        "dan-rosenfield",
+        "dominic-cummings",
+        "laura-gilbert"
+      ],
+      "organization_ids": []
+    },
+    {
+      "surface_id": "simon-case-cabinet-secretary-2020-2024",
+      "label": "Simon Case Cabinet Secretary / Head of Civil Service surface, 2020-2024",
+      "surface_type": "government_advisory_surface",
+      "secondary_surface_types": [
+        "governance_continuity_surface"
+      ],
+      "status": "seeded_from_master",
+      "graph_effect": "context-only",
+      "graph_effect_basis": {
+        "hop_eligible": true,
+        "rejected_hop_reason": "broad_institution_context_only"
+      },
+      "window": {
+        "time_start": "2020",
+        "time_end": "2024-12"
+      },
+      "dense": false,
+      "bounded_by": [
+        "official public role",
+        "Cabinet Office tenure"
+      ],
+      "notes": "Governance continuity fixture: highest civil service role across political turnover.",
+      "actor_participant_count": {
+        "metric": "actor_participants",
+        "count": 1,
+        "denominator": 2,
+        "source_ids": [
+          "simon-case"
+        ]
+      },
+      "organization_participant_count": {
+        "metric": "organization_participants",
+        "count": 1,
+        "denominator": 2,
+        "source_ids": [
+          "cabinet-office"
+        ]
+      },
+      "distinct_actor_count": 1,
+      "evidence_composition": {
+        "population": 2,
+        "by_class": {
+          "official": 2,
+          "primary_public": 0,
+          "reported": 0,
+          "derived": 0,
+          "judgment": 0,
+          "open": 0
+        },
+        "source_ids": [
+          "master-doc-v3"
+        ]
+      },
+      "receipt_ids": [
+        "master-doc-v3"
+      ],
+      "actor_ids": [
+        "simon-case"
+      ],
+      "organization_ids": [
+        "cabinet-office"
+      ]
+    },
+    {
+      "surface_id": "strategic-defence-review-2024-2025",
+      "label": "Strategic Defence Review, externally led review, 2024-2025",
+      "surface_type": "policy_document_surface",
+      "secondary_surface_types": [
+        "defence_industrial_surface",
+        "government_advisory_surface"
+      ],
+      "status": "seeded_from_official_reference",
+      "graph_effect": "hop-eligible",
+      "graph_effect_basis": {
+        "hop_eligible": true,
+        "rejected_hop_reason": null
+      },
+      "window": {
+        "time_start": "2024-07",
+        "time_end": "2025-06"
+      },
+      "dense": false,
+      "bounded_by": [
+        "official terms of reference naming the three external Reviewers",
+        "official commission and oversight roles (PM, Defence Secretary)",
+        "published final report, 2 Jun 2025"
+      ],
+      "notes": "Bounded review surface: three named external Reviewers working inside MoD Main Building, commissioned by the PM, overseen by the Defence Secretary, reporting to the PM, Chancellor and Defence Secretary. Public-role facts from official documentation only.",
+      "actor_participant_count": {
+        "metric": "actor_participants",
+        "count": 5,
+        "denominator": 6,
+        "source_ids": [
+          "fiona-hill",
+          "george-robertson",
+          "john-healey",
+          "keir-starmer",
+          "richard-barrons"
+        ]
+      },
+      "organization_participant_count": {
+        "metric": "organization_participants",
+        "count": 1,
+        "denominator": 6,
+        "source_ids": [
+          "mod"
+        ]
+      },
+      "distinct_actor_count": 5,
+      "evidence_composition": {
+        "population": 6,
+        "by_class": {
+          "official": 6,
+          "primary_public": 0,
+          "reported": 0,
+          "derived": 0,
+          "judgment": 0,
+          "open": 0
+        },
+        "source_ids": [
+          "gov-sdr-2025-publication",
+          "gov-sdr-terms-of-reference"
+        ]
+      },
+      "receipt_ids": [
+        "gov-sdr-2025-publication",
+        "gov-sdr-terms-of-reference"
+      ],
+      "actor_ids": [
+        "fiona-hill",
+        "george-robertson",
+        "john-healey",
+        "keir-starmer",
+        "richard-barrons"
+      ],
+      "organization_ids": [
+        "mod"
+      ]
+    },
+    {
+      "surface_id": "team-barrow-public-private-fund-2026",
+      "label": "Team Barrow public-private development fund surface",
+      "surface_type": "public_private_fund_surface",
+      "secondary_surface_types": [
+        "defence_industrial_surface",
+        "governance_continuity_surface"
+      ],
+      "status": "seeded_from_master",
+      "graph_effect": "context-only",
+      "graph_effect_basis": {
+        "hop_eligible": true,
+        "rejected_hop_reason": "broad_institution_context_only"
+      },
+      "window": {
+        "time_start": "2026",
+        "time_end": ""
+      },
+      "dense": false,
+      "bounded_by": [
+        "public-private fund reporting",
+        "named chair role",
+        "named public/private funders"
+      ],
+      "notes": "Simon Case public-private fund surface with UK Government, BAE Systems, and local council.",
+      "actor_participant_count": {
+        "metric": "actor_participants",
+        "count": 1,
+        "denominator": 4,
+        "source_ids": [
+          "simon-case"
+        ]
+      },
+      "organization_participant_count": {
+        "metric": "organization_participants",
+        "count": 3,
+        "denominator": 4,
+        "source_ids": [
+          "bae-systems",
+          "local-council",
+          "uk-government"
+        ]
+      },
+      "distinct_actor_count": 1,
+      "evidence_composition": {
+        "population": 4,
+        "by_class": {
+          "official": 0,
+          "primary_public": 0,
+          "reported": 4,
+          "derived": 0,
+          "judgment": 0,
+          "open": 0
+        },
+        "source_ids": [
+          "master-doc-v3"
+        ]
+      },
+      "receipt_ids": [
+        "master-doc-v3"
+      ],
+      "actor_ids": [
+        "simon-case"
+      ],
+      "organization_ids": [
+        "bae-systems",
+        "local-council",
+        "uk-government"
+      ]
+    },
+    {
+      "surface_id": "vote-leave-data-science-2016",
+      "label": "Vote Leave data science surface, 2016",
+      "surface_type": "campaign_surface",
+      "secondary_surface_types": [
+        "model_governance_surface"
+      ],
+      "status": "seeded_from_master",
+      "graph_effect": "hop-eligible",
+      "graph_effect_basis": {
+        "hop_eligible": true,
+        "rejected_hop_reason": null
+      },
+      "window": {
+        "time_start": "2016",
+        "time_end": "2016"
+      },
+      "dense": false,
+      "bounded_by": [
+        "campaign role reporting",
+        "Faculty / ASI data science service history"
+      ],
+      "notes": "Campaign data operation surface linking Warner, Faculty/ASI, Marc Warner, and Dominic Cummings.",
+      "actor_participant_count": {
+        "metric": "actor_participants",
+        "count": 3,
+        "denominator": 4,
+        "source_ids": [
+          "ben-warner",
+          "dominic-cummings",
+          "marc-warner"
+        ]
+      },
+      "organization_participant_count": {
+        "metric": "organization_participants",
+        "count": 1,
+        "denominator": 4,
+        "source_ids": [
+          "vote-leave"
+        ]
+      },
+      "distinct_actor_count": 3,
+      "evidence_composition": {
+        "population": 4,
+        "by_class": {
+          "official": 2,
+          "primary_public": 0,
+          "reported": 2,
+          "derived": 0,
+          "judgment": 0,
+          "open": 0
+        },
+        "source_ids": [
+          "warner-surface-audit-2026-06-29"
+        ]
+      },
+      "receipt_ids": [
+        "master-doc-v3",
+        "warner-surface-audit-2026-06-29"
+      ],
+      "actor_ids": [
+        "ben-warner",
+        "dominic-cummings",
+        "marc-warner"
+      ],
+      "organization_ids": [
+        "vote-leave"
+      ]
+    }
+  ],
+  "actor_brackets": [
+    {
+      "actor_id": "adam-d-angelo",
+      "label": "Adam D'Angelo",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "adam-grant",
+      "label": "Adam Grant",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "alex-cooper",
+      "label": "Alex Cooper",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "electric-twin-founder-2023"
+      ],
+      "surface_count": 1,
+      "graph_effect": "hop-eligible",
+      "graph_effect_composition": {
+        "hop-eligible": 1,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 0
+      },
+      "dense_surface_ids": [],
+      "receipt_ids": [
+        "businesscloud-electric-twin-founders",
+        "companies-house-electric-twin"
+      ]
+    },
+    {
+      "actor_id": "alexus-grynkewich",
+      "label": "Alexus Grynkewich",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "ali-jehangir-siddiqui",
+      "label": "Ali Jehangir Siddiqui",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "anne-marie-slaughter",
+      "label": "Anne-Marie Slaughter",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "astro-teller",
+      "label": "Astro Teller",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "atul-gawande",
+      "label": "Atul Gawande",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "auren-hoffman",
+      "label": "Auren Hoffman",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "barry-silbert",
+      "label": "Barry Silbert",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "ben-henshall",
+      "label": "Ben Henshall",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "no10-digital-data-advisory-2019-2021"
+      ],
+      "surface_count": 1,
+      "graph_effect": "hop-eligible",
+      "graph_effect_composition": {
+        "hop-eligible": 1,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 0
+      },
+      "dense_surface_ids": [],
+      "receipt_ids": [
+        "warner-surface-audit-2026-06-29"
+      ]
+    },
+    {
+      "actor_id": "ben-warner",
+      "label": "Dr. Ben Warner",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "electric-twin-founder-2023",
+        "electric-twin-newsuk-synthetic-audience",
+        "faculty-investor-employee-2015-2019",
+        "gartner-synthetic-population-category-2026",
+        "no10-digital-data-advisory-2019-2021",
+        "vote-leave-data-science-2016"
+      ],
+      "surface_count": 6,
+      "graph_effect": "hop-eligible",
+      "graph_effect_composition": {
+        "hop-eligible": 4,
+        "context-only": 0,
+        "scout-only": 2,
+        "none": 0
+      },
+      "dense_surface_ids": [],
+      "receipt_ids": [
+        "businesscloud-electric-twin-founders",
+        "companies-house-electric-twin",
+        "official-no10-ben-warner",
+        "warner-linkedin-gartner-2026-06-29",
+        "warner-surface-audit-2026-06-29"
+      ]
+    },
+    {
+      "actor_id": "benj-pasek",
+      "label": "Benj Pasek",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "bob-cialdini",
+      "label": "Bob Cialdini",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "bob-jain",
+      "label": "Bob Jain",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "bret-stephens",
+      "label": "Bret Stephens",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "bryan-johnson",
+      "label": "Bryan Johnson",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "cal-henderson",
+      "label": "Cal Henderson",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "electric-twin-funding-surface-2023-2026"
+      ],
+      "surface_count": 1,
+      "graph_effect": "hop-eligible",
+      "graph_effect_composition": {
+        "hop-eligible": 1,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 0
+      },
+      "dense_surface_ids": [],
+      "receipt_ids": [
+        "master-doc-v3"
+      ]
+    },
+    {
+      "actor_id": "cesar-carvalho",
+      "label": "Cesar Carvalho",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "chamath-palihapitiya",
+      "label": "Chamath Palihapitiya",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "charles-duhigg",
+      "label": "Charles Duhigg",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "charlie-songhurst",
+      "label": "Charlie Songhurst",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "cory-booker",
+      "label": "Cory Booker",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "dan-driscoll",
+      "label": "Dan Driscoll",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "dan-rosenfield",
+      "label": "Dan Rosenfield",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "no10-digital-data-advisory-2019-2021"
+      ],
+      "surface_count": 1,
+      "graph_effect": "hop-eligible",
+      "graph_effect_composition": {
+        "hop-eligible": 1,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 0
+      },
+      "dense_surface_ids": [],
+      "receipt_ids": [
+        "warner-surface-audit-2026-06-29"
+      ]
+    },
+    {
+      "actor_id": "daniel-pink",
+      "label": "Daniel Pink",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "demet-mutlu",
+      "label": "Demet Mutlu",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "dominic-cummings",
+      "label": "Dominic Cummings",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "no10-digital-data-advisory-2019-2021",
+        "vote-leave-data-science-2016"
+      ],
+      "surface_count": 2,
+      "graph_effect": "hop-eligible",
+      "graph_effect_composition": {
+        "hop-eligible": 2,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 0
+      },
+      "dense_surface_ids": [],
+      "receipt_ids": [
+        "warner-surface-audit-2026-06-29"
+      ]
+    },
+    {
+      "actor_id": "drew-scott",
+      "label": "Drew Scott",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "elizabeth-blackburn",
+      "label": "Elizabeth Blackburn",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "elon-musk",
+      "label": "Elon Musk",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "eric-schmidt",
+      "label": "Eric Schmidt",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "ezra-klein",
+      "label": "Ezra Klein",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "fatima-kardar",
+      "label": "Fatima Kardar",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "fiona-hill",
+      "label": "Dr Fiona Hill",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "strategic-defence-review-2024-2025"
+      ],
+      "surface_count": 1,
+      "graph_effect": "hop-eligible",
+      "graph_effect_composition": {
+        "hop-eligible": 1,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 0
+      },
+      "dense_surface_ids": [],
+      "receipt_ids": [
+        "gov-sdr-2025-publication",
+        "gov-sdr-terms-of-reference"
+      ]
+    },
+    {
+      "actor_id": "garry-kasparov",
+      "label": "Garry Kasparov",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "gaurva-kapadia",
+      "label": "Gaurva Kapadia",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "george-robertson",
+      "label": "George Robertson",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "strategic-defence-review-2024-2025"
+      ],
+      "surface_count": 1,
+      "graph_effect": "hop-eligible",
+      "graph_effect_composition": {
+        "hop-eligible": 1,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 0
+      },
+      "dense_surface_ids": [],
+      "receipt_ids": [
+        "gov-sdr-2025-publication",
+        "gov-sdr-terms-of-reference"
+      ]
+    },
+    {
+      "actor_id": "greg-brockman",
+      "label": "Greg Brockman",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "gretchen-rubin",
+      "label": "Gretchen Rubin",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "grover-norquist",
+      "label": "Grover Norquist",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "henry-kravis",
+      "label": "Henry Kravis",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "howie-liu",
+      "label": "Howie Liu",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "immad-akhund",
+      "label": "Immad Akhund",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "jared-kushner",
+      "label": "Jared Kushner",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "jared-polis",
+      "label": "Jared Polis",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "jason-kwon",
+      "label": "Jason Kwon",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "jens-spahn",
+      "label": "Jens Spahn",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "jim-himes",
+      "label": "Jim Himes",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "joe-lonsdale",
+      "label": "Joe Lonsdale",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "john-arnold",
+      "label": "John Arnold",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "john-healey",
+      "label": "John Healey",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "strategic-defence-review-2024-2025"
+      ],
+      "surface_count": 1,
+      "graph_effect": "hop-eligible",
+      "graph_effect_composition": {
+        "hop-eligible": 1,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 0
+      },
+      "dense_surface_ids": [],
+      "receipt_ids": [
+        "gov-sdr-terms-of-reference"
+      ]
+    },
+    {
+      "actor_id": "john-townsend",
+      "label": "John Townsend",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "jonathan-haidt",
+      "label": "Jonathan Haidt",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "jonathan-levin",
+      "label": "Jonathan Levin",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "jonathan-ross",
+      "label": "Jonathan Ross",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "joseph-gordon-levitt",
+      "label": "Joseph Gordon-Levitt",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "josh-brolin",
+      "label": "Josh Brolin",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "julian-castro",
+      "label": "Julian Castro",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "kaja-kallas",
+      "label": "Kaja Kallas",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "karen-karniol-tambour",
+      "label": "Karen Karniol-Tambour",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "keir-starmer",
+      "label": "Keir Starmer",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "ai-opportunities-action-plan-2025",
+        "strategic-defence-review-2024-2025"
+      ],
+      "surface_count": 2,
+      "graph_effect": "hop-eligible",
+      "graph_effect_composition": {
+        "hop-eligible": 2,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 0
+      },
+      "dense_surface_ids": [],
+      "receipt_ids": [
+        "gov-ai-opportunities-action-plan",
+        "gov-pm-ai-blueprint-2025",
+        "gov-sdr-terms-of-reference"
+      ]
+    },
+    {
+      "actor_id": "kim-scott",
+      "label": "Kim Scott",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "laura-gilbert",
+      "label": "Dr. Laura Gilbert CBE",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "no10-digital-data-advisory-2019-2021"
+      ],
+      "surface_count": 1,
+      "graph_effect": "hop-eligible",
+      "graph_effect_composition": {
+        "hop-eligible": 1,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 0
+      },
+      "dense_surface_ids": [],
+      "receipt_ids": [
+        "warner-surface-audit-2026-06-29"
+      ]
+    },
+    {
+      "actor_id": "lawrence-summers",
+      "label": "Lawrence Summers",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "leonard-leo",
+      "label": "Leonard Leo",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "lisa-gevelber",
+      "label": "Lisa Gevelber",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "lisa-monaco",
+      "label": "Lisa Monaco",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "louis-mosley",
+      "label": "Louis Mosley",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "electric-twin-funding-surface-2023-2026"
+      ],
+      "surface_count": 1,
+      "graph_effect": "hop-eligible",
+      "graph_effect_composition": {
+        "hop-eligible": 1,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 0
+      },
+      "dense_surface_ids": [],
+      "receipt_ids": [
+        "master-doc-v3"
+      ]
+    },
+    {
+      "actor_id": "manuel-bronstein",
+      "label": "Manuel Bronstein",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "marc-andreessen",
+      "label": "Marc Andreessen",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "electric-twin-funding-surface-2023-2026"
+      ],
+      "surface_count": 1,
+      "graph_effect": "hop-eligible",
+      "graph_effect_composition": {
+        "hop-eligible": 1,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 0
+      },
+      "dense_surface_ids": [],
+      "receipt_ids": [
+        "master-doc-v3"
+      ]
+    },
+    {
+      "actor_id": "marc-warner",
+      "label": "Dr. Marc Warner",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "faculty-investor-employee-2015-2019",
+        "vote-leave-data-science-2016"
+      ],
+      "surface_count": 2,
+      "graph_effect": "hop-eligible",
+      "graph_effect_composition": {
+        "hop-eligible": 2,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 0
+      },
+      "dense_surface_ids": [],
+      "receipt_ids": [
+        "master-doc-v3",
+        "warner-surface-audit-2026-06-29"
+      ]
+    },
+    {
+      "actor_id": "marcos-galperin",
+      "label": "Marcos Galperin",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "mario-schlosser",
+      "label": "Mario Schlosser",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "matt-clifford",
+      "label": "Matt Clifford",
+      "kind": "person",
+      "anchor": true,
+      "surface_ids": [
+        "ai-opportunities-action-plan-2025",
+        "dialog-society-membership"
+      ],
+      "surface_count": 2,
+      "graph_effect": "hop-eligible",
+      "graph_effect_composition": {
+        "hop-eligible": 1,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "master-doc-v3",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "matt-cohler",
+      "label": "Matt Cohler",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "micky-malka",
+      "label": "Micky Malka",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "mike-cannon-brookes",
+      "label": "Mike Cannon-Brookes",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "mike-novogratz",
+      "label": "Mike Novogratz",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "mitch-daniels",
+      "label": "Mitch Daniels",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "neal-katyal",
+      "label": "Neal Katyal",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "neal-mohan",
+      "label": "Neal Mohan",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "nick-thompson",
+      "label": "Nick Thompson",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "nicolas-berggruen",
+      "label": "Nicolas Berggruen",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "peggy-hamburg",
+      "label": "Peggy Hamburg",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "pete-briger",
+      "label": "Pete Briger",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "pete-shadbolt",
+      "label": "Pete Shadbolt",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "peter-brown",
+      "label": "Peter Brown",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "peter-thiel",
+      "label": "Peter Thiel",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "preet-bharara",
+      "label": "Preet Bharara",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "rachel-brand",
+      "label": "Rachel Brand",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "raffi-grinberg",
+      "label": "Raffi Grinberg",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "randy-kroszner",
+      "label": "Randy Kroszner",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "reema-al-saud",
+      "label": "Reema Al-Saud",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "reid-hoffman",
+      "label": "Reid Hoffman",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "richard-barrons",
+      "label": "Richard Barrons",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "strategic-defence-review-2024-2025"
+      ],
+      "surface_count": 1,
+      "graph_effect": "hop-eligible",
+      "graph_effect_composition": {
+        "hop-eligible": 1,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 0
+      },
+      "dense_surface_ids": [],
+      "receipt_ids": [
+        "gov-sdr-2025-publication",
+        "gov-sdr-terms-of-reference"
+      ]
+    },
+    {
+      "actor_id": "rick-warren",
+      "label": "Rick Warren",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "robert-hur",
+      "label": "Robert Hur",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "robert-rubin",
+      "label": "Robert Rubin",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "sam-harris",
+      "label": "Sam Harris",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "sarah-bond",
+      "label": "Sarah Bond",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "saul-klein",
+      "label": "Saul Klein",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "faculty-investor-employee-2015-2019"
+      ],
+      "surface_count": 1,
+      "graph_effect": "hop-eligible",
+      "graph_effect_composition": {
+        "hop-eligible": 1,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 0
+      },
+      "dense_surface_ids": [],
+      "receipt_ids": [
+        "warner-surface-audit-2026-06-29"
+      ]
+    },
+    {
+      "actor_id": "scott-belsky",
+      "label": "Scott Belsky",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "scott-bessent",
+      "label": "Scott Bessent",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "scott-cook",
+      "label": "Scott Cook",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "scott-stephenson",
+      "label": "Scott Stephenson",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "severin-hacker",
+      "label": "Severin Hacker",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "shahid-khaqan-abbasi",
+      "label": "Shahid Khaqan Abbasi",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "sheikh-nawaf-saud-nasir-al-sabah",
+      "label": "Sheikh Nawaf Saud Nasir Al-Sabah",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "shivon-zilis",
+      "label": "Shivon Zilis",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "shmuel-abramzon",
+      "label": "Shmuel Abramzon",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "simon-case",
+      "label": "Sir Simon Case / Lord Case",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "electric-twin-ethics-board-2026",
+        "simon-case-cabinet-secretary-2020-2024",
+        "team-barrow-public-private-fund-2026"
+      ],
+      "surface_count": 3,
+      "graph_effect": "context-only",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 2,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [],
+      "receipt_ids": [
+        "master-doc-v3",
+        "times-case-electric-twin-2026"
+      ]
+    },
+    {
+      "actor_id": "sophia-bush",
+      "label": "Sophia Bush",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "stan-mcchrystal",
+      "label": "Stan McChrystal",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "steve-ells",
+      "label": "Steve Ells",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "steven-pinker",
+      "label": "Steven Pinker",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "strauss-zelnick",
+      "label": "Strauss Zelnick",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "susan-athey",
+      "label": "Susan Athey",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "taro-kono",
+      "label": "Tarō Kōno",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "ted-cruz",
+      "label": "Ted Cruz",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "thasunda-brown-duckett",
+      "label": "Thasunda Brown Duckett",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "tim-ferriss",
+      "label": "Tim Ferriss",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "tim-urban",
+      "label": "Tim Urban",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "tom-goldstein",
+      "label": "Tom Goldstein",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "tom-lue",
+      "label": "Tom Lue",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "tom-shinner",
+      "label": "Tom Shinner",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "electric-twin-funding-surface-2023-2026"
+      ],
+      "surface_count": 1,
+      "graph_effect": "hop-eligible",
+      "graph_effect_composition": {
+        "hop-eligible": 1,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 0
+      },
+      "dense_surface_ids": [],
+      "receipt_ids": [
+        "master-doc-v3"
+      ]
+    },
+    {
+      "actor_id": "tom-tugendhat",
+      "label": "Tom Tugendhat",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "turki-al-faisal-al-saud",
+      "label": "Turki Al Faisal Al Saud",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "tyler-cowen",
+      "label": "Tyler Cowen",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "vas-narasimhan",
+      "label": "Vas Narasimhan",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "wences-casares",
+      "label": "Wences Casares",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "wes-moore",
+      "label": "Wes Moore",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "actor_id": "will-scharf",
+      "label": "Will Scharf",
+      "kind": "person",
+      "anchor": false,
+      "surface_ids": [
+        "dialog-society-membership"
+      ],
+      "surface_count": 1,
+      "graph_effect": "none",
+      "graph_effect_composition": {
+        "hop-eligible": 0,
+        "context-only": 0,
+        "scout-only": 0,
+        "none": 1
+      },
+      "dense_surface_ids": [
+        "dialog-society-membership"
+      ],
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    }
+  ],
+  "corridors": [
+    {
+      "chain_id": "policy-to-deployment-synthetic-population",
+      "label": "Policy creation → procurement corridor → personnel continuity → commercial deployment",
+      "pattern": "policy_creation -> procurement_capture -> personnel_continuity -> commercial_deployment",
+      "stage_categories": [
+        "policy_creation",
+        "procurement_capture",
+        "personnel_continuity",
+        "commercial_deployment"
+      ],
+      "chain_length": 4,
+      "stages": [
+        {
+          "order": 1,
+          "stage_category": "policy_creation",
+          "surface_id": "ai-opportunities-action-plan-2025",
+          "actor_id": "matt-clifford",
+          "organization_id": null,
+          "receipt_ids": [
+            "gov-ai-opportunities-action-plan",
+            "master-doc-v3"
+          ],
+          "note": "Clifford authors the commissioned AI Opportunities Action Plan; government accepts and operationalizes it."
+        },
+        {
+          "order": 2,
+          "stage_category": "procurement_capture",
+          "surface_id": "detachment-201-commissioning-2025",
+          "actor_id": null,
+          "organization_id": "us-army",
+          "receipt_ids": [
+            "army-detachment-201",
+            "reuters-defense-procurement"
+          ],
+          "note": "Detachment 201 commissions senior technology-company executives (Palantir, OpenAI) as Army Reserve officers, occupying the strategic/procurement corridor. Award IDs/amounts not yet confirmed; reported/structural."
+        },
+        {
+          "order": 3,
+          "stage_category": "personnel_continuity",
+          "surface_id": "no10-digital-data-advisory-2019-2021",
+          "actor_id": "ben-warner",
+          "organization_id": null,
+          "receipt_ids": [
+            "official-no10-ben-warner",
+            "warner-surface-audit-2026-06-29"
+          ],
+          "note": "The synthetic-population / modelled-input logic is built inside No. 10 government machinery, then carried by the same personnel into the private sector."
+        },
+        {
+          "order": 4,
+          "stage_category": "commercial_deployment",
+          "surface_id": "electric-twin-newsuk-synthetic-audience",
+          "actor_id": null,
+          "organization_id": "electric-twin",
+          "receipt_ids": [
+            "sandhu-comment-newsuk-2026-06-29",
+            "warner-linkedin-gartner-2026-06-29"
+          ],
+          "note": "The same logic is commercialized as synthetic-audience infrastructure and deployed at a named customer (News UK), substituting modelled feedback for real consultation."
+        }
+      ],
+      "surface_ids": [
+        "ai-opportunities-action-plan-2025",
+        "detachment-201-commissioning-2025",
+        "electric-twin-newsuk-synthetic-audience",
+        "no10-digital-data-advisory-2019-2021"
+      ],
+      "receipt_ids": [
+        "army-detachment-201",
+        "gov-ai-opportunities-action-plan",
+        "master-doc-v3",
+        "official-no10-ben-warner",
+        "reuters-defense-procurement",
+        "sandhu-comment-newsuk-2026-06-29",
+        "warner-linkedin-gartner-2026-06-29",
+        "warner-surface-audit-2026-06-29"
+      ],
+      "evidence_class": "judgment",
+      "graph_effect": "none",
+      "graph_effect_basis": {
+        "connector_surfaces_all_non_hop": true,
+        "source_clifford_number": null,
+        "why_no_hop": "No bounded surface carries shared Matt Clifford co-participation across these stages. The stages are connected by policy lineage and a procurement corridor, not by co-presence. Clifford Numbers for the actors involved are therefore unchanged by this chain. The chain expresses structural position only and must never be read as a hop or as guilt by association."
+      }
+    }
+  ],
+  "route_index": {
+    "alex-cooper": [
+      "electric-twin-founder-2023"
+    ],
+    "ben-henshall": [
+      "no10-digital-data-advisory-2019-2021"
+    ],
+    "ben-warner": [
+      "electric-twin-founder-2023",
+      "faculty-investor-employee-2015-2019",
+      "no10-digital-data-advisory-2019-2021",
+      "vote-leave-data-science-2016"
+    ],
+    "cal-henderson": [
+      "electric-twin-funding-surface-2023-2026"
+    ],
+    "dan-rosenfield": [
+      "no10-digital-data-advisory-2019-2021"
+    ],
+    "dominic-cummings": [
+      "no10-digital-data-advisory-2019-2021",
+      "vote-leave-data-science-2016"
+    ],
+    "fiona-hill": [
+      "strategic-defence-review-2024-2025"
+    ],
+    "george-robertson": [
+      "strategic-defence-review-2024-2025"
+    ],
+    "john-healey": [
+      "strategic-defence-review-2024-2025"
+    ],
+    "keir-starmer": [
+      "ai-opportunities-action-plan-2025",
+      "strategic-defence-review-2024-2025"
+    ],
+    "laura-gilbert": [
+      "no10-digital-data-advisory-2019-2021"
+    ],
+    "louis-mosley": [
+      "electric-twin-funding-surface-2023-2026"
+    ],
+    "marc-andreessen": [
+      "electric-twin-funding-surface-2023-2026"
+    ],
+    "marc-warner": [
+      "faculty-investor-employee-2015-2019",
+      "vote-leave-data-science-2016"
+    ],
+    "matt-clifford": [
+      "ai-opportunities-action-plan-2025"
+    ],
+    "richard-barrons": [
+      "strategic-defence-review-2024-2025"
+    ],
+    "saul-klein": [
+      "faculty-investor-employee-2015-2019"
+    ],
+    "tom-shinner": [
+      "electric-twin-funding-surface-2023-2026"
+    ]
+  },
+  "aggregate_metrics": {
+    "total_surfaces": {
+      "metric": "total_surfaces",
+      "count": 14,
+      "denominator": 14,
+      "source_ids": [
+        "ai-opportunities-action-plan-2025",
+        "detachment-201-commissioning-2025",
+        "dialog-society-membership",
+        "electric-twin-ethics-board-2026",
+        "electric-twin-founder-2023",
+        "electric-twin-funding-surface-2023-2026",
+        "electric-twin-newsuk-synthetic-audience",
+        "faculty-investor-employee-2015-2019",
+        "gartner-synthetic-population-category-2026",
+        "no10-digital-data-advisory-2019-2021",
+        "simon-case-cabinet-secretary-2020-2024",
+        "strategic-defence-review-2024-2025",
+        "team-barrow-public-private-fund-2026",
+        "vote-leave-data-science-2016"
+      ]
+    },
+    "hop_eligible_surfaces": {
+      "metric": "hop_eligible_surfaces",
+      "count": 7,
+      "denominator": 14,
+      "source_ids": [
+        "ai-opportunities-action-plan-2025",
+        "electric-twin-founder-2023",
+        "electric-twin-funding-surface-2023-2026",
+        "faculty-investor-employee-2015-2019",
+        "no10-digital-data-advisory-2019-2021",
+        "strategic-defence-review-2024-2025",
+        "vote-leave-data-science-2016"
+      ]
+    },
+    "context_only_surfaces": {
+      "metric": "context_only_surfaces",
+      "count": 2,
+      "denominator": 14,
+      "source_ids": [
+        "simon-case-cabinet-secretary-2020-2024",
+        "team-barrow-public-private-fund-2026"
+      ]
+    },
+    "scout_only_surfaces": {
+      "metric": "scout_only_surfaces",
+      "count": 2,
+      "denominator": 14,
+      "source_ids": [
+        "electric-twin-newsuk-synthetic-audience",
+        "gartner-synthetic-population-category-2026"
+      ]
+    },
+    "none_effect_surfaces": {
+      "metric": "none_effect_surfaces",
+      "count": 3,
+      "denominator": 14,
+      "source_ids": [
+        "detachment-201-commissioning-2025",
+        "dialog-society-membership",
+        "electric-twin-ethics-board-2026"
+      ]
+    },
+    "dense_surfaces": {
+      "metric": "dense_surfaces",
+      "count": 1,
+      "denominator": 14,
+      "source_ids": [
+        "dialog-society-membership"
+      ]
+    },
+    "actors_with_participation": {
+      "metric": "actors_with_participation",
+      "count": 133,
+      "denominator": 154,
+      "source_ids": [
+        "adam-d-angelo",
+        "adam-grant",
+        "alex-cooper",
+        "alexus-grynkewich",
+        "ali-jehangir-siddiqui",
+        "anne-marie-slaughter",
+        "astro-teller",
+        "atul-gawande",
+        "auren-hoffman",
+        "barry-silbert",
+        "ben-henshall",
+        "ben-warner",
+        "benj-pasek",
+        "bob-cialdini",
+        "bob-jain",
+        "bret-stephens",
+        "bryan-johnson",
+        "cal-henderson",
+        "cesar-carvalho",
+        "chamath-palihapitiya",
+        "charles-duhigg",
+        "charlie-songhurst",
+        "cory-booker",
+        "dan-driscoll",
+        "dan-rosenfield",
+        "daniel-pink",
+        "demet-mutlu",
+        "dominic-cummings",
+        "drew-scott",
+        "elizabeth-blackburn",
+        "elon-musk",
+        "eric-schmidt",
+        "ezra-klein",
+        "fatima-kardar",
+        "fiona-hill",
+        "garry-kasparov",
+        "gaurva-kapadia",
+        "george-robertson",
+        "greg-brockman",
+        "gretchen-rubin",
+        "grover-norquist",
+        "henry-kravis",
+        "howie-liu",
+        "immad-akhund",
+        "jared-kushner",
+        "jared-polis",
+        "jason-kwon",
+        "jens-spahn",
+        "jim-himes",
+        "joe-lonsdale",
+        "john-arnold",
+        "john-healey",
+        "john-townsend",
+        "jonathan-haidt",
+        "jonathan-levin",
+        "jonathan-ross",
+        "joseph-gordon-levitt",
+        "josh-brolin",
+        "julian-castro",
+        "kaja-kallas",
+        "karen-karniol-tambour",
+        "keir-starmer",
+        "kim-scott",
+        "laura-gilbert",
+        "lawrence-summers",
+        "leonard-leo",
+        "lisa-gevelber",
+        "lisa-monaco",
+        "louis-mosley",
+        "manuel-bronstein",
+        "marc-andreessen",
+        "marc-warner",
+        "marcos-galperin",
+        "mario-schlosser",
+        "matt-clifford",
+        "matt-cohler",
+        "micky-malka",
+        "mike-cannon-brookes",
+        "mike-novogratz",
+        "mitch-daniels",
+        "neal-katyal",
+        "neal-mohan",
+        "nick-thompson",
+        "nicolas-berggruen",
+        "peggy-hamburg",
+        "pete-briger",
+        "pete-shadbolt",
+        "peter-brown",
+        "peter-thiel",
+        "preet-bharara",
+        "rachel-brand",
+        "raffi-grinberg",
+        "randy-kroszner",
+        "reema-al-saud",
+        "reid-hoffman",
+        "richard-barrons",
+        "rick-warren",
+        "robert-hur",
+        "robert-rubin",
+        "sam-harris",
+        "sarah-bond",
+        "saul-klein",
+        "scott-belsky",
+        "scott-bessent",
+        "scott-cook",
+        "scott-stephenson",
+        "severin-hacker",
+        "shahid-khaqan-abbasi",
+        "sheikh-nawaf-saud-nasir-al-sabah",
+        "shivon-zilis",
+        "shmuel-abramzon",
+        "simon-case",
+        "sophia-bush",
+        "stan-mcchrystal",
+        "steve-ells",
+        "steven-pinker",
+        "strauss-zelnick",
+        "susan-athey",
+        "taro-kono",
+        "ted-cruz",
+        "thasunda-brown-duckett",
+        "tim-ferriss",
+        "tim-urban",
+        "tom-goldstein",
+        "tom-lue",
+        "tom-shinner",
+        "tom-tugendhat",
+        "turki-al-faisal-al-saud",
+        "tyler-cowen",
+        "vas-narasimhan",
+        "wences-casares",
+        "wes-moore",
+        "will-scharf"
+      ]
+    },
+    "machines": {
+      "metric": "machines",
+      "count": 16,
+      "denominator": 81,
+      "source_ids": [
+        "atomico",
+        "bae-systems",
+        "cabinet-office",
+        "dialog",
+        "dsit",
+        "electric-twin",
+        "gartner",
+        "local-council",
+        "localglobe",
+        "mod",
+        "news-uk",
+        "openai",
+        "palantir",
+        "uk-government",
+        "us-army",
+        "vote-leave"
+      ]
+    },
+    "regions": {
+      "metric": "regions",
+      "count": 2,
+      "denominator": 2,
+      "source_ids": [
+        "template",
+        "uk-ai-policy"
+      ]
+    },
+    "corridors": {
+      "metric": "corridors",
+      "count": 1,
+      "denominator": 1,
+      "source_ids": [
+        "policy-to-deployment-synthetic-population"
+      ]
+    },
+    "receipts": {
+      "metric": "receipts",
+      "count": 20,
+      "denominator": 20,
+      "source_ids": [
+        "army-detachment-201",
+        "businesscloud-electric-twin-founders",
+        "companies-house-electric-twin",
+        "dialog-directory-extract",
+        "dialog-human-layer",
+        "gov-ai-opportunities-action-plan",
+        "gov-pm-ai-blueprint-2025",
+        "gov-sdr-2025-publication",
+        "gov-sdr-terms-of-reference",
+        "guardian-faculty-sage",
+        "master-doc-v3",
+        "official-no10-ben-warner",
+        "reuters-defense-procurement",
+        "sandhu-comment-newsuk-2026-06-29",
+        "surface-architecture-spec-2026-06-29",
+        "times-case-electric-twin-2026",
+        "warner-linkedin-gartner-2026-06-29",
+        "warner-surface-audit-2026-06-29",
+        "wired-dialog-leak",
+        "wired-dialog-misconfig"
+      ]
+    },
+    "corpus_evidence_composition": {
+      "population": 164,
+      "by_class": {
+        "official": 20,
+        "primary_public": 120,
+        "reported": 21,
+        "derived": 0,
+        "judgment": 3,
+        "open": 0
+      },
+      "source_ids": [
+        "army-detachment-201",
+        "businesscloud-electric-twin-founders",
+        "companies-house-electric-twin",
+        "dialog-directory-extract",
+        "gov-ai-opportunities-action-plan",
+        "gov-pm-ai-blueprint-2025",
+        "gov-sdr-2025-publication",
+        "gov-sdr-terms-of-reference",
+        "master-doc-v3",
+        "official-no10-ben-warner",
+        "sandhu-comment-newsuk-2026-06-29",
+        "times-case-electric-twin-2026",
+        "warner-linkedin-gartner-2026-06-29",
+        "warner-surface-audit-2026-06-29",
+        "wired-dialog-leak"
+      ]
+    }
+  }
+}
