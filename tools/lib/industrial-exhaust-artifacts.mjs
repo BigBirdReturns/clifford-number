@@ -374,6 +374,17 @@ export function selectHydrationCandidates(candidates, state, limit) {
     .slice(0, limit);
 }
 
+function artifactProjectionIdentity({ bodyRecord, bodySha256, contentType }) {
+  const mediaType = String(contentType ?? '')
+    .toLowerCase()
+    .split(';', 1)[0]
+    .trim();
+  const projectionMode = mediaType === 'application/pdf' ? 'opaque_body' : 'semantic_text';
+  return projectionMode === 'opaque_body'
+    ? { projection_mode: projectionMode, ...bodyRecord, body_sha256: bodySha256 ?? null }
+    : { projection_mode: projectionMode, ...bodyRecord };
+}
+
 export function mergeArtifactProjection({ artifacts, candidate, sourceProjection, capturedAt, bodyReceiptPath, bodySha256, responseHeaders }) {
   const merged = [...artifacts];
   const recordKey = sha256(candidate.canonical_url);
@@ -384,11 +395,31 @@ export function mergeArtifactProjection({ artifacts, candidate, sourceProjection
     description: sourceProjection.description ?? '',
     normalized_text: sourceProjection.normalized_text ?? '',
     normalized_text_sha256: sourceProjection.normalized_text_sha256 ?? null,
-    published_at: sourceProjection.published_at ?? null,
-    body_sha256: bodySha256
+    published_at: sourceProjection.published_at ?? null
   };
-  const projectionSha256 = sha256(bodyRecord);
-  if (previous?.projection_sha256 === projectionSha256) return { artifacts: merged, added: null, unchanged: previous };
+  const projectionIdentity = artifactProjectionIdentity({
+    bodyRecord,
+    bodySha256,
+    contentType: responseHeaders.content_type
+  });
+  const projectionSha256 = sha256(projectionIdentity);
+  if (previous) {
+    const previousBodyRecord = {
+      title: previous.title ?? '',
+      description: previous.description ?? '',
+      normalized_text: previous.normalized_text ?? '',
+      normalized_text_sha256: previous.normalized_text_sha256 ?? null,
+      published_at: previous.published_at ?? null
+    };
+    const previousProjectionIdentity = artifactProjectionIdentity({
+      bodyRecord: previousBodyRecord,
+      bodySha256: previous.body_sha256 ?? null,
+      contentType: previous.content_type
+    });
+    if (sha256(previousProjectionIdentity) === projectionSha256) {
+      return { artifacts: merged, added: null, unchanged: previous };
+    }
+  }
 
   const watchConfig = responseHeaders.watch_config;
   const artifactMatchedTerms = sourceProjection.normalized_text
