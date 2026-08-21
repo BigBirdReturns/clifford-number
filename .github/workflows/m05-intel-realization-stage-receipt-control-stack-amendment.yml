@@ -4,6 +4,7 @@ on:
   pull_request:
     branches: [main]
     paths:
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-postmerge-repair.json'
       - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.json'
       - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-live-registry-contract.json'
       - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-registry.json'
@@ -13,12 +14,25 @@ on:
       - 'receipts/m05/intel-realization/**'
       - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-registry.json'
       - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-provenance-object-custody-contract.json'
+      - 'tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-provenance-object-custody.mjs'
+      - 'test/m05-answerable-power-sprint-03-leg-07-intel-realization-provenance-object-custody.test.js'
+      - '.github/workflows/m05-intel-realization-provenance-object-custody.yml'
       - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-connection-authentication-custody-amendment.json'
+      - 'tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-connection-authentication-custody-amendment.mjs'
+      - 'test/m05-answerable-power-sprint-03-leg-07-intel-realization-connection-authentication-custody-amendment.test.js'
+      - '.github/workflows/m05-intel-realization-connection-authentication-custody-amendment.yml'
       - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-observation-time-custody-amendment.json'
+      - 'tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-observation-time-custody-amendment.mjs'
+      - 'test/m05-answerable-power-sprint-03-leg-07-intel-realization-observation-time-custody-amendment.test.js'
+      - '.github/workflows/m05-intel-realization-observation-time-custody-amendment.yml'
       - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-temporal-reconciliation-admission-amendment.json'
+      - 'tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-temporal-reconciliation-admission-amendment.mjs'
+      - 'test/m05-answerable-power-sprint-03-leg-07-intel-realization-temporal-reconciliation-admission-amendment.test.js'
+      - '.github/workflows/m05-intel-realization-temporal-reconciliation-admission-amendment.yml'
   push:
     branches: [main]
     paths:
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-postmerge-repair.json'
       - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.json'
       - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-live-registry-contract.json'
       - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-registry.json'
@@ -28,9 +42,21 @@ on:
       - 'receipts/m05/intel-realization/**'
       - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-registry.json'
       - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-provenance-object-custody-contract.json'
+      - 'tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-provenance-object-custody.mjs'
+      - 'test/m05-answerable-power-sprint-03-leg-07-intel-realization-provenance-object-custody.test.js'
+      - '.github/workflows/m05-intel-realization-provenance-object-custody.yml'
       - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-connection-authentication-custody-amendment.json'
+      - 'tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-connection-authentication-custody-amendment.mjs'
+      - 'test/m05-answerable-power-sprint-03-leg-07-intel-realization-connection-authentication-custody-amendment.test.js'
+      - '.github/workflows/m05-intel-realization-connection-authentication-custody-amendment.yml'
       - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-observation-time-custody-amendment.json'
+      - 'tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-observation-time-custody-amendment.mjs'
+      - 'test/m05-answerable-power-sprint-03-leg-07-intel-realization-observation-time-custody-amendment.test.js'
+      - '.github/workflows/m05-intel-realization-observation-time-custody-amendment.yml'
       - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-temporal-reconciliation-admission-amendment.json'
+      - 'tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-temporal-reconciliation-admission-amendment.mjs'
+      - 'test/m05-answerable-power-sprint-03-leg-07-intel-realization-temporal-reconciliation-admission-amendment.test.js'
+      - '.github/workflows/m05-intel-realization-temporal-reconciliation-admission-amendment.yml'
   workflow_dispatch:
 
 permissions:
@@ -52,7 +78,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Validate predecessor controls and live registry overlay
+      - name: Validate predecessor controls and repaired live registry overlay
         run: |
           node --check tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.mjs
           node --check test/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.test.js
