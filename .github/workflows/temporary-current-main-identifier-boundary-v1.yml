@@ -1,0 +1,279 @@
+name: Temporary current-main identifier-boundary repair
+
+on:
+  pull_request:
+    paths:
+      - '.github/current-main-identifier-boundary-trigger.txt'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: current-main-identifier-boundary-v1
+  cancel-in-progress: false
+
+jobs:
+  qualify-and-publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/current-main-identifier-context-v1
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Reproduce, repair, qualify, and publish exact two-file product
+        shell: bash
+        env:
+          EXPECTED_BASE: cdc9d3670fb226e92ff90952c3f8a4392c532a26
+          EXPECTED_PRODUCT_HEAD: 3ed617a8e3b3fa467f817ce737ad9e51463625d9
+          PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+          CARRIER_BRANCH: agent/current-main-identifier-context-v1
+        run: |
+          set -euo pipefail
+
+          remote_carrier_head="$(git rev-parse HEAD)"
+          test "$(git merge-base "$EXPECTED_BASE" HEAD)" = "$EXPECTED_BASE"
+          test "$(git merge-base "$EXPECTED_PRODUCT_HEAD" HEAD)" = "$EXPECTED_PRODUCT_HEAD"
+          carrier_paths="$(git diff --name-only "$EXPECTED_PRODUCT_HEAD"..HEAD | LC_ALL=C sort)"
+          expected_carrier_paths="$(printf '%s\n' \
+            .github/current-main-identifier-boundary-trigger.txt \
+            .github/workflows/temporary-current-main-identifier-boundary-v1.yml | LC_ALL=C sort)"
+          test "$carrier_paths" = "$expected_carrier_paths"
+
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { redactContactData } from './tools/lib/industrial-exhaust.mjs';
+
+          const cases = [
+            ['Phone-ID: 09012345678', 'Phone-ID: [contact omitted]'],
+            ['Phone/ID: 09012345678', 'Phone/ID: [contact omitted]'],
+            ['電話番号／ＩＤ：０９０１２３４５６７８', '電話番号／ＩＤ：[contact omitted]'],
+            ['reference: 09012345678 03-6216-8041', 'reference: 09012345678 [contact omitted]'],
+            ['contact identifier: 09012345678', 'contact identifier: 09012345678']
+          ];
+          for (const [input, expected] of cases) {
+            const actual = redactContactData(input);
+            console.log(JSON.stringify({ input, actual, expected }));
+            assert.notEqual(actual, expected, `expected current product to reproduce boundary defect: ${input}`);
+          }
+          NODE
+
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(text, old, new, label):
+              count = text.count(old)
+              if count != 1:
+                  raise RuntimeError(f'{label}: expected one exact anchor, found {count}')
+              return text.replace(old, new, 1)
+
+          library_path = Path('tools/lib/industrial-exhaust.mjs')
+          test_path = Path('test/industrial-exhaust.test.js')
+          library = library_path.read_text(encoding='utf-8')
+          tests = test_path.read_text(encoding='utf-8')
+
+          old_phone_label_helper = '''function hasPhoneLabelPrefixNormalized(normalizedPrefix) {
+            if (PHONE_LABEL_PATTERN.test(normalizedPrefix.slice(-48))) return true;
+            const identifierMatch = explicitIdentifierLabelMatch(normalizedPrefix);
+            if (!identifierMatch || identifierMatch.index == null) return false;
+            const window = normalizedPrefix.slice(-128);
+            return PHONE_LABEL_PATTERN.test(window.slice(0, identifierMatch.index).slice(-48));
+          }
+          '''.replace('          ', '')
+          new_phone_label_helper = r'''function hasPhoneLabelPrefixNormalized(normalizedPrefix) {
+            if (PHONE_LABEL_PATTERN.test(normalizedPrefix.slice(-48))) return true;
+            const identifierMatch = explicitIdentifierLabelMatch(normalizedPrefix);
+            if (!identifierMatch || identifierMatch.index == null
+                || !/^id(?=$|[^\p{L}\p{N}_])/iu.test(identifierMatch[0])) return false;
+            const window = normalizedPrefix.slice(-128);
+            const beforeIdentifier = window.slice(0, identifierMatch.index)
+              .replace(/[\s,;:·•|/\\\-‐‑‒–—―−]+$/u, ' ');
+            return PHONE_LABEL_PATTERN.test(beforeIdentifier.slice(-48));
+          }
+          '''.replace('          ', '')
+          library = replace_once(
+              library,
+              old_phone_label_helper,
+              new_phone_label_helper,
+              'combined phone-label helper'
+          )
+
+          range_marker = 'function phoneRedactionRanges(\n'
+          protected_prefix_helper = '''function identifierProtectedPrefixEnd(candidate, groups, externalSuffix) {
+            const observationGroup = trailingObservationGroup(candidate, groups, '', externalSuffix);
+            let protectedEnd = groups[0].index + groups[0][0].length;
+            let protectedScore = Number.NEGATIVE_INFINITY;
+            for (let last = 0;
+              last < groups.length
+                && last < MAX_PHONE_DIGIT_GROUPS
+                && last < observationGroup;
+              last += 1) {
+              const { start, end } = phoneWindowBounds(candidate, groups, 0, last);
+              const slice = candidate.slice(start, end);
+              let score = phoneCandidateScore(slice, '');
+              if (!score) continue;
+              if (last === observationGroup - 1) score += 32;
+              else if (last === groups.length - 1) score += 24;
+              else score -= 24;
+              if (score > protectedScore
+                  || (score === protectedScore && end > protectedEnd)) {
+                protectedScore = score;
+                protectedEnd = end;
+              }
+            }
+            return protectedEnd;
+          }
+
+          '''.replace('          ', '')
+          library = replace_once(
+              library,
+              range_marker,
+              f'{protected_prefix_helper}{range_marker}',
+              'identifier protected-prefix helper'
+          )
+
+          old_identifier_propagation = '''  const normalizedExternalPrefix = externalPrefix.normalize('NFKC');
+          const phoneLabelContext = hasPhoneLabelPrefixNormalized(normalizedExternalPrefix);
+          if (hasExplicitIdentifierPrefixNormalized(normalizedExternalPrefix) && !phoneLabelContext) {
+            return [];
+          }
+          '''.replace('          ', '')
+          new_identifier_propagation = '''  const normalizedExternalPrefix = externalPrefix.normalize('NFKC');
+          const phoneLabelContext = hasPhoneLabelPrefixNormalized(normalizedExternalPrefix);
+          if (hasExplicitIdentifierPrefixNormalized(normalizedExternalPrefix) && !phoneLabelContext) {
+            const protectedEnd = identifierProtectedPrefixEnd(candidate, groups, externalSuffix);
+            return phoneRedactionRanges(
+              candidate.slice(protectedEnd),
+              `${externalPrefix}${candidate.slice(0, protectedEnd)}`,
+              externalSuffix,
+              true
+            ).map(range => ({
+              start: range.start + protectedEnd,
+              end: range.end + protectedEnd
+            }));
+          }
+          '''.replace('          ', '')
+          library = replace_once(
+              library,
+              old_identifier_propagation,
+              new_identifier_propagation,
+              'bounded identifier propagation'
+          )
+
+          test_marker = 'for (const compactNumericIdentifier of ['
+          test_insert = '''for (const [punctuatedPhoneId, expected] of [
+            ['Phone-ID: 09012345678', 'Phone-ID: [contact omitted]'],
+            ['Phone/ID: 09012345678', 'Phone/ID: [contact omitted]'],
+            ['Phone, ID: 09012345678', 'Phone, ID: [contact omitted]'],
+            ['Phone; ID: 09012345678', 'Phone; ID: [contact omitted]'],
+            ['Phone | ID: 09012345678', 'Phone | ID: [contact omitted]'],
+            ['電話番号／ＩＤ：０９０１２３４５６７８', '電話番号／ＩＤ：[contact omitted]']
+          ]) {
+            assert.equal(
+              redactContactData(punctuatedPhoneId),
+              expected,
+              'separator punctuation must not suppress a phone-label override before standalone ID'
+            );
+          }
+          for (const [identifierThenPhone, expected] of [
+            ['reference: 09012345678 03-6216-8041', 'reference: 09012345678 [contact omitted]'],
+            ['ID: 09012345678 090-1234-5678', 'ID: 09012345678 [contact omitted]'],
+            ['ID: 03-6216-8041 090-1234-5678', 'ID: 03-6216-8041 [contact omitted]'],
+            ['ID: 01 42 68 53 00 03 62 16 80 41', 'ID: 01 42 68 53 00 [contact omitted]'],
+            ['reference: +1 212 555 1234 03-6216-8041', 'reference: +1 212 555 1234 [contact omitted]'],
+            ['ID: +44 (0)20 7123 4567 03-6216-8041', 'ID: +44 (0)20 7123 4567 [contact omitted]'],
+            ['ID: 09012345678 +81 90 1234 5678', 'ID: 09012345678 [contact omitted]']
+          ]) {
+            assert.equal(
+              redactContactData(identifierThenPhone),
+              expected,
+              'identifier protection must end after the first phone-shaped value in one scanner span'
+            );
+          }
+          assert.equal(
+            redactContactData('contact identifier: 09012345678'),
+            'contact identifier: 09012345678',
+            'a phone label may override only a trailing standalone ID, not every identifier label'
+          );
+          assert.equal(
+            redactContactData('電話番号／管理番号：０９０１２３４５６７８'),
+            '電話番号／管理番号：０９０１２３４５６７８',
+            'Japanese management identifiers must not be reclassified by a preceding phone word'
+          );
+
+          '''.replace('          ', '')
+          tests = replace_once(
+              tests,
+              test_marker,
+              f'{test_insert}{test_marker}',
+              'identifier-boundary regressions'
+          )
+
+          library_path.write_text(library, encoding='utf-8')
+          test_path.write_text(tests, encoding='utf-8')
+          PY
+
+          node --check tools/lib/industrial-exhaust.mjs
+          node --check tools/crawl-industrial-exhaust.mjs
+          node --check test/industrial-exhaust.test.js
+          node test/industrial-exhaust.test.js
+          node test/industrial-exhaust-artifacts.test.js
+          git diff --check
+
+          rm -f -- \
+            .github/current-main-identifier-boundary-trigger.txt \
+            .github/workflows/temporary-current-main-identifier-boundary-v1.yml
+
+          expected_product_paths="$(printf '%s\n' \
+            test/industrial-exhaust.test.js \
+            tools/lib/industrial-exhaust.mjs | LC_ALL=C sort)"
+          actual_product_paths="$(git diff --name-only "$EXPECTED_BASE" | LC_ALL=C sort)"
+          test "$actual_product_paths" = "$expected_product_paths"
+
+          qualification_root="$(mktemp -d)"
+          qualification_dir="$qualification_root/repository"
+          git worktree add --detach "$qualification_dir" "$EXPECTED_BASE"
+          cp tools/lib/industrial-exhaust.mjs "$qualification_dir/tools/lib/industrial-exhaust.mjs"
+          cp test/industrial-exhaust.test.js "$qualification_dir/test/industrial-exhaust.test.js"
+          (
+            cd "$qualification_dir"
+            npm run release:check
+            git diff --check
+          )
+          git worktree remove --force "$qualification_dir"
+          rmdir "$qualification_root"
+
+          git diff --check
+          actual_product_paths="$(git diff --name-only "$EXPECTED_BASE" | LC_ALL=C sort)"
+          test "$actual_product_paths" = "$expected_product_paths"
+
+          mkdir -p /tmp/current-main-identifier-boundary/tools/lib \
+            /tmp/current-main-identifier-boundary/test
+          cp tools/lib/industrial-exhaust.mjs \
+            /tmp/current-main-identifier-boundary/tools/lib/industrial-exhaust.mjs
+          cp test/industrial-exhaust.test.js \
+            /tmp/current-main-identifier-boundary/test/industrial-exhaust.test.js
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout --detach --force "$EXPECTED_BASE"
+          cp /tmp/current-main-identifier-boundary/tools/lib/industrial-exhaust.mjs \
+            tools/lib/industrial-exhaust.mjs
+          cp /tmp/current-main-identifier-boundary/test/industrial-exhaust.test.js \
+            test/industrial-exhaust.test.js
+          git add -- tools/lib/industrial-exhaust.mjs test/industrial-exhaust.test.js
+          git diff --cached --check
+          staged_paths="$(git diff --cached --name-only | LC_ALL=C sort)"
+          test "$staged_paths" = "$expected_product_paths"
+          git commit -m "fix(crawler): bound identifier context to one value"
+          new_product_head="$(git rev-parse HEAD)"
+
+          git push --force-with-lease="refs/heads/$PRODUCT_BRANCH:$EXPECTED_PRODUCT_HEAD" \
+            origin "HEAD:refs/heads/$PRODUCT_BRANCH"
+          git push --force-with-lease="refs/heads/$CARRIER_BRANCH:$remote_carrier_head" \
+            origin "HEAD:refs/heads/$CARRIER_BRANCH"
+
+          printf 'published_product_head=%s\n' "$new_product_head"
