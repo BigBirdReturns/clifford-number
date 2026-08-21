@@ -52,7 +52,11 @@ jobs:
           set -euo pipefail
           rm -rf /tmp/m05-stage-tree-custody
           mkdir -p /tmp/m05-stage-tree-custody
-          cat .m05-stage-tree-custody-materializer/payload-*.b64 | tr -d '\n' | base64 --decode > /tmp/m05-stage-tree-custody/payload.zip
+          cat \
+            .m05-stage-tree-custody-materializer/payload-00.b64 \
+            .m05-stage-tree-custody-materializer/payload-01.b64 \
+            .m05-stage-tree-custody-materializer/tail-*.b64 \
+            | tr -d '\n' | base64 --decode > /tmp/m05-stage-tree-custody/payload.zip
           sha256sum /tmp/m05-stage-tree-custody/payload.zip
           echo "$PAYLOAD_SHA256  /tmp/m05-stage-tree-custody/payload.zip" | sha256sum -c -
 
