@@ -1,0 +1,116 @@
+name: M-05 stage-stack review repair carrier
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.tmp/m05-stage-stack-review2/**'
+      - '.github/workflows/m05-stage-stack-review2-carrier.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: m05-stage-stack-review2-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Patch, qualify, and publish exact product successor
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BASE_SHA: dae4917b16a4e08450ee79a1ad33ab4f3d3416cd
+          BASE_TREE: c9042e538eb1f7e78c8cefdd1ecac640c4b82514
+          PRODUCT_BRANCH: agent/m05-s03-l7-stage-stack-postmerge-repair-v1
+          PRODUCT_LEASE: 17d3d0eb865adda1b0d84ec9fbd83dcb82074317
+          PATCH_B64_SHA256: c70b2ad1b32a6c1d682a645bd97bf845cd27034bec909b6fea027c7a607baa68
+          PATCH_SHA256: 902c39b8c770cc162ea221b68c0bf3ec21016be031418c90cc499505373061a8
+        shell: bash
+        run: |
+          set -euo pipefail
+          payload="$RUNNER_TEMP/patch.py.xz.b64"
+          patch="$RUNNER_TEMP/patch.py"
+          work="$RUNNER_TEMP/product"
+          cat .tmp/m05-stage-stack-review2/patch.part-* > "$payload"
+          printf '%s  %s\n' "$PATCH_B64_SHA256" "$payload" | sha256sum -c -
+          base64 --decode "$payload" | xz --decompress > "$patch"
+          printf '%s  %s\n' "$PATCH_SHA256" "$patch" | sha256sum -c -
+          python3 -m py_compile "$patch"
+
+          git fetch --no-tags origin main "refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/$PRODUCT_BRANCH"
+          test "$(git rev-parse origin/main)" = "$BASE_SHA"
+          test "$(git rev-parse "$BASE_SHA^{tree}")" = "$BASE_TREE"
+          test "$(git rev-parse "origin/$PRODUCT_BRANCH")" = "$PRODUCT_LEASE"
+
+          git worktree add --detach "$work" "origin/$PRODUCT_BRANCH"
+          python3 "$patch" "$work"
+          cd "$work"
+
+          node --check tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.mjs
+          node --check test/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.test.js
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-provenance-object-custody.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-intel-realization-provenance-object-custody.test.js
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-connection-authentication-custody-amendment.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-intel-realization-connection-authentication-custody-amendment.test.js
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-observation-time-custody-amendment.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-intel-realization-observation-time-custody-amendment.test.js
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-temporal-reconciliation-admission-amendment.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-intel-realization-temporal-reconciliation-admission-amendment.test.js
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.test.js
+          npm run release:check
+          git diff --check
+
+          git add -- \
+            data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-postmerge-repair.json \
+            tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.mjs \
+            test/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.test.js
+          mapfile -t staged < <(git diff --cached --name-only | sort)
+          mapfile -t expected_staged < <(printf '%s\n' \
+            'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-postmerge-repair.json' \
+            'test/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.test.js' \
+            'tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.mjs' | sort)
+          test "$(printf '%s\n' "${staged[@]}")" = "$(printf '%s\n' "${expected_staged[@]}")"
+
+          git config user.name 'BigBirdReturns'
+          git config user.email 'bigbirdreturns@proton.me'
+          git commit -m '[M-05 S03-L7] Close full-stack review gaps'
+
+          mapfile -t product_paths < <(git diff --name-only "origin/main...HEAD" | sort)
+          mapfile -t expected_product < <(printf '%s\n' \
+            '.github/workflows/m05-intel-realization-stage-receipt-control-stack-amendment.yml' \
+            'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-postmerge-repair.json' \
+            'test/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.test.js' \
+            'tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.mjs' | sort)
+          test "$(printf '%s\n' "${product_paths[@]}")" = "$(printf '%s\n' "${expected_product[@]}")"
+
+          git fetch --no-tags origin main "refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/$PRODUCT_BRANCH"
+          test "$(git rev-parse origin/main)" = "$BASE_SHA"
+          test "$(git rev-parse "$BASE_SHA^{tree}")" = "$BASE_TREE"
+          test "$(git rev-parse "origin/$PRODUCT_BRANCH")" = "$PRODUCT_LEASE"
+          git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push origin "HEAD:refs/heads/$PRODUCT_BRANCH"
+
+          printf 'product_head=%s\n' "$(git rev-parse HEAD)"
+          printf 'product_tree=%s\n' "$(git rev-parse HEAD^{tree})"
+          for rel in "${expected_product[@]}"; do
+            printf '%s %s\n' "$(git hash-object "$rel")" "$rel"
+          done
+          python3 - <<'PY'
+          import json, hashlib
+          p='data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-postmerge-repair.json'
+          d=json.load(open(p)); declared=d.pop('stage_receipt_control_stack_postmerge_repair_sha256')
+          computed=hashlib.sha256(json.dumps(d,separators=(',',':')).encode()).hexdigest()
+          assert declared==computed
+          print(f'repair_semantic_sha256={declared}')
+          PY
