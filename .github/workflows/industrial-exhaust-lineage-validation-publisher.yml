@@ -38,7 +38,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
 
       - name: Materialize, qualify, and publish the product branch
         shell: bash
@@ -124,7 +123,6 @@ jobs:
           actual_paths="$(git diff --name-only "$EXPECTED_BASE" | LC_ALL=C sort)"
           test "$actual_paths" = "$expected_paths"
 
-          npm ci
           node --check tools/lib/industrial-exhaust-artifacts.mjs
           node --check test/industrial-exhaust-artifacts.test.js
           node test/industrial-exhaust-artifacts.test.js
