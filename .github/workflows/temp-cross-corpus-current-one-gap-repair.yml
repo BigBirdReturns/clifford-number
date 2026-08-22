@@ -1,0 +1,213 @@
+name: TEMP current one-gap cross-corpus repair
+
+on:
+  push:
+    branches:
+      - agent/cross-corpus-current-one-gap-repair-carrier-v1
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/cross-corpus-current-one-gap-repair-carrier-v1
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Build, qualify, and publish the exact one-file product
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          EXPECTED_BASE='311823fb03bf8b7761495aa2cad74db174289504'
+          PRODUCT_BRANCH='agent/cross-corpus-current-one-gap-repair-v1'
+          TARGET='data/research/clifford-cross-corpus-public-interest-map.json'
+          PRODUCT_DIR='/tmp/cross-corpus-current-one-gap-product'
+          REPAIRED_MAP='/tmp/cross-corpus-current-one-gap-map.json'
+
+          git fetch --no-tags origin main
+          BASE="$(git rev-parse origin/main)"
+          if [[ "$BASE" != "$EXPECTED_BASE" ]]; then
+            echo "Canonical main moved: expected $EXPECTED_BASE, found $BASE" >&2
+            exit 2
+          fi
+
+          if git ls-remote --exit-code origin "refs/heads/$PRODUCT_BRANCH" >/dev/null 2>&1; then
+            echo "Product branch already exists: $PRODUCT_BRANCH" >&2
+            exit 2
+          fi
+
+          rm -rf "$PRODUCT_DIR"
+          git worktree add --detach "$PRODUCT_DIR" "$BASE"
+          cd "$PRODUCT_DIR"
+
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          state_path = Path('data/crawl/state.json')
+          map_path = Path('data/research/clifford-cross-corpus-public-interest-map.json')
+          state = json.loads(state_path.read_text())
+          federal = state['sources']['federal-register']
+          sam = state['sources']['sam-opportunities']
+
+          assert sam['status'] == 'skipped_missing_credential'
+          assert sam['credential_env'] == 'SAM_API_KEY'
+          assert federal['status'] == 'ok'
+          assert federal['records_seen'] == 11
+          assert federal['errors'] == []
+          assert federal['last_run_at'] == '2026-08-22T09:45:50.822Z'
+
+          data = json.loads(map_path.read_text())
+          lane = next(item for item in data['lanes'] if item['lane_id'] == 'official-research-fanout')
+          assert lane['counts']['crawl_source_gaps'] == 2
+          assert lane['crawl_source_gap_states'] == [
+              {
+                  'source_id': 'sam-opportunities',
+                  'status': 'skipped_missing_credential',
+                  'interpretation': 'Acquisition did not run; this is not a zero result.'
+              },
+              {
+                  'source_id': 'federal-register',
+                  'status': 'partial',
+                  'records_seen': 11,
+                  'failed_queries': 1,
+                  'failure_class': 'upstream_503',
+                  'interpretation': 'Coverage is incomplete; failed queries are not negative results.'
+              }
+          ]
+
+          old = (
+              'The current committed crawl exposes two source gaps: SAM.gov did not execute because its credential is unavailable, '
+              'and the Federal Register run is partial because one configured query returned an upstream 503 while eleven records were still observed. '
+              'Neither state supports a zero-result interpretation or evidence of absence.'
+          )
+          new = (
+              'The current committed crawl exposes one source gap: SAM.gov did not execute because its credential is unavailable. '
+              'This state is an acquisition gap, not a zero result or evidence of absence. '
+              'The Federal Register source returned to ok in the committed 2026-08-22 intake, with eleven records seen and no errors; '
+              'the earlier partial run remains preserved in repository history.'
+          )
+          assert old in lane['what_the_data_shows']
+
+          data['generated_at'] = '2026-08-22'
+          lane['counts']['crawl_source_gaps'] = 1
+          lane['crawl_source_gap_states'] = [
+              {
+                  'source_id': 'sam-opportunities',
+                  'status': 'skipped_missing_credential',
+                  'interpretation': 'Acquisition did not run; this is not a zero result.'
+              }
+          ]
+          lane['what_the_data_shows'] = lane['what_the_data_shows'].replace(old, new)
+          map_path.write_text(json.dumps(data, indent=2) + '\n')
+          PY
+
+          cp "$TARGET" "$REPAIRED_MAP"
+          npm run fanout
+          npm run validate:cross-corpus-map
+          npm run release:check
+          cmp "$TARGET" "$REPAIRED_MAP"
+
+          git reset --hard "$BASE"
+          cp "$REPAIRED_MAP" "$TARGET"
+          git diff --check
+
+          mapfile -t CHANGED_PATHS < <(git diff --name-only)
+          if [[ "${#CHANGED_PATHS[@]}" -ne 1 || "${CHANGED_PATHS[0]}" != "$TARGET" ]]; then
+            printf 'Unexpected product paths:\n%s\n' "${CHANGED_PATHS[*]}" >&2
+            exit 2
+          fi
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$TARGET"
+          git commit -m 'Reconcile current one-source crawl gap'
+
+          PRODUCT="$(git rev-parse HEAD)"
+          TREE="$(git rev-parse 'HEAD^{tree}')"
+          PARENT="$(git rev-parse 'HEAD^')"
+          BLOB="$(git rev-parse "HEAD:$TARGET")"
+          SHA256="$(sha256sum "$TARGET" | awk '{print $1}')"
+
+          [[ "$PARENT" == "$BASE" ]]
+          [[ "$(git diff --name-only "$BASE" "$PRODUCT")" == "$TARGET" ]]
+
+          REMOTE_MAIN="$(git ls-remote origin refs/heads/main | awk '{print $1}')"
+          if [[ "$REMOTE_MAIN" != "$BASE" ]]; then
+            echo "Canonical main moved before publication: expected $BASE, found $REMOTE_MAIN" >&2
+            exit 2
+          fi
+
+          git push origin "$PRODUCT:refs/heads/$PRODUCT_BRANCH"
+
+          RECEIPT_DIR="$GITHUB_WORKSPACE/build/cross-corpus-current-one-gap-repair"
+          mkdir -p "$RECEIPT_DIR"
+          BASE="$BASE" PRODUCT="$PRODUCT" TREE="$TREE" BLOB="$BLOB" SHA256="$SHA256" TARGET="$TARGET" PRODUCT_BRANCH="$PRODUCT_BRANCH" python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          receipt = {
+              'schema_version': 'cross-corpus-current-one-gap-repair-receipt@1',
+              'object_class': 'repository_baseline_reconciliation',
+              'run_id': os.environ['GITHUB_RUN_ID'],
+              'canonical_parent': os.environ['BASE'],
+              'product_commit': os.environ['PRODUCT'],
+              'product_tree': os.environ['TREE'],
+              'product_branch': os.environ['PRODUCT_BRANCH'],
+              'changed_paths': [os.environ['TARGET']],
+              'map_git_blob': os.environ['BLOB'],
+              'map_sha256': os.environ['SHA256'],
+              'current_gap_count': 1,
+              'current_gap_states': [
+                  {
+                      'source_id': 'sam-opportunities',
+                      'status': 'skipped_missing_credential',
+                      'interpretation': 'acquisition_gap_not_zero_result'
+                  }
+              ],
+              'federal_register': {
+                  'status': 'ok',
+                  'records_seen': 11,
+                  'errors': 0,
+                  'last_run_at': '2026-08-22T09:45:50.822Z'
+              },
+              'source_requests': 0,
+              'graph_effect': 'none',
+              'conclusion_generated': False,
+              'answer_effect': False,
+              'issue_closure_authority': False,
+              'release_check': 'passed'
+          }
+          Path(os.environ['GITHUB_WORKSPACE'], 'build/cross-corpus-current-one-gap-repair/receipt.json').write_text(
+              json.dumps(receipt, indent=2) + '\n'
+          )
+          PY
+
+          {
+            echo '# Current one-gap cross-corpus repair'
+            echo
+            echo "- Canonical parent: $BASE"
+            echo "- Product commit: $PRODUCT"
+            echo "- Product tree: $TREE"
+            echo "- Map blob: $BLOB"
+            echo "- Map SHA-256: $SHA256"
+            echo '- Changed paths: 1'
+            echo '- Current source gaps: 1'
+            echo '- Source requests: 0'
+            echo '- Graph effect: none'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cross-corpus-current-one-gap-repair-${{ github.run_id }}
+          path: build/cross-corpus-current-one-gap-repair/
+          if-no-files-found: error
+          retention-days: 30
