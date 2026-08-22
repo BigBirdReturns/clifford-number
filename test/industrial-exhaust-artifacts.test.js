@@ -17,7 +17,7 @@ import {
   validateDiscoveryRevisionLineage,
   writeArtifactReceipt
 } from '../tools/lib/industrial-exhaust-artifacts.mjs';
-import { matchWatchTerms } from '../tools/lib/industrial-exhaust.mjs';
+import { contentId, matchWatchTerms, sha256 } from '../tools/lib/industrial-exhaust.mjs';
 
 const config = validateArtifactConfig({
   schema_version: 1,
@@ -153,6 +153,32 @@ const discoveryLineage = discoveryRepeatMerge.records
 const [discoveryA1, discoveryB2, discoveryA3] = discoveryLineage;
 const otherDiscoveryRoot = firstMerge.records.find(item => item.source_record_key !== recurrentDiscoveryKey);
 assert.equal(validateDiscoveryRevisionLineage(discoveryRepeatMerge.records), discoveryRepeatMerge.records);
+
+assert.throws(
+  () => validateDiscoveryRevisionLineage([{ ...discoveryA1, canonical_url: `${discoveryA1.canonical_url}-tampered` }]),
+  /source_record_key does not match/u
+);
+assert.throws(
+  () => validateDiscoveryRevisionLineage([{ ...discoveryA1, title: `${discoveryA1.title} tampered` }]),
+  /content_sha256 does not match/u
+);
+assert.throws(
+  () => validateDiscoveryRevisionLineage([{ ...discoveryA1, discovery_id: 'xdiscover_forged_occurrence' }]),
+  /root .* occurrence id does not match/u
+);
+const legacyDiscoveryRevision = {
+  ...discoveryB2,
+  discovery_id: contentId(
+    'xdiscover',
+    discoveryB2.source_id,
+    discoveryB2.source_record_key,
+    discoveryB2.content_sha256
+  )
+};
+assert.throws(
+  () => validateDiscoveryRevisionLineage([discoveryA1, legacyDiscoveryRevision]),
+  /must use a predecessor-bound occurrence id/u
+);
 assert.throws(
   () => validateDiscoveryRevisionLineage([{ ...discoveryA1, revision_of: 'xdiscover_non_null_root' }]),
   /discovery root .* must declare revision_of null/u
@@ -197,16 +223,30 @@ assert.throws(
   ]),
   /names a missing predecessor/u
 );
+const crossDiscoveryTitle = `${otherDiscoveryRoot.title} revised`;
+const crossDiscoveryDigest = sha256({
+  canonical_url: otherDiscoveryRoot.canonical_url,
+  title: crossDiscoveryTitle
+});
+const crossDiscoveryRevision = {
+  ...otherDiscoveryRoot,
+  discovery_id: contentId(
+    'xdiscover',
+    otherDiscoveryRoot.source_id,
+    otherDiscoveryRoot.source_record_key,
+    discoveryA1.discovery_id,
+    crossDiscoveryDigest
+  ),
+  title: crossDiscoveryTitle,
+  content_sha256: crossDiscoveryDigest,
+  revision_of: discoveryA1.discovery_id,
+  revision_number: 2
+};
 assert.throws(
   () => validateDiscoveryRevisionLineage([
     discoveryA1,
     otherDiscoveryRoot,
-    {
-      ...discoveryB2,
-      discovery_id: 'xdiscover_cross_lineage',
-      source_record_key: otherDiscoveryRoot.source_record_key,
-      revision_of: discoveryA1.discovery_id
-    }
+    crossDiscoveryRevision
   ]),
   /crosses stable identity through revision_of/u
 );
@@ -312,10 +352,28 @@ assert.equal(transportOnlyMerge.added, null, 'transport-only HTML churn must not
 assert.equal(transportOnlyMerge.artifacts.length, 1);
 assert.equal(transportOnlyMerge.unchanged.artifact_id, artifactMerge.added.artifact_id);
 
+const legacyProjectionSha256 = sha256({
+  title: artifactMerge.added.title ?? '',
+  description: artifactMerge.added.description ?? '',
+  normalized_text: artifactMerge.added.normalized_text ?? '',
+  normalized_text_sha256: artifactMerge.added.normalized_text_sha256 ?? null,
+  published_at: artifactMerge.added.published_at ?? null,
+  body_sha256: artifactMerge.added.body_sha256
+});
 const legacyProjectionArtifact = {
   ...artifactMerge.added,
-  projection_sha256: 'f'.repeat(64)
+  artifact_id: contentId(
+    'xartifact',
+    artifactMerge.added.artifact_record_key,
+    legacyProjectionSha256
+  ),
+  projection_sha256: legacyProjectionSha256
 };
+const legacyProjectionRecords = [legacyProjectionArtifact];
+assert.equal(
+  validateArtifactRevisionLineage(legacyProjectionRecords),
+  legacyProjectionRecords
+);
 const legacyTransportOnlyMerge = mergeArtifactProjection({
   artifacts: [legacyProjectionArtifact],
   candidate,
@@ -339,6 +397,72 @@ assert.equal(
 );
 
 const changedText = `${projection.normalized_text} A substantive publisher statement changed.`;
+
+const legacyChangedBodySha256 = '1'.repeat(64);
+const legacyChangedBody = {
+  title: projection.title,
+  description: projection.description,
+  normalized_text: changedText,
+  normalized_text_sha256: sha256(changedText),
+  published_at: projection.published_at
+};
+const legacyChangedProjectionSha256 = sha256({
+  ...legacyChangedBody,
+  body_sha256: legacyChangedBodySha256
+});
+const legacyRevisionArtifact = {
+  ...legacyProjectionArtifact,
+  ...legacyChangedBody,
+  artifact_id: contentId(
+    'xartifact',
+    legacyProjectionArtifact.artifact_record_key,
+    legacyChangedProjectionSha256
+  ),
+  body_sha256: legacyChangedBodySha256,
+  projection_sha256: legacyChangedProjectionSha256,
+  revision_of: legacyProjectionArtifact.artifact_id,
+  revision_number: 2
+};
+assert.equal(
+  validateArtifactRevisionLineage([legacyProjectionArtifact, legacyRevisionArtifact]).length,
+  2,
+  'historical body-bound artifact revisions must remain valid'
+);
+
+const currentSuccessorText = `${changedText} A current-contract successor changed again.`;
+const legacyToCurrentMerge = mergeArtifactProjection({
+  artifacts: [legacyProjectionArtifact, legacyRevisionArtifact],
+  candidate,
+  sourceProjection: {
+    ...projection,
+    normalized_text: currentSuccessorText,
+    normalized_text_sha256: sha256(currentSuccessorText)
+  },
+  capturedAt: '2026-08-18T13:30:00.000Z',
+  bodyReceiptPath: 'receipts/article-current-successor.json',
+  bodySha256: '2'.repeat(64),
+  responseHeaders: {
+    content_type: 'text/html',
+    etag: 'current-successor',
+    last_modified: null,
+    final_url: candidate.canonical_url,
+    redirect_chain: [],
+    watch_config: watchConfig
+  }
+});
+assert.ok(legacyToCurrentMerge.added, 'a legacy lineage must accept one-way migration to the current projection contract');
+assert.equal(legacyToCurrentMerge.added.revision_number, 3);
+assert.equal(legacyToCurrentMerge.added.revision_of, legacyRevisionArtifact.artifact_id);
+assert.equal(
+  legacyToCurrentMerge.added.artifact_id,
+  contentId(
+    'xartifact',
+    legacyToCurrentMerge.added.artifact_record_key,
+    legacyRevisionArtifact.artifact_id,
+    legacyToCurrentMerge.added.projection_sha256
+  )
+);
+assert.equal(validateArtifactRevisionLineage(legacyToCurrentMerge.artifacts), legacyToCurrentMerge.artifacts);
 const semanticChangeMerge = mergeArtifactProjection({
   artifacts: artifactMerge.artifacts,
   candidate,
@@ -431,7 +555,61 @@ const artifactLineage = semanticRepeatMerge.artifacts
   .filter(item => item.artifact_record_key === artifactMerge.added.artifact_record_key)
   .sort((left, right) => left.revision_number - right.revision_number);
 const [artifactA1, artifactB2, artifactA3] = artifactLineage;
+
+const downgradeLegacyProjectionSha256 = sha256({
+  title: artifactA3.title ?? '',
+  description: artifactA3.description ?? '',
+  normalized_text: artifactA3.normalized_text ?? '',
+  normalized_text_sha256: artifactA3.normalized_text_sha256 ?? null,
+  published_at: artifactA3.published_at ?? null,
+  body_sha256: artifactA3.body_sha256
+});
+const legacyProjectionDowngrade = {
+  ...artifactA3,
+  artifact_id: contentId(
+    'xartifact',
+    artifactA3.artifact_record_key,
+    artifactB2.artifact_id,
+    downgradeLegacyProjectionSha256
+  ),
+  projection_sha256: downgradeLegacyProjectionSha256,
+  revision_of: artifactB2.artifact_id,
+  revision_number: 3
+};
+assert.throws(
+  () => validateArtifactRevisionLineage([artifactA1, artifactB2, legacyProjectionDowngrade]),
+  /may not return to the legacy projection contract/u
+);
 assert.equal(validateArtifactRevisionLineage(semanticRepeatMerge.artifacts), semanticRepeatMerge.artifacts);
+
+assert.throws(
+  () => validateArtifactRevisionLineage([{ ...artifactA1, canonical_url: `${artifactA1.canonical_url}-tampered` }]),
+  /artifact_record_key does not match/u
+);
+assert.throws(
+  () => validateArtifactRevisionLineage([{ ...artifactA1, normalized_text_sha256: '0'.repeat(64) }]),
+  /normalized_text_sha256 does not match/u
+);
+assert.throws(
+  () => validateArtifactRevisionLineage([{ ...artifactA1, projection_sha256: '0'.repeat(64) }]),
+  /projection_sha256 does not match/u
+);
+assert.throws(
+  () => validateArtifactRevisionLineage([{ ...artifactA1, artifact_id: 'xartifact_forged_occurrence' }]),
+  /root .* occurrence id does not match/u
+);
+const legacyCurrentArtifactRevision = {
+  ...artifactB2,
+  artifact_id: contentId(
+    'xartifact',
+    artifactB2.artifact_record_key,
+    artifactB2.projection_sha256
+  )
+};
+assert.throws(
+  () => validateArtifactRevisionLineage([artifactA1, legacyCurrentArtifactRevision]),
+  /must use a predecessor-bound occurrence id/u
+);
 assert.throws(
   () => validateArtifactRevisionLineage([{ ...artifactA1, revision_of: 'xartifact_non_null_root' }]),
   /artifact root .* must declare revision_of null/u
@@ -478,15 +656,24 @@ assert.throws(
   ]),
   /names a missing predecessor/u
 );
+const crossArtifactCanonicalUrl = 'https://www.dentsu.com/news-releases/cross-lineage-artifact';
+const crossArtifactRecordKey = sha256(crossArtifactCanonicalUrl);
+const crossArtifactRevision = {
+  ...artifactB2,
+  artifact_id: contentId(
+    'xartifact',
+    crossArtifactRecordKey,
+    artifactA1.artifact_id,
+    artifactB2.projection_sha256
+  ),
+  artifact_record_key: crossArtifactRecordKey,
+  canonical_url: crossArtifactCanonicalUrl,
+  revision_of: artifactA1.artifact_id
+};
 assert.throws(
   () => validateArtifactRevisionLineage([
     artifactA1,
-    {
-      ...artifactB2,
-      artifact_id: 'xartifact_cross_lineage',
-      artifact_record_key: 'artifact-record-key-other',
-      revision_of: artifactA1.artifact_id
-    }
+    crossArtifactRevision
   ]),
   /crosses stable identity through revision_of/u
 );
@@ -576,10 +763,27 @@ const rematchedAlerts = buildArtifactAlerts(artifactMerge.artifacts, {
   candidates: discoveryCandidates
 });
 assert.ok(rematchedAlerts[0].artifact_matched_terms.includes('leadership_copy'));
+const retiredSeedNormalizedText = 'The current registry does not match this body.';
+const retiredSeedBody = {
+  title: 'No current watch match',
+  description: artifactMerge.added.description ?? '',
+  normalized_text: retiredSeedNormalizedText,
+  normalized_text_sha256: sha256(retiredSeedNormalizedText),
+  published_at: artifactMerge.added.published_at ?? null
+};
+const retiredSeedProjectionSha256 = sha256({
+  ...retiredSeedBody,
+  body_sha256: artifactMerge.added.body_sha256
+});
 const retiredSeedArtifact = {
   ...artifactMerge.added,
-  title: 'No current watch match',
-  normalized_text: 'The current registry does not match this body.',
+  ...retiredSeedBody,
+  artifact_id: contentId(
+    'xartifact',
+    artifactMerge.added.artifact_record_key,
+    retiredSeedProjectionSha256
+  ),
+  projection_sha256: retiredSeedProjectionSha256,
   seed_matched_terms: ['retired_term'],
   artifact_matched_terms: [],
   matched_terms: ['retired_term']
@@ -686,6 +890,26 @@ assert.match(
   hydratorRuntimeSource,
   /last_status: 'error',\s+last_error: error\.message,\s+new_discovery_count: 0/u,
   'an index acquisition error must reset the current-run discovery count'
+);
+
+
+const canonicalDiscoveryRecords = fs.readFileSync(
+  new URL('../data/exhaust/discovery-observations.jsonl', import.meta.url),
+  'utf8'
+).trim().split(/\r?\n/u).map(line => JSON.parse(line));
+const canonicalArtifactRecords = fs.readFileSync(
+  new URL('../data/exhaust/artifacts.jsonl', import.meta.url),
+  'utf8'
+).trim().split(/\r?\n/u).map(line => JSON.parse(line));
+assert.equal(
+  validateDiscoveryRevisionLineage(canonicalDiscoveryRecords),
+  canonicalDiscoveryRecords,
+  'the canonical discovery corpus must satisfy record and lineage custody'
+);
+assert.equal(
+  validateArtifactRevisionLineage(canonicalArtifactRecords),
+  canonicalArtifactRecords,
+  'the canonical artifact corpus must retain its historical projection and occurrence custody'
 );
 
 console.log('industrial-exhaust artifact tests passed');
