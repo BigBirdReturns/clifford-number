@@ -21,26 +21,28 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Build, qualify, and publish the exact one-file product
+      - name: Build, qualify, and replace the exact one-file product
         shell: bash
         run: |
           set -euo pipefail
 
           EXPECTED_BASE='311823fb03bf8b7761495aa2cad74db174289504'
+          EXPECTED_PRODUCT='da48a01e7baf2f7a6162d267ed2972f0a5790d1e'
           PRODUCT_BRANCH='agent/cross-corpus-current-one-gap-repair-v1'
           TARGET='data/research/clifford-cross-corpus-public-interest-map.json'
           PRODUCT_DIR='/tmp/cross-corpus-current-one-gap-product'
           REPAIRED_MAP='/tmp/cross-corpus-current-one-gap-map.json'
 
-          git fetch --no-tags origin main
+          git fetch --no-tags origin main "$PRODUCT_BRANCH"
           BASE="$(git rev-parse origin/main)"
           if [[ "$BASE" != "$EXPECTED_BASE" ]]; then
             echo "Canonical main moved: expected $EXPECTED_BASE, found $BASE" >&2
             exit 2
           fi
 
-          if git ls-remote --exit-code origin "refs/heads/$PRODUCT_BRANCH" >/dev/null 2>&1; then
-            echo "Product branch already exists: $PRODUCT_BRANCH" >&2
+          CURRENT_PRODUCT="$(git ls-remote origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')"
+          if [[ "$CURRENT_PRODUCT" != "$EXPECTED_PRODUCT" ]]; then
+            echo "Product lease changed: expected $EXPECTED_PRODUCT, found ${CURRENT_PRODUCT:-absent}" >&2
             exit 2
           fi
 
@@ -65,7 +67,13 @@ jobs:
           assert federal['errors'] == []
           assert federal['last_run_at'] == '2026-08-22T09:45:50.822Z'
 
-          data = json.loads(map_path.read_text())
+          original = map_path.read_text()
+          assert 'Michael Muthukrishna’s' in original
+          assert 'Matt Clifford–Anduril' in original
+          assert '\\u2019' not in original
+          assert '\\u2013' not in original
+
+          data = json.loads(original)
           lane = next(item for item in data['lanes'] if item['lane_id'] == 'official-research-fanout')
           assert lane['counts']['crawl_source_gaps'] == 2
           assert lane['crawl_source_gap_states'] == [
@@ -107,7 +115,12 @@ jobs:
               }
           ]
           lane['what_the_data_shows'] = lane['what_the_data_shows'].replace(old, new)
-          map_path.write_text(json.dumps(data, indent=2) + '\n')
+          repaired = json.dumps(data, indent=2, ensure_ascii=False) + '\n'
+          assert 'Michael Muthukrishna’s' in repaired
+          assert 'Matt Clifford–Anduril' in repaired
+          assert '\\u2019' not in repaired
+          assert '\\u2013' not in repaired
+          map_path.write_text(repaired)
           PY
 
           cp "$TARGET" "$REPAIRED_MAP"
@@ -123,6 +136,10 @@ jobs:
           mapfile -t CHANGED_PATHS < <(git diff --name-only)
           if [[ "${#CHANGED_PATHS[@]}" -ne 1 || "${CHANGED_PATHS[0]}" != "$TARGET" ]]; then
             printf 'Unexpected product paths:\n%s\n' "${CHANGED_PATHS[*]}" >&2
+            exit 2
+          fi
+          if git diff -- "$TARGET" | grep -Eq '\\\\u2019|\\\\u2013'; then
+            echo 'Unicode escape churn entered the product diff' >&2
             exit 2
           fi
 
@@ -145,27 +162,34 @@ jobs:
             echo "Canonical main moved before publication: expected $BASE, found $REMOTE_MAIN" >&2
             exit 2
           fi
+          CURRENT_PRODUCT="$(git ls-remote origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')"
+          if [[ "$CURRENT_PRODUCT" != "$EXPECTED_PRODUCT" ]]; then
+            echo "Product lease moved before publication: expected $EXPECTED_PRODUCT, found ${CURRENT_PRODUCT:-absent}" >&2
+            exit 2
+          fi
 
-          git push origin "$PRODUCT:refs/heads/$PRODUCT_BRANCH"
+          git push --force-with-lease="refs/heads/$PRODUCT_BRANCH:$EXPECTED_PRODUCT" origin "$PRODUCT:refs/heads/$PRODUCT_BRANCH"
 
           RECEIPT_DIR="$GITHUB_WORKSPACE/build/cross-corpus-current-one-gap-repair"
           mkdir -p "$RECEIPT_DIR"
-          BASE="$BASE" PRODUCT="$PRODUCT" TREE="$TREE" BLOB="$BLOB" SHA256="$SHA256" TARGET="$TARGET" PRODUCT_BRANCH="$PRODUCT_BRANCH" python - <<'PY'
+          BASE="$BASE" PREDECESSOR_PRODUCT="$EXPECTED_PRODUCT" PRODUCT="$PRODUCT" TREE="$TREE" BLOB="$BLOB" SHA256="$SHA256" TARGET="$TARGET" PRODUCT_BRANCH="$PRODUCT_BRANCH" python - <<'PY'
           import json
           import os
           from pathlib import Path
 
           receipt = {
-              'schema_version': 'cross-corpus-current-one-gap-repair-receipt@1',
+              'schema_version': 'cross-corpus-current-one-gap-repair-receipt@2',
               'object_class': 'repository_baseline_reconciliation',
               'run_id': os.environ['GITHUB_RUN_ID'],
               'canonical_parent': os.environ['BASE'],
+              'replaced_product_commit': os.environ['PREDECESSOR_PRODUCT'],
               'product_commit': os.environ['PRODUCT'],
               'product_tree': os.environ['TREE'],
               'product_branch': os.environ['PRODUCT_BRANCH'],
               'changed_paths': [os.environ['TARGET']],
               'map_git_blob': os.environ['BLOB'],
               'map_sha256': os.environ['SHA256'],
+              'unicode_representation_preserved': True,
               'current_gap_count': 1,
               'current_gap_states': [
                   {
@@ -196,11 +220,13 @@ jobs:
             echo '# Current one-gap cross-corpus repair'
             echo
             echo "- Canonical parent: $BASE"
+            echo "- Replaced product: $EXPECTED_PRODUCT"
             echo "- Product commit: $PRODUCT"
             echo "- Product tree: $TREE"
             echo "- Map blob: $BLOB"
             echo "- Map SHA-256: $SHA256"
             echo '- Changed paths: 1'
+            echo '- Unicode representation preserved: true'
             echo '- Current source gaps: 1'
             echo '- Source requests: 0'
             echo '- Graph effect: none'
