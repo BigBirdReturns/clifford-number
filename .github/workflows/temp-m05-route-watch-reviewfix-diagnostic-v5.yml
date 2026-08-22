@@ -139,6 +139,7 @@ jobs:
           node --check "$TEST"
           node "$VALIDATOR"
           node "$TEST"
+          git add -N -- "${PRODUCT_PATHS[@]}"
           git diff --check
           mapfile -t EXPECTED_PATHS < <(printf '%s\n' "${PRODUCT_PATHS[@]}" | sort)
           mapfile -t ACTUAL_PATHS < <(git diff --name-only "$observed_base" | sort)
