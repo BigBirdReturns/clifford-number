@@ -1,4 +1,4 @@
-name: Temporary current-main identifier-boundary P1 repair v6
+name: Temporary current-main identifier-boundary P1 repair v7
 
 on:
   pull_request:
@@ -10,7 +10,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: current-main-identifier-boundary-repair-v6
+  group: current-main-identifier-boundary-repair-v7
   cancel-in-progress: false
 
 jobs:
@@ -19,15 +19,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      SOURCE_BASE: 21b7be4cd4045529be198befaddd3a1d941143a1
-      PRODUCT_HEAD: e132d68bbfd94eecfdd9f20a2375fa2c96d3ead4
-      CARRIER_PARENT: ccd0805dcc2c21a2eec502408add326065f5ddc3
+      SOURCE_BASE: b97a0d04f309269441a1e52195d7acc98dcd299d
+      PRODUCT_HEAD: 5b8c5153645778b547d39fd13b9a9bd1a9f10158
+      CARRIER_PARENT: 8a091ff940e4f2d9461a8511c99865faec5842b0
       PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
       CARRIER_BRANCH: agent/current-main-identifier-context-v1
       BASE_LIBRARY: 5f68254d3e44de693e83503aed879160f9b7b997
       BASE_TEST: 1659a7cc54666a2ac5a1d6b88eb8c6591d98008e
-      SOURCE_LIBRARY: e22bbb2899233ec1bf046cef79da20cb69797937
-      SOURCE_TEST: a3384f944235d9170b1cbf09779ab6898a21bccd
+      SOURCE_LIBRARY: 44cc935fe9ba1b1b4485fbf0676733664b58c8ef
+      SOURCE_TEST: ebcf778044a086ad76eaebd5bae1981a0e06cf9c
     steps:
       - uses: actions/checkout@v4
         with:
@@ -100,53 +100,7 @@ jobs:
           library = library_path.read_text(encoding='utf-8')
           tests = test_path.read_text(encoding='utf-8')
 
-          old_identifier_match = r"""function explicitIdentifierLabelMatch(normalizedPrefix) {
-            const window = normalizedPrefix.slice(-128);
-            const match = window.match(EXPLICIT_IDENTIFIER_LABEL_PATTERN);
-            if (!match || match.index == null) return match;
-            return hasUrlTokenPrefixContext(window.slice(0, match.index)) ? null : match;
-          }
-          """
-          new_identifier_match = r"""function explicitIdentifierLabelMatch(normalizedPrefix) {
-            const windowStart = Math.max(0, normalizedPrefix.length - 128);
-            const window = normalizedPrefix.slice(windowStart);
-            const match = window.match(EXPLICIT_IDENTIFIER_LABEL_PATTERN);
-            if (!match || match.index == null) return match;
-            const absoluteMatchIndex = windowStart + match.index;
-            return hasUrlTokenPrefixContext(normalizedPrefix.slice(0, absoluteMatchIndex))
-              ? null
-              : match;
-          }
-          """
-          library = replace_once(
-              library,
-              old_identifier_match,
-              new_identifier_match,
-              'complete URL-token identifier-label context'
-          )
-
-          old_numeric_url = r"""  const numericUrlContext = /(?:(?:https?:)?\/\/|www\.|(?:[\p{L}\p{N}](?:[\p{L}\p{N}-]*[\p{L}\p{N}])?\.)+(?:[\p{L}]{2,}|xn--[\p{L}\p{N}-]{2,})(?=[:/?#])|(?:\d{1,3}\.){3}\d{1,3}(?=[:/?#]))[^\s]*$/iu.test(
-              normalizedPrefix
-            );
-          """
-          new_numeric_url = r"""  const numericUrlContext = hasUrlTokenPrefixContext(normalizedPrefix);
-          """
-          library = replace_once(
-              library,
-              old_numeric_url,
-              new_numeric_url,
-              'shared URL-token predicate'
-          )
-
           old_prefix_context = r"""function redactionPrefixContext(input, offset) {
-            const preceding = input.slice(0, offset);
-            const boundedStart = Math.max(0, preceding.length - 64);
-            const currentToken = preceding.match(/\S+$/u)?.[0] ?? '';
-            const tokenStart = currentToken ? preceding.length - currentToken.length : preceding.length;
-            return preceding.slice(Math.min(boundedStart, tokenStart));
-          }
-          """
-          new_prefix_context = r"""function redactionPrefixContext(input, offset) {
             const preceding = input.slice(0, offset);
             const boundedStart = Math.max(0, preceding.length - 64);
             const currentTokenWithTrailingSpace = preceding.match(/\S+\s*$/u)?.[0] ?? '';
@@ -156,152 +110,114 @@ jobs:
             return preceding.slice(Math.min(boundedStart, tokenStart));
           }
           """
+          new_prefix_context = r"""function redactionPrefixContext(input, offset) {
+            const preceding = input.slice(0, offset);
+            const boundedStart = Math.max(0, preceding.length - 64);
+            const currentTokenWithTrailingSpace = preceding.match(/\S+\s*$/u)?.[0] ?? '';
+            let tokenStart = currentTokenWithTrailingSpace
+              ? preceding.length - currentTokenWithTrailingSpace.length
+              : preceding.length;
+            const normalizedCurrentToken = currentTokenWithTrailingSpace
+              .normalize('NFKC')
+              .trim();
+            if (/^(?:\(|\[|\{|（|［|【)+$/u.test(normalizedCurrentToken)) {
+              const beforeWrapper = preceding.slice(0, tokenStart);
+              const priorTokenWithTrailingSpace = beforeWrapper.match(/\S+\s*$/u)?.[0] ?? '';
+              if (priorTokenWithTrailingSpace) {
+                tokenStart = beforeWrapper.length - priorTokenWithTrailingSpace.length;
+              }
+            }
+            return preceding.slice(Math.min(boundedStart, tokenStart));
+          }
+          """
           library = replace_once(
               library,
               old_prefix_context,
               new_prefix_context,
-              'complete preceding token retention'
+              'detached-wrapper preceding-token retention'
           )
 
-          old_protected_end = r"""function identifierProtectedPrefixEnd(candidate, groups, externalSuffix) {
-            const observationGroup = trailingObservationGroup(candidate, groups, '', externalSuffix);
-            let protectedEnd = candidate.length;
-            let protectedScore = null;
-            for (let last = 0;
-              last < groups.length
-                && last < MAX_PHONE_DIGIT_GROUPS
-                && last < observationGroup;
-              last += 1) {
-              const { start, end } = phoneWindowBounds(candidate, groups, 0, last);
-              const slice = candidate.slice(start, end);
-              let score = phoneCandidateScore(slice, '');
-              if (!score) continue;
-              if (last === observationGroup - 1) score += 32;
-              else if (last === groups.length - 1) score += 24;
-              else score -= 24;
-              if (protectedScore == null
-                  || score > protectedScore
-                  || (score === protectedScore && end > protectedEnd)) {
-                protectedScore = score;
-                protectedEnd = end;
-              }
-            }
-            return protectedEnd;
-          }
+          old_hard_boundary = r"""      const hardBoundary = /(?:\s[\/]|[\/]\s|[.．]\s+)/u.test(separator);
           """
-          new_protected_end = r"""function identifierProtectedPrefixEnd(candidate, groups, externalSuffix) {
-            const observationGroup = trailingObservationGroup(candidate, groups, '', externalSuffix);
-            let protectedEnd = candidate.length;
-            let protectedScore = null;
-            for (let last = 0;
-              last < groups.length
-                && last < MAX_PHONE_DIGIT_GROUPS
-                && last < observationGroup;
-              last += 1) {
-              const { start, end } = phoneWindowBounds(candidate, groups, 0, last);
-              const slice = candidate.slice(start, end);
-              let score = phoneCandidateScore(slice, '');
-              if (!score) continue;
-              if (last === observationGroup - 1) score += 32;
-              else if (last === groups.length - 1) score += 24;
-              else score -= 24;
-              if (protectedScore == null
-                  || score > protectedScore
-                  || (score === protectedScore && end > protectedEnd)) {
-                protectedScore = score;
-                protectedEnd = end;
-              }
-            }
-            if (protectedScore != null) return protectedEnd;
-
-            for (let first = 1; first < groups.length; first += 1) {
-              const previousEnd = groups[first - 1].index + groups[first - 1][0].length;
-              const groupStart = groups[first].index;
-              const separator = candidate.slice(previousEnd, groupStart).normalize('NFKC');
-              const hardBoundary = /(?:\s[\/]|[\/]\s|[.．]\s+)/u.test(separator);
-              if (!hardBoundary) continue;
-              if (!canStartIndependentPhone(candidate, groups, first, '')) continue;
-              return phoneWindowBounds(candidate, groups, first, first).start;
-            }
-            return candidate.length;
-          }
+          new_hard_boundary = r"""      const hardBoundary = /[\/／]/u.test(separator)
+                || /[.．]\s+/u.test(separator);
           """
           library = replace_once(
               library,
-              old_protected_end,
-              new_protected_end,
-              'unscored identifier hard-boundary fallback'
+              old_hard_boundary,
+              new_hard_boundary,
+              'unspaced slash hard boundary'
           )
 
-          url_marker = "for (const [urlPathLabel, expected] of [\n"
-          unscored_tests = r"""for (const [unscoredIdentifierThenPhone, expected] of [
-            ['ID: 12345678 / 03-6216-8041', 'ID: 12345678 / [contact omitted]'],
-            ['ID: 12345678. 03-6216-8041', 'ID: 12345678. [contact omitted]'],
-            ['ID: 12345678 / +81 3 6216 5111', 'ID: 12345678 / [contact omitted]'],
-            ['ID: 12345678; 03-6216-8041', 'ID: 12345678; [contact omitted]'],
-            ['ID: 12345678 Phone: 03-6216-8041', 'ID: 12345678 Phone: [contact omitted]']
-          ]) {
-            assert.equal(
-              redactContactData(unscoredIdentifierThenPhone),
-              expected,
-              'an unscored numeric identifier must not protect a later independently complete phone'
-            );
-          }
-          for (const completeGroupedIdentifier of [
-            'ID: +1 212 555 1234',
-            'reference: +1 212 555 1234',
-            'ID: +44 (0)20 7123 4567',
-            'ID: (+81 3 6216 5111)',
-            'ＩＤ：（＋８１ ３ ６２１６ ５１１１）'
-          ]) {
-            assert.equal(
-              redactContactData(completeGroupedIdentifier),
-              completeGroupedIdentifier,
-              'a complete grouped identifier must not be split at an internally phone-shaped suffix'
-            );
-          }
-
+          spaced_slash_case = r"""    ['ID: 12345678 / 03-6216-8041', 'ID: 12345678 / [contact omitted]'],
+          """
+          expanded_slash_cases = r"""    ['ID: 12345678 / 03-6216-8041', 'ID: 12345678 / [contact omitted]'],
+            ['ID: 12345678/03-6216-8041', 'ID: 12345678/[contact omitted]'],
+            ['ＩＤ：１２３４５６７８／０３－６２１６－８０４１', 'ＩＤ：１２３４５６７８／[contact omitted]'],
           """
           tests = replace_once(
               tests,
-              url_marker,
-              f'{unscored_tests}{url_marker}',
-              'unscored identifier boundary regressions'
+              spaced_slash_case,
+              expanded_slash_cases,
+              'unspaced slash regressions'
           )
 
-          wrapped_marker = 'for (const wrappedIdentifier of [\n'
-          long_url_tests = r"""const longIdentifierUrlSegment = 'a'.repeat(140);
-          for (const [longUrlPathLabel, expected] of [
-            [
+          grouped_marker = r"""for (const completeGroupedIdentifier of [
+          """
+          slash_negative = r"""assert.equal(
+            redactContactData('ID: 12345678/87654321'),
+            'ID: 12345678/87654321',
+            'a slash suffix that is not independently a complete phone must remain protected'
+          );
+          for (const completeGroupedIdentifier of [
+          """
+          tests = replace_once(
+              tests,
+              grouped_marker,
+              slash_negative,
+              'unspaced slash negative control'
+          )
+
+          long_http_case = r"""    [
+              `https://example.test/${longIdentifierUrlSegment}/id: 09012345678`,
+              `https://example.test/${longIdentifierUrlSegment}/id: [contact omitted]`
+            ],
+          """
+          expanded_long_http = r"""    [
               `https://example.test/${longIdentifierUrlSegment}/id: 09012345678`,
               `https://example.test/${longIdentifierUrlSegment}/id: [contact omitted]`
             ],
             [
+              `https://example.test/${longIdentifierUrlSegment}/reference: (+81 3 6216 5111)`,
+              `https://example.test/${longIdentifierUrlSegment}/reference: ([contact omitted])`
+            ],
+          """
+          tests = replace_once(
+              tests,
+              long_http_case,
+              expanded_long_http,
+              'long HTTP detached-wrapper regression'
+          )
+
+          scheme_relative_case = r"""    [
+              `//example.test/${longIdentifierUrlSegment}/reference: +81 3 6216 5111`,
+              `//example.test/${longIdentifierUrlSegment}/reference: [contact omitted]`
+            ],
+          """
+          expanded_scheme_relative = r"""    [
               `//example.test/${longIdentifierUrlSegment}/reference: +81 3 6216 5111`,
               `//example.test/${longIdentifierUrlSegment}/reference: [contact omitted]`
             ],
             [
-              `example.test/${longIdentifierUrlSegment}/id: 03-6216-8041`,
-              `example.test/${longIdentifierUrlSegment}/id: [contact omitted]`
+              `//example.test/${longIdentifierUrlSegment}/id: （＋８１ ３ ６２１６ ５１１１）`,
+              `//example.test/${longIdentifierUrlSegment}/id: （[contact omitted]）`
             ],
-            [
-              `192.0.2.1/${longIdentifierUrlSegment}/reference: 090-1234-5678`,
-              `192.0.2.1/${longIdentifierUrlSegment}/reference: [contact omitted]`
-            ]
-          ]) {
-            assert.equal(
-              redactContactData(longUrlPathLabel),
-              expected,
-              'a long URL token must retain URL provenance when rejecting an embedded identifier label'
-            );
-          }
-
           """
           tests = replace_once(
               tests,
-              wrapped_marker,
-              f'{long_url_tests}{wrapped_marker}',
-              'long URL identifier-label regressions'
+              scheme_relative_case,
+              expanded_scheme_relative,
+              'scheme-relative fullwidth detached-wrapper regression'
           )
 
           library_path.write_text(library, encoding='utf-8')
@@ -357,7 +273,7 @@ jobs:
           git diff --cached --check
           test "$(git diff --cached --name-only | LC_ALL=C sort)" = "$expected_product_paths"
           test "$(git diff --cached --numstat | LC_ALL=C sort -k3)" = "$expected_numstat"
-          git commit -m 'fix(crawler): close residual identifier boundaries'
+          git commit -m 'fix(crawler): close final identifier boundaries'
           new_head="$(git rev-parse HEAD)"
           new_tree="$(git rev-parse HEAD^{tree})"
           test "$(git rev-parse HEAD^)" = "$MAIN"
@@ -371,7 +287,7 @@ jobs:
             origin "HEAD:refs/heads/$PRODUCT_BRANCH"
 
           {
-            printf 'receipt_version=current-main-identifier-boundary-repair@6\n'
+            printf 'receipt_version=current-main-identifier-boundary-repair@7\n'
             printf 'carrier_head=%s\n' "$HEAD_SHA"
             printf 'run_id=%s\n' '${{ github.run_id }}'
             printf 'base=%s\n' "$MAIN"
