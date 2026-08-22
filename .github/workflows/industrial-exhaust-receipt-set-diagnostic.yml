@@ -1,0 +1,237 @@
+name: Diagnose industrial-exhaust receipt-store closure
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/industrial-exhaust-receipt-set-diagnostic.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.pull_request.head.ref == 'agent/industrial-exhaust-receipt-set-diagnostic-v1'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out diagnostic tree
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Confirm current referenced-custody audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tools/hydrate-industrial-exhaust.mjs --audit >/dev/null
+
+      - name: Audit the complete retained receipt store
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import crypto from 'node:crypto';
+          import fs from 'node:fs';
+          import path from 'node:path';
+
+          const root = process.cwd();
+          const posix = value => value.split(path.sep).join('/');
+          const sha256 = value => crypto.createHash('sha256').update(value).digest('hex');
+          const digestPattern = /^[a-f0-9]{64}$/u;
+          const expectedSourceClass = 'first_party_corporate_publication';
+          const expectedGraphEffect = 'none';
+
+          function readJsonl(relativePath) {
+            const text = fs.readFileSync(path.join(root, relativePath), 'utf8');
+            return text.split(/\r?\n/u).filter(Boolean).map((line, index) => {
+              try {
+                return JSON.parse(line);
+              } catch (error) {
+                throw new Error(`${relativePath}:${index + 1}: ${error.message}`);
+              }
+            });
+          }
+
+          function walkJson(relativeDir) {
+            const base = path.join(root, relativeDir);
+            if (!fs.existsSync(base)) return [];
+            const result = [];
+            const visit = current => {
+              for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
+                const absolute = path.join(current, entry.name);
+                if (entry.isDirectory()) visit(absolute);
+                else if (entry.isFile() && entry.name.endsWith('.json')) {
+                  result.push(posix(path.relative(root, absolute)));
+                }
+              }
+            };
+            visit(base);
+            return result.sort();
+          }
+
+          function loadObject(relativePath) {
+            const parsed = JSON.parse(fs.readFileSync(path.join(root, relativePath), 'utf8'));
+            if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+              throw new Error('receipt is not a JSON object');
+            }
+            return parsed;
+          }
+
+          function assertGovernance(receipt) {
+            if (receipt.graph_effect !== expectedGraphEffect
+              || receipt.promotion_authority !== false
+              || receipt.canonical_mutation_authorized !== false) {
+              throw new Error('receipt exceeds the non-promotional governance boundary');
+            }
+          }
+
+          function artifactBodyBytes(receipt) {
+            if (typeof receipt.body !== 'string') throw new Error('artifact receipt lacks a string body');
+            if (receipt.body_encoding === 'utf-8') return Buffer.from(receipt.body, 'utf8');
+            if (receipt.body_encoding !== 'base64') {
+              throw new Error(`artifact receipt has unsupported body_encoding ${receipt.body_encoding ?? 'missing'}`);
+            }
+            const compact = receipt.body.replace(/\s+/gu, '');
+            const bytes = Buffer.from(compact, 'base64');
+            if (bytes.toString('base64').replace(/=+$/u, '') !== compact.replace(/=+$/u, '')) {
+              throw new Error('artifact receipt contains invalid base64 body data');
+            }
+            return bytes;
+          }
+
+          const discoveryRecords = readJsonl('data/exhaust/discovery-observations.jsonl');
+          const artifactRecords = readJsonl('data/exhaust/artifacts.jsonl');
+          const referencedIndexes = new Set(discoveryRecords.map(record => record.index_receipt_path));
+          const referencedArtifacts = new Set(artifactRecords.map(record => record.body_receipt_path));
+          const indexPaths = walkJson('receipts/exhaust/indexes');
+          const artifactPaths = walkJson('receipts/exhaust/artifacts');
+          const indexPathSet = new Set(indexPaths);
+          const artifactPathSet = new Set(artifactPaths);
+          const failures = [];
+          const recordFailure = (kind, relativePath, error) => {
+            if (failures.length < 40) failures.push({ kind, path: relativePath, error: error.message });
+          };
+
+          let byteVerifiedIndexes = 0;
+          let legacyIndexes = 0;
+          let legacyBodyMatchesIndex = 0;
+          let legacyBodyDiffersFromIndex = 0;
+          let invalidIndexes = 0;
+          for (const relativePath of indexPaths) {
+            try {
+              const match = relativePath.match(/^receipts\/exhaust\/indexes\/([^/]+)\/([a-f0-9]{64})\.json$/u);
+              if (!match) throw new Error('index receipt path is not canonical');
+              const [, sourceId, pathDigest] = match;
+              const receipt = loadObject(relativePath);
+              if (receipt.schema_version !== 1
+                || receipt.receipt_type !== 'first_party_publication_index_snapshot') {
+                throw new Error('index receipt contract is invalid');
+              }
+              if (receipt.source_id !== sourceId || receipt.index_sha256 !== pathDigest) {
+                throw new Error('index receipt identity does not match its path');
+              }
+              if (receipt.source_class !== expectedSourceClass) {
+                throw new Error('index receipt source_class is invalid');
+              }
+              if (typeof receipt.index_url !== 'string' || !receipt.index_url) {
+                throw new Error('index receipt lacks index_url');
+              }
+              if (receipt.body_encoding !== 'utf-8' || typeof receipt.body !== 'string') {
+                throw new Error('index receipt does not retain a UTF-8 body');
+              }
+              assertGovernance(receipt);
+              const computedBodyDigest = sha256(receipt.body);
+              if (receipt.body_sha256 === undefined) {
+                legacyIndexes += 1;
+                if (computedBodyDigest === receipt.index_sha256) legacyBodyMatchesIndex += 1;
+                else legacyBodyDiffersFromIndex += 1;
+              } else {
+                if (!digestPattern.test(receipt.body_sha256)) {
+                  throw new Error('index receipt body_sha256 is not a lowercase SHA-256 digest');
+                }
+                if (computedBodyDigest !== receipt.body_sha256) {
+                  throw new Error('index receipt body bytes do not match body_sha256');
+                }
+                byteVerifiedIndexes += 1;
+              }
+            } catch (error) {
+              invalidIndexes += 1;
+              recordFailure('index', relativePath, error);
+            }
+          }
+
+          let invalidArtifacts = 0;
+          for (const relativePath of artifactPaths) {
+            try {
+              const match = relativePath.match(/^receipts\/exhaust\/artifacts\/([^/]+)\/([a-f0-9]{64})\/([a-f0-9]{64})\.json$/u);
+              if (!match) throw new Error('artifact receipt path is not canonical');
+              const [, pathHost, pathRecordKey, pathBodyDigest] = match;
+              const receipt = loadObject(relativePath);
+              if (receipt.schema_version !== 1
+                || receipt.receipt_type !== 'first_party_publication_artifact_snapshot') {
+                throw new Error('artifact receipt contract is invalid');
+              }
+              if (receipt.source_class !== expectedSourceClass) {
+                throw new Error('artifact receipt source_class is invalid');
+              }
+              if (typeof receipt.canonical_url !== 'string' || !receipt.canonical_url) {
+                throw new Error('artifact receipt lacks canonical_url');
+              }
+              const canonicalUrl = new URL(receipt.canonical_url);
+              const safeHost = canonicalUrl.hostname.toLowerCase().replace(/[^a-z0-9.-]+/gu, '_');
+              if (safeHost !== pathHost || sha256(canonicalUrl.href) !== pathRecordKey) {
+                throw new Error('artifact receipt URL identity does not match its path');
+              }
+              if (receipt.body_sha256 !== pathBodyDigest || !digestPattern.test(receipt.body_sha256)) {
+                throw new Error('artifact receipt body identity does not match its path');
+              }
+              if (sha256(artifactBodyBytes(receipt)) !== receipt.body_sha256) {
+                throw new Error('artifact receipt body bytes do not match body_sha256');
+              }
+              assertGovernance(receipt);
+            } catch (error) {
+              invalidArtifacts += 1;
+              recordFailure('artifact', relativePath, error);
+            }
+          }
+
+          const missingIndexReferences = [...referencedIndexes].filter(value => !indexPathSet.has(value)).sort();
+          const missingArtifactReferences = [...referencedArtifacts].filter(value => !artifactPathSet.has(value)).sort();
+          const unreferencedIndexes = indexPaths.filter(value => !referencedIndexes.has(value));
+          const unreferencedArtifacts = artifactPaths.filter(value => !referencedArtifacts.has(value));
+
+          const result = {
+            diagnostic_base: 'c5af4ec7b257ca3a17428a502ff5677868f98778',
+            discovery_record_count: discoveryRecords.length,
+            artifact_record_count: artifactRecords.length,
+            index_receipt_count: indexPaths.length,
+            referenced_index_receipt_count: referencedIndexes.size,
+            unreferenced_index_receipt_count: unreferencedIndexes.length,
+            byte_verified_index_receipt_count: byteVerifiedIndexes,
+            legacy_anchor_bound_index_receipt_count: legacyIndexes,
+            legacy_body_digest_matches_index_count: legacyBodyMatchesIndex,
+            legacy_body_digest_differs_from_index_count: legacyBodyDiffersFromIndex,
+            invalid_index_receipt_count: invalidIndexes,
+            artifact_receipt_count: artifactPaths.length,
+            referenced_artifact_receipt_count: referencedArtifacts.size,
+            unreferenced_artifact_receipt_count: unreferencedArtifacts.length,
+            invalid_artifact_receipt_count: invalidArtifacts,
+            missing_index_reference_count: missingIndexReferences.length,
+            missing_artifact_reference_count: missingArtifactReferences.length,
+            unreferenced_index_samples: unreferencedIndexes.slice(0, 12),
+            unreferenced_artifact_samples: unreferencedArtifacts.slice(0, 12),
+            missing_index_reference_samples: missingIndexReferences.slice(0, 12),
+            missing_artifact_reference_samples: missingArtifactReferences.slice(0, 12),
+            failure_samples: failures
+          };
+          console.log(`RECEIPT_SET_DIAGNOSTIC=${JSON.stringify(result)}`);
+          NODE
