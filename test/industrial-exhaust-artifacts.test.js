@@ -15,7 +15,9 @@ import {
   validateArtifactConfig,
   validateArtifactRevisionLineage,
   validateDiscoveryRevisionLineage,
-  writeArtifactReceipt
+  validateIndustrialExhaustReceiptCustody,
+  writeArtifactReceipt,
+  writeIndexReceipt
 } from '../tools/lib/industrial-exhaust-artifacts.mjs';
 import { contentId, matchWatchTerms, sha256 } from '../tools/lib/industrial-exhaust.mjs';
 
@@ -877,6 +879,175 @@ assert.throws(() => assertAllowedArtifactUrl('https://www.dentsu.com:8443/news-r
 assert.throws(() => assertAllowedArtifactUrl('https://user@www.dentsu.com/news-releases/example', config), /credentials/u);
 assert.throws(() => validateArtifactConfig({ ...config, graph_effect: 'edge' }), /may not authorize/u);
 
+const receiptCustodyRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'industrial-exhaust-receipt-custody-'));
+try {
+  const custodyCapturedAt = '2026-08-19T00:00:00.000Z';
+  const custodyIndexHtml = '<!doctype html><html><head><title>Custody index</title></head><body><a href="/news-releases/custody-example">Custody Example</a></body></html>';
+  const custodySource = config.indexes[0];
+  const custodyParsedIndex = parseHtmlLinkIndex(custodyIndexHtml, custodySource);
+  const custodyIndexReceiptPath = writeIndexReceipt({
+    rootDir: receiptCustodyRoot,
+    source: custodySource,
+    parsedIndex: custodyParsedIndex,
+    html: custodyIndexHtml,
+    capturedAt: custodyCapturedAt,
+    responseHeaders: { content_type: 'text/html', etag: 'index-custody', last_modified: null }
+  });
+  const custodyDiscoveryRecords = mergeDiscoveryRecords({
+    records: [],
+    source: custodySource,
+    parsedIndex: custodyParsedIndex,
+    capturedAt: custodyCapturedAt,
+    indexReceiptPath: custodyIndexReceiptPath
+  }).records;
+  const custodyCanonicalUrl = custodyDiscoveryRecords[0].canonical_url;
+  const custodyBody = Buffer.from('<!doctype html><html><head><title>Custody Example</title></head><body><main>Custody receipt body with enough stable publisher text for semantic extraction and verification.</main></body></html>');
+  const custodyBodySha256 = crypto.createHash('sha256').update(custodyBody).digest('hex');
+  const custodyArtifactReceiptPath = writeArtifactReceipt({
+    rootDir: receiptCustodyRoot,
+    canonicalUrl: custodyCanonicalUrl,
+    body: custodyBody,
+    bodySha256: custodyBodySha256,
+    capturedAt: custodyCapturedAt,
+    responseHeaders: {
+      content_type: 'text/html',
+      etag: 'artifact-custody',
+      last_modified: null,
+      final_url: custodyCanonicalUrl,
+      redirect_chain: []
+    }
+  });
+  const custodyProjection = extractHtmlArtifact(custodyBody.toString('utf8'), custodyCanonicalUrl);
+  const custodyArtifacts = mergeArtifactProjection({
+    artifacts: [],
+    candidate: {
+      canonical_url: custodyCanonicalUrl,
+      source_id: custodySource.id,
+      publisher: custodySource.publisher,
+      title: custodyDiscoveryRecords[0].title,
+      seed_matched_terms: [],
+      linked_records: [{ record_type: 'index_discovery', record_id: custodyDiscoveryRecords[0].discovery_id }]
+    },
+    sourceProjection: custodyProjection,
+    capturedAt: custodyCapturedAt,
+    bodyReceiptPath: custodyArtifactReceiptPath,
+    bodySha256: custodyBodySha256,
+    responseHeaders: {
+      content_type: 'text/html',
+      etag: 'artifact-custody',
+      last_modified: null,
+      final_url: custodyCanonicalUrl,
+      redirect_chain: [],
+      watch_config: watchConfig
+    }
+  }).artifacts;
+  assert.deepEqual(
+    validateIndustrialExhaustReceiptCustody({
+      rootDir: receiptCustodyRoot,
+      discoveryRecords: custodyDiscoveryRecords,
+      artifacts: custodyArtifacts
+    }),
+    {
+      discovery_record_count: 1,
+      artifact_record_count: 1,
+      index_receipt_count: 1,
+      byte_verified_index_receipt_count: 1,
+      legacy_anchor_bound_index_receipt_count: 0,
+      artifact_receipt_count: 1,
+      byte_verified_artifact_receipt_count: 1
+    }
+  );
+
+  const custodyIndexReceiptAbsolutePath = path.join(receiptCustodyRoot, custodyIndexReceiptPath);
+  const originalCustodyIndexReceipt = fs.readFileSync(custodyIndexReceiptAbsolutePath, 'utf8');
+  const tamperedCustodyIndexReceipt = JSON.parse(originalCustodyIndexReceipt);
+  tamperedCustodyIndexReceipt.body = `${tamperedCustodyIndexReceipt.body}tampered`;
+  fs.writeFileSync(custodyIndexReceiptAbsolutePath, `${JSON.stringify(tamperedCustodyIndexReceipt, null, 2)}\n`);
+  assert.throws(
+    () => validateIndustrialExhaustReceiptCustody({
+      rootDir: receiptCustodyRoot,
+      discoveryRecords: custodyDiscoveryRecords,
+      artifacts: custodyArtifacts
+    }),
+    /body bytes do not match body_sha256/u
+  );
+  fs.writeFileSync(custodyIndexReceiptAbsolutePath, originalCustodyIndexReceipt);
+
+  const legacyCustodyIndexReceipt = JSON.parse(originalCustodyIndexReceipt);
+  delete legacyCustodyIndexReceipt.body_sha256;
+  fs.writeFileSync(custodyIndexReceiptAbsolutePath, `${JSON.stringify(legacyCustodyIndexReceipt, null, 2)}\n`);
+  assert.deepEqual(
+    validateIndustrialExhaustReceiptCustody({
+      rootDir: receiptCustodyRoot,
+      discoveryRecords: custodyDiscoveryRecords,
+      artifacts: custodyArtifacts
+    }),
+    {
+      discovery_record_count: 1,
+      artifact_record_count: 1,
+      index_receipt_count: 1,
+      byte_verified_index_receipt_count: 0,
+      legacy_anchor_bound_index_receipt_count: 1,
+      artifact_receipt_count: 1,
+      byte_verified_artifact_receipt_count: 1
+    }
+  );
+  fs.writeFileSync(custodyIndexReceiptAbsolutePath, originalCustodyIndexReceipt);
+
+  const forgedBodySha256 = '0'.repeat(64);
+  const forgedReceiptBinding = {
+    ...custodyArtifacts[0],
+    body_sha256: forgedBodySha256,
+    body_receipt_path: custodyArtifacts[0].body_receipt_path.replace(custodyBodySha256, forgedBodySha256)
+  };
+  assert.deepEqual(
+    validateArtifactRevisionLineage([forgedReceiptBinding]),
+    [forgedReceiptBinding],
+    'semantic lineage validation alone does not authenticate the transport receipt'
+  );
+  assert.throws(
+    () => validateIndustrialExhaustReceiptCustody({
+      rootDir: receiptCustodyRoot,
+      discoveryRecords: custodyDiscoveryRecords,
+      artifacts: [forgedReceiptBinding]
+    }),
+    /does not exist/u
+  );
+  assert.throws(
+    () => validateIndustrialExhaustReceiptCustody({
+      rootDir: receiptCustodyRoot,
+      discoveryRecords: [{ ...custodyDiscoveryRecords[0], raw_item_sha256: '0'.repeat(64) }],
+      artifacts: custodyArtifacts
+    }),
+    /does not identify its stored index anchor/u
+  );
+  assert.throws(
+    () => validateIndustrialExhaustReceiptCustody({
+      rootDir: receiptCustodyRoot,
+      discoveryRecords: custodyDiscoveryRecords,
+      artifacts: [{ ...custodyArtifacts[0], body_receipt_path: '../outside.json' }]
+    }),
+    /body_receipt_path does not match/u
+  );
+
+  const custodyArtifactReceiptAbsolutePath = path.join(receiptCustodyRoot, custodyArtifactReceiptPath);
+  const originalCustodyReceipt = fs.readFileSync(custodyArtifactReceiptAbsolutePath, 'utf8');
+  const tamperedCustodyReceipt = JSON.parse(originalCustodyReceipt);
+  tamperedCustodyReceipt.body = `${tamperedCustodyReceipt.body}tampered`;
+  fs.writeFileSync(custodyArtifactReceiptAbsolutePath, `${JSON.stringify(tamperedCustodyReceipt, null, 2)}\n`);
+  assert.throws(
+    () => validateIndustrialExhaustReceiptCustody({
+      rootDir: receiptCustodyRoot,
+      discoveryRecords: custodyDiscoveryRecords,
+      artifacts: custodyArtifacts
+    }),
+    /body bytes do not match body_sha256/u
+  );
+  fs.writeFileSync(custodyArtifactReceiptAbsolutePath, originalCustodyReceipt);
+} finally {
+  fs.rmSync(receiptCustodyRoot, { recursive: true, force: true });
+}
+
 const hydratorRuntimeSource = fs.readFileSync(
   new URL('../tools/hydrate-industrial-exhaust.mjs', import.meta.url),
   'utf8'
@@ -890,6 +1061,11 @@ assert.match(
   hydratorRuntimeSource,
   /last_status: 'error',\s+last_error: error\.message,\s+new_discovery_count: 0/u,
   'an index acquisition error must reset the current-run discovery count'
+);
+assert.match(
+  hydratorRuntimeSource,
+  /validateIndustrialExhaustReceiptCustody\(\{\s+rootDir,\s+discoveryRecords,\s+artifacts\s+\}\)/u,
+  'the runtime must authenticate receipt custody before records influence hydration state'
 );
 
 
@@ -910,6 +1086,25 @@ assert.equal(
   validateArtifactRevisionLineage(canonicalArtifactRecords),
   canonicalArtifactRecords,
   'the canonical artifact corpus must retain its historical projection and occurrence custody'
+);
+const canonicalReceiptCustody = validateIndustrialExhaustReceiptCustody({
+  rootDir: process.cwd(),
+  discoveryRecords: canonicalDiscoveryRecords,
+  artifacts: canonicalArtifactRecords
+});
+assert.equal(canonicalReceiptCustody.discovery_record_count, canonicalDiscoveryRecords.length);
+assert.equal(canonicalReceiptCustody.artifact_record_count, canonicalArtifactRecords.length);
+assert.ok(canonicalReceiptCustody.index_receipt_count > 0);
+assert.equal(
+  canonicalReceiptCustody.byte_verified_index_receipt_count
+    + canonicalReceiptCustody.legacy_anchor_bound_index_receipt_count,
+  canonicalReceiptCustody.index_receipt_count
+);
+assert.ok(canonicalReceiptCustody.legacy_anchor_bound_index_receipt_count > 0);
+assert.ok(canonicalReceiptCustody.artifact_receipt_count > 0);
+assert.equal(
+  canonicalReceiptCustody.byte_verified_artifact_receipt_count,
+  canonicalReceiptCustody.artifact_receipt_count
 );
 
 console.log('industrial-exhaust artifact tests passed');
