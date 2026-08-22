@@ -1,4 +1,4 @@
-name: Temporary current-main identifier-boundary P1 repair v8
+name: Temporary current-main identifier-boundary P1 repair v9
 
 on:
   pull_request:
@@ -10,7 +10,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: current-main-identifier-boundary-repair-v8
+  group: current-main-identifier-boundary-repair-v9
   cancel-in-progress: false
 
 jobs:
@@ -21,13 +21,18 @@ jobs:
     env:
       SOURCE_BASE: b97a0d04f309269441a1e52195d7acc98dcd299d
       PRODUCT_HEAD: 5b8c5153645778b547d39fd13b9a9bd1a9f10158
-      CARRIER_PARENT: dc34f894b700848138d402c4ca563819c34f622f
+      CARRIER_PARENT: 5064f1e48f9bd941a3a40298a7b1ee3021f808fc
       PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
       CARRIER_BRANCH: agent/current-main-identifier-context-v1
       BASE_LIBRARY: 5f68254d3e44de693e83503aed879160f9b7b997
       BASE_TEST: 1659a7cc54666a2ac5a1d6b88eb8c6591d98008e
       SOURCE_LIBRARY: 44cc935fe9ba1b1b4485fbf0676733664b58c8ef
       SOURCE_TEST: ebcf778044a086ad76eaebd5bae1981a0e06cf9c
+      PATCH_WORK: ${{ runner.temp }}/identifier-boundary-patch
+      QUALIFICATION_WORK: ${{ runner.temp }}/identifier-boundary-qualification
+      EXPECTED_PATHS_FILE: ${{ runner.temp }}/identifier-boundary-paths.txt
+      EXPECTED_NUMSTAT_FILE: ${{ runner.temp }}/identifier-boundary-numstat.txt
+      RECEIPT_FILE: ${{ runner.temp }}/identifier-boundary-receipt.txt
     steps:
       - uses: actions/checkout@v4
         with:
@@ -38,26 +43,27 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Repair, qualify, and publish exact two-file product
-        id: publish
+      - name: Verify carrier and branch leases
         shell: bash
         run: |
           set -euo pipefail
-
           HEAD_SHA='${{ github.event.pull_request.head.sha }}'
           test "$(git rev-parse HEAD)" = "$HEAD_SHA"
           test '${{ github.event.pull_request.head.ref }}' = "$CARRIER_BRANCH"
           test "$(git rev-parse HEAD^)" = "$CARRIER_PARENT"
-          expected_carrier_paths="$(printf '%s\n' \
+          printf '%s\n' \
             .github/current-main-identifier-boundary-trigger.txt \
-            .github/workflows/temporary-current-main-identifier-boundary-v1.yml | LC_ALL=C sort)"
-          test "$(git diff --name-only "$CARRIER_PARENT..HEAD" | LC_ALL=C sort)" = "$expected_carrier_paths"
+            .github/workflows/temporary-current-main-identifier-boundary-v1.yml \
+            | LC_ALL=C sort > "$EXPECTED_PATHS_FILE.carrier"
+          test "$(git diff --name-only "$CARRIER_PARENT..HEAD" | LC_ALL=C sort)" \
+            = "$(cat "$EXPECTED_PATHS_FILE.carrier")"
 
           git fetch --no-tags origin \
             "+refs/heads/main:refs/remotes/origin/main" \
             "+refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/$PRODUCT_BRANCH"
           MAIN="$(git rev-parse refs/remotes/origin/main)"
           printf 'leased_main=%s\n' "$MAIN"
+          printf 'MAIN=%s\n' "$MAIN" >> "$GITHUB_ENV"
           test "$(git rev-parse refs/remotes/origin/$PRODUCT_BRANCH)" = "$PRODUCT_HEAD"
           test "$(git rev-parse "$PRODUCT_HEAD^")" = "$SOURCE_BASE"
           test "$(git rev-list --count "$SOURCE_BASE..$PRODUCT_HEAD")" = 1
@@ -69,38 +75,32 @@ jobs:
           test "$(git rev-parse "$PRODUCT_HEAD:tools/lib/industrial-exhaust.mjs")" = "$SOURCE_LIBRARY"
           test "$(git rev-parse "$PRODUCT_HEAD:test/industrial-exhaust.test.js")" = "$SOURCE_TEST"
 
-          expected_product_paths="$(printf '%s\n' \
+          printf '%s\n' \
             test/industrial-exhaust.test.js \
-            tools/lib/industrial-exhaust.mjs | LC_ALL=C sort)"
-          test "$(git diff --name-only "$SOURCE_BASE..$PRODUCT_HEAD" | LC_ALL=C sort)" = "$expected_product_paths"
+            tools/lib/industrial-exhaust.mjs \
+            | LC_ALL=C sort > "$EXPECTED_PATHS_FILE"
+          test "$(git diff --name-only "$SOURCE_BASE..$PRODUCT_HEAD" | LC_ALL=C sort)" \
+            = "$(cat "$EXPECTED_PATHS_FILE")"
 
-          patch_work="$(mktemp -d)"
-          qualification_work="$(mktemp -d)"
-          cleanup() {
-            git worktree remove --force "$patch_work" >/dev/null 2>&1 || true
-            git worktree remove --force "$qualification_work" >/dev/null 2>&1 || true
-            rm -rf "$patch_work" "$qualification_work"
-          }
-          trap cleanup EXIT
+      - name: Materialize exact product worktree
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf "$PATCH_WORK" "$QUALIFICATION_WORK"
+          git worktree prune
+          git worktree add --detach "$PATCH_WORK" "$PRODUCT_HEAD"
 
-          git worktree add --detach "$patch_work" "$PRODUCT_HEAD"
-          (
-            cd "$patch_work"
-            python - <<'PY'
+      - name: Patch detached-wrapper URL provenance
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - "$PATCH_WORK/tools/lib/industrial-exhaust.mjs" <<'PY'
           from pathlib import Path
+          import sys
 
-          def replace_once(text, old, new, label):
-              count = text.count(old)
-              if count != 1:
-                  raise RuntimeError(f'{label}: expected one exact anchor, found {count}')
-              return text.replace(old, new, 1)
-
-          library_path = Path('tools/lib/industrial-exhaust.mjs')
-          test_path = Path('test/industrial-exhaust.test.js')
-          library = library_path.read_text(encoding='utf-8')
-          tests = test_path.read_text(encoding='utf-8')
-
-          old_prefix_context = r"""function redactionPrefixContext(input, offset) {
+          path = Path(sys.argv[1])
+          text = path.read_text(encoding='utf-8')
+          old = r"""function redactionPrefixContext(input, offset) {
             const preceding = input.slice(0, offset);
             const boundedStart = Math.max(0, preceding.length - 64);
             const currentTokenWithTrailingSpace = preceding.match(/\S+\s*$/u)?.[0] ?? '';
@@ -110,7 +110,7 @@ jobs:
             return preceding.slice(Math.min(boundedStart, tokenStart));
           }
           """
-          new_prefix_context = r"""function redactionPrefixContext(input, offset) {
+          new = r"""function redactionPrefixContext(input, offset) {
             const preceding = input.slice(0, offset);
             const boundedStart = Math.max(0, preceding.length - 64);
             const currentTokenWithTrailingSpace = preceding.match(/\S+\s*$/u)?.[0] ?? '';
@@ -136,27 +136,45 @@ jobs:
             return preceding.slice(contextStart);
           }
           """
-          library = replace_once(
-              library,
-              old_prefix_context,
-              new_prefix_context,
-              'detached-wrapper preceding-token retention'
-          )
+          count = text.count(old)
+          if count != 1:
+              raise RuntimeError(f'detached-wrapper anchor count: {count}')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
 
-          old_hard_boundary = r"""    const hardBoundary = /(?:\s[\/]|[\/]\s|[.．]\s+)/u.test(separator);
+      - name: Patch unspaced slash boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - "$PATCH_WORK/tools/lib/industrial-exhaust.mjs" <<'PY'
+          from pathlib import Path
+          import sys
+
+          path = Path(sys.argv[1])
+          text = path.read_text(encoding='utf-8')
+          old = r"""    const hardBoundary = /(?:\s[\/]|[\/]\s|[.．]\s+)/u.test(separator);
           """
-          new_hard_boundary = r"""    const hardBoundary = /[\/／]/u.test(separator)
+          new = r"""    const hardBoundary = /[\/／]/u.test(separator)
                 || /[.．]\s+/u.test(separator);
           """
-          library = replace_once(
-              library,
-              old_hard_boundary,
-              new_hard_boundary,
-              'unspaced slash hard boundary'
-          )
+          count = text.count(old)
+          if count != 1:
+              raise RuntimeError(f'unspaced-slash anchor count: {count}')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
 
-          test_marker = "for (const wrappedIdentifier of [\n"
-          test_insert = r"""const finalBoundaryLongUrlSegment = 'a'.repeat(140);
+      - name: Add final boundary regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - "$PATCH_WORK/test/industrial-exhaust.test.js" <<'PY'
+          from pathlib import Path
+          import sys
+
+          path = Path(sys.argv[1])
+          text = path.read_text(encoding='utf-8')
+          marker = "for (const wrappedIdentifier of [\n"
+          insert = r"""const finalBoundaryLongUrlSegment = 'a'.repeat(140);
           for (const [finalBoundaryInput, expected] of [
             ['ID: 12345678/03-6216-8041', 'ID: 12345678/[contact omitted]'],
             ['ＩＤ：１２３４５６７８／０３－６２１６－８０４１', 'ＩＤ：１２３４５６７８／[contact omitted]'],
@@ -178,51 +196,88 @@ jobs:
           }
 
           """
-          tests = replace_once(
-              tests,
-              test_marker,
-              f'{test_insert}{test_marker}',
-              'final identifier-boundary regressions'
-          )
-
-          library_path.write_text(library, encoding='utf-8')
-          test_path.write_text(tests, encoding='utf-8')
+          count = text.count(marker)
+          if count != 1:
+              raise RuntimeError(f'final-regression marker count: {count}')
+          path.write_text(text.replace(marker, f'{insert}{marker}', 1), encoding='utf-8')
           PY
 
-            test "$(git diff --name-only | LC_ALL=C sort)" = "$expected_product_paths"
-            git diff --check
-            node --check tools/lib/industrial-exhaust.mjs
-            node --check tools/crawl-industrial-exhaust.mjs
-            node --check test/industrial-exhaust.test.js
-            node test/industrial-exhaust.test.js
-            node test/industrial-exhaust-artifacts.test.js
-          )
+      - name: Validate exact two-file materialization
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$PATCH_WORK"
+          test "$(git diff --name-only | LC_ALL=C sort)" = "$(cat "$EXPECTED_PATHS_FILE")"
+          git diff --check
+          NEW_LIBRARY="$(git hash-object tools/lib/industrial-exhaust.mjs)"
+          NEW_TEST="$(git hash-object test/industrial-exhaust.test.js)"
+          test "$NEW_LIBRARY" != "$SOURCE_LIBRARY"
+          test "$NEW_TEST" != "$SOURCE_TEST"
+          printf 'NEW_LIBRARY=%s\n' "$NEW_LIBRARY" >> "$GITHUB_ENV"
+          printf 'NEW_TEST=%s\n' "$NEW_TEST" >> "$GITHUB_ENV"
 
-          new_library="$(git -C "$patch_work" hash-object tools/lib/industrial-exhaust.mjs)"
-          new_test="$(git -C "$patch_work" hash-object test/industrial-exhaust.test.js)"
-          test "$new_library" != "$SOURCE_LIBRARY"
-          test "$new_test" != "$SOURCE_TEST"
+      - name: Run product syntax checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$PATCH_WORK"
+          node --check tools/lib/industrial-exhaust.mjs
+          node --check tools/crawl-industrial-exhaust.mjs
+          node --check test/industrial-exhaust.test.js
 
-          git worktree add --detach "$qualification_work" "$MAIN"
-          cp "$patch_work/tools/lib/industrial-exhaust.mjs" "$qualification_work/tools/lib/industrial-exhaust.mjs"
-          cp "$patch_work/test/industrial-exhaust.test.js" "$qualification_work/test/industrial-exhaust.test.js"
-          expected_numstat="$(git -C "$qualification_work" diff --numstat | LC_ALL=C sort -k3)"
-          test "$(printf '%s\n' "$expected_numstat" | sed '/^$/d' | wc -l)" -eq 2
-          (
-            cd "$qualification_work"
-            test "$(git diff --name-only | LC_ALL=C sort)" = "$expected_product_paths"
-            test "$(git diff --numstat | LC_ALL=C sort -k3)" = "$expected_numstat"
-            git diff --check
-            node --check tools/lib/industrial-exhaust.mjs
-            node --check tools/crawl-industrial-exhaust.mjs
-            node --check test/industrial-exhaust.test.js
-            node test/industrial-exhaust.test.js
-            node test/industrial-exhaust-artifacts.test.js
-            npm run release:check
-            git diff --check
-          )
-          git worktree remove --force "$qualification_work"
+      - name: Run focused product suite
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$PATCH_WORK"
+          node test/industrial-exhaust.test.js
 
+      - name: Run product artifact suite
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$PATCH_WORK"
+          node test/industrial-exhaust-artifacts.test.js
+
+      - name: Prepare leased current-main qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+          git worktree add --detach "$QUALIFICATION_WORK" "$MAIN"
+          cp "$PATCH_WORK/tools/lib/industrial-exhaust.mjs" "$QUALIFICATION_WORK/tools/lib/industrial-exhaust.mjs"
+          cp "$PATCH_WORK/test/industrial-exhaust.test.js" "$QUALIFICATION_WORK/test/industrial-exhaust.test.js"
+          cd "$QUALIFICATION_WORK"
+          test "$(git diff --name-only | LC_ALL=C sort)" = "$(cat "$EXPECTED_PATHS_FILE")"
+          git diff --numstat | LC_ALL=C sort -k3 > "$EXPECTED_NUMSTAT_FILE"
+          test "$(sed '/^$/d' "$EXPECTED_NUMSTAT_FILE" | wc -l)" -eq 2
+          git diff --check
+
+      - name: Run current-main focused qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$QUALIFICATION_WORK"
+          node --check tools/lib/industrial-exhaust.mjs
+          node --check tools/crawl-industrial-exhaust.mjs
+          node --check test/industrial-exhaust.test.js
+          node test/industrial-exhaust.test.js
+          node test/industrial-exhaust-artifacts.test.js
+
+      - name: Run current-main release gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$QUALIFICATION_WORK"
+          npm run release:check
+          git diff --check
+          test "$(git diff --name-only | LC_ALL=C sort)" = "$(cat "$EXPECTED_PATHS_FILE")"
+          test "$(git diff --numstat | LC_ALL=C sort -k3)" = "$(cat "$EXPECTED_NUMSTAT_FILE")"
+
+      - name: Revalidate leases and publish exact product
+        id: publish
+        shell: bash
+        run: |
+          set -euo pipefail
           git fetch --no-tags origin \
             "+refs/heads/main:refs/remotes/origin/main" \
             "+refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/$PRODUCT_BRANCH"
@@ -232,45 +287,53 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git checkout --detach --force "$MAIN"
-          cp "$patch_work/tools/lib/industrial-exhaust.mjs" tools/lib/industrial-exhaust.mjs
-          cp "$patch_work/test/industrial-exhaust.test.js" test/industrial-exhaust.test.js
+          cp "$PATCH_WORK/tools/lib/industrial-exhaust.mjs" tools/lib/industrial-exhaust.mjs
+          cp "$PATCH_WORK/test/industrial-exhaust.test.js" test/industrial-exhaust.test.js
           git add -- tools/lib/industrial-exhaust.mjs test/industrial-exhaust.test.js
           git diff --cached --check
-          test "$(git diff --cached --name-only | LC_ALL=C sort)" = "$expected_product_paths"
-          test "$(git diff --cached --numstat | LC_ALL=C sort -k3)" = "$expected_numstat"
+          test "$(git diff --cached --name-only | LC_ALL=C sort)" = "$(cat "$EXPECTED_PATHS_FILE")"
+          test "$(git diff --cached --numstat | LC_ALL=C sort -k3)" = "$(cat "$EXPECTED_NUMSTAT_FILE")"
           git commit -m 'fix(crawler): close final identifier boundaries'
-          new_head="$(git rev-parse HEAD)"
-          new_tree="$(git rev-parse HEAD^{tree})"
+          NEW_HEAD="$(git rev-parse HEAD)"
+          NEW_TREE="$(git rev-parse HEAD^{tree})"
           test "$(git rev-parse HEAD^)" = "$MAIN"
-          test "$(git rev-list --count "$MAIN..$new_head")" = 1
-          test "$(git diff --name-only "$MAIN..$new_head" | LC_ALL=C sort)" = "$expected_product_paths"
-          test "$(git diff --numstat "$MAIN..$new_head" | LC_ALL=C sort -k3)" = "$expected_numstat"
-          test "$(git rev-parse "$new_head:tools/lib/industrial-exhaust.mjs")" = "$new_library"
-          test "$(git rev-parse "$new_head:test/industrial-exhaust.test.js")" = "$new_test"
+          test "$(git rev-list --count "$MAIN..$NEW_HEAD")" = 1
+          test "$(git diff --name-only "$MAIN..$NEW_HEAD" | LC_ALL=C sort)" = "$(cat "$EXPECTED_PATHS_FILE")"
+          test "$(git diff --numstat "$MAIN..$NEW_HEAD" | LC_ALL=C sort -k3)" = "$(cat "$EXPECTED_NUMSTAT_FILE")"
+          test "$(git rev-parse "$NEW_HEAD:tools/lib/industrial-exhaust.mjs")" = "$NEW_LIBRARY"
+          test "$(git rev-parse "$NEW_HEAD:test/industrial-exhaust.test.js")" = "$NEW_TEST"
 
           git push --force-with-lease="refs/heads/$PRODUCT_BRANCH:$PRODUCT_HEAD" \
             origin "HEAD:refs/heads/$PRODUCT_BRANCH"
 
           {
-            printf 'receipt_version=current-main-identifier-boundary-repair@8\n'
-            printf 'carrier_head=%s\n' "$HEAD_SHA"
+            printf 'receipt_version=current-main-identifier-boundary-repair@9\n'
+            printf 'carrier_head=%s\n' '${{ github.event.pull_request.head.sha }}'
             printf 'run_id=%s\n' '${{ github.run_id }}'
             printf 'base=%s\n' "$MAIN"
             printf 'superseded_product_head=%s\n' "$PRODUCT_HEAD"
-            printf 'published_product_head=%s\n' "$new_head"
-            printf 'published_tree=%s\n' "$new_tree"
-            printf 'library_blob=%s\n' "$new_library"
-            printf 'test_blob=%s\n' "$new_test"
-            printf 'changed_paths:\n%s\n' "$expected_product_paths"
-            printf 'numstat:\n%s\n' "$expected_numstat"
+            printf 'published_product_head=%s\n' "$NEW_HEAD"
+            printf 'published_tree=%s\n' "$NEW_TREE"
+            printf 'library_blob=%s\n' "$NEW_LIBRARY"
+            printf 'test_blob=%s\n' "$NEW_TEST"
+            printf 'changed_paths:\n%s\n' "$(cat "$EXPECTED_PATHS_FILE")"
+            printf 'numstat:\n%s\n' "$(cat "$EXPECTED_NUMSTAT_FILE")"
             printf 'qualification=node-check+industrial-exhaust+artifacts+release-check\n'
-          } > /tmp/current-main-identifier-boundary-repair-receipt.txt
-          printf 'product_head=%s\n' "$new_head" >> "$GITHUB_OUTPUT"
-          cat /tmp/current-main-identifier-boundary-repair-receipt.txt
+          } > "$RECEIPT_FILE"
+          printf 'product_head=%s\n' "$NEW_HEAD" >> "$GITHUB_OUTPUT"
+          cat "$RECEIPT_FILE"
 
       - uses: actions/upload-artifact@v4
         with:
           name: current-main-identifier-boundary-repair-${{ steps.publish.outputs.product_head }}
-          path: /tmp/current-main-identifier-boundary-repair-receipt.txt
+          path: ${{ env.RECEIPT_FILE }}
           if-no-files-found: error
           retention-days: 30
+
+      - name: Clean worktrees
+        if: always()
+        shell: bash
+        run: |
+          git worktree remove --force "$PATCH_WORK" >/dev/null 2>&1 || true
+          git worktree remove --force "$QUALIFICATION_WORK" >/dev/null 2>&1 || true
+          rm -rf "$PATCH_WORK" "$QUALIFICATION_WORK"
