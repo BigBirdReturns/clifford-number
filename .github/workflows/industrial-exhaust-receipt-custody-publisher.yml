@@ -1,0 +1,113 @@
+name: Publish industrial-exhaust receipt custody product
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/industrial-exhaust-receipt-custody-publisher.yml
+      - .github/materializers/industrial-exhaust-receipt-custody.py
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: industrial-exhaust-receipt-custody-product
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.pull_request.head.ref == 'agent/industrial-exhaust-receipt-custody-controller-v1'
+    runs-on: ubuntu-latest
+    env:
+      EXPECTED_BASE: b8b058f6058a160ae24d61d961fcce3139fbd196
+      PRODUCT_BRANCH: agent/industrial-exhaust-receipt-custody-v1
+    steps:
+      - name: Check out controller branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Materialize, qualify, and publish the product branch
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git fetch --no-tags origin main
+          actual_base="$(git rev-parse origin/main)"
+          if [[ "$actual_base" != "$EXPECTED_BASE" ]]; then
+            echo "main moved: expected $EXPECTED_BASE, observed $actual_base" >&2
+            exit 1
+          fi
+
+          if git ls-remote --exit-code --heads origin "$PRODUCT_BRANCH" >/dev/null 2>&1; then
+            echo "product branch already exists: $PRODUCT_BRANCH" >&2
+            exit 1
+          fi
+
+          worktree="$(mktemp -d)"
+          cleanup() {
+            git worktree remove --force "$worktree" >/dev/null 2>&1 || true
+            rm -rf "$worktree"
+          }
+          trap cleanup EXIT
+
+          git worktree add --detach "$worktree" "$EXPECTED_BASE"
+          python "$GITHUB_WORKSPACE/.github/materializers/industrial-exhaust-receipt-custody.py" "$worktree"
+
+          cd "$worktree"
+          git diff --check
+          mapfile -t changed_paths < <(git diff --name-only | sort)
+          expected_paths=(
+            "test/industrial-exhaust-artifacts.test.js"
+            "tools/hydrate-industrial-exhaust.mjs"
+            "tools/lib/industrial-exhaust-artifacts.mjs"
+          )
+          if [[ "${changed_paths[*]}" != "${expected_paths[*]}" ]]; then
+            printf 'unexpected path denominator:\n' >&2
+            printf '  %s\n' "${changed_paths[@]}" >&2
+            exit 1
+          fi
+
+          node --check tools/lib/industrial-exhaust-artifacts.mjs
+          node --check tools/hydrate-industrial-exhaust.mjs
+          node --check test/industrial-exhaust-artifacts.test.js
+          node test/industrial-exhaust-artifacts.test.js
+          node test/industrial-exhaust.test.js
+          node tools/hydrate-industrial-exhaust.mjs --audit >/dev/null
+
+          mapfile -t post_test_paths < <(git status --porcelain | sed -E 's/^...//' | sort)
+          if [[ "${post_test_paths[*]}" != "${expected_paths[*]}" ]]; then
+            printf 'tests changed the product denominator:\n' >&2
+            printf '  %s\n' "${post_test_paths[@]}" >&2
+            exit 1
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$PRODUCT_BRANCH"
+          git add -- "${expected_paths[@]}"
+          git diff --cached --check
+          git commit -m "fix(industrial-exhaust): authenticate receipt custody"
+
+          if [[ "$(git rev-parse HEAD^)" != "$EXPECTED_BASE" ]]; then
+            echo "product commit is not directly parented to the leased base" >&2
+            exit 1
+          fi
+          mapfile -t committed_paths < <(git diff-tree --no-commit-id --name-only -r HEAD | sort)
+          if [[ "${committed_paths[*]}" != "${expected_paths[*]}" ]]; then
+            echo "committed path denominator drifted" >&2
+            exit 1
+          fi
+
+          git push origin "HEAD:refs/heads/$PRODUCT_BRANCH"
+          echo "published_product_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
