@@ -1,0 +1,81 @@
+name: Diagnose industrial-exhaust projection contracts
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/industrial-exhaust-projection-contract-diagnostic.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.pull_request.head.ref == 'agent/industrial-exhaust-occurrence-custody-diagnostic-v1'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Classify projection and occurrence contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import crypto from 'node:crypto';
+          import fs from 'node:fs';
+
+          const stableJson = value => {
+            if (Array.isArray(value)) return `[${value.map(stableJson).join(',')}]`;
+            if (value && typeof value === 'object') {
+              return `{${Object.keys(value).sort().map(key => `${JSON.stringify(key)}:${stableJson(value[key])}`).join(',')}}`;
+            }
+            return JSON.stringify(value);
+          };
+          const sha256 = value => crypto.createHash('sha256')
+            .update(typeof value === 'string' ? value : stableJson(value)).digest('hex');
+          const contentId = (prefix, ...parts) => `${prefix}_${sha256(parts.map(part => String(part ?? '')).join('|')).slice(0, 24)}`;
+          const records = fs.readFileSync('data/exhaust/artifacts.jsonl', 'utf8').trim().split(/\r?\n/u).map(JSON.parse);
+          const counts = {
+            total: records.length,
+            roots: 0,
+            revised: 0,
+            legacy_projection_digest: 0,
+            current_projection_digest: 0,
+            legacy_occurrence_id: 0,
+            predecessor_bound_occurrence_id: 0
+          };
+
+          for (const record of records) {
+            const body = {
+              title: record.title ?? '',
+              description: record.description ?? '',
+              normalized_text: record.normalized_text ?? '',
+              normalized_text_sha256: record.normalized_text_sha256 ?? null,
+              published_at: record.published_at ?? null
+            };
+            const legacyDigest = sha256({ ...body, body_sha256: record.body_sha256 ?? null });
+            const mediaType = String(record.content_type ?? '').toLowerCase().split(';', 1)[0].trim();
+            const mode = mediaType === 'application/pdf' ? 'opaque_body' : 'semantic_text';
+            const currentDigest = sha256(mode === 'opaque_body'
+              ? { projection_mode: mode, ...body, body_sha256: record.body_sha256 ?? null }
+              : { projection_mode: mode, ...body });
+            const legacyId = contentId('xartifact', record.artifact_record_key, record.projection_sha256);
+            const boundId = record.revision_of
+              ? contentId('xartifact', record.artifact_record_key, record.revision_of, record.projection_sha256)
+              : legacyId;
+
+            counts[record.revision_number === 1 ? 'roots' : 'revised'] += 1;
+            if (record.projection_sha256 === legacyDigest) counts.legacy_projection_digest += 1;
+            if (record.projection_sha256 === currentDigest) counts.current_projection_digest += 1;
+            if (record.artifact_id === legacyId) counts.legacy_occurrence_id += 1;
+            if (record.artifact_id === boundId) counts.predecessor_bound_occurrence_id += 1;
+          }
+
+          console.log(JSON.stringify(counts, null, 2));
+          if (counts.legacy_projection_digest !== counts.total) process.exitCode = 1;
+          if (counts.legacy_occurrence_id !== counts.total) process.exitCode = 1;
+          NODE
