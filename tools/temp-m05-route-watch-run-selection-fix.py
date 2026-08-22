@@ -51,18 +51,18 @@ def main() -> None:
             fi
             candidate="${candidates[0]}"
             compatibility="$(node --input-type=module - "$candidate" <<'NODE'
-            import fs from 'node:fs';
-            import {canonicalJson,semanticSha256,sha256} from './tools/lib/m05-answerable-power-sprint-03-leg-07-five-domain-route-watch.mjs';
-            const receipt=JSON.parse(fs.readFileSync(process.argv[2],'utf8'));
-            const contract=JSON.parse(fs.readFileSync('data/project/m05-answerable-power-sprint-03-leg-07-five-domain-route-watch-contract.json','utf8'));
-            if(receipt?.schema_version!=='m05-answerable-power-s03-l7-five-domain-route-watch-receipt@1')throw new Error('prior receipt schema is malformed');
-            if(receipt?.object_class!=='bounded_five_domain_official_route_watch_receipt')throw new Error('prior receipt object class is malformed');
-            if(!/^[0-9a-f]{64}$/u.test(receipt?.contract_semantic_sha256||''))throw new Error('prior contract digest is malformed');
-            const {proof_sha256:proof,...core}=receipt;
-            if(!/^[0-9a-f]{64}$/u.test(proof||''))throw new Error('prior receipt proof is malformed');
-            if(proof!==sha256(Buffer.from(canonicalJson(core),'utf8')))throw new Error('prior receipt proof does not recompute');
-            process.stdout.write(receipt.contract_semantic_sha256===semanticSha256(contract)?'compatible':'incompatible');
-            NODE
+          import fs from 'node:fs';
+          import {canonicalJson,semanticSha256,sha256} from './tools/lib/m05-answerable-power-sprint-03-leg-07-five-domain-route-watch.mjs';
+          const receipt=JSON.parse(fs.readFileSync(process.argv[2],'utf8'));
+          const contract=JSON.parse(fs.readFileSync('data/project/m05-answerable-power-sprint-03-leg-07-five-domain-route-watch-contract.json','utf8'));
+          if(receipt?.schema_version!=='m05-answerable-power-s03-l7-five-domain-route-watch-receipt@1')throw new Error('prior receipt schema is malformed');
+          if(receipt?.object_class!=='bounded_five_domain_official_route_watch_receipt')throw new Error('prior receipt object class is malformed');
+          if(!/^[0-9a-f]{64}$/u.test(receipt?.contract_semantic_sha256||''))throw new Error('prior contract digest is malformed');
+          const {proof_sha256:proof,...core}=receipt;
+          if(!/^[0-9a-f]{64}$/u.test(proof||''))throw new Error('prior receipt proof is malformed');
+          if(proof!==sha256(Buffer.from(canonicalJson(core),'utf8')))throw new Error('prior receipt proof does not recompute');
+          process.stdout.write(receipt.contract_semantic_sha256===semanticSha256(contract)?'compatible':'incompatible');
+          NODE
             )"
             if [[ "$compatibility" == 'incompatible' ]]; then
               echo "::notice::Skipping prior run ${run_id} because its authenticated receipt targets a different contract"
@@ -95,7 +95,7 @@ def main() -> None:
     test = replace_once(
         test,
         "assert(workflow.includes('status=success'));\n",
-        "assert(workflow.includes('status=success'));\nassert(!workflow.includes('branch=main&status=success'));\nassert(workflow.includes('select(.head_branch==\"main\")'));\nassert(workflow.includes('unzip -tq'));\nassert(workflow.includes('exactly one is required'));\nassert(workflow.includes('prior receipt proof does not recompute'));\nassert(workflow.includes(\"compatibility == 'incompatible'\"));\n",
+        "assert(workflow.includes('status=success'));\nassert(!workflow.includes('branch=main&status=success'));\nassert(workflow.includes('select(.head_branch==\"main\")'));\nassert(workflow.includes('unzip -tq'));\nassert(workflow.includes('exactly one is required'));\nassert(workflow.includes('prior receipt proof does not recompute'));\nassert(workflow.includes('authenticated receipt targets a different contract'));\n",
         "workflow run-selection assertions",
     )
     test_path.write_text(test)
