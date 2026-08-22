@@ -1,4 +1,4 @@
-name: Temporary current-main identifier-boundary reparent v4
+name: Temporary current-main identifier-boundary reparent v5
 
 on:
   pull_request:
@@ -10,7 +10,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: current-main-identifier-boundary-reparent-v4
+  group: current-main-identifier-boundary-reparent-v5
   cancel-in-progress: false
 
 jobs:
@@ -19,135 +19,123 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      EXPECTED_MAIN: 21b7be4cd4045529be198befaddd3a1d941143a1
-      EXPECTED_PRODUCT_PARENT: cdc9d3670fb226e92ff90952c3f8a4392c532a26
-      EXPECTED_PRODUCT_HEAD: 83a8ce7234a203f70be5e2e1cbb84fe665dd80b6
-      EXPECTED_CARRIER_PARENT: fdab932f05b0df42568d36684de35f7317afcb59
+      MAIN: 21b7be4cd4045529be198befaddd3a1d941143a1
+      SOURCE_PARENT: cdc9d3670fb226e92ff90952c3f8a4392c532a26
+      SOURCE_HEAD: 83a8ce7234a203f70be5e2e1cbb84fe665dd80b6
+      CARRIER_PARENT: db24aa5bd392a359383d7b7d3434445217b87de4
       PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
       CARRIER_BRANCH: agent/current-main-identifier-context-v1
-      EXPECTED_MAIN_LIBRARY_BLOB: 5f68254d3e44de693e83503aed879160f9b7b997
-      EXPECTED_MAIN_TEST_BLOB: 1659a7cc54666a2ac5a1d6b88eb8c6591d98008e
-      EXPECTED_PRODUCT_LIBRARY_BLOB: e22bbb2899233ec1bf046cef79da20cb69797937
-      EXPECTED_PRODUCT_TEST_BLOB: a3384f944235d9170b1cbf09779ab6898a21bccd
-      PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-      PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
-      PR_NUMBER: ${{ github.event.pull_request.number }}
-      RUN_ID: ${{ github.run_id }}
-      RUN_ATTEMPT: ${{ github.run_attempt }}
+      BASE_LIBRARY: 5f68254d3e44de693e83503aed879160f9b7b997
+      BASE_TEST: 1659a7cc54666a2ac5a1d6b88eb8c6591d98008e
+      PRODUCT_LIBRARY: e22bbb2899233ec1bf046cef79da20cb69797937
+      PRODUCT_TEST: a3384f944235d9170b1cbf09779ab6898a21bccd
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
-
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-
-      - name: Validate exact carrier, main, and product leases
-        shell: bash
-        run: |
-          set -euo pipefail
-          
-          test "$(git rev-parse HEAD)" = "$PR_HEAD_SHA"
-          test "$PR_HEAD_REF" = "$CARRIER_BRANCH"
-          test "$PR_NUMBER" = "2227"
-          test "$(git rev-parse HEAD^)" = "$EXPECTED_CARRIER_PARENT"
-          
-          carrier_paths="$(git diff --name-only HEAD^..HEAD | LC_ALL=C sort)"
-          expected_carrier_paths="$(printf '%s\n' \
-            .github/current-main-identifier-boundary-trigger.txt \
-            .github/workflows/temporary-current-main-identifier-boundary-v1.yml | LC_ALL=C sort)"
-          test "$carrier_paths" = "$expected_carrier_paths"
-          
-          git fetch --no-tags origin \
-            "+refs/heads/main:refs/remotes/origin/main" \
-            "+refs/heads/${PRODUCT_BRANCH}:refs/remotes/origin/${PRODUCT_BRANCH}"
-          
-          test "$(git rev-parse refs/remotes/origin/main)" = "$EXPECTED_MAIN"
-          test "$(git rev-parse refs/remotes/origin/${PRODUCT_BRANCH})" = "$EXPECTED_PRODUCT_HEAD"
-          test "$(git rev-parse "${EXPECTED_PRODUCT_HEAD}^")" = "$EXPECTED_PRODUCT_PARENT"
-          test "$(git rev-list --count "${EXPECTED_PRODUCT_PARENT}..${EXPECTED_PRODUCT_HEAD}")" = "1"
-          test "$(git merge-base "$EXPECTED_PRODUCT_PARENT" "$EXPECTED_MAIN")" = "$EXPECTED_PRODUCT_PARENT"
-          test "$(git merge-base "$EXPECTED_MAIN" "$EXPECTED_PRODUCT_HEAD")" = "$EXPECTED_PRODUCT_PARENT"
-          
-          expected_product_paths="$(printf '%s\n' \
-            test/industrial-exhaust.test.js \
-            tools/lib/industrial-exhaust.mjs | LC_ALL=C sort)"
-          product_paths="$(git diff --name-only "${EXPECTED_PRODUCT_PARENT}..${EXPECTED_PRODUCT_HEAD}" | LC_ALL=C sort)"
-          test "$product_paths" = "$expected_product_paths"
-          
-          expected_product_numstat="$(printf '103\t0\ttest/industrial-exhaust.test.js\n78\t9\ttools/lib/industrial-exhaust.mjs\n' | LC_ALL=C sort -k3)"
-          product_numstat="$(git diff --numstat "${EXPECTED_PRODUCT_PARENT}..${EXPECTED_PRODUCT_HEAD}" | LC_ALL=C sort -k3)"
-          test "$product_numstat" = "$expected_product_numstat"
-          
-          test "$(git rev-parse "${EXPECTED_MAIN}:tools/lib/industrial-exhaust.mjs")" = "$EXPECTED_MAIN_LIBRARY_BLOB"
-          test "$(git rev-parse "${EXPECTED_MAIN}:test/industrial-exhaust.test.js")" = "$EXPECTED_MAIN_TEST_BLOB"
-          test "$(git rev-parse "${EXPECTED_PRODUCT_PARENT}:tools/lib/industrial-exhaust.mjs")" = "$EXPECTED_MAIN_LIBRARY_BLOB"
-          test "$(git rev-parse "${EXPECTED_PRODUCT_PARENT}:test/industrial-exhaust.test.js")" = "$EXPECTED_MAIN_TEST_BLOB"
-          test "$(git rev-parse "${EXPECTED_PRODUCT_HEAD}:tools/lib/industrial-exhaust.mjs")" = "$EXPECTED_PRODUCT_LIBRARY_BLOB"
-          test "$(git rev-parse "${EXPECTED_PRODUCT_HEAD}:test/industrial-exhaust.test.js")" = "$EXPECTED_PRODUCT_TEST_BLOB"
-          
-          printf 'carrier_head=%s\n' "$PR_HEAD_SHA"
-          printf 'current_main=%s\n' "$EXPECTED_MAIN"
-          printf 'superseded_product_head=%s\n' "$EXPECTED_PRODUCT_HEAD"
-          printf 'product_paths:\n%s\n' "$product_paths"
-          printf 'product_numstat:\n%s\n' "$product_numstat"
-
-      - name: Reparent, qualify, and publish one exact two-file product commit
+      - name: Qualify and publish exact two-file product
         id: publish
         shell: bash
         run: |
           set -euo pipefail
-          
-          expected_product_paths="$(printf '%s\n' \
-            test/industrial-exhaust.test.js \
-            tools/lib/industrial-exhaust.mjs | LC_ALL=C sort)"
-          expected_product_numstat="$(printf '103\t0\ttest/industrial-exhaust.test.js\n78\t9\ttools/lib/industrial-exhaust.mjs\n' | LC_ALL=C sort -k3)"
-          
-          artifact_root="$(mktemp -d)"
-          qualification_root="$(mktemp -d)"
-          qualification_dir="$qualification_root/repository"
-          cleanup() {
-            git worktree remove --force "$qualification_dir" >/dev/null 2>&1 || true
-            rm -rf "$artifact_root" "$qualification_root"
-          }
+          HEAD_SHA='${{ github.event.pull_request.head.sha }}'
+          test "$(git rev-parse HEAD)" = "$HEAD_SHA"
+          test '${{ github.event.pull_request.head.ref }}' = "$CARRIER_BRANCH"
+          test "$(git rev-parse HEAD^)" = "$CARRIER_PARENT"
+          expected_carrier="$(printf '%s\n' .github/current-main-identifier-boundary-trigger.txt .github/workflows/temporary-current-main-identifier-boundary-v1.yml | sort)"
+          test "$(git diff --name-only HEAD^..HEAD | sort)" = "$expected_carrier"
+
+          git fetch --no-tags origin \
+            "+refs/heads/main:refs/remotes/origin/main" \
+            "+refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/$PRODUCT_BRANCH"
+          test "$(git rev-parse refs/remotes/origin/main)" = "$MAIN"
+          test "$(git rev-parse refs/remotes/origin/$PRODUCT_BRANCH)" = "$SOURCE_HEAD"
+          test "$(git rev-parse "$SOURCE_HEAD^")" = "$SOURCE_PARENT"
+          test "$(git rev-list --count "$SOURCE_PARENT..$SOURCE_HEAD")" = 1
+          test "$(git merge-base "$SOURCE_PARENT" "$MAIN")" = "$SOURCE_PARENT"
+
+          expected_paths="$(printf '%s\n' test/industrial-exhaust.test.js tools/lib/industrial-exhaust.mjs | sort)"
+          expected_numstat="$(printf '103\t0\ttest/industrial-exhaust.test.js\n78\t9\ttools/lib/industrial-exhaust.mjs\n' | sort -k3)"
+          test "$(git diff --name-only "$SOURCE_PARENT..$SOURCE_HEAD" | sort)" = "$expected_paths"
+          test "$(git diff --numstat "$SOURCE_PARENT..$SOURCE_HEAD" | sort -k3)" = "$expected_numstat"
+          test "$(git rev-parse "$MAIN:tools/lib/industrial-exhaust.mjs")" = "$BASE_LIBRARY"
+          test "$(git rev-parse "$MAIN:test/industrial-exhaust.test.js")" = "$BASE_TEST"
+          test "$(git rev-parse "$SOURCE_HEAD:tools/lib/industrial-exhaust.mjs")" = "$PRODUCT_LIBRARY"
+          test "$(git rev-parse "$SOURCE_HEAD:test/industrial-exhaust.test.js")" = "$PRODUCT_TEST"
+
+          payload="$(mktemp -d)"
+          work="$(mktemp -d)"
+          cleanup() { git worktree remove --force "$work" >/dev/null 2>&1 || true; rm -rf "$payload" "$work"; }
           trap cleanup EXIT
-          
-          mkdir -p "$artifact_root/tools/lib" "$artifact_root/test"
-          git show "${EXPECTED_PRODUCT_HEAD}:tools/lib/industrial-exhaust.mjs" \
-            > "$artifact_root/tools/lib/industrial-exhaust.mjs"
-          git show "${EXPECTED_PRODUCT_HEAD}:test/industrial-exhaust.test.js" \
-            > "$artifact_root/test/industrial-exhaust.test.js"
-          
-          test "$(git hash-object "$artifact_root/tools/lib/industrial-exhaust.mjs")" = "$EXPECTED_PRODUCT_LIBRARY_BLOB"
-          test "$(git hash-object "$artifact_root/test/industrial-exhaust.test.js")" = "$EXPECTED_PRODUCT_TEST_BLOB"
-          
-          git worktree add --detach "$qualification_dir" "$EXPECTED_MAIN"
-          cp "$artifact_root/tools/lib/industrial-exhaust.mjs" \
-            "$qualification_dir/tools/lib/industrial-exhaust.mjs"
-         Ü‰\Y˜XÝÜ›ÛÝÝ\ÝÚ[™\ÝšX[Y^]\Ý\ÝšœÈˆˆ‰]X[YšXØ][Û—Ù\‹Ý\ÝÚ[™\ÝšX[Y^]\Ý\ÝšœÈ‚ˆˆ
-ˆÙ‰]X[YšXØ][Û—Ù\ˆ‚ˆˆÚ[™ÙYÜ]ÏH‰
-Ú]Y™ˆK[˜[YK[Û›H×ÐSPÈÛÜ
-H‚ˆ\Ý‰Ú[™ÙYÜ]ÈˆH‰^XÝYÜ›ÙXÝÜ]È‚ˆÚ[™ÙYÛ[\Ý]H‰
-Ú]Y™ˆK[[\Ý]×ÐSPÈÛÜZÌÊH‚ˆ\Ý‰Ú[™ÙYÛ[\Ý]ˆH‰^XÝYÜ›ÙXÝÛ[\Ý]‚ˆÚ]Y™ˆKXÚXÚÂˆˆ›ÙHKXÚXÚÈÛÛËÛX‹Ú[™\ÝšX[Y^]\Ý›ZœÂˆ›ÙHKXÚXÚÈÛÛËØÜ˜]ÛZ[™\ÝšX[Y^]\Ý›ZœÂˆ›ÙHKXÚXÚÈ\ÝÚ[™\ÝšX[Y^]\Ý\ÝšœÂˆ›ÙH\ÝÚ[™\ÝšX[Y^]\Ý\ÝšœÂˆ›ÙH\ÝÚ[™\ÝšX[Y^]\ÝX\Y˜XÝË\ÝšœÂˆˆ›ÙHKZ[œ]]\O[[Ù[H	Ó“ÑIÂˆ[\Ü\ÜÙ\œ›ÛH	Û›ÙN˜\ÜÙ\ÜÝšXÝ	ÎÂˆ[\ÜÈ™YXÝÛÛXÝ]HHœ›ÛH	Ë‹ÝÛÛËÛX‹Ú[™\ÝšX[Y^]\Ý›ZœÉÎÂˆˆ›Üˆ
-ÛÛœÝÚ[œ]^XÝYHÙˆÂˆÉÒQˆLLŒÍMÎÈËMŒŒM‹NIË	ÒQˆLLŒÍMÎÈØÛÛXÝÛZ]YI×KˆÉÜ™Y™\™[˜ÙNˆLLŒÍMÎËMŒŒM‹NIË	Ü™Y™\™[˜ÙNˆLLŒÍMÎØÛÛXÝÛZ]YI×KˆÉÚÎ‹ËÙ^[\K\ÝÚYˆLLŒÍMÎ	Ë	ÚÎ‹ËÙ^[\K\ÝÚYˆØÛÛXÝÛZ]YI×KˆÉÚÎ‹ËÙ^[\K\ÝÜ™Y™\™[˜ÙNˆ
-ÎHÈŒŒMˆLLLIË	ÚÎ‹ËÙ^[\K\ÝÜ™Y™\™[˜ÙNˆØÛÛXÝÛZ]YI×KˆÉÒQˆ
+          mkdir -p "$payload/tools/lib" "$payload/test"
+          git show "$SOURCE_HEAD:tools/lib/industrial-exhaust.mjs" > "$payload/tools/lib/industrial-exhaust.mjs"
+          git show "$SOURCE_HEAD:test/industrial-exhaust.test.js" > "$payload/test/industrial-exhaust.test.js"
+          test "$(git hash-object "$payload/tools/lib/industrial-exhaust.mjs")" = "$PRODUCT_LIBRARY"
+          test "$(git hash-object "$payload/test/industrial-exhaust.test.js")" = "$PRODUCT_TEST"
 
-ÎHÈŒŒMˆLLLJIË	ÒQˆ
+          git worktree add --detach "$work" "$MAIN"
+          cp "$payload/tools/lib/industrial-exhaust.mjs" "$work/tools/lib/industrial-exhaust.mjs"
+          cp "$payload/test/industrial-exhaust.test.js" "$work/test/industrial-exhaust.test.js"
+          (
+            cd "$work"
+            test "$(git diff --name-only | sort)" = "$expected_paths"
+            test "$(git diff --numstat | sort -k3)" = "$expected_numstat"
+            git diff --check
+            node --check tools/lib/industrial-exhaust.mjs
+            node --check tools/crawl-industrial-exhaust.mjs
+            node --check test/industrial-exhaust.test.js
+            node test/industrial-exhaust.test.js
+            node test/industrial-exhaust-artifacts.test.js
+            npm run release:check
+            git diff --check
+          )
+          git worktree remove --force "$work"
 
-ÎHÈŒŒMˆLLLJI×KˆÉûï*{ï);ï&»ï";ï"ûï&;ï$H;ï$È;ï%»ï$»ï${ï%ˆ;ï%{ï${ï${ï${ï"IË	ûï*{ï);ï&»ï";ï"ûï&;ï$H;ï$È;ï%»ï$»ï${ï%ˆ;ï%{ï${ï${ï${ï"I×KˆÉØÛÛXÝY[YšY\ŽˆLLŒÍMÎ	Ë	ØÛÛXÝY[YšY\ŽˆLLŒÍMÎ	×KˆÉúfîú*lyåj¹cíûï#ùë¨yä!¹åj¹cíûï&»ï$;ï&{ï$;ï${ï$»ï$ûï%;ï%{ï%»ï%ûï&	Ë	úfîú*lyåj¹cíûï#ùë¨yä!¹åj¹cíûï&»ï$;ï&{ï$;ï${ï$»ï$ûï%;ï%{ï%»ï%ûï&	×BˆJHÂˆ\ÜÙ\™\]X[
-™YXÝÛÛXÝ]J[œ]
-K^XÝY[œ]
-NÂˆBˆˆ›Üˆ
-ÛÛœÝ[œ]ÙˆÂˆ	ÔÛ™Nˆ
-QˆLLŒÍMÎ
-IËˆ	ÔÛ™HÈQˆLLŒÍMÎ	Ëˆ	ÔÛ™KRQˆLLŒÍMÎ	Ëˆ	ÔÛ™KÒQˆLLŒÍMÎ	Ëˆ	úfîú*lyåj¹cíûï#ûï*{ï);ï&»ï$;ï&{ï$;ï${ï$»ï$ûï%;ï%{ï%»ï%ûï&	ÂˆJHÂˆÛÛœÝXÝX[H™YXÝÛÛXÝ]J[œ]
-NÂˆ\ÜÙ\›X]Ú
-XÝX[×ØÛÛXÝÛZ]YKÝK[œ]
-NÂˆ\ÜÙ\™Ù\Ó›ÝX]Ú
-XÝX[››Ü›X[^™J	Ó‘’ÐÉÊKÌLLŒÍMÎÝK[œ]
-NÂˆBˆ“ÑBˆˆœH[ˆ™[X\ÙN˜ÚXÚÂˆÚ]Y™ˆKXÚXÚÂˆ
-BˆˆÚ]ÛÜšÝ™YH™[[Ý™HKY›Ü˜ÙH‰]X[YšXØ][Û—Ù\ˆ‚ˆ›Y\ˆ‰]X[YšXØ][Û—Ü›ÛÝ‚ˆˆÈ™K\™XY›Ý™[[ÝHX\Ù\È[[YYX][H™Y›Ü™HX›XØ][Û‹ˆH[Ýš[™ÈXZ[ˆÜ‚ˆÈ›ÙXÝœ˜[˜Ú˜Z[ÈÛÜÙY˜]\ˆ[ˆÚ[[HÚ[™Ú[™ÈH™]šY]ÈØš™XÝ‚ˆÚ]™]ÚK[›Ë]YÜÈÜšYÚ[ˆˆŠÜ™YœËÚXYËÛXZ[Žœ™YœËÜ™[[Ý\ËÛÜšYÚ[‹ÛXZ[ˆˆˆŠÜ™YœËÚXYËÉÔ“ÑPÕÐ”SÒNœ™YœËÜ™[[Ý\ËÛÜšYÚ[‹ÉÔ“ÑPÕÐ”SÒH‚ˆ\Ý‰
-Ú]™]‹\\œÙH™YœËÜ™[[Ý\ËÛÜšYÚ[‹ÛXZ[ŠHˆH‰VPÕQÓPRSˆ‚ˆ\Ý‰
-Ú]™]‹\\œÙH™YœËÜ™[[Ý\ËÛÜšYÚ[‹ÉÔ“ÑPÕÐ”SÒJHˆH‰VPÕQÔ“ÑPÕÒPQ‚ˆˆÚ]ÛÛ™šYÈ\Ù\‹›˜[YH™Ú]X‹XXÝ[ÛœÖØ›ÝH‚ˆÚ]ÛÛ™šYÈ\Ù\‹™[XZ[NNŽŠÙÚ]X‹XXÝ[ÛœÖØ›ÝP\Ù\œË››Ü™\K™Ú]X‹˜ÛÛH‚ˆÚ]ÚXÚÛÝ]KY]XÚKY›Ü˜ÙH‰VPÕQÓPRSˆ‚ˆÜ‰\Y˜XÝÜ›ÛÝÝÛÛËÛX‹Ú[™\ÝšX[Y^]\Ý›ZœÈˆÛÛËÛX‹Ú[™\ÝšX[Y^]\Ý›ZœÂˆ7"F'F–f7E÷&ö÷B÷FW7Bö–æGW7G&–ÂÖW††W7BçFW7Bæ§2"FW7Bö–æGW7G&–ÂÖW††W7BçFW7Bæ§0¢ ¢v—BFBÒÒFööÇ2öÆ–"ö–æGW7G&–ÂÖW††W7BæÖ§2FW7Bö–æGW7G&–ÂÖW††W7BçFW7Bæ§0¢v—BF–fbÒÖ66†VBÒÖ6†V6°¢ ¢7FvVE÷F‡3Ò"B†v—BF–fbÒÖ66†VBÒÖæÖRÖöæÇ’ÂÄ5ôÄÃÔ26÷'B’ ¢FW7B"G7FvVE÷F‡2"Ò"FW‡V7FVE÷&öGV7E÷F‡2 ¢7FvVEöçV×7FCÒ"B†v—BF–fbÒÖ66†VBÒÖçV×7FBÂÄ5ôÄÃÔ26÷'BÖ³2’ ¢FW7B"G7FvVEöçV×7FB"Ò"FW‡V7FVE÷&öGV7EöçV×7FB ¢FW7B"B†v—B†6‚Öö&¦V7BFööÇ2öÆ–"ö–æGW7G&–ÂÖW††W7BæÖ§2’"Ò"DU…T5DTEõ$ôET5EôÄ”%$%•ô$Äô" ¢FW7B"B†v—B†6‚Öö&¦V7BFW7Bö–æGW7G&–ÂÖW††W7BçFW7Bæ§2’"Ò"DU…T5DTEõ$ôET5EõDU5Eô$Äô" ¢ ¢v—B6öÖÖ—BÖÒ&f—‚†7&vÆW"“¢6Æ÷6R–FVçF–f–W"Ö6öçFW‡B&Wf–Wr&÷VæF&–W2 ¢æWu÷&öGV7Eö†VCÒ"B†v—B&Wb×'6R„TB’ ¢ ¢FW7B"B†v—B&Wb×'6R„TEâ’"Ò"DU…T5DTEôÔ”â ¢FW7B"B†v—B&WbÖÆ—7BÒÖ6÷VçB"G´U…T5DTEôÔ”çÒââG¶æWu÷&öGV7Eö†VGÒ"’"Ò# ¢6öÖÖ—GFVE÷F‡3Ò"B†v—BF–fbÒÖæÖRÖöæÇ’"G´U…T5DTEôÔ”çÒââG¶æWu÷&öGV7Eö†VGÒ"ÂÄ5ôÄÃÔ26÷'B’ ¢FW7B"F6öÖÖ—GFVE÷F‡2"Ò"FW‡V7FVE÷&öGV7E÷F‡2 ¢6öÖÖ—GFVEöçV×7FCÒ"B†v—BF–fbÒÖçV×7FB"G´U…T5DTEôÔ”çÒââG¶æWu÷&öGV7Eö†VGÒ"ÂÄ5ôÄÃÔ26÷'BÖ³2’ ¢FW7B"F6öÖÖ—GFVEöçV×7FB"Ò"FW‡V7FVE÷&öGV7EöçV×7FB ¢FW7B"B†v—B&Wb×'6R"G¶æWu÷&öGV7Eö†VGÓ§FööÇ2öÆ–"ö–æGW7G&–ÂÖW††W7BæÖ§2"’"Ò"DU…T5DTEõ$ôET5EôÄ”%$%•ô$Äô" ¢FW7B"B†v—B&Wb×'6R"G¶æWu÷&öGV7Eö†VGÓ§FW7Bö–æGW7G&–ÂÖW††W7BçFW7Bæ§2"’"Ò"DU…T5DTEõ$ôET5EõDU5Eô$Äô" ¢ ¢v—BW6‚ÒÖf÷&6R×v—F‚ÖÆV6SÒ'&Vg2ö†VG2òGµ$ôET5Eô%$ä4‡Ó¢G´U…T5DTEõ$ôET5Eô„TGÒ"À¢÷&–v–â$„TC§&Vg2ö†VG2òGµ$ôET5Eô%$ä4‡Ò ¢v—BfWF6‚ÒÖæò×Fw2÷&–v–âÀ¢"·&Vg2ö†VG2òGµ$ôET5Eô%$ä4‡Ó§&Vg2÷&VÖ÷FW2ö÷&–v–âòGµ$ôET5Eô%$ä4‡Ò ¢FW7B"B†v—B&Wb×'6R&Vg2÷&VÖ÷FW2ö÷&–v–âòGµ$ôET5Eô%$ä4‡Ò’"Ò"FæWu÷&öGV7Eö†VB ¢ ¢°¢&–çFbw&V6V—E÷fW'6–öãÖ7W'&VçBÖÖ–âÖ–FVçF–f–W"Ö&÷VæF'’×&W&VçDEÆâp¢&–çFbv6'&–W%ö†VCÒW5Æâr"E%ô„TEõ4„ ¢&–çFbv6'&–W%÷'Våö–CÒW5Æâr"E%Tåô”B ¢&–çFbv6'&–W%÷'VåöGFV×CÒW5Æâr"E%TåôEDTÕB ¢&–çFbv&6SÒW5Æâr"DU…T5DTEôÔ”â ¢&–çFbw6÷W&6U÷&öGV7E÷&VçCÒW5Æâr"DU…T5DTEõ$ôET5Eõ$TåB ¢&–çFbw7WW'6VFVE÷&öGV7Eö†VCÒW5Æâr"DU…T5DTEõ$ôET5Eô„TB ¢&–çFbwV&Æ—6†VE÷&öGV7Eö†VCÒW5Æâr"FæWu÷&öGV7Eö†VB ¢&–çFbvÆ–'&'•ö&Æö#ÒW5Æâr"B†v—B&Wb×'6R"G¶æWu÷&öGV7Eö†VGÓ§FööÇ2öÆ–"ö–æGW7G&–ÂÖW††W7BæÖ§2"’ ¢&–çFbwFW7Eö&Æö#ÒW5Æâr"B†v—B&Wb×'6R"G¶æWu÷&öGV7Eö†VGÓ§FW7Bö–æGW7G&–ÂÖW††W7BçFW7Bæ§2"’ ¢&–çFbv6öÖÖ—Eö6÷VçCÒW5Æâr"B†v—B&WbÖÆ—7BÒÖ6÷VçB"G´U…T5DTEôÔ”çÒââG¶æWu÷&öGV7Eö†VGÒ"’ ¢&–çFbv6†ævVE÷F‡3¥ÆâW5Æâr"F6öÖÖ—GFVE÷F‡2 ¢&–çFbvçV×7FC¥ÆâW5Æâr"F6öÖÖ—GFVEöçV×7FB ¢Òâ÷F×ö7W'&VçBÖÖ–âÖ–FVçF–f–W"Ö&÷VæF'’×&W&VçB×&V6V—BçG‡@¢ ¢&–çFbw&öGV7Eö†VCÒW5Æâr"FæWu÷&öGV7Eö†VB"ãâ"Dt•D…T%ôõUEUB ¢&–çFbwV&Æ—6†VE÷&öGV7Eö†VCÒW5Æâr"FæWu÷&öGV7Eö†VB ¢6B÷F×ö7W'&VçBÖÖ–âÖ–FVçF–f–W"Ö&÷VæF'’×&W&VçB×&V6V—BçG‡@ ¢ÒæÖS¢WÆöB–Ö×WF&ÆRV&Æ–6F–öâ&V6V—@¢W6W3¢7F–öç2÷WÆöBÖ'F–f7Dc@¢v—Fƒ ¢æÖS¢7W'&VçBÖÖ–âÖ–FVçF–f–W"Ö&÷VæF'’×&W&VçBÒG·²7FW2çV&Æ—6‚æ÷WGWG2ç&öGV7Eö†VB×Ð¢Fƒ¢÷F×ö7W'&VçBÖÖ–âÖ–FVçF–f–W"Ö&÷VæF'’×&W&VçB×&V6V—BçG‡@¢–bÖæòÖf–ÆW2Öf÷VæC¢W'&÷ ¢&WFVçF–öâÖF—3¢3 
+          git fetch --no-tags origin \
+            "+refs/heads/main:refs/remotes/origin/main" \
+            "+refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/$PRODUCT_BRANCH"
+          test "$(git rev-parse refs/remotes/origin/main)" = "$MAIN"
+          test "$(git rev-parse refs/remotes/origin/$PRODUCT_BRANCH)" = "$SOURCE_HEAD"
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git checkout --detach --force "$MAIN"
+          cp "$payload/tools/lib/industrial-exhaust.mjs" tools/lib/industrial-exhaust.mjs
+          cp "$payload/test/industrial-exhaust.test.js" test/industrial-exhaust.test.js
+          git add -- tools/lib/industrial-exhaust.mjs test/industrial-exhaust.test.js
+          git diff --cached --check
+          test "$(git diff --cached --name-only | sort)" = "$expected_paths"
+          test "$(git diff --cached --numstat | sort -k3)" = "$expected_numstat"
+          git commit -m 'fix(crawler): close identifier-context review boundaries'
+          new_head="$(git rev-parse HEAD)"
+          test "$(git rev-parse HEAD^)" = "$MAIN"
+          test "$(git diff --name-only "$MAIN..$new_head" | sort)" = "$expected_paths"
+          test "$(git diff --numstat "$MAIN..$new_head" | sort -k3)" = "$expected_numstat"
+          test "$(git rev-parse "$new_head:tools/lib/industrial-exhaust.mjs")" = "$PRODUCT_LIBRARY"
+          test "$(git rev-parse "$new_head:test/industrial-exhaust.test.js")" = "$PRODUCT_TEST"
+
+          git push --force-with-lease="refs/heads/$PRODUCT_BRANCH:$SOURCE_HEAD" origin "HEAD:refs/heads/$PRODUCT_BRANCH"
+          {
+            printf 'receipt_version=current-main-identifier-boundary-reparent@5\n'
+            printf 'carrier_head=%s\n' "$HEAD_SHA"
+            printf 'run_id=%s\n' '${{ github.run_id }}'
+            printf 'base=%s\n' "$MAIN"
+            printf 'superseded_product_head=%s\n' "$SOURCE_HEAD"
+            printf 'published_product_head=%s\n' "$new_head"
+            printf 'library_blob=%s\n' "$PRODUCT_LIBRARY"
+            printf 'test_blob=%s\n' "$PRODUCT_TEST"
+            printf 'changed_paths:\n%s\n' "$expected_paths"
+            printf 'numstat:\n%s\n' "$expected_numstat"
+          } > /tmp/current-main-identifier-boundary-reparent-receipt.txt
+          printf 'product_head=%s\n' "$new_head" >> "$GITHUB_OUTPUT"
+          cat /tmp/current-main-identifier-boundary-reparent-receipt.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: current-main-identifier-boundary-reparent-${{ steps.publish.outputs.product_head }}
+          path: /tmp/current-main-identifier-boundary-reparent-receipt.txt
+          if-no-files-found: error
+          retention-days: 30
