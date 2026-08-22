@@ -1,15 +1,16 @@
-name: Temporary current-main identifier-boundary repair v2
+name: Temporary current-main identifier-boundary reparent v4
 
 on:
   pull_request:
     paths:
       - '.github/current-main-identifier-boundary-trigger.txt'
+      - '.github/workflows/temporary-current-main-identifier-boundary-v1.yml'
 
 permissions:
   contents: write
 
 concurrency:
-  group: current-main-identifier-boundary-v2
+  group: current-main-identifier-boundary-reparent-v4
   cancel-in-progress: false
 
 jobs:
@@ -18,12 +19,21 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      EXPECTED_BASE: cdc9d3670fb226e92ff90952c3f8a4392c532a26
-      EXPECTED_PRODUCT_HEAD: 3ed617a8e3b3fa467f817ce737ad9e51463625d9
+      EXPECTED_MAIN: 21b7be4cd4045529be198befaddd3a1d941143a1
+      EXPECTED_PRODUCT_PARENT: cdc9d3670fb226e92ff90952c3f8a4392c532a26
+      EXPECTED_PRODUCT_HEAD: 83a8ce7234a203f70be5e2e1cbb84fe665dd80b6
+      EXPECTED_CARRIER_PARENT: fdab932f05b0df42568d36684de35f7317afcb59
       PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
       CARRIER_BRANCH: agent/current-main-identifier-context-v1
-      EXPECTED_LIBRARY_BLOB: da860cd16b85bcdce7df7af365ea0ff2012e0494
-      EXPECTED_TEST_BLOB: b757ae8a4baf37b90da5cc3eff6e25cc452e419f
+      EXPECTED_MAIN_LIBRARY_BLOB: 5f68254d3e44de693e83503aed879160f9b7b997
+      EXPECTED_MAIN_TEST_BLOB: 1659a7cc54666a2ac5a1d6b88eb8c6591d98008e
+      EXPECTED_PRODUCT_LIBRARY_BLOB: e22bbb2899233ec1bf046cef79da20cb69797937
+      EXPECTED_PRODUCT_TEST_BLOB: a3384f944235d9170b1cbf09779ab6898a21bccd
+      PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      RUN_ID: ${{ github.run_id }}
+      RUN_ATTEMPT: ${{ github.run_attempt }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -34,354 +44,110 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Validate exact carrier and reproduce all four review mechanisms
+      - name: Validate exact carrier, main, and product leases
         shell: bash
         run: |
           set -euo pipefail
-
-          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
-          test "$(git merge-base "$EXPECTED_BASE" HEAD)" = "$EXPECTED_BASE"
-          test "$(git merge-base "$EXPECTED_PRODUCT_HEAD" HEAD)" = "$EXPECTED_PRODUCT_HEAD"
-          test "$(git hash-object tools/lib/industrial-exhaust.mjs)" = "$EXPECTED_LIBRARY_BLOB"
-          test "$(git hash-object test/industrial-exhaust.test.js)" = "$EXPECTED_TEST_BLOB"
-
-          carrier_paths="$(git diff --name-only "$EXPECTED_PRODUCT_HEAD"..HEAD | LC_ALL=C sort)"
+          
+          test "$(git rev-parse HEAD)" = "$PR_HEAD_SHA"
+          test "$PR_HEAD_REF" = "$CARRIER_BRANCH"
+          test "$PR_NUMBER" = "2227"
+          test "$(git rev-parse HEAD^)" = "$EXPECTED_CARRIER_PARENT"
+          
+          carrier_paths="$(git diff --name-only HEAD^..HEAD | LC_ALL=C sort)"
           expected_carrier_paths="$(printf '%s\n' \
             .github/current-main-identifier-boundary-trigger.txt \
             .github/workflows/temporary-current-main-identifier-boundary-v1.yml | LC_ALL=C sort)"
           test "$carrier_paths" = "$expected_carrier_paths"
+          
+          git fetch --no-tags origin \
+            "+refs/heads/main:refs/remotes/origin/main" \
+            "+refs/heads/${PRODUCT_BRANCH}:refs/remotes/origin/${PRODUCT_BRANCH}"
+          
+          test "$(git rev-parse refs/remotes/origin/main)" = "$EXPECTED_MAIN"
+          test "$(git rev-parse refs/remotes/origin/${PRODUCT_BRANCH})" = "$EXPECTED_PRODUCT_HEAD"
+          test "$(git rev-parse "${EXPECTED_PRODUCT_HEAD}^")" = "$EXPECTED_PRODUCT_PARENT"
+          test "$(git rev-list --count "${EXPECTED_PRODUCT_PARENT}..${EXPECTED_PRODUCT_HEAD}")" = "1"
+          test "$(git merge-base "$EXPECTED_PRODUCT_PARENT" "$EXPECTED_MAIN")" = "$EXPECTED_PRODUCT_PARENT"
+          test "$(git merge-base "$EXPECTED_MAIN" "$EXPECTED_PRODUCT_HEAD")" = "$EXPECTED_PRODUCT_PARENT"
+          
+          expected_product_paths="$(printf '%s\n' \
+            test/industrial-exhaust.test.js \
+            tools/lib/industrial-exhaust.mjs | LC_ALL=C sort)"
+          product_paths="$(git diff --name-only "${EXPECTED_PRODUCT_PARENT}..${EXPECTED_PRODUCT_HEAD}" | LC_ALL=C sort)"
+          test "$product_paths" = "$expected_product_paths"
+          
+          expected_product_numstat="$(printf '103\t0\ttest/industrial-exhaust.test.js\n78\t9\ttools/lib/industrial-exhaust.mjs\n' | LC_ALL=C sort -k3)"
+          product_numstat="$(git diff --numstat "${EXPECTED_PRODUCT_PARENT}..${EXPECTED_PRODUCT_HEAD}" | LC_ALL=C sort -k3)"
+          test "$product_numstat" = "$expected_product_numstat"
+          
+          test "$(git rev-parse "${EXPECTED_MAIN}:tools/lib/industrial-exhaust.mjs")" = "$EXPECTED_MAIN_LIBRARY_BLOB"
+          test "$(git rev-parse "${EXPECTED_MAIN}:test/industrial-exhaust.test.js")" = "$EXPECTED_MAIN_TEST_BLOB"
+          test "$(git rev-parse "${EXPECTED_PRODUCT_PARENT}:tools/lib/industrial-exhaust.mjs")" = "$EXPECTED_MAIN_LIBRARY_BLOB"
+          test "$(git rev-parse "${EXPECTED_PRODUCT_PARENT}:test/industrial-exhaust.test.js")" = "$EXPECTED_MAIN_TEST_BLOB"
+          test "$(git rev-parse "${EXPECTED_PRODUCT_HEAD}:tools/lib/industrial-exhaust.mjs")" = "$EXPECTED_PRODUCT_LIBRARY_BLOB"
+          test "$(git rev-parse "${EXPECTED_PRODUCT_HEAD}:test/industrial-exhaust.test.js")" = "$EXPECTED_PRODUCT_TEST_BLOB"
+          
+          printf 'carrier_head=%s\n' "$PR_HEAD_SHA"
+          printf 'current_main=%s\n' "$EXPECTED_MAIN"
+          printf 'superseded_product_head=%s\n' "$EXPECTED_PRODUCT_HEAD"
+          printf 'product_paths:\n%s\n' "$product_paths"
+          printf 'product_numstat:\n%s\n' "$product_numstat"
 
-          node --input-type=module <<'NODE'
-          import assert from 'node:assert/strict';
-          import { redactContactData } from './tools/lib/industrial-exhaust.mjs';
-
-          const exactDefects = [
-            ['ID: 09012345678 / 03-6216-8041', 'ID: 09012345678 / [contact omitted]'],
-            ['https://example.test/id: 09012345678', 'https://example.test/id: [contact omitted]'],
-            ['https://example.test/reference: +81 3 6216 5111', 'https://example.test/reference: [contact omitted]'],
-            ['ID: (+81 3 6216 5111)', 'ID: (+81 3 6216 5111)']
-          ];
-          for (const [input, repaired] of exactDefects) {
-            const actual = redactContactData(input);
-            console.log(JSON.stringify({ input, actual, repaired }));
-            assert.notEqual(
-              actual,
-              repaired,
-              `expected old product head to reproduce review defect: ${input}`
-            );
-          }
-
-          for (const input of [
-            'Phone: (ID: 09012345678)',
-            'Phone / ID: 09012345678'
-          ]) {
-            const actual = redactContactData(input);
-            console.log(JSON.stringify({ input, actual }));
-            assert.match(actual, /09012345678/u);
-            assert.doesNotMatch(actual, /\[contact omitted\]/u);
-          }
-          NODE
-
-      - name: Materialize, qualify, and publish one two-file product commit
+      - name: Reparent, qualify, and publish one exact two-file product commit
         id: publish
         shell: bash
         run: |
           set -euo pipefail
-
-          python - <<'PY'
-          from pathlib import Path
-
-          def replace_once(text, old, new, label):
-              count = text.count(old)
-              if count != 1:
-                  raise RuntimeError(f'{label}: expected one exact anchor, found {count}')
-              return text.replace(old, new, 1)
-
-          library_path = Path('tools/lib/industrial-exhaust.mjs')
-          test_path = Path('test/industrial-exhaust.test.js')
-          library = library_path.read_text(encoding='utf-8')
-          tests = test_path.read_text(encoding='utf-8')
-
-          old_identifier_pattern = r"""const EXPLICIT_IDENTIFIER_LABEL_PATTERN = /(?:(?:^|\b)(?:id|guid|identifier|reference|revision|release(?:\s+id)?|record(?:\s+id)?|receipt|sha(?:-?256)?|hash|ticket|case|invoice|order|code)|(?:è­˜åˆ¥å­|å‚ç…§(?:ç•ªå·)?|ç®¡ç†ç•ªå·|å—ä»˜ç•ªå·|æ³¨æ–‡ç•ªå·|æ¡ˆä»¶ç•ªå·|ã‚³ãƒ¼ãƒ‰))\s*[:ï¼š=#ï¼ƒ-]?\s*$/iu;
-          """
-          new_identifier_pattern = r"""const EXPLICIT_IDENTIFIER_LABEL_PATTERN = /(?:(?:^|\b)(?:id|guid|identifier|reference|revision|release(?:\s+id)?|record(?:\s+id)?|receipt|sha(?:-?256)?|hash|ticket|case|invoice|order|code)|(?:è­˜åˆ¥å­|å‚ç…§(?:ç•ªå·)?|ç®¡ç†ç•ªå·|å—ä»˜ç•ªå·|æ³¨æ–‡ç•ªå·|æ¡ˆä»¶ç•ªå·|ã‚³ãƒ¼ãƒ‰))\s*[:ï¼š=#ï¼ƒ-]?\s*(?:(?:\(|\[|\{|ï¼ˆ|ï¼»|ã€)\s*)?$/iu;
-          """
-          library = replace_once(
-              library,
-              old_identifier_pattern,
-              new_identifier_pattern,
-              'identifier wrapper pattern'
-          )
-
-          old_identifier_helper = r"""function explicitIdentifierLabelMatch(normalizedPrefix) {
-            return normalizedPrefix.slice(-128).match(EXPLICIT_IDENTIFIER_LABEL_PATTERN);
-          }
-          """
-          new_identifier_helper = r"""function hasUrlTokenPrefixContext(normalizedPrefix) {
-            return /(?:(?:https?:)?\/\/|www\.|(?:[\p{L}\p{N}](?:[\p{L}\p{N}-]*[\p{L}\p{N}])?\.)+(?:[\p{L}]{2,}|xn--[\p{L}\p{N}-]{2,})(?=[:/?#])|(?:\d{1,3}\.){3}\d{1,3}(?=[:/?#]))[^\s]*$/iu.test(
-              normalizedPrefix
-            );
-          }
-
-          function explicitIdentifierLabelMatch(normalizedPrefix) {
-            const window = normalizedPrefix.slice(-128);
-            const match = window.match(EXPLICIT_IDENTIFIER_LABEL_PATTERN);
-            if (!match || match.index == null) return match;
-            return hasUrlTokenPrefixContext(window.slice(0, match.index)) ? null : match;
-          }
-          """
-          library = replace_once(
-              library,
-              old_identifier_helper,
-              new_identifier_helper,
-              'URL-aware identifier helper'
-          )
-
-          old_phone_label_helper = r"""function hasPhoneLabelPrefixNormalized(normalizedPrefix) {
-            if (PHONE_LABEL_PATTERN.test(normalizedPrefix.slice(-48))) return true;
-            const identifierMatch = explicitIdentifierLabelMatch(normalizedPrefix);
-            if (!identifierMatch || identifierMatch.index == null) return false;
-            const window = normalizedPrefix.slice(-128);
-            return PHONE_LABEL_PATTERN.test(window.slice(0, identifierMatch.index).slice(-48));
-          }
-          """
-          new_phone_label_helper = r"""function hasPhoneLabelPrefixNormalized(normalizedPrefix) {
-            if (PHONE_LABEL_PATTERN.test(normalizedPrefix.slice(-48))) return true;
-            const identifierMatch = explicitIdentifierLabelMatch(normalizedPrefix);
-            if (!identifierMatch || identifierMatch.index == null
-                || !/^id(?=$|[^\p{L}\p{N}_])/iu.test(identifierMatch[0])) return false;
-            const window = normalizedPrefix.slice(-128);
-            const beforeIdentifier = window.slice(0, identifierMatch.index)
-              .replace(/[\s,;:Â·â€¢|\/\\\-â€â€‘â€’â€“â€”â€•âˆ’(\[ï½›{ï¼ˆï¼»ã€]+$/gu, ' ');
-            return PHONE_LABEL_PATTERN.test(beforeIdentifier.slice(-48));
-          }
-          """
-          library = replace_once(
-              library,
-              old_phone_label_helper,
-              new_phone_label_helper,
-              'punctuation-tolerant phone-label helper'
-          )
-
-          range_marker = 'function phoneRedactionRanges(\n'
-          protected_prefix_helper = r"""function identifierProtectedPrefixEnd(candidate, groups, externalSuffix) {
-            const observationGroup = trailingObservationGroup(candidate, groups, '', externalSuffix);
-            let protectedEnd = candidate.length;
-            let protectedScore = null;
-            for (let last = 0;
-              last < groups.length
-                && last < MAX_PHONE_DIGIT_GROUPS
-                && last < observationGroup;
-              last += 1) {
-              const { start, end } = phoneWindowBounds(candidate, groups, 0, last);
-              const slice = candidate.slice(start, end);
-              let score = phoneCandidateScore(slice, '');
-              if (!score) continue;
-              if (last === observationGroup - 1) score += 32;
-              else if (last === groups.length - 1) score += 24;
-              else score -= 24;
-              if (protectedScore == null
-                  || score > protectedScore
-                  || (score === protectedScore && end > protectedEnd)) {
-                protectedScore = score;
-                protectedEnd = end;
-              }
-            }
-            return protectedEnd;
-          }
-
-          """
-          library = replace_once(
-              library,
-              range_marker,
-              f'{protected_prefix_helper}{range_marker}',
-              'identifier protected-prefix helper'
-          )
-
-          old_identifier_propagation = r"""  const normalizedExternalPrefix = externalPrefix.normalize('NFKC');
-            const phoneLabelContext = hasPhoneLabelPrefixNormalized(normalizedExternalPrefix);
-            if (hasExplicitIdentifierPrefixNormalized(normalizedExternalPrefix) && !phoneLabelContext) {
-              return [];
-            }
-          """
-          new_identifier_propagation = r"""  const normalizedExternalPrefix = externalPrefix.normalize('NFKC');
-            const phoneLabelContext = hasPhoneLabelPrefixNormalized(normalizedExternalPrefix);
-            if (hasExplicitIdentifierPrefixNormalized(normalizedExternalPrefix) && !phoneLabelContext) {
-              const protectedEnd = identifierProtectedPrefixEnd(candidate, groups, externalSuffix);
-              return phoneRedactionRanges(
-                candidate.slice(protectedEnd),
-                `${externalPrefix}${candidate.slice(0, protectedEnd)}`,
-                externalSuffix,
-                true
-              ).map(range => ({
-                start: range.start + protectedEnd,
-                end: range.end + protectedEnd
-              }));
-            }
-          """
-          library = replace_once(
-              library,
-              old_identifier_propagation,
-              new_identifier_propagation,
-              'bounded identifier propagation'
-          )
-
-          test_marker = 'for (const compactNumericIdentifier of ['
-          test_insert = r"""for (const [identifierThenPhone, expected] of [
-            ['ID: 09012345678 / 03-6216-8041', 'ID: 09012345678 / [contact omitted]'],
-            ['reference: 09012345678 03-6216-8041', 'reference: 09012345678 [contact omitted]'],
-            ['ID: 03-6216-8041 090-1234-5678', 'ID: 03-6216-8041 [contact omitted]'],
-            ['ID: 01 42 68 53 00 03 62 16 80 41', 'ID: 01 42 68 53 00 [contact omitted]'],
-            ['reference: +1 212 555 1234 03-6216-8041', 'reference: +1 212 555 1234 [contact omitted]'],
-            ['ID: +44 (0)20 7123 4567 03-6216-8041', 'ID: +44 (0)20 7123 4567 [contact omitted]'],
-            ['ID: 09012345678 +81 90 1234 5678', 'ID: 09012345678 [contact omitted]']
-          ]) {
-            assert.equal(
-              redactContactData(identifierThenPhone),
-              expected,
-              'identifier protection must end after the first phone-shaped value in one scanner span'
-            );
-          }
-
-          for (const [urlPathLabel, expected] of [
-            ['https://example.test/id: 09012345678', 'https://example.test/id: [contact omitted]'],
-            ['https://example.test/reference: +81 3 6216 5111', 'https://example.test/reference: [contact omitted]'],
-            ['example.test/id: 03-6216-8041', 'example.test/id: [contact omitted]']
-          ]) {
-            assert.equal(
-              redactContactData(urlPathLabel),
-              expected,
-              'an identifier word embedded in a URL token must not protect a later phone after whitespace'
-            );
-          }
-
-          for (const wrappedIdentifier of [
-            'ID: (+81 3 6216 5111)',
-            'ï¼©ï¼¤ï¼šï¼ˆï¼‹ï¼˜ï¼‘ ï¼“ ï¼–ï¼’ï¼‘ï¼– ï¼•ï¼‘ï¼‘ï¼‘ï¼‰'
-          ]) {
-            assert.equal(
-              redactContactData(wrappedIdentifier),
-              wrappedIdentifier,
-              'an opening wrapper after an identifier label must remain in identifier context'
-            );
-          }
-
-          for (const punctuatedPhoneId of [
-            'Phone: (ID: 09012345678)',
-            'Phone / ID: 09012345678',
-            'Phone-ID: 09012345678',
-            'Phone/ID: 09012345678',
-            'é›»è©±ç•ªå·ï¼ï¼©ï¼¤ï¼šï¼ï¼™ï¼ï¼‘ï¼’ï¼“ï¼”ï¼•ï¼–ï¼—ï¼˜'
-          ]) {
-            const redacted = redactContactData(punctuatedPhoneId);
-            assert.match(
-              redacted,
-              /\[contact omitted\]/u,
-              'separator punctuation must not suppress a phone-label override before standalone ID'
-            );
-            assert.doesNotMatch(
-              redacted.normalize('NFKC'),
-              /09012345678/u,
-              'phone-labelled values must not survive redaction'
-            );
-          }
-
-          for (const protectedNarrativeIdentifier of [
-            'contact identifier: 09012345678',
-            'é›»è©±ç•ªå·ï¼ç®¡ç†ç•ªå·ï¼šï¼ï¼™ï¼ï¼‘ï¼’ï¼“ï¼”ï¼•ï¼–ï¼—ï¼˜'
-          ]) {
-            assert.equal(
-              redactContactData(protectedNarrativeIdentifier),
-              protectedNarrativeIdentifier,
-              'phone precedence must remain limited to a trailing standalone ID label'
-            );
-          }
-
-          """
-          tests = replace_once(
-              tests,
-              test_marker,
-              f'{test_insert}{test_marker}',
-              'identifier-boundary regressions'
-          )
-
-          library_path.write_text(library, encoding='utf-8')
-          test_path.write_text(tests, encoding='utf-8')
-          PY
-
-          node --check tools/lib/industrial-exhaust.mjs
-          node --check tools/crawl-industrial-exhaust.mjs
-          node --check test/industrial-exhaust.test.js
-          node test/industrial-exhaust.test.js
-          node test/industrial-exhaust-artifacts.test.js
-          git diff --check
-
+          
           expected_product_paths="$(printf '%s\n' \
             test/industrial-exhaust.test.js \
             tools/lib/industrial-exhaust.mjs | LC_ALL=C sort)"
-          actual_product_paths="$(git diff --name-only "$EXPECTED_BASE" | \
-            grep -v '^\.github/current-main-identifier-boundary-trigger\.txt$' | \
-            grep -v '^\.github/workflows/temporary-current-main-identifier-boundary-v1\.yml$' | \
-            LC_ALL=C sort)"
-          test "$actual_product_paths" = "$expected_product_paths"
-
+          expected_product_numstat="$(printf '103\t0\ttest/industrial-exhaust.test.js\n78\t9\ttools/lib/industrial-exhaust.mjs\n' | LC_ALL=C sort -k3)"
+          
+          artifact_root="$(mktemp -d)"
           qualification_root="$(mktemp -d)"
           qualification_dir="$qualification_root/repository"
-          git worktree add --detach "$qualification_dir" "$EXPECTED_BASE"
-          cp tools/lib/industrial-exhaust.mjs "$qualification_dir/tools/lib/industrial-exhaust.mjs"
-          cp test/industrial-exhaust.test.js "$qualification_dir/test/industrial-exhaust.test.js"
-          (
-            cd "$qualification_dir"
-            npm run release:check
-            git diff --check
-          )
-          git worktree remove --force "$qualification_dir"
-          rmdir "$qualification_root"
-
-          artifact_root="$(mktemp -d)"
+          cleanup() {
+            git worktree remove --force "$qualification_dir" >/dev/null 2>&1 || true
+            rm -rf "$artifact_root" "$qualification_root"
+          }
+          trap cleanup EXIT
+          
           mkdir -p "$artifact_root/tools/lib" "$artifact_root/test"
-          cp tools/lib/industrial-exhaust.mjs "$artifact_root/tools/lib/industrial-exhaust.mjs"
-          cp test/industrial-exhaust.test.js "$artifact_root/test/industrial-exhaust.test.js"
+          git show "${EXPECTED_PRODUCT_HEAD}:tools/lib/industrial-exhaust.mjs" \
+            > "$artifact_root/tools/lib/industrial-exhaust.mjs"
+          git show "${EXPECTED_PRODUCT_HEAD}:test/industrial-exhaust.test.js" \
+            > "$artifact_root/test/industrial-exhaust.test.js"
+          
+          test "$(git hash-object "$artifact_root/tools/lib/industrial-exhaust.mjs")" = "$EXPECTED_PRODUCT_LIBRARY_BLOB"
+          test "$(git hash-object "$artifact_root/test/industrial-exhaust.test.js")" = "$EXPECTED_PRODUCT_TEST_BLOB"
+          
+          git worktree add --detach "$qualification_dir" "$EXPECTED_MAIN"
+          cp "$artifact_root/tools/lib/industrial-exhaust.mjs" \
+            "$qualification_dir/tools/lib/industrial-exhaust.mjs"
+         Ü‰\Y˜XİÜ›Ûİİ\İÚ[™\İšX[Y^]\İ\İšœÈˆˆ‰]X[YšXØ][Û—Ù\‹İ\İÚ[™\İšX[Y^]\İ\İšœÈ‚ˆˆ
+ˆÙ‰]X[YšXØ][Û—Ù\ˆ‚ˆˆÚ[™ÙYÜ]ÏH‰
+Ú]Y™ˆK[˜[YK[Û›H×ĞSPÈÛÜ
+H‚ˆ\İ‰Ú[™ÙYÜ]ÈˆH‰^XİYÜ›ÙXİÜ]È‚ˆÚ[™ÙYÛ[\İ]H‰
+Ú]Y™ˆK[[\İ]×ĞSPÈÛÜZÌÊH‚ˆ\İ‰Ú[™ÙYÛ[\İ]ˆH‰^XİYÜ›ÙXİÛ[\İ]‚ˆÚ]Y™ˆKXÚXÚÂˆˆ›ÙHKXÚXÚÈÛÛËÛX‹Ú[™\İšX[Y^]\İ›ZœÂˆ›ÙHKXÚXÚÈÛÛËØÜ˜]ÛZ[™\İšX[Y^]\İ›ZœÂˆ›ÙHKXÚXÚÈ\İÚ[™\İšX[Y^]\İ\İšœÂˆ›ÙH\İÚ[™\İšX[Y^]\İ\İšœÂˆ›ÙH\İÚ[™\İšX[Y^]\İX\Y˜XİË\İšœÂˆˆ›ÙHKZ[œ]]\O[[Ù[H	Ó“ÑIÂˆ[\Ü\ÜÙ\œ›ÛH	Û›ÙN˜\ÜÙ\ÜİšXİ	ÎÂˆ[\ÜÈ™YXİÛÛXİ]HHœ›ÛH	Ë‹İÛÛËÛX‹Ú[™\İšX[Y^]\İ›ZœÉÎÂˆˆ›Üˆ
+ÛÛœİÚ[œ]^XİYHÙˆÂˆÉÒQˆLLŒÍMÎÈËMŒŒM‹NIË	ÒQˆLLŒÍMÎÈØÛÛXİÛZ]YI×KˆÉÜ™Y™\™[˜ÙNˆLLŒÍMÎËMŒŒM‹NIË	Ü™Y™\™[˜ÙNˆLLŒÍMÎØÛÛXİÛZ]YI×KˆÉÚÎ‹ËÙ^[\K\İÚYˆLLŒÍMÎ	Ë	ÚÎ‹ËÙ^[\K\İÚYˆØÛÛXİÛZ]YI×KˆÉÚÎ‹ËÙ^[\K\İÜ™Y™\™[˜ÙNˆ
+ÎHÈŒŒMˆLLLIË	ÚÎ‹ËÙ^[\K\İÜ™Y™\™[˜ÙNˆØÛÛXİÛZ]YI×KˆÉÒQˆ
 
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git checkout --detach --force "$EXPECTED_BASE"
-          cp "$artifact_root/tools/lib/industrial-exhaust.mjs" tools/lib/industrial-exhaust.mjs
-          cp "$artifact_root/test/industrial-exhaust.test.js" test/industrial-exhaust.test.js
-          git add -- tools/lib/industrial-exhaust.mjs test/industrial-exhaust.test.js
-          git diff --cached --check
+ÎHÈŒŒMˆLLLJIË	ÒQˆ
 
-          staged_paths="$(git diff --cached --name-only | LC_ALL=C sort)"
-          test "$staged_paths" = "$expected_product_paths"
-          git commit -m "fix(crawler): close identifier-context review boundaries"
-          new_product_head="$(git rev-parse HEAD)"
-
-          test "$(git rev-list --count "$EXPECTED_BASE..$new_product_head")" = "1"
-          committed_paths="$(git diff --name-only "$EXPECTED_BASE..$new_product_head" | LC_ALL=C sort)"
-          test "$committed_paths" = "$expected_product_paths"
-
-          git push --force-with-lease="refs/heads/$PRODUCT_BRANCH:$EXPECTED_PRODUCT_HEAD" \
-            origin "HEAD:refs/heads/$PRODUCT_BRANCH"
-          git fetch --no-tags origin "$PRODUCT_BRANCH"
-          test "$(git rev-parse FETCH_HEAD)" = "$new_product_head"
-
-          {
-            printf 'base=%s\n' "$EXPECTED_BASE"
-            printf 'superseded_product_head=%s\n' "$EXPECTED_PRODUCT_HEAD"
-            printf 'published_product_head=%s\n' "$new_product_head"
-            printf 'library_blob=%s\n' "$(git rev-parse "$new_product_head:tools/lib/industrial-exhaust.mjs")"
-            printf 'test_blob=%s\n' "$(git rev-parse "$new_product_head:test/industrial-exhaust.test.js")"
-            printf 'commit_count=%s\n' "$(git rev-list --count "$EXPECTED_BASE..$new_product_head")"
-            printf 'changed_paths:\n%s\n' "$committed_paths"
-          } > /tmp/current-main-identifier-boundary-receipt.txt
-
-          printf 'product_head=%s\n' "$new_product_head" >> "$GITHUB_OUTPUT"
-          printf 'published_product_head=%s\n' "$new_product_head"
-
-      - name: Upload immutable materialization receipt
-        uses: actions/upload-artifact@v4
-        with:
-          name: current-main-identifier-boundary-${{ steps.publish.outputs.product_head }}
-          path: /tmp/current-main-identifier-boundary-receipt.txt
-          if-no-files-found: error
-          retention-days: 30
+ÎHÈŒŒMˆLLLJI×KˆÉûï*{ï);ï&»ï";ï"ûï&;ï$H;ï$È;ï%»ï$»ï${ï%ˆ;ï%{ï${ï${ï${ï"IË	ûï*{ï);ï&»ï";ï"ûï&;ï$H;ï$È;ï%»ï$»ï${ï%ˆ;ï%{ï${ï${ï${ï"I×KˆÉØÛÛXİY[YšY\ˆLLŒÍMÎ	Ë	ØÛÛXİY[YšY\ˆLLŒÍMÎ	×KˆÉúfîú*lyåj¹cíûï#ùë¨yä!¹åj¹cíûï&»ï$;ï&{ï$;ï${ï$»ï$ûï%;ï%{ï%»ï%ûï&	Ë	úfîú*lyåj¹cíûï#ùë¨yä!¹åj¹cíûï&»ï$;ï&{ï$;ï${ï$»ï$ûï%;ï%{ï%»ï%ûï&	×BˆJHÂˆ\ÜÙ\™\]X[
+™YXİÛÛXİ]J[œ]
+K^XİY[œ]
+NÂˆBˆˆ›Üˆ
+ÛÛœİ[œ]ÙˆÂˆ	ÔÛ™Nˆ
+QˆLLŒÍMÎ
+IËˆ	ÔÛ™HÈQˆLLŒÍMÎ	Ëˆ	ÔÛ™KRQˆLLŒÍMÎ	Ëˆ	ÔÛ™KÒQˆLLŒÍMÎ	Ëˆ	úfîú*lyåj¹cíûï#ûï*{ï);ï&»ï$;ï&{ï$;ï${ï$»ï$ûï%;ï%{ï%»ï%ûï&	ÂˆJHÂˆÛÛœİXİX[H™YXİÛÛXİ]J[œ]
+NÂˆ\ÜÙ\›X]Ú
+XİX[×ØÛÛXİÛZ]YKİK[œ]
+NÂˆ\ÜÙ\™Ù\Ó›İX]Ú
+XİX[››Ü›X[^™J	Ó‘’ĞÉÊKÌLLŒÍMÎİK[œ]
+NÂˆBˆ“ÑBˆˆœH[ˆ™[X\ÙN˜ÚXÚÂˆÚ]Y™ˆKXÚXÚÂˆ
+BˆˆÚ]ÛÜšİ™YH™[[İ™HKY›Ü˜ÙH‰]X[YšXØ][Û—Ù\ˆ‚ˆ›Y\ˆ‰]X[YšXØ][Û—Ü›Ûİ‚ˆˆÈ™K\™XY›İ™[[İHX\Ù\È[[YYX][H™Y›Ü™HX›XØ][Û‹ˆH[İš[™ÈXZ[ˆÜ‚ˆÈ›ÙXİœ˜[˜Ú˜Z[ÈÛÜÙY˜]\ˆ[ˆÚ[[HÚ[™Ú[™ÈH™]šY]ÈØš™Xİ‚ˆÚ]™]ÚK[›Ë]YÜÈÜšYÚ[ˆˆŠÜ™YœËÚXYËÛXZ[œ™YœËÜ™[[İ\ËÛÜšYÚ[‹ÛXZ[ˆˆˆŠÜ™YœËÚXYËÉÔ“ÑPÕĞ”SÒNœ™YœËÜ™[[İ\ËÛÜšYÚ[‹ÉÔ“ÑPÕĞ”SÒH‚ˆ\İ‰
+Ú]™]‹\\œÙH™YœËÜ™[[İ\ËÛÜšYÚ[‹ÛXZ[ŠHˆH‰VPÕQÓPRSˆ‚ˆ\İ‰
+Ú]™]‹\\œÙH™YœËÜ™[[İ\ËÛÜšYÚ[‹ÉÔ“ÑPÕĞ”SÒJHˆH‰VPÕQÔ“ÑPÕÒPQ‚ˆˆÚ]ÛÛ™šYÈ\Ù\‹›˜[YH™Ú]X‹XXİ[ÛœÖØ›İH‚ˆÚ]ÛÛ™šYÈ\Ù\‹™[XZ[NNŠÙÚ]X‹XXİ[ÛœÖØ›İP\Ù\œË››Ü™\K™Ú]X‹˜ÛÛH‚ˆÚ]ÚXÚÛİ]KY]XÚKY›Ü˜ÙH‰VPÕQÓPRSˆ‚ˆÜ‰\Y˜XİÜ›ÛİİÛÛËÛX‹Ú[™\İšX[Y^]\İ›ZœÈˆÛÛËÛX‹Ú[™\İšX[Y^]\İ›ZœÂˆ7"F'F–f7E÷&ö÷B÷FW7Bö–æGW7G&–ÂÖW††W7BçFW7Bæ§2"FW7Bö–æGW7G&–ÂÖW††W7BçFW7Bæ§0¢ ¢v—BFBÒÒFööÇ2öÆ–"ö–æGW7G&–ÂÖW††W7BæÖ§2FW7Bö–æGW7G&–ÂÖW††W7BçFW7Bæ§0¢v—BF–fbÒÖ66†VBÒÖ6†V6°¢ ¢7FvVE÷F‡3Ò"B†v—BF–fbÒÖ66†VBÒÖæÖRÖöæÇ’ÂÄ5ôÄÃÔ26÷'B’ ¢FW7B"G7FvVE÷F‡2"Ò"FW‡V7FVE÷&öGV7E÷F‡2 ¢7FvVEöçV×7FCÒ"B†v—BF–fbÒÖ66†VBÒÖçV×7FBÂÄ5ôÄÃÔ26÷'BÖ³2’ ¢FW7B"G7FvVEöçV×7FB"Ò"FW‡V7FVE÷&öGV7EöçV×7FB ¢FW7B"B†v—B†6‚Öö&¦V7BFööÇ2öÆ–"ö–æGW7G&–ÂÖW††W7BæÖ§2’"Ò"DU…T5DTEõ$ôET5EôÄ”%$%•ô$Äô" ¢FW7B"B†v—B†6‚Öö&¦V7BFW7Bö–æGW7G&–ÂÖW††W7BçFW7Bæ§2’"Ò"DU…T5DTEõ$ôET5EõDU5Eô$Äô" ¢ ¢v—B6öÖÖ—BÖÒ&f—‚†7&vÆW"“¢6Æ÷6R–FVçF–f–W"Ö6öçFW‡B&Wf–Wr&÷VæF&–W2 ¢æWu÷&öGV7Eö†VCÒ"B†v—B&Wb×'6R„TB’ ¢ ¢FW7B"B†v—B&Wb×'6R„TEâ’"Ò"DU…T5DTEôÔ”â ¢FW7B"B†v—B&WbÖÆ—7BÒÖ6÷VçB"G´U…T5DTEôÔ”çÒââG¶æWu÷&öGV7Eö†VGÒ"’"Ò# ¢6öÖÖ—GFVE÷F‡3Ò"B†v—BF–fbÒÖæÖRÖöæÇ’"G´U…T5DTEôÔ”çÒââG¶æWu÷&öGV7Eö†VGÒ"ÂÄ5ôÄÃÔ26÷'B’ ¢FW7B"F6öÖÖ—GFVE÷F‡2"Ò"FW‡V7FVE÷&öGV7E÷F‡2 ¢6öÖÖ—GFVEöçV×7FCÒ"B†v—BF–fbÒÖçV×7FB"G´U…T5DTEôÔ”çÒââG¶æWu÷&öGV7Eö†VGÒ"ÂÄ5ôÄÃÔ26÷'BÖ³2’ ¢FW7B"F6öÖÖ—GFVEöçV×7FB"Ò"FW‡V7FVE÷&öGV7EöçV×7FB ¢FW7B"B†v—B&Wb×'6R"G¶æWu÷&öGV7Eö†VGÓ§FööÇ2öÆ–"ö–æGW7G&–ÂÖW††W7BæÖ§2"’"Ò"DU…T5DTEõ$ôET5EôÄ”%$%•ô$Äô" ¢FW7B"B†v—B&Wb×'6R"G¶æWu÷&öGV7Eö†VGÓ§FW7Bö–æGW7G&–ÂÖW††W7BçFW7Bæ§2"’"Ò"DU…T5DTEõ$ôET5EõDU5Eô$Äô" ¢ ¢v—BW6‚ÒÖf÷&6R×v—F‚ÖÆV6SÒ'&Vg2ö†VG2òGµ$ôET5Eô%$ä4‡Ó¢G´U…T5DTEõ$ôET5Eô„TGÒ"À¢÷&–v–â$„TC§&Vg2ö†VG2òGµ$ôET5Eô%$ä4‡Ò ¢v—BfWF6‚ÒÖæò×Fw2÷&–v–âÀ¢"·&Vg2ö†VG2òGµ$ôET5Eô%$ä4‡Ó§&Vg2÷&VÖ÷FW2ö÷&–v–âòGµ$ôET5Eô%$ä4‡Ò ¢FW7B"B†v—B&Wb×'6R&Vg2÷&VÖ÷FW2ö÷&–v–âòGµ$ôET5Eô%$ä4‡Ò’"Ò"FæWu÷&öGV7Eö†VB ¢ ¢°¢&–çFbw&V6V—E÷fW'6–öãÖ7W'&VçBÖÖ–âÖ–FVçF–f–W"Ö&÷VæF'’×&W&VçDEÆâp¢&–çFbv6'&–W%ö†VCÒW5Æâr"E%ô„TEõ4„ ¢&–çFbv6'&–W%÷'Våö–CÒW5Æâr"E%Tåô”B ¢&–çFbv6'&–W%÷'VåöGFV×CÒW5Æâr"E%TåôEDTÕB ¢&–çFbv&6SÒW5Æâr"DU…T5DTEôÔ”â ¢&–çFbw6÷W&6U÷&öGV7E÷&VçCÒW5Æâr"DU…T5DTEõ$ôET5Eõ$TåB ¢&–çFbw7WW'6VFVE÷&öGV7Eö†VCÒW5Æâr"DU…T5DTEõ$ôET5Eô„TB ¢&–çFbwV&Æ—6†VE÷&öGV7Eö†VCÒW5Æâr"FæWu÷&öGV7Eö†VB ¢&–çFbvÆ–'&'•ö&Æö#ÒW5Æâr"B†v—B&Wb×'6R"G¶æWu÷&öGV7Eö†VGÓ§FööÇ2öÆ–"ö–æGW7G&–ÂÖW††W7BæÖ§2"’ ¢&–çFbwFW7Eö&Æö#ÒW5Æâr"B†v—B&Wb×'6R"G¶æWu÷&öGV7Eö†VGÓ§FW7Bö–æGW7G&–ÂÖW††W7BçFW7Bæ§2"’ ¢&–çFbv6öÖÖ—Eö6÷VçCÒW5Æâr"B†v—B&WbÖÆ—7BÒÖ6÷VçB"G´U…T5DTEôÔ”çÒââG¶æWu÷&öGV7Eö†VGÒ"’ ¢&–çFbv6†ævVE÷F‡3¥ÆâW5Æâr"F6öÖÖ—GFVE÷F‡2 ¢&–çFbvçV×7FC¥ÆâW5Æâr"F6öÖÖ—GFVEöçV×7FB ¢Òâ÷F×ö7W'&VçBÖÖ–âÖ–FVçF–f–W"Ö&÷VæF'’×&W&VçB×&V6V—BçG‡@¢ ¢&–çFbw&öGV7Eö†VCÒW5Æâr"FæWu÷&öGV7Eö†VB"ãâ"Dt•D…T%ôõUEUB ¢&–çFbwV&Æ—6†VE÷&öGV7Eö†VCÒW5Æâr"FæWu÷&öGV7Eö†VB ¢6B÷F×ö7W'&VçBÖÖ–âÖ–FVçF–f–W"Ö&÷VæF'’×&W&VçB×&V6V—BçG‡@ ¢ÒæÖS¢WÆöB–Ö×WF&ÆRV&Æ–6F–öâ&V6V—@¢W6W3¢7F–öç2÷WÆöBÖ'F–f7Dc@¢v—Fƒ ¢æÖS¢7W'&VçBÖÖ–âÖ–FVçF–f–W"Ö&÷VæF'’×&W&VçBÒG·²7FW2çV&Æ—6‚æ÷WGWG2ç&öGV7Eö†VB×Ğ¢Fƒ¢÷F×ö7W'&VçBÖÖ–âÖ–FVçF–f–W"Ö&÷VæF'’×&W&VçB×&V6V—BçG‡@¢–bÖæòÖf–ÆW2Öf÷VæC¢W'&÷ ¢&WFVçF–öâÖF—3¢3 
