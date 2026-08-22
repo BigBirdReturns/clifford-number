@@ -44,6 +44,77 @@ function latestBy(records, keyName, revisionName = 'revision_number') {
   return map;
 }
 
+function validateRevisionLineage(records, { label, idName, keyNames }) {
+  if (!Array.isArray(records)) throw new Error(`${label} revision lineage must be an array`);
+  const byId = new Map();
+  const byRevision = new Map();
+
+  for (const record of records) {
+    const id = record?.[idName];
+    if (typeof id !== 'string' || !id) throw new Error(`${label} revision is missing ${idName}`);
+    if (byId.has(id)) throw new Error(`duplicate ${label} occurrence id: ${id}`);
+
+    const keyParts = keyNames.map(keyName => record?.[keyName]);
+    if (keyParts.some(value => typeof value !== 'string' || !value)) {
+      throw new Error(`${label} revision ${id} lacks stable identity`);
+    }
+    const lineageKey = stableJson(keyParts);
+    const revisionNumber = record?.revision_number;
+    if (!Number.isSafeInteger(revisionNumber) || revisionNumber < 1) {
+      throw new Error(`${label} revision ${id} has an invalid revision_number`);
+    }
+    const revisionKey = stableJson([lineageKey, revisionNumber]);
+    if (byRevision.has(revisionKey)) {
+      throw new Error(`forked ${label} lineage at revision ${revisionNumber}: ${id}`);
+    }
+
+    const node = { id, lineageKey, revisionNumber, record };
+    byId.set(id, node);
+    byRevision.set(revisionKey, node);
+  }
+
+  for (const node of byId.values()) {
+    const parentId = node.record.revision_of;
+    if (node.revisionNumber === 1) {
+      if (parentId !== null) {
+        throw new Error(`${label} root ${node.id} must declare revision_of null`);
+      }
+      continue;
+    }
+    if (typeof parentId !== 'string' || !parentId) {
+      throw new Error(`${label} revision ${node.id} is missing its predecessor`);
+    }
+    const parent = byId.get(parentId);
+    if (!parent) {
+      throw new Error(`${label} revision ${node.id} names a missing predecessor: ${parentId}`);
+    }
+    if (parent.lineageKey !== node.lineageKey) {
+      throw new Error(`${label} revision ${node.id} crosses stable identity through revision_of`);
+    }
+    if (parent.revisionNumber !== node.revisionNumber - 1) {
+      throw new Error(`${label} revision ${node.id} does not name its immediate predecessor`);
+    }
+  }
+
+  return records;
+}
+
+export function validateDiscoveryRevisionLineage(records) {
+  return validateRevisionLineage(records, {
+    label: 'discovery',
+    idName: 'discovery_id',
+    keyNames: ['source_id', 'source_record_key']
+  });
+}
+
+export function validateArtifactRevisionLineage(records) {
+  return validateRevisionLineage(records, {
+    label: 'artifact',
+    idName: 'artifact_id',
+    keyNames: ['artifact_record_key']
+  });
+}
+
 function normalizeDate(value) {
   const raw = cleanText(value, 300);
   if (!raw) return null;
@@ -161,6 +232,7 @@ export function parseHtmlLinkIndex(html, source) {
 }
 
 export function mergeDiscoveryRecords({ records, source, parsedIndex, capturedAt, indexReceiptPath }) {
+  validateDiscoveryRevisionLineage(records);
   const merged = [...records];
   const latest = latestBy(merged.filter(record => record.source_id === source.id), 'source_record_key');
   const added = [];
@@ -170,7 +242,12 @@ export function mergeDiscoveryRecords({ records, source, parsedIndex, capturedAt
     const revisionNumber = previous ? Number(previous.revision_number ?? 1) + 1 : 1;
     const record = {
       schema_version: ARTIFACT_SCHEMA_VERSION,
-      discovery_id: contentId('xdiscover', source.id, item.source_record_key, item.content_sha256),
+      discovery_id: revisionOccurrenceId(
+        'xdiscover',
+        [source.id, item.source_record_key],
+        previous?.discovery_id ?? null,
+        item.content_sha256
+      ),
       source_id: source.id,
       source_class: SOURCE_CLASS,
       publisher: source.publisher,
@@ -200,6 +277,7 @@ export function mergeDiscoveryRecords({ records, source, parsedIndex, capturedAt
     added.push(record);
   }
   merged.sort((a, b) => a.discovery_id.localeCompare(b.discovery_id));
+  validateDiscoveryRevisionLineage(merged);
   return { records: merged, added };
 }
 
@@ -303,6 +381,7 @@ export function extractHtmlArtifact(html, canonicalUrl, maxNormalizedChars = 60_
 }
 
 export function buildHydrationCandidates({ baseAlerts, discoveryRecords, watchConfig }) {
+  validateDiscoveryRevisionLineage(discoveryRecords);
   const candidates = new Map();
   const add = ({ canonicalUrl, sourceId, publisher, title, matchedTerms, recordType, recordId }) => {
     if (!canonicalUrl) return;
@@ -374,6 +453,13 @@ export function selectHydrationCandidates(candidates, state, limit) {
     .slice(0, limit);
 }
 
+function revisionOccurrenceId(prefix, stableParts, previousId, contentSha256) {
+  const parts = Array.isArray(stableParts) ? stableParts : [stableParts];
+  return previousId
+    ? contentId(prefix, ...parts, previousId, contentSha256)
+    : contentId(prefix, ...parts, contentSha256);
+}
+
 function artifactProjectionIdentity({ bodyRecord, bodySha256, contentType }) {
   const mediaType = String(contentType ?? '')
     .toLowerCase()
@@ -386,6 +472,7 @@ function artifactProjectionIdentity({ bodyRecord, bodySha256, contentType }) {
 }
 
 export function mergeArtifactProjection({ artifacts, candidate, sourceProjection, capturedAt, bodyReceiptPath, bodySha256, responseHeaders }) {
+  validateArtifactRevisionLineage(artifacts);
   const merged = [...artifacts];
   const recordKey = sha256(candidate.canonical_url);
   const latest = latestBy(merged, 'artifact_record_key');
@@ -429,7 +516,12 @@ export function mergeArtifactProjection({ artifacts, candidate, sourceProjection
   const revisionNumber = previous ? Number(previous.revision_number ?? 1) + 1 : 1;
   const artifact = {
     schema_version: ARTIFACT_SCHEMA_VERSION,
-    artifact_id: contentId('xartifact', recordKey, projectionSha256),
+    artifact_id: revisionOccurrenceId(
+      'xartifact',
+      recordKey,
+      previous?.artifact_id ?? null,
+      projectionSha256
+    ),
     artifact_record_key: recordKey,
     source_id: candidate.source_id,
     source_class: SOURCE_CLASS,
@@ -464,10 +556,12 @@ export function mergeArtifactProjection({ artifacts, candidate, sourceProjection
   };
   merged.push(artifact);
   merged.sort((a, b) => a.artifact_id.localeCompare(b.artifact_id));
+  validateArtifactRevisionLineage(merged);
   return { artifacts: merged, added: artifact, unchanged: null };
 }
 
 export function buildArtifactAlerts(artifacts, { watchConfig = null, candidates = [] } = {}) {
+  validateArtifactRevisionLineage(artifacts);
   const latest = latestBy(artifacts, 'artifact_record_key');
   const candidatesByUrl = new Map(candidates.map(candidate => [candidate.canonical_url, candidate]));
   const alerts = [];

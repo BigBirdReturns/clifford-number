@@ -13,6 +13,8 @@ import {
   parseHtmlLinkIndex,
   selectHydrationCandidates,
   validateArtifactConfig,
+  validateArtifactRevisionLineage,
+  validateDiscoveryRevisionLineage,
   writeArtifactReceipt
 } from '../tools/lib/industrial-exhaust-artifacts.mjs';
 import { matchWatchTerms } from '../tools/lib/industrial-exhaust.mjs';
@@ -83,6 +85,147 @@ const secondMerge = mergeDiscoveryRecords({
   indexReceiptPath: 'receipts/index.json'
 });
 assert.equal(secondMerge.added.length, 0);
+
+const revisedIndex = parseHtmlLinkIndex(
+  indexHtml.replace(
+    'Dentsu Partners With Evidenza To Integrate Synthetic Audiences',
+    'Dentsu Partners With Evidenza Revision'
+  ),
+  config.indexes[0]
+);
+const recurrentDiscoveryKey = parsedIndex.items.find(item => item.canonical_url.includes('partners-with-evidenza')).source_record_key;
+const initialDiscovery = firstMerge.records.find(item => item.source_record_key === recurrentDiscoveryKey);
+const discoveryRevisionMerge = mergeDiscoveryRecords({
+  records: firstMerge.records,
+  source: config.indexes[0],
+  parsedIndex: revisedIndex,
+  capturedAt: '2026-08-18T12:00:00.000Z',
+  indexReceiptPath: 'receipts/index-b.json'
+});
+assert.equal(discoveryRevisionMerge.added.length, 1);
+const discoveryRevision = discoveryRevisionMerge.added[0];
+const discoveryRevertMerge = mergeDiscoveryRecords({
+  records: discoveryRevisionMerge.records,
+  source: config.indexes[0],
+  parsedIndex,
+  capturedAt: '2026-08-18T13:00:00.000Z',
+  indexReceiptPath: 'receipts/index-a-repeat.json'
+});
+assert.equal(discoveryRevertMerge.added.length, 1, 'A → B → A must append a new discovery occurrence');
+const revertedDiscovery = discoveryRevertMerge.added[0];
+assert.equal(revertedDiscovery.content_sha256, initialDiscovery.content_sha256);
+assert.notEqual(
+  revertedDiscovery.discovery_id,
+  initialDiscovery.discovery_id,
+  'reverted discovery content must not reuse the first occurrence identifier'
+);
+assert.equal(revertedDiscovery.revision_of, discoveryRevision.discovery_id);
+assert.equal(revertedDiscovery.revision_number, 3);
+
+const discoveryRepeatMerge = mergeDiscoveryRecords({
+  records: discoveryRevertMerge.records,
+  source: config.indexes[0],
+  parsedIndex: revisedIndex,
+  capturedAt: '2026-08-18T14:00:00.000Z',
+  indexReceiptPath: 'receipts/index-b-repeat.json'
+});
+assert.equal(discoveryRepeatMerge.added.length, 1, 'A → B → A → B must append a fourth discovery occurrence');
+const repeatedDiscovery = discoveryRepeatMerge.added[0];
+assert.equal(repeatedDiscovery.content_sha256, discoveryRevision.content_sha256);
+assert.notEqual(
+  repeatedDiscovery.discovery_id,
+  discoveryRevision.discovery_id,
+  'repeated discovery content must not reuse the earlier revised occurrence identifier'
+);
+assert.equal(repeatedDiscovery.revision_of, revertedDiscovery.discovery_id);
+assert.equal(repeatedDiscovery.revision_number, 4);
+assert.equal(
+  new Set(discoveryRepeatMerge.records
+    .filter(item => item.source_record_key === recurrentDiscoveryKey)
+    .map(item => item.discovery_id)).size,
+  4,
+  'every discovery revision occurrence must retain a unique identifier'
+);
+
+const discoveryLineage = discoveryRepeatMerge.records
+  .filter(item => item.source_record_key === recurrentDiscoveryKey)
+  .sort((left, right) => left.revision_number - right.revision_number);
+const [discoveryA1, discoveryB2, discoveryA3] = discoveryLineage;
+const otherDiscoveryRoot = firstMerge.records.find(item => item.source_record_key !== recurrentDiscoveryKey);
+assert.equal(validateDiscoveryRevisionLineage(discoveryRepeatMerge.records), discoveryRepeatMerge.records);
+assert.throws(
+  () => validateDiscoveryRevisionLineage([{ ...discoveryA1, revision_of: 'xdiscover_non_null_root' }]),
+  /discovery root .* must declare revision_of null/u
+);
+assert.throws(
+  () => validateDiscoveryRevisionLineage([{ ...discoveryA1, revision_number: 0 }]),
+  /discovery revision .* invalid revision_number/u
+);
+assert.throws(
+  () => validateDiscoveryRevisionLineage([{ ...discoveryA1, revision_number: '1' }]),
+  /discovery revision .* invalid revision_number/u
+);
+assert.throws(
+  () => validateDiscoveryRevisionLineage([
+    discoveryA1,
+    { ...otherDiscoveryRoot, discovery_id: discoveryA1.discovery_id }
+  ]),
+  /duplicate discovery occurrence id/u
+);
+const discoveryFork = {
+  ...discoveryB2,
+  discovery_id: 'xdiscover_forked_revision'
+};
+assert.throws(
+  () => validateDiscoveryRevisionLineage([discoveryA1, discoveryB2, discoveryFork]),
+  /forked discovery lineage at revision 2/u
+);
+assert.throws(
+  () => mergeDiscoveryRecords({
+    records: [discoveryA1, discoveryB2, discoveryFork],
+    source: config.indexes[0],
+    parsedIndex,
+    capturedAt: '2026-08-18T15:00:00.000Z',
+    indexReceiptPath: 'receipts/index-fork-rejected.json'
+  }),
+  /forked discovery lineage at revision 2/u
+);
+assert.throws(
+  () => validateDiscoveryRevisionLineage([
+    discoveryA1,
+    { ...discoveryB2, revision_of: 'xdiscover_missing_predecessor' }
+  ]),
+  /names a missing predecessor/u
+);
+assert.throws(
+  () => validateDiscoveryRevisionLineage([
+    discoveryA1,
+    otherDiscoveryRoot,
+    {
+      ...discoveryB2,
+      discovery_id: 'xdiscover_cross_lineage',
+      source_record_key: otherDiscoveryRoot.source_record_key,
+      revision_of: discoveryA1.discovery_id
+    }
+  ]),
+  /crosses stable identity through revision_of/u
+);
+assert.throws(
+  () => validateDiscoveryRevisionLineage([
+    discoveryA1,
+    discoveryB2,
+    { ...discoveryA3, revision_of: discoveryA1.discovery_id }
+  ]),
+  /does not name its immediate predecessor/u
+);
+assert.throws(
+  () => buildHydrationCandidates({
+    baseAlerts: [],
+    discoveryRecords: [discoveryA1, discoveryB2, discoveryFork],
+    watchConfig
+  }),
+  /forked discovery lineage at revision 2/u
+);
 
 const articleHtml = `<!doctype html><html><head>
 <title>Dentsu B2B</title><meta property="article:published_time" content="2024-08-26T07:00:00Z">
@@ -218,6 +361,147 @@ const semanticChangeMerge = mergeArtifactProjection({
 });
 assert.ok(semanticChangeMerge.added, 'changed normalized content must create a revision');
 assert.equal(semanticChangeMerge.added.revision_number, 2);
+
+const semanticRevertMerge = mergeArtifactProjection({
+  artifacts: semanticChangeMerge.artifacts,
+  candidate,
+  sourceProjection: projection,
+  capturedAt: '2026-08-18T14:30:00.000Z',
+  bodyReceiptPath: 'receipts/article-semantic-revert.json',
+  bodySha256: 'e'.repeat(64),
+  responseHeaders: {
+    content_type: 'text/html',
+    etag: 'semantic-revert',
+    last_modified: null,
+    final_url: candidate.canonical_url,
+    redirect_chain: [],
+    watch_config: watchConfig
+  }
+});
+assert.ok(semanticRevertMerge.added, 'A → B → A must append a new artifact occurrence');
+const revertedArtifact = semanticRevertMerge.added;
+assert.equal(revertedArtifact.projection_sha256, artifactMerge.added.projection_sha256);
+assert.notEqual(
+  revertedArtifact.artifact_id,
+  artifactMerge.added.artifact_id,
+  'reverted semantic content must not reuse the first artifact occurrence identifier'
+);
+assert.equal(revertedArtifact.revision_of, semanticChangeMerge.added.artifact_id);
+assert.equal(revertedArtifact.revision_number, 3);
+
+const semanticRepeatMerge = mergeArtifactProjection({
+  artifacts: semanticRevertMerge.artifacts,
+  candidate,
+  sourceProjection: {
+    ...projection,
+    normalized_text: changedText,
+    normalized_text_sha256: crypto.createHash('sha256').update(changedText).digest('hex')
+  },
+  capturedAt: '2026-08-18T14:45:00.000Z',
+  bodyReceiptPath: 'receipts/article-semantic-repeat.json',
+  bodySha256: 'f'.repeat(64),
+  responseHeaders: {
+    content_type: 'text/html; charset=utf-8',
+    etag: 'semantic-repeat',
+    last_modified: null,
+    final_url: candidate.canonical_url,
+    redirect_chain: [],
+    watch_config: watchConfig
+  }
+});
+assert.ok(semanticRepeatMerge.added, 'A → B → A → B must append a fourth artifact occurrence');
+const repeatedArtifact = semanticRepeatMerge.added;
+assert.equal(repeatedArtifact.projection_sha256, semanticChangeMerge.added.projection_sha256);
+assert.notEqual(
+  repeatedArtifact.artifact_id,
+  semanticChangeMerge.added.artifact_id,
+  'repeated semantic content must not reuse the earlier revised artifact occurrence identifier'
+);
+assert.equal(repeatedArtifact.revision_of, revertedArtifact.artifact_id);
+assert.equal(repeatedArtifact.revision_number, 4);
+assert.equal(
+  new Set(semanticRepeatMerge.artifacts
+    .filter(item => item.artifact_record_key === artifactMerge.added.artifact_record_key)
+    .map(item => item.artifact_id)).size,
+  4,
+  'every artifact revision occurrence must retain a unique identifier'
+);
+
+const artifactLineage = semanticRepeatMerge.artifacts
+  .filter(item => item.artifact_record_key === artifactMerge.added.artifact_record_key)
+  .sort((left, right) => left.revision_number - right.revision_number);
+const [artifactA1, artifactB2, artifactA3] = artifactLineage;
+assert.equal(validateArtifactRevisionLineage(semanticRepeatMerge.artifacts), semanticRepeatMerge.artifacts);
+assert.throws(
+  () => validateArtifactRevisionLineage([{ ...artifactA1, revision_of: 'xartifact_non_null_root' }]),
+  /artifact root .* must declare revision_of null/u
+);
+assert.throws(
+  () => validateArtifactRevisionLineage([{ ...artifactA1, revision_number: 0 }]),
+  /artifact revision .* invalid revision_number/u
+);
+assert.throws(
+  () => validateArtifactRevisionLineage([{ ...artifactA1, revision_number: '1' }]),
+  /artifact revision .* invalid revision_number/u
+);
+assert.throws(
+  () => validateArtifactRevisionLineage([
+    artifactA1,
+    { ...artifactB2, artifact_id: artifactA1.artifact_id }
+  ]),
+  /duplicate artifact occurrence id/u
+);
+const artifactFork = {
+  ...artifactB2,
+  artifact_id: 'xartifact_forked_revision'
+};
+assert.throws(
+  () => validateArtifactRevisionLineage([artifactA1, artifactB2, artifactFork]),
+  /forked artifact lineage at revision 2/u
+);
+assert.throws(
+  () => mergeArtifactProjection({
+    artifacts: [artifactA1, artifactB2, artifactFork],
+    candidate,
+    sourceProjection: projection,
+    capturedAt: '2026-08-18T15:00:00.000Z',
+    bodyReceiptPath: 'receipts/article-fork-rejected.json',
+    bodySha256: 'a'.repeat(64),
+    responseHeaders: { content_type: 'text/html', watch_config: watchConfig }
+  }),
+  /forked artifact lineage at revision 2/u
+);
+assert.throws(
+  () => validateArtifactRevisionLineage([
+    artifactA1,
+    { ...artifactB2, revision_of: 'xartifact_missing_predecessor' }
+  ]),
+  /names a missing predecessor/u
+);
+assert.throws(
+  () => validateArtifactRevisionLineage([
+    artifactA1,
+    {
+      ...artifactB2,
+      artifact_id: 'xartifact_cross_lineage',
+      artifact_record_key: 'artifact-record-key-other',
+      revision_of: artifactA1.artifact_id
+    }
+  ]),
+  /crosses stable identity through revision_of/u
+);
+assert.throws(
+  () => validateArtifactRevisionLineage([
+    artifactA1,
+    artifactB2,
+    { ...artifactA3, revision_of: artifactA1.artifact_id }
+  ]),
+  /does not name its immediate predecessor/u
+);
+assert.throws(
+  () => buildArtifactAlerts([artifactA1, artifactB2, artifactFork], { watchConfig, candidates: discoveryCandidates }),
+  /forked artifact lineage at revision 2/u
+);
 
 const pdfCandidate = {
   ...candidate,
