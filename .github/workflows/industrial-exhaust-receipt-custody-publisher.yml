@@ -7,6 +7,7 @@ on:
     paths:
       - .github/workflows/industrial-exhaust-receipt-custody-publisher.yml
       - .github/materializers/industrial-exhaust-receipt-custody.py
+      - .github/materializers/industrial-exhaust-receipt-custody-compat.py
   workflow_dispatch:
 
 permissions:
@@ -63,6 +64,7 @@ jobs:
 
           git worktree add --detach "$worktree" "$EXPECTED_BASE"
           python "$GITHUB_WORKSPACE/.github/materializers/industrial-exhaust-receipt-custody.py" "$worktree"
+          python "$GITHUB_WORKSPACE/.github/materializers/industrial-exhaust-receipt-custody-compat.py" "$worktree"
 
           cd "$worktree"
           git diff --check
