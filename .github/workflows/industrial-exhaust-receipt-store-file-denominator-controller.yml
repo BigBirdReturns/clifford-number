@@ -1,0 +1,117 @@
+name: Industrial exhaust receipt-store file denominator controller
+
+on:
+  push:
+    branches:
+      - agent/industrial-exhaust-receipt-store-file-denominator-controller-v1
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Materialize, qualify, and publish the clean product
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          leased_base='645b6e979d31679835329cd0694fedd6e0955a59'
+          product_branch='agent/industrial-exhaust-receipt-store-file-denominator-v1'
+          git fetch origin main "$product_branch"
+          test "$(git rev-parse origin/main)" = "$leased_base"
+          test "$(git rev-parse "origin/$product_branch")" = "$leased_base"
+
+          workdir="$(mktemp -d)"
+          git worktree add --detach "$workdir" "$leased_base"
+          cd "$workdir"
+
+          python - <<'PY'
+          from pathlib import Path
+
+          library = Path('tools/lib/industrial-exhaust-artifacts.mjs')
+          text = library.read_text()
+          old = r"""      } else if (entry.isFile()) {
+                if (entry.name.endsWith('.json')) result.push(portableReceiptPath(root, absolutePath));
+              } else {
+                throw new Error(`receipt store contains an unsupported entry: ${portableReceiptPath(root, absolutePath)}`);
+              }
+          """
+          new = r"""      } else if (entry.isFile()) {
+                const relativePath = portableReceiptPath(root, absolutePath);
+                if (!entry.name.endsWith('.json')) {
+                  throw new Error(`receipt store contains an unsupported file: ${relativePath}`);
+                }
+                result.push(relativePath);
+              } else {
+                throw new Error(`receipt store contains an unsupported entry: ${portableReceiptPath(root, absolutePath)}`);
+              }
+          """
+          if text.count(old) != 1:
+              raise SystemExit('library patch anchor is not unique')
+          library.write_text(text.replace(old, new))
+
+          test_file = Path('test/industrial-exhaust-retained-store-custody.test.js')
+          test_text = test_file.read_text()
+          anchor = r"""  fs.rmSync(noncanonicalReceiptPath);
+          } finally {
+          """
+          replacement = r"""  fs.rmSync(noncanonicalReceiptPath);
+
+            const unsupportedRegularFilePath = path.join(
+              rootDir,
+              'receipts',
+              'exhaust',
+              'artifacts',
+              '.ignored-receipt'
+            );
+            fs.writeFileSync(unsupportedRegularFilePath, 'unauthenticated receipt bytes\n');
+            assert.throws(
+              () => validateIndustrialExhaustReceiptStore({ rootDir }),
+              /unsupported file: receipts\/exhaust\/artifacts\/\.ignored-receipt/u,
+              'every retained regular file must enter the custody denominator'
+            );
+            assert.throws(
+              () => validateIndustrialExhaustReceiptCustody({ rootDir, discoveryRecords, artifacts }),
+              /unsupported file: receipts\/exhaust\/artifacts\/\.ignored-receipt/u,
+              'runtime custody must reject regular files outside the receipt contract'
+            );
+            fs.rmSync(unsupportedRegularFilePath);
+          } finally {
+          """
+          if test_text.count(anchor) != 1:
+              raise SystemExit('test patch anchor is not unique')
+          test_file.write_text(test_text.replace(anchor, replacement))
+          PY
+
+          expected_paths=$'test/industrial-exhaust-retained-store-custody.test.js\ntools/lib/industrial-exhaust-artifacts.mjs'
+          actual_paths="$(git diff --name-only | sort)"
+          test "$actual_paths" = "$expected_paths"
+          git diff --check
+
+          node --check tools/lib/industrial-exhaust-artifacts.mjs
+          node --check test/industrial-exhaust-retained-store-custody.test.js
+          node test/industrial-exhaust-retained-store-custody.test.js
+          node test/industrial-exhaust-artifacts.test.js
+          node test/industrial-exhaust.test.js
+          node tools/hydrate-industrial-exhaust.mjs --audit
+
+          test "$(git diff --name-only | sort)" = "$expected_paths"
+          test -z "$(git status --porcelain --untracked-files=all | grep -v -E '^( M|M |A |\?\?) (test/industrial-exhaust-retained-store-custody.test.js|tools/lib/industrial-exhaust-artifacts.mjs)$' || true)"
+
+          git config user.name 'clifford-exhaust-bot'
+          git config user.email 'clifford-exhaust-bot@users.noreply.github.com'
+          git switch -c "$product_branch"
+          git add tools/lib/industrial-exhaust-artifacts.mjs test/industrial-exhaust-retained-store-custody.test.js
+          git commit -m 'fix(industrial-exhaust): close receipt-store file denominator'
+          test "$(git rev-parse HEAD^)" = "$leased_base"
+          test "$(git diff-tree --no-commit-id --name-only -r HEAD | sort)" = "$expected_paths"
+          git push --force-with-lease="refs/heads/$product_branch:$leased_base" origin "HEAD:refs/heads/$product_branch"
+          echo "PRODUCT_HEAD=$(git rev-parse HEAD)"
