@@ -1,0 +1,133 @@
+{
+  "schema_version": "m05-answerable-power-s03-l7-intel-realization-stage-receipt-repository-tree-custody-amendment@1",
+  "object_class": "intel_realization_stage_receipt_repository_tree_custody_control",
+  "program_id": "M-05",
+  "sprint_id": "M05-SPRINT-03",
+  "leg_id": "S03-L7",
+  "issue": 345,
+  "status": "intel_realization_stage_receipt_repository_tree_custody_amendment_frozen",
+  "predecessor_control_stack_binding": {
+    "repair_contract": {
+      "path": "data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-postmerge-repair.json",
+      "git_blob_sha1": "14decc6ed12383ca7395551c025edac06c446c5c",
+      "semantic_sha256": "3d70718a3c458189dae7f724c128301813eae885f968226fa738b1564bd29651"
+    },
+    "validator": {
+      "path": "tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.mjs",
+      "git_blob_sha1": "f011ce212a5b94a8d2557b8a88f12f30740b010e"
+    },
+    "adversarial_test": {
+      "path": "test/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.test.js",
+      "git_blob_sha1": "159574dfe4cd3b86fddb8ff597ad7010b300f5b9"
+    },
+    "focused_workflow": {
+      "path": ".github/workflows/m05-intel-realization-stage-receipt-control-stack-amendment.yml",
+      "git_blob_sha1": "a97748f0a84c7f5a020b5c6e59aa471fcb5cd0de"
+    }
+  },
+  "defect_classification": {
+    "class": "working_tree_hash_without_committed_tree_membership",
+    "affected_objects": [
+      "control_stack_receipts",
+      "top_level_source_receipts",
+      "nested_custody_objects"
+    ],
+    "prior_behavior": "A regular filesystem file could qualify when its bytes recomputed to the declared Git blob SHA-1 and body SHA-256, even if no committed Git tree contained that path and object.",
+    "required_behavior": "Every receipt-namespace file used by a nonempty live registry must be a regular 100644 blob at the exact path in one immutable committed custody snapshot that strictly precedes the registry declaration commit, and the validation HEAD, index, and worktree must preserve that exact receipt tree."
+  },
+  "registry_overlay": {
+    "field": "repository_snapshot_binding",
+    "empty_registry_value": null,
+    "nonempty_registry_required_fields": [
+      "repository_commit_sha",
+      "repository_tree_sha",
+      "receipt_namespace",
+      "control_stack_prefix",
+      "path_set_sha256",
+      "custody_commit_precedes_registry_commit"
+    ]
+  },
+  "repository_snapshot_contract": {
+    "receipt_namespace": "receipts/m05/intel-realization/",
+    "control_stack_prefix": "receipts/m05/intel-realization/control-stack/",
+    "repository_root_mode": "validator_git_worktree_root",
+    "custody_commit_relationship": "strict_ancestor_of_validation_head",
+    "required_tree_entry_mode": "100644",
+    "required_tree_entry_type": "blob",
+    "exact_namespace_path_set_required": true,
+    "worktree_bytes_must_equal_bound_tree_blob": true,
+    "git_object_bytes_must_equal_worktree_bytes": true,
+    "empty_registry_requires_empty_receipt_namespace": true,
+    "untracked_receipts_nonqualifying": true,
+    "index_only_receipts_nonqualifying": true,
+    "working_tree_rewrites_nonqualifying": true,
+    "alternate_path_substitution_nonqualifying": true,
+    "detached_unreferenced_git_objects_nonqualifying": true,
+    "two_commit_admission_protocol": [
+      "Commit every source, nested-custody, and control-stack receipt to a custody snapshot without changing the live registry.",
+      "Record the custody commit, its complete tree, and the receipt-namespace path-set digest in repository_snapshot_binding in a later registry commit.",
+      "Validate the registry commit only when the custody commit is a strict ancestor and the checked-out receipt namespace is byte-identical to the bound snapshot."
+    ],
+    "index_must_match_validation_head": true,
+    "git_object_format": "sha1",
+    "full_history_required": true,
+    "replace_refs_grafts_and_object_alternates_allowed": false,
+    "validation_repeated_after_predecessor_replay": true,
+    "live_registry_bytes_must_remain_stable_during_validation": true,
+    "live_registry_path": "data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-registry.json",
+    "validation_head_receipt_tree_must_equal_custody_snapshot": true,
+    "empty_registry_requires_empty_validation_head_tree": true,
+    "worktree_must_match_validation_head_receipt_tree": true,
+    "custody_commit_requires_parent": true,
+    "custody_commit_must_preserve_live_registry_bytes": true,
+    "control_files_must_be_committed_at_validation_head": true,
+    "predecessor_replay_environment_must_use_canonical_paths": true,
+    "partial_clone_or_promisor_object_fetch_allowed": false,
+    "symlink_gitlink_and_nonblob_leaf_entries_nonqualifying": true,
+    "custody_commit_registry_comparison_parent": "first_parent"
+  },
+  "path_set_canonicalization": {
+    "version": "git_tree_path_set_v1",
+    "entry_projection": "mode NUL type NUL object_sha NUL repository_path NUL",
+    "ordering": "repository_path_ascending_utf8",
+    "path_encoding": "strict_utf8",
+    "digest": "sha256_raw_projection_bytes"
+  },
+  "baseline_state": {
+    "registered_stage_receipts": 0,
+    "repository_snapshot_binding": null,
+    "transaction_admissible": false,
+    "federal_cash_custody_admissible": false,
+    "public_account_booking_admissible": false,
+    "distribution_admissible": false
+  },
+  "boundaries": {
+    "creates_intel_transaction": false,
+    "creates_federal_cash_receipt": false,
+    "creates_public_account_booking": false,
+    "creates_distribution": false,
+    "authorizes_answer_change": false,
+    "graph_effect": "none",
+    "cross_domain_regression_completed": false,
+    "project_complete": false,
+    "issue_345_may_close": false
+  },
+  "changed_path_denominator": [
+    ".github/workflows/m05-intel-realization-stage-receipt-repository-tree-custody-amendment.yml",
+    "data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-registry.json",
+    "data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-repository-tree-custody-amendment.json",
+    "test/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-repository-tree-custody-amendment.test.js",
+    "tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-repository-tree-custody-amendment.mjs"
+  ],
+  "workflow_trigger_contract": {
+    "must_trigger_on_changed_path_denominator": true,
+    "must_trigger_on_receipt_namespace": true,
+    "must_trigger_on_live_registry_and_predecessor_control_stack": true,
+    "must_replay_predecessor_validator_and_adversarial_test": true,
+    "must_run_complete_repository_release_gate": true,
+    "must_prove_deterministic_state": true,
+    "focused_workflow_path": ".github/workflows/m05-intel-realization-stage-receipt-repository-tree-custody-amendment.yml",
+    "focused_workflow_git_blob_sha1": "dc5bf79d77ad15d0ea9692d0b24a6636e6e93b15"
+  },
+  "repository_tree_custody_amendment_sha256": "77859aae9af48d5d8781ecdd3ab2c9eb0ca66313aea33f94444de893560e3871"
+}
