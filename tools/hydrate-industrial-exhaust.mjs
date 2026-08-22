@@ -22,6 +22,7 @@ import {
   parseHtmlLinkIndex,
   selectHydrationCandidates,
   validateArtifactConfig,
+  validateIndustrialExhaustReceiptCustody,
   writeArtifactReceipt,
   writeIndexReceipt
 } from './lib/industrial-exhaust-artifacts.mjs';
@@ -144,12 +145,20 @@ async function main() {
   if (!Number.isInteger(limit) || limit < 1 || limit > 500) throw new Error('limit must be an integer from 1 to 500');
 
   const enabledIndexes = config.indexes.filter(source => source.enabled);
+  let discoveryRecords = readJsonl(path.join(dataDir, 'discovery-observations.jsonl'));
+  let artifacts = readJsonl(path.join(dataDir, 'artifacts.jsonl'));
+  const receiptCustody = validateIndustrialExhaustReceiptCustody({
+    rootDir,
+    discoveryRecords,
+    artifacts
+  });
   if (args.audit) {
     console.log(JSON.stringify({
       lane: ARTIFACT_LANE,
       enabled_indexes: enabledIndexes.map(source => ({ id: source.id, index_url: source.index_url, publisher: source.publisher })),
       allowed_hosts: config.hydration.allowed_hosts,
       default_limit: config.hydration.default_limit,
+      receipt_custody: receiptCustody,
       graph_effect: 'none',
       canonical_mutation_authorized: false
     }, null, 2));
@@ -160,8 +169,6 @@ async function main() {
   const timeoutMs = runtimeInteger('EXHAUST_TIMEOUT_MS', process.env.EXHAUST_TIMEOUT_MS || 30_000, 1_000, 300_000);
   const maxBytes = runtimeInteger('EXHAUST_ARTIFACT_MAX_BYTES', process.env.EXHAUST_ARTIFACT_MAX_BYTES || config.hydration.max_bytes, 1_000, 50_000_000);
   const delayMs = runtimeInteger('EXHAUST_ARTIFACT_DELAY_MS', process.env.EXHAUST_ARTIFACT_DELAY_MS || config.hydration.request_delay_ms, 0, 60_000);
-  let discoveryRecords = readJsonl(path.join(dataDir, 'discovery-observations.jsonl'));
-  let artifacts = readJsonl(path.join(dataDir, 'artifacts.jsonl'));
   const state = readJson(path.join(dataDir, 'artifact-state.json'), artifactStateTemplate());
   const failures = [];
   const indexSummaries = [];
@@ -305,6 +312,9 @@ redirect_chain: headers.redirect_chain
     if (delayMs > 0 && index < selected.length - 1) await sleep(delayMs);
   }
 
+  if (!args.dryRun) {
+    validateIndustrialExhaustReceiptCustody({ rootDir, discoveryRecords, artifacts });
+  }
   const artifactAlerts = buildArtifactAlerts(artifacts, { watchConfig, candidates });
   state.last_run_at = capturedAt;
   state.last_candidate_count = candidates.length;

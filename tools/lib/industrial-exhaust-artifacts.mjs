@@ -267,6 +267,177 @@ export function validateArtifactRevisionLineage(records) {
   });
 }
 
+function portableReceiptPath(rootDir, absolutePath) {
+  const relative = path.relative(path.resolve(rootDir), path.resolve(absolutePath));
+  if (!relative || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
+    throw new Error(`receipt path escapes repository root: ${absolutePath}`);
+  }
+  return relative.split(path.sep).join('/');
+}
+
+function loadReceiptJson(rootDir, relativePath, label) {
+  if (typeof relativePath !== 'string' || !relativePath
+    || relativePath.startsWith('/') || relativePath.includes('\\')
+    || path.posix.normalize(relativePath) !== relativePath
+    || relativePath.startsWith('../')) {
+    throw new Error(`${label} is not a canonical repository-relative path`);
+  }
+  const root = path.resolve(rootDir);
+  const absolutePath = path.resolve(root, ...relativePath.split('/'));
+  const relative = path.relative(root, absolutePath);
+  if (!relative || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
+    throw new Error(`${label} escapes repository root`);
+  }
+  if (!fs.existsSync(absolutePath)) throw new Error(`${label} does not exist: ${relativePath}`);
+  let receipt;
+  try {
+    receipt = JSON.parse(fs.readFileSync(absolutePath, 'utf8'));
+  } catch (error) {
+    throw new Error(`${label} is not valid JSON: ${error.message}`);
+  }
+  if (!receipt || typeof receipt !== 'object' || Array.isArray(receipt)) {
+    throw new Error(`${label} must contain a JSON object`);
+  }
+  return receipt;
+}
+
+function receiptBodyBytes(receipt, label) {
+  if (typeof receipt.body !== 'string') throw new Error(`${label} lacks a string body`);
+  if (receipt.body_encoding === 'utf-8') return Buffer.from(receipt.body, 'utf8');
+  if (receipt.body_encoding === 'base64') {
+    const compact = receipt.body.replace(/\s+/gu, '');
+    const bytes = Buffer.from(compact, 'base64');
+    if (bytes.toString('base64').replace(/=+$/u, '') !== compact.replace(/=+$/u, '')) {
+      throw new Error(`${label} contains invalid base64 body data`);
+    }
+    return bytes;
+  }
+  throw new Error(`${label} has unsupported body_encoding ${receipt.body_encoding ?? 'missing'}`);
+}
+
+function receiptBodySha256(receipt, label) {
+  return crypto.createHash('sha256').update(receiptBodyBytes(receipt, label)).digest('hex');
+}
+
+function discoveryAnchorKeys(html, indexUrl) {
+  const keys = new Set();
+  for (const match of String(html ?? '').matchAll(/<a\b([^>]*)>([\s\S]*?)<\/a\s*>/giu)) {
+    const canonicalUrl = canonicalizeUrl(htmlAttribute(match[1], 'href'), indexUrl);
+    const title = cleanText(match[2], 700);
+    if (!canonicalUrl || !title) continue;
+    keys.add(stableJson([canonicalUrl, title, sha256(match[0])]));
+  }
+  return keys;
+}
+
+export function validateIndustrialExhaustReceiptCustody({ rootDir, discoveryRecords, artifacts }) {
+  const root = path.resolve(rootDir);
+  validateDiscoveryRevisionLineage(discoveryRecords);
+  validateArtifactRevisionLineage(artifacts);
+  const indexReceipts = new Map();
+  const artifactReceipts = new Map();
+
+  for (const record of discoveryRecords) {
+    const id = record.discovery_id;
+    const indexSha256 = assertSha256Digest(record.index_sha256, `discovery revision ${id} index_sha256`);
+    const rawItemSha256 = assertSha256Digest(record.raw_item_sha256, `discovery revision ${id} raw_item_sha256`);
+    const expectedPath = portableReceiptPath(root, indexReceiptPath(root, record.source_id, indexSha256));
+    if (record.index_receipt_path !== expectedPath) {
+      throw new Error(`discovery revision ${id} index_receipt_path does not match source_id and index_sha256`);
+    }
+    let cached = indexReceipts.get(expectedPath);
+    if (!cached) {
+      const receipt = loadReceiptJson(root, expectedPath, `index receipt ${expectedPath}`);
+      if (receipt.schema_version !== ARTIFACT_SCHEMA_VERSION
+        || receipt.receipt_type !== 'first_party_publication_index_snapshot') {
+        throw new Error(`index receipt ${expectedPath} has an invalid receipt contract`);
+      }
+      if (receipt.source_id !== record.source_id || receipt.index_url !== record.source_index_url) {
+        throw new Error(`index receipt ${expectedPath} does not match its discovery source`);
+      }
+      if (receipt.index_sha256 !== indexSha256) {
+        throw new Error(`index receipt ${expectedPath} does not match index_sha256`);
+      }
+      if (receipt.body_encoding !== 'utf-8' || typeof receipt.body !== 'string') {
+        throw new Error(`index receipt ${expectedPath} must retain a UTF-8 body`);
+      }
+      let custodyMode;
+      if (receipt.body_sha256 === undefined) {
+        custodyMode = 'legacy_anchor_bound';
+      } else {
+        const storedBodySha256 = assertSha256Digest(
+          receipt.body_sha256,
+          `index receipt ${expectedPath} body_sha256`
+        );
+        if (sha256(receipt.body) !== storedBodySha256) {
+          throw new Error(`index receipt ${expectedPath} body bytes do not match body_sha256`);
+        }
+        custodyMode = 'byte_verified';
+      }
+      if (receipt.graph_effect !== GRAPH_EFFECT || receipt.promotion_authority !== false
+        || receipt.canonical_mutation_authorized !== false) {
+        throw new Error(`index receipt ${expectedPath} exceeds its governance boundary`);
+      }
+      cached = {
+        receipt,
+        anchors: discoveryAnchorKeys(receipt.body, receipt.index_url),
+        custody_mode: custodyMode
+      };
+      indexReceipts.set(expectedPath, cached);
+    }
+    if (cached.receipt.source_id !== record.source_id || cached.receipt.index_url !== record.source_index_url
+      || cached.receipt.index_sha256 !== indexSha256) {
+      throw new Error(`discovery revision ${id} is rebound to an unrelated index receipt`);
+    }
+    const anchorKey = stableJson([record.canonical_url, record.title, rawItemSha256]);
+    if (!cached.anchors.has(anchorKey)) {
+      throw new Error(`discovery revision ${id} raw_item_sha256 does not identify its stored index anchor`);
+    }
+  }
+
+  for (const record of artifacts) {
+    const id = record.artifact_id;
+    const bodySha256 = assertSha256Digest(record.body_sha256, `artifact revision ${id} body_sha256`);
+    const expectedPath = portableReceiptPath(root, artifactReceiptPath(root, record.canonical_url, bodySha256));
+    if (record.body_receipt_path !== expectedPath) {
+      throw new Error(`artifact revision ${id} body_receipt_path does not match canonical_url and body_sha256`);
+    }
+    let receipt = artifactReceipts.get(expectedPath);
+    if (!receipt) {
+      receipt = loadReceiptJson(root, expectedPath, `artifact receipt ${expectedPath}`);
+      if (receipt.schema_version !== ARTIFACT_SCHEMA_VERSION
+        || receipt.receipt_type !== 'first_party_publication_artifact_snapshot') {
+        throw new Error(`artifact receipt ${expectedPath} has an invalid receipt contract`);
+      }
+      if (receipt.canonical_url !== record.canonical_url || receipt.body_sha256 !== bodySha256) {
+        throw new Error(`artifact receipt ${expectedPath} does not match its artifact identity`);
+      }
+      if (receiptBodySha256(receipt, `artifact receipt ${expectedPath}`) !== bodySha256) {
+        throw new Error(`artifact receipt ${expectedPath} body bytes do not match body_sha256`);
+      }
+      if (receipt.source_class !== SOURCE_CLASS || receipt.graph_effect !== GRAPH_EFFECT
+        || receipt.promotion_authority !== false || receipt.canonical_mutation_authorized !== false) {
+        throw new Error(`artifact receipt ${expectedPath} exceeds its governance boundary`);
+      }
+      artifactReceipts.set(expectedPath, receipt);
+    }
+    if (receipt.canonical_url !== record.canonical_url || receipt.body_sha256 !== bodySha256) {
+      throw new Error(`artifact revision ${id} is rebound to an unrelated body receipt`);
+    }
+  }
+
+  const indexCustodyModes = [...indexReceipts.values()].map(value => value.custody_mode);
+  return {
+    discovery_record_count: discoveryRecords.length,
+    artifact_record_count: artifacts.length,
+    index_receipt_count: indexReceipts.size,
+    byte_verified_index_receipt_count: indexCustodyModes.filter(mode => mode === 'byte_verified').length,
+    legacy_anchor_bound_index_receipt_count: indexCustodyModes.filter(mode => mode === 'legacy_anchor_bound').length,
+    artifact_receipt_count: artifactReceipts.size,
+    byte_verified_artifact_receipt_count: artifactReceipts.size
+  };
+}
+
 function normalizeDate(value) {
   const raw = cleanText(value, 300);
   if (!raw) return null;
@@ -777,6 +948,7 @@ export function writeIndexReceipt({ rootDir, source, parsedIndex, html, captured
       index_url: source.index_url,
       captured_at: capturedAt,
       index_sha256: parsedIndex.index_sha256,
+      body_sha256: sha256(html),
       index_title: parsedIndex.index_title,
       item_count: parsedIndex.item_count,
       response_headers: {
