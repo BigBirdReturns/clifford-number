@@ -1,4 +1,4 @@
-name: Temporary current-main identifier-boundary P1 repair v11
+name: Temporary current-main identifier-boundary P1 repair v12
 
 on:
   pull_request:
@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: current-main-identifier-boundary-repair-v11
+  group: current-main-identifier-boundary-repair-v12
   cancel-in-progress: false
 
 jobs:
@@ -21,18 +21,18 @@ jobs:
       EXPECTED_MAIN: bbd03eb3bf9a6eee1eb9d8a6f82d6829fe3d2237
       SOURCE_BASE: b97a0d04f309269441a1e52195d7acc98dcd299d
       PRODUCT_HEAD: 5b8c5153645778b547d39fd13b9a9bd1a9f10158
-      CARRIER_PARENT: 0ce41c177fb3235bdabe7f107350d1c95ee8333c
+      CARRIER_PARENT: db747371e43d817c543c1153ca3254239f93d19f
       PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
       CARRIER_BRANCH: agent/current-main-identifier-context-v1
       BASE_LIBRARY: 5f68254d3e44de693e83503aed879160f9b7b997
       BASE_TEST: 1659a7cc54666a2ac5a1d6b88eb8c6591d98008e
       SOURCE_LIBRARY: 44cc935fe9ba1b1b4485fbf0676733664b58c8ef
       SOURCE_TEST: ebcf778044a086ad76eaebd5bae1981a0e06cf9c
-      PATCH_WORK: /tmp/identifier-boundary-patch-v11
-      QUALIFICATION_WORK: /tmp/identifier-boundary-qualification-v11
-      EXPECTED_PATHS_FILE: /tmp/identifier-boundary-paths-v11.txt
-      EXPECTED_NUMSTAT_FILE: /tmp/identifier-boundary-numstat-v11.txt
-      RECEIPT_FILE: /tmp/identifier-boundary-receipt-v11.txt
+      PATCH_WORK: /tmp/identifier-boundary-patch-v12
+      QUALIFICATION_WORK: /tmp/identifier-boundary-qualification-v12
+      EXPECTED_PATHS_FILE: /tmp/identifier-boundary-paths-v12.txt
+      EXPECTED_NUMSTAT_FILE: /tmp/identifier-boundary-numstat-v12.txt
+      RECEIPT_FILE: /tmp/identifier-boundary-receipt-v12.txt
     steps:
       - uses: actions/checkout@v4
         with:
@@ -180,8 +180,6 @@ jobs:
           cd "$PATCH_WORK"
           test "$(git diff --name-only | LC_ALL=C sort)" = "$(cat "$EXPECTED_PATHS_FILE")"
           git diff --check
-          git diff --numstat | LC_ALL=C sort -k3 > "$EXPECTED_NUMSTAT_FILE"
-          test "$(sed '/^$/d' "$EXPECTED_NUMSTAT_FILE" | wc -l)" -eq 2
           NEW_LIBRARY="$(git hash-object tools/lib/industrial-exhaust.mjs)"
           NEW_TEST="$(git hash-object test/industrial-exhaust.test.js)"
           test "$NEW_LIBRARY" != "$SOURCE_LIBRARY"
@@ -204,9 +202,15 @@ jobs:
           cp "$PATCH_WORK/tools/lib/industrial-exhaust.mjs" "$QUALIFICATION_WORK/tools/lib/industrial-exhaust.mjs"
           cp "$PATCH_WORK/test/industrial-exhaust.test.js" "$QUALIFICATION_WORK/test/industrial-exhaust.test.js"
           cd "$QUALIFICATION_WORK"
+          test "$(git hash-object tools/lib/industrial-exhaust.mjs)" = "$NEW_LIBRARY"
+          test "$(git hash-object test/industrial-exhaust.test.js)" = "$NEW_TEST"
           test "$(git diff --name-only | LC_ALL=C sort)" = "$(cat "$EXPECTED_PATHS_FILE")"
-          test "$(git diff --numstat | LC_ALL=C sort -k3)" = "$(cat "$EXPECTED_NUMSTAT_FILE")"
           git diff --check
+          git diff --numstat | LC_ALL=C sort -k3 > "$EXPECTED_NUMSTAT_FILE"
+          test "$(sed '/^$/d' "$EXPECTED_NUMSTAT_FILE" | wc -l)" -eq 2
+          printf '%s\n' 'qualified current-main numstat:'
+          cat "$EXPECTED_NUMSTAT_FILE"
+
           node --check tools/lib/industrial-exhaust.mjs
           node --check tools/crawl-industrial-exhaust.mjs
           node --check test/industrial-exhaust.test.js
@@ -243,6 +247,8 @@ jobs:
           git checkout --detach --force "$EXPECTED_MAIN"
           cp "$PATCH_WORK/tools/lib/industrial-exhaust.mjs" tools/lib/industrial-exhaust.mjs
           cp "$PATCH_WORK/test/industrial-exhaust.test.js" test/industrial-exhaust.test.js
+          test "$(git hash-object tools/lib/industrial-exhaust.mjs)" = "$NEW_LIBRARY"
+          test "$(git hash-object test/industrial-exhaust.test.js)" = "$NEW_TEST"
           git add -- tools/lib/industrial-exhaust.mjs test/industrial-exhaust.test.js
           git diff --cached --check
           test "$(git diff --cached --name-only | LC_ALL=C sort)" = "$(cat "$EXPECTED_PATHS_FILE")"
@@ -263,7 +269,7 @@ jobs:
             origin "HEAD:refs/heads/$PRODUCT_BRANCH"
 
           {
-            printf 'receipt_version=current-main-identifier-boundary-repair@11\n'
+            printf 'receipt_version=current-main-identifier-boundary-repair@12\n'
             printf 'carrier_head=%s\n' "$HEAD_SHA"
             printf 'run_id=%s\n' '${{ github.run_id }}'
             printf 'base=%s\n' "$EXPECTED_MAIN"
@@ -274,7 +280,7 @@ jobs:
             printf 'test_blob=%s\n' "$NEW_TEST"
             printf 'changed_paths:\n%s\n' "$(cat "$EXPECTED_PATHS_FILE")"
             printf 'numstat:\n%s\n' "$(cat "$EXPECTED_NUMSTAT_FILE")"
-            printf 'qualification=node-check+industrial-exhaust+artifacts+release-check+path-scoped-post-gate-custody\n'
+            printf 'qualification=node-check+industrial-exhaust+artifacts+release-check+current-main-numstat+path-scoped-post-gate-custody\n'
           } > "$RECEIPT_FILE"
           printf 'product_head=%s\n' "$NEW_HEAD" >> "$GITHUB_OUTPUT"
           cat "$RECEIPT_FILE"
