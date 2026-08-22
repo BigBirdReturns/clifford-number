@@ -1,4 +1,4 @@
-name: Temporary current-main identifier-boundary repair
+name: Temporary current-main identifier-boundary repair v2
 
 on:
   pull_request:
@@ -9,34 +9,42 @@ permissions:
   contents: write
 
 concurrency:
-  group: current-main-identifier-boundary-v1
+  group: current-main-identifier-boundary-v2
   cancel-in-progress: false
 
 jobs:
   qualify-and-publish:
+    if: github.repository == 'BigBirdReturns/clifford-number' && github.event.pull_request.number == 2227
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    env:
+      EXPECTED_BASE: cdc9d3670fb226e92ff90952c3f8a4392c532a26
+      EXPECTED_PRODUCT_HEAD: 3ed617a8e3b3fa467f817ce737ad9e51463625d9
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      CARRIER_BRANCH: agent/current-main-identifier-context-v1
+      EXPECTED_LIBRARY_BLOB: da860cd16b85bcdce7df7af365ea0ff2012e0494
+      EXPECTED_TEST_BLOB: b757ae8a4baf37b90da5cc3eff6e25cc452e419f
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: agent/current-main-identifier-context-v1
+          ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
+
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Reproduce, repair, qualify, and publish exact two-file product
+
+      - name: Validate exact carrier and reproduce all four review mechanisms
         shell: bash
-        env:
-          EXPECTED_BASE: cdc9d3670fb226e92ff90952c3f8a4392c532a26
-          EXPECTED_PRODUCT_HEAD: 3ed617a8e3b3fa467f817ce737ad9e51463625d9
-          PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
-          CARRIER_BRANCH: agent/current-main-identifier-context-v1
         run: |
           set -euo pipefail
 
-          remote_carrier_head="$(git rev-parse HEAD)"
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
           test "$(git merge-base "$EXPECTED_BASE" HEAD)" = "$EXPECTED_BASE"
           test "$(git merge-base "$EXPECTED_PRODUCT_HEAD" HEAD)" = "$EXPECTED_PRODUCT_HEAD"
+          test "$(git hash-object tools/lib/industrial-exhaust.mjs)" = "$EXPECTED_LIBRARY_BLOB"
+          test "$(git hash-object test/industrial-exhaust.test.js)" = "$EXPECTED_TEST_BLOB"
+
           carrier_paths="$(git diff --name-only "$EXPECTED_PRODUCT_HEAD"..HEAD | LC_ALL=C sort)"
           expected_carrier_paths="$(printf '%s\n' \
             .github/current-main-identifier-boundary-trigger.txt \
@@ -47,19 +55,38 @@ jobs:
           import assert from 'node:assert/strict';
           import { redactContactData } from './tools/lib/industrial-exhaust.mjs';
 
-          const cases = [
-            ['Phone-ID: 09012345678', 'Phone-ID: [contact omitted]'],
-            ['Phone/ID: 09012345678', 'Phone/ID: [contact omitted]'],
-            ['電話番号／ＩＤ：０９０１２３４５６７８', '電話番号／ＩＤ：[contact omitted]'],
-            ['reference: 09012345678 03-6216-8041', 'reference: 09012345678 [contact omitted]'],
-            ['contact identifier: 09012345678', 'contact identifier: 09012345678']
+          const exactDefects = [
+            ['ID: 09012345678 / 03-6216-8041', 'ID: 09012345678 / [contact omitted]'],
+            ['https://example.test/id: 09012345678', 'https://example.test/id: [contact omitted]'],
+            ['https://example.test/reference: +81 3 6216 5111', 'https://example.test/reference: [contact omitted]'],
+            ['ID: (+81 3 6216 5111)', 'ID: (+81 3 6216 5111)']
           ];
-          for (const [input, expected] of cases) {
+          for (const [input, repaired] of exactDefects) {
             const actual = redactContactData(input);
-            console.log(JSON.stringify({ input, actual, expected }));
-            assert.notEqual(actual, expected, `expected current product to reproduce boundary defect: ${input}`);
+            console.log(JSON.stringify({ input, actual, repaired }));
+            assert.notEqual(
+              actual,
+              repaired,
+              `expected old product head to reproduce review defect: ${input}`
+            );
+          }
+
+          for (const input of [
+            'Phone: (ID: 09012345678)',
+            'Phone / ID: 09012345678'
+          ]) {
+            const actual = redactContactData(input);
+            console.log(JSON.stringify({ input, actual }));
+            assert.match(actual, /09012345678/u);
+            assert.doesNotMatch(actual, /\[contact omitted\]/u);
           }
           NODE
+
+      - name: Materialize, qualify, and publish one two-file product commit
+        id: publish
+        shell: bash
+        run: |
+          set -euo pipefail
 
           python - <<'PY'
           from pathlib import Path
@@ -75,37 +102,72 @@ jobs:
           library = library_path.read_text(encoding='utf-8')
           tests = test_path.read_text(encoding='utf-8')
 
-          old_phone_label_helper = '''function hasPhoneLabelPrefixNormalized(normalizedPrefix) {
+          old_identifier_pattern = r"""const EXPLICIT_IDENTIFIER_LABEL_PATTERN = /(?:(?:^|\b)(?:id|guid|identifier|reference|revision|release(?:\s+id)?|record(?:\s+id)?|receipt|sha(?:-?256)?|hash|ticket|case|invoice|order|code)|(?:識別子|参照(?:番号)?|管理番号|受付番号|注文番号|案件番号|コード))\s*[:：=#＃-]?\s*$/iu;
+          """
+          new_identifier_pattern = r"""const EXPLICIT_IDENTIFIER_LABEL_PATTERN = /(?:(?:^|\b)(?:id|guid|identifier|reference|revision|release(?:\s+id)?|record(?:\s+id)?|receipt|sha(?:-?256)?|hash|ticket|case|invoice|order|code)|(?:識別子|参照(?:番号)?|管理番号|受付番号|注文番号|案件番号|コード))\s*[:：=#＃-]?\s*(?:(?:\(|\[|\{|（|［|【)\s*)?$/iu;
+          """
+          library = replace_once(
+              library,
+              old_identifier_pattern,
+              new_identifier_pattern,
+              'identifier wrapper pattern'
+          )
+
+          old_identifier_helper = r"""function explicitIdentifierLabelMatch(normalizedPrefix) {
+            return normalizedPrefix.slice(-128).match(EXPLICIT_IDENTIFIER_LABEL_PATTERN);
+          }
+          """
+          new_identifier_helper = r"""function hasUrlTokenPrefixContext(normalizedPrefix) {
+            return /(?:(?:https?:)?\/\/|www\.|(?:[\p{L}\p{N}](?:[\p{L}\p{N}-]*[\p{L}\p{N}])?\.)+(?:[\p{L}]{2,}|xn--[\p{L}\p{N}-]{2,})(?=[:/?#])|(?:\d{1,3}\.){3}\d{1,3}(?=[:/?#]))[^\s]*$/iu.test(
+              normalizedPrefix
+            );
+          }
+
+          function explicitIdentifierLabelMatch(normalizedPrefix) {
+            const window = normalizedPrefix.slice(-128);
+            const match = window.match(EXPLICIT_IDENTIFIER_LABEL_PATTERN);
+            if (!match || match.index == null) return match;
+            return hasUrlTokenPrefixContext(window.slice(0, match.index)) ? null : match;
+          }
+          """
+          library = replace_once(
+              library,
+              old_identifier_helper,
+              new_identifier_helper,
+              'URL-aware identifier helper'
+          )
+
+          old_phone_label_helper = r"""function hasPhoneLabelPrefixNormalized(normalizedPrefix) {
             if (PHONE_LABEL_PATTERN.test(normalizedPrefix.slice(-48))) return true;
             const identifierMatch = explicitIdentifierLabelMatch(normalizedPrefix);
             if (!identifierMatch || identifierMatch.index == null) return false;
             const window = normalizedPrefix.slice(-128);
             return PHONE_LABEL_PATTERN.test(window.slice(0, identifierMatch.index).slice(-48));
           }
-          '''.replace('          ', '')
-          new_phone_label_helper = r'''function hasPhoneLabelPrefixNormalized(normalizedPrefix) {
+          """
+          new_phone_label_helper = r"""function hasPhoneLabelPrefixNormalized(normalizedPrefix) {
             if (PHONE_LABEL_PATTERN.test(normalizedPrefix.slice(-48))) return true;
             const identifierMatch = explicitIdentifierLabelMatch(normalizedPrefix);
             if (!identifierMatch || identifierMatch.index == null
                 || !/^id(?=$|[^\p{L}\p{N}_])/iu.test(identifierMatch[0])) return false;
             const window = normalizedPrefix.slice(-128);
             const beforeIdentifier = window.slice(0, identifierMatch.index)
-              .replace(/[\s,;:·•|/\\\-‐‑‒–—―−]+$/u, ' ');
+              .replace(/[\s,;:·•|\/\\\-‐‑‒–—―−(\[｛{（［【]+$/gu, ' ');
             return PHONE_LABEL_PATTERN.test(beforeIdentifier.slice(-48));
           }
-          '''.replace('          ', '')
+          """
           library = replace_once(
               library,
               old_phone_label_helper,
               new_phone_label_helper,
-              'combined phone-label helper'
+              'punctuation-tolerant phone-label helper'
           )
 
           range_marker = 'function phoneRedactionRanges(\n'
-          protected_prefix_helper = '''function identifierProtectedPrefixEnd(candidate, groups, externalSuffix) {
+          protected_prefix_helper = r"""function identifierProtectedPrefixEnd(candidate, groups, externalSuffix) {
             const observationGroup = trailingObservationGroup(candidate, groups, '', externalSuffix);
-            let protectedEnd = groups[0].index + groups[0][0].length;
-            let protectedScore = Number.NEGATIVE_INFINITY;
+            let protectedEnd = candidate.length;
+            let protectedScore = null;
             for (let last = 0;
               last < groups.length
                 && last < MAX_PHONE_DIGIT_GROUPS
@@ -118,7 +180,8 @@ jobs:
               if (last === observationGroup - 1) score += 32;
               else if (last === groups.length - 1) score += 24;
               else score -= 24;
-              if (score > protectedScore
+              if (protectedScore == null
+                  || score > protectedScore
                   || (score === protectedScore && end > protectedEnd)) {
                 protectedScore = score;
                 protectedEnd = end;
@@ -127,7 +190,7 @@ jobs:
             return protectedEnd;
           }
 
-          '''.replace('          ', '')
+          """
           library = replace_once(
               library,
               range_marker,
@@ -135,27 +198,27 @@ jobs:
               'identifier protected-prefix helper'
           )
 
-          old_identifier_propagation = '''  const normalizedExternalPrefix = externalPrefix.normalize('NFKC');
-          const phoneLabelContext = hasPhoneLabelPrefixNormalized(normalizedExternalPrefix);
-          if (hasExplicitIdentifierPrefixNormalized(normalizedExternalPrefix) && !phoneLabelContext) {
-            return [];
-          }
-          '''.replace('          ', '')
-          new_identifier_propagation = '''  const normalizedExternalPrefix = externalPrefix.normalize('NFKC');
-          const phoneLabelContext = hasPhoneLabelPrefixNormalized(normalizedExternalPrefix);
-          if (hasExplicitIdentifierPrefixNormalized(normalizedExternalPrefix) && !phoneLabelContext) {
-            const protectedEnd = identifierProtectedPrefixEnd(candidate, groups, externalSuffix);
-            return phoneRedactionRanges(
-              candidate.slice(protectedEnd),
-              `${externalPrefix}${candidate.slice(0, protectedEnd)}`,
-              externalSuffix,
-              true
-            ).map(range => ({
-              start: range.start + protectedEnd,
-              end: range.end + protectedEnd
-            }));
-          }
-          '''.replace('          ', '')
+          old_identifier_propagation = r"""  const normalizedExternalPrefix = externalPrefix.normalize('NFKC');
+            const phoneLabelContext = hasPhoneLabelPrefixNormalized(normalizedExternalPrefix);
+            if (hasExplicitIdentifierPrefixNormalized(normalizedExternalPrefix) && !phoneLabelContext) {
+              return [];
+            }
+          """
+          new_identifier_propagation = r"""  const normalizedExternalPrefix = externalPrefix.normalize('NFKC');
+            const phoneLabelContext = hasPhoneLabelPrefixNormalized(normalizedExternalPrefix);
+            if (hasExplicitIdentifierPrefixNormalized(normalizedExternalPrefix) && !phoneLabelContext) {
+              const protectedEnd = identifierProtectedPrefixEnd(candidate, groups, externalSuffix);
+              return phoneRedactionRanges(
+                candidate.slice(protectedEnd),
+                `${externalPrefix}${candidate.slice(0, protectedEnd)}`,
+                externalSuffix,
+                true
+              ).map(range => ({
+                start: range.start + protectedEnd,
+                end: range.end + protectedEnd
+              }));
+            }
+          """
           library = replace_once(
               library,
               old_identifier_propagation,
@@ -164,23 +227,9 @@ jobs:
           )
 
           test_marker = 'for (const compactNumericIdentifier of ['
-          test_insert = '''for (const [punctuatedPhoneId, expected] of [
-            ['Phone-ID: 09012345678', 'Phone-ID: [contact omitted]'],
-            ['Phone/ID: 09012345678', 'Phone/ID: [contact omitted]'],
-            ['Phone, ID: 09012345678', 'Phone, ID: [contact omitted]'],
-            ['Phone; ID: 09012345678', 'Phone; ID: [contact omitted]'],
-            ['Phone | ID: 09012345678', 'Phone | ID: [contact omitted]'],
-            ['電話番号／ＩＤ：０９０１２３４５６７８', '電話番号／ＩＤ：[contact omitted]']
-          ]) {
-            assert.equal(
-              redactContactData(punctuatedPhoneId),
-              expected,
-              'separator punctuation must not suppress a phone-label override before standalone ID'
-            );
-          }
-          for (const [identifierThenPhone, expected] of [
+          test_insert = r"""for (const [identifierThenPhone, expected] of [
+            ['ID: 09012345678 / 03-6216-8041', 'ID: 09012345678 / [contact omitted]'],
             ['reference: 09012345678 03-6216-8041', 'reference: 09012345678 [contact omitted]'],
-            ['ID: 09012345678 090-1234-5678', 'ID: 09012345678 [contact omitted]'],
             ['ID: 03-6216-8041 090-1234-5678', 'ID: 03-6216-8041 [contact omitted]'],
             ['ID: 01 42 68 53 00 03 62 16 80 41', 'ID: 01 42 68 53 00 [contact omitted]'],
             ['reference: +1 212 555 1234 03-6216-8041', 'reference: +1 212 555 1234 [contact omitted]'],
@@ -193,18 +242,62 @@ jobs:
               'identifier protection must end after the first phone-shaped value in one scanner span'
             );
           }
-          assert.equal(
-            redactContactData('contact identifier: 09012345678'),
-            'contact identifier: 09012345678',
-            'a phone label may override only a trailing standalone ID, not every identifier label'
-          );
-          assert.equal(
-            redactContactData('電話番号／管理番号：０９０１２３４５６７８'),
-            '電話番号／管理番号：０９０１２３４５６７８',
-            'Japanese management identifiers must not be reclassified by a preceding phone word'
-          );
 
-          '''.replace('          ', '')
+          for (const [urlPathLabel, expected] of [
+            ['https://example.test/id: 09012345678', 'https://example.test/id: [contact omitted]'],
+            ['https://example.test/reference: +81 3 6216 5111', 'https://example.test/reference: [contact omitted]'],
+            ['example.test/id: 03-6216-8041', 'example.test/id: [contact omitted]']
+          ]) {
+            assert.equal(
+              redactContactData(urlPathLabel),
+              expected,
+              'an identifier word embedded in a URL token must not protect a later phone after whitespace'
+            );
+          }
+
+          for (const wrappedIdentifier of [
+            'ID: (+81 3 6216 5111)',
+            'ＩＤ：（＋８１ ３ ６２１６ ５１１１）'
+          ]) {
+            assert.equal(
+              redactContactData(wrappedIdentifier),
+              wrappedIdentifier,
+              'an opening wrapper after an identifier label must remain in identifier context'
+            );
+          }
+
+          for (const punctuatedPhoneId of [
+            'Phone: (ID: 09012345678)',
+            'Phone / ID: 09012345678',
+            'Phone-ID: 09012345678',
+            'Phone/ID: 09012345678',
+            '電話番号／ＩＤ：０９０１２３４５６７８'
+          ]) {
+            const redacted = redactContactData(punctuatedPhoneId);
+            assert.match(
+              redacted,
+              /\[contact omitted\]/u,
+              'separator punctuation must not suppress a phone-label override before standalone ID'
+            );
+            assert.doesNotMatch(
+              redacted.normalize('NFKC'),
+              /09012345678/u,
+              'phone-labelled values must not survive redaction'
+            );
+          }
+
+          for (const protectedNarrativeIdentifier of [
+            'contact identifier: 09012345678',
+            '電話番号／管理番号：０９０１２３４５６７８'
+          ]) {
+            assert.equal(
+              redactContactData(protectedNarrativeIdentifier),
+              protectedNarrativeIdentifier,
+              'phone precedence must remain limited to a trailing standalone ID label'
+            );
+          }
+
+          """
           tests = replace_once(
               tests,
               test_marker,
@@ -223,14 +316,13 @@ jobs:
           node test/industrial-exhaust-artifacts.test.js
           git diff --check
 
-          rm -f -- \
-            .github/current-main-identifier-boundary-trigger.txt \
-            .github/workflows/temporary-current-main-identifier-boundary-v1.yml
-
           expected_product_paths="$(printf '%s\n' \
             test/industrial-exhaust.test.js \
             tools/lib/industrial-exhaust.mjs | LC_ALL=C sort)"
-          actual_product_paths="$(git diff --name-only "$EXPECTED_BASE" | LC_ALL=C sort)"
+          actual_product_paths="$(git diff --name-only "$EXPECTED_BASE" | \
+            grep -v '^\.github/current-main-identifier-boundary-trigger\.txt$' | \
+            grep -v '^\.github/workflows/temporary-current-main-identifier-boundary-v1\.yml$' | \
+            LC_ALL=C sort)"
           test "$actual_product_paths" = "$expected_product_paths"
 
           qualification_root="$(mktemp -d)"
@@ -246,34 +338,50 @@ jobs:
           git worktree remove --force "$qualification_dir"
           rmdir "$qualification_root"
 
-          git diff --check
-          actual_product_paths="$(git diff --name-only "$EXPECTED_BASE" | LC_ALL=C sort)"
-          test "$actual_product_paths" = "$expected_product_paths"
-
-          mkdir -p /tmp/current-main-identifier-boundary/tools/lib \
-            /tmp/current-main-identifier-boundary/test
-          cp tools/lib/industrial-exhaust.mjs \
-            /tmp/current-main-identifier-boundary/tools/lib/industrial-exhaust.mjs
-          cp test/industrial-exhaust.test.js \
-            /tmp/current-main-identifier-boundary/test/industrial-exhaust.test.js
+          artifact_root="$(mktemp -d)"
+          mkdir -p "$artifact_root/tools/lib" "$artifact_root/test"
+          cp tools/lib/industrial-exhaust.mjs "$artifact_root/tools/lib/industrial-exhaust.mjs"
+          cp test/industrial-exhaust.test.js "$artifact_root/test/industrial-exhaust.test.js"
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout --detach --force "$EXPECTED_BASE"
-          cp /tmp/current-main-identifier-boundary/tools/lib/industrial-exhaust.mjs \
-            tools/lib/industrial-exhaust.mjs
-          cp /tmp/current-main-identifier-boundary/test/industrial-exhaust.test.js \
-            test/industrial-exhaust.test.js
+          cp "$artifact_root/tools/lib/industrial-exhaust.mjs" tools/lib/industrial-exhaust.mjs
+          cp "$artifact_root/test/industrial-exhaust.test.js" test/industrial-exhaust.test.js
           git add -- tools/lib/industrial-exhaust.mjs test/industrial-exhaust.test.js
           git diff --cached --check
+
           staged_paths="$(git diff --cached --name-only | LC_ALL=C sort)"
           test "$staged_paths" = "$expected_product_paths"
-          git commit -m "fix(crawler): bound identifier context to one value"
+          git commit -m "fix(crawler): close identifier-context review boundaries"
           new_product_head="$(git rev-parse HEAD)"
+
+          test "$(git rev-list --count "$EXPECTED_BASE..$new_product_head")" = "1"
+          committed_paths="$(git diff --name-only "$EXPECTED_BASE..$new_product_head" | LC_ALL=C sort)"
+          test "$committed_paths" = "$expected_product_paths"
 
           git push --force-with-lease="refs/heads/$PRODUCT_BRANCH:$EXPECTED_PRODUCT_HEAD" \
             origin "HEAD:refs/heads/$PRODUCT_BRANCH"
-          git push --force-with-lease="refs/heads/$CARRIER_BRANCH:$remote_carrier_head" \
-            origin "HEAD:refs/heads/$CARRIER_BRANCH"
+          git fetch --no-tags origin "$PRODUCT_BRANCH"
+          test "$(git rev-parse FETCH_HEAD)" = "$new_product_head"
 
+          {
+            printf 'base=%s\n' "$EXPECTED_BASE"
+            printf 'superseded_product_head=%s\n' "$EXPECTED_PRODUCT_HEAD"
+            printf 'published_product_head=%s\n' "$new_product_head"
+            printf 'library_blob=%s\n' "$(git rev-parse "$new_product_head:tools/lib/industrial-exhaust.mjs")"
+            printf 'test_blob=%s\n' "$(git rev-parse "$new_product_head:test/industrial-exhaust.test.js")"
+            printf 'commit_count=%s\n' "$(git rev-list --count "$EXPECTED_BASE..$new_product_head")"
+            printf 'changed_paths:\n%s\n' "$committed_paths"
+          } > /tmp/current-main-identifier-boundary-receipt.txt
+
+          printf 'product_head=%s\n' "$new_product_head" >> "$GITHUB_OUTPUT"
           printf 'published_product_head=%s\n' "$new_product_head"
+
+      - name: Upload immutable materialization receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: current-main-identifier-boundary-${{ steps.publish.outputs.product_head }}
+          path: /tmp/current-main-identifier-boundary-receipt.txt
+          if-no-files-found: error
+          retention-days: 30
