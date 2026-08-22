@@ -1,0 +1,159 @@
+name: NEVER MERGE - materialize M-05 route-watch persistence fixes
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/m05-five-domain-route-watch-reviewfix3-materializer.yml'
+      - '.m05-review-fix/five-domain-route-watch-v3/review-fixes.patch.xz.b64'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: m05-five-domain-route-watch-reviewfix3-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out carrier
+        uses: actions/checkout@v4
+        with:
+          path: carrier
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Check out leased product branch
+        uses: actions/checkout@v4
+        with:
+          repository: BigBirdReturns/clifford-number
+          ref: agent/m05-s03-l7-five-domain-route-watch-v1
+          path: product
+          fetch-depth: 0
+          persist-credentials: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Apply, qualify, and publish sole-parent product
+        env:
+          PRODUCT_BRANCH: agent/m05-s03-l7-five-domain-route-watch-v1
+          LEASED_PRODUCT_HEAD: ba606e6297fb9754be2aae129bcb57da0e9073fd
+          PATCH_ARCHIVE_SHA256: 07c780b5c2bb719625398cac1f617a71eeaea940b6b9b8cfd6febf718d946710
+          CONTRACT_BLOB: 32602ed6b3181b7bed967bc9c173a5ebcff83f2e
+          LIBRARY_BLOB: 135d06c44d41a044d9469104f349d8178d431efe
+          RUNNER_BLOB: 0b647e203a9683a838565f30754d5b03378ac1e7
+          VALIDATOR_BLOB: a029596b949b12db586f2ce72b61c442c38ac3a5
+          TEST_BLOB: 3b666b50b6d5c3f87d2e3c3fe077e4f57276157d
+          WORKFLOW_BLOB: 638c5f86f0633497c686b49e5439fb8e923d089a
+        run: |
+          set -euo pipefail
+
+          patch_archive='carrier/.m05-review-fix/five-domain-route-watch-v3/review-fixes.patch.xz.b64'
+          base64 --decode "$patch_archive" > /tmp/m05-route-watch-review-fixes.patch.xz
+          echo "$PATCH_ARCHIVE_SHA256  /tmp/m05-route-watch-review-fixes.patch.xz" | sha256sum -c -
+          xz --decompress --stdout /tmp/m05-route-watch-review-fixes.patch.xz > /tmp/m05-route-watch-review-fixes.patch
+          patch='/tmp/m05-route-watch-review-fixes.patch'
+
+          product_head=$(git -C product rev-parse HEAD)
+          test "$product_head" = "$LEASED_PRODUCT_HEAD"
+          remote_product=$(git -C product ls-remote origin "refs/heads/$PRODUCT_BRANCH" | cut -f1)
+          test "$remote_product" = "$LEASED_PRODUCT_HEAD"
+          base_sha=$(git -C product ls-remote origin refs/heads/main | cut -f1)
+          test -n "$base_sha"
+          git -C product fetch --no-tags origin "$base_sha"
+
+          contract='data/project/m05-answerable-power-sprint-03-leg-07-five-domain-route-watch-contract.json'
+          library='tools/lib/m05-answerable-power-sprint-03-leg-07-five-domain-route-watch.mjs'
+          runner='tools/run-m05-answerable-power-sprint-03-leg-07-five-domain-route-watch.mjs'
+          validator='tools/validate-m05-answerable-power-sprint-03-leg-07-five-domain-route-watch.mjs'
+          test_path='test/m05-answerable-power-sprint-03-leg-07-five-domain-route-watch.test.js'
+          workflow='.github/workflows/m05-five-domain-route-watch.yml'
+          paths=("$contract" "$library" "$runner" "$validator" "$test_path" "$workflow")
+
+          test "$(git -C product rev-parse "$LEASED_PRODUCT_HEAD:$contract")" = "$CONTRACT_BLOB"
+          test "$(git -C product rev-parse "$LEASED_PRODUCT_HEAD:$library")" = "$LIBRARY_BLOB"
+          test "$(git -C product rev-parse "$LEASED_PRODUCT_HEAD:$runner")" = "$RUNNER_BLOB"
+          test "$(git -C product rev-parse "$LEASED_PRODUCT_HEAD:$validator")" = "$VALIDATOR_BLOB"
+          test "$(git -C product rev-parse "$LEASED_PRODUCT_HEAD:$test_path")" = "$TEST_BLOB"
+          test "$(git -C product rev-parse "$LEASED_PRODUCT_HEAD:$workflow")" = "$WORKFLOW_BLOB"
+
+          for path in "${paths[@]}"; do
+            if git -C product cat-file -e "$base_sha:$path" 2>/dev/null; then
+              echo "product path already exists on current main: $path" >&2
+              exit 1
+            fi
+          done
+
+          git -C product reset --hard "$base_sha"
+          git -C product clean -fdx
+          for path in "${paths[@]}"; do
+            mkdir -p "product/$(dirname "$path")"
+            git -C product show "$LEASED_PRODUCT_HEAD:$path" > "product/$path"
+          done
+
+          (
+            cd product
+            git apply --check --recount --whitespace=error-all "$patch"
+            git apply --recount --whitespace=error-all "$patch"
+          )
+
+          test "$(git -C product hash-object "$contract")" = "$CONTRACT_BLOB"
+          test "$(git -C product hash-object "$runner")" = "$RUNNER_BLOB"
+          test "$(git -C product hash-object "$validator")" = "$VALIDATOR_BLOB"
+          test "$(git -C product hash-object "$library")" != "$LIBRARY_BLOB"
+          test "$(git -C product hash-object "$test_path")" != "$TEST_BLOB"
+          test "$(git -C product hash-object "$workflow")" != "$WORKFLOW_BLOB"
+
+          git -C product add -- "${paths[@]}"
+          actual_paths=$(git -C product diff --cached --name-only | LC_ALL=C sort)
+          expected_paths=$(printf '%s\n' "${paths[@]}" | LC_ALL=C sort)
+          test "$actual_paths" = "$expected_paths"
+          git -C product diff --cached --check
+
+          tree_sha=$(git -C product write-tree)
+          export GIT_AUTHOR_NAME='BigBirdReturns'
+          export GIT_AUTHOR_EMAIL='219768509+BigBirdReturns@users.noreply.github.com'
+          export GIT_COMMITTER_NAME="$GIT_AUTHOR_NAME"
+          export GIT_COMMITTER_EMAIL="$GIT_AUTHOR_EMAIL"
+          commit_message=$'[M-05 S03-L7] Persist prior route receipts and harden terminal-state validation\n\nLoad the latest successful canonical watch artifact before recurring comparisons and reject contradictory receipt status, success, metadata, request-count, HTTP-status, and body-custody combinations while preserving the twenty-route denominator, Intel date gate, zero promotion authority, and issue #345 as open.'
+          candidate=$(printf '%s\n' "$commit_message" | git -C product commit-tree "$tree_sha" -p "$base_sha")
+          test "$(git -C product rev-parse "$candidate^")" = "$base_sha"
+          test "$(git -C product rev-parse "$candidate^{tree}")" = "$tree_sha"
+          candidate_paths=$(git -C product diff --name-only "$base_sha" "$candidate" | LC_ALL=C sort)
+          test "$candidate_paths" = "$expected_paths"
+
+          rm -rf /tmp/m05-route-watch-reviewfix3-qualification
+          git -C product worktree add --detach /tmp/m05-route-watch-reviewfix3-qualification "$candidate"
+          node --check /tmp/m05-route-watch-reviewfix3-qualification/tools/lib/m05-answerable-power-sprint-03-leg-07-five-domain-route-watch.mjs
+          node --check /tmp/m05-route-watch-reviewfix3-qualification/tools/run-m05-answerable-power-sprint-03-leg-07-five-domain-route-watch.mjs
+          node --check /tmp/m05-route-watch-reviewfix3-qualification/tools/validate-m05-answerable-power-sprint-03-leg-07-five-domain-route-watch.mjs
+          node --check /tmp/m05-route-watch-reviewfix3-qualification/test/m05-answerable-power-sprint-03-leg-07-five-domain-route-watch.test.js
+          (
+            cd /tmp/m05-route-watch-reviewfix3-qualification
+            node tools/validate-m05-answerable-power-sprint-03-leg-07-five-domain-route-watch.mjs
+            node test/m05-answerable-power-sprint-03-leg-07-five-domain-route-watch.test.js
+            npm run release:check
+            git restore --staged --worktree .
+            git clean -fdx
+            node tools/validate-m05-answerable-power-sprint-03-leg-07-five-domain-route-watch.mjs
+            node test/m05-answerable-power-sprint-03-leg-07-five-domain-route-watch.test.js
+            git diff --exit-code
+            test -z "$(git status --porcelain)"
+          )
+
+          test "$(git -C product ls-remote origin refs/heads/main | cut -f1)" = "$base_sha"
+          test "$(git -C product ls-remote origin "refs/heads/$PRODUCT_BRANCH" | cut -f1)" = "$LEASED_PRODUCT_HEAD"
+          git -C product push origin "$candidate:refs/heads/$PRODUCT_BRANCH" \
+            --force-with-lease="refs/heads/$PRODUCT_BRANCH:$LEASED_PRODUCT_HEAD"
+
+          echo "base_sha=$base_sha"
+          echo "candidate=$candidate"
+          echo "tree_sha=$tree_sha"
+          echo "library_blob=$(git -C product rev-parse "$candidate:$library")"
+          echo "test_blob=$(git -C product rev-parse "$candidate:$test_path")"
+          echo "workflow_blob=$(git -C product rev-parse "$candidate:$workflow")"
