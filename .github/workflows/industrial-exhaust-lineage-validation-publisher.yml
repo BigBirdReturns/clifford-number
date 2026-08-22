@@ -1,0 +1,154 @@
+name: Publish industrial-exhaust lineage validation product
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/industrial-exhaust-lineage-validation-publisher.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: industrial-exhaust-lineage-validation-product
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.pull_request.head.ref == 'agent/industrial-exhaust-lineage-validation-controller-v1'
+    runs-on: ubuntu-latest
+    env:
+      EXPECTED_BASE: cdc9d3670fb226e92ff90952c3f8a4392c532a26
+      EXPECTED_PREDECESSOR: 0e609d24af3d60c731d12fa15062043dd1601684
+      PREDECESSOR_BRANCH: agent/industrial-exhaust-revision-occurrence-v1
+      PRODUCT_BRANCH: agent/industrial-exhaust-lineage-validation-v1
+      PATCH_SHA256: c80c97b2f13b6b4eba5327e42205837b9b79c15a50f2f62913fc2e031f60d61d
+    steps:
+      - name: Check out controller branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Materialize, qualify, and publish the product branch
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git fetch --no-tags origin \
+            refs/heads/main:refs/remotes/origin/main \
+            "refs/heads/${PREDECESSOR_BRANCH}:refs/remotes/origin/${PREDECESSOR_BRANCH}"
+
+          actual_base="$(git rev-parse refs/remotes/origin/main)"
+          test "$actual_base" = "$EXPECTED_BASE"
+
+          actual_predecessor="$(git rev-parse "refs/remotes/origin/${PREDECESSOR_BRANCH}")"
+          test "$actual_predecessor" = "$EXPECTED_PREDECESSOR"
+
+          git checkout -B "$PRODUCT_BRANCH" "$EXPECTED_BASE"
+          git checkout "$EXPECTED_PREDECESSOR" -- \
+            tools/lib/industrial-exhaust-artifacts.mjs \
+            test/industrial-exhaust-artifacts.test.js
+
+          base64 --decode > /tmp/industrial-exhaust-lineage-validation.patch.gz <<'PATCH_GZIP_BASE64'
+          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
+          PATCH_GZIP_BASE64
+          gzip --decompress --stdout \
+            /tmp/industrial-exhaust-lineage-validation.patch.gz \
+            > /tmp/industrial-exhaust-lineage-validation.patch
+          echo "$PATCH_SHA256  /tmp/industrial-exhaust-lineage-validation.patch" | sha256sum --check --strict
+
+          git apply --check /tmp/industrial-exhaust-lineage-validation.patch
+          git apply /tmp/industrial-exhaust-lineage-validation.patch
+          git diff --check
+
+          expected_paths=$'test/industrial-exhaust-artifacts.test.js\ntools/lib/industrial-exhaust-artifacts.mjs'
+          actual_paths="$(git diff --name-only "$EXPECTED_BASE" | LC_ALL=C sort)"
+          test "$actual_paths" = "$expected_paths"
+
+          npm ci
+          node --check tools/lib/industrial-exhaust-artifacts.mjs
+          node --check test/industrial-exhaust-artifacts.test.js
+          node test/industrial-exhaust-artifacts.test.js
+          node test/industrial-exhaust.test.js
+
+          actual_paths_after="$(git diff --name-only "$EXPECTED_BASE" | LC_ALL=C sort)"
+          test "$actual_paths_after" = "$expected_paths"
+          test -z "$(git ls-files --others --exclude-standard)"
+
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -- \
+            tools/lib/industrial-exhaust-artifacts.mjs \
+            test/industrial-exhaust-artifacts.test.js
+          git diff --cached --check
+          staged_paths="$(git diff --cached --name-only "$EXPECTED_BASE" | LC_ALL=C sort)"
+          test "$staged_paths" = "$expected_paths"
+          test -z "$(git diff --name-only)"
+          git commit -m "fix(industrial-exhaust): validate revision lineages deterministically"
+
+          remote_sha="$(git ls-remote --heads origin "refs/heads/${PRODUCT_BRANCH}" | awk '{print $1}')"
+          if [[ -n "$remote_sha" ]]; then
+            git push --force-with-lease="refs/heads/${PRODUCT_BRANCH}:${remote_sha}" \
+              origin "HEAD:refs/heads/${PRODUCT_BRANCH}"
+          else
+            git push origin "HEAD:refs/heads/${PRODUCT_BRANCH}"
+          fi
