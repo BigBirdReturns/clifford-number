@@ -67,18 +67,69 @@ jobs:
           import pathlib
           import sys
 
+          def replace_once(text: str, old: str, new: str, label: str) -> str:
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f"{label}: expected one match, found {count}")
+              return text.replace(old, new, 1)
+
           test_path = pathlib.Path(sys.argv[1]) / "test/industrial-exhaust-artifacts.test.js"
           test = test_path.read_text(encoding="utf-8")
-          old = "assert.equal(validateArtifactRevisionLineage([legacyProjectionArtifact]), [legacyProjectionArtifact]);"
-          new = """const legacyProjectionRecords = [legacyProjectionArtifact];
+
+          old_legacy_identity = "assert.equal(validateArtifactRevisionLineage([legacyProjectionArtifact]), [legacyProjectionArtifact]);"
+          new_legacy_identity = """const legacyProjectionRecords = [legacyProjectionArtifact];
           assert.equal(
             validateArtifactRevisionLineage(legacyProjectionRecords),
             legacyProjectionRecords
           );"""
-          count = test.count(old)
-          if count != 1:
-              raise SystemExit(f"legacy projection identity assertion: expected one match, found {count}")
-          test_path.write_text(test.replace(old, new, 1), encoding="utf-8")
+          test = replace_once(
+              test,
+              old_legacy_identity,
+              new_legacy_identity,
+              "legacy projection identity assertion",
+          )
+
+          old_retired_seed = """const retiredSeedArtifact = {
+            ...artifactMerge.added,
+            title: 'No current watch match',
+            normalized_text: 'The current registry does not match this body.',
+            seed_matched_terms: ['retired_term'],
+            artifact_matched_terms: [],
+            matched_terms: ['retired_term']
+          };"""
+          new_retired_seed = """const retiredSeedNormalizedText = 'The current registry does not match this body.';
+          const retiredSeedBody = {
+            title: 'No current watch match',
+            description: artifactMerge.added.description ?? '',
+            normalized_text: retiredSeedNormalizedText,
+            normalized_text_sha256: sha256(retiredSeedNormalizedText),
+            published_at: artifactMerge.added.published_at ?? null
+          };
+          const retiredSeedProjectionSha256 = sha256({
+            ...retiredSeedBody,
+            body_sha256: artifactMerge.added.body_sha256
+          });
+          const retiredSeedArtifact = {
+            ...artifactMerge.added,
+            ...retiredSeedBody,
+            artifact_id: contentId(
+              'xartifact',
+              artifactMerge.added.artifact_record_key,
+              retiredSeedProjectionSha256
+            ),
+            projection_sha256: retiredSeedProjectionSha256,
+            seed_matched_terms: ['retired_term'],
+            artifact_matched_terms: [],
+            matched_terms: ['retired_term']
+          };"""
+          test = replace_once(
+              test,
+              old_retired_seed,
+              new_retired_seed,
+              "retired seed artifact custody fixture",
+          )
+
+          test_path.write_text(test, encoding="utf-8")
           PY
 
           cd "$worktree"
