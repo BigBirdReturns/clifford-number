@@ -63,6 +63,23 @@ jobs:
 
           git worktree add --detach "$worktree" "$EXPECTED_BASE"
           python "$GITHUB_WORKSPACE/.github/materializers/industrial-exhaust-record-custody.py" "$worktree"
+          python - "$worktree" <<'PY'
+          import pathlib
+          import sys
+
+          test_path = pathlib.Path(sys.argv[1]) / "test/industrial-exhaust-artifacts.test.js"
+          test = test_path.read_text(encoding="utf-8")
+          old = "assert.equal(validateArtifactRevisionLineage([legacyProjectionArtifact]), [legacyProjectionArtifact]);"
+          new = """const legacyProjectionRecords = [legacyProjectionArtifact];
+          assert.equal(
+            validateArtifactRevisionLineage(legacyProjectionRecords),
+            legacyProjectionRecords
+          );"""
+          count = test.count(old)
+          if count != 1:
+              raise SystemExit(f"legacy projection identity assertion: expected one match, found {count}")
+          test_path.write_text(test.replace(old, new, 1), encoding="utf-8")
+          PY
 
           cd "$worktree"
           git diff --check
