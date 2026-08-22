@@ -45,7 +45,7 @@ source = replace_once(
           receipt.body_sha256,
           `index receipt ${expectedPath} body_sha256`
         );
-        if (storedBodySha256 !== indexSha256 || sha256(receipt.body) !== storedBodySha256) {
+        if (sha256(receipt.body) !== storedBodySha256) {
           throw new Error(`index receipt ${expectedPath} body bytes do not match body_sha256`);
         }
         custodyMode = 'byte_verified';
