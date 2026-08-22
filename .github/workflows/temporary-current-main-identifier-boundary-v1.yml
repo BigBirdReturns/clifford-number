@@ -1,4 +1,4 @@
-name: Temporary current-main identifier-boundary P1 repair v12
+name: Temporary current-main identifier-boundary P1 repair v13
 
 on:
   pull_request:
@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: current-main-identifier-boundary-repair-v12
+  group: current-main-identifier-boundary-repair-v13
   cancel-in-progress: false
 
 jobs:
@@ -18,21 +18,20 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      EXPECTED_MAIN: bbd03eb3bf9a6eee1eb9d8a6f82d6829fe3d2237
       SOURCE_BASE: b97a0d04f309269441a1e52195d7acc98dcd299d
       PRODUCT_HEAD: 5b8c5153645778b547d39fd13b9a9bd1a9f10158
-      CARRIER_PARENT: db747371e43d817c543c1153ca3254239f93d19f
+      CARRIER_PARENT: 61df9ad4e47ddb38cc23005e93b2cb9d2db1c72c
       PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
       CARRIER_BRANCH: agent/current-main-identifier-context-v1
       BASE_LIBRARY: 5f68254d3e44de693e83503aed879160f9b7b997
       BASE_TEST: 1659a7cc54666a2ac5a1d6b88eb8c6591d98008e
       SOURCE_LIBRARY: 44cc935fe9ba1b1b4485fbf0676733664b58c8ef
       SOURCE_TEST: ebcf778044a086ad76eaebd5bae1981a0e06cf9c
-      PATCH_WORK: /tmp/identifier-boundary-patch-v12
-      QUALIFICATION_WORK: /tmp/identifier-boundary-qualification-v12
-      EXPECTED_PATHS_FILE: /tmp/identifier-boundary-paths-v12.txt
-      EXPECTED_NUMSTAT_FILE: /tmp/identifier-boundary-numstat-v12.txt
-      RECEIPT_FILE: /tmp/identifier-boundary-receipt-v12.txt
+      PATCH_WORK: /tmp/identifier-boundary-patch-v13
+      QUALIFICATION_WORK: /tmp/identifier-boundary-qualification-v13
+      EXPECTED_PATHS_FILE: /tmp/identifier-boundary-paths-v13.txt
+      EXPECTED_NUMSTAT_FILE: /tmp/identifier-boundary-numstat-v13.txt
+      RECEIPT_FILE: /tmp/identifier-boundary-receipt-v13.txt
     steps:
       - uses: actions/checkout@v4
         with:
@@ -43,7 +42,7 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Verify exact carrier, main, and product leases
+      - name: Pin live main and verify every input lease
         shell: bash
         run: |
           set -euo pipefail
@@ -58,16 +57,22 @@ jobs:
             "+refs/heads/main:refs/remotes/origin/main" \
             "+refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/$PRODUCT_BRANCH" \
             "+refs/heads/$CARRIER_BRANCH:refs/remotes/origin/$CARRIER_BRANCH"
-          test "$(git rev-parse refs/remotes/origin/$CARRIER_BRANCH)" = "$HEAD_SHA"
-          test "$(git rev-parse refs/remotes/origin/main)" = "$EXPECTED_MAIN"
-          test "$(git rev-parse refs/remotes/origin/$PRODUCT_BRANCH)" = "$PRODUCT_HEAD"
+          RUN_MAIN="$(git rev-parse refs/remotes/origin/main)"
+          LIVE_PRODUCT="$(git rev-parse refs/remotes/origin/$PRODUCT_BRANCH)"
+          LIVE_CARRIER="$(git rev-parse refs/remotes/origin/$CARRIER_BRANCH)"
+          printf 'run_main=%s\nproduct=%s\ncarrier=%s\n' \
+            "$RUN_MAIN" "$LIVE_PRODUCT" "$LIVE_CARRIER"
+          printf 'RUN_MAIN=%s\n' "$RUN_MAIN" >> "$GITHUB_ENV"
+
+          test "$LIVE_CARRIER" = "$HEAD_SHA"
+          test "$LIVE_PRODUCT" = "$PRODUCT_HEAD"
           test "$(git rev-parse "$PRODUCT_HEAD^")" = "$SOURCE_BASE"
           test "$(git rev-list --count "$SOURCE_BASE..$PRODUCT_HEAD")" = 1
-          git merge-base --is-ancestor "$SOURCE_BASE" "$EXPECTED_MAIN"
+          git merge-base --is-ancestor "$SOURCE_BASE" "$RUN_MAIN"
           test "$(git rev-parse "$SOURCE_BASE:tools/lib/industrial-exhaust.mjs")" = "$BASE_LIBRARY"
           test "$(git rev-parse "$SOURCE_BASE:test/industrial-exhaust.test.js")" = "$BASE_TEST"
-          test "$(git rev-parse "$EXPECTED_MAIN:tools/lib/industrial-exhaust.mjs")" = "$BASE_LIBRARY"
-          test "$(git rev-parse "$EXPECTED_MAIN:test/industrial-exhaust.test.js")" = "$BASE_TEST"
+          test "$(git rev-parse "$RUN_MAIN:tools/lib/industrial-exhaust.mjs")" = "$BASE_LIBRARY"
+          test "$(git rev-parse "$RUN_MAIN:test/industrial-exhaust.test.js")" = "$BASE_TEST"
           test "$(git rev-parse "$PRODUCT_HEAD:tools/lib/industrial-exhaust.mjs")" = "$SOURCE_LIBRARY"
           test "$(git rev-parse "$PRODUCT_HEAD:test/industrial-exhaust.test.js")" = "$SOURCE_TEST"
 
@@ -182,12 +187,13 @@ jobs:
           git diff --check
           NEW_LIBRARY="$(git hash-object tools/lib/industrial-exhaust.mjs)"
           NEW_TEST="$(git hash-object test/industrial-exhaust.test.js)"
+          printf 'new_library=%s\nnew_test=%s\n' "$NEW_LIBRARY" "$NEW_TEST"
           test "$NEW_LIBRARY" != "$SOURCE_LIBRARY"
           test "$NEW_TEST" != "$SOURCE_TEST"
           printf 'NEW_LIBRARY=%s\n' "$NEW_LIBRARY" >> "$GITHUB_ENV"
           printf 'NEW_TEST=%s\n' "$NEW_TEST" >> "$GITHUB_ENV"
 
-      - name: Qualify the exact product on repaired main
+      - name: Qualify the exact product on pinned main
         shell: bash
         run: |
           set -euo pipefail
@@ -198,7 +204,7 @@ jobs:
           node test/industrial-exhaust.test.js
           node test/industrial-exhaust-artifacts.test.js
 
-          git worktree add --detach "$QUALIFICATION_WORK" "$EXPECTED_MAIN"
+          git worktree add --detach "$QUALIFICATION_WORK" "$RUN_MAIN"
           cp "$PATCH_WORK/tools/lib/industrial-exhaust.mjs" "$QUALIFICATION_WORK/tools/lib/industrial-exhaust.mjs"
           cp "$PATCH_WORK/test/industrial-exhaust.test.js" "$QUALIFICATION_WORK/test/industrial-exhaust.test.js"
           cd "$QUALIFICATION_WORK"
@@ -208,7 +214,7 @@ jobs:
           git diff --check
           git diff --numstat | LC_ALL=C sort -k3 > "$EXPECTED_NUMSTAT_FILE"
           test "$(sed '/^$/d' "$EXPECTED_NUMSTAT_FILE" | wc -l)" -eq 2
-          printf '%s\n' 'qualified current-main numstat:'
+          printf '%s\n' 'qualified pinned-main numstat:'
           cat "$EXPECTED_NUMSTAT_FILE"
 
           node --check tools/lib/industrial-exhaust.mjs
@@ -228,7 +234,7 @@ jobs:
             tools/lib/industrial-exhaust.mjs test/industrial-exhaust.test.js | LC_ALL=C sort -k3)" = \
             "$(cat "$EXPECTED_NUMSTAT_FILE")"
 
-      - name: Revalidate every lease and publish the two-file product
+      - name: Revalidate live leases and publish the two-file product
         id: publish
         shell: bash
         run: |
@@ -238,13 +244,20 @@ jobs:
             "+refs/heads/main:refs/remotes/origin/main" \
             "+refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/$PRODUCT_BRANCH" \
             "+refs/heads/$CARRIER_BRANCH:refs/remotes/origin/$CARRIER_BRANCH"
-          test "$(git rev-parse refs/remotes/origin/main)" = "$EXPECTED_MAIN"
-          test "$(git rev-parse refs/remotes/origin/$PRODUCT_BRANCH)" = "$PRODUCT_HEAD"
-          test "$(git rev-parse refs/remotes/origin/$CARRIER_BRANCH)" = "$HEAD_SHA"
+          LIVE_MAIN="$(git rev-parse refs/remotes/origin/main)"
+          LIVE_PRODUCT="$(git rev-parse refs/remotes/origin/$PRODUCT_BRANCH)"
+          LIVE_CARRIER="$(git rev-parse refs/remotes/origin/$CARRIER_BRANCH)"
+          printf 'revalidated_main=%s\nproduct=%s\ncarrier=%s\n' \
+            "$LIVE_MAIN" "$LIVE_PRODUCT" "$LIVE_CARRIER"
+          test "$LIVE_MAIN" = "$RUN_MAIN"
+          test "$LIVE_PRODUCT" = "$PRODUCT_HEAD"
+          test "$LIVE_CARRIER" = "$HEAD_SHA"
+          test "$(git rev-parse "$RUN_MAIN:tools/lib/industrial-exhaust.mjs")" = "$BASE_LIBRARY"
+          test "$(git rev-parse "$RUN_MAIN:test/industrial-exhaust.test.js")" = "$BASE_TEST"
 
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git checkout --detach --force "$EXPECTED_MAIN"
+          git checkout --detach --force "$RUN_MAIN"
           cp "$PATCH_WORK/tools/lib/industrial-exhaust.mjs" tools/lib/industrial-exhaust.mjs
           cp "$PATCH_WORK/test/industrial-exhaust.test.js" test/industrial-exhaust.test.js
           test "$(git hash-object tools/lib/industrial-exhaust.mjs)" = "$NEW_LIBRARY"
@@ -256,11 +269,11 @@ jobs:
           git commit -m 'fix(crawler): close final identifier boundaries'
           NEW_HEAD="$(git rev-parse HEAD)"
           NEW_TREE="$(git rev-parse HEAD^{tree})"
-          test "$(git rev-parse HEAD^)" = "$EXPECTED_MAIN"
-          test "$(git rev-list --count "$EXPECTED_MAIN..$NEW_HEAD")" = 1
-          test "$(git diff --name-only "$EXPECTED_MAIN..$NEW_HEAD" | LC_ALL=C sort)" = \
+          test "$(git rev-parse HEAD^)" = "$RUN_MAIN"
+          test "$(git rev-list --count "$RUN_MAIN..$NEW_HEAD")" = 1
+          test "$(git diff --name-only "$RUN_MAIN..$NEW_HEAD" | LC_ALL=C sort)" = \
             "$(cat "$EXPECTED_PATHS_FILE")"
-          test "$(git diff --numstat "$EXPECTED_MAIN..$NEW_HEAD" | LC_ALL=C sort -k3)" = \
+          test "$(git diff --numstat "$RUN_MAIN..$NEW_HEAD" | LC_ALL=C sort -k3)" = \
             "$(cat "$EXPECTED_NUMSTAT_FILE")"
           test "$(git rev-parse "$NEW_HEAD:tools/lib/industrial-exhaust.mjs")" = "$NEW_LIBRARY"
           test "$(git rev-parse "$NEW_HEAD:test/industrial-exhaust.test.js")" = "$NEW_TEST"
@@ -269,10 +282,10 @@ jobs:
             origin "HEAD:refs/heads/$PRODUCT_BRANCH"
 
           {
-            printf 'receipt_version=current-main-identifier-boundary-repair@12\n'
+            printf 'receipt_version=current-main-identifier-boundary-repair@13\n'
             printf 'carrier_head=%s\n' "$HEAD_SHA"
             printf 'run_id=%s\n' '${{ github.run_id }}'
-            printf 'base=%s\n' "$EXPECTED_MAIN"
+            printf 'base=%s\n' "$RUN_MAIN"
             printf 'superseded_product_head=%s\n' "$PRODUCT_HEAD"
             printf 'published_product_head=%s\n' "$NEW_HEAD"
             printf 'published_tree=%s\n' "$NEW_TREE"
@@ -280,7 +293,7 @@ jobs:
             printf 'test_blob=%s\n' "$NEW_TEST"
             printf 'changed_paths:\n%s\n' "$(cat "$EXPECTED_PATHS_FILE")"
             printf 'numstat:\n%s\n' "$(cat "$EXPECTED_NUMSTAT_FILE")"
-            printf 'qualification=node-check+industrial-exhaust+artifacts+release-check+current-main-numstat+path-scoped-post-gate-custody\n'
+            printf 'qualification=node-check+industrial-exhaust+artifacts+release-check+pinned-main-numstat+path-scoped-post-gate-custody\n'
           } > "$RECEIPT_FILE"
           printf 'product_head=%s\n' "$NEW_HEAD" >> "$GITHUB_OUTPUT"
           cat "$RECEIPT_FILE"
