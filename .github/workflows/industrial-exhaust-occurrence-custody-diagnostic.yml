@@ -1,0 +1,158 @@
+name: Diagnose industrial-exhaust occurrence custody
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/industrial-exhaust-occurrence-custody-diagnostic.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.pull_request.head.ref == 'agent/industrial-exhaust-occurrence-custody-diagnostic-v1'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Audit stored keys, digests, and occurrence identifiers
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import crypto from 'node:crypto';
+          import fs from 'node:fs';
+          import {
+            validateArtifactRevisionLineage,
+            validateDiscoveryRevisionLineage
+          } from './tools/lib/industrial-exhaust-artifacts.mjs';
+
+          function stableJson(value) {
+            if (Array.isArray(value)) return `[${value.map(stableJson).join(',')}]`;
+            if (value && typeof value === 'object') {
+              return `{${Object.keys(value).sort().map(key => `${JSON.stringify(key)}:${stableJson(value[key])}`).join(',')}}`;
+            }
+            return JSON.stringify(value);
+          }
+
+          function sha256(value) {
+            return crypto.createHash('sha256')
+              .update(typeof value === 'string' ? value : stableJson(value))
+              .digest('hex');
+          }
+
+          function contentId(prefix, ...parts) {
+            return `${prefix}_${sha256(parts.map(part => String(part ?? '')).join('|')).slice(0, 24)}`;
+          }
+
+          function readJsonl(file) {
+            const text = fs.readFileSync(file, 'utf8').trim();
+            return text ? text.split(/\r?\n/u).map((line, index) => {
+              try { return JSON.parse(line); }
+              catch (error) { throw new Error(`${file}:${index + 1}: ${error.message}`); }
+            }) : [];
+          }
+
+          function audit(records, checks) {
+            const counts = Object.fromEntries(Object.keys(checks).map(name => [name, 0]));
+            const samples = Object.fromEntries(Object.keys(checks).map(name => [name, []]));
+            for (const record of records) {
+              for (const [name, check] of Object.entries(checks)) {
+                if (check(record)) {
+                  counts[name] += 1;
+                } else if (samples[name].length < 5) {
+                  samples[name].push({
+                    id: record.discovery_id ?? record.artifact_id ?? null,
+                    revision_number: record.revision_number ?? null,
+                    stable_key: record.source_record_key ?? record.artifact_record_key ?? null
+                  });
+                }
+              }
+            }
+            return { total: records.length, counts, samples };
+          }
+
+          function discoveryExpectedDigest(record) {
+            return sha256({ canonical_url: record.canonical_url, title: record.title });
+          }
+
+          function discoveryId(record, digest, predecessorBound) {
+            const parts = [record.source_id, record.source_record_key];
+            return predecessorBound && record.revision_of
+              ? contentId('xdiscover', ...parts, record.revision_of, digest)
+              : contentId('xdiscover', ...parts, digest);
+          }
+
+          function artifactBodyRecord(record) {
+            return {
+              title: record.title ?? '',
+              description: record.description ?? '',
+              normalized_text: record.normalized_text ?? '',
+              normalized_text_sha256: record.normalized_text_sha256 ?? null,
+              published_at: record.published_at ?? null
+            };
+          }
+
+          function artifactExpectedDigest(record) {
+            const mediaType = String(record.content_type ?? '').toLowerCase().split(';', 1)[0].trim();
+            const projectionMode = mediaType === 'application/pdf' ? 'opaque_body' : 'semantic_text';
+            const bodyRecord = artifactBodyRecord(record);
+            const identity = projectionMode === 'opaque_body'
+              ? { projection_mode: projectionMode, ...bodyRecord, body_sha256: record.body_sha256 ?? null }
+              : { projection_mode: projectionMode, ...bodyRecord };
+            return sha256(identity);
+          }
+
+          function artifactId(record, digest, predecessorBound) {
+            return predecessorBound && record.revision_of
+              ? contentId('xartifact', record.artifact_record_key, record.revision_of, digest)
+              : contentId('xartifact', record.artifact_record_key, digest);
+          }
+
+          const discovery = readJsonl('data/exhaust/discovery-observations.jsonl');
+          const artifacts = readJsonl('data/exhaust/artifacts.jsonl');
+          validateDiscoveryRevisionLineage(discovery);
+          validateArtifactRevisionLineage(artifacts);
+
+          const discoveryAudit = audit(discovery, {
+            stable_key_matches_canonical_url: record => record.source_record_key === sha256(`${record.source_id}|${record.canonical_url}`),
+            canonical_content_digest_matches: record => record.content_sha256 === discoveryExpectedDigest(record),
+            occurrence_id_matches_canonical_current_scheme: record => record.discovery_id === discoveryId(record, discoveryExpectedDigest(record), true),
+            occurrence_id_matches_stored_digest_current_scheme: record => record.discovery_id === discoveryId(record, record.content_sha256, true),
+            occurrence_id_matches_canonical_legacy_scheme: record => record.discovery_id === discoveryId(record, discoveryExpectedDigest(record), false),
+            occurrence_id_matches_stored_digest_legacy_scheme: record => record.discovery_id === discoveryId(record, record.content_sha256, false)
+          });
+
+          const artifactAudit = audit(artifacts, {
+            stable_key_matches_canonical_url: record => record.artifact_record_key === sha256(record.canonical_url),
+            normalized_text_digest_matches: record => record.normalized_text_sha256 === null
+              ? String(record.normalized_text ?? '') === ''
+              : record.normalized_text_sha256 === sha256(String(record.normalized_text ?? '')),
+            canonical_projection_digest_matches: record => record.projection_sha256 === artifactExpectedDigest(record),
+            occurrence_id_matches_canonical_current_scheme: record => record.artifact_id === artifactId(record, artifactExpectedDigest(record), true),
+            occurrence_id_matches_stored_digest_current_scheme: record => record.artifact_id === artifactId(record, record.projection_sha256, true),
+            occurrence_id_matches_canonical_legacy_scheme: record => record.artifact_id === artifactId(record, artifactExpectedDigest(record), false),
+            occurrence_id_matches_stored_digest_legacy_scheme: record => record.artifact_id === artifactId(record, record.projection_sha256, false),
+            body_receipt_path_matches_record_key_and_digest: record => typeof record.body_receipt_path === 'string'
+              && record.body_receipt_path.includes(`/${record.artifact_record_key}/`)
+              && record.body_receipt_path.endsWith(`/${record.body_sha256}.json`)
+          });
+
+          console.log(JSON.stringify({
+            schema_version: 1,
+            diagnostic: 'industrial_exhaust_occurrence_custody',
+            canonical_commit: process.env.GITHUB_SHA,
+            structural_lineage_validation: 'passed',
+            discovery: discoveryAudit,
+            artifacts: artifactAudit
+          }, null, 2));
+          NODE
