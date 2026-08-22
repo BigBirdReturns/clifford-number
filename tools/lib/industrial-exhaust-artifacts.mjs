@@ -44,7 +44,105 @@ function latestBy(records, keyName, revisionName = 'revision_number') {
   return map;
 }
 
-function validateRevisionLineage(records, { label, idName, keyNames }) {
+function assertSha256Digest(value, label) {
+  if (typeof value !== 'string' || !/^[a-f0-9]{64}$/u.test(value)) {
+    throw new Error(`${label} must be a lowercase SHA-256 digest`);
+  }
+  return value;
+}
+
+function storedArtifactBodyRecord(record, id) {
+  const title = record?.title ?? '';
+  const description = record?.description ?? '';
+  const normalizedText = record?.normalized_text ?? '';
+  const publishedAt = record?.published_at ?? null;
+  if (typeof title !== 'string' || typeof description !== 'string' || typeof normalizedText !== 'string') {
+    throw new Error(`artifact revision ${id} has non-string projection text`);
+  }
+  if (publishedAt !== null && typeof publishedAt !== 'string') {
+    throw new Error(`artifact revision ${id} has an invalid published_at value`);
+  }
+  const normalizedTextSha256 = record?.normalized_text_sha256;
+  if (normalizedTextSha256 === null) {
+    if (normalizedText !== '') {
+      throw new Error(`artifact revision ${id} has normalized text without normalized_text_sha256`);
+    }
+  } else if (normalizedTextSha256 !== sha256(normalizedText)) {
+    throw new Error(`artifact revision ${id} normalized_text_sha256 does not match normalized_text`);
+  }
+  return {
+    title,
+    description,
+    normalized_text: normalizedText,
+    normalized_text_sha256: normalizedTextSha256,
+    published_at: publishedAt
+  };
+}
+
+function validateDiscoveryRevisionRecord(record, id) {
+  const sourceId = record?.source_id;
+  const canonicalUrl = record?.canonical_url;
+  const title = record?.title;
+  if (typeof sourceId !== 'string' || !sourceId || typeof canonicalUrl !== 'string' || !canonicalUrl
+    || typeof title !== 'string') {
+    throw new Error(`discovery revision ${id} lacks canonical source content`);
+  }
+  const expectedRecordKey = sha256(`${sourceId}|${canonicalUrl}`);
+  if (record.source_record_key !== expectedRecordKey) {
+    throw new Error(`discovery revision ${id} source_record_key does not match source_id and canonical_url`);
+  }
+  const expectedContentSha256 = sha256({ canonical_url: canonicalUrl, title });
+  if (record.content_sha256 !== expectedContentSha256) {
+    throw new Error(`discovery revision ${id} content_sha256 does not match canonical discovery content`);
+  }
+  return {
+    occurrencePrefix: 'xdiscover',
+    occurrenceParts: [sourceId, expectedRecordKey],
+    payloadDigest: expectedContentSha256,
+    allowLegacyOccurrence: false,
+    projectionContract: null
+  };
+}
+
+function validateArtifactRevisionRecord(record, id) {
+  const canonicalUrl = record?.canonical_url;
+  if (typeof canonicalUrl !== 'string' || !canonicalUrl) {
+    throw new Error(`artifact revision ${id} lacks canonical_url`);
+  }
+  const expectedRecordKey = sha256(canonicalUrl);
+  if (record.artifact_record_key !== expectedRecordKey) {
+    throw new Error(`artifact revision ${id} artifact_record_key does not match canonical_url`);
+  }
+  const bodyRecord = storedArtifactBodyRecord(record, id);
+  const bodySha256 = assertSha256Digest(record?.body_sha256, `artifact revision ${id} body_sha256`);
+  const projectionSha256 = assertSha256Digest(
+    record?.projection_sha256,
+    `artifact revision ${id} projection_sha256`
+  );
+  const legacyProjectionSha256 = sha256({ ...bodyRecord, body_sha256: bodySha256 });
+  const currentProjectionSha256 = sha256(artifactProjectionIdentity({
+    bodyRecord,
+    bodySha256,
+    contentType: record?.content_type
+  }));
+  let projectionContract;
+  if (projectionSha256 === currentProjectionSha256) {
+    projectionContract = 'current_projection';
+  } else if (projectionSha256 === legacyProjectionSha256) {
+    projectionContract = 'legacy_body_bound';
+  } else {
+    throw new Error(`artifact revision ${id} projection_sha256 does not match a supported projection contract`);
+  }
+  return {
+    occurrencePrefix: 'xartifact',
+    occurrenceParts: [expectedRecordKey],
+    payloadDigest: projectionSha256,
+    allowLegacyOccurrence: projectionContract === 'legacy_body_bound',
+    projectionContract
+  };
+}
+
+function validateRevisionLineage(records, { label, idName, keyNames, validateRecord }) {
   if (!Array.isArray(records)) throw new Error(`${label} revision lineage must be an array`);
   const byId = new Map();
   const byRevision = new Map();
@@ -68,7 +166,15 @@ function validateRevisionLineage(records, { label, idName, keyNames }) {
       throw new Error(`forked ${label} lineage at revision ${revisionNumber}: ${id}`);
     }
 
-    const node = { id, lineageKey, revisionNumber, record };
+    const custody = validateRecord(record, id);
+    const node = {
+      id,
+      lineageKey,
+      revisionNumber,
+      record,
+      custody,
+      occurrenceScheme: null
+    };
     byId.set(id, node);
     byRevision.set(revisionKey, node);
   }
@@ -79,6 +185,16 @@ function validateRevisionLineage(records, { label, idName, keyNames }) {
       if (parentId !== null) {
         throw new Error(`${label} root ${node.id} must declare revision_of null`);
       }
+      const expectedRootId = revisionOccurrenceId(
+        node.custody.occurrencePrefix,
+        node.custody.occurrenceParts,
+        null,
+        node.custody.payloadDigest
+      );
+      if (node.id !== expectedRootId) {
+        throw new Error(`${label} root ${node.id} occurrence id does not match its canonical payload`);
+      }
+      node.occurrenceScheme = 'root';
       continue;
     }
     if (typeof parentId !== 'string' || !parentId) {
@@ -94,6 +210,40 @@ function validateRevisionLineage(records, { label, idName, keyNames }) {
     if (parent.revisionNumber !== node.revisionNumber - 1) {
       throw new Error(`${label} revision ${node.id} does not name its immediate predecessor`);
     }
+
+    const expectedPredecessorBoundId = revisionOccurrenceId(
+      node.custody.occurrencePrefix,
+      node.custody.occurrenceParts,
+      parentId,
+      node.custody.payloadDigest
+    );
+    const expectedLegacyId = revisionOccurrenceId(
+      node.custody.occurrencePrefix,
+      node.custody.occurrenceParts,
+      null,
+      node.custody.payloadDigest
+    );
+    if (node.id === expectedPredecessorBoundId) {
+      node.occurrenceScheme = 'predecessor_bound';
+    } else if (node.custody.allowLegacyOccurrence && node.id === expectedLegacyId) {
+      node.occurrenceScheme = 'legacy';
+    } else if (node.custody.allowLegacyOccurrence) {
+      throw new Error(`${label} revision ${node.id} occurrence id matches neither supported contract`);
+    } else {
+      throw new Error(`${label} revision ${node.id} must use a predecessor-bound occurrence id`);
+    }
+  }
+
+  for (const node of byId.values()) {
+    if (node.revisionNumber === 1) continue;
+    const parent = byId.get(node.record.revision_of);
+    if (parent.occurrenceScheme === 'predecessor_bound' && node.occurrenceScheme !== 'predecessor_bound') {
+      throw new Error(`${label} revision ${node.id} may not return to a legacy occurrence contract`);
+    }
+    if (parent.custody.projectionContract === 'current_projection'
+      && node.custody.projectionContract === 'legacy_body_bound') {
+      throw new Error(`artifact revision ${node.id} may not return to the legacy projection contract`);
+    }
   }
 
   return records;
@@ -103,7 +253,8 @@ export function validateDiscoveryRevisionLineage(records) {
   return validateRevisionLineage(records, {
     label: 'discovery',
     idName: 'discovery_id',
-    keyNames: ['source_id', 'source_record_key']
+    keyNames: ['source_id', 'source_record_key'],
+    validateRecord: validateDiscoveryRevisionRecord
   });
 }
 
@@ -111,7 +262,8 @@ export function validateArtifactRevisionLineage(records) {
   return validateRevisionLineage(records, {
     label: 'artifact',
     idName: 'artifact_id',
-    keyNames: ['artifact_record_key']
+    keyNames: ['artifact_record_key'],
+    validateRecord: validateArtifactRevisionRecord
   });
 }
 
