@@ -1,4 +1,4 @@
-name: Temporary current-main identifier-boundary reparent v5
+name: Temporary current-main identifier-boundary P1 repair v6
 
 on:
   pull_request:
@@ -10,7 +10,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: current-main-identifier-boundary-reparent-v5
+  group: current-main-identifier-boundary-repair-v6
   cancel-in-progress: false
 
 jobs:
@@ -19,71 +19,318 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      MAIN: 21b7be4cd4045529be198befaddd3a1d941143a1
-      SOURCE_PARENT: cdc9d3670fb226e92ff90952c3f8a4392c532a26
-      SOURCE_HEAD: 83a8ce7234a203f70be5e2e1cbb84fe665dd80b6
-      CARRIER_PARENT: db24aa5bd392a359383d7b7d3434445217b87de4
+      SOURCE_BASE: 21b7be4cd4045529be198befaddd3a1d941143a1
+      PRODUCT_HEAD: e132d68bbfd94eecfdd9f20a2375fa2c96d3ead4
+      CARRIER_PARENT: ccd0805dcc2c21a2eec502408add326065f5ddc3
       PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
       CARRIER_BRANCH: agent/current-main-identifier-context-v1
       BASE_LIBRARY: 5f68254d3e44de693e83503aed879160f9b7b997
       BASE_TEST: 1659a7cc54666a2ac5a1d6b88eb8c6591d98008e
-      PRODUCT_LIBRARY: e22bbb2899233ec1bf046cef79da20cb69797937
-      PRODUCT_TEST: a3384f944235d9170b1cbf09779ab6898a21bccd
+      SOURCE_LIBRARY: e22bbb2899233ec1bf046cef79da20cb69797937
+      SOURCE_TEST: a3384f944235d9170b1cbf09779ab6898a21bccd
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
+
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Qualify and publish exact two-file product
+
+      - name: Repair, qualify, and publish exact two-file product
         id: publish
         shell: bash
         run: |
           set -euo pipefail
+
           HEAD_SHA='${{ github.event.pull_request.head.sha }}'
           test "$(git rev-parse HEAD)" = "$HEAD_SHA"
           test '${{ github.event.pull_request.head.ref }}' = "$CARRIER_BRANCH"
           test "$(git rev-parse HEAD^)" = "$CARRIER_PARENT"
-          expected_carrier="$(printf '%s\n' .github/current-main-identifier-boundary-trigger.txt .github/workflows/temporary-current-main-identifier-boundary-v1.yml | sort)"
-          test "$(git diff --name-only HEAD^..HEAD | sort)" = "$expected_carrier"
+          expected_carrier_paths="$(printf '%s\n' \
+            .github/current-main-identifier-boundary-trigger.txt \
+            .github/workflows/temporary-current-main-identifier-boundary-v1.yml | LC_ALL=C sort)"
+          test "$(git diff --name-only "$CARRIER_PARENT..HEAD" | LC_ALL=C sort)" = "$expected_carrier_paths"
 
           git fetch --no-tags origin \
             "+refs/heads/main:refs/remotes/origin/main" \
             "+refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/$PRODUCT_BRANCH"
-          test "$(git rev-parse refs/remotes/origin/main)" = "$MAIN"
-          test "$(git rev-parse refs/remotes/origin/$PRODUCT_BRANCH)" = "$SOURCE_HEAD"
-          test "$(git rev-parse "$SOURCE_HEAD^")" = "$SOURCE_PARENT"
-          test "$(git rev-list --count "$SOURCE_PARENT..$SOURCE_HEAD")" = 1
-          test "$(git merge-base "$SOURCE_PARENT" "$MAIN")" = "$SOURCE_PARENT"
-
-          expected_paths="$(printf '%s\n' test/industrial-exhaust.test.js tools/lib/industrial-exhaust.mjs | sort)"
-          expected_numstat="$(printf '103\t0\ttest/industrial-exhaust.test.js\n78\t9\ttools/lib/industrial-exhaust.mjs\n' | sort -k3)"
-          test "$(git diff --name-only "$SOURCE_PARENT..$SOURCE_HEAD" | sort)" = "$expected_paths"
-          test "$(git diff --numstat "$SOURCE_PARENT..$SOURCE_HEAD" | sort -k3)" = "$expected_numstat"
+          MAIN="$(git rev-parse refs/remotes/origin/main)"
+          printf 'leased_main=%s\n' "$MAIN"
+          test "$(git rev-parse refs/remotes/origin/$PRODUCT_BRANCH)" = "$PRODUCT_HEAD"
+          test "$(git rev-parse "$PRODUCT_HEAD^")" = "$SOURCE_BASE"
+          test "$(git rev-list --count "$SOURCE_BASE..$PRODUCT_HEAD")" = 1
+          git merge-base --is-ancestor "$SOURCE_BASE" "$MAIN"
+          test "$(git rev-parse "$SOURCE_BASE:tools/lib/industrial-exhaust.mjs")" = "$BASE_LIBRARY"
+          test "$(git rev-parse "$SOURCE_BASE:test/industrial-exhaust.test.js")" = "$BASE_TEST"
           test "$(git rev-parse "$MAIN:tools/lib/industrial-exhaust.mjs")" = "$BASE_LIBRARY"
           test "$(git rev-parse "$MAIN:test/industrial-exhaust.test.js")" = "$BASE_TEST"
-          test "$(git rev-parse "$SOURCE_HEAD:tools/lib/industrial-exhaust.mjs")" = "$PRODUCT_LIBRARY"
-          test "$(git rev-parse "$SOURCE_HEAD:test/industrial-exhaust.test.js")" = "$PRODUCT_TEST"
+          test "$(git rev-parse "$PRODUCT_HEAD:tools/lib/industrial-exhaust.mjs")" = "$SOURCE_LIBRARY"
+          test "$(git rev-parse "$PRODUCT_HEAD:test/industrial-exhaust.test.js")" = "$SOURCE_TEST"
 
-          payload="$(mktemp -d)"
-          work="$(mktemp -d)"
-          cleanup() { git worktree remove --force "$work" >/dev/null 2>&1 || true; rm -rf "$payload" "$work"; }
+          expected_product_paths="$(printf '%s\n' \
+            test/industrial-exhaust.test.js \
+            tools/lib/industrial-exhaust.mjs | LC_ALL=C sort)"
+          test "$(git diff --name-only "$SOURCE_BASE..$PRODUCT_HEAD" | LC_ALL=C sort)" = "$expected_product_paths"
+
+          patch_work="$(mktemp -d)"
+          qualification_work="$(mktemp -d)"
+          cleanup() {
+            git worktree remove --force "$patch_work" >/dev/null 2>&1 || true
+            git worktree remove --force "$qualification_work" >/dev/null 2>&1 || true
+            rm -rf "$patch_work" "$qualification_work"
+          }
           trap cleanup EXIT
-          mkdir -p "$payload/tools/lib" "$payload/test"
-          git show "$SOURCE_HEAD:tools/lib/industrial-exhaust.mjs" > "$payload/tools/lib/industrial-exhaust.mjs"
-          git show "$SOURCE_HEAD:test/industrial-exhaust.test.js" > "$payload/test/industrial-exhaust.test.js"
-          test "$(git hash-object "$payload/tools/lib/industrial-exhaust.mjs")" = "$PRODUCT_LIBRARY"
-          test "$(git hash-object "$payload/test/industrial-exhaust.test.js")" = "$PRODUCT_TEST"
 
-          git worktree add --detach "$work" "$MAIN"
-          cp "$payload/tools/lib/industrial-exhaust.mjs" "$work/tools/lib/industrial-exhaust.mjs"
-          cp "$payload/test/industrial-exhaust.test.js" "$work/test/industrial-exhaust.test.js"
+          git worktree add --detach "$patch_work" "$PRODUCT_HEAD"
           (
-            cd "$work"
-            test "$(git diff --name-only | sort)" = "$expected_paths"
-            test "$(git diff --numstat | sort -k3)" = "$expected_numstat"
+            cd "$patch_work"
+            python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(text, old, new, label):
+              count = text.count(old)
+              if count != 1:
+                  raise RuntimeError(f'{label}: expected one exact anchor, found {count}')
+              return text.replace(old, new, 1)
+
+          library_path = Path('tools/lib/industrial-exhaust.mjs')
+          test_path = Path('test/industrial-exhaust.test.js')
+          library = library_path.read_text(encoding='utf-8')
+          tests = test_path.read_text(encoding='utf-8')
+
+          old_identifier_match = r"""function explicitIdentifierLabelMatch(normalizedPrefix) {
+            const window = normalizedPrefix.slice(-128);
+            const match = window.match(EXPLICIT_IDENTIFIER_LABEL_PATTERN);
+            if (!match || match.index == null) return match;
+            return hasUrlTokenPrefixContext(window.slice(0, match.index)) ? null : match;
+          }
+          """
+          new_identifier_match = r"""function explicitIdentifierLabelMatch(normalizedPrefix) {
+            const windowStart = Math.max(0, normalizedPrefix.length - 128);
+            const window = normalizedPrefix.slice(windowStart);
+            const match = window.match(EXPLICIT_IDENTIFIER_LABEL_PATTERN);
+            if (!match || match.index == null) return match;
+            const absoluteMatchIndex = windowStart + match.index;
+            return hasUrlTokenPrefixContext(normalizedPrefix.slice(0, absoluteMatchIndex))
+              ? null
+              : match;
+          }
+          """
+          library = replace_once(
+              library,
+              old_identifier_match,
+              new_identifier_match,
+              'complete URL-token identifier-label context'
+          )
+
+          old_numeric_url = r"""  const numericUrlContext = /(?:(?:https?:)?\/\/|www\.|(?:[\p{L}\p{N}](?:[\p{L}\p{N}-]*[\p{L}\p{N}])?\.)+(?:[\p{L}]{2,}|xn--[\p{L}\p{N}-]{2,})(?=[:/?#])|(?:\d{1,3}\.){3}\d{1,3}(?=[:/?#]))[^\s]*$/iu.test(
+              normalizedPrefix
+            );
+          """
+          new_numeric_url = r"""  const numericUrlContext = hasUrlTokenPrefixContext(normalizedPrefix);
+          """
+          library = replace_once(
+              library,
+              old_numeric_url,
+              new_numeric_url,
+              'shared URL-token predicate'
+          )
+
+          old_prefix_context = r"""function redactionPrefixContext(input, offset) {
+            const preceding = input.slice(0, offset);
+            const boundedStart = Math.max(0, preceding.length - 64);
+            const currentToken = preceding.match(/\S+$/u)?.[0] ?? '';
+            const tokenStart = currentToken ? preceding.length - currentToken.length : preceding.length;
+            return preceding.slice(Math.min(boundedStart, tokenStart));
+          }
+          """
+          new_prefix_context = r"""function redactionPrefixContext(input, offset) {
+            const preceding = input.slice(0, offset);
+            const boundedStart = Math.max(0, preceding.length - 64);
+            const currentTokenWithTrailingSpace = preceding.match(/\S+\s*$/u)?.[0] ?? '';
+            const tokenStart = currentTokenWithTrailingSpace
+              ? preceding.length - currentTokenWithTrailingSpace.length
+              : preceding.length;
+            return preceding.slice(Math.min(boundedStart, tokenStart));
+          }
+          """
+          library = replace_once(
+              library,
+              old_prefix_context,
+              new_prefix_context,
+              'complete preceding token retention'
+          )
+
+          old_protected_end = r"""function identifierProtectedPrefixEnd(candidate, groups, externalSuffix) {
+            const observationGroup = trailingObservationGroup(candidate, groups, '', externalSuffix);
+            let protectedEnd = candidate.length;
+            let protectedScore = null;
+            for (let last = 0;
+              last < groups.length
+                && last < MAX_PHONE_DIGIT_GROUPS
+                && last < observationGroup;
+              last += 1) {
+              const { start, end } = phoneWindowBounds(candidate, groups, 0, last);
+              const slice = candidate.slice(start, end);
+              let score = phoneCandidateScore(slice, '');
+              if (!score) continue;
+              if (last === observationGroup - 1) score += 32;
+              else if (last === groups.length - 1) score += 24;
+              else score -= 24;
+              if (protectedScore == null
+                  || score > protectedScore
+                  || (score === protectedScore && end > protectedEnd)) {
+                protectedScore = score;
+                protectedEnd = end;
+              }
+            }
+            return protectedEnd;
+          }
+          """
+          new_protected_end = r"""function identifierProtectedPrefixEnd(candidate, groups, externalSuffix) {
+            const observationGroup = trailingObservationGroup(candidate, groups, '', externalSuffix);
+            let protectedEnd = candidate.length;
+            let protectedScore = null;
+            for (let last = 0;
+              last < groups.length
+                && last < MAX_PHONE_DIGIT_GROUPS
+                && last < observationGroup;
+              last += 1) {
+              const { start, end } = phoneWindowBounds(candidate, groups, 0, last);
+              const slice = candidate.slice(start, end);
+              let score = phoneCandidateScore(slice, '');
+              if (!score) continue;
+              if (last === observationGroup - 1) score += 32;
+              else if (last === groups.length - 1) score += 24;
+              else score -= 24;
+              if (protectedScore == null
+                  || score > protectedScore
+                  || (score === protectedScore && end > protectedEnd)) {
+                protectedScore = score;
+                protectedEnd = end;
+              }
+            }
+            if (protectedScore != null) return protectedEnd;
+
+            for (let first = 1; first < groups.length; first += 1) {
+              const previousEnd = groups[first - 1].index + groups[first - 1][0].length;
+              const groupStart = groups[first].index;
+              const separator = candidate.slice(previousEnd, groupStart).normalize('NFKC');
+              const hardBoundary = /(?:\s[\/]|[\/]\s|[.．]\s+)/u.test(separator);
+              if (!hardBoundary) continue;
+              if (!canStartIndependentPhone(candidate, groups, first, '')) continue;
+              return phoneWindowBounds(candidate, groups, first, first).start;
+            }
+            return candidate.length;
+          }
+          """
+          library = replace_once(
+              library,
+              old_protected_end,
+              new_protected_end,
+              'unscored identifier hard-boundary fallback'
+          )
+
+          url_marker = "for (const [urlPathLabel, expected] of [\n"
+          unscored_tests = r"""for (const [unscoredIdentifierThenPhone, expected] of [
+            ['ID: 12345678 / 03-6216-8041', 'ID: 12345678 / [contact omitted]'],
+            ['ID: 12345678. 03-6216-8041', 'ID: 12345678. [contact omitted]'],
+            ['ID: 12345678 / +81 3 6216 5111', 'ID: 12345678 / [contact omitted]'],
+            ['ID: 12345678; 03-6216-8041', 'ID: 12345678; [contact omitted]'],
+            ['ID: 12345678 Phone: 03-6216-8041', 'ID: 12345678 Phone: [contact omitted]']
+          ]) {
+            assert.equal(
+              redactContactData(unscoredIdentifierThenPhone),
+              expected,
+              'an unscored numeric identifier must not protect a later independently complete phone'
+            );
+          }
+          for (const completeGroupedIdentifier of [
+            'ID: +1 212 555 1234',
+            'reference: +1 212 555 1234',
+            'ID: +44 (0)20 7123 4567',
+            'ID: (+81 3 6216 5111)',
+            'ＩＤ：（＋８１ ３ ６２１６ ５１１１）'
+          ]) {
+            assert.equal(
+              redactContactData(completeGroupedIdentifier),
+              completeGroupedIdentifier,
+              'a complete grouped identifier must not be split at an internally phone-shaped suffix'
+            );
+          }
+
+          """
+          tests = replace_once(
+              tests,
+              url_marker,
+              f'{unscored_tests}{url_marker}',
+              'unscored identifier boundary regressions'
+          )
+
+          wrapped_marker = 'for (const wrappedIdentifier of [\n'
+          long_url_tests = r"""const longIdentifierUrlSegment = 'a'.repeat(140);
+          for (const [longUrlPathLabel, expected] of [
+            [
+              `https://example.test/${longIdentifierUrlSegment}/id: 09012345678`,
+              `https://example.test/${longIdentifierUrlSegment}/id: [contact omitted]`
+            ],
+            [
+              `//example.test/${longIdentifierUrlSegment}/reference: +81 3 6216 5111`,
+              `//example.test/${longIdentifierUrlSegment}/reference: [contact omitted]`
+            ],
+            [
+              `example.test/${longIdentifierUrlSegment}/id: 03-6216-8041`,
+              `example.test/${longIdentifierUrlSegment}/id: [contact omitted]`
+            ],
+            [
+              `192.0.2.1/${longIdentifierUrlSegment}/reference: 090-1234-5678`,
+              `192.0.2.1/${longIdentifierUrlSegment}/reference: [contact omitted]`
+            ]
+          ]) {
+            assert.equal(
+              redactContactData(longUrlPathLabel),
+              expected,
+              'a long URL token must retain URL provenance when rejecting an embedded identifier label'
+            );
+          }
+
+          """
+          tests = replace_once(
+              tests,
+              wrapped_marker,
+              f'{long_url_tests}{wrapped_marker}',
+              'long URL identifier-label regressions'
+          )
+
+          library_path.write_text(library, encoding='utf-8')
+          test_path.write_text(tests, encoding='utf-8')
+          PY
+
+            test "$(git diff --name-only | LC_ALL=C sort)" = "$expected_product_paths"
+            git diff --check
+            node --check tools/lib/industrial-exhaust.mjs
+            node --check tools/crawl-industrial-exhaust.mjs
+            node --check test/industrial-exhaust.test.js
+            node test/industrial-exhaust.test.js
+            node test/industrial-exhaust-artifacts.test.js
+          )
+
+          new_library="$(git -C "$patch_work" hash-object tools/lib/industrial-exhaust.mjs)"
+          new_test="$(git -C "$patch_work" hash-object test/industrial-exhaust.test.js)"
+          test "$new_library" != "$SOURCE_LIBRARY"
+          test "$new_test" != "$SOURCE_TEST"
+
+          git worktree add --detach "$qualification_work" "$MAIN"
+          cp "$patch_work/tools/lib/industrial-exhaust.mjs" "$qualification_work/tools/lib/industrial-exhaust.mjs"
+          cp "$patch_work/test/industrial-exhaust.test.js" "$qualification_work/test/industrial-exhaust.test.js"
+          expected_numstat="$(git -C "$qualification_work" diff --numstat | LC_ALL=C sort -k3)"
+          test "$(printf '%s\n' "$expected_numstat" | sed '/^$/d' | wc -l)" -eq 2
+          (
+            cd "$qualification_work"
+            test "$(git diff --name-only | LC_ALL=C sort)" = "$expected_product_paths"
+            test "$(git diff --numstat | LC_ALL=C sort -k3)" = "$expected_numstat"
             git diff --check
             node --check tools/lib/industrial-exhaust.mjs
             node --check tools/crawl-industrial-exhaust.mjs
@@ -93,49 +340,56 @@ jobs:
             npm run release:check
             git diff --check
           )
-          git worktree remove --force "$work"
+          git worktree remove --force "$qualification_work"
 
           git fetch --no-tags origin \
             "+refs/heads/main:refs/remotes/origin/main" \
             "+refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/$PRODUCT_BRANCH"
           test "$(git rev-parse refs/remotes/origin/main)" = "$MAIN"
-          test "$(git rev-parse refs/remotes/origin/$PRODUCT_BRANCH)" = "$SOURCE_HEAD"
+          test "$(git rev-parse refs/remotes/origin/$PRODUCT_BRANCH)" = "$PRODUCT_HEAD"
 
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git checkout --detach --force "$MAIN"
-          cp "$payload/tools/lib/industrial-exhaust.mjs" tools/lib/industrial-exhaust.mjs
-          cp "$payload/test/industrial-exhaust.test.js" test/industrial-exhaust.test.js
+          cp "$patch_work/tools/lib/industrial-exhaust.mjs" tools/lib/industrial-exhaust.mjs
+          cp "$patch_work/test/industrial-exhaust.test.js" test/industrial-exhaust.test.js
           git add -- tools/lib/industrial-exhaust.mjs test/industrial-exhaust.test.js
           git diff --cached --check
-          test "$(git diff --cached --name-only | sort)" = "$expected_paths"
-          test "$(git diff --cached --numstat | sort -k3)" = "$expected_numstat"
-          git commit -m 'fix(crawler): close identifier-context review boundaries'
+          test "$(git diff --cached --name-only | LC_ALL=C sort)" = "$expected_product_paths"
+          test "$(git diff --cached --numstat | LC_ALL=C sort -k3)" = "$expected_numstat"
+          git commit -m 'fix(crawler): close residual identifier boundaries'
           new_head="$(git rev-parse HEAD)"
+          new_tree="$(git rev-parse HEAD^{tree})"
           test "$(git rev-parse HEAD^)" = "$MAIN"
-          test "$(git diff --name-only "$MAIN..$new_head" | sort)" = "$expected_paths"
-          test "$(git diff --numstat "$MAIN..$new_head" | sort -k3)" = "$expected_numstat"
-          test "$(git rev-parse "$new_head:tools/lib/industrial-exhaust.mjs")" = "$PRODUCT_LIBRARY"
-          test "$(git rev-parse "$new_head:test/industrial-exhaust.test.js")" = "$PRODUCT_TEST"
+          test "$(git rev-list --count "$MAIN..$new_head")" = 1
+          test "$(git diff --name-only "$MAIN..$new_head" | LC_ALL=C sort)" = "$expected_product_paths"
+          test "$(git diff --numstat "$MAIN..$new_head" | LC_ALL=C sort -k3)" = "$expected_numstat"
+          test "$(git rev-parse "$new_head:tools/lib/industrial-exhaust.mjs")" = "$new_library"
+          test "$(git rev-parse "$new_head:test/industrial-exhaust.test.js")" = "$new_test"
 
-          git push --force-with-lease="refs/heads/$PRODUCT_BRANCH:$SOURCE_HEAD" origin "HEAD:refs/heads/$PRODUCT_BRANCH"
+          git push --force-with-lease="refs/heads/$PRODUCT_BRANCH:$PRODUCT_HEAD" \
+            origin "HEAD:refs/heads/$PRODUCT_BRANCH"
+
           {
-            printf 'receipt_version=current-main-identifier-boundary-reparent@5\n'
+            printf 'receipt_version=current-main-identifier-boundary-repair@6\n'
             printf 'carrier_head=%s\n' "$HEAD_SHA"
             printf 'run_id=%s\n' '${{ github.run_id }}'
             printf 'base=%s\n' "$MAIN"
-            printf 'superseded_product_head=%s\n' "$SOURCE_HEAD"
+            printf 'superseded_product_head=%s\n' "$PRODUCT_HEAD"
             printf 'published_product_head=%s\n' "$new_head"
-            printf 'library_blob=%s\n' "$PRODUCT_LIBRARY"
-            printf 'test_blob=%s\n' "$PRODUCT_TEST"
-            printf 'changed_paths:\n%s\n' "$expected_paths"
+            printf 'published_tree=%s\n' "$new_tree"
+            printf 'library_blob=%s\n' "$new_library"
+            printf 'test_blob=%s\n' "$new_test"
+            printf 'changed_paths:\n%s\n' "$expected_product_paths"
             printf 'numstat:\n%s\n' "$expected_numstat"
-          } > /tmp/current-main-identifier-boundary-reparent-receipt.txt
+            printf 'qualification=node-check+industrial-exhaust+artifacts+release-check\n'
+          } > /tmp/current-main-identifier-boundary-repair-receipt.txt
           printf 'product_head=%s\n' "$new_head" >> "$GITHUB_OUTPUT"
-          cat /tmp/current-main-identifier-boundary-reparent-receipt.txt
+          cat /tmp/current-main-identifier-boundary-repair-receipt.txt
+
       - uses: actions/upload-artifact@v4
         with:
-          name: current-main-identifier-boundary-reparent-${{ steps.publish.outputs.product_head }}
-          path: /tmp/current-main-identifier-boundary-reparent-receipt.txt
+          name: current-main-identifier-boundary-repair-${{ steps.publish.outputs.product_head }}
+          path: /tmp/current-main-identifier-boundary-repair-receipt.txt
           if-no-files-found: error
           retention-days: 30
