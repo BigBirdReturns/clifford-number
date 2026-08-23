@@ -1,4 +1,4 @@
-name: Temporary current-main identifier-boundary P1 repair v16
+name: Temporary current-main identifier-boundary P1 repair v17
 
 on:
   pull_request:
@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: current-main-identifier-boundary-repair-v16
+  group: current-main-identifier-boundary-repair-v17
   cancel-in-progress: false
 
 jobs:
@@ -20,18 +20,18 @@ jobs:
     env:
       SOURCE_BASE: 29fdd0f342cef522cd0f1cd04c854cf5fdfd38b2
       PRODUCT_HEAD: 2985317cda6599c4869d35a84b66d074d9a178a7
-      CARRIER_PARENT: 91f30b8e0ae359526918bc1626d47aa4d9314d66
+      CARRIER_PARENT: a59915be305d8ed965451018bac3cc583db96bc8
       PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
       CARRIER_BRANCH: agent/current-main-identifier-context-v1
       BASE_LIBRARY: 5f68254d3e44de693e83503aed879160f9b7b997
       BASE_TEST: 1659a7cc54666a2ac5a1d6b88eb8c6591d98008e
       SOURCE_LIBRARY: ac809bab014f951f4736030d130358439052eb92
       SOURCE_TEST: 322fe508467a2e45ddbb67684e87976166203446
-      PATCH_WORK: /tmp/identifier-boundary-patch-v16
-      QUALIFICATION_WORK: /tmp/identifier-boundary-qualification-v16
-      EXPECTED_PATHS_FILE: /tmp/identifier-boundary-paths-v16.txt
-      EXPECTED_NUMSTAT_FILE: /tmp/identifier-boundary-numstat-v16.txt
-      RECEIPT_FILE: /tmp/identifier-boundary-receipt-v16.txt
+      PATCH_WORK: /tmp/identifier-boundary-patch-v17
+      QUALIFICATION_WORK: /tmp/identifier-boundary-qualification-v17
+      EXPECTED_PATHS_FILE: /tmp/identifier-boundary-paths-v17.txt
+      EXPECTED_NUMSTAT_FILE: /tmp/identifier-boundary-numstat-v17.txt
+      RECEIPT_FILE: /tmp/identifier-boundary-receipt-v17.txt
     steps:
       - uses: actions/checkout@v4
         with:
@@ -98,28 +98,18 @@ jobs:
           path = Path(sys.argv[1])
           text = path.read_text(encoding='utf-8')
 
-          old_complete = r"""  const completeBounds = phoneWindowBounds(
-            candidate,
-            groups,
-            0,
-            observationGroup - 1
-          );
-          const completeCandidate = candidate.slice(
-            completeBounds.start,
-            completeBounds.end
-          );
-          if (phoneCandidateScore(completeCandidate, '')) return completeBounds.end;
+          start_marker = "  const completeBounds = phoneWindowBounds(\n"
+          end_marker = "  if (phoneCandidateScore(completeCandidate, '')) return completeBounds.end;\n\n"
+          if text.count(start_marker) != 1:
+              raise RuntimeError(f'whole-span start anchor count: {text.count(start_marker)}')
+          start = text.index(start_marker)
+          if text.count(end_marker, start) != 1:
+              raise RuntimeError(f'whole-span end anchor count: {text.count(end_marker, start)}')
+          end = text.index(end_marker, start) + len(end_marker)
+          text = text[:start] + text[end:]
 
-          """
-          if text.count(old_complete) != 1:
-              raise RuntimeError(f'whole-span early-return anchor count: {text.count(old_complete)}')
-          text = text.replace(old_complete, '', 1)
-
-          old_boundary = r"""    const hardBoundary = /[\/／]/u.test(separator)
-                || /[.．]\s+/u.test(separator);
-          """
-          new_boundary = r"""    const hardBoundary = /[\/／.．]/u.test(separator);
-          """
+          old_boundary = "    const hardBoundary = /[\\/／]/u.test(separator)\n      || /[.．]\\s+/u.test(separator);"
+          new_boundary = "    const hardBoundary = /[\\/／.．]/u.test(separator);"
           if text.count(old_boundary) != 1:
               raise RuntimeError(f'bare-period boundary anchor count: {text.count(old_boundary)}')
           path.write_text(text.replace(old_boundary, new_boundary, 1), encoding='utf-8')
@@ -296,7 +286,7 @@ jobs:
             origin "HEAD:refs/heads/$PRODUCT_BRANCH"
 
           {
-            printf 'receipt_version=current-main-identifier-boundary-repair@16\n'
+            printf 'receipt_version=current-main-identifier-boundary-repair@17\n'
             printf 'carrier_head=%s\n' "$HEAD_SHA"
             printf 'run_id=%s\n' '${{ github.run_id }}'
             printf 'base=%s\n' "$RUN_MAIN"
