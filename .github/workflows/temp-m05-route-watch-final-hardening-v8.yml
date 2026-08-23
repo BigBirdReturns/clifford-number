@@ -1,0 +1,168 @@
+name: TEMP materialize final M-05 route-watch hardening v8
+
+on:
+  push:
+    branches:
+      - agent/m05-s03-l7-route-watch-reviewfix-carrier-v2
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/m05-s03-l7-route-watch-reviewfix-carrier-v2
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Build, qualify, and publish exact six-path product
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          EXPECTED_BASE='645b6e979d31679835329cd0694fedd6e0955a59'
+          EXPECTED_PRODUCT='80165eb95fa5cc5e2a48e6ba240267579e03e8e7'
+          PRODUCT_BRANCH='agent/m05-s03-l7-five-domain-route-watch-v1'
+          DIAGNOSTIC_BRANCH='agent/m05-s03-l7-route-watch-final-hardening-diagnostic-v8'
+          PRODUCT_DIR='/tmp/m05-route-watch-final-hardening-v8'
+          SNAPSHOT_DIR='/tmp/m05-route-watch-final-hardening-snapshot-v8'
+          DIAGNOSTIC_DIR='/tmp/m05-route-watch-final-hardening-diagnostic-v8'
+          LOG_FILE="$RUNNER_TEMP/m05-route-watch-final-hardening-v8.log"
+          STATUS_FILE="$RUNNER_TEMP/m05-route-watch-final-hardening-v8.json"
+          PATCHER_ONE="$GITHUB_WORKSPACE/tools/temp-m05-route-watch-final-hardening-v7.py"
+          PATCHER_TWO="$GITHUB_WORKSPACE/tools/temp-m05-route-watch-challenge-status-v8.py"
+
+          WORKFLOW='.github/workflows/m05-five-domain-route-watch.yml'
+          CONTRACT='data/project/m05-answerable-power-sprint-03-leg-07-five-domain-route-watch-contract.json'
+          TEST='test/m05-answerable-power-sprint-03-leg-07-five-domain-route-watch.test.js'
+          LIBRARY='tools/lib/m05-answerable-power-sprint-03-leg-07-five-domain-route-watch.mjs'
+          RUNNER='tools/run-m05-answerable-power-sprint-03-leg-07-five-domain-route-watch.mjs'
+          VALIDATOR='tools/validate-m05-answerable-power-sprint-03-leg-07-five-domain-route-watch.mjs'
+          PRODUCT_PATHS=("$WORKFLOW" "$CONTRACT" "$TEST" "$LIBRARY" "$RUNNER" "$VALIDATOR")
+
+          stage='initializing'
+          observed_base=''
+          observed_product=''
+          candidate_commit=''
+          candidate_tree=''
+          exec > >(tee "$LOG_FILE") 2>&1
+
+          publish_diagnostic() {
+            rc=$?
+            trap - EXIT
+            set +e
+            STAGE="$stage" RC="$rc" EXPECTED_BASE="$EXPECTED_BASE" OBSERVED_BASE="$observed_base" EXPECTED_PRODUCT="$EXPECTED_PRODUCT" OBSERVED_PRODUCT="$observed_product" CANDIDATE_COMMIT="$candidate_commit" CANDIDATE_TREE="$candidate_tree" RUN_ID="$GITHUB_RUN_ID" STATUS_FILE="$STATUS_FILE" python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          payload = {
+              'schema_version': 'm05-route-watch-final-hardening-diagnostic@2',
+              'run_id': os.environ['RUN_ID'],
+              'stage': os.environ['STAGE'],
+              'exit_code': int(os.environ['RC']),
+              'expected_base': os.environ['EXPECTED_BASE'],
+              'observed_base': os.environ['OBSERVED_BASE'] or None,
+              'expected_product': os.environ['EXPECTED_PRODUCT'],
+              'observed_product': os.environ['OBSERVED_PRODUCT'] or None,
+              'candidate_commit': os.environ['CANDIDATE_COMMIT'] or None,
+              'candidate_tree': os.environ['CANDIDATE_TREE'] or None,
+              'focused_validation': os.environ['STAGE'] not in {'initializing', 'fetching_leases', 'constructing_product', 'focused_validation'},
+              'release_check': os.environ['STAGE'] not in {'initializing', 'fetching_leases', 'constructing_product', 'focused_validation', 'release_check'},
+              'deterministic_replay': os.environ['STAGE'] in {'committing_product', 'publishing_product', 'published'},
+              'published': os.environ['STAGE'] == 'published' and int(os.environ['RC']) == 0,
+              'source_requests': 0,
+              'qualifying_evidence_receipts': 0,
+              'answer_changes_authorized': False,
+              'graph_effect': 'none',
+              'issue_345_may_close': False,
+          }
+          Path(os.environ['STATUS_FILE']).write_text(json.dumps(payload, indent=2) + '\n')
+          PY
+            rm -rf "$DIAGNOSTIC_DIR"
+            git worktree add --detach "$DIAGNOSTIC_DIR" "$EXPECTED_BASE"
+            mkdir -p "$DIAGNOSTIC_DIR/build/m05-route-watch-final-hardening-diagnostic-v8"
+            cp "$STATUS_FILE" "$DIAGNOSTIC_DIR/build/m05-route-watch-final-hardening-diagnostic-v8/status.json"
+            cp "$LOG_FILE" "$DIAGNOSTIC_DIR/build/m05-route-watch-final-hardening-diagnostic-v8/materializer.log"
+            cd "$DIAGNOSTIC_DIR"
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add build/m05-route-watch-final-hardening-diagnostic-v8/
+            git commit -m "M-05 route-watch final-hardening diagnostic run $GITHUB_RUN_ID"
+            git push --force origin "HEAD:refs/heads/$DIAGNOSTIC_BRANCH"
+            exit "$rc"
+          }
+          trap publish_diagnostic EXIT
+
+          stage='fetching_leases'
+          git fetch --no-tags origin main "$PRODUCT_BRANCH"
+          observed_base="$(git rev-parse origin/main)"
+          observed_product="$(git rev-parse "origin/$PRODUCT_BRANCH")"
+          [[ "$observed_base" == "$EXPECTED_BASE" ]] || { echo "Canonical main moved: expected $EXPECTED_BASE, found $observed_base" >&2; exit 2; }
+          [[ "$observed_product" == "$EXPECTED_PRODUCT" ]] || { echo "Product lease moved: expected $EXPECTED_PRODUCT, found $observed_product" >&2; exit 2; }
+
+          stage='constructing_product'
+          rm -rf "$PRODUCT_DIR" "$SNAPSHOT_DIR"
+          git worktree add --detach "$PRODUCT_DIR" "$observed_base"
+          cd "$PRODUCT_DIR"
+          git checkout "$observed_product" -- "${PRODUCT_PATHS[@]}"
+          python "$PATCHER_ONE" "$PRODUCT_DIR"
+          python "$PATCHER_TWO" "$PRODUCT_DIR"
+          mkdir -p "$SNAPSHOT_DIR"
+          for product_path in "${PRODUCT_PATHS[@]}"; do
+            cp --parents "$product_path" "$SNAPSHOT_DIR"
+          done
+
+          stage='focused_validation'
+          node --check "$LIBRARY"
+          node --check "$RUNNER"
+          node --check "$VALIDATOR"
+          node --check "$TEST"
+          node "$VALIDATOR"
+          node "$TEST"
+
+          stage='release_check'
+          npm run release:check
+
+          stage='deterministic_replay'
+          git reset --hard "$observed_base"
+          git clean -fdx
+          cp -a "$SNAPSHOT_DIR/." .
+          node --check "$LIBRARY"
+          node --check "$RUNNER"
+          node --check "$VALIDATOR"
+          node --check "$TEST"
+          node "$VALIDATOR"
+          node "$TEST"
+          git add -N -- "${PRODUCT_PATHS[@]}"
+          git diff --check
+          mapfile -t EXPECTED_PATHS < <(printf '%s\n' "${PRODUCT_PATHS[@]}" | sort)
+          mapfile -t ACTUAL_PATHS < <(git diff --name-only "$observed_base" | sort)
+          [[ "${#ACTUAL_PATHS[@]}" -eq 6 ]] || { printf 'Unexpected path count: %s\n' "${#ACTUAL_PATHS[@]}" >&2; exit 2; }
+          [[ "$(printf '%s\n' "${EXPECTED_PATHS[@]}")" == "$(printf '%s\n' "${ACTUAL_PATHS[@]}")" ]] || {
+            printf 'Expected paths:\n%s\nActual paths:\n%s\n' "$(printf '%s\n' "${EXPECTED_PATHS[@]}")" "$(printf '%s\n' "${ACTUAL_PATHS[@]}")" >&2
+            exit 2
+          }
+
+          stage='committing_product'
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- "${PRODUCT_PATHS[@]}"
+          git commit -m '[M-05 S03-L7] Refuse future clocks and classify all recognized challenge pages'
+          candidate_commit="$(git rev-parse HEAD)"
+          candidate_tree="$(git rev-parse 'HEAD^{tree}')"
+          [[ "$(git rev-parse 'HEAD^')" == "$observed_base" ]]
+
+          stage='publishing_product'
+          remote_main="$(git ls-remote origin refs/heads/main | awk '{print $1}')"
+          remote_product="$(git ls-remote origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')"
+          [[ "$remote_main" == "$observed_base" ]] || { echo "Canonical main moved before publication" >&2; exit 2; }
+          [[ "$remote_product" == "$observed_product" ]] || { echo "Product branch moved before publication" >&2; exit 2; }
+          git push --force-with-lease="refs/heads/$PRODUCT_BRANCH:$observed_product" origin "$candidate_commit:refs/heads/$PRODUCT_BRANCH"
+          stage='published'
