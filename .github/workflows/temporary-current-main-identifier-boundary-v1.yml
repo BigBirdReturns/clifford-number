@@ -1,4 +1,4 @@
-name: Temporary current-main identifier-boundary P1 repair v14
+name: Temporary current-main identifier-boundary P1 repair v15
 
 on:
   pull_request:
@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: current-main-identifier-boundary-repair-v14
+  group: current-main-identifier-boundary-repair-v15
   cancel-in-progress: false
 
 jobs:
@@ -18,20 +18,20 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      SOURCE_BASE: 645b6e979d31679835329cd0694fedd6e0955a59
-      PRODUCT_HEAD: 1b1ad30dbf44eb145b74de09252760aa8115dfb5
-      CARRIER_PARENT: a7431b554aeda1d4e7470a00b117e145d3b5a8ad
+      SOURCE_BASE: b76368aa329071216f3653521241063801580d40
+      PRODUCT_HEAD: 8cb8d44c50a6fd2ba1da1121e251155867bc01bf
+      CARRIER_PARENT: e30bd3e5816ae291c6c51f5531f228b28853d64c
       PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
       CARRIER_BRANCH: agent/current-main-identifier-context-v1
       BASE_LIBRARY: 5f68254d3e44de693e83503aed879160f9b7b997
       BASE_TEST: 1659a7cc54666a2ac5a1d6b88eb8c6591d98008e
-      SOURCE_LIBRARY: 5434f1cd0403e3a82febfc3684f8333b43f6f0d0
-      SOURCE_TEST: 48f89f0a058a0d0395cb45cf16c088c9a3812b9c
-      PATCH_WORK: /tmp/identifier-boundary-patch-v14
-      QUALIFICATION_WORK: /tmp/identifier-boundary-qualification-v14
-      EXPECTED_PATHS_FILE: /tmp/identifier-boundary-paths-v14.txt
-      EXPECTED_NUMSTAT_FILE: /tmp/identifier-boundary-numstat-v14.txt
-      RECEIPT_FILE: /tmp/identifier-boundary-receipt-v14.txt
+      SOURCE_LIBRARY: 22a9e2cef8c0ed987b63561fe73fb2c48016927c
+      SOURCE_TEST: 304fdd29d817f68c23f9f4ad9081a613278262c2
+      PATCH_WORK: /tmp/identifier-boundary-patch-v15
+      QUALIFICATION_WORK: /tmp/identifier-boundary-qualification-v15
+      EXPECTED_PATHS_FILE: /tmp/identifier-boundary-paths-v15.txt
+      EXPECTED_NUMSTAT_FILE: /tmp/identifier-boundary-numstat-v15.txt
+      RECEIPT_FILE: /tmp/identifier-boundary-receipt-v15.txt
     steps:
       - uses: actions/checkout@v4
         with:
@@ -83,7 +83,7 @@ jobs:
           test "$(git diff --name-only "$SOURCE_BASE..$PRODUCT_HEAD" | LC_ALL=C sort)" = \
             "$(cat "$EXPECTED_PATHS_FILE")"
 
-      - name: Materialize scored-prefix and whitespace-boundary repairs
+      - name: Materialize grouped-identifier and nested-wrapper repairs
         shell: bash
         run: |
           set -euo pipefail
@@ -97,103 +97,22 @@ jobs:
 
           path = Path(sys.argv[1])
           text = path.read_text(encoding='utf-8')
-          old = r"""function identifierProtectedPrefixEnd(candidate, groups, externalSuffix) {
-            const observationGroup = trailingObservationGroup(candidate, groups, '', externalSuffix);
-            let protectedEnd = candidate.length;
-            let protectedScore = null;
-            for (let last = 0;
-              last < groups.length
-                && last < MAX_PHONE_DIGIT_GROUPS
-                && last < observationGroup;
-              last += 1) {
-              const { start, end } = phoneWindowBounds(candidate, groups, 0, last);
-              const slice = candidate.slice(start, end);
-              let score = phoneCandidateScore(slice, '');
-              if (!score) continue;
-              if (last === observationGroup - 1) score += 32;
-              else if (last === groups.length - 1) score += 24;
-              else score -= 24;
-              if (protectedScore == null
-                  || score > protectedScore
-                  || (score === protectedScore && end > protectedEnd)) {
-                protectedScore = score;
-                protectedEnd = end;
-              }
-            }
-            if (protectedScore != null) return protectedEnd;
 
-            for (let first = 1; first < groups.length; first += 1) {
-              const previousEnd = groups[first - 1].index + groups[first - 1][0].length;
-              const groupStart = groups[first].index;
-              const separator = candidate.slice(previousEnd, groupStart).normalize('NFKC');
-              const hardBoundary = /[\/／]/u.test(separator)
-                || /[.．]\s+/u.test(separator);
-              if (!hardBoundary) continue;
-              if (!canStartIndependentPhone(candidate, groups, first, '')) continue;
-              return phoneWindowBounds(candidate, groups, first, first).start;
-            }
-            return candidate.length;
-          }
+          old_pattern = r"""const EXPLICIT_IDENTIFIER_LABEL_PATTERN = /(?:(?:^|\b)(?:id|guid|identifier|reference|revision|release(?:\s+id)?|record(?:\s+id)?|receipt|sha(?:-?256)?|hash|ticket|case|invoice|order|code)|(?:識別子|参照(?:番号)?|管理番号|受付番号|注文番号|案件番号|コード))\s*[:：=#＃-]?\s*(?:(?:\(|\[|\{|（|［|【)\s*)?$/iu;
           """
-          new = r"""function identifierProtectedPrefixEnd(candidate, groups, externalSuffix) {
-            const observationGroup = trailingObservationGroup(candidate, groups, '', externalSuffix);
-            if (observationGroup <= 0) return candidate.length;
-
-            const completeBounds = phoneWindowBounds(
-              candidate,
-              groups,
-              0,
-              observationGroup - 1
-            );
-            const completeCandidate = candidate.slice(
-              completeBounds.start,
-              completeBounds.end
-            );
-            if (phoneCandidateScore(completeCandidate, '')) return completeBounds.end;
-
-            const scoredBoundaries = [];
-            const unscoredBoundaries = [];
-            for (let first = 1; first < observationGroup; first += 1) {
-              const previousEnd = groups[first - 1].index + groups[first - 1][0].length;
-              const groupStart = groups[first].index;
-              const separator = candidate.slice(previousEnd, groupStart).normalize('NFKC');
-              const hardBoundary = /[\/／]/u.test(separator)
-                || /[.．]\s+/u.test(separator);
-              const whitespaceBoundary = /\s/u.test(separator);
-              if (!hardBoundary && !whitespaceBoundary) continue;
-              if (!canStartIndependentPhone(candidate, groups, first, '')) continue;
-
-              const { start } = phoneWindowBounds(candidate, groups, first, first);
-              const protectedPrefix = candidate.slice(0, start).trimEnd();
-              const prefixScore = phoneCandidateScore(protectedPrefix, '');
-              const protectedDigits = protectedPrefix
-                .normalize('NFKC')
-                .replace(/\D/gu, '')
-                .length;
-              const proposal = { start, prefixScore, protectedDigits };
-              if (prefixScore) scoredBoundaries.push(proposal);
-              else if (hardBoundary || (first === 1 && protectedDigits >= 7)) {
-                unscoredBoundaries.push(proposal);
-              }
-            }
-
-            if (scoredBoundaries.length) {
-              scoredBoundaries.sort((left, right) =>
-                right.start - left.start
-                  || right.prefixScore - left.prefixScore
-                  || right.protectedDigits - left.protectedDigits);
-              return scoredBoundaries[0].start;
-            }
-            if (unscoredBoundaries.length) {
-              unscoredBoundaries.sort((left, right) => left.start - right.start);
-              return unscoredBoundaries[0].start;
-            }
-            return candidate.length;
-          }
+          new_pattern = r"""const EXPLICIT_IDENTIFIER_LABEL_PATTERN = /(?:(?:^|\b)(?:id|guid|identifier|reference|revision|release(?:\s+id)?|record(?:\s+id)?|receipt|sha(?:-?256)?|hash|ticket|case|invoice|order|code)|(?:識別子|参照(?:番号)?|管理番号|受付番号|注文番号|案件番号|コード))\s*[:：=#＃-]?\s*(?:(?:\(|\[|\{|（|［|【)\s*)*$/iu;
           """
-          if text.count(old) != 1:
-              raise RuntimeError(f'identifier boundary anchor count: {text.count(old)}')
-          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          if text.count(old_pattern) != 1:
+              raise RuntimeError(f'nested-wrapper pattern anchor count: {text.count(old_pattern)}')
+          text = text.replace(old_pattern, new_pattern, 1)
+
+          old_boundary = r"""    else if (hardBoundary || (first === 1 && protectedDigits >= 7)) {
+          """
+          new_boundary = r"""    else if (hardBoundary || protectedDigits >= 7) {
+          """
+          if text.count(old_boundary) != 1:
+              raise RuntimeError(f'grouped-unscored boundary anchor count: {text.count(old_boundary)}')
+          path.write_text(text.replace(old_boundary, new_boundary, 1), encoding='utf-8')
           PY
 
           python - "$PATCH_WORK/test/industrial-exhaust.test.js" <<'PY'
@@ -203,53 +122,80 @@ jobs:
           path = Path(sys.argv[1])
           text = path.read_text(encoding='utf-8')
           marker = "for (const completeGroupedIdentifier of [\n"
-          insert = r"""for (const [reviewBoundaryInput, expected] of [
+          insert = r"""for (const [groupedUnscoredIdentifierThenPhone, expected] of [
             [
-              'ID: 09012345678 / (03) 6216 8041',
-              'ID: 09012345678 / [contact omitted]'
+              'ID: 1234 5678 03-6216-8041',
+              'ID: 1234 5678 [contact omitted]'
             ],
             [
-              'ＩＤ：０９０１２３４５６７８／（０３） ６２１６ ８０４１',
-              'ＩＤ：０９０１２３４５６７８／[contact omitted]'
+              'ID: 123-45678 090-1234-5678',
+              'ID: 123-45678 [contact omitted]'
             ],
             [
-              'ID: 01 42 68 53 00 / (03) 6216 8041',
-              'ID: 01 42 68 53 00 / [contact omitted]'
+              'ＩＤ：１２３４ ５６７８ ０３－６２１６－８０４１',
+              'ＩＤ：１２３４ ５６７８ [contact omitted]'
             ],
             [
-              'ID: 12345678 03-6216-8041',
-              'ID: 12345678 [contact omitted]'
-            ],
-            [
-              'ID: 12345678 (03) 6216 8041',
-              'ID: 12345678 [contact omitted]'
-            ],
-            [
-              'ID: 09012345678 (03) 6216 8041',
-              'ID: 09012345678 [contact omitted]'
+              'ID: 1234 5678 (03) 6216 8041',
+              'ID: 1234 5678 [contact omitted]'
             ]
           ]) {
             assert.equal(
-              redactContactData(reviewBoundaryInput),
+              redactContactData(groupedUnscoredIdentifierThenPhone),
               expected,
-              'validated boundaries must be selected before a later phone group can extend identifier scope'
-            );
-          }
-          for (const unsplitWhitespaceIdentifier of [
-            'ID: 1 212 555 1234',
-            'ID: 999 212 555 1234',
-            'ID: 12345678 87654321'
-          ]) {
-            assert.equal(
-              redactContactData(unsplitWhitespaceIdentifier),
-              unsplitWhitespaceIdentifier,
-              'whitespace alone must not split a complete or insufficiently bounded numeric identifier'
+              'grouped unscored identifiers must end before an independently valid phone suffix'
             );
           }
 
+          for (const nestedIdentifierWrapper of [
+            'ID: [(+81 3 6216 5111)]',
+            'ID: [ (+81 3 6216 5111)]',
+            'ＩＤ：（（＋８１ ３ ６２１６ ５１１１））'
+          ]) {
+            assert.equal(
+              redactContactData(nestedIdentifierWrapper),
+              nestedIdentifierWrapper,
+              'a sequence of accepted opening wrappers must remain in explicit identifier context'
+            );
+          }
+
+          const nestedPhoneLabelRedaction = redactContactData(
+            'Phone: ID: [(+81 3 6216 5111)]'
+          );
+          assert.match(
+            nestedPhoneLabelRedaction,
+            /\[contact omitted\]/u,
+            'nested identifier wrappers must not suppress an affirmative phone-label override'
+          );
+          assert.doesNotMatch(
+            nestedPhoneLabelRedaction.normalize('NFKC'),
+            /81362165111/u,
+            'phone-labelled nested values must not survive redaction'
+          );
+
+          const nestedWrapperUrlSegment = 'a'.repeat(140);
+          const nestedWrapperUrlPrefix = `https://example.test/${nestedWrapperUrlSegment}/id: [`;
+          const nestedWrapperUrlRedaction = redactContactData(
+            `${nestedWrapperUrlPrefix}(+81 3 6216 5111)]`
+          );
+          assert.ok(
+            nestedWrapperUrlRedaction.startsWith(nestedWrapperUrlPrefix),
+            'nested wrapper support must preserve the complete preceding URL token'
+          );
+          assert.match(
+            nestedWrapperUrlRedaction,
+            /\[contact omitted\]/u,
+            'a URL-embedded identifier label must not protect a nested wrapped phone after whitespace'
+          );
+          assert.doesNotMatch(
+            nestedWrapperUrlRedaction.normalize('NFKC'),
+            /81362165111/u,
+            'URL-adjacent nested wrapped phones must not survive redaction'
+          );
+
           """
           if text.count(marker) != 1:
-              raise RuntimeError(f'review-regression marker count: {text.count(marker)}')
+              raise RuntimeError(f'grouped-wrapper regression marker count: {text.count(marker)}')
           path.write_text(text.replace(marker, f'{insert}{marker}', 1), encoding='utf-8')
           PY
 
@@ -337,7 +283,7 @@ jobs:
           git diff --cached --check
           test "$(git diff --cached --name-only | LC_ALL=C sort)" = "$(cat "$EXPECTED_PATHS_FILE")"
           test "$(git diff --cached --numstat | LC_ALL=C sort -k3)" = "$(cat "$EXPECTED_NUMSTAT_FILE")"
-          git commit -m 'fix(crawler): close scored and whitespace identifier boundaries'
+          git commit -m 'fix(crawler): close grouped identifiers and nested wrappers'
           NEW_HEAD="$(git rev-parse HEAD)"
           NEW_TREE="$(git rev-parse HEAD^{tree})"
           test "$(git rev-parse HEAD^)" = "$RUN_MAIN"
@@ -353,7 +299,7 @@ jobs:
             origin "HEAD:refs/heads/$PRODUCT_BRANCH"
 
           {
-            printf 'receipt_version=current-main-identifier-boundary-repair@14\n'
+            printf 'receipt_version=current-main-identifier-boundary-repair@15\n'
             printf 'carrier_head=%s\n' "$HEAD_SHA"
             printf 'run_id=%s\n' '${{ github.run_id }}'
             printf 'base=%s\n' "$RUN_MAIN"
