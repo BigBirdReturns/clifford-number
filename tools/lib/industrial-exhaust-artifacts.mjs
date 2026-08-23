@@ -275,6 +275,30 @@ function portableReceiptPath(rootDir, absolutePath) {
   return relative.split(path.sep).join('/');
 }
 
+function inspectReceiptPath(rootDir, relativePath, { label, leafType }) {
+  const root = path.resolve(rootDir);
+  const segments = String(relativePath).split('/');
+  const absolutePath = path.resolve(root, ...segments);
+  let current = root;
+  for (let index = 0; index < segments.length; index += 1) {
+    current = path.join(current, segments[index]);
+    let stats;
+    try {
+      stats = fs.lstatSync(current);
+    } catch (error) {
+      if (error?.code === 'ENOENT') return { absolutePath, exists: false };
+      throw new Error(`${label} path inspection failed: ${error.message}`);
+    }
+    const expectsDirectory = index < segments.length - 1 || leafType === 'directory';
+    if (expectsDirectory ? !stats.isDirectory() : !stats.isFile()) {
+      throw new Error(
+        `${label} contains an unsupported path entry: ${portableReceiptPath(root, current)}`
+      );
+    }
+  }
+  return { absolutePath, exists: true };
+}
+
 function loadReceiptJson(rootDir, relativePath, label) {
   if (typeof relativePath !== 'string' || !relativePath
     || relativePath.startsWith('/') || relativePath.includes('\\')
@@ -288,7 +312,8 @@ function loadReceiptJson(rootDir, relativePath, label) {
   if (!relative || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
     throw new Error(`${label} escapes repository root`);
   }
-  if (!fs.existsSync(absolutePath)) throw new Error(`${label} does not exist: ${relativePath}`);
+  const inspected = inspectReceiptPath(root, relativePath, { label, leafType: 'file' });
+  if (!inspected.exists) throw new Error(`${label} does not exist: ${relativePath}`);
   let receipt;
   try {
     receipt = JSON.parse(fs.readFileSync(absolutePath, 'utf8'));
@@ -337,7 +362,11 @@ function walkReceiptJson(rootDir, relativeDir) {
   if (!relativeBase || relativeBase.startsWith(`..${path.sep}`) || path.isAbsolute(relativeBase)) {
     throw new Error(`receipt store directory escapes repository root: ${relativeDir}`);
   }
-  if (!fs.existsSync(base)) return [];
+  const inspected = inspectReceiptPath(root, relativeDir, {
+    label: `receipt store directory ${relativeDir}`,
+    leafType: 'directory'
+  });
+  if (!inspected.exists) return [];
 
   const result = [];
   const visit = current => {
@@ -1096,7 +1125,11 @@ export function writeIndexReceipt({ rootDir, source, parsedIndex, html, captured
   }
   const receiptPath = indexReceiptPath(rootDir, source.id, parsedIndex.index_sha256);
   const relativePath = portableReceiptPath(rootDir, receiptPath);
-  if (!fs.existsSync(receiptPath)) {
+  const inspected = inspectReceiptPath(rootDir, relativePath, {
+    label: `index receipt ${relativePath}`,
+    leafType: 'file'
+  });
+  if (!inspected.exists) {
     writeJson(receiptPath, {
       schema_version: ARTIFACT_SCHEMA_VERSION,
       receipt_type: 'first_party_publication_index_snapshot',
@@ -1149,7 +1182,11 @@ export function writeArtifactReceipt({ rootDir, canonicalUrl, body, bodySha256, 
   const isText = contentType.startsWith('text/')
     || /(?:json|xml|html|javascript)/iu.test(contentType)
     || contentType === '';
-  if (!fs.existsSync(receiptPath)) {
+  const inspected = inspectReceiptPath(rootDir, relativePath, {
+    label: `artifact receipt ${relativePath}`,
+    leafType: 'file'
+  });
+  if (!inspected.exists) {
     writeJson(receiptPath, {
       schema_version: ARTIFACT_SCHEMA_VERSION,
       receipt_type: 'first_party_publication_artifact_snapshot',
