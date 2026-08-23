@@ -1,0 +1,71 @@
+name: Industrial exhaust receipt root custody diagnostic
+
+on:
+  push:
+    branches:
+      - agent/industrial-exhaust-receipt-root-custody-controller-v1
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Run qualification body without publication
+        shell: bash
+        run: |
+          set -uo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          workflow = Path('.github/workflows/industrial-exhaust-receipt-root-custody-controller.yml')
+          lines = workflow.read_text().splitlines()
+          marker = '        run: |'
+          if lines.count(marker) != 1:
+              raise SystemExit(f'unexpected run-block marker count: {lines.count(marker)}')
+          start = lines.index(marker) + 1
+          body = []
+          for line in lines[start:]:
+              if line and not line.startswith('          '):
+                  break
+              body.append(line[10:] if line.startswith('          ') else '')
+          stop_marker = "git config user.name 'clifford-exhaust-bot'"
+          stop_indexes = [index for index, line in enumerate(body) if stop_marker in line]
+          if len(stop_indexes) != 1:
+              raise SystemExit(f'unexpected publication marker count: {len(stop_indexes)}')
+          body = body[:stop_indexes[0]]
+          script = Path('root-custody-controller-body.sh')
+          script.write_text('\n'.join(body) + '\n')
+          PY
+
+          set +e
+          bash root-custody-controller-body.sh > root-custody-runtime.log 2>&1
+          status=$?
+          set -e
+
+          {
+            echo "exit_status=$status"
+            echo
+            echo "runtime_tail:"
+            tail -n 300 root-custody-runtime.log
+          } > root-custody-diagnostic.txt
+
+          exit "$status"
+      - name: Upload compact diagnostic
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: industrial-exhaust-receipt-root-custody-diagnostic
+          path: |
+            root-custody-controller-body.sh
+            root-custody-runtime.log
+            root-custody-diagnostic.txt
+          if-no-files-found: error
+          retention-days: 1
