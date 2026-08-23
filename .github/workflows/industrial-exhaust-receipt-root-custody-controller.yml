@@ -133,17 +133,7 @@ jobs:
 
           test_file = Path('test/industrial-exhaust-retained-store-custody.test.js')
           test_text = test_file.read_text()
-          anchor = r"""  assertSymlinkedStoreRejected({
-            storeName: 'indexes',
-            writeReceipt: () => writeIndexReceipt({
-              rootDir,
-              source,
-              parsedIndex,
-              html: indexHtml,
-              capturedAt
-            })
-          });
-          """
+          anchor = "  const assertHardLinkedReceiptRejected = ({ receiptPath, writeReceipt, receiptType }) => {\n"
           addition = r"""
 
             const assertRootAliasRejected = ({ aliasRoot, expectedError, label }) => {
@@ -216,7 +206,9 @@ jobs:
           """
           if test_text.count(anchor) != 1:
               raise SystemExit('receipt-root test anchor is not unique')
-          test_file.write_text(test_text.replace(anchor, anchor + addition))
+          test_file.write_text(
+              test_text.replace(anchor, addition.lstrip('\n') + '\n' + anchor)
+          )
           PY
 
           expected_paths=$'test/industrial-exhaust-retained-store-custody.test.js\ntools/lib/industrial-exhaust-artifacts.mjs'
