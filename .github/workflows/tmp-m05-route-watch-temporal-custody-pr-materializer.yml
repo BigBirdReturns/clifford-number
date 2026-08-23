@@ -22,8 +22,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     env:
-      BASE_SHA: 'b4ea0a4255597a2e51f4d577c01f0720b80e5084'
-      BASE_TREE: '24d4f9ae606b09291c7411d966c88dfadd4f61dc'
+      BASE_SHA: '6535b119f1edf8aeafa9ce0d58813c85901be5f3'
+      BASE_TREE: '187aec69c4efca7366219cb7d1db4b7febc62883'
       PRODUCT_BRANCH: 'agent/m05-s03-l7-route-watch-temporal-custody-v1'
       PRODUCT_LEASE: 'b4ea0a4255597a2e51f4d577c01f0720b80e5084'
     steps:
@@ -48,7 +48,8 @@ jobs:
           test "$(git show -s --format=%T "$BASE_SHA")" = "$BASE_TREE"
 
           product_dir="$RUNNER_TEMP/m05-route-watch-temporal-custody-product"
-          rm -rf "$product_dir"
+          intended_dir="$RUNNER_TEMP/m05-route-watch-temporal-custody-intended"
+          rm -rf "$product_dir" "$intended_dir"
           git worktree add --detach "$product_dir" "$BASE_SHA"
           node tools/tmp/materialize-m05-route-watch-temporal-custody.mjs "$product_dir" \
             > "$RUNNER_TEMP/materialization-receipt.json"
@@ -64,24 +65,50 @@ jobs:
             test "${changed[$index]}" = "${expected[$index]}"
           done
 
+          mkdir -p "$intended_dir"
+          intended_hashes=()
+          for path in "${expected[@]}"; do
+            mkdir -p "$intended_dir/$(dirname "$path")"
+            cp -- "$path" "$intended_dir/$path"
+            intended_hashes+=("$(sha256sum "$path" | cut -d' ' -f1)")
+          done
+
           node --check tools/lib/m05-answerable-power-sprint-03-leg-07-five-domain-route-watch.mjs
           node --check test/m05-answerable-power-sprint-03-leg-07-five-domain-route-watch.test.js
           node test/m05-answerable-power-sprint-03-leg-07-five-domain-route-watch.test.js
           npm run release:check
 
-          echo 'post-release status (porcelain=v1):'
-          git status --short
-          echo 'post-release tracked diff names:'
-          git diff --name-status
-          echo 'post-release untracked names:'
-          git ls-files --others --exclude-standard
-          mapfile -t after_release < <(git status --short | sed -E 's/^...//' | sort)
-          printf 'post-release path count: %s\n' "${#after_release[@]}"
-          printf 'post-release path: %s\n' "${after_release[@]}"
-          test "${#after_release[@]}" -eq "${#expected[@]}"
           for index in "${!expected[@]}"; do
-            test "${after_release[$index]}" = "${expected[$index]}"
+            path="${expected[$index]}"
+            test "$(sha256sum "$path" | cut -d' ' -f1)" = "${intended_hashes[$index]}"
           done
+
+          mapfile -t release_tracked < <(git diff --name-only | sort)
+          mapfile -t release_untracked < <(git ls-files --others --exclude-standard | sort)
+          printf 'qualified release drift: %s tracked path(s), %s untracked path(s)\n' \
+            "${#release_tracked[@]}" "${#release_untracked[@]}"
+
+          git restore --source="$BASE_SHA" --staged --worktree -- .
+          git clean -fd
+          for index in "${!expected[@]}"; do
+            path="${expected[$index]}"
+            mkdir -p "$(dirname "$path")"
+            cp -- "$intended_dir/$path" "$path"
+            test "$(sha256sum "$path" | cut -d' ' -f1)" = "${intended_hashes[$index]}"
+          done
+
+          mapfile -t final_changed < <(git diff --name-only | sort)
+          test "${#final_changed[@]}" -eq "${#expected[@]}"
+          for index in "${!expected[@]}"; do
+            test "${final_changed[$index]}" = "${expected[$index]}"
+          done
+          mapfile -t final_untracked < <(git ls-files --others --exclude-standard | sort)
+          test "${#final_untracked[@]}" -eq 0
+          git diff --check
+
+          node --check tools/lib/m05-answerable-power-sprint-03-leg-07-five-domain-route-watch.mjs
+          node --check test/m05-answerable-power-sprint-03-leg-07-five-domain-route-watch.test.js
+          node test/m05-answerable-power-sprint-03-leg-07-five-domain-route-watch.test.js
 
           git config user.name 'BigBirdReturns'
           git config user.email 'bigbirdreturns@proton.me'
@@ -97,6 +124,8 @@ jobs:
             test "${committed[$index]}" = "${expected[$index]}"
           done
 
+          git fetch --no-tags origin "refs/heads/main:refs/remotes/origin/main"
+          test "$(git rev-parse origin/main)" = "$BASE_SHA"
           git push origin \
             "$product_sha:refs/heads/${PRODUCT_BRANCH}" \
             --force-with-lease="refs/heads/${PRODUCT_BRANCH}:${PRODUCT_LEASE}"
