@@ -439,6 +439,51 @@ try {
       capturedAt
     })
   });
+
+  const emptyArtifactNamespacePath = path.join(
+    rootDir,
+    'receipts',
+    'exhaust',
+    'artifacts',
+    'empty.example',
+    '0'.repeat(64)
+  );
+  fs.mkdirSync(emptyArtifactNamespacePath, { recursive: true });
+  assert.throws(
+    () => validateIndustrialExhaustReceiptStore({ rootDir }),
+    /empty directory: receipts\/exhaust\/artifacts\/empty\.example\/0{64}/u,
+    'store validation must reject empty receipt namespaces'
+  );
+  assert.throws(
+    () => validateIndustrialExhaustReceiptCustody({ rootDir, discoveryRecords, artifacts }),
+    /empty directory: receipts\/exhaust\/artifacts\/empty\.example\/0{64}/u,
+    'runtime custody must reject empty receipt namespaces'
+  );
+  fs.rmSync(path.join(rootDir, 'receipts', 'exhaust', 'artifacts', 'empty.example'), {
+    recursive: true,
+    force: true
+  });
+
+  const directoryReceiptLeafPath = path.join(
+    rootDir,
+    'receipts',
+    'exhaust',
+    'indexes',
+    source.id,
+    `${'f'.repeat(64)}.json`
+  );
+  fs.mkdirSync(directoryReceiptLeafPath, { recursive: true });
+  assert.throws(
+    () => validateIndustrialExhaustReceiptStore({ rootDir }),
+    /unsupported directory: receipts\/exhaust\/indexes\/dentsu_global_news_sitemap\/f{64}\.json/u,
+    'a directory may not occupy a receipt-file position'
+  );
+  assert.throws(
+    () => validateIndustrialExhaustReceiptCustody({ rootDir, discoveryRecords, artifacts }),
+    /unsupported directory: receipts\/exhaust\/indexes\/dentsu_global_news_sitemap\/f{64}\.json/u,
+    'runtime custody must reject directories in receipt-file positions'
+  );
+  fs.rmSync(directoryReceiptLeafPath, { recursive: true, force: true });
 } finally {
   fs.rmSync(rootDir, { recursive: true, force: true });
 }
