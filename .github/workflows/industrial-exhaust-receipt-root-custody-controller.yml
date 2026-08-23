@@ -26,11 +26,14 @@ jobs:
         run: |
           set -euo pipefail
 
-          leased_base='29fdd0f342cef522cd0f1cd04c854cf5fdfd38b2'
           product_branch='agent/industrial-exhaust-receipt-root-custody-v1'
+          expected_library_blob='e0e24f17846ff1dedbd1083f826c91879a997939'
+          expected_test_blob='f46149822d72d33dcb15c1e2baa2d9d020854c83'
           git fetch origin main "$product_branch"
-          test "$(git rev-parse origin/main)" = "$leased_base"
-          test "$(git rev-parse "origin/$product_branch")" = "$leased_base"
+          leased_base="$(git rev-parse origin/main)"
+          product_lease="$(git rev-parse "origin/$product_branch")"
+          test "$(git rev-parse "$leased_base:tools/lib/industrial-exhaust-artifacts.mjs")" = "$expected_library_blob"
+          test "$(git rev-parse "$leased_base:test/industrial-exhaust-retained-store-custody.test.js")" = "$expected_test_blob"
 
           workdir="$(mktemp -d)"
           git worktree add --detach "$workdir" "$leased_base"
@@ -233,7 +236,7 @@ jobs:
 
           git fetch origin main "$product_branch"
           test "$(git rev-parse origin/main)" = "$leased_base"
-          test "$(git rev-parse "origin/$product_branch")" = "$leased_base"
+          test "$(git rev-parse "origin/$product_branch")" = "$product_lease"
 
           git config user.name 'clifford-exhaust-bot'
           git config user.email 'clifford-exhaust-bot@users.noreply.github.com'
@@ -242,5 +245,5 @@ jobs:
           git commit -m 'fix(industrial-exhaust): authenticate receipt repository root'
           test "$(git rev-parse HEAD^)" = "$leased_base"
           test "$(git diff-tree --no-commit-id --name-only -r HEAD | sort)" = "$expected_paths"
-          git push --force-with-lease="refs/heads/$product_branch:$leased_base" origin "HEAD:refs/heads/$product_branch"
+          git push --force-with-lease="refs/heads/$product_branch:$product_lease" origin "HEAD:refs/heads/$product_branch"
           echo "PRODUCT_HEAD=$(git rev-parse HEAD)"
