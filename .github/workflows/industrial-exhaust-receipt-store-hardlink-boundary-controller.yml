@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - agent/industrial-exhaust-receipt-store-hardlink-boundary-controller-v1
+    paths-ignore:
+      - '.controller-diagnostics/**'
   pull_request:
     branches:
       - main
@@ -22,8 +24,10 @@ jobs:
         with:
           node-version: 20
       - name: Materialize, qualify, and publish the clean product
+        id: materialize
         shell: bash
         run: |
+          exec > >(tee /tmp/industrial-exhaust-hardlink-materializer.log) 2>&1
           set -euo pipefail
 
           leased_base='29fdd0f342cef522cd0f1cd04c854cf5fdfd38b2'
@@ -187,3 +191,29 @@ jobs:
             git push --force-with-lease="refs/heads/$product_branch:" origin "HEAD:refs/heads/$product_branch"
           fi
           echo "PRODUCT_HEAD=$(git rev-parse HEAD)"
+      - name: Publish bounded controller diagnostic
+        if: always()
+        shell: bash
+        env:
+          MATERIALIZER_OUTCOME: ${{ steps.materialize.outcome }}
+        run: |
+          set -euo pipefail
+          controller_branch='agent/industrial-exhaust-receipt-store-hardlink-boundary-controller-v1'
+          git fetch origin "$controller_branch"
+          git checkout -B "$controller_branch" "origin/$controller_branch"
+          mkdir -p .controller-diagnostics
+          {
+            echo "run_id=${GITHUB_RUN_ID}"
+            echo "run_attempt=${GITHUB_RUN_ATTEMPT}"
+            echo "head_sha=${GITHUB_SHA}"
+            echo "materializer_outcome=${MATERIALIZER_OUTCOME}"
+            echo "--- log tail ---"
+            tail -n 500 /tmp/industrial-exhaust-hardlink-materializer.log 2>/dev/null || true
+          } > .controller-diagnostics/industrial-exhaust-receipt-store-hardlink-boundary.log
+          git config user.name 'clifford-exhaust-bot'
+          git config user.email 'clifford-exhaust-bot@users.noreply.github.com'
+          git add .controller-diagnostics/industrial-exhaust-receipt-store-hardlink-boundary.log
+          if ! git diff --cached --quiet; then
+            git commit -m 'chore(controller): record hard-link materializer outcome'
+            git push origin "HEAD:refs/heads/$controller_branch"
+          fi
