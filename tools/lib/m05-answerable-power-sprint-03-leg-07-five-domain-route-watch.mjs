@@ -200,7 +200,7 @@ function selectedHeaders(headers,names){
   return result;
 }
 
-function policyObservation(lane,route,observedAt,status,reason,extra={}){
+function createPolicyObservation(lane,route,observedAt,status,reason,extra={}){
   return {
     lane_id:lane.lane_id,
     domain_id:lane.domain_id,
@@ -277,6 +277,10 @@ export async function fetchOfficialRoute(lane,route,contract,{fetchImpl=globalTh
   assert(typeof beforeRequest==='function','beforeRequest hook is required');
   const policy=contract.execution_policy;
   const startedAt=new Date(clock()).toISOString();
+  const policyObservation=(targetLane,targetRoute,targetObservedAt,status,reason,extra={})=>createPolicyObservation(
+    targetLane,targetRoute,targetObservedAt,status,reason,
+    {...extra,completed_at:new Date(clock()).toISOString()}
+  );
   let current=new URL(route.url);
   let requestCount=0;
   const redirectChain=[];
@@ -479,6 +483,13 @@ export async function runRouteWatch(contract,{fetchImpl=globalThis.fetch,observe
   assert(Number.isFinite(actualClockMs),'execution clock must be finite');
   assert(Number.isFinite(Number(observedAtMs)),'observation clock must be finite');
   assert(Number(observedAtMs)<=actualClockMs,'observation clock cannot be in the future');
+  let receiptClockMs=actualClockMs;
+  const receiptClock=()=>{
+    const next=Number(clock());
+    assert(Number.isFinite(next),'execution clock must be finite');
+    receiptClockMs=Math.max(receiptClockMs,next);
+    return receiptClockMs;
+  };
   if(previousReceipt)validateReceipt(previousReceipt,contract);
   const observedAt=new Date(observedAtMs).toISOString();
   const gate=new HostGate({sleepImpl,clock});
@@ -486,9 +497,9 @@ export async function runRouteWatch(contract,{fetchImpl=globalThis.fetch,observe
   const observations=await mapLimit(rows,contract.execution_policy.global_concurrency,async({lane,route})=>{
     const activation=routeActivation(lane,contract,observedAtMs);
     if(activation.state==='gated_not_before'){
-      return policyObservation(lane,route,observedAt,'gated_not_before','ordinary Intel acquisition gate has not opened',{not_before_utc:activation.not_before_utc});
+      return createPolicyObservation(lane,route,observedAt,'gated_not_before','ordinary Intel acquisition gate has not opened',{not_before_utc:activation.not_before_utc});
     }
-    return gate.runMany(route.allowed_hosts,contract.execution_policy.minimum_host_interval_ms,()=>fetchOfficialRoute(lane,route,contract,{fetchImpl,clock,beforeRequest:(host,interval)=>gate.waitForRequest(host,interval)}));
+    return gate.runMany(route.allowed_hosts,contract.execution_policy.minimum_host_interval_ms,()=>fetchOfficialRoute(lane,route,contract,{fetchImpl,clock:receiptClock,beforeRequest:(host,interval)=>gate.waitForRequest(host,interval)}));
   });
   const compared=compareWithPrevious(observations,previousReceipt);
   const summary=summarizeObservations(compared,contract);
@@ -501,7 +512,7 @@ export async function runRouteWatch(contract,{fetchImpl=globalThis.fetch,observe
     sprint_id:'M05-SPRINT-03',
     leg_id:'S03-L7',
     issue:345,
-    generated_at:new Date(clock()).toISOString(),
+    generated_at:new Date(receiptClock()).toISOString(),
     observation_clock_utc:observedAt,
     contract_semantic_sha256:semanticSha256(contract),
     contract_authoring_base:contract.canonical_base_at_authoring,
@@ -526,10 +537,12 @@ const RECEIPT_KEYS=['schema_version','object_class','program_id','sprint_id','le
 const SUMMARY_KEYS=['selected_lanes','selected_routes','terminal_observations','executed_routes','network_requests','gated_not_before','route_successes','content_successes','metadata_only','challenge_pages','failed_routes','policy_refusals','unclassified_failures','changed_routes','uncompared_routes','failure_counts','execution_complete','denominator_preserved','network_observation_only','qualifying_evidence_receipts','answer_changes_authorized','effective_domain_answers','qualifying_jurisdictions','cross_domain_regression_completed','graph_effect','issue_345_may_close'];
 const INTEL_GATE_KEYS=['ordinary_gate_utc','standard_route_eligible','bilateral_exception_observed','elapsed_time_is_transaction_evidence'];
 const OBSERVATION_KEYS=['lane_id','domain_id','jurisdiction','route_class','route_id','requested_url','final_url','observed_at','terminal','status','status_code','reason','route_success','content_success','metadata_only','network_request_count','redirect_chain','response_headers','body_bytes','body_sha256','changed_since_previous','network_observation_only','promotion_authority','answer_effect','graph_effect'];
-const COMPLETED_STATUSES=new Set(['content_retrieved','metadata_only','challenge_page','http_failure']);
+const COMPLETED_STATUSES=new Set([...TERMINAL_STATUSES].filter((status)=>status!=='gated_not_before'));
 const POLICY_REFUSAL_REASONS=new Set(['non_https_target','redirect_host_not_allowlisted','embedded_credentials_refused','redirect_without_location','invalid_redirect_location','https_downgrade_refused','redirect_limit_exceeded']);
 const REFUSAL_WITHOUT_FOLLOWUP=new Set(['non_https_target','redirect_host_not_allowlisted','embedded_credentials_refused','https_downgrade_refused','redirect_limit_exceeded']);
 const FAILURE_STATUSES=new Set(['challenge_page','http_failure','transport_failure','timeout','body_limit_exceeded','policy_refusal']);
+const LEGACY_COMPLETIONLESS_RECEIPT_PROOFS=new Set(['90bb94f010fdca48285e39cc8a9874eabb20863a1ac2312980e64b6ff20489dd']);
+const LEGACY_COMPLETIONLESS_STATUSES=new Set(['transport_failure','timeout','body_limit_exceeded','policy_refusal']);
 
 function validSha256(value){return typeof value==='string'&&/^[0-9a-f]{64}$/u.test(value)}
 function nonEmptyString(value){return typeof value==='string'&&value.length>0}
@@ -585,11 +598,14 @@ function validateAddressing(row,route){
   else assert(allowedTarget(route,finalUrl),`${label} policy refusal final URL is incoherent`);
 }
 
-function validateObservationState(row,lane,route,contract){
+function validateObservationState(row,lane,route,contract,receiptTimes){
   const label=row.route_id;
   const policy=contract.execution_policy;
+  const legacyCompletionless=receiptTimes.legacyCompletionlessReceipt&&
+    LEGACY_COMPLETIONLESS_STATUSES.has(row.status)&&
+    !Object.prototype.hasOwnProperty.call(row,'completed_at');
   const keys=[...OBSERVATION_KEYS];
-  if(COMPLETED_STATUSES.has(row.status))keys.push('completed_at');
+  if(COMPLETED_STATUSES.has(row.status)&&!legacyCompletionless)keys.push('completed_at');
   if(row.status==='gated_not_before')keys.push('not_before_utc');
   exactKeys(row,keys,`${label} observation`);
   assert(row.lane_id===lane.lane_id,`${label} lane binding drift`);
@@ -598,9 +614,14 @@ function validateObservationState(row,lane,route,contract){
   assert(row.route_class===lane.route_class,`${label} route-class binding drift`);
   assert(row.requested_url===route.url,`${label} requested URL binding drift`);
   assert(validTimestamp(row.observed_at),`${label} has an invalid observation timestamp`);
-  if(COMPLETED_STATUSES.has(row.status)){
+  const rowObservedAtMs=Date.parse(row.observed_at);
+  assert(rowObservedAtMs>=receiptTimes.observationClockMs,`${label} starts before receipt observation clock`);
+  assert(rowObservedAtMs<=receiptTimes.generatedAtMs,`${label} starts after receipt generation`);
+  if(COMPLETED_STATUSES.has(row.status)&&!legacyCompletionless){
     assert(validTimestamp(row.completed_at),`${label} has an invalid completion timestamp`);
-    assert(Date.parse(row.completed_at)>=Date.parse(row.observed_at),`${label} completes before it starts`);
+    const completedAtMs=Date.parse(row.completed_at);
+    assert(completedAtMs>=rowObservedAtMs,`${label} completes before it starts`);
+    assert(completedAtMs<=receiptTimes.generatedAtMs,`${label} completes after receipt generation`);
   }
   assert(row.terminal===true,`${label} is not terminal`);
   assert(typeof row.route_success==='boolean',`${label} route_success must be boolean`);
@@ -693,9 +714,11 @@ export function validateReceipt(receipt,contract){
   assert(receipt.previous_receipt_proof_sha256===null||validSha256(receipt.previous_receipt_proof_sha256),'previous receipt proof must be null or a SHA-256 digest');
   assert(validTimestamp(receipt.generated_at),'receipt generated_at is invalid');
   assert(validTimestamp(receipt.observation_clock_utc),'receipt observation clock is invalid');
+  const generatedAtMs=Date.parse(receipt.generated_at);
+  const observedAtMs=Date.parse(receipt.observation_clock_utc);
+  assert(observedAtMs<=generatedAtMs,'receipt generated_at precedes observation clock');
   exactKeys(receipt.intel_gate,INTEL_GATE_KEYS,'receipt Intel gate');
   assert(receipt.intel_gate.ordinary_gate_utc===contract.intel_time_gate.ordinary_gate_utc,'receipt Intel gate boundary drift');
-  const observedAtMs=Date.parse(receipt.observation_clock_utc);
   const gateMs=Date.parse(contract.intel_time_gate.ordinary_gate_utc);
   const eligible=observedAtMs>=gateMs;
   assert(receipt.intel_gate.standard_route_eligible===eligible,'receipt Intel eligibility does not match its observation clock');
@@ -717,7 +740,11 @@ export function validateReceipt(receipt,contract){
     assert(row.answer_effect==='none',`${row.route_id} claims an answer effect`);
     assert(row.graph_effect==='none',`${row.route_id} claims a graph effect`);
     assert(!Object.prototype.hasOwnProperty.call(row,'body'),`${row.route_id} improperly retains response body bytes`);
-    validateObservationState(row,lane,route,contract);
+    validateObservationState(row,lane,route,contract,{
+      observationClockMs:observedAtMs,
+      generatedAtMs,
+      legacyCompletionlessReceipt:LEGACY_COMPLETIONLESS_RECEIPT_PROOFS.has(receipt.proof_sha256)
+    });
     const intel=lane.lane_id===contract.intel_time_gate.lane_id;
     if(intel&&!eligible)assert(row.status==='gated_not_before',`${row.route_id} escaped the pre-gate Intel terminal state`);
     else assert(row.status!=='gated_not_before',`${row.route_id} is gated outside the pre-gate Intel boundary`);
