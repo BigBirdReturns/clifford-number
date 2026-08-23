@@ -1,0 +1,70 @@
+name: Industrial exhaust receipt publication custody controller repair
+
+on:
+  push:
+    branches:
+      - agent/industrial-exhaust-receipt-publication-custody-controller-v1
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Execute corrected publication-custody controller
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          workflow = Path('.github/workflows/industrial-exhaust-receipt-publication-custody-controller.yml')
+          lines = workflow.read_text().splitlines()
+          marker = '        run: |'
+          if lines.count(marker) != 1:
+              raise SystemExit(f'unexpected controller run-block count: {lines.count(marker)}')
+          start = lines.index(marker) + 1
+          body = []
+          for line in lines[start:]:
+              if line and not line.startswith('          '):
+                  break
+              body.append(line[10:] if line.startswith('          ') else '')
+          script = '\n'.join(body) + '\n'
+
+          def replace_assignment(name, value):
+              global script
+              pattern = rf'{name} = (?:r)?""".*?"""\n'
+              replacement = f'{name} = {value!r}\n'
+              script, count = re.subn(pattern, lambda _: replacement, script, count=1, flags=re.S)
+              if count != 1:
+                  raise SystemExit(f'unexpected {name} assignment count: {count}')
+
+          replace_assignment(
+              'import_old',
+              "  sha256,\n  stableJson,\n  writeJson\n} from './industrial-exhaust.mjs';\n"
+          )
+          replace_assignment(
+              'import_new',
+              "  sha256,\n  stableJson\n} from './industrial-exhaust.mjs';\n"
+          )
+          replace_assignment(
+              'test_import_old',
+              "import {\n  extractHtmlArtifact,\n  mergeArtifactProjection,\n  mergeDiscoveryRecords,\n  parseHtmlLinkIndex,\n  "
+          )
+          replace_assignment(
+              'test_import_new',
+              "import {\n  artifactReceiptPath as artifactReceiptFilePath,\n  extractHtmlArtifact,\n  indexReceiptPath as indexReceiptFilePath,\n  mergeArtifactProjection,\n  mergeDiscoveryRecords,\n  parseHtmlLinkIndex,\n  "
+          )
+
+          Path('publication-custody-controller-body.sh').write_text(script)
+          PY
+
+          bash publication-custody-controller-body.sh
