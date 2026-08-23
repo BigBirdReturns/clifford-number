@@ -1,4 +1,4 @@
-name: Temporary current-main identifier-boundary P1 repair v17
+name: Temporary current-main identifier-boundary P1 repair v18
 
 on:
   pull_request:
@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: current-main-identifier-boundary-repair-v17
+  group: current-main-identifier-boundary-repair-v18
   cancel-in-progress: false
 
 jobs:
@@ -20,18 +20,18 @@ jobs:
     env:
       SOURCE_BASE: 29fdd0f342cef522cd0f1cd04c854cf5fdfd38b2
       PRODUCT_HEAD: 2985317cda6599c4869d35a84b66d074d9a178a7
-      CARRIER_PARENT: a59915be305d8ed965451018bac3cc583db96bc8
+      CARRIER_PARENT: f7773d899f462760828c81e5f0013a9bb7e17365
       PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
       CARRIER_BRANCH: agent/current-main-identifier-context-v1
       BASE_LIBRARY: 5f68254d3e44de693e83503aed879160f9b7b997
       BASE_TEST: 1659a7cc54666a2ac5a1d6b88eb8c6591d98008e
       SOURCE_LIBRARY: ac809bab014f951f4736030d130358439052eb92
       SOURCE_TEST: 322fe508467a2e45ddbb67684e87976166203446
-      PATCH_WORK: /tmp/identifier-boundary-patch-v17
-      QUALIFICATION_WORK: /tmp/identifier-boundary-qualification-v17
-      EXPECTED_PATHS_FILE: /tmp/identifier-boundary-paths-v17.txt
-      EXPECTED_NUMSTAT_FILE: /tmp/identifier-boundary-numstat-v17.txt
-      RECEIPT_FILE: /tmp/identifier-boundary-receipt-v17.txt
+      PATCH_WORK: /tmp/identifier-boundary-patch-v18
+      QUALIFICATION_WORK: /tmp/identifier-boundary-qualification-v18
+      EXPECTED_PATHS_FILE: /tmp/identifier-boundary-paths-v18.txt
+      EXPECTED_NUMSTAT_FILE: /tmp/identifier-boundary-numstat-v18.txt
+      RECEIPT_FILE: /tmp/identifier-boundary-receipt-v18.txt
     steps:
       - uses: actions/checkout@v4
         with:
@@ -98,21 +98,78 @@ jobs:
           path = Path(sys.argv[1])
           text = path.read_text(encoding='utf-8')
 
-          start_marker = "  const completeBounds = phoneWindowBounds(\n"
-          end_marker = "  if (phoneCandidateScore(completeCandidate, '')) return completeBounds.end;\n\n"
+          start_marker = "function identifierProtectedPrefixEnd(candidate, groups, externalSuffix) {\n"
+          end_marker = "\nfunction phoneRedactionRanges(\n"
           if text.count(start_marker) != 1:
-              raise RuntimeError(f'whole-span start anchor count: {text.count(start_marker)}')
+              raise RuntimeError(f'identifier-boundary start anchor count: {text.count(start_marker)}')
           start = text.index(start_marker)
           if text.count(end_marker, start) != 1:
-              raise RuntimeError(f'whole-span end anchor count: {text.count(end_marker, start)}')
-          end = text.index(end_marker, start) + len(end_marker)
-          text = text[:start] + text[end:]
+              raise RuntimeError(f'identifier-boundary end anchor count: {text.count(end_marker, start)}')
+          end = text.index(end_marker, start)
 
-          old_boundary = "    const hardBoundary = /[\\/／]/u.test(separator)\n      || /[.．]\\s+/u.test(separator);"
-          new_boundary = "    const hardBoundary = /[\\/／.．]/u.test(separator);"
-          if text.count(old_boundary) != 1:
-              raise RuntimeError(f'bare-period boundary anchor count: {text.count(old_boundary)}')
-          path.write_text(text.replace(old_boundary, new_boundary, 1), encoding='utf-8')
+          replacement = r"""function identifierProtectedPrefixEnd(candidate, groups, externalSuffix) {
+            const observationGroup = trailingObservationGroup(candidate, groups, '', externalSuffix);
+            if (observationGroup <= 0) return candidate.length;
+
+            const completeBounds = phoneWindowBounds(
+              candidate,
+              groups,
+              0,
+              observationGroup - 1
+            );
+            const completeCandidate = candidate.slice(
+              completeBounds.start,
+              completeBounds.end
+            );
+            const completeScore = phoneCandidateScore(completeCandidate, '');
+
+            const scoredBoundaries = [];
+            const unscoredBoundaries = [];
+            for (let first = 1; first < groups.length; first += 1) {
+              const previousEnd = groups[first - 1].index + groups[first - 1][0].length;
+              const groupStart = groups[first].index;
+              const separator = candidate.slice(previousEnd, groupStart).normalize('NFKC');
+              const slashBoundary = /[\/／]/u.test(separator);
+              const periodBoundary = /[.．]/u.test(separator);
+              const whitespaceBoundary = /\s/u.test(separator);
+              if (!slashBoundary && !periodBoundary && !whitespaceBoundary) continue;
+              if (!canStartIndependentPhone(candidate, groups, first, '')) continue;
+
+              const { start } = phoneWindowBounds(candidate, groups, first, first);
+              const protectedPrefix = candidate.slice(0, start).trimEnd();
+              const prefixScore = phoneCandidateScore(protectedPrefix, '');
+              const protectedDigits = protectedPrefix
+                .normalize('NFKC')
+                .replace(/\D/gu, '')
+                .length;
+              const proposal = { start, prefixScore, protectedDigits };
+              if (prefixScore) {
+                scoredBoundaries.push(proposal);
+              } else if (slashBoundary
+                  || (periodBoundary && (!completeScore || protectedDigits >= 7))
+                  || (whitespaceBoundary && protectedDigits >= 7)) {
+                unscoredBoundaries.push(proposal);
+              }
+            }
+
+            if (scoredBoundaries.length) {
+              scoredBoundaries.sort((left, right) =>
+                right.start - left.start
+                  || right.prefixScore - left.prefixScore
+                  || right.protectedDigits - left.protectedDigits);
+              return scoredBoundaries[0].start;
+            }
+            if (unscoredBoundaries.length) {
+              unscoredBoundaries.sort((left, right) => left.start - right.start);
+              return unscoredBoundaries[0].start;
+            }
+            if (completeScore) return completeBounds.end;
+            return candidate.length;
+          }
+          """
+
+          text = text[:start] + replacement + text[end:]
+          path.write_text(text, encoding='utf-8')
           PY
 
           python - "$PATCH_WORK/test/industrial-exhaust.test.js" <<'PY'
@@ -171,12 +228,14 @@ jobs:
           for (const unsplitBoundaryGuard of [
             'ID: 1234567 / 7654321',
             'ID: 12345678.87654321',
-            'ID: 03.6216.8041'
+            'ID: 03.6216.8041',
+            'ID: 1.212.555.1234',
+            'ＩＤ：１．２１２．５５５．１２３４'
           ]) {
             assert.equal(
               redactContactData(unsplitBoundaryGuard),
               unsplitBoundaryGuard,
-              'boundary punctuation must not split a suffix that is not independently telephone-valid'
+              'boundary punctuation must not split an invalid suffix or a complete period-formatted identifier'
             );
           }
 
@@ -286,7 +345,7 @@ jobs:
             origin "HEAD:refs/heads/$PRODUCT_BRANCH"
 
           {
-            printf 'receipt_version=current-main-identifier-boundary-repair@17\n'
+            printf 'receipt_version=current-main-identifier-boundary-repair@18\n'
             printf 'carrier_head=%s\n' "$HEAD_SHA"
             printf 'run_id=%s\n' '${{ github.run_id }}'
             printf 'base=%s\n' "$RUN_MAIN"
