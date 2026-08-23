@@ -1,0 +1,189 @@
+name: Industrial exhaust receipt-store hard-link boundary controller
+
+on:
+  push:
+    branches:
+      - agent/industrial-exhaust-receipt-store-hardlink-boundary-controller-v1
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Materialize, qualify, and publish the clean product
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          leased_base='29fdd0f342cef522cd0f1cd04c854cf5fdfd38b2'
+          product_branch='agent/industrial-exhaust-receipt-store-hardlink-boundary-v1'
+          git fetch origin main
+          test "$(git rev-parse origin/main)" = "$leased_base"
+          if git ls-remote --exit-code --heads origin "$product_branch" >/dev/null 2>&1; then
+            git fetch origin "$product_branch"
+            test "$(git rev-parse "origin/$product_branch")" = "$leased_base"
+          fi
+
+          workdir="$(mktemp -d)"
+          git worktree add --detach "$workdir" "$leased_base"
+          cd "$workdir"
+
+          python - <<'PY'
+          from pathlib import Path
+
+          library = Path('tools/lib/industrial-exhaust-artifacts.mjs')
+          text = library.read_text()
+          old = r"""    if (expectsDirectory ? !stats.isDirectory() : !stats.isFile()) {
+                throw new Error(
+                  `${label} contains an unsupported path entry: ${portableReceiptPath(root, current)}`
+                );
+              }
+          """
+          new = r"""    if (expectsDirectory ? !stats.isDirectory() : !stats.isFile()) {
+                throw new Error(
+                  `${label} contains an unsupported path entry: ${portableReceiptPath(root, current)}`
+                );
+              }
+              if (!expectsDirectory && stats.nlink !== 1) {
+                throw new Error(
+                  `${label} contains a multiply linked receipt file: ${portableReceiptPath(root, current)}`
+                );
+              }
+          """
+          if text.count(old) != 1:
+              raise SystemExit('receipt path inspection anchor is not unique')
+          library.write_text(text.replace(old, new))
+
+          test_file = Path('test/industrial-exhaust-retained-store-custody.test.js')
+          test_text = test_file.read_text()
+          anchor = r"""  assertSymlinkedStoreRejected({
+              storeName: 'indexes',
+              writeReceipt: () => writeIndexReceipt({
+                rootDir,
+                source,
+                parsedIndex,
+                html: indexHtml,
+                capturedAt
+              })
+            });
+          } finally {
+          """
+          replacement = r"""  assertSymlinkedStoreRejected({
+              storeName: 'indexes',
+              writeReceipt: () => writeIndexReceipt({
+                rootDir,
+                source,
+                parsedIndex,
+                html: indexHtml,
+                capturedAt
+              })
+            });
+
+            const assertHardLinkedReceiptRejected = ({ receiptPath, writeReceipt, receiptType }) => {
+              const absoluteReceiptPath = path.join(rootDir, receiptPath);
+              const externalRoot = fs.mkdtempSync(
+                path.join(path.dirname(rootDir), `industrial-exhaust-hardlink-${receiptType}-`)
+              );
+              const externalReceiptPath = path.join(externalRoot, 'receipt.json');
+              fs.linkSync(absoluteReceiptPath, externalReceiptPath);
+              try {
+                assert.equal(
+                  fs.lstatSync(absoluteReceiptPath).nlink,
+                  2,
+                  'the adversarial fixture must create a second pathname for the same inode'
+                );
+                assert.throws(
+                  () => validateIndustrialExhaustReceiptStore({ rootDir }),
+                  /multiply linked receipt file/u,
+                  `store validation must reject a hard-linked ${receiptType} receipt`
+                );
+                assert.throws(
+                  () => validateIndustrialExhaustReceiptCustody({ rootDir, discoveryRecords, artifacts }),
+                  /multiply linked receipt file/u,
+                  `runtime custody must reject a hard-linked ${receiptType} receipt`
+                );
+                assert.throws(
+                  writeReceipt,
+                  /multiply linked receipt file/u,
+                  `receipt writers must reject a hard-linked ${receiptType} receipt`
+                );
+              } finally {
+                fs.rmSync(externalRoot, { recursive: true, force: true });
+              }
+            };
+
+            assertHardLinkedReceiptRejected({
+              receiptPath: artifactReceiptPath,
+              receiptType: 'artifact',
+              writeReceipt: () => writeArtifactReceipt({
+                rootDir,
+                canonicalUrl,
+                body,
+                bodySha256,
+                capturedAt,
+                responseHeaders: {
+                  content_type: 'text/html',
+                  final_url: canonicalUrl,
+                  redirect_chain: []
+                }
+              })
+            });
+            assertHardLinkedReceiptRejected({
+              receiptPath: indexReceiptPath,
+              receiptType: 'index',
+              writeReceipt: () => writeIndexReceipt({
+                rootDir,
+                source,
+                parsedIndex,
+                html: indexHtml,
+                capturedAt
+              })
+            });
+          } finally {
+          """
+          if test_text.count(anchor) != 1:
+              raise SystemExit('hard-link regression anchor is not unique')
+          test_file.write_text(test_text.replace(anchor, replacement))
+          PY
+
+          expected_paths=$'test/industrial-exhaust-retained-store-custody.test.js\ntools/lib/industrial-exhaust-artifacts.mjs'
+          test "$(git diff --name-only | sort)" = "$expected_paths"
+          git diff --check
+
+          node --check tools/lib/industrial-exhaust-artifacts.mjs
+          node --check test/industrial-exhaust-retained-store-custody.test.js
+          node test/industrial-exhaust-retained-store-custody.test.js
+          node test/industrial-exhaust-artifacts.test.js
+          node test/industrial-exhaust.test.js
+          node tools/hydrate-industrial-exhaust.mjs --audit
+          test -z "$(find receipts/exhaust/indexes receipts/exhaust/artifacts -type f -links +1 -print -quit)"
+
+          test "$(git diff --name-only | sort)" = "$expected_paths"
+          test -z "$(git status --porcelain --untracked-files=all | grep -v -E '^( M|M |A |\?\?) (test/industrial-exhaust-retained-store-custody.test.js|tools/lib/industrial-exhaust-artifacts.mjs)$' || true)"
+
+          git config user.name 'clifford-exhaust-bot'
+          git config user.email 'clifford-exhaust-bot@users.noreply.github.com'
+          git switch -c "$product_branch"
+          git add tools/lib/industrial-exhaust-artifacts.mjs test/industrial-exhaust-retained-store-custody.test.js
+          git commit -m 'fix(industrial-exhaust): reject hard-linked receipt files'
+          test "$(git rev-parse HEAD^)" = "$leased_base"
+          test "$(git diff-tree --no-commit-id --name-only -r HEAD | sort)" = "$expected_paths"
+
+          if git ls-remote --exit-code --heads origin "$product_branch" >/dev/null 2>&1; then
+            lease="$(git rev-parse "origin/$product_branch")"
+            git push --force-with-lease="refs/heads/$product_branch:$lease" origin "HEAD:refs/heads/$product_branch"
+          else
+            git push --force-with-lease="refs/heads/$product_branch:" origin "HEAD:refs/heads/$product_branch"
+          fi
+          echo "PRODUCT_HEAD=$(git rev-parse HEAD)"
