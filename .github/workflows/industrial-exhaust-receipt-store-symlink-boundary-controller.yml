@@ -1,0 +1,269 @@
+name: Industrial exhaust receipt-store symlink boundary controller
+
+on:
+  push:
+    branches:
+      - agent/industrial-exhaust-receipt-store-symlink-boundary-controller-v1
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Materialize, qualify, and publish the clean product
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          leased_base='b76368aa329071216f3653521241063801580d40'
+          product_branch='agent/industrial-exhaust-receipt-store-symlink-boundary-v1'
+          git fetch origin main "$product_branch"
+          test "$(git rev-parse origin/main)" = "$leased_base"
+          test "$(git rev-parse "origin/$product_branch")" = "$leased_base"
+
+          workdir="$(mktemp -d)"
+          git worktree add --detach "$workdir" "$leased_base"
+          cd "$workdir"
+
+          python - <<'PY'
+          from pathlib import Path
+
+          library = Path('tools/lib/industrial-exhaust-artifacts.mjs')
+          text = library.read_text()
+
+          helper_anchor = r"""function portableReceiptPath(rootDir, absolutePath) {
+            const relative = path.relative(path.resolve(rootDir), path.resolve(absolutePath));
+            if (!relative || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
+              throw new Error(`receipt path escapes repository root: ${absolutePath}`);
+            }
+            return relative.split(path.sep).join('/');
+          }
+
+          function loadReceiptJson(rootDir, relativePath, label) {
+          """
+          helper_replacement = r"""function portableReceiptPath(rootDir, absolutePath) {
+            const relative = path.relative(path.resolve(rootDir), path.resolve(absolutePath));
+            if (!relative || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
+              throw new Error(`receipt path escapes repository root: ${absolutePath}`);
+            }
+            return relative.split(path.sep).join('/');
+          }
+
+          function inspectReceiptPath(rootDir, relativePath, { label, leafType }) {
+            const root = path.resolve(rootDir);
+            const segments = String(relativePath).split('/');
+            const absolutePath = path.resolve(root, ...segments);
+            let current = root;
+            for (let index = 0; index < segments.length; index += 1) {
+              current = path.join(current, segments[index]);
+              let stats;
+              try {
+                stats = fs.lstatSync(current);
+              } catch (error) {
+                if (error?.code === 'ENOENT') return { absolutePath, exists: false };
+                throw new Error(`${label} path inspection failed: ${error.message}`);
+              }
+              const expectsDirectory = index < segments.length - 1 || leafType === 'directory';
+              if (expectsDirectory ? !stats.isDirectory() : !stats.isFile()) {
+                throw new Error(
+                  `${label} contains an unsupported path entry: ${portableReceiptPath(root, current)}`
+                );
+              }
+            }
+            return { absolutePath, exists: true };
+          }
+
+          function loadReceiptJson(rootDir, relativePath, label) {
+          """
+          if text.count(helper_anchor) != 1:
+              raise SystemExit('receipt path helper anchor is not unique')
+          text = text.replace(helper_anchor, helper_replacement)
+
+          load_anchor = r"""  const root = path.resolve(rootDir);
+            const absolutePath = path.resolve(root, ...relativePath.split('/'));
+            const relative = path.relative(root, absolutePath);
+            if (!relative || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
+              throw new Error(`${label} escapes repository root`);
+            }
+            if (!fs.existsSync(absolutePath)) throw new Error(`${label} does not exist: ${relativePath}`);
+          """
+          load_replacement = r"""  const root = path.resolve(rootDir);
+            const absolutePath = path.resolve(root, ...relativePath.split('/'));
+            const relative = path.relative(root, absolutePath);
+            if (!relative || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
+              throw new Error(`${label} escapes repository root`);
+            }
+            const inspected = inspectReceiptPath(root, relativePath, { label, leafType: 'file' });
+            if (!inspected.exists) throw new Error(`${label} does not exist: ${relativePath}`);
+          """
+          if text.count(load_anchor) != 1:
+              raise SystemExit('receipt loader anchor is not unique')
+          text = text.replace(load_anchor, load_replacement)
+
+          walk_anchor = r"""  if (!fs.existsSync(base)) return [];
+
+            const result = [];
+          """
+          walk_replacement = r"""  const inspected = inspectReceiptPath(root, relativeDir, {
+              label: `receipt store directory ${relativeDir}`,
+              leafType: 'directory'
+            });
+            if (!inspected.exists) return [];
+
+            const result = [];
+          """
+          if text.count(walk_anchor) != 1:
+              raise SystemExit('receipt walker anchor is not unique')
+          text = text.replace(walk_anchor, walk_replacement)
+
+          index_writer_anchor = r"""  const receiptPath = indexReceiptPath(rootDir, source.id, parsedIndex.index_sha256);
+            const relativePath = portableReceiptPath(rootDir, receiptPath);
+            if (!fs.existsSync(receiptPath)) {
+          """
+          index_writer_replacement = r"""  const receiptPath = indexReceiptPath(rootDir, source.id, parsedIndex.index_sha256);
+            const relativePath = portableReceiptPath(rootDir, receiptPath);
+            const inspected = inspectReceiptPath(rootDir, relativePath, {
+              label: `index receipt ${relativePath}`,
+              leafType: 'file'
+            });
+            if (!inspected.exists) {
+          """
+          if text.count(index_writer_anchor) != 1:
+              raise SystemExit('index writer anchor is not unique')
+          text = text.replace(index_writer_anchor, index_writer_replacement)
+
+          artifact_writer_anchor = r"""  const receiptPath = artifactReceiptPath(rootDir, canonicalUrl, bodySha256);
+            const relativePath = portableReceiptPath(rootDir, receiptPath);
+            const contentType = String(responseHeaders.content_type ?? '');
+            const isText = contentType.startsWith('text/')
+              || /(?:json|xml|html|javascript)/iu.test(contentType)
+              || contentType === '';
+            if (!fs.existsSync(receiptPath)) {
+          """
+          artifact_writer_replacement = r"""  const receiptPath = artifactReceiptPath(rootDir, canonicalUrl, bodySha256);
+            const relativePath = portableReceiptPath(rootDir, receiptPath);
+            const contentType = String(responseHeaders.content_type ?? '');
+            const isText = contentType.startsWith('text/')
+              || /(?:json|xml|html|javascript)/iu.test(contentType)
+              || contentType === '';
+            const inspected = inspectReceiptPath(rootDir, relativePath, {
+              label: `artifact receipt ${relativePath}`,
+              leafType: 'file'
+            });
+            if (!inspected.exists) {
+          """
+          if text.count(artifact_writer_anchor) != 1:
+              raise SystemExit('artifact writer anchor is not unique')
+          text = text.replace(artifact_writer_anchor, artifact_writer_replacement)
+          library.write_text(text)
+
+          test_file = Path('test/industrial-exhaust-retained-store-custody.test.js')
+          test_text = test_file.read_text()
+          test_anchor = r"""  fs.rmSync(unsupportedRegularFilePath);
+          } finally {
+          """
+          test_replacement = r"""  fs.rmSync(unsupportedRegularFilePath);
+
+            const assertSymlinkedStoreRejected = ({ storeName, writeReceipt }) => {
+              const storePath = path.join(rootDir, 'receipts', 'exhaust', storeName);
+              const externalRoot = fs.mkdtempSync(
+                path.join(os.tmpdir(), `industrial-exhaust-external-${storeName}-`)
+              );
+              const externalStorePath = path.join(externalRoot, storeName);
+              fs.renameSync(storePath, externalStorePath);
+              try {
+                fs.symlinkSync(externalStorePath, storePath, 'dir');
+                const expectedError = new RegExp(
+                  `unsupported path entry: receipts/exhaust/${storeName}`,
+                  'u'
+                );
+                assert.throws(
+                  () => validateIndustrialExhaustReceiptStore({ rootDir }),
+                  expectedError,
+                  `store validation must reject a symlinked ${storeName} directory`
+                );
+                assert.throws(
+                  () => validateIndustrialExhaustReceiptCustody({ rootDir, discoveryRecords, artifacts }),
+                  expectedError,
+                  `runtime custody must reject a symlinked ${storeName} directory`
+                );
+                assert.throws(
+                  writeReceipt,
+                  expectedError,
+                  `receipt writers must reject a symlinked ${storeName} directory`
+                );
+              } finally {
+                try {
+                  fs.unlinkSync(storePath);
+                } catch (error) {
+                  if (error?.code !== 'ENOENT') throw error;
+                }
+                fs.renameSync(externalStorePath, storePath);
+                fs.rmSync(externalRoot, { recursive: true, force: true });
+              }
+            };
+
+            assertSymlinkedStoreRejected({
+              storeName: 'artifacts',
+              writeReceipt: () => writeArtifactReceipt({
+                rootDir,
+                canonicalUrl,
+                body,
+                bodySha256,
+                capturedAt,
+                responseHeaders: {
+                  content_type: 'text/html',
+                  final_url: canonicalUrl,
+                  redirect_chain: []
+                }
+              })
+            });
+            assertSymlinkedStoreRejected({
+              storeName: 'indexes',
+              writeReceipt: () => writeIndexReceipt({
+                rootDir,
+                source,
+                parsedIndex,
+                html: indexHtml,
+                capturedAt
+              })
+            });
+          } finally {
+          """
+          if test_text.count(test_anchor) != 1:
+              raise SystemExit('symlink regression anchor is not unique')
+          test_file.write_text(test_text.replace(test_anchor, test_replacement))
+          PY
+
+          expected_paths=$'test/industrial-exhaust-retained-store-custody.test.js\ntools/lib/industrial-exhaust-artifacts.mjs'
+          actual_paths="$(git diff --name-only | sort)"
+          test "$actual_paths" = "$expected_paths"
+          git diff --check
+
+          node --check tools/lib/industrial-exhaust-artifacts.mjs
+          node --check test/industrial-exhaust-retained-store-custody.test.js
+          node test/industrial-exhaust-retained-store-custody.test.js
+          node test/industrial-exhaust-artifacts.test.js
+          node test/industrial-exhaust.test.js
+          node tools/hydrate-industrial-exhaust.mjs --audit
+
+          test "$(git diff --name-only | sort)" = "$expected_paths"
+          test -z "$(git status --porcelain --untracked-files=all | grep -v -E '^( M|M |A |\?\?) (test/industrial-exhaust-retained-store-custody.test.js|tools/lib/industrial-exhaust-artifacts.mjs)$' || true)"
+
+          git config user.name 'clifford-exhaust-bot'
+          git config user.email 'clifford-exhaust-bot@users.noreply.github.com'
+          git switch -c "$product_branch"
+          git add tools/lib/industrial-exhaust-artifacts.mjs test/industrial-exhaust-retained-store-custody.test.js
+          git commit -m 'fix(industrial-exhaust): reject symlinked receipt paths'
+          test "$(git rev-parse HEAD^)" = "$leased_base"
+          test "$(git diff-tree --no-commit-id --name-only -r HEAD | sort)" = "$expected_paths"
+          git push --force-with-lease="refs/heads/$product_branch:$leased_base" origin "HEAD:refs/heads/$product_branch"
+          echo "PRODUCT_HEAD=$(git rev-parse HEAD)"
