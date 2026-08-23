@@ -1,0 +1,239 @@
+name: Temporary current-main phone-label chain repair v24
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-current-main-phone-label-chain-v24.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: current-main-phone-label-chain-repair-v24
+  cancel-in-progress: false
+
+jobs:
+  qualify-and-publish:
+    if: github.repository == 'BigBirdReturns/clifford-number' && github.event.pull_request.number == 2227
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      SOURCE_BASE: 6535b119f1edf8aeafa9ce0d58813c85901be5f3
+      PRODUCT_HEAD: c3b172d60e2f7e07ffc0bf0efe1b10139521b2cc
+      CARRIER_PARENT: d92c6942db818bb7b87775be44104e8f6c956074
+      CARRIER_HELPER_BLOB: 7c15b26b4f2ba9a358ef60fd29638764830ffcd5
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      CARRIER_BRANCH: agent/current-main-identifier-context-v1
+      BASE_LIBRARY: 5f68254d3e44de693e83503aed879160f9b7b997
+      BASE_TEST: 1659a7cc54666a2ac5a1d6b88eb8c6591d98008e
+      SOURCE_LIBRARY: 179c673021c7b60c4ae3028f9ea72c543e92ceb0
+      SOURCE_TEST: 49624524c74ad8c286e8373a6633cd16cd2dcff6
+      PRODUCT_AUTHOR_NAME: BigBirdReturns
+      PRODUCT_AUTHOR_EMAIL: bigbirdreturns@proton.me
+      PATCH_WORK: /tmp/phone-label-chain-patch-v24
+      QUALIFICATION_WORK: /tmp/phone-label-chain-qualification-v24
+      EXPECTED_PATHS_FILE: /tmp/phone-label-chain-paths-v24.txt
+      EXPECTED_NUMSTAT_FILE: /tmp/phone-label-chain-numstat-v24.txt
+      RECEIPT_FILE: /tmp/phone-label-chain-receipt-v24.txt
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Pin live inputs and verify leases
+        shell: bash
+        run: |
+          set -euo pipefail
+          HEAD_SHA='${{ github.event.pull_request.head.sha }}'
+          test "$(git rev-parse HEAD)" = "$HEAD_SHA"
+          test '${{ github.event.pull_request.head.ref }}' = "$CARRIER_BRANCH"
+          test "$(git rev-parse HEAD^)" = "$CARRIER_PARENT"
+          test "$(git diff --name-only "$CARRIER_PARENT..HEAD")" = \
+            '.github/workflows/temporary-current-main-phone-label-chain-v24.yml'
+          test "$(git rev-parse HEAD:.github/scripts/phone-label-chain-linear-v24.py)" = \
+            "$CARRIER_HELPER_BLOB"
+          python -m py_compile .github/scripts/phone-label-chain-linear-v24.py
+
+          git fetch --no-tags origin \
+            "+refs/heads/main:refs/remotes/origin/main" \
+            "+refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/$PRODUCT_BRANCH" \
+            "+refs/heads/$CARRIER_BRANCH:refs/remotes/origin/$CARRIER_BRANCH"
+          RUN_MAIN="$(git rev-parse refs/remotes/origin/main)"
+          LIVE_PRODUCT="$(git rev-parse refs/remotes/origin/$PRODUCT_BRANCH)"
+          LIVE_CARRIER="$(git rev-parse refs/remotes/origin/$CARRIER_BRANCH)"
+          printf 'run_main=%s\nproduct=%s\ncarrier=%s\n' \
+            "$RUN_MAIN" "$LIVE_PRODUCT" "$LIVE_CARRIER"
+          printf 'RUN_MAIN=%s\n' "$RUN_MAIN" >> "$GITHUB_ENV"
+
+          test "$LIVE_CARRIER" = "$HEAD_SHA"
+          test "$LIVE_PRODUCT" = "$PRODUCT_HEAD"
+          test "$(git rev-parse "$PRODUCT_HEAD^")" = "$SOURCE_BASE"
+          test "$(git rev-list --count "$SOURCE_BASE..$PRODUCT_HEAD")" = 1
+          git merge-base --is-ancestor "$SOURCE_BASE" "$RUN_MAIN"
+          test "$(git rev-parse "$SOURCE_BASE:tools/lib/industrial-exhaust.mjs")" = "$BASE_LIBRARY"
+          test "$(git rev-parse "$SOURCE_BASE:test/industrial-exhaust.test.js")" = "$BASE_TEST"
+          test "$(git rev-parse "$RUN_MAIN:tools/lib/industrial-exhaust.mjs")" = "$BASE_LIBRARY"
+          test "$(git rev-parse "$RUN_MAIN:test/industrial-exhaust.test.js")" = "$BASE_TEST"
+          test "$(git rev-parse "$PRODUCT_HEAD:tools/lib/industrial-exhaust.mjs")" = "$SOURCE_LIBRARY"
+          test "$(git rev-parse "$PRODUCT_HEAD:test/industrial-exhaust.test.js")" = "$SOURCE_TEST"
+
+          printf '%s\n' \
+            test/industrial-exhaust.test.js \
+            tools/lib/industrial-exhaust.mjs \
+            | LC_ALL=C sort > "$EXPECTED_PATHS_FILE"
+          test "$(git diff --name-only "$SOURCE_BASE..$PRODUCT_HEAD" | LC_ALL=C sort)" = \
+            "$(cat "$EXPECTED_PATHS_FILE")"
+
+      - name: Materialize the two-file repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf "$PATCH_WORK" "$QUALIFICATION_WORK"
+          git worktree prune
+          git worktree add --detach "$PATCH_WORK" "$PRODUCT_HEAD"
+          python .github/scripts/phone-label-chain-linear-v24.py \
+            "$PATCH_WORK/tools/lib/industrial-exhaust.mjs" \
+            "$PATCH_WORK/test/industrial-exhaust.test.js"
+          cd "$PATCH_WORK"
+          test "$(git diff --name-only | LC_ALL=C sort)" = "$(cat "$EXPECTED_PATHS_FILE")"
+          git diff --check
+          NEW_LIBRARY="$(git hash-object tools/lib/industrial-exhaust.mjs)"
+          NEW_TEST="$(git hash-object test/industrial-exhaust.test.js)"
+          printf 'new_library=%s\nnew_test=%s\n' "$NEW_LIBRARY" "$NEW_TEST"
+          test "$NEW_LIBRARY" != "$SOURCE_LIBRARY"
+          test "$NEW_TEST" != "$SOURCE_TEST"
+          printf 'NEW_LIBRARY=%s\n' "$NEW_LIBRARY" >> "$GITHUB_ENV"
+          printf 'NEW_TEST=%s\n' "$NEW_TEST" >> "$GITHUB_ENV"
+
+      - name: Qualify exact product on pinned main
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$PATCH_WORK"
+          node --check tools/lib/industrial-exhaust.mjs
+          node --check tools/crawl-industrial-exhaust.mjs
+          node --check test/industrial-exhaust.test.js
+          /usr/bin/time -f 'focused_patch_elapsed=%e' node test/industrial-exhaust.test.js
+          node test/industrial-exhaust-artifacts.test.js
+
+          git worktree add --detach "$QUALIFICATION_WORK" "$RUN_MAIN"
+          cp "$PATCH_WORK/tools/lib/industrial-exhaust.mjs" \
+            "$QUALIFICATION_WORK/tools/lib/industrial-exhaust.mjs"
+          cp "$PATCH_WORK/test/industrial-exhaust.test.js" \
+            "$QUALIFICATION_WORK/test/industrial-exhaust.test.js"
+          cd "$QUALIFICATION_WORK"
+          test "$(git hash-object tools/lib/industrial-exhaust.mjs)" = "$NEW_LIBRARY"
+          test "$(git hash-object test/industrial-exhaust.test.js)" = "$NEW_TEST"
+          test "$(git diff --name-only | LC_ALL=C sort)" = "$(cat "$EXPECTED_PATHS_FILE")"
+          git diff --check
+          git diff --numstat | LC_ALL=C sort -k3 > "$EXPECTED_NUMSTAT_FILE"
+          test "$(sed '/^$/d' "$EXPECTED_NUMSTAT_FILE" | wc -l)" -eq 2
+          printf '%s\n' 'qualified pinned-main numstat:'
+          cat "$EXPECTED_NUMSTAT_FILE"
+
+          node --check tools/lib/industrial-exhaust.mjs
+          node --check tools/crawl-industrial-exhaust.mjs
+          node --check test/industrial-exhaust.test.js
+          /usr/bin/time -f 'focused_main_elapsed=%e' node test/industrial-exhaust.test.js
+          node test/industrial-exhaust-artifacts.test.js
+          npm run release:check
+
+          test "$(git hash-object tools/lib/industrial-exhaust.mjs)" = "$NEW_LIBRARY"
+          test "$(git hash-object test/industrial-exhaust.test.js)" = "$NEW_TEST"
+          git diff --check -- tools/lib/industrial-exhaust.mjs test/industrial-exhaust.test.js
+          test "$(git diff --name-only -- \
+            tools/lib/industrial-exhaust.mjs test/industrial-exhaust.test.js | LC_ALL=C sort)" = \
+            "$(cat "$EXPECTED_PATHS_FILE")"
+          test "$(git diff --numstat -- \
+            tools/lib/industrial-exhaust.mjs test/industrial-exhaust.test.js | LC_ALL=C sort -k3)" = \
+            "$(cat "$EXPECTED_NUMSTAT_FILE")"
+
+      - name: Revalidate leases and publish qualified owner commit
+        id: publish
+        shell: bash
+        run: |
+          set -euo pipefail
+          HEAD_SHA='${{ github.event.pull_request.head.sha }}'
+          git fetch --no-tags origin \
+            "+refs/heads/main:refs/remotes/origin/main" \
+            "+refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/$PRODUCT_BRANCH" \
+            "+refs/heads/$CARRIER_BRANCH:refs/remotes/origin/$CARRIER_BRANCH"
+          LIVE_MAIN="$(git rev-parse refs/remotes/origin/main)"
+          LIVE_PRODUCT="$(git rev-parse refs/remotes/origin/$PRODUCT_BRANCH)"
+          LIVE_CARRIER="$(git rev-parse refs/remotes/origin/$CARRIER_BRANCH)"
+          printf 'revalidated_main=%s\nproduct=%s\ncarrier=%s\n' \
+            "$LIVE_MAIN" "$LIVE_PRODUCT" "$LIVE_CARRIER"
+          test "$LIVE_MAIN" = "$RUN_MAIN"
+          test "$LIVE_PRODUCT" = "$PRODUCT_HEAD"
+          test "$LIVE_CARRIER" = "$HEAD_SHA"
+          test "$(git rev-parse "$RUN_MAIN:tools/lib/industrial-exhaust.mjs")" = "$BASE_LIBRARY"
+          test "$(git rev-parse "$RUN_MAIN:test/industrial-exhaust.test.js")" = "$BASE_TEST"
+
+          git config user.name "$PRODUCT_AUTHOR_NAME"
+          git config user.email "$PRODUCT_AUTHOR_EMAIL"
+          git checkout --detach --force "$RUN_MAIN"
+          cp "$PATCH_WORK/tools/lib/industrial-exhaust.mjs" tools/lib/industrial-exhaust.mjs
+          cp "$PATCH_WORK/test/industrial-exhaust.test.js" test/industrial-exhaust.test.js
+          test "$(git hash-object tools/lib/industrial-exhaust.mjs)" = "$NEW_LIBRARY"
+          test "$(git hash-object test/industrial-exhaust.test.js)" = "$NEW_TEST"
+          git add -- tools/lib/industrial-exhaust.mjs test/industrial-exhaust.test.js
+          git diff --cached --check
+          test "$(git diff --cached --name-only | LC_ALL=C sort)" = "$(cat "$EXPECTED_PATHS_FILE")"
+          test "$(git diff --cached --numstat | LC_ALL=C sort -k3)" = "$(cat "$EXPECTED_NUMSTAT_FILE")"
+          git commit -m 'fix(crawler): bound phone-label chain provenance'
+          NEW_HEAD="$(git rev-parse HEAD)"
+          NEW_TREE="$(git rev-parse HEAD^{tree})"
+          test "$(git rev-parse HEAD^)" = "$RUN_MAIN"
+          test "$(git rev-list --count "$RUN_MAIN..$NEW_HEAD")" = 1
+          test "$(git log -1 --format=%an)" = "$PRODUCT_AUTHOR_NAME"
+          test "$(git log -1 --format=%ae)" = "$PRODUCT_AUTHOR_EMAIL"
+          test "$(git log -1 --format=%cn)" = "$PRODUCT_AUTHOR_NAME"
+          test "$(git log -1 --format=%ce)" = "$PRODUCT_AUTHOR_EMAIL"
+          test "$(git diff --name-only "$RUN_MAIN..$NEW_HEAD" | LC_ALL=C sort)" = \
+            "$(cat "$EXPECTED_PATHS_FILE")"
+          test "$(git diff --numstat "$RUN_MAIN..$NEW_HEAD" | LC_ALL=C sort -k3)" = \
+            "$(cat "$EXPECTED_NUMSTAT_FILE")"
+          test "$(git rev-parse "$NEW_HEAD:tools/lib/industrial-exhaust.mjs")" = "$NEW_LIBRARY"
+          test "$(git rev-parse "$NEW_HEAD:test/industrial-exhaust.test.js")" = "$NEW_TEST"
+
+          git push --force-with-lease="refs/heads/$PRODUCT_BRANCH:$PRODUCT_HEAD" \
+            origin "HEAD:refs/heads/$PRODUCT_BRANCH"
+
+          {
+            printf 'receipt_version=current-main-phone-label-chain-repair@24\n'
+            printf 'carrier_head=%s\n' "$HEAD_SHA"
+            printf 'run_id=%s\n' '${{ github.run_id }}'
+            printf 'base=%s\n' "$RUN_MAIN"
+            printf 'superseded_product_head=%s\n' "$PRODUCT_HEAD"
+            printf 'published_product_head=%s\n' "$NEW_HEAD"
+            printf 'published_tree=%s\n' "$NEW_TREE"
+            printf 'author_name=%s\n' "$PRODUCT_AUTHOR_NAME"
+            printf 'author_email=%s\n' "$PRODUCT_AUTHOR_EMAIL"
+            printf 'library_blob=%s\n' "$NEW_LIBRARY"
+            printf 'test_blob=%s\n' "$NEW_TEST"
+            printf 'changed_paths:\n%s\n' "$(cat "$EXPECTED_PATHS_FILE")"
+            printf 'numstat:\n%s\n' "$(cat "$EXPECTED_NUMSTAT_FILE")"
+            printf 'qualification=node-check+linear-long-chain-regressions+industrial-exhaust+artifacts+release-check+pinned-main-numstat+path-scoped-post-gate-custody\n'
+          } > "$RECEIPT_FILE"
+          printf 'product_head=%s\n' "$NEW_HEAD" >> "$GITHUB_OUTPUT"
+          cat "$RECEIPT_FILE"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: current-main-phone-label-chain-repair-${{ steps.publish.outputs.product_head }}
+          path: ${{ env.RECEIPT_FILE }}
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Clean worktrees
+        if: always()
+        shell: bash
+        run: |
+          git worktree remove --force "$PATCH_WORK" >/dev/null 2>&1 || true
+          git worktree remove --force "$QUALIFICATION_WORK" >/dev/null 2>&1 || true
+          rm -rf "$PATCH_WORK" "$QUALIFICATION_WORK"
