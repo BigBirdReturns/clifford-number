@@ -1,4 +1,4 @@
-name: Temporary current-main identifier-boundary P1 repair v18
+name: Temporary current-main identifier-boundary P1 repair v19
 
 on:
   pull_request:
@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: current-main-identifier-boundary-repair-v18
+  group: current-main-identifier-boundary-repair-v19
   cancel-in-progress: false
 
 jobs:
@@ -18,20 +18,20 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      SOURCE_BASE: 29fdd0f342cef522cd0f1cd04c854cf5fdfd38b2
-      PRODUCT_HEAD: 2985317cda6599c4869d35a84b66d074d9a178a7
-      CARRIER_PARENT: f7773d899f462760828c81e5f0013a9bb7e17365
+      SOURCE_BASE: b4ea0a4255597a2e51f4d577c01f0720b80e5084
+      PRODUCT_HEAD: 547ccb1280ea5b257aeebd509415e74cbfc9274f
+      CARRIER_PARENT: 92031eb7eccca3e8f5ba418a4863a64c5a9bd9af
       PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
       CARRIER_BRANCH: agent/current-main-identifier-context-v1
       BASE_LIBRARY: 5f68254d3e44de693e83503aed879160f9b7b997
       BASE_TEST: 1659a7cc54666a2ac5a1d6b88eb8c6591d98008e
-      SOURCE_LIBRARY: ac809bab014f951f4736030d130358439052eb92
-      SOURCE_TEST: 322fe508467a2e45ddbb67684e87976166203446
-      PATCH_WORK: /tmp/identifier-boundary-patch-v18
-      QUALIFICATION_WORK: /tmp/identifier-boundary-qualification-v18
-      EXPECTED_PATHS_FILE: /tmp/identifier-boundary-paths-v18.txt
-      EXPECTED_NUMSTAT_FILE: /tmp/identifier-boundary-numstat-v18.txt
-      RECEIPT_FILE: /tmp/identifier-boundary-receipt-v18.txt
+      SOURCE_LIBRARY: ae3d12b009adf77cd9c6a4c070bba7843754b3fc
+      SOURCE_TEST: dd71ae0b2e98be8362423b3184ea79215d843978
+      PATCH_WORK: /tmp/identifier-boundary-patch-v19
+      QUALIFICATION_WORK: /tmp/identifier-boundary-qualification-v19
+      EXPECTED_PATHS_FILE: /tmp/identifier-boundary-paths-v19.txt
+      EXPECTED_NUMSTAT_FILE: /tmp/identifier-boundary-numstat-v19.txt
+      RECEIPT_FILE: /tmp/identifier-boundary-receipt-v19.txt
     steps:
       - uses: actions/checkout@v4
         with:
@@ -83,7 +83,7 @@ jobs:
           test "$(git diff --name-only "$SOURCE_BASE..$PRODUCT_HEAD" | LC_ALL=C sort)" = \
             "$(cat "$EXPECTED_PATHS_FILE")"
 
-      - name: Materialize boundary-order and bare-period repairs
+      - name: Materialize first-valid-boundary recursion repair
         shell: bash
         run: |
           set -euo pipefail
@@ -123,8 +123,6 @@ jobs:
             );
             const completeScore = phoneCandidateScore(completeCandidate, '');
 
-            const scoredBoundaries = [];
-            const unscoredBoundaries = [];
             for (let first = 1; first < groups.length; first += 1) {
               const previousEnd = groups[first - 1].index + groups[first - 1][0].length;
               const groupStart = groups[first].index;
@@ -142,27 +140,12 @@ jobs:
                 .normalize('NFKC')
                 .replace(/\D/gu, '')
                 .length;
-              const proposal = { start, prefixScore, protectedDigits };
-              if (prefixScore) {
-                scoredBoundaries.push(proposal);
-              } else if (slashBoundary
+              if (prefixScore
+                  || slashBoundary
                   || (periodBoundary && (!completeScore || protectedDigits >= 7))
-                  || (whitespaceBoundary && protectedDigits >= 7)) {
-                unscoredBoundaries.push(proposal);
-              }
+                  || (whitespaceBoundary && protectedDigits >= 7)) return start;
             }
 
-            if (scoredBoundaries.length) {
-              scoredBoundaries.sort((left, right) =>
-                right.start - left.start
-                  || right.prefixScore - left.prefixScore
-                  || right.protectedDigits - left.protectedDigits);
-              return scoredBoundaries[0].start;
-            }
-            if (unscoredBoundaries.length) {
-              unscoredBoundaries.sort((left, right) => left.start - right.start);
-              return unscoredBoundaries[0].start;
-            }
             if (completeScore) return completeBounds.end;
             return candidate.length;
           }
@@ -179,69 +162,34 @@ jobs:
           path = Path(sys.argv[1])
           text = path.read_text(encoding='utf-8')
           marker = "for (const completeGroupedIdentifier of [\n"
-          insert = r"""for (const [lateParenthesizedPhone, expected] of [
+          insert = r"""for (const [firstValidIdentifierBoundary, expected] of [
             [
-              'ID: 1234567 / (123) 4567',
-              'ID: 1234567 / [contact omitted]'
+              'ID: 1234567 / (123) 4567 / (234) 5678',
+              'ID: 1234567 / [contact omitted] / [contact omitted]'
             ],
             [
-              'ID: 1234567/(123)4567',
-              'ID: 1234567/[contact omitted]'
+              'ID: 1234567/(123)4567/(234)5678',
+              'ID: 1234567/[contact omitted]/[contact omitted]'
             ],
             [
-              'ＩＤ：１２３４５６７／（１２３）４５６７',
-              'ＩＤ：１２３４５６７／[contact omitted]'
+              'ＩＤ：１２３４５６７／（１２３）４５６７／（２３４）５６７８',
+              'ＩＤ：１２３４５６７／[contact omitted]／[contact omitted]'
             ],
             [
-              'ID: 1234567.(123)4567',
-              'ID: 1234567.[contact omitted]'
+              'ID: 1234567.(123)4567.(234)5678',
+              'ID: 1234567.[contact omitted].[contact omitted]'
             ]
           ]) {
             assert.equal(
-              redactContactData(lateParenthesizedPhone),
+              redactContactData(firstValidIdentifierBoundary),
               expected,
-              'a validated later-phone boundary must be selected before whole-span scoring'
-            );
-          }
-
-          for (const [barePeriodIdentifierThenPhone, expected] of [
-            [
-              'ID: 12345678.03.6216.8041',
-              'ID: 12345678.[contact omitted]'
-            ],
-            [
-              'ＩＤ：１２３４５６７８．０３．６２１６．８０４１',
-              'ＩＤ：１２３４５６７８．[contact omitted]'
-            ],
-            [
-              'ID: 12345678.212.555.1234',
-              'ID: 12345678.[contact omitted]'
-            ]
-          ]) {
-            assert.equal(
-              redactContactData(barePeriodIdentifierThenPhone),
-              expected,
-              'a bare ASCII or fullwidth period must permit an independently valid phone suffix'
-            );
-          }
-
-          for (const unsplitBoundaryGuard of [
-            'ID: 1234567 / 7654321',
-            'ID: 12345678.87654321',
-            'ID: 03.6216.8041',
-            'ID: 1.212.555.1234',
-            'ＩＤ：１．２１２．５５５．１２３４'
-          ]) {
-            assert.equal(
-              redactContactData(unsplitBoundaryGuard),
-              unsplitBoundaryGuard,
-              'boundary punctuation must not split an invalid suffix or a complete period-formatted identifier'
+              'identifier protection must end at the first independently valid later-phone boundary'
             );
           }
 
           """
           if text.count(marker) != 1:
-              raise RuntimeError(f'boundary-order regression marker count: {text.count(marker)}')
+              raise RuntimeError(f'first-valid-boundary regression marker count: {text.count(marker)}')
           path.write_text(text.replace(marker, f'{insert}{marker}', 1), encoding='utf-8')
           PY
 
@@ -329,7 +277,7 @@ jobs:
           git diff --cached --check
           test "$(git diff --cached --name-only | LC_ALL=C sort)" = "$(cat "$EXPECTED_PATHS_FILE")"
           test "$(git diff --cached --numstat | LC_ALL=C sort -k3)" = "$(cat "$EXPECTED_NUMSTAT_FILE")"
-          git commit -m 'fix(crawler): close boundary-order and bare-period gaps'
+          git commit -m 'fix(crawler): recurse at first valid identifier boundary'
           NEW_HEAD="$(git rev-parse HEAD)"
           NEW_TREE="$(git rev-parse HEAD^{tree})"
           test "$(git rev-parse HEAD^)" = "$RUN_MAIN"
@@ -345,7 +293,7 @@ jobs:
             origin "HEAD:refs/heads/$PRODUCT_BRANCH"
 
           {
-            printf 'receipt_version=current-main-identifier-boundary-repair@18\n'
+            printf 'receipt_version=current-main-identifier-boundary-repair@19\n'
             printf 'carrier_head=%s\n' "$HEAD_SHA"
             printf 'run_id=%s\n' '${{ github.run_id }}'
             printf 'base=%s\n' "$RUN_MAIN"
