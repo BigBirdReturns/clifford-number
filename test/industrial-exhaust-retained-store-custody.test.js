@@ -379,6 +379,74 @@ try {
     })
   });
 
+  const assertRootAliasRejected = ({ aliasRoot, expectedError, label }) => {
+    assert.throws(
+      () => validateIndustrialExhaustReceiptStore({ rootDir: aliasRoot }),
+      expectedError,
+      `store validation must reject ${label}`
+    );
+    assert.throws(
+      () => validateIndustrialExhaustReceiptCustody({
+        rootDir: aliasRoot,
+        discoveryRecords,
+        artifacts
+      }),
+      expectedError,
+      `runtime custody must reject ${label}`
+    );
+    assert.throws(
+      () => writeIndexReceipt({
+        rootDir: aliasRoot,
+        source,
+        parsedIndex,
+        html: indexHtml,
+        capturedAt
+      }),
+      expectedError,
+      `index receipt writes must reject ${label}`
+    );
+    assert.throws(
+      () => writeArtifactReceipt({
+        rootDir: aliasRoot,
+        canonicalUrl,
+        body,
+        bodySha256,
+        capturedAt,
+        responseHeaders: {
+          content_type: 'text/html',
+          final_url: canonicalUrl,
+          redirect_chain: []
+        }
+      }),
+      expectedError,
+      `artifact receipt writes must reject ${label}`
+    );
+  };
+
+  const rootAliasContainer = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'industrial-exhaust-root-alias-')
+  );
+  try {
+    const directRootAlias = path.join(rootAliasContainer, 'repository');
+    fs.symlinkSync(rootDir, directRootAlias, 'dir');
+    assertRootAliasRejected({
+      aliasRoot: directRootAlias,
+      expectedError: /receipt repository root contains an unsupported path entry/u,
+      label: 'a symbolic-link repository root'
+    });
+    fs.unlinkSync(directRootAlias);
+
+    const ancestorAlias = path.join(rootAliasContainer, 'ancestor');
+    fs.symlinkSync(path.dirname(rootDir), ancestorAlias, 'dir');
+    assertRootAliasRejected({
+      aliasRoot: path.join(ancestorAlias, path.basename(rootDir)),
+      expectedError: /receipt repository root is not canonical/u,
+      label: 'a repository root reached through a symbolic-link ancestor'
+    });
+  } finally {
+    fs.rmSync(rootAliasContainer, { recursive: true, force: true });
+  }
+
   const assertHardLinkedReceiptRejected = ({ receiptPath, writeReceipt, receiptType }) => {
     const absoluteReceiptPath = path.join(rootDir, receiptPath);
     const externalRoot = fs.mkdtempSync(
