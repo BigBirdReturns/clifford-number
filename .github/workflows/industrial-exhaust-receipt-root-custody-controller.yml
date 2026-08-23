@@ -1,0 +1,246 @@
+name: Industrial exhaust receipt root custody controller
+
+on:
+  push:
+    branches:
+      - agent/industrial-exhaust-receipt-root-custody-controller-v1
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Reproduce, materialize, qualify, and publish the clean product
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          leased_base='29fdd0f342cef522cd0f1cd04c854cf5fdfd38b2'
+          product_branch='agent/industrial-exhaust-receipt-root-custody-v1'
+          git fetch origin main "$product_branch"
+          test "$(git rev-parse origin/main)" = "$leased_base"
+          test "$(git rev-parse "origin/$product_branch")" = "$leased_base"
+
+          workdir="$(mktemp -d)"
+          git worktree add --detach "$workdir" "$leased_base"
+          cd "$workdir"
+
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import fs from 'node:fs';
+          import os from 'node:os';
+          import path from 'node:path';
+          import { validateIndustrialExhaustReceiptStore } from './tools/lib/industrial-exhaust-artifacts.mjs';
+
+          const expectedEmptyStore = {
+            index_receipt_count: 0,
+            byte_verified_index_receipt_count: 0,
+            legacy_anchor_bound_index_receipt_count: 0,
+            legacy_body_digest_matches_index_count: 0,
+            legacy_body_digest_differs_from_index_count: 0,
+            artifact_receipt_count: 0,
+            byte_verified_artifact_receipt_count: 0
+          };
+          const realRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'industrial-exhaust-root-repro-'));
+          const aliasContainer = fs.mkdtempSync(path.join(os.tmpdir(), 'industrial-exhaust-root-alias-'));
+          try {
+            fs.mkdirSync(path.join(realRoot, 'receipts', 'exhaust', 'indexes'), { recursive: true });
+            fs.mkdirSync(path.join(realRoot, 'receipts', 'exhaust', 'artifacts'), { recursive: true });
+
+            const directAlias = path.join(aliasContainer, 'repository');
+            fs.symlinkSync(realRoot, directAlias, 'dir');
+            assert.deepEqual(
+              validateIndustrialExhaustReceiptStore({ rootDir: directAlias }),
+              expectedEmptyStore,
+              'the leased base must reproduce direct root-symlink acceptance'
+            );
+
+            const ancestorAlias = path.join(aliasContainer, 'ancestor');
+            fs.symlinkSync(path.dirname(realRoot), ancestorAlias, 'dir');
+            assert.deepEqual(
+              validateIndustrialExhaustReceiptStore({
+                rootDir: path.join(ancestorAlias, path.basename(realRoot))
+              }),
+              expectedEmptyStore,
+              'the leased base must reproduce symlinked-ancestor acceptance'
+            );
+          } finally {
+            fs.rmSync(aliasContainer, { recursive: true, force: true });
+            fs.rmSync(realRoot, { recursive: true, force: true });
+          }
+          console.log('leased-base receipt-root alias acceptance reproduced');
+          NODE
+
+          python - <<'PY'
+          from pathlib import Path
+
+          library = Path('tools/lib/industrial-exhaust-artifacts.mjs')
+          text = library.read_text()
+          root_line = '  const root = path.resolve(rootDir);\n'
+          if text.count(root_line) != 4:
+              raise SystemExit(f'unexpected receipt-root callsite count: {text.count(root_line)}')
+          text = text.replace(root_line, '  const root = resolveReceiptRoot(rootDir);\n')
+
+          portable_old = "  const relative = path.relative(path.resolve(rootDir), path.resolve(absolutePath));\n"
+          portable_new = "  const relative = path.relative(resolveReceiptRoot(rootDir), path.resolve(absolutePath));\n"
+          if text.count(portable_old) != 1:
+              raise SystemExit('portable receipt-root anchor is not unique')
+          text = text.replace(portable_old, portable_new)
+
+          helper_anchor = 'function portableReceiptPath(rootDir, absolutePath) {\n'
+          helper = r"""function resolveReceiptRoot(rootDir) {
+            const root = path.resolve(rootDir);
+            let stats;
+            try {
+              stats = fs.lstatSync(root);
+            } catch (error) {
+              throw new Error(`receipt repository root inspection failed: ${error.message}`);
+            }
+            if (!stats.isDirectory()) {
+              throw new Error(`receipt repository root contains an unsupported path entry: ${root}`);
+            }
+            let canonicalRoot;
+            try {
+              canonicalRoot = fs.realpathSync.native(root);
+            } catch (error) {
+              throw new Error(`receipt repository root resolution failed: ${error.message}`);
+            }
+            if (canonicalRoot !== root) {
+              throw new Error(`receipt repository root is not canonical: ${root}`);
+            }
+            return root;
+          }
+
+          """
+          if text.count(helper_anchor) != 1:
+              raise SystemExit('receipt-root helper anchor is not unique')
+          text = text.replace(helper_anchor, helper + helper_anchor)
+          library.write_text(text)
+
+          test_file = Path('test/industrial-exhaust-retained-store-custody.test.js')
+          test_text = test_file.read_text()
+          anchor = r"""  assertSymlinkedStoreRejected({
+            storeName: 'indexes',
+            writeReceipt: () => writeIndexReceipt({
+              rootDir,
+              source,
+              parsedIndex,
+              html: indexHtml,
+              capturedAt
+            })
+          });
+          """
+          addition = r"""
+
+            const assertRootAliasRejected = ({ aliasRoot, expectedError, label }) => {
+              assert.throws(
+                () => validateIndustrialExhaustReceiptStore({ rootDir: aliasRoot }),
+                expectedError,
+                `store validation must reject ${label}`
+              );
+              assert.throws(
+                () => validateIndustrialExhaustReceiptCustody({
+                  rootDir: aliasRoot,
+                  discoveryRecords,
+                  artifacts
+                }),
+                expectedError,
+                `runtime custody must reject ${label}`
+              );
+              assert.throws(
+                () => writeIndexReceipt({
+                  rootDir: aliasRoot,
+                  source,
+                  parsedIndex,
+                  html: indexHtml,
+                  capturedAt
+                }),
+                expectedError,
+                `index receipt writes must reject ${label}`
+              );
+              assert.throws(
+                () => writeArtifactReceipt({
+                  rootDir: aliasRoot,
+                  canonicalUrl,
+                  body,
+                  bodySha256,
+                  capturedAt,
+                  responseHeaders: {
+                    content_type: 'text/html',
+                    final_url: canonicalUrl,
+                    redirect_chain: []
+                  }
+                }),
+                expectedError,
+                `artifact receipt writes must reject ${label}`
+              );
+            };
+
+            const rootAliasContainer = fs.mkdtempSync(
+              path.join(os.tmpdir(), 'industrial-exhaust-root-alias-')
+            );
+            try {
+              const directRootAlias = path.join(rootAliasContainer, 'repository');
+              fs.symlinkSync(rootDir, directRootAlias, 'dir');
+              assertRootAliasRejected({
+                aliasRoot: directRootAlias,
+                expectedError: /receipt repository root contains an unsupported path entry/u,
+                label: 'a symbolic-link repository root'
+              });
+              fs.unlinkSync(directRootAlias);
+
+              const ancestorAlias = path.join(rootAliasContainer, 'ancestor');
+              fs.symlinkSync(path.dirname(rootDir), ancestorAlias, 'dir');
+              assertRootAliasRejected({
+                aliasRoot: path.join(ancestorAlias, path.basename(rootDir)),
+                expectedError: /receipt repository root is not canonical/u,
+                label: 'a repository root reached through a symbolic-link ancestor'
+              });
+            } finally {
+              fs.rmSync(rootAliasContainer, { recursive: true, force: true });
+            }
+          """
+          if test_text.count(anchor) != 1:
+              raise SystemExit('receipt-root test anchor is not unique')
+          test_file.write_text(test_text.replace(anchor, anchor + addition))
+          PY
+
+          expected_paths=$'test/industrial-exhaust-retained-store-custody.test.js\ntools/lib/industrial-exhaust-artifacts.mjs'
+          actual_paths="$(git diff --name-only | sort)"
+          test "$actual_paths" = "$expected_paths"
+          git diff --check
+
+          node --check tools/lib/industrial-exhaust-artifacts.mjs
+          node --check test/industrial-exhaust-retained-store-custody.test.js
+          node test/industrial-exhaust-retained-store-custody.test.js
+          node test/industrial-exhaust-artifacts.test.js
+          node test/industrial-exhaust.test.js
+          node tools/hydrate-industrial-exhaust.mjs --audit
+
+          test "$(git diff --name-only | sort)" = "$expected_paths"
+          test -z "$(git status --porcelain --untracked-files=all | grep -v -E '^( M|M |A |\?\?) (test/industrial-exhaust-retained-store-custody.test.js|tools/lib/industrial-exhaust-artifacts.mjs)$' || true)"
+
+          git fetch origin main "$product_branch"
+          test "$(git rev-parse origin/main)" = "$leased_base"
+          test "$(git rev-parse "origin/$product_branch")" = "$leased_base"
+
+          git config user.name 'clifford-exhaust-bot'
+          git config user.email 'clifford-exhaust-bot@users.noreply.github.com'
+          git switch -c "$product_branch"
+          git add tools/lib/industrial-exhaust-artifacts.mjs test/industrial-exhaust-retained-store-custody.test.js
+          git commit -m 'fix(industrial-exhaust): authenticate receipt repository root'
+          test "$(git rev-parse HEAD^)" = "$leased_base"
+          test "$(git diff-tree --no-commit-id --name-only -r HEAD | sort)" = "$expected_paths"
+          git push --force-with-lease="refs/heads/$product_branch:$leased_base" origin "HEAD:refs/heads/$product_branch"
+          echo "PRODUCT_HEAD=$(git rev-parse HEAD)"
