@@ -346,7 +346,11 @@ function walkReceiptJson(rootDir, relativeDir) {
       if (entry.isDirectory()) {
         visit(absolutePath);
       } else if (entry.isFile()) {
-        if (entry.name.endsWith('.json')) result.push(portableReceiptPath(root, absolutePath));
+        const relativePath = portableReceiptPath(root, absolutePath);
+        if (!entry.name.endsWith('.json')) {
+          throw new Error(`receipt store contains an unsupported file: ${relativePath}`);
+        }
+        result.push(relativePath);
       } else {
         throw new Error(`receipt store contains an unsupported entry: ${portableReceiptPath(root, absolutePath)}`);
       }
