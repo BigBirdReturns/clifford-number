@@ -267,8 +267,31 @@ export function validateArtifactRevisionLineage(records) {
   });
 }
 
+function resolveReceiptRoot(rootDir) {
+  const root = path.resolve(rootDir);
+  let stats;
+  try {
+    stats = fs.lstatSync(root);
+  } catch (error) {
+    throw new Error(`receipt repository root inspection failed: ${error.message}`);
+  }
+  if (!stats.isDirectory()) {
+    throw new Error(`receipt repository root contains an unsupported path entry: ${root}`);
+  }
+  let canonicalRoot;
+  try {
+    canonicalRoot = fs.realpathSync.native(root);
+  } catch (error) {
+    throw new Error(`receipt repository root resolution failed: ${error.message}`);
+  }
+  if (canonicalRoot !== root) {
+    throw new Error(`receipt repository root is not canonical: ${root}`);
+  }
+  return root;
+}
+
 function portableReceiptPath(rootDir, absolutePath) {
-  const relative = path.relative(path.resolve(rootDir), path.resolve(absolutePath));
+  const relative = path.relative(resolveReceiptRoot(rootDir), path.resolve(absolutePath));
   if (!relative || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
     throw new Error(`receipt path escapes repository root: ${absolutePath}`);
   }
@@ -276,7 +299,7 @@ function portableReceiptPath(rootDir, absolutePath) {
 }
 
 function inspectReceiptPath(rootDir, relativePath, { label, leafType }) {
-  const root = path.resolve(rootDir);
+  const root = resolveReceiptRoot(rootDir);
   const segments = String(relativePath).split('/');
   const absolutePath = path.resolve(root, ...segments);
   let current = root;
@@ -311,7 +334,7 @@ function loadReceiptJson(rootDir, relativePath, label) {
     || relativePath.startsWith('../')) {
     throw new Error(`${label} is not a canonical repository-relative path`);
   }
-  const root = path.resolve(rootDir);
+  const root = resolveReceiptRoot(rootDir);
   const absolutePath = path.resolve(root, ...relativePath.split('/'));
   const relative = path.relative(root, absolutePath);
   if (!relative || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
@@ -361,7 +384,7 @@ function discoveryAnchorKeys(html, indexUrl) {
 }
 
 function walkReceiptJson(rootDir, relativeDir) {
-  const root = path.resolve(rootDir);
+  const root = resolveReceiptRoot(rootDir);
   const base = path.resolve(root, ...relativeDir.split('/'));
   const relativeBase = path.relative(root, base);
   if (!relativeBase || relativeBase.startsWith(`..${path.sep}`) || path.isAbsolute(relativeBase)) {
@@ -538,7 +561,7 @@ function validateArtifactReceiptAtPath({
 }
 
 function loadIndustrialExhaustReceiptStore(rootDir) {
-  const root = path.resolve(rootDir);
+  const root = resolveReceiptRoot(rootDir);
   const indexReceipts = new Map();
   const artifactReceipts = new Map();
   let byteVerifiedIndexes = 0;
