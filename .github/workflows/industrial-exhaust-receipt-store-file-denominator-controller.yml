@@ -41,24 +41,15 @@ jobs:
 
           library = Path('tools/lib/industrial-exhaust-artifacts.mjs')
           text = library.read_text()
-          old = r"""      } else if (entry.isFile()) {
-                if (entry.name.endsWith('.json')) result.push(portableReceiptPath(root, absolutePath));
-              } else {
-                throw new Error(`receipt store contains an unsupported entry: ${portableReceiptPath(root, absolutePath)}`);
-              }
-          """
-          new = r"""      } else if (entry.isFile()) {
-                const relativePath = portableReceiptPath(root, absolutePath);
-                if (!entry.name.endsWith('.json')) {
-                  throw new Error(`receipt store contains an unsupported file: ${relativePath}`);
-                }
-                result.push(relativePath);
-              } else {
-                throw new Error(`receipt store contains an unsupported entry: ${portableReceiptPath(root, absolutePath)}`);
-              }
+          old = "        if (entry.name.endsWith('.json')) result.push(portableReceiptPath(root, absolutePath));\n"
+          new = r"""        const relativePath = portableReceiptPath(root, absolutePath);
+                  if (!entry.name.endsWith('.json')) {
+                    throw new Error(`receipt store contains an unsupported file: ${relativePath}`);
+                  }
+                  result.push(relativePath);
           """
           if text.count(old) != 1:
-              raise SystemExit('library patch anchor is not unique')
+              raise SystemExit('library statement anchor is not unique')
           library.write_text(text.replace(old, new))
 
           test_file = Path('test/industrial-exhaust-retained-store-custody.test.js')
