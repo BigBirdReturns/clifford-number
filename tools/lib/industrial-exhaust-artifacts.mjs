@@ -12,8 +12,7 @@ import {
   matchWatchTerms,
   redactContactData,
   sha256,
-  stableJson,
-  writeJson
+  stableJson
 } from './industrial-exhaust.mjs';
 
 export const ARTIFACT_LANE = 'first_party_industrial_exhaust_artifact_hydration';
@@ -1161,6 +1160,96 @@ export function buildArtifactAlerts(artifacts, { watchConfig = null, candidates 
   return alerts.sort((a, b) => a.alert_id.localeCompare(b.alert_id));
 }
 
+function publishReceiptJson({ rootDir, relativePath, receipt, label }) {
+  const root = resolveReceiptRoot(rootDir);
+  const inspected = inspectReceiptPath(root, relativePath, { label, leafType: 'file' });
+  if (inspected.exists) return inspected.absolutePath;
+
+  const parentRelativePath = path.posix.dirname(relativePath);
+  const parentBefore = inspectReceiptPath(root, parentRelativePath, {
+    label: `${label} parent directory`,
+    leafType: 'directory'
+  });
+  if (!parentBefore.exists) {
+    fs.mkdirSync(path.dirname(inspected.absolutePath), { recursive: true });
+  }
+  const parentAfter = inspectReceiptPath(root, parentRelativePath, {
+    label: `${label} parent directory`,
+    leafType: 'directory'
+  });
+  if (!parentAfter.exists) {
+    throw new Error(`${label} parent directory was not created`);
+  }
+
+  const serialized = `${JSON.stringify(receipt, null, 2)}\n`;
+  let tempPath = null;
+  let tempIdentity = null;
+  let published = false;
+  try {
+    for (let attempt = 0; attempt < 8; attempt += 1) {
+      const candidate = `${inspected.absolutePath}.${process.pid}.${crypto.randomBytes(16).toString('hex')}.tmp`;
+      let descriptor;
+      try {
+        descriptor = fs.openSync(
+          candidate,
+          fs.constants.O_WRONLY
+            | fs.constants.O_CREAT
+            | fs.constants.O_EXCL
+            | (fs.constants.O_NOFOLLOW ?? 0),
+          0o600
+        );
+      } catch (error) {
+        if (error?.code === 'EEXIST') continue;
+        throw new Error(`${label} temporary publication failed: ${error.message}`);
+      }
+      tempPath = candidate;
+      try {
+        fs.writeFileSync(descriptor, serialized, 'utf8');
+        fs.fsyncSync(descriptor);
+        const stats = fs.fstatSync(descriptor);
+        if (!stats.isFile() || stats.nlink !== 1) {
+          throw new Error(`${label} temporary publication is not an exclusive regular file`);
+        }
+        tempIdentity = { device: stats.dev, inode: stats.ino };
+      } finally {
+        fs.closeSync(descriptor);
+      }
+      break;
+    }
+    if (!tempPath || !tempIdentity) {
+      throw new Error(`${label} could not allocate an exclusive temporary publication`);
+    }
+
+    try {
+      fs.linkSync(tempPath, inspected.absolutePath);
+      published = true;
+    } catch (error) {
+      if (error?.code !== 'EEXIST') {
+        throw new Error(`${label} no-overwrite publication failed: ${error.message}`);
+      }
+    }
+  } finally {
+    if (tempPath) {
+      try {
+        fs.unlinkSync(tempPath);
+      } catch (error) {
+        if (error?.code !== 'ENOENT') throw error;
+      }
+    }
+  }
+
+  if (published) {
+    const stats = fs.lstatSync(inspected.absolutePath);
+    if (!stats.isFile()
+      || stats.nlink !== 1
+      || stats.dev !== tempIdentity.device
+      || stats.ino !== tempIdentity.inode) {
+      throw new Error(`${label} publication identity changed before validation`);
+    }
+  }
+  return inspected.absolutePath;
+}
+
 export function indexReceiptPath(rootDir, sourceId, hash) {
   return path.join(rootDir, 'receipts', 'exhaust', 'indexes', sourceId, `${hash}.json`);
 }
@@ -1172,36 +1261,36 @@ export function writeIndexReceipt({ rootDir, source, parsedIndex, html, captured
   }
   const receiptPath = indexReceiptPath(rootDir, source.id, parsedIndex.index_sha256);
   const relativePath = portableReceiptPath(rootDir, receiptPath);
-  const inspected = inspectReceiptPath(rootDir, relativePath, {
-    label: `index receipt ${relativePath}`,
-    leafType: 'file'
+  const receipt = {
+    schema_version: ARTIFACT_SCHEMA_VERSION,
+    receipt_type: 'first_party_publication_index_snapshot',
+    source_id: source.id,
+    source_class: SOURCE_CLASS,
+    publisher: source.publisher,
+    publisher_resolution: source.publisher_resolution ?? null,
+    index_url: source.index_url,
+    captured_at: capturedAt,
+    index_sha256: parsedIndex.index_sha256,
+    body_sha256: computedBodySha256,
+    index_title: parsedIndex.index_title,
+    item_count: parsedIndex.item_count,
+    response_headers: {
+      content_type: responseHeaders.content_type ?? null,
+      etag: responseHeaders.etag ?? null,
+      last_modified: responseHeaders.last_modified ?? null
+    },
+    body_encoding: 'utf-8',
+    body: html,
+    graph_effect: GRAPH_EFFECT,
+    promotion_authority: false,
+    canonical_mutation_authorized: false
+  };
+  publishReceiptJson({
+    rootDir,
+    relativePath,
+    receipt,
+    label: `index receipt ${relativePath}`
   });
-  if (!inspected.exists) {
-    writeJson(receiptPath, {
-      schema_version: ARTIFACT_SCHEMA_VERSION,
-      receipt_type: 'first_party_publication_index_snapshot',
-      source_id: source.id,
-      source_class: SOURCE_CLASS,
-      publisher: source.publisher,
-      publisher_resolution: source.publisher_resolution ?? null,
-      index_url: source.index_url,
-      captured_at: capturedAt,
-      index_sha256: parsedIndex.index_sha256,
-      body_sha256: computedBodySha256,
-      index_title: parsedIndex.index_title,
-      item_count: parsedIndex.item_count,
-      response_headers: {
-        content_type: responseHeaders.content_type ?? null,
-        etag: responseHeaders.etag ?? null,
-        last_modified: responseHeaders.last_modified ?? null
-      },
-      body_encoding: 'utf-8',
-      body: html,
-      graph_effect: GRAPH_EFFECT,
-      promotion_authority: false,
-      canonical_mutation_authorized: false
-    });
-  }
   validateIndexReceiptAtPath({
     rootDir,
     relativePath,
@@ -1229,32 +1318,32 @@ export function writeArtifactReceipt({ rootDir, canonicalUrl, body, bodySha256, 
   const isText = contentType.startsWith('text/')
     || /(?:json|xml|html|javascript)/iu.test(contentType)
     || contentType === '';
-  const inspected = inspectReceiptPath(rootDir, relativePath, {
-    label: `artifact receipt ${relativePath}`,
-    leafType: 'file'
+  const receipt = {
+    schema_version: ARTIFACT_SCHEMA_VERSION,
+    receipt_type: 'first_party_publication_artifact_snapshot',
+    source_class: SOURCE_CLASS,
+    canonical_url: canonicalUrl,
+    resolved_url: responseHeaders.final_url ?? canonicalUrl,
+    redirect_chain: structuredClone(responseHeaders.redirect_chain ?? []),
+    captured_at: capturedAt,
+    body_sha256: bodySha256,
+    response_headers: {
+      content_type: responseHeaders.content_type ?? null,
+      etag: responseHeaders.etag ?? null,
+      last_modified: responseHeaders.last_modified ?? null
+    },
+    body_encoding: isText ? 'utf-8' : 'base64',
+    body: isText ? body.toString('utf8') : body.toString('base64'),
+    graph_effect: GRAPH_EFFECT,
+    promotion_authority: false,
+    canonical_mutation_authorized: false
+  };
+  publishReceiptJson({
+    rootDir,
+    relativePath,
+    receipt,
+    label: `artifact receipt ${relativePath}`
   });
-  if (!inspected.exists) {
-    writeJson(receiptPath, {
-      schema_version: ARTIFACT_SCHEMA_VERSION,
-      receipt_type: 'first_party_publication_artifact_snapshot',
-      source_class: SOURCE_CLASS,
-      canonical_url: canonicalUrl,
-      resolved_url: responseHeaders.final_url ?? canonicalUrl,
-      redirect_chain: structuredClone(responseHeaders.redirect_chain ?? []),
-      captured_at: capturedAt,
-      body_sha256: bodySha256,
-      response_headers: {
-        content_type: responseHeaders.content_type ?? null,
-        etag: responseHeaders.etag ?? null,
-        last_modified: responseHeaders.last_modified ?? null
-      },
-      body_encoding: isText ? 'utf-8' : 'base64',
-      body: isText ? body.toString('utf8') : body.toString('base64'),
-      graph_effect: GRAPH_EFFECT,
-      promotion_authority: false,
-      canonical_mutation_authorized: false
-    });
-  }
   validateArtifactReceiptAtPath({
     rootDir,
     relativePath,

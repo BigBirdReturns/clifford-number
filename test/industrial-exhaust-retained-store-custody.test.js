@@ -4,7 +4,9 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {
+  artifactReceiptPath as artifactReceiptFilePath,
   extractHtmlArtifact,
+  indexReceiptPath as indexReceiptFilePath,
   mergeArtifactProjection,
   mergeDiscoveryRecords,
   parseHtmlLinkIndex,
@@ -141,6 +143,285 @@ try {
     }),
     artifactReceiptPath
   );
+
+  const assertPredictableTempAliasIgnored = ({
+    receiptType,
+    absoluteReceiptPath,
+    writeReceipt,
+    cleanupParent = false
+  }) => {
+    const externalRoot = fs.mkdtempSync(
+      path.join(os.tmpdir(), `industrial-exhaust-${receiptType}-publication-external-`)
+    );
+    const externalPath = path.join(externalRoot, 'external.txt');
+    const predictableTempPath = `${absoluteReceiptPath}.${process.pid}.tmp`;
+    const sentinel = `external ${receiptType} sentinel\n`;
+    fs.mkdirSync(path.dirname(absoluteReceiptPath), { recursive: true });
+    fs.writeFileSync(externalPath, sentinel);
+    fs.symlinkSync(externalPath, predictableTempPath, 'file');
+    try {
+      const expectedRelativePath = path.relative(rootDir, absoluteReceiptPath)
+        .split(path.sep)
+        .join('/');
+      assert.equal(
+        writeReceipt(),
+        expectedRelativePath,
+        `${receiptType} publication must ignore the predictable legacy temporary pathname`
+      );
+      assert.equal(
+        fs.readFileSync(externalPath, 'utf8'),
+        sentinel,
+        `${receiptType} publication must not mutate bytes through the predictable temporary alias`
+      );
+      assert.equal(
+        fs.lstatSync(predictableTempPath).isSymbolicLink(),
+        true,
+        `${receiptType} publication must not consume the attacker-controlled temporary alias`
+      );
+      const receiptStats = fs.lstatSync(absoluteReceiptPath);
+      assert.equal(
+        receiptStats.isFile(),
+        true,
+        `${receiptType} publication must create a regular receipt file`
+      );
+      assert.equal(
+        receiptStats.nlink,
+        1,
+        `${receiptType} publication must leave the receipt under exclusive inode custody`
+      );
+    } finally {
+      try {
+        fs.unlinkSync(predictableTempPath);
+      } catch (error) {
+        if (error?.code !== 'ENOENT') throw error;
+      }
+      fs.rmSync(absoluteReceiptPath, { force: true });
+      if (cleanupParent) fs.rmdirSync(path.dirname(absoluteReceiptPath));
+      fs.rmSync(externalRoot, { recursive: true, force: true });
+    }
+  };
+
+  const publicationIndexHtml = '<!doctype html><html><body><a href="/news-releases/publication-custody-index">Publication custody index</a></body></html>';
+  const publicationParsedIndex = parseHtmlLinkIndex(publicationIndexHtml, source);
+  const publicationIndexReceiptPath = indexReceiptFilePath(
+    rootDir,
+    source.id,
+    publicationParsedIndex.index_sha256
+  );
+  assertPredictableTempAliasIgnored({
+    receiptType: 'index',
+    absoluteReceiptPath: publicationIndexReceiptPath,
+    writeReceipt: () => writeIndexReceipt({
+      rootDir,
+      source,
+      parsedIndex: publicationParsedIndex,
+      html: publicationIndexHtml,
+      capturedAt: '2026-08-22T10:06:00.000Z'
+    })
+  });
+
+  const publicationCanonicalUrl = 'https://www.dentsu.com/news-releases/publication-custody-artifact';
+  const publicationArtifactBody = Buffer.from(
+    '<!doctype html><html><body><main>Publication custody artifact body.</main></body></html>'
+  );
+  const publicationArtifactBodySha256 = crypto
+    .createHash('sha256')
+    .update(publicationArtifactBody)
+    .digest('hex');
+  const publicationArtifactReceiptPath = artifactReceiptFilePath(
+    rootDir,
+    publicationCanonicalUrl,
+    publicationArtifactBodySha256
+  );
+  assertPredictableTempAliasIgnored({
+    receiptType: 'artifact',
+    absoluteReceiptPath: publicationArtifactReceiptPath,
+    cleanupParent: true,
+    writeReceipt: () => writeArtifactReceipt({
+      rootDir,
+      canonicalUrl: publicationCanonicalUrl,
+      body: publicationArtifactBody,
+      bodySha256: publicationArtifactBodySha256,
+      capturedAt: '2026-08-22T10:06:00.000Z',
+      responseHeaders: {
+        content_type: 'text/html',
+        final_url: publicationCanonicalUrl,
+        redirect_chain: []
+      }
+    })
+  });
+
+  const assertDestinationRacePreservesWinner = ({
+  receiptType,
+  absoluteReceiptPath,
+  competingReceipt,
+  writeReceipt,
+  cleanupParent = false
+}) => {
+  fs.mkdirSync(path.dirname(absoluteReceiptPath), { recursive: true });
+  const originalLinkSync = fs.linkSync;
+  let raceInjected = false;
+  fs.linkSync = (sourcePath, destinationPath) => {
+    if (!raceInjected
+      && path.resolve(destinationPath) === path.resolve(absoluteReceiptPath)) {
+      fs.writeFileSync(destinationPath, competingReceipt, {
+        encoding: 'utf8',
+        flag: 'wx',
+        mode: 0o600
+      });
+      raceInjected = true;
+    }
+    return originalLinkSync(sourcePath, destinationPath);
+  };
+  try {
+    const expectedRelativePath = path.relative(rootDir, absoluteReceiptPath)
+      .split(path.sep)
+      .join('/');
+    assert.equal(
+      writeReceipt(),
+      expectedRelativePath,
+      `${receiptType} publication must accept the valid intervening winner`
+    );
+    assert.equal(
+      raceInjected,
+      true,
+      `${receiptType} publication must exercise the destination-creation race`
+    );
+    assert.equal(
+      fs.readFileSync(absoluteReceiptPath, 'utf8'),
+      competingReceipt,
+      `${receiptType} publication must not replace intervening destination bytes`
+    );
+    const receiptStats = fs.lstatSync(absoluteReceiptPath);
+    assert.equal(
+      receiptStats.isFile(),
+      true,
+      `${receiptType} race winner must remain a regular receipt file`
+    );
+    assert.equal(
+      receiptStats.nlink,
+      1,
+      `${receiptType} race winner must remain under exclusive inode custody`
+    );
+  } finally {
+    fs.linkSync = originalLinkSync;
+    fs.rmSync(absoluteReceiptPath, { force: true });
+    if (cleanupParent) {
+      try {
+        fs.rmdirSync(path.dirname(absoluteReceiptPath));
+      } catch (error) {
+        if (!['ENOENT', 'ENOTEMPTY'].includes(error?.code)) throw error;
+      }
+    }
+  }
+};
+
+const raceIndexHtml = '<!doctype html><html><body><a href="/news-releases/publication-race-index">Publication race index</a></body></html>';
+const raceParsedIndex = parseHtmlLinkIndex(raceIndexHtml, source);
+const raceIndexRoot = fs.mkdtempSync(
+  path.join(os.tmpdir(), 'industrial-exhaust-index-publication-race-winner-')
+);
+let competingIndexReceipt;
+try {
+  writeIndexReceipt({
+    rootDir: raceIndexRoot,
+    source,
+    parsedIndex: raceParsedIndex,
+    html: raceIndexHtml,
+    capturedAt: '2026-08-22T10:07:00.000Z',
+    responseHeaders: { content_type: 'text/html', etag: 'race-winner-index' }
+  });
+  competingIndexReceipt = fs.readFileSync(
+    indexReceiptFilePath(
+      raceIndexRoot,
+      source.id,
+      raceParsedIndex.index_sha256
+    ),
+    'utf8'
+  );
+} finally {
+  fs.rmSync(raceIndexRoot, { recursive: true, force: true });
+}
+const raceIndexReceiptPath = indexReceiptFilePath(
+  rootDir,
+  source.id,
+  raceParsedIndex.index_sha256
+);
+assertDestinationRacePreservesWinner({
+  receiptType: 'index',
+  absoluteReceiptPath: raceIndexReceiptPath,
+  competingReceipt: competingIndexReceipt,
+  writeReceipt: () => writeIndexReceipt({
+    rootDir,
+    source,
+    parsedIndex: raceParsedIndex,
+    html: raceIndexHtml,
+    capturedAt: '2026-08-22T10:08:00.000Z',
+    responseHeaders: { content_type: 'text/html', etag: 'race-loser-index' }
+  })
+});
+
+const raceCanonicalUrl = 'https://www.dentsu.com/news-releases/publication-race-artifact';
+const raceArtifactBody = Buffer.from(
+  '<!doctype html><html><body><main>Publication destination race artifact.</main></body></html>'
+);
+const raceArtifactBodySha256 = crypto
+  .createHash('sha256')
+  .update(raceArtifactBody)
+  .digest('hex');
+const raceArtifactRoot = fs.mkdtempSync(
+  path.join(os.tmpdir(), 'industrial-exhaust-artifact-publication-race-winner-')
+);
+let competingArtifactReceipt;
+try {
+  writeArtifactReceipt({
+    rootDir: raceArtifactRoot,
+    canonicalUrl: raceCanonicalUrl,
+    body: raceArtifactBody,
+    bodySha256: raceArtifactBodySha256,
+    capturedAt: '2026-08-22T10:07:00.000Z',
+    responseHeaders: {
+      content_type: 'text/html',
+      etag: 'race-winner-artifact',
+      final_url: raceCanonicalUrl,
+      redirect_chain: []
+    }
+  });
+  competingArtifactReceipt = fs.readFileSync(
+    artifactReceiptFilePath(
+      raceArtifactRoot,
+      raceCanonicalUrl,
+      raceArtifactBodySha256
+    ),
+    'utf8'
+  );
+} finally {
+  fs.rmSync(raceArtifactRoot, { recursive: true, force: true });
+}
+const raceArtifactReceiptPath = artifactReceiptFilePath(
+  rootDir,
+  raceCanonicalUrl,
+  raceArtifactBodySha256
+);
+assertDestinationRacePreservesWinner({
+  receiptType: 'artifact',
+  absoluteReceiptPath: raceArtifactReceiptPath,
+  competingReceipt: competingArtifactReceipt,
+  cleanupParent: true,
+  writeReceipt: () => writeArtifactReceipt({
+    rootDir,
+    canonicalUrl: raceCanonicalUrl,
+    body: raceArtifactBody,
+    bodySha256: raceArtifactBodySha256,
+    capturedAt: '2026-08-22T10:08:00.000Z',
+    responseHeaders: {
+      content_type: 'text/html',
+      etag: 'race-loser-artifact',
+      final_url: raceCanonicalUrl,
+      redirect_chain: []
+    }
+  })
+});
 
   const indexAbsolutePath = path.join(rootDir, indexReceiptPath);
   const originalIndexReceipt = fs.readFileSync(indexAbsolutePath, 'utf8');
