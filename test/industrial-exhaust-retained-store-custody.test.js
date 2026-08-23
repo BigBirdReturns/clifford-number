@@ -313,6 +313,71 @@ try {
     'runtime custody must reject regular files outside the receipt contract'
   );
   fs.rmSync(unsupportedRegularFilePath);
+
+  const assertSymlinkedStoreRejected = ({ storeName, writeReceipt }) => {
+    const storePath = path.join(rootDir, 'receipts', 'exhaust', storeName);
+    const externalRoot = fs.mkdtempSync(
+      path.join(os.tmpdir(), `industrial-exhaust-external-${storeName}-`)
+    );
+    const externalStorePath = path.join(externalRoot, storeName);
+    fs.renameSync(storePath, externalStorePath);
+    try {
+      fs.symlinkSync(externalStorePath, storePath, 'dir');
+      const expectedError = new RegExp(
+        `unsupported path entry: receipts/exhaust/${storeName}`,
+        'u'
+      );
+      assert.throws(
+        () => validateIndustrialExhaustReceiptStore({ rootDir }),
+        expectedError,
+        `store validation must reject a symlinked ${storeName} directory`
+      );
+      assert.throws(
+        () => validateIndustrialExhaustReceiptCustody({ rootDir, discoveryRecords, artifacts }),
+        expectedError,
+        `runtime custody must reject a symlinked ${storeName} directory`
+      );
+      assert.throws(
+        writeReceipt,
+        expectedError,
+        `receipt writers must reject a symlinked ${storeName} directory`
+      );
+    } finally {
+      try {
+        fs.unlinkSync(storePath);
+      } catch (error) {
+        if (error?.code !== 'ENOENT') throw error;
+      }
+      fs.renameSync(externalStorePath, storePath);
+      fs.rmSync(externalRoot, { recursive: true, force: true });
+    }
+  };
+
+  assertSymlinkedStoreRejected({
+    storeName: 'artifacts',
+    writeReceipt: () => writeArtifactReceipt({
+      rootDir,
+      canonicalUrl,
+      body,
+      bodySha256,
+      capturedAt,
+      responseHeaders: {
+        content_type: 'text/html',
+        final_url: canonicalUrl,
+        redirect_chain: []
+      }
+    })
+  });
+  assertSymlinkedStoreRejected({
+    storeName: 'indexes',
+    writeReceipt: () => writeIndexReceipt({
+      rootDir,
+      source,
+      parsedIndex,
+      html: indexHtml,
+      capturedAt
+    })
+  });
 } finally {
   fs.rmSync(rootDir, { recursive: true, force: true });
 }
