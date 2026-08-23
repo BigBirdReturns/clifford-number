@@ -1,4 +1,4 @@
-name: Temporary current-main identifier-boundary P1 repair v15
+name: Temporary current-main identifier-boundary P1 repair v16
 
 on:
   pull_request:
@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: current-main-identifier-boundary-repair-v15
+  group: current-main-identifier-boundary-repair-v16
   cancel-in-progress: false
 
 jobs:
@@ -18,20 +18,20 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      SOURCE_BASE: b76368aa329071216f3653521241063801580d40
-      PRODUCT_HEAD: 8cb8d44c50a6fd2ba1da1121e251155867bc01bf
-      CARRIER_PARENT: e30bd3e5816ae291c6c51f5531f228b28853d64c
+      SOURCE_BASE: 29fdd0f342cef522cd0f1cd04c854cf5fdfd38b2
+      PRODUCT_HEAD: 2985317cda6599c4869d35a84b66d074d9a178a7
+      CARRIER_PARENT: 91f30b8e0ae359526918bc1626d47aa4d9314d66
       PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
       CARRIER_BRANCH: agent/current-main-identifier-context-v1
       BASE_LIBRARY: 5f68254d3e44de693e83503aed879160f9b7b997
       BASE_TEST: 1659a7cc54666a2ac5a1d6b88eb8c6591d98008e
-      SOURCE_LIBRARY: 22a9e2cef8c0ed987b63561fe73fb2c48016927c
-      SOURCE_TEST: 304fdd29d817f68c23f9f4ad9081a613278262c2
-      PATCH_WORK: /tmp/identifier-boundary-patch-v15
-      QUALIFICATION_WORK: /tmp/identifier-boundary-qualification-v15
-      EXPECTED_PATHS_FILE: /tmp/identifier-boundary-paths-v15.txt
-      EXPECTED_NUMSTAT_FILE: /tmp/identifier-boundary-numstat-v15.txt
-      RECEIPT_FILE: /tmp/identifier-boundary-receipt-v15.txt
+      SOURCE_LIBRARY: ac809bab014f951f4736030d130358439052eb92
+      SOURCE_TEST: 322fe508467a2e45ddbb67684e87976166203446
+      PATCH_WORK: /tmp/identifier-boundary-patch-v16
+      QUALIFICATION_WORK: /tmp/identifier-boundary-qualification-v16
+      EXPECTED_PATHS_FILE: /tmp/identifier-boundary-paths-v16.txt
+      EXPECTED_NUMSTAT_FILE: /tmp/identifier-boundary-numstat-v16.txt
+      RECEIPT_FILE: /tmp/identifier-boundary-receipt-v16.txt
     steps:
       - uses: actions/checkout@v4
         with:
@@ -83,7 +83,7 @@ jobs:
           test "$(git diff --name-only "$SOURCE_BASE..$PRODUCT_HEAD" | LC_ALL=C sort)" = \
             "$(cat "$EXPECTED_PATHS_FILE")"
 
-      - name: Materialize grouped-identifier and nested-wrapper repairs
+      - name: Materialize boundary-order and bare-period repairs
         shell: bash
         run: |
           set -euo pipefail
@@ -98,20 +98,30 @@ jobs:
           path = Path(sys.argv[1])
           text = path.read_text(encoding='utf-8')
 
-          old_pattern = r"""const EXPLICIT_IDENTIFIER_LABEL_PATTERN = /(?:(?:^|\b)(?:id|guid|identifier|reference|revision|release(?:\s+id)?|record(?:\s+id)?|receipt|sha(?:-?256)?|hash|ticket|case|invoice|order|code)|(?:識別子|参照(?:番号)?|管理番号|受付番号|注文番号|案件番号|コード))\s*[:：=#＃-]?\s*(?:(?:\(|\[|\{|（|［|【)\s*)?$/iu;
-          """
-          new_pattern = r"""const EXPLICIT_IDENTIFIER_LABEL_PATTERN = /(?:(?:^|\b)(?:id|guid|identifier|reference|revision|release(?:\s+id)?|record(?:\s+id)?|receipt|sha(?:-?256)?|hash|ticket|case|invoice|order|code)|(?:識別子|参照(?:番号)?|管理番号|受付番号|注文番号|案件番号|コード))\s*[:：=#＃-]?\s*(?:(?:\(|\[|\{|（|［|【)\s*)*$/iu;
-          """
-          if text.count(old_pattern) != 1:
-              raise RuntimeError(f'nested-wrapper pattern anchor count: {text.count(old_pattern)}')
-          text = text.replace(old_pattern, new_pattern, 1)
+          old_complete = r"""  const completeBounds = phoneWindowBounds(
+            candidate,
+            groups,
+            0,
+            observationGroup - 1
+          );
+          const completeCandidate = candidate.slice(
+            completeBounds.start,
+            completeBounds.end
+          );
+          if (phoneCandidateScore(completeCandidate, '')) return completeBounds.end;
 
-          old_boundary = r"""    else if (hardBoundary || (first === 1 && protectedDigits >= 7)) {
           """
-          new_boundary = r"""    else if (hardBoundary || protectedDigits >= 7) {
+          if text.count(old_complete) != 1:
+              raise RuntimeError(f'whole-span early-return anchor count: {text.count(old_complete)}')
+          text = text.replace(old_complete, '', 1)
+
+          old_boundary = r"""    const hardBoundary = /[\/／]/u.test(separator)
+                || /[.．]\s+/u.test(separator);
+          """
+          new_boundary = r"""    const hardBoundary = /[\/／.．]/u.test(separator);
           """
           if text.count(old_boundary) != 1:
-              raise RuntimeError(f'grouped-unscored boundary anchor count: {text.count(old_boundary)}')
+              raise RuntimeError(f'bare-period boundary anchor count: {text.count(old_boundary)}')
           path.write_text(text.replace(old_boundary, new_boundary, 1), encoding='utf-8')
           PY
 
@@ -122,80 +132,67 @@ jobs:
           path = Path(sys.argv[1])
           text = path.read_text(encoding='utf-8')
           marker = "for (const completeGroupedIdentifier of [\n"
-          insert = r"""for (const [groupedUnscoredIdentifierThenPhone, expected] of [
+          insert = r"""for (const [lateParenthesizedPhone, expected] of [
             [
-              'ID: 1234 5678 03-6216-8041',
-              'ID: 1234 5678 [contact omitted]'
+              'ID: 1234567 / (123) 4567',
+              'ID: 1234567 / [contact omitted]'
             ],
             [
-              'ID: 123-45678 090-1234-5678',
-              'ID: 123-45678 [contact omitted]'
+              'ID: 1234567/(123)4567',
+              'ID: 1234567/[contact omitted]'
             ],
             [
-              'ＩＤ：１２３４ ５６７８ ０３－６２１６－８０４１',
-              'ＩＤ：１２３４ ５６７８ [contact omitted]'
+              'ＩＤ：１２３４５６７／（１２３）４５６７',
+              'ＩＤ：１２３４５６７／[contact omitted]'
             ],
             [
-              'ID: 1234 5678 (03) 6216 8041',
-              'ID: 1234 5678 [contact omitted]'
+              'ID: 1234567.(123)4567',
+              'ID: 1234567.[contact omitted]'
             ]
           ]) {
             assert.equal(
-              redactContactData(groupedUnscoredIdentifierThenPhone),
+              redactContactData(lateParenthesizedPhone),
               expected,
-              'grouped unscored identifiers must end before an independently valid phone suffix'
+              'a validated later-phone boundary must be selected before whole-span scoring'
             );
           }
 
-          for (const nestedIdentifierWrapper of [
-            'ID: [(+81 3 6216 5111)]',
-            'ID: [ (+81 3 6216 5111)]',
-            'ＩＤ：（（＋８１ ３ ６２１６ ５１１１））'
+          for (const [barePeriodIdentifierThenPhone, expected] of [
+            [
+              'ID: 12345678.03.6216.8041',
+              'ID: 12345678.[contact omitted]'
+            ],
+            [
+              'ＩＤ：１２３４５６７８．０３．６２１６．８０４１',
+              'ＩＤ：１２３４５６７８．[contact omitted]'
+            ],
+            [
+              'ID: 12345678.212.555.1234',
+              'ID: 12345678.[contact omitted]'
+            ]
           ]) {
             assert.equal(
-              redactContactData(nestedIdentifierWrapper),
-              nestedIdentifierWrapper,
-              'a sequence of accepted opening wrappers must remain in explicit identifier context'
+              redactContactData(barePeriodIdentifierThenPhone),
+              expected,
+              'a bare ASCII or fullwidth period must permit an independently valid phone suffix'
             );
           }
 
-          const nestedPhoneLabelRedaction = redactContactData(
-            'Phone: ID: [(+81 3 6216 5111)]'
-          );
-          assert.match(
-            nestedPhoneLabelRedaction,
-            /\[contact omitted\]/u,
-            'nested identifier wrappers must not suppress an affirmative phone-label override'
-          );
-          assert.doesNotMatch(
-            nestedPhoneLabelRedaction.normalize('NFKC'),
-            /81362165111/u,
-            'phone-labelled nested values must not survive redaction'
-          );
-
-          const nestedWrapperUrlSegment = 'a'.repeat(140);
-          const nestedWrapperUrlPrefix = `https://example.test/${nestedWrapperUrlSegment}/id: [`;
-          const nestedWrapperUrlRedaction = redactContactData(
-            `${nestedWrapperUrlPrefix}(+81 3 6216 5111)]`
-          );
-          assert.ok(
-            nestedWrapperUrlRedaction.startsWith(nestedWrapperUrlPrefix),
-            'nested wrapper support must preserve the complete preceding URL token'
-          );
-          assert.match(
-            nestedWrapperUrlRedaction,
-            /\[contact omitted\]/u,
-            'a URL-embedded identifier label must not protect a nested wrapped phone after whitespace'
-          );
-          assert.doesNotMatch(
-            nestedWrapperUrlRedaction.normalize('NFKC'),
-            /81362165111/u,
-            'URL-adjacent nested wrapped phones must not survive redaction'
-          );
+          for (const unsplitBoundaryGuard of [
+            'ID: 1234567 / 7654321',
+            'ID: 12345678.87654321',
+            'ID: 03.6216.8041'
+          ]) {
+            assert.equal(
+              redactContactData(unsplitBoundaryGuard),
+              unsplitBoundaryGuard,
+              'boundary punctuation must not split a suffix that is not independently telephone-valid'
+            );
+          }
 
           """
           if text.count(marker) != 1:
-              raise RuntimeError(f'grouped-wrapper regression marker count: {text.count(marker)}')
+              raise RuntimeError(f'boundary-order regression marker count: {text.count(marker)}')
           path.write_text(text.replace(marker, f'{insert}{marker}', 1), encoding='utf-8')
           PY
 
@@ -283,7 +280,7 @@ jobs:
           git diff --cached --check
           test "$(git diff --cached --name-only | LC_ALL=C sort)" = "$(cat "$EXPECTED_PATHS_FILE")"
           test "$(git diff --cached --numstat | LC_ALL=C sort -k3)" = "$(cat "$EXPECTED_NUMSTAT_FILE")"
-          git commit -m 'fix(crawler): close grouped identifiers and nested wrappers'
+          git commit -m 'fix(crawler): close boundary-order and bare-period gaps'
           NEW_HEAD="$(git rev-parse HEAD)"
           NEW_TREE="$(git rev-parse HEAD^{tree})"
           test "$(git rev-parse HEAD^)" = "$RUN_MAIN"
@@ -299,7 +296,7 @@ jobs:
             origin "HEAD:refs/heads/$PRODUCT_BRANCH"
 
           {
-            printf 'receipt_version=current-main-identifier-boundary-repair@15\n'
+            printf 'receipt_version=current-main-identifier-boundary-repair@16\n'
             printf 'carrier_head=%s\n' "$HEAD_SHA"
             printf 'run_id=%s\n' '${{ github.run_id }}'
             printf 'base=%s\n' "$RUN_MAIN"
