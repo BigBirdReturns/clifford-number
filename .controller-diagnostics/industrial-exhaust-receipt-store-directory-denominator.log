@@ -1,41 +1,54 @@
-run_id=32610519433
+run_id=32610595009
 run_attempt=1
-head_sha=ca84a3b78666b810a892efd47c76f2930ab929c8
+head_sha=7b54bb16e0ee7ac811071f4c7f60494510df7a91
 leased_base=59da3004efc9bd1cff68ecfe2bd9b832e9058e26
-materializer_outcome=failure
+materializer_outcome=success
 --- log tail ---
 From https://github.com/BigBirdReturns/clifford-number
  * branch              main       -> FETCH_HEAD
 Preparing worktree (detached HEAD 59da3004)
-Updating files:  42% (3399/7954)Updating files:  43% (3421/7954)Updating files:  44% (3500/7954)Updating files:  45% (3580/7954)Updating files:  46% (3659/7954)Updating files:  47% (3739/7954)Updating files:  48% (3818/7954)Updating files:  49% (3898/7954)Updating files:  50% (3977/7954)Updating files:  51% (4057/7954)Updating files:  52% (4137/7954)Updating files:  53% (4216/7954)Updating files:  54% (4296/7954)Updating files:  55% (4375/7954)Updating files:  56% (4455/7954)Updating files:  57% (4534/7954)Updating files:  58% (4614/7954)Updating files:  59% (4693/7954)Updating files:  60% (4773/7954)Updating files:  61% (4852/7954)Updating files:  62% (4932/7954)Updating files:  63% (5012/7954)Updating files:  64% (5091/7954)Updating files:  65% (5171/7954)Updating files:  66% (5250/7954)Updating files:  67% (5330/7954)Updating files:  68% (5409/7954)Updating files:  69% (5489/7954)Updating files:  70% (5568/7954)Updating files:  71% (5648/7954)Updating files:  72% (5727/7954)Updating files:  73% (5807/7954)Updating files:  74% (5886/7954)Updating files:  75% (5966/7954)Updating files:  76% (6046/7954)Updating files:  77% (6125/7954)Updating files:  78% (6205/7954)Updating files:  79% (6284/7954)Updating files:  80% (6364/7954)Updating files:  81% (6443/7954)Updating files:  82% (6523/7954)Updating files:  83% (6602/7954)Updating files:  84% (6682/7954)Updating files:  85% (6761/7954)Updating files:  86% (6841/7954)Updating files:  87% (6920/7954)Updating files:  88% (7000/7954)Updating files:  89% (7080/7954)Updating files:  90% (7159/7954)Updating files:  91% (7239/7954)Updating files:  92% (7318/7954)Updating files:  93% (7398/7954)Updating files:  94% (7477/7954)Updating files:  95% (7557/7954)Updating files:  96% (7636/7954)Updating files:  97% (7716/7954)Updating files:  98% (7795/7954)Updating files:  99% (7875/7954)Updating files: 100% (7954/7954)Updating files: 100% (7954/7954), done.
+Updating files:  70% (5628/7954)Updating files:  71% (5648/7954)Updating files:  72% (5727/7954)Updating files:  73% (5807/7954)Updating files:  74% (5886/7954)Updating files:  75% (5966/7954)Updating files:  76% (6046/7954)Updating files:  77% (6125/7954)Updating files:  78% (6205/7954)Updating files:  79% (6284/7954)Updating files:  80% (6364/7954)Updating files:  81% (6443/7954)Updating files:  82% (6523/7954)Updating files:  83% (6602/7954)Updating files:  84% (6682/7954)Updating files:  85% (6761/7954)Updating files:  86% (6841/7954)Updating files:  87% (6920/7954)Updating files:  88% (7000/7954)Updating files:  89% (7080/7954)Updating files:  90% (7159/7954)Updating files:  91% (7239/7954)Updating files:  92% (7318/7954)Updating files:  93% (7398/7954)Updating files:  94% (7477/7954)Updating files:  95% (7557/7954)Updating files:  96% (7636/7954)Updating files:  97% (7716/7954)Updating files:  98% (7795/7954)Updating files:  99% (7875/7954)Updating files: 100% (7954/7954)Updating files: 100% (7954/7954), done.
 HEAD is now at 59da3004 crawl: first-party industrial exhaust (2026-08-23)
-node:internal/modules/run_main:123
-    triggerUncaughtException(
-    ^
-
-AssertionError [ERR_ASSERTION]: The input did not match the regular expression /path is not canonical/u. Input:
-
-'Error: receipt store contains a misplaced file: receipts/exhaust/artifacts/noncanonical.json'
-
-    at file:///tmp/tmp.KTw3i8QQVQ/test/industrial-exhaust-retained-store-custody.test.js:291:10
-    at ModuleJob.run (node:internal/modules/esm/module_job:325:25)
-    at async ModuleLoader.import (node:internal/modules/esm/loader:606:24)
-    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5) {
-  generatedMessage: true,
-  code: 'ERR_ASSERTION',
-  actual: Error: receipt store contains a misplaced file: receipts/exhaust/artifacts/noncanonical.json
-      at visit (file:///tmp/tmp.KTw3i8QQVQ/tools/lib/industrial-exhaust-artifacts.mjs:402:17)
-      at walkReceiptJson (file:///tmp/tmp.KTw3i8QQVQ/tools/lib/industrial-exhaust-artifacts.mjs:415:3)
-      at loadIndustrialExhaustReceiptStore (file:///tmp/tmp.KTw3i8QQVQ/tools/lib/industrial-exhaust-artifacts.mjs:564:30)
-      at validateIndustrialExhaustReceiptStore (file:///tmp/tmp.KTw3i8QQVQ/tools/lib/industrial-exhaust-artifacts.mjs:588:26)
-      at file:///tmp/tmp.KTw3i8QQVQ/test/industrial-exhaust-retained-store-custody.test.js:292:11
-      at getActual (node:assert:498:5)
-      at Function.throws (node:assert:644:24)
-      at file:///tmp/tmp.KTw3i8QQVQ/test/industrial-exhaust-retained-store-custody.test.js:291:10
-      at ModuleJob.run (node:internal/modules/esm/module_job:325:25)
-      at async ModuleLoader.import (node:internal/modules/esm/loader:606:24),
-  expected: /path is not canonical/u,
-  operator: 'throws'
+industrial-exhaust retained-store custody tests passed
+industrial-exhaust artifact tests passed
+industrial-exhaust tests passed
+{
+  "lane": "first_party_industrial_exhaust_artifact_hydration",
+  "enabled_indexes": [
+    {
+      "id": "dentsu_global_news_sitemap",
+      "index_url": "https://www.dentsu.com/sitemap",
+      "publisher": "dentsu global website"
+    }
+  ],
+  "allowed_hosts": [
+    "www.dentsu.com",
+    "www.dentsu.co.jp",
+    "www.group.dentsu.com",
+    "ssl4.eir-parts.net"
+  ],
+  "default_limit": 50,
+  "receipt_custody": {
+    "discovery_record_count": 343,
+    "artifact_record_count": 106,
+    "index_receipt_count": 1,
+    "byte_verified_index_receipt_count": 0,
+    "legacy_anchor_bound_index_receipt_count": 1,
+    "artifact_receipt_count": 106,
+    "byte_verified_artifact_receipt_count": 106
+  },
+  "graph_effect": "none",
+  "canonical_mutation_authorized": false
 }
-
-Node.js v20.20.2
+Switched to a new branch 'agent/industrial-exhaust-receipt-store-directory-denominator-v1'
+[agent/industrial-exhaust-receipt-store-directory-denominator-v1 faaaa3de] fix(industrial-exhaust): close receipt directory denominator
+ 2 files changed, 69 insertions(+), 5 deletions(-)
+From https://github.com/BigBirdReturns/clifford-number
+ * branch              main       -> FETCH_HEAD
+remote: 
+remote: Create a pull request for 'agent/industrial-exhaust-receipt-store-directory-denominator-v1' on GitHub by visiting:        
+remote:      https://github.com/BigBirdReturns/clifford-number/pull/new/agent/industrial-exhaust-receipt-store-directory-denominator-v1        
+remote: 
+To https://github.com/BigBirdReturns/clifford-number
+ * [new branch]        HEAD -> agent/industrial-exhaust-receipt-store-directory-denominator-v1
+PRODUCT_HEAD=faaaa3de1bbb1b832ba35063d46c25a0c32a9c91
