@@ -69,7 +69,15 @@ jobs:
           node test/m05-answerable-power-sprint-03-leg-07-five-domain-route-watch.test.js
           npm run release:check
 
+          echo 'post-release status (porcelain=v1):'
+          git status --short
+          echo 'post-release tracked diff names:'
+          git diff --name-status
+          echo 'post-release untracked names:'
+          git ls-files --others --exclude-standard
           mapfile -t after_release < <(git status --short | sed -E 's/^...//' | sort)
+          printf 'post-release path count: %s\n' "${#after_release[@]}"
+          printf 'post-release path: %s\n' "${after_release[@]}"
           test "${#after_release[@]}" -eq "${#expected[@]}"
           for index in "${!expected[@]}"; do
             test "${after_release[$index]}" = "${expected[$index]}"
