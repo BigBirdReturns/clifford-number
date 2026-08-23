@@ -1,4 +1,4 @@
-name: NEVER MERGE M-05 completion-custody controller
+name: NEVER MERGE M-05 terminal temporal-custody controller
 
 on:
   push:
@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: m05-route-watch-completion-custody-controller
+  group: m05-route-watch-terminal-temporal-custody-controller
   cancel-in-progress: false
 
 jobs:
@@ -20,7 +20,7 @@ jobs:
       BASE_TREE: 187aec69c4efca7366219cb7d1db4b7febc62883
       MAIN_LEASE: 242efd8190cd07b781c395c9fd7e9523c8de02a6
       PRODUCT_BRANCH: agent/m05-s03-l7-route-watch-temporal-custody-v1
-      PRODUCT_LEASE: 167391c520e71021a88aa97740624bc15dd87df3
+      PRODUCT_LEASE: c5c7277f6feb84850c415c7efd097a552ee086c5
     steps:
       - uses: actions/checkout@v4
         with:
@@ -32,7 +32,7 @@ jobs:
         with:
           node-version: 24
 
-      - name: Materialize one direct-parent two-path product
+      - name: Materialize monotonic one-window product
         shell: bash
         run: |
           set -euo pipefail
@@ -45,8 +45,8 @@ jobs:
           test "$(git show -s --format=%T "$BASE_SHA")" = "$BASE_TREE"
           test "$(git show -s --format=%P "$PRODUCT_LEASE")" = "$BASE_SHA"
 
-          product_dir="$RUNNER_TEMP/m05-route-watch-completion-custody-product"
-          intended_dir="$RUNNER_TEMP/m05-route-watch-completion-custody-intended"
+          product_dir="$RUNNER_TEMP/m05-route-watch-monotonic-product"
+          intended_dir="$RUNNER_TEMP/m05-route-watch-monotonic-intended"
           rm -rf "$product_dir" "$intended_dir"
           git worktree add --detach "$product_dir" "$PRODUCT_LEASE"
 
@@ -67,32 +67,36 @@ jobs:
           library = library_path.read_text(encoding='utf-8')
           library = replace_once(
               library,
-              "function policyObservation(lane,route,observedAt,status,reason,extra={}){",
-              "function createPolicyObservation(lane,route,observedAt,status,reason,extra={}){",
-              'policy-observation constructor rename',
+              "  const actualClockMs=Number(clock());\n"
+              "  assert(Number.isFinite(actualClockMs),'execution clock must be finite');\n"
+              "  assert(Number.isFinite(Number(observedAtMs)),'observation clock must be finite');\n"
+              "  assert(Number(observedAtMs)<=actualClockMs,'observation clock cannot be in the future');\n"
+              "  if(previousReceipt)validateReceipt(previousReceipt,contract);",
+              "  const actualClockMs=Number(clock());\n"
+              "  assert(Number.isFinite(actualClockMs),'execution clock must be finite');\n"
+              "  assert(Number.isFinite(Number(observedAtMs)),'observation clock must be finite');\n"
+              "  assert(Number(observedAtMs)<=actualClockMs,'observation clock cannot be in the future');\n"
+              "  let receiptClockMs=actualClockMs;\n"
+              "  const receiptClock=()=>{\n"
+              "    const next=Number(clock());\n"
+              "    assert(Number.isFinite(next),'execution clock must be finite');\n"
+              "    receiptClockMs=Math.max(receiptClockMs,next);\n"
+              "    return receiptClockMs;\n"
+              "  };\n"
+              "  if(previousReceipt)validateReceipt(previousReceipt,contract);",
+              'monotonic receipt clock',
           )
           library = replace_once(
               library,
-              "  const startedAt=new Date(clock()).toISOString();\n  let current=new URL(route.url);",
-              "  const startedAt=new Date(clock()).toISOString();\n"
-              "  const policyObservation=(targetLane,targetRoute,targetObservedAt,status,reason,extra={})=>createPolicyObservation(\n"
-              "    targetLane,targetRoute,targetObservedAt,status,reason,\n"
-              "    {...extra,completed_at:new Date(clock()).toISOString()}\n"
-              "  );\n"
-              "  let current=new URL(route.url);",
-              'executed-terminal completion wrapper',
+              "fetchOfficialRoute(lane,route,contract,{fetchImpl,clock,beforeRequest:(host,interval)=>gate.waitForRequest(host,interval)})",
+              "fetchOfficialRoute(lane,route,contract,{fetchImpl,clock:receiptClock,beforeRequest:(host,interval)=>gate.waitForRequest(host,interval)})",
+              'route timestamp clock binding',
           )
           library = replace_once(
               library,
-              "      return policyObservation(lane,route,observedAt,'gated_not_before','ordinary Intel acquisition gate has not opened',{not_before_utc:activation.not_before_utc});",
-              "      return createPolicyObservation(lane,route,observedAt,'gated_not_before','ordinary Intel acquisition gate has not opened',{not_before_utc:activation.not_before_utc});",
-              'gated-row completion exemption',
-          )
-          library = replace_once(
-              library,
-              "const COMPLETED_STATUSES=new Set(['content_retrieved','metadata_only','challenge_page','http_failure']);",
-              "const COMPLETED_STATUSES=new Set([...TERMINAL_STATUSES].filter((status)=>status!=='gated_not_before'));",
-              'all-executed-status completion denominator',
+              "    generated_at:new Date(clock()).toISOString(),",
+              "    generated_at:new Date(receiptClock()).toISOString(),",
+              'generation timestamp clamp',
           )
           library_path.write_text(library, encoding='utf-8')
 
@@ -100,111 +104,32 @@ jobs:
           insertion = r'''
 
           {
-            const beforeGate=Date.parse('2026-08-26T23:00:00Z');
-            clockValue=Math.max(clockValue,beforeGate+1000);
+            const afterGate=Date.parse('2026-08-28T18:00:00Z');
+            const peak=afterGate+10000;
+            let clockCalls=0;
+            const regressingClock=()=>{
+              clockCalls+=1;
+              return clockCalls===1?peak:afterGate-10000;
+            };
             const receipt=await runRouteWatch(contract,{
-              observedAtMs:beforeGate,
-              fetchImpl:async()=>successResponse('completion custody before gate'),
+              observedAtMs:afterGate,
+              fetchImpl:async()=>successResponse('monotonic receipt time'),
               sleepImpl:noSleep,
-              clock
+              clock:regressingClock
             });
             validateReceipt(receipt,contract);
-            const gated=receipt.observations.filter((row)=>row.status==='gated_not_before');
-            const executed=receipt.observations.filter((row)=>row.status!=='gated_not_before');
-            assert.equal(gated.length,4);
-            assert.equal(executed.length,16);
-            assert(gated.every((row)=>!Object.prototype.hasOwnProperty.call(row,'completed_at')));
-            assert(executed.every((row)=>Object.prototype.hasOwnProperty.call(row,'completed_at')));
-
-            const forgedGatedCompletion=clone(receipt);
-            const gatedIndex=forgedGatedCompletion.observations.findIndex((row)=>row.status==='gated_not_before');
-            forgedGatedCompletion.observations[gatedIndex].completed_at=forgedGatedCompletion.generated_at;
-            resign(forgedGatedCompletion);
-            assert.throws(()=>validateReceipt(forgedGatedCompletion,contract),/keys drift/u);
-          }
-
-          {
-            const lane=contract.lanes[0];
-            const route={...lane.routes[0],url:'http://ministers.dss.gov.au/media-releases/51'};
-            clockValue=Math.max(clockValue,Date.parse('2026-08-28T12:00:00Z'));
-            const observation=await fetchOfficialRoute(lane,route,contract,{
-              fetchImpl:async()=>{throw new Error('pre-request refusal must not execute')},
-              clock
-            });
-            assert.equal(observation.status,'policy_refusal');
-            assert.equal(observation.reason,'non_https_target');
-            assert(Object.prototype.hasOwnProperty.call(observation,'completed_at'));
-            assert(Date.parse(observation.completed_at)>=Date.parse(observation.observed_at));
-          }
-
-          {
-            const afterGate=Date.parse('2026-08-28T12:00:00Z');
-            const bounded=clone(contract);
-            bounded.execution_policy.max_body_bytes=1024;
-            validateContract(bounded);
-            const failureCases=[
-              {
-                status:'transport_failure',
-                receiptContract:contract,
-                fetchImpl:async()=>{
-                  const error=new Error('synthetic connection reset');
-                  error.code='ECONNRESET';
-                  throw error;
-                }
-              },
-              {
-                status:'timeout',
-                receiptContract:contract,
-                fetchImpl:async()=>{
-                  const error=new Error('synthetic timeout');
-                  error.name='AbortError';
-                  throw error;
-                }
-              },
-              {
-                status:'body_limit_exceeded',
-                receiptContract:bounded,
-                fetchImpl:async()=>new Response(Buffer.alloc(1025,1),{status:200,headers:{'content-type':'application/octet-stream'}})
-              },
-              {
-                status:'policy_refusal',
-                receiptContract:contract,
-                fetchImpl:async()=>new Response(null,{status:302,headers:{location:'https://example.com/refused'}})
-              }
-            ];
-
-            for(const failureCase of failureCases){
-              clockValue=Math.max(clockValue,afterGate+1000);
-              const receipt=await runRouteWatch(failureCase.receiptContract,{
-                observedAtMs:afterGate,
-                fetchImpl:failureCase.fetchImpl,
-                sleepImpl:noSleep,
-                clock
-              });
-              validateReceipt(receipt,failureCase.receiptContract);
-              assert.equal(receipt.observations.length,20);
-              assert(receipt.observations.every((row)=>row.status===failureCase.status));
-              assert(receipt.observations.every((row)=>Object.prototype.hasOwnProperty.call(row,'completed_at')));
-              assert(receipt.observations.every((row)=>Date.parse(row.completed_at)>=Date.parse(row.observed_at)));
-              assert(receipt.observations.every((row)=>Date.parse(row.completed_at)<=Date.parse(receipt.generated_at)));
-
-              const missingCompletion=clone(receipt);
-              delete missingCompletion.observations[0].completed_at;
-              resign(missingCompletion);
-              assert.throws(()=>validateReceipt(missingCompletion,failureCase.receiptContract),/keys drift/u);
-
-              const completionAfterGeneration=clone(receipt);
-              completionAfterGeneration.observations[0].completed_at=new Date(Date.parse(completionAfterGeneration.generated_at)+1).toISOString();
-              resign(completionAfterGeneration);
-              assert.throws(()=>validateReceipt(completionAfterGeneration,failureCase.receiptContract),/completes after receipt generation/u);
-            }
+            assert(clockCalls>1);
+            assert.equal(Date.parse(receipt.generated_at),peak);
+            assert(receipt.observations.every((row)=>Date.parse(row.observed_at)<=Date.parse(receipt.generated_at)));
+            assert(receipt.observations.every((row)=>Date.parse(row.completed_at)<=Date.parse(receipt.generated_at)));
+            assert(receipt.observations.every((row)=>Date.parse(row.completed_at)>=Date.parse(row.observed_at)));
           }
           '''
           tests = replace_once(
               tests,
               "\nconsole.log('m05-answerable-power-sprint-03-leg-07-five-domain-route-watch.test: OK');\n",
               insertion + "\nconsole.log('m05-answerable-power-sprint-03-leg-07-five-domain-route-watch.test: OK');\n",
-              'completion-custody adversarial suite insertion',
+              'monotonic-clock regression insertion',
           )
           test_path.write_text(tests, encoding='utf-8')
           PY
@@ -262,7 +187,7 @@ jobs:
           git config user.email 'bigbirdreturns@proton.me'
           git add -- "${expected[@]}"
           product_tree="$(git write-tree)"
-          product_sha="$(printf '%s\n' '[M-05 S03-L7] Bind every terminal route receipt to one temporal window' | git commit-tree "$product_tree" -p "$BASE_SHA")"
+          product_sha="$(printf '%s\n' '[M-05 S03-L7] Make route-watch receipt time monotonic' | git commit-tree "$product_tree" -p "$BASE_SHA")"
           test "$(git show -s --format=%T "$product_sha")" = "$product_tree"
           test "$(git show -s --format=%P "$product_sha")" = "$BASE_SHA"
           mapfile -t committed < <(git diff --name-only "$BASE_SHA" "$product_sha" | sort)
