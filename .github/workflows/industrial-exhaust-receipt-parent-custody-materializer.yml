@@ -6,6 +6,11 @@ on:
       - agent/industrial-exhaust-receipt-parent-custody-controller-v1
     paths:
       - .github/workflows/industrial-exhaust-receipt-parent-custody-materializer.yml
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/industrial-exhaust-receipt-parent-custody-materializer.yml
 
 permissions:
   contents: write
@@ -38,7 +43,7 @@ jobs:
           TEST_PATH='test/industrial-exhaust-retained-store-custody.test.js'
 
           current_sha="$(git rev-parse HEAD)"
-          test "$(git rev-parse HEAD^)" = "$BASE_SHA"
+          test "$(git merge-base "$BASE_SHA" "$current_sha")" = "$BASE_SHA"
           mapfile -t controller_diff < <(git diff --name-only "$BASE_SHA" "$current_sha")
           test "${#controller_diff[@]}" -eq 1
           test "${controller_diff[0]}" = "$WORKFLOW_PATH"
