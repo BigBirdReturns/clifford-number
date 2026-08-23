@@ -293,6 +293,26 @@ try {
     /path is not canonical/u
   );
   fs.rmSync(noncanonicalReceiptPath);
+
+  const unsupportedRegularFilePath = path.join(
+    rootDir,
+    'receipts',
+    'exhaust',
+    'artifacts',
+    '.ignored-receipt'
+  );
+  fs.writeFileSync(unsupportedRegularFilePath, 'unauthenticated receipt bytes\n');
+  assert.throws(
+    () => validateIndustrialExhaustReceiptStore({ rootDir }),
+    /unsupported file: receipts\/exhaust\/artifacts\/\.ignored-receipt/u,
+    'every retained regular file must enter the custody denominator'
+  );
+  assert.throws(
+    () => validateIndustrialExhaustReceiptCustody({ rootDir, discoveryRecords, artifacts }),
+    /unsupported file: receipts\/exhaust\/artifacts\/\.ignored-receipt/u,
+    'runtime custody must reject regular files outside the receipt contract'
+  );
+  fs.rmSync(unsupportedRegularFilePath);
 } finally {
   fs.rmSync(rootDir, { recursive: true, force: true });
 }
