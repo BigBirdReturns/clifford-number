@@ -1,0 +1,128 @@
+name: NEVER MERGE M-05 predecessor-compatibility controller
+
+on:
+  push:
+    branches:
+      - agent/m05-s03-l7-route-watch-completion-custody-controller-v1
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: m05-route-watch-predecessor-compatibility-controller
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-24.04
+    env:
+      BASE_SHA: 6535b119f1edf8aeafa9ce0d58813c85901be5f3
+      BASE_TREE: 187aec69c4efca7366219cb7d1db4b7febc62883
+      MAIN_LEASE: 242efd8190cd07b781c395c9fd7e9523c8de02a6
+      PRODUCT_BRANCH: agent/m05-s03-l7-route-watch-temporal-custody-v1
+      PRODUCT_LEASE: 68c2b21430cd8305a5cdee7fff385257c2879ef2
+      LEGACY_ARTIFACT_ID: '9488435714'
+      LEGACY_ZIP_SHA256: 79b887e44ea34ac052ea2d80b9512127e3f1b1118f09e29fa6c9b71d4d248b53
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Materialize proof-addressed predecessor compatibility
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          controller_root="$GITHUB_WORKSPACE"
+          git fetch --no-tags origin \
+            "refs/heads/main:refs/remotes/origin/main" \
+            "refs/heads/${PRODUCT_BRANCH}:refs/remotes/origin/${PRODUCT_BRANCH}"
+          test "$(git rev-parse origin/main)" = "$MAIN_LEASE"
+          test "$(git rev-parse "origin/${PRODUCT_BRANCH}")" = "$PRODUCT_LEASE"
+          test "$(git show -s --format=%T "$BASE_SHA")" = "$BASE_TREE"
+          test "$(git show -s --format=%P "$PRODUCT_LEASE")" = "$BASE_SHA"
+
+          legacy_dir="$RUNNER_TEMP/m05-route-watch-legacy"
+          rm -rf "$legacy_dir"
+          mkdir -p "$legacy_dir/extracted"
+          gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/${LEGACY_ARTIFACT_ID}/zip" > "$legacy_dir/artifact.zip"
+          test "$(sha256sum "$legacy_dir/artifact.zip" | cut -d' ' -f1)" = "$LEGACY_ZIP_SHA256"
+          unzip -tq "$legacy_dir/artifact.zip" >/dev/null
+          unzip -q "$legacy_dir/artifact.zip" -d "$legacy_dir/extracted"
+          mapfile -t legacy_receipts < <(find "$legacy_dir/extracted" -type f -name 'm05-five-domain-route-watch-receipt.json' -print)
+          test "${#legacy_receipts[@]}" -eq 1
+
+          product_dir="$RUNNER_TEMP/m05-route-watch-predecessor-product"
+          intended_dir="$RUNNER_TEMP/m05-route-watch-predecessor-intended"
+          rm -rf "$product_dir" "$intended_dir"
+          git worktree add --detach "$product_dir" "$PRODUCT_LEASE"
+          python3 "$controller_root/.github/scripts/m05-predecessor-compatibility-v1.py" \
+            "$product_dir" "${legacy_receipts[0]}"
+
+          cd "$product_dir"
+          expected=(
+            'test/m05-answerable-power-sprint-03-leg-07-five-domain-route-watch.test.js'
+            'tools/lib/m05-answerable-power-sprint-03-leg-07-five-domain-route-watch.mjs'
+          )
+          mapfile -t changed < <(git diff --name-only "$BASE_SHA" -- | sort)
+          test "${#changed[@]}" -eq "${#expected[@]}"
+          for index in "${!expected[@]}"; do test "${changed[$index]}" = "${expected[$index]}"; done
+
+          mkdir -p "$intended_dir"
+          intended_hashes=()
+          for path in "${expected[@]}"; do
+            mkdir -p "$intended_dir/$(dirname "$path")"
+            cp -- "$path" "$intended_dir/$path"
+            intended_hashes+=("$(sha256sum "$path" | cut -d' ' -f1)")
+          done
+          node --check tools/lib/m05-answerable-power-sprint-03-leg-07-five-domain-route-watch.mjs
+          node --check test/m05-answerable-power-sprint-03-leg-07-five-domain-route-watch.test.js
+          node test/m05-answerable-power-sprint-03-leg-07-five-domain-route-watch.test.js
+          npm run release:check
+          for index in "${!expected[@]}"; do
+            path="${expected[$index]}"
+            test "$(sha256sum "$path" | cut -d' ' -f1)" = "${intended_hashes[$index]}"
+          done
+
+          git restore --source="$BASE_SHA" --staged --worktree -- .
+          git clean -fd
+          for index in "${!expected[@]}"; do
+            path="${expected[$index]}"
+            mkdir -p "$(dirname "$path")"
+            cp -- "$intended_dir/$path" "$path"
+            test "$(sha256sum "$path" | cut -d' ' -f1)" = "${intended_hashes[$index]}"
+          done
+          mapfile -t final_changed < <(git diff --name-only "$BASE_SHA" -- | sort)
+          test "${#final_changed[@]}" -eq "${#expected[@]}"
+          for index in "${!expected[@]}"; do test "${final_changed[$index]}" = "${expected[$index]}"; done
+          test -z "$(git ls-files --others --exclude-standard)"
+          git diff --check
+          node --check tools/lib/m05-answerable-power-sprint-03-leg-07-five-domain-route-watch.mjs
+          node --check test/m05-answerable-power-sprint-03-leg-07-five-domain-route-watch.test.js
+          node test/m05-answerable-power-sprint-03-leg-07-five-domain-route-watch.test.js
+
+          git config user.name 'BigBirdReturns'
+          git config user.email 'bigbirdreturns@proton.me'
+          git add -- "${expected[@]}"
+          product_tree="$(git write-tree)"
+          product_sha="$(printf '%s\n' '[M-05 S03-L7] Preserve authenticated legacy receipt continuity' | git commit-tree "$product_tree" -p "$BASE_SHA")"
+          test "$(git show -s --format=%T "$product_sha")" = "$product_tree"
+          test "$(git show -s --format=%P "$product_sha")" = "$BASE_SHA"
+          mapfile -t committed < <(git diff --name-only "$BASE_SHA" "$product_sha" | sort)
+          test "${#committed[@]}" -eq "${#expected[@]}"
+          for index in "${!expected[@]}"; do test "${committed[$index]}" = "${expected[$index]}"; done
+
+          git fetch --no-tags origin \
+            "refs/heads/main:refs/remotes/origin/main" \
+            "refs/heads/${PRODUCT_BRANCH}:refs/remotes/origin/${PRODUCT_BRANCH}"
+          test "$(git rev-parse origin/main)" = "$MAIN_LEASE"
+          test "$(git rev-parse "origin/${PRODUCT_BRANCH}")" = "$PRODUCT_LEASE"
+          git push origin "$product_sha:refs/heads/${PRODUCT_BRANCH}" \
+            --force-with-lease="refs/heads/${PRODUCT_BRANCH}:${PRODUCT_LEASE}"
+          printf 'product_sha=%s\nproduct_tree=%s\n' "$product_sha" "$product_tree"
