@@ -1,0 +1,532 @@
+name: Industrial exhaust receipt publication custody controller
+
+on:
+  push:
+    branches:
+      - agent/industrial-exhaust-receipt-publication-custody-controller-v1
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Reproduce, materialize, qualify, and publish the clean product
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          product_branch='agent/industrial-exhaust-receipt-publication-custody-v1'
+          expected_library_blob='54575617903e053e836f4a45d2687838351fe6b6'
+          expected_test_blob='2541e305b5a07f3b8df0cc1c3132d531538e0c74'
+
+          git fetch origin main "$product_branch"
+          leased_base="$(git rev-parse origin/main)"
+          product_lease="$(git rev-parse "origin/$product_branch")"
+          test "$(git rev-parse "$leased_base:tools/lib/industrial-exhaust-artifacts.mjs")" = "$expected_library_blob"
+          test "$(git rev-parse "$leased_base:test/industrial-exhaust-retained-store-custody.test.js")" = "$expected_test_blob"
+
+          workdir="$(mktemp -d)"
+          git worktree add --detach "$workdir" "$leased_base"
+          cd "$workdir"
+
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import crypto from 'node:crypto';
+          import fs from 'node:fs';
+          import os from 'node:os';
+          import path from 'node:path';
+          import {
+            artifactReceiptPath,
+            indexReceiptPath,
+            parseHtmlLinkIndex,
+            writeArtifactReceipt,
+            writeIndexReceipt
+          } from './tools/lib/industrial-exhaust-artifacts.mjs';
+
+          const source = {
+            id: 'publication_custody_reproduction',
+            publisher: 'publication custody reproduction',
+            publisher_resolution: 'test_fixture',
+            index_url: 'https://www.dentsu.com/sitemap',
+            include_path_prefixes: ['/news-releases/'],
+            source_class: 'first_party_corporate_publication',
+            graph_effect: 'none'
+          };
+
+          function reproduceIndexRedirect() {
+            const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'industrial-exhaust-index-publication-repro-'));
+            const externalRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'industrial-exhaust-index-publication-external-'));
+            try {
+              const html = '<!doctype html><html><body><a href="/news-releases/publication-custody-index">Publication custody index</a></body></html>';
+              const parsedIndex = parseHtmlLinkIndex(html, source);
+              const receiptPath = indexReceiptPath(rootDir, source.id, parsedIndex.index_sha256);
+              const tempPath = `${receiptPath}.${process.pid}.tmp`;
+              const externalPath = path.join(externalRoot, 'external.txt');
+              fs.mkdirSync(path.dirname(receiptPath), { recursive: true });
+              fs.writeFileSync(externalPath, 'external index sentinel\n');
+              fs.symlinkSync(externalPath, tempPath, 'file');
+
+              assert.throws(
+                () => writeIndexReceipt({
+                  rootDir,
+                  source,
+                  parsedIndex,
+                  html,
+                  capturedAt: '2026-08-23T00:00:00.000Z'
+                }),
+                /unsupported path entry/u,
+                'the leased base must move the predictable temp symlink onto the receipt path'
+              );
+              assert.notEqual(
+                fs.readFileSync(externalPath, 'utf8'),
+                'external index sentinel\n',
+                'the leased base must reproduce external index-byte mutation'
+              );
+              assert.equal(
+                fs.lstatSync(receiptPath).isSymbolicLink(),
+                true,
+                'the leased base must reproduce symlink publication at the index receipt path'
+              );
+            } finally {
+              fs.rmSync(rootDir, { recursive: true, force: true });
+              fs.rmSync(externalRoot, { recursive: true, force: true });
+            }
+          }
+
+          function reproduceArtifactRedirect() {
+            const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'industrial-exhaust-artifact-publication-repro-'));
+            const externalRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'industrial-exhaust-artifact-publication-external-'));
+            try {
+              const canonicalUrl = 'https://www.dentsu.com/news-releases/publication-custody-artifact';
+              const body = Buffer.from('<!doctype html><html><body>Publication custody artifact body.</body></html>');
+              const bodySha256 = crypto.createHash('sha256').update(body).digest('hex');
+              const receiptPath = artifactReceiptPath(rootDir, canonicalUrl, bodySha256);
+              const tempPath = `${receiptPath}.${process.pid}.tmp`;
+              const externalPath = path.join(externalRoot, 'external.txt');
+              fs.mkdirSync(path.dirname(receiptPath), { recursive: true });
+              fs.writeFileSync(externalPath, 'external artifact sentinel\n');
+              fs.symlinkSync(externalPath, tempPath, 'file');
+
+              assert.throws(
+                () => writeArtifactReceipt({
+                  rootDir,
+                  canonicalUrl,
+                  body,
+                  bodySha256,
+                  capturedAt: '2026-08-23T00:00:00.000Z',
+                  responseHeaders: {
+                    content_type: 'text/html',
+                    final_url: canonicalUrl,
+                    redirect_chain: []
+                  }
+                }),
+                /unsupported path entry/u,
+                'the leased base must move the predictable temp symlink onto the artifact receipt path'
+              );
+              assert.notEqual(
+                fs.readFileSync(externalPath, 'utf8'),
+                'external artifact sentinel\n',
+                'the leased base must reproduce external artifact-byte mutation'
+              );
+              assert.equal(
+                fs.lstatSync(receiptPath).isSymbolicLink(),
+                true,
+                'the leased base must reproduce symlink publication at the artifact receipt path'
+              );
+            } finally {
+              fs.rmSync(rootDir, { recursive: true, force: true });
+              fs.rmSync(externalRoot, { recursive: true, force: true });
+            }
+          }
+
+          reproduceIndexRedirect();
+          reproduceArtifactRedirect();
+          console.log('leased-base predictable receipt-temp redirection reproduced');
+          NODE
+
+          python - <<'PY'
+          from pathlib import Path
+
+          library = Path('tools/lib/industrial-exhaust-artifacts.mjs')
+          text = library.read_text()
+
+          import_old = """  sha256,
+          stableJson,
+          writeJson
+          } from './industrial-exhaust.mjs';
+          """
+          import_new = """  sha256,
+          stableJson
+          } from './industrial-exhaust.mjs';
+          """
+          if text.count(import_old) != 1:
+              raise SystemExit(f'unexpected writeJson import count: {text.count(import_old)}')
+          text = text.replace(import_old, import_new)
+
+          helper_anchor = "export function indexReceiptPath(rootDir, sourceId, hash) {\n"
+          helper = r"""function publishReceiptJson({ rootDir, relativePath, receipt, label }) {
+            const root = resolveReceiptRoot(rootDir);
+            const inspected = inspectReceiptPath(root, relativePath, { label, leafType: 'file' });
+            if (inspected.exists) return inspected.absolutePath;
+
+            const parentRelativePath = path.posix.dirname(relativePath);
+            const parentBefore = inspectReceiptPath(root, parentRelativePath, {
+              label: `${label} parent directory`,
+              leafType: 'directory'
+            });
+            if (!parentBefore.exists) {
+              fs.mkdirSync(path.dirname(inspected.absolutePath), { recursive: true });
+            }
+            const parentAfter = inspectReceiptPath(root, parentRelativePath, {
+              label: `${label} parent directory`,
+              leafType: 'directory'
+            });
+            if (!parentAfter.exists) {
+              throw new Error(`${label} parent directory was not created`);
+            }
+
+            const serialized = `${JSON.stringify(receipt, null, 2)}\n`;
+            let tempPath = null;
+            let tempIdentity = null;
+            let published = false;
+            try {
+              for (let attempt = 0; attempt < 8; attempt += 1) {
+                const candidate = `${inspected.absolutePath}.${process.pid}.${crypto.randomBytes(16).toString('hex')}.tmp`;
+                let descriptor;
+                try {
+                  descriptor = fs.openSync(
+                    candidate,
+                    fs.constants.O_WRONLY
+                      | fs.constants.O_CREAT
+                      | fs.constants.O_EXCL
+                      | (fs.constants.O_NOFOLLOW ?? 0),
+                    0o600
+                  );
+                } catch (error) {
+                  if (error?.code === 'EEXIST') continue;
+                  throw new Error(`${label} temporary publication failed: ${error.message}`);
+                }
+                tempPath = candidate;
+                try {
+                  fs.writeFileSync(descriptor, serialized, 'utf8');
+                  fs.fsyncSync(descriptor);
+                  const stats = fs.fstatSync(descriptor);
+                  if (!stats.isFile() || stats.nlink !== 1) {
+                    throw new Error(`${label} temporary publication is not an exclusive regular file`);
+                  }
+                  tempIdentity = { device: stats.dev, inode: stats.ino };
+                } finally {
+                  fs.closeSync(descriptor);
+                }
+                break;
+              }
+              if (!tempPath || !tempIdentity) {
+                throw new Error(`${label} could not allocate an exclusive temporary publication`);
+              }
+
+              try {
+                fs.linkSync(tempPath, inspected.absolutePath);
+                published = true;
+              } catch (error) {
+                if (error?.code !== 'EEXIST') {
+                  throw new Error(`${label} no-overwrite publication failed: ${error.message}`);
+                }
+              }
+            } finally {
+              if (tempPath) {
+                try {
+                  fs.unlinkSync(tempPath);
+                } catch (error) {
+                  if (error?.code !== 'ENOENT') throw error;
+                }
+              }
+            }
+
+            if (published) {
+              const stats = fs.lstatSync(inspected.absolutePath);
+              if (!stats.isFile()
+                || stats.nlink !== 1
+                || stats.dev !== tempIdentity.device
+                || stats.ino !== tempIdentity.inode) {
+                throw new Error(`${label} publication identity changed before validation`);
+              }
+            }
+            return inspected.absolutePath;
+          }
+
+          """
+          if text.count(helper_anchor) != 1:
+              raise SystemExit('receipt publication helper anchor is not unique')
+          text = text.replace(helper_anchor, helper + helper_anchor)
+
+          index_start = text.index('export function writeIndexReceipt({')
+          index_end = text.index('\n\nexport function artifactReceiptPath(', index_start)
+          index_function = r"""export function writeIndexReceipt({ rootDir, source, parsedIndex, html, capturedAt, responseHeaders = {} }) {
+            const computedBodySha256 = sha256(html);
+            if (parsedIndex.index_sha256 !== computedBodySha256) {
+              throw new Error('index body hash does not match parsed index digest');
+            }
+            const receiptPath = indexReceiptPath(rootDir, source.id, parsedIndex.index_sha256);
+            const relativePath = portableReceiptPath(rootDir, receiptPath);
+            const receipt = {
+              schema_version: ARTIFACT_SCHEMA_VERSION,
+              receipt_type: 'first_party_publication_index_snapshot',
+              source_id: source.id,
+              source_class: SOURCE_CLASS,
+              publisher: source.publisher,
+              publisher_resolution: source.publisher_resolution ?? null,
+              index_url: source.index_url,
+              captured_at: capturedAt,
+              index_sha256: parsedIndex.index_sha256,
+              body_sha256: computedBodySha256,
+              index_title: parsedIndex.index_title,
+              item_count: parsedIndex.item_count,
+              response_headers: {
+                content_type: responseHeaders.content_type ?? null,
+                etag: responseHeaders.etag ?? null,
+                last_modified: responseHeaders.last_modified ?? null
+              },
+              body_encoding: 'utf-8',
+              body: html,
+              graph_effect: GRAPH_EFFECT,
+              promotion_authority: false,
+              canonical_mutation_authorized: false
+            };
+            publishReceiptJson({
+              rootDir,
+              relativePath,
+              receipt,
+              label: `index receipt ${relativePath}`
+            });
+            validateIndexReceiptAtPath({
+              rootDir,
+              relativePath,
+              expectedSourceId: source.id,
+              expectedIndexUrl: source.index_url,
+              expectedIndexSha256: parsedIndex.index_sha256,
+              expectedBody: html
+            });
+            return relativePath;
+          }"""
+          text = text[:index_start] + index_function + text[index_end:]
+
+          artifact_start = text.index('export function writeArtifactReceipt({')
+          artifact_end = text.index('\n\nexport function artifactStateTemplate()', artifact_start)
+          artifact_function = r"""export function writeArtifactReceipt({ rootDir, canonicalUrl, body, bodySha256, capturedAt, responseHeaders = {} }) {
+            const computedBodySha256 = crypto.createHash('sha256').update(body).digest('hex');
+            if (computedBodySha256 !== bodySha256) throw new Error('artifact body hash does not match supplied digest');
+            const receiptPath = artifactReceiptPath(rootDir, canonicalUrl, bodySha256);
+            const relativePath = portableReceiptPath(rootDir, receiptPath);
+            const contentType = String(responseHeaders.content_type ?? '');
+            const isText = contentType.startsWith('text/')
+              || /(?:json|xml|html|javascript)/iu.test(contentType)
+              || contentType === '';
+            const receipt = {
+              schema_version: ARTIFACT_SCHEMA_VERSION,
+              receipt_type: 'first_party_publication_artifact_snapshot',
+              source_class: SOURCE_CLASS,
+              canonical_url: canonicalUrl,
+              resolved_url: responseHeaders.final_url ?? canonicalUrl,
+              redirect_chain: structuredClone(responseHeaders.redirect_chain ?? []),
+              captured_at: capturedAt,
+              body_sha256: bodySha256,
+              response_headers: {
+                content_type: responseHeaders.content_type ?? null,
+                etag: responseHeaders.etag ?? null,
+                last_modified: responseHeaders.last_modified ?? null
+              },
+              body_encoding: isText ? 'utf-8' : 'base64',
+              body: isText ? body.toString('utf8') : body.toString('base64'),
+              graph_effect: GRAPH_EFFECT,
+              promotion_authority: false,
+              canonical_mutation_authorized: false
+            };
+            publishReceiptJson({
+              rootDir,
+              relativePath,
+              receipt,
+              label: `artifact receipt ${relativePath}`
+            });
+            validateArtifactReceiptAtPath({
+              rootDir,
+              relativePath,
+              expectedCanonicalUrl: canonicalUrl,
+              expectedBodySha256: bodySha256,
+              expectedBody: body
+            });
+            return relativePath;
+          }"""
+          text = text[:artifact_start] + artifact_function + text[artifact_end:]
+          library.write_text(text)
+
+          test_file = Path('test/industrial-exhaust-retained-store-custody.test.js')
+          test_text = test_file.read_text()
+          test_import_old = """import {
+          extractHtmlArtifact,
+          mergeArtifactProjection,
+          mergeDiscoveryRecords,
+          parseHtmlLinkIndex,
+          """
+          test_import_new = """import {
+          artifactReceiptPath as artifactReceiptFilePath,
+          extractHtmlArtifact,
+          indexReceiptPath as indexReceiptFilePath,
+          mergeArtifactProjection,
+          mergeDiscoveryRecords,
+          parseHtmlLinkIndex,
+          """
+          if test_text.count(test_import_old) != 1:
+              raise SystemExit('retained-store import anchor is not unique')
+          test_text = test_text.replace(test_import_old, test_import_new)
+
+          test_anchor = "  const indexAbsolutePath = path.join(rootDir, indexReceiptPath);\n"
+          test_addition = r"""
+            const assertPredictableTempAliasIgnored = ({
+              receiptType,
+              absoluteReceiptPath,
+              writeReceipt,
+              cleanupParent = false
+            }) => {
+              const externalRoot = fs.mkdtempSync(
+                path.join(os.tmpdir(), `industrial-exhaust-${receiptType}-publication-external-`)
+              );
+              const externalPath = path.join(externalRoot, 'external.txt');
+              const predictableTempPath = `${absoluteReceiptPath}.${process.pid}.tmp`;
+              const sentinel = `external ${receiptType} sentinel\n`;
+              fs.mkdirSync(path.dirname(absoluteReceiptPath), { recursive: true });
+              fs.writeFileSync(externalPath, sentinel);
+              fs.symlinkSync(externalPath, predictableTempPath, 'file');
+              try {
+                const expectedRelativePath = path.relative(rootDir, absoluteReceiptPath)
+                  .split(path.sep)
+                  .join('/');
+                assert.equal(
+                  writeReceipt(),
+                  expectedRelativePath,
+                  `${receiptType} publication must ignore the predictable legacy temporary pathname`
+                );
+                assert.equal(
+                  fs.readFileSync(externalPath, 'utf8'),
+                  sentinel,
+                  `${receiptType} publication must not mutate bytes through the predictable temporary alias`
+                );
+                assert.equal(
+                  fs.lstatSync(predictableTempPath).isSymbolicLink(),
+                  true,
+                  `${receiptType} publication must not consume the attacker-controlled temporary alias`
+                );
+                const receiptStats = fs.lstatSync(absoluteReceiptPath);
+                assert.equal(
+                  receiptStats.isFile(),
+                  true,
+                  `${receiptType} publication must create a regular receipt file`
+                );
+                assert.equal(
+                  receiptStats.nlink,
+                  1,
+                  `${receiptType} publication must leave the receipt under exclusive inode custody`
+                );
+              } finally {
+                try {
+                  fs.unlinkSync(predictableTempPath);
+                } catch (error) {
+                  if (error?.code !== 'ENOENT') throw error;
+                }
+                fs.rmSync(absoluteReceiptPath, { force: true });
+                if (cleanupParent) fs.rmdirSync(path.dirname(absoluteReceiptPath));
+                fs.rmSync(externalRoot, { recursive: true, force: true });
+              }
+            };
+
+            const publicationIndexHtml = '<!doctype html><html><body><a href="/news-releases/publication-custody-index">Publication custody index</a></body></html>';
+            const publicationParsedIndex = parseHtmlLinkIndex(publicationIndexHtml, source);
+            const publicationIndexReceiptPath = indexReceiptFilePath(
+              rootDir,
+              source.id,
+              publicationParsedIndex.index_sha256
+            );
+            assertPredictableTempAliasIgnored({
+              receiptType: 'index',
+              absoluteReceiptPath: publicationIndexReceiptPath,
+              writeReceipt: () => writeIndexReceipt({
+                rootDir,
+                source,
+                parsedIndex: publicationParsedIndex,
+                html: publicationIndexHtml,
+                capturedAt: '2026-08-22T10:06:00.000Z'
+              })
+            });
+
+            const publicationCanonicalUrl = 'https://www.dentsu.com/news-releases/publication-custody-artifact';
+            const publicationArtifactBody = Buffer.from(
+              '<!doctype html><html><body><main>Publication custody artifact body.</main></body></html>'
+            );
+            const publicationArtifactBodySha256 = crypto
+              .createHash('sha256')
+              .update(publicationArtifactBody)
+              .digest('hex');
+            const publicationArtifactReceiptPath = artifactReceiptFilePath(
+              rootDir,
+              publicationCanonicalUrl,
+              publicationArtifactBodySha256
+            );
+            assertPredictableTempAliasIgnored({
+              receiptType: 'artifact',
+              absoluteReceiptPath: publicationArtifactReceiptPath,
+              cleanupParent: true,
+              writeReceipt: () => writeArtifactReceipt({
+                rootDir,
+                canonicalUrl: publicationCanonicalUrl,
+                body: publicationArtifactBody,
+                bodySha256: publicationArtifactBodySha256,
+                capturedAt: '2026-08-22T10:06:00.000Z',
+                responseHeaders: {
+                  content_type: 'text/html',
+                  final_url: publicationCanonicalUrl,
+                  redirect_chain: []
+                }
+              })
+            });
+
+          """
+          if test_text.count(test_anchor) != 1:
+              raise SystemExit('receipt publication regression anchor is not unique')
+          test_text = test_text.replace(test_anchor, test_addition.lstrip('\n') + test_anchor)
+          test_file.write_text(test_text)
+          PY
+
+          expected_paths=$'test/industrial-exhaust-retained-store-custody.test.js\ntools/lib/industrial-exhaust-artifacts.mjs'
+          test "$(git diff --name-only | sort)" = "$expected_paths"
+          git diff --check
+
+          node --check tools/lib/industrial-exhaust-artifacts.mjs
+          node --check test/industrial-exhaust-retained-store-custody.test.js
+          node test/industrial-exhaust-retained-store-custody.test.js
+          node test/industrial-exhaust-artifacts.test.js
+          node test/industrial-exhaust.test.js
+          node tools/hydrate-industrial-exhaust.mjs --audit
+
+          test "$(git diff --name-only | sort)" = "$expected_paths"
+          test -z "$(git status --porcelain --untracked-files=all | grep -v -E '^( M|M |A |\?\?) (test/industrial-exhaust-retained-store-custody.test.js|tools/lib/industrial-exhaust-artifacts.mjs)$' || true)"
+
+          git fetch origin main "$product_branch"
+          test "$(git rev-parse origin/main)" = "$leased_base"
+          test "$(git rev-parse "origin/$product_branch")" = "$product_lease"
+
+          git config user.name 'clifford-exhaust-bot'
+          git config user.email 'clifford-exhaust-bot@users.noreply.github.com'
+          git switch -c "$product_branch"
+          git add tools/lib/industrial-exhaust-artifacts.mjs test/industrial-exhaust-retained-store-custody.test.js
+          git commit -m 'fix(industrial-exhaust): publish receipts without temp-path overwrite'
+          test "$(git rev-parse HEAD^)" = "$leased_base"
+          test "$(git diff-tree --no-commit-id --name-only -r HEAD | sort)" = "$expected_paths"
+          git push --force-with-lease="refs/heads/$product_branch:$product_lease" origin "HEAD:refs/heads/$product_branch"
+          echo "PRODUCT_HEAD=$(git rev-parse HEAD)"
