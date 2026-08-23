@@ -49,9 +49,6 @@ new = """  const maxDirectoryDepth = relativeDir === 'receipts/exhaust/indexes'
         }
         fileCount += nestedFileCount;
       } else if (entry.isFile()) {
-        if (depth !== maxDirectoryDepth) {
-          throw new Error(`receipt store contains a misplaced file: ${relativePath}`);
-        }
         if (!entry.name.endsWith('.json')) {
           throw new Error(`receipt store contains an unsupported file: ${relativePath}`);
         }
