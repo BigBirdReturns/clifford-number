@@ -295,6 +295,11 @@ function inspectReceiptPath(rootDir, relativePath, { label, leafType }) {
         `${label} contains an unsupported path entry: ${portableReceiptPath(root, current)}`
       );
     }
+    if (!expectsDirectory && stats.nlink !== 1) {
+      throw new Error(
+        `${label} contains a multiply linked receipt file: ${portableReceiptPath(root, current)}`
+      );
+    }
   }
   return { absolutePath, exists: true };
 }

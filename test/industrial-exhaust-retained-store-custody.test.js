@@ -378,6 +378,67 @@ try {
       capturedAt
     })
   });
+
+  const assertHardLinkedReceiptRejected = ({ receiptPath, writeReceipt, receiptType }) => {
+    const absoluteReceiptPath = path.join(rootDir, receiptPath);
+    const externalRoot = fs.mkdtempSync(
+      path.join(path.dirname(rootDir), `industrial-exhaust-hardlink-${receiptType}-`)
+    );
+    const externalReceiptPath = path.join(externalRoot, 'receipt.json');
+    fs.linkSync(absoluteReceiptPath, externalReceiptPath);
+    try {
+      assert.equal(
+        fs.lstatSync(absoluteReceiptPath).nlink,
+        2,
+        'the adversarial fixture must create a second pathname for the same inode'
+      );
+      assert.throws(
+        () => validateIndustrialExhaustReceiptStore({ rootDir }),
+        /multiply linked receipt file/u,
+        `store validation must reject a hard-linked ${receiptType} receipt`
+      );
+      assert.throws(
+        () => validateIndustrialExhaustReceiptCustody({ rootDir, discoveryRecords, artifacts }),
+        /multiply linked receipt file/u,
+        `runtime custody must reject a hard-linked ${receiptType} receipt`
+      );
+      assert.throws(
+        writeReceipt,
+        /multiply linked receipt file/u,
+        `receipt writers must reject a hard-linked ${receiptType} receipt`
+      );
+    } finally {
+      fs.rmSync(externalRoot, { recursive: true, force: true });
+    }
+  };
+
+  assertHardLinkedReceiptRejected({
+    receiptPath: artifactReceiptPath,
+    receiptType: 'artifact',
+    writeReceipt: () => writeArtifactReceipt({
+      rootDir,
+      canonicalUrl,
+      body,
+      bodySha256,
+      capturedAt,
+      responseHeaders: {
+        content_type: 'text/html',
+        final_url: canonicalUrl,
+        redirect_chain: []
+      }
+    })
+  });
+  assertHardLinkedReceiptRejected({
+    receiptPath: indexReceiptPath,
+    receiptType: 'index',
+    writeReceipt: () => writeIndexReceipt({
+      rootDir,
+      source,
+      parsedIndex,
+      html: indexHtml,
+      capturedAt
+    })
+  });
 } finally {
   fs.rmSync(rootDir, { recursive: true, force: true });
 }
