@@ -1,0 +1,99 @@
+name: Industrial exhaust receipt-store directory denominator controller
+
+on:
+  push:
+    branches:
+      - agent/industrial-exhaust-receipt-store-directory-denominator-controller-v1
+    paths-ignore:
+      - '.controller-diagnostics/**'
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Materialize, qualify, and publish the clean product
+        id: materialize
+        shell: bash
+        run: |
+          exec > >(tee /tmp/industrial-exhaust-directory-denominator.log) 2>&1
+          set -euo pipefail
+          product_branch='agent/industrial-exhaust-receipt-store-directory-denominator-v1'
+          expected_library_blob='6ac0423c7ab6b29c4ae279754b831c9090467610'
+          expected_test_blob='27758a842c77f93eddcd30987adb654018655797'
+          git fetch origin main
+          leased_base="$(git rev-parse origin/main)"
+          test "$(git rev-parse "$leased_base:tools/lib/industrial-exhaust-artifacts.mjs")" = "$expected_library_blob"
+          test "$(git rev-parse "$leased_base:test/industrial-exhaust-retained-store-custody.test.js")" = "$expected_test_blob"
+          printf '%s\n' "$leased_base" > /tmp/industrial-exhaust-directory-leased-base
+          product_lease=''
+          if git ls-remote --exit-code --heads origin "$product_branch" >/dev/null 2>&1; then
+            git fetch origin "$product_branch"
+            product_lease="$(git rev-parse "origin/$product_branch")"
+          fi
+          workdir="$(mktemp -d)"
+          git worktree add --detach "$workdir" "$leased_base"
+          python "$GITHUB_WORKSPACE/.controller/materialize-industrial-exhaust-receipt-store-directory-denominator.py" "$workdir"
+          cd "$workdir"
+          expected_paths=$'test/industrial-exhaust-retained-store-custody.test.js\ntools/lib/industrial-exhaust-artifacts.mjs'
+          test "$(git diff --name-only | sort)" = "$expected_paths"
+          git diff --check
+          node --check tools/lib/industrial-exhaust-artifacts.mjs
+          node --check test/industrial-exhaust-retained-store-custody.test.js
+          node test/industrial-exhaust-retained-store-custody.test.js
+          node test/industrial-exhaust-artifacts.test.js
+          node test/industrial-exhaust.test.js
+          node tools/hydrate-industrial-exhaust.mjs --audit
+          test -z "$(find receipts/exhaust/indexes receipts/exhaust/artifacts -mindepth 1 -type d -empty -print -quit)"
+          test "$(git diff --name-only | sort)" = "$expected_paths"
+          test -z "$(git status --porcelain --untracked-files=all | grep -v -E '^( M|M |A |\?\?) (test/industrial-exhaust-retained-store-custody.test.js|tools/lib/industrial-exhaust-artifacts.mjs)$' || true)"
+          git config user.name 'clifford-exhaust-bot'
+          git config user.email 'clifford-exhaust-bot@users.noreply.github.com'
+          git switch -c "$product_branch"
+          git add tools/lib/industrial-exhaust-artifacts.mjs test/industrial-exhaust-retained-store-custody.test.js
+          git commit -m 'fix(industrial-exhaust): close receipt directory denominator'
+          test "$(git rev-parse HEAD^)" = "$leased_base"
+          test "$(git diff-tree --no-commit-id --name-only -r HEAD | sort)" = "$expected_paths"
+          git fetch origin main
+          test "$(git rev-parse origin/main)" = "$leased_base"
+          if [ -n "$product_lease" ]; then
+            git push --force-with-lease="refs/heads/$product_branch:$product_lease" origin "HEAD:refs/heads/$product_branch"
+          else
+            git push --force-with-lease="refs/heads/$product_branch:" origin "HEAD:refs/heads/$product_branch"
+          fi
+          echo "PRODUCT_HEAD=$(git rev-parse HEAD)"
+      - name: Publish bounded controller diagnostic
+        if: always()
+        shell: bash
+        env:
+          MATERIALIZER_OUTCOME: ${{ steps.materialize.outcome }}
+        run: |
+          set -euo pipefail
+          controller_branch='agent/industrial-exhaust-receipt-store-directory-denominator-controller-v1'
+          git fetch origin "$controller_branch"
+          git checkout -B "$controller_branch" "origin/$controller_branch"
+          mkdir -p .controller-diagnostics
+          {
+            echo "run_id=${GITHUB_RUN_ID}"
+            echo "run_attempt=${GITHUB_RUN_ATTEMPT}"
+            echo "head_sha=${GITHUB_SHA}"
+            echo "leased_base=$(cat /tmp/industrial-exhaust-directory-leased-base 2>/dev/null || true)"
+            echo "materializer_outcome=${MATERIALIZER_OUTCOME}"
+            echo "--- log tail ---"
+            tail -n 500 /tmp/industrial-exhaust-directory-denominator.log 2>/dev/null || true
+          } > .controller-diagnostics/industrial-exhaust-receipt-store-directory-denominator.log
+          git config user.name 'clifford-exhaust-bot'
+          git config user.email 'clifford-exhaust-bot@users.noreply.github.com'
+          git add .controller-diagnostics/industrial-exhaust-receipt-store-directory-denominator.log
+          if ! git diff --cached --quiet; then
+            git commit -m 'chore(controller): record directory materializer outcome'
+            git push origin "HEAD:refs/heads/$controller_branch"
+          fi
