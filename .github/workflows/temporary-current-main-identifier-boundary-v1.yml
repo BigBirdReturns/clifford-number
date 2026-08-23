@@ -1,4 +1,4 @@
-name: Temporary current-main identifier-boundary P1 repair v13
+name: Temporary current-main identifier-boundary P1 repair v14
 
 on:
   pull_request:
@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: current-main-identifier-boundary-repair-v13
+  group: current-main-identifier-boundary-repair-v14
   cancel-in-progress: false
 
 jobs:
@@ -18,20 +18,20 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      SOURCE_BASE: b97a0d04f309269441a1e52195d7acc98dcd299d
-      PRODUCT_HEAD: 5b8c5153645778b547d39fd13b9a9bd1a9f10158
-      CARRIER_PARENT: 61df9ad4e47ddb38cc23005e93b2cb9d2db1c72c
+      SOURCE_BASE: 645b6e979d31679835329cd0694fedd6e0955a59
+      PRODUCT_HEAD: 1b1ad30dbf44eb145b74de09252760aa8115dfb5
+      CARRIER_PARENT: a7431b554aeda1d4e7470a00b117e145d3b5a8ad
       PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
       CARRIER_BRANCH: agent/current-main-identifier-context-v1
       BASE_LIBRARY: 5f68254d3e44de693e83503aed879160f9b7b997
       BASE_TEST: 1659a7cc54666a2ac5a1d6b88eb8c6591d98008e
-      SOURCE_LIBRARY: 44cc935fe9ba1b1b4485fbf0676733664b58c8ef
-      SOURCE_TEST: ebcf778044a086ad76eaebd5bae1981a0e06cf9c
-      PATCH_WORK: /tmp/identifier-boundary-patch-v13
-      QUALIFICATION_WORK: /tmp/identifier-boundary-qualification-v13
-      EXPECTED_PATHS_FILE: /tmp/identifier-boundary-paths-v13.txt
-      EXPECTED_NUMSTAT_FILE: /tmp/identifier-boundary-numstat-v13.txt
-      RECEIPT_FILE: /tmp/identifier-boundary-receipt-v13.txt
+      SOURCE_LIBRARY: 5434f1cd0403e3a82febfc3684f8333b43f6f0d0
+      SOURCE_TEST: 48f89f0a058a0d0395cb45cf16c088c9a3812b9c
+      PATCH_WORK: /tmp/identifier-boundary-patch-v14
+      QUALIFICATION_WORK: /tmp/identifier-boundary-qualification-v14
+      EXPECTED_PATHS_FILE: /tmp/identifier-boundary-paths-v14.txt
+      EXPECTED_NUMSTAT_FILE: /tmp/identifier-boundary-numstat-v14.txt
+      RECEIPT_FILE: /tmp/identifier-boundary-receipt-v14.txt
     steps:
       - uses: actions/checkout@v4
         with:
@@ -83,7 +83,7 @@ jobs:
           test "$(git diff --name-only "$SOURCE_BASE..$PRODUCT_HEAD" | LC_ALL=C sort)" = \
             "$(cat "$EXPECTED_PATHS_FILE")"
 
-      - name: Materialize the exact residual repair
+      - name: Materialize scored-prefix and whitespace-boundary repairs
         shell: bash
         run: |
           set -euo pipefail
@@ -97,55 +97,103 @@ jobs:
 
           path = Path(sys.argv[1])
           text = path.read_text(encoding='utf-8')
-
-          old_prefix = r"""function redactionPrefixContext(input, offset) {
-            const preceding = input.slice(0, offset);
-            const boundedStart = Math.max(0, preceding.length - 64);
-            const currentTokenWithTrailingSpace = preceding.match(/\S+\s*$/u)?.[0] ?? '';
-            const tokenStart = currentTokenWithTrailingSpace
-              ? preceding.length - currentTokenWithTrailingSpace.length
-              : preceding.length;
-            return preceding.slice(Math.min(boundedStart, tokenStart));
-          }
-          """
-          new_prefix = r"""function redactionPrefixContext(input, offset) {
-            const preceding = input.slice(0, offset);
-            const boundedStart = Math.max(0, preceding.length - 64);
-            const currentTokenWithTrailingSpace = preceding.match(/\S+\s*$/u)?.[0] ?? '';
-            const tokenStart = currentTokenWithTrailingSpace
-              ? preceding.length - currentTokenWithTrailingSpace.length
-              : preceding.length;
-            let contextStart = Math.min(boundedStart, tokenStart);
-            let scanEnd = tokenStart;
-            let normalizedToken = currentTokenWithTrailingSpace
-              .normalize('NFKC')
-              .trim();
-            while (/^(?:\(|\[|\{|（|［|【)+$/u.test(normalizedToken) && scanEnd > 0) {
-              const priorTokenWithTrailingSpace = preceding
-                .slice(0, scanEnd)
-                .match(/\S+\s*$/u)?.[0] ?? '';
-              if (!priorTokenWithTrailingSpace) break;
-              scanEnd -= priorTokenWithTrailingSpace.length;
-              contextStart = Math.min(contextStart, scanEnd);
-              normalizedToken = priorTokenWithTrailingSpace
-                .normalize('NFKC')
-                .trim();
+          old = r"""function identifierProtectedPrefixEnd(candidate, groups, externalSuffix) {
+            const observationGroup = trailingObservationGroup(candidate, groups, '', externalSuffix);
+            let protectedEnd = candidate.length;
+            let protectedScore = null;
+            for (let last = 0;
+              last < groups.length
+                && last < MAX_PHONE_DIGIT_GROUPS
+                && last < observationGroup;
+              last += 1) {
+              const { start, end } = phoneWindowBounds(candidate, groups, 0, last);
+              const slice = candidate.slice(start, end);
+              let score = phoneCandidateScore(slice, '');
+              if (!score) continue;
+              if (last === observationGroup - 1) score += 32;
+              else if (last === groups.length - 1) score += 24;
+              else score -= 24;
+              if (protectedScore == null
+                  || score > protectedScore
+                  || (score === protectedScore && end > protectedEnd)) {
+                protectedScore = score;
+                protectedEnd = end;
+              }
             }
-            return preceding.slice(contextStart);
+            if (protectedScore != null) return protectedEnd;
+
+            for (let first = 1; first < groups.length; first += 1) {
+              const previousEnd = groups[first - 1].index + groups[first - 1][0].length;
+              const groupStart = groups[first].index;
+              const separator = candidate.slice(previousEnd, groupStart).normalize('NFKC');
+              const hardBoundary = /[\/／]/u.test(separator)
+                || /[.．]\s+/u.test(separator);
+              if (!hardBoundary) continue;
+              if (!canStartIndependentPhone(candidate, groups, first, '')) continue;
+              return phoneWindowBounds(candidate, groups, first, first).start;
+            }
+            return candidate.length;
           }
           """
-          if text.count(old_prefix) != 1:
-              raise RuntimeError(f'detached-wrapper anchor count: {text.count(old_prefix)}')
-          text = text.replace(old_prefix, new_prefix, 1)
+          new = r"""function identifierProtectedPrefixEnd(candidate, groups, externalSuffix) {
+            const observationGroup = trailingObservationGroup(candidate, groups, '', externalSuffix);
+            if (observationGroup <= 0) return candidate.length;
 
-          old_boundary = r"""    const hardBoundary = /(?:\s[\/]|[\/]\s|[.．]\s+)/u.test(separator);
-          """
-          new_boundary = r"""    const hardBoundary = /[\/／]/u.test(separator)
+            const completeBounds = phoneWindowBounds(
+              candidate,
+              groups,
+              0,
+              observationGroup - 1
+            );
+            const completeCandidate = candidate.slice(
+              completeBounds.start,
+              completeBounds.end
+            );
+            if (phoneCandidateScore(completeCandidate, '')) return completeBounds.end;
+
+            const scoredBoundaries = [];
+            const unscoredBoundaries = [];
+            for (let first = 1; first < observationGroup; first += 1) {
+              const previousEnd = groups[first - 1].index + groups[first - 1][0].length;
+              const groupStart = groups[first].index;
+              const separator = candidate.slice(previousEnd, groupStart).normalize('NFKC');
+              const hardBoundary = /[\/／]/u.test(separator)
                 || /[.．]\s+/u.test(separator);
+              const whitespaceBoundary = /\s/u.test(separator);
+              if (!hardBoundary && !whitespaceBoundary) continue;
+              if (!canStartIndependentPhone(candidate, groups, first, '')) continue;
+
+              const { start } = phoneWindowBounds(candidate, groups, first, first);
+              const protectedPrefix = candidate.slice(0, start).trimEnd();
+              const prefixScore = phoneCandidateScore(protectedPrefix, '');
+              const protectedDigits = protectedPrefix
+                .normalize('NFKC')
+                .replace(/\D/gu, '')
+                .length;
+              const proposal = { start, prefixScore, protectedDigits };
+              if (prefixScore) scoredBoundaries.push(proposal);
+              else if (hardBoundary || (first === 1 && protectedDigits >= 7)) {
+                unscoredBoundaries.push(proposal);
+              }
+            }
+
+            if (scoredBoundaries.length) {
+              scoredBoundaries.sort((left, right) =>
+                right.start - left.start
+                  || right.prefixScore - left.prefixScore
+                  || right.protectedDigits - left.protectedDigits);
+              return scoredBoundaries[0].start;
+            }
+            if (unscoredBoundaries.length) {
+              unscoredBoundaries.sort((left, right) => left.start - right.start);
+              return unscoredBoundaries[0].start;
+            }
+            return candidate.length;
+          }
           """
-          if text.count(old_boundary) != 1:
-              raise RuntimeError(f'unspaced-slash anchor count: {text.count(old_boundary)}')
-          path.write_text(text.replace(old_boundary, new_boundary, 1), encoding='utf-8')
+          if text.count(old) != 1:
+              raise RuntimeError(f'identifier boundary anchor count: {text.count(old)}')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
           PY
 
           python - "$PATCH_WORK/test/industrial-exhaust.test.js" <<'PY'
@@ -154,31 +202,54 @@ jobs:
 
           path = Path(sys.argv[1])
           text = path.read_text(encoding='utf-8')
-          marker = "for (const wrappedIdentifier of [\n"
-          insert = r"""const finalBoundaryLongUrlSegment = 'a'.repeat(140);
-          for (const [finalBoundaryInput, expected] of [
-            ['ID: 12345678/03-6216-8041', 'ID: 12345678/[contact omitted]'],
-            ['ＩＤ：１２３４５６７８／０３－６２１６－８０４１', 'ＩＤ：１２３４５６７８／[contact omitted]'],
-            ['ID: 12345678/87654321', 'ID: 12345678/87654321'],
+          marker = "for (const completeGroupedIdentifier of [\n"
+          insert = r"""for (const [reviewBoundaryInput, expected] of [
             [
-              `https://example.test/${finalBoundaryLongUrlSegment}/reference: (+81 3 6216 5111)`,
-              `https://example.test/${finalBoundaryLongUrlSegment}/reference: ([contact omitted])`
+              'ID: 09012345678 / (03) 6216 8041',
+              'ID: 09012345678 / [contact omitted]'
             ],
             [
-              `//example.test/${finalBoundaryLongUrlSegment}/id: （＋８１ ３ ６２１６ ５１１１）`,
-              `//example.test/${finalBoundaryLongUrlSegment}/id: （[contact omitted]）`
+              'ＩＤ：０９０１２３４５６７８／（０３） ６２１６ ８０４１',
+              'ＩＤ：０９０１２３４５６７８／[contact omitted]'
+            ],
+            [
+              'ID: 01 42 68 53 00 / (03) 6216 8041',
+              'ID: 01 42 68 53 00 / [contact omitted]'
+            ],
+            [
+              'ID: 12345678 03-6216-8041',
+              'ID: 12345678 [contact omitted]'
+            ],
+            [
+              'ID: 12345678 (03) 6216 8041',
+              'ID: 12345678 [contact omitted]'
+            ],
+            [
+              'ID: 09012345678 (03) 6216 8041',
+              'ID: 09012345678 [contact omitted]'
             ]
           ]) {
             assert.equal(
-              redactContactData(finalBoundaryInput),
+              redactContactData(reviewBoundaryInput),
               expected,
-              'final identifier boundaries must preserve the identifier and redact only an independent phone'
+              'validated boundaries must be selected before a later phone group can extend identifier scope'
+            );
+          }
+          for (const unsplitWhitespaceIdentifier of [
+            'ID: 1 212 555 1234',
+            'ID: 999 212 555 1234',
+            'ID: 12345678 87654321'
+          ]) {
+            assert.equal(
+              redactContactData(unsplitWhitespaceIdentifier),
+              unsplitWhitespaceIdentifier,
+              'whitespace alone must not split a complete or insufficiently bounded numeric identifier'
             );
           }
 
           """
           if text.count(marker) != 1:
-              raise RuntimeError(f'final-regression marker count: {text.count(marker)}')
+              raise RuntimeError(f'review-regression marker count: {text.count(marker)}')
           path.write_text(text.replace(marker, f'{insert}{marker}', 1), encoding='utf-8')
           PY
 
@@ -193,7 +264,7 @@ jobs:
           printf 'NEW_LIBRARY=%s\n' "$NEW_LIBRARY" >> "$GITHUB_ENV"
           printf 'NEW_TEST=%s\n' "$NEW_TEST" >> "$GITHUB_ENV"
 
-      - name: Qualify the exact product on pinned main
+      - name: Qualify exact product on pinned main
         shell: bash
         run: |
           set -euo pipefail
@@ -234,7 +305,7 @@ jobs:
             tools/lib/industrial-exhaust.mjs test/industrial-exhaust.test.js | LC_ALL=C sort -k3)" = \
             "$(cat "$EXPECTED_NUMSTAT_FILE")"
 
-      - name: Revalidate live leases and publish the two-file product
+      - name: Revalidate live leases and publish two-file product
         id: publish
         shell: bash
         run: |
@@ -266,7 +337,7 @@ jobs:
           git diff --cached --check
           test "$(git diff --cached --name-only | LC_ALL=C sort)" = "$(cat "$EXPECTED_PATHS_FILE")"
           test "$(git diff --cached --numstat | LC_ALL=C sort -k3)" = "$(cat "$EXPECTED_NUMSTAT_FILE")"
-          git commit -m 'fix(crawler): close final identifier boundaries'
+          git commit -m 'fix(crawler): close scored and whitespace identifier boundaries'
           NEW_HEAD="$(git rev-parse HEAD)"
           NEW_TREE="$(git rev-parse HEAD^{tree})"
           test "$(git rev-parse HEAD^)" = "$RUN_MAIN"
@@ -282,7 +353,7 @@ jobs:
             origin "HEAD:refs/heads/$PRODUCT_BRANCH"
 
           {
-            printf 'receipt_version=current-main-identifier-boundary-repair@13\n'
+            printf 'receipt_version=current-main-identifier-boundary-repair@14\n'
             printf 'carrier_head=%s\n' "$HEAD_SHA"
             printf 'run_id=%s\n' '${{ github.run_id }}'
             printf 'base=%s\n' "$RUN_MAIN"
