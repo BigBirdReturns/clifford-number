@@ -1,0 +1,94 @@
+name: Industrial-exhaust receipt parent-custody materializer
+
+on:
+  push:
+    branches:
+      - agent/industrial-exhaust-receipt-parent-custody-controller-v1
+    paths:
+      - .github/workflows/industrial-exhaust-receipt-parent-custody-materializer.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: industrial-exhaust-receipt-parent-custody-materializer
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/industrial-exhaust-receipt-parent-custody-controller-v1
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Reproduce, repair, qualify, and publish the bounded product
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE_SHA='bd66952df64b7eef2e673af724e922ad3f6a719a'
+          PRODUCT_BRANCH='agent/industrial-exhaust-receipt-parent-custody-v1'
+          WORKFLOW_PATH='.github/workflows/industrial-exhaust-receipt-parent-custody-materializer.yml'
+          LIB_PATH='tools/lib/industrial-exhaust-artifacts.mjs'
+          TEST_PATH='test/industrial-exhaust-retained-store-custody.test.js'
+
+          current_sha="$(git rev-parse HEAD)"
+          test "$(git rev-parse HEAD^)" = "$BASE_SHA"
+          mapfile -t controller_diff < <(git diff --name-only "$BASE_SHA" "$current_sha")
+          test "${#controller_diff[@]}" -eq 1
+          test "${controller_diff[0]}" = "$WORKFLOW_PATH"
+          git fetch origin main --quiet
+          test "$(git rev-parse origin/main)" = "$BASE_SHA"
+
+          printf '%s' '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' | base64 -d | gzip -d > /tmp/materialize-parent-custody.py
+          test "$(sha256sum /tmp/materialize-parent-custody.py | cut -d' ' -f1)" = '117b67fb8324b904e2465d0390d73c0c1297e3e2c139daff2fda61f6b8784204'
+          python /tmp/materialize-parent-custody.py
+          rm "$WORKFLOW_PATH"
+
+          node --check "$LIB_PATH"
+          node --check "$TEST_PATH"
+          node "$TEST_PATH"
+          node test/industrial-exhaust-artifacts.test.js
+          node test/industrial-exhaust.test.js
+          node tools/hydrate-industrial-exhaust.mjs --audit
+          git diff --check
+
+          mapfile -t product_diff < <(git diff --name-only "$BASE_SHA")
+          test "${#product_diff[@]}" -eq 2
+          test "${product_diff[0]}" = "$TEST_PATH"
+          test "${product_diff[1]}" = "$LIB_PATH"
+          mapfile -t worktree_status < <(git status --porcelain)
+          test "${#worktree_status[@]}" -eq 3
+          printf '%s\n' "${worktree_status[@]}" | grep -Fxq " D $WORKFLOW_PATH"
+          printf '%s\n' "${worktree_status[@]}" | grep -Fxq " M $TEST_PATH"
+          printf '%s\n' "${worktree_status[@]}" | grep -Fxq " M $LIB_PATH"
+
+          git fetch origin main --quiet
+          test "$(git rev-parse origin/main)" = "$BASE_SHA"
+          test -z "$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH")"
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          tree_sha="$(git write-tree)"
+          product_sha="$(
+            printf '%s\n\n%s\n' \
+              'fix(industrial-exhaust): bind receipt publication to directory custody' \
+              'Anchor creation and no-overwrite publication to authenticated directory descriptors, synchronize directory entries, and reject parent replacement without external mutation.' \
+              | git commit-tree "$tree_sha" -p "$BASE_SHA"
+          )"
+          mapfile -t committed_diff < <(git diff --name-only "$BASE_SHA" "$product_sha")
+          test "${#committed_diff[@]}" -eq 2
+          test "${committed_diff[0]}" = "$TEST_PATH"
+          test "${committed_diff[1]}" = "$LIB_PATH"
+          git diff --check "$BASE_SHA" "$product_sha"
+
+          git fetch origin main --quiet
+          test "$(git rev-parse origin/main)" = "$BASE_SHA"
+          git push origin "$product_sha:refs/heads/$PRODUCT_BRANCH"
+          echo "PRODUCT_SHA=$product_sha"
