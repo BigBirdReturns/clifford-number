@@ -1,0 +1,117 @@
+name: NEVER MERGE M-05 route-watch temporal-custody materializer
+
+on:
+  push:
+    branches:
+      - 'agent/m05-s03-l7-route-watch-temporal-custody-carrier-v1'
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: m05-route-watch-temporal-custody-materializer
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      BASE_SHA: 'b4ea0a4255597a2e51f4d577c01f0720b80e5084'
+      BASE_TREE: '24d4f9ae606b09291c7411d966c88dfadd4f61dc'
+      PRODUCT_BRANCH: 'agent/m05-s03-l7-route-watch-temporal-custody-v1'
+      PRODUCT_LEASE: 'b4ea0a4255597a2e51f4d577c01f0720b80e5084'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify leases and build the clean two-path product
+        id: product
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin \
+            "refs/heads/main:refs/remotes/origin/main" \
+            "refs/heads/${PRODUCT_BRANCH}:refs/remotes/origin/${PRODUCT_BRANCH}"
+          test "$(git rev-parse origin/main)" = "$BASE_SHA"
+          test "$(git rev-parse "origin/${PRODUCT_BRANCH}")" = "$PRODUCT_LEASE"
+          test "$(git show -s --format=%T "$BASE_SHA")" = "$BASE_TREE"
+
+          product_dir="$RUNNER_TEMP/m05-route-watch-temporal-custody-product"
+          rm -rf "$product_dir"
+          git worktree add --detach "$product_dir" "$BASE_SHA"
+          node tools/tmp/materialize-m05-route-watch-temporal-custody.mjs "$product_dir" \
+            > "$RUNNER_TEMP/materialization-receipt.json"
+
+          cd "$product_dir"
+          mapfile -t changed < <(git diff --name-only | sort)
+          expected=(
+            'test/m05-answerable-power-sprint-03-leg-07-five-domain-route-watch.test.js'
+            'tools/lib/m05-answerable-power-sprint-03-leg-07-five-domain-route-watch.mjs'
+          )
+          test "${#changed[@]}" -eq "${#expected[@]}"
+          for index in "${!expected[@]}"; do
+            test "${changed[$index]}" = "${expected[$index]}"
+          done
+
+          node --check tools/lib/m05-answerable-power-sprint-03-leg-07-five-domain-route-watch.mjs
+          node --check test/m05-answerable-power-sprint-03-leg-07-five-domain-route-watch.test.js
+          node test/m05-answerable-power-sprint-03-leg-07-five-domain-route-watch.test.js
+          npm run release:check
+
+          mapfile -t after_release < <(git status --short | sed -E 's/^...//' | sort)
+          test "${#after_release[@]}" -eq "${#expected[@]}"
+          for index in "${!expected[@]}"; do
+            test "${after_release[$index]}" = "${expected[$index]}"
+          done
+
+          git config user.name 'BigBirdReturns'
+          git config user.email 'bigbirdreturns@proton.me'
+          git add -- "${expected[@]}"
+          git commit -m '[M-05 S03-L7] Bind route-watch receipts to one temporal window'
+          product_sha="$(git rev-parse HEAD)"
+          product_tree="$(git show -s --format=%T HEAD)"
+          test "$(git rev-list --count "$BASE_SHA..$product_sha")" -eq 1
+          test "$(git rev-list --count "$product_sha..$BASE_SHA")" -eq 0
+          mapfile -t committed < <(git diff --name-only "$BASE_SHA" "$product_sha" | sort)
+          test "${#committed[@]}" -eq "${#expected[@]}"
+          for index in "${!expected[@]}"; do
+            test "${committed[$index]}" = "${expected[$index]}"
+          done
+
+          git push origin \
+            "$product_sha:refs/heads/${PRODUCT_BRANCH}" \
+            --force-with-lease="refs/heads/${PRODUCT_BRANCH}:${PRODUCT_LEASE}"
+
+          echo "product_sha=$product_sha" >> "$GITHUB_OUTPUT"
+          echo "product_tree=$product_tree" >> "$GITHUB_OUTPUT"
+      - name: Record the detached publication receipt
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PRODUCT_SHA: ${{ steps.product.outputs.product_sha }}
+          PRODUCT_TREE: ${{ steps.product.outputs.product_tree }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > "$RUNNER_TEMP/m05-temporal-custody-comment.md" <<EOF
+          ## M-05 route-watch temporal-custody product published
+
+          The never-merge carrier run \`${{ github.run_id }}\` published one clean two-path product over exact base \`$BASE_SHA\`.
+
+          \`\`\`text
+          product branch:  $PRODUCT_BRANCH
+          product head:    $PRODUCT_SHA
+          product tree:    $PRODUCT_TREE
+          changed paths:   2
+          focused suite:   success
+          release:check:   success
+          \`\`\`
+
+          The repair binds each observation start to the interval beginning at the receipt observation clock, rejects starts or completions after receipt generation, and rejects a receipt whose generation precedes its observation clock. It changes no route, host, request, comparison, Intel gate, authority, answer, graph, completion, or issue-closure field. This carrier must never merge.
+          EOF
+          gh issue comment 345 --body-file "$RUNNER_TEMP/m05-temporal-custody-comment.md"
