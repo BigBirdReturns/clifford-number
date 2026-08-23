@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - agent/industrial-exhaust-receipt-root-custody-controller-v1
+  pull_request:
+    branches:
+      - main
 
 permissions:
   contents: read
@@ -69,5 +72,3 @@ jobs:
             root-custody-diagnostic.txt
           if-no-files-found: error
           retention-days: 1
-
-# This revision exists solely to schedule the diagnostic after initial workflow registration.
