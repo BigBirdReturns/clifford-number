@@ -1,0 +1,43 @@
+name: Industrial exhaust receipt publication custody PR runner
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    if: github.event.pull_request.head.ref == 'agent/industrial-exhaust-receipt-publication-custody-controller-v1'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Execute the pinned controller body
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          workflow = Path('.github/workflows/industrial-exhaust-receipt-publication-custody-controller.yml')
+          lines = workflow.read_text().splitlines()
+          marker = '        run: |'
+          if lines.count(marker) != 1:
+              raise SystemExit(f'unexpected controller run-block count: {lines.count(marker)}')
+          start = lines.index(marker) + 1
+          body = []
+          for line in lines[start:]:
+              if line and not line.startswith('          '):
+                  break
+              body.append(line[10:] if line.startswith('          ') else '')
+          Path('receipt-publication-controller-body.sh').write_text('\n'.join(body) + '\n')
+          PY
+          bash receipt-publication-controller-body.sh
