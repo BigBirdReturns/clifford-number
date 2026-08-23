@@ -373,24 +373,43 @@ function walkReceiptJson(rootDir, relativeDir) {
   });
   if (!inspected.exists) return [];
 
+  const maxDirectoryDepth = relativeDir === 'receipts/exhaust/indexes'
+    ? 1
+    : relativeDir === 'receipts/exhaust/artifacts'
+      ? 2
+      : null;
+  if (maxDirectoryDepth === null) {
+    throw new Error(`unsupported receipt store directory: ${relativeDir}`);
+  }
+
   const result = [];
-  const visit = current => {
+  const visit = (current, depth) => {
+    let fileCount = 0;
     for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
       const absolutePath = path.join(current, entry.name);
+      const relativePath = portableReceiptPath(root, absolutePath);
       if (entry.isDirectory()) {
-        visit(absolutePath);
+        if (depth >= maxDirectoryDepth) {
+          throw new Error(`receipt store contains an unsupported directory: ${relativePath}`);
+        }
+        const nestedFileCount = visit(absolutePath, depth + 1);
+        if (nestedFileCount === 0) {
+          throw new Error(`receipt store contains an empty directory: ${relativePath}`);
+        }
+        fileCount += nestedFileCount;
       } else if (entry.isFile()) {
-        const relativePath = portableReceiptPath(root, absolutePath);
         if (!entry.name.endsWith('.json')) {
           throw new Error(`receipt store contains an unsupported file: ${relativePath}`);
         }
         result.push(relativePath);
+        fileCount += 1;
       } else {
-        throw new Error(`receipt store contains an unsupported entry: ${portableReceiptPath(root, absolutePath)}`);
+        throw new Error(`receipt store contains an unsupported entry: ${relativePath}`);
       }
     }
+    return fileCount;
   };
-  visit(base);
+  visit(base, 0);
   return result.sort();
 }
 
