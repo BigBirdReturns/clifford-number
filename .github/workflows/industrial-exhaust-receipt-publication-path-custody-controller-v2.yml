@@ -34,8 +34,6 @@ jobs:
 
           TEMPLATE_COMMIT='c104db9efc177d866b8201aa9fb58b476e8263f1'
           TEMPLATE_PATH='.github/workflows/industrial-exhaust-receipt-publication-path-custody-controller.yml'
-          WORKFLOW_PATH='.github/workflows/industrial-exhaust-receipt-publication-path-custody-controller-v2.yml'
-          CONTROLLER_BRANCH='agent/industrial-exhaust-receipt-publication-path-custody-controller-v2'
 
           git fetch --no-tags origin \
             agent/industrial-exhaust-receipt-publication-path-custody-controller-v1
@@ -140,6 +138,58 @@ jobs:
               + robust_writer_replacement
               + script[replacement_end:]
           )
+
+          race_marker = 'if node "$TEST_PATH"; then\n'
+          race_patch = r'''python - <<'RACEPY'
+          from pathlib import Path
+
+          test_path = Path('test/industrial-exhaust-retained-store-custody.test.js')
+          text = test_path.read_text()
+          old = """  fs.linkSync = (sourcePath, destinationPath) => {
+            if (!raceInjected
+              && path.resolve(destinationPath) === path.resolve(absoluteReceiptPath)) {
+              fs.writeFileSync(destinationPath, competingReceipt, {
+                encoding: 'utf8',
+                flag: 'wx',
+                mode: 0o600
+              });
+              raceInjected = true;
+            }
+            return originalLinkSync(sourcePath, destinationPath);
+          };
+          """
+          new = """  fs.linkSync = (sourcePath, destinationPath) => {
+            let targetsReceipt = false;
+            try {
+              targetsReceipt = path.basename(destinationPath)
+                  === path.basename(absoluteReceiptPath)
+                && fs.realpathSync.native(path.dirname(destinationPath))
+                  === fs.realpathSync.native(path.dirname(absoluteReceiptPath));
+            } catch {}
+            if (!raceInjected && targetsReceipt) {
+              fs.writeFileSync(destinationPath, competingReceipt, {
+                encoding: 'utf8',
+                flag: 'wx',
+                mode: 0o600
+              });
+              raceInjected = true;
+            }
+            return originalLinkSync(sourcePath, destinationPath);
+          };
+          """
+          if text.count(old) != 1:
+              raise SystemExit(
+                  f'unexpected destination-race helper count: {text.count(old)}'
+              )
+          test_path.write_text(text.replace(old, new, 1))
+          RACEPY
+
+          '''
+          if script.count(race_marker) != 1:
+              raise SystemExit(
+                  f'unexpected predecessor execution marker count: {script.count(race_marker)}'
+              )
+          script = script.replace(race_marker, race_patch + race_marker, 1)
 
           Path('/tmp/controller.sh').write_text(script)
           PY
