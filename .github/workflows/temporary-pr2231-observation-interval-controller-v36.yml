@@ -1,0 +1,109 @@
+name: Temporary PR 2231 observation interval controller v36
+on:
+  push:
+    branches: [agent/pr2231-observation-interval-controller-v36]
+    paths: ['.github/workflows/temporary-pr2231-observation-interval-controller-v36.yml']
+permissions:
+  contents: write
+  issues: read
+concurrency:
+  group: pr2231-observation-interval-controller-v36
+  cancel-in-progress: false
+jobs:
+  qualify-and-publish:
+    if: github.repository == 'BigBirdReturns/clifford-number'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      CBRANCH: agent/pr2231-observation-interval-controller-v36
+      CPATH: .github/workflows/temporary-pr2231-observation-interval-controller-v36.yml
+      CPARENT: 58508a8d5ecd9c42a89b9bff0e2c8fe96c2d6952
+      PBRANCH: agent/current-main-identifier-context-product-v1
+      PHEAD: 456ee43cb8a0d3c1afeeed8b9f7342219a3fac05
+      PPARENT: 2d2c7b6cd7517ca25854e481b21774a697d0e76b
+      PLIB: dbf28c75e6681ca06915ccc2e85062f67382175f
+      PTEST: 08b3cd4014b916d1ac5845c73c59f7d55dbae7ef
+      BLIB: 5f68254d3e44de693e83503aed879160f9b7b997
+      BTEST: 1659a7cc54666a2ac5a1d6b88eb8c6591d98008e
+      COMMENT: '5400057410'
+      PHASH: 7988d991b5141ad7a7a0b79c5203be0279348f1d6d737c5656178c61ccdff2ea
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with: {ref: '${{ github.sha }}', fetch-depth: 0}
+      - uses: actions/setup-node@v4
+        with: {node-version: '20'}
+      - name: Qualify and publish
+        shell: bash
+        run: |
+          set -euo pipefail
+          H='${{ github.sha }}'; S=/tmp/p2231-source; Q=/tmp/p2231-main; R=/tmp/p2231-v36.txt
+          test "$(git rev-parse HEAD^)" = "$CPARENT"
+          test '${{ github.ref_name }}' = "$CBRANCH"
+          test "$(git diff --name-only "$CPARENT..HEAD")" = "$CPATH"
+          fetch() { git fetch --no-tags origin "+refs/heads/main:refs/remotes/origin/main" "+refs/heads/$PBRANCH:refs/remotes/origin/$PBRANCH" "+refs/heads/$CBRANCH:refs/remotes/origin/$CBRANCH"; }
+          fetch
+          test "$(git rev-parse refs/remotes/origin/$PBRANCH)" = "$PHEAD"
+          test "$(git rev-parse refs/remotes/origin/$CBRANCH)" = "$H"
+          test "$(git rev-parse "$PHEAD^")" = "$PPARENT"
+          test "$(git rev-parse "$PHEAD:tools/lib/industrial-exhaust.mjs")" = "$PLIB"
+          test "$(git rev-parse "$PHEAD:test/industrial-exhaust.test.js")" = "$PTEST"
+          MAIN="$(git rev-parse refs/remotes/origin/main)"
+          test "$(git rev-parse "$MAIN:tools/lib/industrial-exhaust.mjs")" = "$BLIB"
+          test "$(git rev-parse "$MAIN:test/industrial-exhaust.test.js")" = "$BTEST"
+
+          gh api "repos/$GITHUB_REPOSITORY/issues/comments/$COMMENT" --jq .body >/tmp/c.md
+          python3 - <<'PY'
+          import base64,gzip,hashlib,os,pathlib,re
+          b=pathlib.Path('/tmp/c.md').read_text(); c=re.findall(r'^\d+\. `([A-Za-z0-9+/=]+)`$',b,re.M)
+          assert len(c)==6, len(c)
+          z=base64.b64decode(''.join(c),validate=True); assert hashlib.sha256(z).hexdigest()==os.environ['PHASH']
+          pathlib.Path('/tmp/p.patch').write_bytes(gzip.decompress(z))
+          PY
+
+          rm -rf "$S" "$Q"; git worktree prune; git worktree add --detach "$S" "$PHEAD"
+          cd "$S"
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict'; import {redactContactData as r} from './tools/lib/industrial-exhaust.mjs';
+          assert.notEqual(r('Phone: 09012345678 2026-08-17 01 42 68 53 00'),'Phone: [contact omitted] 2026-08-17 [contact omitted]');
+          assert.notEqual(r('ID: 09012345678 2026-08-17.1 212 555 1234'),'ID: 09012345678 2026-08-17.[contact omitted]');
+          NODE
+          git config user.name BigBirdReturns; git config user.email bigbirdreturns@proton.me
+          git am /tmp/p.patch
+          test "$(git rev-parse HEAD^)" = "$PHEAD"
+          test "$(git diff --name-only "$PHEAD..HEAD"|LC_ALL=C sort)" = $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          test "$(git diff --numstat "$PHEAD..HEAD"|LC_ALL=C sort -k3)" = $'53\t0\ttest/industrial-exhaust.test.js\n70\t31\ttools/lib/industrial-exhaust.mjs'
+          SLIB="$(git rev-parse HEAD:tools/lib/industrial-exhaust.mjs)"; STEST="$(git rev-parse HEAD:test/industrial-exhaust.test.js)"
+
+          cd "$GITHUB_WORKSPACE"; git worktree add --detach "$Q" "$MAIN"
+          cp "$S/tools/lib/industrial-exhaust.mjs" "$Q/tools/lib/industrial-exhaust.mjs"
+          cp "$S/test/industrial-exhaust.test.js" "$Q/test/industrial-exhaust.test.js"
+          cd "$Q"
+          test "$(git hash-object tools/lib/industrial-exhaust.mjs)" = "$SLIB"
+          test "$(git hash-object test/industrial-exhaust.test.js)" = "$STEST"
+          test "$(git diff --name-only|LC_ALL=C sort)" = $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          git diff --check
+          node --check tools/lib/industrial-exhaust.mjs
+          node --check tools/crawl-industrial-exhaust.mjs
+          node --check test/industrial-exhaust.test.js
+          node test/industrial-exhaust.test.js
+          node test/industrial-exhaust-artifacts.test.js
+          npm run release:check
+
+          cd "$GITHUB_WORKSPACE"; fetch
+          test "$(git rev-parse refs/remotes/origin/main)" = "$MAIN"
+          test "$(git rev-parse refs/remotes/origin/$PBRANCH)" = "$PHEAD"
+          test "$(git rev-parse refs/remotes/origin/$CBRANCH)" = "$H"
+          cd "$Q"; git config user.name BigBirdReturns; git config user.email bigbirdreturns@proton.me
+          git add tools/lib/industrial-exhaust.mjs test/industrial-exhaust.test.js
+          git diff --cached --check
+          git commit -m 'fix(crawler): retain complete observation and phone intervals'
+          N="$(git rev-parse HEAD)"; T="$(git rev-parse HEAD^{tree})"
+          test "$(git rev-parse HEAD^)" = "$MAIN"
+          test "$(git rev-list --count "$MAIN..HEAD")" = 1
+          test "$(git diff --name-only "$MAIN..HEAD"|LC_ALL=C sort)" = $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          git push --force-with-lease="refs/heads/$PBRANCH:$PHEAD" origin "HEAD:refs/heads/$PBRANCH"
+          printf 'run=%s\nbase=%s\nhead=%s\ntree=%s\nlib=%s\ntest=%s\npatch=%s\n' '${{ github.run_id }}' "$MAIN" "$N" "$T" "$SLIB" "$STEST" "$PHASH" >"$R"
+          cat "$R"
+      - uses: actions/upload-artifact@v4
+        with: {name: pr2231-observation-interval-product-v36, path: /tmp/pr2231-v36.txt, if-no-files-found: error, retention-days: 90}
