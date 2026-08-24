@@ -145,20 +145,15 @@ jobs:
 
           test_path = Path('test/industrial-exhaust-retained-store-custody.test.js')
           text = test_path.read_text()
-          old = """  fs.linkSync = (sourcePath, destinationPath) => {
-            if (!raceInjected
-              && path.resolve(destinationPath) === path.resolve(absoluteReceiptPath)) {
-              fs.writeFileSync(destinationPath, competingReceipt, {
-                encoding: 'utf8',
-                flag: 'wx',
-                mode: 0o600
-              });
-              raceInjected = true;
-            }
-            return originalLinkSync(sourcePath, destinationPath);
-          };
-          """
-          new = """  fs.linkSync = (sourcePath, destinationPath) => {
+          helper_start = text.index(
+              'const assertDestinationRacePreservesWinner = ({'
+          )
+          link_start = text.index(
+              '  fs.linkSync = (sourcePath, destinationPath) => {',
+              helper_start
+          )
+          link_end = text.index('  try {\n', link_start)
+          replacement = """  fs.linkSync = (sourcePath, destinationPath) => {
             let targetsReceipt = false;
             try {
               targetsReceipt = path.basename(destinationPath)
@@ -177,11 +172,9 @@ jobs:
             return originalLinkSync(sourcePath, destinationPath);
           };
           """
-          if text.count(old) != 1:
-              raise SystemExit(
-                  f'unexpected destination-race helper count: {text.count(old)}'
-              )
-          test_path.write_text(text.replace(old, new, 1))
+          test_path.write_text(
+              text[:link_start] + replacement + text[link_end:]
+          )
           RACEPY
 
           '''
