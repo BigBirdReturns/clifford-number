@@ -1205,6 +1205,9 @@ const RECEIPT_DIRFD_CONTROL_SYMBOL = Symbol.for(
 const RECEIPT_DIRFD_HELPER_MAX_BUFFER = 64 * 1024 * 1024;
 const RECEIPT_DIRFD_HELPER_MAX_RECEIPT_BYTES = 24_000_000;
 const RECEIPT_DIRFD_INTERPRETER_MAX_BYTES = 64 * 1024 * 1024;
+const RECEIPT_DIRFD_INTERPRETER_CHILD_FD = 4;
+const RECEIPT_DIRFD_INTERPRETER_EXEC_PATH =
+  `/proc/self/fd/${RECEIPT_DIRFD_INTERPRETER_CHILD_FD}`;
 const RECEIPT_DIRFD_HELPER_SOURCE = String.raw`
 import base64
 import errno
@@ -1218,6 +1221,7 @@ import sys
 
 MAX_RECEIPT_BYTES = 24_000_000
 ROOT_FD = 3
+INTERPRETER_FD = 4
 EVENTS = []
 FAULT = None
 FAULT_USED = False
@@ -1261,12 +1265,24 @@ def confine_runtime():
     try:
         os.umask(0o077)
         os.set_inheritable(ROOT_FD, False)
+        os.set_inheritable(INTERPRETER_FD, False)
         resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
         resource.setrlimit(resource.RLIMIT_NPROC, (0, 0))
     except (AttributeError, OSError, ValueError) as error:
         fail(f"descriptor-relative receipt helper confinement failed: {error}")
     if resource.getrlimit(resource.RLIMIT_NPROC) != (0, 0):
         fail("descriptor-relative receipt helper process limit was not retained")
+    try:
+        interpreter_stats = os.fstat(INTERPRETER_FD)
+        if not stat.S_ISREG(interpreter_stats.st_mode):
+            fail("descriptor-relative receipt helper executable descriptor is not a file")
+        os.close(INTERPRETER_FD)
+    except OSError as error:
+        fail(f"descriptor-relative receipt helper executable closure failed: {error}")
+    add_event(
+        "interpreter-capability-closed",
+        **identity(interpreter_stats),
+    )
     cwd_stats = os.stat(".", follow_symlinks=False)
     cwd_mode = stat.S_IMODE(cwd_stats.st_mode)
     if (
@@ -1906,8 +1922,14 @@ function runReceiptDirfdHelper({
       path.join(os.tmpdir(), 'industrial-exhaust-receipt-helper-')
     );
     fs.chmodSync(workingDirectory, 0o700);
+    const executable = lease === null
+      ? interpreter
+      : RECEIPT_DIRFD_INTERPRETER_EXEC_PATH;
+    const stdio = lease === null
+      ? ['pipe', 'pipe', 'pipe', rootDescriptor]
+      : ['pipe', 'pipe', 'pipe', rootDescriptor, lease.descriptor];
     result = spawnSync(
-      lease?.path ?? interpreter,
+      executable,
       ['-I', '-c', RECEIPT_DIRFD_HELPER_SOURCE],
       {
         input: JSON.stringify(helperRequest),
@@ -1915,7 +1937,7 @@ function runReceiptDirfdHelper({
         maxBuffer: RECEIPT_DIRFD_HELPER_MAX_BUFFER,
         timeout: 120_000,
         cwd: workingDirectory,
-        stdio: ['pipe', 'pipe', 'pipe', rootDescriptor],
+        stdio,
         env: {
           PATH: '/usr/bin:/bin',
           LANG: 'C.UTF-8',
@@ -1972,8 +1994,18 @@ function runReceiptDirfdHelper({
         ? response.events.map(event => event?.type)
         : []
     );
+    const interpreterCloseEvents = Array.isArray(response.events)
+      ? response.events.filter(
+        event => event?.type === 'interpreter-capability-closed'
+      )
+      : [];
     if (!eventTypes.has('runtime-confined')
-      || !eventTypes.has('capability-narrowed')) {
+      || !eventTypes.has('capability-narrowed')
+      || interpreterCloseEvents.length !== 1
+      || String(interpreterCloseEvents[0]?.dev)
+        !== String(lease?.identity?.dev)
+      || String(interpreterCloseEvents[0]?.ino)
+        !== String(lease?.identity?.ino)) {
       throw new Error(
         `${label} dirfd helper omitted runtime-confinement proof`
       );
