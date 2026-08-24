@@ -423,6 +423,211 @@ assertDestinationRacePreservesWinner({
   })
 });
 
+  const assertReceiptPublicationDurability = ({
+    receiptType,
+    durabilityRoot,
+    absoluteReceiptPath,
+    writeReceipt,
+    reuseReceipt
+  }) => {
+    const expectedRelativePath = path.relative(durabilityRoot, absoluteReceiptPath)
+      .split(path.sep)
+      .join('/');
+    const directoryChain = [];
+    let current = path.dirname(absoluteReceiptPath);
+    while (current !== durabilityRoot) {
+      const relative = path.relative(durabilityRoot, current);
+      if (!relative || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
+        throw new Error(`${receiptType} durability test path escapes its root`);
+      }
+      directoryChain.unshift(current);
+      current = path.dirname(current);
+    }
+    directoryChain.unshift(durabilityRoot);
+
+    const originalFsyncSync = fs.fsyncSync;
+    const originalLinkSync = fs.linkSync;
+    const directorySyncs = new Set();
+    const events = [];
+    let failNextDirectorySync = false;
+
+    fs.linkSync = (sourcePath, destinationPath) => {
+      if (path.resolve(destinationPath) === path.resolve(absoluteReceiptPath)) {
+        events.push('publish-link');
+      }
+      return originalLinkSync(sourcePath, destinationPath);
+    };
+    fs.fsyncSync = descriptor => {
+      const stats = fs.fstatSync(descriptor);
+      if (stats.isDirectory()) {
+        events.push('directory-sync');
+        if (failNextDirectorySync) {
+          failNextDirectorySync = false;
+          const error = new Error('simulated directory fsync failure');
+          error.code = 'EIO';
+          throw error;
+        }
+        directorySyncs.add(`${stats.dev}:${stats.ino}`);
+      } else {
+        events.push('file-sync');
+      }
+      return originalFsyncSync(descriptor);
+    };
+
+    try {
+      assert.equal(
+        writeReceipt(),
+        expectedRelativePath,
+        `${receiptType} publication must return its canonical receipt path`
+      );
+      const linkEventIndex = events.indexOf('publish-link');
+      assert.notEqual(
+        linkEventIndex,
+        -1,
+        `${receiptType} durability regression must exercise final-path publication`
+      );
+      assert.equal(
+        events.slice(linkEventIndex + 1).includes('directory-sync'),
+        true,
+        `${receiptType} publication must synchronize its directory after linking the receipt`
+      );
+
+      for (const directoryPath of directoryChain) {
+        const stats = fs.lstatSync(directoryPath);
+        assert.equal(
+          directorySyncs.has(`${stats.dev}:${stats.ino}`),
+          true,
+          `${receiptType} publication must synchronize directory ${path.relative(
+            durabilityRoot,
+            directoryPath
+          ) || '.'}`
+        );
+      }
+
+      const originalReceipt = fs.readFileSync(absoluteReceiptPath, 'utf8');
+      directorySyncs.clear();
+      events.length = 0;
+      assert.equal(
+        reuseReceipt(),
+        expectedRelativePath,
+        `${receiptType} idempotent reuse must retain its canonical receipt path`
+      );
+      const parentStats = fs.lstatSync(path.dirname(absoluteReceiptPath));
+      assert.equal(
+        directorySyncs.has(`${parentStats.dev}:${parentStats.ino}`),
+        true,
+        `${receiptType} idempotent reuse must synchronize the retained receipt directory`
+      );
+      assert.equal(
+        fs.readFileSync(absoluteReceiptPath, 'utf8'),
+        originalReceipt,
+        `${receiptType} idempotent reuse may not rewrite retained receipt bytes`
+      );
+
+      failNextDirectorySync = true;
+      assert.throws(
+        () => reuseReceipt(),
+        /synchronization failed/u,
+        `${receiptType} reuse must fail closed when directory synchronization fails`
+      );
+      assert.equal(
+        failNextDirectorySync,
+        false,
+        `${receiptType} failure injection must reach a directory synchronization call`
+      );
+      assert.equal(
+        fs.readFileSync(absoluteReceiptPath, 'utf8'),
+        originalReceipt,
+        `${receiptType} failed durability proof may not rewrite retained receipt bytes`
+      );
+    } finally {
+      fs.fsyncSync = originalFsyncSync;
+      fs.linkSync = originalLinkSync;
+      fs.rmSync(durabilityRoot, { recursive: true, force: true });
+    }
+  };
+
+  const durableIndexRoot = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'industrial-exhaust-index-publication-durability-')
+  );
+  const durableIndexHtml = '<!doctype html><html><body><a href="/news-releases/publication-durability-index">Publication durability index</a></body></html>';
+  const durableParsedIndex = parseHtmlLinkIndex(durableIndexHtml, source);
+  const durableIndexReceiptPath = indexReceiptFilePath(
+    durableIndexRoot,
+    source.id,
+    durableParsedIndex.index_sha256
+  );
+  assertReceiptPublicationDurability({
+    receiptType: 'index',
+    durabilityRoot: durableIndexRoot,
+    absoluteReceiptPath: durableIndexReceiptPath,
+    writeReceipt: () => writeIndexReceipt({
+      rootDir: durableIndexRoot,
+      source,
+      parsedIndex: durableParsedIndex,
+      html: durableIndexHtml,
+      capturedAt: '2026-08-22T10:09:00.000Z',
+      responseHeaders: { content_type: 'text/html', etag: 'durability-index-a' }
+    }),
+    reuseReceipt: () => writeIndexReceipt({
+      rootDir: durableIndexRoot,
+      source,
+      parsedIndex: durableParsedIndex,
+      html: durableIndexHtml,
+      capturedAt: '2026-08-22T10:10:00.000Z',
+      responseHeaders: { content_type: 'text/html', etag: 'durability-index-b' }
+    })
+  });
+
+  const durableArtifactRoot = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'industrial-exhaust-artifact-publication-durability-')
+  );
+  const durableArtifactCanonicalUrl =
+    'https://www.dentsu.com/news-releases/publication-durability-artifact';
+  const durableArtifactBody = Buffer.from(
+    '<!doctype html><html><body><main>Publication durability artifact.</main></body></html>'
+  );
+  const durableArtifactBodySha256 = crypto
+    .createHash('sha256')
+    .update(durableArtifactBody)
+    .digest('hex');
+  const durableArtifactReceiptPath = artifactReceiptFilePath(
+    durableArtifactRoot,
+    durableArtifactCanonicalUrl,
+    durableArtifactBodySha256
+  );
+  assertReceiptPublicationDurability({
+    receiptType: 'artifact',
+    durabilityRoot: durableArtifactRoot,
+    absoluteReceiptPath: durableArtifactReceiptPath,
+    writeReceipt: () => writeArtifactReceipt({
+      rootDir: durableArtifactRoot,
+      canonicalUrl: durableArtifactCanonicalUrl,
+      body: durableArtifactBody,
+      bodySha256: durableArtifactBodySha256,
+      capturedAt: '2026-08-22T10:09:00.000Z',
+      responseHeaders: {
+        content_type: 'text/html',
+        etag: 'durability-artifact-a',
+        final_url: durableArtifactCanonicalUrl,
+        redirect_chain: []
+      }
+    }),
+    reuseReceipt: () => writeArtifactReceipt({
+      rootDir: durableArtifactRoot,
+      canonicalUrl: durableArtifactCanonicalUrl,
+      body: durableArtifactBody,
+      bodySha256: durableArtifactBodySha256,
+      capturedAt: '2026-08-22T10:10:00.000Z',
+      responseHeaders: {
+        content_type: 'text/html',
+        etag: 'durability-artifact-b',
+        final_url: durableArtifactCanonicalUrl,
+        redirect_chain: []
+      }
+    })
+  });
+
   const indexAbsolutePath = path.join(rootDir, indexReceiptPath);
   const originalIndexReceipt = fs.readFileSync(indexAbsolutePath, 'utf8');
   const tamperedIndexReceipt = JSON.parse(originalIndexReceipt);
