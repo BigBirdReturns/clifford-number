@@ -1,0 +1,203 @@
+from pathlib import Path
+
+lib_path = Path('tools/lib/industrial-exhaust-artifacts.mjs')
+text = lib_path.read_text()
+
+block_start = text.index("const RECEIPT_DESCRIPTOR_ROOT = '/proc/self/fd';")
+block_end = text.index('\nexport function indexReceiptPath', block_start)
+replacement = r"""const RECEIPT_DESCRIPTOR_ROOT = '/proc/self/fd';
+const RECEIPT_MOUNT_NAMESPACE_PATH = '/proc/self/ns/mnt';
+const RECEIPT_MOUNTINFO_PATH = '/proc/self/mountinfo';
+const RECEIPT_PROCFS_MAGIC = 0x9fa0;
+
+function decodeReceiptMountInfoField(value) {
+  return String(value).replace(/\\([0-7]{3})/gu, (_match, digits) =>
+    String.fromCharCode(Number.parseInt(digits, 8)));
+}
+
+function receiptMountCoversPath(mountPoint, targetPath) {
+  if (mountPoint === '/') return targetPath.startsWith('/');
+  return targetPath === mountPoint || targetPath.startsWith(`${mountPoint}/`);
+}
+
+function inspectReceiptProcfsMount() {
+  let mountInfo;
+  try {
+    mountInfo = fs.readFileSync(RECEIPT_MOUNTINFO_PATH, 'utf8');
+  } catch (error) {
+    throw new Error(
+      `descriptor-relative receipt publication procfs mount inspection failed: ${error.message}`
+    );
+  }
+
+  const entries = [];
+  for (const line of mountInfo.split('\n')) {
+    if (!line) continue;
+    const fields = line.split(' ');
+    const separator = fields.indexOf('-');
+    if (separator < 6 || fields.length < separator + 3) continue;
+    entries.push({
+      mount_id: fields[0],
+      parent_id: fields[1],
+      major_minor: fields[2],
+      root: decodeReceiptMountInfoField(fields[3]),
+      mount_point: decodeReceiptMountInfoField(fields[4]),
+      fs_type: fields[separator + 1],
+      mount_source: fields[separator + 2]
+    });
+  }
+
+  const effective = entries
+    .filter(entry => receiptMountCoversPath(
+      entry.mount_point,
+      RECEIPT_DESCRIPTOR_ROOT
+    ))
+    .sort((left, right) => right.mount_point.length - left.mount_point.length)[0];
+  if (!effective
+    || effective.mount_point !== '/proc'
+    || effective.root !== '/'
+    || effective.fs_type !== 'proc'
+    || effective.mount_source !== 'proc') {
+    throw new Error(
+      'descriptor-relative receipt publication effective descriptor mount is not canonical procfs'
+    );
+  }
+  return effective;
+}
+
+function closeReceiptPublicationPlatformSession(session, label) {
+  if (!session) return null;
+  let failure = null;
+  for (const [key, descriptorLabel] of [
+    ['descriptorRootDescriptor', 'descriptor-root'],
+    ['namespaceDescriptor', 'mount-namespace']
+  ]) {
+    const descriptor = session[key];
+    if (descriptor === null || descriptor === undefined) continue;
+    try {
+      fs.closeSync(descriptor);
+    } catch (error) {
+      failure ??= new Error(
+        `${label} ${descriptorLabel} descriptor close failed: ${error.message}`
+      );
+    }
+    session[key] = null;
+  }
+  return failure;
+}
+
+function openReceiptPublicationPlatformSession(label) {
+  if (process.platform !== 'linux') {
+    throw new Error('descriptor-relative receipt publication requires Linux procfs');
+  }
+
+  let namespaceDescriptor;
+  let descriptorRootDescriptor;
+  try {
+    const mount = inspectReceiptProcfsMount();
+    const fileSystem = fs.statfsSync(RECEIPT_DESCRIPTOR_ROOT);
+    if (Number(fileSystem.type) !== RECEIPT_PROCFS_MAGIC) {
+      throw new Error(
+        'descriptor-relative receipt publication descriptor root is not procfs'
+      );
+    }
+
+    namespaceDescriptor = fs.openSync(
+      RECEIPT_MOUNT_NAMESPACE_PATH,
+      fs.constants.O_RDONLY
+    );
+    descriptorRootDescriptor = fs.openSync(
+      RECEIPT_DESCRIPTOR_ROOT,
+      fs.constants.O_RDONLY
+        | (fs.constants.O_DIRECTORY ?? 0)
+        | (fs.constants.O_NOFOLLOW ?? 0)
+    );
+
+    const namespaceStats = fs.fstatSync(namespaceDescriptor);
+    const namespacePathStats = fs.statSync(RECEIPT_MOUNT_NAMESPACE_PATH);
+    const descriptorRootStats = fs.fstatSync(descriptorRootDescriptor);
+    const descriptorRootPathStats = fs.statSync(RECEIPT_DESCRIPTOR_ROOT);
+    if (!sameReceiptIdentity(namespaceStats, namespacePathStats)) {
+      throw new Error(
+        'descriptor-relative receipt publication mount-namespace identity mismatch'
+      );
+    }
+    if (!descriptorRootStats.isDirectory()
+      || !descriptorRootPathStats.isDirectory()
+      || !sameReceiptIdentity(descriptorRootStats, descriptorRootPathStats)) {
+      throw new Error(
+        'descriptor-relative receipt publication descriptor-root identity mismatch'
+      );
+    }
+
+    const session = {
+      namespaceDescriptor,
+      namespaceIdentity: {
+        dev: namespaceStats.dev,
+        ino: namespaceStats.ino
+      },
+      descriptorRootDescriptor,
+      descriptorRootIdentity: {
+        dev: descriptorRootStats.dev,
+        ino: descriptorRootStats.ino
+      },
+      mountIdentity: {
+        mount_id: mount.mount_id,
+        major_minor: mount.major_minor
+      }
+    };
+    verifyReceiptPublicationPlatformSession(session, `${label} admission`);
+    return session;
+  } catch (error) {
+    const partial = {
+      namespaceDescriptor: namespaceDescriptor ?? null,
+      descriptorRootDescriptor: descriptorRootDescriptor ?? null
+    };
+    const closeFailure = closeReceiptPublicationPlatformSession(partial, label);
+    if (closeFailure) {
+      throw new Error(
+        `${label} platform admission failed: ${error.message}; ${closeFailure.message}`
+      );
+    }
+    throw new Error(`${label} platform admission failed: ${error.message}`);
+  }
+}
+
+function verifyReceiptPublicationPlatformSession(session, label) {
+  if (!session
+    || !Number.isInteger(session.namespaceDescriptor)
+    || !Number.isInteger(session.descriptorRootDescriptor)) {
+    throw new Error(`${label} lacks an admitted procfs platform session`);
+  }
+
+  try {
+    const mount = inspectReceiptProcfsMount();
+    if (mount.mount_id !== session.mountIdentity.mount_id
+      || mount.major_minor !== session.mountIdentity.major_minor) {
+      throw new Error(
+        'descriptor-relative receipt publication procfs mount identity changed'
+      );
+    }
+
+    const fileSystem = fs.statfsSync(RECEIPT_DESCRIPTOR_ROOT);
+    if (Number(fileSystem.type) !== RECEIPT_PROCFS_MAGIC) {
+      throw new Error(
+        'descriptor-relative receipt publication descriptor root is not procfs'
+      );
+    }
+
+    const namespaceDescriptorStats = fs.fstatSync(session.namespaceDescriptor);
+    const namespacePathStats = fs.statSync(RECEIPT_MOUNT_NAMESPACE_PATH);
+    if (!sameReceiptIdentity(namespaceDescriptorStats, session.namespaceIdentity)
+      || !sameReceiptIdentity(namespacePathStats, session.namespaceIdentity)) {
+      throw new Error(
+        'descriptor-relative receipt publication mount-namespace identity changed'
+      );
+    }
+
+    const descriptorRootStats = fs.fstatSync(session.descriptorRootDescriptor);
+    const descriptorRootPathStats = fs.statSync(RECEIPT_DESCRIPTOR_ROOT);
+    if (!descriptorRootStats.isDirectory()
+      || !descriptorRootPathStats.isDirectory()
+      || !sameReceiptIdentity(
+        descriptorRootStats,

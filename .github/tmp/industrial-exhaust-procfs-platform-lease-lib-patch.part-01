@@ -1,0 +1,233 @@
+        session.descriptorRootIdentity
+      )
+      || !sameReceiptIdentity(
+        descriptorRootPathStats,
+        session.descriptorRootIdentity
+      )) {
+      throw new Error(
+        'descriptor-relative receipt publication descriptor-root identity changed'
+      );
+    }
+  } catch (error) {
+    throw new Error(`${label} platform custody changed: ${error.message}`);
+  }
+}
+
+function performReceiptPublicationPlatformOperation(
+  session,
+  label,
+  operation,
+  discardResult = null
+) {
+  verifyReceiptPublicationPlatformSession(session, `${label} preflight`);
+  let result;
+  let operationFailure = null;
+  try {
+    result = operation();
+  } catch (error) {
+    operationFailure = error;
+  }
+
+  let custodyFailure = null;
+  try {
+    verifyReceiptPublicationPlatformSession(session, `${label} postflight`);
+  } catch (error) {
+    custodyFailure = error;
+  }
+
+  if (custodyFailure) {
+    let discardFailure = null;
+    if (!operationFailure && typeof discardResult === 'function') {
+      try {
+        discardResult(result);
+      } catch (error) {
+        discardFailure = error;
+      }
+    }
+    const operationContext = operationFailure
+      ? `; operation failed: ${operationFailure.message}`
+      : '';
+    const discardContext = discardFailure
+      ? `; result disposal failed: ${discardFailure.message}`
+      : '';
+    throw new Error(
+      `${custodyFailure.message}${operationContext}${discardContext}`
+    );
+  }
+  if (operationFailure) throw operationFailure;
+  return result;
+}
+
+function assertReceiptDescriptorPathComponent(childName) {
+  if (childName === null) return;
+  if (typeof childName !== 'string' || !childName
+    || childName === '.' || childName === '..'
+    || childName.includes('/') || childName.includes('\\')) {
+    throw new Error(`invalid descriptor-relative receipt path component: ${childName}`);
+  }
+}
+
+function receiptDescriptorBridgePath(descriptor) {
+  if (!Number.isInteger(descriptor) || descriptor < 0) {
+    throw new Error(`invalid receipt directory descriptor: ${descriptor}`);
+  }
+  const bridgePath = path.join(RECEIPT_DESCRIPTOR_ROOT, String(descriptor));
+  let descriptorStats;
+  let bridgeStats;
+  try {
+    descriptorStats = fs.fstatSync(descriptor);
+    bridgeStats = fs.statSync(bridgePath);
+  } catch (error) {
+    throw new Error(
+      `descriptor-relative receipt publication descriptor bridge unavailable: ${error.message}`
+    );
+  }
+  if (!descriptorStats.isDirectory()
+    || !bridgeStats.isDirectory()
+    || !sameReceiptIdentity(descriptorStats, bridgeStats)) {
+    throw new Error(
+      'descriptor-relative receipt publication descriptor bridge identity mismatch'
+    );
+  }
+  return bridgePath;
+}
+
+function withReceiptDescriptorPath({
+  platform,
+  descriptor,
+  childName = null,
+  label,
+  operation,
+  discardResult = null
+}) {
+  assertReceiptDescriptorPathComponent(childName);
+  return performReceiptPublicationPlatformOperation(
+    platform,
+    label,
+    () => {
+      const base = receiptDescriptorBridgePath(descriptor);
+      const targetPath = childName === null ? base : path.join(base, childName);
+      return operation(targetPath);
+    },
+    discardResult
+  );
+}
+
+function withReceiptDescriptorPaths({
+  platform,
+  descriptor,
+  childNames,
+  label,
+  operation
+}) {
+  if (!Array.isArray(childNames) || childNames.length < 2) {
+    throw new Error(`${label} requires at least two descriptor-relative paths`);
+  }
+  childNames.forEach(assertReceiptDescriptorPathComponent);
+  return performReceiptPublicationPlatformOperation(
+    platform,
+    label,
+    () => {
+      const base = receiptDescriptorBridgePath(descriptor);
+      return operation(childNames.map(childName => path.join(base, childName)));
+    }
+  );
+}
+
+function verifyReceiptDescriptorBridge(platform, descriptor, label) {
+  withReceiptDescriptorPath({
+    platform,
+    descriptor,
+    label,
+    operation: () => undefined
+  });
+}
+
+function synchronizeReceiptDirectoryDescriptor(descriptor, label) {
+  let before;
+  try {
+    before = fs.fstatSync(descriptor);
+    if (!before.isDirectory()) throw new Error('descriptor is not a directory');
+    fs.fsyncSync(descriptor);
+    const after = fs.fstatSync(descriptor);
+    if (!after.isDirectory() || !sameReceiptIdentity(before, after)) {
+      throw new Error('directory descriptor identity changed');
+    }
+  } catch (error) {
+    throw new Error(`${label} synchronization failed: ${error.message}`);
+  }
+}
+
+function closeReceiptDirectorySession(session, label) {
+  let failure = null;
+  for (const entry of [...session.chain].reverse()) {
+    try {
+      fs.closeSync(entry.descriptor);
+    } catch (error) {
+      failure ??= new Error(`${label} directory descriptor close failed: ${error.message}`);
+    }
+  }
+  const platformFailure = closeReceiptPublicationPlatformSession(
+    session.platform,
+    label
+  );
+  failure ??= platformFailure;
+  return failure;
+}
+
+function verifyReceiptDirectorySession(session, label) {
+  verifyReceiptPublicationPlatformSession(session.platform, label);
+  let currentRoot;
+  try {
+    currentRoot = fs.lstatSync(session.root);
+  } catch (error) {
+    throw new Error(`${label} directory chain changed at .: ${error.message}`);
+  }
+  if (!currentRoot.isDirectory()
+    || !sameReceiptIdentity(currentRoot, session.chain[0].identity)) {
+    throw new Error(`${label} directory chain changed at .`);
+  }
+
+  for (let index = 1; index < session.chain.length; index += 1) {
+    const parent = session.chain[index - 1];
+    const child = session.chain[index];
+    let pathStats;
+    let descriptorStats;
+    try {
+      pathStats = withReceiptDescriptorPath({
+        platform: session.platform,
+        descriptor: parent.descriptor,
+        childName: child.segment,
+        label: `${label} directory ${child.display} path inspection`,
+        operation: targetPath => fs.lstatSync(targetPath)
+      });
+      descriptorStats = fs.fstatSync(child.descriptor);
+    } catch (error) {
+      throw new Error(
+        `${label} directory chain changed at ${child.display}: ${error.message}`
+      );
+    }
+    if (!pathStats.isDirectory()
+      || !descriptorStats.isDirectory()
+      || !sameReceiptIdentity(pathStats, descriptorStats)
+      || !sameReceiptIdentity(descriptorStats, child.identity)) {
+      throw new Error(`${label} directory chain changed at ${child.display}`);
+    }
+  }
+}
+
+function openReceiptDirectorySession(rootDir, relativePath, label) {
+  const segments = relativePath === '.' ? [] : String(relativePath).split('/');
+  if (segments.some(segment => !segment || segment === '.' || segment === '..'
+    || segment.includes('\\'))) {
+    throw new Error(`${label} is not a canonical directory path: ${relativePath}`);
+  }
+
+  const rootCustody = inspectReceiptRoot(rootDir);
+  const platform = openReceiptPublicationPlatformSession(`${label} platform`);
+  let rootDescriptor;
+  try {
+    rootDescriptor = fs.openSync(
+      rootCustody.root,
+      fs.constants.O_RDONLY
+        | (fs.constants.O_DIRECTORY ?? 0)

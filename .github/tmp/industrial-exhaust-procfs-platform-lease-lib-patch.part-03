@@ -1,0 +1,208 @@
+      throw new Error('receipt file identity changed');
+    }
+    return {
+      descriptor,
+      identity: { dev: descriptorStats.dev, ino: descriptorStats.ino }
+    };
+  } catch (error) {
+    if (descriptor !== undefined) {
+      try { fs.closeSync(descriptor); } catch {}
+    }
+    throw new Error(`${label} file open failed: ${error.message}`);
+  }
+}
+
+function publishReceiptJson({
+  rootDir,
+  relativePath,
+  receipt,
+  label,
+  validateReceipt
+}) {
+  if (typeof relativePath !== 'string' || !relativePath
+    || relativePath.startsWith('/') || relativePath.includes('\\')
+    || path.posix.normalize(relativePath) !== relativePath
+    || relativePath.startsWith('../')) {
+    throw new Error(`${label} is not a canonical repository-relative path`);
+  }
+  if (typeof validateReceipt !== 'function') {
+    throw new Error(`${label} requires an anchored validation callback`);
+  }
+
+  const parentRelativePath = path.posix.dirname(relativePath);
+  const finalName = path.posix.basename(relativePath);
+  const session = openReceiptDirectorySession(
+    rootDir,
+    parentRelativePath,
+    `${label} parent directory`
+  );
+  const parent = session.chain.at(-1);
+  const finalInspection = inspectAnchoredReceiptFile(
+    parent.descriptor,
+    finalName,
+    label,
+    session.platform
+  );
+  const serialized = `${JSON.stringify(receipt, null, 2)}\n`;
+  let tempName = null;
+  let tempIdentity = null;
+  let published = false;
+  let finalDescriptor = null;
+  let failure = null;
+  const absolutePath = path.resolve(session.root, ...relativePath.split('/'));
+
+  try {
+    if (!finalInspection.exists) {
+      for (let attempt = 0; attempt < 8; attempt += 1) {
+        const candidateName =
+          `${finalName}.${process.pid}.${crypto.randomBytes(16).toString('hex')}.tmp`;
+        let descriptor;
+        try {
+          descriptor = withReceiptDescriptorPath({
+            platform: session.platform,
+            descriptor: parent.descriptor,
+            childName: candidateName,
+            label: `${label} temporary publication`,
+            operation: targetPath => fs.openSync(
+              targetPath,
+              fs.constants.O_WRONLY
+                | fs.constants.O_CREAT
+                | fs.constants.O_EXCL
+                | (fs.constants.O_NOFOLLOW ?? 0),
+              0o600
+            ),
+            discardResult: openedDescriptor => fs.closeSync(openedDescriptor)
+          });
+        } catch (error) {
+          if (error?.code === 'EEXIST') continue;
+          throw new Error(`${label} temporary publication failed: ${error.message}`);
+        }
+        tempName = candidateName;
+        try {
+          fs.writeFileSync(descriptor, serialized, 'utf8');
+          fs.fsyncSync(descriptor);
+          const stats = fs.fstatSync(descriptor);
+          if (!stats.isFile() || stats.nlink !== 1) {
+            throw new Error(
+              `${label} temporary publication is not an exclusive regular file`
+            );
+          }
+          tempIdentity = { dev: stats.dev, ino: stats.ino };
+        } finally {
+          fs.closeSync(descriptor);
+        }
+        break;
+      }
+      if (!tempName || !tempIdentity) {
+        throw new Error(
+          `${label} could not allocate an exclusive temporary publication`
+        );
+      }
+
+      try {
+        withReceiptDescriptorPaths({
+          platform: session.platform,
+          descriptor: parent.descriptor,
+          childNames: [tempName, finalName],
+          label: `${label} no-overwrite publication`,
+          operation: ([sourcePath, destinationPath]) => {
+            fs.linkSync(sourcePath, destinationPath);
+          }
+        });
+        published = true;
+      } catch (error) {
+        if (error?.code !== 'EEXIST') {
+          throw new Error(`${label} no-overwrite publication failed: ${error.message}`);
+        }
+      }
+    }
+  } catch (error) {
+    failure = error;
+  }
+
+  if (tempName) {
+    try {
+      withReceiptDescriptorPath({
+        platform: session.platform,
+        descriptor: parent.descriptor,
+        childName: tempName,
+        label: `${label} temporary cleanup`,
+        operation: targetPath => fs.unlinkSync(targetPath)
+      });
+    } catch (error) {
+      if (error?.code !== 'ENOENT') {
+        failure ??= new Error(`${label} temporary cleanup failed: ${error.message}`);
+      }
+    }
+  }
+
+  try {
+    synchronizeReceiptDirectoryDescriptor(
+      parent.descriptor,
+      `${label} publication directory`
+    );
+  } catch (error) {
+    failure ??= error;
+  }
+
+  try {
+    verifyReceiptDirectorySession(session, `${label} publication`);
+  } catch (error) {
+    failure ??= error;
+  }
+
+  if (!failure) {
+    try {
+      const opened = openAnchoredReceiptFile(
+        parent.descriptor,
+        finalName,
+        label,
+        session.platform
+      );
+      finalDescriptor = opened.descriptor;
+      if (published && !sameReceiptIdentity(opened.identity, tempIdentity)) {
+        throw new Error(`${label} publication identity changed before validation`);
+      }
+      const retainedReceipt = parseReceiptJsonText(
+        fs.readFileSync(finalDescriptor, 'utf8'),
+        label
+      );
+      validateReceipt(retainedReceipt);
+
+      const finalStats = fs.fstatSync(finalDescriptor);
+      const finalPathStats = withReceiptDescriptorPath({
+        platform: session.platform,
+        descriptor: parent.descriptor,
+        childName: finalName,
+        label: `${label} final validation`,
+        operation: targetPath => fs.lstatSync(targetPath)
+      });
+      if (!finalStats.isFile()
+        || finalStats.nlink !== 1
+        || !finalPathStats.isFile()
+        || finalPathStats.nlink !== 1
+        || !sameReceiptIdentity(finalStats, finalPathStats)
+        || !sameReceiptIdentity(finalStats, opened.identity)) {
+        throw new Error(`${label} publication identity changed during validation`);
+      }
+      verifyReceiptDirectorySession(session, `${label} validation`);
+    } catch (error) {
+      failure = error;
+    }
+  }
+
+  if (finalDescriptor !== null) {
+    try {
+      fs.closeSync(finalDescriptor);
+    } catch (error) {
+      failure ??= new Error(`${label} file descriptor close failed: ${error.message}`);
+    }
+  }
+  const closeFailure = closeReceiptDirectorySession(session, label);
+  failure ??= closeFailure;
+  if (failure) throw failure;
+  return absolutePath;
+}
+"""
+text = text[:block_start] + replacement + text[block_end:]
+lib_path.write_text(text)
