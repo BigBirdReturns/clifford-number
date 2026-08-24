@@ -1,0 +1,275 @@
+name: M-05 Intel post-gate official-route watch
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-post-gate-route-watch-contract.json'
+      - 'tools/lib/m05-answerable-power-sprint-03-leg-07-intel-post-gate-route-watch.mjs'
+      - 'tools/run-m05-answerable-power-sprint-03-leg-07-intel-post-gate-route-watch.mjs'
+      - 'tools/validate-m05-answerable-power-sprint-03-leg-07-intel-post-gate-route-watch.mjs'
+      - 'test/m05-answerable-power-sprint-03-leg-07-intel-post-gate-route-watch.test.js'
+      - '.github/workflows/m05-intel-post-gate-route-watch.yml'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-date-gate-monitor.json'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-five-domain-route-watch-contract.json'
+      - 'tools/lib/m05-answerable-power-sprint-03-leg-07-five-domain-route-watch.mjs'
+      - 'tools/run-m05-answerable-power-sprint-03-leg-07-five-domain-route-watch.mjs'
+      - 'tools/validate-m05-answerable-power-sprint-03-leg-07-five-domain-route-watch.mjs'
+      - 'test/m05-answerable-power-sprint-03-leg-07-five-domain-route-watch.test.js'
+      - '.github/workflows/m05-five-domain-route-watch.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-post-gate-route-watch-contract.json'
+      - 'tools/lib/m05-answerable-power-sprint-03-leg-07-intel-post-gate-route-watch.mjs'
+      - 'tools/run-m05-answerable-power-sprint-03-leg-07-intel-post-gate-route-watch.mjs'
+      - 'tools/validate-m05-answerable-power-sprint-03-leg-07-intel-post-gate-route-watch.mjs'
+      - 'test/m05-answerable-power-sprint-03-leg-07-intel-post-gate-route-watch.test.js'
+      - '.github/workflows/m05-intel-post-gate-route-watch.yml'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-date-gate-monitor.json'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-five-domain-route-watch-contract.json'
+      - 'tools/lib/m05-answerable-power-sprint-03-leg-07-five-domain-route-watch.mjs'
+      - 'tools/run-m05-answerable-power-sprint-03-leg-07-five-domain-route-watch.mjs'
+      - 'tools/validate-m05-answerable-power-sprint-03-leg-07-five-domain-route-watch.mjs'
+      - 'test/m05-answerable-power-sprint-03-leg-07-five-domain-route-watch.test.js'
+      - '.github/workflows/m05-five-domain-route-watch.yml'
+  schedule:
+    - cron: '17 12 * * *'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+  issues: write
+
+concurrency:
+  group: m05-intel-post-gate-route-watch-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Validate the Intel post-gate controller
+        run: |
+          set -euo pipefail
+          node --check tools/lib/m05-answerable-power-sprint-03-leg-07-intel-post-gate-route-watch.mjs
+          node --check tools/run-m05-answerable-power-sprint-03-leg-07-intel-post-gate-route-watch.mjs
+          node --check tools/validate-m05-answerable-power-sprint-03-leg-07-intel-post-gate-route-watch.mjs
+          node --check test/m05-answerable-power-sprint-03-leg-07-intel-post-gate-route-watch.test.js
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-post-gate-route-watch.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-intel-post-gate-route-watch.test.js
+      - name: Run complete repository release gate
+        run: npm run release:check
+      - name: Prove deterministic focused state
+        run: |
+          set -euo pipefail
+          git restore --staged --worktree .
+          git clean -fd
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-post-gate-route-watch.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-intel-post-gate-route-watch.test.js
+          git diff --exit-code
+          test -z "$(git status --porcelain)"
+
+  watch:
+    if: github.event_name != 'pull_request'
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Restore latest compatible validated receipt
+        id: previous
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          previous_dir="$RUNNER_TEMP/m05-intel-post-gate-route-watch-previous"
+          rm -rf "$previous_dir"
+          mkdir -p "$previous_dir"
+          while IFS= read -r run_id; do
+            [[ -n "$run_id" ]] || continue
+            [[ "$run_id" == "$GITHUB_RUN_ID" ]] && continue
+            artifact_id="$(
+              gh api --method GET \
+                "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/artifacts?per_page=100" \
+                --jq ".artifacts[] | select(.expired == false and .name == \"m05-intel-post-gate-route-watch-${run_id}\") | .id" \
+                | head -n 1
+            )"
+            [[ -n "$artifact_id" ]] || continue
+            rm -rf "$previous_dir/extracted"
+            mkdir -p "$previous_dir/extracted"
+            gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/${artifact_id}/zip" > "$previous_dir/artifact.zip"
+            unzip -tq "$previous_dir/artifact.zip" >/dev/null
+            unzip -q "$previous_dir/artifact.zip" -d "$previous_dir/extracted"
+            mapfile -t candidates < <(find "$previous_dir/extracted" -type f -name 'm05-intel-post-gate-route-watch-receipt.json' -print)
+            if [[ "${#candidates[@]}" -ne 1 ]]; then
+              echo "Prior successful run ${run_id} has ${#candidates[@]} Intel receipts; exactly one is required" >&2
+              exit 2
+            fi
+            candidate="${candidates[0]}"
+            compatibility="$(node --input-type=module - "$candidate" <<'NODE'
+          import fs from 'node:fs';
+          import {canonicalJson,semanticSha256,sha256} from './tools/lib/m05-answerable-power-sprint-03-leg-07-intel-post-gate-route-watch.mjs';
+          const receipt=JSON.parse(fs.readFileSync(process.argv[2],'utf8'));
+          const contract=JSON.parse(fs.readFileSync('data/project/m05-answerable-power-sprint-03-leg-07-intel-post-gate-route-watch-contract.json','utf8'));
+          if(receipt?.schema_version!=='m05-answerable-power-s03-l7-intel-post-gate-route-watch-receipt@1')throw new Error('prior receipt schema is malformed');
+          if(receipt?.object_class!=='bounded_intel_post_gate_official_route_watch_receipt')throw new Error('prior receipt object class is malformed');
+          if(!/^[0-9a-f]{64}$/u.test(receipt?.contract_semantic_sha256||''))throw new Error('prior contract digest is malformed');
+          const {proof_sha256:proof,...core}=receipt;
+          if(!/^[0-9a-f]{64}$/u.test(proof||''))throw new Error('prior receipt proof is malformed');
+          if(proof!==sha256(Buffer.from(canonicalJson(core),'utf8')))throw new Error('prior receipt proof does not recompute');
+          process.stdout.write(receipt.contract_semantic_sha256===semanticSha256(contract)?'compatible':'incompatible');
+          NODE
+            )"
+            if [[ "$compatibility" == 'incompatible' ]]; then
+              echo "::notice::Skipping prior run ${run_id} because its authenticated receipt targets a different contract"
+              continue
+            fi
+            node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-post-gate-route-watch.mjs --receipt "$candidate"
+            cp "$candidate" "$previous_dir/previous-receipt.json"
+            echo "previous_receipt=$previous_dir/previous-receipt.json" >> "$GITHUB_OUTPUT"
+            echo "previous_run_id=$run_id" >> "$GITHUB_OUTPUT"
+            exit 0
+          done < <(
+            gh api --method GET --paginate \
+              "repos/${GITHUB_REPOSITORY}/actions/workflows/m05-intel-post-gate-route-watch.yml/runs?status=success&per_page=100" \
+              --jq '.workflow_runs[] | select(.head_branch=="main") | .id'
+          )
+          echo 'previous_receipt=' >> "$GITHUB_OUTPUT"
+          echo 'previous_run_id=' >> "$GITHUB_OUTPUT"
+      - name: Execute the frozen five-route watch
+        env:
+          PREVIOUS_RECEIPT: ${{ steps.previous.outputs.previous_receipt }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          previous_args=()
+          if [[ -n "$PREVIOUS_RECEIPT" ]]; then
+            previous_args=(--previous "$PREVIOUS_RECEIPT")
+          fi
+          node tools/run-m05-answerable-power-sprint-03-leg-07-intel-post-gate-route-watch.mjs \
+            --output build/m05-intel-post-gate-route-watch/m05-intel-post-gate-route-watch-receipt.json \
+            "${previous_args[@]}"
+      - name: Validate the machine-readable receipt
+        run: |
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-post-gate-route-watch.mjs \
+            --receipt build/m05-intel-post-gate-route-watch/m05-intel-post-gate-route-watch-receipt.json
+      - name: Write step summary
+        env:
+          PREVIOUS_RUN_ID: ${{ steps.previous.outputs.previous_run_id }}
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const receipt=JSON.parse(fs.readFileSync('build/m05-intel-post-gate-route-watch/m05-intel-post-gate-route-watch-receipt.json','utf8'));
+          const s=receipt.summary;
+          const lines=[
+            '# M-05 Intel post-gate official-route watch',
+            '',
+            `- Observation clock: ${receipt.observation_clock_utc}`,
+            `- Standard route eligible: ${receipt.intel_gate.standard_route_eligible}`,
+            `- Selected routes: ${s.selected_routes}`,
+            `- Executed routes: ${s.executed_routes}`,
+            `- Network requests: ${s.network_requests}`,
+            `- Gated not before: ${s.gated_not_before}`,
+            `- Content successes: ${s.content_successes}`,
+            `- Metadata only: ${s.metadata_only}`,
+            `- Challenge pages: ${s.challenge_pages}`,
+            `- Failed routes: ${s.failed_routes}`,
+            `- Policy refusals: ${s.policy_refusals}`,
+            `- Unclassified failures: ${s.unclassified_failures}`,
+            `- Previous successful run: ${process.env.PREVIOUS_RUN_ID||'none'}`,
+            `- Previous receipt proof: ${receipt.previous_receipt_proof_sha256||'none'}`,
+            `- Changed routes: ${s.changed_routes}`,
+            `- Uncompared routes: ${s.uncompared_routes}`,
+            `- Qualifying evidence receipts: ${s.qualifying_evidence_receipts}`,
+            `- Answer changes authorized: ${s.answer_changes_authorized}`,
+            `- Proof: ${receipt.proof_sha256}`
+          ];
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,lines.join('\n')+'\n');
+          NODE
+      - uses: actions/upload-artifact@v4
+        with:
+          name: m05-intel-post-gate-route-watch-${{ github.run_id }}
+          path: build/m05-intel-post-gate-route-watch/
+          if-no-files-found: error
+          retention-days: 30
+      - name: Reconcile issue 345 without promoting evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PREVIOUS_RUN_ID: ${{ steps.previous.outputs.previous_run_id }}
+        run: |
+          node --input-type=module <<'NODE' > /tmp/m05-intel-post-gate-route-watch-comment.md
+          import fs from 'node:fs';
+          const receipt=JSON.parse(fs.readFileSync('build/m05-intel-post-gate-route-watch/m05-intel-post-gate-route-watch-receipt.json','utf8'));
+          const s=receipt.summary;
+          console.log('## M-05 Intel post-gate official-route watch');
+          console.log('');
+          console.log('```text');
+          console.log(`run:                           ${process.env.GITHUB_RUN_ID}`);
+          console.log(`event:                         ${process.env.GITHUB_EVENT_NAME}`);
+          console.log(`head:                          ${process.env.GITHUB_SHA}`);
+          console.log(`observation clock:             ${receipt.observation_clock_utc}`);
+          console.log(`standard route eligible:       ${receipt.intel_gate.standard_route_eligible}`);
+          console.log(`selected routes:               ${s.selected_routes}`);
+          console.log(`executed routes:               ${s.executed_routes}`);
+          console.log(`network requests:              ${s.network_requests}`);
+          console.log(`gated not before:              ${s.gated_not_before}`);
+          console.log(`route successes:               ${s.route_successes}`);
+          console.log(`content successes:             ${s.content_successes}`);
+          console.log(`metadata only:                 ${s.metadata_only}`);
+          console.log(`challenge pages:               ${s.challenge_pages}`);
+          console.log(`failed routes:                 ${s.failed_routes}`);
+          console.log(`policy refusals:               ${s.policy_refusals}`);
+          console.log(`unclassified failures:         ${s.unclassified_failures}`);
+          console.log(`previous successful run:       ${process.env.PREVIOUS_RUN_ID||'none'}`);
+          console.log(`previous receipt proof:        ${receipt.previous_receipt_proof_sha256||'none'}`);
+          console.log(`changed routes:                ${s.changed_routes}`);
+          console.log(`uncompared routes:             ${s.uncompared_routes}`);
+          console.log(`qualifying evidence receipts:  ${s.qualifying_evidence_receipts}`);
+          console.log(`answer changes authorized:     ${s.answer_changes_authorized}`);
+          console.log(`effective domain answers:      ${s.effective_domain_answers}`);
+          console.log(`cross-domain regression done:  ${s.cross_domain_regression_completed}`);
+          console.log(`issue #345 may close:          ${s.issue_345_may_close}`);
+          console.log(`proof SHA-256:                 ${receipt.proof_sha256}`);
+          console.log('```');
+          console.log('');
+          console.log('The five-route denominator is preserved. Before the ordinary gate, all rows remain terminal and unexecuted. At or after the gate, the controller observes the SEC, Intel, Commerce, Treasury, and USAspending discovery surfaces. This receipt records network observations only. Gate opening, reachability, metadata, changed bytes, and route success do not establish a disposition, federal receipt, public-account booking, distribution, answer effect, graph effect, cross-domain completion, or authority to close issue #345.');
+          NODE
+          gh issue comment 345 --body-file /tmp/m05-intel-post-gate-route-watch-comment.md
+      - name: Enforce denominator and authority boundaries
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const receipt=JSON.parse(fs.readFileSync('build/m05-intel-post-gate-route-watch/m05-intel-post-gate-route-watch-receipt.json','utf8'));
+          const s=receipt.summary;
+          const failures=[];
+          if(!s.execution_complete)failures.push('five-route execution was incomplete');
+          if(!s.denominator_preserved||s.selected_routes!==5)failures.push('route denominator changed');
+          if(s.unclassified_failures!==0)failures.push(`${s.unclassified_failures} failures were unclassified`);
+          if(receipt.intel_gate.standard_route_eligible){
+            if(s.executed_routes!==5||s.gated_not_before!==0)failures.push('post-gate denominator did not execute all five routes');
+          }else if(s.executed_routes!==0||s.gated_not_before!==5||s.network_requests!==0){
+            failures.push('pre-gate receipt executed or lost a gated row');
+          }
+          if(s.qualifying_evidence_receipts!==0)failures.push('network observations were promoted to evidence');
+          if(s.answer_changes_authorized!==false||s.effective_domain_answers!==0)failures.push('answer authority changed');
+          if(s.qualifying_jurisdictions!==0||s.cross_domain_regression_completed!==false)failures.push('cross-domain state changed');
+          if(s.graph_effect!=='none'||s.issue_345_may_close!==false)failures.push('graph or issue-closure authority changed');
+          if(failures.length){for(const failure of failures)console.error(failure);process.exit(1)}
+          NODE
