@@ -11,14 +11,14 @@ concurrency:
   group: pr2231-observation-interval-controller-v36
   cancel-in-progress: false
 jobs:
-  recover-exact-patch-digest:
+  qualify-repaired-transport:
     if: github.repository == 'BigBirdReturns/clifford-number'
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 75
     env:
       CBRANCH: agent/pr2231-observation-interval-controller-v36
       CPATH: .github/workflows/temporary-pr2231-observation-interval-controller-v36.yml
-      CPARENT: d513cf672f3b75967d5bfe79e65e0fd8166b1f70
+      CPARENT: 8e36a286b6db1288593b219a0ed652c98a420f8e
       PBRANCH: agent/current-main-identifier-context-product-v1
       PHEAD: 456ee43cb8a0d3c1afeeed8b9f7342219a3fac05
       PPARENT: 2d2c7b6cd7517ca25854e481b21774a697d0e76b
@@ -31,11 +31,17 @@ jobs:
       PTREE: 7f562e216eb716fef39bd426176f7c638fa8e778
       SLIB: d825c94f2dfe5ef2bd64d483a2feb9dfa0a5c645
       STEST: 34ae708c4934834334839552d7603e48e3db4ea4
-      CURRENT_SHA: 20056e150a6953f4c942c126e4098705e0992f1cc80676a7b4eb9acf5cbe4a96
-      TARGET_SHA: 7f25ffa5c58b0025bbd7ce2783393c6010a98e8f0606c3f94607946efb4f9054
-      PZBYTES: '4343'
-      PBYTES: '15943'
-      PCHARS: '5792'
+      POSTED_SHA: 20056e150a6953f4c942c126e4098705e0992f1cc80676a7b4eb9acf5cbe4a96
+      TARGET_GZIP_SHA: 7f25ffa5c58b0025bbd7ce2783393c6010a98e8f0606c3f94607946efb4f9054
+      PATCH_SHA: d5e5afcf65fbd7b5a5d379e636b4ccc81cc72f3f95bb114519c64dba3c2114bb
+      PREFIX_SHA: 51cb1f40492ccfe872142b63321b2f9c55cfd74f6f525c73130b4b2dfd32ad68
+      CORRUPT_TAIL_HEX: 2d2d20302d6172742c20656e64207d2c206c6174652d2e300a0a
+      FOOTER_CRC: fdae62e6
+      RAW_BYTES: '15957'
+      PREFIX_BYTES: '15931'
+      PATCH_BYTES: '15943'
+      GZIP_BYTES: '4343'
+      B64_CHARS: '5792'
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
@@ -45,19 +51,21 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Recover and verify exact digest
+      - name: Qualify repaired transport
         shell: bash
         run: |
           set -euo pipefail
           H='${{ github.event.pull_request.head.sha }}'
           S=/tmp/p2231-source
-          R=/tmp/p2231-exact-digest-recovery.txt
+          Q=/tmp/p2231-main
+          R=/tmp/p2231-repaired-qualification.txt
           : >"$R"
           stage() { printf '\n=== STAGE %s ===\n' "$1" | tee -a "$R"; }
           fail() { printf 'FAIL[%s] %s\n' "$1" "$2" | tee -a "$R" >&2; exit 1; }
-          eq() {
-            printf '%s actual=%s expected=%s\n' "$1" "$2" "$3" | tee -a "$R"
-            [ "$2" = "$3" ] || fail "$1" mismatch
+          require_eq() {
+            local label="$1" actual="$2" expected="$3"
+            printf '%s actual=%s expected=%s\n' "$label" "$actual" "$expected" | tee -a "$R"
+            [ "$actual" = "$expected" ] || fail "$label" 'value mismatch'
           }
           fetch() {
             git fetch --no-tags origin \
@@ -66,106 +74,288 @@ jobs:
               "+refs/heads/$CBRANCH:refs/remotes/origin/$CBRANCH"
           }
 
-          stage leases
-          eq controller-parent "$(git rev-parse HEAD^)" "$CPARENT"
-          eq controller-branch '${{ github.head_ref }}' "$CBRANCH"
-          eq controller-path "$(git diff --name-only "$CPARENT..HEAD")" "$CPATH"
+          stage controller-envelope
+          require_eq controller-parent "$(git rev-parse HEAD^)" "$CPARENT"
+          require_eq controller-branch '${{ github.head_ref }}' "$CBRANCH"
+          require_eq controller-paths "$(git diff --name-only "$CPARENT..HEAD")" "$CPATH"
+
+          stage initial-live-leases
           fetch
-          eq controller-remote "$(git rev-parse refs/remotes/origin/$CBRANCH)" "$H"
-          eq product-head "$(git rev-parse refs/remotes/origin/$PBRANCH)" "$PHEAD"
-          eq product-parent "$(git rev-parse "$PHEAD^")" "$PPARENT"
-          eq product-lib "$(git rev-parse "$PHEAD:tools/lib/industrial-exhaust.mjs")" "$PLIB"
-          eq product-test "$(git rev-parse "$PHEAD:test/industrial-exhaust.test.js")" "$PTEST"
+          require_eq controller-remote "$(git rev-parse refs/remotes/origin/$CBRANCH)" "$H"
+          require_eq product-head "$(git rev-parse refs/remotes/origin/$PBRANCH)" "$PHEAD"
+          require_eq product-parent "$(git rev-parse "$PHEAD^")" "$PPARENT"
+          require_eq product-lib "$(git rev-parse "$PHEAD:tools/lib/industrial-exhaust.mjs")" "$PLIB"
+          require_eq product-test "$(git rev-parse "$PHEAD:test/industrial-exhaust.test.js")" "$PTEST"
           MAIN="$(git rev-parse refs/remotes/origin/main)"
           printf 'main=%s\n' "$MAIN" | tee -a "$R"
-          eq main-lib "$(git rev-parse "$MAIN:tools/lib/industrial-exhaust.mjs")" "$BLIB"
-          eq main-test "$(git rev-parse "$MAIN:test/industrial-exhaust.test.js")" "$BTEST"
+          require_eq main-lib "$(git rev-parse "$MAIN:tools/lib/industrial-exhaust.mjs")" "$BLIB"
+          require_eq main-test "$(git rev-parse "$MAIN:test/industrial-exhaust.test.js")" "$BTEST"
 
-          stage transport
-          gh api "repos/$GITHUB_REPOSITORY/issues/comments/$COMMENT" --jq .body >/tmp/p2231-comment.md
-          python3 - /tmp/p2231-comment.md /tmp/p2231.patch /tmp/p2231-corrected.gz /tmp/p2231-posted.gz <<'PY' 2>&1 | tee -a "$R"
-          import base64, gzip, hashlib, os, pathlib, re, sys, time
-          def emit(k, v): print(f'{k}={v}', flush=True)
-          def die(k, v): print(f'FAIL[{k}] {v}', file=sys.stderr, flush=True); raise SystemExit(1)
+          cat >/tmp/reconstruct-p2231.py <<'PY'
+          import base64
+          import hashlib
+          import os
+          import pathlib
+          import re
+          import struct
+          import sys
+          import zlib
+
+          def emit(label, value):
+              print(f'{label}={value}', flush=True)
+
+          def fail(label, detail):
+              print(f'FAIL[{label}] {detail}', file=sys.stderr, flush=True)
+              raise SystemExit(1)
+
           body = pathlib.Path(sys.argv[1]).read_text()
           chunks = re.findall(r'^\d+\. `([A-Za-z0-9+/=]+)`$', body, re.M)
           emit('chunk-count', len(chunks))
-          if len(chunks) != 1: die('chunk-count', len(chunks))
+          if len(chunks) != 1:
+              fail('chunk-count', f'expected=1 actual={len(chunks)}')
           encoded = ''.join(chunks)
           emit('encoded-chars', len(encoded))
-          if len(encoded) != int(os.environ['PCHARS']): die('encoded-chars', len(encoded))
-          declared = re.findall(r'Compressed SHA-256\s*\|\s*`([0-9a-f]{64})`', body)
-          emit('declared-digests', declared)
-          if declared != [os.environ['TARGET_SHA']]: die('declared-digest', declared)
-          posted = base64.b64decode(encoded, validate=True)
+          if len(encoded) != int(os.environ['B64_CHARS']):
+              fail('encoded-chars', f"expected={os.environ['B64_CHARS']} actual={len(encoded)}")
+
+          declared_digest = re.findall(r'Compressed SHA-256\s*\|\s*`([0-9a-f]{64})`', body)
+          declared_patch = re.findall(r'Uncompressed patch bytes\s*\|\s*`([0-9,]+)`', body)
+          declared_gzip = re.findall(r'Compressed bytes\s*\|\s*`([0-9,]+)`', body)
+          declared_chars = re.findall(r'Base64 characters\s*\|\s*`([0-9,]+)`', body)
+          emit('declared-digest', declared_digest)
+          emit('declared-patch-bytes', declared_patch)
+          emit('declared-gzip-bytes', declared_gzip)
+          emit('declared-base64-characters', declared_chars)
+          if declared_digest != [os.environ['TARGET_GZIP_SHA']]:
+              fail('declared-digest', declared_digest)
+          if declared_patch != ['15,943']:
+              fail('declared-patch-bytes', declared_patch)
+          if declared_gzip != ['4,343']:
+              fail('declared-gzip-bytes', declared_gzip)
+          if declared_chars != ['5,792']:
+              fail('declared-base64-characters', declared_chars)
+
+          try:
+              posted = base64.b64decode(encoded, validate=True)
+          except Exception as exc:
+              fail('base64-decode', repr(exc))
           posted_sha = hashlib.sha256(posted).hexdigest()
-          emit('posted-bytes', len(posted)); emit('posted-sha256', posted_sha)
-          if len(posted) != int(os.environ['PZBYTES']): die('posted-bytes', len(posted))
-          if posted_sha != os.environ['CURRENT_SHA']: die('posted-sha256', posted_sha)
-          target = bytes.fromhex(os.environ['TARGET_SHA'])
-          work = bytearray(posted)
-          found = None
-          attempts = 0
-          started = time.monotonic()
-          for i, old in enumerate(posted):
-              for new in range(256):
-                  if new == old: continue
-                  work[i] = new; attempts += 1
-                  if hashlib.sha256(work).digest() == target:
-                      found = (i, old, new, bytes(work)); break
-              work[i] = old
-              if found: break
-          emit('attempts', attempts); emit('seconds', f'{time.monotonic()-started:.3f}')
-          pathlib.Path(sys.argv[4]).write_bytes(posted)
-          if not found: die('single-byte-recovery', 'no digest match')
-          i, old, new, corrected = found
-          emit('mutation-index', i); emit('old-hex', f'{old:02x}'); emit('new-hex', f'{new:02x}'); emit('xor-hex', f'{old^new:02x}')
-          emit('corrected-sha256', hashlib.sha256(corrected).hexdigest())
-          patch = gzip.decompress(corrected)
-          emit('patch-bytes', len(patch)); emit('patch-sha256', hashlib.sha256(patch).hexdigest())
-          if len(patch) != int(os.environ['PBYTES']): die('patch-bytes', len(patch))
-          prefix = b'From ' + os.environ['PCOMMIT'].encode() + b' '
-          if not patch.startswith(prefix): die('patch-prefix', patch.splitlines()[0])
-          pathlib.Path(sys.argv[2]).write_bytes(patch)
-          pathlib.Path(sys.argv[3]).write_bytes(corrected)
+          emit('posted-bytes', len(posted))
+          emit('posted-sha256', posted_sha)
+          emit('gzip-header', posted[:10].hex())
+          if len(posted) != int(os.environ['GZIP_BYTES']):
+              fail('posted-bytes', len(posted))
+          if posted_sha != os.environ['POSTED_SHA']:
+              fail('posted-sha256', posted_sha)
+          if posted[:10] != bytes.fromhex('1f8b0800000000000203'):
+              fail('gzip-header', posted[:10].hex())
+
+          inflater = zlib.decompressobj(-zlib.MAX_WBITS)
+          try:
+              raw = inflater.decompress(posted[10:-8]) + inflater.flush()
+          except zlib.error as exc:
+              fail('raw-inflate', repr(exc))
+          emit('inflater-eof', inflater.eof)
+          emit('inflater-unused-bytes', len(inflater.unused_data))
+          emit('inflater-unconsumed-bytes', len(inflater.unconsumed_tail))
+          if not inflater.eof or inflater.unused_data or inflater.unconsumed_tail:
+              fail('raw-inflate-envelope', 'stream boundary mismatch')
+
+          footer_crc, footer_size = struct.unpack('<II', posted[-8:])
+          emit('raw-bytes', len(raw))
+          emit('raw-crc', f'{zlib.crc32(raw) & 0xffffffff:08x}')
+          emit('footer-size', footer_size)
+          emit('footer-crc', f'{footer_crc:08x}')
+          if len(raw) != int(os.environ['RAW_BYTES']):
+              fail('raw-bytes', len(raw))
+          if footer_size != int(os.environ['PATCH_BYTES']):
+              fail('footer-size', footer_size)
+          if f'{footer_crc:08x}' != os.environ['FOOTER_CRC']:
+              fail('footer-crc', f'{footer_crc:08x}')
+
+          corrupt_tail = bytes.fromhex(os.environ['CORRUPT_TAIL_HEX'])
+          if not raw.endswith(corrupt_tail):
+              fail('corrupt-tail', raw[-len(corrupt_tail):].hex())
+          prefix = raw[:-len(corrupt_tail)]
+          prefix_sha = hashlib.sha256(prefix).hexdigest()
+          emit('prefix-bytes', len(prefix))
+          emit('prefix-sha256', prefix_sha)
+          if len(prefix) != int(os.environ['PREFIX_BYTES']):
+              fail('prefix-bytes', len(prefix))
+          if prefix_sha != os.environ['PREFIX_SHA']:
+              fail('prefix-sha256', prefix_sha)
+
+          trailer = b'-- \n2.43.0\n\n'
+          patch = prefix + trailer
+          patch_sha = hashlib.sha256(patch).hexdigest()
+          patch_crc = zlib.crc32(patch) & 0xffffffff
+          emit('repaired-trailer', repr(trailer))
+          emit('patch-bytes', len(patch))
+          emit('patch-sha256', patch_sha)
+          emit('patch-crc', f'{patch_crc:08x}')
+          if len(patch) != footer_size:
+              fail('patch-bytes', len(patch))
+          if patch_sha != os.environ['PATCH_SHA']:
+              fail('patch-sha256', patch_sha)
+          if patch_crc != footer_crc:
+              fail('patch-crc', f'expected={footer_crc:08x} actual={patch_crc:08x}')
+
+          expected_prefix = b'From ' + os.environ['PCOMMIT'].encode() + b' '
+          first_line = patch.splitlines()[0].decode('ascii', errors='backslashreplace') if patch else ''
+          emit('patch-first-line', first_line)
+          if not patch.startswith(expected_prefix):
+              fail('patch-source-commit', first_line)
+          if not patch.endswith(trailer):
+              fail('patch-trailer', patch[-len(trailer):])
+
+          pathlib.Path(sys.argv[2]).write_bytes(posted)
+          pathlib.Path(sys.argv[3]).write_bytes(patch)
           PY
 
-          stage apply
-          rm -rf "$S"; git worktree prune; git worktree add --detach "$S" "$PHEAD"
+          stage initial-transport-reconstruction
+          gh api "repos/$GITHUB_REPOSITORY/issues/comments/$COMMENT" --jq .body >/tmp/p2231-comment-initial.md
+          python3 /tmp/reconstruct-p2231.py \
+            /tmp/p2231-comment-initial.md \
+            /tmp/p2231-posted-initial.gz \
+            /tmp/p2231-repaired-initial.patch 2>&1 | tee -a "$R"
+          gzip -n -9 -c /tmp/p2231-repaired-initial.patch >/tmp/p2231-repaired-initial.gz
+          require_eq deterministic-gzip-bytes "$(wc -c </tmp/p2231-repaired-initial.gz)" "$GZIP_BYTES"
+          require_eq deterministic-gzip-sha "$(sha256sum /tmp/p2231-repaired-initial.gz | cut -d' ' -f1)" "$TARGET_GZIP_SHA"
+          require_eq deterministic-base64-chars "$(base64 -w0 /tmp/p2231-repaired-initial.gz | wc -c)" "$B64_CHARS"
+
+          stage old-head-defect-census
+          rm -rf "$S" "$Q"
+          git worktree prune
+          git worktree add --detach "$S" "$PHEAD"
           cd "$S"
+          require_eq source-head "$(git rev-parse HEAD)" "$PHEAD"
+          node --input-type=module <<'NODE' 2>&1 | tee -a "$R"
+          import assert from 'node:assert/strict';
+          import {redactContactData as r} from './tools/lib/industrial-exhaust.mjs';
+          const terminalInput = 'Phone: 09012345678 2026-08-17 01 42 68 53 00 90 people';
+          const terminalExpected = 'Phone: [contact omitted] 2026-08-17 [contact omitted] 90 people';
+          const countryInput = 'ID: 09012345678 2026-08-17.1 212 555 1234';
+          const countryExpected = 'ID: 09012345678 2026-08-17.[contact omitted]';
+          console.log('old-terminal='+JSON.stringify(r(terminalInput)));
+          console.log('old-country='+JSON.stringify(r(countryInput)));
+          assert.notEqual(r(terminalInput), terminalExpected);
+          assert.notEqual(r(countryInput), countryExpected);
+          NODE
+
+          stage apply-repaired-patch
           git config user.name BigBirdReturns
           git config user.email bigbirdreturns@proton.me
-          git am /tmp/p2231.patch 2>&1 | tee -a "$R"
-          eq applied-parent "$(git rev-parse HEAD^)" "$PHEAD"
-          eq applied-count "$(git rev-list --count "$PHEAD..HEAD")" '1'
-          eq applied-tree "$(git rev-parse HEAD^{tree})" "$PTREE"
-          eq applied-lib "$(git rev-parse HEAD:tools/lib/industrial-exhaust.mjs)" "$SLIB"
-          eq applied-test "$(git rev-parse HEAD:test/industrial-exhaust.test.js)" "$STEST"
-          eq applied-paths "$(git diff --name-only "$PHEAD..HEAD" | LC_ALL=C sort)" $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
-          eq applied-numstat "$(git diff --numstat "$PHEAD..HEAD" | LC_ALL=C sort -k3)" $'39\t0\ttest/industrial-exhaust.test.js\n195\t22\ttools/lib/industrial-exhaust.mjs'
-          git diff --check "$PHEAD..HEAD"
+          git am /tmp/p2231-repaired-initial.patch 2>&1 | tee -a "$R"
 
-          stage focused-verification
+          stage repaired-object-census
+          AHEAD="$(git rev-parse HEAD)"
+          ATREE="$(git rev-parse HEAD^{tree})"
+          ALIB="$(git rev-parse HEAD:tools/lib/industrial-exhaust.mjs)"
+          ATEST="$(git rev-parse HEAD:test/industrial-exhaust.test.js)"
+          require_eq repaired-parent "$(git rev-parse HEAD^)" "$PHEAD"
+          require_eq repaired-count "$(git rev-list --count "$PHEAD..HEAD")" '1'
+          require_eq repaired-tree "$ATREE" "$PTREE"
+          require_eq repaired-lib "$ALIB" "$SLIB"
+          require_eq repaired-test "$ATEST" "$STEST"
+          require_eq repaired-paths "$(git diff --name-only "$PHEAD..HEAD" | LC_ALL=C sort)" $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          require_eq repaired-numstat "$(git diff --numstat "$PHEAD..HEAD" | LC_ALL=C sort -k3)" $'39\t0\ttest/industrial-exhaust.test.js\n195\t22\ttools/lib/industrial-exhaust.mjs'
+          git diff --check "$PHEAD..HEAD"
+          printf 'repaired-head=%s\nrepaired-tree=%s\nrepaired-lib=%s\nrepaired-test=%s\n' "$AHEAD" "$ATREE" "$ALIB" "$ATEST" | tee -a "$R"
+
+          stage repaired-behavior
+          node --input-type=module <<'NODE' 2>&1 | tee -a "$R"
+          import assert from 'node:assert/strict';
+          import {redactContactData as r} from './tools/lib/industrial-exhaust.mjs';
+          const cases = [
+            ['Phone: 09012345678 2026-08-17 01 42 68 53 00', 'Phone: [contact omitted] 2026-08-17 [contact omitted]'],
+            ['Phone: 09012345678 2026.08.17.03 62 16 80 41', 'Phone: [contact omitted] 2026.08.17.[contact omitted]'],
+            ['ID: 09012345678 2026-08-17.1 212 555 1234', 'ID: 09012345678 2026-08-17.[contact omitted]'],
+            ['Phone: 09012345678 2026-08-17 01 42 68 53 00 90 people', 'Phone: [contact omitted] 2026-08-17 [contact omitted] 90 people'],
+            ['Reference: 2026-88-77 04 72 98 76 54', 'Reference: 2026-88-77 04 72 98 76 54'],
+          ];
+          for (const [input, expected] of cases) {
+            const actual = r(input);
+            console.log(JSON.stringify({input, actual, expected}));
+            assert.equal(actual, expected, input);
+          }
+          NODE
           node --check tools/lib/industrial-exhaust.mjs
           node --check tools/crawl-industrial-exhaust.mjs
           node --check test/industrial-exhaust.test.js
           node test/industrial-exhaust.test.js 2>&1 | tee -a "$R"
           node test/industrial-exhaust-artifacts.test.js 2>&1 | tee -a "$R"
 
-          stage final-leases
-          cd "$GITHUB_WORKSPACE"; fetch
-          eq final-main "$(git rev-parse refs/remotes/origin/main)" "$MAIN"
-          eq final-product "$(git rev-parse refs/remotes/origin/$PBRANCH)" "$PHEAD"
-          eq final-controller "$(git rev-parse refs/remotes/origin/$CBRANCH)" "$H"
-          printf 'RECOVERY_SUCCESS tree=%s lib=%s test=%s gzip=%s\n' "$PTREE" "$SLIB" "$STEST" "$TARGET_SHA" | tee -a "$R"
+          stage live-main-byte-qualification
+          cd "$GITHUB_WORKSPACE"
+          git worktree add --detach "$Q" "$MAIN"
+          cp "$S/tools/lib/industrial-exhaust.mjs" "$Q/tools/lib/industrial-exhaust.mjs"
+          cp "$S/test/industrial-exhaust.test.js" "$Q/test/industrial-exhaust.test.js"
+          cd "$Q"
+          require_eq qualified-lib "$(git hash-object tools/lib/industrial-exhaust.mjs)" "$SLIB"
+          require_eq qualified-test "$(git hash-object test/industrial-exhaust.test.js)" "$STEST"
+          require_eq qualified-paths "$(git diff --name-only | LC_ALL=C sort)" $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          require_eq qualified-numstat "$(git diff --numstat | LC_ALL=C sort -k3)" $'39\t0\ttest/industrial-exhaust.test.js\n195\t22\ttools/lib/industrial-exhaust.mjs'
+          git diff --check
+          node --input-type=module <<'NODE' 2>&1 | tee -a "$R"
+          import assert from 'node:assert/strict';
+          import {redactContactData as r} from './tools/lib/industrial-exhaust.mjs';
+          const cases = [
+            ['Phone: 09012345678 2026-08-17 01 42 68 53 00', 'Phone: [contact omitted] 2026-08-17 [contact omitted]'],
+            ['Phone: 09012345678 2026.08.17.03 62 16 80 41', 'Phone: [contact omitted] 2026.08.17.[contact omitted]'],
+            ['ID: 09012345678 2026-08-17.1 212 555 1234', 'ID: 09012345678 2026-08-17.[contact omitted]'],
+            ['Phone: 09012345678 2026-08-17 01 42 68 53 00 90 people', 'Phone: [contact omitted] 2026-08-17 [contact omitted] 90 people'],
+            ['Reference: 2026-88-77 04 72 98 76 54', 'Reference: 2026-88-77 04 72 98 76 54'],
+          ];
+          for (const [input, expected] of cases) assert.equal(r(input), expected, input);
+          NODE
+          node --check tools/lib/industrial-exhaust.mjs
+          node --check tools/crawl-industrial-exhaust.mjs
+          node --check test/industrial-exhaust.test.js
+          node test/industrial-exhaust.test.js 2>&1 | tee -a "$R"
+          node test/industrial-exhaust-artifacts.test.js 2>&1 | tee -a "$R"
+          npm run release:check 2>&1 | tee -a "$R"
+          require_eq post-release-lib "$(git hash-object tools/lib/industrial-exhaust.mjs)" "$SLIB"
+          require_eq post-release-test "$(git hash-object test/industrial-exhaust.test.js)" "$STEST"
+          require_eq post-release-paths "$(git diff --name-only | LC_ALL=C sort)" $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          require_eq post-release-numstat "$(git diff --numstat | LC_ALL=C sort -k3)" $'39\t0\ttest/industrial-exhaust.test.js\n195\t22\ttools/lib/industrial-exhaust.mjs'
+
+          stage final-transport-and-lease-revalidation
+          cd "$GITHUB_WORKSPACE"
+          fetch
+          require_eq final-main "$(git rev-parse refs/remotes/origin/main)" "$MAIN"
+          require_eq final-product "$(git rev-parse refs/remotes/origin/$PBRANCH)" "$PHEAD"
+          require_eq final-controller "$(git rev-parse refs/remotes/origin/$CBRANCH)" "$H"
+          require_eq final-main-lib "$(git rev-parse "$MAIN:tools/lib/industrial-exhaust.mjs")" "$BLIB"
+          require_eq final-main-test "$(git rev-parse "$MAIN:test/industrial-exhaust.test.js")" "$BTEST"
+          require_eq final-product-lib "$(git rev-parse "$PHEAD:tools/lib/industrial-exhaust.mjs")" "$PLIB"
+          require_eq final-product-test "$(git rev-parse "$PHEAD:test/industrial-exhaust.test.js")" "$PTEST"
+          gh api "repos/$GITHUB_REPOSITORY/issues/comments/$COMMENT" --jq .body >/tmp/p2231-comment-final.md
+          python3 /tmp/reconstruct-p2231.py \
+            /tmp/p2231-comment-final.md \
+            /tmp/p2231-posted-final.gz \
+            /tmp/p2231-repaired-final.patch 2>&1 | tee -a "$R"
+          gzip -n -9 -c /tmp/p2231-repaired-final.patch >/tmp/p2231-repaired-final.gz
+          cmp /tmp/p2231-comment-initial.md /tmp/p2231-comment-final.md
+          cmp /tmp/p2231-posted-initial.gz /tmp/p2231-posted-final.gz
+          cmp /tmp/p2231-repaired-initial.patch /tmp/p2231-repaired-final.patch
+          cmp /tmp/p2231-repaired-initial.gz /tmp/p2231-repaired-final.gz
+          require_eq final-deterministic-gzip-sha "$(sha256sum /tmp/p2231-repaired-final.gz | cut -d' ' -f1)" "$TARGET_GZIP_SHA"
+
+          printf 'QUALIFICATION_SUCCESS\nrun=%s\nbase=%s\nproduct=%s\nrepaired-head=%s\ntree=%s\nlib=%s\ntest=%s\nposted-gzip=%s\nrepaired-gzip=%s\npatch=%s\n' \
+            '${{ github.run_id }}' "$MAIN" "$PHEAD" "$AHEAD" "$ATREE" "$ALIB" "$ATEST" "$POSTED_SHA" "$TARGET_GZIP_SHA" "$PATCH_SHA" | tee -a "$R"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: pr2231-exact-digest-recovery-v36
+          name: pr2231-repaired-transport-qualification-v36
           path: |
-            /tmp/p2231-exact-digest-recovery.txt
-            /tmp/p2231-posted.gz
-            /tmp/p2231-corrected.gz
-            /tmp/p2231.patch
+            /tmp/p2231-repaired-qualification.txt
+            /tmp/p2231-comment-initial.md
+            /tmp/p2231-posted-initial.gz
+            /tmp/p2231-repaired-initial.patch
+            /tmp/p2231-repaired-initial.gz
+            /tmp/p2231-comment-final.md
+            /tmp/p2231-posted-final.gz
+            /tmp/p2231-repaired-final.patch
+            /tmp/p2231-repaired-final.gz
           if-no-files-found: warn
           retention-days: 90
