@@ -1,0 +1,154 @@
+name: Industrial-exhaust receipt helper executable binding controller v1
+
+# controller-trigger: v4
+on:
+  push:
+    branches:
+      - agent/industrial-exhaust-receipt-helper-exec-bind-controller-v1
+    paths:
+      - .github/workflows/industrial-exhaust-receipt-helper-exec-bind-controller-v1.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: industrial-exhaust-receipt-helper-exec-bind-controller-v1
+  cancel-in-progress: false
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/industrial-exhaust-receipt-helper-exec-bind-controller-v1
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Reproduce and repair helper executable binding
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          BASE_SHA='58508a8d5ecd9c42a89b9bff0e2c8fe96c2d6952'
+          PRODUCT_BRANCH='agent/industrial-exhaust-receipt-helper-exec-bind-v1'
+          DIAGNOSTIC_BRANCH='agent/industrial-exhaust-receipt-helper-exec-bind-diagnostics-v1'
+          WORKFLOW_PATH='.github/workflows/industrial-exhaust-receipt-helper-exec-bind-controller-v1.yml'
+          TEST_PATCH='.github/tmp/industrial-exhaust-helper-exec-bind-test-patch.py'
+          LIB_PATCH='.github/tmp/industrial-exhaust-helper-exec-bind-lib-patch.py'
+          DIAGNOSTIC_PATH='.github/tmp/industrial-exhaust-helper-exec-bind-controller-failure.log'
+          LIB_PATH='tools/lib/industrial-exhaust-artifacts.mjs'
+          TEST_PATH='test/industrial-exhaust-retained-store-custody.test.js'
+          CONTROLLER_HEAD="$(git rev-parse HEAD)"
+          CONTROLLER_LOG='/tmp/industrial-exhaust-helper-exec-bind-controller.log'
+
+          exec > >(tee "$CONTROLLER_LOG") 2>&1
+
+          record_error() {
+            local status="$?"
+            printf 'status=%s line=%s command=%q\n' \
+              "$status" "${BASH_LINENO[0]:-unknown}" "${BASH_COMMAND:-unknown}" \
+              >> "$CONTROLLER_LOG"
+            return "$status"
+          }
+
+          publish_failure_diagnostic() {
+            local status="$?"
+            trap - ERR EXIT
+            if [[ "$status" -ne 0 ]]; then
+              set +e
+              git reset --hard "$CONTROLLER_HEAD"
+              git clean -fdx
+              mkdir -p "$(dirname "$DIAGNOSTIC_PATH")"
+              {
+                printf 'controller_status=%s\n' "$status"
+                cat "$CONTROLLER_LOG"
+              } > "$DIAGNOSTIC_PATH"
+              git config user.name 'github-actions[bot]'
+              git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+              git add "$DIAGNOSTIC_PATH"
+              local diagnostic_tree diagnostic_sha
+              diagnostic_tree="$(git write-tree)"
+              diagnostic_sha="$(
+                printf '%s\n' 'transport: record helper executable binding controller failure' \
+                  | git commit-tree "$diagnostic_tree" -p "$CONTROLLER_HEAD"
+              )"
+              git push --force origin \
+                "${diagnostic_sha}:refs/heads/${DIAGNOSTIC_BRANCH}"
+            fi
+            exit "$status"
+          }
+
+          trap record_error ERR
+          trap publish_failure_diagnostic EXIT
+
+          current_sha="$CONTROLLER_HEAD"
+          git merge-base --is-ancestor "$BASE_SHA" "$current_sha"
+
+          expected_controller_paths=(
+            "$LIB_PATCH"
+            "$TEST_PATCH"
+            "$WORKFLOW_PATH"
+          )
+          mapfile -t controller_diff < <(git diff --name-only "$BASE_SHA" "$current_sha")
+          test "${#controller_diff[@]}" -eq "${#expected_controller_paths[@]}"
+          for index in "${!expected_controller_paths[@]}"; do
+            test "${controller_diff[$index]}" = "${expected_controller_paths[$index]}"
+          done
+
+          python -m py_compile "$TEST_PATCH" "$LIB_PATCH"
+          python "$TEST_PATCH"
+
+          if node "$TEST_PATH"; then
+            echo 'predecessor unexpectedly bound execution to the leased interpreter descriptor' >&2
+            exit 1
+          else
+            echo 'predecessor interpreter pathname substitution defect reproduced'
+          fi
+
+          python "$LIB_PATCH"
+
+          node --check "$LIB_PATH"
+          node --check "$TEST_PATH"
+          node "$TEST_PATH"
+          node test/industrial-exhaust-artifacts.test.js
+          node test/industrial-exhaust.test.js
+          node tools/hydrate-industrial-exhaust.mjs --audit
+          git diff --check
+
+          rm "$WORKFLOW_PATH" "$TEST_PATCH" "$LIB_PATCH"
+
+          mapfile -t product_diff < <(git diff --name-only "$BASE_SHA")
+          test "${#product_diff[@]}" -eq 2
+          test "${product_diff[0]}" = "$TEST_PATH"
+          test "${product_diff[1]}" = "$LIB_PATH"
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          tree_sha="$(git write-tree)"
+          new_sha="$(
+            printf '%s\n\n%s\n' \
+              'fix(industrial-exhaust): bind helper execution to leased interpreter' \
+              'Execute the helper through the leased interpreter descriptor, close that child capability after startup, and reject transient pathname substitution.' \
+              | git commit-tree "$tree_sha" -p "$BASE_SHA"
+          )"
+
+          mapfile -t final_diff < <(git diff --name-only "$BASE_SHA" "$new_sha")
+          test "${#final_diff[@]}" -eq 2
+          test "${final_diff[0]}" = "$TEST_PATH"
+          test "${final_diff[1]}" = "$LIB_PATH"
+          git diff --check "$BASE_SHA" "$new_sha"
+
+          live_main="$(git ls-remote origin refs/heads/main | awk '{print $1}')"
+          test "$live_main" = "$BASE_SHA"
+
+          git push \
+            --force-with-lease="refs/heads/${PRODUCT_BRANCH}:" \
+            origin \
+            "${new_sha}:refs/heads/${PRODUCT_BRANCH}"
+
+          trap - ERR EXIT
