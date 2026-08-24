@@ -1,0 +1,247 @@
+name: Temporary current-main observation period rebase v34
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-current-main-observation-period-rebase-v34.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: current-main-observation-period-rebase-v34
+  cancel-in-progress: false
+
+jobs:
+  qualify-and-publish:
+    if: github.repository == 'BigBirdReturns/clifford-number' && github.event.pull_request.number == 2227
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      EXPECTED_MAIN: 2d2c7b6cd7517ca25854e481b21774a697d0e76b
+      SOURCE_PARENT: f9627ecef674d34588395a7b5304c14746488c23
+      SOURCE_HEAD: 84ed47f2ed8373dab6b91938a1ed89700e275e69
+      CARRIER_PARENT: 280f4c4a7a937fcf16b24ef88be95f907783e0c0
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      CARRIER_BRANCH: agent/current-main-identifier-context-v1
+      BASE_LIBRARY: 5f68254d3e44de693e83503aed879160f9b7b997
+      BASE_TEST: 1659a7cc54666a2ac5a1d6b88eb8c6591d98008e
+      SOURCE_LIBRARY: dbf28c75e6681ca06915ccc2e85062f67382175f
+      SOURCE_TEST: 08b3cd4014b916d1ac5845c73c59f7d55dbae7ef
+      PRODUCT_AUTHOR_NAME: BigBirdReturns
+      PRODUCT_AUTHOR_EMAIL: bigbirdreturns@proton.me
+      SOURCE_WORK: /tmp/observation-period-source-v34
+      QUALIFICATION_WORK: /tmp/observation-period-current-main-v34
+      EXPECTED_PATHS_FILE: /tmp/observation-period-paths-v34.txt
+      EXPECTED_NUMSTAT_FILE: /tmp/observation-period-numstat-v34.txt
+      RECEIPT_FILE: /tmp/observation-period-rebase-receipt-v34.txt
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Validate controller, source, and live refs
+        shell: bash
+        run: |
+          set -euo pipefail
+          HEAD_SHA='${{ github.event.pull_request.head.sha }}'
+          test "$(git rev-parse HEAD)" = "$HEAD_SHA"
+          test '${{ github.event.pull_request.head.ref }}' = "$CARRIER_BRANCH"
+          test "$(git rev-parse HEAD^)" = "$CARRIER_PARENT"
+          test "$(git diff --name-only "$CARRIER_PARENT..HEAD")" = '.github/workflows/temporary-current-main-observation-period-rebase-v34.yml'
+
+          git fetch --no-tags origin \
+            "+refs/heads/main:refs/remotes/origin/main" \
+            "+refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/$PRODUCT_BRANCH" \
+            "+refs/heads/$CARRIER_BRANCH:refs/remotes/origin/$CARRIER_BRANCH"
+          RUN_MAIN="$(git rev-parse refs/remotes/origin/main)"
+          LIVE_PRODUCT="$(git rev-parse refs/remotes/origin/$PRODUCT_BRANCH)"
+          LIVE_CARRIER="$(git rev-parse refs/remotes/origin/$CARRIER_BRANCH)"
+          printf 'expected_main=%s\nrun_main=%s\nsource=%s\ncarrier=%s\n' \
+            "$EXPECTED_MAIN" "$RUN_MAIN" "$LIVE_PRODUCT" "$LIVE_CARRIER"
+          printf 'RUN_MAIN=%s\n' "$RUN_MAIN" >> "$GITHUB_ENV"
+
+          test "$RUN_MAIN" = "$EXPECTED_MAIN"
+          test "$LIVE_PRODUCT" = "$SOURCE_HEAD"
+          test "$LIVE_CARRIER" = "$HEAD_SHA"
+          test "$(git rev-parse "$SOURCE_HEAD^")" = "$SOURCE_PARENT"
+          test "$(git rev-list --count "$SOURCE_PARENT..$SOURCE_HEAD")" = 1
+          test "$(git rev-parse "$RUN_MAIN:tools/lib/industrial-exhaust.mjs")" = "$BASE_LIBRARY"
+          test "$(git rev-parse "$RUN_MAIN:test/industrial-exhaust.test.js")" = "$BASE_TEST"
+          test "$(git rev-parse "$SOURCE_HEAD:tools/lib/industrial-exhaust.mjs")" = "$SOURCE_LIBRARY"
+          test "$(git rev-parse "$SOURCE_HEAD:test/industrial-exhaust.test.js")" = "$SOURCE_TEST"
+
+          printf '%s\n' test/industrial-exhaust.test.js tools/lib/industrial-exhaust.mjs | LC_ALL=C sort > "$EXPECTED_PATHS_FILE"
+          printf '690\t0\ttest/industrial-exhaust.test.js\n457\t48\ttools/lib/industrial-exhaust.mjs\n' > "$EXPECTED_NUMSTAT_FILE"
+          test "$(git diff --name-only "$SOURCE_PARENT..$SOURCE_HEAD" | LC_ALL=C sort)" = "$(cat "$EXPECTED_PATHS_FILE")"
+          test "$(git diff --numstat "$SOURCE_PARENT..$SOURCE_HEAD" | LC_ALL=C sort -k3)" = "$(cat "$EXPECTED_NUMSTAT_FILE")"
+
+      - name: Prepare exact source and current-main qualification trees
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf "$SOURCE_WORK" "$QUALIFICATION_WORK"
+          git worktree prune
+          git worktree add --detach "$SOURCE_WORK" "$SOURCE_HEAD"
+          git worktree add --detach "$QUALIFICATION_WORK" "$RUN_MAIN"
+
+          test "$(git -C "$SOURCE_WORK" rev-parse HEAD:tools/lib/industrial-exhaust.mjs)" = "$SOURCE_LIBRARY"
+          test "$(git -C "$SOURCE_WORK" rev-parse HEAD:test/industrial-exhaust.test.js)" = "$SOURCE_TEST"
+          cp "$SOURCE_WORK/tools/lib/industrial-exhaust.mjs" "$QUALIFICATION_WORK/tools/lib/industrial-exhaust.mjs"
+          cp "$SOURCE_WORK/test/industrial-exhaust.test.js" "$QUALIFICATION_WORK/test/industrial-exhaust.test.js"
+
+          cd "$QUALIFICATION_WORK"
+          test "$(git hash-object tools/lib/industrial-exhaust.mjs)" = "$SOURCE_LIBRARY"
+          test "$(git hash-object test/industrial-exhaust.test.js)" = "$SOURCE_TEST"
+          test "$(git diff --name-only | LC_ALL=C sort)" = "$(cat "$EXPECTED_PATHS_FILE")"
+          test "$(git diff --numstat | LC_ALL=C sort -k3)" = "$(cat "$EXPECTED_NUMSTAT_FILE")"
+          git diff --check
+          node --check tools/lib/industrial-exhaust.mjs
+          node --check tools/crawl-industrial-exhaust.mjs
+          node --check test/industrial-exhaust.test.js
+
+      - name: Run focused and artifact suites on exact source
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$SOURCE_WORK"
+          /usr/bin/time -f 'focused_source_elapsed=%e' node test/industrial-exhaust.test.js
+          node test/industrial-exhaust-artifacts.test.js
+
+      - name: Run period-boundary matrix on current main
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$QUALIFICATION_WORK"
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { redactContactData } from './tools/lib/industrial-exhaust.mjs';
+
+          const chain = 'GUID '.repeat(4000);
+          for (const [observation, separator, laterPhone] of [
+            ['2026-08-17', '.', '03-6216-8041'],
+            ['3.14', '.', '03-6216-8041'],
+            ['２０２６－０８－１７', '．', '０３－６２１６－８０４１'],
+            ['2026-08-17', '.', '1 212 555 1234']
+          ]) {
+            const input = `Phone ${chain}record id: 09012345678 ${observation}${separator}${laterPhone}`;
+            assert.equal(
+              redactContactData(input),
+              `Phone ${chain}record id: [contact omitted] ${observation}${separator}[contact omitted]`,
+              `period observation boundary failed for ${observation}${separator}${laterPhone}`
+            );
+          }
+
+          for (const [observation, separator, laterPhone] of [
+            ['2026 people', ' ', '03-6216-8041'],
+            ['2026-08-17', '/', '03-6216-8041'],
+            ['12:30', ' ', '(03) 6216 8041'],
+            ['10-20 people', ' ', '+81 3 6216 5111']
+          ]) {
+            const input = `Phone ${chain}record id: 09012345678 ${observation}${separator}${laterPhone}`;
+            assert.equal(
+              redactContactData(input),
+              `Phone ${chain}record id: [contact omitted] ${observation}${separator}[contact omitted]`,
+              `existing observation boundary failed for ${observation}${separator}${laterPhone}`
+            );
+          }
+          NODE
+
+      - name: Run focused and artifact suites on current main
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$QUALIFICATION_WORK"
+          /usr/bin/time -f 'focused_main_elapsed=%e' node test/industrial-exhaust.test.js
+          node test/industrial-exhaust-artifacts.test.js
+
+      - name: Run release gate on current main
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$QUALIFICATION_WORK"
+          npm run release:check
+          test "$(git hash-object tools/lib/industrial-exhaust.mjs)" = "$SOURCE_LIBRARY"
+          test "$(git hash-object test/industrial-exhaust.test.js)" = "$SOURCE_TEST"
+          test "$(git diff --name-only -- tools/lib/industrial-exhaust.mjs test/industrial-exhaust.test.js | LC_ALL=C sort)" = "$(cat "$EXPECTED_PATHS_FILE")"
+          test "$(git diff --numstat -- tools/lib/industrial-exhaust.mjs test/industrial-exhaust.test.js | LC_ALL=C sort -k3)" = "$(cat "$EXPECTED_NUMSTAT_FILE")"
+
+      - name: Revalidate publication leases
+        shell: bash
+        run: |
+          set -euo pipefail
+          HEAD_SHA='${{ github.event.pull_request.head.sha }}'
+          git fetch --no-tags origin \
+            "+refs/heads/main:refs/remotes/origin/main" \
+            "+refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/$PRODUCT_BRANCH" \
+            "+refs/heads/$CARRIER_BRANCH:refs/remotes/origin/$CARRIER_BRANCH"
+          LIVE_MAIN="$(git rev-parse refs/remotes/origin/main)"
+          LIVE_PRODUCT="$(git rev-parse refs/remotes/origin/$PRODUCT_BRANCH)"
+          LIVE_CARRIER="$(git rev-parse refs/remotes/origin/$CARRIER_BRANCH)"
+          printf 'qualified_main=%s\nlive_main=%s\nsource=%s\ncarrier=%s\n' \
+            "$RUN_MAIN" "$LIVE_MAIN" "$LIVE_PRODUCT" "$LIVE_CARRIER"
+          test "$LIVE_MAIN" = "$RUN_MAIN"
+          test "$LIVE_PRODUCT" = "$SOURCE_HEAD"
+          test "$LIVE_CARRIER" = "$HEAD_SHA"
+          test "$(git rev-parse "$LIVE_MAIN:tools/lib/industrial-exhaust.mjs")" = "$BASE_LIBRARY"
+          test "$(git rev-parse "$LIVE_MAIN:test/industrial-exhaust.test.js")" = "$BASE_TEST"
+
+      - name: Publish qualified current-main product
+        id: publish
+        shell: bash
+        run: |
+          set -euo pipefail
+          HEAD_SHA='${{ github.event.pull_request.head.sha }}'
+          git config user.name "$PRODUCT_AUTHOR_NAME"
+          git config user.email "$PRODUCT_AUTHOR_EMAIL"
+          git checkout --detach --force "$RUN_MAIN"
+          cp "$SOURCE_WORK/tools/lib/industrial-exhaust.mjs" tools/lib/industrial-exhaust.mjs
+          cp "$SOURCE_WORK/test/industrial-exhaust.test.js" test/industrial-exhaust.test.js
+          git add -- tools/lib/industrial-exhaust.mjs test/industrial-exhaust.test.js
+          git diff --cached --check
+          test "$(git diff --cached --name-only | LC_ALL=C sort)" = "$(cat "$EXPECTED_PATHS_FILE")"
+          test "$(git diff --cached --numstat | LC_ALL=C sort -k3)" = "$(cat "$EXPECTED_NUMSTAT_FILE")"
+          git commit -m 'fix(crawler): rebase period-boundary repair on current main'
+          NEW_HEAD="$(git rev-parse HEAD)"
+          NEW_TREE="$(git rev-parse HEAD^{tree})"
+          test "$(git rev-parse HEAD^)" = "$RUN_MAIN"
+          test "$(git rev-list --count "$RUN_MAIN..$NEW_HEAD")" = 1
+          test "$(git log -1 --format=%an)" = "$PRODUCT_AUTHOR_NAME"
+          test "$(git log -1 --format=%ae)" = "$PRODUCT_AUTHOR_EMAIL"
+          test "$(git rev-parse "$NEW_HEAD:tools/lib/industrial-exhaust.mjs")" = "$SOURCE_LIBRARY"
+          test "$(git rev-parse "$NEW_HEAD:test/industrial-exhaust.test.js")" = "$SOURCE_TEST"
+
+          {
+            printf 'receipt_version=current-main-observation-period-rebase@34\n'
+            printf 'carrier_head=%s\nrun_id=%s\nbase=%s\nsuperseded_product_head=%s\npublished_product_head=%s\npublished_tree=%s\n' \
+              "$HEAD_SHA" '${{ github.run_id }}' "$RUN_MAIN" "$SOURCE_HEAD" "$NEW_HEAD" "$NEW_TREE"
+            printf 'library_blob=%s\ntest_blob=%s\n' "$SOURCE_LIBRARY" "$SOURCE_TEST"
+            printf 'changed_paths:\n%s\nnumstat:\n%s\n' "$(cat "$EXPECTED_PATHS_FILE")" "$(cat "$EXPECTED_NUMSTAT_FILE")"
+            printf 'qualification=source-focused+source-artifacts+node-check+period-boundary-matrix+focused-main+artifacts-main+release-check+dynamic-current-main-custody\n'
+          } > "$RECEIPT_FILE"
+          cat "$RECEIPT_FILE"
+
+          git push --force-with-lease="refs/heads/$PRODUCT_BRANCH:$SOURCE_HEAD" origin "HEAD:refs/heads/$PRODUCT_BRANCH"
+          printf 'new_head=%s\nnew_tree=%s\n' "$NEW_HEAD" "$NEW_TREE" >> "$GITHUB_OUTPUT"
+
+      - name: Upload qualification receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: observation-period-current-main-product-v34
+          path: /tmp/observation-period-rebase-receipt-v34.txt
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Cleanup worktrees
+        if: always()
+        shell: bash
+        run: |
+          git worktree remove --force "$SOURCE_WORK" >/dev/null 2>&1 || true
+          git worktree remove --force "$QUALIFICATION_WORK" >/dev/null 2>&1 || true
+          rm -rf "$SOURCE_WORK" "$QUALIFICATION_WORK"
