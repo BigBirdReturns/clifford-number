@@ -1,0 +1,65 @@
+name: Industrial-exhaust receipt publication path-custody controller v3
+
+on:
+  push:
+    branches:
+      - agent/industrial-exhaust-receipt-publication-path-custody-controller-v3
+    paths:
+      - .github/workflows/industrial-exhaust-receipt-publication-path-custody-controller-v3.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: industrial-exhaust-receipt-publication-path-custody-controller-v3
+  cancel-in-progress: false
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/industrial-exhaust-receipt-publication-path-custody-controller-v3
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Execute corrected descriptor-custody controller
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          SOURCE_BRANCH='agent/industrial-exhaust-receipt-publication-path-custody-controller-v2'
+          SOURCE_COMMIT='6fcd09aaa16508158bcd4638ee1350b4a1189765'
+          SOURCE_WORKFLOW='.github/workflows/industrial-exhaust-receipt-publication-path-custody-controller-v2.yml'
+
+          git fetch origin "${SOURCE_BRANCH}:refs/remotes/origin/${SOURCE_BRANCH}"
+          git show "${SOURCE_COMMIT}:${SOURCE_WORKFLOW}" > /tmp/path-custody-controller-v2.yml
+
+          python - <<'PY'
+          from pathlib import Path
+
+          text = Path('/tmp/path-custody-controller-v2.yml').read_text()
+          marker = '        run: |\n'
+          start = text.index(marker) + len(marker)
+          lines = []
+          for line in text[start:].splitlines():
+              if line.startswith('          '):
+                  lines.append(line[10:])
+              elif not line:
+                  lines.append('')
+              else:
+                  break
+
+          script = '\n'.join(lines) + '\n'
+          script = script.replace(
+              'industrial-exhaust-receipt-publication-path-custody-controller-v2',
+              'industrial-exhaust-receipt-publication-path-custody-controller-v3'
+          )
+          Path('/tmp/path-custody-controller-v3.sh').write_text(script)
+          PY
+
+          bash /tmp/path-custody-controller-v3.sh
