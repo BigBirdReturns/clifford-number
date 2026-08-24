@@ -18,7 +18,7 @@ jobs:
     env:
       CBRANCH: agent/pr2231-observation-interval-controller-v36
       CPATH: .github/workflows/temporary-pr2231-observation-interval-controller-v36.yml
-      CPARENT: f0918c547618b8f620f7ac4a22b647f967e2a5ba
+      CPARENT: 02cd9734f269c535afd9630233795f22e0ce15ac
       PBRANCH: agent/current-main-identifier-context-product-v1
       PHEAD: 456ee43cb8a0d3c1afeeed8b9f7342219a3fac05
       PPARENT: 2d2c7b6cd7517ca25854e481b21774a697d0e76b
@@ -60,7 +60,7 @@ jobs:
           test "$(git rev-parse "$MAIN:test/industrial-exhaust.test.js")" = "$BTEST"
 
           cat >/tmp/decode-p2231.py <<'PY'
-          import base64,gzip,hashlib,os,pathlib,re,sys
+          import base64,hashlib,os,pathlib,re,struct,sys,zlib
           body=pathlib.Path(sys.argv[1]).read_text()
           chunks=re.findall(r'^\d+\. `([A-Za-z0-9+/=]+)`$',body,re.M)
           assert len(chunks)==1, len(chunks)
@@ -68,11 +68,21 @@ jobs:
           assert len(encoded)==int(os.environ['PCHARS']), len(encoded)
           compressed=base64.b64decode(encoded,validate=True)
           assert len(compressed)==int(os.environ['PZBYTES']), len(compressed)
-          patch=gzip.decompress(compressed)
+          assert compressed[:4]==b'\x1f\x8b\x08\x00', compressed[:4].hex()
+          inflater=zlib.decompressobj(-zlib.MAX_WBITS)
+          patch=inflater.decompress(compressed[10:-8])+inflater.flush()
+          assert inflater.eof
+          assert not inflater.unused_data
+          assert not inflater.unconsumed_tail
+          footer_crc,footer_size=struct.unpack('<II',compressed[-8:])
+          actual_crc=zlib.crc32(patch)&0xffffffff
+          assert footer_size==(len(patch)&0xffffffff),(footer_size,len(patch))
           assert len(patch)==int(os.environ['PBYTES']), len(patch)
           assert patch.startswith(b'From '+os.environ['PCOMMIT'].encode()+b' ')
           pathlib.Path(sys.argv[2]).write_bytes(patch)
           pathlib.Path(sys.argv[3]).write_text(hashlib.sha256(compressed).hexdigest()+'\n')
+          print(f'gzip-footer-crc={footer_crc:08x}')
+          print(f'payload-crc={actual_crc:08x}')
           PY
           gh api "repos/$GITHUB_REPOSITORY/issues/comments/$COMMENT" --jq .body >/tmp/c.md
           python3 /tmp/decode-p2231.py /tmp/c.md /tmp/p.patch /tmp/p.sha
