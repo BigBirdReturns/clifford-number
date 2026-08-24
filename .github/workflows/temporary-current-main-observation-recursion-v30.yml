@@ -1,0 +1,319 @@
+name: Temporary current-main observation recursion repair v30
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-current-main-observation-recursion-v30.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: current-main-observation-recursion-repair-v30
+  cancel-in-progress: false
+
+jobs:
+  qualify-and-publish:
+    if: github.repository == 'BigBirdReturns/clifford-number' && github.event.pull_request.number == 2227
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      SOURCE_BASE: 8be5ec761d878671a7b81f3b423b37b1a128db30
+      PRODUCT_PARENT: 01141ee3cda60cb82da80d89ebf9da164ad602da
+      PRODUCT_HEAD: eab9374726d50a13fd033b343d6d95116e2bdd9b
+      CARRIER_PARENT: f532507f80264ae827ce47559b96dafcfd2eadc3
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      CARRIER_BRANCH: agent/current-main-identifier-context-v1
+      BASE_LIBRARY: 5f68254d3e44de693e83503aed879160f9b7b997
+      BASE_TEST: 1659a7cc54666a2ac5a1d6b88eb8c6591d98008e
+      SOURCE_LIBRARY: 06575fa75daf153b5fccfec46e6ed5d7710eac79
+      SOURCE_TEST: eb46aeaed31f7f7f1c1dbba3db0c8dbef1abd518
+      PRODUCT_AUTHOR_NAME: BigBirdReturns
+      PRODUCT_AUTHOR_EMAIL: bigbirdreturns@proton.me
+      PATCH_WORK: /tmp/observation-recursion-patch-v30
+      QUALIFICATION_WORK: /tmp/observation-recursion-qualification-v30
+      EXPECTED_PATHS_FILE: /tmp/observation-recursion-paths-v30.txt
+      EXPECTED_NUMSTAT_FILE: /tmp/observation-recursion-numstat-v30.txt
+      RECEIPT_FILE: /tmp/observation-recursion-receipt-v30.txt
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Reproduce, repair, qualify, and publish
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT="$PWD"
+          HEAD_SHA='${{ github.event.pull_request.head.sha }}'
+
+          cleanup() {
+            cd "$ROOT" >/dev/null 2>&1 || true
+            git worktree remove --force "$PATCH_WORK" >/dev/null 2>&1 || true
+            git worktree remove --force "$QUALIFICATION_WORK" >/dev/null 2>&1 || true
+            rm -rf "$PATCH_WORK" "$QUALIFICATION_WORK"
+          }
+          trap cleanup EXIT
+
+          test "$(git rev-parse HEAD)" = "$HEAD_SHA"
+          test '${{ github.event.pull_request.head.ref }}' = "$CARRIER_BRANCH"
+          test "$(git rev-parse HEAD^)" = "$CARRIER_PARENT"
+          test "$(git diff --name-only "$CARRIER_PARENT..HEAD")" = '.github/workflows/temporary-current-main-observation-recursion-v30.yml'
+
+          git fetch --no-tags origin \
+            "+refs/heads/main:refs/remotes/origin/main" \
+            "+refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/$PRODUCT_BRANCH" \
+            "+refs/heads/$CARRIER_BRANCH:refs/remotes/origin/$CARRIER_BRANCH"
+          RUN_MAIN="$(git rev-parse refs/remotes/origin/main)"
+          LIVE_PRODUCT="$(git rev-parse refs/remotes/origin/$PRODUCT_BRANCH)"
+          LIVE_CARRIER="$(git rev-parse refs/remotes/origin/$CARRIER_BRANCH)"
+          printf 'run_main=%s\nproduct=%s\ncarrier=%s\n' "$RUN_MAIN" "$LIVE_PRODUCT" "$LIVE_CARRIER"
+
+          test "$RUN_MAIN" = "$SOURCE_BASE"
+          test "$LIVE_PRODUCT" = "$PRODUCT_HEAD"
+          test "$LIVE_CARRIER" = "$HEAD_SHA"
+          test "$(git rev-parse "$PRODUCT_HEAD^")" = "$PRODUCT_PARENT"
+          test "$(git rev-list --count "$PRODUCT_PARENT..$PRODUCT_HEAD")" = 1
+          test "$(git rev-parse "$SOURCE_BASE:tools/lib/industrial-exhaust.mjs")" = "$BASE_LIBRARY"
+          test "$(git rev-parse "$SOURCE_BASE:test/industrial-exhaust.test.js")" = "$BASE_TEST"
+          test "$(git rev-parse "$PRODUCT_HEAD:tools/lib/industrial-exhaust.mjs")" = "$SOURCE_LIBRARY"
+          test "$(git rev-parse "$PRODUCT_HEAD:test/industrial-exhaust.test.js")" = "$SOURCE_TEST"
+          printf '%s\n' test/industrial-exhaust.test.js tools/lib/industrial-exhaust.mjs | LC_ALL=C sort > "$EXPECTED_PATHS_FILE"
+          test "$(git diff --name-only "$PRODUCT_PARENT..$PRODUCT_HEAD" | LC_ALL=C sort)" = "$(cat "$EXPECTED_PATHS_FILE")"
+
+          rm -rf "$PATCH_WORK" "$QUALIFICATION_WORK"
+          git worktree prune
+          git worktree add --detach "$PATCH_WORK" "$PRODUCT_HEAD"
+          cd "$PATCH_WORK"
+
+          node --input-type=module <<'NODE'
+          import { redactContactData } from './tools/lib/industrial-exhaust.mjs';
+          const chain = 'GUID '.repeat(4000);
+          const input = `Phone ${chain}record id: 09012345678 2026-08-17 03-6216-8041`;
+          const expected = `Phone ${chain}record id: [contact omitted] 2026-08-17 [contact omitted]`;
+          const actual = redactContactData(input);
+          if (actual === expected) {
+            throw new Error('source head no longer reproduces the recursive observation defect');
+          }
+          if (!actual.includes('[contact omitted]')) {
+            throw new Error(`unexpected reproduction output: ${actual.slice(-160)}`);
+          }
+          console.log(`reproduced_tail=${actual.slice(-120)}`);
+          NODE
+
+          python - tools/lib/industrial-exhaust.mjs test/industrial-exhaust.test.js <<'PY'
+          from pathlib import Path
+          from textwrap import dedent, indent
+          import sys
+
+          library_path = Path(sys.argv[1])
+          test_path = Path(sys.argv[2])
+          library = library_path.read_text(encoding='utf-8')
+          tests = test_path.read_text(encoding='utf-8')
+
+          def replace_once(text, old, new, label):
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected one match, found {count}')
+              return text.replace(old, new, 1)
+
+          def replace_first_span(text, start_marker, end_marker, replacement, label):
+              start_count = text.count(start_marker)
+              if start_count != 1:
+                  raise SystemExit(f'{label}: start anchor count {start_count}')
+              start = text.index(start_marker)
+              end_start = text.find(end_marker, start + len(start_marker))
+              if end_start < 0:
+                  raise SystemExit(f'{label}: end anchor missing')
+              end = end_start + len(end_marker)
+              return text[:start] + replacement + text[end:]
+
+          helper = dedent('''\
+          function independentPhoneStartAfterObservation(
+            candidate,
+            groups,
+            observationGroup
+          ) {
+            for (let first = observationGroup + 1; first < groups.length; first += 1) {
+              const previousEnd = groups[first - 1].index + groups[first - 1][0].length;
+              const separator = candidate.slice(previousEnd, groups[first].index);
+              if (!/[\\s/／]/u.test(separator)) continue;
+              if (!canStartIndependentPhone(candidate, groups, first, '')) continue;
+              return phoneWindowBounds(candidate, groups, first, first).start;
+            }
+            return candidate.length;
+          }
+
+          function phoneRedactionRanges(
+          ''')
+          library = replace_once(
+              library,
+              '\nfunction phoneRedactionRanges(\n',
+              '\n' + helper,
+              'observation recursion helper'
+          )
+
+          recursion_body = dedent('''\
+          const recursiveStart = observationGroup < groups.length
+            ? independentPhoneStartAfterObservation(
+                candidate,
+                groups,
+                observationGroup
+              )
+            : end;
+          const preservedObservation = candidate.slice(end, recursiveStart);
+          const remainderRanges = recursiveStart < candidate.length
+            ? phoneRedactionRanges(
+                candidate.slice(recursiveStart),
+                `${externalPrefix}${candidate.slice(0, start)}[contact omitted]${preservedObservation}`,
+                externalSuffix,
+                true,
+                indeterminatePhoneContext
+              ).map(range => ({
+                start: range.start + recursiveStart,
+                end: range.end + recursiveStart
+              }))
+            : [];
+          return [{ start, end }, ...remainderRanges];
+          ''')
+          library = replace_first_span(
+              library,
+              '      const remainderRanges = phoneRedactionRanges(\n',
+              '      return [{ start, end }, ...remainderRanges];',
+              indent(recursion_body.rstrip('\n'), '      '),
+              'observation recursion boundary'
+          )
+
+          recursive_tests = dedent('''\
+          for (const [overflowObservation, laterPhone] of [
+            ['2026 people', '03-6216-8041'],
+            ['2026-08-17', '03-6216-8041'],
+            ['12:30', '(03) 6216 8041'],
+            ['3.14', '(03) 6216 8041'],
+            ['10-20 people', '+81 3 6216 5111']
+          ]) {
+            const input = `Phone ${overflowIdentifierLabelChain}record id: 09012345678 ${overflowObservation} ${laterPhone}`;
+            assert.equal(
+              redactContactData(input),
+              `Phone ${overflowIdentifierLabelChain}record id: [contact omitted] ${overflowObservation} [contact omitted]`,
+              'a proven observation boundary must survive recursion to a later independent phone'
+            );
+          }
+
+          const overflowAmbiguousContinuation = `Phone ${overflowIdentifierLabelChain}record id: 09012345678 2026`;
+          ''')
+          tests = replace_once(
+              tests,
+              'const overflowAmbiguousContinuation = `Phone ${overflowIdentifierLabelChain}record id: 09012345678 2026`;',
+              recursive_tests.rstrip('\n'),
+              'overflow recursive observation regressions'
+          )
+
+          for label, text in [('library', library), ('tests', tests)]:
+              bad_lines = [
+                  number
+                  for number, line in enumerate(text.splitlines(), 1)
+                  if line.rstrip() != line
+              ]
+              if bad_lines:
+                  raise SystemExit(f'{label}: trailing whitespace at lines {bad_lines[:10]}')
+
+          library_path.write_text(library, encoding='utf-8')
+          test_path.write_text(tests, encoding='utf-8')
+          PY
+
+          test "$(git diff --name-only | LC_ALL=C sort)" = "$(cat "$EXPECTED_PATHS_FILE")"
+          git diff --check
+          NEW_LIBRARY="$(git hash-object tools/lib/industrial-exhaust.mjs)"
+          NEW_TEST="$(git hash-object test/industrial-exhaust.test.js)"
+          printf 'new_library=%s\nnew_test=%s\n' "$NEW_LIBRARY" "$NEW_TEST"
+          test "$NEW_LIBRARY" != "$SOURCE_LIBRARY"
+          test "$NEW_TEST" != "$SOURCE_TEST"
+
+          node --check tools/lib/industrial-exhaust.mjs
+          node --check tools/crawl-industrial-exhaust.mjs
+          node --check test/industrial-exhaust.test.js
+          /usr/bin/time -f 'focused_patch_elapsed=%e' node test/industrial-exhaust.test.js
+          node test/industrial-exhaust-artifacts.test.js
+
+          cd "$ROOT"
+          git worktree add --detach "$QUALIFICATION_WORK" "$RUN_MAIN"
+          cp "$PATCH_WORK/tools/lib/industrial-exhaust.mjs" "$QUALIFICATION_WORK/tools/lib/industrial-exhaust.mjs"
+          cp "$PATCH_WORK/test/industrial-exhaust.test.js" "$QUALIFICATION_WORK/test/industrial-exhaust.test.js"
+          cd "$QUALIFICATION_WORK"
+
+          test "$(git hash-object tools/lib/industrial-exhaust.mjs)" = "$NEW_LIBRARY"
+          test "$(git hash-object test/industrial-exhaust.test.js)" = "$NEW_TEST"
+          test "$(git diff --name-only | LC_ALL=C sort)" = "$(cat "$EXPECTED_PATHS_FILE")"
+          git diff --check
+          git diff --numstat | LC_ALL=C sort -k3 > "$EXPECTED_NUMSTAT_FILE"
+          test "$(sed '/^$/d' "$EXPECTED_NUMSTAT_FILE" | wc -l)" -eq 2
+          cat "$EXPECTED_NUMSTAT_FILE"
+          node --check tools/lib/industrial-exhaust.mjs
+          node --check tools/crawl-industrial-exhaust.mjs
+          node --check test/industrial-exhaust.test.js
+          /usr/bin/time -f 'focused_main_elapsed=%e' node test/industrial-exhaust.test.js
+          node test/industrial-exhaust-artifacts.test.js
+          npm run release:check
+          test "$(git hash-object tools/lib/industrial-exhaust.mjs)" = "$NEW_LIBRARY"
+          test "$(git hash-object test/industrial-exhaust.test.js)" = "$NEW_TEST"
+          test "$(git diff --name-only | LC_ALL=C sort)" = "$(cat "$EXPECTED_PATHS_FILE")"
+          test "$(git diff --numstat | LC_ALL=C sort -k3)" = "$(cat "$EXPECTED_NUMSTAT_FILE")"
+
+          cd "$ROOT"
+          git fetch --no-tags origin \
+            "+refs/heads/main:refs/remotes/origin/main" \
+            "+refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/$PRODUCT_BRANCH" \
+            "+refs/heads/$CARRIER_BRANCH:refs/remotes/origin/$CARRIER_BRANCH"
+          LIVE_MAIN="$(git rev-parse refs/remotes/origin/main)"
+          LIVE_PRODUCT="$(git rev-parse refs/remotes/origin/$PRODUCT_BRANCH)"
+          LIVE_CARRIER="$(git rev-parse refs/remotes/origin/$CARRIER_BRANCH)"
+          test "$LIVE_MAIN" = "$RUN_MAIN"
+          test "$LIVE_PRODUCT" = "$PRODUCT_HEAD"
+          test "$LIVE_CARRIER" = "$HEAD_SHA"
+          test "$(git rev-parse "$RUN_MAIN:tools/lib/industrial-exhaust.mjs")" = "$BASE_LIBRARY"
+          test "$(git rev-parse "$RUN_MAIN:test/industrial-exhaust.test.js")" = "$BASE_TEST"
+
+          git config user.name "$PRODUCT_AUTHOR_NAME"
+          git config user.email "$PRODUCT_AUTHOR_EMAIL"
+          git checkout --detach --force "$RUN_MAIN"
+          cp "$PATCH_WORK/tools/lib/industrial-exhaust.mjs" tools/lib/industrial-exhaust.mjs
+          cp "$PATCH_WORK/test/industrial-exhaust.test.js" test/industrial-exhaust.test.js
+          git add -- tools/lib/industrial-exhaust.mjs test/industrial-exhaust.test.js
+          git diff --cached --check
+          test "$(git diff --cached --name-only | LC_ALL=C sort)" = "$(cat "$EXPECTED_PATHS_FILE")"
+          test "$(git diff --cached --numstat | LC_ALL=C sort -k3)" = "$(cat "$EXPECTED_NUMSTAT_FILE")"
+          git commit -m 'fix(crawler): persist observation boundaries across recursion'
+          NEW_HEAD="$(git rev-parse HEAD)"
+          NEW_TREE="$(git rev-parse HEAD^{tree})"
+          test "$(git rev-parse HEAD^)" = "$RUN_MAIN"
+          test "$(git rev-list --count "$RUN_MAIN..$NEW_HEAD")" = 1
+          test "$(git log -1 --format=%an)" = "$PRODUCT_AUTHOR_NAME"
+          test "$(git log -1 --format=%ae)" = "$PRODUCT_AUTHOR_EMAIL"
+          test "$(git rev-parse "$NEW_HEAD:tools/lib/industrial-exhaust.mjs")" = "$NEW_LIBRARY"
+          test "$(git rev-parse "$NEW_HEAD:test/industrial-exhaust.test.js")" = "$NEW_TEST"
+          git push --force-with-lease="refs/heads/$PRODUCT_BRANCH:$PRODUCT_HEAD" origin "HEAD:refs/heads/$PRODUCT_BRANCH"
+
+          {
+            printf 'receipt_version=current-main-observation-recursion-repair@30\n'
+            printf 'carrier_head=%s\nrun_id=%s\nbase=%s\nsuperseded_product_head=%s\npublished_product_head=%s\npublished_tree=%s\n' \
+              "$HEAD_SHA" '${{ github.run_id }}' "$RUN_MAIN" "$PRODUCT_HEAD" "$NEW_HEAD" "$NEW_TREE"
+            printf 'library_blob=%s\ntest_blob=%s\n' "$NEW_LIBRARY" "$NEW_TEST"
+            printf 'changed_paths:\n%s\nnumstat:\n%s\n' "$(cat "$EXPECTED_PATHS_FILE")" "$(cat "$EXPECTED_NUMSTAT_FILE")"
+            printf 'qualification=node-check+recursive-observation-matrix+industrial-exhaust+artifacts+release-check+pinned-main-custody\n'
+          } > "$RECEIPT_FILE"
+          cat "$RECEIPT_FILE"
+
+      - name: Upload qualification receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: observation-recursion-product-v30
+          path: /tmp/observation-recursion-receipt-v30.txt
+          if-no-files-found: error
+          retention-days: 90
