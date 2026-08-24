@@ -1197,20 +1197,274 @@ export function buildArtifactAlerts(artifacts, { watchConfig = null, candidates 
 }
 
 const RECEIPT_DESCRIPTOR_ROOT = '/proc/self/fd';
+const RECEIPT_MOUNT_NAMESPACE_PATH = '/proc/self/ns/mnt';
+const RECEIPT_MOUNTINFO_PATH = '/proc/self/mountinfo';
+const RECEIPT_PROCFS_MAGIC = 0x9fa0;
 
-function receiptDirectoryDisplayPath(root, absolutePath) {
-  const relative = path.relative(root, absolutePath);
-  return relative ? relative.split(path.sep).join('/') : '.';
+function decodeReceiptMountInfoField(value) {
+  return String(value).replace(/\\([0-7]{3})/gu, (_match, digits) =>
+    String.fromCharCode(Number.parseInt(digits, 8)));
 }
 
-function receiptDescriptorBridgePath(descriptor) {
+function receiptMountCoversPath(mountPoint, targetPath) {
+  if (mountPoint === '/') return targetPath.startsWith('/');
+  return targetPath === mountPoint || targetPath.startsWith(`${mountPoint}/`);
+}
+
+function inspectReceiptProcfsMount() {
+  let mountInfo;
+  try {
+    mountInfo = fs.readFileSync(RECEIPT_MOUNTINFO_PATH, 'utf8');
+  } catch (error) {
+    throw new Error(
+      `descriptor-relative receipt publication procfs mount inspection failed: ${error.message}`
+    );
+  }
+
+  const entries = [];
+  for (const line of mountInfo.split('\n')) {
+    if (!line) continue;
+    const fields = line.split(' ');
+    const separator = fields.indexOf('-');
+    if (separator < 6 || fields.length < separator + 3) continue;
+    entries.push({
+      mount_id: fields[0],
+      parent_id: fields[1],
+      major_minor: fields[2],
+      root: decodeReceiptMountInfoField(fields[3]),
+      mount_point: decodeReceiptMountInfoField(fields[4]),
+      fs_type: fields[separator + 1],
+      mount_source: fields[separator + 2]
+    });
+  }
+
+  const effective = entries
+    .filter(entry => receiptMountCoversPath(
+      entry.mount_point,
+      RECEIPT_DESCRIPTOR_ROOT
+    ))
+    .sort((left, right) => right.mount_point.length - left.mount_point.length)[0];
+  if (!effective
+    || effective.mount_point !== '/proc'
+    || effective.root !== '/'
+    || effective.fs_type !== 'proc'
+    || effective.mount_source !== 'proc') {
+    throw new Error(
+      'descriptor-relative receipt publication effective descriptor mount is not canonical procfs'
+    );
+  }
+  return effective;
+}
+
+function closeReceiptPublicationPlatformSession(session, label) {
+  if (!session) return null;
+  let failure = null;
+  for (const [key, descriptorLabel] of [
+    ['descriptorRootDescriptor', 'descriptor-root'],
+    ['namespaceDescriptor', 'mount-namespace']
+  ]) {
+    const descriptor = session[key];
+    if (descriptor === null || descriptor === undefined) continue;
+    try {
+      fs.closeSync(descriptor);
+    } catch (error) {
+      failure ??= new Error(
+        `${label} ${descriptorLabel} descriptor close failed: ${error.message}`
+      );
+    }
+    session[key] = null;
+  }
+  return failure;
+}
+
+function openReceiptPublicationPlatformSession(label) {
   if (process.platform !== 'linux') {
     throw new Error('descriptor-relative receipt publication requires Linux procfs');
   }
+
+  let namespaceDescriptor;
+  let descriptorRootDescriptor;
+  try {
+    const mount = inspectReceiptProcfsMount();
+    const fileSystem = fs.statfsSync(RECEIPT_DESCRIPTOR_ROOT);
+    if (Number(fileSystem.type) !== RECEIPT_PROCFS_MAGIC) {
+      throw new Error(
+        'descriptor-relative receipt publication descriptor root is not procfs'
+      );
+    }
+
+    namespaceDescriptor = fs.openSync(
+      RECEIPT_MOUNT_NAMESPACE_PATH,
+      fs.constants.O_RDONLY
+    );
+    descriptorRootDescriptor = fs.openSync(
+      RECEIPT_DESCRIPTOR_ROOT,
+      fs.constants.O_RDONLY
+        | (fs.constants.O_DIRECTORY ?? 0)
+        | (fs.constants.O_NOFOLLOW ?? 0)
+    );
+
+    const namespaceStats = fs.fstatSync(namespaceDescriptor);
+    const namespacePathStats = fs.statSync(RECEIPT_MOUNT_NAMESPACE_PATH);
+    const descriptorRootStats = fs.fstatSync(descriptorRootDescriptor);
+    const descriptorRootPathStats = fs.statSync(RECEIPT_DESCRIPTOR_ROOT);
+    if (!sameReceiptIdentity(namespaceStats, namespacePathStats)) {
+      throw new Error(
+        'descriptor-relative receipt publication mount-namespace identity mismatch'
+      );
+    }
+    if (!descriptorRootStats.isDirectory()
+      || !descriptorRootPathStats.isDirectory()
+      || !sameReceiptIdentity(descriptorRootStats, descriptorRootPathStats)) {
+      throw new Error(
+        'descriptor-relative receipt publication descriptor-root identity mismatch'
+      );
+    }
+
+    const session = {
+      namespaceDescriptor,
+      namespaceIdentity: {
+        dev: namespaceStats.dev,
+        ino: namespaceStats.ino
+      },
+      descriptorRootDescriptor,
+      descriptorRootIdentity: {
+        dev: descriptorRootStats.dev,
+        ino: descriptorRootStats.ino
+      },
+      mountIdentity: {
+        mount_id: mount.mount_id,
+        major_minor: mount.major_minor
+      }
+    };
+    verifyReceiptPublicationPlatformSession(session, `${label} admission`);
+    return session;
+  } catch (error) {
+    const partial = {
+      namespaceDescriptor: namespaceDescriptor ?? null,
+      descriptorRootDescriptor: descriptorRootDescriptor ?? null
+    };
+    const closeFailure = closeReceiptPublicationPlatformSession(partial, label);
+    if (closeFailure) {
+      throw new Error(
+        `${label} platform admission failed: ${error.message}; ${closeFailure.message}`
+      );
+    }
+    throw new Error(`${label} platform admission failed: ${error.message}`);
+  }
+}
+
+function verifyReceiptPublicationPlatformSession(session, label) {
+  if (!session
+    || !Number.isInteger(session.namespaceDescriptor)
+    || !Number.isInteger(session.descriptorRootDescriptor)) {
+    throw new Error(`${label} lacks an admitted procfs platform session`);
+  }
+
+  try {
+    const mount = inspectReceiptProcfsMount();
+    if (mount.mount_id !== session.mountIdentity.mount_id
+      || mount.major_minor !== session.mountIdentity.major_minor) {
+      throw new Error(
+        'descriptor-relative receipt publication procfs mount identity changed'
+      );
+    }
+
+    const fileSystem = fs.statfsSync(RECEIPT_DESCRIPTOR_ROOT);
+    if (Number(fileSystem.type) !== RECEIPT_PROCFS_MAGIC) {
+      throw new Error(
+        'descriptor-relative receipt publication descriptor root is not procfs'
+      );
+    }
+
+    const namespaceDescriptorStats = fs.fstatSync(session.namespaceDescriptor);
+    const namespacePathStats = fs.statSync(RECEIPT_MOUNT_NAMESPACE_PATH);
+    if (!sameReceiptIdentity(namespaceDescriptorStats, session.namespaceIdentity)
+      || !sameReceiptIdentity(namespacePathStats, session.namespaceIdentity)) {
+      throw new Error(
+        'descriptor-relative receipt publication mount-namespace identity changed'
+      );
+    }
+
+    const descriptorRootStats = fs.fstatSync(session.descriptorRootDescriptor);
+    const descriptorRootPathStats = fs.statSync(RECEIPT_DESCRIPTOR_ROOT);
+    if (!descriptorRootStats.isDirectory()
+      || !descriptorRootPathStats.isDirectory()
+      || !sameReceiptIdentity(
+        descriptorRootStats,
+        session.descriptorRootIdentity
+      )
+      || !sameReceiptIdentity(
+        descriptorRootPathStats,
+        session.descriptorRootIdentity
+      )) {
+      throw new Error(
+        'descriptor-relative receipt publication descriptor-root identity changed'
+      );
+    }
+  } catch (error) {
+    throw new Error(`${label} platform custody changed: ${error.message}`);
+  }
+}
+
+function performReceiptPublicationPlatformOperation(
+  session,
+  label,
+  operation,
+  discardResult = null
+) {
+  verifyReceiptPublicationPlatformSession(session, `${label} preflight`);
+  let result;
+  let operationFailure = null;
+  try {
+    result = operation();
+  } catch (error) {
+    operationFailure = error;
+  }
+
+  let custodyFailure = null;
+  try {
+    verifyReceiptPublicationPlatformSession(session, `${label} postflight`);
+  } catch (error) {
+    custodyFailure = error;
+  }
+
+  if (custodyFailure) {
+    let discardFailure = null;
+    if (!operationFailure && typeof discardResult === 'function') {
+      try {
+        discardResult(result);
+      } catch (error) {
+        discardFailure = error;
+      }
+    }
+    const operationContext = operationFailure
+      ? `; operation failed: ${operationFailure.message}`
+      : '';
+    const discardContext = discardFailure
+      ? `; result disposal failed: ${discardFailure.message}`
+      : '';
+    throw new Error(
+      `${custodyFailure.message}${operationContext}${discardContext}`
+    );
+  }
+  if (operationFailure) throw operationFailure;
+  return result;
+}
+
+function assertReceiptDescriptorPathComponent(childName) {
+  if (childName === null) return;
+  if (typeof childName !== 'string' || !childName
+    || childName === '.' || childName === '..'
+    || childName.includes('/') || childName.includes('\\')) {
+    throw new Error(`invalid descriptor-relative receipt path component: ${childName}`);
+  }
+}
+
+function receiptDescriptorBridgePath(descriptor) {
   if (!Number.isInteger(descriptor) || descriptor < 0) {
     throw new Error(`invalid receipt directory descriptor: ${descriptor}`);
   }
-
   const bridgePath = path.join(RECEIPT_DESCRIPTOR_ROOT, String(descriptor));
   let descriptorStats;
   let bridgeStats;
@@ -1232,15 +1486,55 @@ function receiptDescriptorBridgePath(descriptor) {
   return bridgePath;
 }
 
-function receiptDescriptorPath(descriptor, childName = null) {
-  if (childName !== null
-    && (typeof childName !== 'string' || !childName
-      || childName === '.' || childName === '..'
-      || childName.includes('/') || childName.includes('\\'))) {
-    throw new Error(`invalid descriptor-relative receipt path component: ${childName}`);
+function withReceiptDescriptorPath({
+  platform,
+  descriptor,
+  childName = null,
+  label,
+  operation,
+  discardResult = null
+}) {
+  assertReceiptDescriptorPathComponent(childName);
+  return performReceiptPublicationPlatformOperation(
+    platform,
+    label,
+    () => {
+      const base = receiptDescriptorBridgePath(descriptor);
+      const targetPath = childName === null ? base : path.join(base, childName);
+      return operation(targetPath);
+    },
+    discardResult
+  );
+}
+
+function withReceiptDescriptorPaths({
+  platform,
+  descriptor,
+  childNames,
+  label,
+  operation
+}) {
+  if (!Array.isArray(childNames) || childNames.length < 2) {
+    throw new Error(`${label} requires at least two descriptor-relative paths`);
   }
-  const base = receiptDescriptorBridgePath(descriptor);
-  return childName === null ? base : path.join(base, childName);
+  childNames.forEach(assertReceiptDescriptorPathComponent);
+  return performReceiptPublicationPlatformOperation(
+    platform,
+    label,
+    () => {
+      const base = receiptDescriptorBridgePath(descriptor);
+      return operation(childNames.map(childName => path.join(base, childName)));
+    }
+  );
+}
+
+function verifyReceiptDescriptorBridge(platform, descriptor, label) {
+  withReceiptDescriptorPath({
+    platform,
+    descriptor,
+    label,
+    operation: () => undefined
+  });
 }
 
 function synchronizeReceiptDirectoryDescriptor(descriptor, label) {
@@ -1267,10 +1561,16 @@ function closeReceiptDirectorySession(session, label) {
       failure ??= new Error(`${label} directory descriptor close failed: ${error.message}`);
     }
   }
+  const platformFailure = closeReceiptPublicationPlatformSession(
+    session.platform,
+    label
+  );
+  failure ??= platformFailure;
   return failure;
 }
 
 function verifyReceiptDirectorySession(session, label) {
+  verifyReceiptPublicationPlatformSession(session.platform, label);
   let currentRoot;
   try {
     currentRoot = fs.lstatSync(session.root);
@@ -1285,11 +1585,16 @@ function verifyReceiptDirectorySession(session, label) {
   for (let index = 1; index < session.chain.length; index += 1) {
     const parent = session.chain[index - 1];
     const child = session.chain[index];
-    const anchoredPath = receiptDescriptorPath(parent.descriptor, child.segment);
     let pathStats;
     let descriptorStats;
     try {
-      pathStats = fs.lstatSync(anchoredPath);
+      pathStats = withReceiptDescriptorPath({
+        platform: session.platform,
+        descriptor: parent.descriptor,
+        childName: child.segment,
+        label: `${label} directory ${child.display} path inspection`,
+        operation: targetPath => fs.lstatSync(targetPath)
+      });
       descriptorStats = fs.fstatSync(child.descriptor);
     } catch (error) {
       throw new Error(
@@ -1313,6 +1618,7 @@ function openReceiptDirectorySession(rootDir, relativePath, label) {
   }
 
   const rootCustody = inspectReceiptRoot(rootDir);
+  const platform = openReceiptPublicationPlatformSession(`${label} platform`);
   let rootDescriptor;
   try {
     rootDescriptor = fs.openSync(
@@ -1322,12 +1628,22 @@ function openReceiptDirectorySession(rootDir, relativePath, label) {
         | (fs.constants.O_NOFOLLOW ?? 0)
     );
   } catch (error) {
+    const platformCloseFailure = closeReceiptPublicationPlatformSession(
+      platform,
+      label
+    );
+    if (platformCloseFailure) {
+      throw new Error(
+        `${label} root descriptor open failed: ${error.message}; ${platformCloseFailure.message}`
+      );
+    }
     throw new Error(`${label} root descriptor open failed: ${error.message}`);
   }
 
   const session = {
     root: rootCustody.root,
-    chain: []
+    chain: [],
+    platform
   };
   try {
     const rootStats = fs.fstatSync(rootDescriptor);
@@ -1337,7 +1653,11 @@ function openReceiptDirectorySession(rootDir, relativePath, label) {
       || !sameReceiptIdentity(rootStats, currentRootStats)) {
       throw new Error(`${label} root identity changed before descriptor anchoring`);
     }
-    receiptDescriptorPath(rootDescriptor);
+    verifyReceiptDescriptorBridge(
+      session.platform,
+      rootDescriptor,
+      `${label} root descriptor bridge`
+    );
     session.chain.push({
       descriptor: rootDescriptor,
       segment: null,
@@ -1347,18 +1667,24 @@ function openReceiptDirectorySession(rootDir, relativePath, label) {
 
     for (const segment of segments) {
       const parent = session.chain.at(-1);
-      const anchoredPath = receiptDescriptorPath(parent.descriptor, segment);
       const display = session.chain.length === 1
         ? segment
         : `${session.chain.at(-1).display}/${segment}`;
       let descriptor;
       try {
-        descriptor = fs.openSync(
-          anchoredPath,
-          fs.constants.O_RDONLY
-            | (fs.constants.O_DIRECTORY ?? 0)
-            | (fs.constants.O_NOFOLLOW ?? 0)
-        );
+        descriptor = withReceiptDescriptorPath({
+          platform: session.platform,
+          descriptor: parent.descriptor,
+          childName: segment,
+          label: `${label} directory open ${display}`,
+          operation: targetPath => fs.openSync(
+            targetPath,
+            fs.constants.O_RDONLY
+              | (fs.constants.O_DIRECTORY ?? 0)
+              | (fs.constants.O_NOFOLLOW ?? 0)
+          ),
+          discardResult: openedDescriptor => fs.closeSync(openedDescriptor)
+        });
       } catch (error) {
         if (['ELOOP', 'ENOTDIR'].includes(error?.code)) {
           throw new Error(
@@ -1369,19 +1695,32 @@ function openReceiptDirectorySession(rootDir, relativePath, label) {
           throw new Error(`${label} directory open failed: ${error.message}`);
         }
         try {
-          fs.mkdirSync(anchoredPath);
+          withReceiptDescriptorPath({
+            platform: session.platform,
+            descriptor: parent.descriptor,
+            childName: segment,
+            label: `${label} directory creation ${display}`,
+            operation: targetPath => fs.mkdirSync(targetPath)
+          });
         } catch (mkdirError) {
           if (mkdirError?.code !== 'EEXIST') {
             throw new Error(`${label} directory creation failed: ${mkdirError.message}`);
           }
         }
         try {
-          descriptor = fs.openSync(
-            anchoredPath,
-            fs.constants.O_RDONLY
-              | (fs.constants.O_DIRECTORY ?? 0)
-              | (fs.constants.O_NOFOLLOW ?? 0)
-          );
+          descriptor = withReceiptDescriptorPath({
+            platform: session.platform,
+            descriptor: parent.descriptor,
+            childName: segment,
+            label: `${label} created-directory open ${display}`,
+            operation: targetPath => fs.openSync(
+              targetPath,
+              fs.constants.O_RDONLY
+                | (fs.constants.O_DIRECTORY ?? 0)
+                | (fs.constants.O_NOFOLLOW ?? 0)
+            ),
+            discardResult: openedDescriptor => fs.closeSync(openedDescriptor)
+          });
         } catch (openError) {
           if (['ELOOP', 'ENOTDIR'].includes(openError?.code)) {
             throw new Error(
@@ -1393,7 +1732,13 @@ function openReceiptDirectorySession(rootDir, relativePath, label) {
       }
 
       const descriptorStats = fs.fstatSync(descriptor);
-      const pathStats = fs.lstatSync(anchoredPath);
+      const pathStats = withReceiptDescriptorPath({
+        platform: session.platform,
+        descriptor: parent.descriptor,
+        childName: segment,
+        label: `${label} directory identity ${display}`,
+        operation: targetPath => fs.lstatSync(targetPath)
+      });
       if (!descriptorStats.isDirectory()
         || !pathStats.isDirectory()
         || !sameReceiptIdentity(descriptorStats, pathStats)) {
@@ -1439,14 +1784,24 @@ function openReceiptDirectorySession(rootDir, relativePath, label) {
   }
 }
 
-function inspectAnchoredReceiptFile(parentDescriptor, fileName, label) {
-  const anchoredPath = receiptDescriptorPath(parentDescriptor, fileName);
+function inspectAnchoredReceiptFile(
+  parentDescriptor,
+  fileName,
+  label,
+  platform
+) {
   let stats;
   try {
-    stats = fs.lstatSync(anchoredPath);
+    stats = withReceiptDescriptorPath({
+      platform,
+      descriptor: parentDescriptor,
+      childName: fileName,
+      label: `${label} path inspection`,
+      operation: targetPath => fs.lstatSync(targetPath)
+    });
   } catch (error) {
     if (error?.code === 'ENOENT') {
-      return { anchoredPath, exists: false, stats: null };
+      return { exists: false, stats: null };
     }
     throw new Error(`${label} path inspection failed: ${error.message}`);
   }
@@ -1456,19 +1811,36 @@ function inspectAnchoredReceiptFile(parentDescriptor, fileName, label) {
   if (stats.nlink !== 1) {
     throw new Error(`${label} contains a multiply linked receipt file`);
   }
-  return { anchoredPath, exists: true, stats };
+  return { exists: true, stats };
 }
 
-function openAnchoredReceiptFile(parentDescriptor, fileName, label) {
-  const anchoredPath = receiptDescriptorPath(parentDescriptor, fileName);
+function openAnchoredReceiptFile(
+  parentDescriptor,
+  fileName,
+  label,
+  platform
+) {
   let descriptor;
   try {
-    descriptor = fs.openSync(
-      anchoredPath,
-      fs.constants.O_RDONLY | (fs.constants.O_NOFOLLOW ?? 0)
-    );
+    descriptor = withReceiptDescriptorPath({
+      platform,
+      descriptor: parentDescriptor,
+      childName: fileName,
+      label: `${label} file open`,
+      operation: targetPath => fs.openSync(
+        targetPath,
+        fs.constants.O_RDONLY | (fs.constants.O_NOFOLLOW ?? 0)
+      ),
+      discardResult: openedDescriptor => fs.closeSync(openedDescriptor)
+    });
     const descriptorStats = fs.fstatSync(descriptor);
-    const pathStats = fs.lstatSync(anchoredPath);
+    const pathStats = withReceiptDescriptorPath({
+      platform,
+      descriptor: parentDescriptor,
+      childName: fileName,
+      label: `${label} file identity`,
+      operation: targetPath => fs.lstatSync(targetPath)
+    });
     if (!descriptorStats.isFile()
       || descriptorStats.nlink !== 1
       || !pathStats.isFile()
@@ -1478,7 +1850,6 @@ function openAnchoredReceiptFile(parentDescriptor, fileName, label) {
     }
     return {
       descriptor,
-      anchoredPath,
       identity: { dev: descriptorStats.dev, ino: descriptorStats.ino }
     };
   } catch (error) {
@@ -1517,7 +1888,8 @@ function publishReceiptJson({
   const finalInspection = inspectAnchoredReceiptFile(
     parent.descriptor,
     finalName,
-    label
+    label,
+    session.platform
   );
   const serialized = `${JSON.stringify(receipt, null, 2)}\n`;
   let tempName = null;
@@ -1525,24 +1897,30 @@ function publishReceiptJson({
   let published = false;
   let finalDescriptor = null;
   let failure = null;
-  let absolutePath = path.resolve(session.root, ...relativePath.split('/'));
+  const absolutePath = path.resolve(session.root, ...relativePath.split('/'));
 
   try {
     if (!finalInspection.exists) {
       for (let attempt = 0; attempt < 8; attempt += 1) {
         const candidateName =
           `${finalName}.${process.pid}.${crypto.randomBytes(16).toString('hex')}.tmp`;
-        const candidatePath = receiptDescriptorPath(parent.descriptor, candidateName);
         let descriptor;
         try {
-          descriptor = fs.openSync(
-            candidatePath,
-            fs.constants.O_WRONLY
-              | fs.constants.O_CREAT
-              | fs.constants.O_EXCL
-              | (fs.constants.O_NOFOLLOW ?? 0),
-            0o600
-          );
+          descriptor = withReceiptDescriptorPath({
+            platform: session.platform,
+            descriptor: parent.descriptor,
+            childName: candidateName,
+            label: `${label} temporary publication`,
+            operation: targetPath => fs.openSync(
+              targetPath,
+              fs.constants.O_WRONLY
+                | fs.constants.O_CREAT
+                | fs.constants.O_EXCL
+                | (fs.constants.O_NOFOLLOW ?? 0),
+              0o600
+            ),
+            discardResult: openedDescriptor => fs.closeSync(openedDescriptor)
+          });
         } catch (error) {
           if (error?.code === 'EEXIST') continue;
           throw new Error(`${label} temporary publication failed: ${error.message}`);
@@ -1570,10 +1948,15 @@ function publishReceiptJson({
       }
 
       try {
-        fs.linkSync(
-          receiptDescriptorPath(parent.descriptor, tempName),
-          receiptDescriptorPath(parent.descriptor, finalName)
-        );
+        withReceiptDescriptorPaths({
+          platform: session.platform,
+          descriptor: parent.descriptor,
+          childNames: [tempName, finalName],
+          label: `${label} no-overwrite publication`,
+          operation: ([sourcePath, destinationPath]) => {
+            fs.linkSync(sourcePath, destinationPath);
+          }
+        });
         published = true;
       } catch (error) {
         if (error?.code !== 'EEXIST') {
@@ -1587,7 +1970,13 @@ function publishReceiptJson({
 
   if (tempName) {
     try {
-      fs.unlinkSync(receiptDescriptorPath(parent.descriptor, tempName));
+      withReceiptDescriptorPath({
+        platform: session.platform,
+        descriptor: parent.descriptor,
+        childName: tempName,
+        label: `${label} temporary cleanup`,
+        operation: targetPath => fs.unlinkSync(targetPath)
+      });
     } catch (error) {
       if (error?.code !== 'ENOENT') {
         failure ??= new Error(`${label} temporary cleanup failed: ${error.message}`);
@@ -1615,7 +2004,8 @@ function publishReceiptJson({
       const opened = openAnchoredReceiptFile(
         parent.descriptor,
         finalName,
-        label
+        label,
+        session.platform
       );
       finalDescriptor = opened.descriptor;
       if (published && !sameReceiptIdentity(opened.identity, tempIdentity)) {
@@ -1628,7 +2018,13 @@ function publishReceiptJson({
       validateReceipt(retainedReceipt);
 
       const finalStats = fs.fstatSync(finalDescriptor);
-      const finalPathStats = fs.lstatSync(opened.anchoredPath);
+      const finalPathStats = withReceiptDescriptorPath({
+        platform: session.platform,
+        descriptor: parent.descriptor,
+        childName: finalName,
+        label: `${label} final validation`,
+        operation: targetPath => fs.lstatSync(targetPath)
+      });
       if (!finalStats.isFile()
         || finalStats.nlink !== 1
         || !finalPathStats.isFile()

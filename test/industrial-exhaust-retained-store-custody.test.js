@@ -639,6 +639,328 @@ assertDestinationRacePreservesWinner({
     })
   });
 
+  const assertPublicationPlatformFailurePrecedesMutation = ({
+    receiptType,
+    platformRoot,
+    installFault,
+    writeReceipt,
+    expectedError
+  }) => {
+    const receiptsPath = path.join(platformRoot, 'receipts');
+    const restore = installFault();
+    try {
+      assert.throws(
+        () => writeReceipt(),
+        expectedError,
+        `${receiptType} publication must reject an unauthenticated procfs platform`
+      );
+      assert.equal(
+        fs.existsSync(receiptsPath),
+        false,
+        `${receiptType} platform admission failure must precede receipt-tree mutation`
+      );
+    } finally {
+      restore();
+      fs.rmSync(platformRoot, { recursive: true, force: true });
+    }
+  };
+
+  const nonProcfsIndexRoot = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'industrial-exhaust-index-non-procfs-platform-')
+  );
+  const nonProcfsIndexHtml =
+    '<!doctype html><html><body><a href="/news-releases/non-procfs-platform-index">Non-procfs platform index</a></body></html>';
+  const nonProcfsParsedIndex = parseHtmlLinkIndex(nonProcfsIndexHtml, source);
+  assertPublicationPlatformFailurePrecedesMutation({
+    receiptType: 'index',
+    platformRoot: nonProcfsIndexRoot,
+    installFault: () => {
+      const originalStatfsSync = fs.statfsSync;
+      fs.statfsSync = (targetPath, ...args) => {
+        const stats = originalStatfsSync(targetPath, ...args);
+        if (String(targetPath) === '/proc/self/fd') {
+          return { ...stats, type: 0x01021994 };
+        }
+        return stats;
+      };
+      return () => { fs.statfsSync = originalStatfsSync; };
+    },
+    writeReceipt: () => writeIndexReceipt({
+      rootDir: nonProcfsIndexRoot,
+      source,
+      parsedIndex: nonProcfsParsedIndex,
+      html: nonProcfsIndexHtml,
+      capturedAt: '2026-08-24T11:20:00.000Z',
+      responseHeaders: {
+        content_type: 'text/html',
+        etag: 'non-procfs-platform-index'
+      }
+    }),
+    expectedError: /descriptor root is not procfs/u
+  });
+
+  const shadowedMountArtifactRoot = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'industrial-exhaust-artifact-shadowed-procfs-mount-')
+  );
+  const shadowedMountCanonicalUrl =
+    'https://www.dentsu.com/news-releases/shadowed-procfs-mount-artifact';
+  const shadowedMountBody = Buffer.from(
+    '<!doctype html><html><body><main>Shadowed procfs mount artifact.</main></body></html>'
+  );
+  const shadowedMountBodySha256 = crypto
+    .createHash('sha256')
+    .update(shadowedMountBody)
+    .digest('hex');
+  assertPublicationPlatformFailurePrecedesMutation({
+    receiptType: 'artifact',
+    platformRoot: shadowedMountArtifactRoot,
+    installFault: () => {
+      const originalReadFileSync = fs.readFileSync;
+      fs.readFileSync = (targetPath, ...args) => {
+        if (String(targetPath) === '/proc/self/mountinfo') {
+          return '999 1 0:999 / /proc rw,relatime - tmpfs tmpfs rw\n';
+        }
+        return originalReadFileSync(targetPath, ...args);
+      };
+      return () => { fs.readFileSync = originalReadFileSync; };
+    },
+    writeReceipt: () => writeArtifactReceipt({
+      rootDir: shadowedMountArtifactRoot,
+      canonicalUrl: shadowedMountCanonicalUrl,
+      body: shadowedMountBody,
+      bodySha256: shadowedMountBodySha256,
+      capturedAt: '2026-08-24T11:20:00.000Z',
+      responseHeaders: {
+        content_type: 'text/html',
+        etag: 'shadowed-procfs-mount-artifact',
+        final_url: shadowedMountCanonicalUrl,
+        redirect_chain: []
+      }
+    }),
+    expectedError: /effective descriptor mount is not canonical procfs/u
+  });
+
+  const descriptorRootMismatchIndexRoot = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'industrial-exhaust-index-descriptor-root-mismatch-')
+  );
+  const descriptorRootMismatchExternalRoot = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'industrial-exhaust-index-descriptor-root-external-')
+  );
+  const descriptorRootMismatchHtml =
+    '<!doctype html><html><body><a href="/news-releases/descriptor-root-mismatch-index">Descriptor root mismatch index</a></body></html>';
+  const descriptorRootMismatchParsedIndex = parseHtmlLinkIndex(
+    descriptorRootMismatchHtml,
+    source
+  );
+  assertPublicationPlatformFailurePrecedesMutation({
+    receiptType: 'index',
+    platformRoot: descriptorRootMismatchIndexRoot,
+    installFault: () => {
+      const originalStatSync = fs.statSync;
+      fs.statSync = (targetPath, ...args) => {
+        if (String(targetPath) === '/proc/self/fd') {
+          return originalStatSync(descriptorRootMismatchExternalRoot);
+        }
+        return originalStatSync(targetPath, ...args);
+      };
+      return () => {
+        fs.statSync = originalStatSync;
+        fs.rmSync(descriptorRootMismatchExternalRoot, {
+          recursive: true,
+          force: true
+        });
+      };
+    },
+    writeReceipt: () => writeIndexReceipt({
+      rootDir: descriptorRootMismatchIndexRoot,
+      source,
+      parsedIndex: descriptorRootMismatchParsedIndex,
+      html: descriptorRootMismatchHtml,
+      capturedAt: '2026-08-24T11:20:00.000Z',
+      responseHeaders: {
+        content_type: 'text/html',
+        etag: 'descriptor-root-mismatch-index'
+      }
+    }),
+    expectedError: /descriptor-root identity mismatch/u
+  });
+
+  const namespaceDriftArtifactRoot = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'industrial-exhaust-artifact-namespace-drift-')
+  );
+  const namespaceDriftExternalRoot = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'industrial-exhaust-artifact-namespace-external-')
+  );
+  const namespaceDriftSentinelPath = path.join(
+    namespaceDriftExternalRoot,
+    'namespace-sentinel.txt'
+  );
+  fs.writeFileSync(namespaceDriftSentinelPath, 'namespace drift sentinel\n');
+  const namespaceDriftCanonicalUrl =
+    'https://www.dentsu.com/news-releases/namespace-drift-artifact';
+  const namespaceDriftBody = Buffer.from(
+    '<!doctype html><html><body><main>Namespace drift artifact.</main></body></html>'
+  );
+  const namespaceDriftBodySha256 = crypto
+    .createHash('sha256')
+    .update(namespaceDriftBody)
+    .digest('hex');
+  assertPublicationPlatformFailurePrecedesMutation({
+    receiptType: 'artifact',
+    platformRoot: namespaceDriftArtifactRoot,
+    installFault: () => {
+      const originalStatSync = fs.statSync;
+      let namespaceProbeCount = 0;
+      fs.statSync = (targetPath, ...args) => {
+        if (String(targetPath) === '/proc/self/ns/mnt') {
+          namespaceProbeCount += 1;
+          if (namespaceProbeCount > 1) {
+            return originalStatSync(namespaceDriftSentinelPath);
+          }
+        }
+        return originalStatSync(targetPath, ...args);
+      };
+      return () => {
+        fs.statSync = originalStatSync;
+        fs.rmSync(namespaceDriftExternalRoot, {
+          recursive: true,
+          force: true
+        });
+      };
+    },
+    writeReceipt: () => writeArtifactReceipt({
+      rootDir: namespaceDriftArtifactRoot,
+      canonicalUrl: namespaceDriftCanonicalUrl,
+      body: namespaceDriftBody,
+      bodySha256: namespaceDriftBodySha256,
+      capturedAt: '2026-08-24T11:20:00.000Z',
+      responseHeaders: {
+        content_type: 'text/html',
+        etag: 'namespace-drift-artifact',
+        final_url: namespaceDriftCanonicalUrl,
+        redirect_chain: []
+      }
+    }),
+    expectedError: /mount-namespace identity changed/u
+  });
+
+  const mountDriftIndexRoot = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'industrial-exhaust-index-procfs-mount-drift-')
+  );
+  const mountDriftIndexHtml =
+    '<!doctype html><html><body><a href="/news-releases/procfs-mount-drift-index">Procfs mount drift index</a></body></html>';
+  const mountDriftParsedIndex = parseHtmlLinkIndex(mountDriftIndexHtml, source);
+  assertPublicationPlatformFailurePrecedesMutation({
+    receiptType: 'index',
+    platformRoot: mountDriftIndexRoot,
+    installFault: () => {
+      const originalReadFileSync = fs.readFileSync;
+      let mountInfoReadCount = 0;
+      fs.readFileSync = (targetPath, ...args) => {
+        const value = originalReadFileSync(targetPath, ...args);
+        if (String(targetPath) !== '/proc/self/mountinfo') return value;
+        mountInfoReadCount += 1;
+        if (mountInfoReadCount === 1) return value;
+        return `${value}998 999 0:998 / /proc/self/fd rw,relatime - tmpfs tmpfs rw\n`;
+      };
+      return () => { fs.readFileSync = originalReadFileSync; };
+    },
+    writeReceipt: () => writeIndexReceipt({
+      rootDir: mountDriftIndexRoot,
+      source,
+      parsedIndex: mountDriftParsedIndex,
+      html: mountDriftIndexHtml,
+      capturedAt: '2026-08-24T11:20:00.000Z',
+      responseHeaders: {
+        content_type: 'text/html',
+        etag: 'procfs-mount-drift-index'
+      }
+    }),
+    expectedError: /effective descriptor mount is not canonical procfs/u
+  });
+
+  const lateDriftArtifactRoot = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'industrial-exhaust-artifact-late-procfs-drift-')
+  );
+  const lateDriftCanonicalUrl =
+    'https://www.dentsu.com/news-releases/late-procfs-drift-artifact';
+  const lateDriftBody = Buffer.from(
+    '<!doctype html><html><body><main>Late procfs drift artifact.</main></body></html>'
+  );
+  const lateDriftBodySha256 = crypto
+    .createHash('sha256')
+    .update(lateDriftBody)
+    .digest('hex');
+  const lateDriftReceiptPath = artifactReceiptFilePath(
+    lateDriftArtifactRoot,
+    lateDriftCanonicalUrl,
+    lateDriftBodySha256
+  );
+  const originalLateReadFileSync = fs.readFileSync;
+  const originalLateOpenSync = fs.openSync;
+  const originalLateCloseSync = fs.closeSync;
+  let lateDriftActive = false;
+  let lateTempDescriptor = null;
+  let lateTempDescriptorClosed = false;
+  fs.readFileSync = (targetPath, ...args) => {
+    const value = originalLateReadFileSync(targetPath, ...args);
+    if (String(targetPath) !== '/proc/self/mountinfo' || !lateDriftActive) {
+      return value;
+    }
+    return `${value}997 999 0:997 / /proc/self/fd rw,relatime - tmpfs tmpfs rw\n`;
+  };
+  fs.openSync = (targetPath, ...args) => {
+    const descriptor = originalLateOpenSync(targetPath, ...args);
+    if (String(targetPath).endsWith('.tmp')) {
+      lateTempDescriptor = descriptor;
+      lateDriftActive = true;
+    }
+    return descriptor;
+  };
+  fs.closeSync = descriptor => {
+    if (descriptor === lateTempDescriptor) lateTempDescriptorClosed = true;
+    return originalLateCloseSync(descriptor);
+  };
+  try {
+    assert.throws(
+      () => writeArtifactReceipt({
+        rootDir: lateDriftArtifactRoot,
+        canonicalUrl: lateDriftCanonicalUrl,
+        body: lateDriftBody,
+        bodySha256: lateDriftBodySha256,
+        capturedAt: '2026-08-24T11:21:00.000Z',
+        responseHeaders: {
+          content_type: 'text/html',
+          etag: 'late-procfs-drift-artifact',
+          final_url: lateDriftCanonicalUrl,
+          redirect_chain: []
+        }
+      }),
+      /effective descriptor mount is not canonical procfs/u,
+      'artifact publication must reject procfs drift after temporary-file open'
+    );
+    assert.notEqual(
+      lateTempDescriptor,
+      null,
+      'late-drift regression must exercise temporary-file creation'
+    );
+    assert.equal(
+      lateTempDescriptorClosed,
+      true,
+      'late-drift rejection must dispose the opened temporary descriptor'
+    );
+    assert.equal(
+      fs.existsSync(lateDriftReceiptPath),
+      false,
+      'late-drift rejection may not publish a final receipt'
+    );
+  } finally {
+    fs.readFileSync = originalLateReadFileSync;
+    fs.openSync = originalLateOpenSync;
+    fs.closeSync = originalLateCloseSync;
+    fs.rmSync(lateDriftArtifactRoot, { recursive: true, force: true });
+  }
+
   const assertDescriptorBridgeFailurePrecedesMutation = ({
     receiptType,
     bridgeRoot,
