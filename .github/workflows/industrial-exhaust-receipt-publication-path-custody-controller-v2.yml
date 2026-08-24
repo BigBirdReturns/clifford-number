@@ -1,0 +1,147 @@
+name: Industrial-exhaust receipt publication path-custody controller v2
+
+on:
+  push:
+    branches:
+      - agent/industrial-exhaust-receipt-publication-path-custody-controller-v2
+    paths:
+      - .github/workflows/industrial-exhaust-receipt-publication-path-custody-controller-v2.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: industrial-exhaust-receipt-publication-path-custody-controller-v2
+  cancel-in-progress: false
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/industrial-exhaust-receipt-publication-path-custody-controller-v2
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Execute corrected descriptor-custody materializer
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          TEMPLATE_COMMIT='c104db9efc177d866b8201aa9fb58b476e8263f1'
+          TEMPLATE_PATH='.github/workflows/industrial-exhaust-receipt-publication-path-custody-controller.yml'
+          WORKFLOW_PATH='.github/workflows/industrial-exhaust-receipt-publication-path-custody-controller-v2.yml'
+          CONTROLLER_BRANCH='agent/industrial-exhaust-receipt-publication-path-custody-controller-v2'
+
+          git fetch --no-tags origin \
+            agent/industrial-exhaust-receipt-publication-path-custody-controller-v1
+          git show "${TEMPLATE_COMMIT}:${TEMPLATE_PATH}" > /tmp/controller-template.yml
+
+          python - <<'PY'
+          from pathlib import Path
+
+          template = Path('/tmp/controller-template.yml').read_text()
+          marker = '        run: |\n'
+          start = template.rindex(marker) + len(marker)
+          script_lines = []
+          for line in template[start:].splitlines():
+              if line.startswith('          '):
+                  script_lines.append(line[10:])
+              elif line.strip() == '':
+                  script_lines.append('')
+              else:
+                  break
+          script = '\n'.join(script_lines) + '\n'
+
+          script = script.replace(
+              "WORKFLOW_PATH='.github/workflows/industrial-exhaust-receipt-publication-path-custody-controller.yml'",
+              "WORKFLOW_PATH='.github/workflows/industrial-exhaust-receipt-publication-path-custody-controller-v2.yml'",
+              1
+          )
+          script = script.replace(
+              'refs/heads/agent/industrial-exhaust-receipt-publication-path-custody-controller-v1',
+              'refs/heads/agent/industrial-exhaust-receipt-publication-path-custody-controller-v2'
+          )
+
+          replacement_start = script.index('old_index = """')
+          replacement_end = script.index('lib_path.write_text(text)', replacement_start)
+          robust_writer_replacement = r'''index_function_start = text.index(
+              'export function writeIndexReceipt'
+          )
+          index_publish_start = text.index(
+              '  publishReceiptJson({',
+              index_function_start
+          )
+          index_return_start = text.index(
+              '  return relativePath;',
+              index_publish_start
+          )
+          index_writer = """  publishReceiptJson({
+            rootDir,
+            relativePath,
+            receipt,
+            label: `index receipt ${relativePath}`,
+            validateReceipt: receiptOverride => validateIndexReceiptAtPath({
+              rootDir,
+              relativePath,
+              expectedSourceId: source.id,
+              expectedIndexUrl: source.index_url,
+              expectedIndexSha256: parsedIndex.index_sha256,
+              expectedBody: html,
+              receiptOverride
+            })
+          });
+          """
+          text = (
+              text[:index_publish_start]
+              + index_writer
+              + text[index_return_start:]
+          )
+
+          artifact_function_start = text.index(
+              'export function writeArtifactReceipt'
+          )
+          artifact_publish_start = text.index(
+              '  publishReceiptJson({',
+              artifact_function_start
+          )
+          artifact_return_start = text.index(
+              '  return relativePath;',
+              artifact_publish_start
+          )
+          artifact_writer = """  publishReceiptJson({
+            rootDir,
+            relativePath,
+            receipt,
+            label: `artifact receipt ${relativePath}`,
+            validateReceipt: receiptOverride => validateArtifactReceiptAtPath({
+              rootDir,
+              relativePath,
+              expectedCanonicalUrl: canonicalUrl,
+              expectedBodySha256: bodySha256,
+              expectedBody: body,
+              receiptOverride
+            })
+          });
+          """
+          text = (
+              text[:artifact_publish_start]
+              + artifact_writer
+              + text[artifact_return_start:]
+          )
+
+          '''
+          script = (
+              script[:replacement_start]
+              + robust_writer_replacement
+              + script[replacement_end:]
+          )
+
+          Path('/tmp/controller.sh').write_text(script)
+          PY
+
+          bash /tmp/controller.sh
