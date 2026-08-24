@@ -33,6 +33,27 @@ const watchConfig = {
 const capturedAt = '2026-08-22T10:00:00.000Z';
 const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'industrial-exhaust-retained-store-'));
 
+const receiptDirfdControlSymbol = Symbol.for(
+  'clifford-number.industrial-exhaust.receipt-dirfd-control'
+);
+const originalNodeEnv = process.env.NODE_ENV;
+process.env.NODE_ENV = 'test';
+
+const withReceiptDirfdControl = (control, operation) => {
+  const previous = globalThis[receiptDirfdControlSymbol];
+  globalThis[receiptDirfdControlSymbol] = control;
+  try {
+    return operation();
+  } finally {
+    if (previous === undefined) {
+      delete globalThis[receiptDirfdControlSymbol];
+    } else {
+      globalThis[receiptDirfdControlSymbol] = previous;
+    }
+  }
+};
+
+
 try {
   const indexHtml = '<!doctype html><html><head><title>Custody index</title></head><body><a href="/news-releases/custody-example">Custody Example</a></body></html>';
   const parsedIndex = parseHtmlLinkIndex(indexHtml, source);
@@ -252,182 +273,173 @@ try {
   });
 
   const assertDestinationRacePreservesWinner = ({
-  receiptType,
-  absoluteReceiptPath,
-  competingReceipt,
-  writeReceipt,
-  cleanupParent = false
-}) => {
-  fs.mkdirSync(path.dirname(absoluteReceiptPath), { recursive: true });
-  const originalLinkSync = fs.linkSync;
-  let raceInjected = false;
-  fs.linkSync = (sourcePath, destinationPath) => {
-  let targetsReceipt = false;
-  try {
-    targetsReceipt = path.basename(destinationPath)
-        === path.basename(absoluteReceiptPath)
-      && fs.realpathSync.native(path.dirname(destinationPath))
-        === fs.realpathSync.native(path.dirname(absoluteReceiptPath));
-  } catch {}
-  if (!raceInjected && targetsReceipt) {
-    fs.writeFileSync(destinationPath, competingReceipt, {
-      encoding: 'utf8',
-      flag: 'wx',
-      mode: 0o600
-    });
-    raceInjected = true;
-  }
-  return originalLinkSync(sourcePath, destinationPath);
-};
-  try {
-    const expectedRelativePath = path.relative(rootDir, absoluteReceiptPath)
-      .split(path.sep)
-      .join('/');
-    assert.equal(
-      writeReceipt(),
-      expectedRelativePath,
-      `${receiptType} publication must accept the valid intervening winner`
-    );
-    assert.equal(
-      raceInjected,
-      true,
-      `${receiptType} publication must exercise the destination-creation race`
-    );
-    assert.equal(
-      fs.readFileSync(absoluteReceiptPath, 'utf8'),
-      competingReceipt,
-      `${receiptType} publication must not replace intervening destination bytes`
-    );
-    const receiptStats = fs.lstatSync(absoluteReceiptPath);
-    assert.equal(
-      receiptStats.isFile(),
-      true,
-      `${receiptType} race winner must remain a regular receipt file`
-    );
-    assert.equal(
-      receiptStats.nlink,
-      1,
-      `${receiptType} race winner must remain under exclusive inode custody`
-    );
-  } finally {
-    fs.linkSync = originalLinkSync;
-    fs.rmSync(absoluteReceiptPath, { force: true });
-    if (cleanupParent) {
-      try {
-        fs.rmdirSync(path.dirname(absoluteReceiptPath));
-      } catch (error) {
-        if (!['ENOENT', 'ENOTEMPTY'].includes(error?.code)) throw error;
+    receiptType,
+    absoluteReceiptPath,
+    competingReceipt,
+    writeReceipt,
+    cleanupParent = false
+  }) => {
+    fs.mkdirSync(path.dirname(absoluteReceiptPath), { recursive: true });
+    const control = {
+      events: [],
+      fault: {
+        type: 'create_competing_receipt_before_link',
+        content_base64: Buffer.from(competingReceipt, 'utf8').toString('base64')
+      }
+    };
+    try {
+      const expectedRelativePath = path.relative(rootDir, absoluteReceiptPath)
+        .split(path.sep)
+        .join('/');
+      assert.equal(
+        withReceiptDirfdControl(control, writeReceipt),
+        expectedRelativePath,
+        `${receiptType} publication must accept the valid intervening winner`
+      );
+      assert.equal(
+        control.events.some(event => event.type === 'competing-receipt-created'),
+        true,
+        `${receiptType} publication must exercise the destination-creation race`
+      );
+      assert.equal(
+        control.events.some(event => event.type === 'publish-link-conflict'),
+        true,
+        `${receiptType} publication must preserve the no-overwrite conflict`
+      );
+      assert.equal(
+        fs.readFileSync(absoluteReceiptPath, 'utf8'),
+        competingReceipt,
+        `${receiptType} publication must not replace intervening destination bytes`
+      );
+      const receiptStats = fs.lstatSync(absoluteReceiptPath);
+      assert.equal(
+        receiptStats.isFile(),
+        true,
+        `${receiptType} race winner must remain a regular receipt file`
+      );
+      assert.equal(
+        receiptStats.nlink,
+        1,
+        `${receiptType} race winner must remain under exclusive inode custody`
+      );
+    } finally {
+      fs.rmSync(absoluteReceiptPath, { force: true });
+      if (cleanupParent) {
+        try {
+          fs.rmdirSync(path.dirname(absoluteReceiptPath));
+        } catch (error) {
+          if (!['ENOENT', 'ENOTEMPTY'].includes(error?.code)) throw error;
+        }
       }
     }
+  };
+
+  const raceIndexHtml = '<!doctype html><html><body><a href="/news-releases/publication-race-index">Publication race index</a></body></html>';
+  const raceParsedIndex = parseHtmlLinkIndex(raceIndexHtml, source);
+  const raceIndexRoot = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'industrial-exhaust-index-publication-race-winner-')
+  );
+  let competingIndexReceipt;
+  try {
+    writeIndexReceipt({
+      rootDir: raceIndexRoot,
+      source,
+      parsedIndex: raceParsedIndex,
+      html: raceIndexHtml,
+      capturedAt: '2026-08-22T10:07:00.000Z',
+      responseHeaders: { content_type: 'text/html', etag: 'race-winner-index' }
+    });
+    competingIndexReceipt = fs.readFileSync(
+      indexReceiptFilePath(
+        raceIndexRoot,
+        source.id,
+        raceParsedIndex.index_sha256
+      ),
+      'utf8'
+    );
+  } finally {
+    fs.rmSync(raceIndexRoot, { recursive: true, force: true });
   }
-};
-
-const raceIndexHtml = '<!doctype html><html><body><a href="/news-releases/publication-race-index">Publication race index</a></body></html>';
-const raceParsedIndex = parseHtmlLinkIndex(raceIndexHtml, source);
-const raceIndexRoot = fs.mkdtempSync(
-  path.join(os.tmpdir(), 'industrial-exhaust-index-publication-race-winner-')
-);
-let competingIndexReceipt;
-try {
-  writeIndexReceipt({
-    rootDir: raceIndexRoot,
-    source,
-    parsedIndex: raceParsedIndex,
-    html: raceIndexHtml,
-    capturedAt: '2026-08-22T10:07:00.000Z',
-    responseHeaders: { content_type: 'text/html', etag: 'race-winner-index' }
-  });
-  competingIndexReceipt = fs.readFileSync(
-    indexReceiptFilePath(
-      raceIndexRoot,
-      source.id,
-      raceParsedIndex.index_sha256
-    ),
-    'utf8'
-  );
-} finally {
-  fs.rmSync(raceIndexRoot, { recursive: true, force: true });
-}
-const raceIndexReceiptPath = indexReceiptFilePath(
-  rootDir,
-  source.id,
-  raceParsedIndex.index_sha256
-);
-assertDestinationRacePreservesWinner({
-  receiptType: 'index',
-  absoluteReceiptPath: raceIndexReceiptPath,
-  competingReceipt: competingIndexReceipt,
-  writeReceipt: () => writeIndexReceipt({
+  const raceIndexReceiptPath = indexReceiptFilePath(
     rootDir,
-    source,
-    parsedIndex: raceParsedIndex,
-    html: raceIndexHtml,
-    capturedAt: '2026-08-22T10:08:00.000Z',
-    responseHeaders: { content_type: 'text/html', etag: 'race-loser-index' }
-  })
-});
-
-const raceCanonicalUrl = 'https://www.dentsu.com/news-releases/publication-race-artifact';
-const raceArtifactBody = Buffer.from(
-  '<!doctype html><html><body><main>Publication destination race artifact.</main></body></html>'
-);
-const raceArtifactBodySha256 = crypto
-  .createHash('sha256')
-  .update(raceArtifactBody)
-  .digest('hex');
-const raceArtifactRoot = fs.mkdtempSync(
-  path.join(os.tmpdir(), 'industrial-exhaust-artifact-publication-race-winner-')
-);
-let competingArtifactReceipt;
-try {
-  writeArtifactReceipt({
-    rootDir: raceArtifactRoot,
-    canonicalUrl: raceCanonicalUrl,
-    body: raceArtifactBody,
-    bodySha256: raceArtifactBodySha256,
-    capturedAt: '2026-08-22T10:07:00.000Z',
-    responseHeaders: {
-      content_type: 'text/html',
-      etag: 'race-winner-artifact',
-      final_url: raceCanonicalUrl,
-      redirect_chain: []
-    }
-  });
-  competingArtifactReceipt = fs.readFileSync(
-    artifactReceiptFilePath(
-      raceArtifactRoot,
-      raceCanonicalUrl,
-      raceArtifactBodySha256
-    ),
-    'utf8'
+    source.id,
+    raceParsedIndex.index_sha256
   );
-} finally {
-  fs.rmSync(raceArtifactRoot, { recursive: true, force: true });
-}
-const raceArtifactReceiptPath = artifactReceiptFilePath(
-  rootDir,
-  raceCanonicalUrl,
-  raceArtifactBodySha256
-);
-assertDestinationRacePreservesWinner({
-  receiptType: 'artifact',
-  absoluteReceiptPath: raceArtifactReceiptPath,
-  competingReceipt: competingArtifactReceipt,
-  cleanupParent: true,
-  writeReceipt: () => writeArtifactReceipt({
+  assertDestinationRacePreservesWinner({
+    receiptType: 'index',
+    absoluteReceiptPath: raceIndexReceiptPath,
+    competingReceipt: competingIndexReceipt,
+    writeReceipt: () => writeIndexReceipt({
+      rootDir,
+      source,
+      parsedIndex: raceParsedIndex,
+      html: raceIndexHtml,
+      capturedAt: '2026-08-22T10:08:00.000Z',
+      responseHeaders: { content_type: 'text/html', etag: 'race-loser-index' }
+    })
+  });
+
+  const raceCanonicalUrl = 'https://www.dentsu.com/news-releases/publication-race-artifact';
+  const raceArtifactBody = Buffer.from(
+    '<!doctype html><html><body><main>Publication destination race artifact.</main></body></html>'
+  );
+  const raceArtifactBodySha256 = crypto
+    .createHash('sha256')
+    .update(raceArtifactBody)
+    .digest('hex');
+  const raceArtifactRoot = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'industrial-exhaust-artifact-publication-race-winner-')
+  );
+  let competingArtifactReceipt;
+  try {
+    writeArtifactReceipt({
+      rootDir: raceArtifactRoot,
+      canonicalUrl: raceCanonicalUrl,
+      body: raceArtifactBody,
+      bodySha256: raceArtifactBodySha256,
+      capturedAt: '2026-08-22T10:07:00.000Z',
+      responseHeaders: {
+        content_type: 'text/html',
+        etag: 'race-winner-artifact',
+        final_url: raceCanonicalUrl,
+        redirect_chain: []
+      }
+    });
+    competingArtifactReceipt = fs.readFileSync(
+      artifactReceiptFilePath(
+        raceArtifactRoot,
+        raceCanonicalUrl,
+        raceArtifactBodySha256
+      ),
+      'utf8'
+    );
+  } finally {
+    fs.rmSync(raceArtifactRoot, { recursive: true, force: true });
+  }
+  const raceArtifactReceiptPath = artifactReceiptFilePath(
     rootDir,
-    canonicalUrl: raceCanonicalUrl,
-    body: raceArtifactBody,
-    bodySha256: raceArtifactBodySha256,
-    capturedAt: '2026-08-22T10:08:00.000Z',
-    responseHeaders: {
-      content_type: 'text/html',
-      etag: 'race-loser-artifact',
-      final_url: raceCanonicalUrl,
-      redirect_chain: []
-    }
-  })
-});
+    raceCanonicalUrl,
+    raceArtifactBodySha256
+  );
+  assertDestinationRacePreservesWinner({
+    receiptType: 'artifact',
+    absoluteReceiptPath: raceArtifactReceiptPath,
+    competingReceipt: competingArtifactReceipt,
+    cleanupParent: true,
+    writeReceipt: () => writeArtifactReceipt({
+      rootDir,
+      canonicalUrl: raceCanonicalUrl,
+      body: raceArtifactBody,
+      bodySha256: raceArtifactBodySha256,
+      capturedAt: '2026-08-22T10:08:00.000Z',
+      responseHeaders: {
+        content_type: 'text/html',
+        etag: 'race-loser-artifact',
+        final_url: raceCanonicalUrl,
+        redirect_chain: []
+      }
+    })
+  });
 
   const assertReceiptPublicationDurability = ({
     receiptType,
@@ -451,58 +463,34 @@ assertDestinationRacePreservesWinner({
     }
     directoryChain.unshift(durabilityRoot);
 
-    const originalFsyncSync = fs.fsyncSync;
-    const originalLinkSync = fs.linkSync;
-    const directorySyncs = new Set();
-    const events = [];
-    let failNextDirectorySync = false;
-
-    fs.linkSync = (sourcePath, destinationPath) => {
-    let targetsReceipt = false;
-    try {
-      targetsReceipt = path.basename(destinationPath)
-          === path.basename(absoluteReceiptPath)
-        && fs.realpathSync.native(path.dirname(destinationPath))
-          === fs.realpathSync.native(path.dirname(absoluteReceiptPath));
-    } catch {}
-    if (targetsReceipt) events.push('publish-link');
-    return originalLinkSync(sourcePath, destinationPath);
-  };
-    fs.fsyncSync = descriptor => {
-      const stats = fs.fstatSync(descriptor);
-      if (stats.isDirectory()) {
-        events.push('directory-sync');
-        if (failNextDirectorySync) {
-          failNextDirectorySync = false;
-          const error = new Error('simulated directory fsync failure');
-          error.code = 'EIO';
-          throw error;
-        }
-        directorySyncs.add(`${stats.dev}:${stats.ino}`);
-      } else {
-        events.push('file-sync');
-      }
-      return originalFsyncSync(descriptor);
-    };
-
+    const writeControl = { events: [] };
     try {
       assert.equal(
-        writeReceipt(),
+        withReceiptDirfdControl(writeControl, writeReceipt),
         expectedRelativePath,
         `${receiptType} publication must return its canonical receipt path`
       );
-      const linkEventIndex = events.indexOf('publish-link');
+      const linkEventIndex = writeControl.events.findIndex(
+        event => event.type === 'publish-link'
+      );
       assert.notEqual(
         linkEventIndex,
         -1,
         `${receiptType} durability regression must exercise final-path publication`
       );
       assert.equal(
-        events.slice(linkEventIndex + 1).includes('directory-sync'),
+        writeControl.events
+          .slice(linkEventIndex + 1)
+          .some(event => event.type === 'directory-sync'),
         true,
         `${receiptType} publication must synchronize its directory after linking the receipt`
       );
 
+      const directorySyncs = new Set(
+        writeControl.events
+          .filter(event => event.type === 'directory-sync')
+          .map(event => `${event.dev}:${event.ino}`)
+      );
       for (const directoryPath of directoryChain) {
         const stats = fs.lstatSync(directoryPath);
         assert.equal(
@@ -516,16 +504,20 @@ assertDestinationRacePreservesWinner({
       }
 
       const originalReceipt = fs.readFileSync(absoluteReceiptPath, 'utf8');
-      directorySyncs.clear();
-      events.length = 0;
+      const reuseControl = { events: [] };
       assert.equal(
-        reuseReceipt(),
+        withReceiptDirfdControl(reuseControl, reuseReceipt),
         expectedRelativePath,
         `${receiptType} idempotent reuse must retain its canonical receipt path`
       );
+      const reuseDirectorySyncs = new Set(
+        reuseControl.events
+          .filter(event => event.type === 'directory-sync')
+          .map(event => `${event.dev}:${event.ino}`)
+      );
       const parentStats = fs.lstatSync(path.dirname(absoluteReceiptPath));
       assert.equal(
-        directorySyncs.has(`${parentStats.dev}:${parentStats.ino}`),
+        reuseDirectorySyncs.has(`${parentStats.dev}:${parentStats.ino}`),
         true,
         `${receiptType} idempotent reuse must synchronize the retained receipt directory`
       );
@@ -535,15 +527,20 @@ assertDestinationRacePreservesWinner({
         `${receiptType} idempotent reuse may not rewrite retained receipt bytes`
       );
 
-      failNextDirectorySync = true;
+      const failureControl = {
+        events: [],
+        fault: { type: 'fail_next_directory_sync' }
+      };
       assert.throws(
-        () => reuseReceipt(),
+        () => withReceiptDirfdControl(failureControl, reuseReceipt),
         /synchronization failed/u,
         `${receiptType} reuse must fail closed when directory synchronization fails`
       );
       assert.equal(
-        failNextDirectorySync,
-        false,
+        failureControl.events.some(
+          event => event.type === 'directory-sync-failure'
+        ),
+        true,
         `${receiptType} failure injection must reach a directory synchronization call`
       );
       assert.equal(
@@ -552,8 +549,6 @@ assertDestinationRacePreservesWinner({
         `${receiptType} failed durability proof may not rewrite retained receipt bytes`
       );
     } finally {
-      fs.fsyncSync = originalFsyncSync;
-      fs.linkSync = originalLinkSync;
       fs.rmSync(durabilityRoot, { recursive: true, force: true });
     }
   };
@@ -639,592 +634,285 @@ assertDestinationRacePreservesWinner({
     })
   });
 
-  const assertPublicationPlatformFailurePrecedesMutation = ({
+  const assertNoProcfsPathMediation = ({
     receiptType,
-    platformRoot,
-    installFault,
-    writeReceipt,
-    expectedError
+    publicationRoot,
+    absoluteReceiptPath,
+    writeReceipt
   }) => {
-    const receiptsPath = path.join(platformRoot, 'receipts');
-    const restore = installFault();
+    const guardedMethods = [
+      'openSync',
+      'statSync',
+      'statfsSync',
+      'lstatSync',
+      'mkdirSync',
+      'linkSync',
+      'unlinkSync',
+      'readFileSync'
+    ];
+    const originals = new Map(
+      guardedMethods.map(method => [method, fs[method]])
+    );
+    const attempts = [];
+    for (const method of guardedMethods) {
+      fs[method] = (...args) => {
+        const pathArguments = method === 'linkSync'
+          ? args.slice(0, 2)
+          : args.slice(0, 1);
+        const forbidden = pathArguments
+          .map(value => String(value))
+          .find(value => value.startsWith('/proc/self/'));
+        if (forbidden) {
+          attempts.push({ method, path: forbidden });
+          throw new Error(`forbidden procfs path mediation: ${forbidden}`);
+        }
+        return originals.get(method)(...args);
+      };
+    }
     try {
-      assert.throws(
-        () => writeReceipt(),
-        expectedError,
-        `${receiptType} publication must reject an unauthenticated procfs platform`
-      );
+      const expectedRelativePath = path.relative(
+        publicationRoot,
+        absoluteReceiptPath
+      ).split(path.sep).join('/');
       assert.equal(
-        fs.existsSync(receiptsPath),
-        false,
-        `${receiptType} platform admission failure must precede receipt-tree mutation`
+        writeReceipt(),
+        expectedRelativePath,
+        `${receiptType} publication must use inherited dirfd operations`
+      );
+      assert.deepEqual(
+        attempts,
+        [],
+        `${receiptType} publication may not derive mutation paths through procfs`
       );
     } finally {
-      restore();
-      fs.rmSync(platformRoot, { recursive: true, force: true });
+      for (const [method, original] of originals) fs[method] = original;
+      fs.rmSync(publicationRoot, { recursive: true, force: true });
     }
   };
 
-  const nonProcfsIndexRoot = fs.mkdtempSync(
-    path.join(os.tmpdir(), 'industrial-exhaust-index-non-procfs-platform-')
+  const noProcfsIndexRoot = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'industrial-exhaust-index-no-procfs-mediation-')
   );
-  const nonProcfsIndexHtml =
-    '<!doctype html><html><body><a href="/news-releases/non-procfs-platform-index">Non-procfs platform index</a></body></html>';
-  const nonProcfsParsedIndex = parseHtmlLinkIndex(nonProcfsIndexHtml, source);
-  assertPublicationPlatformFailurePrecedesMutation({
+  const noProcfsIndexHtml =
+    '<!doctype html><html><body><a href="/news-releases/no-procfs-index">No procfs index</a></body></html>';
+  const noProcfsParsedIndex = parseHtmlLinkIndex(noProcfsIndexHtml, source);
+  const noProcfsIndexReceiptPath = indexReceiptFilePath(
+    noProcfsIndexRoot,
+    source.id,
+    noProcfsParsedIndex.index_sha256
+  );
+  assertNoProcfsPathMediation({
     receiptType: 'index',
-    platformRoot: nonProcfsIndexRoot,
-    installFault: () => {
-      const originalStatfsSync = fs.statfsSync;
-      fs.statfsSync = (targetPath, ...args) => {
-        const stats = originalStatfsSync(targetPath, ...args);
-        if (String(targetPath) === '/proc/self/fd') {
-          return { ...stats, type: 0x01021994 };
-        }
-        return stats;
-      };
-      return () => { fs.statfsSync = originalStatfsSync; };
-    },
+    publicationRoot: noProcfsIndexRoot,
+    absoluteReceiptPath: noProcfsIndexReceiptPath,
     writeReceipt: () => writeIndexReceipt({
-      rootDir: nonProcfsIndexRoot,
+      rootDir: noProcfsIndexRoot,
       source,
-      parsedIndex: nonProcfsParsedIndex,
-      html: nonProcfsIndexHtml,
-      capturedAt: '2026-08-24T11:20:00.000Z',
-      responseHeaders: {
-        content_type: 'text/html',
-        etag: 'non-procfs-platform-index'
-      }
-    }),
-    expectedError: /descriptor root is not procfs/u
+      parsedIndex: noProcfsParsedIndex,
+      html: noProcfsIndexHtml,
+      capturedAt: '2026-08-24T12:20:00.000Z'
+    })
   });
 
-  const shadowedMountArtifactRoot = fs.mkdtempSync(
-    path.join(os.tmpdir(), 'industrial-exhaust-artifact-shadowed-procfs-mount-')
+  const noProcfsArtifactRoot = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'industrial-exhaust-artifact-no-procfs-mediation-')
   );
-  const shadowedMountCanonicalUrl =
-    'https://www.dentsu.com/news-releases/shadowed-procfs-mount-artifact';
-  const shadowedMountBody = Buffer.from(
-    '<!doctype html><html><body><main>Shadowed procfs mount artifact.</main></body></html>'
+  const noProcfsArtifactCanonicalUrl =
+    'https://www.dentsu.com/news-releases/no-procfs-artifact';
+  const noProcfsArtifactBody = Buffer.from(
+    '<!doctype html><html><body><main>No procfs artifact.</main></body></html>'
   );
-  const shadowedMountBodySha256 = crypto
+  const noProcfsArtifactBodySha256 = crypto
     .createHash('sha256')
-    .update(shadowedMountBody)
+    .update(noProcfsArtifactBody)
     .digest('hex');
-  assertPublicationPlatformFailurePrecedesMutation({
+  const noProcfsArtifactReceiptPath = artifactReceiptFilePath(
+    noProcfsArtifactRoot,
+    noProcfsArtifactCanonicalUrl,
+    noProcfsArtifactBodySha256
+  );
+  assertNoProcfsPathMediation({
     receiptType: 'artifact',
-    platformRoot: shadowedMountArtifactRoot,
-    installFault: () => {
-      const originalReadFileSync = fs.readFileSync;
-      fs.readFileSync = (targetPath, ...args) => {
-        if (String(targetPath) === '/proc/self/mountinfo') {
-          return '999 1 0:999 / /proc rw,relatime - tmpfs tmpfs rw\n';
-        }
-        return originalReadFileSync(targetPath, ...args);
-      };
-      return () => { fs.readFileSync = originalReadFileSync; };
-    },
+    publicationRoot: noProcfsArtifactRoot,
+    absoluteReceiptPath: noProcfsArtifactReceiptPath,
     writeReceipt: () => writeArtifactReceipt({
-      rootDir: shadowedMountArtifactRoot,
-      canonicalUrl: shadowedMountCanonicalUrl,
-      body: shadowedMountBody,
-      bodySha256: shadowedMountBodySha256,
-      capturedAt: '2026-08-24T11:20:00.000Z',
+      rootDir: noProcfsArtifactRoot,
+      canonicalUrl: noProcfsArtifactCanonicalUrl,
+      body: noProcfsArtifactBody,
+      bodySha256: noProcfsArtifactBodySha256,
+      capturedAt: '2026-08-24T12:20:00.000Z',
       responseHeaders: {
         content_type: 'text/html',
-        etag: 'shadowed-procfs-mount-artifact',
-        final_url: shadowedMountCanonicalUrl,
+        final_url: noProcfsArtifactCanonicalUrl,
         redirect_chain: []
       }
-    }),
-    expectedError: /effective descriptor mount is not canonical procfs/u
+    })
   });
 
-  const descriptorRootMismatchIndexRoot = fs.mkdtempSync(
-    path.join(os.tmpdir(), 'industrial-exhaust-index-descriptor-root-mismatch-')
+  const unavailableHelperRoot = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'industrial-exhaust-index-dirfd-helper-unavailable-')
   );
-  const descriptorRootMismatchExternalRoot = fs.mkdtempSync(
-    path.join(os.tmpdir(), 'industrial-exhaust-index-descriptor-root-external-')
-  );
-  const descriptorRootMismatchHtml =
-    '<!doctype html><html><body><a href="/news-releases/descriptor-root-mismatch-index">Descriptor root mismatch index</a></body></html>';
-  const descriptorRootMismatchParsedIndex = parseHtmlLinkIndex(
-    descriptorRootMismatchHtml,
+  const unavailableHelperHtml =
+    '<!doctype html><html><body><a href="/news-releases/helper-unavailable-index">Helper unavailable index</a></body></html>';
+  const unavailableHelperParsedIndex = parseHtmlLinkIndex(
+    unavailableHelperHtml,
     source
   );
-  assertPublicationPlatformFailurePrecedesMutation({
-    receiptType: 'index',
-    platformRoot: descriptorRootMismatchIndexRoot,
-    installFault: () => {
-      const originalStatSync = fs.statSync;
-      fs.statSync = (targetPath, ...args) => {
-        if (String(targetPath) === '/proc/self/fd') {
-          return originalStatSync(descriptorRootMismatchExternalRoot);
-        }
-        return originalStatSync(targetPath, ...args);
-      };
-      return () => {
-        fs.statSync = originalStatSync;
-        fs.rmSync(descriptorRootMismatchExternalRoot, {
-          recursive: true,
-          force: true
-        });
-      };
-    },
-    writeReceipt: () => writeIndexReceipt({
-      rootDir: descriptorRootMismatchIndexRoot,
-      source,
-      parsedIndex: descriptorRootMismatchParsedIndex,
-      html: descriptorRootMismatchHtml,
-      capturedAt: '2026-08-24T11:20:00.000Z',
-      responseHeaders: {
-        content_type: 'text/html',
-        etag: 'descriptor-root-mismatch-index'
-      }
-    }),
-    expectedError: /descriptor-root identity mismatch/u
-  });
-
-  const namespaceDriftArtifactRoot = fs.mkdtempSync(
-    path.join(os.tmpdir(), 'industrial-exhaust-artifact-namespace-drift-')
-  );
-  const namespaceDriftExternalRoot = fs.mkdtempSync(
-    path.join(os.tmpdir(), 'industrial-exhaust-artifact-namespace-external-')
-  );
-  const namespaceDriftSentinelPath = path.join(
-    namespaceDriftExternalRoot,
-    'namespace-sentinel.txt'
-  );
-  fs.writeFileSync(namespaceDriftSentinelPath, 'namespace drift sentinel\n');
-  const namespaceDriftCanonicalUrl =
-    'https://www.dentsu.com/news-releases/namespace-drift-artifact';
-  const namespaceDriftBody = Buffer.from(
-    '<!doctype html><html><body><main>Namespace drift artifact.</main></body></html>'
-  );
-  const namespaceDriftBodySha256 = crypto
-    .createHash('sha256')
-    .update(namespaceDriftBody)
-    .digest('hex');
-  assertPublicationPlatformFailurePrecedesMutation({
-    receiptType: 'artifact',
-    platformRoot: namespaceDriftArtifactRoot,
-    installFault: () => {
-      const originalStatSync = fs.statSync;
-      let namespaceProbeCount = 0;
-      fs.statSync = (targetPath, ...args) => {
-        if (String(targetPath) === '/proc/self/ns/mnt') {
-          namespaceProbeCount += 1;
-          if (namespaceProbeCount > 1) {
-            return originalStatSync(namespaceDriftSentinelPath);
-          }
-        }
-        return originalStatSync(targetPath, ...args);
-      };
-      return () => {
-        fs.statSync = originalStatSync;
-        fs.rmSync(namespaceDriftExternalRoot, {
-          recursive: true,
-          force: true
-        });
-      };
-    },
-    writeReceipt: () => writeArtifactReceipt({
-      rootDir: namespaceDriftArtifactRoot,
-      canonicalUrl: namespaceDriftCanonicalUrl,
-      body: namespaceDriftBody,
-      bodySha256: namespaceDriftBodySha256,
-      capturedAt: '2026-08-24T11:20:00.000Z',
-      responseHeaders: {
-        content_type: 'text/html',
-        etag: 'namespace-drift-artifact',
-        final_url: namespaceDriftCanonicalUrl,
-        redirect_chain: []
-      }
-    }),
-    expectedError: /mount-namespace identity changed/u
-  });
-
-  const mountDriftIndexRoot = fs.mkdtempSync(
-    path.join(os.tmpdir(), 'industrial-exhaust-index-procfs-mount-drift-')
-  );
-  const mountDriftIndexHtml =
-    '<!doctype html><html><body><a href="/news-releases/procfs-mount-drift-index">Procfs mount drift index</a></body></html>';
-  const mountDriftParsedIndex = parseHtmlLinkIndex(mountDriftIndexHtml, source);
-  assertPublicationPlatformFailurePrecedesMutation({
-    receiptType: 'index',
-    platformRoot: mountDriftIndexRoot,
-    installFault: () => {
-      const originalReadFileSync = fs.readFileSync;
-      let mountInfoReadCount = 0;
-      fs.readFileSync = (targetPath, ...args) => {
-        const value = originalReadFileSync(targetPath, ...args);
-        if (String(targetPath) !== '/proc/self/mountinfo') return value;
-        mountInfoReadCount += 1;
-        if (mountInfoReadCount === 1) return value;
-        return `${value}998 999 0:998 / /proc/self/fd rw,relatime - tmpfs tmpfs rw\n`;
-      };
-      return () => { fs.readFileSync = originalReadFileSync; };
-    },
-    writeReceipt: () => writeIndexReceipt({
-      rootDir: mountDriftIndexRoot,
-      source,
-      parsedIndex: mountDriftParsedIndex,
-      html: mountDriftIndexHtml,
-      capturedAt: '2026-08-24T11:20:00.000Z',
-      responseHeaders: {
-        content_type: 'text/html',
-        etag: 'procfs-mount-drift-index'
-      }
-    }),
-    expectedError: /effective descriptor mount is not canonical procfs/u
-  });
-
-  const lateDriftArtifactRoot = fs.mkdtempSync(
-    path.join(os.tmpdir(), 'industrial-exhaust-artifact-late-procfs-drift-')
-  );
-  const lateDriftCanonicalUrl =
-    'https://www.dentsu.com/news-releases/late-procfs-drift-artifact';
-  const lateDriftBody = Buffer.from(
-    '<!doctype html><html><body><main>Late procfs drift artifact.</main></body></html>'
-  );
-  const lateDriftBodySha256 = crypto
-    .createHash('sha256')
-    .update(lateDriftBody)
-    .digest('hex');
-  const lateDriftReceiptPath = artifactReceiptFilePath(
-    lateDriftArtifactRoot,
-    lateDriftCanonicalUrl,
-    lateDriftBodySha256
-  );
-  const originalLateReadFileSync = fs.readFileSync;
-  const originalLateOpenSync = fs.openSync;
-  const originalLateCloseSync = fs.closeSync;
-  let lateDriftActive = false;
-  let lateTempDescriptor = null;
-  let lateTempDescriptorClosed = false;
-  fs.readFileSync = (targetPath, ...args) => {
-    const value = originalLateReadFileSync(targetPath, ...args);
-    if (String(targetPath) !== '/proc/self/mountinfo' || !lateDriftActive) {
-      return value;
-    }
-    return `${value}997 999 0:997 / /proc/self/fd rw,relatime - tmpfs tmpfs rw\n`;
-  };
-  fs.openSync = (targetPath, ...args) => {
-    const descriptor = originalLateOpenSync(targetPath, ...args);
-    if (String(targetPath).endsWith('.tmp')) {
-      lateTempDescriptor = descriptor;
-      lateDriftActive = true;
-    }
-    return descriptor;
-  };
-  fs.closeSync = descriptor => {
-    if (descriptor === lateTempDescriptor) lateTempDescriptorClosed = true;
-    return originalLateCloseSync(descriptor);
+  const unavailableControl = {
+    events: [],
+    interpreter_path: '/definitely/missing/industrial-exhaust-python3'
   };
   try {
     assert.throws(
-      () => writeArtifactReceipt({
-        rootDir: lateDriftArtifactRoot,
-        canonicalUrl: lateDriftCanonicalUrl,
-        body: lateDriftBody,
-        bodySha256: lateDriftBodySha256,
-        capturedAt: '2026-08-24T11:21:00.000Z',
-        responseHeaders: {
-          content_type: 'text/html',
-          etag: 'late-procfs-drift-artifact',
-          final_url: lateDriftCanonicalUrl,
-          redirect_chain: []
-        }
-      }),
-      /effective descriptor mount is not canonical procfs/u,
-      'artifact publication must reject procfs drift after temporary-file open'
-    );
-    assert.notEqual(
-      lateTempDescriptor,
-      null,
-      'late-drift regression must exercise temporary-file creation'
+      () => withReceiptDirfdControl(
+        unavailableControl,
+        () => writeIndexReceipt({
+          rootDir: unavailableHelperRoot,
+          source,
+          parsedIndex: unavailableHelperParsedIndex,
+          html: unavailableHelperHtml,
+          capturedAt: '2026-08-24T12:21:00.000Z'
+        })
+      ),
+      /dirfd helper launch failed/u,
+      'publication must fail closed when the dirfd helper runtime is unavailable'
     );
     assert.equal(
-      lateTempDescriptorClosed,
-      true,
-      'late-drift rejection must dispose the opened temporary descriptor'
-    );
-    assert.equal(
-      fs.existsSync(lateDriftReceiptPath),
+      fs.existsSync(path.join(unavailableHelperRoot, 'receipts')),
       false,
-      'late-drift rejection may not publish a final receipt'
+      'helper launch failure must precede receipt-tree mutation'
     );
   } finally {
-    fs.readFileSync = originalLateReadFileSync;
-    fs.openSync = originalLateOpenSync;
-    fs.closeSync = originalLateCloseSync;
-    fs.rmSync(lateDriftArtifactRoot, { recursive: true, force: true });
+    fs.rmSync(unavailableHelperRoot, { recursive: true, force: true });
   }
 
-  const assertDescriptorBridgeFailurePrecedesMutation = ({
+  const assertAncestorSwapCannotRedirectPublication = ({
     receiptType,
-    bridgeRoot,
-    externalRoot = null,
-    externalSentinelPath = null,
-    externalSentinel = null,
-    bridgeProbe,
-    writeReceipt,
-    expectedError
+    raceRoot,
+    externalRoot,
+    absoluteReceiptPath,
+    writeReceipt
   }) => {
-    const receiptsPath = path.join(bridgeRoot, 'receipts');
-    const originalStatSync = fs.statSync;
-    let bridgeProbeObserved = false;
+    const canonicalReceiptsPath = path.join(raceRoot, 'receipts');
+    const displacedReceiptsPath = path.join(raceRoot, 'receipts-displaced');
+    const externalReceiptsPath = path.join(externalRoot, 'receipts');
+    const relativeWithinReceipts = path.relative(
+      canonicalReceiptsPath,
+      absoluteReceiptPath
+    );
+    const externalReceiptPath = path.join(
+      externalReceiptsPath,
+      relativeWithinReceipts
+    );
 
-    fs.statSync = (targetPath, ...args) => {
-      if (/^\/proc\/self\/fd\/\d+$/u.test(String(targetPath))) {
-        bridgeProbeObserved = true;
-        return bridgeProbe({
-          targetPath: String(targetPath),
-          args,
-          originalStatSync
-        });
+    fs.mkdirSync(path.dirname(absoluteReceiptPath), { recursive: true });
+    fs.mkdirSync(path.dirname(externalReceiptPath), { recursive: true });
+    const control = {
+      events: [],
+      fault: {
+        type: 'swap_visible_ancestor_after_temp_open',
+        canonical_receipts_path: canonicalReceiptsPath,
+        displaced_receipts_path: displacedReceiptsPath,
+        external_receipts_path: externalReceiptsPath
       }
-      return originalStatSync(targetPath, ...args);
     };
 
     try {
       assert.throws(
-        () => writeReceipt(),
-        expectedError,
-        `${receiptType} publication must reject an unauthenticated descriptor bridge`
+        () => withReceiptDirfdControl(control, writeReceipt),
+        /directory chain changed/u,
+        `${receiptType} publication must reject a changed visible receipt chain`
       );
       assert.equal(
-        bridgeProbeObserved,
+        control.events.some(event => event.type === 'visible-ancestor-swapped'),
         true,
-        `${receiptType} regression must exercise descriptor-bridge authentication`
+        `${receiptType} regression must exercise the temporary-file publication window`
       );
       assert.equal(
-        fs.existsSync(receiptsPath),
+        fs.existsSync(externalReceiptPath),
         false,
-        `${receiptType} descriptor-bridge failure must precede receipt-tree mutation`
+        `${receiptType} publication may not mutate the substituted external tree`
       );
-      if (externalSentinelPath !== null) {
-        assert.equal(
-          fs.readFileSync(externalSentinelPath, 'utf8'),
-          externalSentinel,
-          `${receiptType} descriptor-bridge failure may not mutate the external tree`
-        );
-      }
     } finally {
-      fs.statSync = originalStatSync;
-      fs.rmSync(bridgeRoot, { recursive: true, force: true });
-      if (externalRoot !== null) {
-        fs.rmSync(externalRoot, { recursive: true, force: true });
-      }
+      fs.rmSync(raceRoot, { recursive: true, force: true });
+      fs.rmSync(externalRoot, { recursive: true, force: true });
     }
   };
 
-  const unavailableBridgeIndexRoot = fs.mkdtempSync(
-    path.join(os.tmpdir(), 'industrial-exhaust-index-bridge-unavailable-')
+  const ancestorRaceIndexRoot = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'industrial-exhaust-index-ancestor-race-root-')
   );
-  const unavailableBridgeIndexHtml =
-    '<!doctype html><html><body><a href="/news-releases/bridge-unavailable-index">Bridge unavailable index</a></body></html>';
-  const unavailableBridgeParsedIndex = parseHtmlLinkIndex(
-    unavailableBridgeIndexHtml,
+  const ancestorRaceIndexExternalRoot = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'industrial-exhaust-index-ancestor-race-external-')
+  );
+  const ancestorRaceIndexHtml =
+    '<!doctype html><html><body><a href="/news-releases/publication-ancestor-race-index">Publication ancestor race index</a></body></html>';
+  const ancestorRaceParsedIndex = parseHtmlLinkIndex(
+    ancestorRaceIndexHtml,
     source
   );
-  assertDescriptorBridgeFailurePrecedesMutation({
+  const ancestorRaceIndexReceiptPath = indexReceiptFilePath(
+    ancestorRaceIndexRoot,
+    source.id,
+    ancestorRaceParsedIndex.index_sha256
+  );
+  assertAncestorSwapCannotRedirectPublication({
     receiptType: 'index',
-    bridgeRoot: unavailableBridgeIndexRoot,
-    bridgeProbe: () => {
-      const error = new Error('simulated descriptor bridge outage');
-      error.code = 'ENOENT';
-      throw error;
-    },
+    raceRoot: ancestorRaceIndexRoot,
+    externalRoot: ancestorRaceIndexExternalRoot,
+    absoluteReceiptPath: ancestorRaceIndexReceiptPath,
     writeReceipt: () => writeIndexReceipt({
-      rootDir: unavailableBridgeIndexRoot,
+      rootDir: ancestorRaceIndexRoot,
       source,
-      parsedIndex: unavailableBridgeParsedIndex,
-      html: unavailableBridgeIndexHtml,
-      capturedAt: '2026-08-24T10:40:00.000Z',
+      parsedIndex: ancestorRaceParsedIndex,
+      html: ancestorRaceIndexHtml,
+      capturedAt: '2026-08-22T10:11:00.000Z',
       responseHeaders: {
         content_type: 'text/html',
-        etag: 'bridge-unavailable-index'
+        etag: 'ancestor-race-index'
       }
-    }),
-    expectedError: /descriptor bridge unavailable/u
+    })
   });
 
-  const mismatchedBridgeArtifactRoot = fs.mkdtempSync(
-    path.join(os.tmpdir(), 'industrial-exhaust-artifact-bridge-mismatch-')
+  const ancestorRaceArtifactRoot = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'industrial-exhaust-artifact-ancestor-race-root-')
   );
-  const mismatchedBridgeExternalRoot = fs.mkdtempSync(
-    path.join(os.tmpdir(), 'industrial-exhaust-artifact-bridge-external-')
+  const ancestorRaceArtifactExternalRoot = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'industrial-exhaust-artifact-ancestor-race-external-')
   );
-  const mismatchedBridgeSentinelPath = path.join(
-    mismatchedBridgeExternalRoot,
-    'sentinel.txt'
+  const ancestorRaceArtifactCanonicalUrl =
+    'https://www.dentsu.com/news-releases/publication-ancestor-race-artifact';
+  const ancestorRaceArtifactBody = Buffer.from(
+    '<!doctype html><html><body><main>Publication ancestor race artifact.</main></body></html>'
   );
-  const mismatchedBridgeSentinel = 'external descriptor bridge sentinel\n';
-  fs.writeFileSync(mismatchedBridgeSentinelPath, mismatchedBridgeSentinel);
-  const mismatchedBridgeArtifactCanonicalUrl =
-    'https://www.dentsu.com/news-releases/bridge-mismatch-artifact';
-  const mismatchedBridgeArtifactBody = Buffer.from(
-    '<!doctype html><html><body><main>Bridge mismatch artifact.</main></body></html>'
-  );
-  const mismatchedBridgeArtifactBodySha256 = crypto
+  const ancestorRaceArtifactBodySha256 = crypto
     .createHash('sha256')
-    .update(mismatchedBridgeArtifactBody)
+    .update(ancestorRaceArtifactBody)
     .digest('hex');
-  assertDescriptorBridgeFailurePrecedesMutation({
+  const ancestorRaceArtifactReceiptPath = artifactReceiptFilePath(
+    ancestorRaceArtifactRoot,
+    ancestorRaceArtifactCanonicalUrl,
+    ancestorRaceArtifactBodySha256
+  );
+  assertAncestorSwapCannotRedirectPublication({
     receiptType: 'artifact',
-    bridgeRoot: mismatchedBridgeArtifactRoot,
-    externalRoot: mismatchedBridgeExternalRoot,
-    externalSentinelPath: mismatchedBridgeSentinelPath,
-    externalSentinel: mismatchedBridgeSentinel,
-    bridgeProbe: ({ originalStatSync }) =>
-      originalStatSync(mismatchedBridgeExternalRoot),
+    raceRoot: ancestorRaceArtifactRoot,
+    externalRoot: ancestorRaceArtifactExternalRoot,
+    absoluteReceiptPath: ancestorRaceArtifactReceiptPath,
     writeReceipt: () => writeArtifactReceipt({
-      rootDir: mismatchedBridgeArtifactRoot,
-      canonicalUrl: mismatchedBridgeArtifactCanonicalUrl,
-      body: mismatchedBridgeArtifactBody,
-      bodySha256: mismatchedBridgeArtifactBodySha256,
-      capturedAt: '2026-08-24T10:40:00.000Z',
+      rootDir: ancestorRaceArtifactRoot,
+      canonicalUrl: ancestorRaceArtifactCanonicalUrl,
+      body: ancestorRaceArtifactBody,
+      bodySha256: ancestorRaceArtifactBodySha256,
+      capturedAt: '2026-08-22T10:11:00.000Z',
       responseHeaders: {
         content_type: 'text/html',
-        etag: 'bridge-mismatch-artifact',
-        final_url: mismatchedBridgeArtifactCanonicalUrl,
+        etag: 'ancestor-race-artifact',
+        final_url: ancestorRaceArtifactCanonicalUrl,
         redirect_chain: []
       }
-    }),
-    expectedError: /descriptor bridge identity mismatch/u
+    })
   });
-
-  const assertAncestorSwapCannotRedirectPublication = ({
-  receiptType,
-  raceRoot,
-  externalRoot,
-  absoluteReceiptPath,
-  writeReceipt
-}) => {
-  const canonicalReceiptsPath = path.join(raceRoot, 'receipts');
-  const displacedReceiptsPath = path.join(raceRoot, 'receipts-displaced');
-  const externalReceiptsPath = path.join(externalRoot, 'receipts');
-  const relativeWithinReceipts = path.relative(
-    canonicalReceiptsPath,
-    absoluteReceiptPath
-  );
-  const externalReceiptPath = path.join(
-    externalReceiptsPath,
-    relativeWithinReceipts
-  );
-
-  fs.mkdirSync(path.dirname(absoluteReceiptPath), { recursive: true });
-  fs.mkdirSync(path.dirname(externalReceiptPath), { recursive: true });
-
-  const originalOpenSync = fs.openSync;
-  let swapInjected = false;
-  fs.openSync = (targetPath, ...args) => {
-    if (!swapInjected && String(targetPath).endsWith('.tmp')) {
-      fs.renameSync(canonicalReceiptsPath, displacedReceiptsPath);
-      fs.symlinkSync(externalReceiptsPath, canonicalReceiptsPath, 'dir');
-      swapInjected = true;
-    }
-    return originalOpenSync(targetPath, ...args);
-  };
-
-  try {
-    assert.throws(
-      () => writeReceipt(),
-      /directory chain changed/u,
-      `${receiptType} publication must reject an ancestor substitution`
-    );
-    assert.equal(
-      swapInjected,
-      true,
-      `${receiptType} regression must exercise the temporary-file publication window`
-    );
-    assert.equal(
-      fs.existsSync(externalReceiptPath),
-      false,
-      `${receiptType} publication may not mutate the substituted external tree`
-    );
-  } finally {
-    fs.openSync = originalOpenSync;
-    fs.rmSync(raceRoot, { recursive: true, force: true });
-    fs.rmSync(externalRoot, { recursive: true, force: true });
-  }
-};
-
-const ancestorRaceIndexRoot = fs.mkdtempSync(
-  path.join(os.tmpdir(), 'industrial-exhaust-index-ancestor-race-root-')
-);
-const ancestorRaceIndexExternalRoot = fs.mkdtempSync(
-  path.join(os.tmpdir(), 'industrial-exhaust-index-ancestor-race-external-')
-);
-const ancestorRaceIndexHtml =
-  '<!doctype html><html><body><a href="/news-releases/publication-ancestor-race-index">Publication ancestor race index</a></body></html>';
-const ancestorRaceParsedIndex = parseHtmlLinkIndex(
-  ancestorRaceIndexHtml,
-  source
-);
-const ancestorRaceIndexReceiptPath = indexReceiptFilePath(
-  ancestorRaceIndexRoot,
-  source.id,
-  ancestorRaceParsedIndex.index_sha256
-);
-assertAncestorSwapCannotRedirectPublication({
-  receiptType: 'index',
-  raceRoot: ancestorRaceIndexRoot,
-  externalRoot: ancestorRaceIndexExternalRoot,
-  absoluteReceiptPath: ancestorRaceIndexReceiptPath,
-  writeReceipt: () => writeIndexReceipt({
-    rootDir: ancestorRaceIndexRoot,
-    source,
-    parsedIndex: ancestorRaceParsedIndex,
-    html: ancestorRaceIndexHtml,
-    capturedAt: '2026-08-22T10:11:00.000Z',
-    responseHeaders: {
-      content_type: 'text/html',
-      etag: 'ancestor-race-index'
-    }
-  })
-});
-
-const ancestorRaceArtifactRoot = fs.mkdtempSync(
-  path.join(os.tmpdir(), 'industrial-exhaust-artifact-ancestor-race-root-')
-);
-const ancestorRaceArtifactExternalRoot = fs.mkdtempSync(
-  path.join(os.tmpdir(), 'industrial-exhaust-artifact-ancestor-race-external-')
-);
-const ancestorRaceArtifactCanonicalUrl =
-  'https://www.dentsu.com/news-releases/publication-ancestor-race-artifact';
-const ancestorRaceArtifactBody = Buffer.from(
-  '<!doctype html><html><body><main>Publication ancestor race artifact.</main></body></html>'
-);
-const ancestorRaceArtifactBodySha256 = crypto
-  .createHash('sha256')
-  .update(ancestorRaceArtifactBody)
-  .digest('hex');
-const ancestorRaceArtifactReceiptPath = artifactReceiptFilePath(
-  ancestorRaceArtifactRoot,
-  ancestorRaceArtifactCanonicalUrl,
-  ancestorRaceArtifactBodySha256
-);
-assertAncestorSwapCannotRedirectPublication({
-  receiptType: 'artifact',
-  raceRoot: ancestorRaceArtifactRoot,
-  externalRoot: ancestorRaceArtifactExternalRoot,
-  absoluteReceiptPath: ancestorRaceArtifactReceiptPath,
-  writeReceipt: () => writeArtifactReceipt({
-    rootDir: ancestorRaceArtifactRoot,
-    canonicalUrl: ancestorRaceArtifactCanonicalUrl,
-    body: ancestorRaceArtifactBody,
-    bodySha256: ancestorRaceArtifactBodySha256,
-    capturedAt: '2026-08-22T10:11:00.000Z',
-    responseHeaders: {
-      content_type: 'text/html',
-      etag: 'ancestor-race-artifact',
-      final_url: ancestorRaceArtifactCanonicalUrl,
-      redirect_chain: []
-    }
-  })
-});
 
   const indexAbsolutePath = path.join(rootDir, indexReceiptPath);
   const originalIndexReceipt = fs.readFileSync(indexAbsolutePath, 'utf8');
@@ -1639,6 +1327,10 @@ assertAncestorSwapCannotRedirectPublication({
 } finally {
   fs.rmSync(rootDir, { recursive: true, force: true });
 }
+
+delete globalThis[receiptDirfdControlSymbol];
+if (originalNodeEnv === undefined) delete process.env.NODE_ENV;
+else process.env.NODE_ENV = originalNodeEnv;
 
 const canonicalDiscoveryRecords = fs.readFileSync(
   new URL('../data/exhaust/discovery-observations.jsonl', import.meta.url),
