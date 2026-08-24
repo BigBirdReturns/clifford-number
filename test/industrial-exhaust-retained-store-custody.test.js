@@ -1430,7 +1430,7 @@ process.stdin.on('end', () => {
   });
   fs.rmSync(forgedHelperRoot, { recursive: true, force: true });
 
-  const assertAncestorSwapCannotRedirectPublication = ({
+  const assertHelperWriteAuthorityIsReceiptParentOnly = ({
     receiptType,
     raceRoot,
     externalRoot,
@@ -1462,20 +1462,52 @@ process.stdin.on('end', () => {
     };
 
     try {
-      assert.throws(
-        () => withReceiptDirfdControl(control, writeReceipt),
-        /directory chain changed/u,
-        `${receiptType} publication must reject a changed visible receipt chain`
+      const expectedRelativePath = path.relative(
+        raceRoot,
+        absoluteReceiptPath
+      ).split(path.sep).join('/');
+      assert.equal(
+        withReceiptDirfdControl(control, writeReceipt),
+        expectedRelativePath,
+        `${receiptType} publication must continue after denying ambient ancestor mutation`
+      );
+      const confinementScopes = [...new Set(
+        control.events
+          .filter(event => event.type === 'filesystem-write-confined')
+          .map(event => event.scope)
+      )].sort();
+      assert.deepEqual(
+        confinementScopes,
+        ['receipt-parent', 'repository-root'],
+        `${receiptType} helper must enter repository-root and receipt-parent Landlock domains`
+      );
+      assert.equal(
+        control.events.some(
+          event => event.type === 'ambient-write-denied'
+            && event.operation === 'visible-ancestor-swap'
+        ),
+        true,
+        `${receiptType} helper must prove that ancestor mutation was denied`
       );
       assert.equal(
         control.events.some(event => event.type === 'visible-ancestor-swapped'),
-        true,
-        `${receiptType} regression must exercise the temporary-file publication window`
+        false,
+        `${receiptType} helper may not alter the visible receipt ancestor`
+      );
+      assert.equal(
+        fs.existsSync(displacedReceiptsPath),
+        false,
+        `${receiptType} denied mutation may not displace the canonical receipt tree`
       );
       assert.equal(
         fs.existsSync(externalReceiptPath),
         false,
-        `${receiptType} publication may not mutate the substituted external tree`
+        `${receiptType} helper may not mutate the external replacement tree`
+      );
+      assert.equal(
+        fs.existsSync(absoluteReceiptPath),
+        true,
+        `${receiptType} receipt must remain reachable after ambient mutation denial`
       );
     } finally {
       fs.rmSync(raceRoot, { recursive: true, force: true });
@@ -1500,7 +1532,7 @@ process.stdin.on('end', () => {
     source.id,
     ancestorRaceParsedIndex.index_sha256
   );
-  assertAncestorSwapCannotRedirectPublication({
+  assertHelperWriteAuthorityIsReceiptParentOnly({
     receiptType: 'index',
     raceRoot: ancestorRaceIndexRoot,
     externalRoot: ancestorRaceIndexExternalRoot,
@@ -1538,7 +1570,7 @@ process.stdin.on('end', () => {
     ancestorRaceArtifactCanonicalUrl,
     ancestorRaceArtifactBodySha256
   );
-  assertAncestorSwapCannotRedirectPublication({
+  assertHelperWriteAuthorityIsReceiptParentOnly({
     receiptType: 'artifact',
     raceRoot: ancestorRaceArtifactRoot,
     externalRoot: ancestorRaceArtifactExternalRoot,
