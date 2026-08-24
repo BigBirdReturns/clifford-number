@@ -1202,6 +1202,7 @@ const RECEIPT_DIRFD_CONTROL_SYMBOL = Symbol.for(
   'clifford-number.industrial-exhaust.receipt-dirfd-control'
 );
 const RECEIPT_DIRFD_HELPER_MAX_BUFFER = 64 * 1024 * 1024;
+const RECEIPT_DIRFD_HELPER_MAX_RECEIPT_BYTES = 24_000_000;
 const RECEIPT_DIRFD_HELPER_SOURCE = String.raw`
 import base64
 import errno
@@ -1756,29 +1757,57 @@ function sameReceiptIdentityText(stats, identity) {
     && String(stats.ino) === String(identity?.ino);
 }
 
-function verifyReceiptDirectoryReachability(session, chain, label) {
-  if (!Array.isArray(chain) || chain.length === 0 || chain[0]?.display !== '.') {
-    throw new Error(`${label} returned an invalid directory chain`);
+function expectedReceiptDirectoryDisplays(relativePath, label) {
+  const segments = String(relativePath).split('/');
+  if (segments.length < 1
+    || segments.some(segment => !segment || segment === '.' || segment === '..'
+      || segment.includes('\\'))) {
+    throw new Error(`${label} is not a canonical repository-relative path`);
   }
+  const displays = ['.'];
+  const current = [];
+  for (const segment of segments.slice(0, -1)) {
+    current.push(segment);
+    displays.push(current.join('/'));
+  }
+  return displays;
+}
+
+function verifyReceiptDirectoryReachability(
+  session,
+  chain,
+  relativePath,
+  label
+) {
+  const expectedDisplays = expectedReceiptDirectoryDisplays(
+    relativePath,
+    label
+  );
+  if (!Array.isArray(chain) || chain.length !== expectedDisplays.length) {
+    throw new Error(`${label} returned an incomplete directory chain`);
+  }
+
   const rootDescriptorStats = fs.fstatSync(session.descriptor);
   if (!rootDescriptorStats.isDirectory()
     || !sameReceiptIdentity(rootDescriptorStats, session.identity)) {
     throw new Error(`${label} directory chain changed at .`);
   }
 
-  for (const entry of chain) {
-    if (!entry || typeof entry.display !== 'string') {
+  const normalized = [];
+  for (let index = 0; index < chain.length; index += 1) {
+    const entry = chain[index];
+    const expectedDisplay = expectedDisplays[index];
+    if (!entry || entry.display !== expectedDisplay
+      || !['string', 'number', 'bigint'].includes(typeof entry.dev)
+      || !['string', 'number', 'bigint'].includes(typeof entry.ino)) {
       throw new Error(`${label} returned an invalid directory-chain entry`);
     }
-    const segments = entry.display === '.' ? [] : entry.display.split('/');
-    if (segments.some(segment => !segment || segment === '.' || segment === '..'
-      || segment.includes('\\'))) {
-      throw new Error(`${label} returned a noncanonical directory-chain entry`);
-    }
+    const segments = expectedDisplay === '.' ? [] : expectedDisplay.split('/');
     const absolutePath = path.resolve(session.root, ...segments);
     const relative = path.relative(session.root, absolutePath);
-    if (entry.display !== '.'
-      && (!relative || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative))) {
+    if (expectedDisplay !== '.'
+      && (!relative || relative.startsWith(`..${path.sep}`)
+        || path.isAbsolute(relative))) {
       throw new Error(`${label} directory chain escapes the repository root`);
     }
     let stats;
@@ -1786,14 +1815,129 @@ function verifyReceiptDirectoryReachability(session, chain, label) {
       stats = fs.lstatSync(absolutePath);
     } catch (error) {
       throw new Error(
-        `${label} directory chain changed at ${entry.display}: ${error.message}`
+        `${label} directory chain changed at ${expectedDisplay}: ${error.message}`
       );
     }
     if (!stats.isDirectory() || !sameReceiptIdentityText(stats, entry)) {
-      throw new Error(`${label} directory chain changed at ${entry.display}`);
+      throw new Error(`${label} directory chain changed at ${expectedDisplay}`);
+    }
+    normalized.push({
+      display: expectedDisplay,
+      dev: String(entry.dev),
+      ino: String(entry.ino)
+    });
+  }
+  return normalized;
+}
+
+function readReceiptDescriptorBytes(descriptor, label) {
+  const chunks = [];
+  const buffer = Buffer.allocUnsafe(1024 * 1024);
+  let total = 0;
+  while (true) {
+    const count = fs.readSync(descriptor, buffer, 0, buffer.length, null);
+    if (count === 0) break;
+    total += count;
+    if (total > RECEIPT_DIRFD_HELPER_MAX_RECEIPT_BYTES) {
+      throw new Error(`${label} exceeds the parent byte limit`);
+    }
+    chunks.push(Buffer.from(buffer.subarray(0, count)));
+  }
+  return Buffer.concat(chunks, total);
+}
+
+function attestVisibleReceipt({
+  session,
+  relativePath,
+  chain,
+  expectedIdentity,
+  expectedSha256,
+  label,
+  validateReceipt
+}) {
+  if (!expectedIdentity || typeof expectedIdentity !== 'object'
+    || typeof expectedSha256 !== 'string'
+    || !/^[a-f0-9]{64}$/u.test(expectedSha256)) {
+    throw new Error(`${label} visible receipt attestation lacks helper identity`);
+  }
+
+  const absolutePath = path.resolve(
+    session.root,
+    ...relativePath.split('/')
+  );
+  let descriptor = null;
+  let failure = null;
+  try {
+    verifyReceiptDirectoryReachability(
+      session,
+      chain,
+      relativePath,
+      `${label} visible preflight`
+    );
+    descriptor = fs.openSync(
+      absolutePath,
+      fs.constants.O_RDONLY | (fs.constants.O_NOFOLLOW ?? 0)
+    );
+    const openedStats = fs.fstatSync(descriptor);
+    const visibleStats = fs.lstatSync(absolutePath);
+    if (!openedStats.isFile()
+      || openedStats.nlink !== 1
+      || !visibleStats.isFile()
+      || visibleStats.nlink !== 1
+      || !sameReceiptIdentity(openedStats, visibleStats)
+      || !sameReceiptIdentityText(openedStats, expectedIdentity)) {
+      throw new Error('visible final receipt identity does not match helper proof');
+    }
+
+    const retainedBytes = readReceiptDescriptorBytes(descriptor, label);
+    const digest = crypto
+      .createHash('sha256')
+      .update(retainedBytes)
+      .digest('hex');
+    if (digest !== expectedSha256) {
+      throw new Error('visible final receipt bytes do not match helper proof');
+    }
+    const retainedReceipt = parseReceiptJsonText(
+      retainedBytes.toString('utf8'),
+      label
+    );
+    validateReceipt(retainedReceipt);
+
+    const finalStats = fs.fstatSync(descriptor);
+    const finalVisibleStats = fs.lstatSync(absolutePath);
+    if (!finalStats.isFile()
+      || finalStats.nlink !== 1
+      || !finalVisibleStats.isFile()
+      || finalVisibleStats.nlink !== 1
+      || !sameReceiptIdentity(finalStats, openedStats)
+      || !sameReceiptIdentity(finalVisibleStats, openedStats)
+      || !sameReceiptIdentityText(finalStats, expectedIdentity)) {
+      throw new Error('visible final receipt identity changed during attestation');
+    }
+    verifyReceiptDirectoryReachability(
+      session,
+      chain,
+      relativePath,
+      `${label} visible postflight`
+    );
+  } catch (error) {
+    failure = new Error(
+      `${label} visible receipt attestation failed: ${error.message}`
+    );
+  }
+
+  if (descriptor !== null) {
+    try {
+      fs.closeSync(descriptor);
+    } catch (error) {
+      failure ??= new Error(
+        `${label} visible receipt descriptor close failed: ${error.message}`
+      );
     }
   }
+  if (failure) throw failure;
 }
+
 
 function decodeReceiptDirfdRetainedBytes(response, label) {
   if (typeof response.retained_base64 !== 'string'
@@ -1847,9 +1991,10 @@ function publishReceiptJson({
         serialized_base64: Buffer.from(serialized, 'utf8').toString('base64')
       }
     });
-    verifyReceiptDirectoryReachability(
+    const publicationChain = verifyReceiptDirectoryReachability(
       rootSession,
       publication.chain,
+      relativePath,
       `${label} publication`
     );
     const retainedBytes = decodeReceiptDirfdRetainedBytes(publication, label);
@@ -1874,11 +2019,24 @@ function publishReceiptJson({
         !== JSON.stringify(publication.final_identity)) {
       throw new Error(`${label} publication identity changed after validation`);
     }
-    verifyReceiptDirectoryReachability(
+    const verificationChain = verifyReceiptDirectoryReachability(
       rootSession,
       verification.chain,
+      relativePath,
       `${label} validation`
     );
+    if (JSON.stringify(verificationChain) !== JSON.stringify(publicationChain)) {
+      throw new Error(`${label} directory chain changed after validation`);
+    }
+    attestVisibleReceipt({
+      session: rootSession,
+      relativePath,
+      chain: verification.chain,
+      expectedIdentity: verification.final_identity,
+      expectedSha256: verification.retained_sha256,
+      label,
+      validateReceipt
+    });
   } catch (error) {
     failure = error;
   }
