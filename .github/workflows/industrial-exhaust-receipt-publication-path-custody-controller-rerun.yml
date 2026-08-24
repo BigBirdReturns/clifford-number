@@ -1,0 +1,150 @@
+name: Industrial-exhaust receipt publication path-custody controller rerun
+
+on:
+  push:
+    branches:
+      - agent/industrial-exhaust-receipt-publication-path-custody-controller-v1
+    paths:
+      - .github/workflows/industrial-exhaust-receipt-publication-path-custody-controller-rerun.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: industrial-exhaust-receipt-publication-path-custody-controller
+  cancel-in-progress: false
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/industrial-exhaust-receipt-publication-path-custody-controller-v1
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Correct the exact-source anchor and rerun qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          python - <<'PY'
+          from pathlib import Path
+
+          source_path = Path(
+              '.github/workflows/industrial-exhaust-receipt-publication-path-custody-controller.yml'
+          )
+          rerun_path = (
+              '.github/workflows/'
+              'industrial-exhaust-receipt-publication-path-custody-controller-rerun.yml'
+          )
+          lines = source_path.read_text().splitlines()
+          run_index = next(
+              index for index, line in enumerate(lines)
+              if line == '        run: |'
+          )
+          shell_lines = []
+          for line in lines[run_index + 1:]:
+              if line and not line.startswith('          '):
+                  break
+              shell_lines.append(line[10:] if line.startswith('          ') else '')
+          script = '\n'.join(shell_lines) + '\n'
+
+          variable_anchor = "TEST_PATH='test/industrial-exhaust-retained-store-custody.test.js'\n"
+          if script.count(variable_anchor) != 1:
+              raise SystemExit('unexpected controller variable anchor')
+          script = script.replace(
+              variable_anchor,
+              variable_anchor
+              + "RERUN_WORKFLOW_PATH='"
+              + rerun_path
+              + "'\n",
+              1
+          )
+
+          check_start = script.index('mapfile -t controller_diff')
+          check_end = script.index("python - <<'PY'", check_start)
+          check = r"""mapfile -t controller_diff < <(git diff --name-only "$BASE_SHA" "$current_sha")
+          test "${#controller_diff[@]}" -ge 1
+          test "${#controller_diff[@]}" -le 3
+          for path_name in "${controller_diff[@]}"; do
+            test "$path_name" = "$WORKFLOW_PATH" \
+              || test "$path_name" = "$DIAGNOSTIC_PATH" \
+              || test "$path_name" = "$RERUN_WORKFLOW_PATH"
+          done
+
+          """
+          script = script[:check_start] + check + script[check_end:]
+
+          writer_start = script.index('\nold_index = ') + 1
+          writer_end = script.index('\nlib_path.write_text(text)', writer_start)
+          writer_patch = r"""index_writer_start = text.index(
+              '  publishReceiptJson({',
+              text.index('export function writeIndexReceipt')
+          )
+          index_writer_end = text.index('  return relativePath;', index_writer_start)
+          new_index = '\n'.join([
+              '  publishReceiptJson({',
+              '    rootDir,',
+              '    relativePath,',
+              '    receipt,',
+              '    label: `index receipt ${relativePath}`,',
+              '    validateReceipt: receiptOverride => validateIndexReceiptAtPath({',
+              '      rootDir,',
+              '      relativePath,',
+              '      expectedSourceId: source.id,',
+              '      expectedIndexUrl: source.index_url,',
+              '      expectedIndexSha256: parsedIndex.index_sha256,',
+              '      expectedBody: html,',
+              '      receiptOverride',
+              '    })',
+              '  });',
+              ''
+          ])
+          text = text[:index_writer_start] + new_index + text[index_writer_end:]
+
+          artifact_writer_start = text.index(
+              '  publishReceiptJson({',
+              text.index('export function writeArtifactReceipt')
+          )
+          artifact_writer_end = text.index('  return relativePath;', artifact_writer_start)
+          new_artifact = '\n'.join([
+              '  publishReceiptJson({',
+              '    rootDir,',
+              '    relativePath,',
+              '    receipt,',
+              '    label: `artifact receipt ${relativePath}`,',
+              '    validateReceipt: receiptOverride => validateArtifactReceiptAtPath({',
+              '      rootDir,',
+              '      relativePath,',
+              '      expectedCanonicalUrl: canonicalUrl,',
+              '      expectedBodySha256: bodySha256,',
+              '      expectedBody: body,',
+              '      receiptOverride',
+              '    })',
+              '  });',
+              ''
+          ])
+          text = text[:artifact_writer_start] + new_artifact + text[artifact_writer_end:]
+          """
+          script = script[:writer_start] + writer_patch + script[writer_end:]
+
+          cleanup_anchor = 'rm "$WORKFLOW_PATH"\nrm -f "$DIAGNOSTIC_PATH"\n'
+          if script.count(cleanup_anchor) != 1:
+              raise SystemExit('unexpected controller cleanup anchor')
+          script = script.replace(
+              cleanup_anchor,
+              cleanup_anchor + 'rm -f "$RERUN_WORKFLOW_PATH"\n',
+              1
+          )
+
+          output = Path('/tmp/industrial-exhaust-path-custody-controller.sh')
+          output.write_text(script)
+          output.chmod(0o700)
+          PY
+
+          /tmp/industrial-exhaust-path-custody-controller.sh
