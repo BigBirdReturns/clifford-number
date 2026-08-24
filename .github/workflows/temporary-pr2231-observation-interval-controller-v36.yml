@@ -1,7 +1,8 @@
 name: Temporary PR 2231 observation interval controller v36
 on:
-  push:
-    branches: [agent/pr2231-observation-interval-controller-v36]
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
     paths: ['.github/workflows/temporary-pr2231-observation-interval-controller-v36.yml']
 permissions:
   contents: write
@@ -17,7 +18,7 @@ jobs:
     env:
       CBRANCH: agent/pr2231-observation-interval-controller-v36
       CPATH: .github/workflows/temporary-pr2231-observation-interval-controller-v36.yml
-      CPARENT: 58508a8d5ecd9c42a89b9bff0e2c8fe96c2d6952
+      CPARENT: 8f64559d4ddf38956716945e7fabeae2329af5e2
       PBRANCH: agent/current-main-identifier-context-product-v1
       PHEAD: 456ee43cb8a0d3c1afeeed8b9f7342219a3fac05
       PPARENT: 2d2c7b6cd7517ca25854e481b21774a697d0e76b
@@ -30,16 +31,16 @@ jobs:
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
-        with: {ref: '${{ github.sha }}', fetch-depth: 0}
+        with: {ref: '${{ github.event.pull_request.head.sha }}', fetch-depth: 0}
       - uses: actions/setup-node@v4
         with: {node-version: '20'}
       - name: Qualify and publish
         shell: bash
         run: |
           set -euo pipefail
-          H='${{ github.sha }}'; S=/tmp/p2231-source; Q=/tmp/p2231-main; R=/tmp/p2231-v36.txt
+          H='${{ github.event.pull_request.head.sha }}'; S=/tmp/p2231-source; Q=/tmp/p2231-main; R=/tmp/p2231-v36.txt
           test "$(git rev-parse HEAD^)" = "$CPARENT"
-          test '${{ github.ref_name }}' = "$CBRANCH"
+          test '${{ github.head_ref }}' = "$CBRANCH"
           test "$(git diff --name-only "$CPARENT..HEAD")" = "$CPATH"
           fetch() { git fetch --no-tags origin "+refs/heads/main:refs/remotes/origin/main" "+refs/heads/$PBRANCH:refs/remotes/origin/$PBRANCH" "+refs/heads/$CBRANCH:refs/remotes/origin/$CBRANCH"; }
           fetch
