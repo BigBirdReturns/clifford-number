@@ -1,0 +1,875 @@
+name: Industrial-exhaust receipt publication path-custody controller
+
+on:
+  push:
+    branches:
+      - agent/industrial-exhaust-receipt-publication-path-custody-controller-v1
+    paths:
+      - .github/workflows/industrial-exhaust-receipt-publication-path-custody-controller.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: industrial-exhaust-receipt-publication-path-custody-controller
+  cancel-in-progress: false
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/industrial-exhaust-receipt-publication-path-custody-controller-v1
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Reproduce ancestor redirection and publish bounded repair
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          BASE_SHA='01141ee3cda60cb82da80d89ebf9da164ad602da'
+          PRODUCT_BRANCH='agent/industrial-exhaust-receipt-publication-path-custody-v1'
+          WORKFLOW_PATH='.github/workflows/industrial-exhaust-receipt-publication-path-custody-controller.yml'
+          LIB_PATH='tools/lib/industrial-exhaust-artifacts.mjs'
+          TEST_PATH='test/industrial-exhaust-retained-store-custody.test.js'
+
+          current_sha="$(git rev-parse HEAD)"
+          parent_sha="$(git rev-parse HEAD^)"
+          test "$parent_sha" = "$BASE_SHA"
+
+          mapfile -t controller_diff < <(git diff --name-only "$BASE_SHA" "$current_sha")
+          test "${#controller_diff[@]}" -eq 1
+          test "${controller_diff[0]}" = "$WORKFLOW_PATH"
+
+          python - <<'PY'
+          from pathlib import Path
+
+          test_path = Path('test/industrial-exhaust-retained-store-custody.test.js')
+          text = test_path.read_text()
+          marker = "  const indexAbsolutePath = path.join(rootDir, indexReceiptPath);\n"
+          if text.count(marker) != 1:
+              raise SystemExit(f'unexpected ancestor-race insertion marker count: {text.count(marker)}')
+
+          insertion = r"""  const assertAncestorSwapCannotRedirectPublication = ({
+            receiptType,
+            raceRoot,
+            externalRoot,
+            absoluteReceiptPath,
+            writeReceipt
+          }) => {
+            const canonicalReceiptsPath = path.join(raceRoot, 'receipts');
+            const displacedReceiptsPath = path.join(raceRoot, 'receipts-displaced');
+            const externalReceiptsPath = path.join(externalRoot, 'receipts');
+            const relativeWithinReceipts = path.relative(
+              canonicalReceiptsPath,
+              absoluteReceiptPath
+            );
+            const externalReceiptPath = path.join(
+              externalReceiptsPath,
+              relativeWithinReceipts
+            );
+
+            fs.mkdirSync(path.dirname(absoluteReceiptPath), { recursive: true });
+            fs.mkdirSync(path.dirname(externalReceiptPath), { recursive: true });
+
+            const originalOpenSync = fs.openSync;
+            let swapInjected = false;
+            fs.openSync = (targetPath, ...args) => {
+              if (!swapInjected && String(targetPath).endsWith('.tmp')) {
+                fs.renameSync(canonicalReceiptsPath, displacedReceiptsPath);
+                fs.symlinkSync(externalReceiptsPath, canonicalReceiptsPath, 'dir');
+                swapInjected = true;
+              }
+              return originalOpenSync(targetPath, ...args);
+            };
+
+            try {
+              assert.throws(
+                () => writeReceipt(),
+                /directory chain changed/u,
+                `${receiptType} publication must reject an ancestor substitution`
+              );
+              assert.equal(
+                swapInjected,
+                true,
+                `${receiptType} regression must exercise the temporary-file publication window`
+              );
+              assert.equal(
+                fs.existsSync(externalReceiptPath),
+                false,
+                `${receiptType} publication may not mutate the substituted external tree`
+              );
+            } finally {
+              fs.openSync = originalOpenSync;
+              fs.rmSync(raceRoot, { recursive: true, force: true });
+              fs.rmSync(externalRoot, { recursive: true, force: true });
+            }
+          };
+
+          const ancestorRaceIndexRoot = fs.mkdtempSync(
+            path.join(os.tmpdir(), 'industrial-exhaust-index-ancestor-race-root-')
+          );
+          const ancestorRaceIndexExternalRoot = fs.mkdtempSync(
+            path.join(os.tmpdir(), 'industrial-exhaust-index-ancestor-race-external-')
+          );
+          const ancestorRaceIndexHtml =
+            '<!doctype html><html><body><a href="/news-releases/publication-ancestor-race-index">Publication ancestor race index</a></body></html>';
+          const ancestorRaceParsedIndex = parseHtmlLinkIndex(
+            ancestorRaceIndexHtml,
+            source
+          );
+          const ancestorRaceIndexReceiptPath = indexReceiptFilePath(
+            ancestorRaceIndexRoot,
+            source.id,
+            ancestorRaceParsedIndex.index_sha256
+          );
+          assertAncestorSwapCannotRedirectPublication({
+            receiptType: 'index',
+            raceRoot: ancestorRaceIndexRoot,
+            externalRoot: ancestorRaceIndexExternalRoot,
+            absoluteReceiptPath: ancestorRaceIndexReceiptPath,
+            writeReceipt: () => writeIndexReceipt({
+              rootDir: ancestorRaceIndexRoot,
+              source,
+              parsedIndex: ancestorRaceParsedIndex,
+              html: ancestorRaceIndexHtml,
+              capturedAt: '2026-08-22T10:11:00.000Z',
+              responseHeaders: {
+                content_type: 'text/html',
+                etag: 'ancestor-race-index'
+              }
+            })
+          });
+
+          const ancestorRaceArtifactRoot = fs.mkdtempSync(
+            path.join(os.tmpdir(), 'industrial-exhaust-artifact-ancestor-race-root-')
+          );
+          const ancestorRaceArtifactExternalRoot = fs.mkdtempSync(
+            path.join(os.tmpdir(), 'industrial-exhaust-artifact-ancestor-race-external-')
+          );
+          const ancestorRaceArtifactCanonicalUrl =
+            'https://www.dentsu.com/news-releases/publication-ancestor-race-artifact';
+          const ancestorRaceArtifactBody = Buffer.from(
+            '<!doctype html><html><body><main>Publication ancestor race artifact.</main></body></html>'
+          );
+          const ancestorRaceArtifactBodySha256 = crypto
+            .createHash('sha256')
+            .update(ancestorRaceArtifactBody)
+            .digest('hex');
+          const ancestorRaceArtifactReceiptPath = artifactReceiptFilePath(
+            ancestorRaceArtifactRoot,
+            ancestorRaceArtifactCanonicalUrl,
+            ancestorRaceArtifactBodySha256
+          );
+          assertAncestorSwapCannotRedirectPublication({
+            receiptType: 'artifact',
+            raceRoot: ancestorRaceArtifactRoot,
+            externalRoot: ancestorRaceArtifactExternalRoot,
+            absoluteReceiptPath: ancestorRaceArtifactReceiptPath,
+            writeReceipt: () => writeArtifactReceipt({
+              rootDir: ancestorRaceArtifactRoot,
+              canonicalUrl: ancestorRaceArtifactCanonicalUrl,
+              body: ancestorRaceArtifactBody,
+              bodySha256: ancestorRaceArtifactBodySha256,
+              capturedAt: '2026-08-22T10:11:00.000Z',
+              responseHeaders: {
+                content_type: 'text/html',
+                etag: 'ancestor-race-artifact',
+                final_url: ancestorRaceArtifactCanonicalUrl,
+                redirect_chain: []
+              }
+            })
+          });
+
+          """
+          test_path.write_text(text.replace(marker, insertion + marker, 1))
+          PY
+
+          if node "$TEST_PATH"; then
+            echo 'predecessor unexpectedly rejected external ancestor mutation without the repair' >&2
+            exit 1
+          else
+            echo 'predecessor ancestor-redirection mutation reproduced'
+          fi
+
+          python - <<'PY'
+          from pathlib import Path
+
+          lib_path = Path('tools/lib/industrial-exhaust-artifacts.mjs')
+          text = lib_path.read_text()
+
+          root_start = text.index('function resolveReceiptRoot(rootDir) {')
+          root_end = text.index('\nfunction portableReceiptPath', root_start)
+          new_root = r"""function sameReceiptIdentity(left, right) {
+            return left.dev === right.dev && left.ino === right.ino;
+          }
+
+          function inspectReceiptRoot(rootDir) {
+            const root = path.resolve(rootDir);
+            let before;
+            try {
+              before = fs.lstatSync(root);
+            } catch (error) {
+              throw new Error(`receipt repository root inspection failed: ${error.message}`);
+            }
+            if (!before.isDirectory()) {
+              throw new Error(`receipt repository root contains an unsupported path entry: ${root}`);
+            }
+
+            let canonicalRoot;
+            try {
+              canonicalRoot = fs.realpathSync.native(root);
+            } catch (error) {
+              throw new Error(`receipt repository root resolution failed: ${error.message}`);
+            }
+            if (canonicalRoot !== root) {
+              throw new Error(`receipt repository root is not canonical: ${root}`);
+            }
+
+            let after;
+            try {
+              after = fs.lstatSync(root);
+            } catch (error) {
+              throw new Error(`receipt repository root reinspection failed: ${error.message}`);
+            }
+            if (!after.isDirectory() || !sameReceiptIdentity(before, after)) {
+              throw new Error(`receipt repository root identity changed during inspection: ${root}`);
+            }
+            return {
+              root,
+              identity: { dev: after.dev, ino: after.ino }
+            };
+          }
+
+          function resolveReceiptRoot(rootDir) {
+            return inspectReceiptRoot(rootDir).root;
+          }
+          """
+          text = text[:root_start] + new_root + text[root_end:]
+
+          load_start = text.index('function loadReceiptJson(rootDir, relativePath, label) {')
+          load_end = text.index('\nfunction receiptBodyBytes', load_start)
+          new_load = r"""function assertReceiptJsonObject(receipt, label) {
+            if (!receipt || typeof receipt !== 'object' || Array.isArray(receipt)) {
+              throw new Error(`${label} must contain a JSON object`);
+            }
+            return receipt;
+          }
+
+          function parseReceiptJsonText(text, label) {
+            let receipt;
+            try {
+              receipt = JSON.parse(text);
+            } catch (error) {
+              throw new Error(`${label} is not valid JSON: ${error.message}`);
+            }
+            return assertReceiptJsonObject(receipt, label);
+          }
+
+          function loadReceiptJson(rootDir, relativePath, label) {
+            if (typeof relativePath !== 'string' || !relativePath
+              || relativePath.startsWith('/') || relativePath.includes('\\')
+              || path.posix.normalize(relativePath) !== relativePath
+              || relativePath.startsWith('../')) {
+              throw new Error(`${label} is not a canonical repository-relative path`);
+            }
+            const root = resolveReceiptRoot(rootDir);
+            const absolutePath = path.resolve(root, ...relativePath.split('/'));
+            const relative = path.relative(root, absolutePath);
+            if (!relative || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
+              throw new Error(`${label} escapes repository root`);
+            }
+            const inspected = inspectReceiptPath(root, relativePath, { label, leafType: 'file' });
+            if (!inspected.exists) throw new Error(`${label} does not exist: ${relativePath}`);
+            return parseReceiptJsonText(fs.readFileSync(absolutePath, 'utf8'), label);
+          }
+          """
+          text = text[:load_start] + new_load + text[load_end:]
+
+          text = text.replace(
+          """  expectedIndexSha256,
+            expectedBody
+          }) {
+          """,
+          """  expectedIndexSha256,
+            expectedBody,
+            receiptOverride
+          }) {
+          """,
+          1
+          )
+          text = text.replace(
+          """  const receipt = loadReceiptJson(rootDir, relativePath, label);
+          """,
+          """  const receipt = receiptOverride === undefined
+            ? loadReceiptJson(rootDir, relativePath, label)
+            : assertReceiptJsonObject(receiptOverride, label);
+          """,
+          1
+          )
+          text = text.replace(
+          """  expectedBodySha256,
+            expectedBody
+          }) {
+          """,
+          """  expectedBodySha256,
+            expectedBody,
+            receiptOverride
+          }) {
+          """,
+          1
+          )
+          text = text.replace(
+          """  const receipt = loadReceiptJson(rootDir, relativePath, label);
+          """,
+          """  const receipt = receiptOverride === undefined
+            ? loadReceiptJson(rootDir, relativePath, label)
+            : assertReceiptJsonObject(receiptOverride, label);
+          """,
+          1
+          )
+
+          publish_start = text.index('function receiptDirectoryDisplayPath(root, absolutePath) {')
+          publish_end = text.index('\nexport function indexReceiptPath', publish_start)
+          new_publish = r"""const RECEIPT_DESCRIPTOR_ROOT = '/proc/self/fd';
+
+          function receiptDirectoryDisplayPath(root, absolutePath) {
+            const relative = path.relative(root, absolutePath);
+            return relative ? relative.split(path.sep).join('/') : '.';
+          }
+
+          function receiptDescriptorPath(descriptor, childName = null) {
+            if (process.platform !== 'linux' || !fs.existsSync(RECEIPT_DESCRIPTOR_ROOT)) {
+              throw new Error('descriptor-relative receipt publication requires Linux procfs');
+            }
+            const base = path.join(RECEIPT_DESCRIPTOR_ROOT, String(descriptor));
+            if (childName === null) return base;
+            if (typeof childName !== 'string' || !childName
+              || childName === '.' || childName === '..'
+              || childName.includes('/') || childName.includes('\\')) {
+              throw new Error(`invalid descriptor-relative receipt path component: ${childName}`);
+            }
+            return path.join(base, childName);
+          }
+
+          function synchronizeReceiptDirectoryDescriptor(descriptor, label) {
+            let before;
+            try {
+              before = fs.fstatSync(descriptor);
+              if (!before.isDirectory()) throw new Error('descriptor is not a directory');
+              fs.fsyncSync(descriptor);
+              const after = fs.fstatSync(descriptor);
+              if (!after.isDirectory() || !sameReceiptIdentity(before, after)) {
+                throw new Error('directory descriptor identity changed');
+              }
+            } catch (error) {
+              throw new Error(`${label} synchronization failed: ${error.message}`);
+            }
+          }
+
+          function closeReceiptDirectorySession(session, label) {
+            let failure = null;
+            for (const entry of [...session.chain].reverse()) {
+              try {
+                fs.closeSync(entry.descriptor);
+              } catch (error) {
+                failure ??= new Error(`${label} directory descriptor close failed: ${error.message}`);
+              }
+            }
+            return failure;
+          }
+
+          function verifyReceiptDirectorySession(session, label) {
+            let currentRoot;
+            try {
+              currentRoot = fs.lstatSync(session.root);
+            } catch (error) {
+              throw new Error(`${label} directory chain changed at .: ${error.message}`);
+            }
+            if (!currentRoot.isDirectory()
+              || !sameReceiptIdentity(currentRoot, session.chain[0].identity)) {
+              throw new Error(`${label} directory chain changed at .`);
+            }
+
+            for (let index = 1; index < session.chain.length; index += 1) {
+              const parent = session.chain[index - 1];
+              const child = session.chain[index];
+              const anchoredPath = receiptDescriptorPath(parent.descriptor, child.segment);
+              let pathStats;
+              let descriptorStats;
+              try {
+                pathStats = fs.lstatSync(anchoredPath);
+                descriptorStats = fs.fstatSync(child.descriptor);
+              } catch (error) {
+                throw new Error(
+                  `${label} directory chain changed at ${child.display}: ${error.message}`
+                );
+              }
+              if (!pathStats.isDirectory()
+                || !descriptorStats.isDirectory()
+                || !sameReceiptIdentity(pathStats, descriptorStats)
+                || !sameReceiptIdentity(descriptorStats, child.identity)) {
+                throw new Error(`${label} directory chain changed at ${child.display}`);
+              }
+            }
+          }
+
+          function openReceiptDirectorySession(rootDir, relativePath, label) {
+            const segments = relativePath === '.' ? [] : String(relativePath).split('/');
+            if (segments.some(segment => !segment || segment === '.' || segment === '..'
+              || segment.includes('\\'))) {
+              throw new Error(`${label} is not a canonical directory path: ${relativePath}`);
+            }
+
+            const rootCustody = inspectReceiptRoot(rootDir);
+            let rootDescriptor;
+            try {
+              rootDescriptor = fs.openSync(
+                rootCustody.root,
+                fs.constants.O_RDONLY
+                  | (fs.constants.O_DIRECTORY ?? 0)
+                  | (fs.constants.O_NOFOLLOW ?? 0)
+              );
+            } catch (error) {
+              throw new Error(`${label} root descriptor open failed: ${error.message}`);
+            }
+
+            const session = {
+              root: rootCustody.root,
+              chain: []
+            };
+            try {
+              const rootStats = fs.fstatSync(rootDescriptor);
+              const currentRootStats = fs.lstatSync(rootCustody.root);
+              if (!rootStats.isDirectory()
+                || !sameReceiptIdentity(rootStats, rootCustody.identity)
+                || !sameReceiptIdentity(rootStats, currentRootStats)) {
+                throw new Error(`${label} root identity changed before descriptor anchoring`);
+              }
+              session.chain.push({
+                descriptor: rootDescriptor,
+                segment: null,
+                display: '.',
+                identity: { dev: rootStats.dev, ino: rootStats.ino }
+              });
+
+              for (const segment of segments) {
+                const parent = session.chain.at(-1);
+                const anchoredPath = receiptDescriptorPath(parent.descriptor, segment);
+                let descriptor;
+                try {
+                  descriptor = fs.openSync(
+                    anchoredPath,
+                    fs.constants.O_RDONLY
+                      | (fs.constants.O_DIRECTORY ?? 0)
+                      | (fs.constants.O_NOFOLLOW ?? 0)
+                  );
+                } catch (error) {
+                  if (error?.code !== 'ENOENT') {
+                    throw new Error(`${label} directory open failed: ${error.message}`);
+                  }
+                  try {
+                    fs.mkdirSync(anchoredPath);
+                  } catch (mkdirError) {
+                    if (mkdirError?.code !== 'EEXIST') {
+                      throw new Error(`${label} directory creation failed: ${mkdirError.message}`);
+                    }
+                  }
+                  try {
+                    descriptor = fs.openSync(
+                      anchoredPath,
+                      fs.constants.O_RDONLY
+                        | (fs.constants.O_DIRECTORY ?? 0)
+                        | (fs.constants.O_NOFOLLOW ?? 0)
+                    );
+                  } catch (openError) {
+                    throw new Error(`${label} directory open failed: ${openError.message}`);
+                  }
+                }
+
+                const descriptorStats = fs.fstatSync(descriptor);
+                const pathStats = fs.lstatSync(anchoredPath);
+                if (!descriptorStats.isDirectory()
+                  || !pathStats.isDirectory()
+                  || !sameReceiptIdentity(descriptorStats, pathStats)) {
+                  fs.closeSync(descriptor);
+                  throw new Error(`${label} directory identity changed while opening ${segment}`);
+                }
+
+                const display = session.chain.length === 1
+                  ? segment
+                  : `${session.chain.at(-1).display}/${segment}`;
+                session.chain.push({
+                  descriptor,
+                  segment,
+                  display,
+                  identity: { dev: descriptorStats.dev, ino: descriptorStats.ino }
+                });
+                synchronizeReceiptDirectoryDescriptor(
+                  descriptor,
+                  `${label} directory ${display}`
+                );
+                synchronizeReceiptDirectoryDescriptor(
+                  parent.descriptor,
+                  `${label} parent directory ${parent.display}`
+                );
+              }
+
+              verifyReceiptDirectorySession(session, label);
+              return session;
+            } catch (error) {
+              const closeFailure = closeReceiptDirectorySession(session, label);
+              if (session.chain.length === 0) {
+                try {
+                  fs.closeSync(rootDescriptor);
+                } catch (closeError) {
+                  if (!closeFailure) {
+                    throw new Error(
+                      `${error.message}; ${label} root descriptor close failed: ${closeError.message}`
+                    );
+                  }
+                }
+              }
+              if (closeFailure) {
+                throw new Error(`${error.message}; ${closeFailure.message}`);
+              }
+              throw error;
+            }
+          }
+
+          function inspectAnchoredReceiptFile(parentDescriptor, fileName, label) {
+            const anchoredPath = receiptDescriptorPath(parentDescriptor, fileName);
+            let stats;
+            try {
+              stats = fs.lstatSync(anchoredPath);
+            } catch (error) {
+              if (error?.code === 'ENOENT') {
+                return { anchoredPath, exists: false, stats: null };
+              }
+              throw new Error(`${label} path inspection failed: ${error.message}`);
+            }
+            if (!stats.isFile()) {
+              throw new Error(`${label} contains an unsupported path entry`);
+            }
+            if (stats.nlink !== 1) {
+              throw new Error(`${label} contains a multiply linked receipt file`);
+            }
+            return { anchoredPath, exists: true, stats };
+          }
+
+          function openAnchoredReceiptFile(parentDescriptor, fileName, label) {
+            const anchoredPath = receiptDescriptorPath(parentDescriptor, fileName);
+            let descriptor;
+            try {
+              descriptor = fs.openSync(
+                anchoredPath,
+                fs.constants.O_RDONLY | (fs.constants.O_NOFOLLOW ?? 0)
+              );
+              const descriptorStats = fs.fstatSync(descriptor);
+              const pathStats = fs.lstatSync(anchoredPath);
+              if (!descriptorStats.isFile()
+                || descriptorStats.nlink !== 1
+                || !pathStats.isFile()
+                || pathStats.nlink !== 1
+                || !sameReceiptIdentity(descriptorStats, pathStats)) {
+                throw new Error('receipt file identity changed');
+              }
+              return {
+                descriptor,
+                anchoredPath,
+                identity: { dev: descriptorStats.dev, ino: descriptorStats.ino }
+              };
+            } catch (error) {
+              if (descriptor !== undefined) {
+                try { fs.closeSync(descriptor); } catch {}
+              }
+              throw new Error(`${label} file open failed: ${error.message}`);
+            }
+          }
+
+          function publishReceiptJson({
+            rootDir,
+            relativePath,
+            receipt,
+            label,
+            validateReceipt
+          }) {
+            if (typeof relativePath !== 'string' || !relativePath
+              || relativePath.startsWith('/') || relativePath.includes('\\')
+              || path.posix.normalize(relativePath) !== relativePath
+              || relativePath.startsWith('../')) {
+              throw new Error(`${label} is not a canonical repository-relative path`);
+            }
+            if (typeof validateReceipt !== 'function') {
+              throw new Error(`${label} requires an anchored validation callback`);
+            }
+
+            const parentRelativePath = path.posix.dirname(relativePath);
+            const finalName = path.posix.basename(relativePath);
+            const session = openReceiptDirectorySession(
+              rootDir,
+              parentRelativePath,
+              `${label} parent directory`
+            );
+            const parent = session.chain.at(-1);
+            const finalInspection = inspectAnchoredReceiptFile(
+              parent.descriptor,
+              finalName,
+              label
+            );
+            const serialized = `${JSON.stringify(receipt, null, 2)}\n`;
+            let tempName = null;
+            let tempIdentity = null;
+            let published = false;
+            let finalDescriptor = null;
+            let failure = null;
+            let absolutePath = path.resolve(session.root, ...relativePath.split('/'));
+
+            try {
+              if (!finalInspection.exists) {
+                for (let attempt = 0; attempt < 8; attempt += 1) {
+                  const candidateName =
+                    `${finalName}.${process.pid}.${crypto.randomBytes(16).toString('hex')}.tmp`;
+                  const candidatePath = receiptDescriptorPath(parent.descriptor, candidateName);
+                  let descriptor;
+                  try {
+                    descriptor = fs.openSync(
+                      candidatePath,
+                      fs.constants.O_WRONLY
+                        | fs.constants.O_CREAT
+                        | fs.constants.O_EXCL
+                        | (fs.constants.O_NOFOLLOW ?? 0),
+                      0o600
+                    );
+                  } catch (error) {
+                    if (error?.code === 'EEXIST') continue;
+                    throw new Error(`${label} temporary publication failed: ${error.message}`);
+                  }
+                  tempName = candidateName;
+                  try {
+                    fs.writeFileSync(descriptor, serialized, 'utf8');
+                    fs.fsyncSync(descriptor);
+                    const stats = fs.fstatSync(descriptor);
+                    if (!stats.isFile() || stats.nlink !== 1) {
+                      throw new Error(
+                        `${label} temporary publication is not an exclusive regular file`
+                      );
+                    }
+                    tempIdentity = { dev: stats.dev, ino: stats.ino };
+                  } finally {
+                    fs.closeSync(descriptor);
+                  }
+                  break;
+                }
+                if (!tempName || !tempIdentity) {
+                  throw new Error(
+                    `${label} could not allocate an exclusive temporary publication`
+                  );
+                }
+
+                try {
+                  fs.linkSync(
+                    receiptDescriptorPath(parent.descriptor, tempName),
+                    receiptDescriptorPath(parent.descriptor, finalName)
+                  );
+                  published = true;
+                } catch (error) {
+                  if (error?.code !== 'EEXIST') {
+                    throw new Error(`${label} no-overwrite publication failed: ${error.message}`);
+                  }
+                }
+              }
+            } catch (error) {
+              failure = error;
+            }
+
+            if (tempName) {
+              try {
+                fs.unlinkSync(receiptDescriptorPath(parent.descriptor, tempName));
+              } catch (error) {
+                if (error?.code !== 'ENOENT') {
+                  failure ??= new Error(`${label} temporary cleanup failed: ${error.message}`);
+                }
+              }
+            }
+
+            try {
+              synchronizeReceiptDirectoryDescriptor(
+                parent.descriptor,
+                `${label} publication directory`
+              );
+            } catch (error) {
+              failure ??= error;
+            }
+
+            try {
+              verifyReceiptDirectorySession(session, `${label} publication`);
+            } catch (error) {
+              failure ??= error;
+            }
+
+            if (!failure) {
+              try {
+                const opened = openAnchoredReceiptFile(
+                  parent.descriptor,
+                  finalName,
+                  label
+                );
+                finalDescriptor = opened.descriptor;
+                if (published && !sameReceiptIdentity(opened.identity, tempIdentity)) {
+                  throw new Error(`${label} publication identity changed before validation`);
+                }
+                const retainedReceipt = parseReceiptJsonText(
+                  fs.readFileSync(finalDescriptor, 'utf8'),
+                  label
+                );
+                validateReceipt(retainedReceipt);
+
+                const finalStats = fs.fstatSync(finalDescriptor);
+                const finalPathStats = fs.lstatSync(opened.anchoredPath);
+                if (!finalStats.isFile()
+                  || finalStats.nlink !== 1
+                  || !finalPathStats.isFile()
+                  || finalPathStats.nlink !== 1
+                  || !sameReceiptIdentity(finalStats, finalPathStats)
+                  || !sameReceiptIdentity(finalStats, opened.identity)) {
+                  throw new Error(`${label} publication identity changed during validation`);
+                }
+                verifyReceiptDirectorySession(session, `${label} validation`);
+              } catch (error) {
+                failure = error;
+              }
+            }
+
+            if (finalDescriptor !== null) {
+              try {
+                fs.closeSync(finalDescriptor);
+              } catch (error) {
+                failure ??= new Error(`${label} file descriptor close failed: ${error.message}`);
+              }
+            }
+            const closeFailure = closeReceiptDirectorySession(session, label);
+            failure ??= closeFailure;
+            if (failure) throw failure;
+            return absolutePath;
+          }
+          """
+          text = text[:publish_start] + new_publish + text[publish_end:]
+
+          old_index = """  publishReceiptJson({
+            rootDir,
+            relativePath,
+            receipt,
+            label: `index receipt ${relativePath}`
+          });
+          validateIndexReceiptAtPath({
+            rootDir,
+            relativePath,
+            expectedSourceId: source.id,
+            expectedIndexUrl: source.index_url,
+            expectedIndexSha256: parsedIndex.index_sha256,
+            expectedBody: html
+          });
+          """
+          new_index = """  publishReceiptJson({
+            rootDir,
+            relativePath,
+            receipt,
+            label: `index receipt ${relativePath}`,
+            validateReceipt: receiptOverride => validateIndexReceiptAtPath({
+              rootDir,
+              relativePath,
+              expectedSourceId: source.id,
+              expectedIndexUrl: source.index_url,
+              expectedIndexSha256: parsedIndex.index_sha256,
+              expectedBody: html,
+              receiptOverride
+            })
+          });
+          """
+          if text.count(old_index) != 1:
+              raise SystemExit(f'unexpected index writer replacement count: {text.count(old_index)}')
+          text = text.replace(old_index, new_index, 1)
+
+          old_artifact = """  publishReceiptJson({
+            rootDir,
+            relativePath,
+            receipt,
+            label: `artifact receipt ${relativePath}`
+          });
+          validateArtifactReceiptAtPath({
+            rootDir,
+            relativePath,
+            expectedCanonicalUrl: canonicalUrl,
+            expectedBodySha256: bodySha256,
+            expectedBody: body
+          });
+          """
+          new_artifact = """  publishReceiptJson({
+            rootDir,
+            relativePath,
+            receipt,
+            label: `artifact receipt ${relativePath}`,
+            validateReceipt: receiptOverride => validateArtifactReceiptAtPath({
+              rootDir,
+              relativePath,
+              expectedCanonicalUrl: canonicalUrl,
+              expectedBodySha256: bodySha256,
+              expectedBody: body,
+              receiptOverride
+            })
+          });
+          """
+          if text.count(old_artifact) != 1:
+              raise SystemExit(
+                  f'unexpected artifact writer replacement count: {text.count(old_artifact)}'
+              )
+          text = text.replace(old_artifact, new_artifact, 1)
+
+          lib_path.write_text(text)
+          PY
+
+          node --check "$LIB_PATH"
+          node --check "$TEST_PATH"
+          node "$TEST_PATH"
+          node test/industrial-exhaust-artifacts.test.js
+          node test/industrial-exhaust.test.js
+          node tools/hydrate-industrial-exhaust.mjs --audit
+          git diff --check
+
+          rm "$WORKFLOW_PATH"
+
+          mapfile -t product_diff < <(git diff --name-only "$BASE_SHA")
+          test "${#product_diff[@]}" -eq 2
+          test "${product_diff[0]}" = "$TEST_PATH"
+          test "${product_diff[1]}" = "$LIB_PATH"
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          tree_sha="$(git write-tree)"
+          new_sha="$(
+            printf '%s\n\n%s\n' \
+              'fix(industrial-exhaust): anchor receipt publication to directory descriptors' \
+              'Prevent ancestor substitution from redirecting temporary or final receipt writes outside the authenticated repository tree.' \
+              | git commit-tree "$tree_sha" -p "$BASE_SHA"
+          )"
+
+          mapfile -t final_diff < <(git diff --name-only "$BASE_SHA" "$new_sha")
+          test "${#final_diff[@]}" -eq 2
+          test "${final_diff[0]}" = "$TEST_PATH"
+          test "${final_diff[1]}" = "$LIB_PATH"
+          git diff --check "$BASE_SHA" "$new_sha"
+
+          live_main="$(git ls-remote origin refs/heads/main | awk '{print $1}')"
+          test "$live_main" = "$BASE_SHA"
+
+          git push \
+            --force-with-lease="refs/heads/${PRODUCT_BRANCH}:" \
+            origin \
+            "${new_sha}:refs/heads/${PRODUCT_BRANCH}"
