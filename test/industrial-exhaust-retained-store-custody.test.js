@@ -639,6 +639,140 @@ assertDestinationRacePreservesWinner({
     })
   });
 
+  const assertDescriptorBridgeFailurePrecedesMutation = ({
+    receiptType,
+    bridgeRoot,
+    externalRoot = null,
+    externalSentinelPath = null,
+    externalSentinel = null,
+    bridgeProbe,
+    writeReceipt,
+    expectedError
+  }) => {
+    const receiptsPath = path.join(bridgeRoot, 'receipts');
+    const originalStatSync = fs.statSync;
+    let bridgeProbeObserved = false;
+
+    fs.statSync = (targetPath, ...args) => {
+      if (/^\/proc\/self\/fd\/\d+$/u.test(String(targetPath))) {
+        bridgeProbeObserved = true;
+        return bridgeProbe({
+          targetPath: String(targetPath),
+          args,
+          originalStatSync
+        });
+      }
+      return originalStatSync(targetPath, ...args);
+    };
+
+    try {
+      assert.throws(
+        () => writeReceipt(),
+        expectedError,
+        `${receiptType} publication must reject an unauthenticated descriptor bridge`
+      );
+      assert.equal(
+        bridgeProbeObserved,
+        true,
+        `${receiptType} regression must exercise descriptor-bridge authentication`
+      );
+      assert.equal(
+        fs.existsSync(receiptsPath),
+        false,
+        `${receiptType} descriptor-bridge failure must precede receipt-tree mutation`
+      );
+      if (externalSentinelPath !== null) {
+        assert.equal(
+          fs.readFileSync(externalSentinelPath, 'utf8'),
+          externalSentinel,
+          `${receiptType} descriptor-bridge failure may not mutate the external tree`
+        );
+      }
+    } finally {
+      fs.statSync = originalStatSync;
+      fs.rmSync(bridgeRoot, { recursive: true, force: true });
+      if (externalRoot !== null) {
+        fs.rmSync(externalRoot, { recursive: true, force: true });
+      }
+    }
+  };
+
+  const unavailableBridgeIndexRoot = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'industrial-exhaust-index-bridge-unavailable-')
+  );
+  const unavailableBridgeIndexHtml =
+    '<!doctype html><html><body><a href="/news-releases/bridge-unavailable-index">Bridge unavailable index</a></body></html>';
+  const unavailableBridgeParsedIndex = parseHtmlLinkIndex(
+    unavailableBridgeIndexHtml,
+    source
+  );
+  assertDescriptorBridgeFailurePrecedesMutation({
+    receiptType: 'index',
+    bridgeRoot: unavailableBridgeIndexRoot,
+    bridgeProbe: () => {
+      const error = new Error('simulated descriptor bridge outage');
+      error.code = 'ENOENT';
+      throw error;
+    },
+    writeReceipt: () => writeIndexReceipt({
+      rootDir: unavailableBridgeIndexRoot,
+      source,
+      parsedIndex: unavailableBridgeParsedIndex,
+      html: unavailableBridgeIndexHtml,
+      capturedAt: '2026-08-24T10:40:00.000Z',
+      responseHeaders: {
+        content_type: 'text/html',
+        etag: 'bridge-unavailable-index'
+      }
+    }),
+    expectedError: /descriptor bridge unavailable/u
+  });
+
+  const mismatchedBridgeArtifactRoot = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'industrial-exhaust-artifact-bridge-mismatch-')
+  );
+  const mismatchedBridgeExternalRoot = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'industrial-exhaust-artifact-bridge-external-')
+  );
+  const mismatchedBridgeSentinelPath = path.join(
+    mismatchedBridgeExternalRoot,
+    'sentinel.txt'
+  );
+  const mismatchedBridgeSentinel = 'external descriptor bridge sentinel\n';
+  fs.writeFileSync(mismatchedBridgeSentinelPath, mismatchedBridgeSentinel);
+  const mismatchedBridgeArtifactCanonicalUrl =
+    'https://www.dentsu.com/news-releases/bridge-mismatch-artifact';
+  const mismatchedBridgeArtifactBody = Buffer.from(
+    '<!doctype html><html><body><main>Bridge mismatch artifact.</main></body></html>'
+  );
+  const mismatchedBridgeArtifactBodySha256 = crypto
+    .createHash('sha256')
+    .update(mismatchedBridgeArtifactBody)
+    .digest('hex');
+  assertDescriptorBridgeFailurePrecedesMutation({
+    receiptType: 'artifact',
+    bridgeRoot: mismatchedBridgeArtifactRoot,
+    externalRoot: mismatchedBridgeExternalRoot,
+    externalSentinelPath: mismatchedBridgeSentinelPath,
+    externalSentinel: mismatchedBridgeSentinel,
+    bridgeProbe: ({ originalStatSync }) =>
+      originalStatSync(mismatchedBridgeExternalRoot),
+    writeReceipt: () => writeArtifactReceipt({
+      rootDir: mismatchedBridgeArtifactRoot,
+      canonicalUrl: mismatchedBridgeArtifactCanonicalUrl,
+      body: mismatchedBridgeArtifactBody,
+      bodySha256: mismatchedBridgeArtifactBodySha256,
+      capturedAt: '2026-08-24T10:40:00.000Z',
+      responseHeaders: {
+        content_type: 'text/html',
+        etag: 'bridge-mismatch-artifact',
+        final_url: mismatchedBridgeArtifactCanonicalUrl,
+        redirect_chain: []
+      }
+    }),
+    expectedError: /descriptor bridge identity mismatch/u
+  });
+
   const assertAncestorSwapCannotRedirectPublication = ({
   receiptType,
   raceRoot,
