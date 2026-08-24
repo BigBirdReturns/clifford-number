@@ -11,14 +11,14 @@ concurrency:
   group: pr2231-observation-interval-controller-v36
   cancel-in-progress: false
 jobs:
-  diagnose-recovery:
+  diagnose-footer-bounded-recovery:
     if: github.repository == 'BigBirdReturns/clifford-number'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     env:
       CBRANCH: agent/pr2231-observation-interval-controller-v36
       CPATH: .github/workflows/temporary-pr2231-observation-interval-controller-v36.yml
-      CPARENT: 9acc95924ddf984ddb0a6c4f1d75783d02668c9f
+      CPARENT: ff780c1d546491f7b1817adcb7350b79c019557a
       PBRANCH: agent/current-main-identifier-context-product-v1
       PHEAD: 456ee43cb8a0d3c1afeeed8b9f7342219a3fac05
       PPARENT: 2d2c7b6cd7517ca25854e481b21774a697d0e76b
@@ -31,9 +31,11 @@ jobs:
       PTREE: 7f562e216eb716fef39bd426176f7c638fa8e778
       SLIB: d825c94f2dfe5ef2bd64d483a2feb9dfa0a5c645
       STEST: 34ae708c4934834334839552d7603e48e3db4ea4
+      PSHA: 20056e150a6953f4c942c126e4098705e0992f1cc80676a7b4eb9acf5cbe4a96
       PZBYTES: '4343'
       PBYTES: '15943'
       PCHARS: '5792'
+      PEXTRA: '14'
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
@@ -43,13 +45,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Diagnose leased patch recovery
+      - name: Diagnose footer-bounded recovery
         shell: bash
         run: |
           set -euo pipefail
           H='${{ github.event.pull_request.head.sha }}'
           S=/tmp/p2231-source
-          R=/tmp/p2231-recovery-diagnostic.txt
+          Q=/tmp/p2231-main
+          R=/tmp/p2231-footer-recovery.txt
           : >"$R"
           stage() { printf '\n=== STAGE %s ===\n' "$1" | tee -a "$R"; }
           fail() { printf 'FAIL[%s] %s\n' "$1" "$2" | tee -a "$R" >&2; exit 1; }
@@ -70,7 +73,7 @@ jobs:
           require_eq controller-branch '${{ github.head_ref }}' "$CBRANCH"
           require_eq controller-paths "$(git diff --name-only "$CPARENT..HEAD")" "$CPATH"
 
-          stage branch-leases
+          stage live-leases
           fetch
           require_eq controller-remote "$(git rev-parse refs/remotes/origin/$CBRANCH)" "$H"
           require_eq product-head "$(git rev-parse refs/remotes/origin/$PBRANCH)" "$PHEAD"
@@ -82,19 +85,12 @@ jobs:
           require_eq main-lib "$(git rev-parse "$MAIN:tools/lib/industrial-exhaust.mjs")" "$BLIB"
           require_eq main-test "$(git rev-parse "$MAIN:test/industrial-exhaust.test.js")" "$BTEST"
 
-          stage comment-fetch
-          gh api "repos/$GITHUB_REPOSITORY/issues/comments/$COMMENT" --jq .body >/tmp/c.md
-          printf 'comment=%s body-bytes=%s\n' "$COMMENT" "$(wc -c </tmp/c.md)" | tee -a "$R"
+          stage transport-fetch
+          gh api "repos/$GITHUB_REPOSITORY/issues/comments/$COMMENT" --jq .body >/tmp/p2231-comment.md
+          printf 'comment=%s body-bytes=%s\n' "$COMMENT" "$(wc -c </tmp/p2231-comment.md)" | tee -a "$R"
 
           cat >/tmp/decode-p2231.py <<'PY'
-          import base64
-          import hashlib
-          import os
-          import pathlib
-          import re
-          import struct
-          import sys
-          import zlib
+          import base64, hashlib, os, pathlib, re, struct, sys, zlib
 
           def emit(label, value):
               print(f'{label}={value}', flush=True)
@@ -108,121 +104,93 @@ jobs:
           emit('chunk-count', len(chunks))
           if len(chunks) != 1:
               fail('chunk-count', f'expected=1 actual={len(chunks)}')
-
           encoded = ''.join(chunks)
           emit('encoded-chars', len(encoded))
           if len(encoded) != int(os.environ['PCHARS']):
               fail('encoded-chars', f"expected={os.environ['PCHARS']} actual={len(encoded)}")
-
           try:
               compressed = base64.b64decode(encoded, validate=True)
           except Exception as exc:
               fail('base64-decode', repr(exc))
+          compressed_sha = hashlib.sha256(compressed).hexdigest()
           emit('compressed-bytes', len(compressed))
-          emit('compressed-sha256', hashlib.sha256(compressed).hexdigest())
+          emit('compressed-sha256', compressed_sha)
           emit('gzip-header', compressed[:10].hex())
           if len(compressed) != int(os.environ['PZBYTES']):
               fail('compressed-bytes', f"expected={os.environ['PZBYTES']} actual={len(compressed)}")
-          if len(compressed) < 18:
-              fail('gzip-envelope', f'compressed payload too short: {len(compressed)}')
-          if compressed[:4] != b'\x1f\x8b\x08\x00':
-              fail('gzip-header', f'expected=1f8b0800 actual={compressed[:4].hex()}')
-
+          if compressed_sha != os.environ['PSHA']:
+              fail('compressed-sha256', f"expected={os.environ['PSHA']} actual={compressed_sha}")
+          if compressed[:10] != bytes.fromhex('1f8b0800000000000203'):
+              fail('gzip-header', compressed[:10].hex())
           inflater = zlib.decompressobj(-zlib.MAX_WBITS)
           try:
-              patch = inflater.decompress(compressed[10:-8]) + inflater.flush()
+              full = inflater.decompress(compressed[10:-8]) + inflater.flush()
           except zlib.error as exc:
               fail('raw-inflate', repr(exc))
           emit('inflater-eof', inflater.eof)
           emit('inflater-unused-bytes', len(inflater.unused_data))
           emit('inflater-unconsumed-bytes', len(inflater.unconsumed_tail))
-          emit('patch-bytes', len(patch))
-          if not inflater.eof:
-              fail('raw-inflate-eof', 'deflate stream did not terminate')
-          if inflater.unused_data:
-              fail('raw-inflate-unused', f'bytes={len(inflater.unused_data)}')
-          if inflater.unconsumed_tail:
-              fail('raw-inflate-unconsumed', f'bytes={len(inflater.unconsumed_tail)}')
-
+          if not inflater.eof or inflater.unused_data or inflater.unconsumed_tail:
+              fail('raw-inflate-envelope', 'stream boundary mismatch')
           footer_crc, footer_size = struct.unpack('<II', compressed[-8:])
-          actual_crc = zlib.crc32(patch) & 0xffffffff
-          emit('footer-crc', f'{footer_crc:08x}')
-          emit('payload-crc', f'{actual_crc:08x}')
+          extra = len(full) - footer_size
+          emit('full-bytes', len(full))
           emit('footer-size', footer_size)
-          emit('actual-size-mod32', len(patch) & 0xffffffff)
-          if footer_size != (len(patch) & 0xffffffff):
-              fail('footer-size', f'expected={footer_size} actual={len(patch) & 0xffffffff}')
-          if len(patch) != int(os.environ['PBYTES']):
-              fail('patch-bytes', f"expected={os.environ['PBYTES']} actual={len(patch)}")
-
+          emit('extra-bytes', extra)
+          emit('full-crc', f'{zlib.crc32(full) & 0xffffffff:08x}')
+          emit('footer-crc', f'{footer_crc:08x}')
+          if footer_size != int(os.environ['PBYTES']):
+              fail('footer-size', f"expected={os.environ['PBYTES']} actual={footer_size}")
+          if extra != int(os.environ['PEXTRA']):
+              fail('extra-bytes', f"expected={os.environ['PEXTRA']} actual={extra}")
+          if footer_size > len(full):
+              fail('footer-bound', f'footer={footer_size} full={len(full)}')
+          patch = full[:footer_size]
+          tail = full[footer_size:]
+          patch_crc = zlib.crc32(patch) & 0xffffffff
+          emit('bounded-crc', f'{patch_crc:08x}')
+          emit('trailing-hex', tail.hex())
+          emit('bounded-sha256', hashlib.sha256(patch).hexdigest())
+          if patch_crc != footer_crc:
+              fail('bounded-crc', f'expected={footer_crc:08x} actual={patch_crc:08x}')
+          expected_prefix = b'From ' + os.environ['PCOMMIT'].encode() + b' '
           first_line = patch.splitlines()[0].decode('ascii', errors='backslashreplace') if patch else ''
           emit('patch-first-line', first_line)
-          expected_prefix = b'From ' + os.environ['PCOMMIT'].encode() + b' '
           if not patch.startswith(expected_prefix):
-              fail('patch-source-commit', f'expected-prefix={expected_prefix!r} actual-first-line={first_line!r}')
-
+              fail('patch-source-commit', first_line)
           pathlib.Path(sys.argv[2]).write_bytes(patch)
-          pathlib.Path(sys.argv[3]).write_text(hashlib.sha256(compressed).hexdigest() + '\n')
+          pathlib.Path(sys.argv[3]).write_text(compressed_sha + '\n')
           PY
 
-          stage payload-decode
-          if ! python3 /tmp/decode-p2231.py /tmp/c.md /tmp/p.patch /tmp/p.sha 2>&1 | tee -a "$R"; then
-            fail payload-decode 'decoder rejected the retained transport'
-          fi
+          stage footer-bounded-decode
+          python3 /tmp/decode-p2231.py /tmp/p2231-comment.md /tmp/p2231.patch /tmp/p2231.sha 2>&1 | tee -a "$R"
 
-          stage old-head-worktree
-          rm -rf "$S"
+          stage source-application
+          rm -rf "$S" "$Q"
           git worktree prune
           git worktree add --detach "$S" "$PHEAD"
           cd "$S"
-          require_eq worktree-head "$(git rev-parse HEAD)" "$PHEAD"
-
-          stage old-head-behavior
-          node --input-type=module <<'NODE' 2>&1 | tee -a "$R"
-          import assert from 'node:assert/strict';
-          import {redactContactData as r} from './tools/lib/industrial-exhaust.mjs';
-          const oldTerminal = r('Phone: 09012345678 2026-08-17 01 42 68 53 00 90 people');
-          console.log('old-terminal='+JSON.stringify(oldTerminal));
-          assert.equal(
-            r('Phone: 09012345678 2026-08-17 01 42 68 53 00'),
-            'Phone: [contact omitted] 2026-08-17 [contact omitted]',
-          );
-          assert.notEqual(
-            r('ID: 09012345678 2026-08-17.1 212 555 1234'),
-            'ID: 09012345678 2026-08-17.[contact omitted]',
-          );
-          NODE
-
-          stage git-am
+          require_eq source-head "$(git rev-parse HEAD)" "$PHEAD"
           git config user.name BigBirdReturns
           git config user.email bigbirdreturns@proton.me
-          if ! git am /tmp/p.patch >/tmp/am.out 2>/tmp/am.err; then
-            cat /tmp/am.out /tmp/am.err | tee -a "$R" >&2
-            git am --show-current-patch=diff 2>/dev/null | sed -n '1,120p' | tee -a "$R" || true
-            fail git-am 'patch application failed'
-          fi
-          cat /tmp/am.out /tmp/am.err | tee -a "$R"
+          git am /tmp/p2231.patch 2>&1 | tee -a "$R"
 
-          stage applied-object-census
+          stage source-object-census
           AHEAD="$(git rev-parse HEAD)"
-          APARENT="$(git rev-parse HEAD^)"
           ATREE="$(git rev-parse HEAD^{tree})"
           ALIB="$(git rev-parse HEAD:tools/lib/industrial-exhaust.mjs)"
           ATEST="$(git rev-parse HEAD:test/industrial-exhaust.test.js)"
-          APATHS="$(git diff --name-only "$PHEAD..HEAD" | LC_ALL=C sort)"
-          ANUMSTAT="$(git diff --numstat "$PHEAD..HEAD" | LC_ALL=C sort -k3)"
-          printf 'applied-head=%s\napplied-parent=%s\napplied-tree=%s\napplied-lib=%s\napplied-test=%s\napplied-paths<<EOF\n%s\nEOF\napplied-numstat<<EOF\n%s\nEOF\n' \
-            "$AHEAD" "$APARENT" "$ATREE" "$ALIB" "$ATEST" "$APATHS" "$ANUMSTAT" | tee -a "$R"
-          require_eq applied-parent "$APARENT" "$PHEAD"
-          require_eq applied-commit-count "$(git rev-list --count "$PHEAD..HEAD")" '1'
+          require_eq applied-parent "$(git rev-parse HEAD^)" "$PHEAD"
+          require_eq applied-count "$(git rev-list --count "$PHEAD..HEAD")" '1'
           require_eq applied-tree "$ATREE" "$PTREE"
           require_eq applied-lib "$ALIB" "$SLIB"
           require_eq applied-test "$ATEST" "$STEST"
-          require_eq applied-paths "$APATHS" $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
-          require_eq applied-numstat "$ANUMSTAT" $'39\t0\ttest/industrial-exhaust.test.js\n195\t22\ttools/lib/industrial-exhaust.mjs'
+          require_eq applied-paths "$(git diff --name-only "$PHEAD..HEAD" | LC_ALL=C sort)" $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          require_eq applied-numstat "$(git diff --numstat "$PHEAD..HEAD" | LC_ALL=C sort -k3)" $'39\t0\ttest/industrial-exhaust.test.js\n195\t22\ttools/lib/industrial-exhaust.mjs'
           git diff --check "$PHEAD..HEAD"
+          printf 'applied-head=%s\napplied-tree=%s\napplied-lib=%s\napplied-test=%s\n' "$AHEAD" "$ATREE" "$ALIB" "$ATEST" | tee -a "$R"
 
-          stage recovered-behavior
+          stage source-behavior
           node --input-type=module <<'NODE' 2>&1 | tee -a "$R"
           import assert from 'node:assert/strict';
           import {redactContactData as r} from './tools/lib/industrial-exhaust.mjs';
@@ -233,19 +201,34 @@ jobs:
             ['Phone: 09012345678 2026-08-17 01 42 68 53 00 90 people', 'Phone: [contact omitted] 2026-08-17 [contact omitted] 90 people'],
             ['Reference: 2026-88-77 04 72 98 76 54', 'Reference: 2026-88-77 04 72 98 76 54'],
           ];
-          for (const [input, expected] of cases) {
-            const actual = r(input);
-            console.log(JSON.stringify({input, actual, expected}));
-            assert.equal(actual, expected, input);
-          }
+          for (const [input, expected] of cases) assert.equal(r(input), expected, input);
           NODE
-
-          stage recovered-source-checks
           node --check tools/lib/industrial-exhaust.mjs
           node --check tools/crawl-industrial-exhaust.mjs
           node --check test/industrial-exhaust.test.js
           node test/industrial-exhaust.test.js 2>&1 | tee -a "$R"
           node test/industrial-exhaust-artifacts.test.js 2>&1 | tee -a "$R"
+
+          stage live-main-qualification
+          cd "$GITHUB_WORKSPACE"
+          git worktree add --detach "$Q" "$MAIN"
+          cp "$S/tools/lib/industrial-exhaust.mjs" "$Q/tools/lib/industrial-exhaust.mjs"
+          cp "$S/test/industrial-exhaust.test.js" "$Q/test/industrial-exhaust.test.js"
+          cd "$Q"
+          require_eq main-qualified-lib "$(git hash-object tools/lib/industrial-exhaust.mjs)" "$SLIB"
+          require_eq main-qualified-test "$(git hash-object test/industrial-exhaust.test.js)" "$STEST"
+          require_eq main-qualified-paths "$(git diff --name-only | LC_ALL=C sort)" $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          require_eq main-qualified-numstat "$(git diff --numstat | LC_ALL=C sort -k3)" $'39\t0\ttest/industrial-exhaust.test.js\n195\t22\ttools/lib/industrial-exhaust.mjs'
+          git diff --check
+          node --check tools/lib/industrial-exhaust.mjs
+          node --check tools/crawl-industrial-exhaust.mjs
+          node --check test/industrial-exhaust.test.js
+          node test/industrial-exhaust.test.js 2>&1 | tee -a "$R"
+          node test/industrial-exhaust-artifacts.test.js 2>&1 | tee -a "$R"
+          npm run release:check 2>&1 | tee -a "$R"
+          require_eq post-release-lib "$(git hash-object tools/lib/industrial-exhaust.mjs)" "$SLIB"
+          require_eq post-release-test "$(git hash-object test/industrial-exhaust.test.js)" "$STEST"
+          require_eq post-release-paths "$(git diff --name-only | LC_ALL=C sort)" $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
 
           stage final-lease-revalidation
           cd "$GITHUB_WORKSPACE"
@@ -253,12 +236,14 @@ jobs:
           require_eq final-main "$(git rev-parse refs/remotes/origin/main)" "$MAIN"
           require_eq final-product "$(git rev-parse refs/remotes/origin/$PBRANCH)" "$PHEAD"
           require_eq final-controller "$(git rev-parse refs/remotes/origin/$CBRANCH)" "$H"
-          printf 'DIAGNOSTIC_SUCCESS recovered-tree=%s recovered-lib=%s recovered-test=%s product-unchanged=%s\n' \
-            "$ATREE" "$ALIB" "$ATEST" "$PHEAD" | tee -a "$R"
+          require_eq final-main-lib "$(git rev-parse "$MAIN:tools/lib/industrial-exhaust.mjs")" "$BLIB"
+          require_eq final-main-test "$(git rev-parse "$MAIN:test/industrial-exhaust.test.js")" "$BTEST"
+          printf 'DIAGNOSTIC_SUCCESS main=%s product=%s recovered-head=%s tree=%s lib=%s test=%s patch-sha=%s\n' \
+            "$MAIN" "$PHEAD" "$AHEAD" "$ATREE" "$ALIB" "$ATEST" "$(cat /tmp/p2231.sha)" | tee -a "$R"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: pr2231-observation-interval-recovery-diagnostic-v36
-          path: /tmp/p2231-recovery-diagnostic.txt
+          name: pr2231-footer-bounded-recovery-v36
+          path: /tmp/p2231-footer-recovery.txt
           if-no-files-found: warn
           retention-days: 90
