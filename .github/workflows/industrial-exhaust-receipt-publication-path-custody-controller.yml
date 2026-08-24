@@ -32,6 +32,27 @@ jobs:
         run: |
           set -euo pipefail
 
+          DIAGNOSTIC_PATH='.github/controller-diagnostics/industrial-exhaust-receipt-publication-path-custody.log'
+          CONTROLLER_LOG='/tmp/industrial-exhaust-receipt-publication-path-custody.log'
+          exec > >(tee "$CONTROLLER_LOG") 2>&1
+          record_failure() {
+            status=$?
+            trap - EXIT
+            if [ "$status" -ne 0 ]; then
+              set +e
+              mkdir -p "$(dirname "$DIAGNOSTIC_PATH")"
+              cp "$CONTROLLER_LOG" "$DIAGNOSTIC_PATH"
+              git config user.name 'github-actions[bot]'
+              git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+              git reset --mixed HEAD
+              git add "$DIAGNOSTIC_PATH"
+              git commit -m 'controller: record path-custody qualification failure'
+              git push origin "HEAD:refs/heads/agent/industrial-exhaust-receipt-publication-path-custody-controller-v1"
+            fi
+            exit "$status"
+          }
+          trap record_failure EXIT
+
           BASE_SHA='01141ee3cda60cb82da80d89ebf9da164ad602da'
           PRODUCT_BRANCH='agent/industrial-exhaust-receipt-publication-path-custody-v1'
           WORKFLOW_PATH='.github/workflows/industrial-exhaust-receipt-publication-path-custody-controller.yml'
@@ -39,8 +60,7 @@ jobs:
           TEST_PATH='test/industrial-exhaust-retained-store-custody.test.js'
 
           current_sha="$(git rev-parse HEAD)"
-          parent_sha="$(git rev-parse HEAD^)"
-          test "$parent_sha" = "$BASE_SHA"
+          git merge-base --is-ancestor "$BASE_SHA" "$current_sha"
 
           mapfile -t controller_diff < <(git diff --name-only "$BASE_SHA" "$current_sha")
           test "${#controller_diff[@]}" -eq 1
@@ -873,3 +893,4 @@ jobs:
             --force-with-lease="refs/heads/${PRODUCT_BRANCH}:" \
             origin \
             "${new_sha}:refs/heads/${PRODUCT_BRANCH}"
+          trap - EXIT
