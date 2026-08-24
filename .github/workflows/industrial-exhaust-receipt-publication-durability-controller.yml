@@ -1,0 +1,115 @@
+name: Industrial-exhaust receipt publication durability controller
+
+on:
+  push:
+    branches:
+      - agent/industrial-exhaust-receipt-publication-durability-controller-v1
+    paths:
+      - .github/workflows/industrial-exhaust-receipt-publication-durability-controller.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: industrial-exhaust-receipt-publication-durability-controller
+  cancel-in-progress: false
+
+jobs:
+  qualify-and-publish:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/industrial-exhaust-receipt-publication-durability-controller-v1
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Reproduce, repair, qualify, and publish
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE_SHA='bd66952df64b7eef2e673af724e922ad3f6a719a'
+          PRODUCT_BRANCH='agent/industrial-exhaust-receipt-publication-durability-v1'
+          WORKFLOW_PATH='.github/workflows/industrial-exhaust-receipt-publication-durability-controller.yml'
+          LIB_PATH='tools/lib/industrial-exhaust-artifacts.mjs'
+          TEST_PATH='test/industrial-exhaust-retained-store-custody.test.js'
+          current_sha="$(git rev-parse HEAD)"
+          test "$(git rev-parse HEAD^)" = "$BASE_SHA"
+          mapfile -t controller_diff < <(git diff --name-only "$BASE_SHA" "$current_sha")
+          test "${#controller_diff[@]}" -eq 1
+          test "${controller_diff[0]}" = "$WORKFLOW_PATH"
+
+          OLD_Z64='eNrNVl1rGzsQfc+vmEBgd7nbxe1DKXFN6IcLLcG+JIH2QuFa3tXGIrK0SFonrrP//Y6k/fLGzi15qiHOShrNzDkzZ9Z5KVLDpICiXHKmV1c0paww37QU4Q6UlOYzUzEoyolhG/o3MSu7ckYxcLKkHKoIdicAqRTauCswQRMt+YbW7q5wM6ydRePWlgld0NTQDC/Uz/UFG8ddGIbe+ZgYmpL8ZlvQcwhyxmmAWVjHLIewdZvQB6aNjtCHKZXo4iVkiemVxjkdn7QJFURRgTl0ETGzAv8lhdTsIcmYEmRNw35OPTz++keaS0Wfg/Q0TOwYBA/uHBZnO/dU1aaAgdGTVNtF7O069O1RgCcdCaf9ZFoifJRcJ+s7vHe9FWno4DXADjMUWd4xSqk05nsORpW0DlUNwH/IDVV/CHaXywC6WSl5D4Lew1QpqcLj0eCeaBDYzKmiBBlZ1HhbwJoqRjj75doX/Xy7ns8SbRQTtyzfhq1IRMmxX99E1U+xsC44NWDouqjbyx73t79mmAYz28FRrU8XLCdcU3tgMM26pFJBaO2IsU6sBEfjdvEe3nWLvybwuqGjwZISkbEMYXooh9ugSs52hZIp1TopWGaXqdoWRiYKr8v1x62hOnz9NkqMvHY8hMGKPgRRlZh14bD7+iHLVKcK2ZGq2e2g2E93buHqRBZUuG5tLaDLOe5toq1DRITRyfzf71fz2eU/vXOAx6HNp6vph5vnTaY/Pl0OLMKByWz+ZX55Of8OFxcwivopjeTb0ahdRw3gCgGYdAUhtY0Y9cDbFnabFxghw5JMJhBMpz++Xt8EkS2YYaKk49b+eE/bgktFkFrXPhjQjvqc4MDMzuFs56IkaywouaXVosutKUrXpi3bhwuGbNwrZugXdO0K1VUw7iklhqA0+bsgGvdv5hpvDG71LGq5GWK074bcPh+3dyPAmSdM24TCCB4fvYNEcCbu4HSyJ4KXsMj8dCAC6EPKSzsZcUbelpwosG+kRS+jqqvVvsJ32OkbluIs89nhKsbZiVVvdnABVdczOROE8wHzKZeaHuOjib3EMXbnN/2Wo6mtMBJ02k+uI+c4MakseeZZ4Fymdnzs0XGQuIYXN0n32wih2Oo4JE1i8ZG3douvPxjti6n2fkRdQ22d7mlr9xuaEvKV3FDluv1FsrLfw0LatBrEPeaHEivFE35eME885tl8OrOYPVJ3fiDPk/qV2rLcOH4iSt6K8tmCHRBnHfWQRIdHqA930O/UxEtoaGqF88TUSet3WntP6Y1e0xURt9hoS/8Lb4MzLRv0tP/7n9+b1cl/v56lPg=='
+          NEW_Z64='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'
+          TEST_Z64='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'
+          export OLD_Z64 NEW_Z64 TEST_Z64
+
+          python - <<'PY'
+          import base64, os, zlib
+          from pathlib import Path
+          test_path = Path('test/industrial-exhaust-retained-store-custody.test.js')
+          text = test_path.read_text()
+          marker = "  const indexAbsolutePath = path.join(rootDir, indexReceiptPath);\n"
+          if text.count(marker) != 1:
+              raise SystemExit(f'unexpected test insertion marker count: {text.count(marker)}')
+          insertion = zlib.decompress(base64.b64decode(os.environ['TEST_Z64'])).decode()
+          test_path.write_text(text.replace(marker, insertion + marker, 1))
+          PY
+
+          set +e
+          node "$TEST_PATH" > /tmp/durability-predecessor.log 2>&1
+          predecessor_status=$?
+          set -e
+          test "$predecessor_status" -ne 0
+          grep -Eq 'must synchronize its directory after linking the receipt' /tmp/durability-predecessor.log
+
+          python - <<'PY'
+          import base64, os, zlib
+          from pathlib import Path
+          lib_path = Path('tools/lib/industrial-exhaust-artifacts.mjs')
+          text = lib_path.read_text()
+          old = zlib.decompress(base64.b64decode(os.environ['OLD_Z64'])).decode()
+          new = zlib.decompress(base64.b64decode(os.environ['NEW_Z64'])).decode()
+          if text.count(old) != 1:
+              raise SystemExit(f'unexpected publication function count: {text.count(old)}')
+          lib_path.write_text(text.replace(old, new, 1))
+          PY
+
+          rm "$WORKFLOW_PATH"
+          node --check "$LIB_PATH"
+          node --check "$TEST_PATH"
+          node "$TEST_PATH"
+          node test/industrial-exhaust-artifacts.test.js
+          node test/industrial-exhaust.test.js
+          node tools/hydrate-industrial-exhaust.mjs --audit
+          git diff --check
+
+          mapfile -t changed_paths < <(git diff --name-only "$BASE_SHA")
+          test "${#changed_paths[@]}" -eq 2
+          test "${changed_paths[0]}" = "$TEST_PATH"
+          test "${changed_paths[1]}" = "$LIB_PATH"
+
+          git fetch origin main --quiet
+          test "$(git rev-parse origin/main)" = "$BASE_SHA"
+          if git ls-remote --exit-code --heads origin "refs/heads/${PRODUCT_BRANCH}" >/dev/null 2>&1; then
+            echo "product branch already exists" >&2
+            exit 1
+          fi
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          tree_sha="$(git write-tree)"
+          product_sha="$(
+            printf '%s\n\n%s\n'               'fix(industrial-exhaust): make receipt publication crash-durable'               'Synchronize the receipt directory chain and final publication entry, including idempotent reuse.'               | git commit-tree "$tree_sha" -p "$BASE_SHA"
+          )"
+          mapfile -t product_paths < <(git diff --name-only "$BASE_SHA" "$product_sha")
+          test "${#product_paths[@]}" -eq 2
+          test "${product_paths[0]}" = "$TEST_PATH"
+          test "${product_paths[1]}" = "$LIB_PATH"
+          git diff --check "$BASE_SHA" "$product_sha"
+          git fetch origin main --quiet
+          test "$(git rev-parse origin/main)" = "$BASE_SHA"
+          git push origin "${product_sha}:refs/heads/${PRODUCT_BRANCH}"
+          echo "PRODUCT_SHA=${product_sha}"
