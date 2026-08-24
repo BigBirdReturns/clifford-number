@@ -1,0 +1,217 @@
+name: Industrial-exhaust receipt publication path-custody controller v4
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/industrial-exhaust-receipt-publication-path-custody-controller-v4.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: industrial-exhaust-receipt-publication-path-custody-controller-v4
+  cancel-in-progress: false
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/industrial-exhaust-receipt-publication-path-custody-controller-v4
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Execute descriptor-custody product qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          SOURCE_BRANCH='agent/industrial-exhaust-receipt-publication-path-custody-controller-v2'
+          SOURCE_COMMIT='c003985b2662e8111bbacf63148078722157c4ac'
+          SOURCE_WORKFLOW='.github/workflows/industrial-exhaust-receipt-publication-path-custody-controller-v2.yml'
+
+          git fetch origin "${SOURCE_BRANCH}:refs/remotes/origin/${SOURCE_BRANCH}"
+          git show "${SOURCE_COMMIT}:${SOURCE_WORKFLOW}" > /tmp/path-custody-controller-v2.yml
+
+          python - <<'PY'
+          from pathlib import Path
+
+          text = Path('/tmp/path-custody-controller-v2.yml').read_text()
+          marker = '        run: |\n'
+          start = text.rindex(marker) + len(marker)
+          lines = []
+          for line in text[start:].splitlines():
+              if line.startswith('          '):
+                  lines.append(line[10:])
+              elif not line:
+                  lines.append('')
+              else:
+                  break
+
+          script = '\n'.join(lines) + '\n'
+          source_identity = (
+              'industrial-exhaust-receipt-publication-path-custody-controller-v2'
+          )
+          target_identity = (
+              'industrial-exhaust-receipt-publication-path-custody-controller-v4'
+          )
+          if script.count(source_identity) < 2:
+              raise SystemExit(
+                  f'unexpected controller identity count: {script.count(source_identity)}'
+              )
+          script = script.replace(source_identity, target_identity)
+
+          materialize_marker = "Path('/tmp/controller.sh').write_text(script)"
+          materialize_replacement = r'''diagnostic_start = script.index(
+              "DIAGNOSTIC_PATH='.github/controller-diagnostics/industrial-exhaust-receipt-publication-path-custody.log'"
+          )
+          base_start = script.index(
+              "BASE_SHA='01141ee3cda60cb82da80d89ebf9da164ad602da'",
+              diagnostic_start
+          )
+          script = script[:diagnostic_start] + script[base_start:]
+
+          old_base = "BASE_SHA='01141ee3cda60cb82da80d89ebf9da164ad602da'"
+          new_base = "BASE_SHA='2c730d69a05d31f9e045b2c74d72b26c152b917c'"
+          if script.count(old_base) != 1:
+              raise SystemExit(
+                  f'unexpected controller base marker count: {script.count(old_base)}'
+              )
+          script = script.replace(old_base, new_base, 1)
+
+          inner_python_end = 'P' + 'Y'
+          qualification_marker = (
+              'lib_path.write_text(text)\n'
+              + inner_python_end
+              + '\n\nnode --check "$LIB_PATH"\n'
+          )
+          symlink_patch = (
+              'lib_path.write_text(text)\n'
+              + inner_python_end
+              + '\n\n'
+              + r"""python - <<'SYMLINKPY'
+          from pathlib import Path
+
+          lib_path = Path('tools/lib/industrial-exhaust-artifacts.mjs')
+          text = lib_path.read_text()
+
+          loop_old = (
+              "    for (const segment of segments) {\n"
+              "      const parent = session.chain.at(-1);\n"
+              "      const anchoredPath = receiptDescriptorPath(parent.descriptor, segment);\n"
+              "      let descriptor;\n"
+          )
+          loop_new = (
+              "    for (const segment of segments) {\n"
+              "      const parent = session.chain.at(-1);\n"
+              "      const anchoredPath = receiptDescriptorPath(parent.descriptor, segment);\n"
+              "      const display = session.chain.length === 1\n"
+              "        ? segment\n"
+              "        : `${session.chain.at(-1).display}/${segment}`;\n"
+              "      let descriptor;\n"
+          )
+          if text.count(loop_old) != 1:
+              raise SystemExit(
+                  f'unexpected generated directory-loop count: {text.count(loop_old)}'
+              )
+          text = text.replace(loop_old, loop_new, 1)
+
+          initial_old = (
+              "      } catch (error) {\n"
+              "        if (error?.code !== 'ENOENT') {\n"
+              "          throw new Error(`${label} directory open failed: ${error.message}`);\n"
+              "        }\n"
+              "        try {\n"
+          )
+          initial_new = (
+              "      } catch (error) {\n"
+              "        if (['ELOOP', 'ENOTDIR'].includes(error?.code)) {\n"
+              "          throw new Error(\n"
+              "            `${label} contains an unsupported path entry: ${display}`\n"
+              "          );\n"
+              "        }\n"
+              "        if (error?.code !== 'ENOENT') {\n"
+              "          throw new Error(`${label} directory open failed: ${error.message}`);\n"
+              "        }\n"
+              "        try {\n"
+          )
+          if text.count(initial_old) != 1:
+              raise SystemExit(
+                  f'unexpected generated initial-open catch count: {text.count(initial_old)}'
+              )
+          text = text.replace(initial_old, initial_new, 1)
+
+          retry_old = (
+              "        } catch (openError) {\n"
+              "          throw new Error(`${label} directory open failed: ${openError.message}`);\n"
+              "        }\n"
+              "      }\n"
+          )
+          retry_new = (
+              "        } catch (openError) {\n"
+              "          if (['ELOOP', 'ENOTDIR'].includes(openError?.code)) {\n"
+              "            throw new Error(\n"
+              "              `${label} contains an unsupported path entry: ${display}`\n"
+              "            );\n"
+              "          }\n"
+              "          throw new Error(`${label} directory open failed: ${openError.message}`);\n"
+              "        }\n"
+              "      }\n"
+          )
+          if text.count(retry_old) != 1:
+              raise SystemExit(
+                  f'unexpected generated retry-open catch count: {text.count(retry_old)}'
+              )
+          text = text.replace(retry_old, retry_new, 1)
+
+          late_display = (
+              "      const display = session.chain.length === 1\n"
+              "        ? segment\n"
+              "        : `${session.chain.at(-1).display}/${segment}`;\n"
+              "      session.chain.push({\n"
+          )
+          if text.count(late_display) != 1:
+              raise SystemExit(
+                  f'unexpected generated late-display count: {text.count(late_display)}'
+              )
+          text = text.replace(late_display, "      session.chain.push({\n", 1)
+
+          lib_path.write_text(text)
+          SYMLINKPY
+
+          node --check "$LIB_PATH"
+          """
+          )
+          if script.count(qualification_marker) != 1:
+              raise SystemExit(
+                  f'unexpected product qualification marker count: '
+                  f'{script.count(qualification_marker)}'
+              )
+          script = script.replace(
+              qualification_marker,
+              symlink_patch,
+              1
+          )
+
+          Path('/tmp/controller.sh').write_text(script)'''
+          if script.count(materialize_marker) != 1:
+              raise SystemExit(
+                  f'unexpected controller materialization marker count: '
+                  f'{script.count(materialize_marker)}'
+              )
+          script = script.replace(
+              materialize_marker,
+              materialize_replacement,
+              1
+          )
+
+          Path('/tmp/path-custody-controller-v4.sh').write_text(script)
+          PY
+
+          bash /tmp/path-custody-controller-v4.sh
