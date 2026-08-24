@@ -760,7 +760,8 @@ try {
   );
   const unavailableControl = {
     events: [],
-    interpreter_path: '/definitely/missing/industrial-exhaust-python3'
+    interpreter_path: '/definitely/missing/industrial-exhaust-python3',
+    allow_unleased_interpreter: true
   };
   try {
     assert.throws(
@@ -786,6 +787,201 @@ try {
     fs.rmSync(unavailableHelperRoot, { recursive: true, force: true });
   }
 
+
+  const unleasedRuntimeRoot = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'industrial-exhaust-unleased-helper-runtime-')
+  );
+  const unleasedRuntimePath = path.join(unleasedRuntimeRoot, 'python3');
+  const unleasedRuntimeScript = `#!${process.execPath}
+const crypto = require('node:crypto');
+const fs = require('node:fs');
+const path = require('node:path');
+
+let input = '';
+process.stdin.setEncoding('utf8');
+process.stdin.on('data', chunk => { input += chunk; });
+process.stdin.on('end', () => {
+  const request = JSON.parse(input);
+  const rootPath = fs.realpathSync.native('/proc/self/fd/3');
+  const segments = String(request.relative_path ?? '').split('/');
+  const parentSegments = segments.slice(0, -1);
+  const finalPath = path.join(rootPath, ...segments);
+  fs.mkdirSync(path.dirname(finalPath), { recursive: true });
+  fs.writeFileSync(
+    path.join(rootPath, 'unleased-helper-runtime-escape.txt'),
+    'unleased runtime escaped its receipt authority\n'
+  );
+
+  if (request.action === 'publish') {
+    const retained = Buffer.from(request.serialized_base64, 'base64');
+    try {
+      fs.writeFileSync(finalPath, retained, { flag: 'wx', mode: 0o600 });
+    } catch (error) {
+      if (error?.code !== 'EEXIST') throw error;
+    }
+  }
+
+  const retained = fs.readFileSync(finalPath);
+  const digest = crypto.createHash('sha256').update(retained).digest('hex');
+  const finalStats = fs.lstatSync(finalPath);
+  const chain = [];
+  let currentPath = rootPath;
+  let currentDisplay = '.';
+  let stats = fs.lstatSync(currentPath);
+  chain.push({
+    display: currentDisplay,
+    dev: String(stats.dev),
+    ino: String(stats.ino)
+  });
+  for (const segment of parentSegments) {
+    currentPath = path.join(currentPath, segment);
+    currentDisplay = currentDisplay === '.'
+      ? segment
+      : currentDisplay + '/' + segment;
+    stats = fs.lstatSync(currentPath);
+    chain.push({
+      display: currentDisplay,
+      dev: String(stats.dev),
+      ino: String(stats.ino)
+    });
+  }
+
+  const response = {
+    ok: true,
+    events: [],
+    retained_sha256: digest,
+    final_identity: {
+      dev: String(finalStats.dev),
+      ino: String(finalStats.ino)
+    },
+    chain
+  };
+  if (request.action === 'publish') {
+    response.published = true;
+    response.retained_base64 = retained.toString('base64');
+  }
+  process.stdout.write(JSON.stringify(response));
+});
+`;
+  fs.writeFileSync(unleasedRuntimePath, unleasedRuntimeScript, { mode: 0o700 });
+
+  const assertUnleasedRuntimeRejectedBeforeMutation = ({
+    receiptType,
+    publicationRoot,
+    writeReceipt
+  }) => {
+    const escapePath = path.join(
+      publicationRoot,
+      'unleased-helper-runtime-escape.txt'
+    );
+    try {
+      assert.throws(
+        () => withReceiptDirfdControl(
+          {
+            events: [],
+            interpreter_path: unleasedRuntimePath
+          },
+          writeReceipt
+        ),
+        /interpreter lease failed/u,
+        `${receiptType} publication must reject an unleased helper runtime`
+      );
+      assert.equal(
+        fs.existsSync(path.join(publicationRoot, 'receipts')),
+        false,
+        `${receiptType} runtime rejection must precede receipt-tree mutation`
+      );
+      assert.equal(
+        fs.existsSync(escapePath),
+        false,
+        `${receiptType} rejected runtime may not mutate outside the receipt path`
+      );
+    } finally {
+      fs.rmSync(publicationRoot, { recursive: true, force: true });
+    }
+  };
+
+  const unleasedRuntimeIndexRoot = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'industrial-exhaust-index-unleased-runtime-')
+  );
+  const unleasedRuntimeIndexHtml =
+    '<!doctype html><html><body><a href="/news-releases/unleased-runtime-index">Unleased runtime index</a></body></html>';
+  const unleasedRuntimeParsedIndex = parseHtmlLinkIndex(
+    unleasedRuntimeIndexHtml,
+    source
+  );
+  assertUnleasedRuntimeRejectedBeforeMutation({
+    receiptType: 'index',
+    publicationRoot: unleasedRuntimeIndexRoot,
+    writeReceipt: () => writeIndexReceipt({
+      rootDir: unleasedRuntimeIndexRoot,
+      source,
+      parsedIndex: unleasedRuntimeParsedIndex,
+      html: unleasedRuntimeIndexHtml,
+      capturedAt: '2026-08-24T19:20:00.000Z'
+    })
+  });
+
+  const unleasedRuntimeArtifactRoot = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'industrial-exhaust-artifact-unleased-runtime-')
+  );
+  const unleasedRuntimeArtifactCanonicalUrl =
+    'https://www.dentsu.com/news-releases/unleased-runtime-artifact';
+  const unleasedRuntimeArtifactBody = Buffer.from(
+    '<!doctype html><html><body><main>Unleased runtime artifact.</main></body></html>'
+  );
+  const unleasedRuntimeArtifactBodySha256 = crypto
+    .createHash('sha256')
+    .update(unleasedRuntimeArtifactBody)
+    .digest('hex');
+  assertUnleasedRuntimeRejectedBeforeMutation({
+    receiptType: 'artifact',
+    publicationRoot: unleasedRuntimeArtifactRoot,
+    writeReceipt: () => writeArtifactReceipt({
+      rootDir: unleasedRuntimeArtifactRoot,
+      canonicalUrl: unleasedRuntimeArtifactCanonicalUrl,
+      body: unleasedRuntimeArtifactBody,
+      bodySha256: unleasedRuntimeArtifactBodySha256,
+      capturedAt: '2026-08-24T19:20:00.000Z',
+      responseHeaders: {
+        content_type: 'text/html',
+        final_url: unleasedRuntimeArtifactCanonicalUrl,
+        redirect_chain: []
+      }
+    })
+  });
+  fs.rmSync(unleasedRuntimeRoot, { recursive: true, force: true });
+
+  const forkProbeRoot = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'industrial-exhaust-helper-fork-probe-')
+  );
+  const forkProbeHtml =
+    '<!doctype html><html><body><a href="/news-releases/helper-fork-probe">Helper fork probe</a></body></html>';
+  const forkProbeParsedIndex = parseHtmlLinkIndex(forkProbeHtml, source);
+  const forkProbeControl = {
+    events: [],
+    fault: { type: 'probe_fork_denial' }
+  };
+  try {
+    withReceiptDirfdControl(
+      forkProbeControl,
+      () => writeIndexReceipt({
+        rootDir: forkProbeRoot,
+        source,
+        parsedIndex: forkProbeParsedIndex,
+        html: forkProbeHtml,
+        capturedAt: '2026-08-24T19:21:00.000Z',
+        responseHeaders: { content_type: 'text/html' }
+      })
+    );
+    assert.equal(
+      forkProbeControl.events.some(event => event.type === 'fork-denied'),
+      true,
+      'the leased helper runtime must prohibit descendant process creation'
+    );
+  } finally {
+    fs.rmSync(forkProbeRoot, { recursive: true, force: true });
+  }
 
   const forgedHelperRoot = fs.mkdtempSync(
     path.join(os.tmpdir(), 'industrial-exhaust-forged-dirfd-helper-')
@@ -869,7 +1065,8 @@ process.stdin.on('end', () => {
   }) => {
     const control = {
       events: [],
-      interpreter_path: forgedHelperPath
+      interpreter_path: forgedHelperPath,
+      allow_unleased_interpreter: true
     };
     try {
       assert.throws(

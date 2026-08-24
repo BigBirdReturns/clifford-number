@@ -1,6 +1,7 @@
 import { spawnSync } from 'node:child_process';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import {
   GRAPH_EFFECT,
@@ -1203,12 +1204,14 @@ const RECEIPT_DIRFD_CONTROL_SYMBOL = Symbol.for(
 );
 const RECEIPT_DIRFD_HELPER_MAX_BUFFER = 64 * 1024 * 1024;
 const RECEIPT_DIRFD_HELPER_MAX_RECEIPT_BYTES = 24_000_000;
+const RECEIPT_DIRFD_INTERPRETER_MAX_BYTES = 64 * 1024 * 1024;
 const RECEIPT_DIRFD_HELPER_SOURCE = String.raw`
 import base64
 import errno
 import hashlib
 import json
 import os
+import resource
 import secrets
 import stat
 import sys
@@ -1249,6 +1252,57 @@ def require_dir_fd_support():
             "descriptor-relative receipt publication requires dir_fd support for "
             + ", ".join(missing)
         )
+
+def confine_runtime():
+    if sys.platform != "linux" or os.name != "posix":
+        fail("descriptor-relative receipt helper requires Linux process controls")
+    if os.geteuid() == 0:
+        fail("descriptor-relative receipt helper may not run as root")
+    try:
+        os.umask(0o077)
+        os.set_inheritable(ROOT_FD, False)
+        resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
+        resource.setrlimit(resource.RLIMIT_NPROC, (0, 0))
+    except (AttributeError, OSError, ValueError) as error:
+        fail(f"descriptor-relative receipt helper confinement failed: {error}")
+    if resource.getrlimit(resource.RLIMIT_NPROC) != (0, 0):
+        fail("descriptor-relative receipt helper process limit was not retained")
+    cwd_stats = os.stat(".", follow_symlinks=False)
+    cwd_mode = stat.S_IMODE(cwd_stats.st_mode)
+    if (
+        not stat.S_ISDIR(cwd_stats.st_mode)
+        or cwd_stats.st_uid != os.geteuid()
+        or cwd_mode & 0o077
+        or cwd_mode & 0o700 != 0o700
+    ):
+        fail("descriptor-relative receipt helper working directory is not private")
+    add_event(
+        "runtime-confined",
+        euid=str(os.geteuid()),
+        cwd_dev=str(cwd_stats.st_dev),
+        cwd_ino=str(cwd_stats.st_ino),
+    )
+
+def maybe_probe_fork_denial():
+    global FAULT_USED
+    if (
+        not isinstance(FAULT, dict)
+        or FAULT.get("type") != "probe_fork_denial"
+        or FAULT_USED
+    ):
+        return
+    try:
+        child = os.fork()
+    except OSError as error:
+        if error.errno not in (errno.EAGAIN, errno.EPERM):
+            fail(f"unexpected helper fork failure: {error}")
+        FAULT_USED = True
+        add_event("fork-denied", errno=error.errno)
+        return
+    if child == 0:
+        os._exit(0)
+    os.waitpid(child, 0)
+    fail("descriptor-relative receipt helper permitted descendant creation")
 
 def sync_directory(descriptor, label):
     global FAULT_USED
@@ -1297,7 +1351,11 @@ def open_directory_chain(relative_parent, create):
     for segment in segments:
         validate_component(segment)
 
+    global ROOT_FD
     root_descriptor = os.dup(ROOT_FD)
+    os.set_inheritable(root_descriptor, False)
+    os.close(ROOT_FD)
+    ROOT_FD = -1
     chain_descriptors = [root_descriptor]
     root_stats = os.fstat(root_descriptor)
     if not stat.S_ISDIR(root_stats.st_mode):
@@ -1335,6 +1393,7 @@ def open_directory_chain(relative_parent, create):
                 dir_fd=parent_descriptor,
             )
 
+        os.set_inheritable(descriptor, False)
         descriptor_stats = os.fstat(descriptor)
         path_stats = os.stat(
             segment,
@@ -1358,6 +1417,18 @@ def open_directory_chain(relative_parent, create):
 
     return chain_descriptors, chain
 
+def narrow_chain_to_parent(chain_descriptors, chain):
+    parent_descriptor = chain_descriptors[-1]
+    for descriptor in chain_descriptors[:-1]:
+        os.close(descriptor)
+    parent_stats = os.fstat(parent_descriptor)
+    add_event(
+        "capability-narrowed",
+        display=chain[-1]["display"],
+        **identity(parent_stats),
+    )
+    return [parent_descriptor], parent_descriptor
+
 def inspect_final(parent_descriptor, final_name):
     try:
         stats = os.stat(
@@ -1379,6 +1450,7 @@ def open_final(parent_descriptor, final_name):
         os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0),
         dir_fd=parent_descriptor,
     )
+    os.set_inheritable(descriptor, False)
     descriptor_stats = os.fstat(descriptor)
     path_stats = os.stat(
         final_name,
@@ -1464,7 +1536,10 @@ def publish(request):
     final_name = segments[-1]
     validate_component(final_name)
     chain_descriptors, chain = open_directory_chain(parent_relative, True)
-    parent_descriptor = chain_descriptors[-1]
+    chain_descriptors, parent_descriptor = narrow_chain_to_parent(
+        chain_descriptors,
+        chain,
+    )
     temp_name = None
     temp_identity = None
     published = False
@@ -1578,7 +1653,10 @@ def verify(request):
     final_name = segments[-1]
     validate_component(final_name)
     chain_descriptors, chain = open_directory_chain(parent_relative, False)
-    parent_descriptor = chain_descriptors[-1]
+    chain_descriptors, parent_descriptor = narrow_chain_to_parent(
+        chain_descriptors,
+        chain,
+    )
     final_descriptor = None
     try:
         final_descriptor, final_stats = open_final(parent_descriptor, final_name)
@@ -1616,8 +1694,10 @@ def verify(request):
 def main():
     global FAULT
     require_dir_fd_support()
+    confine_runtime()
     request = json.load(sys.stdin)
     FAULT = request.get("fault")
+    maybe_probe_fork_denial()
     action = request.get("action")
     if action == "publish":
         result = publish(request)
@@ -1649,6 +1729,157 @@ function recordReceiptDirfdEvents(control, events) {
   control.events.push(...events.map(event => structuredClone(event)));
 }
 
+function receiptInterpreterPathEntryIsTrusted(stats) {
+  return stats.uid === 0 && (stats.mode & 0o022) === 0;
+}
+
+function hashReceiptInterpreterDescriptor(descriptor, size, label) {
+  if (!Number.isSafeInteger(size) || size < 1
+    || size > RECEIPT_DIRFD_INTERPRETER_MAX_BYTES) {
+    throw new Error(`${label} has an unsupported executable size`);
+  }
+  const digest = crypto.createHash('sha256');
+  const buffer = Buffer.allocUnsafe(1024 * 1024);
+  let offset = 0;
+  while (offset < size) {
+    const count = fs.readSync(
+      descriptor,
+      buffer,
+      0,
+      Math.min(buffer.length, size - offset),
+      offset
+    );
+    if (count <= 0) {
+      throw new Error(`${label} executable hash made no progress`);
+    }
+    digest.update(buffer.subarray(0, count));
+    offset += count;
+  }
+  return digest.digest('hex');
+}
+
+function openReceiptInterpreterLease(interpreter, label) {
+  let descriptor = null;
+  try {
+    if (typeof interpreter !== 'string' || !path.isAbsolute(interpreter)) {
+      throw new Error('interpreter path is not absolute');
+    }
+    const canonicalPath = fs.realpathSync.native(interpreter);
+    const relativeToUsrBin = path.relative('/usr/bin', canonicalPath);
+    if (!relativeToUsrBin
+      || relativeToUsrBin.startsWith(`..${path.sep}`)
+      || path.isAbsolute(relativeToUsrBin)) {
+      throw new Error('interpreter does not resolve beneath /usr/bin');
+    }
+
+    let current = path.parse(canonicalPath).root;
+    const parentSegments = path.relative(
+      current,
+      path.dirname(canonicalPath)
+    ).split(path.sep).filter(Boolean);
+    for (const segment of parentSegments) {
+      current = path.join(current, segment);
+      const stats = fs.lstatSync(current);
+      if (!stats.isDirectory() || !receiptInterpreterPathEntryIsTrusted(stats)) {
+        throw new Error(`interpreter parent is not root-owned and immutable: ${current}`);
+      }
+    }
+
+    const before = fs.lstatSync(canonicalPath);
+    if (!before.isFile()
+      || !receiptInterpreterPathEntryIsTrusted(before)
+      || (before.mode & 0o111) === 0) {
+      throw new Error('interpreter target is not a root-owned immutable executable');
+    }
+    descriptor = fs.openSync(
+      canonicalPath,
+      fs.constants.O_RDONLY | (fs.constants.O_NOFOLLOW ?? 0)
+    );
+    const opened = fs.fstatSync(descriptor);
+    const after = fs.lstatSync(canonicalPath);
+    if (!opened.isFile()
+      || !sameReceiptIdentity(opened, before)
+      || !sameReceiptIdentity(opened, after)
+      || opened.size !== before.size
+      || opened.size !== after.size
+      || !receiptInterpreterPathEntryIsTrusted(opened)) {
+      throw new Error('interpreter identity changed during lease admission');
+    }
+    const sha256 = hashReceiptInterpreterDescriptor(
+      descriptor,
+      opened.size,
+      label
+    );
+    const finalStats = fs.fstatSync(descriptor);
+    if (!sameReceiptIdentity(finalStats, opened)
+      || finalStats.size !== opened.size) {
+      throw new Error('interpreter identity changed during content lease');
+    }
+    return {
+      path: canonicalPath,
+      descriptor,
+      identity: {
+        dev: opened.dev,
+        ino: opened.ino,
+        size: opened.size,
+        mode: opened.mode,
+        uid: opened.uid
+      },
+      sha256
+    };
+  } catch (error) {
+    if (descriptor !== null) {
+      try { fs.closeSync(descriptor); } catch {}
+    }
+    throw new Error(
+      `${label} dirfd helper interpreter lease failed: ${error.message}`
+    );
+  }
+}
+
+function verifyReceiptInterpreterLease(lease, label) {
+  try {
+    const descriptorStats = fs.fstatSync(lease.descriptor);
+    const pathStats = fs.lstatSync(lease.path);
+    if (!descriptorStats.isFile()
+      || !pathStats.isFile()
+      || !sameReceiptIdentity(descriptorStats, lease.identity)
+      || !sameReceiptIdentity(pathStats, lease.identity)
+      || descriptorStats.size !== lease.identity.size
+      || pathStats.size !== lease.identity.size
+      || descriptorStats.mode !== lease.identity.mode
+      || descriptorStats.uid !== lease.identity.uid
+      || !receiptInterpreterPathEntryIsTrusted(pathStats)) {
+      throw new Error('interpreter identity changed while the helper executed');
+    }
+    const digest = hashReceiptInterpreterDescriptor(
+      lease.descriptor,
+      lease.identity.size,
+      label
+    );
+    if (digest !== lease.sha256) {
+      throw new Error('interpreter bytes changed while the helper executed');
+    }
+  } catch (error) {
+    throw new Error(
+      `${label} dirfd helper interpreter lease failed: ${error.message}`
+    );
+  }
+}
+
+function closeReceiptInterpreterLease(lease, label) {
+  if (!lease || !Number.isInteger(lease.descriptor)) return null;
+  try {
+    fs.closeSync(lease.descriptor);
+    lease.descriptor = null;
+    return null;
+  } catch (error) {
+    return new Error(
+      `${label} dirfd helper interpreter descriptor close failed: ${error.message}`
+    );
+  }
+}
+
 function runReceiptDirfdHelper({
   rootDescriptor,
   label,
@@ -1658,27 +1889,58 @@ function runReceiptDirfdHelper({
   const interpreter = typeof control?.interpreter_path === 'string'
     ? control.interpreter_path
     : RECEIPT_DIRFD_HELPER_INTERPRETER;
+  const allowUnleasedInterpreter = control?.allow_unleased_interpreter === true;
   const helperRequest = {
     ...request,
     fault: control?.fault ?? null
   };
-  const result = spawnSync(
-    interpreter,
-    ['-I', '-c', RECEIPT_DIRFD_HELPER_SOURCE],
-    {
-      input: JSON.stringify(helperRequest),
-      encoding: 'utf8',
-      maxBuffer: RECEIPT_DIRFD_HELPER_MAX_BUFFER,
-      timeout: 120_000,
-      stdio: ['pipe', 'pipe', 'pipe', rootDescriptor],
-      env: {
-        PATH: '/usr/bin:/bin',
-        LANG: 'C.UTF-8',
-        LC_ALL: 'C.UTF-8',
-        PYTHONIOENCODING: 'utf-8'
-      }
+  let lease = null;
+  let workingDirectory = null;
+  let result = null;
+  let failure = null;
+  try {
+    if (!allowUnleasedInterpreter) {
+      lease = openReceiptInterpreterLease(interpreter, label);
     }
-  );
+    workingDirectory = fs.mkdtempSync(
+      path.join(os.tmpdir(), 'industrial-exhaust-receipt-helper-')
+    );
+    fs.chmodSync(workingDirectory, 0o700);
+    result = spawnSync(
+      lease?.path ?? interpreter,
+      ['-I', '-c', RECEIPT_DIRFD_HELPER_SOURCE],
+      {
+        input: JSON.stringify(helperRequest),
+        encoding: 'utf8',
+        maxBuffer: RECEIPT_DIRFD_HELPER_MAX_BUFFER,
+        timeout: 120_000,
+        cwd: workingDirectory,
+        stdio: ['pipe', 'pipe', 'pipe', rootDescriptor],
+        env: {
+          PATH: '/usr/bin:/bin',
+          LANG: 'C.UTF-8',
+          LC_ALL: 'C.UTF-8',
+          PYTHONIOENCODING: 'utf-8'
+        }
+      }
+    );
+    if (lease !== null) verifyReceiptInterpreterLease(lease, label);
+  } catch (error) {
+    failure = error;
+  }
+
+  const leaseCloseFailure = closeReceiptInterpreterLease(lease, label);
+  failure ??= leaseCloseFailure;
+  if (workingDirectory !== null) {
+    try {
+      fs.rmSync(workingDirectory, { recursive: true, force: true });
+    } catch (error) {
+      failure ??= new Error(
+        `${label} dirfd helper working-directory cleanup failed: ${error.message}`
+      );
+    }
+  }
+  if (failure) throw failure;
   if (result.error) {
     throw new Error(`${label} dirfd helper launch failed: ${result.error.message}`);
   }
@@ -1703,6 +1965,19 @@ function runReceiptDirfdHelper({
     throw new Error(
       `${label} dirfd helper exited with status ${result.status}`
     );
+  }
+  if (!allowUnleasedInterpreter) {
+    const eventTypes = new Set(
+      Array.isArray(response.events)
+        ? response.events.map(event => event?.type)
+        : []
+    );
+    if (!eventTypes.has('runtime-confined')
+      || !eventTypes.has('capability-narrowed')) {
+      throw new Error(
+        `${label} dirfd helper omitted runtime-confinement proof`
+      );
+    }
   }
   return response;
 }
