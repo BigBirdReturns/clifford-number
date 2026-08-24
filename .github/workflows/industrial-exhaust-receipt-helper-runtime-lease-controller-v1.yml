@@ -1,0 +1,123 @@
+name: Industrial-exhaust receipt helper runtime lease controller v1
+
+on:
+  push:
+    branches:
+      - agent/industrial-exhaust-receipt-helper-runtime-lease-controller-v1
+    paths:
+      - .github/workflows/industrial-exhaust-receipt-helper-runtime-lease-controller-v1.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: industrial-exhaust-receipt-helper-runtime-lease-controller-v1
+  cancel-in-progress: false
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/industrial-exhaust-receipt-helper-runtime-lease-controller-v1
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Reproduce and repair helper runtime custody
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          BASE_SHA='2469a23db69e0b2bc325133d0619cc88e1c89ab2'
+          PRODUCT_BRANCH='agent/industrial-exhaust-receipt-helper-runtime-lease-v1'
+          WORKFLOW_PATH='.github/workflows/industrial-exhaust-receipt-helper-runtime-lease-controller-v1.yml'
+          TEST_PART_0='.github/tmp/industrial-exhaust-helper-runtime-test-patch.b64.part-00'
+          TEST_PART_1='.github/tmp/industrial-exhaust-helper-runtime-test-patch.b64.part-01'
+          LIB_PART_0='.github/tmp/industrial-exhaust-helper-runtime-lib-patch.b64.part-00'
+          LIB_PART_1='.github/tmp/industrial-exhaust-helper-runtime-lib-patch.b64.part-01'
+          LIB_PART_2='.github/tmp/industrial-exhaust-helper-runtime-lib-patch.b64.part-02'
+          LIB_PATH='tools/lib/industrial-exhaust-artifacts.mjs'
+          TEST_PATH='test/industrial-exhaust-retained-store-custody.test.js'
+
+          current_sha="$(git rev-parse HEAD)"
+          git merge-base --is-ancestor "$BASE_SHA" "$current_sha"
+
+          expected_controller_paths=(
+            "$LIB_PART_0"
+            "$LIB_PART_1"
+            "$LIB_PART_2"
+            "$TEST_PART_0"
+            "$TEST_PART_1"
+            "$WORKFLOW_PATH"
+          )
+          mapfile -t controller_diff < <(git diff --name-only "$BASE_SHA" "$current_sha")
+          test "${#controller_diff[@]}" -eq "${#expected_controller_paths[@]}"
+          for index in "${!expected_controller_paths[@]}"; do
+            test "${controller_diff[$index]}" = "${expected_controller_paths[$index]}"
+          done
+
+          cat "$TEST_PART_0" "$TEST_PART_1" \
+            | base64 --decode \
+            > /tmp/industrial-exhaust-helper-runtime-test-patch.py
+          cat "$LIB_PART_0" "$LIB_PART_1" "$LIB_PART_2" \
+            | base64 --decode \
+            > /tmp/industrial-exhaust-helper-runtime-lib-patch.py
+          python -m py_compile \
+            /tmp/industrial-exhaust-helper-runtime-test-patch.py \
+            /tmp/industrial-exhaust-helper-runtime-lib-patch.py
+
+          python /tmp/industrial-exhaust-helper-runtime-test-patch.py
+          if node "$TEST_PATH"; then
+            echo 'predecessor unexpectedly accepted an unleased helper runtime' >&2
+            exit 1
+          else
+            echo 'predecessor helper runtime custody defect reproduced'
+          fi
+
+          python /tmp/industrial-exhaust-helper-runtime-lib-patch.py
+
+          node --check "$LIB_PATH"
+          node --check "$TEST_PATH"
+          node "$TEST_PATH"
+          node test/industrial-exhaust-artifacts.test.js
+          node test/industrial-exhaust.test.js
+          node tools/hydrate-industrial-exhaust.mjs --audit
+          git diff --check
+
+          rm "$WORKFLOW_PATH" \
+            "$TEST_PART_0" "$TEST_PART_1" \
+            "$LIB_PART_0" "$LIB_PART_1" "$LIB_PART_2"
+
+          mapfile -t product_diff < <(git diff --name-only "$BASE_SHA")
+          test "${#product_diff[@]}" -eq 2
+          test "${product_diff[0]}" = "$TEST_PATH"
+          test "${product_diff[1]}" = "$LIB_PATH"
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          tree_sha="$(git write-tree)"
+          new_sha="$(
+            printf '%s\n\n%s\n' \
+              'fix(industrial-exhaust): lease and confine receipt helper runtime' \
+              'Lease the root-owned interpreter, isolate startup, prohibit descendants, close the inherited root capability, and retain only the final parent dirfd.' \
+              | git commit-tree "$tree_sha" -p "$BASE_SHA"
+          )"
+
+          mapfile -t final_diff < <(git diff --name-only "$BASE_SHA" "$new_sha")
+          test "${#final_diff[@]}" -eq 2
+          test "${final_diff[0]}" = "$TEST_PATH"
+          test "${final_diff[1]}" = "$LIB_PATH"
+          git diff --check "$BASE_SHA" "$new_sha"
+
+          live_main="$(git ls-remote origin refs/heads/main | awk '{print $1}')"
+          test "$live_main" = "$BASE_SHA"
+
+          git push \
+            --force-with-lease="refs/heads/${PRODUCT_BRANCH}:" \
+            origin \
+            "${new_sha}:refs/heads/${PRODUCT_BRANCH}"
