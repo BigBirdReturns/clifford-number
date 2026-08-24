@@ -145,6 +145,7 @@ jobs:
 
           test_path = Path('test/industrial-exhaust-retained-store-custody.test.js')
           text = test_path.read_text()
+
           helper_start = text.index(
               'const assertDestinationRacePreservesWinner = ({'
           )
@@ -172,9 +173,38 @@ jobs:
             return originalLinkSync(sourcePath, destinationPath);
           };
           """
-          test_path.write_text(
-              text[:link_start] + replacement + text[link_end:]
+          text = text[:link_start] + replacement + text[link_end:]
+
+          durability_start = text.index(
+              'const assertReceiptPublicationDurability = ({'
           )
+          durability_link_start = text.index(
+              '    fs.linkSync = (sourcePath, destinationPath) => {',
+              durability_start
+          )
+          durability_link_end = text.index(
+              '    fs.fsyncSync = descriptor => {',
+              durability_link_start
+          )
+          durability_replacement = """    fs.linkSync = (sourcePath, destinationPath) => {
+              let targetsReceipt = false;
+              try {
+                targetsReceipt = path.basename(destinationPath)
+                    === path.basename(absoluteReceiptPath)
+                  && fs.realpathSync.native(path.dirname(destinationPath))
+                    === fs.realpathSync.native(path.dirname(absoluteReceiptPath));
+              } catch {}
+              if (targetsReceipt) events.push('publish-link');
+              return originalLinkSync(sourcePath, destinationPath);
+            };
+          """
+          text = (
+              text[:durability_link_start]
+              + durability_replacement
+              + text[durability_link_end:]
+          )
+
+          test_path.write_text(text)
           RACEPY
 
           '''
