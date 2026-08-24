@@ -18,7 +18,7 @@ jobs:
     env:
       CBRANCH: agent/pr2231-observation-interval-controller-v36
       CPATH: .github/workflows/temporary-pr2231-observation-interval-controller-v36.yml
-      CPARENT: 03406b96600cb6c1b89a769cd8c45786f9eca68c
+      CPARENT: 000eead6bb3b56979ebcb3e7d3bb29806b9deaf0
       PBRANCH: agent/current-main-identifier-context-product-v1
       PHEAD: 456ee43cb8a0d3c1afeeed8b9f7342219a3fac05
       PPARENT: 2d2c7b6cd7517ca25854e481b21774a697d0e76b
@@ -26,8 +26,15 @@ jobs:
       PTEST: 08b3cd4014b916d1ac5845c73c59f7d55dbae7ef
       BLIB: 5f68254d3e44de693e83503aed879160f9b7b997
       BTEST: 1659a7cc54666a2ac5a1d6b88eb8c6591d98008e
-      COMMENT: '5400057410'
-      PHASH: 7988d991b5141ad7a7a0b79c5203be0279348f1d6d737c5656178c61ccdff2ea
+      COMMENT: '5401422894'
+      PCOMMIT: 614c8065a6c255fbd8cfdc9315ef861d700011a9
+      PTREE: 7f562e216eb716fef39bd426176f7c638fa8e778
+      SLIB: d825c94f2dfe5ef2bd64d483a2feb9dfa0a5c645
+      STEST: 34ae708c4934834334839552d7603e48e3db4ea4
+      PHASH: 7f25ffa5c58b0025bbd7ce2783393c6010a98e8f0606c3f94607946efb4f9054
+      PZBYTES: '4343'
+      PBYTES: '15943'
+      PCHARS: '5792'
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
@@ -53,14 +60,23 @@ jobs:
           test "$(git rev-parse "$MAIN:tools/lib/industrial-exhaust.mjs")" = "$BLIB"
           test "$(git rev-parse "$MAIN:test/industrial-exhaust.test.js")" = "$BTEST"
 
-          gh api "repos/$GITHUB_REPOSITORY/issues/comments/$COMMENT" --jq .body >/tmp/c.md
-          python3 - <<'PY'
-          import base64,gzip,hashlib,os,pathlib,re
-          b=pathlib.Path('/tmp/c.md').read_text(); c=re.findall(r'^\d+\. `([A-Za-z0-9+/=]+)`$',b,re.M)
-          assert len(c)==6, len(c)
-          z=base64.b64decode(''.join(c),validate=True); assert hashlib.sha256(z).hexdigest()==os.environ['PHASH']
-          pathlib.Path('/tmp/p.patch').write_bytes(gzip.decompress(z))
+          cat >/tmp/decode-p2231.py <<'PY'
+          import base64,gzip,hashlib,os,pathlib,re,sys
+          body=pathlib.Path(sys.argv[1]).read_text()
+          chunks=re.findall(r'^\d+\. `([A-Za-z0-9+/=]+)`$',body,re.M)
+          assert len(chunks)==1, len(chunks)
+          encoded=''.join(chunks)
+          assert len(encoded)==int(os.environ['PCHARS']), len(encoded)
+          compressed=base64.b64decode(encoded,validate=True)
+          assert len(compressed)==int(os.environ['PZBYTES']), len(compressed)
+          assert hashlib.sha256(compressed).hexdigest()==os.environ['PHASH']
+          patch=gzip.decompress(compressed)
+          assert len(patch)==int(os.environ['PBYTES']), len(patch)
+          assert patch.startswith(b'From '+os.environ['PCOMMIT'].encode()+b' ')
+          pathlib.Path(sys.argv[2]).write_bytes(patch)
           PY
+          gh api "repos/$GITHUB_REPOSITORY/issues/comments/$COMMENT" --jq .body >/tmp/c.md
+          python3 /tmp/decode-p2231.py /tmp/c.md /tmp/p.patch
 
           rm -rf "$S" "$Q"; git worktree prune; git worktree add --detach "$S" "$PHEAD"
           cd "$S"
@@ -75,25 +91,37 @@ jobs:
             r('ID: 09012345678 2026-08-17.1 212 555 1234'),
             'ID: 09012345678 2026-08-17.[contact omitted]',
           );
+          console.log('prepatch-terminal='+JSON.stringify(
+            r('Phone: 09012345678 2026-08-17 01 42 68 53 00 90 people')
+          ));
           NODE
           git config user.name BigBirdReturns; git config user.email bigbirdreturns@proton.me
           git am /tmp/p.patch
           test "$(git rev-parse HEAD^)" = "$PHEAD"
+          test "$(git rev-list --count "$PHEAD..HEAD")" = 1
+          test "$(git rev-parse HEAD^{tree})" = "$PTREE"
+          test "$(git rev-parse HEAD:tools/lib/industrial-exhaust.mjs)" = "$SLIB"
+          test "$(git rev-parse HEAD:test/industrial-exhaust.test.js)" = "$STEST"
           test "$(git diff --name-only "$PHEAD..HEAD"|LC_ALL=C sort)" = $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
-          test "$(git diff --numstat "$PHEAD..HEAD"|LC_ALL=C sort -k3)" = $'53\t0\ttest/industrial-exhaust.test.js\n70\t31\ttools/lib/industrial-exhaust.mjs'
+          test "$(git diff --numstat "$PHEAD..HEAD"|LC_ALL=C sort -k3)" = $'39\t0\ttest/industrial-exhaust.test.js\n195\t22\ttools/lib/industrial-exhaust.mjs'
+          git diff --check "$PHEAD..HEAD"
           node --input-type=module <<'NODE'
           import assert from 'node:assert/strict';
           import {redactContactData as r} from './tools/lib/industrial-exhaust.mjs';
           const cases = [
             ['Phone: 09012345678 2026-08-17 01 42 68 53 00', 'Phone: [contact omitted] 2026-08-17 [contact omitted]'],
+            ['Phone: 09012345678 2026.08.17.03 62 16 80 41', 'Phone: [contact omitted] 2026.08.17.[contact omitted]'],
             ['ID: 09012345678 2026-08-17.1 212 555 1234', 'ID: 09012345678 2026-08-17.[contact omitted]'],
-            ['Tel: +44 20 7946 0958 2026-08-18 01 23 45 67 89', 'Tel: [contact omitted] 2026-08-18 [contact omitted]'],
-            ['Tel: +44 20 7946 0958 2026-08-18 01 23 45 67 89 ext 9', 'Tel: [contact omitted] 2026-08-18 [contact omitted] ext 9'],
+            ['Phone: 09012345678 2026-08-17 01 42 68 53 00 90 people', 'Phone: [contact omitted] 2026-08-17 [contact omitted] 90 people'],
             ['Reference: 2026-88-77 04 72 98 76 54', 'Reference: 2026-88-77 04 72 98 76 54'],
           ];
           for (const [input, expected] of cases) assert.equal(r(input), expected, input);
           NODE
-          SLIB="$(git rev-parse HEAD:tools/lib/industrial-exhaust.mjs)"; STEST="$(git rev-parse HEAD:test/industrial-exhaust.test.js)"
+          node --check tools/lib/industrial-exhaust.mjs
+          node --check tools/crawl-industrial-exhaust.mjs
+          node --check test/industrial-exhaust.test.js
+          node test/industrial-exhaust.test.js
+          node test/industrial-exhaust-artifacts.test.js
 
           cd "$GITHUB_WORKSPACE"; git worktree add --detach "$Q" "$MAIN"
           cp "$S/tools/lib/industrial-exhaust.mjs" "$Q/tools/lib/industrial-exhaust.mjs"
@@ -102,6 +130,7 @@ jobs:
           test "$(git hash-object tools/lib/industrial-exhaust.mjs)" = "$SLIB"
           test "$(git hash-object test/industrial-exhaust.test.js)" = "$STEST"
           test "$(git diff --name-only|LC_ALL=C sort)" = $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          test "$(git diff --numstat|LC_ALL=C sort -k3)" = $'39\t0\ttest/industrial-exhaust.test.js\n195\t22\ttools/lib/industrial-exhaust.mjs'
           git diff --check
           node --check tools/lib/industrial-exhaust.mjs
           node --check tools/crawl-industrial-exhaust.mjs
@@ -111,9 +140,9 @@ jobs:
           import {redactContactData as r} from './tools/lib/industrial-exhaust.mjs';
           const cases = [
             ['Phone: 09012345678 2026-08-17 01 42 68 53 00', 'Phone: [contact omitted] 2026-08-17 [contact omitted]'],
+            ['Phone: 09012345678 2026.08.17.03 62 16 80 41', 'Phone: [contact omitted] 2026.08.17.[contact omitted]'],
             ['ID: 09012345678 2026-08-17.1 212 555 1234', 'ID: 09012345678 2026-08-17.[contact omitted]'],
-            ['Tel: +44 20 7946 0958 2026-08-18 01 23 45 67 89', 'Tel: [contact omitted] 2026-08-18 [contact omitted]'],
-            ['Tel: +44 20 7946 0958 2026-08-18 01 23 45 67 89 ext 9', 'Tel: [contact omitted] 2026-08-18 [contact omitted] ext 9'],
+            ['Phone: 09012345678 2026-08-17 01 42 68 53 00 90 people', 'Phone: [contact omitted] 2026-08-17 [contact omitted] 90 people'],
             ['Reference: 2026-88-77 04 72 98 76 54', 'Reference: 2026-88-77 04 72 98 76 54'],
           ];
           for (const [input, expected] of cases) assert.equal(r(input), expected, input);
@@ -121,21 +150,43 @@ jobs:
           node test/industrial-exhaust.test.js
           node test/industrial-exhaust-artifacts.test.js
           npm run release:check
+          test "$(git diff --name-only|LC_ALL=C sort)" = $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          test "$(git hash-object tools/lib/industrial-exhaust.mjs)" = "$SLIB"
+          test "$(git hash-object test/industrial-exhaust.test.js)" = "$STEST"
 
           cd "$GITHUB_WORKSPACE"; fetch
           test "$(git rev-parse refs/remotes/origin/main)" = "$MAIN"
           test "$(git rev-parse refs/remotes/origin/$PBRANCH)" = "$PHEAD"
           test "$(git rev-parse refs/remotes/origin/$CBRANCH)" = "$H"
+          test "$(git rev-parse "$MAIN:tools/lib/industrial-exhaust.mjs")" = "$BLIB"
+          test "$(git rev-parse "$MAIN:test/industrial-exhaust.test.js")" = "$BTEST"
+          gh api "repos/$GITHUB_REPOSITORY/issues/comments/$COMMENT" --jq .body >/tmp/c-final.md
+          python3 /tmp/decode-p2231.py /tmp/c-final.md /tmp/p-final.patch
+          cmp /tmp/p.patch /tmp/p-final.patch
+
           cd "$Q"; git config user.name BigBirdReturns; git config user.email bigbirdreturns@proton.me
           git add tools/lib/industrial-exhaust.mjs test/industrial-exhaust.test.js
           git diff --cached --check
-          git commit -m 'fix(crawler): retain complete observation and phone intervals'
+          test "$(git diff --cached --name-only|LC_ALL=C sort)" = $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          test "$(git diff --cached --numstat|LC_ALL=C sort -k3)" = $'39\t0\ttest/industrial-exhaust.test.js\n195\t22\ttools/lib/industrial-exhaust.mjs'
+          git commit -m 'fix(crawler): retain exact observation and phone intervals'
           N="$(git rev-parse HEAD)"; T="$(git rev-parse HEAD^{tree})"
           test "$(git rev-parse HEAD^)" = "$MAIN"
           test "$(git rev-list --count "$MAIN..HEAD")" = 1
           test "$(git diff --name-only "$MAIN..HEAD"|LC_ALL=C sort)" = $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          test "$(git rev-parse HEAD:tools/lib/industrial-exhaust.mjs)" = "$SLIB"
+          test "$(git rev-parse HEAD:test/industrial-exhaust.test.js)" = "$STEST"
+          test "$(git ls-remote origin refs/heads/main|cut -f1)" = "$MAIN"
+          test "$(git ls-remote origin "refs/heads/$PBRANCH"|cut -f1)" = "$PHEAD"
           git push --force-with-lease="refs/heads/$PBRANCH:$PHEAD" origin "HEAD:refs/heads/$PBRANCH"
-          printf 'run=%s\nbase=%s\nhead=%s\ntree=%s\nlib=%s\ntest=%s\npatch=%s\n' '${{ github.run_id }}' "$MAIN" "$N" "$T" "$SLIB" "$STEST" "$PHASH" >"$R"
+          if [ "$(git ls-remote origin refs/heads/main|cut -f1)" != "$MAIN" ]; then
+            git push --force-with-lease="refs/heads/$PBRANCH:$N" origin "$PHEAD:refs/heads/$PBRANCH"
+            echo 'main advanced during publication; restored product lease' >&2
+            exit 1
+          fi
+          git fetch --no-tags origin "+refs/heads/$PBRANCH:refs/remotes/origin/$PBRANCH"
+          test "$(git rev-parse refs/remotes/origin/$PBRANCH)" = "$N"
+          printf 'run=%s\nbase=%s\nhead=%s\ntree=%s\nlib=%s\ntest=%s\npatch-comment=%s\npatch=%s\nsource-tree=%s\n' '${{ github.run_id }}' "$MAIN" "$N" "$T" "$SLIB" "$STEST" "$COMMENT" "$PHASH" "$PTREE" >"$R"
           cat "$R"
       - uses: actions/upload-artifact@v4
-        with: {name: pr2231-observation-interval-product-v36, path: /tmp/pr2231-v36.txt, if-no-files-found: error, retention-days: 90}
+        with: {name: pr2231-observation-interval-product-v36, path: /tmp/p2231-v36.txt, if-no-files-found: error, retention-days: 90}
