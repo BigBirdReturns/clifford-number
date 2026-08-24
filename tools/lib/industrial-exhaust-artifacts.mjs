@@ -1160,83 +1160,183 @@ export function buildArtifactAlerts(artifacts, { watchConfig = null, candidates 
   return alerts.sort((a, b) => a.alert_id.localeCompare(b.alert_id));
 }
 
+function receiptDirectoryDisplayPath(root, absolutePath) {
+  const relative = path.relative(root, absolutePath);
+  return relative ? relative.split(path.sep).join('/') : '.';
+}
+
+function synchronizeReceiptDirectory(absolutePath, label) {
+  let descriptor;
+  let failure = null;
+  try {
+    descriptor = fs.openSync(
+      absolutePath,
+      fs.constants.O_RDONLY
+        | (fs.constants.O_DIRECTORY ?? 0)
+        | (fs.constants.O_NOFOLLOW ?? 0)
+    );
+    const openedStats = fs.fstatSync(descriptor);
+    const assertIdentity = () => {
+      const pathStats = fs.lstatSync(absolutePath);
+      if (!openedStats.isDirectory()
+        || !pathStats.isDirectory()
+        || pathStats.dev !== openedStats.dev
+        || pathStats.ino !== openedStats.ino) {
+        throw new Error('directory identity changed');
+      }
+    };
+    assertIdentity();
+    fs.fsyncSync(descriptor);
+    assertIdentity();
+  } catch (error) {
+    failure = new Error(`${label} synchronization failed: ${error.message}`);
+  }
+
+  if (descriptor !== undefined) {
+    try {
+      fs.closeSync(descriptor);
+    } catch (error) {
+      failure ??= new Error(`${label} close failed: ${error.message}`);
+    }
+  }
+  if (failure) throw failure;
+}
+
+function ensureDurableReceiptDirectoryTree(root, relativePath, label) {
+  const segments = relativePath === '.' ? [] : String(relativePath).split('/');
+  if (segments.some(segment => !segment || segment === '.' || segment === '..')) {
+    throw new Error(`${label} is not a canonical directory path: ${relativePath}`);
+  }
+
+  let current = root;
+  if (segments.length === 0) {
+    synchronizeReceiptDirectory(current, `${label} directory .`);
+    return current;
+  }
+
+  for (const segment of segments) {
+    const parent = current;
+    current = path.join(current, segment);
+    let stats;
+    try {
+      stats = fs.lstatSync(current);
+    } catch (error) {
+      if (error?.code !== 'ENOENT') {
+        throw new Error(`${label} path inspection failed: ${error.message}`);
+      }
+      try {
+        fs.mkdirSync(current);
+      } catch (mkdirError) {
+        if (mkdirError?.code !== 'EEXIST') {
+          throw new Error(`${label} directory creation failed: ${mkdirError.message}`);
+        }
+      }
+      try {
+        stats = fs.lstatSync(current);
+      } catch (inspectionError) {
+        throw new Error(`${label} path inspection failed: ${inspectionError.message}`);
+      }
+    }
+
+    if (!stats.isDirectory()) {
+      throw new Error(
+        `${label} contains an unsupported path entry: ${receiptDirectoryDisplayPath(root, current)}`
+      );
+    }
+    synchronizeReceiptDirectory(
+      current,
+      `${label} directory ${receiptDirectoryDisplayPath(root, current)}`
+    );
+    synchronizeReceiptDirectory(
+      parent,
+      `${label} parent directory ${receiptDirectoryDisplayPath(root, parent)}`
+    );
+  }
+  return current;
+}
+
 function publishReceiptJson({ rootDir, relativePath, receipt, label }) {
   const root = resolveReceiptRoot(rootDir);
-  const inspected = inspectReceiptPath(root, relativePath, { label, leafType: 'file' });
-  if (inspected.exists) return inspected.absolutePath;
-
+  const initial = inspectReceiptPath(root, relativePath, { label, leafType: 'file' });
   const parentRelativePath = path.posix.dirname(relativePath);
-  const parentBefore = inspectReceiptPath(root, parentRelativePath, {
-    label: `${label} parent directory`,
-    leafType: 'directory'
-  });
-  if (!parentBefore.exists) {
-    fs.mkdirSync(path.dirname(inspected.absolutePath), { recursive: true });
-  }
-  const parentAfter = inspectReceiptPath(root, parentRelativePath, {
-    label: `${label} parent directory`,
-    leafType: 'directory'
-  });
-  if (!parentAfter.exists) {
-    throw new Error(`${label} parent directory was not created`);
-  }
+  const parentPath = ensureDurableReceiptDirectoryTree(
+    root,
+    parentRelativePath,
+    `${label} parent directory`
+  );
+  const inspected = inspectReceiptPath(root, relativePath, { label, leafType: 'file' });
 
   const serialized = `${JSON.stringify(receipt, null, 2)}\n`;
   let tempPath = null;
   let tempIdentity = null;
   let published = false;
-  try {
-    for (let attempt = 0; attempt < 8; attempt += 1) {
-      const candidate = `${inspected.absolutePath}.${process.pid}.${crypto.randomBytes(16).toString('hex')}.tmp`;
-      let descriptor;
-      try {
-        descriptor = fs.openSync(
-          candidate,
-          fs.constants.O_WRONLY
-            | fs.constants.O_CREAT
-            | fs.constants.O_EXCL
-            | (fs.constants.O_NOFOLLOW ?? 0),
-          0o600
-        );
-      } catch (error) {
-        if (error?.code === 'EEXIST') continue;
-        throw new Error(`${label} temporary publication failed: ${error.message}`);
-      }
-      tempPath = candidate;
-      try {
-        fs.writeFileSync(descriptor, serialized, 'utf8');
-        fs.fsyncSync(descriptor);
-        const stats = fs.fstatSync(descriptor);
-        if (!stats.isFile() || stats.nlink !== 1) {
-          throw new Error(`${label} temporary publication is not an exclusive regular file`);
-        }
-        tempIdentity = { device: stats.dev, inode: stats.ino };
-      } finally {
-        fs.closeSync(descriptor);
-      }
-      break;
-    }
-    if (!tempPath || !tempIdentity) {
-      throw new Error(`${label} could not allocate an exclusive temporary publication`);
-    }
+  let failure = null;
 
+  if (!inspected.exists) {
     try {
-      fs.linkSync(tempPath, inspected.absolutePath);
-      published = true;
-    } catch (error) {
-      if (error?.code !== 'EEXIST') {
-        throw new Error(`${label} no-overwrite publication failed: ${error.message}`);
+      for (let attempt = 0; attempt < 8; attempt += 1) {
+        const candidate = `${initial.absolutePath}.${process.pid}.${crypto.randomBytes(16).toString('hex')}.tmp`;
+        let descriptor;
+        try {
+          descriptor = fs.openSync(
+            candidate,
+            fs.constants.O_WRONLY
+              | fs.constants.O_CREAT
+              | fs.constants.O_EXCL
+              | (fs.constants.O_NOFOLLOW ?? 0),
+            0o600
+          );
+        } catch (error) {
+          if (error?.code === 'EEXIST') continue;
+          throw new Error(`${label} temporary publication failed: ${error.message}`);
+        }
+        tempPath = candidate;
+        try {
+          fs.writeFileSync(descriptor, serialized, 'utf8');
+          fs.fsyncSync(descriptor);
+          const stats = fs.fstatSync(descriptor);
+          if (!stats.isFile() || stats.nlink !== 1) {
+            throw new Error(`${label} temporary publication is not an exclusive regular file`);
+          }
+          tempIdentity = { device: stats.dev, inode: stats.ino };
+        } finally {
+          fs.closeSync(descriptor);
+        }
+        break;
       }
-    }
-  } finally {
-    if (tempPath) {
+      if (!tempPath || !tempIdentity) {
+        throw new Error(`${label} could not allocate an exclusive temporary publication`);
+      }
+
       try {
-        fs.unlinkSync(tempPath);
+        fs.linkSync(tempPath, inspected.absolutePath);
+        published = true;
       } catch (error) {
-        if (error?.code !== 'ENOENT') throw error;
+        if (error?.code !== 'EEXIST') {
+          throw new Error(`${label} no-overwrite publication failed: ${error.message}`);
+        }
+      }
+    } catch (error) {
+      failure = error;
+    }
+  }
+
+  if (tempPath) {
+    try {
+      fs.unlinkSync(tempPath);
+    } catch (error) {
+      if (error?.code !== 'ENOENT') {
+        failure ??= new Error(`${label} temporary cleanup failed: ${error.message}`);
       }
     }
   }
+
+  try {
+    synchronizeReceiptDirectory(parentPath, `${label} publication directory`);
+  } catch (error) {
+    failure ??= error;
+  }
+  if (failure) throw failure;
 
   if (published) {
     const stats = fs.lstatSync(inspected.absolutePath);
