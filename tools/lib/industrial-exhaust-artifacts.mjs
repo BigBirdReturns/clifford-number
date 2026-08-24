@@ -1203,18 +1203,44 @@ function receiptDirectoryDisplayPath(root, absolutePath) {
   return relative ? relative.split(path.sep).join('/') : '.';
 }
 
-function receiptDescriptorPath(descriptor, childName = null) {
-  if (process.platform !== 'linux' || !fs.existsSync(RECEIPT_DESCRIPTOR_ROOT)) {
+function receiptDescriptorBridgePath(descriptor) {
+  if (process.platform !== 'linux') {
     throw new Error('descriptor-relative receipt publication requires Linux procfs');
   }
-  const base = path.join(RECEIPT_DESCRIPTOR_ROOT, String(descriptor));
-  if (childName === null) return base;
-  if (typeof childName !== 'string' || !childName
-    || childName === '.' || childName === '..'
-    || childName.includes('/') || childName.includes('\\')) {
+  if (!Number.isInteger(descriptor) || descriptor < 0) {
+    throw new Error(`invalid receipt directory descriptor: ${descriptor}`);
+  }
+
+  const bridgePath = path.join(RECEIPT_DESCRIPTOR_ROOT, String(descriptor));
+  let descriptorStats;
+  let bridgeStats;
+  try {
+    descriptorStats = fs.fstatSync(descriptor);
+    bridgeStats = fs.statSync(bridgePath);
+  } catch (error) {
+    throw new Error(
+      `descriptor-relative receipt publication descriptor bridge unavailable: ${error.message}`
+    );
+  }
+  if (!descriptorStats.isDirectory()
+    || !bridgeStats.isDirectory()
+    || !sameReceiptIdentity(descriptorStats, bridgeStats)) {
+    throw new Error(
+      'descriptor-relative receipt publication descriptor bridge identity mismatch'
+    );
+  }
+  return bridgePath;
+}
+
+function receiptDescriptorPath(descriptor, childName = null) {
+  if (childName !== null
+    && (typeof childName !== 'string' || !childName
+      || childName === '.' || childName === '..'
+      || childName.includes('/') || childName.includes('\\'))) {
     throw new Error(`invalid descriptor-relative receipt path component: ${childName}`);
   }
-  return path.join(base, childName);
+  const base = receiptDescriptorBridgePath(descriptor);
+  return childName === null ? base : path.join(base, childName);
 }
 
 function synchronizeReceiptDirectoryDescriptor(descriptor, label) {
@@ -1311,6 +1337,7 @@ function openReceiptDirectorySession(rootDir, relativePath, label) {
       || !sameReceiptIdentity(rootStats, currentRootStats)) {
       throw new Error(`${label} root identity changed before descriptor anchoring`);
     }
+    receiptDescriptorPath(rootDescriptor);
     session.chain.push({
       descriptor: rootDescriptor,
       segment: null,
