@@ -1,0 +1,330 @@
+name: Temporary current-main observation interval custody repair v36
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-current-main-observation-interval-custody-repair-v36.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: current-main-observation-interval-custody-repair-v36
+  cancel-in-progress: false
+
+jobs:
+  qualify-and-publish:
+    if: github.repository == 'BigBirdReturns/clifford-number' && github.event.pull_request.number == 2227
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      EXPECTED_MAIN: 2d2c7b6cd7517ca25854e481b21774a697d0e76b
+      SOURCE_PARENT: 2d2c7b6cd7517ca25854e481b21774a697d0e76b
+      SOURCE_HEAD: 456ee43cb8a0d3c1afeeed8b9f7342219a3fac05
+      CARRIER_PARENT: 5a02b83f03c3703ea85ed4f8e9da38181beeaa70
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      CARRIER_BRANCH: agent/current-main-identifier-context-v1
+      BASE_LIBRARY: 5f68254d3e44de693e83503aed879160f9b7b997
+      BASE_TEST: 1659a7cc54666a2ac5a1d6b88eb8c6591d98008e
+      SOURCE_LIBRARY: dbf28c75e6681ca06915ccc2e85062f67382175f
+      SOURCE_TEST: 08b3cd4014b916d1ac5845c73c59f7d55dbae7ef
+      PRODUCT_AUTHOR_NAME: BigBirdReturns
+      PRODUCT_AUTHOR_EMAIL: bigbirdreturns@proton.me
+      SOURCE_WORK: /tmp/observation-interval-source-v36
+      QUALIFICATION_WORK: /tmp/observation-interval-current-main-v36
+      EXPECTED_PATHS_FILE: /tmp/observation-interval-paths-v36.txt
+      EXPECTED_NUMSTAT_FILE: /tmp/observation-interval-numstat-v36.txt
+      RECEIPT_FILE: /tmp/observation-interval-custody-receipt-v36.txt
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Validate controller, source, and live refs
+        shell: bash
+        run: |
+          set -euo pipefail
+          HEAD_SHA='${{ github.event.pull_request.head.sha }}'
+          test "$(git rev-parse HEAD)" = "$HEAD_SHA"
+          test '${{ github.event.pull_request.head.ref }}' = "$CARRIER_BRANCH"
+          test "$(git rev-parse HEAD^)" = "$CARRIER_PARENT"
+          test "$(git diff --name-only "$CARRIER_PARENT..HEAD")" = '.github/workflows/temporary-current-main-observation-interval-custody-repair-v36.yml'
+
+          git fetch --no-tags origin \
+            "+refs/heads/main:refs/remotes/origin/main" \
+            "+refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/$PRODUCT_BRANCH" \
+            "+refs/heads/$CARRIER_BRANCH:refs/remotes/origin/$CARRIER_BRANCH"
+          RUN_MAIN="$(git rev-parse refs/remotes/origin/main)"
+          LIVE_PRODUCT="$(git rev-parse refs/remotes/origin/$PRODUCT_BRANCH)"
+          LIVE_CARRIER="$(git rev-parse refs/remotes/origin/$CARRIER_BRANCH)"
+          printf 'expected_main=%s\nrun_main=%s\nsource=%s\ncarrier=%s\n' \
+            "$EXPECTED_MAIN" "$RUN_MAIN" "$LIVE_PRODUCT" "$LIVE_CARRIER"
+          printf 'RUN_MAIN=%s\n' "$RUN_MAIN" >> "$GITHUB_ENV"
+
+          test "$RUN_MAIN" = "$EXPECTED_MAIN"
+          test "$LIVE_PRODUCT" = "$SOURCE_HEAD"
+          test "$LIVE_CARRIER" = "$HEAD_SHA"
+          test "$(git rev-parse "$SOURCE_HEAD^")" = "$SOURCE_PARENT"
+          test "$(git rev-list --count "$SOURCE_PARENT..$SOURCE_HEAD")" = 1
+          test "$(git rev-parse "$RUN_MAIN:tools/lib/industrial-exhaust.mjs")" = "$BASE_LIBRARY"
+          test "$(git rev-parse "$RUN_MAIN:test/industrial-exhaust.test.js")" = "$BASE_TEST"
+          test "$(git rev-parse "$SOURCE_HEAD:tools/lib/industrial-exhaust.mjs")" = "$SOURCE_LIBRARY"
+          test "$(git rev-parse "$SOURCE_HEAD:test/industrial-exhaust.test.js")" = "$SOURCE_TEST"
+
+          printf '%s\n' test/industrial-exhaust.test.js tools/lib/industrial-exhaust.mjs | LC_ALL=C sort > "$EXPECTED_PATHS_FILE"
+          test "$(git diff --name-only "$SOURCE_PARENT..$SOURCE_HEAD" | LC_ALL=C sort)" = "$(cat "$EXPECTED_PATHS_FILE")"
+
+      - name: Prepare exact product and reproduce controlling defects
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf "$SOURCE_WORK" "$QUALIFICATION_WORK"
+          git worktree prune
+          git worktree add --detach "$SOURCE_WORK" "$SOURCE_HEAD"
+          git worktree add --detach "$QUALIFICATION_WORK" "$RUN_MAIN"
+
+          test "$(git -C "$SOURCE_WORK" rev-parse HEAD:tools/lib/industrial-exhaust.mjs)" = "$SOURCE_LIBRARY"
+          test "$(git -C "$SOURCE_WORK" rev-parse HEAD:test/industrial-exhaust.test.js)" = "$SOURCE_TEST"
+
+          cd "$SOURCE_WORK"
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { redactContactData } from './tools/lib/industrial-exhaust.mjs';
+
+          const countryCodeInput = 'ID: 09012345678 2026-08-17.1 212 555 1234';
+          const countryCodeExpected = 'ID: 09012345678 2026-08-17.[contact omitted]';
+          const countryCodeActual = redactContactData(countryCodeInput);
+          console.log(JSON.stringify({
+            case: 'country-code-extent',
+            expected: countryCodeExpected,
+            actual: countryCodeActual
+          }));
+          assert.notEqual(
+            countryCodeActual,
+            countryCodeExpected,
+            'the exact source no longer reproduces the reviewed country-code extent defect'
+          );
+
+          for (const [name, input, expected] of [
+            [
+              'dotted-date-pair-grouped',
+              'Phone: 09012345678 2026.08.17.03 62 16 80 41',
+              'Phone: [contact omitted] 2026.08.17.[contact omitted]'
+            ],
+            [
+              'fullwidth-dotted-date-pair-grouped',
+              '電話番号：０９０１２３４５６７８ ２０２６．０８．１７．０３ ６２ １６ ８０ ４１',
+              '電話番号：[contact omitted] ２０２６．０８．１７．[contact omitted]'
+            ]
+          ]) {
+            const actual = redactContactData(input);
+            console.log(JSON.stringify({ case: name, expected, actual }));
+          }
+          NODE
+
+      - name: Apply interval-custody repair and focused regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$SOURCE_WORK"
+          printf '%s' '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' | base64 --decode | gzip --decompress > /tmp/apply-observation-interval-v36.py
+          python3 /tmp/apply-observation-interval-v36.py
+
+          git diff --check
+          test "$(git diff --name-only "$SOURCE_PARENT" | LC_ALL=C sort)" = "$(cat "$EXPECTED_PATHS_FILE")"
+          git diff --numstat "$SOURCE_PARENT" | LC_ALL=C sort -k3 > "$EXPECTED_NUMSTAT_FILE"
+          PATCH_LIBRARY="$(git hash-object tools/lib/industrial-exhaust.mjs)"
+          PATCH_TEST="$(git hash-object test/industrial-exhaust.test.js)"
+          printf 'PATCH_LIBRARY=%s\nPATCH_TEST=%s\n' "$PATCH_LIBRARY" "$PATCH_TEST" >> "$GITHUB_ENV"
+          printf 'patched_library=%s\npatched_test=%s\nnumstat:\n%s\n' \
+            "$PATCH_LIBRARY" "$PATCH_TEST" "$(cat "$EXPECTED_NUMSTAT_FILE")"
+
+          node --check tools/lib/industrial-exhaust.mjs
+          node --check tools/crawl-industrial-exhaust.mjs
+          node --check test/industrial-exhaust.test.js
+
+      - name: Run exact interval-custody matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$SOURCE_WORK"
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { redactContactData } from './tools/lib/industrial-exhaust.mjs';
+
+          const chain = 'GUID '.repeat(4000);
+          const cases = [
+            [
+              'ID: 09012345678 2026-08-17.1 212 555 1234',
+              'ID: 09012345678 2026-08-17.[contact omitted]'
+            ],
+            [
+              'Phone: 09012345678 2026-08-17 01 42 68 53 00',
+              'Phone: [contact omitted] 2026-08-17 [contact omitted]'
+            ],
+            [
+              'Phone: 09012345678 2026.08.17.03 62 16 80 41',
+              'Phone: [contact omitted] 2026.08.17.[contact omitted]'
+            ],
+            [
+              'Phone: 09012345678 3.14.03 62 16 80 41',
+              'Phone: [contact omitted] 3.14.[contact omitted]'
+            ],
+            [
+              `Phone ${chain}record id: 09012345678 2026-08-17.1 212 555 1234`,
+              `Phone ${chain}record id: [contact omitted] 2026-08-17.[contact omitted]`
+            ],
+            [
+              'Phone: 09012345678 2026-08-17 1 212 555 1234 3.14 03-6216-8041',
+              'Phone: [contact omitted] 2026-08-17 [contact omitted] 3.14 [contact omitted]'
+            ]
+          ];
+          for (const [input, expected] of cases) {
+            assert.equal(redactContactData(input), expected, input);
+          }
+          NODE
+
+      - name: Run focused and artifact suites on patched source
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$SOURCE_WORK"
+          /usr/bin/time -f 'focused_source_elapsed=%e' node test/industrial-exhaust.test.js
+          node test/industrial-exhaust-artifacts.test.js
+
+      - name: Prepare and validate current-main qualification tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp "$SOURCE_WORK/tools/lib/industrial-exhaust.mjs" "$QUALIFICATION_WORK/tools/lib/industrial-exhaust.mjs"
+          cp "$SOURCE_WORK/test/industrial-exhaust.test.js" "$QUALIFICATION_WORK/test/industrial-exhaust.test.js"
+          cd "$QUALIFICATION_WORK"
+
+          test "$(git hash-object tools/lib/industrial-exhaust.mjs)" = "$PATCH_LIBRARY"
+          test "$(git hash-object test/industrial-exhaust.test.js)" = "$PATCH_TEST"
+          test "$(git diff --name-only | LC_ALL=C sort)" = "$(cat "$EXPECTED_PATHS_FILE")"
+          test "$(git diff --numstat | LC_ALL=C sort -k3)" = "$(cat "$EXPECTED_NUMSTAT_FILE")"
+          test -z "$(git ls-files --others --exclude-standard)"
+          git diff --check
+          node --check tools/lib/industrial-exhaust.mjs
+          node --check tools/crawl-industrial-exhaust.mjs
+          node --check test/industrial-exhaust.test.js
+
+          /usr/bin/time -f 'focused_main_elapsed=%e' node test/industrial-exhaust.test.js
+          node test/industrial-exhaust-artifacts.test.js
+
+      - name: Run release gate on current main
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$QUALIFICATION_WORK"
+          npm run release:check
+          test "$(git hash-object tools/lib/industrial-exhaust.mjs)" = "$PATCH_LIBRARY"
+          test "$(git hash-object test/industrial-exhaust.test.js)" = "$PATCH_TEST"
+          test "$(git diff --name-only | LC_ALL=C sort)" = "$(cat "$EXPECTED_PATHS_FILE")"
+          test "$(git diff --numstat | LC_ALL=C sort -k3)" = "$(cat "$EXPECTED_NUMSTAT_FILE")"
+          test -z "$(git ls-files --others --exclude-standard)"
+
+      - name: Revalidate publication leases
+        shell: bash
+        run: |
+          set -euo pipefail
+          HEAD_SHA='${{ github.event.pull_request.head.sha }}'
+          git fetch --no-tags origin \
+            "+refs/heads/main:refs/remotes/origin/main" \
+            "+refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/$PRODUCT_BRANCH" \
+            "+refs/heads/$CARRIER_BRANCH:refs/remotes/origin/$CARRIER_BRANCH"
+          LIVE_MAIN="$(git rev-parse refs/remotes/origin/main)"
+          LIVE_PRODUCT="$(git rev-parse refs/remotes/origin/$PRODUCT_BRANCH)"
+          LIVE_CARRIER="$(git rev-parse refs/remotes/origin/$CARRIER_BRANCH)"
+          printf 'qualified_main=%s\nlive_main=%s\nsource=%s\ncarrier=%s\n' \
+            "$RUN_MAIN" "$LIVE_MAIN" "$LIVE_PRODUCT" "$LIVE_CARRIER"
+          test "$LIVE_MAIN" = "$RUN_MAIN"
+          test "$LIVE_PRODUCT" = "$SOURCE_HEAD"
+          test "$LIVE_CARRIER" = "$HEAD_SHA"
+          test "$(git rev-parse "$LIVE_MAIN:tools/lib/industrial-exhaust.mjs")" = "$BASE_LIBRARY"
+          test "$(git rev-parse "$LIVE_MAIN:test/industrial-exhaust.test.js")" = "$BASE_TEST"
+
+      - name: Publish qualified interval-custody product
+        id: publish
+        shell: bash
+        run: |
+          set -euo pipefail
+          HEAD_SHA='${{ github.event.pull_request.head.sha }}'
+          git config user.name "$PRODUCT_AUTHOR_NAME"
+          git config user.email "$PRODUCT_AUTHOR_EMAIL"
+          git checkout --detach --force "$RUN_MAIN"
+          cp "$SOURCE_WORK/tools/lib/industrial-exhaust.mjs" tools/lib/industrial-exhaust.mjs
+          cp "$SOURCE_WORK/test/industrial-exhaust.test.js" test/industrial-exhaust.test.js
+          git add -- tools/lib/industrial-exhaust.mjs test/industrial-exhaust.test.js
+
+          git diff --cached --check
+          test "$(git diff --cached --name-only | LC_ALL=C sort)" = "$(cat "$EXPECTED_PATHS_FILE")"
+          test "$(git diff --cached --numstat | LC_ALL=C sort -k3)" = "$(cat "$EXPECTED_NUMSTAT_FILE")"
+          git commit -m 'fix(crawler): preserve observation and phone interval custody'
+
+          NEW_HEAD="$(git rev-parse HEAD)"
+          NEW_TREE="$(git rev-parse HEAD^{tree})"
+          test "$(git rev-parse HEAD^)" = "$RUN_MAIN"
+          test "$(git rev-list --count "$RUN_MAIN..$NEW_HEAD")" = 1
+          test "$(git log -1 --format=%an)" = "$PRODUCT_AUTHOR_NAME"
+          test "$(git log -1 --format=%ae)" = "$PRODUCT_AUTHOR_EMAIL"
+          test "$(git rev-parse "$NEW_HEAD:tools/lib/industrial-exhaust.mjs")" = "$PATCH_LIBRARY"
+          test "$(git rev-parse "$NEW_HEAD:test/industrial-exhaust.test.js")" = "$PATCH_TEST"
+
+          {
+            printf 'receipt_version=current-main-observation-interval-custody@36\n'
+            printf 'carrier_head=%s\nrun_id=%s\nbase=%s\nsuperseded_product_head=%s\npublished_product_head=%s\npublished_tree=%s\n' \
+              "$HEAD_SHA" '${{ github.run_id }}' "$RUN_MAIN" "$SOURCE_HEAD" "$NEW_HEAD" "$NEW_TREE"
+            printf 'library_blob=%s\ntest_blob=%s\n' "$PATCH_LIBRARY" "$PATCH_TEST"
+            printf 'changed_paths:\n%s\nnumstat:\n%s\n' \
+              "$(cat "$EXPECTED_PATHS_FILE")" "$(cat "$EXPECTED_NUMSTAT_FILE")"
+            printf 'qualification=exact-defect-reproduction+node-check+interval-custody-matrix+focused-source+artifacts-source+focused-main+artifacts-main+release-check+dynamic-current-main-custody\n'
+          } > "$RECEIPT_FILE"
+          cat "$RECEIPT_FILE"
+
+          git push --force-with-lease="refs/heads/$PRODUCT_BRANCH:$SOURCE_HEAD" \
+            origin "HEAD:refs/heads/$PRODUCT_BRANCH"
+          printf 'new_head=%s\nnew_tree=%s\n' "$NEW_HEAD" "$NEW_TREE" >> "$GITHUB_OUTPUT"
+
+      - name: Verify published product
+        shell: bash
+        run: |
+          set -euo pipefail
+          HEAD_SHA='${{ github.event.pull_request.head.sha }}'
+          NEW_HEAD='${{ steps.publish.outputs.new_head }}'
+          git fetch --no-tags origin \
+            "+refs/heads/main:refs/remotes/origin/main" \
+            "+refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/$PRODUCT_BRANCH" \
+            "+refs/heads/$CARRIER_BRANCH:refs/remotes/origin/$CARRIER_BRANCH"
+          test "$(git rev-parse refs/remotes/origin/main)" = "$RUN_MAIN"
+          test "$(git rev-parse refs/remotes/origin/$PRODUCT_BRANCH)" = "$NEW_HEAD"
+          test "$(git rev-parse refs/remotes/origin/$CARRIER_BRANCH)" = "$HEAD_SHA"
+          test "$(git rev-parse "$NEW_HEAD^")" = "$RUN_MAIN"
+          test "$(git rev-list --count "$RUN_MAIN..$NEW_HEAD")" = 1
+          test "$(git diff --name-only "$RUN_MAIN..$NEW_HEAD" | LC_ALL=C sort)" = "$(cat "$EXPECTED_PATHS_FILE")"
+          test "$(git diff --numstat "$RUN_MAIN..$NEW_HEAD" | LC_ALL=C sort -k3)" = "$(cat "$EXPECTED_NUMSTAT_FILE")"
+          test "$(git rev-parse "$NEW_HEAD:tools/lib/industrial-exhaust.mjs")" = "$PATCH_LIBRARY"
+          test "$(git rev-parse "$NEW_HEAD:test/industrial-exhaust.test.js")" = "$PATCH_TEST"
+
+      - name: Upload qualification receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: observation-interval-custody-product-v36
+          path: /tmp/observation-interval-custody-receipt-v36.txt
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Cleanup worktrees
+        if: always()
+        shell: bash
+        run: |
+          git worktree remove --force "$SOURCE_WORK" >/dev/null 2>&1 || true
+          git worktree remove --force "$QUALIFICATION_WORK" >/dev/null 2>&1 || true
+          rm -rf "$SOURCE_WORK" "$QUALIFICATION_WORK"
