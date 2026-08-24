@@ -5,20 +5,20 @@ on:
     types: [opened, synchronize, reopened]
     paths: ['.github/workflows/temporary-pr2231-observation-interval-controller-v36.yml']
 permissions:
-  contents: write
+  contents: read
   issues: read
 concurrency:
   group: pr2231-observation-interval-controller-v36
   cancel-in-progress: false
 jobs:
-  qualify-and-publish:
+  diagnose-recovery:
     if: github.repository == 'BigBirdReturns/clifford-number'
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 30
     env:
       CBRANCH: agent/pr2231-observation-interval-controller-v36
       CPATH: .github/workflows/temporary-pr2231-observation-interval-controller-v36.yml
-      CPARENT: 02cd9734f269c535afd9630233795f22e0ce15ac
+      CPARENT: 9acc95924ddf984ddb0a6c4f1d75783d02668c9f
       PBRANCH: agent/current-main-identifier-context-product-v1
       PHEAD: 456ee43cb8a0d3c1afeeed8b9f7342219a3fac05
       PPARENT: 2d2c7b6cd7517ca25854e481b21774a697d0e76b
@@ -37,63 +37,152 @@ jobs:
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
-        with: {ref: '${{ github.event.pull_request.head.sha }}', fetch-depth: 0}
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
       - uses: actions/setup-node@v4
-        with: {node-version: '20'}
-      - name: Qualify and publish
+        with:
+          node-version: '20'
+      - name: Diagnose leased patch recovery
         shell: bash
         run: |
           set -euo pipefail
-          H='${{ github.event.pull_request.head.sha }}'; S=/tmp/p2231-source; Q=/tmp/p2231-main; R=/tmp/p2231-v36.txt
-          test "$(git rev-parse HEAD^)" = "$CPARENT"
-          test '${{ github.head_ref }}' = "$CBRANCH"
-          test "$(git diff --name-only "$CPARENT..HEAD")" = "$CPATH"
-          fetch() { git fetch --no-tags origin "+refs/heads/main:refs/remotes/origin/main" "+refs/heads/$PBRANCH:refs/remotes/origin/$PBRANCH" "+refs/heads/$CBRANCH:refs/remotes/origin/$CBRANCH"; }
+          H='${{ github.event.pull_request.head.sha }}'
+          S=/tmp/p2231-source
+          R=/tmp/p2231-recovery-diagnostic.txt
+          : >"$R"
+          stage() { printf '\n=== STAGE %s ===\n' "$1" | tee -a "$R"; }
+          fail() { printf 'FAIL[%s] %s\n' "$1" "$2" | tee -a "$R" >&2; exit 1; }
+          require_eq() {
+            local label="$1" actual="$2" expected="$3"
+            printf '%s actual=%s expected=%s\n' "$label" "$actual" "$expected" | tee -a "$R"
+            [ "$actual" = "$expected" ] || fail "$label" 'value mismatch'
+          }
+          fetch() {
+            git fetch --no-tags origin \
+              "+refs/heads/main:refs/remotes/origin/main" \
+              "+refs/heads/$PBRANCH:refs/remotes/origin/$PBRANCH" \
+              "+refs/heads/$CBRANCH:refs/remotes/origin/$CBRANCH"
+          }
+
+          stage controller-envelope
+          require_eq controller-parent "$(git rev-parse HEAD^)" "$CPARENT"
+          require_eq controller-branch '${{ github.head_ref }}' "$CBRANCH"
+          require_eq controller-paths "$(git diff --name-only "$CPARENT..HEAD")" "$CPATH"
+
+          stage branch-leases
           fetch
-          test "$(git rev-parse refs/remotes/origin/$PBRANCH)" = "$PHEAD"
-          test "$(git rev-parse refs/remotes/origin/$CBRANCH)" = "$H"
-          test "$(git rev-parse "$PHEAD^")" = "$PPARENT"
-          test "$(git rev-parse "$PHEAD:tools/lib/industrial-exhaust.mjs")" = "$PLIB"
-          test "$(git rev-parse "$PHEAD:test/industrial-exhaust.test.js")" = "$PTEST"
+          require_eq controller-remote "$(git rev-parse refs/remotes/origin/$CBRANCH)" "$H"
+          require_eq product-head "$(git rev-parse refs/remotes/origin/$PBRANCH)" "$PHEAD"
+          require_eq product-parent "$(git rev-parse "$PHEAD^")" "$PPARENT"
+          require_eq product-lib "$(git rev-parse "$PHEAD:tools/lib/industrial-exhaust.mjs")" "$PLIB"
+          require_eq product-test "$(git rev-parse "$PHEAD:test/industrial-exhaust.test.js")" "$PTEST"
           MAIN="$(git rev-parse refs/remotes/origin/main)"
-          test "$(git rev-parse "$MAIN:tools/lib/industrial-exhaust.mjs")" = "$BLIB"
-          test "$(git rev-parse "$MAIN:test/industrial-exhaust.test.js")" = "$BTEST"
+          printf 'main=%s\n' "$MAIN" | tee -a "$R"
+          require_eq main-lib "$(git rev-parse "$MAIN:tools/lib/industrial-exhaust.mjs")" "$BLIB"
+          require_eq main-test "$(git rev-parse "$MAIN:test/industrial-exhaust.test.js")" "$BTEST"
+
+          stage comment-fetch
+          gh api "repos/$GITHUB_REPOSITORY/issues/comments/$COMMENT" --jq .body >/tmp/c.md
+          printf 'comment=%s body-bytes=%s\n' "$COMMENT" "$(wc -c </tmp/c.md)" | tee -a "$R"
 
           cat >/tmp/decode-p2231.py <<'PY'
-          import base64,hashlib,os,pathlib,re,struct,sys,zlib
-          body=pathlib.Path(sys.argv[1]).read_text()
-          chunks=re.findall(r'^\d+\. `([A-Za-z0-9+/=]+)`$',body,re.M)
-          assert len(chunks)==1, len(chunks)
-          encoded=''.join(chunks)
-          assert len(encoded)==int(os.environ['PCHARS']), len(encoded)
-          compressed=base64.b64decode(encoded,validate=True)
-          assert len(compressed)==int(os.environ['PZBYTES']), len(compressed)
-          assert compressed[:4]==b'\x1f\x8b\x08\x00', compressed[:4].hex()
-          inflater=zlib.decompressobj(-zlib.MAX_WBITS)
-          patch=inflater.decompress(compressed[10:-8])+inflater.flush()
-          assert inflater.eof
-          assert not inflater.unused_data
-          assert not inflater.unconsumed_tail
-          footer_crc,footer_size=struct.unpack('<II',compressed[-8:])
-          actual_crc=zlib.crc32(patch)&0xffffffff
-          assert footer_size==(len(patch)&0xffffffff),(footer_size,len(patch))
-          assert len(patch)==int(os.environ['PBYTES']), len(patch)
-          assert patch.startswith(b'From '+os.environ['PCOMMIT'].encode()+b' ')
-          pathlib.Path(sys.argv[2]).write_bytes(patch)
-          pathlib.Path(sys.argv[3]).write_text(hashlib.sha256(compressed).hexdigest()+'\n')
-          print(f'gzip-footer-crc={footer_crc:08x}')
-          print(f'payload-crc={actual_crc:08x}')
-          PY
-          gh api "repos/$GITHUB_REPOSITORY/issues/comments/$COMMENT" --jq .body >/tmp/c.md
-          python3 /tmp/decode-p2231.py /tmp/c.md /tmp/p.patch /tmp/p.sha
-          PATCH_SHA="$(cat /tmp/p.sha)"
-          printf 'patch-sha256=%s\n' "$PATCH_SHA"
+          import base64
+          import hashlib
+          import os
+          import pathlib
+          import re
+          import struct
+          import sys
+          import zlib
 
-          rm -rf "$S" "$Q"; git worktree prune; git worktree add --detach "$S" "$PHEAD"
+          def emit(label, value):
+              print(f'{label}={value}', flush=True)
+
+          def fail(label, detail):
+              print(f'FAIL[{label}] {detail}', file=sys.stderr, flush=True)
+              raise SystemExit(1)
+
+          body = pathlib.Path(sys.argv[1]).read_text()
+          chunks = re.findall(r'^\d+\. `([A-Za-z0-9+/=]+)`$', body, re.M)
+          emit('chunk-count', len(chunks))
+          if len(chunks) != 1:
+              fail('chunk-count', f'expected=1 actual={len(chunks)}')
+
+          encoded = ''.join(chunks)
+          emit('encoded-chars', len(encoded))
+          if len(encoded) != int(os.environ['PCHARS']):
+              fail('encoded-chars', f"expected={os.environ['PCHARS']} actual={len(encoded)}")
+
+          try:
+              compressed = base64.b64decode(encoded, validate=True)
+          except Exception as exc:
+              fail('base64-decode', repr(exc))
+          emit('compressed-bytes', len(compressed))
+          emit('compressed-sha256', hashlib.sha256(compressed).hexdigest())
+          emit('gzip-header', compressed[:10].hex())
+          if len(compressed) != int(os.environ['PZBYTES']):
+              fail('compressed-bytes', f"expected={os.environ['PZBYTES']} actual={len(compressed)}")
+          if len(compressed) < 18:
+              fail('gzip-envelope', f'compressed payload too short: {len(compressed)}')
+          if compressed[:4] != b'\x1f\x8b\x08\x00':
+              fail('gzip-header', f'expected=1f8b0800 actual={compressed[:4].hex()}')
+
+          inflater = zlib.decompressobj(-zlib.MAX_WBITS)
+          try:
+              patch = inflater.decompress(compressed[10:-8]) + inflater.flush()
+          except zlib.error as exc:
+              fail('raw-inflate', repr(exc))
+          emit('inflater-eof', inflater.eof)
+          emit('inflater-unused-bytes', len(inflater.unused_data))
+          emit('inflater-unconsumed-bytes', len(inflater.unconsumed_tail))
+          emit('patch-bytes', len(patch))
+          if not inflater.eof:
+              fail('raw-inflate-eof', 'deflate stream did not terminate')
+          if inflater.unused_data:
+              fail('raw-inflate-unused', f'bytes={len(inflater.unused_data)}')
+          if inflater.unconsumed_tail:
+              fail('raw-inflate-unconsumed', f'bytes={len(inflater.unconsumed_tail)}')
+
+          footer_crc, footer_size = struct.unpack('<II', compressed[-8:])
+          actual_crc = zlib.crc32(patch) & 0xffffffff
+          emit('footer-crc', f'{footer_crc:08x}')
+          emit('payload-crc', f'{actual_crc:08x}')
+          emit('footer-size', footer_size)
+          emit('actual-size-mod32', len(patch) & 0xffffffff)
+          if footer_size != (len(patch) & 0xffffffff):
+              fail('footer-size', f'expected={footer_size} actual={len(patch) & 0xffffffff}')
+          if len(patch) != int(os.environ['PBYTES']):
+              fail('patch-bytes', f"expected={os.environ['PBYTES']} actual={len(patch)}")
+
+          first_line = patch.splitlines()[0].decode('ascii', errors='backslashreplace') if patch else ''
+          emit('patch-first-line', first_line)
+          expected_prefix = b'From ' + os.environ['PCOMMIT'].encode() + b' '
+          if not patch.startswith(expected_prefix):
+              fail('patch-source-commit', f'expected-prefix={expected_prefix!r} actual-first-line={first_line!r}')
+
+          pathlib.Path(sys.argv[2]).write_bytes(patch)
+          pathlib.Path(sys.argv[3]).write_text(hashlib.sha256(compressed).hexdigest() + '\n')
+          PY
+
+          stage payload-decode
+          if ! python3 /tmp/decode-p2231.py /tmp/c.md /tmp/p.patch /tmp/p.sha 2>&1 | tee -a "$R"; then
+            fail payload-decode 'decoder rejected the retained transport'
+          fi
+
+          stage old-head-worktree
+          rm -rf "$S"
+          git worktree prune
+          git worktree add --detach "$S" "$PHEAD"
           cd "$S"
-          node --input-type=module <<'NODE'
+          require_eq worktree-head "$(git rev-parse HEAD)" "$PHEAD"
+
+          stage old-head-behavior
+          node --input-type=module <<'NODE' 2>&1 | tee -a "$R"
           import assert from 'node:assert/strict';
           import {redactContactData as r} from './tools/lib/industrial-exhaust.mjs';
+          const oldTerminal = r('Phone: 09012345678 2026-08-17 01 42 68 53 00 90 people');
+          console.log('old-terminal='+JSON.stringify(oldTerminal));
           assert.equal(
             r('Phone: 09012345678 2026-08-17 01 42 68 53 00'),
             'Phone: [contact omitted] 2026-08-17 [contact omitted]',
@@ -102,103 +191,74 @@ jobs:
             r('ID: 09012345678 2026-08-17.1 212 555 1234'),
             'ID: 09012345678 2026-08-17.[contact omitted]',
           );
-          console.log('prepatch-terminal='+JSON.stringify(
-            r('Phone: 09012345678 2026-08-17 01 42 68 53 00 90 people')
-          ));
           NODE
-          git config user.name BigBirdReturns; git config user.email bigbirdreturns@proton.me
-          git am /tmp/p.patch
-          test "$(git rev-parse HEAD^)" = "$PHEAD"
-          test "$(git rev-list --count "$PHEAD..HEAD")" = 1
-          test "$(git rev-parse HEAD^{tree})" = "$PTREE"
-          test "$(git rev-parse HEAD:tools/lib/industrial-exhaust.mjs)" = "$SLIB"
-          test "$(git rev-parse HEAD:test/industrial-exhaust.test.js)" = "$STEST"
-          test "$(git diff --name-only "$PHEAD..HEAD"|LC_ALL=C sort)" = $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
-          test "$(git diff --numstat "$PHEAD..HEAD"|LC_ALL=C sort -k3)" = $'39\t0\ttest/industrial-exhaust.test.js\n195\t22\ttools/lib/industrial-exhaust.mjs'
-          git diff --check "$PHEAD..HEAD"
-          node --input-type=module <<'NODE'
-          import assert from 'node:assert/strict';
-          import {redactContactData as r} from './tools/lib/industrial-exhaust.mjs';
-          const cases = [
-            ['Phone: 09012345678 2026-08-17 01 42 68 53 00', 'Phone: [contact omitted] 2026-08-17 [contact omitted]'],
-            ['Phone: 09012345678 2026.08.17.03 62 16 80 41', 'Phone: [contact omitted] 2026.08.17.[contact omitted]'],
-            ['ID: 09012345678 2026-08-17.1 212 555 1234', 'ID: 09012345678 2026-08-17.[contact omitted]'],
-            ['Phone: 09012345678 2026-08-17 01 42 68 53 00 90 people', 'Phone: [contact omitted] 2026-08-17 [contact omitted] 90 people'],
-            ['Reference: 2026-88-77 04 72 98 76 54', 'Reference: 2026-88-77 04 72 98 76 54'],
-          ];
-          for (const [input, expected] of cases) assert.equal(r(input), expected, input);
-          NODE
-          node --check tools/lib/industrial-exhaust.mjs
-          node --check tools/crawl-industrial-exhaust.mjs
-          node --check test/industrial-exhaust.test.js
-          node test/industrial-exhaust.test.js
-          node test/industrial-exhaust-artifacts.test.js
 
-          cd "$GITHUB_WORKSPACE"; git worktree add --detach "$Q" "$MAIN"
-          cp "$S/tools/lib/industrial-exhaust.mjs" "$Q/tools/lib/industrial-exhaust.mjs"
-          cp "$S/test/industrial-exhaust.test.js" "$Q/test/industrial-exhaust.test.js"
-          cd "$Q"
-          test "$(git hash-object tools/lib/industrial-exhaust.mjs)" = "$SLIB"
-          test "$(git hash-object test/industrial-exhaust.test.js)" = "$STEST"
-          test "$(git diff --name-only|LC_ALL=C sort)" = $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
-          test "$(git diff --numstat|LC_ALL=C sort -k3)" = $'39\t0\ttest/industrial-exhaust.test.js\n195\t22\ttools/lib/industrial-exhaust.mjs'
-          git diff --check
-          node --check tools/lib/industrial-exhaust.mjs
-          node --check tools/crawl-industrial-exhaust.mjs
-          node --check test/industrial-exhaust.test.js
-          node --input-type=module <<'NODE'
-          import assert from 'node:assert/strict';
-          import {redactContactData as r} from './tools/lib/industrial-exhaust.mjs';
-          const cases = [
-            ['Phone: 09012345678 2026-08-17 01 42 68 53 00', 'Phone: [contact omitted] 2026-08-17 [contact omitted]'],
-            ['Phone: 09012345678 2026.08.17.03 62 16 80 41', 'Phone: [contact omitted] 2026.08.17.[contact omitted]'],
-            ['ID: 09012345678 2026-08-17.1 212 555 1234', 'ID: 09012345678 2026-08-17.[contact omitted]'],
-            ['Phone: 09012345678 2026-08-17 01 42 68 53 00 90 people', 'Phone: [contact omitted] 2026-08-17 [contact omitted] 90 people'],
-            ['Reference: 2026-88-77 04 72 98 76 54', 'Reference: 2026-88-77 04 72 98 76 54'],
-          ];
-          for (const [input, expected] of cases) assert.equal(r(input), expected, input);
-          NODE
-          node test/industrial-exhaust.test.js
-          node test/industrial-exhaust-artifacts.test.js
-          npm run release:check
-          test "$(git diff --name-only|LC_ALL=C sort)" = $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
-          test "$(git hash-object tools/lib/industrial-exhaust.mjs)" = "$SLIB"
-          test "$(git hash-object test/industrial-exhaust.test.js)" = "$STEST"
-
-          cd "$GITHUB_WORKSPACE"; fetch
-          test "$(git rev-parse refs/remotes/origin/main)" = "$MAIN"
-          test "$(git rev-parse refs/remotes/origin/$PBRANCH)" = "$PHEAD"
-          test "$(git rev-parse refs/remotes/origin/$CBRANCH)" = "$H"
-          test "$(git rev-parse "$MAIN:tools/lib/industrial-exhaust.mjs")" = "$BLIB"
-          test "$(git rev-parse "$MAIN:test/industrial-exhaust.test.js")" = "$BTEST"
-          gh api "repos/$GITHUB_REPOSITORY/issues/comments/$COMMENT" --jq .body >/tmp/c-final.md
-          python3 /tmp/decode-p2231.py /tmp/c-final.md /tmp/p-final.patch /tmp/p-final.sha
-          cmp /tmp/p.patch /tmp/p-final.patch
-          cmp /tmp/p.sha /tmp/p-final.sha
-
-          cd "$Q"; git config user.name BigBirdReturns; git config user.email bigbirdreturns@proton.me
-          git add tools/lib/industrial-exhaust.mjs test/industrial-exhaust.test.js
-          git diff --cached --check
-          test "$(git diff --cached --name-only|LC_ALL=C sort)" = $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
-          test "$(git diff --cached --numstat|LC_ALL=C sort -k3)" = $'39\t0\ttest/industrial-exhaust.test.js\n195\t22\ttools/lib/industrial-exhaust.mjs'
-          git commit -m 'fix(crawler): retain exact observation and phone intervals'
-          N="$(git rev-parse HEAD)"; T="$(git rev-parse HEAD^{tree})"
-          test "$(git rev-parse HEAD^)" = "$MAIN"
-          test "$(git rev-list --count "$MAIN..HEAD")" = 1
-          test "$(git diff --name-only "$MAIN..HEAD"|LC_ALL=C sort)" = $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
-          test "$(git rev-parse HEAD:tools/lib/industrial-exhaust.mjs)" = "$SLIB"
-          test "$(git rev-parse HEAD:test/industrial-exhaust.test.js)" = "$STEST"
-          test "$(git ls-remote origin refs/heads/main|cut -f1)" = "$MAIN"
-          test "$(git ls-remote origin "refs/heads/$PBRANCH"|cut -f1)" = "$PHEAD"
-          git push --force-with-lease="refs/heads/$PBRANCH:$PHEAD" origin "HEAD:refs/heads/$PBRANCH"
-          if [ "$(git ls-remote origin refs/heads/main|cut -f1)" != "$MAIN" ]; then
-            git push --force-with-lease="refs/heads/$PBRANCH:$N" origin "$PHEAD:refs/heads/$PBRANCH"
-            echo 'main advanced during publication; restored product lease' >&2
-            exit 1
+          stage git-am
+          git config user.name BigBirdReturns
+          git config user.email bigbirdreturns@proton.me
+          if ! git am /tmp/p.patch >/tmp/am.out 2>/tmp/am.err; then
+            cat /tmp/am.out /tmp/am.err | tee -a "$R" >&2
+            git am --show-current-patch=diff 2>/dev/null | sed -n '1,120p' | tee -a "$R" || true
+            fail git-am 'patch application failed'
           fi
-          git fetch --no-tags origin "+refs/heads/$PBRANCH:refs/remotes/origin/$PBRANCH"
-          test "$(git rev-parse refs/remotes/origin/$PBRANCH)" = "$N"
-          printf 'run=%s\nbase=%s\nhead=%s\ntree=%s\nlib=%s\ntest=%s\npatch-comment=%s\npatch-sha256=%s\nsource-tree=%s\n' '${{ github.run_id }}' "$MAIN" "$N" "$T" "$SLIB" "$STEST" "$COMMENT" "$PATCH_SHA" "$PTREE" >"$R"
-          cat "$R"
+          cat /tmp/am.out /tmp/am.err | tee -a "$R"
+
+          stage applied-object-census
+          AHEAD="$(git rev-parse HEAD)"
+          APARENT="$(git rev-parse HEAD^)"
+          ATREE="$(git rev-parse HEAD^{tree})"
+          ALIB="$(git rev-parse HEAD:tools/lib/industrial-exhaust.mjs)"
+          ATEST="$(git rev-parse HEAD:test/industrial-exhaust.test.js)"
+          APATHS="$(git diff --name-only "$PHEAD..HEAD" | LC_ALL=C sort)"
+          ANUMSTAT="$(git diff --numstat "$PHEAD..HEAD" | LC_ALL=C sort -k3)"
+          printf 'applied-head=%s\napplied-parent=%s\napplied-tree=%s\napplied-lib=%s\napplied-test=%s\napplied-paths<<EOF\n%s\nEOF\napplied-numstat<<EOF\n%s\nEOF\n' \
+            "$AHEAD" "$APARENT" "$ATREE" "$ALIB" "$ATEST" "$APATHS" "$ANUMSTAT" | tee -a "$R"
+          require_eq applied-parent "$APARENT" "$PHEAD"
+          require_eq applied-commit-count "$(git rev-list --count "$PHEAD..HEAD")" '1'
+          require_eq applied-tree "$ATREE" "$PTREE"
+          require_eq applied-lib "$ALIB" "$SLIB"
+          require_eq applied-test "$ATEST" "$STEST"
+          require_eq applied-paths "$APATHS" $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          require_eq applied-numstat "$ANUMSTAT" $'39\t0\ttest/industrial-exhaust.test.js\n195\t22\ttools/lib/industrial-exhaust.mjs'
+          git diff --check "$PHEAD..HEAD"
+
+          stage recovered-behavior
+          node --input-type=module <<'NODE' 2>&1 | tee -a "$R"
+          import assert from 'node:assert/strict';
+          import {redactContactData as r} from './tools/lib/industrial-exhaust.mjs';
+          const cases = [
+            ['Phone: 09012345678 2026-08-17 01 42 68 53 00', 'Phone: [contact omitted] 2026-08-17 [contact omitted]'],
+            ['Phone: 09012345678 2026.08.17.03 62 16 80 41', 'Phone: [contact omitted] 2026.08.17.[contact omitted]'],
+            ['ID: 09012345678 2026-08-17.1 212 555 1234', 'ID: 09012345678 2026-08-17.[contact omitted]'],
+            ['Phone: 09012345678 2026-08-17 01 42 68 53 00 90 people', 'Phone: [contact omitted] 2026-08-17 [contact omitted] 90 people'],
+            ['Reference: 2026-88-77 04 72 98 76 54', 'Reference: 2026-88-77 04 72 98 76 54'],
+          ];
+          for (const [input, expected] of cases) {
+            const actual = r(input);
+            console.log(JSON.stringify({input, actual, expected}));
+            assert.equal(actual, expected, input);
+          }
+          NODE
+
+          stage recovered-source-checks
+          node --check tools/lib/industrial-exhaust.mjs
+          node --check tools/crawl-industrial-exhaust.mjs
+          node --check test/industrial-exhaust.test.js
+          node test/industrial-exhaust.test.js 2>&1 | tee -a "$R"
+          node test/industrial-exhaust-artifacts.test.js 2>&1 | tee -a "$R"
+
+          stage final-lease-revalidation
+          cd "$GITHUB_WORKSPACE"
+          fetch
+          require_eq final-main "$(git rev-parse refs/remotes/origin/main)" "$MAIN"
+          require_eq final-product "$(git rev-parse refs/remotes/origin/$PBRANCH)" "$PHEAD"
+          require_eq final-controller "$(git rev-parse refs/remotes/origin/$CBRANCH)" "$H"
+          printf 'DIAGNOSTIC_SUCCESS recovered-tree=%s recovered-lib=%s recovered-test=%s product-unchanged=%s\n' \
+            "$ATREE" "$ALIB" "$ATEST" "$PHEAD" | tee -a "$R"
       - uses: actions/upload-artifact@v4
-        with: {name: pr2231-observation-interval-product-v36, path: /tmp/p2231-v36.txt, if-no-files-found: error, retention-days: 90}
+        if: always()
+        with:
+          name: pr2231-observation-interval-recovery-diagnostic-v36
+          path: /tmp/p2231-recovery-diagnostic.txt
+          if-no-files-found: warn
+          retention-days: 90
