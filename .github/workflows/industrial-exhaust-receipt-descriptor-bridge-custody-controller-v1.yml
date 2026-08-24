@@ -1,0 +1,327 @@
+name: Industrial-exhaust receipt descriptor-bridge custody controller v1
+
+on:
+  push:
+    branches:
+      - agent/industrial-exhaust-receipt-descriptor-bridge-custody-controller-v1
+    paths:
+      - .github/workflows/industrial-exhaust-receipt-descriptor-bridge-custody-controller-v1.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: industrial-exhaust-receipt-descriptor-bridge-custody-controller-v1
+  cancel-in-progress: false
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/industrial-exhaust-receipt-descriptor-bridge-custody-controller-v1
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Reproduce and repair descriptor-bridge custody
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          BASE_SHA='f9627ecef674d34588395a7b5304c14746488c23'
+          PRODUCT_BRANCH='agent/industrial-exhaust-receipt-descriptor-bridge-custody-v1'
+          WORKFLOW_PATH='.github/workflows/industrial-exhaust-receipt-descriptor-bridge-custody-controller-v1.yml'
+          LIB_PATH='tools/lib/industrial-exhaust-artifacts.mjs'
+          TEST_PATH='test/industrial-exhaust-retained-store-custody.test.js'
+
+          current_sha="$(git rev-parse HEAD)"
+          git merge-base --is-ancestor "$BASE_SHA" "$current_sha"
+
+          mapfile -t controller_diff < <(git diff --name-only "$BASE_SHA" "$current_sha")
+          test "${#controller_diff[@]}" -eq 1
+          test "${controller_diff[0]}" = "$WORKFLOW_PATH"
+
+          python - <<'TESTPY'
+          from pathlib import Path
+
+          test_path = Path('test/industrial-exhaust-retained-store-custody.test.js')
+          text = test_path.read_text()
+          marker = """  const assertAncestorSwapCannotRedirectPublication = ({
+          """
+          if text.count(marker) != 1:
+              raise SystemExit(
+                  f'unexpected descriptor-bridge regression insertion count: {text.count(marker)}'
+              )
+
+          insertion = r"""  const assertDescriptorBridgeFailurePrecedesMutation = ({
+              receiptType,
+              bridgeRoot,
+              externalRoot = null,
+              externalSentinelPath = null,
+              externalSentinel = null,
+              bridgeProbe,
+              writeReceipt,
+              expectedError
+            }) => {
+              const receiptsPath = path.join(bridgeRoot, 'receipts');
+              const originalStatSync = fs.statSync;
+              let bridgeProbeObserved = false;
+          
+              fs.statSync = (targetPath, ...args) => {
+                if (/^\/proc\/self\/fd\/\d+$/u.test(String(targetPath))) {
+                  bridgeProbeObserved = true;
+                  return bridgeProbe({
+                    targetPath: String(targetPath),
+                    args,
+                    originalStatSync
+                  });
+                }
+                return originalStatSync(targetPath, ...args);
+              };
+          
+              try {
+                assert.throws(
+                  () => writeReceipt(),
+                  expectedError,
+                  `${receiptType} publication must reject an unauthenticated descriptor bridge`
+                );
+                assert.equal(
+                  bridgeProbeObserved,
+                  true,
+                  `${receiptType} regression must exercise descriptor-bridge authentication`
+                );
+                assert.equal(
+                  fs.existsSync(receiptsPath),
+                  false,
+                  `${receiptType} descriptor-bridge failure must precede receipt-tree mutation`
+                );
+                if (externalSentinelPath !== null) {
+                  assert.equal(
+                    fs.readFileSync(externalSentinelPath, 'utf8'),
+                    externalSentinel,
+                    `${receiptType} descriptor-bridge failure may not mutate the external tree`
+                  );
+                }
+              } finally {
+                fs.statSync = originalStatSync;
+                fs.rmSync(bridgeRoot, { recursive: true, force: true });
+                if (externalRoot !== null) {
+                  fs.rmSync(externalRoot, { recursive: true, force: true });
+                }
+              }
+            };
+          
+            const unavailableBridgeIndexRoot = fs.mkdtempSync(
+              path.join(os.tmpdir(), 'industrial-exhaust-index-bridge-unavailable-')
+            );
+            const unavailableBridgeIndexHtml =
+              '<!doctype html><html><body><a href="/news-releases/bridge-unavailable-index">Bridge unavailable index</a></body></html>';
+            const unavailableBridgeParsedIndex = parseHtmlLinkIndex(
+              unavailableBridgeIndexHtml,
+              source
+            );
+            assertDescriptorBridgeFailurePrecedesMutation({
+              receiptType: 'index',
+              bridgeRoot: unavailableBridgeIndexRoot,
+              bridgeProbe: () => {
+                const error = new Error('simulated descriptor bridge outage');
+                error.code = 'ENOENT';
+                throw error;
+              },
+              writeReceipt: () => writeIndexReceipt({
+                rootDir: unavailableBridgeIndexRoot,
+                source,
+                parsedIndex: unavailableBridgeParsedIndex,
+                html: unavailableBridgeIndexHtml,
+                capturedAt: '2026-08-24T10:40:00.000Z',
+                responseHeaders: {
+                  content_type: 'text/html',
+                  etag: 'bridge-unavailable-index'
+                }
+              }),
+              expectedError: /descriptor bridge unavailable/u
+            });
+          
+            const mismatchedBridgeArtifactRoot = fs.mkdtempSync(
+              path.join(os.tmpdir(), 'industrial-exhaust-artifact-bridge-mismatch-')
+            );
+            const mismatchedBridgeExternalRoot = fs.mkdtempSync(
+              path.join(os.tmpdir(), 'industrial-exhaust-artifact-bridge-external-')
+            );
+            const mismatchedBridgeSentinelPath = path.join(
+              mismatchedBridgeExternalRoot,
+              'sentinel.txt'
+            );
+            const mismatchedBridgeSentinel = 'external descriptor bridge sentinel\n';
+            fs.writeFileSync(mismatchedBridgeSentinelPath, mismatchedBridgeSentinel);
+            const mismatchedBridgeArtifactCanonicalUrl =
+              'https://www.dentsu.com/news-releases/bridge-mismatch-artifact';
+            const mismatchedBridgeArtifactBody = Buffer.from(
+              '<!doctype html><html><body><main>Bridge mismatch artifact.</main></body></html>'
+            );
+            const mismatchedBridgeArtifactBodySha256 = crypto
+              .createHash('sha256')
+              .update(mismatchedBridgeArtifactBody)
+              .digest('hex');
+            assertDescriptorBridgeFailurePrecedesMutation({
+              receiptType: 'artifact',
+              bridgeRoot: mismatchedBridgeArtifactRoot,
+              externalRoot: mismatchedBridgeExternalRoot,
+              externalSentinelPath: mismatchedBridgeSentinelPath,
+              externalSentinel: mismatchedBridgeSentinel,
+              bridgeProbe: ({ originalStatSync }) =>
+                originalStatSync(mismatchedBridgeExternalRoot),
+              writeReceipt: () => writeArtifactReceipt({
+                rootDir: mismatchedBridgeArtifactRoot,
+                canonicalUrl: mismatchedBridgeArtifactCanonicalUrl,
+                body: mismatchedBridgeArtifactBody,
+                bodySha256: mismatchedBridgeArtifactBodySha256,
+                capturedAt: '2026-08-24T10:40:00.000Z',
+                responseHeaders: {
+                  content_type: 'text/html',
+                  etag: 'bridge-mismatch-artifact',
+                  final_url: mismatchedBridgeArtifactCanonicalUrl,
+                  redirect_chain: []
+                }
+              }),
+              expectedError: /descriptor bridge identity mismatch/u
+            });
+          
+          """
+          test_path.write_text(text.replace(marker, insertion + marker, 1))
+          TESTPY
+
+          if node "$TEST_PATH"; then
+            echo 'predecessor unexpectedly authenticated the procfs descriptor bridge' >&2
+            exit 1
+          else
+            echo 'predecessor descriptor-bridge custody defect reproduced'
+          fi
+
+          python - <<'LIBPY'
+          from pathlib import Path
+
+          lib_path = Path('tools/lib/industrial-exhaust-artifacts.mjs')
+          text = lib_path.read_text()
+
+          old_bridge = r"""function receiptDescriptorPath(descriptor, childName = null) {
+            if (process.platform !== 'linux' || !fs.existsSync(RECEIPT_DESCRIPTOR_ROOT)) {
+              throw new Error('descriptor-relative receipt publication requires Linux procfs');
+            }
+            const base = path.join(RECEIPT_DESCRIPTOR_ROOT, String(descriptor));
+            if (childName === null) return base;
+            if (typeof childName !== 'string' || !childName
+              || childName === '.' || childName === '..'
+              || childName.includes('/') || childName.includes('\\')) {
+              throw new Error(`invalid descriptor-relative receipt path component: ${childName}`);
+            }
+            return path.join(base, childName);
+          }
+          """
+          new_bridge = r"""function receiptDescriptorBridgePath(descriptor) {
+            if (process.platform !== 'linux') {
+              throw new Error('descriptor-relative receipt publication requires Linux procfs');
+            }
+            if (!Number.isInteger(descriptor) || descriptor < 0) {
+              throw new Error(`invalid receipt directory descriptor: ${descriptor}`);
+            }
+
+            const bridgePath = path.join(RECEIPT_DESCRIPTOR_ROOT, String(descriptor));
+            let descriptorStats;
+            let bridgeStats;
+            try {
+              descriptorStats = fs.fstatSync(descriptor);
+              bridgeStats = fs.statSync(bridgePath);
+            } catch (error) {
+              throw new Error(
+                `descriptor-relative receipt publication descriptor bridge unavailable: ${error.message}`
+              );
+            }
+            if (!descriptorStats.isDirectory()
+              || !bridgeStats.isDirectory()
+              || !sameReceiptIdentity(descriptorStats, bridgeStats)) {
+              throw new Error(
+                'descriptor-relative receipt publication descriptor bridge identity mismatch'
+              );
+            }
+            return bridgePath;
+          }
+
+          function receiptDescriptorPath(descriptor, childName = null) {
+            if (childName !== null
+              && (typeof childName !== 'string' || !childName
+                || childName === '.' || childName === '..'
+                || childName.includes('/') || childName.includes('\\'))) {
+              throw new Error(`invalid descriptor-relative receipt path component: ${childName}`);
+            }
+            const base = receiptDescriptorBridgePath(descriptor);
+            return childName === null ? base : path.join(base, childName);
+          }
+          """
+          if text.count(old_bridge) != 1:
+              raise SystemExit(
+                  f'unexpected descriptor-bridge function count: {text.count(old_bridge)}'
+              )
+          text = text.replace(old_bridge, new_bridge, 1)
+
+          old_root_anchor = r"""      throw new Error(`${label} root identity changed before descriptor anchoring`);
+              }
+              session.chain.push({
+          """
+          new_root_anchor = r"""      throw new Error(`${label} root identity changed before descriptor anchoring`);
+              }
+              receiptDescriptorPath(rootDescriptor);
+              session.chain.push({
+          """
+          if text.count(old_root_anchor) != 1:
+              raise SystemExit(
+                  f'unexpected root descriptor anchor count: {text.count(old_root_anchor)}'
+              )
+          text = text.replace(old_root_anchor, new_root_anchor, 1)
+
+          lib_path.write_text(text)
+          LIBPY
+
+          node --check "$LIB_PATH"
+          node --check "$TEST_PATH"
+          node "$TEST_PATH"
+          node test/industrial-exhaust-artifacts.test.js
+          node test/industrial-exhaust.test.js
+          node tools/hydrate-industrial-exhaust.mjs --audit
+          git diff --check
+
+          rm "$WORKFLOW_PATH"
+
+          mapfile -t product_diff < <(git diff --name-only "$BASE_SHA")
+          test "${#product_diff[@]}" -eq 2
+          test "${product_diff[0]}" = "$TEST_PATH"
+          test "${product_diff[1]}" = "$LIB_PATH"
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          tree_sha="$(git write-tree)"
+          new_sha="$(
+            printf '%s\n\n%s\n' \
+              'fix(industrial-exhaust): authenticate procfs descriptor bridge' \
+              'Fail before receipt-tree mutation unless each procfs descriptor bridge resolves to the admitted directory identity.' \
+              | git commit-tree "$tree_sha" -p "$BASE_SHA"
+          )"
+
+          mapfile -t final_diff < <(git diff --name-only "$BASE_SHA" "$new_sha")
+          test "${#final_diff[@]}" -eq 2
+          test "${final_diff[0]}" = "$TEST_PATH"
+          test "${final_diff[1]}" = "$LIB_PATH"
+          git diff --check "$BASE_SHA" "$new_sha"
+
+          live_main="$(git ls-remote origin refs/heads/main | awk '{print $1}')"
+          test "$live_main" = "$BASE_SHA"
+
+          git push \
+            --force-with-lease="refs/heads/${PRODUCT_BRANCH}:" \
+            origin \
+            "${new_sha}:refs/heads/${PRODUCT_BRANCH}"
