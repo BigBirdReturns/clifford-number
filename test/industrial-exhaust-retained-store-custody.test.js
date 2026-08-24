@@ -262,17 +262,23 @@ try {
   const originalLinkSync = fs.linkSync;
   let raceInjected = false;
   fs.linkSync = (sourcePath, destinationPath) => {
-    if (!raceInjected
-      && path.resolve(destinationPath) === path.resolve(absoluteReceiptPath)) {
-      fs.writeFileSync(destinationPath, competingReceipt, {
-        encoding: 'utf8',
-        flag: 'wx',
-        mode: 0o600
-      });
-      raceInjected = true;
-    }
-    return originalLinkSync(sourcePath, destinationPath);
-  };
+  let targetsReceipt = false;
+  try {
+    targetsReceipt = path.basename(destinationPath)
+        === path.basename(absoluteReceiptPath)
+      && fs.realpathSync.native(path.dirname(destinationPath))
+        === fs.realpathSync.native(path.dirname(absoluteReceiptPath));
+  } catch {}
+  if (!raceInjected && targetsReceipt) {
+    fs.writeFileSync(destinationPath, competingReceipt, {
+      encoding: 'utf8',
+      flag: 'wx',
+      mode: 0o600
+    });
+    raceInjected = true;
+  }
+  return originalLinkSync(sourcePath, destinationPath);
+};
   try {
     const expectedRelativePath = path.relative(rootDir, absoluteReceiptPath)
       .split(path.sep)
@@ -452,11 +458,16 @@ assertDestinationRacePreservesWinner({
     let failNextDirectorySync = false;
 
     fs.linkSync = (sourcePath, destinationPath) => {
-      if (path.resolve(destinationPath) === path.resolve(absoluteReceiptPath)) {
-        events.push('publish-link');
-      }
-      return originalLinkSync(sourcePath, destinationPath);
-    };
+    let targetsReceipt = false;
+    try {
+      targetsReceipt = path.basename(destinationPath)
+          === path.basename(absoluteReceiptPath)
+        && fs.realpathSync.native(path.dirname(destinationPath))
+          === fs.realpathSync.native(path.dirname(absoluteReceiptPath));
+    } catch {}
+    if (targetsReceipt) events.push('publish-link');
+    return originalLinkSync(sourcePath, destinationPath);
+  };
     fs.fsyncSync = descriptor => {
       const stats = fs.fstatSync(descriptor);
       if (stats.isDirectory()) {
@@ -627,6 +638,137 @@ assertDestinationRacePreservesWinner({
       }
     })
   });
+
+  const assertAncestorSwapCannotRedirectPublication = ({
+  receiptType,
+  raceRoot,
+  externalRoot,
+  absoluteReceiptPath,
+  writeReceipt
+}) => {
+  const canonicalReceiptsPath = path.join(raceRoot, 'receipts');
+  const displacedReceiptsPath = path.join(raceRoot, 'receipts-displaced');
+  const externalReceiptsPath = path.join(externalRoot, 'receipts');
+  const relativeWithinReceipts = path.relative(
+    canonicalReceiptsPath,
+    absoluteReceiptPath
+  );
+  const externalReceiptPath = path.join(
+    externalReceiptsPath,
+    relativeWithinReceipts
+  );
+
+  fs.mkdirSync(path.dirname(absoluteReceiptPath), { recursive: true });
+  fs.mkdirSync(path.dirname(externalReceiptPath), { recursive: true });
+
+  const originalOpenSync = fs.openSync;
+  let swapInjected = false;
+  fs.openSync = (targetPath, ...args) => {
+    if (!swapInjected && String(targetPath).endsWith('.tmp')) {
+      fs.renameSync(canonicalReceiptsPath, displacedReceiptsPath);
+      fs.symlinkSync(externalReceiptsPath, canonicalReceiptsPath, 'dir');
+      swapInjected = true;
+    }
+    return originalOpenSync(targetPath, ...args);
+  };
+
+  try {
+    assert.throws(
+      () => writeReceipt(),
+      /directory chain changed/u,
+      `${receiptType} publication must reject an ancestor substitution`
+    );
+    assert.equal(
+      swapInjected,
+      true,
+      `${receiptType} regression must exercise the temporary-file publication window`
+    );
+    assert.equal(
+      fs.existsSync(externalReceiptPath),
+      false,
+      `${receiptType} publication may not mutate the substituted external tree`
+    );
+  } finally {
+    fs.openSync = originalOpenSync;
+    fs.rmSync(raceRoot, { recursive: true, force: true });
+    fs.rmSync(externalRoot, { recursive: true, force: true });
+  }
+};
+
+const ancestorRaceIndexRoot = fs.mkdtempSync(
+  path.join(os.tmpdir(), 'industrial-exhaust-index-ancestor-race-root-')
+);
+const ancestorRaceIndexExternalRoot = fs.mkdtempSync(
+  path.join(os.tmpdir(), 'industrial-exhaust-index-ancestor-race-external-')
+);
+const ancestorRaceIndexHtml =
+  '<!doctype html><html><body><a href="/news-releases/publication-ancestor-race-index">Publication ancestor race index</a></body></html>';
+const ancestorRaceParsedIndex = parseHtmlLinkIndex(
+  ancestorRaceIndexHtml,
+  source
+);
+const ancestorRaceIndexReceiptPath = indexReceiptFilePath(
+  ancestorRaceIndexRoot,
+  source.id,
+  ancestorRaceParsedIndex.index_sha256
+);
+assertAncestorSwapCannotRedirectPublication({
+  receiptType: 'index',
+  raceRoot: ancestorRaceIndexRoot,
+  externalRoot: ancestorRaceIndexExternalRoot,
+  absoluteReceiptPath: ancestorRaceIndexReceiptPath,
+  writeReceipt: () => writeIndexReceipt({
+    rootDir: ancestorRaceIndexRoot,
+    source,
+    parsedIndex: ancestorRaceParsedIndex,
+    html: ancestorRaceIndexHtml,
+    capturedAt: '2026-08-22T10:11:00.000Z',
+    responseHeaders: {
+      content_type: 'text/html',
+      etag: 'ancestor-race-index'
+    }
+  })
+});
+
+const ancestorRaceArtifactRoot = fs.mkdtempSync(
+  path.join(os.tmpdir(), 'industrial-exhaust-artifact-ancestor-race-root-')
+);
+const ancestorRaceArtifactExternalRoot = fs.mkdtempSync(
+  path.join(os.tmpdir(), 'industrial-exhaust-artifact-ancestor-race-external-')
+);
+const ancestorRaceArtifactCanonicalUrl =
+  'https://www.dentsu.com/news-releases/publication-ancestor-race-artifact';
+const ancestorRaceArtifactBody = Buffer.from(
+  '<!doctype html><html><body><main>Publication ancestor race artifact.</main></body></html>'
+);
+const ancestorRaceArtifactBodySha256 = crypto
+  .createHash('sha256')
+  .update(ancestorRaceArtifactBody)
+  .digest('hex');
+const ancestorRaceArtifactReceiptPath = artifactReceiptFilePath(
+  ancestorRaceArtifactRoot,
+  ancestorRaceArtifactCanonicalUrl,
+  ancestorRaceArtifactBodySha256
+);
+assertAncestorSwapCannotRedirectPublication({
+  receiptType: 'artifact',
+  raceRoot: ancestorRaceArtifactRoot,
+  externalRoot: ancestorRaceArtifactExternalRoot,
+  absoluteReceiptPath: ancestorRaceArtifactReceiptPath,
+  writeReceipt: () => writeArtifactReceipt({
+    rootDir: ancestorRaceArtifactRoot,
+    canonicalUrl: ancestorRaceArtifactCanonicalUrl,
+    body: ancestorRaceArtifactBody,
+    bodySha256: ancestorRaceArtifactBodySha256,
+    capturedAt: '2026-08-22T10:11:00.000Z',
+    responseHeaders: {
+      content_type: 'text/html',
+      etag: 'ancestor-race-artifact',
+      final_url: ancestorRaceArtifactCanonicalUrl,
+      redirect_chain: []
+    }
+  })
+});
 
   const indexAbsolutePath = path.join(rootDir, indexReceiptPath);
   const originalIndexReceipt = fs.readFileSync(indexAbsolutePath, 'utf8');
