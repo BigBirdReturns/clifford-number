@@ -65,6 +65,76 @@ jobs:
               'refs/heads/agent/industrial-exhaust-receipt-publication-path-custody-controller-v2'
           )
 
+          loop_old = """    for (const segment of segments) {
+            const parent = session.chain.at(-1);
+            const anchoredPath = receiptDescriptorPath(parent.descriptor, segment);
+            let descriptor;
+          """
+          loop_new = """    for (const segment of segments) {
+            const parent = session.chain.at(-1);
+            const anchoredPath = receiptDescriptorPath(parent.descriptor, segment);
+            const display = session.chain.length === 1
+              ? segment
+              : `${session.chain.at(-1).display}/${segment}`;
+            let descriptor;
+          """
+          if script.count(loop_old) != 1:
+              raise SystemExit(
+                  f'unexpected directory-loop anchor count: {script.count(loop_old)}'
+              )
+          script = script.replace(loop_old, loop_new, 1)
+
+          initial_open_old = """        } catch (error) {
+                  if (error?.code !== 'ENOENT') {
+                    throw new Error(`${label} directory open failed: ${error.message}`);
+                  }
+          """
+          initial_open_new = """        } catch (error) {
+                  if (['ELOOP', 'ENOTDIR'].includes(error?.code)) {
+                    throw new Error(
+                      `${label} contains an unsupported path entry: ${display}`
+                    );
+                  }
+                  if (error?.code !== 'ENOENT') {
+                    throw new Error(`${label} directory open failed: ${error.message}`);
+                  }
+          """
+          if script.count(initial_open_old) != 1:
+              raise SystemExit(
+                  f'unexpected initial directory-open catch count: {script.count(initial_open_old)}'
+              )
+          script = script.replace(initial_open_old, initial_open_new, 1)
+
+          retry_open_old = """          } catch (openError) {
+                    throw new Error(`${label} directory open failed: ${openError.message}`);
+                  }
+          """
+          retry_open_new = """          } catch (openError) {
+                    if (['ELOOP', 'ENOTDIR'].includes(openError?.code)) {
+                      throw new Error(
+                        `${label} contains an unsupported path entry: ${display}`
+                      );
+                    }
+                    throw new Error(`${label} directory open failed: ${openError.message}`);
+                  }
+          """
+          if script.count(retry_open_old) != 1:
+              raise SystemExit(
+                  f'unexpected retry directory-open catch count: {script.count(retry_open_old)}'
+              )
+          script = script.replace(retry_open_old, retry_open_new, 1)
+
+          late_display = """        const display = session.chain.length === 1
+                  ? segment
+                  : `${session.chain.at(-1).display}/${segment}`;
+                session.chain.push({
+          """
+          if script.count(late_display) != 1:
+              raise SystemExit(
+                  f'unexpected late display declaration count: {script.count(late_display)}'
+              )
+          script = script.replace(late_display, '        session.chain.push({\n', 1)
+
           replacement_start = script.index('old_index = """')
           replacement_end = script.index('lib_path.write_text(text)', replacement_start)
           robust_writer_replacement = r'''index_function_start = text.index(
