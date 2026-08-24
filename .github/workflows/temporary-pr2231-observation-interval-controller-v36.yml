@@ -18,7 +18,7 @@ jobs:
     env:
       CBRANCH: agent/pr2231-observation-interval-controller-v36
       CPATH: .github/workflows/temporary-pr2231-observation-interval-controller-v36.yml
-      CPARENT: 8f64559d4ddf38956716945e7fabeae2329af5e2
+      CPARENT: 03406b96600cb6c1b89a769cd8c45786f9eca68c
       PBRANCH: agent/current-main-identifier-context-product-v1
       PHEAD: 456ee43cb8a0d3c1afeeed8b9f7342219a3fac05
       PPARENT: 2d2c7b6cd7517ca25854e481b21774a697d0e76b
@@ -65,15 +65,34 @@ jobs:
           rm -rf "$S" "$Q"; git worktree prune; git worktree add --detach "$S" "$PHEAD"
           cd "$S"
           node --input-type=module <<'NODE'
-          import assert from 'node:assert/strict'; import {redactContactData as r} from './tools/lib/industrial-exhaust.mjs';
-          assert.notEqual(r('Phone: 09012345678 2026-08-17 01 42 68 53 00'),'Phone: [contact omitted] 2026-08-17 [contact omitted]');
-          assert.notEqual(r('ID: 09012345678 2026-08-17.1 212 555 1234'),'ID: 09012345678 2026-08-17.[contact omitted]');
+          import assert from 'node:assert/strict';
+          import {redactContactData as r} from './tools/lib/industrial-exhaust.mjs';
+          assert.equal(
+            r('Phone: 09012345678 2026-08-17 01 42 68 53 00'),
+            'Phone: [contact omitted] 2026-08-17 [contact omitted]',
+          );
+          assert.notEqual(
+            r('ID: 09012345678 2026-08-17.1 212 555 1234'),
+            'ID: 09012345678 2026-08-17.[contact omitted]',
+          );
           NODE
           git config user.name BigBirdReturns; git config user.email bigbirdreturns@proton.me
           git am /tmp/p.patch
           test "$(git rev-parse HEAD^)" = "$PHEAD"
           test "$(git diff --name-only "$PHEAD..HEAD"|LC_ALL=C sort)" = $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
           test "$(git diff --numstat "$PHEAD..HEAD"|LC_ALL=C sort -k3)" = $'53\t0\ttest/industrial-exhaust.test.js\n70\t31\ttools/lib/industrial-exhaust.mjs'
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import {redactContactData as r} from './tools/lib/industrial-exhaust.mjs';
+          const cases = [
+            ['Phone: 09012345678 2026-08-17 01 42 68 53 00', 'Phone: [contact omitted] 2026-08-17 [contact omitted]'],
+            ['ID: 09012345678 2026-08-17.1 212 555 1234', 'ID: 09012345678 2026-08-17.[contact omitted]'],
+            ['Tel: +44 20 7946 0958 2026-08-18 01 23 45 67 89', 'Tel: [contact omitted] 2026-08-18 [contact omitted]'],
+            ['Tel: +44 20 7946 0958 2026-08-18 01 23 45 67 89 ext 9', 'Tel: [contact omitted] 2026-08-18 [contact omitted] ext 9'],
+            ['Reference: 2026-88-77 04 72 98 76 54', 'Reference: 2026-88-77 04 72 98 76 54'],
+          ];
+          for (const [input, expected] of cases) assert.equal(r(input), expected, input);
+          NODE
           SLIB="$(git rev-parse HEAD:tools/lib/industrial-exhaust.mjs)"; STEST="$(git rev-parse HEAD:test/industrial-exhaust.test.js)"
 
           cd "$GITHUB_WORKSPACE"; git worktree add --detach "$Q" "$MAIN"
@@ -87,6 +106,18 @@ jobs:
           node --check tools/lib/industrial-exhaust.mjs
           node --check tools/crawl-industrial-exhaust.mjs
           node --check test/industrial-exhaust.test.js
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import {redactContactData as r} from './tools/lib/industrial-exhaust.mjs';
+          const cases = [
+            ['Phone: 09012345678 2026-08-17 01 42 68 53 00', 'Phone: [contact omitted] 2026-08-17 [contact omitted]'],
+            ['ID: 09012345678 2026-08-17.1 212 555 1234', 'ID: 09012345678 2026-08-17.[contact omitted]'],
+            ['Tel: +44 20 7946 0958 2026-08-18 01 23 45 67 89', 'Tel: [contact omitted] 2026-08-18 [contact omitted]'],
+            ['Tel: +44 20 7946 0958 2026-08-18 01 23 45 67 89 ext 9', 'Tel: [contact omitted] 2026-08-18 [contact omitted] ext 9'],
+            ['Reference: 2026-88-77 04 72 98 76 54', 'Reference: 2026-88-77 04 72 98 76 54'],
+          ];
+          for (const [input, expected] of cases) assert.equal(r(input), expected, input);
+          NODE
           node test/industrial-exhaust.test.js
           node test/industrial-exhaust-artifacts.test.js
           npm run release:check
