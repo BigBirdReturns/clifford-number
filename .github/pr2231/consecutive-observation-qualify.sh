@@ -20,7 +20,7 @@ fetch_leases() {
 
 stage controller-envelope
 require_eq controller-branch "$GITHUB_HEAD_REF" "$CONTROLLER_BRANCH"
-require_eq controller-paths "$(git diff --name-only "$EXPECTED_MAIN..HEAD" | LC_ALL=C sort)" $'.github/pr2231/consecutive-observation-patch.py\n.github/pr2231/consecutive-observation-qualify.sh\n.github/workflows/temporary-pr2231-consecutive-observation-qualifier-v1.yml'
+require_eq controller-paths "$(git diff --name-only "$CONTROLLER_BASE..HEAD" | LC_ALL=C sort)" $'.github/pr2231/consecutive-observation-patch.py\n.github/pr2231/consecutive-observation-qualify.sh\n.github/workflows/temporary-pr2231-consecutive-observation-qualifier-v1.yml'
 
 stage initial-live-leases
 fetch_leases
