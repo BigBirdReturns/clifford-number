@@ -1155,13 +1155,53 @@ process.stdin.on('end', () => {
         true,
         `${receiptType} receipt must remain reachable after metadata confinement`
       );
+      const metadataProof = control.events.find(
+        event => event.type === 'filesystem-metadata-confined'
+          && event.policy === 'filesystem-metadata-v1'
+      );
       assert.equal(
-        control.events.some(
-          event => event.type === 'filesystem-metadata-confined'
-            && event.policy === 'filesystem-metadata-v1'
-        ),
+        Boolean(metadataProof),
         true,
         `${receiptType} helper must prove filesystem metadata syscall confinement`
+      );
+      assert.deepEqual(
+        metadataProof?.ioctl_requests,
+        [
+          'FS_IOC_SETFLAGS:1074292226',
+          'FS_IOC_FSSETXATTR:1075599392'
+        ],
+        `${receiptType} metadata seccomp proof must deny metadata ioctl requests`
+      );
+      assert.equal(
+        metadataProof?.architecture === 'x86_64'
+          ? Number(metadataProof?.ioctl_syscall) === 16
+          : metadataProof?.architecture === 'aarch64'
+            && Number(metadataProof?.ioctl_syscall) === 29,
+        true,
+        `${receiptType} metadata seccomp proof must bind the ioctl syscall`
+      );
+      assert.equal(
+        Array.isArray(metadataProof?.entries)
+          && metadataProof.entries.every(
+            entry => !/^ioctl:\d+$/.test(entry)
+          ),
+        true,
+        `${receiptType} metadata seccomp proof must scope ioctl denial to request codes`
+      );
+      assert.equal(
+        metadataProof?.architecture === 'x86_64'
+          ? Number(metadataProof?.rejected_syscall_mask) === 0x40000000
+          : Number(metadataProof?.rejected_syscall_mask) === 0,
+        true,
+        `${receiptType} metadata seccomp proof must bind the alternate syscall namespace`
+      );
+      assert.equal(
+        metadataProof?.architecture === 'x86_64'
+          ? Number(metadataProof?.audit_arch) === 0xC000003E
+          : metadataProof?.architecture === 'aarch64'
+            && Number(metadataProof?.audit_arch) === 0xC00000B7,
+        true,
+        `${receiptType} metadata seccomp proof must bind the Linux audit architecture`
       );
     } finally {
       fs.rmSync(publicationRoot, { recursive: true, force: true });
