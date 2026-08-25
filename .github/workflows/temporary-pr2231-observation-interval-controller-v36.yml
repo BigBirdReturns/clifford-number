@@ -18,8 +18,8 @@ jobs:
     env:
       CBRANCH: agent/pr2231-observation-interval-controller-v36
       CPATH: .github/workflows/temporary-pr2231-observation-interval-controller-v36.yml
-      CPARENT: 0c209e7f6b01995a9018193025b74b3493ff33d4
-      PARENT_BLOB: a9fc986a0ba6740164b0d46e83bf8b4dd2adb272
+      CPARENT: a8eba95e3b1939e69c24239aa20a6009e91e995b
+      PARENT_BLOB: 732c8db0c491ad5e83a5edeeae89301c280c9706
       SOURCE_COMMIT: 944ec8f2a3549b717c87e30a7a21b56f47cc1f24
       SOURCE_BLOB: a0e6f9c14ede9657f6086d97d7b95d870d687bd5
       SOURCE_RUN_SHA: 5f7e069893c312567063551549765d0976195e311d701876a9847e7807b58c8b
@@ -138,6 +138,35 @@ jobs:
               raise SystemExit('reference expectation repair count mismatch')
           script = script.replace(reference_defect, reference_repair)
 
+          qualified_numstat_defect = (
+              "require_eq qualified-numstat \"$(git diff --numstat | LC_ALL=C sort -k3)\" "
+              "$'39\\t0\\ttest/industrial-exhaust.test.js\\n195\\t22\\ttools/lib/industrial-exhaust.mjs'"
+          )
+          qualified_numstat_repair = (
+              "require_eq qualified-numstat \"$(git diff --numstat | LC_ALL=C sort -k3)\" "
+              "$'729\\t0\\ttest/industrial-exhaust.test.js\\n638\\t56\\ttools/lib/industrial-exhaust.mjs'"
+          )
+          post_release_numstat_defect = (
+              "require_eq post-release-numstat \"$(git diff --numstat | LC_ALL=C sort -k3)\" "
+              "$'39\\t0\\ttest/industrial-exhaust.test.js\\n195\\t22\\ttools/lib/industrial-exhaust.mjs'"
+          )
+          post_release_numstat_repair = (
+              "require_eq post-release-numstat \"$(git diff --numstat | LC_ALL=C sort -k3)\" "
+              "$'729\\t0\\ttest/industrial-exhaust.test.js\\n638\\t56\\ttools/lib/industrial-exhaust.mjs'"
+          )
+          if script.count(qualified_numstat_defect) != 1 or script.count(qualified_numstat_repair) != 0:
+              raise SystemExit('qualified cumulative numstat repair count mismatch')
+          if script.count(post_release_numstat_defect) != 1 or script.count(post_release_numstat_repair) != 0:
+              raise SystemExit('post-release cumulative numstat repair count mismatch')
+          script = script.replace(qualified_numstat_defect, qualified_numstat_repair)
+          script = script.replace(post_release_numstat_defect, post_release_numstat_repair)
+
+          patch_numstat = "$'39\\t0\\ttest/industrial-exhaust.test.js\\n195\\t22\\ttools/lib/industrial-exhaust.mjs'"
+          cumulative_numstat = "$'729\\t0\\ttest/industrial-exhaust.test.js\\n638\\t56\\ttools/lib/industrial-exhaust.mjs'"
+          if script.count(patch_numstat) != 1:
+              raise SystemExit('patch-local numstat denominator shape mismatch')
+          if script.count(cumulative_numstat) != 2:
+              raise SystemExit('live-main cumulative numstat denominator shape mismatch')
           if script.count(terminal_repair) != 1:
               raise SystemExit('terminal repaired census shape mismatch')
           if script.count('assert.notEqual(r(countryInput), countryExpected);') != 1:
@@ -147,10 +176,10 @@ jobs:
           if script.count(reference_repair) != 2:
               raise SystemExit('reference repaired expectation shape mismatch')
 
-          target = pathlib.Path('/tmp/p2231-qualified-v39.sh')
+          target = pathlib.Path('/tmp/p2231-qualified-v40.sh')
           target.write_text(script)
           target.chmod(0o700)
-          receipt = pathlib.Path('/tmp/p2231-controller-repair-v39.txt')
+          receipt = pathlib.Path('/tmp/p2231-controller-repair-v40.txt')
           receipt.write_text(
               f'controller_parent={os.environ["CPARENT"]}\n'
               f'controller_parent_blob={os.environ["PARENT_BLOB"]}\n'
@@ -160,19 +189,19 @@ jobs:
               f'current_head={os.environ["CURRENT_HEAD"]}\n'
               f'current_branch={os.environ["CURRENT_BRANCH"]}\n'
               f'run_id={os.environ["CURRENT_RUN_ID"]}\n'
-              'repair=terminal-preexisting-pass-country-defect-retained-reference-preexisting-redaction-two-census-sites\n'
+              'repair=terminal-preexisting-pass-country-defect-retained-reference-preexisting-redaction-two-census-sites-live-main-cumulative-numstat\n'
               f'qualified_script_sha256={hashlib.sha256(script.encode()).hexdigest()}\n'
           )
           PY
-          bash -n /tmp/p2231-qualified-v39.sh
-          bash /tmp/p2231-qualified-v39.sh
+          bash -n /tmp/p2231-qualified-v40.sh
+          bash /tmp/p2231-qualified-v40.sh
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: pr2231-repaired-transport-qualification-v39
+          name: pr2231-repaired-transport-qualification-v40
           path: |
-            /tmp/p2231-controller-repair-v39.txt
-            /tmp/p2231-qualified-v39.sh
+            /tmp/p2231-controller-repair-v40.txt
+            /tmp/p2231-qualified-v40.sh
             /tmp/p2231-repaired-qualification.txt
             /tmp/p2231-comment-initial.md
             /tmp/p2231-posted-initial.gz
