@@ -18,8 +18,8 @@ jobs:
     env:
       CBRANCH: agent/pr2231-observation-interval-controller-v36
       CPATH: .github/workflows/temporary-pr2231-observation-interval-controller-v36.yml
-      CPARENT: a8eba95e3b1939e69c24239aa20a6009e91e995b
-      PARENT_BLOB: 732c8db0c491ad5e83a5edeeae89301c280c9706
+      CPARENT: 1c35a47ad9754a888db05eb0f0ab3e10a4f9d11f
+      PARENT_BLOB: 7c98a6ee038764102f720aa5266d41db354d90db
       SOURCE_COMMIT: 944ec8f2a3549b717c87e30a7a21b56f47cc1f24
       SOURCE_BLOB: a0e6f9c14ede9657f6086d97d7b95d870d687bd5
       SOURCE_RUN_SHA: 5f7e069893c312567063551549765d0976195e311d701876a9847e7807b58c8b
@@ -161,6 +161,35 @@ jobs:
           script = script.replace(qualified_numstat_defect, qualified_numstat_repair)
           script = script.replace(post_release_numstat_defect, post_release_numstat_repair)
 
+          post_release_paths_defect = (
+              "require_eq post-release-paths \"$(git diff --name-only | LC_ALL=C sort)\" "
+              "$'test/industrial-exhaust.test.js\\ntools/lib/industrial-exhaust.mjs'"
+          )
+          post_release_paths_repair = (
+              "require_eq post-release-paths \"$(git diff --name-only | LC_ALL=C sort)\" "
+              "$'build/axm-identity.json\\nbuild/build-hop-report.json\\nbuild/hop-graph.json\\n"
+              "build/migration-review.md\\nbuild/migration-summary.json\\nbuild/receipt-graph.json\\n"
+              "build/scores.json\\nbuild/scout-report.json\\nbuild/scout-report.md\\n"
+              "build/surface-graph.json\\nbuild/topology-admission-frontier.json\\n"
+              "test/industrial-exhaust.test.js\\ntools/lib/industrial-exhaust.mjs'"
+          )
+          if script.count(post_release_paths_defect) != 1 or script.count(post_release_paths_repair) != 0:
+              raise SystemExit('post-release generated path census repair count mismatch')
+          script = script.replace(post_release_paths_defect, post_release_paths_repair)
+
+          two_path_set = "$'test/industrial-exhaust.test.js\\ntools/lib/industrial-exhaust.mjs'"
+          generated_path_set = (
+              "$'build/axm-identity.json\\nbuild/build-hop-report.json\\nbuild/hop-graph.json\\n"
+              "build/migration-review.md\\nbuild/migration-summary.json\\nbuild/receipt-graph.json\\n"
+              "build/scores.json\\nbuild/scout-report.json\\nbuild/scout-report.md\\n"
+              "build/surface-graph.json\\nbuild/topology-admission-frontier.json\\n"
+              "test/industrial-exhaust.test.js\\ntools/lib/industrial-exhaust.mjs'"
+          )
+          if script.count(two_path_set) != 2:
+              raise SystemExit('pre-release two-path census shape mismatch')
+          if script.count(generated_path_set) != 1:
+              raise SystemExit('post-release generated path census shape mismatch')
+
           patch_numstat = "$'39\\t0\\ttest/industrial-exhaust.test.js\\n195\\t22\\ttools/lib/industrial-exhaust.mjs'"
           cumulative_numstat = "$'729\\t0\\ttest/industrial-exhaust.test.js\\n638\\t56\\ttools/lib/industrial-exhaust.mjs'"
           if script.count(patch_numstat) != 1:
@@ -176,10 +205,10 @@ jobs:
           if script.count(reference_repair) != 2:
               raise SystemExit('reference repaired expectation shape mismatch')
 
-          target = pathlib.Path('/tmp/p2231-qualified-v40.sh')
+          target = pathlib.Path('/tmp/p2231-qualified-v41.sh')
           target.write_text(script)
           target.chmod(0o700)
-          receipt = pathlib.Path('/tmp/p2231-controller-repair-v40.txt')
+          receipt = pathlib.Path('/tmp/p2231-controller-repair-v41.txt')
           receipt.write_text(
               f'controller_parent={os.environ["CPARENT"]}\n'
               f'controller_parent_blob={os.environ["PARENT_BLOB"]}\n'
@@ -189,19 +218,19 @@ jobs:
               f'current_head={os.environ["CURRENT_HEAD"]}\n'
               f'current_branch={os.environ["CURRENT_BRANCH"]}\n'
               f'run_id={os.environ["CURRENT_RUN_ID"]}\n'
-              'repair=terminal-preexisting-pass-country-defect-retained-reference-preexisting-redaction-two-census-sites-live-main-cumulative-numstat\n'
+              'repair=terminal-preexisting-pass-country-defect-retained-reference-preexisting-redaction-two-census-sites-live-main-cumulative-numstat-post-release-generated-path-set\n'
               f'qualified_script_sha256={hashlib.sha256(script.encode()).hexdigest()}\n'
           )
           PY
-          bash -n /tmp/p2231-qualified-v40.sh
-          bash /tmp/p2231-qualified-v40.sh
+          bash -n /tmp/p2231-qualified-v41.sh
+          bash /tmp/p2231-qualified-v41.sh
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: pr2231-repaired-transport-qualification-v40
+          name: pr2231-repaired-transport-qualification-v41
           path: |
-            /tmp/p2231-controller-repair-v40.txt
-            /tmp/p2231-qualified-v40.sh
+            /tmp/p2231-controller-repair-v41.txt
+            /tmp/p2231-qualified-v41.sh
             /tmp/p2231-repaired-qualification.txt
             /tmp/p2231-comment-initial.md
             /tmp/p2231-posted-initial.gz
