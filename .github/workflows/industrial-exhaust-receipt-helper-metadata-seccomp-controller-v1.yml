@@ -3,7 +3,7 @@ name: Industrial-exhaust receipt helper metadata seccomp controller v1
 on:
   push:
     branches:
-      - agent/industrial-exhaust-receipt-helper-metadata-seccomp-controller-diagnostic-v2
+      - agent/industrial-exhaust-receipt-helper-metadata-seccomp-controller-diagnostic-v3
 
 permissions:
   contents: write
@@ -25,7 +25,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: agent/industrial-exhaust-receipt-helper-metadata-seccomp-controller-diagnostic-v2
+          ref: agent/industrial-exhaust-receipt-helper-metadata-seccomp-controller-diagnostic-v3
           fetch-depth: 0
 
       - uses: actions/setup-node@v4
