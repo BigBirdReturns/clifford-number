@@ -3,7 +3,7 @@ name: Industrial-exhaust receipt helper metadata seccomp review-fix controller v
 on:
   push:
     branches:
-      - agent/industrial-exhaust-receipt-helper-metadata-seccomp-reviewfix-controller-v2
+      - agent/industrial-exhaust-receipt-helper-metadata-seccomp-reviewfix-controller-v3
 
 permissions:
   contents: write
@@ -24,7 +24,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: agent/industrial-exhaust-receipt-helper-metadata-seccomp-reviewfix-controller-v2
+          ref: agent/industrial-exhaust-receipt-helper-metadata-seccomp-reviewfix-controller-v3
           fetch-depth: 0
 
       - uses: actions/setup-node@v4
@@ -52,7 +52,7 @@ jobs:
 
           python -m py_compile "$TEST_PATCH" "$REPAIR_PATCH"
 
-      - name: Reproduce ioctl and x32 proof gaps
+      - name: Reproduce metadata ioctl and x32 proof gaps
         shell: bash
         run: |
           set -euo pipefail
@@ -66,11 +66,11 @@ jobs:
           predecessor_status=$?
           set -e
           test "$predecessor_status" -ne 0
-          grep -F 'metadata seccomp proof must deny ioctl' \
+          grep -F 'metadata seccomp proof must deny metadata ioctl requests' \
             /tmp/industrial-exhaust-helper-metadata-seccomp-review-predecessor.log
-          echo 'predecessor ioctl denominator gap reproduced'
+          echo 'predecessor metadata ioctl denominator gap reproduced'
 
-      - name: Apply ioctl and x32 review repair
+      - name: Apply request-scoped ioctl and x32 review repair
         shell: bash
         run: |
           set -euo pipefail
@@ -118,7 +118,7 @@ jobs:
           new_sha="$(
             printf '%s\n\n%s\n' \
               'fix(industrial-exhaust): close metadata seccomp review gaps' \
-              'Deny ioctl after helper confinement, reject the x86-64 x32 syscall namespace, and bind both controls into the parent-validated proof.' \
+              'Filter metadata-mutating ioctl requests, reject the x86-64 x32 syscall namespace, and bind both controls into the parent-validated proof.' \
               | git commit-tree "$tree_sha" -p "$PRODUCT_BASE_SHA"
           )"
 
