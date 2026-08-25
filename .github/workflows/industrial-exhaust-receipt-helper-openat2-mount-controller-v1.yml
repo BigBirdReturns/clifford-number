@@ -1,0 +1,156 @@
+name: Industrial-exhaust receipt helper openat2 mount controller v1
+
+on:
+  push:
+    branches:
+      - agent/industrial-exhaust-receipt-helper-openat2-mount-controller-v1
+
+permissions:
+  contents: write
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/industrial-exhaust-receipt-helper-openat2-mount-controller-v1
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Reproduce and repair nested mount traversal
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE_SHA='482db6e3ff25fa6d085a59f8677d9a0b33c5804b'
+          PRODUCT_BRANCH='agent/industrial-exhaust-receipt-helper-openat2-mount-v1'
+          WORKFLOW_PATH='.github/workflows/industrial-exhaust-receipt-helper-openat2-mount-controller-v1.yml'
+          LIB_PATH='tools/lib/industrial-exhaust-artifacts.mjs'
+          TEST_PATH='test/industrial-exhaust-retained-store-custody.test.js'
+          current_sha="$(git rev-parse HEAD)"
+          test "$(git rev-parse "${current_sha}^")" = "$BASE_SHA"
+          mapfile -t controller_diff < <(git diff --name-only "$BASE_SHA" "$current_sha")
+          test "${#controller_diff[@]}" -eq 1
+          test "${controller_diff[0]}" = "$WORKFLOW_PATH"
+          cat > /tmp/patches.tgz.b64 <<'PATCHES'
+          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
+          PATCHES
+          base64 -d /tmp/patches.tgz.b64 > /tmp/patches.tgz
+          mkdir /tmp/openat2-patches
+          tar -xzf /tmp/patches.tgz -C /tmp/openat2-patches
+          TEST_PATCH='/tmp/openat2-patches/test_patch.py'
+          INSTRUMENTATION_PATCH='/tmp/openat2-patches/instrumentation_patch.py'
+          REPAIR_PATCH='/tmp/openat2-patches/repair_patch.py'
+          python -m py_compile "$TEST_PATCH" "$INSTRUMENTATION_PATCH" "$REPAIR_PATCH"
+          python "$TEST_PATCH"
+          python "$INSTRUMENTATION_PATCH"
+          set +e
+          node "$TEST_PATH" > /tmp/industrial-exhaust-openat2-mount-predecessor.log 2>&1
+          predecessor_status=$?
+          set -e
+          test "$predecessor_status" -ne 0
+          grep -F 'index mount crossing may not publish into an alternate subtree' /tmp/industrial-exhaust-openat2-mount-predecessor.log
+          echo 'predecessor nested-mount wrong-subtree publication reproduced'
+          python "$REPAIR_PATCH"
+          node --check "$LIB_PATH"
+          node --check "$TEST_PATH"
+          node "$TEST_PATH"
+          node test/industrial-exhaust-artifacts.test.js
+          node test/industrial-exhaust.test.js
+          node tools/hydrate-industrial-exhaust.mjs --audit
+          git diff --check
+          rm "$WORKFLOW_PATH"
+          mapfile -t product_diff < <(git diff --name-only "$BASE_SHA")
+          test "${#product_diff[@]}" -eq 2
+          test "${product_diff[0]}" = "$TEST_PATH"
+          test "${product_diff[1]}" = "$LIB_PATH"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          tree_sha="$(git write-tree)"
+          new_sha="$(printf '%s\n\n%s\n' 'fix(industrial-exhaust): reject receipt mount crossings with openat2' 'Require openat2 no-cross-device resolution for every receipt path open and bind parent proof to the admitted root mount.' | git commit-tree "$tree_sha" -p "$BASE_SHA")"
+          mapfile -t final_diff < <(git diff --name-only "$BASE_SHA" "$new_sha")
+          test "${#final_diff[@]}" -eq 2
+          test "${final_diff[0]}" = "$TEST_PATH"
+          test "${final_diff[1]}" = "$LIB_PATH"
+          git diff --check "$BASE_SHA" "$new_sha"
+          live_main="$(git ls-remote origin refs/heads/main | awk '{print $1}')"
+          test "$live_main" = "$BASE_SHA"
+          git push --force-with-lease="refs/heads/${PRODUCT_BRANCH}:" origin "${new_sha}:refs/heads/${PRODUCT_BRANCH}"
