@@ -1607,6 +1607,11 @@ def open_directory_chain(relative_parent, create):
 
         chain_descriptors.append(descriptor)
         chain.append({"display": display, **identity(descriptor_stats)})
+        restrict_filesystem_writes(
+            descriptor,
+            f"directory-chain:{display}",
+        )
+        maybe_rename_directory_chain_sibling(display, create)
         sync_directory(descriptor, f"receipt parent directory {display}")
         sync_directory(parent_descriptor, f"receipt parent directory parent {chain[-2]['display']}")
         if created:
@@ -1695,6 +1700,46 @@ def maybe_swap_visible_ancestor():
         )
         return
     add_event("visible-ancestor-swapped")
+
+def maybe_rename_directory_chain_sibling(display, create):
+    global FAULT_USED
+    if (
+        not create
+        or not isinstance(FAULT, dict)
+        or FAULT.get("type") != "rename_directory_chain_sibling_after_open"
+        or FAULT_USED
+        or FAULT.get("after_display") != display
+    ):
+        return
+    FAULT_USED = True
+    canonical = FAULT.get("canonical_path")
+    displaced = FAULT.get("displaced_path")
+    if (
+        not all(
+            isinstance(value, str) and value and os.path.isabs(value)
+            for value in (canonical, displaced)
+        )
+        or canonical == displaced
+    ):
+        fail("invalid directory-chain sibling rename fault")
+    try:
+        os.rename(canonical, displaced)
+    except OSError as error:
+        if error.errno not in (errno.EACCES, errno.EPERM, errno.EXDEV):
+            raise
+        if os.path.lexists(displaced) or not os.path.lexists(canonical):
+            fail(
+                "progressive Landlock rejection left a partial "
+                "directory-chain sibling rename"
+            )
+        add_event(
+            "ambient-write-denied",
+            operation="directory-chain-sibling-rename",
+            display=display,
+            errno=error.errno,
+        )
+        return
+    add_event("directory-chain-sibling-renamed", display=display)
 
 def maybe_create_competing_receipt(parent_descriptor, final_name):
     global FAULT_USED
@@ -2556,11 +2601,34 @@ function runReceiptDirfdHelper({
     const parentConfinement = writeConfinementEvents.find(
       event => event?.scope === 'receipt-parent'
     );
+    const directoryConfinements = writeConfinementEvents.filter(
+      event => typeof event?.scope === 'string'
+        && event.scope.startsWith('directory-chain:')
+    );
+    const chainEntries = Array.isArray(response.chain)
+      ? response.chain.slice(1)
+      : [];
+    const directoryConfinementByScope = new Map(
+      directoryConfinements.map(event => [event.scope, event])
+    );
+    const directoryChainConfined =
+      directoryConfinementByScope.size === directoryConfinements.length
+      && directoryConfinements.length === chainEntries.length
+      && chainEntries.every(entry => {
+        const event = directoryConfinementByScope.get(
+          `directory-chain:${entry?.display}`
+        );
+        return event
+          && Number(event.abi) >= 3
+          && String(event.dev) === String(entry?.dev)
+          && String(event.ino) === String(entry?.ino);
+      });
     if (!eventTypes.has('runtime-confined')
-      || writeConfinementEvents.length !== 2
+      || writeConfinementEvents.length !== chainEntries.length + 2
       || capabilityEvents.length !== 1
       || !rootConfinement
       || !parentConfinement
+      || !directoryChainConfined
       || Number(rootConfinement?.abi) < 3
       || Number(parentConfinement?.abi) < 3
       || String(parentConfinement?.dev) !== String(capabilityEvents[0]?.dev)
