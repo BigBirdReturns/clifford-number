@@ -18,7 +18,9 @@ jobs:
     env:
       CBRANCH: agent/pr2231-observation-interval-controller-v36
       CPATH: .github/workflows/temporary-pr2231-observation-interval-controller-v36.yml
-      CPARENT: 944ec8f2a3549b717c87e30a7a21b56f47cc1f24
+      CPARENT: 93ce24e1330f29ca93c6153fb42d5e9023b5e24a
+      PARENT_BLOB: 37b0dffab448ab382a0c31be4ff4a1bc50bad872
+      SOURCE_COMMIT: 944ec8f2a3549b717c87e30a7a21b56f47cc1f24
       SOURCE_BLOB: a0e6f9c14ede9657f6086d97d7b95d870d687bd5
       SOURCE_RUN_SHA: 5f7e069893c312567063551549765d0976195e311d701876a9847e7807b58c8b
       CURRENT_HEAD: ${{ github.event.pull_request.head.sha }}
@@ -56,13 +58,16 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Derive corrected qualifier from pinned parent
+      - name: Derive corrected qualifier from pinned source
         shell: bash
         run: |
           set -euo pipefail
-          actual_blob="$(git rev-parse "$CPARENT:$CPATH")"
-          printf 'source-blob actual=%s expected=%s\n' "$actual_blob" "$SOURCE_BLOB"
-          [ "$actual_blob" = "$SOURCE_BLOB" ]
+          actual_parent_blob="$(git rev-parse "$CPARENT:$CPATH")"
+          printf 'parent-blob actual=%s expected=%s\n' "$actual_parent_blob" "$PARENT_BLOB"
+          [ "$actual_parent_blob" = "$PARENT_BLOB" ]
+          actual_source_blob="$(git rev-parse "$SOURCE_COMMIT:$CPATH")"
+          printf 'source-blob actual=%s expected=%s\n' "$actual_source_blob" "$SOURCE_BLOB"
+          [ "$actual_source_blob" = "$SOURCE_BLOB" ]
           python3 <<'PY'
           import hashlib
           import os
@@ -70,8 +75,8 @@ jobs:
           import subprocess
 
           path = os.environ['CPATH']
-          parent = os.environ['CPARENT']
-          source = subprocess.check_output(['git', 'show', f'{parent}:{path}'], text=True)
+          source_commit = os.environ['SOURCE_COMMIT']
+          source = subprocess.check_output(['git', 'show', f'{source_commit}:{path}'], text=True)
           marker = "      - name: Qualify repaired transport\n        shell: bash\n        run: |\n"
           if source.count(marker) != 1:
               raise SystemExit('source run block marker mismatch')
@@ -99,38 +104,75 @@ jobs:
                   raise SystemExit(f'expression count mismatch: {old!r}')
               script = script.replace(old, new)
 
-          defect = 'assert.notEqual(r(terminalInput), terminalExpected);'
-          repair = 'assert.equal(r(terminalInput), terminalExpected);'
-          if script.count(defect) != 1 or script.count(repair) != 0:
-              raise SystemExit('terminal census repair count mismatch')
-          script = script.replace(defect, repair)
-          if script.count(repair) != 1 or script.count('assert.notEqual(r(countryInput), countryExpected);') != 1:
-              raise SystemExit('corrected census shape mismatch')
+          old_anchor = (
+              "console.log('old-country='+JSON.stringify(r(countryInput)));\n"
+              "assert.notEqual(r(terminalInput), terminalExpected);"
+          )
+          old_replacement = (
+              "console.log('old-country='+JSON.stringify(r(countryInput)));\n"
+              "const referenceInput = 'Reference: 2026-88-77 04 72 98 76 54';\n"
+              "const referenceExpected = 'Reference: 2026-88-77 [contact omitted]';\n"
+              "console.log('old-reference='+JSON.stringify(r(referenceInput)));\n"
+              "assert.equal(r(referenceInput), referenceExpected);\n"
+              "assert.notEqual(r(terminalInput), terminalExpected);"
+          )
+          if script.count(old_anchor) != 1:
+              raise SystemExit('old-reference census anchor mismatch')
+          script = script.replace(old_anchor, old_replacement)
 
-          target = pathlib.Path('/tmp/p2231-qualified-v37.sh')
+          terminal_defect = 'assert.notEqual(r(terminalInput), terminalExpected);'
+          terminal_repair = 'assert.equal(r(terminalInput), terminalExpected);'
+          if script.count(terminal_defect) != 1 or script.count(terminal_repair) != 0:
+              raise SystemExit('terminal census repair count mismatch')
+          script = script.replace(terminal_defect, terminal_repair)
+
+          reference_defect = (
+              "['Reference: 2026-88-77 04 72 98 76 54', "
+              "'Reference: 2026-88-77 04 72 98 76 54'],"
+          )
+          reference_repair = (
+              "['Reference: 2026-88-77 04 72 98 76 54', "
+              "'Reference: 2026-88-77 [contact omitted]'],"
+          )
+          if script.count(reference_defect) != 1 or script.count(reference_repair) != 0:
+              raise SystemExit('reference expectation repair count mismatch')
+          script = script.replace(reference_defect, reference_repair)
+
+          if script.count(terminal_repair) != 1:
+              raise SystemExit('terminal repaired census shape mismatch')
+          if script.count('assert.notEqual(r(countryInput), countryExpected);') != 1:
+              raise SystemExit('country defect census shape mismatch')
+          if script.count("assert.equal(r(referenceInput), referenceExpected);") != 1:
+              raise SystemExit('old-reference census shape mismatch')
+          if script.count(reference_repair) != 1:
+              raise SystemExit('reference repaired expectation shape mismatch')
+
+          target = pathlib.Path('/tmp/p2231-qualified-v38.sh')
           target.write_text(script)
           target.chmod(0o700)
-          receipt = pathlib.Path('/tmp/p2231-controller-repair-v37.txt')
+          receipt = pathlib.Path('/tmp/p2231-controller-repair-v38.txt')
           receipt.write_text(
-              f'source_commit={parent}\n'
+              f'controller_parent={os.environ["CPARENT"]}\n'
+              f'controller_parent_blob={os.environ["PARENT_BLOB"]}\n'
+              f'source_commit={source_commit}\n'
               f'source_blob={os.environ["SOURCE_BLOB"]}\n'
               f'source_run_sha256={source_sha}\n'
               f'current_head={os.environ["CURRENT_HEAD"]}\n'
               f'current_branch={os.environ["CURRENT_BRANCH"]}\n'
               f'run_id={os.environ["CURRENT_RUN_ID"]}\n'
-              'repair=terminal-preexisting-pass-country-defect-retained\n'
+              'repair=terminal-preexisting-pass-country-defect-retained-reference-preexisting-redaction\n'
               f'qualified_script_sha256={hashlib.sha256(script.encode()).hexdigest()}\n'
           )
           PY
-          bash -n /tmp/p2231-qualified-v37.sh
-          bash /tmp/p2231-qualified-v37.sh
+          bash -n /tmp/p2231-qualified-v38.sh
+          bash /tmp/p2231-qualified-v38.sh
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: pr2231-repaired-transport-qualification-v37
+          name: pr2231-repaired-transport-qualification-v38
           path: |
-            /tmp/p2231-controller-repair-v37.txt
-            /tmp/p2231-qualified-v37.sh
+            /tmp/p2231-controller-repair-v38.txt
+            /tmp/p2231-qualified-v38.sh
             /tmp/p2231-repaired-qualification.txt
             /tmp/p2231-comment-initial.md
             /tmp/p2231-posted-initial.gz
