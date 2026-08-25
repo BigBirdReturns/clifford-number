@@ -1,17 +1,17 @@
-name: Temporary PR 2231 current-main requalification v44
+name: Temporary PR 2231 publish current-main successor v45
 on:
   pull_request:
     branches: [main]
     types: [opened, synchronize, reopened]
     paths: ['.github/workflows/temporary-pr2231-observation-interval-controller-v36.yml']
 permissions:
-  contents: read
+  contents: write
   issues: read
 concurrency:
-  group: pr2231-current-main-requalification-v44
+  group: pr2231-current-main-publication-v45
   cancel-in-progress: false
 jobs:
-  qualify-current-main:
+  qualify-and-publish:
     if: github.repository == 'BigBirdReturns/clifford-number'
     runs-on: ubuntu-latest
     timeout-minutes: 75
@@ -34,13 +34,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Qualify exact product bytes on live main
+      - name: Qualify and publish exact product bytes on live main
         shell: bash
         run: |
           set -euo pipefail
           H='${{ github.event.pull_request.head.sha }}'
-          Q=/tmp/pr2231-v44-main
-          R=/tmp/pr2231-v44-qualification.txt
+          Q=/tmp/pr2231-v45-main
+          R=/tmp/pr2231-v45-publication.txt
           : > "$R"
           stage() { printf '\n=== STAGE %s ===\n' "$1" | tee -a "$R"; }
           fail() { printf 'FAIL[%s] %s\n' "$1" "$2" | tee -a "$R" >&2; exit 1; }
@@ -62,16 +62,14 @@ jobs:
           stage initial-live-leases
           fetch_leases
           require_eq controller-head "$(git rev-parse refs/remotes/origin/$CBRANCH)" "$H"
-          require_eq product-head "$(git rev-parse refs/remotes/origin/$PBRANCH)" "$PHEAD"
-          require_eq product-parent "$(git rev-parse "$PHEAD^")" "$PPARENT"
-          require_eq product-count "$(git rev-list --count "$PPARENT..$PHEAD")" '1'
-          require_eq product-tree "$(git rev-parse "$PHEAD^{tree}")" "$PTREE"
-          require_eq product-lib "$(git rev-parse "$PHEAD:tools/lib/industrial-exhaust.mjs")" "$PLIB"
-          require_eq product-test "$(git rev-parse "$PHEAD:test/industrial-exhaust.test.js")" "$PTEST"
-          require_eq product-paths "$(git diff --name-only "$PPARENT..$PHEAD" | LC_ALL=C sort)" "$PRODUCT_PATHS"
-          require_eq product-numstat "$(git diff --numstat "$PPARENT..$PHEAD" | LC_ALL=C sort -k3)" "$PRODUCT_NUMSTAT"
-          require_eq product-author "$(git show -s --format=%an "$PHEAD")" 'BigBirdReturns'
-          require_eq product-committer "$(git show -s --format=%cn "$PHEAD")" 'BigBirdReturns'
+          require_eq source-product-head "$(git rev-parse refs/remotes/origin/$PBRANCH)" "$PHEAD"
+          require_eq source-product-parent "$(git rev-parse "$PHEAD^")" "$PPARENT"
+          require_eq source-product-count "$(git rev-list --count "$PPARENT..$PHEAD")" '1'
+          require_eq source-product-tree "$(git rev-parse "$PHEAD^{tree}")" "$PTREE"
+          require_eq source-product-lib "$(git rev-parse "$PHEAD:tools/lib/industrial-exhaust.mjs")" "$PLIB"
+          require_eq source-product-test "$(git rev-parse "$PHEAD:test/industrial-exhaust.test.js")" "$PTEST"
+          require_eq source-product-paths "$(git diff --name-only "$PPARENT..$PHEAD" | LC_ALL=C sort)" "$PRODUCT_PATHS"
+          require_eq source-product-numstat "$(git diff --numstat "$PPARENT..$PHEAD" | LC_ALL=C sort -k3)" "$PRODUCT_NUMSTAT"
           MAIN="$(git rev-parse refs/remotes/origin/main)"
           printf 'captured-main=%s\n' "$MAIN" | tee -a "$R"
           require_eq main-lib "$(git rev-parse "$MAIN:tools/lib/industrial-exhaust.mjs")" "$BLIB"
@@ -129,23 +127,63 @@ jobs:
           require_eq restored-test "$(git hash-object test/industrial-exhaust.test.js)" "$PTEST"
           git diff --check
 
-          stage final-live-leases
+          stage prepublication-live-leases
           cd "$GITHUB_WORKSPACE"
           fetch_leases
-          require_eq final-main "$(git rev-parse refs/remotes/origin/main)" "$MAIN"
-          require_eq final-product "$(git rev-parse refs/remotes/origin/$PBRANCH)" "$PHEAD"
-          require_eq final-controller "$(git rev-parse refs/remotes/origin/$CBRANCH)" "$H"
-          require_eq final-main-lib "$(git rev-parse "$MAIN:tools/lib/industrial-exhaust.mjs")" "$BLIB"
-          require_eq final-main-test "$(git rev-parse "$MAIN:test/industrial-exhaust.test.js")" "$BTEST"
-          require_eq final-product-lib "$(git rev-parse "$PHEAD:tools/lib/industrial-exhaust.mjs")" "$PLIB"
-          require_eq final-product-test "$(git rev-parse "$PHEAD:test/industrial-exhaust.test.js")" "$PTEST"
+          require_eq prepublish-main "$(git rev-parse refs/remotes/origin/main)" "$MAIN"
+          require_eq prepublish-product "$(git rev-parse refs/remotes/origin/$PBRANCH)" "$PHEAD"
+          require_eq prepublish-controller "$(git rev-parse refs/remotes/origin/$CBRANCH)" "$H"
+          require_eq prepublish-main-lib "$(git rev-parse "$MAIN:tools/lib/industrial-exhaust.mjs")" "$BLIB"
+          require_eq prepublish-main-test "$(git rev-parse "$MAIN:test/industrial-exhaust.test.js")" "$BTEST"
 
-          printf 'QUALIFICATION_SUCCESS\nrun=%s\nmain=%s\nproduct=%s\ntree=%s\nlib=%s\ntest=%s\n' \
-            '${{ github.run_id }}' "$MAIN" "$PHEAD" "$PTREE" "$PLIB" "$PTEST" | tee -a "$R"
+          stage construct-product-successor
+          cd "$Q"
+          git config user.name BigBirdReturns
+          git config user.email bigbirdreturns@proton.me
+          git add tools/lib/industrial-exhaust.mjs test/industrial-exhaust.test.js
+          git commit -m 'fix: preserve observation intervals before later telephone values' 2>&1 | tee -a "$R"
+          NEW_HEAD="$(git rev-parse HEAD)"
+          NEW_TREE="$(git rev-parse HEAD^{tree})"
+          require_eq successor-parent "$(git rev-parse HEAD^)" "$MAIN"
+          require_eq successor-count "$(git rev-list --count "$MAIN..HEAD")" '1'
+          require_eq successor-lib "$(git rev-parse HEAD:tools/lib/industrial-exhaust.mjs)" "$PLIB"
+          require_eq successor-test "$(git rev-parse HEAD:test/industrial-exhaust.test.js)" "$PTEST"
+          require_eq successor-paths "$(git diff --name-only "$MAIN..HEAD" | LC_ALL=C sort)" "$PRODUCT_PATHS"
+          require_eq successor-numstat "$(git diff --numstat "$MAIN..HEAD" | LC_ALL=C sort -k3)" "$PRODUCT_NUMSTAT"
+          require_eq successor-author "$(git show -s --format=%an HEAD)" 'BigBirdReturns'
+          require_eq successor-committer "$(git show -s --format=%cn HEAD)" 'BigBirdReturns'
+          printf 'successor-head=%s\nsuccessor-tree=%s\n' "$NEW_HEAD" "$NEW_TREE" | tee -a "$R"
+
+          stage atomic-force-with-lease-publication
+          cd "$GITHUB_WORKSPACE"
+          fetch_leases
+          require_eq publication-main-lease "$(git rev-parse refs/remotes/origin/main)" "$MAIN"
+          require_eq publication-product-lease "$(git rev-parse refs/remotes/origin/$PBRANCH)" "$PHEAD"
+          require_eq publication-controller-lease "$(git rev-parse refs/remotes/origin/$CBRANCH)" "$H"
+          git -C "$Q" push --atomic origin \
+            "$MAIN:refs/heads/main" \
+            "$NEW_HEAD:refs/heads/$PBRANCH" \
+            --force-with-lease="refs/heads/main:$MAIN" \
+            --force-with-lease="refs/heads/$PBRANCH:$PHEAD" 2>&1 | tee -a "$R"
+
+          stage postpublication-census
+          fetch_leases
+          require_eq published-main "$(git rev-parse refs/remotes/origin/main)" "$MAIN"
+          require_eq published-product "$(git rev-parse refs/remotes/origin/$PBRANCH)" "$NEW_HEAD"
+          require_eq published-controller "$(git rev-parse refs/remotes/origin/$CBRANCH)" "$H"
+          require_eq published-parent "$(git rev-parse "$NEW_HEAD^")" "$MAIN"
+          require_eq published-tree "$(git rev-parse "$NEW_HEAD^{tree}")" "$NEW_TREE"
+          require_eq published-lib "$(git rev-parse "$NEW_HEAD:tools/lib/industrial-exhaust.mjs")" "$PLIB"
+          require_eq published-test "$(git rev-parse "$NEW_HEAD:test/industrial-exhaust.test.js")" "$PTEST"
+          require_eq published-paths "$(git diff --name-only "$MAIN..$NEW_HEAD" | LC_ALL=C sort)" "$PRODUCT_PATHS"
+          require_eq published-numstat "$(git diff --numstat "$MAIN..$NEW_HEAD" | LC_ALL=C sort -k3)" "$PRODUCT_NUMSTAT"
+
+          printf 'PUBLICATION_SUCCESS\nrun=%s\nbase=%s\nold-product=%s\nproduct=%s\ntree=%s\nlib=%s\ntest=%s\n' \
+            '${{ github.run_id }}' "$MAIN" "$PHEAD" "$NEW_HEAD" "$NEW_TREE" "$PLIB" "$PTEST" | tee -a "$R"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: pr2231-current-main-requalification-v44
-          path: /tmp/pr2231-v44-qualification.txt
+          name: pr2231-current-main-publication-v45
+          path: /tmp/pr2231-v45-publication.txt
           if-no-files-found: error
           retention-days: 90
