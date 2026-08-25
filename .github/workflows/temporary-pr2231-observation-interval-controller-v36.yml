@@ -1,0 +1,142 @@
+name: Temporary PR 2231 current-main requalification v43
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths: ['.github/workflows/temporary-pr2231-observation-interval-controller-v36.yml']
+permissions:
+  contents: read
+  issues: read
+concurrency:
+  group: pr2231-current-main-requalification-v43
+  cancel-in-progress: false
+jobs:
+  qualify-current-main:
+    if: github.repository == 'BigBirdReturns/clifford-number'
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    env:
+      CBRANCH: agent/pr2231-observation-interval-controller-v36
+      PBRANCH: agent/current-main-identifier-context-product-v1
+      PHEAD: 5a664528ced503daf37141d87c17e1c973a07eb1
+      PPARENT: ab781df0a26d0c3c6d870863b1d89b3a7d06a14f
+      PTREE: 4e47f7fc240b4cf3144b228514bb1020e8daecef
+      PLIB: d825c94f2dfe5ef2bd64d483a2feb9dfa0a5c645
+      PTEST: 34ae708c4934834334839552d7603e48e3db4ea4
+      BLIB: 5f68254d3e44de693e83503aed879160f9b7b997
+      BTEST: 1659a7cc54666a2ac5a1d6b88eb8c6591d98008e
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Qualify exact product bytes on live main
+        shell: bash
+        run: |
+          set -euo pipefail
+          H='${{ github.event.pull_request.head.sha }}'
+          Q=/tmp/pr2231-v43-main
+          R=/tmp/pr2231-v43-qualification.txt
+          : > "$R"
+          stage() { printf '\n=== STAGE %s ===\n' "$1" | tee -a "$R"; }
+          fail() { printf 'FAIL[%s] %s\n' "$1" "$2" | tee -a "$R" >&2; exit 1; }
+          require_eq() {
+            local label="$1" actual="$2" expected="$3"
+            printf '%s actual=%s expected=%s\n' "$label" "$actual" "$expected" | tee -a "$R"
+            [ "$actual" = "$expected" ] || fail "$label" 'value mismatch'
+          }
+          fetch_leases() {
+            git fetch --no-tags origin \
+              "+refs/heads/main:refs/remotes/origin/main" \
+              "+refs/heads/$PBRANCH:refs/remotes/origin/$PBRANCH" \
+              "+refs/heads/$CBRANCH:refs/remotes/origin/$CBRANCH"
+          }
+
+          stage initial-live-leases
+          fetch_leases
+          require_eq controller-head "$(git rev-parse refs/remotes/origin/$CBRANCH)" "$H"
+          require_eq product-head "$(git rev-parse refs/remotes/origin/$PBRANCH)" "$PHEAD"
+          require_eq product-parent "$(git rev-parse "$PHEAD^")" "$PPARENT"
+          require_eq product-count "$(git rev-list --count "$PPARENT..$PHEAD")" '1'
+          require_eq product-tree "$(git rev-parse "$PHEAD^{tree}")" "$PTREE"
+          require_eq product-lib "$(git rev-parse "$PHEAD:tools/lib/industrial-exhaust.mjs")" "$PLIB"
+          require_eq product-test "$(git rev-parse "$PHEAD:test/industrial-exhaust.test.js")" "$PTEST"
+          require_eq product-paths "$(git diff --name-only "$PPARENT..$PHEAD" | LC_ALL=C sort)" $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          require_eq product-numstat "$(git diff --numstat "$PPARENT..$PHEAD" | LC_ALL=C sort -k3)" $'729\t0\ttest/industrial-exhaust.test.js\n638\t56\ttools/lib/industrial-exhaust.mjs'
+          require_eq product-author "$(git show -s --format=%an "$PHEAD")" 'BigBirdReturns'
+          require_eq product-committer "$(git show -s --format=%cn "$PHEAD")" 'BigBirdReturns'
+          MAIN="$(git rev-parse refs/remotes/origin/main)"
+          printf 'captured-main=%s\n' "$MAIN" | tee -a "$R"
+          require_eq main-lib "$(git rev-parse "$MAIN:tools/lib/industrial-exhaust.mjs")" "$BLIB"
+          require_eq main-test "$(git rev-parse "$MAIN:test/industrial-exhaust.test.js")" "$BTEST"
+
+          stage live-main-byte-transplant
+          rm -rf "$Q"
+          git worktree prune
+          git worktree add --detach "$Q" "$MAIN"
+          git show "$PHEAD:tools/lib/industrial-exhaust.mjs" > "$Q/tools/lib/industrial-exhaust.mjs"
+          git show "$PHEAD:test/industrial-exhaust.test.js" > "$Q/test/industrial-exhaust.test.js"
+          cd "$Q"
+          require_eq qualified-lib "$(git hash-object tools/lib/industrial-exhaust.mjs)" "$PLIB"
+          require_eq qualified-test "$(git hash-object test/industrial-exhaust.test.js)" "$PTEST"
+          require_eq qualified-paths "$(git diff --name-only | LC_ALL=C sort)" $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          require_eq qualified-numstat "$(git diff --numstat | LC_ALL=C sort -k3)" $'729\t0\ttest/industrial-exhaust.test.js\n638\t56\ttools/lib/industrial-exhaust.mjs'
+          git diff --check
+
+          stage exact-boundary-matrix
+          node --input-type=module <<'NODE' 2>&1 | tee -a "$R"
+          import assert from 'node:assert/strict';
+          import {redactContactData as r} from './tools/lib/industrial-exhaust.mjs';
+          const cases = [
+            ['Phone: 09012345678 2026-08-17 01 42 68 53 00', 'Phone: [contact omitted] 2026-08-17 [contact omitted]'],
+            ['Phone: 09012345678 2026.08.17.03 62 16 80 41', 'Phone: [contact omitted] 2026.08.17.[contact omitted]'],
+            ['ID: 09012345678 2026-08-17.1 212 555 1234', 'ID: 09012345678 2026-08-17.[contact omitted]'],
+            ['Phone: 09012345678 2026-08-17 01 42 68 53 00 90 people', 'Phone: [contact omitted] 2026-08-17 [contact omitted] 90 people'],
+            ['Phone: 09012345678 3.14 03-6216-8041', 'Phone: [contact omitted] 3.14 [contact omitted]'],
+            ['Phone: 09012345678 12:30 +81 3 6216 5111', 'Phone: [contact omitted] 12:30 [contact omitted]'],
+            ['Phone: 09012345678 10-20 people (03) 6216 8041', 'Phone: [contact omitted] 10-20 people [contact omitted]'],
+            ['電話：０９０１２３４５６７８ ２０２６．０８．１７．１ ２１２ ５５５ １２３４', '電話：[contact omitted] ２０２６．０８．１７．[contact omitted]'],
+          ];
+          for (const [input, expected] of cases) {
+            const actual = r(input);
+            console.log(JSON.stringify({input, actual, expected}));
+            assert.equal(actual, expected, input);
+          }
+          NODE
+
+          stage focused-and-release-gates
+          node --check tools/lib/industrial-exhaust.mjs
+          node --check tools/crawl-industrial-exhaust.mjs
+          node --check test/industrial-exhaust.test.js
+          node test/industrial-exhaust.test.js 2>&1 | tee -a "$R"
+          node test/industrial-exhaust-artifacts.test.js 2>&1 | tee -a "$R"
+          npm run release:check 2>&1 | tee -a "$R"
+          require_eq post-release-lib "$(git hash-object tools/lib/industrial-exhaust.mjs)" "$PLIB"
+          require_eq post-release-test "$(git hash-object test/industrial-exhaust.test.js)" "$PTEST"
+          require_eq post-release-paths "$(git diff --name-only | LC_ALL=C sort)" $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          require_eq post-release-numstat "$(git diff --numstat | LC_ALL=C sort -k3)" $'729\t0\ttest/industrial-exhaust.test.js\n638\t56\ttools/lib/industrial-exhaust.mjs'
+
+          stage final-live-leases
+          cd "$GITHUB_WORKSPACE"
+          fetch_leases
+          require_eq final-main "$(git rev-parse refs/remotes/origin/main)" "$MAIN"
+          require_eq final-product "$(git rev-parse refs/remotes/origin/$PBRANCH)" "$PHEAD"
+          require_eq final-controller "$(git rev-parse refs/remotes/origin/$CBRANCH)" "$H"
+          require_eq final-main-lib "$(git rev-parse "$MAIN:tools/lib/industrial-exhaust.mjs")" "$BLIB"
+          require_eq final-main-test "$(git rev-parse "$MAIN:test/industrial-exhaust.test.js")" "$BTEST"
+          require_eq final-product-lib "$(git rev-parse "$PHEAD:tools/lib/industrial-exhaust.mjs")" "$PLIB"
+          require_eq final-product-test "$(git rev-parse "$PHEAD:test/industrial-exhaust.test.js")" "$PTEST"
+
+          printf 'QUALIFICATION_SUCCESS\nrun=%s\nmain=%s\nproduct=%s\nlib=%s\ntest=%s\n' \
+            '${{ github.run_id }}' "$MAIN" "$PHEAD" "$PLIB" "$PTEST" | tee -a "$R"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-current-main-requalification-v43
+          path: /tmp/pr2231-v43-qualification.txt
+          if-no-files-found: error
+          retention-days: 90
