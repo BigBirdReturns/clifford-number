@@ -16,40 +16,25 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 75
     env:
-      CBRANCH: agent/pr2231-observation-interval-controller-v36
-      CPATH: .github/workflows/temporary-pr2231-observation-interval-controller-v36.yml
-      CPARENT: 1c35a47ad9754a888db05eb0f0ab3e10a4f9d11f
-      PARENT_BLOB: 7c98a6ee038764102f720aa5266d41db354d90db
-      SOURCE_COMMIT: 944ec8f2a3549b717c87e30a7a21b56f47cc1f24
-      SOURCE_BLOB: a0e6f9c14ede9657f6086d97d7b95d870d687bd5
-      SOURCE_RUN_SHA: 5f7e069893c312567063551549765d0976195e311d701876a9847e7807b58c8b
       CURRENT_HEAD: ${{ github.event.pull_request.head.sha }}
       CURRENT_BRANCH: ${{ github.head_ref }}
       CURRENT_RUN_ID: ${{ github.run_id }}
-      PBRANCH: agent/current-main-identifier-context-product-v1
-      PHEAD: 456ee43cb8a0d3c1afeeed8b9f7342219a3fac05
-      PPARENT: 2d2c7b6cd7517ca25854e481b21774a697d0e76b
-      PLIB: dbf28c75e6681ca06915ccc2e85062f67382175f
-      PTEST: 08b3cd4014b916d1ac5845c73c59f7d55dbae7ef
-      BLIB: 5f68254d3e44de693e83503aed879160f9b7b997
-      BTEST: 1659a7cc54666a2ac5a1d6b88eb8c6591d98008e
-      COMMENT: '5401422894'
-      PCOMMIT: 614c8065a6c255fbd8cfdc9315ef861d700011a9
-      PTREE: 7f562e216eb716fef39bd426176f7c638fa8e778
-      SLIB: d825c94f2dfe5ef2bd64d483a2feb9dfa0a5c645
-      STEST: 34ae708c4934834334839552d7603e48e3db4ea4
-      POSTED_SHA: 20056e150a6953f4c942c126e4098705e0992f1cc80676a7b4eb9acf5cbe4a96
-      TARGET_GZIP_SHA: 7f25ffa5c58b0025bbd7ce2783393c6010a98e8f0606c3f94607946efb4f9054
-      PATCH_SHA: d5e5afcf65fbd7b5a5d379e636b4ccc81cc72f3f95bb114519c64dba3c2114bb
-      PREFIX_SHA: 51cb1f40492ccfe872142b63321b2f9c55cfd74f6f525c73130b4b2dfd32ad68
-      CORRUPT_TAIL_HEX: 2d2d20302d6172742c20656e64207d2c206c6174652d2e300a0a
-      FOOTER_CRC: fdae62e6
-      RAW_BYTES: '15957'
-      PREFIX_BYTES: '15931'
-      PATCH_BYTES: '15943'
-      GZIP_BYTES: '4343'
-      B64_CHARS: '5792'
       GH_TOKEN: ${{ github.token }}
+      RUNNER_SHA256: 23e58095f15733fa216c5e6b0bc769597b7cc1088c108514efe7e9484e0d9477
+      RUNNER_BLOB: c348d1d78f337c78b8536ff56e3664d9c8bc3add
+      PAYLOAD_BLOBS: >-
+        538450eb626d58f65268999a1cd82ad582d92eb5
+        5db12ca5816d73e8c37d4ee885447db8cdb20a6a
+        04157ba0531954b72690d62eb6f65fd092cbf69a
+        f5b208b3453568afe2b8b5bf7ee9cae22f139739
+        a6e8455ae829201e1736891fdb204d4599f002dc
+        1abb45e295db645a8f694100e3510fa23d477f47
+        e0e23a8b5da65abdcc377b253612beec826d86a4
+        6f18fefeca82bcc06631346dc9e1b4f8ecdabbb2
+        13c6a0db2b4272cd0909cb10276f665d8ecd8c48
+        670451026986faab0972d8a352166b037dda29f0
+        baa457e40e71b8d85fac8631fdff0015e3f67a76
+        0174f5e3c141753fa614420c4c226507c9853529
     steps:
       - uses: actions/checkout@v4
         with:
@@ -58,179 +43,42 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Derive corrected qualifier from pinned source
+      - name: Assemble and run checksum-pinned v42 qualifier
         shell: bash
         run: |
           set -euo pipefail
-          actual_parent_blob="$(git rev-parse "$CPARENT:$CPATH")"
-          printf 'parent-blob actual=%s expected=%s\n' "$actual_parent_blob" "$PARENT_BLOB"
-          [ "$actual_parent_blob" = "$PARENT_BLOB" ]
-          actual_source_blob="$(git rev-parse "$SOURCE_COMMIT:$CPATH")"
-          printf 'source-blob actual=%s expected=%s\n' "$actual_source_blob" "$SOURCE_BLOB"
-          [ "$actual_source_blob" = "$SOURCE_BLOB" ]
-          python3 <<'PY'
-          import hashlib
-          import os
-          import pathlib
-          import subprocess
-
-          path = os.environ['CPATH']
-          source_commit = os.environ['SOURCE_COMMIT']
-          source = subprocess.check_output(['git', 'show', f'{source_commit}:{path}'], text=True)
-          marker = "      - name: Qualify repaired transport\n        shell: bash\n        run: |\n"
-          if source.count(marker) != 1:
-              raise SystemExit('source run block marker mismatch')
-          remainder = source.split(marker, 1)[1]
-          lines = []
-          for line in remainder.splitlines():
-              if line.startswith('          '):
-                  lines.append(line[10:])
-              elif line == '':
-                  lines.append('')
-              else:
-                  break
-          script = '\n'.join(lines) + '\n'
-          source_sha = hashlib.sha256(script.encode()).hexdigest()
-          if source_sha != os.environ['SOURCE_RUN_SHA']:
-              raise SystemExit(f'source run sha mismatch: {source_sha}')
-
-          replacements = {
-              '$' + '{{ github.event.pull_request.head.sha }}': os.environ['CURRENT_HEAD'],
-              '$' + '{{ github.head_ref }}': os.environ['CURRENT_BRANCH'],
-              '$' + '{{ github.run_id }}': os.environ['CURRENT_RUN_ID'],
-          }
-          for old, new in replacements.items():
-              if script.count(old) != 1:
-                  raise SystemExit(f'expression count mismatch: {old!r}')
-              script = script.replace(old, new)
-
-          old_anchor = (
-              "console.log('old-country='+JSON.stringify(r(countryInput)));\n"
-              "assert.notEqual(r(terminalInput), terminalExpected);"
-          )
-          old_replacement = (
-              "console.log('old-country='+JSON.stringify(r(countryInput)));\n"
-              "const referenceInput = 'Reference: 2026-88-77 04 72 98 76 54';\n"
-              "const referenceExpected = 'Reference: 2026-88-77 [contact omitted]';\n"
-              "console.log('old-reference='+JSON.stringify(r(referenceInput)));\n"
-              "assert.equal(r(referenceInput), referenceExpected);\n"
-              "assert.notEqual(r(terminalInput), terminalExpected);"
-          )
-          if script.count(old_anchor) != 1:
-              raise SystemExit('old-reference census anchor mismatch')
-          script = script.replace(old_anchor, old_replacement)
-
-          terminal_defect = 'assert.notEqual(r(terminalInput), terminalExpected);'
-          terminal_repair = 'assert.equal(r(terminalInput), terminalExpected);'
-          if script.count(terminal_defect) != 1 or script.count(terminal_repair) != 0:
-              raise SystemExit('terminal census repair count mismatch')
-          script = script.replace(terminal_defect, terminal_repair)
-
-          reference_defect = (
-              "['Reference: 2026-88-77 04 72 98 76 54', "
-              "'Reference: 2026-88-77 04 72 98 76 54'],"
-          )
-          reference_repair = (
-              "['Reference: 2026-88-77 04 72 98 76 54', "
-              "'Reference: 2026-88-77 [contact omitted]'],"
-          )
-          if script.count(reference_defect) != 2 or script.count(reference_repair) != 0:
-              raise SystemExit('reference expectation repair count mismatch')
-          script = script.replace(reference_defect, reference_repair)
-
-          qualified_numstat_defect = (
-              "require_eq qualified-numstat \"$(git diff --numstat | LC_ALL=C sort -k3)\" "
-              "$'39\\t0\\ttest/industrial-exhaust.test.js\\n195\\t22\\ttools/lib/industrial-exhaust.mjs'"
-          )
-          qualified_numstat_repair = (
-              "require_eq qualified-numstat \"$(git diff --numstat | LC_ALL=C sort -k3)\" "
-              "$'729\\t0\\ttest/industrial-exhaust.test.js\\n638\\t56\\ttools/lib/industrial-exhaust.mjs'"
-          )
-          post_release_numstat_defect = (
-              "require_eq post-release-numstat \"$(git diff --numstat | LC_ALL=C sort -k3)\" "
-              "$'39\\t0\\ttest/industrial-exhaust.test.js\\n195\\t22\\ttools/lib/industrial-exhaust.mjs'"
-          )
-          post_release_numstat_repair = (
-              "require_eq post-release-numstat \"$(git diff --numstat | LC_ALL=C sort -k3)\" "
-              "$'729\\t0\\ttest/industrial-exhaust.test.js\\n638\\t56\\ttools/lib/industrial-exhaust.mjs'"
-          )
-          if script.count(qualified_numstat_defect) != 1 or script.count(qualified_numstat_repair) != 0:
-              raise SystemExit('qualified cumulative numstat repair count mismatch')
-          if script.count(post_release_numstat_defect) != 1 or script.count(post_release_numstat_repair) != 0:
-              raise SystemExit('post-release cumulative numstat repair count mismatch')
-          script = script.replace(qualified_numstat_defect, qualified_numstat_repair)
-          script = script.replace(post_release_numstat_defect, post_release_numstat_repair)
-
-          post_release_paths_defect = (
-              "require_eq post-release-paths \"$(git diff --name-only | LC_ALL=C sort)\" "
-              "$'test/industrial-exhaust.test.js\\ntools/lib/industrial-exhaust.mjs'"
-          )
-          post_release_paths_repair = (
-              "require_eq post-release-paths \"$(git diff --name-only | LC_ALL=C sort)\" "
-              "$'build/axm-identity.json\\nbuild/build-hop-report.json\\nbuild/hop-graph.json\\n"
-              "build/migration-review.md\\nbuild/migration-summary.json\\nbuild/receipt-graph.json\\n"
-              "build/scores.json\\nbuild/scout-report.json\\nbuild/scout-report.md\\n"
-              "build/surface-graph.json\\nbuild/topology-admission-frontier.json\\n"
-              "test/industrial-exhaust.test.js\\ntools/lib/industrial-exhaust.mjs'"
-          )
-          if script.count(post_release_paths_defect) != 1 or script.count(post_release_paths_repair) != 0:
-              raise SystemExit('post-release generated path census repair count mismatch')
-          script = script.replace(post_release_paths_defect, post_release_paths_repair)
-
-          two_path_set = "$'test/industrial-exhaust.test.js\\ntools/lib/industrial-exhaust.mjs'"
-          generated_path_set = (
-              "$'build/axm-identity.json\\nbuild/build-hop-report.json\\nbuild/hop-graph.json\\n"
-              "build/migration-review.md\\nbuild/migration-summary.json\\nbuild/receipt-graph.json\\n"
-              "build/scores.json\\nbuild/scout-report.json\\nbuild/scout-report.md\\n"
-              "build/surface-graph.json\\nbuild/topology-admission-frontier.json\\n"
-              "test/industrial-exhaust.test.js\\ntools/lib/industrial-exhaust.mjs'"
-          )
-          if script.count(two_path_set) != 2:
-              raise SystemExit('pre-release two-path census shape mismatch')
-          if script.count(generated_path_set) != 1:
-              raise SystemExit('post-release generated path census shape mismatch')
-
-          patch_numstat = "$'39\\t0\\ttest/industrial-exhaust.test.js\\n195\\t22\\ttools/lib/industrial-exhaust.mjs'"
-          cumulative_numstat = "$'729\\t0\\ttest/industrial-exhaust.test.js\\n638\\t56\\ttools/lib/industrial-exhaust.mjs'"
-          if script.count(patch_numstat) != 1:
-              raise SystemExit('patch-local numstat denominator shape mismatch')
-          if script.count(cumulative_numstat) != 2:
-              raise SystemExit('live-main cumulative numstat denominator shape mismatch')
-          if script.count(terminal_repair) != 1:
-              raise SystemExit('terminal repaired census shape mismatch')
-          if script.count('assert.notEqual(r(countryInput), countryExpected);') != 1:
-              raise SystemExit('country defect census shape mismatch')
-          if script.count("assert.equal(r(referenceInput), referenceExpected);") != 1:
-              raise SystemExit('old-reference census shape mismatch')
-          if script.count(reference_repair) != 2:
-              raise SystemExit('reference repaired expectation shape mismatch')
-
-          target = pathlib.Path('/tmp/p2231-qualified-v41.sh')
-          target.write_text(script)
-          target.chmod(0o700)
-          receipt = pathlib.Path('/tmp/p2231-controller-repair-v41.txt')
-          receipt.write_text(
-              f'controller_parent={os.environ["CPARENT"]}\n'
-              f'controller_parent_blob={os.environ["PARENT_BLOB"]}\n'
-              f'source_commit={source_commit}\n'
-              f'source_blob={os.environ["SOURCE_BLOB"]}\n'
-              f'source_run_sha256={source_sha}\n'
-              f'current_head={os.environ["CURRENT_HEAD"]}\n'
-              f'current_branch={os.environ["CURRENT_BRANCH"]}\n'
-              f'run_id={os.environ["CURRENT_RUN_ID"]}\n'
-              'repair=terminal-preexisting-pass-country-defect-retained-reference-preexisting-redaction-two-census-sites-live-main-cumulative-numstat-post-release-generated-path-set\n'
-              f'qualified_script_sha256={hashlib.sha256(script.encode()).hexdigest()}\n'
-          )
-          PY
-          bash -n /tmp/p2231-qualified-v41.sh
-          bash /tmp/p2231-qualified-v41.sh
+          runner=/tmp/p2231-v42-runner.sh
+          : > "$runner"
+          for sha in $PAYLOAD_BLOBS; do
+            gh api "repos/$GITHUB_REPOSITORY/git/blobs/$sha" --jq .content \
+              | tr -d '\n' | base64 -d >> "$runner"
+          done
+          actual_sha="$(sha256sum "$runner" | cut -d' ' -f1)"
+          actual_blob="$(git hash-object "$runner")"
+          printf 'runner-sha actual=%s expected=%s\n' "$actual_sha" "$RUNNER_SHA256"
+          printf 'runner-blob actual=%s expected=%s\n' "$actual_blob" "$RUNNER_BLOB"
+          [ "$actual_sha" = "$RUNNER_SHA256" ]
+          [ "$actual_blob" = "$RUNNER_BLOB" ]
+          cat > /tmp/p2231-v42-payload-receipt.txt <<EOF
+          payload_blobs=$PAYLOAD_BLOBS
+          runner_sha256=$actual_sha
+          runner_blob=$actual_blob
+          current_head=$CURRENT_HEAD
+          current_branch=$CURRENT_BRANCH
+          run_id=$CURRENT_RUN_ID
+          EOF
+          chmod 700 "$runner"
+          bash -n "$runner"
+          bash "$runner"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: pr2231-repaired-transport-qualification-v41
+          name: pr2231-repaired-transport-qualification-v42
           path: |
-            /tmp/p2231-controller-repair-v41.txt
-            /tmp/p2231-qualified-v41.sh
+            /tmp/p2231-v42-payload-receipt.txt
+            /tmp/p2231-v42-runner.sh
+            /tmp/p2231-controller-repair-v42.txt
+            /tmp/p2231-qualified-v42.sh
             /tmp/p2231-repaired-qualification.txt
             /tmp/p2231-comment-initial.md
             /tmp/p2231-posted-initial.gz
