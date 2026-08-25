@@ -1,4 +1,4 @@
-name: Temporary PR 2231 current-main requalification v43
+name: Temporary PR 2231 current-main requalification v44
 on:
   pull_request:
     branches: [main]
@@ -8,7 +8,7 @@ permissions:
   contents: read
   issues: read
 concurrency:
-  group: pr2231-current-main-requalification-v43
+  group: pr2231-current-main-requalification-v44
   cancel-in-progress: false
 jobs:
   qualify-current-main:
@@ -39,8 +39,8 @@ jobs:
         run: |
           set -euo pipefail
           H='${{ github.event.pull_request.head.sha }}'
-          Q=/tmp/pr2231-v43-main
-          R=/tmp/pr2231-v43-qualification.txt
+          Q=/tmp/pr2231-v44-main
+          R=/tmp/pr2231-v44-qualification.txt
           : > "$R"
           stage() { printf '\n=== STAGE %s ===\n' "$1" | tee -a "$R"; }
           fail() { printf 'FAIL[%s] %s\n' "$1" "$2" | tee -a "$R" >&2; exit 1; }
@@ -55,6 +55,9 @@ jobs:
               "+refs/heads/$PBRANCH:refs/remotes/origin/$PBRANCH" \
               "+refs/heads/$CBRANCH:refs/remotes/origin/$CBRANCH"
           }
+          PRODUCT_PATHS=$'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          PRODUCT_NUMSTAT=$'729\t0\ttest/industrial-exhaust.test.js\n638\t56\ttools/lib/industrial-exhaust.mjs'
+          RELEASE_PATHS=$'build/axm-identity.json\nbuild/build-hop-report.json\nbuild/hop-graph.json\nbuild/migration-review.md\nbuild/migration-summary.json\nbuild/receipt-graph.json\nbuild/scores.json\nbuild/scout-report.json\nbuild/scout-report.md\nbuild/surface-graph.json\nbuild/topology-admission-frontier.json\ntest/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
 
           stage initial-live-leases
           fetch_leases
@@ -65,8 +68,8 @@ jobs:
           require_eq product-tree "$(git rev-parse "$PHEAD^{tree}")" "$PTREE"
           require_eq product-lib "$(git rev-parse "$PHEAD:tools/lib/industrial-exhaust.mjs")" "$PLIB"
           require_eq product-test "$(git rev-parse "$PHEAD:test/industrial-exhaust.test.js")" "$PTEST"
-          require_eq product-paths "$(git diff --name-only "$PPARENT..$PHEAD" | LC_ALL=C sort)" $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
-          require_eq product-numstat "$(git diff --numstat "$PPARENT..$PHEAD" | LC_ALL=C sort -k3)" $'729\t0\ttest/industrial-exhaust.test.js\n638\t56\ttools/lib/industrial-exhaust.mjs'
+          require_eq product-paths "$(git diff --name-only "$PPARENT..$PHEAD" | LC_ALL=C sort)" "$PRODUCT_PATHS"
+          require_eq product-numstat "$(git diff --numstat "$PPARENT..$PHEAD" | LC_ALL=C sort -k3)" "$PRODUCT_NUMSTAT"
           require_eq product-author "$(git show -s --format=%an "$PHEAD")" 'BigBirdReturns'
           require_eq product-committer "$(git show -s --format=%cn "$PHEAD")" 'BigBirdReturns'
           MAIN="$(git rev-parse refs/remotes/origin/main)"
@@ -83,8 +86,8 @@ jobs:
           cd "$Q"
           require_eq qualified-lib "$(git hash-object tools/lib/industrial-exhaust.mjs)" "$PLIB"
           require_eq qualified-test "$(git hash-object test/industrial-exhaust.test.js)" "$PTEST"
-          require_eq qualified-paths "$(git diff --name-only | LC_ALL=C sort)" $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
-          require_eq qualified-numstat "$(git diff --numstat | LC_ALL=C sort -k3)" $'729\t0\ttest/industrial-exhaust.test.js\n638\t56\ttools/lib/industrial-exhaust.mjs'
+          require_eq qualified-paths "$(git diff --name-only | LC_ALL=C sort)" "$PRODUCT_PATHS"
+          require_eq qualified-numstat "$(git diff --numstat | LC_ALL=C sort -k3)" "$PRODUCT_NUMSTAT"
           git diff --check
 
           stage exact-boundary-matrix
@@ -117,8 +120,14 @@ jobs:
           npm run release:check 2>&1 | tee -a "$R"
           require_eq post-release-lib "$(git hash-object tools/lib/industrial-exhaust.mjs)" "$PLIB"
           require_eq post-release-test "$(git hash-object test/industrial-exhaust.test.js)" "$PTEST"
-          require_eq post-release-paths "$(git diff --name-only | LC_ALL=C sort)" $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
-          require_eq post-release-numstat "$(git diff --numstat | LC_ALL=C sort -k3)" $'729\t0\ttest/industrial-exhaust.test.js\n638\t56\ttools/lib/industrial-exhaust.mjs'
+          require_eq post-release-paths "$(git diff --name-only | LC_ALL=C sort)" "$RELEASE_PATHS"
+          git restore --source=HEAD --worktree -- build
+          git clean -fd -- build
+          require_eq restored-paths "$(git diff --name-only | LC_ALL=C sort)" "$PRODUCT_PATHS"
+          require_eq restored-numstat "$(git diff --numstat | LC_ALL=C sort -k3)" "$PRODUCT_NUMSTAT"
+          require_eq restored-lib "$(git hash-object tools/lib/industrial-exhaust.mjs)" "$PLIB"
+          require_eq restored-test "$(git hash-object test/industrial-exhaust.test.js)" "$PTEST"
+          git diff --check
 
           stage final-live-leases
           cd "$GITHUB_WORKSPACE"
@@ -131,12 +140,12 @@ jobs:
           require_eq final-product-lib "$(git rev-parse "$PHEAD:tools/lib/industrial-exhaust.mjs")" "$PLIB"
           require_eq final-product-test "$(git rev-parse "$PHEAD:test/industrial-exhaust.test.js")" "$PTEST"
 
-          printf 'QUALIFICATION_SUCCESS\nrun=%s\nmain=%s\nproduct=%s\nlib=%s\ntest=%s\n' \
-            '${{ github.run_id }}' "$MAIN" "$PHEAD" "$PLIB" "$PTEST" | tee -a "$R"
+          printf 'QUALIFICATION_SUCCESS\nrun=%s\nmain=%s\nproduct=%s\ntree=%s\nlib=%s\ntest=%s\n' \
+            '${{ github.run_id }}' "$MAIN" "$PHEAD" "$PTREE" "$PLIB" "$PTEST" | tee -a "$R"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: pr2231-current-main-requalification-v43
-          path: /tmp/pr2231-v43-qualification.txt
+          name: pr2231-current-main-requalification-v44
+          path: /tmp/pr2231-v44-qualification.txt
           if-no-files-found: error
           retention-days: 90
