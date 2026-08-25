@@ -1,0 +1,112 @@
+ = "filesystem-metadata-v1"
+FILESYSTEM_METADATA_SECCOMP_POLICIES = {
+    "x86_64": {
+        "audit_arch": 0xC000003E,
+        "entries": (
+            ("chmod", 90),
+            ("fchmod", 91),
+            ("chown", 92),
+            ("fchown", 93),
+            ("lchown", 94),
+            ("utime", 132),
+            ("setxattr", 188),
+            ("lsetxattr", 189),
+            ("fsetxattr", 190),
+            ("removexattr", 197),
+            ("lremovexattr", 198),
+            ("fremovexattr", 199),
+            ("utimes", 235),
+            ("fchownat", 260),
+            ("futimesat", 261),
+            ("fchmodat", 268),
+            ("utimensat", 280),
+            ("fchmodat2", 452),
+        ),
+    },
+    "aarch64": {
+        "audit_arch": 0xC00000B7,
+        "entries": (
+            ("setxattr", 5),
+            ("lsetxattr", 6),
+            ("fsetxattr", 7),
+            ("removexattr", 14),
+            ("lremovexattr", 15),
+            ("fremovexattr", 16),
+            ("fchmod", 52),
+            ("fchmodat", 53),
+            ("fchownat", 54),
+            ("fchown", 55),
+            ("utimensat", 88),
+            ("fchmodat2", 452),
+        ),
+    },
+}
+LANDLOCK_ACCESS_FS_WRITE_FILE = 1 << 1
+'''
+text = text.replace(seccomp_constant_anchor, seccomp_constant_block)
+
+function_anchor = '''def runtime_file_paths():
+'''
+if text.count(function_anchor) != 1:
+    raise SystemExit("metadata seccomp function anchor mismatch")
+function_block = r'''def confine_filesystem_metadata():
+    machine = os.uname().machine
+    policy = FILESYSTEM_METADATA_SECCOMP_POLICIES.get(machine)
+    if policy is None:
+        fail(
+            "descriptor-relative receipt helper does not know metadata "
+            f"seccomp policy for architecture {machine}"
+        )
+
+    filters = [
+        SockFilter(
+            BPF_LD | BPF_W | BPF_ABS,
+            0,
+            0,
+            SECCOMP_DATA_ARCH_OFFSET,
+        ),
+        SockFilter(
+            BPF_JMP | BPF_JEQ | BPF_K,
+            1,
+            0,
+            policy["audit_arch"],
+        ),
+        SockFilter(
+            BPF_RET | BPF_K,
+            0,
+            0,
+            SECCOMP_RET_KILL_PROCESS,
+        ),
+        SockFilter(
+            BPF_LD | BPF_W | BPF_ABS,
+            0,
+            0,
+            SECCOMP_DATA_NR_OFFSET,
+        ),
+    ]
+    for _name, syscall_number in policy["entries"]:
+        filters.extend(
+            [
+                SockFilter(
+                    BPF_JMP | BPF_JEQ | BPF_K,
+                    0,
+                    1,
+                    syscall_number,
+                ),
+                SockFilter(
+                    BPF_RET | BPF_K,
+                    0,
+                    0,
+                    SECCOMP_RET_ERRNO | errno.EPERM,
+                ),
+            ]
+        )
+    filters.append(
+        SockFilter(
+            BPF_RET | BPF_K,
+            0,
+            0,
+            SECCOMP_RET_ALLOW,
+        )
+    )
+    filter_array = (SockFilter * len(filters))(*filters)
