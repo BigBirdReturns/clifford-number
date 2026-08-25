@@ -1249,8 +1249,166 @@ def validate_component(component):
         or component in (".", "..")
         or "/" in component
         or "\\" in component
+        or "\x00" in component
     ):
         fail(f"invalid descriptor-relative receipt path component: {component}")
+
+class OpenHow(ctypes.Structure):
+    _fields_ = [
+        ("flags", ctypes.c_uint64),
+        ("mode", ctypes.c_uint64),
+        ("resolve", ctypes.c_uint64),
+    ]
+
+
+RESOLVE_NO_XDEV = 0x01
+RESOLVE_NO_MAGICLINKS = 0x02
+RESOLVE_NO_SYMLINKS = 0x04
+RESOLVE_BENEATH = 0x08
+SECURE_OPEN_RESOLVE = (
+    RESOLVE_NO_XDEV
+    | RESOLVE_NO_MAGICLINKS
+    | RESOLVE_NO_SYMLINKS
+    | RESOLVE_BENEATH
+)
+OPENAT2_SYSCALLS = {
+    "x86_64": 437,
+    "aarch64": 437,
+}
+
+
+def openat2_syscall(directory_descriptor, component, flags, mode):
+    syscall_number = OPENAT2_SYSCALLS.get(os.uname().machine)
+    if syscall_number is None:
+        fail(
+            "descriptor-relative receipt helper does not know openat2 "
+            f"for architecture {os.uname().machine}"
+        )
+    how = OpenHow(
+        flags=flags,
+        mode=mode,
+        resolve=SECURE_OPEN_RESOLVE,
+    )
+    encoded = os.fsencode(component)
+    ctypes.set_errno(0)
+    result = LIBC.syscall(
+        ctypes.c_long(syscall_number),
+        ctypes.c_int(directory_descriptor),
+        ctypes.c_char_p(encoded),
+        ctypes.byref(how),
+        ctypes.c_size_t(ctypes.sizeof(how)),
+    )
+    if result >= 0:
+        return int(result)
+    error_number = ctypes.get_errno()
+    raise OSError(
+        error_number,
+        os.strerror(error_number),
+        component,
+    )
+
+
+def secure_open(
+    directory_descriptor,
+    component,
+    flags,
+    mode,
+    label,
+    *,
+    display=None,
+    stage="generic",
+    allow_fault=True,
+):
+    global FAULT_USED
+    if component != ".":
+        validate_component(component)
+    if (
+        allow_fault
+        and isinstance(FAULT, dict)
+        and FAULT.get("type") == "simulate_mount_crossing"
+        and not FAULT_USED
+        and stage == "directory"
+        and FAULT.get("after_display") == display
+    ):
+        FAULT_USED = True
+        error = OSError(
+            errno.EXDEV,
+            "simulated nested mount crossing",
+            component,
+        )
+        add_event(
+            "mount-crossing-rejected",
+            display=display,
+            stage=stage,
+            errno=error.errno,
+        )
+        raise RuntimeError(f"{label} crosses a mount point: {error}")
+
+    try:
+        descriptor = openat2_syscall(
+            directory_descriptor,
+            component,
+            flags,
+            mode,
+        )
+    except OSError as error:
+        if error.errno == errno.EXDEV:
+            add_event(
+                "mount-crossing-rejected",
+                display=display or component,
+                stage=stage,
+                errno=error.errno,
+            )
+            raise RuntimeError(f"{label} crosses a mount point: {error}")
+        raise
+    os.set_inheritable(descriptor, False)
+    return descriptor
+
+
+def opened_component_stats(
+    directory_descriptor,
+    component,
+    descriptor,
+    display,
+):
+    return os.stat(
+        component,
+        dir_fd=directory_descriptor,
+        follow_symlinks=False,
+    )
+
+
+def require_openat2_support(descriptor):
+    probe = secure_open(
+        descriptor,
+        ".",
+        os.O_RDONLY
+        | getattr(os, "O_DIRECTORY", 0)
+        | getattr(os, "O_CLOEXEC", 0),
+        0,
+        "receipt repository openat2 capability probe",
+        display=".",
+        stage="probe",
+        allow_fault=False,
+    )
+    try:
+        root_stats = os.fstat(descriptor)
+        probe_stats = os.fstat(probe)
+        if (
+            not stat.S_ISDIR(root_stats.st_mode)
+            or not stat.S_ISDIR(probe_stats.st_mode)
+            or not same_identity(root_stats, probe_stats)
+        ):
+            fail("receipt repository openat2 capability probe changed identity")
+    finally:
+        os.close(probe)
+    add_event(
+        "mount-boundary-supported",
+        syscall="openat2",
+        resolve=str(SECURE_OPEN_RESOLVE),
+        **identity(root_stats),
+    )
+
 
 def require_dir_fd_support():
     required = [os.open, os.stat, os.mkdir, os.link, os.unlink]
@@ -1448,6 +1606,7 @@ def confine_runtime():
 
     root_stats = os.fstat(ROOT_FD)
     if stat.S_ISDIR(root_stats.st_mode):
+        require_openat2_support(ROOT_FD)
         restrict_filesystem_writes(ROOT_FD, "repository-root")
     elif not stat.S_ISCHR(root_stats.st_mode):
         fail("runtime closure probe descriptor is not a harmless character device")
@@ -1564,12 +1723,17 @@ def open_directory_chain(relative_parent, create):
         display = segment if len(chain) == 1 else f"{chain[-1]['display']}/{segment}"
         created = False
         try:
-            descriptor = os.open(
+            descriptor = secure_open(
+                parent_descriptor,
                 segment,
                 os.O_RDONLY
                 | getattr(os, "O_DIRECTORY", 0)
-                | getattr(os, "O_NOFOLLOW", 0),
-                dir_fd=parent_descriptor,
+                | getattr(os, "O_NOFOLLOW", 0)
+                | getattr(os, "O_CLOEXEC", 0),
+                0,
+                f"receipt parent directory {display}",
+                display=display,
+                stage="directory",
             )
         except OSError as error:
             if error.errno in (errno.ELOOP, errno.ENOTDIR):
@@ -1582,20 +1746,26 @@ def open_directory_chain(relative_parent, create):
                 add_event("directory-created", display=display)
             except FileExistsError:
                 pass
-            descriptor = os.open(
+            descriptor = secure_open(
+                parent_descriptor,
                 segment,
                 os.O_RDONLY
                 | getattr(os, "O_DIRECTORY", 0)
-                | getattr(os, "O_NOFOLLOW", 0),
-                dir_fd=parent_descriptor,
+                | getattr(os, "O_NOFOLLOW", 0)
+                | getattr(os, "O_CLOEXEC", 0),
+                0,
+                f"receipt parent directory {display}",
+                display=display,
+                stage="directory",
             )
 
         os.set_inheritable(descriptor, False)
         descriptor_stats = os.fstat(descriptor)
-        path_stats = os.stat(
+        path_stats = opened_component_stats(
+            parent_descriptor,
             segment,
-            dir_fd=parent_descriptor,
-            follow_symlinks=False,
+            descriptor,
+            display,
         )
         if (
             not stat.S_ISDIR(descriptor_stats.st_mode)
@@ -1648,10 +1818,16 @@ def inspect_final(parent_descriptor, final_name):
     return stats
 
 def open_final(parent_descriptor, final_name):
-    descriptor = os.open(
+    descriptor = secure_open(
+        parent_descriptor,
         final_name,
-        os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0),
-        dir_fd=parent_descriptor,
+        os.O_RDONLY
+        | getattr(os, "O_NOFOLLOW", 0)
+        | getattr(os, "O_CLOEXEC", 0),
+        0,
+        "receipt final file",
+        display=final_name,
+        stage="final",
     )
     os.set_inheritable(descriptor, False)
     descriptor_stats = os.fstat(descriptor)
@@ -1754,14 +1930,18 @@ def maybe_create_competing_receipt(parent_descriptor, final_name):
     if not isinstance(encoded, str):
         fail("invalid competing receipt fault")
     content = base64.b64decode(encoded, validate=True)
-    descriptor = os.open(
+    descriptor = secure_open(
+        parent_descriptor,
         final_name,
         os.O_WRONLY
         | os.O_CREAT
         | os.O_EXCL
-        | getattr(os, "O_NOFOLLOW", 0),
+        | getattr(os, "O_NOFOLLOW", 0)
+        | getattr(os, "O_CLOEXEC", 0),
         0o600,
-        dir_fd=parent_descriptor,
+        "competing receipt file",
+        display=final_name,
+        stage="competing",
     )
     try:
         write_all(descriptor, content)
@@ -1807,14 +1987,18 @@ def publish(request):
                     f"{final_name}.{os.getpid()}.{secrets.token_hex(16)}.tmp"
                 )
                 try:
-                    temp_descriptor = os.open(
+                    temp_descriptor = secure_open(
+                        parent_descriptor,
                         candidate_name,
                         os.O_WRONLY
                         | os.O_CREAT
                         | os.O_EXCL
-                        | getattr(os, "O_NOFOLLOW", 0),
+                        | getattr(os, "O_NOFOLLOW", 0)
+                        | getattr(os, "O_CLOEXEC", 0),
                         0o600,
-                        dir_fd=parent_descriptor,
+                        "temporary receipt file",
+                        display=candidate_name,
+                        stage="temporary",
                     )
                 except FileExistsError:
                     continue
@@ -2595,6 +2779,11 @@ function runReceiptDirfdHelper({
     const capabilityEvents = Array.isArray(response.events)
       ? response.events.filter(event => event?.type === 'capability-narrowed')
       : [];
+    const mountBoundaryEvents = Array.isArray(response.events)
+      ? response.events.filter(
+        event => event?.type === 'mount-boundary-supported'
+      )
+      : [];
     const rootConfinement = writeConfinementEvents.find(
       event => event?.scope === 'repository-root'
     );
@@ -2623,7 +2812,16 @@ function runReceiptDirfdHelper({
           && String(event.dev) === String(entry?.dev)
           && String(event.ino) === String(entry?.ino);
       });
+    const rootChainEntry = Array.isArray(response.chain)
+      ? response.chain[0]
+      : null;
+    const mountBoundary = mountBoundaryEvents[0];
     if (!eventTypes.has('runtime-confined')
+      || mountBoundaryEvents.length !== 1
+      || mountBoundary?.syscall !== 'openat2'
+      || Number(mountBoundary?.resolve) !== 0x0f
+      || String(mountBoundary?.dev) !== String(rootChainEntry?.dev)
+      || String(mountBoundary?.ino) !== String(rootChainEntry?.ino)
       || writeConfinementEvents.length !== chainEntries.length + 2
       || capabilityEvents.length !== 1
       || !rootConfinement

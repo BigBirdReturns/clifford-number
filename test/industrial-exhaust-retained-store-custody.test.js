@@ -165,6 +165,145 @@ try {
     artifactReceiptPath
   );
 
+  const assertNestedMountCrossingRejected = ({
+    receiptType,
+    raceRoot,
+    absoluteReceiptPath,
+    triggerDisplay,
+    alternateRelativePath,
+    writeReceipt
+  }) => {
+    const triggerPath = path.join(
+      raceRoot,
+      ...triggerDisplay.split('/')
+    );
+    const alternatePath = path.join(
+      raceRoot,
+      ...alternateRelativePath.split('/')
+    );
+    fs.mkdirSync(triggerPath, { recursive: true });
+    fs.mkdirSync(alternatePath, { recursive: true });
+    const crossedReceiptPath = path.join(
+      alternatePath,
+      path.relative(triggerPath, absoluteReceiptPath)
+    );
+    const control = {
+      events: [],
+      fault: {
+        type: 'simulate_mount_crossing',
+        after_display: triggerDisplay,
+        external_directory: alternatePath
+      }
+    };
+
+    try {
+      assert.throws(
+        () => withReceiptDirfdControl(control, writeReceipt),
+        /mount point|directory chain changed/iu,
+        `${receiptType} publication must reject a nested mount crossing`
+      );
+      assert.equal(
+        fs.existsSync(crossedReceiptPath),
+        false,
+        `${receiptType} mount crossing may not publish into an alternate subtree`
+      );
+      assert.equal(
+        control.events.some(
+          event => event.type === 'mount-crossing-rejected'
+            && event.display === triggerDisplay
+            && Number(event.errno) === 18
+        ),
+        true,
+        `${receiptType} helper must prove openat2 mount-boundary rejection`
+      );
+      assert.equal(
+        control.events.some(event => event.type === 'mount-crossing-followed'),
+        false,
+        `${receiptType} helper may not follow the simulated nested mount`
+      );
+      assert.equal(
+        fs.existsSync(absoluteReceiptPath),
+        false,
+        `${receiptType} rejected mount crossing may not publish a visible receipt`
+      );
+    } finally {
+      fs.rmSync(raceRoot, { recursive: true, force: true });
+    }
+  };
+
+  const mountBoundaryIndexRoot = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'industrial-exhaust-index-openat2-mount-')
+  );
+  const mountBoundaryIndexHtml =
+    '<!doctype html><html><body><a href="/news-releases/openat2-mount-index">Openat2 mount index</a></body></html>';
+  const mountBoundaryParsedIndex = parseHtmlLinkIndex(
+    mountBoundaryIndexHtml,
+    source
+  );
+  const mountBoundaryIndexReceiptPath = indexReceiptFilePath(
+    mountBoundaryIndexRoot,
+    source.id,
+    mountBoundaryParsedIndex.index_sha256
+  );
+  assertNestedMountCrossingRejected({
+    receiptType: 'index',
+    raceRoot: mountBoundaryIndexRoot,
+    absoluteReceiptPath: mountBoundaryIndexReceiptPath,
+    triggerDisplay: 'receipts/exhaust/indexes',
+    alternateRelativePath:
+      'receipts/exhaust/artifacts/openat2-mount-index-target',
+    writeReceipt: () => writeIndexReceipt({
+      rootDir: mountBoundaryIndexRoot,
+      source,
+      parsedIndex: mountBoundaryParsedIndex,
+      html: mountBoundaryIndexHtml,
+      capturedAt: '2026-08-25T05:00:00.000Z',
+      responseHeaders: {
+        content_type: 'text/html',
+        etag: 'openat2-mount-index'
+      }
+    })
+  });
+
+  const mountBoundaryArtifactRoot = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'industrial-exhaust-artifact-openat2-mount-')
+  );
+  const mountBoundaryArtifactCanonicalUrl =
+    'https://www.dentsu.com/news-releases/openat2-mount-artifact';
+  const mountBoundaryArtifactBody = Buffer.from(
+    '<!doctype html><html><body><main>Openat2 mount-boundary artifact.</main></body></html>'
+  );
+  const mountBoundaryArtifactBodySha256 = crypto
+    .createHash('sha256')
+    .update(mountBoundaryArtifactBody)
+    .digest('hex');
+  const mountBoundaryArtifactReceiptPath = artifactReceiptFilePath(
+    mountBoundaryArtifactRoot,
+    mountBoundaryArtifactCanonicalUrl,
+    mountBoundaryArtifactBodySha256
+  );
+  assertNestedMountCrossingRejected({
+    receiptType: 'artifact',
+    raceRoot: mountBoundaryArtifactRoot,
+    absoluteReceiptPath: mountBoundaryArtifactReceiptPath,
+    triggerDisplay: 'receipts/exhaust/artifacts',
+    alternateRelativePath:
+      'receipts/exhaust/indexes/openat2-mount-artifact-target',
+    writeReceipt: () => writeArtifactReceipt({
+      rootDir: mountBoundaryArtifactRoot,
+      canonicalUrl: mountBoundaryArtifactCanonicalUrl,
+      body: mountBoundaryArtifactBody,
+      bodySha256: mountBoundaryArtifactBodySha256,
+      capturedAt: '2026-08-25T05:00:00.000Z',
+      responseHeaders: {
+        content_type: 'text/html',
+        etag: 'openat2-mount-artifact',
+        final_url: mountBoundaryArtifactCanonicalUrl,
+        redirect_chain: []
+      }
+    })
+  });
+
   const assertPredictableTempAliasIgnored = ({
     receiptType,
     absoluteReceiptPath,
