@@ -1605,11 +1605,10 @@ def confine_runtime():
         fail("descriptor-relative receipt helper process limit was not retained")
 
     root_stats = os.fstat(ROOT_FD)
-    if stat.S_ISDIR(root_stats.st_mode):
-        require_openat2_support(ROOT_FD)
-        restrict_filesystem_writes(ROOT_FD, "repository-root")
-    elif not stat.S_ISCHR(root_stats.st_mode):
-        fail("runtime closure probe descriptor is not a harmless character device")
+    if not stat.S_ISDIR(root_stats.st_mode):
+        fail("descriptor-relative receipt helper authority root is not a directory")
+    require_openat2_support(ROOT_FD)
+    restrict_filesystem_writes(ROOT_FD, "repository-root")
     add_event("landlock-supported", abi=str(LANDLOCK_ABI))
 
     try:
@@ -1638,6 +1637,50 @@ def confine_runtime():
         cwd_dev=str(cwd_stats.st_dev),
         cwd_ino=str(cwd_stats.st_ino),
     )
+
+def maybe_probe_runtime_ambient_write():
+    global FAULT_USED
+    if (
+        not isinstance(FAULT, dict)
+        or FAULT.get("type") != "write_runtime_probe_escape"
+        or FAULT_USED
+    ):
+        return
+    FAULT_USED = True
+    target = FAULT.get("path")
+    encoded = FAULT.get("content_base64")
+    if (
+        not isinstance(target, str)
+        or not target
+        or not os.path.isabs(target)
+        or not isinstance(encoded, str)
+    ):
+        fail("invalid runtime-probe ambient-write fault")
+    content = base64.b64decode(encoded, validate=True)
+    descriptor = None
+    try:
+        descriptor = os.open(
+            target,
+            os.O_WRONLY
+            | os.O_CREAT
+            | os.O_TRUNC
+            | getattr(os, "O_NOFOLLOW", 0),
+            0o600,
+        )
+        write_all(descriptor, content)
+        os.fsync(descriptor)
+    except OSError as error:
+        if error.errno not in (errno.EACCES, errno.EPERM):
+            raise
+        if os.path.lexists(target):
+            fail("runtime-probe write denial left an ambient escape file")
+        add_event("runtime-probe-write-denied", errno=error.errno)
+        return
+    finally:
+        if descriptor is not None:
+            os.close(descriptor)
+    add_event("runtime-probe-escape-created")
+
 
 def maybe_probe_fork_denial():
     global FAULT_USED
@@ -2136,6 +2179,7 @@ def main():
     confine_runtime()
     request = json.load(sys.stdin)
     FAULT = request.get("fault")
+    maybe_probe_runtime_ambient_write()
     maybe_probe_fork_denial()
     action = request.get("action")
     if action == "runtime_probe":
@@ -2512,7 +2556,12 @@ function verifyReceiptRuntimeClosureLease(closure, label) {
   }
 }
 
-function parseReceiptRuntimeProbeResult(result, label, interpreterLease) {
+function parseReceiptRuntimeProbeResult(
+  result,
+  label,
+  interpreterLease,
+  probeRootIdentity
+) {
   if (result.error) {
     throw new Error(`${label} runtime closure probe launch failed: ${result.error.message}`);
   }
@@ -2544,9 +2593,31 @@ function parseReceiptRuntimeProbeResult(result, label, interpreterLease) {
   const landlockEvents = Array.isArray(response.events)
     ? response.events.filter(event => event?.type === 'landlock-supported')
     : [];
+  const rootConfinementEvents = Array.isArray(response.events)
+    ? response.events.filter(
+      event => event?.type === 'filesystem-write-confined'
+        && event?.scope === 'repository-root'
+    )
+    : [];
+  const mountBoundaryEvents = Array.isArray(response.events)
+    ? response.events.filter(
+      event => event?.type === 'mount-boundary-supported'
+    )
+    : [];
+  const rootConfinement = rootConfinementEvents[0];
+  const mountBoundary = mountBoundaryEvents[0];
   if (!eventTypes.has('runtime-confined')
     || landlockEvents.length !== 1
     || Number(landlockEvents[0]?.abi) < 3
+    || rootConfinementEvents.length !== 1
+    || Number(rootConfinement?.abi) < 3
+    || String(rootConfinement?.dev) !== String(probeRootIdentity?.dev)
+    || String(rootConfinement?.ino) !== String(probeRootIdentity?.ino)
+    || mountBoundaryEvents.length !== 1
+    || mountBoundary?.syscall !== 'openat2'
+    || Number(mountBoundary?.resolve) !== 0x0f
+    || String(mountBoundary?.dev) !== String(probeRootIdentity?.dev)
+    || String(mountBoundary?.ino) !== String(probeRootIdentity?.ino)
     || interpreterCloseEvents.length !== 1
     || String(interpreterCloseEvents[0]?.dev)
       !== String(interpreterLease.identity.dev)
@@ -2558,21 +2629,49 @@ function parseReceiptRuntimeProbeResult(result, label, interpreterLease) {
 }
 
 function probeReceiptRuntimeClosure({ interpreterLease, label, control }) {
-  let nullDescriptor = null;
+  let probeRootDescriptor = null;
+  let probeRootIdentity = null;
   let workingDirectory = null;
   let result = null;
   let failure = null;
   try {
-    nullDescriptor = fs.openSync('/dev/null', fs.constants.O_RDONLY);
     workingDirectory = fs.mkdtempSync(
       path.join(os.tmpdir(), 'industrial-exhaust-receipt-runtime-probe-')
     );
     fs.chmodSync(workingDirectory, 0o700);
+    const before = fs.lstatSync(workingDirectory);
+    probeRootDescriptor = fs.openSync(
+      workingDirectory,
+      fs.constants.O_RDONLY
+        | (fs.constants.O_DIRECTORY ?? 0)
+        | (fs.constants.O_NOFOLLOW ?? 0)
+    );
+    const opened = fs.fstatSync(probeRootDescriptor);
+    const admittedPath = fs.lstatSync(workingDirectory);
+    const admittedMode = opened.mode & 0o777;
+    if (!before.isDirectory()
+      || !opened.isDirectory()
+      || !admittedPath.isDirectory()
+      || !sameReceiptIdentity(before, opened)
+      || !sameReceiptIdentity(opened, admittedPath)
+      || admittedMode !== 0o700) {
+      throw new Error(
+        `${label} runtime closure probe root admission failed`
+      );
+    }
+    probeRootIdentity = {
+      dev: opened.dev,
+      ino: opened.ino
+    };
+
     result = spawnSync(
       RECEIPT_DIRFD_INTERPRETER_EXEC_PATH,
       ['-I', '-S', '-B', '-c', RECEIPT_DIRFD_HELPER_SOURCE],
       {
-        input: JSON.stringify({ action: 'runtime_probe', fault: null }),
+        input: JSON.stringify({
+          action: 'runtime_probe',
+          fault: control?.runtime_probe_fault ?? null
+        }),
         encoding: 'utf8',
         maxBuffer: RECEIPT_DIRFD_HELPER_MAX_BUFFER,
         timeout: 120_000,
@@ -2581,7 +2680,7 @@ function probeReceiptRuntimeClosure({ interpreterLease, label, control }) {
           'pipe',
           'pipe',
           'pipe',
-          nullDescriptor,
+          probeRootDescriptor,
           interpreterLease.descriptor
         ],
         env: {
@@ -2594,17 +2693,30 @@ function probeReceiptRuntimeClosure({ interpreterLease, label, control }) {
         }
       }
     );
+
+    const descriptorAfter = fs.fstatSync(probeRootDescriptor);
+    const pathAfter = fs.lstatSync(workingDirectory);
+    if (!descriptorAfter.isDirectory()
+      || !pathAfter.isDirectory()
+      || !sameReceiptIdentity(descriptorAfter, probeRootIdentity)
+      || !sameReceiptIdentity(pathAfter, probeRootIdentity)
+      || (descriptorAfter.mode & 0o777) !== 0o700
+      || (pathAfter.mode & 0o777) !== 0o700) {
+      throw new Error(
+        `${label} runtime closure probe root changed while the helper executed`
+      );
+    }
     verifyReceiptInterpreterLease(interpreterLease, label);
   } catch (error) {
     failure = error;
   }
 
-  if (nullDescriptor !== null) {
+  if (probeRootDescriptor !== null) {
     try {
-      fs.closeSync(nullDescriptor);
+      fs.closeSync(probeRootDescriptor);
     } catch (error) {
       failure ??= new Error(
-        `${label} runtime closure probe descriptor close failed: ${error.message}`
+        `${label} runtime closure probe root descriptor close failed: ${error.message}`
       );
     }
   }
@@ -2622,8 +2734,10 @@ function probeReceiptRuntimeClosure({ interpreterLease, label, control }) {
   const response = parseReceiptRuntimeProbeResult(
     result,
     label,
-    interpreterLease
+    interpreterLease,
+    probeRootIdentity
   );
+  recordReceiptDirfdEvents(control, response.events);
   const injected = Array.isArray(control?.runtime_dependency_paths)
     ? control.runtime_dependency_paths
     : [];
