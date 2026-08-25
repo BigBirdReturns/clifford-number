@@ -12,6 +12,16 @@ jobs:
   qualify:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+    env:
+      BASE_SHA: e3877ad68e860c0b62632230f499544eadd44bb8
+      PRODUCT_BRANCH: agent/industrial-exhaust-receipt-helper-metadata-seccomp-v1
+      WORKFLOW_PATH: .github/workflows/industrial-exhaust-receipt-helper-metadata-seccomp-controller-v1.yml
+      TEST_PATCH: .github/tmp/industrial-exhaust-helper-metadata-seccomp-test-patch.py
+      INSTRUMENTATION_PATCH: .github/tmp/industrial-exhaust-helper-metadata-seccomp-instrumentation-patch.py
+      REPAIR_PART_PREFIX: .github/tmp/industrial-exhaust-helper-metadata-seccomp-repair-patch.b64.
+      REPAIR_PATCH: /tmp/industrial-exhaust-helper-metadata-seccomp-repair-patch.py
+      LIB_PATH: tools/lib/industrial-exhaust-artifacts.mjs
+      TEST_PATH: test/industrial-exhaust-retained-store-custody.test.js
     steps:
       - uses: actions/checkout@v4
         with:
@@ -22,20 +32,10 @@ jobs:
         with:
           node-version: 20
 
-      - name: Reproduce and confine helper metadata mutation authority
+      - name: Verify exact controller transport
         shell: bash
         run: |
           set -euo pipefail
-
-          BASE_SHA='e3877ad68e860c0b62632230f499544eadd44bb8'
-          PRODUCT_BRANCH='agent/industrial-exhaust-receipt-helper-metadata-seccomp-v1'
-          WORKFLOW_PATH='.github/workflows/industrial-exhaust-receipt-helper-metadata-seccomp-controller-v1.yml'
-          TEST_PATCH='.github/tmp/industrial-exhaust-helper-metadata-seccomp-test-patch.py'
-          INSTRUMENTATION_PATCH='.github/tmp/industrial-exhaust-helper-metadata-seccomp-instrumentation-patch.py'
-          REPAIR_PART_PREFIX='.github/tmp/industrial-exhaust-helper-metadata-seccomp-repair-patch.b64.'
-          REPAIR_PATCH='/tmp/industrial-exhaust-helper-metadata-seccomp-repair-patch.py'
-          LIB_PATH='tools/lib/industrial-exhaust-artifacts.mjs'
-          TEST_PATH='test/industrial-exhaust-retained-store-custody.test.js'
 
           current_sha="$(git rev-parse HEAD)"
           test "$(git rev-parse "${current_sha}^")" = "$BASE_SHA"
@@ -67,6 +67,12 @@ jobs:
             "$TEST_PATCH" \
             "$INSTRUMENTATION_PATCH" \
             "$REPAIR_PATCH"
+
+      - name: Reproduce predecessor metadata authority
+        shell: bash
+        run: |
+          set -euo pipefail
+
           python "$TEST_PATCH"
           python "$INSTRUMENTATION_PATCH"
 
@@ -80,15 +86,34 @@ jobs:
             /tmp/industrial-exhaust-helper-metadata-seccomp-predecessor.log
           echo 'predecessor helper metadata authority reproduced'
 
-          python "$REPAIR_PATCH"
+      - name: Apply metadata seccomp repair
+        shell: bash
+        run: |
+          set -euo pipefail
 
+          python "$REPAIR_PATCH"
           node --check "$LIB_PATH"
           node --check "$TEST_PATH"
+
+      - name: Qualify focused retained-store custody
+        shell: bash
+        run: |
+          set -euo pipefail
           node "$TEST_PATH"
+
+      - name: Qualify repository-wide industrial-exhaust paths
+        shell: bash
+        run: |
+          set -euo pipefail
           node test/industrial-exhaust-artifacts.test.js
           node test/industrial-exhaust.test.js
           node tools/hydrate-industrial-exhaust.mjs --audit
           git diff --check
+
+      - name: Publish exact two-file product branch
+        shell: bash
+        run: |
+          set -euo pipefail
 
           rm \
             "$WORKFLOW_PATH" \
