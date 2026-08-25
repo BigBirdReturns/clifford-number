@@ -21,13 +21,29 @@ replacement = """      const metadataProof = control.events.find(
         true,
         `${receiptType} helper must prove filesystem metadata syscall confinement`
       );
+      assert.deepEqual(
+        metadataProof?.ioctl_requests,
+        [
+          'FS_IOC_SETFLAGS:1074292226',
+          'FS_IOC_FSSETXATTR:1075599392'
+        ],
+        `${receiptType} metadata seccomp proof must deny metadata ioctl requests`
+      );
+      assert.equal(
+        metadataProof?.architecture === 'x86_64'
+          ? Number(metadataProof?.ioctl_syscall) === 16
+          : metadataProof?.architecture === 'aarch64'
+            && Number(metadataProof?.ioctl_syscall) === 29,
+        true,
+        `${receiptType} metadata seccomp proof must bind the ioctl syscall`
+      );
       assert.equal(
         Array.isArray(metadataProof?.entries)
-          && metadataProof.entries.some(
-            entry => /^ioctl:\\d+$/.test(entry)
+          && metadataProof.entries.every(
+            entry => !/^ioctl:\\d+$/.test(entry)
           ),
         true,
-        `${receiptType} metadata seccomp proof must deny ioctl`
+        `${receiptType} metadata seccomp proof must scope ioctl denial to request codes`
       );
       assert.equal(
         metadataProof?.architecture === 'x86_64'
