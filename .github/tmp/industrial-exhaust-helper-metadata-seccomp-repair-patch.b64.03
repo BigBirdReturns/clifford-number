@@ -67,7 +67,7 @@ text = text.replace(confine_anchor, confine_block)
 
 record_anchor = '''function recordReceiptDirfdEvents(control, events) {
   if (!control || !Array.isArray(control.events) || !Array.isArray(events)) return;
-  control.events.push(...events.map(event => structuredClone(event))));
+  control.events.push(...events.map(event => structuredClone(event)));
 }
 
 function receiptInterpreterPathEntryIsTrusted(stats) {
