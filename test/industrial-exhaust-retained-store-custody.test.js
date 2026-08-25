@@ -1091,6 +1091,201 @@ process.stdin.on('end', () => {
   });
   fs.rmSync(unleasedRuntimeRoot, { recursive: true, force: true });
 
+  const assertUnrelatedMetadataMutationConfined = ({
+    receiptType,
+    publicationRoot,
+    absoluteReceiptPath,
+    writeReceipt
+  }) => {
+    const sentinelPath = path.join(
+      publicationRoot,
+      'unrelated-metadata-sentinel.txt'
+    );
+    const sentinelBody = `${receiptType} unrelated metadata sentinel\n`;
+    fs.writeFileSync(sentinelPath, sentinelBody, { mode: 0o600 });
+    fs.chmodSync(sentinelPath, 0o600);
+    const before = fs.lstatSync(sentinelPath);
+    const control = {
+      events: [],
+      fault: {
+        type: 'chmod_unrelated_after_narrowing',
+        path: sentinelPath,
+        mode: 0o644
+      }
+    };
+
+    try {
+      const expectedRelativePath = path.relative(
+        publicationRoot,
+        absoluteReceiptPath
+      ).split(path.sep).join('/');
+      assert.equal(
+        withReceiptDirfdControl(control, writeReceipt),
+        expectedRelativePath,
+        `${receiptType} publication must survive a denied unrelated metadata mutation`
+      );
+      assert.equal(
+        control.events.some(
+          event => event.type === 'metadata-mutation-denied'
+            && event.operation === 'chmod'
+        ),
+        true,
+        `${receiptType} helper must deny unrelated metadata mutation after capability narrowing`
+      );
+      assert.equal(
+        control.events.some(
+          event => event.type === 'metadata-mutation-succeeded'
+        ),
+        false,
+        `${receiptType} helper may not complete an unrelated metadata mutation`
+      );
+      const after = fs.lstatSync(sentinelPath);
+      assert.equal(
+        after.mode & 0o777,
+        before.mode & 0o777,
+        `${receiptType} denied metadata mutation must preserve the sentinel mode`
+      );
+      assert.equal(
+        fs.readFileSync(sentinelPath, 'utf8'),
+        sentinelBody,
+        `${receiptType} denied metadata mutation must preserve sentinel bytes`
+      );
+      assert.equal(
+        fs.existsSync(absoluteReceiptPath),
+        true,
+        `${receiptType} receipt must remain reachable after metadata confinement`
+      );
+      const metadataProof = control.events.find(
+        event => event.type === 'filesystem-metadata-confined'
+          && event.policy === 'filesystem-metadata-v1'
+      );
+      assert.equal(
+        Boolean(metadataProof),
+        true,
+        `${receiptType} helper must prove filesystem metadata syscall confinement`
+      );
+      assert.deepEqual(
+        metadataProof?.ioctl_requests,
+        [
+          'FS_IOC_SETFLAGS:1074292226',
+          'FS_IOC_FSSETXATTR:1075599392'
+        ],
+        `${receiptType} metadata seccomp proof must deny metadata ioctl requests`
+      );
+      assert.equal(
+        metadataProof?.architecture === 'x86_64'
+          ? Number(metadataProof?.ioctl_syscall) === 16
+          : metadataProof?.architecture === 'aarch64'
+            && Number(metadataProof?.ioctl_syscall) === 29,
+        true,
+        `${receiptType} metadata seccomp proof must bind the ioctl syscall`
+      );
+      assert.equal(
+        Array.isArray(metadataProof?.entries)
+          && metadataProof.entries.every(
+            entry => !/^ioctl:\d+$/.test(entry)
+          ),
+        true,
+        `${receiptType} metadata seccomp proof must scope ioctl denial to request codes`
+      );
+      assert.deepEqual(
+        metadataProof?.entries?.filter(
+          entry => /^io_uring_(?:setup|enter|register):\d+$/.test(entry)
+        ),
+        [
+          'io_uring_setup:425',
+          'io_uring_enter:426',
+          'io_uring_register:427'
+        ],
+        `${receiptType} metadata seccomp proof must deny io_uring metadata submission`
+      );
+      assert.equal(
+        metadataProof?.architecture === 'x86_64'
+          ? Number(metadataProof?.rejected_syscall_mask) === 0x40000000
+          : Number(metadataProof?.rejected_syscall_mask) === 0,
+        true,
+        `${receiptType} metadata seccomp proof must bind the alternate syscall namespace`
+      );
+      assert.equal(
+        metadataProof?.architecture === 'x86_64'
+          ? Number(metadataProof?.audit_arch) === 0xC000003E
+          : metadataProof?.architecture === 'aarch64'
+            && Number(metadataProof?.audit_arch) === 0xC00000B7,
+        true,
+        `${receiptType} metadata seccomp proof must bind the Linux audit architecture`
+      );
+    } finally {
+      fs.rmSync(publicationRoot, { recursive: true, force: true });
+    }
+  };
+
+  const metadataSeccompIndexRoot = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'industrial-exhaust-index-metadata-seccomp-')
+  );
+  const metadataSeccompIndexHtml =
+    '<!doctype html><html><body><a href="/news-releases/metadata-seccomp-index">Metadata seccomp index</a></body></html>';
+  const metadataSeccompParsedIndex = parseHtmlLinkIndex(
+    metadataSeccompIndexHtml,
+    source
+  );
+  const metadataSeccompIndexReceiptPath = indexReceiptFilePath(
+    metadataSeccompIndexRoot,
+    source.id,
+    metadataSeccompParsedIndex.index_sha256
+  );
+  assertUnrelatedMetadataMutationConfined({
+    receiptType: 'index',
+    publicationRoot: metadataSeccompIndexRoot,
+    absoluteReceiptPath: metadataSeccompIndexReceiptPath,
+    writeReceipt: () => writeIndexReceipt({
+      rootDir: metadataSeccompIndexRoot,
+      source,
+      parsedIndex: metadataSeccompParsedIndex,
+      html: metadataSeccompIndexHtml,
+      capturedAt: '2026-08-25T17:40:00.000Z',
+      responseHeaders: {
+        content_type: 'text/html',
+        etag: 'metadata-seccomp-index'
+      }
+    })
+  });
+
+  const metadataSeccompArtifactRoot = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'industrial-exhaust-artifact-metadata-seccomp-')
+  );
+  const metadataSeccompArtifactCanonicalUrl =
+    'https://www.dentsu.com/news-releases/metadata-seccomp-artifact';
+  const metadataSeccompArtifactBody = Buffer.from(
+    '<!doctype html><html><body><main>Metadata seccomp artifact.</main></body></html>'
+  );
+  const metadataSeccompArtifactBodySha256 = crypto
+    .createHash('sha256')
+    .update(metadataSeccompArtifactBody)
+    .digest('hex');
+  const metadataSeccompArtifactReceiptPath = artifactReceiptFilePath(
+    metadataSeccompArtifactRoot,
+    metadataSeccompArtifactCanonicalUrl,
+    metadataSeccompArtifactBodySha256
+  );
+  assertUnrelatedMetadataMutationConfined({
+    receiptType: 'artifact',
+    publicationRoot: metadataSeccompArtifactRoot,
+    absoluteReceiptPath: metadataSeccompArtifactReceiptPath,
+    writeReceipt: () => writeArtifactReceipt({
+      rootDir: metadataSeccompArtifactRoot,
+      canonicalUrl: metadataSeccompArtifactCanonicalUrl,
+      body: metadataSeccompArtifactBody,
+      bodySha256: metadataSeccompArtifactBodySha256,
+      capturedAt: '2026-08-25T17:40:00.000Z',
+      responseHeaders: {
+        content_type: 'text/html',
+        etag: 'metadata-seccomp-artifact',
+        final_url: metadataSeccompArtifactCanonicalUrl,
+        redirect_chain: []
+      }
+    })
+  });
+
   const forkProbeRoot = fs.mkdtempSync(
     path.join(os.tmpdir(), 'industrial-exhaust-helper-fork-probe-')
   );

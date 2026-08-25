@@ -1210,6 +1210,66 @@ const RECEIPT_DIRFD_RUNTIME_CLOSURE_MAX_FILES = 256;
 const RECEIPT_DIRFD_INTERPRETER_CHILD_FD = 4;
 const RECEIPT_DIRFD_INTERPRETER_EXEC_PATH =
   `/proc/self/fd/${RECEIPT_DIRFD_INTERPRETER_CHILD_FD}`;
+const RECEIPT_DIRFD_METADATA_SECCOMP_POLICIES = Object.freeze({
+  x86_64: Object.freeze({
+    audit_arch: 0xC000003E,
+    rejected_syscall_mask: 0x40000000,
+    ioctl_syscall: 16,
+    ioctl_requests: Object.freeze([
+      'FS_IOC_SETFLAGS:1074292226',
+      'FS_IOC_FSSETXATTR:1075599392'
+    ]),
+    entries: Object.freeze([
+      'chmod:90',
+      'fchmod:91',
+      'chown:92',
+      'fchown:93',
+      'lchown:94',
+      'utime:132',
+      'setxattr:188',
+      'lsetxattr:189',
+      'fsetxattr:190',
+      'removexattr:197',
+      'lremovexattr:198',
+      'fremovexattr:199',
+      'utimes:235',
+      'fchownat:260',
+      'futimesat:261',
+      'fchmodat:268',
+      'utimensat:280',
+      'fchmodat2:452',
+      'io_uring_setup:425',
+      'io_uring_enter:426',
+      'io_uring_register:427'
+    ])
+  }),
+  aarch64: Object.freeze({
+    audit_arch: 0xC00000B7,
+    rejected_syscall_mask: 0,
+    ioctl_syscall: 29,
+    ioctl_requests: Object.freeze([
+      'FS_IOC_SETFLAGS:1074292226',
+      'FS_IOC_FSSETXATTR:1075599392'
+    ]),
+    entries: Object.freeze([
+      'setxattr:5',
+      'lsetxattr:6',
+      'fsetxattr:7',
+      'removexattr:14',
+      'lremovexattr:15',
+      'fremovexattr:16',
+      'fchmod:52',
+      'fchmodat:53',
+      'fchownat:54',
+      'fchown:55',
+      'utimensat:88',
+      'fchmodat2:452',
+      'io_uring_setup:425',
+      'io_uring_enter:426',
+      'io_uring_register:427'
+    ])
+  })
+});
 const RECEIPT_DIRFD_HELPER_SOURCE = String.raw`
 import base64
 import ctypes
@@ -1431,9 +1491,102 @@ class LandlockPathBeneathAttr(ctypes.Structure):
     ]
 
 
+class SockFilter(ctypes.Structure):
+    _fields_ = [
+        ("code", ctypes.c_ushort),
+        ("jt", ctypes.c_ubyte),
+        ("jf", ctypes.c_ubyte),
+        ("k", ctypes.c_uint32),
+    ]
+
+
+class SockFprog(ctypes.Structure):
+    _fields_ = [
+        ("length", ctypes.c_ushort),
+        ("filters", ctypes.POINTER(SockFilter)),
+    ]
+
+
 LANDLOCK_CREATE_RULESET_VERSION = 1
 LANDLOCK_RULE_PATH_BENEATH = 1
+PR_SET_SECCOMP = 22
 PR_SET_NO_NEW_PRIVS = 38
+SECCOMP_MODE_FILTER = 2
+SECCOMP_RET_KILL_PROCESS = 0x80000000
+SECCOMP_RET_ERRNO = 0x00050000
+SECCOMP_RET_ALLOW = 0x7FFF0000
+BPF_LD = 0x00
+BPF_W = 0x00
+BPF_ABS = 0x20
+BPF_JMP = 0x05
+BPF_JEQ = 0x10
+BPF_JSET = 0x40
+BPF_K = 0x00
+BPF_RET = 0x06
+SECCOMP_DATA_NR_OFFSET = 0
+SECCOMP_DATA_ARCH_OFFSET = 4
+SECCOMP_DATA_ARG1_OFFSET = 24
+FILESYSTEM_METADATA_SECCOMP_POLICY = "filesystem-metadata-v1"
+FILESYSTEM_METADATA_SECCOMP_POLICIES = {
+    "x86_64": {
+        "audit_arch": 0xC000003E,
+        "rejected_syscall_mask": 0x40000000,
+        "ioctl_syscall": 16,
+        "ioctl_requests": (
+            ("FS_IOC_SETFLAGS", 0x40086602),
+            ("FS_IOC_FSSETXATTR", 0x401C5820),
+        ),
+        "entries": (
+            ("chmod", 90),
+            ("fchmod", 91),
+            ("chown", 92),
+            ("fchown", 93),
+            ("lchown", 94),
+            ("utime", 132),
+            ("setxattr", 188),
+            ("lsetxattr", 189),
+            ("fsetxattr", 190),
+            ("removexattr", 197),
+            ("lremovexattr", 198),
+            ("fremovexattr", 199),
+            ("utimes", 235),
+            ("fchownat", 260),
+            ("futimesat", 261),
+            ("fchmodat", 268),
+            ("utimensat", 280),
+            ("fchmodat2", 452),
+            ("io_uring_setup", 425),
+            ("io_uring_enter", 426),
+            ("io_uring_register", 427),
+        ),
+    },
+    "aarch64": {
+        "audit_arch": 0xC00000B7,
+        "rejected_syscall_mask": 0,
+        "ioctl_syscall": 29,
+        "ioctl_requests": (
+            ("FS_IOC_SETFLAGS", 0x40086602),
+            ("FS_IOC_FSSETXATTR", 0x401C5820),
+        ),
+        "entries": (
+            ("setxattr", 5),
+            ("lsetxattr", 6),
+            ("fsetxattr", 7),
+            ("removexattr", 14),
+            ("lremovexattr", 15),
+            ("fremovexattr", 16),
+            ("fchmod", 52),
+            ("fchmodat", 53),
+            ("fchownat", 54),
+            ("fchown", 55),
+            ("utimensat", 88),
+            ("fchmodat2", 452),
+            ("io_uring_setup", 425),
+            ("io_uring_enter", 426),
+            ("io_uring_register", 427),
+        ),
+    },
+}
 LANDLOCK_ACCESS_FS_WRITE_FILE = 1 << 1
 LANDLOCK_ACCESS_FS_REMOVE_DIR = 1 << 4
 LANDLOCK_ACCESS_FS_REMOVE_FILE = 1 << 5
@@ -1549,6 +1702,242 @@ def restrict_filesystem_writes(descriptor, scope):
         **identity(after),
     )
 
+def require_syscall_errno(
+    syscall_number,
+    label,
+    expected_errno,
+    *arguments,
+):
+    ctypes.set_errno(0)
+    result = LIBC.syscall(ctypes.c_long(syscall_number), *arguments)
+    error_number = ctypes.get_errno()
+    if result != -1 or error_number != expected_errno:
+        fail(
+            "descriptor-relative receipt helper metadata seccomp "
+            f"probe mismatch for {label}: result={result}, "
+            f"errno={error_number}, expected={expected_errno}"
+        )
+
+
+def confine_filesystem_metadata():
+    machine = os.uname().machine
+    policy = FILESYSTEM_METADATA_SECCOMP_POLICIES.get(machine)
+    if policy is None:
+        fail(
+            "descriptor-relative receipt helper does not know metadata "
+            f"seccomp policy for architecture {machine}"
+        )
+
+    filters = [
+        SockFilter(
+            BPF_LD | BPF_W | BPF_ABS,
+            0,
+            0,
+            SECCOMP_DATA_ARCH_OFFSET,
+        ),
+        SockFilter(
+            BPF_JMP | BPF_JEQ | BPF_K,
+            1,
+            0,
+            policy["audit_arch"],
+        ),
+        SockFilter(
+            BPF_RET | BPF_K,
+            0,
+            0,
+            SECCOMP_RET_KILL_PROCESS,
+        ),
+        SockFilter(
+            BPF_LD | BPF_W | BPF_ABS,
+            0,
+            0,
+            SECCOMP_DATA_NR_OFFSET,
+        ),
+    ]
+    rejected_syscall_mask = policy["rejected_syscall_mask"]
+    if rejected_syscall_mask:
+        filters.extend(
+            [
+                SockFilter(
+                    BPF_JMP | BPF_JSET | BPF_K,
+                    0,
+                    1,
+                    rejected_syscall_mask,
+                ),
+                SockFilter(
+                    BPF_RET | BPF_K,
+                    0,
+                    0,
+                    SECCOMP_RET_ERRNO | errno.EPERM,
+                ),
+            ]
+        )
+
+    ioctl_requests = policy["ioctl_requests"]
+    filters.extend(
+        [
+            SockFilter(
+                BPF_JMP | BPF_JEQ | BPF_K,
+                0,
+                2 * len(ioctl_requests) + 1,
+                policy["ioctl_syscall"],
+            ),
+            SockFilter(
+                BPF_LD | BPF_W | BPF_ABS,
+                0,
+                0,
+                SECCOMP_DATA_ARG1_OFFSET,
+            ),
+        ]
+    )
+    for _name, request_number in ioctl_requests:
+        filters.extend(
+            [
+                SockFilter(
+                    BPF_JMP | BPF_JEQ | BPF_K,
+                    0,
+                    1,
+                    request_number,
+                ),
+                SockFilter(
+                    BPF_RET | BPF_K,
+                    0,
+                    0,
+                    SECCOMP_RET_ERRNO | errno.EPERM,
+                ),
+            ]
+        )
+    filters.append(
+        SockFilter(
+            BPF_LD | BPF_W | BPF_ABS,
+            0,
+            0,
+            SECCOMP_DATA_NR_OFFSET,
+        )
+    )
+
+    for _name, syscall_number in policy["entries"]:
+        filters.extend(
+            [
+                SockFilter(
+                    BPF_JMP | BPF_JEQ | BPF_K,
+                    0,
+                    1,
+                    syscall_number,
+                ),
+                SockFilter(
+                    BPF_RET | BPF_K,
+                    0,
+                    0,
+                    SECCOMP_RET_ERRNO | errno.EPERM,
+                ),
+            ]
+        )
+    filters.append(
+        SockFilter(
+            BPF_RET | BPF_K,
+            0,
+            0,
+            SECCOMP_RET_ALLOW,
+        )
+    )
+    filter_array = (SockFilter * len(filters))(*filters)
+    program = SockFprog(len(filters), filter_array)
+    ctypes.set_errno(0)
+    if LIBC.prctl(
+        PR_SET_SECCOMP,
+        SECCOMP_MODE_FILTER,
+        ctypes.byref(program),
+    ) != 0:
+        error_number = ctypes.get_errno()
+        fail(
+            "descriptor-relative receipt helper metadata seccomp "
+            f"confinement failed: {os.strerror(error_number)}"
+        )
+
+    for request_name, request_number in ioctl_requests:
+        require_syscall_errno(
+            policy["ioctl_syscall"],
+            request_name,
+            errno.EPERM,
+            ctypes.c_int(-1),
+            ctypes.c_ulong(request_number),
+            ctypes.c_void_p(0),
+        )
+    require_syscall_errno(
+        policy["ioctl_syscall"],
+        "unlisted ioctl request",
+        errno.EBADF,
+        ctypes.c_int(-1),
+        ctypes.c_ulong(0),
+        ctypes.c_void_p(0),
+    )
+    if rejected_syscall_mask:
+        require_syscall_errno(
+            rejected_syscall_mask,
+            "x32 syscall namespace",
+            errno.EPERM,
+            ctypes.c_int(-1),
+            ctypes.c_void_p(0),
+            ctypes.c_size_t(0),
+        )
+
+    entry_syscalls = dict(policy["entries"])
+    for io_uring_name in (
+        "io_uring_setup",
+        "io_uring_enter",
+        "io_uring_register",
+    ):
+        require_syscall_errno(
+            entry_syscalls[io_uring_name],
+            io_uring_name,
+            errno.EPERM,
+        )
+
+    cwd_before = os.stat(".", follow_symlinks=False)
+    cwd_mode = stat.S_IMODE(cwd_before.st_mode)
+    try:
+        os.chmod(".", cwd_mode)
+    except OSError as error:
+        if error.errno != errno.EPERM:
+            fail(
+                "descriptor-relative receipt helper metadata seccomp "
+                f"probe failed unexpectedly: {error}"
+            )
+    else:
+        fail(
+            "descriptor-relative receipt helper metadata seccomp "
+            "probe permitted chmod"
+        )
+    cwd_after = os.stat(".", follow_symlinks=False)
+    if (
+        not stat.S_ISDIR(cwd_after.st_mode)
+        or not same_identity(cwd_before, cwd_after)
+        or stat.S_IMODE(cwd_after.st_mode) != cwd_mode
+    ):
+        fail(
+            "descriptor-relative receipt helper metadata seccomp "
+            "probe changed the working directory"
+        )
+    add_event(
+        "filesystem-metadata-confined",
+        policy=FILESYSTEM_METADATA_SECCOMP_POLICY,
+        architecture=machine,
+        audit_arch=policy["audit_arch"],
+        rejected_syscall_mask=rejected_syscall_mask,
+        ioctl_syscall=policy["ioctl_syscall"],
+        ioctl_requests=[
+            f"{name}:{request_number}"
+            for name, request_number in ioctl_requests
+        ],
+        errno=errno.EPERM,
+        entries=[
+            f"{name}:{syscall_number}"
+            for name, syscall_number in policy["entries"]
+        ],
+    )
+
+
 def runtime_file_paths():
     paths = set()
     for module in tuple(sys.modules.values()):
@@ -1609,6 +1998,7 @@ def confine_runtime():
         fail("descriptor-relative receipt helper authority root is not a directory")
     require_openat2_support(ROOT_FD)
     restrict_filesystem_writes(ROOT_FD, "repository-root")
+    confine_filesystem_metadata()
     add_event("landlock-supported", abi=str(LANDLOCK_ABI))
 
     try:
@@ -1890,6 +2280,59 @@ def open_final(parent_descriptor, final_name):
         fail("receipt publication identity changed")
     return descriptor, descriptor_stats
 
+def maybe_chmod_unrelated_after_narrowing():
+    global FAULT_USED
+    if (
+        not isinstance(FAULT, dict)
+        or FAULT.get("type") != "chmod_unrelated_after_narrowing"
+        or FAULT_USED
+    ):
+        return
+    FAULT_USED = True
+    target = FAULT.get("path")
+    requested_mode = FAULT.get("mode")
+    if (
+        not isinstance(target, str)
+        or not target
+        or not os.path.isabs(target)
+        or not isinstance(requested_mode, int)
+        or isinstance(requested_mode, bool)
+        or requested_mode < 0
+        or requested_mode > 0o7777
+    ):
+        fail("invalid unrelated metadata mutation fault")
+    before = os.lstat(target)
+    before_mode = stat.S_IMODE(before.st_mode)
+    if not stat.S_ISREG(before.st_mode):
+        fail("unrelated metadata mutation target is not a regular file")
+    try:
+        os.chmod(target, requested_mode)
+    except OSError as error:
+        if error.errno not in (errno.EACCES, errno.EPERM):
+            raise
+        after = os.lstat(target)
+        if (
+            not stat.S_ISREG(after.st_mode)
+            or not same_identity(before, after)
+            or stat.S_IMODE(after.st_mode) != before_mode
+        ):
+            fail("metadata mutation denial changed the unrelated target")
+        add_event(
+            "metadata-mutation-denied",
+            operation="chmod",
+            errno=error.errno,
+            mode=str(before_mode),
+        )
+        return
+    after = os.lstat(target)
+    add_event(
+        "metadata-mutation-succeeded",
+        operation="chmod",
+        before_mode=str(before_mode),
+        after_mode=str(stat.S_IMODE(after.st_mode)),
+    )
+
+
 def maybe_swap_visible_ancestor():
     global FAULT_USED
     if (
@@ -2018,6 +2461,7 @@ def publish(request):
         chain_descriptors,
         chain,
     )
+    maybe_chmod_unrelated_after_narrowing()
     temp_name = None
     temp_identity = None
     published = False
@@ -2213,6 +2657,26 @@ function receiptDirfdTestControl() {
 function recordReceiptDirfdEvents(control, events) {
   if (!control || !Array.isArray(control.events) || !Array.isArray(events)) return;
   control.events.push(...events.map(event => structuredClone(event)));
+}
+
+function receiptFilesystemMetadataProofIsValid(event) {
+  if (!event || event.type !== 'filesystem-metadata-confined'
+    || event.policy !== 'filesystem-metadata-v1'
+    || Number(event.errno) !== 1
+    || typeof event.architecture !== 'string'
+    || !Array.isArray(event.entries)) {
+    return false;
+  }
+  const expected = RECEIPT_DIRFD_METADATA_SECCOMP_POLICIES[event.architecture];
+  return expected && typeof expected === 'object'
+    && Number(event.audit_arch) === expected.audit_arch
+    && Number(event.rejected_syscall_mask) === expected.rejected_syscall_mask
+    && Number(event.ioctl_syscall) === expected.ioctl_syscall
+    && Array.isArray(expected.ioctl_requests)
+    && JSON.stringify(event.ioctl_requests)
+      === JSON.stringify(expected.ioctl_requests)
+    && Array.isArray(expected.entries)
+    && JSON.stringify(event.entries) === JSON.stringify(expected.entries);
 }
 
 function receiptInterpreterPathEntryIsTrusted(stats) {
@@ -2604,9 +3068,17 @@ function parseReceiptRuntimeProbeResult(
       event => event?.type === 'mount-boundary-supported'
     )
     : [];
+  const metadataConfinementEvents = Array.isArray(response.events)
+    ? response.events.filter(
+      event => event?.type === 'filesystem-metadata-confined'
+    )
+    : [];
   const rootConfinement = rootConfinementEvents[0];
   const mountBoundary = mountBoundaryEvents[0];
+  const metadataConfinement = metadataConfinementEvents[0];
   if (!eventTypes.has('runtime-confined')
+    || metadataConfinementEvents.length !== 1
+    || !receiptFilesystemMetadataProofIsValid(metadataConfinement)
     || landlockEvents.length !== 1
     || Number(landlockEvents[0]?.abi) < 3
     || rootConfinementEvents.length !== 1
@@ -2898,6 +3370,11 @@ function runReceiptDirfdHelper({
         event => event?.type === 'mount-boundary-supported'
       )
       : [];
+    const metadataConfinementEvents = Array.isArray(response.events)
+      ? response.events.filter(
+        event => event?.type === 'filesystem-metadata-confined'
+      )
+      : [];
     const rootConfinement = writeConfinementEvents.find(
       event => event?.scope === 'repository-root'
     );
@@ -2930,7 +3407,10 @@ function runReceiptDirfdHelper({
       ? response.chain[0]
       : null;
     const mountBoundary = mountBoundaryEvents[0];
+    const metadataConfinement = metadataConfinementEvents[0];
     if (!eventTypes.has('runtime-confined')
+      || metadataConfinementEvents.length !== 1
+      || !receiptFilesystemMetadataProofIsValid(metadataConfinement)
       || mountBoundaryEvents.length !== 1
       || mountBoundary?.syscall !== 'openat2'
       || Number(mountBoundary?.resolve) !== 0x0f
