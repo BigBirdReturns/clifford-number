@@ -1,30 +1,34 @@
-name: Temporary PR 2231 consecutive observation qualifier v46
+name: Temporary PR 2231 consecutive observation publisher v47
 on:
   pull_request:
     branches: [main]
     types: [opened, synchronize, reopened]
     paths: ['.github/workflows/temporary-pr2231-observation-interval-controller-v36.yml']
 permissions:
-  contents: read
+  contents: write
   issues: read
 concurrency:
-  group: pr2231-consecutive-observation-qualifier-v46
+  group: pr2231-consecutive-observation-publisher-v47
   cancel-in-progress: false
 jobs:
-  qualify-consecutive-observation-repair:
+  qualify-and-publish-consecutive-observation-repair:
     if: github.repository == 'BigBirdReturns/clifford-number'
     runs-on: ubuntu-latest
     timeout-minutes: 75
     env:
       CBRANCH: agent/pr2231-observation-interval-controller-v36
-      PBRANCH: agent/current-main-identifier-context-product-v1
-      PHEAD: 20805a634d9cd4ef2e0091506a614593b105dc1c
-      PPARENT: 482db6e3ff25fa6d085a59f8677d9a0b33c5804b
-      PTREE: 18ed46d92c0b9df65a2e9444ea140002b7d64f07
-      PLIB: d825c94f2dfe5ef2bd64d483a2feb9dfa0a5c645
-      PTEST: 34ae708c4934834334839552d7603e48e3db4ea4
-      BLIB: 5f68254d3e44de693e83503aed879160f9b7b997
-      BTEST: 1659a7cc54666a2ac5a1d6b88eb8c6591d98008e
+      CPATH: .github/workflows/temporary-pr2231-observation-interval-controller-v36.yml
+      SOURCE_COMMIT: fef1c4f0a8429507f371cdd332cc0671ea989d62
+      SOURCE_BLOB: 145b1a57d6225692890903af9c6a4ab1cd3b9e36
+      CURRENT_HEAD: ${{ github.event.pull_request.head.sha }}
+      CURRENT_BRANCH: ${{ github.head_ref }}
+      CURRENT_RUN_ID: ${{ github.run_id }}
+      QUALIFIED_TREE: d8acecd1750c9a51a054c806a02cd4a6d610c004
+      QUALIFIED_LIB: 3cea6706bcc69b18de026107efb993b63cb4b110
+      QUALIFIED_TEST: b511fae6aa674d6d885c314510bea4df0628d7d2
+      QUALIFIED_NUMSTAT: |-
+        744	0	test/industrial-exhaust.test.js
+        653	56	tools/lib/industrial-exhaust.mjs
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
@@ -34,268 +38,99 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Reproduce, repair, and qualify exact product bytes
+      - name: Repeat v46 qualification and publish under exact leases
         shell: bash
         run: |
           set -euo pipefail
-          H='${{ github.event.pull_request.head.sha }}'
-          S=/tmp/pr2231-v46-source
-          Q=/tmp/pr2231-v46-main
-          R=/tmp/pr2231-v46-qualification.txt
-          PATCH=/tmp/pr2231-v46-product.patch
-          : > "$R"
-          stage() { printf '\n=== STAGE %s ===\n' "$1" | tee -a "$R"; }
-          fail() { printf 'FAIL[%s] %s\n' "$1" "$2" | tee -a "$R" >&2; exit 1; }
-          require_eq() {
-            local label="$1" actual="$2" expected="$3"
-            printf '%s actual=%s expected=%s\n' "$label" "$actual" "$expected" | tee -a "$R"
-            [ "$actual" = "$expected" ] || fail "$label" 'value mismatch'
-          }
-          fetch_leases() {
-            git fetch --no-tags origin \
-              "+refs/heads/main:refs/remotes/origin/main" \
-              "+refs/heads/$PBRANCH:refs/remotes/origin/$PBRANCH" \
-              "+refs/heads/$CBRANCH:refs/remotes/origin/$CBRANCH"
-          }
-          PRODUCT_PATHS=$'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
-          RELEASE_PATHS=$'build/axm-identity.json\nbuild/build-hop-report.json\nbuild/hop-graph.json\nbuild/migration-review.md\nbuild/migration-summary.json\nbuild/receipt-graph.json\nbuild/scores.json\nbuild/scout-report.json\nbuild/scout-report.md\nbuild/surface-graph.json\nbuild/topology-admission-frontier.json\ntest/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          actual_source_blob="$(git rev-parse "$SOURCE_COMMIT:$CPATH")"
+          printf 'source-blob actual=%s expected=%s\n' "$actual_source_blob" "$SOURCE_BLOB"
+          [ "$actual_source_blob" = "$SOURCE_BLOB" ]
 
-          stage initial-live-leases
-          fetch_leases
-          require_eq controller-head "$(git rev-parse refs/remotes/origin/$CBRANCH)" "$H"
-          require_eq product-head "$(git rev-parse refs/remotes/origin/$PBRANCH)" "$PHEAD"
-          require_eq product-parent "$(git rev-parse "$PHEAD^")" "$PPARENT"
-          require_eq product-count "$(git rev-list --count "$PPARENT..$PHEAD")" '1'
-          require_eq product-tree "$(git rev-parse "$PHEAD^{tree}")" "$PTREE"
-          require_eq product-lib "$(git rev-parse "$PHEAD:tools/lib/industrial-exhaust.mjs")" "$PLIB"
-          require_eq product-test "$(git rev-parse "$PHEAD:test/industrial-exhaust.test.js")" "$PTEST"
-          require_eq product-paths "$(git diff --name-only "$PPARENT..$PHEAD" | LC_ALL=C sort)" "$PRODUCT_PATHS"
-          MAIN="$(git rev-parse refs/remotes/origin/main)"
-          printf 'captured-main=%s\n' "$MAIN" | tee -a "$R"
-          require_eq main-lib "$(git rev-parse "$MAIN:tools/lib/industrial-exhaust.mjs")" "$BLIB"
-          require_eq main-test "$(git rev-parse "$MAIN:test/industrial-exhaust.test.js")" "$BTEST"
-
-          stage exact-head-defect-reproduction
-          rm -rf "$S" "$Q"
-          git worktree prune
-          git worktree add --detach "$S" "$PHEAD"
-          cd "$S"
-          node --input-type=module <<'NODE' 2>&1 | tee -a "$R"
-          import assert from 'node:assert/strict';
-          import {redactContactData as r} from './tools/lib/industrial-exhaust.mjs';
-          const chain = 'GUID '.repeat(4000);
-          const input = `Phone ${chain}record id: 09012345678 2026-08-17 2027-09-18 03-6216-8041`;
-          const expected = `Phone ${chain}record id: [contact omitted] 2026-08-17 2027-09-18 [contact omitted]`;
-          const reproduced = `Phone ${chain}record id: [contact omitted] 2026-08-17 [contact omitted]-8041`;
-          const actual = r(input);
-          console.log(JSON.stringify({input, actual, expected}));
-          assert.equal(actual, reproduced, 'the exact reviewed P2 must reproduce on the leased head');
-          assert.notEqual(actual, expected);
-          NODE
-
-          stage apply-two-file-repair
           python3 <<'PY'
-          from pathlib import Path
+          import os
+          import pathlib
+          import subprocess
 
-          library = Path('tools/lib/industrial-exhaust.mjs')
-          text = library.read_text()
-          old = '''function independentPhoneStartAfterObservation(
-            candidate,
-            groups,
-            observation,
-            externalPrefix,
-            externalSuffix,
-            indeterminatePhoneContext
-          ) {
-            for (let first = observation.group; first < groups.length; first += 1) {
-              if (groups[first].index < observation.end) continue;
-              const previousEnd = groups[first - 1].index + groups[first - 1][0].length;
-              const separator = candidate.slice(previousEnd, groups[first].index);
-              if (!/[\\s/／.．]/u.test(separator)) continue;
-              const interval = validatedIndependentPhoneInterval(
-                candidate, groups, first, externalPrefix, externalSuffix, indeterminatePhoneContext
-              );
-              if (interval) return interval;
-            }
-            return null;
+          path = os.environ['CPATH']
+          source = subprocess.check_output(
+              ['git', 'show', f"{os.environ['SOURCE_COMMIT']}:{path}"],
+              text=True
+          )
+          marker = "      - name: Reproduce, repair, and qualify exact product bytes\n        shell: bash\n        run: |\n"
+          if source.count(marker) != 1:
+              raise SystemExit('v46 run-block marker mismatch')
+          remainder = source.split(marker, 1)[1]
+          lines = []
+          for line in remainder.splitlines():
+              if line.startswith('          '):
+                  lines.append(line[10:])
+              elif line == '':
+                  lines.append('')
+              else:
+                  break
+          script = '\n'.join(lines) + '\n'
+          replacements = {
+              '$' + '{{ github.event.pull_request.head.sha }}': os.environ['CURRENT_HEAD'],
+              '$' + '{{ github.head_ref }}': os.environ['CURRENT_BRANCH'],
+              '$' + '{{ github.run_id }}': os.environ['CURRENT_RUN_ID'],
           }
-          '''
-          new = '''function independentPhoneStartAfterObservation(
-            candidate,
-            groups,
-            observation,
-            externalPrefix,
-            externalSuffix,
-            indeterminatePhoneContext
-          ) {
-            let observationEnd = observation.end;
-            for (let first = observation.group; first < groups.length; first += 1) {
-              const groupStart = groups[first].index;
-              if (groupStart < observationEnd) continue;
-
-              const subsequentObservation = numericObservationMatch(
-                candidate.slice(groupStart),
-                externalSuffix
-              );
-              if (subsequentObservation) {
-                observationEnd = groupStart + sourceEndForNormalizedPrefix(
-                  candidate.slice(groupStart),
-                  subsequentObservation[0].length
-                );
-                continue;
-              }
-
-              const previousEnd = groups[first - 1].index + groups[first - 1][0].length;
-              const separator = candidate.slice(previousEnd, groupStart);
-              if (!/[\\s/／.．]/u.test(separator)) continue;
-              const interval = validatedIndependentPhoneInterval(
-                candidate, groups, first, externalPrefix, externalSuffix, indeterminatePhoneContext
-              );
-              if (interval) return interval;
-            }
-            return null;
-          }
-          '''
-          if text.count(old) != 1:
-              raise SystemExit(f'library anchor count mismatch: {text.count(old)}')
-          library.write_text(text.replace(old, new))
-
-          test = Path('test/industrial-exhaust.test.js')
-          text = test.read_text()
-          anchor = '''const sequentialObservationPhones = `Phone ${overflowIdentifierLabelChain}record id: 09012345678 2026-08-17 01 42 68 53 00 90 people +81 3 6216 5111`;
-          assert.equal(
-            redactContactData(sequentialObservationPhones),
-            `Phone ${overflowIdentifierLabelChain}record id: [contact omitted] 2026-08-17 [contact omitted] 90 people [contact omitted]`,
-            'sequential observation/phone transitions must retain each exact interval'
-          );
-          '''
-          addition = anchor + '''
-          for (const [consecutiveObservations, laterPhone] of [
-            ['2026-08-17 2027-09-18', '03-6216-8041'],
-            ['2026-08-17 3.14', '1 212 555 1234'],
-            ['3.14 2027-09-18', '(03) 6216 8041'],
-            ['２０２６－０８－１７ ２０２７－０９－１８', '０３－６２１６－８０４１'],
-            ['2026-08-17 2027-09-18 2028-10-19', '03 62 16 80 41']
-          ]) {
-            const input = `Phone ${overflowIdentifierLabelChain}record id: 09012345678 ${consecutiveObservations} ${laterPhone}`;
-            assert.equal(
-              redactContactData(input),
-              `Phone ${overflowIdentifierLabelChain}record id: [contact omitted] ${consecutiveObservations} [contact omitted]`,
-              'each complete consecutive observation must be skipped before validating the later phone interval'
-            );
-          }
-          '''
-          if text.count(anchor) != 1:
-              raise SystemExit(f'test anchor count mismatch: {text.count(anchor)}')
-          test.write_text(text.replace(anchor, addition))
+          for old, new in replacements.items():
+              if script.count(old) != 1:
+                  raise SystemExit(f'v46 expression count mismatch: {old!r}')
+              script = script.replace(old, new)
+          target = pathlib.Path('/tmp/pr2231-v47-qualified.sh')
+          target.write_text(script)
+          target.chmod(0o700)
           PY
-          require_eq repaired-paths "$(git diff --name-only | LC_ALL=C sort)" "$PRODUCT_PATHS"
-          git diff --check
-          git diff --binary > "$PATCH"
+          bash -n /tmp/pr2231-v47-qualified.sh
+          source /tmp/pr2231-v47-qualified.sh
 
-          stage repaired-targeted-matrix
-          node --input-type=module <<'NODE' 2>&1 | tee -a "$R"
-          import assert from 'node:assert/strict';
-          import {redactContactData as r} from './tools/lib/industrial-exhaust.mjs';
-          const chain = 'GUID '.repeat(4000);
-          const cases = [
-            ['2026-08-17 2027-09-18', '03-6216-8041'],
-            ['2026-08-17 3.14', '1 212 555 1234'],
-            ['3.14 2027-09-18', '(03) 6216 8041'],
-            ['２０２６－０８－１７ ２０２７－０９－１８', '０３－６２１６－８０４１'],
-            ['2026-08-17 2027-09-18 2028-10-19', '03 62 16 80 41']
-          ];
-          for (const [observations, phone] of cases) {
-            const input = `Phone ${chain}record id: 09012345678 ${observations} ${phone}`;
-            const expected = `Phone ${chain}record id: [contact omitted] ${observations} [contact omitted]`;
-            const actual = r(input);
-            console.log(JSON.stringify({input, actual, expected}));
-            assert.equal(actual, expected, input);
-          }
-          NODE
+          V47=/tmp/pr2231-v47-publication.txt
+          cp "$R" "$V47"
+          stage prepublication-qualified-object-census
+          require_eq qualified-tree "$NEWTREE" "$QUALIFIED_TREE"
+          require_eq qualified-lib "$NEWLIB" "$QUALIFIED_LIB"
+          require_eq qualified-test "$NEWTEST" "$QUALIFIED_TEST"
+          require_eq qualified-numstat "$CANDIDATE_NUMSTAT" "$QUALIFIED_NUMSTAT"
+          require_eq qualified-parent "$(git -C "$Q" rev-parse "$NEWHEAD^")" "$MAIN"
+          require_eq qualified-count "$(git -C "$Q" rev-list --count "$MAIN..$NEWHEAD")" '1'
+          require_eq qualified-author "$(git -C "$Q" show -s --format=%an "$NEWHEAD")" 'BigBirdReturns'
+          require_eq qualified-committer "$(git -C "$Q" show -s --format=%cn "$NEWHEAD")" 'BigBirdReturns'
 
-          stage repaired-source-gates
-          node --check tools/lib/industrial-exhaust.mjs
-          node --check tools/crawl-industrial-exhaust.mjs
-          node --check test/industrial-exhaust.test.js
-          node test/industrial-exhaust.test.js 2>&1 | tee -a "$R"
-          node test/industrial-exhaust-artifacts.test.js 2>&1 | tee -a "$R"
-          npm run release:check 2>&1 | tee -a "$R"
-          require_eq source-release-paths "$(git diff --name-only | LC_ALL=C sort)" "$RELEASE_PATHS"
-          git restore --source=HEAD --worktree -- build
-          git clean -fd -- build
-          require_eq source-restored-paths "$(git diff --name-only | LC_ALL=C sort)" "$PRODUCT_PATHS"
-          git diff --check
-          NEWLIB="$(git hash-object tools/lib/industrial-exhaust.mjs)"
-          NEWTEST="$(git hash-object test/industrial-exhaust.test.js)"
-          printf 'candidate-library-blob=%s\ncandidate-test-blob=%s\n' "$NEWLIB" "$NEWTEST" | tee -a "$R"
-
-          stage live-main-byte-qualification
-          cd "$GITHUB_WORKSPACE"
-          git worktree add --detach "$Q" "$MAIN"
-          cp "$S/tools/lib/industrial-exhaust.mjs" "$Q/tools/lib/industrial-exhaust.mjs"
-          cp "$S/test/industrial-exhaust.test.js" "$Q/test/industrial-exhaust.test.js"
-          cd "$Q"
-          require_eq qualified-lib "$(git hash-object tools/lib/industrial-exhaust.mjs)" "$NEWLIB"
-          require_eq qualified-test "$(git hash-object test/industrial-exhaust.test.js)" "$NEWTEST"
-          require_eq qualified-paths "$(git diff --name-only | LC_ALL=C sort)" "$PRODUCT_PATHS"
-          git diff --check
-          node --input-type=module <<'NODE' 2>&1 | tee -a "$R"
-          import assert from 'node:assert/strict';
-          import {redactContactData as r} from './tools/lib/industrial-exhaust.mjs';
-          const chain = 'GUID '.repeat(4000);
-          const input = `Phone ${chain}record id: 09012345678 2026-08-17 2027-09-18 03-6216-8041`;
-          assert.equal(
-            r(input),
-            `Phone ${chain}record id: [contact omitted] 2026-08-17 2027-09-18 [contact omitted]`
-          );
-          NODE
-          node --check tools/lib/industrial-exhaust.mjs
-          node --check tools/crawl-industrial-exhaust.mjs
-          node --check test/industrial-exhaust.test.js
-          node test/industrial-exhaust.test.js 2>&1 | tee -a "$R"
-          node test/industrial-exhaust-artifacts.test.js 2>&1 | tee -a "$R"
-          npm run release:check 2>&1 | tee -a "$R"
-          require_eq main-release-paths "$(git diff --name-only | LC_ALL=C sort)" "$RELEASE_PATHS"
-          git restore --source=HEAD --worktree -- build
-          git clean -fd -- build
-          require_eq main-restored-paths "$(git diff --name-only | LC_ALL=C sort)" "$PRODUCT_PATHS"
-          require_eq main-restored-lib "$(git hash-object tools/lib/industrial-exhaust.mjs)" "$NEWLIB"
-          require_eq main-restored-test "$(git hash-object test/industrial-exhaust.test.js)" "$NEWTEST"
-          git diff --check
-
-          stage candidate-object-census
-          git config user.name BigBirdReturns
-          git config user.email bigbirdreturns@proton.me
-          git add tools/lib/industrial-exhaust.mjs test/industrial-exhaust.test.js
-          git commit -m 'fix: skip consecutive observations before later phones' 2>&1 | tee -a "$R"
-          NEWHEAD="$(git rev-parse HEAD)"
-          NEWTREE="$(git rev-parse HEAD^{tree})"
-          require_eq candidate-parent "$(git rev-parse HEAD^)" "$MAIN"
-          require_eq candidate-count "$(git rev-list --count "$MAIN..HEAD")" '1'
-          require_eq candidate-lib "$(git rev-parse HEAD:tools/lib/industrial-exhaust.mjs)" "$NEWLIB"
-          require_eq candidate-test "$(git rev-parse HEAD:test/industrial-exhaust.test.js)" "$NEWTEST"
-          require_eq candidate-paths "$(git diff --name-only "$MAIN..HEAD" | LC_ALL=C sort)" "$PRODUCT_PATHS"
-          CANDIDATE_NUMSTAT="$(git diff --numstat "$MAIN..HEAD" | LC_ALL=C sort -k3)"
-          printf 'candidate-head=%s\ncandidate-tree=%s\ncandidate-numstat<<EOF\n%s\nEOF\n' "$NEWHEAD" "$NEWTREE" "$CANDIDATE_NUMSTAT" | tee -a "$R"
-
-          stage final-live-leases
+          stage atomic-force-with-lease-publication
           cd "$GITHUB_WORKSPACE"
           fetch_leases
-          require_eq final-main "$(git rev-parse refs/remotes/origin/main)" "$MAIN"
-          require_eq final-product "$(git rev-parse refs/remotes/origin/$PBRANCH)" "$PHEAD"
-          require_eq final-controller "$(git rev-parse refs/remotes/origin/$CBRANCH)" "$H"
-          require_eq final-main-lib "$(git rev-parse "$MAIN:tools/lib/industrial-exhaust.mjs")" "$BLIB"
-          require_eq final-main-test "$(git rev-parse "$MAIN:test/industrial-exhaust.test.js")" "$BTEST"
+          require_eq publication-main-lease "$(git rev-parse refs/remotes/origin/main)" "$MAIN"
+          require_eq publication-product-lease "$(git rev-parse refs/remotes/origin/$PBRANCH)" "$PHEAD"
+          require_eq publication-controller-lease "$(git rev-parse refs/remotes/origin/$CBRANCH)" "$H"
+          git -C "$Q" push --atomic origin \
+            "$MAIN:refs/heads/main" \
+            "$NEWHEAD:refs/heads/$PBRANCH" \
+            --force-with-lease="refs/heads/main:$MAIN" \
+            --force-with-lease="refs/heads/$PBRANCH:$PHEAD" 2>&1 | tee -a "$V47"
 
-          printf 'QUALIFICATION_SUCCESS\nrun=%s\nbase=%s\nsource=%s\ncandidate=%s\ntree=%s\nlib=%s\ntest=%s\n' \
-            '${{ github.run_id }}' "$MAIN" "$PHEAD" "$NEWHEAD" "$NEWTREE" "$NEWLIB" "$NEWTEST" | tee -a "$R"
+          stage postpublication-census
+          fetch_leases
+          require_eq published-main "$(git rev-parse refs/remotes/origin/main)" "$MAIN"
+          require_eq published-product "$(git rev-parse refs/remotes/origin/$PBRANCH)" "$NEWHEAD"
+          require_eq published-controller "$(git rev-parse refs/remotes/origin/$CBRANCH)" "$H"
+          require_eq published-parent "$(git rev-parse "$NEWHEAD^")" "$MAIN"
+          require_eq published-tree "$(git rev-parse "$NEWHEAD^{tree}")" "$QUALIFIED_TREE"
+          require_eq published-lib "$(git rev-parse "$NEWHEAD:tools/lib/industrial-exhaust.mjs")" "$QUALIFIED_LIB"
+          require_eq published-test "$(git rev-parse "$NEWHEAD:test/industrial-exhaust.test.js")" "$QUALIFIED_TEST"
+          require_eq published-paths "$(git diff --name-only "$MAIN..$NEWHEAD" | LC_ALL=C sort)" "$PRODUCT_PATHS"
+          require_eq published-numstat "$(git diff --numstat "$MAIN..$NEWHEAD" | LC_ALL=C sort -k3)" "$QUALIFIED_NUMSTAT"
+
+          printf 'PUBLICATION_SUCCESS\nrun=%s\nbase=%s\nold-product=%s\nproduct=%s\ntree=%s\nlib=%s\ntest=%s\n' \
+            '${{ github.run_id }}' "$MAIN" "$PHEAD" "$NEWHEAD" "$QUALIFIED_TREE" "$QUALIFIED_LIB" "$QUALIFIED_TEST" | tee -a "$V47"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: pr2231-consecutive-observation-qualification-v46
+          name: pr2231-consecutive-observation-publication-v47
           path: |
             /tmp/pr2231-v46-qualification.txt
             /tmp/pr2231-v46-product.patch
+            /tmp/pr2231-v47-qualified.sh
+            /tmp/pr2231-v47-publication.txt
           if-no-files-found: error
           retention-days: 90
