@@ -1,0 +1,116 @@
+from pathlib import Path
+
+PATH = Path("tools/lib/industrial-exhaust-artifacts.mjs")
+text = PATH.read_text()
+
+constant_anchor = '''const RECEIPT_DIRFD_INTERPRETER_EXEC_PATH =
+  `/proc/self/fd/${RECEIPT_DIRFD_INTERPRETER_CHILD_FD}`;
+const RECEIPT_DIRFD_HELPER_SOURCE = String.raw`
+'''
+if text.count(constant_anchor) != 1:
+    raise SystemExit("metadata policy constant anchor mismatch")
+constant_block = '''const RECEIPT_DIRFD_INTERPRETER_EXEC_PATH =
+  `/proc/self/fd/${RECEIPT_DIRFD_INTERPRETER_CHILD_FD}`;
+const RECEIPT_DIRFD_METADATA_SECCOMP_POLICIES = Object.freeze({
+  x86_64: Object.freeze([
+    'chmod:90',
+    'fchmod:91',
+    'chown:92',
+    'fchown:93',
+    'lchown:94',
+    'utime:132',
+    'setxattr:188',
+    'lsetxattr:189',
+    'fsetxattr:190',
+    'removexattr:197',
+    'lremovexattr:198',
+    'fremovexattr:199',
+    'utimes:235',
+    'fchownat:260',
+    'futimesat:261',
+    'fchmodat:268',
+    'utimensat:280',
+    'fchmodat2:452'
+  ]),
+  aarch64: Object.freeze([
+    'setxattr:5',
+    'lsetxattr:6',
+    'fsetxattr:7',
+    'removexattr:14',
+    'lremovexattr:15',
+    'fremovexattr:16',
+    'fchmod:52',
+    'fchmodat:53',
+    'fchownat:54',
+    'fchown:55',
+    'utimensat:88',
+    'fchmodat2:452'
+  ])
+});
+const RECEIPT_DIRFD_HELPER_SOURCE = String.raw`
+'''
+text = text.replace(constant_anchor, constant_block)
+
+structure_anchor = '''class LandlockPathBeneathAttr(ctypes.Structure):
+    _fields_ = [
+        ("allowed_access", ctypes.c_uint64),
+        ("parent_fd", ctypes.c_int32),
+    ]
+
+
+LANDLOCK_CREATE_RULESET_VERSION = 1
+'''
+if text.count(structure_anchor) != 1:
+    raise SystemExit("metadata seccomp structure anchor mismatch")
+structure_block = '''class LandlockPathBeneathAttr(ctypes.Structure):
+    _fields_ = [
+        ("allowed_access", ctypes.c_uint64),
+        ("parent_fd", ctypes.c_int32),
+    ]
+
+
+class SockFilter(ctypes.Structure):
+    _fields_ = [
+        ("code", ctypes.c_ushort),
+        ("jt", ctypes.c_ubyte),
+        ("jf", ctypes.c_ubyte),
+        ("k", ctypes.c_uint32),
+    ]
+
+
+class SockFprog(ctypes.Structure):
+    _fields_ = [
+        ("length", ctypes.c_ushort),
+        ("filters", ctypes.POINTER(SockFilter)),
+    ]
+
+
+LANDLOCK_CREATE_RULESET_VERSION = 1
+'''
+text = text.replace(structure_anchor, structure_block)
+
+seccomp_constant_anchor = '''LANDLOCK_CREATE_RULESET_VERSION = 1
+LANDLOCK_RULE_PATH_BENEATH = 1
+PR_SET_NO_NEW_PRIVS = 38
+LANDLOCK_ACCESS_FS_WRITE_FILE = 1 << 1
+'''
+if text.count(seccomp_constant_anchor) != 1:
+    raise SystemExit("metadata seccomp constant anchor mismatch")
+seccomp_constant_block = '''LANDLOCK_CREATE_RULESET_VERSION = 1
+LANDLOCK_RULE_PATH_BENEATH = 1
+PR_SET_SECCOMP = 22
+PR_SET_NO_NEW_PRIVS = 38
+SECCOMP_MODE_FILTER = 2
+SECCOMP_RET_KILL_PROCESS = 0x80000000
+SECCOMP_RET_ERRNO = 0x00050000
+SECCOMP_RET_ALLOW = 0x7FFF0000
+BPF_LD = 0x00
+BPF_W = 0x00
+BPF_ABS = 0x20
+BPF_JMP = 0x05
+BPF_JEQ = 0x10
+BPF_K = 0x00
+BPF_RET = 0x06
+SECCOMP_DATA_NR_OFFSET = 0
+SECCOMP_DATA_ARCH_OFFSET = 4
+FILESYSTEM_METADATA_SECCOMP_POLICY

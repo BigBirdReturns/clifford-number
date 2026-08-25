@@ -1,0 +1,85 @@
+    program = SockFprog(len(filters), filter_array)
+    ctypes.set_errno(0)
+    if LIBC.prctl(
+        PR_SET_SECCOMP,
+        SECCOMP_MODE_FILTER,
+        ctypes.byref(program),
+    ) != 0:
+        error_number = ctypes.get_errno()
+        fail(
+            "descriptor-relative receipt helper metadata seccomp "
+            f"confinement failed: {os.strerror(error_number)}"
+        )
+
+    cwd_before = os.stat(".", follow_symlinks=False)
+    cwd_mode = stat.S_IMODE(cwd_before.st_mode)
+    try:
+        os.chmod(".", cwd_mode)
+    except OSError as error:
+        if error.errno != errno.EPERM:
+            fail(
+                "descriptor-relative receipt helper metadata seccomp "
+                f"probe failed unexpectedly: {error}"
+            )
+    else:
+        fail(
+            "descriptor-relative receipt helper metadata seccomp "
+            "probe permitted chmod"
+        )
+    cwd_after = os.stat(".", follow_symlinks=False)
+    if (
+        not stat.S_ISDIR(cwd_after.st_mode)
+        or not same_identity(cwd_before, cwd_after)
+        or stat.S_IMODE(cwd_after.st_mode) != cwd_mode
+    ):
+        fail(
+            "descriptor-relative receipt helper metadata seccomp "
+            "probe changed the working directory"
+        )
+    add_event(
+        "filesystem-metadata-confined",
+        policy=FILESYSTEM_METADATA_SECCOMP_POLICY,
+        architecture=machine,
+        errno=errno.EPERM,
+        entries=[
+            f"{name}:{syscall_number}"
+            for name, syscall_number in policy["entries"]
+        ],
+    )
+
+
+def runtime_file_paths():
+'''
+text = text.replace(function_anchor, function_block)
+
+confine_anchor = '''    require_openat2_support(ROOT_FD)
+    restrict_filesystem_writes(ROOT_FD, "repository-root")
+    add_event("landlock-supported", abi=str(LANDLOCK_ABI))
+'''
+if text.count(confine_anchor) != 1:
+    raise SystemExit("metadata seccomp confinement call anchor mismatch")
+confine_block = '''    require_openat2_support(ROOT_FD)
+    restrict_filesystem_writes(ROOT_FD, "repository-root")
+    confine_filesystem_metadata()
+    add_event("landlock-supported", abi=str(LANDLOCK_ABI))
+'''
+text = text.replace(confine_anchor, confine_block)
+
+record_anchor = '''function recordReceiptDirfdEvents(control, events) {
+  if (!control || !Array.isArray(control.events) || !Array.isArray(events)) return;
+  control.events.push(...events.map(event => structuredClone(event))));
+}
+
+function receiptInterpreterPathEntryIsTrusted(stats) {
+'''
+if text.count(record_anchor) != 1:
+    raise SystemExit("metadata proof helper anchor mismatch")
+record_block = '''function recordReceiptDirfdEvents(control, events) {
+  if (!control || !Array.isArray(control.events) || !Array.isArray(events)) return;
+  control.events.push(...events.map(event => structuredClone(event)));
+}
+
+function receiptFilesystemMetadataProofIsValid(event) {
+  if (!event || event.type !== 'filesystem-metadata-confined'
+    || event.policy !== 'filesystem-metadata-v1'
+    || Number(event.errno) !== 1
