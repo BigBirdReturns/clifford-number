@@ -1,0 +1,160 @@
+name: Industrial-exhaust receipt helper metadata seccomp controller v1
+
+on:
+  push:
+    branches:
+      - agent/industrial-exhaust-receipt-helper-metadata-seccomp-controller-diagnostic-v3
+
+permissions:
+  contents: write
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      BASE_SHA: e3877ad68e860c0b62632230f499544eadd44bb8
+      PRODUCT_BRANCH: agent/industrial-exhaust-receipt-helper-metadata-seccomp-v1
+      WORKFLOW_PATH: .github/workflows/industrial-exhaust-receipt-helper-metadata-seccomp-controller-v1.yml
+      TEST_PATCH: .github/tmp/industrial-exhaust-helper-metadata-seccomp-test-patch.py
+      INSTRUMENTATION_PATCH: .github/tmp/industrial-exhaust-helper-metadata-seccomp-instrumentation-patch.py
+      REPAIR_PART_PREFIX: .github/tmp/industrial-exhaust-helper-metadata-seccomp-repair-patch.b64.
+      REPAIR_PATCH: /tmp/industrial-exhaust-helper-metadata-seccomp-repair-patch.py
+      LIB_PATH: tools/lib/industrial-exhaust-artifacts.mjs
+      TEST_PATH: test/industrial-exhaust-retained-store-custody.test.js
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/industrial-exhaust-receipt-helper-metadata-seccomp-controller-diagnostic-v3
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Verify exact controller transport
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          current_sha="$(git rev-parse HEAD)"
+          test "$(git rev-parse "${current_sha}^")" = "$BASE_SHA"
+
+          expected_controller_paths=(
+            "$INSTRUMENTATION_PATCH"
+            "${REPAIR_PART_PREFIX}01"
+            "${REPAIR_PART_PREFIX}02"
+            "${REPAIR_PART_PREFIX}03"
+            "${REPAIR_PART_PREFIX}04"
+            "${REPAIR_PART_PREFIX}05"
+            "$TEST_PATCH"
+            "$WORKFLOW_PATH"
+          )
+          mapfile -t controller_diff < <(git diff --name-only "$BASE_SHA" "$current_sha")
+          test "${#controller_diff[@]}" -eq "${#expected_controller_paths[@]}"
+          for index in "${!expected_controller_paths[@]}"; do
+            test "${controller_diff[$index]}" = "${expected_controller_paths[$index]}"
+          done
+
+          cat \
+            "${REPAIR_PART_PREFIX}01" \
+            "${REPAIR_PART_PREFIX}02" \
+            "${REPAIR_PART_PREFIX}03" \
+            "${REPAIR_PART_PREFIX}04" \
+            "${REPAIR_PART_PREFIX}05" \
+            > "$REPAIR_PATCH"
+          python -m py_compile \
+            "$TEST_PATCH" \
+            "$INSTRUMENTATION_PATCH" \
+            "$REPAIR_PATCH"
+
+      - name: Reproduce predecessor metadata authority
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          python "$TEST_PATCH"
+          python "$INSTRUMENTATION_PATCH"
+
+          set +e
+          node "$TEST_PATH" \
+            > /tmp/industrial-exhaust-helper-metadata-seccomp-predecessor.log 2>&1
+          predecessor_status=$?
+          set -e
+          test "$predecessor_status" -ne 0
+          grep -F 'index helper must deny unrelated metadata mutation after capability narrowing' \
+            /tmp/industrial-exhaust-helper-metadata-seccomp-predecessor.log
+          echo 'predecessor helper metadata authority reproduced'
+
+      - name: Apply metadata seccomp repair
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          python "$REPAIR_PATCH"
+          node --check "$LIB_PATH"
+          node --check "$TEST_PATH"
+
+      - name: Qualify focused retained-store custody
+        shell: bash
+        run: |
+          set -euo pipefail
+          node "$TEST_PATH"
+
+      - name: Qualify repository-wide industrial-exhaust paths
+        shell: bash
+        run: |
+          set -euo pipefail
+          node test/industrial-exhaust-artifacts.test.js
+          node test/industrial-exhaust.test.js
+          node tools/hydrate-industrial-exhaust.mjs --audit
+          git diff --check
+
+      - name: Publish exact two-file product branch
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          rm \
+            "$WORKFLOW_PATH" \
+            "$TEST_PATCH" \
+            "$INSTRUMENTATION_PATCH" \
+            "${REPAIR_PART_PREFIX}01" \
+            "${REPAIR_PART_PREFIX}02" \
+            "${REPAIR_PART_PREFIX}03" \
+            "${REPAIR_PART_PREFIX}04" \
+            "${REPAIR_PART_PREFIX}05"
+
+          mapfile -t product_diff < <(git diff --name-only "$BASE_SHA")
+          test "${#product_diff[@]}" -eq 2
+          test "${product_diff[0]}" = "$TEST_PATH"
+          test "${product_diff[1]}" = "$LIB_PATH"
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          tree_sha="$(git write-tree)"
+          new_sha="$(
+            printf '%s\n\n%s\n' \
+              'fix(industrial-exhaust): confine receipt helper metadata syscalls' \
+              'Install an exact architecture-bound seccomp policy for mode, ownership, timestamp, and extended-attribute mutation after Landlock admission.' \
+              | git commit-tree "$tree_sha" -p "$BASE_SHA"
+          )"
+
+          mapfile -t final_diff < <(git diff --name-only "$BASE_SHA" "$new_sha")
+          test "${#final_diff[@]}" -eq 2
+          test "${final_diff[0]}" = "$TEST_PATH"
+          test "${final_diff[1]}" = "$LIB_PATH"
+          git diff --check "$BASE_SHA" "$new_sha"
+
+          live_main="$(git ls-remote origin refs/heads/main | awk '{print $1}')"
+          test "$live_main" = "$BASE_SHA"
+          if git ls-remote --exit-code origin "refs/heads/${PRODUCT_BRANCH}" >/dev/null 2>&1; then
+            echo "product branch already exists: ${PRODUCT_BRANCH}" >&2
+            exit 1
+          fi
+
+          git push \
+            --force-with-lease="refs/heads/${PRODUCT_BRANCH}:" \
+            origin \
+            "${new_sha}:refs/heads/${PRODUCT_BRANCH}"

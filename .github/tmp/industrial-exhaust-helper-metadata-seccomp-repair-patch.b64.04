@@ -1,0 +1,75 @@
+
+    || typeof event.architecture !== 'string'
+    || !Array.isArray(event.entries)) {
+    return false;
+  }
+  const expected = RECEIPT_DIRFD_METADATA_SECCOMP_POLICIES[event.architecture];
+  return Array.isArray(expected)
+    && JSON.stringify(event.entries) === JSON.stringify(expected);
+}
+
+function receiptInterpreterPathEntryIsTrusted(stats) {
+'''
+text = text.replace(record_anchor, record_block)
+
+probe_declaration_anchor = '''  const rootConfinement = rootConfinementEvents[0];
+  const mountBoundary = mountBoundaryEvents[0];
+  if (!eventTypes.has('runtime-confined')
+    || landlockEvents.length !== 1
+'''
+if text.count(probe_declaration_anchor) != 1:
+    raise SystemExit("runtime-probe metadata proof declaration anchor mismatch")
+probe_declaration_block = '''  const metadataConfinementEvents = Array.isArray(response.events)
+    ? response.events.filter(
+      event => event?.type === 'filesystem-metadata-confined'
+    )
+    : [];
+  const rootConfinement = rootConfinementEvents[0];
+  const mountBoundary = mountBoundaryEvents[0];
+  const metadataConfinement = metadataConfinementEvents[0];
+  if (!eventTypes.has('runtime-confined')
+    || metadataConfinementEvents.length !== 1
+    || !receiptFilesystemMetadataProofIsValid(metadataConfinement)
+    || landlockEvents.length !== 1
+'''
+text = text.replace(probe_declaration_anchor, probe_declaration_block)
+
+helper_declaration_anchor = '''    const mountBoundaryEvents = Array.isArray(response.events)
+      ? response.events.filter(
+        event => event?.type === 'mount-boundary-supported'
+      )
+      : [];
+    const rootConfinement = writeConfinementEvents.find(
+'''
+if text.count(helper_declaration_anchor) != 1:
+    raise SystemExit("capable-helper metadata proof declaration anchor mismatch")
+helper_declaration_block = '''    const mountBoundaryEvents = Array.isArray(response.events)
+      ? response.events.filter(
+        event => event?.type === 'mount-boundary-supported'
+      )
+      : [];
+    const metadataConfinementEvents = Array.isArray(response.events)
+      ? response.events.filter(
+        event => event?.type === 'filesystem-metadata-confined'
+      )
+      : [];
+    const rootConfinement = writeConfinementEvents.find(
+'''
+text = text.replace(helper_declaration_anchor, helper_declaration_block)
+
+helper_condition_anchor = '''    const rootChainEntry = Array.isArray(response.chain)
+      ? response.chain[0]
+      : null;
+    const mountBoundary = mountBoundaryEvents[0];
+    if (!eventTypes.has('runtime-confined')
+      || mountBoundaryEvents.length !== 1
+'''
+if text.count(helper_condition_anchor) != 1:
+    raise SystemExit("capable-helper metadata proof condition anchor mismatch")
+helper_condition_block = '''    const rootChainEntry = Array.isArray(response.chain)
+      ? response.chain[0]
+      : null;
+    const mountBoundary = mountBoundaryEvents[0];
+    const metadataConfinement = metadataConfinementEvents[0];
+    if (!eventTypes.has('runtime-confined')
+      || metadataConfinementEvents.len
