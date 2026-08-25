@@ -1237,7 +1237,10 @@ const RECEIPT_DIRFD_METADATA_SECCOMP_POLICIES = Object.freeze({
       'futimesat:261',
       'fchmodat:268',
       'utimensat:280',
-      'fchmodat2:452'
+      'fchmodat2:452',
+      'io_uring_setup:425',
+      'io_uring_enter:426',
+      'io_uring_register:427'
     ])
   }),
   aarch64: Object.freeze({
@@ -1260,7 +1263,10 @@ const RECEIPT_DIRFD_METADATA_SECCOMP_POLICIES = Object.freeze({
       'fchownat:54',
       'fchown:55',
       'utimensat:88',
-      'fchmodat2:452'
+      'fchmodat2:452',
+      'io_uring_setup:425',
+      'io_uring_enter:426',
+      'io_uring_register:427'
     ])
   })
 });
@@ -1549,6 +1555,9 @@ FILESYSTEM_METADATA_SECCOMP_POLICIES = {
             ("fchmodat", 268),
             ("utimensat", 280),
             ("fchmodat2", 452),
+            ("io_uring_setup", 425),
+            ("io_uring_enter", 426),
+            ("io_uring_register", 427),
         ),
     },
     "aarch64": {
@@ -1572,6 +1581,9 @@ FILESYSTEM_METADATA_SECCOMP_POLICIES = {
             ("fchown", 55),
             ("utimensat", 88),
             ("fchmodat2", 452),
+            ("io_uring_setup", 425),
+            ("io_uring_enter", 426),
+            ("io_uring_register", 427),
         ),
     },
 }
@@ -1868,6 +1880,18 @@ def confine_filesystem_metadata():
             ctypes.c_int(-1),
             ctypes.c_void_p(0),
             ctypes.c_size_t(0),
+        )
+
+    entry_syscalls = dict(policy["entries"])
+    for io_uring_name in (
+        "io_uring_setup",
+        "io_uring_enter",
+        "io_uring_register",
+    ):
+        require_syscall_errno(
+            entry_syscalls[io_uring_name],
+            io_uring_name,
+            errno.EPERM,
         )
 
     cwd_before = os.stat(".", follow_symlinks=False)

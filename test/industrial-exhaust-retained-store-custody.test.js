@@ -1188,6 +1188,17 @@ process.stdin.on('end', () => {
         true,
         `${receiptType} metadata seccomp proof must scope ioctl denial to request codes`
       );
+      assert.deepEqual(
+        metadataProof?.entries?.filter(
+          entry => /^io_uring_(?:setup|enter|register):\d+$/.test(entry)
+        ),
+        [
+          'io_uring_setup:425',
+          'io_uring_enter:426',
+          'io_uring_register:427'
+        ],
+        `${receiptType} metadata seccomp proof must deny io_uring metadata submission`
+      );
       assert.equal(
         metadataProof?.architecture === 'x86_64'
           ? Number(metadataProof?.rejected_syscall_mask) === 0x40000000
