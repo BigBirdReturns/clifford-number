@@ -1,0 +1,145 @@
+name: Industrial-exhaust receipt helper metadata seccomp review-fix controller v1
+
+on:
+  push:
+    branches:
+      - agent/industrial-exhaust-receipt-helper-metadata-seccomp-reviewfix-controller-v3
+
+permissions:
+  contents: write
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      CANONICAL_BASE_SHA: e3877ad68e860c0b62632230f499544eadd44bb8
+      PRODUCT_BASE_SHA: 92b2459c7d7772c44f30c9f441b38f011975771e
+      PRODUCT_BRANCH: agent/industrial-exhaust-receipt-helper-metadata-seccomp-v1
+      WORKFLOW_PATH: .github/workflows/industrial-exhaust-receipt-helper-metadata-seccomp-reviewfix-controller-v1.yml
+      TEST_PATCH: .github/tmp/industrial-exhaust-helper-metadata-seccomp-review-test-patch.py
+      REPAIR_PATCH: .github/tmp/industrial-exhaust-helper-metadata-seccomp-review-repair-patch.py
+      LIB_PATH: tools/lib/industrial-exhaust-artifacts.mjs
+      TEST_PATH: test/industrial-exhaust-retained-store-custody.test.js
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/industrial-exhaust-receipt-helper-metadata-seccomp-reviewfix-controller-v3
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Verify exact review-fix transport
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          current_sha="$(git rev-parse HEAD)"
+          test "$(git rev-parse "${current_sha}^")" = "$PRODUCT_BASE_SHA"
+
+          expected_controller_paths=(
+            "$REPAIR_PATCH"
+            "$TEST_PATCH"
+            "$WORKFLOW_PATH"
+          )
+          mapfile -t controller_diff < <(git diff --name-only "$PRODUCT_BASE_SHA" "$current_sha")
+          test "${#controller_diff[@]}" -eq "${#expected_controller_paths[@]}"
+          for index in "${!expected_controller_paths[@]}"; do
+            test "${controller_diff[$index]}" = "${expected_controller_paths[$index]}"
+          done
+
+          python -m py_compile "$TEST_PATCH" "$REPAIR_PATCH"
+
+      - name: Reproduce metadata ioctl and x32 proof gaps
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          python "$TEST_PATCH"
+          node --check "$TEST_PATH"
+
+          set +e
+          node "$TEST_PATH" \
+            > /tmp/industrial-exhaust-helper-metadata-seccomp-review-predecessor.log 2>&1
+          predecessor_status=$?
+          set -e
+          test "$predecessor_status" -ne 0
+          grep -F 'metadata seccomp proof must deny metadata ioctl requests' \
+            /tmp/industrial-exhaust-helper-metadata-seccomp-review-predecessor.log
+          echo 'predecessor metadata ioctl denominator gap reproduced'
+
+      - name: Apply request-scoped ioctl and x32 review repair
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          python "$REPAIR_PATCH"
+          node --check "$LIB_PATH"
+          node --check "$TEST_PATH"
+
+      - name: Qualify focused retained-store custody
+        shell: bash
+        run: |
+          set -euo pipefail
+          node "$TEST_PATH"
+
+      - name: Qualify repository-wide industrial-exhaust paths
+        shell: bash
+        run: |
+          set -euo pipefail
+          node test/industrial-exhaust-artifacts.test.js
+          node test/industrial-exhaust.test.js
+          node tools/hydrate-industrial-exhaust.mjs --audit
+          git diff --check
+
+      - name: Publish exact review-fixed product increment
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          rm "$WORKFLOW_PATH" "$TEST_PATCH" "$REPAIR_PATCH"
+
+          mapfile -t incremental_diff < <(git diff --name-only "$PRODUCT_BASE_SHA")
+          test "${#incremental_diff[@]}" -eq 2
+          test "${incremental_diff[0]}" = "$TEST_PATH"
+          test "${incremental_diff[1]}" = "$LIB_PATH"
+
+          mapfile -t canonical_diff < <(git diff --name-only "$CANONICAL_BASE_SHA")
+          test "${#canonical_diff[@]}" -eq 2
+          test "${canonical_diff[0]}" = "$TEST_PATH"
+          test "${canonical_diff[1]}" = "$LIB_PATH"
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          tree_sha="$(git write-tree)"
+          new_sha="$(
+            printf '%s\n\n%s\n' \
+              'fix(industrial-exhaust): close metadata seccomp review gaps' \
+              'Filter metadata-mutating ioctl requests, reject the x86-64 x32 syscall namespace, and bind both controls into the parent-validated proof.' \
+              | git commit-tree "$tree_sha" -p "$PRODUCT_BASE_SHA"
+          )"
+
+          mapfile -t final_incremental_diff < <(git diff --name-only "$PRODUCT_BASE_SHA" "$new_sha")
+          test "${#final_incremental_diff[@]}" -eq 2
+          test "${final_incremental_diff[0]}" = "$TEST_PATH"
+          test "${final_incremental_diff[1]}" = "$LIB_PATH"
+
+          mapfile -t final_canonical_diff < <(git diff --name-only "$CANONICAL_BASE_SHA" "$new_sha")
+          test "${#final_canonical_diff[@]}" -eq 2
+          test "${final_canonical_diff[0]}" = "$TEST_PATH"
+          test "${final_canonical_diff[1]}" = "$LIB_PATH"
+          git diff --check "$PRODUCT_BASE_SHA" "$new_sha"
+          git diff --check "$CANONICAL_BASE_SHA" "$new_sha"
+
+          live_main="$(git ls-remote origin refs/heads/main | awk '{print $1}')"
+          test "$live_main" = "$CANONICAL_BASE_SHA"
+          live_product="$(git ls-remote origin "refs/heads/${PRODUCT_BRANCH}" | awk '{print $1}')"
+          test "$live_product" = "$PRODUCT_BASE_SHA"
+
+          git push \
+            --force-with-lease="refs/heads/${PRODUCT_BRANCH}:${PRODUCT_BASE_SHA}" \
+            origin \
+            "${new_sha}:refs/heads/${PRODUCT_BRANCH}"
