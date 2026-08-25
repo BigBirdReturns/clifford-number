@@ -18,8 +18,8 @@ jobs:
     env:
       CBRANCH: agent/pr2231-observation-interval-controller-v36
       CPATH: .github/workflows/temporary-pr2231-observation-interval-controller-v36.yml
-      CPARENT: 93ce24e1330f29ca93c6153fb42d5e9023b5e24a
-      PARENT_BLOB: 37b0dffab448ab382a0c31be4ff4a1bc50bad872
+      CPARENT: 0c209e7f6b01995a9018193025b74b3493ff33d4
+      PARENT_BLOB: a9fc986a0ba6740164b0d46e83bf8b4dd2adb272
       SOURCE_COMMIT: 944ec8f2a3549b717c87e30a7a21b56f47cc1f24
       SOURCE_BLOB: a0e6f9c14ede9657f6086d97d7b95d870d687bd5
       SOURCE_RUN_SHA: 5f7e069893c312567063551549765d0976195e311d701876a9847e7807b58c8b
@@ -134,7 +134,7 @@ jobs:
               "['Reference: 2026-88-77 04 72 98 76 54', "
               "'Reference: 2026-88-77 [contact omitted]'],"
           )
-          if script.count(reference_defect) != 1 or script.count(reference_repair) != 0:
+          if script.count(reference_defect) != 2 or script.count(reference_repair) != 0:
               raise SystemExit('reference expectation repair count mismatch')
           script = script.replace(reference_defect, reference_repair)
 
@@ -144,13 +144,13 @@ jobs:
               raise SystemExit('country defect census shape mismatch')
           if script.count("assert.equal(r(referenceInput), referenceExpected);") != 1:
               raise SystemExit('old-reference census shape mismatch')
-          if script.count(reference_repair) != 1:
+          if script.count(reference_repair) != 2:
               raise SystemExit('reference repaired expectation shape mismatch')
 
-          target = pathlib.Path('/tmp/p2231-qualified-v38.sh')
+          target = pathlib.Path('/tmp/p2231-qualified-v39.sh')
           target.write_text(script)
           target.chmod(0o700)
-          receipt = pathlib.Path('/tmp/p2231-controller-repair-v38.txt')
+          receipt = pathlib.Path('/tmp/p2231-controller-repair-v39.txt')
           receipt.write_text(
               f'controller_parent={os.environ["CPARENT"]}\n'
               f'controller_parent_blob={os.environ["PARENT_BLOB"]}\n'
@@ -160,19 +160,19 @@ jobs:
               f'current_head={os.environ["CURRENT_HEAD"]}\n'
               f'current_branch={os.environ["CURRENT_BRANCH"]}\n'
               f'run_id={os.environ["CURRENT_RUN_ID"]}\n'
-              'repair=terminal-preexisting-pass-country-defect-retained-reference-preexisting-redaction\n'
+              'repair=terminal-preexisting-pass-country-defect-retained-reference-preexisting-redaction-two-census-sites\n'
               f'qualified_script_sha256={hashlib.sha256(script.encode()).hexdigest()}\n'
           )
           PY
-          bash -n /tmp/p2231-qualified-v38.sh
-          bash /tmp/p2231-qualified-v38.sh
+          bash -n /tmp/p2231-qualified-v39.sh
+          bash /tmp/p2231-qualified-v39.sh
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: pr2231-repaired-transport-qualification-v38
+          name: pr2231-repaired-transport-qualification-v39
           path: |
-            /tmp/p2231-controller-repair-v38.txt
-            /tmp/p2231-qualified-v38.sh
+            /tmp/p2231-controller-repair-v39.txt
+            /tmp/p2231-qualified-v39.sh
             /tmp/p2231-repaired-qualification.txt
             /tmp/p2231-comment-initial.md
             /tmp/p2231-posted-initial.gz
