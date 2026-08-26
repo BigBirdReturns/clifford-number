@@ -1,0 +1,126 @@
+name: Temporary PR 2231 invalid closer restart diagnostic v52
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temporary-pr2231-invalid-closer-restart-diagnostic-v52.yml'
+permissions:
+  contents: read
+  pull-requests: read
+concurrency:
+  group: pr2231-invalid-closer-restart-diagnostic-v52
+  cancel-in-progress: false
+jobs:
+  diagnose:
+    if: github.repository == 'BigBirdReturns/clifford-number'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CBRANCH: agent/pr2231-invalid-closer-restart-diagnostic-v52
+      CPARENT: 2e6cacab7aee4a245466768ff8a18a948ad25ba9
+      PBRANCH: agent/current-main-identifier-context-product-v1
+      PHEAD: 6f8eeaa185e03ad26d1f0a60ffaede6399f42e09
+      PLIB: 866eb2c973d2e666193fa7ae3b6f1d652c460ee9
+      PTEST: a4e740251808a50d9e55a45aa35075641b7cf984
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Reproduce exact-head invalid-closer restart defects
+        shell: bash
+        run: |
+          set -euo pipefail
+          H='${{ github.event.pull_request.head.sha }}'
+          S=/tmp/pr2231-v52-product
+          R=/tmp/pr2231-v52-diagnostic.txt
+          : >"$R"
+          stage() { printf '\n=== STAGE %s ===\n' "$1" | tee -a "$R"; }
+          fail() { printf 'FAIL[%s] %s\n' "$1" "$2" | tee -a "$R" >&2; exit 1; }
+          require_eq() {
+            local label="$1" actual="$2" expected="$3"
+            printf '%s actual=%s expected=%s\n' "$label" "$actual" "$expected" | tee -a "$R"
+            [ "$actual" = "$expected" ] || fail "$label" 'value mismatch'
+          }
+
+          stage diagnostic-envelope
+          require_eq diagnostic-parent "$(git rev-parse HEAD^)" "$CPARENT"
+          require_eq diagnostic-branch '${{ github.head_ref }}' "$CBRANCH"
+          require_eq diagnostic-paths "$(git diff --name-only "$CPARENT..HEAD" | LC_ALL=C sort)" '.github/workflows/temporary-pr2231-invalid-closer-restart-diagnostic-v52.yml'
+
+          stage exact-live-leases
+          git fetch --no-tags origin \
+            "+refs/heads/main:refs/remotes/origin/main" \
+            "+refs/heads/$PBRANCH:refs/remotes/origin/$PBRANCH" \
+            "+refs/heads/$CBRANCH:refs/remotes/origin/$CBRANCH"
+          require_eq diagnostic-remote "$(git rev-parse "refs/remotes/origin/$CBRANCH")" "$H"
+          require_eq main-head "$(git rev-parse refs/remotes/origin/main)" "$CPARENT"
+          require_eq product-head "$(git rev-parse "refs/remotes/origin/$PBRANCH")" "$PHEAD"
+          require_eq product-lib "$(git rev-parse "$PHEAD:tools/lib/industrial-exhaust.mjs")" "$PLIB"
+          require_eq product-test "$(git rev-parse "$PHEAD:test/industrial-exhaust.test.js")" "$PTEST"
+
+          stage intended-v51-controls
+          rm -rf "$S"
+          git worktree prune
+          git worktree add --detach "$S" "$PHEAD"
+          cd "$S"
+          node --input-type=module <<'NODE' 2>&1 | tee -a "$R"
+          import assert from 'node:assert/strict';
+          import { redactContactData as redact } from './tools/lib/industrial-exhaust.mjs';
+
+          const chain = 'GUID '.repeat(4000);
+          assert.equal(
+            redact('Phone: 09012345678 2026-08-17-) 03-6216-8041'),
+            'Phone: [contact omitted] 2026-08-17-) [contact omitted]'
+          );
+          assert.equal(
+            redact(`Archive ${chain}record id: 09012345678 2026-08-17-) 12345678`),
+            `Archive ${chain}record id: [contact omitted] 2026-08-17-) 12345678`
+          );
+          console.log(JSON.stringify({ controls: 'v51-direct-and-bare-tail-pass' }));
+
+          const restartInput =
+            `Archive ${chain}record id: 09012345678 2026-08-17-) 12 34567890`;
+          const restartActual = redact(restartInput);
+          console.log(JSON.stringify({
+            defect: 'invalid-closer-candidate-restart-promotes-interior-tail',
+            actualTail: restartActual.slice(-220)
+          }));
+          assert.equal(
+            restartActual,
+            `Archive ${chain}record id: [contact omitted] 2026-08-17-) 12 [contact omitted]`,
+            'exact head must reproduce restoration of indeterminate authority at an interior group'
+          );
+
+          const staleOwnerInput =
+            `Archive ${chain}record id: 09012345678 (2026-08-17] 2027-09-18) 12345678`;
+          const staleOwnerActual = redact(staleOwnerInput);
+          console.log(JSON.stringify({
+            defect: 'mismatched-closer-state-launders-stale-opener',
+            actualTail: staleOwnerActual.slice(-240)
+          }));
+          assert.equal(
+            staleOwnerActual,
+            `Archive ${chain}record id: [contact omitted] (2026-08-17] 2027-09-18) [contact omitted]`,
+            'exact head must reproduce stale opener authority after a mismatched closer'
+          );
+
+          console.log(JSON.stringify({
+            DIAGNOSTIC_SUCCESS: true,
+            product: '6f8eeaa185e03ad26d1f0a60ffaede6399f42e09',
+            tree: 'd20b55c04b9ee525f7898dd64c7026ed7fd6e3a1',
+            lib: '866eb2c973d2e666193fa7ae3b6f1d652c460ee9',
+            test: 'a4e740251808a50d9e55a45aa35075641b7cf984'
+          }));
+          NODE
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-invalid-closer-restart-diagnostic-v52
+          path: /tmp/pr2231-v52-diagnostic.txt
+          if-no-files-found: error
+          retention-days: 90
