@@ -1,0 +1,212 @@
+name: Temporary PR 2231 cross-callback label custody diagnostic v67
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temporary-pr2231-cross-callback-label-custody-v67.yml'
+
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+
+concurrency:
+  group: pr2231-cross-callback-label-custody-v67
+  cancel-in-progress: false
+
+jobs:
+  diagnose:
+    if: github.repository == 'BigBirdReturns/clifford-number'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CBRANCH: diagnostic/pr2231-cross-callback-label-custody-v67
+      WORKFLOW_PATH: .github/workflows/temporary-pr2231-cross-callback-label-custody-v67.yml
+      CPARENT: a1158b01e7f2ba5c12e0a0085d3897ef00a8f79b
+      PBRANCH: agent/current-main-identifier-context-product-v1
+      PHEAD: cd2cd6994c065991c317e7daa8ff082b49de4a27
+      PTREE: 185f950308f35f2acad96ba2e5f701b54a9b9565
+      PLIB: 2624e63f4d8515241b3d9ed3d9ac94cc9af0fa14
+      PTEST: bef014b85de07e28e4eda7fe498c26dd3e6813a3
+      BLIB: 5f68254d3e44de693e83503aed879160f9b7b997
+      BTEST: 1659a7cc54666a2ac5a1d6b88eb8c6591d98008e
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Prove frozen product and cross-callback label loss
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          H='${{ github.event.pull_request.head.sha }}'
+          S=/tmp/pr2231-v67-product
+          R=/tmp/pr2231-v67-diagnostic.txt
+          : >"$R"
+
+          stage() {
+            printf '\n=== STAGE %s ===\n' "$1" | tee -a "$R"
+          }
+
+          fail() {
+            printf 'FAIL[%s] %s\n' "$1" "$2" | tee -a "$R" >&2
+            exit 1
+          }
+
+          require_eq() {
+            local label="$1" actual="$2" expected="$3"
+            printf '%s actual=%s expected=%s\n' "$label" "$actual" "$expected" | tee -a "$R"
+            [ "$actual" = "$expected" ] || fail "$label" 'value mismatch'
+          }
+
+          fetch_leases() {
+            git fetch --no-tags origin \
+              "+refs/heads/main:refs/remotes/origin/main" \
+              "+refs/heads/$PBRANCH:refs/remotes/origin/$PBRANCH" \
+              "+refs/heads/$CBRANCH:refs/remotes/origin/$CBRANCH"
+          }
+
+          stage controller-envelope
+          require_eq controller-parent "$(git rev-parse HEAD^)" "$CPARENT"
+          require_eq controller-branch '${{ github.head_ref }}' "$CBRANCH"
+          require_eq controller-paths "$(git diff --name-only "$CPARENT..HEAD" | LC_ALL=C sort)" "$WORKFLOW_PATH"
+
+          stage frozen-live-leases
+          fetch_leases
+          require_eq controller-remote "$(git rev-parse refs/remotes/origin/$CBRANCH)" "$H"
+          require_eq product-head "$(git rev-parse refs/remotes/origin/$PBRANCH)" "$PHEAD"
+          require_eq product-parent "$(git rev-parse "$PHEAD^")" "$CPARENT"
+          require_eq product-tree "$(git rev-parse "$PHEAD^{tree}")" "$PTREE"
+          require_eq product-count "$(git rev-list --count "$CPARENT..$PHEAD")" '1'
+          require_eq product-paths "$(git diff --name-only "$CPARENT..$PHEAD" | LC_ALL=C sort)" $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          require_eq product-lib "$(git rev-parse "$PHEAD:tools/lib/industrial-exhaust.mjs")" "$PLIB"
+          require_eq product-test "$(git rev-parse "$PHEAD:test/industrial-exhaust.test.js")" "$PTEST"
+          require_eq main "$(git rev-parse refs/remotes/origin/main)" "$CPARENT"
+          require_eq main-lib "$(git rev-parse "$CPARENT:tools/lib/industrial-exhaust.mjs")" "$BLIB"
+          require_eq main-test "$(git rev-parse "$CPARENT:test/industrial-exhaust.test.js")" "$BTEST"
+
+          stage exact-product-controls-and-residuals
+          rm -rf "$S"
+          git worktree prune
+          git worktree add --detach "$S" "$PHEAD"
+          cd "$S"
+
+          node --input-type=module <<'NODE' 2>&1 | tee -a "$R"
+          import assert from 'node:assert/strict';
+          import { redactContactData as redact } from './tools/lib/industrial-exhaust.mjs';
+
+          const fixedControls = [
+            [
+              'same-candidate-recursive-label-control',
+              'Phone: 09012345678 2026-08-17 555-1212 555-3434',
+              'Phone: [contact omitted] 2026-08-17 [contact omitted] [contact omitted]'
+            ],
+            [
+              'strong-count-precedence-control',
+              'Phone: 09012345678 2026-08-17 12345678 people',
+              'Phone: [contact omitted] 2026-08-17 12345678 people'
+            ],
+            [
+              'strong-unit-range-precedence-control',
+              'Phone: 09012345678 2026-08-17 1234-5678 people',
+              'Phone: [contact omitted] 2026-08-17 1234-5678 people'
+            ],
+            [
+              'strong-decimal-precedence-control',
+              'Phone: 09012345678 2026-08-17 1234.5678',
+              'Phone: [contact omitted] 2026-08-17 1234.5678'
+            ],
+            [
+              'unlabelled-same-candidate-control',
+              'Archive 09012345678 2026-08-17 555-1212 555-3434',
+              'Archive [contact omitted] 2026-08-17 555-1212 555-3434'
+            ],
+            [
+              'standalone-local-phone-label-control',
+              'Phone: 555-1212',
+              'Phone: [contact omitted]'
+            ],
+            [
+              'standalone-mobile-local-label-control',
+              'Mobile number: 666-1212',
+              'Mobile number: [contact omitted]'
+            ]
+          ];
+
+          for (const [name, input, expected] of fixedControls) {
+            const actual = redact(input);
+            console.log(JSON.stringify({ type: 'control', name, input, actual, expected }));
+            assert.equal(actual, expected, name);
+          }
+
+          const residuals = [
+            {
+              name: 'formatted-time-callback-split',
+              input: 'Phone: 09012345678 12:30:45 555-1212',
+              desired: 'Phone: [contact omitted] 12:30:45 [contact omitted]',
+              preservedObservation: '12:30:45',
+              leakedPhone: '555-1212'
+            },
+            {
+              name: 'unit-text-callback-split',
+              input: 'Mobile number: 09012345678 2026-08-17 90 people 666-1212',
+              desired: 'Mobile number: [contact omitted] 2026-08-17 90 people [contact omitted]',
+              preservedObservation: '2026-08-17 90 people',
+              leakedPhone: '666-1212'
+            }
+          ];
+
+          for (const residual of residuals) {
+            const actual = redact(residual.input);
+            console.log(JSON.stringify({ type: 'residual', ...residual, actual }));
+            assert.notEqual(
+              actual,
+              residual.desired,
+              `${residual.name}: exact product unexpectedly repaired the cross-callback transition`
+            );
+            assert.ok(
+              actual.includes('[contact omitted]'),
+              `${residual.name}: the initial labelled telephone must still redact`
+            );
+            assert.ok(
+              actual.includes(residual.preservedObservation),
+              `${residual.name}: the complete observation must remain intact`
+            );
+            assert.ok(
+              actual.includes(residual.leakedPhone),
+              `${residual.name}: the later local telephone must remain exposed on the frozen product`
+            );
+          }
+
+          console.log('CROSS_CALLBACK_DIAGNOSTIC_CONFIRMED');
+          NODE
+
+          stage final-live-lease-revalidation
+          cd "$GITHUB_WORKSPACE"
+          fetch_leases
+          require_eq final-main "$(git rev-parse refs/remotes/origin/main)" "$CPARENT"
+          require_eq final-product "$(git rev-parse refs/remotes/origin/$PBRANCH)" "$PHEAD"
+          require_eq final-controller "$(git rev-parse refs/remotes/origin/$CBRANCH)" "$H"
+          require_eq final-product-tree "$(git rev-parse "$PHEAD^{tree}")" "$PTREE"
+          require_eq final-product-lib "$(git rev-parse "$PHEAD:tools/lib/industrial-exhaust.mjs")" "$PLIB"
+          require_eq final-product-test "$(git rev-parse "$PHEAD:test/industrial-exhaust.test.js")" "$PTEST"
+
+          printf 'DIAGNOSTIC_SUCCESS\nbase=%s\nproduct=%s\ntree=%s\nlib=%s\ntest=%s\n' \
+            "$CPARENT" "$PHEAD" "$PTREE" "$PLIB" "$PTEST" | tee -a "$R"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-cross-callback-label-custody-v67
+          path: /tmp/pr2231-v67-diagnostic.txt
+          if-no-files-found: error
+          retention-days: 90
