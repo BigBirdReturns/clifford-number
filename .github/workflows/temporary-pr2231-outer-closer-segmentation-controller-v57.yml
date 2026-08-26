@@ -1,0 +1,122 @@
+name: Temporary PR 2231 outer-closer segmentation controller v57
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temporary-pr2231-outer-closer-segmentation-controller-v57.yml'
+      - '.github/tmp/pr2231-outer-closer-segmentation-v57-repair.py'
+permissions:
+  contents: write
+  issues: read
+  pull-requests: read
+concurrency:
+  group: pr2231-outer-closer-segmentation-controller-v57
+  cancel-in-progress: false
+jobs:
+  qualify-and-publish:
+    if: github.repository == 'BigBirdReturns/clifford-number'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      CBRANCH: agent/pr2231-outer-closer-segmentation-controller-v57
+      WORKFLOW_PATH: .github/workflows/temporary-pr2231-outer-closer-segmentation-controller-v57.yml
+      REPAIR_PATH: .github/tmp/pr2231-outer-closer-segmentation-v57-repair.py
+      CPARENT: a1158b01e7f2ba5c12e0a0085d3897ef00a8f79b
+      PBRANCH: agent/current-main-identifier-context-product-v1
+      PHEAD: 41e9822462bfabf83bf509e5c0d2f92d6eb9ee2d
+      PLIB: bdfeae132d4545e7f6dcad1764d7c948a66adf04
+      PTEST: cee00b28659acb1b9c7ac32a113d5e4c59f7241c
+      BLIB: 5f68254d3e44de693e83503aed879160f9b7b997
+      BTEST: 1659a7cc54666a2ac5a1d6b88eb8c6591d98008e
+      SOURCE_WORKFLOW_COMMIT: 069e78aa239cbc861fdac7aafa888e8eceebb077
+      SOURCE_WORKFLOW_BLOB: 820a2c6a2cb98a807eb0bc75149581226d73051e
+      CONTROLLER_HEAD: ${{ github.event.pull_request.head.sha }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Execute immutable qualification program with segmented outer-closer repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          SOURCE=/tmp/pr2231-outer-closer-v57-source.yml
+          PROGRAM=/tmp/pr2231-outer-closer-v57-controller.sh
+          URL="https://raw.githubusercontent.com/BigBirdReturns/clifford-number/${SOURCE_WORKFLOW_COMMIT}/.github/workflows/temporary-pr2231-owned-wrapper-suppression-controller-v56.yml"
+          curl --fail --silent --show-error --location "$URL" --output "$SOURCE"
+          ACTUAL_BLOB="$(git hash-object "$SOURCE")"
+          printf 'source-workflow-blob actual=%s expected=%s\n' "$ACTUAL_BLOB" "$SOURCE_WORKFLOW_BLOB"
+          [ "$ACTUAL_BLOB" = "$SOURCE_WORKFLOW_BLOB" ]
+          python3 - "$SOURCE" "$PROGRAM" <<'PY'
+          from pathlib import Path
+          import re
+          import sys
+
+          source_path = Path(sys.argv[1])
+          program_path = Path(sys.argv[2])
+          lines = source_path.read_text().splitlines()
+          marker = '        run: |'
+          try:
+              start = lines.index(marker) + 1
+          except ValueError as error:
+              raise SystemExit('immutable controller run block is missing') from error
+          end = next(
+              (
+                  index
+                  for index in range(start, len(lines))
+                  if lines[index].startswith('      - uses: actions/upload-artifact@v4')
+              ),
+              None,
+          )
+          if end is None:
+              raise SystemExit('immutable controller upload boundary is missing')
+          body = []
+          for line in lines[start:end]:
+              if not line:
+                  body.append('')
+              elif line.startswith('          '):
+                  body.append(line[10:])
+              else:
+                  raise SystemExit(
+                      f'unexpected immutable controller indentation: {line!r}'
+                  )
+          program = '\n'.join(body) + '\n'
+          program, head_count = re.subn(
+              r'^H=.*$',
+              'H="$CONTROLLER_HEAD"',
+              program,
+              count=1,
+              flags=re.MULTILINE,
+          )
+          program, branch_count = re.subn(
+              r'^require_eq controller-branch .* "\$CBRANCH"$',
+              'require_eq controller-branch "$GITHUB_HEAD_REF" "$CBRANCH"',
+              program,
+              count=1,
+              flags=re.MULTILINE,
+          )
+          old_paths = "$'.github/tmp/pr2231-owned-wrapper-suppression-v56-repair.py\\n.github/workflows/temporary-pr2231-owned-wrapper-suppression-controller-v56.yml'"
+          new_paths = "$'.github/tmp/pr2231-outer-closer-segmentation-v57-repair.py\\n.github/workflows/temporary-pr2231-outer-closer-segmentation-controller-v57.yml'"
+          paths_count = program.count(old_paths)
+          program = program.replace(old_paths, new_paths, 1)
+          if head_count != 1 or branch_count != 1 or paths_count != 1:
+              raise SystemExit(
+                  'controller substitution counts '
+                  f'head={head_count} branch={branch_count} paths={paths_count}'
+              )
+          program_path.write_text(program)
+          PY
+          chmod 700 "$PROGRAM"
+          bash "$PROGRAM"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-outer-closer-segmentation-v57
+          path: /tmp/pr2231-v56-receipt.txt
+          if-no-files-found: error
+          retention-days: 90
