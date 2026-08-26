@@ -1,0 +1,78 @@
+name: Temporary PR 2231 closing-wrapper diagnostic v1
+
+on:
+  push:
+    branches:
+      - agent/pr2231-closing-wrapper-diagnostic-v1
+
+permissions:
+  contents: read
+
+jobs:
+  reproduce:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Reproduce closing-wrapper observation boundary gap
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { redactContactData } from './tools/lib/industrial-exhaust.mjs';
+
+          const chain = 'GUID '.repeat(4000);
+          const prefix = `Phone ${chain}record id: 09012345678 `;
+          const cases = [
+            {
+              tail: '2026-08-17(3.14)03-6216-8041',
+              expected: '2026-08-17(3.14)[contact omitted]',
+              leaked: '03-6216-8041'
+            },
+            {
+              tail: '2026-08-17(12:30)+81 3 6216 5111',
+              expected: '2026-08-17(12:30)[contact omitted]',
+              leaked: '+81 3 6216 5111'
+            },
+            {
+              tail: '3.14((2027-09-18))1 212 555 1234',
+              expected: '3.14((2027-09-18))[contact omitted]',
+              leaked: '1 212 555 1234'
+            },
+            {
+              tail: '２０２６－０８－１７（３．１４）０３－６２１６－８０４１',
+              expected: '２０２６－０８－１７（３．１４）[contact omitted]',
+              leaked: '０３－６２１６－８０４１'
+            }
+          ];
+
+          for (const testCase of cases) {
+            const input = `${prefix}${testCase.tail}`;
+            const expected = `Phone ${chain}record id: [contact omitted] ${testCase.expected}`;
+            const actual = redactContactData(input);
+            assert.notEqual(
+              actual,
+              expected,
+              `closing-wrapper case unexpectedly passed before repair: ${testCase.tail}`
+            );
+            assert.equal(
+              actual.includes(testCase.leaked),
+              true,
+              `diagnostic did not retain the expected leaked later phone: ${testCase.tail}`
+            );
+            console.log(JSON.stringify({ tail: testCase.tail, actual, expected }));
+          }
+
+          const genuineWrappedPhone = `${prefix}2026-08-17(03)6216-8041`;
+          assert.equal(
+            redactContactData(genuineWrappedPhone),
+            `Phone ${chain}record id: [contact omitted] 2026-08-17[contact omitted]`,
+            'existing opening-wrapper phone control must remain valid'
+          );
+
+          console.log('closing-wrapper observation boundary gap reproduced');
+          NODE
