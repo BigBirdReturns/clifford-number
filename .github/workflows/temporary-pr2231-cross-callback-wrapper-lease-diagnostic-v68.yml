@@ -1,0 +1,161 @@
+name: Temporary PR 2231 cross-callback wrapper lease diagnostic v68
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temporary-pr2231-cross-callback-wrapper-lease-diagnostic-v68.yml'
+permissions:
+  contents: read
+  pull-requests: read
+concurrency:
+  group: pr2231-cross-callback-wrapper-lease-diagnostic-v68
+  cancel-in-progress: false
+jobs:
+  diagnose:
+    if: github.repository == 'BigBirdReturns/clifford-number'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CBRANCH: agent/pr2231-cross-callback-wrapper-lease-diagnostic-v68
+      CPARENT: a1158b01e7f2ba5c12e0a0085d3897ef00a8f79b
+      CTREE: f7fc52609c1c6b42921c7a4db6e20c4e54c1f99e
+      PBRANCH: agent/current-main-identifier-context-product-v1
+      PHEAD: 28428b8b7f7fe105a2e44cfbdf0028b2c0a3a9ab
+      PTREE: 0463a8ff9e3923e7fcd2b6fca712b305eccc7dea
+      PLIB: 07dc09a44b3c2a092d351d4ad91367a6de72a65b
+      PTEST: 3970d3d97cfc3941bda8ecc844d229a5fc00f41d
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Expose wrapper-produced cross-callback lease state
+        shell: bash
+        run: |
+          set -euo pipefail
+          H='${{ github.event.pull_request.head.sha }}'
+          W=/tmp/pr2231-v68-product
+          R=/tmp/pr2231-v68-wrapper-lease-diagnostic.txt
+          : >"$R"
+          require_eq() {
+            local label="$1" actual="$2" expected="$3"
+            printf '%s actual=%s expected=%s\n' "$label" "$actual" "$expected" | tee -a "$R"
+            [ "$actual" = "$expected" ]
+          }
+
+          require_eq controller-parent "$(git rev-parse HEAD^)" "$CPARENT"
+          require_eq controller-branch '${{ github.head_ref }}' "$CBRANCH"
+          require_eq controller-paths "$(git diff --name-only "$CPARENT..HEAD")" \
+            '.github/workflows/temporary-pr2231-cross-callback-wrapper-lease-diagnostic-v68.yml'
+
+          git fetch --no-tags origin \
+            "+refs/heads/main:refs/remotes/origin/main" \
+            "+refs/heads/$PBRANCH:refs/remotes/origin/$PBRANCH" \
+            "+refs/heads/$CBRANCH:refs/remotes/origin/$CBRANCH"
+          require_eq controller-head "$(git rev-parse refs/remotes/origin/$CBRANCH)" "$H"
+          require_eq main-head "$(git rev-parse refs/remotes/origin/main)" "$CPARENT"
+          require_eq main-tree "$(git rev-parse "$CPARENT^{tree}")" "$CTREE"
+          require_eq product-head "$(git rev-parse refs/remotes/origin/$PBRANCH)" "$PHEAD"
+          require_eq product-parent "$(git rev-parse "$PHEAD^")" "$CPARENT"
+          require_eq product-tree "$(git rev-parse "$PHEAD^{tree}")" "$PTREE"
+          require_eq product-lib "$(git rev-parse "$PHEAD:tools/lib/industrial-exhaust.mjs")" "$PLIB"
+          require_eq product-test "$(git rev-parse "$PHEAD:test/industrial-exhaust.test.js")" "$PTEST"
+          require_eq product-count "$(git rev-list --count "$CPARENT..$PHEAD")" '1'
+          require_eq product-paths "$(git diff --name-only "$CPARENT..$PHEAD" | LC_ALL=C sort)" $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+
+          rm -rf "$W"
+          git worktree prune
+          git worktree add --detach "$W" "$PHEAD"
+          cd "$W"
+          node --input-type=module <<'NODE' 2>&1 | tee -a "$R"
+          import assert from 'node:assert/strict';
+          import { redactContactData as redact } from './tools/lib/industrial-exhaust.mjs';
+
+          const spanPattern = /(?:[+＋](?=\s*[0-9０-９])|[（(](?=\s*[0-9０-９]))?\s*[0-9０-９][0-9０-９()./／\s\-‐‑‒–—−－．（）]{5,}[0-9０-９](?:\s*[)）])*(?=$|[^\p{L}\p{N}]|[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]|(?:(?:ext(?:ension)?\.?|x)\s*[.:#：＃]?\s*[0-9０-９]))/giu;
+          const suspected = [
+            [
+              'wrapped international first phone then time',
+              'Phone: (+81 3 6216 5111) 12:30:45 555-1212',
+              'Phone: ([contact omitted]) 12:30:45 [contact omitted]'
+            ],
+            [
+              'narrative outer closer after labelled first phone',
+              'Contact (Phone: 09012345678) 12:30:45 555-1212',
+              'Contact (Phone: [contact omitted]) 12:30:45 [contact omitted]'
+            ],
+            [
+              'double wrapper first phone then time',
+              'Phone: ((09012345678)) 12:30:45 555-1212',
+              'Phone: ([contact omitted]) 12:30:45 [contact omitted]'
+            ],
+            [
+              'fullwidth wrapped international first phone then time',
+              '電話番号：（＋８１ ３ ６２１６ ５１１１） １２：３０：４５ ５５５－１２１２',
+              '電話番号：（[contact omitted]） １２：３０：４５ [contact omitted]'
+            ],
+            [
+              'wrapped international first phone then date and unit count',
+              'Phone: (+81 3 6216 5111) 2026-08-17 90 people 666-1212',
+              'Phone: ([contact omitted]) 2026-08-17 90 people [contact omitted]'
+            ]
+          ];
+
+          const controls = [
+            [
+              'unwrapped international first phone retains lease',
+              'Phone: +81 3 6216 5111 12:30:45 555-1212',
+              'Phone: [contact omitted] 12:30:45 [contact omitted]'
+            ],
+            [
+              'single wrapped compact domestic first phone retains ordinary ranges',
+              'Phone: (09012345678) 12:30:45 555-1212',
+              'Phone: [contact omitted] 12:30:45 [contact omitted]'
+            ],
+            [
+              'unlabelled wrapped international does not lend authority',
+              'Archive (+81 3 6216 5111) 12:30:45 555-1212',
+              'Archive ([contact omitted]) 12:30:45 555-1212'
+            ]
+          ];
+
+          for (const [name, input, required] of [...suspected, ...controls]) {
+            const candidates = [...input.matchAll(spanPattern)].map(match => ({
+              offset: match.index,
+              source: match[0]
+            }));
+            const actual = redact(input);
+            console.log(JSON.stringify({
+              kind: suspected.some(([caseName]) => caseName === name) ? 'suspected' : 'control',
+              name,
+              input,
+              candidates,
+              actual,
+              required,
+              matchesRequired: actual === required
+            }));
+          }
+
+          for (const [name, input, expected] of controls) {
+            assert.equal(redact(input), expected, name);
+          }
+          NODE
+
+          cd "$GITHUB_WORKSPACE"
+          git fetch --no-tags origin \
+            "+refs/heads/main:refs/remotes/origin/main" \
+            "+refs/heads/$PBRANCH:refs/remotes/origin/$PBRANCH" \
+            "+refs/heads/$CBRANCH:refs/remotes/origin/$CBRANCH"
+          require_eq final-main "$(git rev-parse refs/remotes/origin/main)" "$CPARENT"
+          require_eq final-product "$(git rev-parse refs/remotes/origin/$PBRANCH)" "$PHEAD"
+          require_eq final-controller "$(git rev-parse refs/remotes/origin/$CBRANCH)" "$H"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-cross-callback-wrapper-lease-diagnostic-v68
+          path: /tmp/pr2231-v68-wrapper-lease-diagnostic.txt
+          if-no-files-found: error
+          retention-days: 90
