@@ -1,0 +1,189 @@
+name: Temporary PR 2231 closing-wrapper controller v1
+
+on:
+  push:
+    branches:
+      - agent/pr2231-closing-wrapper-controller-v1
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pr2231-closing-wrapper-controller-v1
+  cancel-in-progress: false
+
+jobs:
+  qualify-and-publish:
+    if: github.repository == 'BigBirdReturns/clifford-number'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      CBRANCH: agent/pr2231-closing-wrapper-controller-v1
+      CPARENT: ecb875258f10b932c0dff4cb116e6eefe6a451f2
+      CANONICAL_BASE_SHA: 2e6cacab7aee4a245466768ff8a18a948ad25ba9
+      PBRANCH: agent/current-main-identifier-context-product-v1
+      PLIB: 9fcec61d586616b9ba8ec9063f26c99f93c348aa
+      PTEST: e4dee4517078c4b74e2c654fb46f8c48c5443016
+      BLIB: 5f68254d3e44de693e83503aed879160f9b7b997
+      BTEST: 1659a7cc54666a2ac5a1d6b88eb8c6591d98008e
+      WORKFLOW_PATH: .github/workflows/temporary-pr2231-closing-wrapper-controller-v1.yml
+      TEST_PATCH: .github/tmp/pr2231-closing-wrapper-test-patch.py
+      REPAIR_PATCH: .github/tmp/pr2231-closing-wrapper-repair-patch.py
+      LIB_PATH: tools/lib/industrial-exhaust.mjs
+      TEST_PATH: test/industrial-exhaust.test.js
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Qualify and publish exact closing-wrapper successor
+        shell: bash
+        run: |
+          set -euo pipefail
+          H="$(git rev-parse HEAD)"
+          S=/tmp/pr2231-closing-wrapper-source
+          Q=/tmp/pr2231-closing-wrapper-main
+          R=/tmp/pr2231-closing-wrapper-receipt.txt
+          : >"$R"
+
+          stage() { printf '\n=== STAGE %s ===\n' "$1" | tee -a "$R"; }
+          fail() { printf 'FAIL[%s] %s\n' "$1" "$2" | tee -a "$R" >&2; exit 1; }
+          require_eq() {
+            local label="$1" actual="$2" expected="$3"
+            printf '%s actual=%s expected=%s\n' "$label" "$actual" "$expected" | tee -a "$R"
+            [ "$actual" = "$expected" ] || fail "$label" 'value mismatch'
+          }
+          fetch_leases() {
+            git fetch --no-tags origin \
+              "+refs/heads/main:refs/remotes/origin/main" \
+              "+refs/heads/$PBRANCH:refs/remotes/origin/$PBRANCH" \
+              "+refs/heads/$CBRANCH:refs/remotes/origin/$CBRANCH"
+          }
+
+          stage controller-envelope
+          require_eq controller-parent "$(git rev-parse HEAD^)" "$CPARENT"
+          require_eq controller-branch "$GITHUB_REF_NAME" "$CBRANCH"
+          require_eq controller-paths \
+            "$(git diff --name-only "$CPARENT..HEAD" | LC_ALL=C sort)" \
+            $'.github/tmp/pr2231-closing-wrapper-repair-patch.py\n.github/tmp/pr2231-closing-wrapper-test-patch.py\n.github/workflows/temporary-pr2231-closing-wrapper-controller-v1.yml'
+          python -m py_compile "$TEST_PATCH" "$REPAIR_PATCH"
+
+          stage initial-live-leases
+          fetch_leases
+          require_eq controller-remote "$(git rev-parse "refs/remotes/origin/$CBRANCH")" "$H"
+          require_eq product-head "$(git rev-parse "refs/remotes/origin/$PBRANCH")" "$CPARENT"
+          require_eq product-lib "$(git rev-parse "$CPARENT:$LIB_PATH")" "$PLIB"
+          require_eq product-test "$(git rev-parse "$CPARENT:$TEST_PATH")" "$PTEST"
+          MAIN="$(git rev-parse refs/remotes/origin/main)"
+          require_eq main-head "$MAIN" "$CANONICAL_BASE_SHA"
+          require_eq main-lib "$(git rev-parse "$MAIN:$LIB_PATH")" "$BLIB"
+          require_eq main-test "$(git rev-parse "$MAIN:$TEST_PATH")" "$BTEST"
+
+          stage exact-head-defect-reproduction
+          rm -rf "$S" "$Q"
+          git worktree prune
+          git worktree add --detach "$S" "$CPARENT"
+          cd "$S"
+          python "$GITHUB_WORKSPACE/$TEST_PATCH"
+          node --check "$TEST_PATH"
+          set +e
+          node "$TEST_PATH" > /tmp/pr2231-closing-wrapper-predecessor.log 2>&1
+          predecessor_status=$?
+          set -e
+          test "$predecessor_status" -ne 0
+          grep -F 'closing wrappers after complete observations must reach the later phone interval' \
+            /tmp/pr2231-closing-wrapper-predecessor.log
+          tail -n 24 /tmp/pr2231-closing-wrapper-predecessor.log | tee -a "$R"
+          printf 'closing-wrapper predecessor gap reproduced\n' | tee -a "$R"
+
+          stage exact-two-file-repair
+          python "$GITHUB_WORKSPACE/$REPAIR_PATCH"
+          git diff --check
+          require_eq repair-paths \
+            "$(git diff --name-only "$CPARENT" | LC_ALL=C sort)" \
+            $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          SLIB="$(git hash-object "$LIB_PATH")"
+          STEST="$(git hash-object "$TEST_PATH")"
+          printf 'source-lib=%s\nsource-test=%s\n' "$SLIB" "$STEST" | tee -a "$R"
+
+          stage repaired-focused-and-repository-suites
+          node --check "$LIB_PATH"
+          node --check tools/crawl-industrial-exhaust.mjs
+          node --check "$TEST_PATH"
+          node "$TEST_PATH" 2>&1 | tee -a "$R"
+          node test/industrial-exhaust-artifacts.test.js 2>&1 | tee -a "$R"
+          node tools/hydrate-industrial-exhaust.mjs --audit 2>&1 | tee -a "$R"
+
+          stage current-main-transplant-and-release-gate
+          cd "$GITHUB_WORKSPACE"
+          git worktree add --detach "$Q" "$MAIN"
+          cp "$S/$LIB_PATH" "$Q/$LIB_PATH"
+          cp "$S/$TEST_PATH" "$Q/$TEST_PATH"
+          cd "$Q"
+          require_eq qualified-paths \
+            "$(git diff --name-only | LC_ALL=C sort)" \
+            $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          git diff --check
+          node --check "$LIB_PATH"
+          node --check tools/crawl-industrial-exhaust.mjs
+          node --check "$TEST_PATH"
+          node "$TEST_PATH" 2>&1 | tee -a "$R"
+          node test/industrial-exhaust-artifacts.test.js 2>&1 | tee -a "$R"
+          node tools/hydrate-industrial-exhaust.mjs --audit 2>&1 | tee -a "$R"
+          npm run release:check 2>&1 | tee -a "$R"
+          git restore --worktree --staged -- build 2>/dev/null || true
+          git clean -fd -- build >/dev/null 2>&1 || true
+          require_eq post-release-paths \
+            "$(git diff --name-only | LC_ALL=C sort)" \
+            $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          git diff --check
+
+          stage construct-qualified-product
+          git config user.name BigBirdReturns
+          git config user.email bigbirdreturns@proton.me
+          git add "$LIB_PATH" "$TEST_PATH"
+          git commit -m 'fix: admit closing wrappers after observations'
+          AHEAD="$(git rev-parse HEAD)"
+          ATREE="$(git rev-parse HEAD^{tree})"
+          ALIB="$(git rev-parse "HEAD:$LIB_PATH")"
+          ATEST="$(git rev-parse "HEAD:$TEST_PATH")"
+          require_eq qualified-parent "$(git rev-parse HEAD^)" "$MAIN"
+          require_eq qualified-count "$(git rev-list --count "$MAIN..HEAD")" '1'
+          require_eq qualified-commit-paths \
+            "$(git diff --name-only "$MAIN..HEAD" | LC_ALL=C sort)" \
+            $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          require_eq qualified-lib "$ALIB" "$SLIB"
+          require_eq qualified-test "$ATEST" "$STEST"
+          git diff --numstat "$MAIN..HEAD" | LC_ALL=C sort -k3 | tee -a "$R"
+          printf 'qualified-head=%s\nqualified-tree=%s\nqualified-lib=%s\nqualified-test=%s\n' \
+            "$AHEAD" "$ATREE" "$ALIB" "$ATEST" | tee -a "$R"
+
+          stage final-lease-revalidation-and-publication
+          cd "$GITHUB_WORKSPACE"
+          fetch_leases
+          require_eq final-main "$(git rev-parse refs/remotes/origin/main)" "$MAIN"
+          require_eq final-product "$(git rev-parse "refs/remotes/origin/$PBRANCH")" "$CPARENT"
+          require_eq final-controller "$(git rev-parse "refs/remotes/origin/$CBRANCH")" "$H"
+          require_eq final-main-lib "$(git rev-parse "$MAIN:$LIB_PATH")" "$BLIB"
+          require_eq final-main-test "$(git rev-parse "$MAIN:$TEST_PATH")" "$BTEST"
+          require_eq final-product-lib "$(git rev-parse "$CPARENT:$LIB_PATH")" "$PLIB"
+          require_eq final-product-test "$(git rev-parse "$CPARENT:$TEST_PATH")" "$PTEST"
+          git -C "$Q" push origin "$AHEAD:refs/heads/$PBRANCH" \
+            --force-with-lease="refs/heads/$PBRANCH:$CPARENT"
+          git fetch --no-tags origin "+refs/heads/$PBRANCH:refs/remotes/origin/$PBRANCH"
+          require_eq published-head "$(git rev-parse "refs/remotes/origin/$PBRANCH")" "$AHEAD"
+          require_eq published-tree "$(git rev-parse "$AHEAD^{tree}")" "$ATREE"
+          require_eq published-lib "$(git rev-parse "$AHEAD:$LIB_PATH")" "$ALIB"
+          require_eq published-test "$(git rev-parse "$AHEAD:$TEST_PATH")" "$ATEST"
+          printf 'QUALIFICATION_SUCCESS\nbase=%s\nold_product=%s\nnew_product=%s\ntree=%s\nlib=%s\ntest=%s\n' \
+            "$MAIN" "$CPARENT" "$AHEAD" "$ATREE" "$ALIB" "$ATEST" | tee -a "$R"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-closing-wrapper-controller-v1
+          path: /tmp/pr2231-closing-wrapper-receipt.txt
+          if-no-files-found: error
+          retention-days: 90
