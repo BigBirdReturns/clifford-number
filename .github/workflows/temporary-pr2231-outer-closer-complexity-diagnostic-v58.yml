@@ -1,0 +1,185 @@
+name: Temporary PR 2231 outer-closer complexity diagnostic v58
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temporary-pr2231-outer-closer-complexity-diagnostic-v58.yml'
+permissions:
+  contents: read
+  pull-requests: read
+concurrency:
+  group: pr2231-outer-closer-complexity-diagnostic-v58
+  cancel-in-progress: false
+jobs:
+  diagnose:
+    if: github.repository == 'BigBirdReturns/clifford-number'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CBRANCH: agent/pr2231-outer-closer-complexity-diagnostic-v58
+      WORKFLOW_PATH: .github/workflows/temporary-pr2231-outer-closer-complexity-diagnostic-v58.yml
+      CPARENT: a1158b01e7f2ba5c12e0a0085d3897ef00a8f79b
+      PBRANCH: agent/current-main-identifier-context-product-v1
+      PHEAD: 64cf378d5bb7b39b9d496f554a887076cf3d637b
+      PTREE: 980429f782d882387335e1067c568fc5a7ac240c
+      PLIB: 476ed485878026ae89682eb692b7802ad7fa37ec
+      PTEST: 964c44006a528234dc0962ba7524c10281c9d81d
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Measure exact-head outer-closer index scan growth
+        shell: bash
+        run: |
+          set -euo pipefail
+          H='${{ github.event.pull_request.head.sha }}'
+          S=/tmp/pr2231-v58-product
+          R=/tmp/pr2231-v58-diagnostic.txt
+          : >"$R"
+          stage() { printf '\n=== STAGE %s ===\n' "$1" | tee -a "$R"; }
+          fail() { printf 'FAIL[%s] %s\n' "$1" "$2" | tee -a "$R" >&2; exit 1; }
+          require_eq() {
+            local label="$1" actual="$2" expected="$3"
+            printf '%s actual=%s expected=%s\n' "$label" "$actual" "$expected" | tee -a "$R"
+            [ "$actual" = "$expected" ] || fail "$label" 'value mismatch'
+          }
+          fetch_leases() {
+            git fetch --no-tags origin \
+              "+refs/heads/main:refs/remotes/origin/main" \
+              "+refs/heads/$PBRANCH:refs/remotes/origin/$PBRANCH" \
+              "+refs/heads/$CBRANCH:refs/remotes/origin/$CBRANCH"
+          }
+
+          stage diagnostic-envelope
+          require_eq diagnostic-parent "$(git rev-parse HEAD^)" "$CPARENT"
+          require_eq diagnostic-branch '${{ github.head_ref }}' "$CBRANCH"
+          require_eq diagnostic-count "$(git rev-list --count "$CPARENT..HEAD")" '1'
+          require_eq diagnostic-paths \
+            "$(git diff --name-only "$CPARENT..HEAD" | LC_ALL=C sort)" \
+            "$WORKFLOW_PATH"
+
+          stage exact-live-leases
+          fetch_leases
+          require_eq diagnostic-remote \
+            "$(git rev-parse "refs/remotes/origin/$CBRANCH")" "$H"
+          require_eq main-head \
+            "$(git rev-parse refs/remotes/origin/main)" "$CPARENT"
+          require_eq product-head \
+            "$(git rev-parse "refs/remotes/origin/$PBRANCH")" "$PHEAD"
+          require_eq product-parent "$(git rev-parse "$PHEAD^")" "$CPARENT"
+          require_eq product-tree "$(git rev-parse "$PHEAD^{tree}")" "$PTREE"
+          require_eq product-library \
+            "$(git rev-parse "$PHEAD:tools/lib/industrial-exhaust.mjs")" "$PLIB"
+          require_eq product-test \
+            "$(git rev-parse "$PHEAD:test/industrial-exhaust.test.js")" "$PTEST"
+          require_eq product-paths \
+            "$(git diff --name-only "$CPARENT..$PHEAD" | LC_ALL=C sort)" \
+            $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+
+          stage executable-complexity-reproduction
+          rm -rf "$S"
+          git worktree prune
+          git worktree add --detach "$S" "$PHEAD"
+          cd "$S"
+          node --input-type=module <<'NODE' 2>&1 | tee -a "$R"
+          import assert from 'node:assert/strict';
+
+          const nativeIndexOf = Array.prototype.indexOf;
+          let active = false;
+          let calls = 0;
+          let scanVolume = 0;
+
+          Array.prototype.indexOf = function trackedIndexOf(searchElement, fromIndex) {
+            if (active) {
+              const stack = new Error().stack ?? '';
+              if (stack.includes('redactPhoneCandidateAcrossOwnedOuterClosers')) {
+                calls += 1;
+                scanVolume += this.length;
+              }
+            }
+            return nativeIndexOf.call(this, searchElement, fromIndex);
+          };
+
+          try {
+            const { redactContactData } = await import(
+              './tools/lib/industrial-exhaust.mjs?outer-closer-complexity-v58'
+            );
+
+            const exercise = closerCount => {
+              calls = 0;
+              scanVolume = 0;
+              const input = `Context (Phone: 03-6216-8041${')'.repeat(closerCount)}`;
+              active = true;
+              const output = redactContactData(input);
+              active = false;
+              assert.equal(
+                (output.match(/\[contact omitted\]/gu) ?? []).length,
+                1,
+                'the stress input must retain one valid phone redaction'
+              );
+              return {
+                closerCount,
+                calls,
+                scanVolume,
+                outputLength: output.length
+              };
+            };
+
+            const small = exercise(128);
+            const large = exercise(256);
+            console.log(JSON.stringify({ small, large }));
+
+            assert.ok(
+              small.calls >= 120,
+              `expected one tracked originalIndexes.indexOf call per closer, got ${small.calls}`
+            );
+            assert.ok(
+              large.calls >= small.calls * 1.8,
+              'doubling accepted closer depth must approximately double lookup count'
+            );
+            assert.ok(
+              large.scanVolume >= small.scanVolume * 3.2,
+              'doubling accepted closer depth must expose superlinear index scan volume'
+            );
+            console.log(JSON.stringify({
+              DIAGNOSTIC_SUCCESS: true,
+              defect: 'quadratic-original-index-lookup-across-outer-closers',
+              product: '64cf378d5bb7b39b9d496f554a887076cf3d637b',
+              tree: '980429f782d882387335e1067c568fc5a7ac240c',
+              library: '476ed485878026ae89682eb692b7802ad7fa37ec',
+              test: '964c44006a528234dc0962ba7524c10281c9d81d'
+            }));
+          } finally {
+            active = false;
+            Array.prototype.indexOf = nativeIndexOf;
+          }
+          NODE
+
+          stage final-live-lease-revalidation
+          cd "$GITHUB_WORKSPACE"
+          fetch_leases
+          require_eq final-main \
+            "$(git rev-parse refs/remotes/origin/main)" "$CPARENT"
+          require_eq final-product \
+            "$(git rev-parse "refs/remotes/origin/$PBRANCH")" "$PHEAD"
+          require_eq final-controller \
+            "$(git rev-parse "refs/remotes/origin/$CBRANCH")" "$H"
+          require_eq final-product-tree \
+            "$(git rev-parse "$PHEAD^{tree}")" "$PTREE"
+          require_eq final-library \
+            "$(git rev-parse "$PHEAD:tools/lib/industrial-exhaust.mjs")" "$PLIB"
+          require_eq final-test \
+            "$(git rev-parse "$PHEAD:test/industrial-exhaust.test.js")" "$PTEST"
+          printf 'DIAGNOSTIC_RECEIPT_COMPLETE\n' | tee -a "$R"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-outer-closer-complexity-v58
+          path: /tmp/pr2231-v58-diagnostic.txt
+          if-no-files-found: error
+          retention-days: 90
