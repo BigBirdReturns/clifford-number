@@ -1,0 +1,272 @@
+name: Temporary PR 2231 recursive phone-label custody controller v61
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temporary-pr2231-phone-label-recursive-controller-v61.yml'
+      - '.github/tmp/pr2231-phone-label-recursive-v61-repair.py'
+permissions:
+  contents: write
+  issues: read
+  pull-requests: read
+concurrency:
+  group: pr2231-phone-label-recursive-v61
+  cancel-in-progress: false
+jobs:
+  qualify-and-publish:
+    if: github.repository == 'BigBirdReturns/clifford-number'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      CBRANCH: agent/pr2231-phone-label-recursive-custody-controller-v61
+      WORKFLOW_PATH: .github/workflows/temporary-pr2231-phone-label-recursive-controller-v61.yml
+      REPAIR_PATH: .github/tmp/pr2231-phone-label-recursive-v61-repair.py
+      CPARENT: a1158b01e7f2ba5c12e0a0085d3897ef00a8f79b
+      PBRANCH: agent/current-main-identifier-context-product-v1
+      PHEAD: 08594a6eb033a137d1500ff5ff970658a7cac020
+      PTREE: d53c3b2397b262972ff594fdbce478f3699179bf
+      PLIB: 0730e31c7870b17c99dfdb92c0c0ac550f7f13c8
+      PTEST: 77a55e8c6a5fba54515008126b1e64ed5b30ae6d
+      BLIB: 5f68254d3e44de693e83503aed879160f9b7b997
+      BTEST: 1659a7cc54666a2ac5a1d6b88eb8c6591d98008e
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Qualify and publish recursive phone-label custody
+        shell: bash
+        run: |
+          set -euo pipefail
+          H='${{ github.event.pull_request.head.sha }}'
+          S=/tmp/pr2231-v61-source
+          Q=/tmp/pr2231-v61-main
+          R=/tmp/pr2231-v61-receipt.txt
+          : >"$R"
+          stage() { printf '\n=== STAGE %s ===\n' "$1" | tee -a "$R"; }
+          fail() { printf 'FAIL[%s] %s\n' "$1" "$2" | tee -a "$R" >&2; exit 1; }
+          require_eq() {
+            local label="$1" actual="$2" expected="$3"
+            printf '%s actual=%s expected=%s\n' "$label" "$actual" "$expected" | tee -a "$R"
+            [ "$actual" = "$expected" ] || fail "$label" 'value mismatch'
+          }
+          fetch_leases() {
+            git fetch --no-tags origin \
+              "+refs/heads/main:refs/remotes/origin/main" \
+              "+refs/heads/$PBRANCH:refs/remotes/origin/$PBRANCH" \
+              "+refs/heads/$CBRANCH:refs/remotes/origin/$CBRANCH"
+          }
+
+          stage controller-envelope
+          require_eq controller-parent "$(git rev-parse HEAD^)" "$CPARENT"
+          require_eq controller-branch '${{ github.head_ref }}' "$CBRANCH"
+          require_eq controller-paths "$(git diff --name-only "$CPARENT..HEAD" | LC_ALL=C sort)" $'.github/tmp/pr2231-phone-label-recursive-v61-repair.py\n.github/workflows/temporary-pr2231-phone-label-recursive-controller-v61.yml'
+          python3 -m py_compile "$REPAIR_PATH"
+
+          stage initial-live-leases
+          fetch_leases
+          require_eq controller-remote "$(git rev-parse refs/remotes/origin/$CBRANCH)" "$H"
+          require_eq product-head "$(git rev-parse refs/remotes/origin/$PBRANCH)" "$PHEAD"
+          require_eq product-parent "$(git rev-parse "$PHEAD^")" "$CPARENT"
+          require_eq product-tree "$(git rev-parse "$PHEAD^{tree}")" "$PTREE"
+          require_eq product-count "$(git rev-list --count "$CPARENT..$PHEAD")" '1'
+          require_eq product-paths "$(git diff --name-only "$CPARENT..$PHEAD" | LC_ALL=C sort)" $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          require_eq product-lib "$(git rev-parse "$PHEAD:tools/lib/industrial-exhaust.mjs")" "$PLIB"
+          require_eq product-test "$(git rev-parse "$PHEAD:test/industrial-exhaust.test.js")" "$PTEST"
+          MAIN="$(git rev-parse refs/remotes/origin/main)"
+          require_eq main "$MAIN" "$CPARENT"
+          require_eq main-lib "$(git rev-parse "$MAIN:tools/lib/industrial-exhaust.mjs")" "$BLIB"
+          require_eq main-test "$(git rev-parse "$MAIN:test/industrial-exhaust.test.js")" "$BTEST"
+
+          stage exact-head-defect-reproduction
+          rm -rf "$S" "$Q"
+          git worktree prune
+          git worktree add --detach "$S" "$PHEAD"
+          cd "$S"
+          node --input-type=module <<'NODE' 2>&1 | tee -a "$R"
+          import assert from 'node:assert/strict';
+          import { redactContactData as redact } from './tools/lib/industrial-exhaust.mjs';
+
+          const single = 'Phone: 09012345678 2026-08-17 555-1212';
+          assert.equal(
+            redact(single),
+            'Phone: [contact omitted] 2026-08-17 [contact omitted]',
+            'exact predecessor must retain the already-qualified one-later-phone behavior'
+          );
+
+          const input = 'Phone: 09012345678 2026-08-17 555-1212 555-3434';
+          const actual = redact(input);
+          const defective =
+            'Phone: [contact omitted] 2026-08-17 [contact omitted] 555-3434';
+          const repaired =
+            'Phone: [contact omitted] 2026-08-17 [contact omitted] [contact omitted]';
+          console.log(JSON.stringify({
+            defect: 'phone-label-authority-lost-across-recursive-suffix',
+            actual,
+            defective,
+            repaired
+          }));
+          assert.equal(
+            actual,
+            defective,
+            'exact head must reproduce the recursive explicit-label P1'
+          );
+
+          for (const [name, candidate, expected] of [
+            [
+              'wrapped',
+              'Phone: (09012345678) 2026-08-17 555-1212 555-3434',
+              'Phone: [contact omitted] 2026-08-17 [contact omitted] [contact omitted]'
+            ],
+            [
+              'fullwidth',
+              '電話番号：０９０１２３４５６７８ ２０２６－０８－１７ ５５５－１２１２ ５５５－３４３４',
+              '電話番号：[contact omitted] ２０２６－０８－１７ [contact omitted] [contact omitted]'
+            ],
+            [
+              'label-chain',
+              'Phone / GUID / record id: 09012345678 2026-08-17 555-1212 555-3434',
+              'Phone / GUID / record id: [contact omitted] 2026-08-17 [contact omitted] [contact omitted]'
+            ]
+          ]) {
+            const observed = redact(candidate);
+            console.log(JSON.stringify({ name, observed, expected }));
+            assert.notEqual(
+              observed,
+              expected,
+              `${name} must remain defective before mutation`
+            );
+          }
+          NODE
+
+          stage exact-two-file-repair
+          python3 "$GITHUB_WORKSPACE/$REPAIR_PATH"
+          git diff --check
+          require_eq repair-paths "$(git diff --name-only "$PHEAD" | LC_ALL=C sort)" $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+
+          stage repaired-transition-and-focused-suites
+          node --input-type=module <<'NODE' 2>&1 | tee -a "$R"
+          import assert from 'node:assert/strict';
+          import { redactContactData as redact } from './tools/lib/industrial-exhaust.mjs';
+
+          const repairedCases = [
+            [
+              'two-later-local-phones',
+              'Phone: 09012345678 2026-08-17 555-1212 555-3434',
+              'Phone: [contact omitted] 2026-08-17 [contact omitted] [contact omitted]'
+            ],
+            [
+              'three-later-local-phones',
+              'Phone: 09012345678 2026-08-17 555-1212 555-3434 555-5656',
+              'Phone: [contact omitted] 2026-08-17 [contact omitted] [contact omitted] [contact omitted]'
+            ],
+            [
+              'wrapped-initial-phone',
+              'Phone: (09012345678) 2026-08-17 555-1212 555-3434',
+              'Phone: [contact omitted] 2026-08-17 [contact omitted] [contact omitted]'
+            ],
+            [
+              'repeated-label-chain',
+              'Phone / GUID / record id: 09012345678 2026-08-17 555-1212 555-3434',
+              'Phone / GUID / record id: [contact omitted] 2026-08-17 [contact omitted] [contact omitted]'
+            ],
+            [
+              'fullwidth',
+              '電話番号：０９０１２３４５６７８ ２０２６－０８－１７ ５５５－１２１２ ５５５－３４３４',
+              '電話番号：[contact omitted] ２０２６－０８－１７ [contact omitted] [contact omitted]'
+            ],
+            [
+              'second-observation',
+              'Phone: 09012345678 2026-08-17 555-1212 2027-09-18 555-3434',
+              'Phone: [contact omitted] 2026-08-17 [contact omitted] 2027-09-18 [contact omitted]'
+            ],
+            [
+              'invalid-closer',
+              'Phone: 09012345678 2026-08-17-) 555-1212 555-3434',
+              'Phone: [contact omitted] 2026-08-17-) [contact omitted] [contact omitted]'
+            ],
+            [
+              'unlabelled-negative',
+              'Archive 09012345678 2026-08-17 555-1212 2027-09-18 555-3434',
+              'Archive [contact omitted] 2026-08-17 555-1212 2027-09-18 555-3434'
+            ]
+          ];
+          for (const [name, candidate, expected] of repairedCases) {
+            const observed = redact(candidate);
+            console.log(JSON.stringify({ name, observed, expected }));
+            assert.equal(observed, expected, name);
+          }
+          NODE
+          node --check tools/lib/industrial-exhaust.mjs
+          node --check tools/crawl-industrial-exhaust.mjs
+          node --check test/industrial-exhaust.test.js
+          node test/industrial-exhaust.test.js 2>&1 | tee -a "$R"
+          node test/industrial-exhaust-artifacts.test.js 2>&1 | tee -a "$R"
+
+          stage live-main-transplant-and-release-qualification
+          cd "$GITHUB_WORKSPACE"
+          git worktree add --detach "$Q" "$MAIN"
+          cp "$S/tools/lib/industrial-exhaust.mjs" "$Q/tools/lib/industrial-exhaust.mjs"
+          cp "$S/test/industrial-exhaust.test.js" "$Q/test/industrial-exhaust.test.js"
+          cd "$Q"
+          require_eq qualified-paths "$(git diff --name-only | LC_ALL=C sort)" $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          git diff --check
+          node --check tools/lib/industrial-exhaust.mjs
+          node --check tools/crawl-industrial-exhaust.mjs
+          node --check test/industrial-exhaust.test.js
+          node test/industrial-exhaust.test.js 2>&1 | tee -a "$R"
+          node test/industrial-exhaust-artifacts.test.js 2>&1 | tee -a "$R"
+          npm run release:check 2>&1 | tee -a "$R"
+          git restore --worktree --staged -- build 2>/dev/null || true
+          git clean -fd -- build >/dev/null 2>&1 || true
+          require_eq post-release-paths "$(git diff --name-only | LC_ALL=C sort)" $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          git diff --check
+
+          stage construct-qualified-product
+          git config user.name BigBirdReturns
+          git config user.email bigbirdreturns@proton.me
+          git add tools/lib/industrial-exhaust.mjs test/industrial-exhaust.test.js
+          git commit -m 'fix: carry phone-label authority through recursive suffixes'
+          AHEAD="$(git rev-parse HEAD)"
+          ATREE="$(git rev-parse HEAD^{tree})"
+          ALIB="$(git rev-parse HEAD:tools/lib/industrial-exhaust.mjs)"
+          ATEST="$(git rev-parse HEAD:test/industrial-exhaust.test.js)"
+          require_eq qualified-parent "$(git rev-parse HEAD^)" "$MAIN"
+          require_eq qualified-count "$(git rev-list --count "$MAIN..HEAD")" '1'
+          require_eq qualified-commit-paths "$(git diff --name-only "$MAIN..HEAD" | LC_ALL=C sort)" $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          printf 'qualified-head=%s\nqualified-tree=%s\nqualified-lib=%s\nqualified-test=%s\n' \
+            "$AHEAD" "$ATREE" "$ALIB" "$ATEST" | tee -a "$R"
+          git diff --numstat "$MAIN..HEAD" | LC_ALL=C sort -k3 | tee -a "$R"
+
+          stage final-lease-revalidation-and-publication
+          cd "$GITHUB_WORKSPACE"
+          fetch_leases
+          require_eq final-main "$(git rev-parse refs/remotes/origin/main)" "$MAIN"
+          require_eq final-product "$(git rev-parse refs/remotes/origin/$PBRANCH)" "$PHEAD"
+          require_eq final-controller "$(git rev-parse refs/remotes/origin/$CBRANCH)" "$H"
+          require_eq final-product-tree "$(git rev-parse "$PHEAD^{tree}")" "$PTREE"
+          require_eq final-main-lib "$(git rev-parse "$MAIN:tools/lib/industrial-exhaust.mjs")" "$BLIB"
+          require_eq final-main-test "$(git rev-parse "$MAIN:test/industrial-exhaust.test.js")" "$BTEST"
+          require_eq final-product-lib "$(git rev-parse "$PHEAD:tools/lib/industrial-exhaust.mjs")" "$PLIB"
+          require_eq final-product-test "$(git rev-parse "$PHEAD:test/industrial-exhaust.test.js")" "$PTEST"
+          git -C "$Q" push origin "$AHEAD:refs/heads/$PBRANCH" \
+            --force-with-lease="refs/heads/$PBRANCH:$PHEAD"
+          git fetch --no-tags origin "+refs/heads/$PBRANCH:refs/remotes/origin/$PBRANCH"
+          require_eq published-head "$(git rev-parse refs/remotes/origin/$PBRANCH)" "$AHEAD"
+          require_eq published-tree "$(git rev-parse "$AHEAD^{tree}")" "$ATREE"
+          require_eq published-lib "$(git rev-parse "$AHEAD:tools/lib/industrial-exhaust.mjs")" "$ALIB"
+          require_eq published-test "$(git rev-parse "$AHEAD:test/industrial-exhaust.test.js")" "$ATEST"
+          printf 'QUALIFICATION_SUCCESS\nbase=%s\nold_product=%s\nnew_product=%s\ntree=%s\nlib=%s\ntest=%s\n' \
+            "$MAIN" "$PHEAD" "$AHEAD" "$ATREE" "$ALIB" "$ATEST" | tee -a "$R"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-phone-label-recursive-v61
+          path: /tmp/pr2231-v61-receipt.txt
+          if-no-files-found: error
+          retention-days: 90
