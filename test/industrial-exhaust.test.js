@@ -177,6 +177,770 @@ for (const labelledCompactPhone of ['Phone: 06012345678', 'Phone: 09012345678'])
     'phone labels must continue to redact compact domestic numbers'
   );
 }
+for (const labelledIdentifier of [
+  'ID: 09012345678',
+  'ＩＤ：０９０１２３４５６７８',
+  'GUID: 03-6216-8041',
+  'reference: +81 3 6216 5111',
+  'reference: +1 212 555 1234',
+  'ID: +44 (0)20 7123 4567',
+  '管理番号：03-6216-8041',
+  '識別子：+81 3 6216 5111'
+]) {
+  assert.equal(
+    redactContactData(labelledIdentifier),
+    labelledIdentifier,
+    'explicit identifier labels must protect every phone-shaped candidate and subspan'
+  );
+}
+for (const [labelledPhone, expected] of [
+  ['Phone: ID: 09012345678', 'Phone: ID: [contact omitted]'],
+  ['Phone ID: 09012345678', 'Phone ID: [contact omitted]'],
+  ['電話番号 ＩＤ：０９０１２３４５６７８', '電話番号 ＩＤ：[contact omitted]']
+]) {
+  assert.equal(
+    redactContactData(labelledPhone),
+    expected,
+    'an affirmative phone label must override a trailing identifier label'
+  );
+}
+assert.equal(
+  redactContactData('ID: 09012345678 Phone: 03-6216-8041'),
+  'ID: 09012345678 Phone: [contact omitted]',
+  'identifier protection must not suppress a later independently labelled phone'
+);
+
+for (const [identifierThenPhone, expected] of [
+  ['ID: 09012345678 / 03-6216-8041', 'ID: 09012345678 / [contact omitted]'],
+  ['reference: 09012345678 03-6216-8041', 'reference: 09012345678 [contact omitted]'],
+  ['ID: 03-6216-8041 090-1234-5678', 'ID: 03-6216-8041 [contact omitted]'],
+  ['ID: 01 42 68 53 00 03 62 16 80 41', 'ID: 01 42 68 53 00 [contact omitted]'],
+  ['reference: +1 212 555 1234 03-6216-8041', 'reference: +1 212 555 1234 [contact omitted]'],
+  ['ID: +44 (0)20 7123 4567 03-6216-8041', 'ID: +44 (0)20 7123 4567 [contact omitted]'],
+  ['ID: 09012345678 +81 90 1234 5678', 'ID: 09012345678 [contact omitted]']
+]) {
+  assert.equal(
+    redactContactData(identifierThenPhone),
+    expected,
+    'identifier protection must end after the first phone-shaped value in one scanner span'
+  );
+}
+
+for (const [unscoredIdentifierThenPhone, expected] of [
+  ['ID: 12345678 / 03-6216-8041', 'ID: 12345678 / [contact omitted]'],
+  ['ID: 12345678. 03-6216-8041', 'ID: 12345678. [contact omitted]'],
+  ['ID: 12345678 / +81 3 6216 5111', 'ID: 12345678 / [contact omitted]'],
+  ['ID: 12345678; 03-6216-8041', 'ID: 12345678; [contact omitted]'],
+  ['ID: 12345678 Phone: 03-6216-8041', 'ID: 12345678 Phone: [contact omitted]']
+]) {
+  assert.equal(
+    redactContactData(unscoredIdentifierThenPhone),
+    expected,
+    'an unscored numeric identifier must not protect a later independently complete phone'
+  );
+}
+for (const [reviewBoundaryInput, expected] of [
+  [
+    'ID: 09012345678 / (03) 6216 8041',
+    'ID: 09012345678 / [contact omitted]'
+  ],
+  [
+    'ＩＤ：０９０１２３４５６７８／（０３） ６２１６ ８０４１',
+    'ＩＤ：０９０１２３４５６７８／[contact omitted]'
+  ],
+  [
+    'ID: 01 42 68 53 00 / (03) 6216 8041',
+    'ID: 01 42 68 53 00 / [contact omitted]'
+  ],
+  [
+    'ID: 12345678 03-6216-8041',
+    'ID: 12345678 [contact omitted]'
+  ],
+  [
+    'ID: 12345678 (03) 6216 8041',
+    'ID: 12345678 [contact omitted]'
+  ],
+  [
+    'ID: 09012345678 (03) 6216 8041',
+    'ID: 09012345678 [contact omitted]'
+  ]
+]) {
+  assert.equal(
+    redactContactData(reviewBoundaryInput),
+    expected,
+    'validated boundaries must be selected before a later phone group can extend identifier scope'
+  );
+}
+for (const unsplitWhitespaceIdentifier of [
+  'ID: 1 212 555 1234',
+  'ID: 999 212 555 1234',
+  'ID: 12345678 87654321'
+]) {
+  assert.equal(
+    redactContactData(unsplitWhitespaceIdentifier),
+    unsplitWhitespaceIdentifier,
+    'whitespace alone must not split a complete or insufficiently bounded numeric identifier'
+  );
+}
+
+for (const [groupedUnscoredIdentifierThenPhone, expected] of [
+  [
+    'ID: 1234 5678 03-6216-8041',
+    'ID: 1234 5678 [contact omitted]'
+  ],
+  [
+    'ID: 123-45678 090-1234-5678',
+    'ID: 123-45678 [contact omitted]'
+  ],
+  [
+    'ＩＤ：１２３４ ５６７８ ０３－６２１６－８０４１',
+    'ＩＤ：１２３４ ５６７８ [contact omitted]'
+  ],
+  [
+    'ID: 1234 5678 (03) 6216 8041',
+    'ID: 1234 5678 [contact omitted]'
+  ]
+]) {
+  assert.equal(
+    redactContactData(groupedUnscoredIdentifierThenPhone),
+    expected,
+    'grouped unscored identifiers must end before an independently valid phone suffix'
+  );
+}
+
+for (const nestedIdentifierWrapper of [
+  'ID: [(+81 3 6216 5111)]',
+  'ID: [ (+81 3 6216 5111)]',
+  'ＩＤ：（（＋８１ ３ ６２１６ ５１１１））'
+]) {
+  assert.equal(
+    redactContactData(nestedIdentifierWrapper),
+    nestedIdentifierWrapper,
+    'a sequence of accepted opening wrappers must remain in explicit identifier context'
+  );
+}
+
+const nestedPhoneLabelRedaction = redactContactData(
+  'Phone: ID: [(+81 3 6216 5111)]'
+);
+assert.match(
+  nestedPhoneLabelRedaction,
+  /\[contact omitted\]/u,
+  'nested identifier wrappers must not suppress an affirmative phone-label override'
+);
+assert.doesNotMatch(
+  nestedPhoneLabelRedaction.normalize('NFKC'),
+  /81362165111/u,
+  'phone-labelled nested values must not survive redaction'
+);
+
+const nestedWrapperUrlSegment = 'a'.repeat(140);
+const nestedWrapperUrlPrefix = `https://example.test/${nestedWrapperUrlSegment}/id: [`;
+const nestedWrapperUrlRedaction = redactContactData(
+  `${nestedWrapperUrlPrefix}(+81 3 6216 5111)]`
+);
+assert.ok(
+  nestedWrapperUrlRedaction.startsWith(nestedWrapperUrlPrefix),
+  'nested wrapper support must preserve the complete preceding URL token'
+);
+assert.match(
+  nestedWrapperUrlRedaction,
+  /\[contact omitted\]/u,
+  'a URL-embedded identifier label must not protect a nested wrapped phone after whitespace'
+);
+assert.doesNotMatch(
+  nestedWrapperUrlRedaction.normalize('NFKC'),
+  /81362165111/u,
+  'URL-adjacent nested wrapped phones must not survive redaction'
+);
+
+for (const [lateParenthesizedPhone, expected] of [
+  [
+    'ID: 1234567 / (123) 4567',
+    'ID: 1234567 / [contact omitted]'
+  ],
+  [
+    'ID: 1234567/(123)4567',
+    'ID: 1234567/[contact omitted]'
+  ],
+  [
+    'ＩＤ：１２３４５６７／（１２３）４５６７',
+    'ＩＤ：１２３４５６７／[contact omitted]'
+  ],
+  [
+    'ID: 1234567.(123)4567',
+    'ID: 1234567.[contact omitted]'
+  ]
+]) {
+  assert.equal(
+    redactContactData(lateParenthesizedPhone),
+    expected,
+    'a validated later-phone boundary must be selected before whole-span scoring'
+  );
+}
+
+for (const [barePeriodIdentifierThenPhone, expected] of [
+  [
+    'ID: 12345678.03.6216.8041',
+    'ID: 12345678.[contact omitted]'
+  ],
+  [
+    'ＩＤ：１２３４５６７８．０３．６２１６．８０４１',
+    'ＩＤ：１２３４５６７８．[contact omitted]'
+  ],
+  [
+    'ID: 12345678.212.555.1234',
+    'ID: 12345678.[contact omitted]'
+  ]
+]) {
+  assert.equal(
+    redactContactData(barePeriodIdentifierThenPhone),
+    expected,
+    'a bare ASCII or fullwidth period must permit an independently valid phone suffix'
+  );
+}
+
+for (const unsplitBoundaryGuard of [
+  'ID: 1234567 / 7654321',
+  'ID: 12345678.87654321',
+  'ID: 03.6216.8041',
+  'ID: 1.212.555.1234',
+  'ＩＤ：１．２１２．５５５．１２３４'
+]) {
+  assert.equal(
+    redactContactData(unsplitBoundaryGuard),
+    unsplitBoundaryGuard,
+    'boundary punctuation must not split an invalid suffix or a complete period-formatted identifier'
+  );
+}
+
+for (const [firstValidIdentifierBoundary, expected] of [
+  [
+    'ID: 1234567 / (123) 4567 / (234) 5678',
+    'ID: 1234567 / [contact omitted] / [contact omitted]'
+  ],
+  [
+    'ID: 1234567/(123)4567/(234)5678',
+    'ID: 1234567/[contact omitted]/[contact omitted]'
+  ],
+  [
+    'ＩＤ：１２３４５６７／（１２３）４５６７／（２３４）５６７８',
+    'ＩＤ：１２３４５６７／[contact omitted]／[contact omitted]'
+  ],
+  [
+    'ID: 1234567.(123)4567.(234)5678',
+    'ID: 1234567.[contact omitted].[contact omitted]'
+  ]
+]) {
+  assert.equal(
+    redactContactData(firstValidIdentifierBoundary),
+    expected,
+    'identifier protection must end at the first independently valid later-phone boundary'
+  );
+}
+
+for (const completeGroupedIdentifier of [
+  'ID: +1 212 555 1234',
+  'reference: +1 212 555 1234',
+  'ID: +44 (0)20 7123 4567',
+  'ID: (+81 3 6216 5111)',
+  'ＩＤ：（＋８１ ３ ６２１６ ５１１１）'
+]) {
+  assert.equal(
+    redactContactData(completeGroupedIdentifier),
+    completeGroupedIdentifier,
+    'a complete grouped identifier must not be split at an internally phone-shaped suffix'
+  );
+}
+
+for (const [urlPathLabel, expected] of [
+  ['https://example.test/id: 09012345678', 'https://example.test/id: [contact omitted]'],
+  ['https://example.test/reference: +81 3 6216 5111', 'https://example.test/reference: [contact omitted]'],
+  ['example.test/id: 03-6216-8041', 'example.test/id: [contact omitted]']
+]) {
+  assert.equal(
+    redactContactData(urlPathLabel),
+    expected,
+    'an identifier word embedded in a URL token must not protect a later phone after whitespace'
+  );
+}
+
+const longIdentifierUrlSegment = 'a'.repeat(140);
+for (const [longUrlPathLabel, expected] of [
+  [
+    `https://example.test/${longIdentifierUrlSegment}/id: 09012345678`,
+    `https://example.test/${longIdentifierUrlSegment}/id: [contact omitted]`
+  ],
+  [
+    `//example.test/${longIdentifierUrlSegment}/reference: +81 3 6216 5111`,
+    `//example.test/${longIdentifierUrlSegment}/reference: [contact omitted]`
+  ],
+  [
+    `example.test/${longIdentifierUrlSegment}/id: 03-6216-8041`,
+    `example.test/${longIdentifierUrlSegment}/id: [contact omitted]`
+  ],
+  [
+    `192.0.2.1/${longIdentifierUrlSegment}/reference: 090-1234-5678`,
+    `192.0.2.1/${longIdentifierUrlSegment}/reference: [contact omitted]`
+  ]
+]) {
+  assert.equal(
+    redactContactData(longUrlPathLabel),
+    expected,
+    'a long URL token must retain URL provenance when rejecting an embedded identifier label'
+  );
+}
+
+const finalBoundaryLongUrlSegment = 'a'.repeat(140);
+for (const [finalBoundaryInput, expected] of [
+  ['ID: 12345678/03-6216-8041', 'ID: 12345678/[contact omitted]'],
+  ['ＩＤ：１２３４５６７８／０３－６２１６－８０４１', 'ＩＤ：１２３４５６７８／[contact omitted]'],
+  ['ID: 12345678/87654321', 'ID: 12345678/87654321'],
+  [
+    `https://example.test/${finalBoundaryLongUrlSegment}/reference: (+81 3 6216 5111)`,
+    `https://example.test/${finalBoundaryLongUrlSegment}/reference: ([contact omitted])`
+  ],
+  [
+    `//example.test/${finalBoundaryLongUrlSegment}/id: （＋８１ ３ ６２１６ ５１１１）`,
+    `//example.test/${finalBoundaryLongUrlSegment}/id: （[contact omitted]）`
+  ]
+]) {
+  assert.equal(
+    redactContactData(finalBoundaryInput),
+    expected,
+    'final identifier boundaries must preserve the identifier and redact only an independent phone'
+  );
+}
+
+for (const wrappedIdentifier of [
+  'ID: (+81 3 6216 5111)',
+  'ＩＤ：（＋８１ ３ ６２１６ ５１１１）'
+]) {
+  assert.equal(
+    redactContactData(wrappedIdentifier),
+    wrappedIdentifier,
+    'an opening wrapper after an identifier label must remain in identifier context'
+  );
+}
+
+for (const punctuatedPhoneId of [
+  'Phone: (ID: 09012345678)',
+  'Phone / ID: 09012345678',
+  'Phone-ID: 09012345678',
+  'Phone/ID: 09012345678',
+  '電話番号／ＩＤ：０９０１２３４５６７８'
+]) {
+  const redacted = redactContactData(punctuatedPhoneId);
+  assert.match(
+    redacted,
+    /\[contact omitted\]/u,
+    'separator punctuation must not suppress a phone-label override before standalone ID'
+  );
+  assert.doesNotMatch(
+    redacted.normalize('NFKC'),
+    /09012345678/u,
+    'phone-labelled values must not survive redaction'
+  );
+}
+
+for (const [phoneLabelThenIdentifier, expected] of [
+  [
+    'Phone: reference: +81 3 6216 5111',
+    'Phone: reference: [contact omitted]'
+  ],
+  [
+    'Phone / GUID: 09012345678',
+    'Phone / GUID: [contact omitted]'
+  ],
+  [
+    'Phone: record id: 03-6216-8041',
+    'Phone: record id: [contact omitted]'
+  ],
+  [
+    'contact: reference: +81 3 6216 5111',
+    'contact: reference: [contact omitted]'
+  ],
+  [
+    'contact number reference: +81 3 6216 5111',
+    'contact number reference: [contact omitted]'
+  ],
+  [
+    '電話番号／管理番号：０９０１２３４５６７８',
+    '電話番号／管理番号：[contact omitted]'
+  ],
+  [
+    'Phone / GUID / record id: 09012345678',
+    'Phone / GUID / record id: [contact omitted]'
+  ],
+  [
+    'Phone GUID record id: 03-6216-8041',
+    'Phone GUID record id: [contact omitted]'
+  ],
+  [
+    'contact: GUID / record id: +81 3 6216 5111',
+    'contact: GUID / record id: [contact omitted]'
+  ],
+  [
+    'contact number GUID reference: 09012345678',
+    'contact number GUID reference: [contact omitted]'
+  ],
+  [
+    'contact ID reference: 09012345678',
+    'contact ID reference: [contact omitted]'
+  ],
+  [
+    '電話番号／管理番号／参照番号：０９０１２３４５６７８',
+    '電話番号／管理番号／参照番号：[contact omitted]'
+  ]
+]) {
+  assert.equal(
+    redactContactData(phoneLabelThenIdentifier),
+    expected,
+    'phone authority must traverse the complete trailing identifier-label chain'
+  );
+}
+
+const longPhoneLabelUrlSegment = 'a'.repeat(140);
+const longPhoneLabelIdentifierChain = `${'GUID '.repeat(40)}record id: `;
+for (const urlEmbeddedPhoneLabelIdentifier of [
+  'https://example.test/phone GUID: 09012345678',
+  `https://example.test/${longPhoneLabelUrlSegment}/mobile record id: +81 3 6216 5111`,
+  '//example.test/tel reference: 03-6216-8041',
+  'example.test/fax identifier: 09012345678',
+  '192.0.2.1/contact ID reference: 09012345678',
+  'www.example.test/phone (GUID: 09012345678)',
+  'https://example.test/path?kind=phone GUID: 09012345678',
+  'https://example.test/path#fax reference: 03-6216-8041',
+  `https://example.test/${longPhoneLabelUrlSegment}/phone ${longPhoneLabelIdentifierChain}09012345678`
+]) {
+  assert.equal(
+    redactContactData(urlEmbeddedPhoneLabelIdentifier),
+    urlEmbeddedPhoneLabelIdentifier,
+    'a phone-label word embedded in a URL token must not override an explicit identifier label'
+  );
+}
+
+for (const [narrativePhoneLabelAfterUrl, expected] of [
+  [
+    'https://example.test/path Phone GUID: 09012345678',
+    'https://example.test/path Phone GUID: [contact omitted]'
+  ],
+  [
+    `https://example.test/${longPhoneLabelUrlSegment}/ Mobile record id: +81 3 6216 5111`,
+    `https://example.test/${longPhoneLabelUrlSegment}/ Mobile record id: [contact omitted]`
+  ],
+  [
+    '//example.test/path Fax reference: 03-6216-8041',
+    '//example.test/path Fax reference: [contact omitted]'
+  ],
+  [
+    'example.test/path Tel GUID: 09012345678',
+    'example.test/path Tel GUID: [contact omitted]'
+  ],
+  [
+    `https://example.test/${longPhoneLabelUrlSegment}/ Mobile ${longPhoneLabelIdentifierChain}+81 3 6216 5111`,
+    `https://example.test/${longPhoneLabelUrlSegment}/ Mobile ${longPhoneLabelIdentifierChain}[contact omitted]`
+  ]
+]) {
+  assert.equal(
+    redactContactData(narrativePhoneLabelAfterUrl),
+    expected,
+    'URL provenance must end at whitespace before a genuine narrative phone label'
+  );
+}
+
+const thousandIdentifierLabelChain = 'GUID '.repeat(1000);
+for (const narrativePhoneLabel of [
+  'Phone number',
+  'Telephone number',
+  'Mobile number',
+  'Phone number is'
+]) {
+  const input = `${narrativePhoneLabel} ${thousandIdentifierLabelChain}record id: 09012345678`;
+  assert.equal(
+    redactContactData(input),
+    `${narrativePhoneLabel} ${thousandIdentifierLabelChain}record id: [contact omitted]`,
+    'multi-token phone-label authority must survive a long identifier-label chain'
+  );
+}
+
+const nonPhoneThousandLabelChain = `Archive ${thousandIdentifierLabelChain}record id: 09012345678`;
+assert.equal(
+  redactContactData(nonPhoneThousandLabelChain),
+  nonPhoneThousandLabelChain,
+  'linear long-chain recovery must not invent telephone authority'
+);
+
+const overflowIdentifierLabelChain = 'GUID '.repeat(4000);
+const overflowPhoneLabelChain = `Phone ${overflowIdentifierLabelChain}record id: 09012345678`;
+assert.equal(
+  redactContactData(overflowPhoneLabelChain),
+  `Phone ${overflowIdentifierLabelChain}record id: [contact omitted]`,
+  'identifier-label context beyond the firm bound must fail conservatively to redaction'
+);
+
+for (const overflowObservationTail of [
+  '2026 people',
+  '2026-08-17',
+  '12:30',
+  '3.14',
+  '10-20 people'
+]) {
+  const input = `Phone ${overflowIdentifierLabelChain}record id: 09012345678 ${overflowObservationTail}`;
+  assert.equal(
+    redactContactData(input),
+    `Phone ${overflowIdentifierLabelChain}record id: [contact omitted] ${overflowObservationTail}`,
+    'bounded context must preserve a strong numeric observation after the redacted phone'
+  );
+}
+
+for (const [overflowObservation, laterPhone] of [
+  ['2026 people', '03-6216-8041'],
+  ['2026-08-17', '03-6216-8041'],
+  ['12:30', '(03) 6216 8041'],
+  ['3.14', '(03) 6216 8041'],
+  ['10-20 people', '+81 3 6216 5111']
+]) {
+  const input = `Phone ${overflowIdentifierLabelChain}record id: 09012345678 ${overflowObservation} ${laterPhone}`;
+  assert.equal(
+    redactContactData(input),
+    `Phone ${overflowIdentifierLabelChain}record id: [contact omitted] ${overflowObservation} [contact omitted]`,
+    'a proven observation boundary must survive recursion to a later independent phone'
+  );
+}
+
+for (const [overflowObservation, separator, laterPhone] of [
+  ['2026-08-17', '.', '03-6216-8041'],
+  ['3.14', '.', '03-6216-8041'],
+  ['２０２６－０８－１７', '．', '０３－６２１６－８０４１'],
+  ['2026-08-17', '.', '1 212 555 1234']
+]) {
+  const input = `Phone ${overflowIdentifierLabelChain}record id: 09012345678 ${overflowObservation}${separator}${laterPhone}`;
+  assert.equal(
+    redactContactData(input),
+    `Phone ${overflowIdentifierLabelChain}record id: [contact omitted] ${overflowObservation}${separator}[contact omitted]`,
+    'period boundaries after proven observations must reach the complete later phone'
+  );
+}
+
+for (const [prefix, observation, separator, laterPhone] of [
+  ['ID: 09012345678', '2026-08-17', '.', '1 212 555 1234'],
+  ['Phone: 09012345678', '2026-08-17', ' ', '01 42 68 53 00'],
+  ['Phone: 09012345678', '2026.08.17', '.', '03 62 16 80 41'],
+  ['ＩＤ：０９０１２３４５６７８', '２０２６－０８－１７', '．', '１ ２１２ ５５５ １２３４']
+]) {
+  const input = `${prefix} ${observation}${separator}${laterPhone}`;
+  const redactedPrefix = prefix.startsWith('Phone:')
+    ? 'Phone: [contact omitted]'
+    : prefix;
+  assert.equal(
+    redactContactData(input),
+    `${redactedPrefix} ${observation}${separator}[contact omitted]`,
+    'post-observation intervals must retain the exact validated phone start and end'
+  );
+}
+
+for (const terminalObservation of [
+  '90 people',
+  '3.14',
+  '12:30',
+  '10-20 people',
+  '2027-09-18'
+]) {
+  const input = `Phone ${overflowIdentifierLabelChain}record id: 09012345678 2026-08-17 01 42 68 53 00 ${terminalObservation}`;
+  assert.equal(
+    redactContactData(input),
+    `Phone ${overflowIdentifierLabelChain}record id: [contact omitted] 2026-08-17 [contact omitted] ${terminalObservation}`,
+    'a candidate-specific observation cap must bound the exact later-phone interval'
+  );
+}
+
+const sequentialObservationPhones = `Phone ${overflowIdentifierLabelChain}record id: 09012345678 2026-08-17 01 42 68 53 00 90 people +81 3 6216 5111`;
+assert.equal(
+  redactContactData(sequentialObservationPhones),
+  `Phone ${overflowIdentifierLabelChain}record id: [contact omitted] 2026-08-17 [contact omitted] 90 people [contact omitted]`,
+  'sequential observation/phone transitions must retain each exact interval'
+);
+
+for (const [observations, laterPhone] of [
+  ['2026-08-17 2027-09-18', '03-6216-8041'],
+  ['2026-08-17 12:30', '+81 3 6216 5111'],
+  ['3.14 90 people', '(03) 6216 8041'],
+  ['２０２６－０８－１７ ２０２７－０９－１８', '０３－６２１６－８０４１']
+]) {
+  const input = `Phone ${overflowIdentifierLabelChain}record id: 09012345678 ${observations} ${laterPhone}`;
+  assert.equal(
+    redactContactData(input),
+    `Phone ${overflowIdentifierLabelChain}record id: [contact omitted] ${observations} [contact omitted]`,
+    'each complete consecutive observation must be skipped before validating a later phone'
+  );
+}
+
+for (const [observations, laterPhone] of [
+  ['2026-08-17(3.14)', '03-6216-8041'],
+  ['2026-08-17(12:30)', '+81 3 6216 5111'],
+  ['3.14((2027-09-18))', '(03) 6216 8041'],
+  ['２０２６－０８－１７（３．１４）', '０３－６２１６－８０４１']
+]) {
+  const input = `Phone ${overflowIdentifierLabelChain}record id: 09012345678 ${observations} ${laterPhone}`;
+  assert.equal(
+    redactContactData(input),
+    `Phone ${overflowIdentifierLabelChain}record id: [contact omitted] ${observations} [contact omitted]`,
+    'an accepted opening wrapper must advance complete observation custody before phone validation'
+  );
+}
+
+const attachedParenthesizedPhone = `Phone ${overflowIdentifierLabelChain}record id: 09012345678 2026-08-17(03) 6216 8041`;
+assert.equal(
+  redactContactData(attachedParenthesizedPhone),
+  `Phone ${overflowIdentifierLabelChain}record id: [contact omitted] 2026-08-17[contact omitted]`,
+  'an opening wrapper that begins a genuine phone must retain exact telephone interval custody'
+);
+
+const overflowAmbiguousContinuation = `Phone ${overflowIdentifierLabelChain}record id: 09012345678 2026`;
+assert.equal(
+  redactContactData(overflowAmbiguousContinuation),
+  `Phone ${overflowIdentifierLabelChain}record id: [contact omitted]`,
+  'a bare numeric continuation must remain inside conservative bounded-context redaction'
+);
+
+for (const trailingDotUrlPhoneLabelIdentifier of [
+  'example.test./path/phone GUID: 09012345678',
+  '192.0.2.1./path/mobile record id: +81 3 6216 5111'
+]) {
+  assert.equal(
+    redactContactData(trailingDotUrlPhoneLabelIdentifier),
+    trailingDotUrlPhoneLabelIdentifier,
+    'a phone-label word inside a trailing-dot bare host token must not override an identifier label'
+  );
+}
+
+for (const [trailingDotUrlIdentifierLabelPhone, expected] of [
+  [
+    'example.test./path/id: 09012345678',
+    'example.test./path/id: [contact omitted]'
+  ],
+  [
+    '192.0.2.1./path/reference: +81 3 6216 5111',
+    '192.0.2.1./path/reference: [contact omitted]'
+  ],
+  [
+    'example.test./path Phone GUID: 09012345678',
+    'example.test./path Phone GUID: [contact omitted]'
+  ]
+]) {
+  assert.equal(
+    redactContactData(trailingDotUrlIdentifierLabelPhone),
+    expected,
+    'trailing-dot host provenance must end at whitespace before narrative labels'
+  );
+}
+
+const literalTruncationSentinel = '\u0000phone-label-context-truncated\u0000 GUID: 09012345678';
+assert.equal(
+  redactContactData(literalTruncationSentinel),
+  literalTruncationSentinel,
+  'literal input must not impersonate bounded-context state'
+);
+
+const detachedWrapperCount = 8000;
+const detachedWrapperPrefix = '( '.repeat(detachedWrapperCount);
+const detachedWrapperSuffix = ')'.repeat(detachedWrapperCount);
+const deeplyDetachedIdentifier = `ID: ${detachedWrapperPrefix}09012345678${detachedWrapperSuffix}`;
+assert.equal(
+  redactContactData(deeplyDetachedIdentifier),
+  deeplyDetachedIdentifier,
+  'detached wrapper traversal must remain linear and preserve identifier authority'
+);
+
+const slashIdentifierLabelChain = 'GUID/'.repeat(1000);
+assert.equal(
+  redactContactData(`Phone/${slashIdentifierLabelChain}record id: 09012345678`),
+  `Phone/${slashIdentifierLabelChain}record id: [contact omitted]`,
+  'unspaced identifier-label chains must retain telephone authority without rescanning one token'
+);
+assert.equal(
+  redactContactData(`Archive/${slashIdentifierLabelChain}record id: 09012345678`),
+  `Archive/${slashIdentifierLabelChain}record id: 09012345678`,
+  'unspaced identifier-label chains must not invent telephone authority'
+);
+assert.equal(
+  redactContactData(`https://example.test/${slashIdentifierLabelChain}id: 09012345678`),
+  `https://example.test/${slashIdentifierLabelChain}id: [contact omitted]`,
+  'a long unspaced URL token must not lend identifier-label authority'
+);
+
+for (const [wrappedPhoneLabelThenIdentifier, preservedPrefix, leakedDigits] of [
+  [
+    'Phone: (record id: 03-6216-8041)',
+    'Phone: (record id: ',
+    '0362168041'
+  ],
+  [
+    '電話番号：（参照番号：＋８１ ３ ６２１６ ５１１１）',
+    '電話番号：（参照番号：',
+    '81362165111'
+  ]
+]) {
+  const redacted = redactContactData(wrappedPhoneLabelThenIdentifier);
+  assert.ok(
+    redacted.startsWith(preservedPrefix),
+    'a wrapped identifier label must remain outside the telephone redaction range'
+  );
+  assert.match(
+    redacted,
+    /\[contact omitted\]/u,
+    'wrappers must not suppress affirmative phone-label authority'
+  );
+  assert.ok(
+    !redacted.normalize('NFKC').replace(/\D/gu, '').includes(leakedDigits),
+    'a phone-labelled wrapped value must not survive redaction'
+  );
+}
+
+for (const ambiguousContactIdentifier of [
+  'contact identifier: 09012345678',
+  'contact reference: +81 3 6216 5111',
+  'contact identifier reference: 09012345678',
+  'contact GUID record id: +81 3 6216 5111'
+]) {
+  assert.equal(
+    redactContactData(ambiguousContactIdentifier),
+    ambiguousContactIdentifier,
+    'bare unpunctuated contact must remain ambiguous across an identifier-label chain'
+  );
+}
+
+const longIdentifierWrapperCount = 126;
+for (const longWrappedIdentifier of [
+  `ID: ${'('.repeat(longIdentifierWrapperCount)}09012345678${')'.repeat(longIdentifierWrapperCount)}`,
+  `ＩＤ：${'（'.repeat(longIdentifierWrapperCount)}＋８１ ３ ６２１６ ５１１１${'）'.repeat(longIdentifierWrapperCount)}`
+]) {
+  assert.equal(
+    redactContactData(longWrappedIdentifier),
+    longWrappedIdentifier,
+    'accepted wrapper depth must not discard explicit identifier-label provenance'
+  );
+}
+
+const longUrlWrapperPrefix = `https://example.test/${'a'.repeat(140)}/id: `;
+const longUrlWrappedPhone = `${longUrlWrapperPrefix}${'('.repeat(longIdentifierWrapperCount)}09012345678${')'.repeat(longIdentifierWrapperCount)}`;
+const longUrlWrappedRedaction = redactContactData(longUrlWrappedPhone);
+assert.ok(
+  longUrlWrappedRedaction.startsWith(longUrlWrapperPrefix),
+  'long wrappers must not erase the retained URL token'
+);
+assert.match(
+  longUrlWrappedRedaction,
+  /\[contact omitted\]/u,
+  'a URL-embedded identifier label must not protect a later long-wrapped phone'
+);
+assert.doesNotMatch(
+  longUrlWrappedRedaction.normalize('NFKC'),
+  /09012345678/u,
+  'the long-wrapped phone after a URL token must not survive redaction'
+);
+
 for (const compactNumericIdentifier of [
   '1234567890',
   '00012345678',
