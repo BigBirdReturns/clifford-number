@@ -1,0 +1,172 @@
+name: Temporary PR 2231 split-observation seconds diagnostic v64
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temporary-pr2231-split-observation-seconds-diagnostic-v64.yml'
+permissions:
+  contents: read
+  pull-requests: read
+concurrency:
+  group: pr2231-split-observation-seconds-diagnostic-v64
+  cancel-in-progress: false
+jobs:
+  diagnose:
+    if: github.repository == 'BigBirdReturns/clifford-number'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CBRANCH: agent/pr2231-split-observation-seconds-diagnostic-v64
+      CPARENT: a1158b01e7f2ba5c12e0a0085d3897ef00a8f79b
+      PBRANCH: agent/current-main-identifier-context-product-v1
+      PHEAD: 08594a6eb033a137d1500ff5ff970658a7cac020
+      PTREE: d53c3b2397b262972ff594fdbce478f3699179bf
+      V63BRANCH: agent/pr2231-split-observation-controller-v63
+      V63HEAD: 80ad8865bd98a8b815a702385bac86c8564ef9a6
+      V63SCRIPT: .github/tmp/pr2231-split-observation-v63-repair.py
+      V63SCRIPT_BLOB: 092a9f56ad924dd1a4e8ada6c90d5df34bebce5d
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Expose exact second-colon custody state
+        shell: bash
+        run: |
+          set -euo pipefail
+          H='${{ github.event.pull_request.head.sha }}'
+          W=/tmp/pr2231-v64-product
+          R=/tmp/pr2231-v64-seconds-diagnostic.txt
+          : >"$R"
+          require_eq() {
+            local label="$1" actual="$2" expected="$3"
+            printf '%s actual=%s expected=%s\n' "$label" "$actual" "$expected" | tee -a "$R"
+            [ "$actual" = "$expected" ]
+          }
+
+          require_eq controller-parent "$(git rev-parse HEAD^)" "$CPARENT"
+          require_eq controller-branch '${{ github.head_ref }}' "$CBRANCH"
+          require_eq controller-paths "$(git diff --name-only "$CPARENT..HEAD")" \
+            '.github/workflows/temporary-pr2231-split-observation-seconds-diagnostic-v64.yml'
+
+          git fetch --no-tags origin \
+            "+refs/heads/main:refs/remotes/origin/main" \
+            "+refs/heads/$PBRANCH:refs/remotes/origin/$PBRANCH" \
+            "+refs/heads/$V63BRANCH:refs/remotes/origin/$V63BRANCH" \
+            "+refs/heads/$CBRANCH:refs/remotes/origin/$CBRANCH"
+          require_eq controller-head "$(git rev-parse refs/remotes/origin/$CBRANCH)" "$H"
+          require_eq main-head "$(git rev-parse refs/remotes/origin/main)" "$CPARENT"
+          require_eq product-head "$(git rev-parse refs/remotes/origin/$PBRANCH)" "$PHEAD"
+          require_eq product-tree "$(git rev-parse "$PHEAD^{tree}")" "$PTREE"
+          require_eq v63-head "$(git rev-parse refs/remotes/origin/$V63BRANCH)" "$V63HEAD"
+          require_eq v63-script-blob "$(git rev-parse "$V63HEAD:$V63SCRIPT")" "$V63SCRIPT_BLOB"
+
+          rm -rf "$W"
+          git worktree prune
+          git worktree add --detach "$W" "$PHEAD"
+          git show "$V63HEAD:$V63SCRIPT" > /tmp/pr2231-v63-repair.py
+          cd "$W"
+          python3 /tmp/pr2231-v63-repair.py
+          git diff --check
+          require_eq repaired-paths "$(git diff --name-only "$PHEAD" | LC_ALL=C sort)" $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+
+          cat >> tools/lib/industrial-exhaust.mjs <<'EXPORTS'
+
+          export {
+            hasPhoneLabelPrefixNormalized,
+            leadingObservationSourceEndAcrossExternalPrefix,
+            numericObservationMatch,
+            phoneRedactionRanges,
+            redactionPrefixContext,
+            renderPhoneRedactionRanges
+          };
+          EXPORTS
+
+          node --input-type=module <<'NODE' 2>&1 | tee -a "$R"
+          import {
+            hasPhoneLabelPrefixNormalized,
+            leadingObservationSourceEndAcrossExternalPrefix,
+            numericObservationMatch,
+            phoneRedactionRanges,
+            redactContactData,
+            redactionPrefixContext,
+            renderPhoneRedactionRanges
+          } from './tools/lib/industrial-exhaust.mjs';
+
+          const spanPattern = /(?:[+＋](?=\s*[0-9０-９])|[（(](?=\s*[0-9０-９]))?\s*[0-9０-９][0-9０-９()./／\s\-‐‑‒–—−－．（）]{5,}[0-9０-９](?:\s*[)）])*(?=$|[^\p{L}\p{N}]|[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]|(?:(?:ext(?:ension)?\.?|x)\s*[.:#：＃]?\s*[0-9０-９]))/giu;
+          const inputs = [
+            'Phone: 09012345678 12:30:45 555-1212',
+            'Phone: 09012345678 12:30 666-1212 3.14 777-1212',
+            '電話番号：０９０１２３４５６７８ １２：３０：４５ ５５５－１２１２'
+          ];
+
+          for (const input of inputs) {
+            console.log(JSON.stringify({ kind: 'input', input }));
+            const matches = [...input.matchAll(spanPattern)];
+            for (let index = 0; index < matches.length; index += 1) {
+              const match = matches[index];
+              const candidate = match[0];
+              const offset = match.index;
+              const firstContactCharacter = candidate.search(/[+＋(（0-9０-９]/u);
+              const contactOffset = offset + Math.max(0, firstContactCharacter);
+              const prefixContext = redactionPrefixContext(input, contactOffset);
+              const prefix = prefixContext.text;
+              const suffix = input.slice(offset + candidate.length, offset + candidate.length + 64);
+              const adjacentCharacter = Array.from(input.slice(0, contactOffset)).at(-1) ?? '';
+              const allowInitialGroup = prefixContext.indeterminate
+                || !/[\p{L}\p{N}]/u.test(adjacentCharacter)
+                || hasPhoneLabelPrefixNormalized(prefix.normalize('NFKC'));
+              const leadingOffset = Math.max(0, candidate.search(/\S/u));
+              const leadingSource = candidate.slice(leadingOffset);
+              const localObservation = numericObservationMatch(leadingSource, suffix);
+              const crossObservationEnd = leadingObservationSourceEndAcrossExternalPrefix(
+                prefix.normalize('NFKC'),
+                leadingSource,
+                suffix
+              );
+              const ranges = phoneRedactionRanges(
+                candidate,
+                prefix,
+                suffix,
+                allowInitialGroup,
+                prefixContext.indeterminate,
+                false
+              );
+              console.log(JSON.stringify({
+                kind: 'candidate',
+                index,
+                offset,
+                candidate,
+                prefix,
+                prefixIndeterminate: prefixContext.indeterminate,
+                explicitPhoneLabelAtEntry: hasPhoneLabelPrefixNormalized(prefix.normalize('NFKC')),
+                suffix,
+                adjacentCharacter,
+                allowInitialGroup,
+                leadingOffset,
+                leadingSource,
+                localObservation: localObservation?.[0] ?? null,
+                crossObservationEnd,
+                crossObservationSource: leadingSource.slice(0, crossObservationEnd),
+                ranges,
+                rendered: renderPhoneRedactionRanges(candidate, ranges)
+              }));
+            }
+            console.log(JSON.stringify({
+              kind: 'final',
+              input,
+              output: redactContactData(input)
+            }));
+          }
+          NODE
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-split-observation-seconds-diagnostic-v64
+          path: /tmp/pr2231-v64-seconds-diagnostic.txt
+          if-no-files-found: error
+          retention-days: 90
