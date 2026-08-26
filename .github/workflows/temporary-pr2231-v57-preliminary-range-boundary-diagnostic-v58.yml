@@ -1,0 +1,169 @@
+name: Temporary PR 2231 v57 preliminary-range boundary diagnostic v58
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temporary-pr2231-v57-preliminary-range-boundary-diagnostic-v58.yml'
+permissions:
+  contents: read
+  pull-requests: read
+concurrency:
+  group: pr2231-v57-preliminary-range-boundary-diagnostic-v58
+  cancel-in-progress: false
+jobs:
+  diagnose:
+    if: github.repository == 'BigBirdReturns/clifford-number'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CBRANCH: agent/pr2231-v57-preliminary-range-boundary-diagnostic-v58
+      CPARENT: a1158b01e7f2ba5c12e0a0085d3897ef00a8f79b
+      PBRANCH: agent/current-main-identifier-context-product-v1
+      PHEAD: 64cf378d5bb7b39b9d496f554a887076cf3d637b
+      PTREE: 980429f782d882387335e1067c568fc5a7ac240c
+      PLIB: 476ed485878026ae89682eb692b7802ad7fa37ec
+      PTEST: 964c44006a528234dc0962ba7524c10281c9d81d
+      WORKFLOW_PATH: .github/workflows/temporary-pr2231-v57-preliminary-range-boundary-diagnostic-v58.yml
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Reproduce preliminary-range boundary semantics
+        shell: bash
+        run: |
+          set -euo pipefail
+          H='${{ github.event.pull_request.head.sha }}'
+          Q=/tmp/pr2231-v58-product
+          R=/tmp/pr2231-v58-diagnostic.txt
+          : >"$R"
+          stage() { printf '\n=== STAGE %s ===\n' "$1" | tee -a "$R"; }
+          fail() { printf 'FAIL[%s] %s\n' "$1" "$2" | tee -a "$R" >&2; exit 1; }
+          require_eq() {
+            local label="$1" actual="$2" expected="$3"
+            printf '%s actual=%s expected=%s\n' "$label" "$actual" "$expected" | tee -a "$R"
+            [ "$actual" = "$expected" ] || fail "$label" 'value mismatch'
+          }
+
+          stage exact-live-leases
+          git fetch --no-tags origin \
+            "+refs/heads/main:refs/remotes/origin/main" \
+            "+refs/heads/$PBRANCH:refs/remotes/origin/$PBRANCH" \
+            "+refs/heads/$CBRANCH:refs/remotes/origin/$CBRANCH"
+          require_eq controller-parent "$(git rev-parse HEAD^)" "$CPARENT"
+          require_eq controller-head "$(git rev-parse HEAD)" "$H"
+          require_eq controller-remote "$(git rev-parse refs/remotes/origin/$CBRANCH)" "$H"
+          require_eq controller-branch '${{ github.head_ref }}' "$CBRANCH"
+          require_eq controller-paths "$(git diff --name-only "$CPARENT..HEAD")" "$WORKFLOW_PATH"
+          require_eq live-main "$(git rev-parse refs/remotes/origin/main)" "$CPARENT"
+          require_eq product-head "$(git rev-parse refs/remotes/origin/$PBRANCH)" "$PHEAD"
+          require_eq product-tree "$(git rev-parse "$PHEAD^{tree}")" "$PTREE"
+          require_eq product-lib "$(git rev-parse "$PHEAD:tools/lib/industrial-exhaust.mjs")" "$PLIB"
+          require_eq product-test "$(git rev-parse "$PHEAD:test/industrial-exhaust.test.js")" "$PTEST"
+
+          stage exact-head-diagnostic
+          rm -rf "$Q"
+          git worktree prune
+          git worktree add --detach "$Q" "$PHEAD"
+          cd "$Q"
+          node --input-type=module <<'NODE' 2>&1 | tee -a "$R"
+          import assert from 'node:assert/strict';
+          import { performance } from 'node:perf_hooks';
+          import { redactContactData as redact } from './tools/lib/industrial-exhaust.mjs';
+
+          const chain = 'GUID '.repeat(4000);
+          const cases = [
+            {
+              name: 'split-four-four',
+              input: `Archive ${chain}(record id: 1234) 5678`,
+              expected: `Archive ${chain}(record id: 1234) 5678`
+            },
+            {
+              name: 'split-six-two',
+              input: `Archive ${chain}(record id: 123456) 78`,
+              expected: `Archive ${chain}(record id: 123456) 78`
+            },
+            {
+              name: 'first-seven-tail-one',
+              input: `Archive ${chain}(record id: 1234567) 8`,
+              expected: `Archive ${chain}(record id: [contact omitted]) 8`
+            },
+            {
+              name: 'fullwidth-split-four-four',
+              input: `Archive ${chain}（record id: １２３４） ５６７８`,
+              expected: `Archive ${chain}（record id: １２３４） ５６７８`
+            },
+            {
+              name: 'intrinsic-after-short-prefix',
+              input: `Archive ${chain}(record id: 1234) 050-12345678`,
+              expected: `Archive ${chain}(record id: 1234) [contact omitted]`
+            },
+            {
+              name: 'observation-after-short-prefix',
+              input: `Archive ${chain}(record id: 1234) 2027-09-18`,
+              expected: `Archive ${chain}(record id: 1234) 2027-09-18`
+            },
+            {
+              name: 'two-intrinsic-segments',
+              input: `Archive ${chain}(record id: 050-12345678) 03-6216-8041`,
+              expected: `Archive ${chain}(record id: [contact omitted]) [contact omitted]`
+            },
+            {
+              name: 'reported-v57-control',
+              input: `Archive ${chain}(record id: 09012345678 2026-08-17-)03-6216-8041) 12345678`,
+              expected: `Archive ${chain}(record id: [contact omitted] 2026-08-17-)[contact omitted] 12345678`
+            },
+            {
+              name: 'crossed-domestic-closer-control',
+              input: 'Context (Phone: (03) ) 6216 5111',
+              expected: 'Context (Phone: [contact omitted])'
+            },
+            {
+              name: 'determinate-four-four-control',
+              input: 'Archive (record id: 1234) 5678',
+              expected: 'Archive (record id: 1234) 5678'
+            }
+          ];
+
+          const failures = [];
+          for (const testCase of cases) {
+            const actual = redact(testCase.input);
+            const record = {
+              name: testCase.name,
+              actualTail: actual.slice(-220),
+              expectedTail: testCase.expected.slice(-220),
+              redactions: (actual.match(/\[contact omitted\]/gu) ?? []).length,
+              equal: actual === testCase.expected
+            };
+            console.log(JSON.stringify(record));
+            if (actual !== testCase.expected) failures.push(record);
+          }
+
+          for (const count of [250, 500, 1000, 2000]) {
+            const input = `Phone: (1234567${')1'.repeat(count)}`;
+            const started = performance.now();
+            const actual = redact(input);
+            const elapsedMs = performance.now() - started;
+            console.log(JSON.stringify({
+              benchmark: 'removed-closer-scan',
+              count,
+              inputLength: input.length,
+              outputLength: actual.length,
+              elapsedMs: Number(elapsedMs.toFixed(3)),
+              redactions: (actual.match(/\[contact omitted\]/gu) ?? []).length
+            }));
+          }
+
+          assert.deepEqual(failures, [], 'preliminary whole-candidate ranges must not suppress real narrative-closer boundaries');
+          NODE
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-v57-preliminary-range-boundary-diagnostic-v58
+          path: /tmp/pr2231-v58-diagnostic.txt
+          if-no-files-found: error
+          retention-days: 30
