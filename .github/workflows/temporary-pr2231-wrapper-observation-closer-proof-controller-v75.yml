@@ -1,0 +1,320 @@
+name: Temporary PR 2231 wrapper observation and closer proof controller v75
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/tmp/pr2231-wrapper-observation-closer-proof-v75-repair.py'
+      - '.github/workflows/temporary-pr2231-wrapper-observation-closer-proof-controller-v75.yml'
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: pr2231-wrapper-observation-closer-proof-v75
+  cancel-in-progress: false
+
+jobs:
+  qualify-and-publish:
+    if: github.repository == 'BigBirdReturns/clifford-number'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      CBRANCH: agent/pr2231-wrapper-observation-closer-proof-controller-v75
+      REPAIR_PATH: .github/tmp/pr2231-wrapper-observation-closer-proof-v75-repair.py
+      REPAIR_BLOB: d7063a328e45bec6c86e9bf4eabf8bf15e88a6e8
+      CPARENT: a1158b01e7f2ba5c12e0a0085d3897ef00a8f79b
+      CTREE: f7fc52609c1c6b42921c7a4db6e20c4e54c1f99e
+      BLIB: 5f68254d3e44de693e83503aed879160f9b7b997
+      BTEST: 1659a7cc54666a2ac5a1d6b88eb8c6591d98008e
+      PBRANCH: agent/current-main-identifier-context-product-v1
+      PHEAD: 196f74bdfb5875fdfdf3c08a1d99952345200123
+      PTREE: f461abbfb690c73b7dca7cd3066d95098d5197c8
+      PLIB: 68d17ceaaa821f6dc71b495b8f1d542112ef8ca2
+      PTEST: 9d4dc2e958863e16733c9d6ec07ea4023c435ae3
+      V74BRANCH: agent/pr2231-wrapped-observation-custody-controller-v74
+      V74HEAD: ba4bd4ceedce88c3bcf2208f10d4472892c1c6ee
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Qualify and publish wrapper observation and closer proof repair
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          H='${{ github.event.pull_request.head.sha }}'
+          S=/tmp/pr2231-v75-source
+          Q=/tmp/pr2231-v75-main
+          A=/tmp/pr2231-v75-artifact
+          R="$A/receipt.txt"
+          mkdir -p "$A"
+          : >"$R"
+
+          stage() { printf '\n=== STAGE %s ===\n' "$1" | tee -a "$R"; }
+          fail() { printf 'FAIL[%s] %s\n' "$1" "$2" | tee -a "$R" >&2; exit 1; }
+          require_eq() {
+            printf '%s actual=%s expected=%s\n' "$1" "$2" "$3" | tee -a "$R"
+            [ "$2" = "$3" ] || fail "$1" 'value mismatch'
+          }
+          fetch_leases() {
+            git fetch --no-tags origin \
+              "+refs/heads/main:refs/remotes/origin/main" \
+              "+refs/heads/$PBRANCH:refs/remotes/origin/$PBRANCH" \
+              "+refs/heads/$V74BRANCH:refs/remotes/origin/$V74BRANCH" \
+              "+refs/heads/$CBRANCH:refs/remotes/origin/$CBRANCH"
+          }
+          retain_workspace() {
+            if [ -d "$S" ]; then
+              git -C "$S" diff --binary -- \
+                tools/lib/industrial-exhaust.mjs \
+                test/industrial-exhaust.test.js \
+                > "$A/candidate.patch" 2>/dev/null || true
+              cp "$S/tools/lib/industrial-exhaust.mjs" \
+                "$A/industrial-exhaust.mjs" 2>/dev/null || true
+              cp "$S/test/industrial-exhaust.test.js" \
+                "$A/industrial-exhaust.test.js" 2>/dev/null || true
+            fi
+          }
+          trap retain_workspace EXIT
+
+          stage controller-envelope
+          require_eq controller-parent "$(git rev-parse HEAD^)" "$CPARENT"
+          require_eq controller-count "$(git rev-list --count "$CPARENT..HEAD")" '1'
+          require_eq controller-paths \
+            "$(git diff --name-only "$CPARENT..HEAD" | LC_ALL=C sort)" \
+            $'.github/tmp/pr2231-wrapper-observation-closer-proof-v75-repair.py\n.github/workflows/temporary-pr2231-wrapper-observation-closer-proof-controller-v75.yml'
+          require_eq repair-blob \
+            "$(git rev-parse "HEAD:$REPAIR_PATH")" "$REPAIR_BLOB"
+          python3 -m py_compile "$REPAIR_PATH"
+
+          stage initial-live-leases
+          fetch_leases
+          require_eq controller-head "$(git rev-parse refs/remotes/origin/$CBRANCH)" "$H"
+          require_eq main-head "$(git rev-parse refs/remotes/origin/main)" "$CPARENT"
+          require_eq main-tree "$(git rev-parse "$CPARENT^{tree}")" "$CTREE"
+          require_eq main-lib "$(git rev-parse "$CPARENT:tools/lib/industrial-exhaust.mjs")" "$BLIB"
+          require_eq main-test "$(git rev-parse "$CPARENT:test/industrial-exhaust.test.js")" "$BTEST"
+          require_eq product-head "$(git rev-parse refs/remotes/origin/$PBRANCH)" "$PHEAD"
+          require_eq product-parent "$(git rev-parse "$PHEAD^")" "$CPARENT"
+          require_eq product-tree "$(git rev-parse "$PHEAD^{tree}")" "$PTREE"
+          require_eq product-lib "$(git rev-parse "$PHEAD:tools/lib/industrial-exhaust.mjs")" "$PLIB"
+          require_eq product-test "$(git rev-parse "$PHEAD:test/industrial-exhaust.test.js")" "$PTEST"
+          require_eq product-count "$(git rev-list --count "$CPARENT..$PHEAD")" '1'
+          require_eq product-paths \
+            "$(git diff --name-only "$CPARENT..$PHEAD" | LC_ALL=C sort)" \
+            $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          require_eq v74-head "$(git rev-parse refs/remotes/origin/$V74BRANCH)" "$V74HEAD"
+
+          stage exact-product-regression-witnesses
+          rm -rf "$S" "$Q"
+          git worktree prune
+          git worktree add --detach "$S" "$PHEAD"
+          cd "$S"
+          node --input-type=module <<'NODE' 2>&1 | tee -a "$R"
+          import assert from 'node:assert/strict';
+          import { redactContactData as redact } from './tools/lib/industrial-exhaust.mjs';
+
+          const wrappedObservationInput =
+            'Phone: ((03-62165111 people)) 12:30:45 555-1212';
+          const wrappedObservationActual = redact(wrappedObservationInput);
+          console.log(JSON.stringify({
+            kind: 'exact-p2-wrapped-observation',
+            input: wrappedObservationInput,
+            actual: wrappedObservationActual
+          }));
+          assert.equal(
+            wrappedObservationActual,
+            'Phone: ([contact omitted] people)) 12:30:45 555-1212'
+          );
+          assert.notEqual(wrappedObservationActual, wrappedObservationInput);
+
+          const closerInput = 'Phone: (555-1212)12345678';
+          const closerActual = redact(closerInput);
+          console.log(JSON.stringify({
+            kind: 'exact-p2-closer-spanning-range',
+            input: closerInput,
+            actual: closerActual
+          }));
+          assert.equal(closerActual, 'Phone: [contact omitted]');
+          assert.notEqual(closerActual, 'Phone: [contact omitted]12345678');
+          NODE
+
+          stage apply-repair-and-targeted-controls
+          python3 "$GITHUB_WORKSPACE/$REPAIR_PATH"
+          require_eq repair-paths \
+            "$(git diff --name-only "$PHEAD" | LC_ALL=C sort)" \
+            $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          git diff --check
+          node --check tools/lib/industrial-exhaust.mjs
+          node --check test/industrial-exhaust.test.js
+
+          node --input-type=module <<'NODE' 2>&1 | tee -a "$R"
+          import assert from 'node:assert/strict';
+          import { redactContactData as redact } from './tools/lib/industrial-exhaust.mjs';
+
+          const repairedCases = [
+            [
+              'nested phone-shaped unit observation',
+              'Phone: ((03-62165111 people)) 12:30:45 555-1212',
+              'Phone: ((03-62165111 people)) 12:30:45 555-1212'
+            ],
+            [
+              'fullwidth nested phone-shaped unit observation',
+              '電話：（（０３－６２１６５１１１ 人）） １２：３０：４５ ５５５－１２１２',
+              '電話：（（０３－６２１６５１１１ 人）） １２：３０：４５ ５５５－１２１２'
+            ],
+            [
+              'label-dependent closer-spanning range with bare tail',
+              'Phone: (555-1212)12345678',
+              'Phone: [contact omitted]12345678'
+            ],
+            [
+              'fullwidth label-dependent closer-spanning range with bare tail',
+              '電話：（５５５－１２１２）１２３４５６７８',
+              '電話：[contact omitted]１２３４５６７８'
+            ]
+          ];
+          for (const [name, input, expected] of repairedCases) {
+            const actual = redact(input);
+            console.log(JSON.stringify({
+              kind: 'repaired-p2', name, input, actual, expected
+            }));
+            assert.equal(actual, expected, name);
+          }
+
+          const retainedControls = [
+            [
+              'weak range-shaped wrapped phone',
+              'Phone: ((03-62165111)) 12:30:45 555-1212',
+              'Phone: ([contact omitted]) 12:30:45 [contact omitted]'
+            ],
+            [
+              'nested compact phone',
+              'Phone: ((09012345678)) 12:30:45 555-1212',
+              'Phone: ([contact omitted]) 12:30:45 [contact omitted]'
+            ],
+            [
+              'nested date custody',
+              'Phone: ((2026-08-17)) 12:30:45 555-1212',
+              'Phone: ((2026-08-17)) 12:30:45 555-1212'
+            ],
+            [
+              'context-free grouped closer crossing',
+              'Phone: (1234) 5678',
+              'Phone: [contact omitted]'
+            ],
+            [
+              'context-free domestic closer crossing',
+              'Phone: (03) 6216 5111',
+              'Phone: [contact omitted]'
+            ],
+            [
+              'two weak local phones under one direct label',
+              'Phone: (555-1212) 555-3434',
+              'Phone: [contact omitted] [contact omitted]'
+            ],
+            [
+              'two intrinsic domestic phones',
+              'Phone: (050-12345678) 03-6216-8041',
+              'Phone: [contact omitted] [contact omitted]'
+            ],
+            [
+              'identifier-period independent phone boundary',
+              'ID: 12345678.03.6216.8041',
+              'ID: 12345678.[contact omitted]'
+            ]
+          ];
+          for (const [name, input, expected] of retainedControls) {
+            const actual = redact(input);
+            console.log(JSON.stringify({
+              kind: 'retained-control', name, input, actual, expected
+            }));
+            assert.equal(actual, expected, name);
+          }
+          NODE
+
+          stage repaired-industrial-exhaust-suites
+          mapfile -t suites < <(
+            find test -maxdepth 1 -type f \
+              -name 'industrial-exhaust*.test.js' -print | LC_ALL=C sort
+          )
+          test "${#suites[@]}" -ge 3
+          printf '%s\n' "${suites[@]}" | tee "$A/suites.txt"
+          for suite in "${suites[@]}"; do
+            printf 'RUNNING %s\n' "$suite" | tee -a "$R"
+            node "$suite" 2>&1 | tee -a "$R"
+          done
+
+          stage exact-main-transplant-and-release
+          cd "$GITHUB_WORKSPACE"
+          git worktree add --detach "$Q" "$CPARENT"
+          cp "$S/tools/lib/industrial-exhaust.mjs" "$Q/tools/lib/industrial-exhaust.mjs"
+          cp "$S/test/industrial-exhaust.test.js" "$Q/test/industrial-exhaust.test.js"
+          cd "$Q"
+          require_eq transplant-paths "$(git diff --name-only | LC_ALL=C sort)" \
+            $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          git diff --check
+          for suite in "${suites[@]}"; do
+            printf 'TRANSPLANT %s\n' "$suite" | tee -a "$R"
+            node "$suite" 2>&1 | tee -a "$R"
+          done
+          npm run release:check 2>&1 | tee -a "$R"
+          git restore --worktree --staged -- build 2>/dev/null || true
+          git clean -fd -- build >/dev/null 2>&1 || true
+          require_eq post-release-paths "$(git diff --name-only | LC_ALL=C sort)" \
+            $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+
+          stage construct-qualified-product
+          git config user.name BigBirdReturns
+          git config user.email bigbirdreturns@proton.me
+          git add tools/lib/industrial-exhaust.mjs test/industrial-exhaust.test.js
+          git commit -m 'fix: separate wrapper observation and closer authority'
+          AHEAD="$(git rev-parse HEAD)"
+          ATREE="$(git rev-parse HEAD^{tree})"
+          ALIB="$(git rev-parse HEAD:tools/lib/industrial-exhaust.mjs)"
+          ATEST="$(git rev-parse HEAD:test/industrial-exhaust.test.js)"
+          require_eq qualified-parent "$(git rev-parse HEAD^)" "$CPARENT"
+          require_eq qualified-count "$(git rev-list --count "$CPARENT..HEAD")" '1'
+          require_eq qualified-paths \
+            "$(git diff --name-only "$CPARENT..HEAD" | LC_ALL=C sort)" \
+            $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          printf 'qualified-head=%s\nqualified-tree=%s\nqualified-lib=%s\nqualified-test=%s\n' \
+            "$AHEAD" "$ATREE" "$ALIB" "$ATEST" | tee -a "$R"
+          git show --format=fuller --stat HEAD > "$A/qualified-commit.txt"
+          git format-patch -1 --stdout > "$A/qualified-product.patch"
+
+          stage final-lease-revalidation-and-publication
+          cd "$GITHUB_WORKSPACE"
+          fetch_leases
+          require_eq final-main "$(git rev-parse refs/remotes/origin/main)" "$CPARENT"
+          require_eq final-product "$(git rev-parse refs/remotes/origin/$PBRANCH)" "$PHEAD"
+          require_eq final-controller "$(git rev-parse refs/remotes/origin/$CBRANCH)" "$H"
+          require_eq final-v74 "$(git rev-parse refs/remotes/origin/$V74BRANCH)" "$V74HEAD"
+          git -C "$Q" push origin "$AHEAD:refs/heads/$PBRANCH" \
+            --force-with-lease="refs/heads/$PBRANCH:$PHEAD"
+          git fetch --no-tags origin \
+            "+refs/heads/$PBRANCH:refs/remotes/origin/$PBRANCH"
+          require_eq published-head "$(git rev-parse refs/remotes/origin/$PBRANCH)" "$AHEAD"
+          require_eq published-tree "$(git rev-parse "$AHEAD^{tree}")" "$ATREE"
+          require_eq published-lib "$(git rev-parse "$AHEAD:tools/lib/industrial-exhaust.mjs")" "$ALIB"
+          require_eq published-test "$(git rev-parse "$AHEAD:test/industrial-exhaust.test.js")" "$ATEST"
+          printf 'QUALIFICATION_SUCCESS\nold=%s\nnew=%s\ntree=%s\nlib=%s\ntest=%s\n' \
+            "$PHEAD" "$AHEAD" "$ATREE" "$ALIB" "$ATEST" | tee -a "$R"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-wrapper-observation-closer-proof-v75
+          path: /tmp/pr2231-v75-artifact
+          if-no-files-found: error
+          retention-days: 90
