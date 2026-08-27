@@ -1,0 +1,227 @@
+name: Temporary PR 2231 terminal review authority controller v77
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/tmp/pr2231-terminal-review-authority-v77-repair.py'
+      - '.github/workflows/temporary-pr2231-terminal-review-authority-controller-v77.yml'
+permissions:
+  contents: write
+  pull-requests: read
+concurrency:
+  group: pr2231-terminal-review-authority-v77
+  cancel-in-progress: false
+jobs:
+  qualify-and-publish:
+    if: github.repository == 'BigBirdReturns/clifford-number'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      CBRANCH: agent/pr2231-terminal-review-authority-controller-v77
+      REPAIR_PATH: .github/tmp/pr2231-terminal-review-authority-v77-repair.py
+      REPAIR_BLOB: 575c5970d95fd35cb894d54c8aaa5ecee9119b6d
+      CPARENT: a1158b01e7f2ba5c12e0a0085d3897ef00a8f79b
+      CTREE: f7fc52609c1c6b42921c7a4db6e20c4e54c1f99e
+      BLIB: 5f68254d3e44de693e83503aed879160f9b7b997
+      BTEST: 1659a7cc54666a2ac5a1d6b88eb8c6591d98008e
+      PBRANCH: agent/current-main-identifier-context-product-v1
+      PHEAD: 1a8a885582ab9786d8d6165b615003155d49535d
+      PTREE: d4c9c80da9c66477aa679f2a3692d333a96fe24a
+      PLIB: e44e4493aeb937f2c2faabe059d25c3a8ce36bb7
+      PTEST: e1c10d355b5220319f786fa923a6b201d5c8b7bd
+      PREDBRANCH: agent/pr2231-live-authority-custody-controller-v1
+      PREDHEAD: bf84b4e5f73d81604b0d249729d2e0fdbf40305a
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Qualify and publish terminal review authority repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          H='${{ github.event.pull_request.head.sha }}'
+          S=/tmp/pr2231-v77-source
+          Q=/tmp/pr2231-v77-main
+          A=/tmp/pr2231-v77-artifact
+          R="$A/receipt.txt"
+          mkdir -p "$A"
+          : >"$R"
+          stage() { printf '\n=== STAGE %s ===\n' "$1" | tee -a "$R"; }
+          fail() { printf 'FAIL[%s] %s\n' "$1" "$2" | tee -a "$R" >&2; exit 1; }
+          eq() {
+            printf '%s actual=%s expected=%s\n' "$1" "$2" "$3" | tee -a "$R"
+            [ "$2" = "$3" ] || fail "$1" mismatch
+          }
+          fetch_leases() {
+            git fetch --no-tags origin \
+              "+refs/heads/main:refs/remotes/origin/main" \
+              "+refs/heads/$PBRANCH:refs/remotes/origin/$PBRANCH" \
+              "+refs/heads/$PREDBRANCH:refs/remotes/origin/$PREDBRANCH" \
+              "+refs/heads/$CBRANCH:refs/remotes/origin/$CBRANCH"
+          }
+          retain() {
+            [ -d "$S" ] || return 0
+            git -C "$S" diff --binary -- tools/lib/industrial-exhaust.mjs \
+              test/industrial-exhaust.test.js >"$A/candidate.patch" || true
+            cp "$S/tools/lib/industrial-exhaust.mjs" "$A/" 2>/dev/null || true
+            cp "$S/test/industrial-exhaust.test.js" "$A/" 2>/dev/null || true
+          }
+          trap retain EXIT
+
+          stage controller-and-live-leases
+          eq parent "$(git rev-parse HEAD^)" "$CPARENT"
+          eq controller-count "$(git rev-list --count "$CPARENT..HEAD")" 1
+          eq controller-paths "$(git diff --name-only "$CPARENT..HEAD" | LC_ALL=C sort)" \
+            $'.github/tmp/pr2231-terminal-review-authority-v77-repair.py\n.github/workflows/temporary-pr2231-terminal-review-authority-controller-v77.yml'
+          eq repair-blob "$(git rev-parse "HEAD:$REPAIR_PATH")" "$REPAIR_BLOB"
+          python3 -m py_compile "$REPAIR_PATH"
+          fetch_leases
+          eq controller "$(git rev-parse refs/remotes/origin/$CBRANCH)" "$H"
+          eq main "$(git rev-parse refs/remotes/origin/main)" "$CPARENT"
+          eq main-tree "$(git rev-parse "$CPARENT^{tree}")" "$CTREE"
+          eq main-lib "$(git rev-parse "$CPARENT:tools/lib/industrial-exhaust.mjs")" "$BLIB"
+          eq main-test "$(git rev-parse "$CPARENT:test/industrial-exhaust.test.js")" "$BTEST"
+          eq product "$(git rev-parse refs/remotes/origin/$PBRANCH)" "$PHEAD"
+          eq product-parent "$(git rev-parse "$PHEAD^")" "$CPARENT"
+          eq product-tree "$(git rev-parse "$PHEAD^{tree}")" "$PTREE"
+          eq product-lib "$(git rev-parse "$PHEAD:tools/lib/industrial-exhaust.mjs")" "$PLIB"
+          eq product-test "$(git rev-parse "$PHEAD:test/industrial-exhaust.test.js")" "$PTEST"
+          eq product-count "$(git rev-list --count "$CPARENT..$PHEAD")" 1
+          eq product-paths "$(git diff --name-only "$CPARENT..$PHEAD" | LC_ALL=C sort)" \
+            $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          eq predecessor-controller "$(git rev-parse refs/remotes/origin/$PREDBRANCH)" "$PREDHEAD"
+
+          stage exact-predecessor-reproduction
+          rm -rf "$S" "$Q"
+          git worktree prune
+          git worktree add --detach "$S" "$PHEAD"
+          cd "$S"
+          node --input-type=module <<'NODE' 2>&1 | tee -a "$R"
+          import assert from 'node:assert/strict';
+          import { redactContactData as redact } from './tools/lib/industrial-exhaust.mjs';
+          assert.equal(
+            redact('050-12345678 03-6216-8041'),
+            '050-12345678 [contact omitted]'
+          );
+          const domestic = redact('03-62165111 09012345678');
+          assert.ok(domestic.includes('03-62165111'));
+          assert.equal((domestic.match(/\[contact omitted\]/gu) ?? []).length, 1);
+          assert.equal(
+            redact('Phone: 2026-08-17 2027-09-18'),
+            'Phone: [contact omitted]-09-18'
+          );
+          for (const input of [
+            'Phone: 2026/08/17 2027/09/18',
+            'Phone: 2026.08.17 2027.09.18'
+          ]) {
+            const actual = redact(input);
+            assert.notEqual(actual, input);
+            assert.match(actual, /\[contact omitted\]/u);
+          }
+          console.log('PREDECESSOR_REPRODUCTION_COMPLETE');
+          NODE
+
+          stage repair-and-cumulative-qualification
+          python3 "$GITHUB_WORKSPACE/$REPAIR_PATH"
+          eq repair-paths "$(git diff --name-only "$PHEAD" | LC_ALL=C sort)" \
+            $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          ALIB="$(git hash-object tools/lib/industrial-exhaust.mjs)"
+          ATEST="$(git hash-object test/industrial-exhaust.test.js)"
+          printf 'repaired-lib=%s\nrepaired-test=%s\n' "$ALIB" "$ATEST" | tee -a "$R"
+          git diff --check
+          node --check tools/lib/industrial-exhaust.mjs
+          node --check test/industrial-exhaust.test.js
+          node --input-type=module <<'NODE' 2>&1 | tee -a "$R"
+          import assert from 'node:assert/strict';
+          import { redactContactData as redact } from './tools/lib/industrial-exhaust.mjs';
+          for (const [input, expected] of [
+            ['050-12345678 03-6216-8041', '[contact omitted] [contact omitted]'],
+            ['03-62165111 09012345678', '[contact omitted] [contact omitted]'],
+            ['Phone: 2026-08-17 2027-09-18', 'Phone: 2026-08-17 2027-09-18'],
+            ['Phone: 2026/08/17 2027/09/18', 'Phone: 2026/08/17 2027/09/18'],
+            ['Phone: 2026.08.17 2027.09.18', 'Phone: 2026.08.17 2027.09.18'],
+            ['Phone: 2026-08-17 2027-09-18 03-6216-8041',
+              'Phone: 2026-08-17 2027-09-18 [contact omitted]'],
+            ['Phone: 555-1212 03-6216-8041',
+              'Phone: [contact omitted] [contact omitted]'],
+            ['Phone: [03-62165111 people] 12:30:45 555-1212',
+              'Phone: [03-62165111 people] 12:30:45 555-1212'],
+            ['Phone: 09012345678 12:30:45 555-1212 13:40:50 666-1212',
+              'Phone: [contact omitted] 12:30:45 [contact omitted] 13:40:50 666-1212']
+          ]) assert.equal(redact(input), expected, input);
+          console.log('REPAIRED_SMOKE_COMPLETE');
+          NODE
+          mapfile -t suites < <(
+            find test -maxdepth 1 -type f -name 'industrial-exhaust*.test.js' \
+              -print | LC_ALL=C sort
+          )
+          test "${#suites[@]}" -ge 3
+          printf '%s\n' "${suites[@]}" | tee "$A/suites.txt"
+          for suite in "${suites[@]}"; do
+            node "$suite" 2>&1 | tee -a "$R"
+          done
+
+          stage exact-main-transplant-and-release
+          cd "$GITHUB_WORKSPACE"
+          git worktree add --detach "$Q" "$CPARENT"
+          cp "$S/tools/lib/industrial-exhaust.mjs" "$Q/tools/lib/industrial-exhaust.mjs"
+          cp "$S/test/industrial-exhaust.test.js" "$Q/test/industrial-exhaust.test.js"
+          cd "$Q"
+          eq transplant-paths "$(git diff --name-only | LC_ALL=C sort)" \
+            $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          eq transplant-lib "$(git hash-object tools/lib/industrial-exhaust.mjs)" "$ALIB"
+          eq transplant-test "$(git hash-object test/industrial-exhaust.test.js)" "$ATEST"
+          git diff --check
+          for suite in "${suites[@]}"; do
+            node "$suite" 2>&1 | tee -a "$R"
+          done
+          npm run release:check 2>&1 | tee -a "$R"
+          git restore --worktree --staged -- build 2>/dev/null || true
+          git clean -fd -- build >/dev/null 2>&1 || true
+          eq post-release-paths "$(git diff --name-only | LC_ALL=C sort)" \
+            $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+
+          stage construct-and-publish
+          git config user.name BigBirdReturns
+          git config user.email bigbirdreturns@proton.me
+          git add tools/lib/industrial-exhaust.mjs test/industrial-exhaust.test.js
+          git commit -m 'fix: preserve intrinsic phones and strong observations'
+          AHEAD="$(git rev-parse HEAD)"
+          ATREE="$(git rev-parse HEAD^{tree})"
+          eq qualified-parent "$(git rev-parse HEAD^)" "$CPARENT"
+          eq qualified-count "$(git rev-list --count "$CPARENT..HEAD")" 1
+          eq qualified-paths "$(git diff --name-only "$CPARENT..HEAD" | LC_ALL=C sort)" \
+            $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          eq qualified-lib "$(git rev-parse HEAD:tools/lib/industrial-exhaust.mjs)" "$ALIB"
+          eq qualified-test "$(git rev-parse HEAD:test/industrial-exhaust.test.js)" "$ATEST"
+          git show --format=fuller --stat HEAD >"$A/qualified-commit.txt"
+          git format-patch -1 --stdout >"$A/qualified-product.patch"
+          cd "$GITHUB_WORKSPACE"
+          fetch_leases
+          eq final-main "$(git rev-parse refs/remotes/origin/main)" "$CPARENT"
+          eq final-product "$(git rev-parse refs/remotes/origin/$PBRANCH)" "$PHEAD"
+          eq final-controller "$(git rev-parse refs/remotes/origin/$CBRANCH)" "$H"
+          eq final-predecessor "$(git rev-parse refs/remotes/origin/$PREDBRANCH)" "$PREDHEAD"
+          git -C "$Q" push origin "$AHEAD:refs/heads/$PBRANCH" \
+            --force-with-lease="refs/heads/$PBRANCH:$PHEAD"
+          git fetch --no-tags origin \
+            "+refs/heads/$PBRANCH:refs/remotes/origin/$PBRANCH"
+          eq published "$(git rev-parse refs/remotes/origin/$PBRANCH)" "$AHEAD"
+          eq published-parent "$(git rev-parse "$AHEAD^")" "$CPARENT"
+          eq published-tree "$(git rev-parse "$AHEAD^{tree}")" "$ATREE"
+          eq published-lib "$(git rev-parse "$AHEAD:tools/lib/industrial-exhaust.mjs")" "$ALIB"
+          eq published-test "$(git rev-parse "$AHEAD:test/industrial-exhaust.test.js")" "$ATEST"
+          printf 'QUALIFICATION_SUCCESS\nold=%s\nnew=%s\ntree=%s\nlib=%s\ntest=%s\n' \
+            "$PHEAD" "$AHEAD" "$ATREE" "$ALIB" "$ATEST" | tee -a "$R"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-terminal-review-authority-v77
+          path: /tmp/pr2231-v77-artifact
+          if-no-files-found: error
+          retention-days: 90
