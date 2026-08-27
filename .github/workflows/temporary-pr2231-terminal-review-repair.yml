@@ -1,0 +1,289 @@
+name: Temporary PR 2231 terminal review repair
+
+on:
+  push:
+    branches:
+      - agent/pr2231-terminal-review-repair
+
+permissions:
+  contents: write
+
+jobs:
+  qualify-and-publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      CBRANCH: agent/pr2231-terminal-review-repair
+      REPAIR_PATH: .github/tmp/pr2231-terminal-review-repair.py
+      PBRANCH: agent/current-main-identifier-context-product-v1
+      PHEAD: 8aae3b90e7506856f41e96e14c6e4727872779b8
+      PARENT: a1158b01e7f2ba5c12e0a0085d3897ef00a8f79b
+      PTREE: 51280c27645796b084617c074cb3345241342db9
+      PLIB: 994ad06d13e8ea0df28b988d7ec21ddfcd1d640b
+      PTEST: 2629ce7d8942f75687772426c11c70bfe8fa8973
+      BLIB: 5f68254d3e44de693e83503aed879160f9b7b997
+      BTEST: 1659a7cc54666a2ac5a1d6b88eb8c6591d98008e
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Qualify and publish canonical review repair
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          H='${{ github.sha }}'
+          S=/tmp/pr2231-terminal-source
+          Q=/tmp/pr2231-terminal-main
+          R=/tmp/pr2231-terminal-review-repair-receipt.txt
+          : >"$R"
+
+          stage() {
+            printf '\n=== STAGE %s ===\n' "$1" | tee -a "$R"
+          }
+
+          fail() {
+            printf 'FAIL[%s] %s\n' "$1" "$2" | tee -a "$R" >&2
+            exit 1
+          }
+
+          require_eq() {
+            local label="$1" actual="$2" expected="$3"
+            printf '%s actual=%s expected=%s\n' "$label" "$actual" "$expected" | tee -a "$R"
+            [ "$actual" = "$expected" ] || fail "$label" 'value mismatch'
+          }
+
+          fetch_leases() {
+            git fetch --no-tags origin \
+              "+refs/heads/main:refs/remotes/origin/main" \
+              "+refs/heads/$PBRANCH:refs/remotes/origin/$PBRANCH" \
+              "+refs/heads/$CBRANCH:refs/remotes/origin/$CBRANCH"
+          }
+
+          stage controller-envelope
+          require_eq controller-parent "$(git rev-parse HEAD^)" "$PARENT"
+          require_eq controller-count "$(git rev-list --count "$PARENT..HEAD")" '1'
+          require_eq controller-paths "$(git diff --name-only "$PARENT..HEAD" | LC_ALL=C sort)" $'.github/tmp/pr2231-terminal-review-repair.py\n.github/workflows/temporary-pr2231-terminal-review-repair.yml'
+          python3 -m py_compile "$REPAIR_PATH"
+
+          stage initial-live-leases
+          fetch_leases
+          require_eq controller-remote "$(git rev-parse refs/remotes/origin/$CBRANCH)" "$H"
+          require_eq product-head "$(git rev-parse refs/remotes/origin/$PBRANCH)" "$PHEAD"
+          require_eq product-parent "$(git rev-parse "$PHEAD^")" "$PARENT"
+          require_eq product-tree "$(git rev-parse "$PHEAD^{tree}")" "$PTREE"
+          require_eq product-count "$(git rev-list --count "$PARENT..$PHEAD")" '1'
+          require_eq product-paths "$(git diff --name-only "$PARENT..$PHEAD" | LC_ALL=C sort)" $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          require_eq product-lib "$(git rev-parse "$PHEAD:tools/lib/industrial-exhaust.mjs")" "$PLIB"
+          require_eq product-test "$(git rev-parse "$PHEAD:test/industrial-exhaust.test.js")" "$PTEST"
+
+          MAIN="$(git rev-parse refs/remotes/origin/main)"
+          require_eq main "$MAIN" "$PARENT"
+          require_eq main-lib "$(git rev-parse "$MAIN:tools/lib/industrial-exhaust.mjs")" "$BLIB"
+          require_eq main-test "$(git rev-parse "$MAIN:test/industrial-exhaust.test.js")" "$BTEST"
+
+          stage exact-head-defect-reproduction
+          rm -rf "$S" "$Q"
+          git worktree prune
+          git worktree add --detach "$S" "$PHEAD"
+          cd "$S"
+
+          node --input-type=module <<'NODE' 2>&1 | tee -a "$R"
+          import assert from 'node:assert/strict';
+          import { redactContactData as redact } from './tools/lib/industrial-exhaust.mjs';
+
+          const sentenceInput = 'Phone: 09012345678. 2026-08-17 12:30:45 555-1212';
+          const sentenceRepaired = 'Phone: [contact omitted]. 2026-08-17 12:30:45 555-1212';
+          const sentenceActual = redact(sentenceInput);
+          console.log(JSON.stringify({ name: 'sentence-boundary', sentenceActual }));
+          assert.notEqual(sentenceActual, sentenceRepaired);
+
+          const renewalInput = 'Phone: 09012345678 12:30:45 555-1212 13:40:50 666-1212';
+          const renewalRepaired = 'Phone: [contact omitted] 12:30:45 [contact omitted] 13:40:50 666-1212';
+          const renewalActual = redact(renewalInput);
+          console.log(JSON.stringify({ name: 'lease-renewal', renewalActual }));
+          assert.notEqual(renewalActual, renewalRepaired);
+
+          const nestedObservationInput = 'Phone: ((2026-08-17)) 12:30:45 555-1212';
+          const nestedObservationActual = redact(nestedObservationInput);
+          console.log(JSON.stringify({ name: 'nested-observation', nestedObservationActual }));
+          assert.notEqual(nestedObservationActual, nestedObservationInput);
+
+          assert.equal(
+            redact('Phone: ((09012345678)) 12:30:45 555-1212'),
+            'Phone: ([contact omitted]) 12:30:45 [contact omitted]',
+            'the current nested-phone repair must already be present'
+          );
+
+          const repeated = '1.1 '.repeat(1200);
+          const performanceInput = `Phone: 09012345678 ${repeated}12:30 555-1212`;
+          const started = process.hrtime.bigint();
+          const performanceActual = redact(performanceInput);
+          const elapsedMs = Number(process.hrtime.bigint() - started) / 1e6;
+          console.log(JSON.stringify({
+            name: 'repeated-observation-baseline',
+            elapsedMs,
+            outputLength: performanceActual.length
+          }));
+          NODE
+
+          stage exact-two-file-repair
+          python3 "$GITHUB_WORKSPACE/$REPAIR_PATH"
+          git diff --check
+          require_eq repair-paths "$(git diff --name-only "$PHEAD" | LC_ALL=C sort)" $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+
+          stage repaired-transition-and-focused-suites
+          node --input-type=module <<'NODE' 2>&1 | tee -a "$R"
+          import assert from 'node:assert/strict';
+          import { redactContactData as redact } from './tools/lib/industrial-exhaust.mjs';
+
+          const cases = [
+            [
+              'sentence-boundary',
+              'Phone: 09012345678. 2026-08-17 12:30:45 555-1212',
+              'Phone: [contact omitted]. 2026-08-17 12:30:45 555-1212'
+            ],
+            [
+              'one-use-lease',
+              'Phone: 09012345678 12:30:45 555-1212 13:40:50 666-1212',
+              'Phone: [contact omitted] 12:30:45 [contact omitted] 13:40:50 666-1212'
+            ],
+            [
+              'nested-phone',
+              'Phone: ((09012345678)) 12:30:45 555-1212',
+              'Phone: ([contact omitted]) 12:30:45 [contact omitted]'
+            ],
+            [
+              'nested-date',
+              'Phone: ((2026-08-17)) 12:30:45 555-1212',
+              'Phone: ((2026-08-17)) 12:30:45 555-1212'
+            ],
+            [
+              'nested-fullwidth-date',
+              '電話：（（２０２６－０８－１７）） １２：３０：４５ ５５５－１２１２',
+              '電話：（（２０２６－０８－１７）） １２：３０：４５ ５５５－１２１２'
+            ],
+            [
+              'nested-decimal',
+              'Phone: ((1234.5678)) 12:30:45 555-1212',
+              'Phone: ((1234.5678)) 12:30:45 555-1212'
+            ],
+            [
+              'nested-unit-count',
+              'Phone: ((12345678 people)) 12:30:45 555-1212',
+              'Phone: ((12345678 people)) 12:30:45 555-1212'
+            ],
+            [
+              'intrinsic-after-nested-observation',
+              'Phone: ((2026-08-17)) 03-6216-8041',
+              'Phone: ((2026-08-17)) [contact omitted]'
+            ],
+            [
+              'weak-range-after-nested-observation',
+              'Phone: ((2026-08-17)) 555-1212',
+              'Phone: ((2026-08-17)) 555-1212'
+            ]
+          ];
+
+          for (const [name, input, expected] of cases) {
+            const actual = redact(input);
+            console.log(JSON.stringify({ name, input, actual, expected }));
+            assert.equal(actual, expected, name);
+          }
+
+          const repeated = '1.1 '.repeat(1200);
+          const repeatedInput = `Phone: 09012345678 ${repeated}12:30 555-1212`;
+          const repeatedExpected = `Phone: [contact omitted] ${repeated}12:30 [contact omitted]`;
+          const started = process.hrtime.bigint();
+          const repeatedActual = redact(repeatedInput);
+          const elapsedMs = Number(process.hrtime.bigint() - started) / 1e6;
+          console.log(JSON.stringify({ name: 'bounded-observation-pass', elapsedMs }));
+          assert.equal(repeatedActual, repeatedExpected);
+          assert.ok(elapsedMs < 2000, `bounded observation pass took ${elapsedMs.toFixed(1)}ms`);
+          NODE
+
+          node --check tools/lib/industrial-exhaust.mjs
+          node --check tools/crawl-industrial-exhaust.mjs
+          node --check test/industrial-exhaust.test.js
+          node test/industrial-exhaust.test.js 2>&1 | tee -a "$R"
+          node test/industrial-exhaust-artifacts.test.js 2>&1 | tee -a "$R"
+
+          stage live-main-transplant-and-release-qualification
+          cd "$GITHUB_WORKSPACE"
+          git worktree add --detach "$Q" "$MAIN"
+          cp "$S/tools/lib/industrial-exhaust.mjs" "$Q/tools/lib/industrial-exhaust.mjs"
+          cp "$S/test/industrial-exhaust.test.js" "$Q/test/industrial-exhaust.test.js"
+          cd "$Q"
+
+          require_eq qualified-paths "$(git diff --name-only | LC_ALL=C sort)" $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          git diff --check
+          node --check tools/lib/industrial-exhaust.mjs
+          node --check tools/crawl-industrial-exhaust.mjs
+          node --check test/industrial-exhaust.test.js
+          node test/industrial-exhaust.test.js 2>&1 | tee -a "$R"
+          node test/industrial-exhaust-artifacts.test.js 2>&1 | tee -a "$R"
+          npm run release:check 2>&1 | tee -a "$R"
+
+          git restore --worktree --staged -- build 2>/dev/null || true
+          git clean -fd -- build >/dev/null 2>&1 || true
+          require_eq post-release-paths "$(git diff --name-only | LC_ALL=C sort)" $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          git diff --check
+
+          stage construct-qualified-product
+          git config user.name BigBirdReturns
+          git config user.email bigbirdreturns@proton.me
+          git add tools/lib/industrial-exhaust.mjs test/industrial-exhaust.test.js
+          git commit -m 'fix: close cross-callback phone-label custody'
+
+          AHEAD="$(git rev-parse HEAD)"
+          ATREE="$(git rev-parse HEAD^{tree})"
+          ALIB="$(git rev-parse HEAD:tools/lib/industrial-exhaust.mjs)"
+          ATEST="$(git rev-parse HEAD:test/industrial-exhaust.test.js)"
+
+          require_eq qualified-parent "$(git rev-parse HEAD^)" "$MAIN"
+          require_eq qualified-count "$(git rev-list --count "$MAIN..HEAD")" '1'
+          require_eq qualified-commit-paths "$(git diff --name-only "$MAIN..HEAD" | LC_ALL=C sort)" $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          printf 'qualified-head=%s\nqualified-tree=%s\nqualified-lib=%s\nqualified-test=%s\n' \
+            "$AHEAD" "$ATREE" "$ALIB" "$ATEST" | tee -a "$R"
+          git diff --numstat "$MAIN..HEAD" | LC_ALL=C sort -k3 | tee -a "$R"
+
+          stage final-lease-revalidation-and-publication
+          cd "$GITHUB_WORKSPACE"
+          fetch_leases
+          require_eq final-main "$(git rev-parse refs/remotes/origin/main)" "$MAIN"
+          require_eq final-product "$(git rev-parse refs/remotes/origin/$PBRANCH)" "$PHEAD"
+          require_eq final-controller "$(git rev-parse refs/remotes/origin/$CBRANCH)" "$H"
+          require_eq final-product-tree "$(git rev-parse "$PHEAD^{tree}")" "$PTREE"
+          require_eq final-main-lib "$(git rev-parse "$MAIN:tools/lib/industrial-exhaust.mjs")" "$BLIB"
+          require_eq final-main-test "$(git rev-parse "$MAIN:test/industrial-exhaust.test.js")" "$BTEST"
+          require_eq final-product-lib "$(git rev-parse "$PHEAD:tools/lib/industrial-exhaust.mjs")" "$PLIB"
+          require_eq final-product-test "$(git rev-parse "$PHEAD:test/industrial-exhaust.test.js")" "$PTEST"
+
+          git -C "$Q" push origin "$AHEAD:refs/heads/$PBRANCH" \
+            --force-with-lease="refs/heads/$PBRANCH:$PHEAD"
+
+          git fetch --no-tags origin "+refs/heads/$PBRANCH:refs/remotes/origin/$PBRANCH"
+          require_eq published-head "$(git rev-parse refs/remotes/origin/$PBRANCH)" "$AHEAD"
+          require_eq published-tree "$(git rev-parse "$AHEAD^{tree}")" "$ATREE"
+          require_eq published-lib "$(git rev-parse "$AHEAD:tools/lib/industrial-exhaust.mjs")" "$ALIB"
+          require_eq published-test "$(git rev-parse "$AHEAD:test/industrial-exhaust.test.js")" "$ATEST"
+
+          printf 'QUALIFICATION_SUCCESS\nbase=%s\nold_product=%s\nnew_product=%s\ntree=%s\nlib=%s\ntest=%s\n' \
+            "$MAIN" "$PHEAD" "$AHEAD" "$ATREE" "$ALIB" "$ATEST" | tee -a "$R"
+
+      - name: Upload qualification receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr2231-terminal-review-repair
+          path: /tmp/pr2231-terminal-review-repair-receipt.txt
+          if-no-files-found: warn
+          retention-days: 90
