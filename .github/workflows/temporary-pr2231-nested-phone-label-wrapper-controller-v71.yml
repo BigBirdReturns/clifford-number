@@ -1,0 +1,230 @@
+name: Temporary PR 2231 nested phone-label wrapper controller v71
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/tmp/pr2231-nested-phone-label-wrapper-v71-repair.py'
+      - '.github/workflows/temporary-pr2231-nested-phone-label-wrapper-controller-v71.yml'
+permissions:
+  contents: write
+  pull-requests: read
+concurrency:
+  group: pr2231-nested-phone-label-wrapper-v71
+  cancel-in-progress: false
+jobs:
+  qualify-and-publish:
+    if: github.repository == 'BigBirdReturns/clifford-number'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      CBRANCH: agent/pr2231-nested-phone-label-wrapper-controller-v71
+      REPAIR_PATH: .github/tmp/pr2231-nested-phone-label-wrapper-v71-repair.py
+      REPAIR_BLOB: 5f9f2c5410e83fbbc285a024bf335cc9ec063d23
+      CPARENT: a1158b01e7f2ba5c12e0a0085d3897ef00a8f79b
+      CTREE: f7fc52609c1c6b42921c7a4db6e20c4e54c1f99e
+      BLIB: 5f68254d3e44de693e83503aed879160f9b7b997
+      BTEST: 1659a7cc54666a2ac5a1d6b88eb8c6591d98008e
+      PBRANCH: agent/current-main-identifier-context-product-v1
+      PHEAD: 2d894172a8ceb0e8fb06b181a7c57568f046efb1
+      PTREE: de5faebcd4bc165700dc81c2393452e7230f606d
+      PLIB: 6599d8704bc8cef65fb364c3958383ea6904b708
+      PTEST: b81edefdc73c59162d0f7823b548b2004a859e4f
+      V70BRANCH: agent/pr2231-wrapper-range-custody-controller-v70
+      V70HEAD: 1363623e4f6fa15c4dadc08d1d04ba95fcb8729a
+      V70WORKFLOW: 64a1256acd308fd05fc49dd35ba4f6e1734f495f
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Qualify and publish nested phone-label wrapper repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          H='${{ github.event.pull_request.head.sha }}'
+          S=/tmp/pr2231-v71-source
+          Q=/tmp/pr2231-v71-main
+          R=/tmp/pr2231-v71-receipt.txt
+          : >"$R"
+          stage() { printf '\n=== STAGE %s ===\n' "$1" | tee -a "$R"; }
+          require_eq() {
+            printf '%s actual=%s expected=%s\n' "$1" "$2" "$3" | tee -a "$R"
+            [ "$2" = "$3" ]
+          }
+          fetch_leases() {
+            git fetch --no-tags origin \
+              "+refs/heads/main:refs/remotes/origin/main" \
+              "+refs/heads/$PBRANCH:refs/remotes/origin/$PBRANCH" \
+              "+refs/heads/$V70BRANCH:refs/remotes/origin/$V70BRANCH" \
+              "+refs/heads/$CBRANCH:refs/remotes/origin/$CBRANCH"
+          }
+
+          stage controller-envelope
+          require_eq controller-parent "$(git rev-parse HEAD^)" "$CPARENT"
+          require_eq controller-count "$(git rev-list --count "$CPARENT..HEAD")" '1'
+          require_eq controller-paths "$(git diff --name-only "$CPARENT..HEAD" | LC_ALL=C sort)" \
+            $'.github/tmp/pr2231-nested-phone-label-wrapper-v71-repair.py\n.github/workflows/temporary-pr2231-nested-phone-label-wrapper-controller-v71.yml'
+          require_eq repair-blob "$(git rev-parse "HEAD:$REPAIR_PATH")" "$REPAIR_BLOB"
+          python3 -m py_compile "$REPAIR_PATH"
+
+          stage initial-live-leases
+          fetch_leases
+          require_eq controller-head "$(git rev-parse refs/remotes/origin/$CBRANCH)" "$H"
+          require_eq main-head "$(git rev-parse refs/remotes/origin/main)" "$CPARENT"
+          require_eq main-tree "$(git rev-parse "$CPARENT^{tree}")" "$CTREE"
+          require_eq main-lib "$(git rev-parse "$CPARENT:tools/lib/industrial-exhaust.mjs")" "$BLIB"
+          require_eq main-test "$(git rev-parse "$CPARENT:test/industrial-exhaust.test.js")" "$BTEST"
+          require_eq product-head "$(git rev-parse refs/remotes/origin/$PBRANCH)" "$PHEAD"
+          require_eq product-parent "$(git rev-parse "$PHEAD^")" "$CPARENT"
+          require_eq product-tree "$(git rev-parse "$PHEAD^{tree}")" "$PTREE"
+          require_eq product-lib "$(git rev-parse "$PHEAD:tools/lib/industrial-exhaust.mjs")" "$PLIB"
+          require_eq product-test "$(git rev-parse "$PHEAD:test/industrial-exhaust.test.js")" "$PTEST"
+          require_eq product-count "$(git rev-list --count "$CPARENT..$PHEAD")" '1'
+          require_eq product-paths "$(git diff --name-only "$CPARENT..$PHEAD" | LC_ALL=C sort)" \
+            $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          require_eq v70-head "$(git rev-parse refs/remotes/origin/$V70BRANCH)" "$V70HEAD"
+          require_eq v70-workflow "$(git rev-parse "$V70HEAD:.github/workflows/temporary-pr2231-wrapper-range-custody-controller-v70.yml")" "$V70WORKFLOW"
+
+          stage exact-product-defect-witness
+          rm -rf "$S" "$Q"
+          git worktree prune
+          git worktree add --detach "$S" "$PHEAD"
+          cd "$S"
+          node --input-type=module <<'NODE' 2>&1 | tee -a "$R"
+          import assert from 'node:assert/strict';
+          import { redactContactData as redact } from './tools/lib/industrial-exhaust.mjs';
+
+          const cases = [
+            ['ASCII nested compact', 'Phone: ((09012345678)) 12:30:45 555-1212', '12:30:45', '09012345678', '5551212'],
+            ['plus-prefixed wrapper', 'Phone: (+81 90 1234 5678) 12:30:45 555-1212', '12:30:45', '819012345678', '5551212'],
+            ['fullwidth plus wrapper', '電話：（＋８１ ９０ １２３４ ５６７８） １２：３０：４５ ５５５－１２１２', '12:30:45', '819012345678', '5551212'],
+            ['unit observation', 'Phone: ((09012345678)) 90 people 555-1212', '90 people', '09012345678', '5551212']
+          ];
+          for (const [name, input, observation, firstDigits, laterDigits] of cases) {
+            const actual = redact(input);
+            const normalized = actual.normalize('NFKC');
+            const digits = normalized.replace(/\D/gu, '');
+            console.log(JSON.stringify({ kind: 'defect-witness', name, input, actual }));
+            assert.ok(normalized.includes(observation), `${name}: observation must survive`);
+            assert.ok(!digits.includes(firstDigits), `${name}: first phone must redact`);
+            assert.ok(digits.includes(laterDigits), `${name}: later phone must exhibit the leak`);
+            assert.equal((actual.match(/\[contact omitted\]/gu) ?? []).length, 1, `${name}: exact defect has one redaction`);
+          }
+          assert.equal(
+            redact('Phone: ((09012345678)) 12:30:45 555-1212'),
+            'Phone: ([contact omitted]) 12:30:45 555-1212'
+          );
+          NODE
+
+          stage apply-repair-and-targeted-controls
+          python3 "$GITHUB_WORKSPACE/$REPAIR_PATH"
+          require_eq repair-paths "$(git diff --name-only "$PHEAD" | LC_ALL=C sort)" \
+            $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          git diff --check
+          node --check tools/lib/industrial-exhaust.mjs
+          node --check test/industrial-exhaust.test.js
+          node --input-type=module <<'NODE' 2>&1 | tee -a "$R"
+          import assert from 'node:assert/strict';
+          import { redactContactData as redact } from './tools/lib/industrial-exhaust.mjs';
+
+          assert.equal(
+            redact('Phone: ((09012345678)) 12:30:45 555-1212'),
+            'Phone: ([contact omitted]) 12:30:45 [contact omitted]'
+          );
+
+          const positives = [
+            ['plus-prefixed wrapper', 'Phone: (+81 90 1234 5678) 12:30:45 555-1212', '12:30:45', '819012345678', '5551212'],
+            ['fullwidth plus wrapper', '電話：（＋８１ ９０ １２３４ ５６７８） １２：３０：４５ ５５５－１２１２', '12:30:45', '819012345678', '5551212'],
+            ['unit observation', 'Phone: ((09012345678)) 90 people 555-1212', '90 people', '09012345678', '5551212']
+          ];
+          for (const [name, input, observation, firstDigits, laterDigits] of positives) {
+            const actual = redact(input);
+            const normalized = actual.normalize('NFKC');
+            const digits = normalized.replace(/\D/gu, '');
+            console.log(JSON.stringify({ kind: 'positive', name, actual }));
+            assert.ok(normalized.includes(observation), `${name}: observation must survive`);
+            assert.ok(!digits.includes(firstDigits), `${name}: first phone must redact`);
+            assert.ok(!digits.includes(laterDigits), `${name}: later phone must redact`);
+            assert.ok((actual.match(/\[contact omitted\]/gu) ?? []).length >= 2, `${name}: both phones must redact`);
+          }
+
+          const refusals = [
+            ['closed square wrapper boundary', 'Phone: [((09012345678))] 12:30:45 555-1212', '12:30:45', '5551212'],
+            ['URL-embedded phone word', 'https://example.test/phone: ((09012345678)) 12:30:45 555-1212', '12:30:45', '5551212'],
+            ['unlabelled wrapper', 'Archive ((09012345678)) 12:30:45 555-1212', '12:30:45', '5551212'],
+            ['fresh sentence', 'Phone: ((09012345678)). 12:30:45 555-1212', '12:30:45', '5551212']
+          ];
+          for (const [name, input, observation, laterDigits] of refusals) {
+            const actual = redact(input);
+            const normalized = actual.normalize('NFKC');
+            console.log(JSON.stringify({ kind: 'refusal', name, actual }));
+            assert.ok(normalized.includes(observation), `${name}: observation must survive`);
+            assert.ok(normalized.replace(/\D/gu, '').includes(laterDigits), `${name}: later phone must remain`);
+            assert.equal((actual.match(/\[contact omitted\]/gu) ?? []).length, 1, `${name}: only first phone may redact`);
+          }
+          NODE
+
+          stage repaired-suites
+          node test/industrial-exhaust.test.js 2>&1 | tee -a "$R"
+          node test/industrial-exhaust-artifacts.test.js 2>&1 | tee -a "$R"
+
+          stage live-main-transplant-and-release
+          cd "$GITHUB_WORKSPACE"
+          git worktree add --detach "$Q" "$CPARENT"
+          cp "$S/tools/lib/industrial-exhaust.mjs" "$Q/tools/lib/industrial-exhaust.mjs"
+          cp "$S/test/industrial-exhaust.test.js" "$Q/test/industrial-exhaust.test.js"
+          cd "$Q"
+          require_eq transplant-paths "$(git diff --name-only | LC_ALL=C sort)" \
+            $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          git diff --check
+          node test/industrial-exhaust.test.js 2>&1 | tee -a "$R"
+          node test/industrial-exhaust-artifacts.test.js 2>&1 | tee -a "$R"
+          npm run release:check 2>&1 | tee -a "$R"
+          git restore --worktree --staged -- build 2>/dev/null || true
+          git clean -fd -- build >/dev/null 2>&1 || true
+          require_eq post-release-paths "$(git diff --name-only | LC_ALL=C sort)" \
+            $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+
+          stage construct-qualified-product
+          git config user.name BigBirdReturns
+          git config user.email bigbirdreturns@proton.me
+          git add tools/lib/industrial-exhaust.mjs test/industrial-exhaust.test.js
+          git commit -m 'fix: retain phone labels through nested value wrappers'
+          AHEAD="$(git rev-parse HEAD)"
+          ATREE="$(git rev-parse HEAD^{tree})"
+          ALIB="$(git rev-parse HEAD:tools/lib/industrial-exhaust.mjs)"
+          ATEST="$(git rev-parse HEAD:test/industrial-exhaust.test.js)"
+          require_eq qualified-parent "$(git rev-parse HEAD^)" "$CPARENT"
+          require_eq qualified-count "$(git rev-list --count "$CPARENT..HEAD")" '1'
+          require_eq qualified-paths "$(git diff --name-only "$CPARENT..HEAD" | LC_ALL=C sort)" \
+            $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          printf 'qualified-head=%s\nqualified-tree=%s\nqualified-lib=%s\nqualified-test=%s\n' \
+            "$AHEAD" "$ATREE" "$ALIB" "$ATEST" | tee -a "$R"
+
+          stage final-lease-revalidation-and-publication
+          cd "$GITHUB_WORKSPACE"
+          fetch_leases
+          require_eq final-main "$(git rev-parse refs/remotes/origin/main)" "$CPARENT"
+          require_eq final-product "$(git rev-parse refs/remotes/origin/$PBRANCH)" "$PHEAD"
+          require_eq final-controller "$(git rev-parse refs/remotes/origin/$CBRANCH)" "$H"
+          require_eq final-v70 "$(git rev-parse refs/remotes/origin/$V70BRANCH)" "$V70HEAD"
+          git -C "$Q" push origin "$AHEAD:refs/heads/$PBRANCH" \
+            --force-with-lease="refs/heads/$PBRANCH:$PHEAD"
+          git fetch --no-tags origin "+refs/heads/$PBRANCH:refs/remotes/origin/$PBRANCH"
+          require_eq published-head "$(git rev-parse refs/remotes/origin/$PBRANCH)" "$AHEAD"
+          require_eq published-tree "$(git rev-parse "$AHEAD^{tree}")" "$ATREE"
+          require_eq published-lib "$(git rev-parse "$AHEAD:tools/lib/industrial-exhaust.mjs")" "$ALIB"
+          require_eq published-test "$(git rev-parse "$AHEAD:test/industrial-exhaust.test.js")" "$ATEST"
+          printf 'QUALIFICATION_SUCCESS\nold=%s\nnew=%s\ntree=%s\nlib=%s\ntest=%s\n' \
+            "$PHEAD" "$AHEAD" "$ATREE" "$ALIB" "$ATEST" | tee -a "$R"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-nested-phone-label-wrapper-v71
+          path: /tmp/pr2231-v71-receipt.txt
+          if-no-files-found: error
+          retention-days: 90
