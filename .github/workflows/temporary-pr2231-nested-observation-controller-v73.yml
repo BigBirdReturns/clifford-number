@@ -1,0 +1,77 @@
+name: Temporary PR 2231 nested observation controller v73
+
+on:
+  push:
+    branches:
+      - agent/pr2231-nested-observation-controller-v73
+
+permissions:
+  contents: write
+  issues: read
+  pull-requests: read
+
+concurrency:
+  group: pr2231-nested-observation-v73
+  cancel-in-progress: false
+
+jobs:
+  qualify-and-publish:
+    if: github.repository == 'BigBirdReturns/clifford-number'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      GH_TOKEN: ${{ github.token }}
+      CONTROLLER_SOURCE: https://raw.githubusercontent.com/BigBirdReturns/clifford-number/222aea6a3a700e7cc41ad6c68387882e00228828/.github/workflows/temporary-pr2231-nested-observation-controller-v73.yml
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Recover exact reviewed controller program
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --silent --show-error \
+            "$CONTROLLER_SOURCE" > /tmp/controller-source.yml
+          ruby <<'RUBY'
+          require 'yaml'
+          require 'shellwords'
+
+          source = YAML.safe_load(File.read('/tmp/controller-source.yml'), aliases: true)
+          job = source.fetch('jobs').fetch('qualify-and-publish')
+          env = job.fetch('env')
+          File.open('/tmp/controller-env.sh', 'w') do |handle|
+            env.each do |key, value|
+              next if key == 'GH_TOKEN'
+              handle.puts "export #{key}=#{Shellwords.escape(value.to_s)}"
+            end
+          end
+
+          step = job.fetch('steps').find do |entry|
+            entry['name'] == 'Qualify and publish nested-observation custody'
+          end
+          raise 'controller run step is absent' unless step
+          program = step.fetch('run')
+          sha_expression = '$' + '{{ github.event.pull_request.head.sha }}'
+          ref_expression = '$' + '{{ github.head_ref }}'
+          program = program.gsub(sha_expression, ENV.fetch('GITHUB_SHA'))
+          program = program.gsub(ref_expression, ENV.fetch('GITHUB_REF_NAME'))
+          raise 'unresolved GitHub expression remains' if program.include?('$' + '{{')
+          File.write('/tmp/controller.sh', program)
+          RUBY
+          bash -n /tmp/controller.sh
+          source /tmp/controller-env.sh
+          bash /tmp/controller.sh
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-nested-observation-v73
+          path: /tmp/pr2231-v73-artifact
+          if-no-files-found: error
+          retention-days: 90
