@@ -1,0 +1,113 @@
+name: Temporary PR 2231 nested observation diagnostic v72
+
+on:
+  push:
+    branches:
+      - agent/pr2231-nested-observation-diagnostic-v72
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Reproduce and qualify the exact two-file successor
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          readonly PRODUCT_HEAD='8aae3b90e7506856f41e96e14c6e4727872779b8'
+          readonly PRODUCT_LIBRARY_BLOB='994ad06d13e8ea0df28b988d7ec21ddfcd1d640b'
+          readonly PRODUCT_TEST_BLOB='2629ce7d8942f75687772426c11c70bfe8fa8973'
+          readonly WORKFLOW_PATH='.github/workflows/temporary-pr2231-nested-observation-diagnostic-v72.yml'
+          readonly MATERIALIZER_PATH='.github/workflows/temporary-pr2231-nested-observation-diagnostic-v72.materializer.b64'
+          readonly WORKTREE='/tmp/pr2231-v72-product'
+          readonly ARTIFACT_DIR='/tmp/pr2231-v72'
+          mkdir -p "$ARTIFACT_DIR"
+          printf 'V72_DIAGNOSTIC_STARTED\n' > "$ARTIFACT_DIR/status.txt"
+
+          diagnostic_commit="$(git rev-parse HEAD)"
+          if [ "$(git show -s --format=%P HEAD | wc -w)" -gt 1 ]; then
+            diagnostic_commit="$(git rev-parse HEAD^2)"
+          fi
+          product_parent="$(git rev-parse "${diagnostic_commit}^")"
+          test "$product_parent" = "$PRODUCT_HEAD"
+          expected_paths="$(printf '%s\n%s\n' "$MATERIALIZER_PATH" "$WORKFLOW_PATH" | sort)"
+          actual_paths="$(git diff --name-only "$product_parent" "$diagnostic_commit" | sort)"
+          test "$actual_paths" = "$expected_paths"
+          test "$(git hash-object tools/lib/industrial-exhaust.mjs)" = "$PRODUCT_LIBRARY_BLOB"
+          test "$(git hash-object test/industrial-exhaust.test.js)" = "$PRODUCT_TEST_BLOB"
+          printf 'diagnostic_commit=%s\nproduct_parent=%s\n' \
+            "$diagnostic_commit" "$product_parent" > "$ARTIFACT_DIR/lineage.txt"
+
+          materializer_payload="$PWD/$MATERIALIZER_PATH"
+          git worktree add --detach "$WORKTREE" "$PRODUCT_HEAD"
+          cd "$WORKTREE"
+
+          node --input-type=module <<'NODE' | tee "$ARTIFACT_DIR/predecessor.jsonl"
+          import assert from 'node:assert/strict';
+          import { redactContactData as redact } from './tools/lib/industrial-exhaust.mjs';
+          const input = 'Phone: ((2026-08-17)) 12:30:45 555-1212';
+          const actual = redact(input);
+          console.log(JSON.stringify({ input, actual }));
+          assert.equal(actual, 'Phone: ([contact omitted]) 12:30:45 [contact omitted]');
+          NODE
+          printf 'V72_PREDECESSOR_REPRODUCED\n' > "$ARTIFACT_DIR/status.txt"
+
+          base64 --decode "$materializer_payload" | gzip --decompress > /tmp/materialize-v72.py
+          python3 /tmp/materialize-v72.py "$WORKTREE" --release-check \
+            | tee "$ARTIFACT_DIR/materializer.log"
+
+          node --input-type=module <<'NODE' | tee "$ARTIFACT_DIR/focused.jsonl"
+          import assert from 'node:assert/strict';
+          import { redactContactData as redact } from './tools/lib/industrial-exhaust.mjs';
+
+          for (const input of [
+            'Phone: ((2026-08-17)) 12:30:45 555-1212',
+            '電話：（（２０２６－０８－１７）） １２：３０：４５ ５５５－１２１２',
+            'Phone: ((123456789.123456)) 12:30:45 555-1212',
+            'Phone: ((123456789 people)) 12:30:45 555-1212'
+          ]) {
+            const actual = redact(input);
+            console.log(JSON.stringify({ kind: 'observation-refusal', input, actual }));
+            assert.equal(actual, input);
+          }
+
+          assert.equal(redact('Phone: ((555-1212))'), 'Phone: ([contact omitted])');
+          assert.equal(
+            redact('Phone: ((09012345678)) 12:30:45 555-1212'),
+            'Phone: ([contact omitted]) 12:30:45 [contact omitted]'
+          );
+          const intrinsic = redact('Phone: ((2026-08-17)) +81 90 1234 5678');
+          assert.ok(intrinsic.includes('((2026-08-17))'));
+          assert.equal((intrinsic.match(/\[contact omitted\]/gu) ?? []).length, 1);
+          assert.doesNotMatch(intrinsic, /\+81 90 1234 5678/u);
+          NODE
+
+          git diff --check
+          git diff -- tools/lib/industrial-exhaust.mjs test/industrial-exhaust.test.js \
+            > "$ARTIFACT_DIR/product.patch"
+          cp tools/lib/industrial-exhaust.mjs "$ARTIFACT_DIR/industrial-exhaust.mjs"
+          cp test/industrial-exhaust.test.js "$ARTIFACT_DIR/industrial-exhaust.test.js"
+          git hash-object tools/lib/industrial-exhaust.mjs \
+            > "$ARTIFACT_DIR/patched-library-blob.txt"
+          git hash-object test/industrial-exhaust.test.js \
+            > "$ARTIFACT_DIR/patched-test-blob.txt"
+          printf 'V72_DIAGNOSTIC_COMPLETE\n' > "$ARTIFACT_DIR/status.txt"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-nested-observation-diagnostic-v72
+          path: /tmp/pr2231-v72
+          if-no-files-found: error
+          retention-days: 90
