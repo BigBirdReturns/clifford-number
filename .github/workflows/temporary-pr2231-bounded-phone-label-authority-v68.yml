@@ -1,0 +1,45 @@
+name: Temporary PR 2231 bounded phone-label authority controller v68
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temporary-pr2231-bounded-phone-label-authority-v68.yml'
+      - '.github/tmp/pr2231-bounded-phone-label-authority-v68-controller.py'
+
+permissions:
+  contents: write
+  issues: read
+  pull-requests: read
+
+concurrency:
+  group: pr2231-bounded-phone-label-authority-v68
+  cancel-in-progress: false
+
+jobs:
+  qualify-and-publish:
+    if: github.repository == 'BigBirdReturns/clifford-number'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Qualify and publish bounded phone-label authority
+        shell: bash
+        run: python3 .github/tmp/pr2231-bounded-phone-label-authority-v68-controller.py
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-bounded-phone-label-authority-v68
+          path: /tmp/pr2231-v68-receipt.txt
+          if-no-files-found: error
+          retention-days: 90
