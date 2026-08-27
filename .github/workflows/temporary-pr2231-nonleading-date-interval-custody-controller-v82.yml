@@ -1,0 +1,195 @@
+name: Temporary PR 2231 nonleading date interval custody controller v82
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/tmp/pr2231-nonleading-date-interval-custody-v82-repair.py'
+      - '.github/workflows/temporary-pr2231-nonleading-date-interval-custody-controller-v82.yml'
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: pr2231-nonleading-date-interval-custody-v82
+  cancel-in-progress: false
+
+jobs:
+  qualify-and-publish:
+    if: github.repository == 'BigBirdReturns/clifford-number'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      CBRANCH: agent/pr2231-nonleading-date-interval-custody-controller-v82
+      REPAIR_PATH: .github/tmp/pr2231-nonleading-date-interval-custody-v82-repair.py
+      REPAIR_BLOB: 25c2f2b5ffacea7edae242ee3e6b93bfaf8f77e1
+      MAIN: 564da53a373bfee43b026d7ed0ba0022bcc38633
+      MAIN_TREE: 2e0ba796bf4648e899e8c425ce00fa9bbdb2c7cc
+      MAIN_LIB: 5f68254d3e44de693e83503aed879160f9b7b997
+      MAIN_TEST: 1659a7cc54666a2ac5a1d6b88eb8c6591d98008e
+      PBRANCH: agent/current-main-identifier-context-product-v1
+      PHEAD: f1bf5651ec946468da666e61f406c8ce86452626
+      PTREE: 6b26facbd9cb7d2b0d6fc0c579eb0c834184373c
+      PLIB: e47033a5178bf1960d55c7653898857662032d38
+      PTEST: c7f0b3eb9c0d790a06c0affeaced5cc49c38a390
+      RLIB: 2b9b2903dfd7bf6eec05f2d1d607e0f60239267d
+      RTEST: 8312a83bf6afe7bfe9ebf05210196ea19793d7b2
+      PREDBRANCH: agent/pr2231-attached-observation-invalid-closer-controller-v1
+      PREDHEAD: b6a55c178c859d90724a764d3a4e480bcd869d36
+      PREDREPAIR: .github/tmp/pr2231-attached-observation-invalid-closer-v1-repair.py
+      PREDREPAIR_BLOB: 8e9da6b7a0e2857f95cb07553d408dcf5d20347d
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Qualify and publish exact two-file successor
+        shell: bash
+        run: |
+          set -euo pipefail
+          H='${{ github.event.pull_request.head.sha }}'
+          S=/tmp/pr2231-v82-source
+          Q=/tmp/pr2231-v82-main
+          A=/tmp/pr2231-v82-artifact
+          R="$A/receipt.txt"
+          mkdir -p "$A"; : >"$R"
+          log(){ printf '%s\n' "$*" | tee -a "$R"; }
+          eq(){ log "$1 actual=$2 expected=$3"; [ "$2" = "$3" ]; }
+          fetch(){ git fetch --no-tags origin \
+            "+refs/heads/main:refs/remotes/origin/main" \
+            "+refs/heads/$PBRANCH:refs/remotes/origin/$PBRANCH" \
+            "+refs/heads/$PREDBRANCH:refs/remotes/origin/$PREDBRANCH" \
+            "+refs/heads/$CBRANCH:refs/remotes/origin/$CBRANCH"; }
+          retain(){ if [ -d "$S" ]; then cp "$S/tools/lib/industrial-exhaust.mjs" "$A/industrial-exhaust.mjs" 2>/dev/null || true; cp "$S/test/industrial-exhaust.test.js" "$A/industrial-exhaust.test.js" 2>/dev/null || true; git -C "$S" diff --binary -- tools/lib/industrial-exhaust.mjs test/industrial-exhaust.test.js >"$A/candidate.patch" || true; fi; }
+          trap retain EXIT
+
+          eq controller-parent "$(git rev-parse HEAD^)" "$MAIN"
+          eq controller-count "$(git rev-list --count "$MAIN..HEAD")" 1
+          eq controller-paths "$(git diff --name-only "$MAIN..HEAD" | LC_ALL=C sort)" $'.github/tmp/pr2231-nonleading-date-interval-custody-v82-repair.py\n.github/workflows/temporary-pr2231-nonleading-date-interval-custody-controller-v82.yml'
+          eq repair-blob "$(git rev-parse "HEAD:$REPAIR_PATH")" "$REPAIR_BLOB"
+          python3 -m py_compile "$REPAIR_PATH"
+
+          fetch
+          eq controller-head "$(git rev-parse refs/remotes/origin/$CBRANCH)" "$H"
+          eq main-head "$(git rev-parse refs/remotes/origin/main)" "$MAIN"
+          eq main-tree "$(git rev-parse "$MAIN^{tree}")" "$MAIN_TREE"
+          eq main-lib "$(git rev-parse "$MAIN:tools/lib/industrial-exhaust.mjs")" "$MAIN_LIB"
+          eq main-test "$(git rev-parse "$MAIN:test/industrial-exhaust.test.js")" "$MAIN_TEST"
+          eq product-head "$(git rev-parse refs/remotes/origin/$PBRANCH)" "$PHEAD"
+          eq product-parent "$(git rev-parse "$PHEAD^")" "$MAIN"
+          eq product-tree "$(git rev-parse "$PHEAD^{tree}")" "$PTREE"
+          eq product-lib "$(git rev-parse "$PHEAD:tools/lib/industrial-exhaust.mjs")" "$PLIB"
+          eq product-test "$(git rev-parse "$PHEAD:test/industrial-exhaust.test.js")" "$PTEST"
+          eq product-count "$(git rev-list --count "$MAIN..$PHEAD")" 1
+          eq product-paths "$(git diff --name-only "$MAIN..$PHEAD" | LC_ALL=C sort)" $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          eq predecessor-controller "$(git rev-parse refs/remotes/origin/$PREDBRANCH)" "$PREDHEAD"
+          eq predecessor-repair "$(git rev-parse "$PREDHEAD:$PREDREPAIR")" "$PREDREPAIR_BLOB"
+
+          rm -rf "$S" "$Q"; git worktree prune; git worktree add --detach "$S" "$PHEAD"; cd "$S"
+          node --input-type=module <<'NODE' | tee -a "$R"
+          import assert from 'node:assert/strict';
+          import { redactContactData as redact } from './tools/lib/industrial-exhaust.mjs';
+          const failures = [
+            ['Phone: 12:30:45 2026-08-17 555-1212','Phone: 12:30:45 2026-[contact omitted]-1212'],
+            ['Archive 12:30:45 2026-08-17 555-1212','Archive 12:30:45 2026-[contact omitted]-1212'],
+            ['ID: 12:30:45 2026-08-17 555-1212','ID: 12:30:45 2026-[contact omitted]-1212'],
+            ['Archive 12:30:45 17-08-2026 555-1212','Archive 12:30:45 17-[contact omitted]-1212'],
+            ['Archive 12:30:45 2026/08/17 555-1212','Archive 12:30:45 2026/[contact omitted]-1212'],
+            ['Archive 12:30:45 2026.08.17 555-1212','Archive 12:30:45 2026.[contact omitted]-1212'],
+            ['記録：１２：３０：４５ ２０２６－０８－１７ ５５５－１２１２','記録：１２：３０：４５ ２０２６－[contact omitted]－１２１２']
+          ];
+          for (const [input, expected] of failures) assert.equal(redact(input), expected, input);
+          assert.equal(redact('Phone: 09012345678 2026-08-17)3.14 03-6216-8041'),'Phone: [contact omitted] 2026-08-17)3.14 [contact omitted]');
+          assert.equal(redact('Context (Phone: 09012345678.) 12:30:45 555-1212'),'Context (Phone: [contact omitted].) 12:30:45 555-1212');
+          console.log(`EXACT_PREDECESSOR_FAILURES=${failures.length}`);
+          NODE
+
+          python3 "$GITHUB_WORKSPACE/$REPAIR_PATH"
+          eq repair-paths "$(git diff --name-only "$PHEAD" | LC_ALL=C sort)" $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          git diff --check; node --check tools/lib/industrial-exhaust.mjs; node --check test/industrial-exhaust.test.js
+          eq repaired-lib "$(git hash-object tools/lib/industrial-exhaust.mjs)" "$RLIB"
+          eq repaired-test "$(git hash-object test/industrial-exhaust.test.js)" "$RTEST"
+
+          node --input-type=module <<'NODE' | tee -a "$R"
+          import assert from 'node:assert/strict';
+          import { performance } from 'node:perf_hooks';
+          import { redactContactData as redact } from './tools/lib/industrial-exhaust.mjs';
+          const cases = [
+            ['Phone: 12:30:45 2026-08-17 555-1212','Phone: 12:30:45 2026-08-17 555-1212'],
+            ['Archive 12:30:45 2026-08-17 555-1212','Archive 12:30:45 2026-08-17 555-1212'],
+            ['ID: 12:30:45 2026-08-17 555-1212','ID: 12:30:45 2026-08-17 555-1212'],
+            ['Archive 12:30:45 17-08-2026 555-1212','Archive 12:30:45 17-08-2026 555-1212'],
+            ['Archive 12:30:45 2026/08/17 555-1212','Archive 12:30:45 2026/08/17 555-1212'],
+            ['Archive 12:30:45 2026.08.17 555-1212','Archive 12:30:45 2026.08.17 555-1212'],
+            ['記録：１２：３０：４５ ２０２６－０８－１７ ５５５－１２１２','記録：１２：３０：４５ ２０２６－０８－１７ ５５５－１２１２'],
+            ['Archive 12:30:45 2026-08-17 03-6216-8041','Archive 12:30:45 2026-08-17 [contact omitted]'],
+            ['Archive 12:30:45 2026/08/17 03.6216.8041','Archive 12:30:45 2026/08/17 [contact omitted]'],
+            ['Phone: 2026-08-17 555-1212','Phone: 2026-08-17 [contact omitted]'],
+            ['Phone: 03.6216.8041 2026-08-17','Phone: [contact omitted] 2026-08-17'],
+            ['Phone: 09012345678 2026-08-17)3.14 03-6216-8041','Phone: [contact omitted] 2026-08-17)3.14 [contact omitted]'],
+            ['Context (Phone: 09012345678.) 12:30:45 555-1212','Context (Phone: [contact omitted].) 12:30:45 555-1212'],
+            ['Phone: 09012345678 12:30:45 555-1212 13:40:50 666-1212','Phone: [contact omitted] 12:30:45 [contact omitted] 13:40:50 666-1212']
+          ];
+          for (const [input, expected] of cases) assert.equal(redact(input), expected, input);
+          const train=`Archive 12:30:45 ${'2026-08-17 '.repeat(1200)}555-1212`;
+          const t=performance.now(); assert.equal(redact(train),train); const ms=performance.now()-t;
+          assert.ok(ms < 2000, `date census exceeded bound: ${ms}ms`);
+          console.log(JSON.stringify({REPAIRED_CASES:cases.length, DATE_TRAIN_MS:ms, DATE_TRAIN_BYTES:Buffer.byteLength(train)}));
+          NODE
+
+          mapfile -t suites < <(find test -maxdepth 1 -type f -name 'industrial-exhaust*.test.js' -print | LC_ALL=C sort)
+          test "${#suites[@]}" -ge 3; printf '%s\n' "${suites[@]}" >"$A/suites.txt"
+          for suite in "${suites[@]}"; do node "$suite" | tee -a "$R"; done
+
+          cd "$GITHUB_WORKSPACE"; git worktree add --detach "$Q" "$MAIN"
+          cp "$S/tools/lib/industrial-exhaust.mjs" "$Q/tools/lib/industrial-exhaust.mjs"
+          cp "$S/test/industrial-exhaust.test.js" "$Q/test/industrial-exhaust.test.js"
+          cd "$Q"
+          eq transplant-paths "$(git diff --name-only | LC_ALL=C sort)" $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          eq transplant-lib "$(git hash-object tools/lib/industrial-exhaust.mjs)" "$RLIB"
+          eq transplant-test "$(git hash-object test/industrial-exhaust.test.js)" "$RTEST"
+          for suite in "${suites[@]}"; do node "$suite" | tee -a "$R"; done
+          npm run release:check | tee -a "$R"
+          git restore --worktree --staged -- build 2>/dev/null || true; git clean -fd -- build >/dev/null 2>&1 || true
+          eq post-release-paths "$(git diff --name-only | LC_ALL=C sort)" $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          eq post-release-lib "$(git hash-object tools/lib/industrial-exhaust.mjs)" "$RLIB"
+          eq post-release-test "$(git hash-object test/industrial-exhaust.test.js)" "$RTEST"
+
+          git config user.name BigBirdReturns; git config user.email bigbirdreturns@proton.me
+          git add tools/lib/industrial-exhaust.mjs test/industrial-exhaust.test.js
+          git commit -m 'fix: preserve complete nonleading date intervals'
+          NEW="$(git rev-parse HEAD)"; TREE="$(git rev-parse HEAD^{tree})"
+          eq qualified-parent "$(git rev-parse HEAD^)" "$MAIN"
+          eq qualified-count "$(git rev-list --count "$MAIN..HEAD")" 1
+          eq qualified-paths "$(git diff --name-only "$MAIN..HEAD" | LC_ALL=C sort)" $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          eq qualified-lib "$(git rev-parse HEAD:tools/lib/industrial-exhaust.mjs)" "$RLIB"
+          eq qualified-test "$(git rev-parse HEAD:test/industrial-exhaust.test.js)" "$RTEST"
+          git format-patch -1 --stdout >"$A/qualified-product.patch"
+
+          cd "$GITHUB_WORKSPACE"; fetch
+          eq final-main "$(git rev-parse refs/remotes/origin/main)" "$MAIN"
+          eq final-product "$(git rev-parse refs/remotes/origin/$PBRANCH)" "$PHEAD"
+          eq final-controller "$(git rev-parse refs/remotes/origin/$CBRANCH)" "$H"
+          eq final-predecessor-controller "$(git rev-parse refs/remotes/origin/$PREDBRANCH)" "$PREDHEAD"
+          git -C "$Q" push origin "$NEW:refs/heads/$PBRANCH" --force-with-lease="refs/heads/$PBRANCH:$PHEAD"
+          git fetch --no-tags origin "+refs/heads/$PBRANCH:refs/remotes/origin/$PBRANCH"
+          eq published-head "$(git rev-parse refs/remotes/origin/$PBRANCH)" "$NEW"
+          eq published-parent "$(git rev-parse "$NEW^")" "$MAIN"
+          eq published-tree "$(git rev-parse "$NEW^{tree}")" "$TREE"
+          eq published-lib "$(git rev-parse "$NEW:tools/lib/industrial-exhaust.mjs")" "$RLIB"
+          eq published-test "$(git rev-parse "$NEW:test/industrial-exhaust.test.js")" "$RTEST"
+          log "QUALIFICATION_SUCCESS old=$PHEAD new=$NEW tree=$TREE lib=$RLIB test=$RTEST"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-nonleading-date-interval-custody-v82
+          path: /tmp/pr2231-v82-artifact
+          if-no-files-found: error
+          retention-days: 90
