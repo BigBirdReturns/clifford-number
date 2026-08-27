@@ -1,0 +1,171 @@
+name: Temporary PR 2231 v72 internal custody diagnostic v73
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temporary-pr2231-v72-internal-custody-diagnostic-v73.yml'
+permissions:
+  contents: read
+  pull-requests: read
+concurrency:
+  group: pr2231-v72-internal-custody-diagnostic-v73
+  cancel-in-progress: false
+jobs:
+  diagnose:
+    if: github.repository == 'BigBirdReturns/clifford-number'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CBRANCH: agent/pr2231-v72-internal-custody-diagnostic-v73
+      CPARENT: a1158b01e7f2ba5c12e0a0085d3897ef00a8f79b
+      PBRANCH: agent/current-main-identifier-context-product-v1
+      PHEAD: 8aae3b90e7506856f41e96e14c6e4727872779b8
+      PTREE: 51280c27645796b084617c074cb3345241342db9
+      V72BRANCH: agent/pr2231-wrapped-observation-custody-controller-v72
+      V72HEAD: 5defc333733cb81fb816ebe60279120278638637
+      REPAIR_PATH: .github/tmp/pr2231-wrapped-observation-custody-v72-repair.py
+      REPAIR_BLOB: 8d66679fa47b8f076dcc9567310fab33bdf7ab52
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Expose v72 post-classification proof state
+        shell: bash
+        run: |
+          set -euo pipefail
+          H='${{ github.event.pull_request.head.sha }}'
+          W=/tmp/pr2231-v72-diagnostic-product
+          R=/tmp/pr2231-v72-internal-custody-diagnostic.txt
+          : >"$R"
+          require_eq() {
+            printf '%s actual=%s expected=%s\n' "$1" "$2" "$3" | tee -a "$R"
+            [ "$2" = "$3" ]
+          }
+
+          require_eq controller-parent "$(git rev-parse HEAD^)" "$CPARENT"
+          require_eq controller-count "$(git rev-list --count "$CPARENT..HEAD")" '1'
+          require_eq controller-paths "$(git diff --name-only "$CPARENT..HEAD")" \
+            '.github/workflows/temporary-pr2231-v72-internal-custody-diagnostic-v73.yml'
+
+          git fetch --no-tags origin \
+            "+refs/heads/main:refs/remotes/origin/main" \
+            "+refs/heads/$PBRANCH:refs/remotes/origin/$PBRANCH" \
+            "+refs/heads/$V72BRANCH:refs/remotes/origin/$V72BRANCH" \
+            "+refs/heads/$CBRANCH:refs/remotes/origin/$CBRANCH"
+          require_eq controller-head "$(git rev-parse refs/remotes/origin/$CBRANCH)" "$H"
+          require_eq main-head "$(git rev-parse refs/remotes/origin/main)" "$CPARENT"
+          require_eq product-head "$(git rev-parse refs/remotes/origin/$PBRANCH)" "$PHEAD"
+          require_eq product-tree "$(git rev-parse "$PHEAD^{tree}")" "$PTREE"
+          require_eq v72-head "$(git rev-parse refs/remotes/origin/$V72BRANCH)" "$V72HEAD"
+          require_eq repair-blob "$(git rev-parse "$V72HEAD:$REPAIR_PATH")" "$REPAIR_BLOB"
+
+          rm -rf "$W"
+          git worktree prune
+          git worktree add --detach "$W" "$PHEAD"
+          git show "$V72HEAD:$REPAIR_PATH" > /tmp/pr2231-v72-repair.py
+          cd "$W"
+          python3 /tmp/pr2231-v72-repair.py
+          git diff --check
+          cp tools/lib/industrial-exhaust.mjs /tmp/pr2231-v72-instrumented.mjs
+          cat >> /tmp/pr2231-v72-instrumented.mjs <<'EXPORTS'
+
+          export {
+            PHONE_SPAN_PATTERN,
+            crossCallbackObservationMatch,
+            hasPhoneLabelBeforeOpeningWrappers,
+            initialRangeProvesIntrinsicPhone,
+            isWeakBareRangeObservation,
+            phoneCandidateScore,
+            provedWrappedPhoneLabelContext,
+            redactPhoneSpanCandidate,
+            redactionPrefixContext,
+            stripMatchedObservationWrappers,
+            terminalIdentifierLabelEnd
+          };
+          EXPORTS
+
+          node --input-type=module <<'NODE' 2>&1 | tee -a "$R"
+          import assert from 'node:assert/strict';
+          import {
+            PHONE_SPAN_PATTERN,
+            crossCallbackObservationMatch,
+            hasPhoneLabelBeforeOpeningWrappers,
+            initialRangeProvesIntrinsicPhone,
+            isWeakBareRangeObservation,
+            phoneCandidateScore,
+            provedWrappedPhoneLabelContext,
+            redactPhoneSpanCandidate,
+            redactionPrefixContext,
+            stripMatchedObservationWrappers,
+            terminalIdentifierLabelEnd
+          } from 'file:///tmp/pr2231-v72-instrumented.mjs';
+          import { redactContactData as redact } from 'file:///tmp/pr2231-v72-instrumented.mjs';
+
+          const input = 'Phone: ((09012345678)) 12:30:45 555-1212';
+          PHONE_SPAN_PATTERN.lastIndex = 0;
+          const matches = [...input.matchAll(PHONE_SPAN_PATTERN)];
+          assert.ok(matches.length >= 2);
+          const first = matches[0];
+          const firstContactCharacter = first[0].search(/[+＋(（0-9０-９]/u);
+          const contactOffset = first.index + Math.max(0, firstContactCharacter);
+          const prefixContext = redactionPrefixContext(input, contactOffset);
+          const result = redactPhoneSpanCandidate(first[0], first.index, input, false);
+          const normalizedPrefix = prefixContext.text.normalize('NFKC');
+          const labelEnd = terminalIdentifierLabelEnd(normalizedPrefix, normalizedPrefix.length);
+          const rangeStates = (result.ranges ?? []).map(range => {
+            const source = first[0].slice(range.start, range.end);
+            const unwrapped = stripMatchedObservationWrappers(source);
+            const observation = crossCallbackObservationMatch(unwrapped);
+            return {
+              range,
+              source,
+              unwrapped,
+              intrinsicScore: phoneCandidateScore(source, '', false),
+              observation: observation?.[0] ?? null,
+              weakObservation: isWeakBareRangeObservation(unwrapped)
+            };
+          });
+          const state = {
+            input,
+            matches: matches.map(match => ({ text: match[0], index: match.index })),
+            firstCandidate: first[0],
+            firstOffset: first.index,
+            contactOffset,
+            prefixContext,
+            normalizedPrefix,
+            labelEnd,
+            labelPrefix: normalizedPrefix.slice(0, labelEnd),
+            wrapperLabel: hasPhoneLabelBeforeOpeningWrappers(normalizedPrefix),
+            result,
+            rangeStates,
+            intrinsicProof: initialRangeProvesIntrinsicPhone(first[0], result.ranges),
+            wrappedProof: provedWrappedPhoneLabelContext(
+              prefixContext.text,
+              first[0],
+              result.ranges
+            ),
+            final: redact(input)
+          };
+          console.log(JSON.stringify(state, null, 2));
+          assert.equal(state.final, 'Phone: ([contact omitted]) 12:30:45 555-1212');
+          NODE
+
+          cd "$GITHUB_WORKSPACE"
+          git fetch --no-tags origin \
+            "+refs/heads/$PBRANCH:refs/remotes/origin/$PBRANCH" \
+            "+refs/heads/$CBRANCH:refs/remotes/origin/$CBRANCH"
+          require_eq final-product "$(git rev-parse refs/remotes/origin/$PBRANCH)" "$PHEAD"
+          require_eq final-controller "$(git rev-parse refs/remotes/origin/$CBRANCH)" "$H"
+          printf 'DIAGNOSTIC_COMPLETE\n' | tee -a "$R"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-v72-internal-custody-diagnostic-v73
+          path: /tmp/pr2231-v72-internal-custody-diagnostic.txt
+          if-no-files-found: error
+          retention-days: 90
