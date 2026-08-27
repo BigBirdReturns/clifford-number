@@ -1,0 +1,301 @@
+name: Temporary PR 2231 owned-closer period boundary controller v1
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/tmp/pr2231-owned-closer-period-boundary-v1-repair.py'
+      - '.github/workflows/temporary-pr2231-owned-closer-period-boundary-controller-v1.yml'
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: pr2231-owned-closer-period-boundary-v1
+  cancel-in-progress: false
+
+jobs:
+  qualify-and-publish:
+    if: github.repository == 'BigBirdReturns/clifford-number'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      CBRANCH: agent/pr2231-owned-closer-period-boundary-controller-v1
+      REPAIR_PATH: .github/tmp/pr2231-owned-closer-period-boundary-v1-repair.py
+      REPAIR_BLOB: f368852606f3066ac66043f1106c373dfc04a11e
+      CPARENT: 564da53a373bfee43b026d7ed0ba0022bcc38633
+      CTREE: 2e0ba796bf4648e899e8c425ce00fa9bbdb2c7cc
+      CBASEPARENT: 01428cde971ffe0d995a60c80c153eded9b7e6b1
+      BLIB: 5f68254d3e44de693e83503aed879160f9b7b997
+      BTEST: 1659a7cc54666a2ac5a1d6b88eb8c6591d98008e
+      PBRANCH: agent/current-main-identifier-context-product-v1
+      PHEAD: e62b67dffa5ee1391f7dbb7c458d2eeda0887126
+      PTREE: 75a7ecb59bd90b752e10d53411e53546f42cc2d8
+      PLIB: 11c4e17f23e4cf007837810354851094d6b9730a
+      PTEST: 86f50889f2e884a19ca4471b58d40f385ac59aec
+      RLIB: a998d31ef669c84c4ae3907c07ffe3a67ba55592
+      RTEST: e4b24deda3de14140466f499418f1bd60baadad5
+      PREDBRANCH: agent/pr2231-accepted-wrapper-intrinsic-phone-controller-v1
+      PREDHEAD: f668a7d27de4594e948608a1ea0b60277b9d4364
+      PREDREPAIR_PATH: .github/tmp/pr2231-accepted-wrapper-intrinsic-phone-v1-repair.py
+      PREDREPAIR_BLOB: af84e9d20048f98d1437565346ecede16e3ea960
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Qualify and publish owned-closer period-boundary repair
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          H='${{ github.event.pull_request.head.sha }}'
+          S=/tmp/pr2231-owned-closer-period-source
+          Q=/tmp/pr2231-owned-closer-period-main
+          A=/tmp/pr2231-owned-closer-period-artifact
+          R="$A/receipt.txt"
+          mkdir -p "$A"
+          : >"$R"
+
+          stage() { printf '\n=== STAGE %s ===\n' "$1" | tee -a "$R"; }
+          fail() { printf 'FAIL[%s] %s\n' "$1" "$2" | tee -a "$R" >&2; exit 1; }
+          require_eq() {
+            printf '%s actual=%s expected=%s\n' "$1" "$2" "$3" | tee -a "$R"
+            [ "$2" = "$3" ] || fail "$1" 'value mismatch'
+          }
+          fetch_leases() {
+            git fetch --no-tags origin \
+              "+refs/heads/main:refs/remotes/origin/main" \
+              "+refs/heads/$PBRANCH:refs/remotes/origin/$PBRANCH" \
+              "+refs/heads/$PREDBRANCH:refs/remotes/origin/$PREDBRANCH" \
+              "+refs/heads/$CBRANCH:refs/remotes/origin/$CBRANCH"
+          }
+          retain_workspace() {
+            if [ -d "$S" ]; then
+              git -C "$S" diff --binary -- \
+                tools/lib/industrial-exhaust.mjs \
+                test/industrial-exhaust.test.js \
+                > "$A/candidate.patch" 2>/dev/null || true
+              cp "$S/tools/lib/industrial-exhaust.mjs" \
+                "$A/industrial-exhaust.mjs" 2>/dev/null || true
+              cp "$S/test/industrial-exhaust.test.js" \
+                "$A/industrial-exhaust.test.js" 2>/dev/null || true
+            fi
+          }
+          trap retain_workspace EXIT
+
+          stage controller-envelope
+          require_eq controller-parent "$(git rev-parse HEAD^)" "$CPARENT"
+          require_eq controller-count "$(git rev-list --count "$CPARENT..HEAD")" '1'
+          require_eq controller-paths \
+            "$(git diff --name-only "$CPARENT..HEAD" | LC_ALL=C sort)" \
+            $'.github/tmp/pr2231-owned-closer-period-boundary-v1-repair.py\n.github/workflows/temporary-pr2231-owned-closer-period-boundary-controller-v1.yml'
+          require_eq repair-blob \
+            "$(git rev-parse "HEAD:$REPAIR_PATH")" "$REPAIR_BLOB"
+          python3 -m py_compile "$REPAIR_PATH"
+
+          stage initial-live-leases
+          fetch_leases
+          require_eq controller-head "$(git rev-parse refs/remotes/origin/$CBRANCH)" "$H"
+          require_eq main-head "$(git rev-parse refs/remotes/origin/main)" "$CPARENT"
+          require_eq main-tree "$(git rev-parse "$CPARENT^{tree}")" "$CTREE"
+          require_eq main-parent "$(git rev-parse "$CPARENT^")" "$CBASEPARENT"
+          require_eq main-lib "$(git rev-parse "$CPARENT:tools/lib/industrial-exhaust.mjs")" "$BLIB"
+          require_eq main-test "$(git rev-parse "$CPARENT:test/industrial-exhaust.test.js")" "$BTEST"
+          require_eq product-head "$(git rev-parse refs/remotes/origin/$PBRANCH)" "$PHEAD"
+          require_eq product-parent "$(git rev-parse "$PHEAD^")" "$CPARENT"
+          require_eq product-main-merge-base "$(git merge-base "$PHEAD" "$CPARENT")" "$CPARENT"
+          require_eq product-tree "$(git rev-parse "$PHEAD^{tree}")" "$PTREE"
+          require_eq product-lib "$(git rev-parse "$PHEAD:tools/lib/industrial-exhaust.mjs")" "$PLIB"
+          require_eq product-test "$(git rev-parse "$PHEAD:test/industrial-exhaust.test.js")" "$PTEST"
+          require_eq product-count "$(git rev-list --count "$CPARENT..$PHEAD")" '1'
+          require_eq product-paths \
+            "$(git diff --name-only "$CPARENT..$PHEAD" | LC_ALL=C sort)" \
+            $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          require_eq predecessor-controller-head \
+            "$(git rev-parse refs/remotes/origin/$PREDBRANCH)" "$PREDHEAD"
+          require_eq predecessor-repair-blob \
+            "$(git rev-parse "$PREDHEAD:$PREDREPAIR_PATH")" "$PREDREPAIR_BLOB"
+
+          stage exact-product-regression-witnesses
+          rm -rf "$S" "$Q"
+          git worktree prune
+          git worktree add --detach "$S" "$PHEAD"
+          cd "$S"
+          node --input-type=module <<'NODE' 2>&1 | tee -a "$R"
+          import assert from 'node:assert/strict';
+          import { redactContactData as redact } from './tools/lib/industrial-exhaust.mjs';
+
+          const predecessorCases = [
+            [
+              'P1 period before an owned closer renews expired label authority',
+              'Context (Phone: 09012345678.) 12:30:45 555-1212',
+              'Context (Phone: [contact omitted].) 12:30:45 [contact omitted]'
+            ],
+            [
+              'P1 period before nested owned closers renews expired label authority',
+              'Context ((Phone: 09012345678.)) 12:30:45 555-1212',
+              'Context ((Phone: [contact omitted].)) 12:30:45 [contact omitted]'
+            ],
+            [
+              'P1 fullwidth period before an owned closer renews expired label authority',
+              '文脈（電話：０９０１２３４５６７８．） １２：３０：４５ ５５５－１２１２',
+              '文脈（電話：[contact omitted]．） １２：３０：４５ [contact omitted]'
+            ]
+          ];
+          for (const [name, input, expected] of predecessorCases) {
+            const actual = redact(input);
+            console.log(JSON.stringify({
+              kind: 'exact-predecessor-reproduction', name, input, actual, expected
+            }));
+            assert.equal(actual, expected, name);
+          }
+
+          assert.equal(
+            redact('Context (Phone: 09012345678) 12:30:45 555-1212'),
+            'Context (Phone: [contact omitted]) 12:30:45 [contact omitted]',
+            'control: no sentence period retains the one-use label bridge'
+          );
+          assert.equal(
+            redact('Context (Phone: 09012345678.)12:30:45 555-1212'),
+            'Context (Phone: [contact omitted].)12:30:45 [contact omitted]',
+            'control: a closer without trailing whitespace is not a fresh sentence boundary'
+          );
+          assert.equal(
+            redact('(Phone: 09012345678). 12:30:45 555-1212'),
+            '(Phone: [contact omitted]). 12:30:45 555-1212',
+            'control: an already-visible period after the closer remains a boundary'
+          );
+          NODE
+
+          stage apply-repair-and-targeted-controls
+          python3 "$GITHUB_WORKSPACE/$REPAIR_PATH"
+          require_eq repair-paths \
+            "$(git diff --name-only "$PHEAD" | LC_ALL=C sort)" \
+            $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          git diff --check
+          node --check tools/lib/industrial-exhaust.mjs
+          node --check test/industrial-exhaust.test.js
+          require_eq repaired-lib "$(git hash-object tools/lib/industrial-exhaust.mjs)" "$RLIB"
+          require_eq repaired-test "$(git hash-object test/industrial-exhaust.test.js)" "$RTEST"
+
+          node --input-type=module <<'NODE' 2>&1 | tee -a "$R"
+          import assert from 'node:assert/strict';
+          import { redactContactData as redact } from './tools/lib/industrial-exhaust.mjs';
+
+          const repairedCases = [
+            ['owned closer boundary', 'Context (Phone: 09012345678.) 12:30:45 555-1212', 'Context (Phone: [contact omitted].) 12:30:45 555-1212'],
+            ['nested owned closers boundary', 'Context ((Phone: 09012345678.)) 12:30:45 555-1212', 'Context ((Phone: [contact omitted].)) 12:30:45 555-1212'],
+            ['fullwidth owned closer boundary', '文脈（電話：０９０１２３４５６７８．） １２：３０：４５ ５５５－１２１２', '文脈（電話：[contact omitted]．） １２：３０：４５ ５５５－１２１２'],
+            ['ordinary bridge remains live', 'Context (Phone: 09012345678) 12:30:45 555-1212', 'Context (Phone: [contact omitted]) 12:30:45 [contact omitted]'],
+            ['no whitespace means no fresh boundary', 'Context (Phone: 09012345678.)12:30:45 555-1212', 'Context (Phone: [contact omitted].)12:30:45 [contact omitted]'],
+            ['period after closer remains a boundary', '(Phone: 09012345678). 12:30:45 555-1212', '(Phone: [contact omitted]). 12:30:45 555-1212'],
+            ['same-candidate sentence boundary remains a refusal', 'Phone: 09012345678. 12:30:45 555-1212', 'Phone: [contact omitted]. 12:30:45 555-1212'],
+            ['one-use lease still cannot renew', 'Phone: 09012345678 12:30:45 555-1212 13:40:50 666-1212', 'Phone: [contact omitted] 12:30:45 [contact omitted] 13:40:50 666-1212'],
+            ['accepted square wrapper remains admitted', 'Phone: 09012345678 12:30:45[555-1212]', 'Phone: [contact omitted] 12:30:45[[contact omitted]]'],
+            ['dotted phone precedence remains intact', 'Phone: 03.6216.8041 2026-08-17', 'Phone: [contact omitted] 2026-08-17'],
+            ['strong observation retains custody', 'Phone: ((03-62165111 people)) 12:30:45 555-1212', 'Phone: ((03-62165111 people)) 12:30:45 555-1212']
+          ];
+          for (const [name, input, expected] of repairedCases) {
+            const actual = redact(input);
+            console.log(JSON.stringify({
+              kind: 'repaired-transition', name, input, actual, expected
+            }));
+            assert.equal(actual, expected, name);
+          }
+          NODE
+
+          stage repaired-industrial-exhaust-suites
+          mapfile -t suites < <(
+            find test -maxdepth 1 -type f \
+              -name 'industrial-exhaust*.test.js' -print | LC_ALL=C sort
+          )
+          test "${#suites[@]}" -ge 3
+          printf '%s\n' "${suites[@]}" | tee "$A/suites.txt"
+          for suite in "${suites[@]}"; do
+            printf 'RUNNING %s\n' "$suite" | tee -a "$R"
+            node "$suite" 2>&1 | tee -a "$R"
+          done
+
+          stage exact-main-transplant-and-release
+          cd "$GITHUB_WORKSPACE"
+          git worktree add --detach "$Q" "$CPARENT"
+          cp "$S/tools/lib/industrial-exhaust.mjs" "$Q/tools/lib/industrial-exhaust.mjs"
+          cp "$S/test/industrial-exhaust.test.js" "$Q/test/industrial-exhaust.test.js"
+          cd "$Q"
+          require_eq transplant-paths "$(git diff --name-only | LC_ALL=C sort)" \
+            $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          git diff --check
+          for suite in "${suites[@]}"; do
+            printf 'TRANSPLANT %s\n' "$suite" | tee -a "$R"
+            node "$suite" 2>&1 | tee -a "$R"
+          done
+          npm run release:check 2>&1 | tee -a "$R"
+
+          cp tools/lib/industrial-exhaust.mjs "$A/repaired-industrial-exhaust.mjs"
+          cp test/industrial-exhaust.test.js "$A/repaired-industrial-exhaust.test.js"
+          git restore --worktree --staged -- .
+          git clean -fd >/dev/null 2>&1 || true
+          cp "$A/repaired-industrial-exhaust.mjs" tools/lib/industrial-exhaust.mjs
+          cp "$A/repaired-industrial-exhaust.test.js" test/industrial-exhaust.test.js
+          require_eq post-release-paths "$(git diff --name-only | LC_ALL=C sort)" \
+            $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          require_eq post-release-lib "$(git hash-object tools/lib/industrial-exhaust.mjs)" "$RLIB"
+          require_eq post-release-test "$(git hash-object test/industrial-exhaust.test.js)" "$RTEST"
+
+          stage construct-qualified-product
+          git config user.name BigBirdReturns
+          git config user.email bigbirdreturns@proton.me
+          git add tools/lib/industrial-exhaust.mjs test/industrial-exhaust.test.js
+          git commit -m 'fix: expire label lease before owned closers'
+          AHEAD="$(git rev-parse HEAD)"
+          ATREE="$(git rev-parse HEAD^{tree})"
+          ALIB="$(git rev-parse HEAD:tools/lib/industrial-exhaust.mjs)"
+          ATEST="$(git rev-parse HEAD:test/industrial-exhaust.test.js)"
+          require_eq qualified-parent "$(git rev-parse HEAD^)" "$CPARENT"
+          require_eq qualified-count "$(git rev-list --count "$CPARENT..HEAD")" '1'
+          require_eq qualified-paths \
+            "$(git diff --name-only "$CPARENT..HEAD" | LC_ALL=C sort)" \
+            $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          require_eq qualified-lib "$ALIB" "$RLIB"
+          require_eq qualified-test "$ATEST" "$RTEST"
+          printf 'qualified-head=%s\nqualified-tree=%s\nqualified-lib=%s\nqualified-test=%s\n' \
+            "$AHEAD" "$ATREE" "$ALIB" "$ATEST" | tee -a "$R"
+          git show --format=fuller --stat HEAD > "$A/qualified-commit.txt"
+          git format-patch -1 --stdout > "$A/qualified-product.patch"
+
+          stage final-lease-revalidation-and-publication
+          cd "$GITHUB_WORKSPACE"
+          fetch_leases
+          require_eq final-main "$(git rev-parse refs/remotes/origin/main)" "$CPARENT"
+          require_eq final-product "$(git rev-parse refs/remotes/origin/$PBRANCH)" "$PHEAD"
+          require_eq final-controller "$(git rev-parse refs/remotes/origin/$CBRANCH)" "$H"
+          require_eq final-predecessor-controller \
+            "$(git rev-parse refs/remotes/origin/$PREDBRANCH)" "$PREDHEAD"
+          git -C "$Q" push origin "$AHEAD:refs/heads/$PBRANCH" \
+            --force-with-lease="refs/heads/$PBRANCH:$PHEAD"
+          git fetch --no-tags origin \
+            "+refs/heads/$PBRANCH:refs/remotes/origin/$PBRANCH"
+          require_eq published-head "$(git rev-parse refs/remotes/origin/$PBRANCH)" "$AHEAD"
+          require_eq published-tree "$(git rev-parse "$AHEAD^{tree}")" "$ATREE"
+          require_eq published-lib "$(git rev-parse "$AHEAD:tools/lib/industrial-exhaust.mjs")" "$ALIB"
+          require_eq published-test "$(git rev-parse "$AHEAD:test/industrial-exhaust.test.js")" "$ATEST"
+          printf 'QUALIFICATION_SUCCESS\nold=%s\nnew=%s\ntree=%s\nlib=%s\ntest=%s\n' \
+            "$PHEAD" "$AHEAD" "$ATREE" "$ALIB" "$ATEST" | tee -a "$R"
+
+      - name: Upload qualification receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr2231-owned-closer-period-boundary-v1
+          path: /tmp/pr2231-owned-closer-period-artifact
+          if-no-files-found: error
+          retention-days: 90
