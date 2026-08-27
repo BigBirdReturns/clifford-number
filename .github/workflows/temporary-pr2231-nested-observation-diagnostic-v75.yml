@@ -1,0 +1,205 @@
+name: Temporary PR 2231 nested observation diagnostic v75
+
+on:
+  push:
+    branches:
+      - agent/pr2231-nested-observation-diagnostic-v75
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Reproduce, patch, and qualify
+        shell: bash
+        run: |
+          set -euo pipefail
+          artifact_dir=/tmp/pr2231-v75
+          mkdir -p "$artifact_dir"
+          status=FAILED
+          trap 'printf "V75_DIAGNOSTIC_%s\n" "$status" > "$artifact_dir/status.txt"' EXIT
+          printf 'V75_DIAGNOSTIC_STARTED\n' > "$artifact_dir/status.txt"
+
+          expected_parent=8aae3b90e7506856f41e96e14c6e4727872779b8
+          actual_parent="$(git rev-parse HEAD^)"
+          printf 'expected_parent=%s\nactual_parent=%s\nhead=%s\n' \
+            "$expected_parent" "$actual_parent" "$(git rev-parse HEAD)" \
+            > "$artifact_dir/lineage.txt"
+          test "$actual_parent" = "$expected_parent"
+
+          node --input-type=module <<'NODE' | tee "$artifact_dir/pre-patch-reproduction.jsonl"
+          import assert from 'node:assert/strict';
+          import { redactContactData as redact } from './tools/lib/industrial-exhaust.mjs';
+          const input = 'Phone: ((2026-08-17)) 12:30:45 555-1212';
+          const actual = redact(input);
+          console.log(JSON.stringify({ kind: 'pre-patch-reproduction', input, actual }));
+          assert.equal(actual, 'Phone: ([contact omitted]) 12:30:45 [contact omitted]');
+          NODE
+
+          python3 <<'PY' 2>&1 | tee "$artifact_dir/patcher.log"
+          from pathlib import Path
+
+          path = Path("tools/lib/industrial-exhaust.mjs")
+          source = path.read_text()
+          function_token = "function redactPhoneSpanCandidate("
+          start_token = (
+              "const adjacentCharacter = "
+              "Array.from(input.slice(0, contactOffset)).at(-1) ?? '';"
+          )
+          end_token = "const ownedWrapper = findOwnedNarrativePhoneWrapper("
+
+          if source.count(function_token) != 1:
+              raise SystemExit(f"function count={source.count(function_token)}")
+          function_start = source.index(function_token)
+          function_end = source.find("\nfunction ", function_start + 1)
+          if function_end < 0:
+              function_end = len(source)
+          body = source[function_start:function_end]
+          if body.count(start_token) != 1:
+              raise SystemExit(f"start token count={body.count(start_token)}")
+          if body.count(end_token) != 1:
+              raise SystemExit(f"end token count={body.count(end_token)}")
+
+          start_position = source.index(start_token, function_start, function_end)
+          start = source.rfind("\n", function_start, start_position) + 1
+          end_position = source.index(end_token, start_position, function_end)
+          end = source.rfind("\n", start_position, end_position) + 1
+          old_slice = source[start:end]
+          for fragment in (
+              "const allowInitialGroup = prefixContext.indeterminate",
+              "const explicitPhoneLabelContext = inheritedExplicitPhoneLabelContext",
+              "hasPhoneLabelPrefix(prefix);",
+          ):
+              if fragment not in old_slice:
+                  raise SystemExit(f"missing expected fragment: {fragment}")
+          if old_slice.count("hasPhoneLabelPrefix(prefix);") != 2:
+              raise SystemExit(
+                  "phone-label call count="
+                  f"{old_slice.count('hasPhoneLabelPrefix(prefix);')}"
+              )
+
+          lines = [
+              "const adjacentCharacter = Array.from(",
+              "  input.slice(0, contactOffset)",
+              ").at(-1) ?? '';",
+              "const localPhoneLabelContext = hasPhoneLabelPrefix(prefix);",
+              "const normalizedPrefix = prefix.normalize('NFKC');",
+              "const wrapperSeparatedPhoneLabel = localPhoneLabelContext",
+              "  && terminalIdentifierLabelEnd(",
+              "    normalizedPrefix,",
+              "    normalizedPrefix.length",
+              "  ) < normalizedPrefix.length;",
+              "let leadingObservationOffset = candidate.length - candidate.trimStart().length;",
+              "while (leadingObservationOffset < candidate.length) {",
+              "  const character = candidate[leadingObservationOffset];",
+              "  const normalizedCharacter = character.normalize('NFKC');",
+              "  if (!Object.hasOwn(OBSERVATION_WRAPPER_PAIRS, normalizedCharacter)) break;",
+              "  leadingObservationOffset += character.length;",
+              "  while (leadingObservationOffset < candidate.length",
+              "      && /\\s/u.test(candidate[leadingObservationOffset])) {",
+              "    leadingObservationOffset += 1;",
+              "  }",
+              "}",
+              "const leadingObservationSource = candidate.slice(leadingObservationOffset);",
+              "const leadingObservationMatch = wrapperSeparatedPhoneLabel",
+              "  ? numericObservationMatch(leadingObservationSource, suffix)",
+              "  : null;",
+              "const wrapperProtectedObservation = Boolean(",
+              "  leadingObservationMatch",
+              "    && !isWeakBareRangeObservation(leadingObservationSource, suffix)",
+              ");",
+              "if (wrapperProtectedObservation) {",
+              "  return {",
+              "    output: candidate,",
+              "    ranges: null,",
+              "    explicitPhoneLabelContext: false",
+              "  };",
+              "}",
+              "const allowInitialGroup = prefixContext.indeterminate",
+              "  || !/[\\p{L}\\p{N}]/u.test(adjacentCharacter)",
+              "  || localPhoneLabelContext;",
+              "const explicitPhoneLabelContext = inheritedExplicitPhoneLabelContext",
+              "  || localPhoneLabelContext;",
+          ]
+          replacement = "\n".join(f"  {line}" for line in lines) + "\n"
+          path.write_text(source[:start] + replacement + source[end:])
+          print(
+              "patched authority slice with observation refusal",
+              f"start={start}",
+              f"end={end}",
+              f"old_bytes={len(old_slice)}",
+              f"new_bytes={len(replacement)}",
+          )
+          PY
+
+          cp tools/lib/industrial-exhaust.mjs "$artifact_dir/industrial-exhaust.mjs"
+          git diff -- tools/lib/industrial-exhaust.mjs > "$artifact_dir/patch.diff"
+          git diff --check
+          node --check tools/lib/industrial-exhaust.mjs
+
+          node --input-type=module <<'NODE' | tee "$artifact_dir/focused-controls.jsonl"
+          import assert from 'node:assert/strict';
+          import { redactContactData as redact } from './tools/lib/industrial-exhaust.mjs';
+
+          for (const input of [
+            'Phone: ((2026-08-17)) 12:30:45 555-1212',
+            '電話：（（２０２６－０８－１７）） １２：３０：４５ ５５５－１２１２',
+            'Phone: ((123456789.123456)) 12:30:45 555-1212',
+            'Phone: ((123456789 people)) 12:30:45 555-1212'
+          ]) {
+            const actual = redact(input);
+            console.log(JSON.stringify({ kind: 'observation-refusal', input, actual }));
+            assert.equal(actual, input, `${input}: wrapped observation must retain custody`);
+          }
+
+          const nestedPhoneInput = 'Phone: ((09012345678)) 12:30:45 555-1212';
+          const nestedPhone = redact(nestedPhoneInput);
+          console.log(JSON.stringify({ kind: 'nested-phone-control', input: nestedPhoneInput, actual: nestedPhone }));
+          assert.equal(nestedPhone, 'Phone: ([contact omitted]) 12:30:45 [contact omitted]');
+
+          for (const input of [
+            'Phone: (+81 90 1234 5678) 12:30:45 555-1212',
+            'Phone: (09012345678) 90 people 555-1212'
+          ]) {
+            const actual = redact(input);
+            const normalized = actual.normalize('NFKC');
+            console.log(JSON.stringify({ kind: 'labelled-phone-control', input, actual }));
+            assert.equal((actual.match(/\[contact omitted\]/gu) ?? []).length, 2);
+            assert.ok(normalized.includes(input.includes('90 people') ? '90 people' : '12:30:45'));
+            assert.doesNotMatch(normalized, /555-1212/u);
+          }
+
+          const weakInput = 'Phone: ((555-1212)) 12:30:45 555-3434';
+          const weakActual = redact(weakInput);
+          console.log(JSON.stringify({ kind: 'weak-range-phone-control', input: weakInput, actual: weakActual }));
+          assert.equal((weakActual.match(/\[contact omitted\]/gu) ?? []).length, 2);
+          assert.match(weakActual, /12:30:45/u);
+          assert.doesNotMatch(weakActual, /555-1212/u);
+          assert.doesNotMatch(weakActual, /555-3434/u);
+          NODE
+
+          mapfile -t suites < <(
+            find test -maxdepth 1 -type f -name 'industrial-exhaust*.test.js' -print | sort
+          )
+          test "${#suites[@]}" -ge 1
+          printf '%s\n' "${suites[@]}" > "$artifact_dir/suites.txt"
+          for suite in "${suites[@]}"; do
+            printf 'RUNNING %s\n' "$suite"
+            node "$suite"
+          done | tee "$artifact_dir/industrial-exhaust-tests.log"
+          status=COMPLETE
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-nested-observation-diagnostic-v75
+          path: /tmp/pr2231-v75
+          if-no-files-found: warn
+          retention-days: 90
