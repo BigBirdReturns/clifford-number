@@ -1,0 +1,309 @@
+name: Temporary PR 2231 canonical cross-callback controller v68
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/temporary-pr2231-canonical-cross-callback-v68.yml
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  qualify-and-publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      CBRANCH: agent/pr2231-canonical-cross-callback-controller-v68
+      WORKFLOW_PATH: .github/workflows/temporary-pr2231-canonical-cross-callback-v68.yml
+      CPARENT: a1158b01e7f2ba5c12e0a0085d3897ef00a8f79b
+      PBRANCH: agent/current-main-identifier-context-product-v1
+      PHEAD: 8aae3b90e7506856f41e96e14c6e4727872779b8
+      PTREE: 51280c27645796b084617c074cb3345241342db9
+      PLIB: 994ad06d13e8ea0df28b988d7ec21ddfcd1d640b
+      PTEST: 2629ce7d8942f75687772426c11c70bfe8fa8973
+      BLIB: 5f68254d3e44de693e83503aed879160f9b7b997
+      BTEST: 1659a7cc54666a2ac5a1d6b88eb8c6591d98008e
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Qualify and publish canonical phone-label lease repair
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          H='${{ github.event.pull_request.head.sha }}'
+          S=/tmp/pr2231-v68-source
+          Q=/tmp/pr2231-v68-main
+          R=/tmp/pr2231-v68-receipt.txt
+          : >"$R"
+
+          stage() {
+            printf '\n=== STAGE %s ===\n' "$1" | tee -a "$R"
+          }
+
+          fail() {
+            printf 'FAIL[%s] %s\n' "$1" "$2" | tee -a "$R" >&2
+            exit 1
+          }
+
+          require_eq() {
+            local label="$1" actual="$2" expected="$3"
+            printf '%s actual=%s expected=%s\n' "$label" "$actual" "$expected" | tee -a "$R"
+            [ "$actual" = "$expected" ] || fail "$label" 'value mismatch'
+          }
+
+          fetch_leases() {
+            git fetch --no-tags origin \
+              "+refs/heads/main:refs/remotes/origin/main" \
+              "+refs/heads/$PBRANCH:refs/remotes/origin/$PBRANCH" \
+              "+refs/heads/$CBRANCH:refs/remotes/origin/$CBRANCH"
+          }
+
+          stage controller-envelope
+          require_eq controller-base "$(git rev-parse HEAD^)" "$CPARENT"
+          require_eq controller-count "$(git rev-list --count "$CPARENT..HEAD")" '1'
+          require_eq controller-branch 'agent/pr2231-canonical-cross-callback-controller-v68' "$CBRANCH"
+          require_eq controller-paths "$(git diff --name-only "$CPARENT..HEAD" | LC_ALL=C sort)" '.github/workflows/temporary-pr2231-canonical-cross-callback-v68.yml'
+          REPAIR=/tmp/pr2231-v68-repair.py
+          printf '%s' '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' | base64 --decode | gzip --decompress >"$REPAIR"
+          python3 -m py_compile "$REPAIR"
+
+          stage initial-live-leases
+          fetch_leases
+          require_eq controller-remote "$(git rev-parse refs/remotes/origin/$CBRANCH)" "$H"
+          require_eq product-head "$(git rev-parse refs/remotes/origin/$PBRANCH)" "$PHEAD"
+          require_eq product-parent "$(git rev-parse "$PHEAD^")" "$CPARENT"
+          require_eq product-tree "$(git rev-parse "$PHEAD^{tree}")" "$PTREE"
+          require_eq product-count "$(git rev-list --count "$CPARENT..$PHEAD")" '1'
+          require_eq product-paths "$(git diff --name-only "$CPARENT..$PHEAD" | LC_ALL=C sort)" $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          require_eq product-lib "$(git rev-parse "$PHEAD:tools/lib/industrial-exhaust.mjs")" "$PLIB"
+          require_eq product-test "$(git rev-parse "$PHEAD:test/industrial-exhaust.test.js")" "$PTEST"
+
+          MAIN="$(git rev-parse refs/remotes/origin/main)"
+          require_eq main "$MAIN" "$CPARENT"
+          require_eq main-lib "$(git rev-parse "$MAIN:tools/lib/industrial-exhaust.mjs")" "$BLIB"
+          require_eq main-test "$(git rev-parse "$MAIN:test/industrial-exhaust.test.js")" "$BTEST"
+
+          stage exact-head-reproduction-and-controls
+          rm -rf "$S" "$Q"
+          git worktree prune
+          git worktree add --detach "$S" "$PHEAD"
+          cd "$S"
+
+          node --input-type=module <<'NODE' 2>&1 | tee -a "$R"
+          import assert from 'node:assert/strict';
+          import fs from 'node:fs';
+          import { redactContactData as redact } from './tools/lib/industrial-exhaust.mjs';
+
+          const defectiveCases = [
+            [
+              'sentence-boundary-renewal',
+              'Phone: 09012345678. 2026-08-17 12:30:45 555-1212',
+              'Phone: [contact omitted]. 2026-08-17 12:30:45 [contact omitted]'
+            ],
+            [
+              'inherited-lease-renewal',
+              'Phone: 09012345678 12:30:45 555-1212 13:40:50 666-1212',
+              'Phone: [contact omitted] 12:30:45 [contact omitted] 13:40:50 [contact omitted]'
+            ],
+            [
+              'nested-observation-label-theft',
+              'Phone: ((2026-08-17)) 12:30:45 555-1212',
+              'Phone: ([contact omitted]) 12:30:45 [contact omitted]'
+            ]
+          ];
+
+          for (const [name, input, defective] of defectiveCases) {
+            const actual = redact(input);
+            console.log(JSON.stringify({ name, input, actual, defective }));
+            assert.equal(actual, defective, `${name}: exact head must reproduce the current defect`);
+          }
+
+          const currentControls = [
+            [
+              'nested-phone-label',
+              'Phone: ((09012345678)) 12:30:45 555-1212',
+              'Phone: ([contact omitted]) 12:30:45 [contact omitted]'
+            ],
+            [
+              'owned-closer-overflow-segmentation',
+              `Archive ${'GUID '.repeat(4000)}(record id: 555-1212)12345678`,
+              `Archive ${'GUID '.repeat(4000)}(record id: [contact omitted])12345678`
+            ]
+          ];
+          for (const [name, input, expected] of currentControls) {
+            const actual = redact(input);
+            console.log(JSON.stringify({ name, actual, expected }));
+            assert.equal(actual, expected, `${name}: current exact-head control must already pass`);
+          }
+
+          const repeated = '1.1 '.repeat(1200);
+          const input = `Phone: 09012345678 ${repeated}12:30 555-1212`;
+          const expected = `Phone: [contact omitted] ${repeated}12:30 [contact omitted]`;
+          const started = process.hrtime.bigint();
+          const actual = redact(input);
+          const elapsedMs = Number(process.hrtime.bigint() - started) / 1e6;
+          assert.equal(actual, expected, 'exact head must preserve the repeated-observation output');
+          fs.writeFileSync('/tmp/pr2231-v68-old-ms', String(elapsedMs));
+          console.log(JSON.stringify({ name: 'repeated-observation-baseline', elapsedMs }));
+          NODE
+
+          stage exact-two-file-repair
+          python3 "$REPAIR"
+          git diff --check
+          require_eq repair-paths "$(git diff --name-only "$PHEAD" | LC_ALL=C sort)" $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+
+          stage repaired-transition-and-focused-suites
+          node --input-type=module <<'NODE' 2>&1 | tee -a "$R"
+          import assert from 'node:assert/strict';
+          import fs from 'node:fs';
+          import { redactContactData as redact } from './tools/lib/industrial-exhaust.mjs';
+
+          const cases = [
+            [
+              'sentence-boundary-expiry',
+              'Phone: 09012345678. 2026-08-17 12:30:45 555-1212',
+              'Phone: [contact omitted]. 2026-08-17 12:30:45 555-1212'
+            ],
+            [
+              'one-use-cross-callback-lease',
+              'Phone: 09012345678 12:30:45 555-1212 13:40:50 666-1212',
+              'Phone: [contact omitted] 12:30:45 [contact omitted] 13:40:50 666-1212'
+            ],
+            [
+              'nested-date-observation',
+              'Phone: ((2026-08-17)) 12:30:45 555-1212',
+              'Phone: ((2026-08-17)) 12:30:45 555-1212'
+            ],
+            [
+              'nested-decimal-observation',
+              'Phone: ((1234.5678)) 12:30:45 555-1212',
+              'Phone: ((1234.5678)) 12:30:45 555-1212'
+            ],
+            [
+              'nested-unit-observation',
+              'Phone: ((12345678 people)) 12:30:45 555-1212',
+              'Phone: ((12345678 people)) 12:30:45 555-1212'
+            ],
+            [
+              'nested-phone-label',
+              'Phone: ((09012345678)) 12:30:45 555-1212',
+              'Phone: ([contact omitted]) 12:30:45 [contact omitted]'
+            ],
+            [
+              'owned-closer-overflow-segmentation',
+              `Archive ${'GUID '.repeat(4000)}(record id: 555-1212)12345678`,
+              `Archive ${'GUID '.repeat(4000)}(record id: [contact omitted])12345678`
+            ]
+          ];
+          for (const [name, input, expected] of cases) {
+            const actual = redact(input);
+            console.log(JSON.stringify({ name, actual, expected }));
+            assert.equal(actual, expected, name);
+          }
+
+          const repeated = '1.1 '.repeat(1200);
+          const input = `Phone: 09012345678 ${repeated}12:30 555-1212`;
+          const expected = `Phone: [contact omitted] ${repeated}12:30 [contact omitted]`;
+          const started = process.hrtime.bigint();
+          const actual = redact(input);
+          const elapsedMs = Number(process.hrtime.bigint() - started) / 1e6;
+          const oldElapsedMs = Number(fs.readFileSync('/tmp/pr2231-v68-old-ms', 'utf8'));
+          assert.equal(actual, expected, 'bounded scan must preserve exact repeated-observation output');
+          assert.ok(elapsedMs < 2000, `bounded scan exceeded 2000ms: ${elapsedMs}`);
+          console.log(JSON.stringify({
+            name: 'repeated-observation-repaired',
+            oldElapsedMs,
+            elapsedMs,
+            speedup: oldElapsedMs / Math.max(elapsedMs, 0.001)
+          }));
+          NODE
+
+          node --check tools/lib/industrial-exhaust.mjs
+          node --check tools/crawl-industrial-exhaust.mjs
+          node --check test/industrial-exhaust.test.js
+          node test/industrial-exhaust.test.js 2>&1 | tee -a "$R"
+          node test/industrial-exhaust-artifacts.test.js 2>&1 | tee -a "$R"
+
+          stage live-main-transplant-and-release-qualification
+          cd "$GITHUB_WORKSPACE"
+          git worktree add --detach "$Q" "$MAIN"
+          cp "$S/tools/lib/industrial-exhaust.mjs" "$Q/tools/lib/industrial-exhaust.mjs"
+          cp "$S/test/industrial-exhaust.test.js" "$Q/test/industrial-exhaust.test.js"
+          cd "$Q"
+
+          require_eq qualified-paths "$(git diff --name-only | LC_ALL=C sort)" $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          git diff --check
+          node --check tools/lib/industrial-exhaust.mjs
+          node --check tools/crawl-industrial-exhaust.mjs
+          node --check test/industrial-exhaust.test.js
+          node test/industrial-exhaust.test.js 2>&1 | tee -a "$R"
+          node test/industrial-exhaust-artifacts.test.js 2>&1 | tee -a "$R"
+          npm run release:check 2>&1 | tee -a "$R"
+
+          git restore --worktree --staged -- build 2>/dev/null || true
+          git clean -fd -- build >/dev/null 2>&1 || true
+          require_eq post-release-paths "$(git diff --name-only | LC_ALL=C sort)" $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          git diff --check
+
+          stage construct-qualified-product
+          git config user.name BigBirdReturns
+          git config user.email bigbirdreturns@proton.me
+          git add tools/lib/industrial-exhaust.mjs test/industrial-exhaust.test.js
+          git commit -m 'fix: bound phone-label leases across observations'
+
+          AHEAD="$(git rev-parse HEAD)"
+          ATREE="$(git rev-parse HEAD^{tree})"
+          ALIB="$(git rev-parse HEAD:tools/lib/industrial-exhaust.mjs)"
+          ATEST="$(git rev-parse HEAD:test/industrial-exhaust.test.js)"
+
+          require_eq qualified-parent "$(git rev-parse HEAD^)" "$MAIN"
+          require_eq qualified-count "$(git rev-list --count "$MAIN..HEAD")" '1'
+          require_eq qualified-commit-paths "$(git diff --name-only "$MAIN..HEAD" | LC_ALL=C sort)" $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          printf 'qualified-head=%s\nqualified-tree=%s\nqualified-lib=%s\nqualified-test=%s\n' \
+            "$AHEAD" "$ATREE" "$ALIB" "$ATEST" | tee -a "$R"
+          git diff --numstat "$MAIN..HEAD" | LC_ALL=C sort -k3 | tee -a "$R"
+
+          stage final-lease-revalidation-and-publication
+          cd "$GITHUB_WORKSPACE"
+          fetch_leases
+          require_eq final-main "$(git rev-parse refs/remotes/origin/main)" "$MAIN"
+          require_eq final-product "$(git rev-parse refs/remotes/origin/$PBRANCH)" "$PHEAD"
+          require_eq final-controller "$(git rev-parse refs/remotes/origin/$CBRANCH)" "$H"
+          require_eq final-product-tree "$(git rev-parse "$PHEAD^{tree}")" "$PTREE"
+          require_eq final-main-lib "$(git rev-parse "$MAIN:tools/lib/industrial-exhaust.mjs")" "$BLIB"
+          require_eq final-main-test "$(git rev-parse "$MAIN:test/industrial-exhaust.test.js")" "$BTEST"
+          require_eq final-product-lib "$(git rev-parse "$PHEAD:tools/lib/industrial-exhaust.mjs")" "$PLIB"
+          require_eq final-product-test "$(git rev-parse "$PHEAD:test/industrial-exhaust.test.js")" "$PTEST"
+
+          git -C "$Q" push origin "$AHEAD:refs/heads/$PBRANCH" \
+            --force-with-lease="refs/heads/$PBRANCH:$PHEAD"
+
+          git fetch --no-tags origin "+refs/heads/$PBRANCH:refs/remotes/origin/$PBRANCH"
+          require_eq published-head "$(git rev-parse refs/remotes/origin/$PBRANCH)" "$AHEAD"
+          require_eq published-tree "$(git rev-parse "$AHEAD^{tree}")" "$ATREE"
+          require_eq published-lib "$(git rev-parse "$AHEAD:tools/lib/industrial-exhaust.mjs")" "$ALIB"
+          require_eq published-test "$(git rev-parse "$AHEAD:test/industrial-exhaust.test.js")" "$ATEST"
+
+          printf 'QUALIFICATION_SUCCESS\nbase=%s\nold_product=%s\nnew_product=%s\ntree=%s\nlib=%s\ntest=%s\n' \
+            "$MAIN" "$PHEAD" "$AHEAD" "$ATREE" "$ALIB" "$ATEST" | tee -a "$R"
+
+      - name: Upload qualification receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr2231-canonical-cross-callback-v68
+          path: /tmp/pr2231-v68-receipt.txt
+          if-no-files-found: error
+          retention-days: 90
