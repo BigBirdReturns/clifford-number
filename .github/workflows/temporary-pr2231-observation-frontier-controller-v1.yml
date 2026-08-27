@@ -1,0 +1,306 @@
+name: Temporary PR 2231 observation frontier controller v1
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/tmp/pr2231-observation-frontier-v1-repair.py'
+      - '.github/workflows/temporary-pr2231-observation-frontier-controller-v1.yml'
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: pr2231-observation-frontier-v1
+  cancel-in-progress: false
+
+jobs:
+  qualify-and-publish:
+    if: github.repository == 'BigBirdReturns/clifford-number'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      CBRANCH: agent/pr2231-observation-frontier-controller-v1
+      REPAIR_PATH: .github/tmp/pr2231-observation-frontier-v1-repair.py
+      REPAIR_BLOB: 2024328fa44826f4ad2aeb98a46054beaaf6c119
+      CPARENT: 564da53a373bfee43b026d7ed0ba0022bcc38633
+      CTREE: 2e0ba796bf4648e899e8c425ce00fa9bbdb2c7cc
+      MPARENT: 01428cde971ffe0d995a60c80c153eded9b7e6b1
+      BLIB: 5f68254d3e44de693e83503aed879160f9b7b997
+      BTEST: 1659a7cc54666a2ac5a1d6b88eb8c6591d98008e
+      PBRANCH: agent/current-main-identifier-context-product-v1
+      PHEAD: 45e5e162a6cc966cff305e0026ed71942f30afc9
+      PTREE: a28fe8655f5821b9a9dd53a6ea2aef3743dfb749
+      PLIB: b3a120bbed8a0146900a238ac79256223201bca4
+      PTEST: 41f4e64f767722fe46ef55aed649af3e6e66cec8
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Qualify and publish one-pass observation frontier
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          H='${{ github.event.pull_request.head.sha }}'
+          S=/tmp/pr2231-observation-frontier-source
+          Q=/tmp/pr2231-observation-frontier-main
+          A=/tmp/pr2231-observation-frontier-artifact
+          R="$A/receipt.txt"
+          mkdir -p "$A"
+          : >"$R"
+
+          stage() { printf '\n=== STAGE %s ===\n' "$1" | tee -a "$R"; }
+          fail() { printf 'FAIL[%s] %s\n' "$1" "$2" | tee -a "$R" >&2; exit 1; }
+          require_eq() {
+            printf '%s actual=%s expected=%s\n' "$1" "$2" "$3" | tee -a "$R"
+            [ "$2" = "$3" ] || fail "$1" 'value mismatch'
+          }
+          fetch_leases() {
+            git fetch --no-tags origin \
+              "+refs/heads/main:refs/remotes/origin/main" \
+              "+refs/heads/$PBRANCH:refs/remotes/origin/$PBRANCH" \
+              "+refs/heads/$CBRANCH:refs/remotes/origin/$CBRANCH"
+          }
+          retain_workspace() {
+            if [ -d "$S" ]; then
+              git -C "$S" diff --binary -- \
+                tools/lib/industrial-exhaust.mjs \
+                test/industrial-exhaust.test.js \
+                > "$A/candidate.patch" 2>/dev/null || true
+              cp "$S/tools/lib/industrial-exhaust.mjs" \
+                "$A/industrial-exhaust.mjs" 2>/dev/null || true
+              cp "$S/test/industrial-exhaust.test.js" \
+                "$A/industrial-exhaust.test.js" 2>/dev/null || true
+            fi
+          }
+          trap retain_workspace EXIT
+
+          stage controller-envelope
+          require_eq controller-parent "$(git rev-parse HEAD^)" "$CPARENT"
+          require_eq controller-count "$(git rev-list --count "$CPARENT..HEAD")" '1'
+          require_eq controller-paths \
+            "$(git diff --name-only "$CPARENT..HEAD" | LC_ALL=C sort)" \
+            $'.github/tmp/pr2231-observation-frontier-v1-repair.py\n.github/workflows/temporary-pr2231-observation-frontier-controller-v1.yml'
+          require_eq repair-blob \
+            "$(git rev-parse "HEAD:$REPAIR_PATH")" "$REPAIR_BLOB"
+          python3 -m py_compile "$REPAIR_PATH"
+
+          stage initial-live-leases
+          fetch_leases
+          require_eq controller-head "$(git rev-parse refs/remotes/origin/$CBRANCH)" "$H"
+          require_eq main-head "$(git rev-parse refs/remotes/origin/main)" "$CPARENT"
+          require_eq main-tree "$(git rev-parse "$CPARENT^{tree}")" "$CTREE"
+          require_eq main-parent "$(git rev-parse "$CPARENT^")" "$MPARENT"
+          require_eq main-lib "$(git rev-parse "$CPARENT:tools/lib/industrial-exhaust.mjs")" "$BLIB"
+          require_eq main-test "$(git rev-parse "$CPARENT:test/industrial-exhaust.test.js")" "$BTEST"
+          require_eq product-head "$(git rev-parse refs/remotes/origin/$PBRANCH)" "$PHEAD"
+          require_eq product-parent "$(git rev-parse "$PHEAD^")" "$MPARENT"
+          require_eq product-main-merge-base "$(git merge-base "$PHEAD" "$CPARENT")" "$MPARENT"
+          require_eq product-tree "$(git rev-parse "$PHEAD^{tree}")" "$PTREE"
+          require_eq product-lib "$(git rev-parse "$PHEAD:tools/lib/industrial-exhaust.mjs")" "$PLIB"
+          require_eq product-test "$(git rev-parse "$PHEAD:test/industrial-exhaust.test.js")" "$PTEST"
+          require_eq product-count "$(git rev-list --count "$MPARENT..$PHEAD")" '1'
+          require_eq product-paths \
+            "$(git diff --name-only "$MPARENT..$PHEAD" | LC_ALL=C sort)" \
+            $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+
+          stage exact-product-complexity-witness
+          rm -rf "$S" "$Q"
+          git worktree prune
+          git worktree add --detach "$S" "$PHEAD"
+          cd "$S"
+          node --input-type=module <<'NODE' 2>&1 | tee -a "$R"
+          import assert from 'node:assert/strict';
+          import { performance } from 'node:perf_hooks';
+          import { redactContactData as redact } from './tools/lib/industrial-exhaust.mjs';
+
+          const count = 1200;
+          const input = `Phone: 09012345678 ${'1.1 '.repeat(count)}12:30 555-1212`;
+          const start = performance.now();
+          const actual = redact(input);
+          const elapsed = performance.now() - start;
+          const expected = `Phone: [contact omitted] ${'1.1 '.repeat(count)}12:30 [contact omitted]`;
+          console.log(JSON.stringify({
+            kind: 'exact-predecessor-complexity-reproduction',
+            count,
+            characters: input.length,
+            elapsed_ms: elapsed,
+            output_matches: actual === expected
+          }));
+          assert.equal(actual, expected, 'predecessor semantics must reproduce exactly');
+          assert.ok(
+            elapsed > 500,
+            `exact predecessor did not reproduce the reviewed complexity floor: ${elapsed.toFixed(1)}ms`
+          );
+          NODE
+
+          stage apply-repair-and-targeted-controls
+          python3 "$GITHUB_WORKSPACE/$REPAIR_PATH"
+          require_eq repair-paths \
+            "$(git diff --name-only "$PHEAD" | LC_ALL=C sort)" \
+            $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          git diff --check
+          node --check tools/lib/industrial-exhaust.mjs
+          node --check test/industrial-exhaust.test.js
+          RLIB="$(git hash-object tools/lib/industrial-exhaust.mjs)"
+          RTEST="$(git hash-object test/industrial-exhaust.test.js)"
+          printf 'repaired-lib=%s\nrepaired-test=%s\n' "$RLIB" "$RTEST" | tee -a "$R"
+
+          node --input-type=module <<'NODE' 2>&1 | tee -a "$R"
+          import assert from 'node:assert/strict';
+          import { performance } from 'node:perf_hooks';
+          import { redactContactData as redact } from './tools/lib/industrial-exhaust.mjs';
+
+          const count = 1200;
+          const input = `Phone: 09012345678 ${'1.1 '.repeat(count)}12:30 555-1212`;
+          const start = performance.now();
+          const actual = redact(input);
+          const elapsed = performance.now() - start;
+          const expected = `Phone: [contact omitted] ${'1.1 '.repeat(count)}12:30 [contact omitted]`;
+          console.log(JSON.stringify({
+            kind: 'repaired-one-pass-observation-frontier',
+            count,
+            characters: input.length,
+            elapsed_ms: elapsed,
+            output_matches: actual === expected
+          }));
+          assert.equal(actual, expected, 'the later local phone must remain governed by the original label');
+          assert.ok(
+            elapsed < 5000,
+            `one-pass observation frontier exceeded the bounded ceiling: ${elapsed.toFixed(1)}ms`
+          );
+
+          const controls = [
+            [
+              'consecutive observations retain exact source custody',
+              'Phone: 09012345678 2026-08-17 12:30:45 555-1212',
+              'Phone: [contact omitted] 2026-08-17 12:30:45 [contact omitted]'
+            ],
+            [
+              'fullwidth observations retain source geometry',
+              '電話：０９０１２３４５６７８ ３．１４ １２：３０：４５ ５５５－１２１２',
+              '電話：[contact omitted] ３．１４ １２：３０：４５ [contact omitted]'
+            ],
+            [
+              'sentence boundary terminates label authority',
+              `Phone: 09012345678. ${'1.1 '.repeat(20)}12:30 555-1212`,
+              `Phone: [contact omitted]. ${'1.1 '.repeat(20)}12:30 555-1212`
+            ],
+            [
+              'one-use inherited lease cannot renew',
+              'Phone: 09012345678 12:30:45(03-6216-8041) 13:40:50 666-1212',
+              'Phone: [contact omitted] 12:30:45[contact omitted] 13:40:50 666-1212'
+            ],
+            [
+              'unit-bearing phone-shaped observation remains protected',
+              'Phone: 03-62165111 people 03-6216-8041',
+              'Phone: 03-62165111 people [contact omitted]'
+            ]
+          ];
+          for (const [name, source, expectedOutput] of controls) {
+            const output = redact(source);
+            console.log(JSON.stringify({kind: 'authority-control', name, output}));
+            assert.equal(output, expectedOutput, name);
+          }
+          NODE
+
+          stage repaired-industrial-exhaust-suites
+          mapfile -t suites < <(
+            find test -maxdepth 1 -type f \
+              -name 'industrial-exhaust*.test.js' -print | LC_ALL=C sort
+          )
+          test "${#suites[@]}" -ge 3
+          printf '%s\n' "${suites[@]}" | tee "$A/suites.txt"
+          for suite in "${suites[@]}"; do
+            printf 'RUNNING %s\n' "$suite" | tee -a "$R"
+            node "$suite" 2>&1 | tee -a "$R"
+          done
+
+          stage current-main-transplant-and-release
+          cd "$GITHUB_WORKSPACE"
+          git worktree add --detach "$Q" "$CPARENT"
+          cp "$S/tools/lib/industrial-exhaust.mjs" "$Q/tools/lib/industrial-exhaust.mjs"
+          cp "$S/test/industrial-exhaust.test.js" "$Q/test/industrial-exhaust.test.js"
+          cd "$Q"
+          require_eq transplant-paths "$(git diff --name-only | LC_ALL=C sort)" \
+            $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          require_eq transplant-lib "$(git hash-object tools/lib/industrial-exhaust.mjs)" "$RLIB"
+          require_eq transplant-test "$(git hash-object test/industrial-exhaust.test.js)" "$RTEST"
+          git diff --check
+          for suite in "${suites[@]}"; do
+            printf 'TRANSPLANT %s\n' "$suite" | tee -a "$R"
+            node "$suite" 2>&1 | tee -a "$R"
+          done
+          npm run release:check 2>&1 | tee -a "$R"
+
+          stage restore-generated-state-and-construct-product
+          git reset --hard "$CPARENT"
+          cp "$S/tools/lib/industrial-exhaust.mjs" tools/lib/industrial-exhaust.mjs
+          cp "$S/test/industrial-exhaust.test.js" test/industrial-exhaust.test.js
+          require_eq restored-paths "$(git diff --name-only | LC_ALL=C sort)" \
+            $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          require_eq restored-lib "$(git hash-object tools/lib/industrial-exhaust.mjs)" "$RLIB"
+          require_eq restored-test "$(git hash-object test/industrial-exhaust.test.js)" "$RTEST"
+          git diff --check
+          git add tools/lib/industrial-exhaust.mjs test/industrial-exhaust.test.js
+          git -c user.name='BigBirdReturns' \
+              -c user.email='bigbirdreturns@proton.me' \
+              commit -m 'fix: bound cross-callback observation scans'
+          QUALIFIED="$(git rev-parse HEAD)"
+          QTREE="$(git rev-parse HEAD^{tree})"
+          require_eq qualified-parent "$(git rev-parse HEAD^)" "$CPARENT"
+          require_eq qualified-count "$(git rev-list --count "$CPARENT..HEAD")" '1'
+          require_eq qualified-paths \
+            "$(git diff --name-only "$CPARENT..HEAD" | LC_ALL=C sort)" \
+            $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          require_eq qualified-lib "$(git rev-parse HEAD:tools/lib/industrial-exhaust.mjs)" "$RLIB"
+          require_eq qualified-test "$(git rev-parse HEAD:test/industrial-exhaust.test.js)" "$RTEST"
+          printf 'qualified-commit=%s\nqualified-tree=%s\n' "$QUALIFIED" "$QTREE" | tee -a "$R"
+          git show --stat --format=fuller HEAD > "$A/qualified-commit.txt"
+          git diff --binary "$CPARENT..HEAD" > "$A/qualified-product.patch"
+
+          stage final-lease-revalidation-and-publication
+          cd "$GITHUB_WORKSPACE"
+          fetch_leases
+          require_eq final-controller-head "$(git rev-parse refs/remotes/origin/$CBRANCH)" "$H"
+          require_eq final-main-head "$(git rev-parse refs/remotes/origin/main)" "$CPARENT"
+          require_eq final-main-tree "$(git rev-parse "$CPARENT^{tree}")" "$CTREE"
+          require_eq final-product-head "$(git rev-parse refs/remotes/origin/$PBRANCH)" "$PHEAD"
+          require_eq final-product-tree "$(git rev-parse "$PHEAD^{tree}")" "$PTREE"
+          require_eq final-product-lib "$(git rev-parse "$PHEAD:tools/lib/industrial-exhaust.mjs")" "$PLIB"
+          require_eq final-product-test "$(git rev-parse "$PHEAD:test/industrial-exhaust.test.js")" "$PTEST"
+          require_eq final-repair-blob "$(git rev-parse "HEAD:$REPAIR_PATH")" "$REPAIR_BLOB"
+          require_eq final-source-lib "$(git -C "$S" hash-object tools/lib/industrial-exhaust.mjs)" "$RLIB"
+          require_eq final-source-test "$(git -C "$S" hash-object test/industrial-exhaust.test.js)" "$RTEST"
+
+          git -C "$Q" push origin \
+            "HEAD:refs/heads/$PBRANCH" \
+            --force-with-lease="refs/heads/$PBRANCH:$PHEAD"
+          git fetch --no-tags origin "+refs/heads/$PBRANCH:refs/remotes/origin/$PBRANCH"
+          require_eq published-head "$(git rev-parse refs/remotes/origin/$PBRANCH)" "$QUALIFIED"
+          require_eq published-tree "$(git rev-parse "$QUALIFIED^{tree}")" "$QTREE"
+          require_eq published-parent "$(git rev-parse "$QUALIFIED^")" "$CPARENT"
+          require_eq published-lib "$(git rev-parse "$QUALIFIED:tools/lib/industrial-exhaust.mjs")" "$RLIB"
+          require_eq published-test "$(git rev-parse "$QUALIFIED:test/industrial-exhaust.test.js")" "$RTEST"
+          require_eq published-paths \
+            "$(git diff --name-only "$CPARENT..$QUALIFIED" | LC_ALL=C sort)" \
+            $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          printf 'QUALIFICATION_SUCCESS\n' | tee -a "$R"
+
+      - name: Retain qualification receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr2231-observation-frontier-v1
+          path: /tmp/pr2231-observation-frontier-artifact
+          if-no-files-found: warn
