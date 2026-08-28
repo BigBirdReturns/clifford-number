@@ -1,0 +1,87 @@
+name: Temporary PR 2231 short-year extension custody controller v85
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/tmp/pr2231-short-year-extension-custody-v85-repair.py'
+      - '.github/workflows/temporary-pr2231-short-year-extension-custody-controller-v85.yml'
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: pr2231-short-year-extension-custody-v85
+  cancel-in-progress: false
+
+jobs:
+  qualify-and-publish:
+    if: github.repository == 'BigBirdReturns/clifford-number'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      CONTROLLER_HEAD: ${{ github.event.pull_request.head.sha }}
+      CBRANCH: agent/pr2231-short-year-extension-custody-controller-v85
+      REPAIR_PATH: .github/tmp/pr2231-short-year-extension-custody-v85-repair.py
+      REPAIR_BLOB: 6db6832b7926daad13e61624fb34e7aa32b3472b
+      CPARENT: 564da53a373bfee43b026d7ed0ba0022bcc38633
+      CTREE: 2e0ba796bf4648e899e8c425ce00fa9bbdb2c7cc
+      CBASEPARENT: 01428cde971ffe0d995a60c80c153eded9b7e6b1
+      BLIB: 5f68254d3e44de693e83503aed879160f9b7b997
+      BTEST: 1659a7cc54666a2ac5a1d6b88eb8c6591d98008e
+      PBRANCH: agent/current-main-identifier-context-product-v1
+      PHEAD: 932089e4911d96cf27997dc39bed15c4e00e1570
+      PPARENT: 564da53a373bfee43b026d7ed0ba0022bcc38633
+      PTREE: e377e456efbc64b858bc85765dabd7b0e53e4aa0
+      PLIB: 4ea5698df5928ad51c42172057578c0c2ef1781a
+      PTEST: 9a5ce8776697ae36d9833c052bfa923cf43f210d
+      RLIB: 2a6434fbdc88385fb922ee48bcd6d81c05474aff
+      RTEST: 0fda1487abcbe3352c49d7e92977333d749d18c1
+      PREDBRANCH: agent/pr2231-observation-boundary-continuation-controller-v1
+      PREDHEAD: a4499a5918af4c576c8823b4cefb27711df28827
+      PREDREPAIR_PATH: .github/tmp/pr2231-observation-boundary-continuation-v1-repair.py
+      PREDREPAIR_BLOB: a240bec6d73b235f6c4235dfab797f4e621a1e8c
+      PREDWORKFLOW_PATH: .github/workflows/temporary-pr2231-observation-boundary-continuation-controller-v1.yml
+      PREDWORKFLOW_BLOB: 8c6fdee5bcf018433a933dd12392676beacf1b3b
+      RUN_SHA256: 37f8586574460c45df2e8b9ab2fb96a1d2329f704e557b7fd78201b1f148517a
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Qualify and publish short-year extension custody repair
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          api="https://api.github.com/repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER"
+          body="$(curl -fsSL \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "$api" | jq -r '.body // ""')"
+          payload="$(printf '%s\n' "$body" | sed -n \
+            '/^CONTROLLER_RUN_GZ_B64_BEGIN$/,/^CONTROLLER_RUN_GZ_B64_END$/p' | \
+            sed '1d;$d' | tr -d '[:space:]')"
+          test -n "$payload"
+          printf '%s' "$payload" | base64 -d | gzip -d > /tmp/pr2231-v85-controller-run.sh
+          test "$(sha256sum /tmp/pr2231-v85-controller-run.sh | awk '{print $1}')" = "$RUN_SHA256"
+          bash /tmp/pr2231-v85-controller-run.sh
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-short-year-extension-custody-v85
+          path: /tmp/pr2231-v85-artifact
+          if-no-files-found: error
+          retention-days: 90
