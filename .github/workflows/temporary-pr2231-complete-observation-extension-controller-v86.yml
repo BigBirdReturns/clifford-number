@@ -1,0 +1,62 @@
+name: Temporary PR 2231 complete observation and extension custody controller v86
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temporary-pr2231-complete-observation-extension-controller-v86.yml'
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: pr2231-complete-observation-extension-v86
+  cancel-in-progress: false
+
+jobs:
+  qualify-and-publish:
+    if: github.repository == 'BigBirdReturns/clifford-number'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      CONTROLLER_HEAD: ${{ github.event.pull_request.head.sha }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      GH_TOKEN: ${{ github.token }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Decode the digest-pinned controller payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          body="$(gh api "/repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq .body)"
+          test "$(printf '%s\n' "$body" | grep -c '^CONTROLLER_RUN_SHA256_BEGIN$')" -eq 1
+          test "$(printf '%s\n' "$body" | grep -c '^CONTROLLER_RUN_GZ_B64_BEGIN$')" -eq 1
+          expected="$(printf '%s\n' "$body" | awk '/^CONTROLLER_RUN_SHA256_BEGIN$/{getline; print; exit}')"
+          payload="$(printf '%s\n' "$body" | awk '/^CONTROLLER_RUN_GZ_B64_BEGIN$/{capture=1;next}/^CONTROLLER_RUN_GZ_B64_END$/{capture=0}capture' | tr -d '\r\n')"
+          test -n "$expected"
+          test -n "$payload"
+          printf '%s' "$payload" | base64 -d > /tmp/pr2231-v86-controller.sh.gz
+          printf '%s  %s\n' "$expected" /tmp/pr2231-v86-controller.sh.gz | sha256sum -c -
+          gzip -dc /tmp/pr2231-v86-controller.sh.gz > /tmp/pr2231-v86-controller.sh
+          chmod +x /tmp/pr2231-v86-controller.sh
+          /tmp/pr2231-v86-controller.sh
+
+      - name: Upload retained qualification artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr2231-complete-observation-extension-v86
+          path: /tmp/pr2231-v86-artifact
+          if-no-files-found: error
+          retention-days: 30
