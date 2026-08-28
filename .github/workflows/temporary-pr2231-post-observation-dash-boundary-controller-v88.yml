@@ -1,0 +1,71 @@
+name: Temporary PR 2231 post-observation dash boundary controller v88
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/tmp/pr2231-post-observation-dash-boundary-v88-repair.py'
+      - '.github/workflows/temporary-pr2231-post-observation-dash-boundary-controller-v88.yml'
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: pr2231-post-observation-dash-boundary-v88
+  cancel-in-progress: false
+
+jobs:
+  qualify-and-publish:
+    if: github.repository == 'BigBirdReturns/clifford-number'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      CONTROLLER_HEAD: ${{ github.event.pull_request.head.sha }}
+      CBRANCH: agent/pr2231-post-observation-dash-boundary-controller-v88
+      REPAIR_PATH: .github/tmp/pr2231-post-observation-dash-boundary-v88-repair.py
+      REPAIR_BLOB: 4918ff8e39ec65aedc0e4fbbaaab6785d3e84b9e
+      CPARENT: 564da53a373bfee43b026d7ed0ba0022bcc38633
+      CTREE: 2e0ba796bf4648e899e8c425ce00fa9bbdb2c7cc
+      CBASEPARENT: 01428cde971ffe0d995a60c80c153eded9b7e6b1
+      BLIB: 5f68254d3e44de693e83503aed879160f9b7b997
+      BTEST: 1659a7cc54666a2ac5a1d6b88eb8c6591d98008e
+      PBRANCH: agent/current-main-identifier-context-product-v1
+      PHEAD: 5db96cdf68815a75eab1db624a9e9877042c89d7
+      PPARENT: 564da53a373bfee43b026d7ed0ba0022bcc38633
+      PTREE: 070d3344c196beac7cc3b2fac43d0769e91ae67e
+      PLIB: 54c390839fa06f39b83e3fd2cac9852082bc9a09
+      PTEST: 6941d9bedc20b3a83a4f2ce96bfbf79457def077
+      RLIB: 01457c2702a2929ae353751435b42ecbe1b3e2bb
+      RTEST: 5a3bc1711990a96833d3213355f784a7d8b26495
+      V87BRANCH: agent/pr2231-complete-observation-extension-controller-v87
+      V87HEAD: 272a2e8800de16d5020dab2dd983395511599c71
+      V87WORKFLOW_PATH: .github/workflows/temporary-pr2231-complete-observation-extension-controller-v87.yml
+      V87WORKFLOW_BLOB: a85b197c508f425b3da96f1ec3b5bea8b0311f62
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Verify and execute the exact controller payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse "HEAD:$REPAIR_PATH")" = "$REPAIR_BLOB"
+          python3 "$REPAIR_PATH" --controller
+
+      - name: Upload retained qualification artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr2231-post-observation-dash-boundary-v88
+          path: /tmp/pr2231-v88-artifact
+          if-no-files-found: error
+          retention-days: 90
