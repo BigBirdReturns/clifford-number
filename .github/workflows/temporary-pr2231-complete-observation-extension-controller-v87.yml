@@ -1,0 +1,61 @@
+name: Temporary PR 2231 complete observation and extension custody controller v87
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/tmp/pr2231-complete-observation-extension-controller-v87.part-*'
+      - '.github/tmp/pr2231-complete-observation-extension-controller-v87.sha256'
+      - '.github/workflows/temporary-pr2231-complete-observation-extension-controller-v87.yml'
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: pr2231-complete-observation-extension-v87
+  cancel-in-progress: false
+
+jobs:
+  qualify-and-publish:
+    if: github.repository == 'BigBirdReturns/clifford-number'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      CONTROLLER_HEAD: ${{ github.event.pull_request.head.sha }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Verify and execute the chunked controller payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          MANIFEST=.github/tmp/pr2231-complete-observation-extension-controller-v87.sha256
+          printf '%s  %s\n' '8f45fffea6a0b0a828200923c67f71a96b050485b0e699fb5848dc7d0f05fa4d' "$MANIFEST" | sha256sum -c -
+          sha256sum -c "$MANIFEST"
+          cat .github/tmp/pr2231-complete-observation-extension-controller-v87.part-* \
+            > /tmp/pr2231-v87-controller.sh.gz.b64
+          base64 -d /tmp/pr2231-v87-controller.sh.gz.b64 \
+            > /tmp/pr2231-v87-controller.sh.gz
+          printf '%s  %s\n' '4f93cfe9bdea9b957e7add0020f6a497b6723af85ef36725a8c0c76546c48934' /tmp/pr2231-v87-controller.sh.gz | sha256sum -c -
+          gzip -dc /tmp/pr2231-v87-controller.sh.gz > /tmp/pr2231-v87-controller.sh
+          chmod +x /tmp/pr2231-v87-controller.sh
+          /tmp/pr2231-v87-controller.sh
+
+      - name: Upload retained qualification artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr2231-complete-observation-extension-v87
+          path: /tmp/pr2231-v87-artifact
+          if-no-files-found: error
+          retention-days: 30
