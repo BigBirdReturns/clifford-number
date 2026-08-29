@@ -1,0 +1,68 @@
+name: Temporary PR 2231 current-main custody publisher v91
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/tmp/pr2231-dash-boundary-custody-v88.patch'
+      - '.github/tmp/pr2231-dash-boundary-custody-controller-v88.part-*'
+      - '.github/tmp/pr2231-dash-boundary-custody-controller-v88.sha256'
+      - '.github/workflows/temporary-pr2231-dash-boundary-custody-v88.yml'
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: pr2231-current-main-custody-v91-publisher
+  cancel-in-progress: false
+
+jobs:
+  qualify-and-publish:
+    if: >-
+      github.repository == 'BigBirdReturns/clifford-number' &&
+      github.event.pull_request.number == 2387 &&
+      github.event.pull_request.draft == true
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      CONTROLLER_HEAD: ${{ github.event.pull_request.head.sha }}
+      CONTROLLER_BRANCH: ${{ github.event.pull_request.head.ref }}
+      GH_TOKEN: ${{ github.token }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Verify and execute the exact leased publisher
+        shell: bash
+        run: |
+          set -euo pipefail
+          PATCH=.github/tmp/pr2231-dash-boundary-custody-v88.patch
+          MANIFEST=.github/tmp/pr2231-dash-boundary-custody-controller-v88.sha256
+          printf '%s  %s\n' 'ff47a01fea4dfb40c0d0e8a98e16199855492b6750314ca37d21fdf0f5ce7fdd' "$PATCH" | sha256sum -c -
+          printf '%s  %s\n' '9a7531fb3f238543f3d49606c1e1b6d63b953efdc8961afa4d94a562c458c396' "$MANIFEST" | sha256sum -c -
+          sha256sum -c "$MANIFEST"
+          cat .github/tmp/pr2231-dash-boundary-custody-controller-v88.part-* > /tmp/pr2231-v91-publish-controller.sh.gz.b64
+          base64 -d /tmp/pr2231-v91-publish-controller.sh.gz.b64 > /tmp/pr2231-v91-publish-controller.sh.gz
+          printf '%s  %s\n' 'd9da48240fa31cde4109ac46dd4fbe466c5f3a5d1b43b856d94699104e16c0c4' /tmp/pr2231-v91-publish-controller.sh.gz | sha256sum -c -
+          gzip -dc /tmp/pr2231-v91-publish-controller.sh.gz > /tmp/pr2231-v91-publish-controller.sh
+          printf '%s  %s\n' 'af50f3e6dd5329a4332ae8e33e9f6a4337b39a3d99ec47d3f4eefdaf13747cc5' /tmp/pr2231-v91-publish-controller.sh | sha256sum -c -
+          chmod +x /tmp/pr2231-v91-publish-controller.sh
+          /tmp/pr2231-v91-publish-controller.sh
+
+      - name: Upload retained publication artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr2231-current-main-custody-v91-publication
+          path: /tmp/pr2231-v91-publish-artifact
+          if-no-files-found: error
+          retention-days: 90
