@@ -21,8 +21,8 @@ jobs:
       EXPECTED_PRODUCT_TREE: 23dde19530990df1f1daa436993b1214e83ac8fd
       EXPECTED_LIBRARY_BLOB: 6655e9aa10ac2964e5f6289a4881f1343265fa0e
       EXPECTED_TEST_BLOB: 7f72ca8c2eb7f436471453c74b98e1227b0970d5
-      EXPECTED_CONTROLLER_PARENT: a913ce18b27febb3d826806b8a7cb5fcdc241c15
-      EXPECTED_CONTROLLER_PAYLOAD_BLOB: fe35f758ee07a8996e9b7dde8a16e25101860ea6
+      EXPECTED_CONTROLLER_PARENT: 2ed9a0194c69f6198766ff467a98972be9408582
+      EXPECTED_CONTROLLER_PAYLOAD_BLOB: b8d35fc5d881e36ea4fc906c8baf9049c4471726
       PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
       RECEIPT_DIR: /tmp/pr2231-current-authority-state-exact-head-read-only
     steps:
@@ -35,26 +35,16 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Recover and execute exact-head read-only qualification
+      - name: Execute exact-head read-only qualification
         shell: bash
         run: |
           set -euo pipefail
-          payload_dir=/tmp/pr2231-current-authority-state-payload
-          rm -rf "$payload_dir" "$RECEIPT_DIR"
-          mkdir -p "$payload_dir"
-          base64 -d .github/tmp/pr2231-current-authority-state-qualification-v1.tar.gz.b64 \
-            | tar -xz -C "$payload_dir"
-          script="$payload_dir/pr2231-current-authority-state-qualification-v2.sh"
-          test -f "$script"
-          chmod +x "$script"
-          "$script"
-      - name: Upload exact-head qualification receipt and frozen payload
+          bash "$GITHUB_WORKSPACE/.github/tmp/pr2231-current-authority-state-qualification-v1.tar.gz.b64"
+      - name: Upload exact-head qualification receipt
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pr2231-current-authority-state-exact-head-read-only
-          path: |
-            /tmp/pr2231-current-authority-state-exact-head-read-only
-            /tmp/pr2231-current-authority-state-payload
+          name: pr2231-current-authority-state-exact-head-read-only-v2
+          path: /tmp/pr2231-current-authority-state-exact-head-read-only
           if-no-files-found: error
           retention-days: 90
