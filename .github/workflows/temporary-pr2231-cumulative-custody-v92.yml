@@ -1,4 +1,4 @@
-name: Temporary PR 2231 cumulative custody diagnostic v93
+name: Temporary PR 2231 cumulative custody diagnostic v93 failure census
 
 on:
   pull_request:
@@ -153,15 +153,51 @@ jobs:
           console.log('V93_COMPLETE_PROVENANCE_NO_LABEL_REPAIR_SUCCESS');
           NODE
 
-      - name: Run cumulative focused and repository-wide qualification
+      - name: Run cumulative qualification with retained first-failure census
         shell: bash
         working-directory: /tmp/pr2231-v93-product
         run: |
-          set -euo pipefail
+          set -uo pipefail
+          rm -rf "$ARTIFACT_DIR"
+          mkdir -p "$ARTIFACT_DIR/logs"
+          printf '%s\n' "$EXPECTED_MAIN" > "$ARTIFACT_DIR/main.sha"
+          printf '%s\n' "$EXPECTED_PRODUCT" > "$ARTIFACT_DIR/product-predecessor.sha"
+          printf '%s\n' "${{ github.event.pull_request.head.sha }}" > "$ARTIFACT_DIR/controller.sha"
+          git hash-object tools/lib/industrial-exhaust.mjs > "$ARTIFACT_DIR/prequalification-library.blob"
+          git hash-object test/industrial-exhaust.test.js > "$ARTIFACT_DIR/prequalification-focused-test.blob"
+          git diff --binary > "$ARTIFACT_DIR/prequalification-product.patch"
+          git diff --stat > "$ARTIFACT_DIR/prequalification-product.diffstat"
+
+          status=0
           for test_file in test/industrial-exhaust*.test.js; do
-            node "$test_file"
+            log="$ARTIFACT_DIR/logs/$(basename "$test_file").log"
+            printf 'RUNNING_TEST=%s\n' "$test_file"
+            if ! node "$test_file" >"$log" 2>&1; then
+              printf 'FAILED_COMMAND=node %s\n' "$test_file" | tee "$ARTIFACT_DIR/failure.txt"
+              printf 'FAILED_LOG=%s\n' "$log" | tee -a "$ARTIFACT_DIR/failure.txt"
+              tail -n 200 "$log" | tee -a "$ARTIFACT_DIR/failure.txt"
+              status=1
+              break
+            fi
           done
-          npm run release:check
+
+          if [ "$status" -eq 0 ]; then
+            log="$ARTIFACT_DIR/logs/release-check.log"
+            printf '%s\n' 'RUNNING_RELEASE_CHECK'
+            if ! npm run release:check >"$log" 2>&1; then
+              printf '%s\n' 'FAILED_COMMAND=npm run release:check' | tee "$ARTIFACT_DIR/failure.txt"
+              printf 'FAILED_LOG=%s\n' "$log" | tee -a "$ARTIFACT_DIR/failure.txt"
+              tail -n 200 "$log" | tee -a "$ARTIFACT_DIR/failure.txt"
+              status=1
+            fi
+          fi
+
+          if [ "$status" -ne 0 ]; then
+            printf '%s\n' QUALIFICATION_FAILURE > "$ARTIFACT_DIR/result.txt"
+            exit "$status"
+          fi
+
+          printf '%s\n' QUALIFICATION_TESTS_SUCCESS > "$ARTIFACT_DIR/result.txt"
 
       - name: Restore generated state and bind exact V93 product bytes
         shell: bash
