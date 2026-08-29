@@ -1,0 +1,334 @@
+diff --git a/test/industrial-exhaust.test.js b/test/industrial-exhaust.test.js
+index 8e3e24b95d11032f9e39a310b7e2904312002ab3..a6ffb9788c89d116f7126abeae606277adf73967 100644
+--- a/test/industrial-exhaust.test.js
++++ b/test/industrial-exhaust.test.js
+@@ -3989,3 +3989,94 @@ for (const [name, input, expected] of [
+     `${name}: accepted dash boundaries must preserve complete observations before validating a disjoint telephone interval`
+   );
+ }
++
++// PR2231 formatted-observation dash-boundary custody regressions
++for (const [name, input, expected] of [
++  [
++    'labelled formatted time with seconds preserves the time before an intrinsic phone',
++    'Phone: 09012345678 12:30:45-03-6216-8041',
++    'Phone: [contact omitted] 12:30:45-[contact omitted]'
++  ],
++  [
++    'unlabelled formatted time with seconds preserves the time before an intrinsic phone',
++    'Archive 09012345678 12:30:45-03-6216-8041',
++    'Archive [contact omitted] 12:30:45-[contact omitted]'
++  ],
++  [
++    'labelled formatted time with minutes preserves the time before an intrinsic phone',
++    'Phone: 09012345678 12:30-03-6216-8041',
++    'Phone: [contact omitted] 12:30-[contact omitted]'
++  ],
++  [
++    'fullwidth formatted time preserves the time before an intrinsic phone',
++    '電話：０９０１２３４５６７８ １２：３０：４５－０３－６２１６－８０４１',
++    '電話：[contact omitted] １２：３０：４５－[contact omitted]'
++  ],
++  [
++    'an attached dash does not transport a phone label into a weak local range',
++    'Phone: 09012345678 12:30:45-555-1212',
++    'Phone: [contact omitted] 12:30:45-555-1212'
++  ],
++  [
++    'an attached dash does not convert a bare numeric tail into a phone',
++    'Phone: 09012345678 12:30:45-12345678',
++    'Phone: [contact omitted] 12:30:45-12345678'
++  ],
++  [
++    'an attached date after a formatted time retains date custody',
++    'Phone: 09012345678 12:30:45-2027-09-18',
++    'Phone: [contact omitted] 12:30:45-2027-09-18'
++  ],
++  [
++    'an attached decimal after a formatted time retains decimal custody',
++    'Phone: 09012345678 12:30:45-3.14',
++    'Phone: [contact omitted] 12:30:45-3.14'
++  ],
++  [
++    'an attached unit-bearing observation retains exact source custody',
++    'Phone: 09012345678 12:30:45-03-62165111 people 03-6216-8041',
++    'Phone: [contact omitted] 12:30:45-03-62165111 people [contact omitted]'
++  ],
++  [
++    'an outer wrapper around trunk notation remains outside the telephone interval',
++    'Phone: 09012345678 12:30:45-((03) 6216 8041)',
++    'Phone: [contact omitted] 12:30:45-([contact omitted])'
++  ],
++  [
++    'the existing whitespace bridge still carries one-use explicit label authority',
++    'Phone: 09012345678 12:30:45 555-1212',
++    'Phone: [contact omitted] 12:30:45 [contact omitted]'
++  ]
++]) {
++  assert.equal(
++    redactContactData(input),
++    expected,
++    `${name}: complete formatted observations must keep exact source custody and dash boundaries must require context-free telephone proof`
++  );
++}
++
++// PR2231 identifier-label chain cap regressions
++const identifierChainAtLimit = `Archive ${'ID '.repeat(4096)}09012345678`;
++const identifierChainPastLimit = `Archive ${'ID '.repeat(4097)}09012345678`;
++const phoneChainAtLimit = `Phone ${'ID '.repeat(4096)}09012345678`;
++const phoneChainPastLimit = `Phone ${'ID '.repeat(4097)}09012345678`;
++assert.equal(
++  redactContactData(identifierChainAtLimit),
++  identifierChainAtLimit,
++  'the maximum fully inspected identifier-label chain must retain identifier custody'
++);
++assert.equal(
++  redactContactData(identifierChainPastLimit),
++  identifierChainPastLimit,
++  'overflowing the bounded identifier-label scan must not synthesize telephone-label authority'
++);
++assert.equal(
++  redactContactData(phoneChainAtLimit),
++  `Phone ${'ID '.repeat(4096)}[contact omitted]`,
++  'a telephone label proved within the bounded identifier-label scan must remain authoritative'
++);
++assert.equal(
++  redactContactData(phoneChainPastLimit),
++  phoneChainPastLimit,
++  'a telephone label outside the bounded identifier-label scan must not be fabricated as proved authority'
++);
+diff --git a/tools/lib/industrial-exhaust.mjs b/tools/lib/industrial-exhaust.mjs
+index 01457c2702a2929ae353751435b42ecbe1b3e2bb..30cad405be83a8e259be71fda8e81461e613833c 100644
+--- a/tools/lib/industrial-exhaust.mjs
++++ b/tools/lib/industrial-exhaust.mjs
+@@ -356,7 +356,10 @@ function hasPhoneLabelPrefixNormalized(normalizedPrefix) {
+ 
+   const identifierChain = trailingIdentifierLabelChain(normalizedPrefix);
+   if (!identifierChain.sawIdentifierLabel) return false;
+-  if (identifierChain.overflow) return true;
++  // Reaching the bounded identifier-label scan is not affirmative telephone
++  // authority. Retain the already-proved identifier custody rather than
++  // synthesizing a phone label from an uninspected prefix.
++  if (identifierChain.overflow) return false;
+ 
+   const phoneLabelMatch = phoneLabelMatchWithProvenanceAt(
+     normalizedPrefix,
+@@ -608,9 +611,14 @@ function numericObservationMatch(source, externalSuffix = '') {
+   const dateMatch = DATE_OBSERVATION_PATTERN.exec(contextual);
+   if (dateMatch) return dateMatch;
+   const formattedMatch = FORMATTED_NUMERIC_OBSERVATION_PATTERN.exec(contextual);
+-  if (formattedMatch
+-      && !/^[./-]\d/u.test(contextual.slice(formattedMatch[0].length))) {
+-    return formattedMatch;
++  if (formattedMatch) {
++    const remainder = contextual.slice(formattedMatch[0].length);
++    // A colon-formatted time is complete before an attached separator. Unlike
++    // decimal and dotted-date spellings, the colon grammar cannot be a prefix
++    // of the following telephone. Preserve the complete time so a later
++    // scanner callback can validate the disjoint suffix independently.
++    if (formattedMatch[0].includes(':')
++        || !/^[./-]\d/u.test(remainder)) return formattedMatch;
+   }
+   return NUMERIC_OBSERVATION_PATTERN.exec(contextual);
+ }
+@@ -2424,17 +2432,22 @@ function hasFreshCrossCallbackNarrativeBoundary(value) {
+     || /(?:^|[^0-9])\.(?:\s*[)\]}】])*\s/u.test(normalized);
+ }
+ 
+-function hasOnlyAcceptedCrossCallbackOpeners(value) {
++function hasOnlyAcceptedCrossCallbackOpeners(
++  value,
++  allowAttachedDashBoundary = false
++) {
+   for (const character of value.normalize('NFKC')) {
+     if (/\s/u.test(character)
+         || character === '+'
+-        || Object.hasOwn(OBSERVATION_WRAPPER_PAIRS, character)) continue;
++        || Object.hasOwn(OBSERVATION_WRAPPER_PAIRS, character)
++        || (allowAttachedDashBoundary
++          && /[-‐‑‒–—−]/u.test(character))) continue;
+     return false;
+   }
+   return true;
+ }
+ 
+-function crossCallbackExplicitPhoneLabelBridge(
++function crossCallbackObservationBridge(
+   lease,
+   candidate,
+   offset,
+@@ -2504,12 +2517,14 @@ function crossCallbackExplicitPhoneLabelBridge(
+     if (/[\r\n]/u.test(observationSource)) continue;
+ 
+     let currentObservationEnd = absoluteObservationEnd - offset;
++    let attachedDashBoundary = false;
+     if (currentObservationEnd < 0) {
+       const trailingGap = input.slice(absoluteObservationEnd, offset);
+       if (/[\r\n]/u.test(trailingGap)
+-          || !hasOnlyAcceptedCrossCallbackOpeners(trailingGap)) {
++          || !hasOnlyAcceptedCrossCallbackOpeners(trailingGap, true)) {
+         continue;
+       }
++      attachedDashBoundary ||= /[-‐‑‒–—−－]/u.test(trailingGap);
+       currentObservationEnd = 0;
+     }
+ 
+@@ -2522,31 +2537,59 @@ function crossCallbackExplicitPhoneLabelBridge(
+       absoluteFirstDigit
+     );
+     if (/\r\n]/u.test(transition)
+-        || !hasOnlyAcceptedCrossCallbackOpeners(transition)) {
++        || !hasOnlyAcceptedCrossCallbackOpeners(transition, true)) {
+        continue;
+     }
++    attachedDashBoundary ||= /[-‐‑‒–—−－]/u.test(transition);
++    if (attachedDashBoundary) {
++      // Keep the separator outside the next candidate. A leading dash can make
++      // a complete unit-bearing observation look like an intrinsic telephone
++      // before its source suffix is considered. Wrappers after the dash remain
++      // with the candidate so their ownership is still adjudicated normally.
++      const dashMatches = [...transition.matchAll(/[-‐‑‒–—−－]/gu)];
++      const lastDash = dashMatches.at(-1);
++      if (lastDash) {
++        const absoluteDashEnd = absoluteObservationEnd
++          + lastDash.index
++          + lastDash[0].length;
++        if (absoluteDashEnd > offset) {
++          currentObservationEnd = Math.max(
++            currentObservationEnd,
++            absoluteDashEnd - offset
++          );
++        }
++      }
++    }
+ 
+     return {
+       currentObservationEnd,
+       observationStart: absoluteSeedStart,
+-      observationEnd: absoluteObservationEnd
++      observationEnd: absoluteObservationEnd,
++      // A dash can expose only a context-free telephone. It is a source
++      // boundary, not transport for the earlier telephone label. Whitespace
++      // bridges retain the established one-use label behavior.
++      explicitPhoneLabelContext: Boolean(
++        lease.explicitPhoneLabelContext && !attachedDashBoundary
++      ),
++      contextFreePhoneOnly: attachedDashBoundary
+     };
+   }
+ 
+   return null;
+ }
+ 
+-function createCrossCallbackExplicitPhoneLabelLease(
++function createCrossCallbackObservationLease(
+   candidate,
+   offset,
+   ranges,
+   explicitPhoneLabelContext
+ ) {
+-  if (!explicitPhoneLabelContext || !ranges.length) return null;
++  if (!ranges.length) return null;
+   return {
+     candidate,
+     offset,
+     end: offset + candidate.length,
++    explicitPhoneLabelContext: Boolean(explicitPhoneLabelContext),
+     ranges: ranges.map(range => ({
+       start: range.start,
+       end: range.end
+@@ -2558,17 +2601,24 @@ function redactPhoneSpanCandidate(
+   candidate,
+   offset,
+   input,
+-  inheritedExplicitPhoneLabelContext = false
++  inheritedExplicitPhoneLabelContext = false,
++  contextFreePhoneOnly = false
+ ) {
+   const firstContactCharacter = candidate.search(/[+�K(（0-9０-９]/u);
+   const contactOffset = offset + Math.max(0, firstContactCharacter);
+   const prefixContext = redactionPrefixContext(input, contactOffset);
+-  const prefix = prefixContext.text;
++  // An attached dash bridge exposes the suffix for independent classification.
++  // Earlier labels, phones, and indeterminate context cannot participate in
++  // that score; the suffix must stand on its own source evidence.
++  const prefix = contextFreePhoneOnly ? '' : prefixContext.text;
++  const indeterminatePhoneContext = contextFreePhoneOnly
++    ? false
++    : prefixContext.indeterminate;
+   const suffix = input.slice(offset + candidate.length, offset + candidate.length + 64);
+   const adjacentCharacter = Array.from(input.slice(0, contactOffset)).at(-1) ?? '';
+-  const directExplicitPhoneLabelContext = inheritedExplicitPhoneLabelContext
+-    || hasPhoneLabelPrefix(prefix);
+-  const allowInitialGroup = prefixContext.indeterminate
++  const directExplicitPhoneLabelContext = !contextFreePhoneOnly
++    && (inheritedExplicitPhoneLabelContext || hasPhoneLabelPrefix(prefix));
++  const allowInitialGroup = indeterminatePhoneContext
+     || directExplicitPhoneLabelContext
+     || !/[\p{L}\p{N}]/u.test(adjacentCharacter);
+   const ownedWrapper = findOwnedNarrativePhoneWrapper(
+@@ -2589,7 +2639,7 @@ function redactPhoneSpanCandidate(
+       prefix,
+       `${ownedWrapper.closers}${afterWrapper}${suffix}`,
+       allowInitialGroup,
+-      prefixContext.indeterminate,
++      indeterminatePhoneContext,
+       inheritedExplicitPhoneLabelContext
+     );
+     const redactedPhone = renderPhoneRedactionRanges(
+@@ -2627,7 +2677,7 @@ function redactPhoneSpanCandidate(
+       suffix,
+       allowInitialGroup,
+       currentNarrativeParenthesisContext(input.slice(0, contactOffset)),
+-      prefixContext.indeterminate,
++      indeterminatePhoneContext,
+       inheritedExplicitPhoneLabelContext,
+       true
+     );
+@@ -2650,7 +2700,7 @@ function redactPhoneSpanCandidate(
+     prefix,
+     suffix,
+     allowInitialGroup,
+-    prefixContext.indeterminate,
++    indeterminatePhoneContext,
+     inheritedExplicitPhoneLabelContext
+   );
+   return {
+@@ -2664,15 +2714,15 @@ function redactContactData(value) {
+   const emailRedacted = String(value ?? '')
+    .replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/giu, '[contact omitted]');
+-  let explicitPhoneLabelLease = null;
++  let observationLease = null;
+ 
+   const phoneRedacted = emailRedacted.replace(
+    PHONE_SPAN_PATTERN,
+    (candidate, offset, input) => {
+-      const priorLease = explicitPhoneLabelLease;
+-      explicitPhoneLabelLease = null;
++      const priorLease = observationLease;
++      observationLease = null;
+ 
+-      const bridge = crossCallbackExplicitPhoneLabelBridge(
++      const bridge = crossCallbackObservationBridge(
+        priorLease,
+       candidate,
+       offset,
+@@ -2686,7 +2736,8 @@ export function redactContactData(value) {
+        localCandidate,
+        localOffset,
+        input,
+-       Boolean(bridge)
++       Boolean(bridge?.explicitPhoneLabelContext),
++      Boolean(bridge?.contextFreePhoneOnly)
+      );
+      const mappedRanges = result.ranges?.map(range => ({
+        start: range.start + currentObservationEnd,
+@@ -2694,7 +2745,7 @@ export function redactContactData(value) {
+      })) ?? null;
+ 
+      if (mappedRanges && !bridge) {
+-        explicitPhoneLabelLease = createCrossCallbackExplicitPhoneLabelLease(
++        observationLease = createCrossCallbackObservationLease(
+           candidate,
+           offset,
+           mappedRanges,

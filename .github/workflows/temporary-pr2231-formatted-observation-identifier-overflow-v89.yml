@@ -1,0 +1,51 @@
+name: Temporary PR 2231 formatted-observation and identifier-overflow controller v89
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/tmp/pr2231-formatted-observation-identifier-overflow-v89.patch'
+      - '.github/tmp/pr2231-formatted-observation-identifier-overflow-v89.sh'
+      - '.github/workflows/temporary-pr2231-formatted-observation-identifier-overflow-v89.yml'
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: pr2231-formatted-observation-identifier-overflow-v89
+  cancel-in-progress: false
+
+jobs:
+  qualify-and-publish:
+    if: github.repository == 'BigBirdReturns/clifford-number'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      CONTROLLER_HEAD: ${{ github.event.pull_request.head.sha }}
+      CONTROLLER_BRANCH: ${{ github.event.pull_request.head.ref }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Verify and execute exact controller
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf '%s  %s\n' 'bfbc30e004a62a3b51acf4ea9f1a740f1e71a5648c6dda0b847c3028c7b5b7f2' '.github/tmp/pr2231-formatted-observation-identifier-overflow-v89.patch' | sha256sum -c -
+          printf '%s  %s\n' 'bad0c2b388879af59c7b2b85d17c9116ff5f4e385a3f46f91a656242d6fed622' '.github/tmp/pr2231-formatted-observation-identifier-overflow-v89.sh' | sha256sum -c -
+          .github/tmp/pr2231-formatted-observation-identifier-overflow-v89.sh
+      - name: Upload retained qualification artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr2231-formatted-observation-identifier-overflow-v89
+          path: /tmp/pr2231-v89-artifact
+          if-no-files-found: error
+          retention-days: 30
