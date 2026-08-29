@@ -16,6 +16,15 @@ jobs:
     timeout-minutes: 45
     env:
       GH_TOKEN: ${{ github.token }}
+      EXPECTED_MAIN: 17aa3cfc22d5f9022164baf5c1d5a8e401b796cf
+      EXPECTED_PRODUCT: bea76f0dd155122c3a45fe82c7c1abbaf676349b
+      EXPECTED_PRODUCT_TREE: 23dde19530990df1f1daa436993b1214e83ac8fd
+      EXPECTED_LIBRARY_BLOB: 6655e9aa10ac2964e5f6289a4881f1343265fa0e
+      EXPECTED_TEST_BLOB: 7f72ca8c2eb7f436471453c74b98e1227b0970d5
+      EXPECTED_CONTROLLER_PARENT: a913ce18b27febb3d826806b8a7cb5fcdc241c15
+      EXPECTED_CONTROLLER_PAYLOAD_BLOB: fe35f758ee07a8996e9b7dde8a16e25101860ea6
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      RECEIPT_DIR: /tmp/pr2231-current-authority-state-exact-head-read-only
     steps:
       - name: Check out exact controller event
         uses: actions/checkout@v4
@@ -26,53 +35,26 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Retain exact product and current-main source snapshots
+      - name: Recover and execute exact-head read-only qualification
         shell: bash
         run: |
           set -euo pipefail
-          product=ec210a32b888f3717027ce8d236ac6d14fcf1c82
-          main=17aa3cfc22d5f9022164baf5c1d5a8e401b796cf
-          product_branch=agent/current-main-identifier-context-product-v1
-          snapshot_dir=/tmp/pr2231-current-authority-state-source-snapshots
-          git fetch --no-tags origin \
-            "+refs/heads/main:refs/remotes/origin/main" \
-            "+refs/heads/$product_branch:refs/remotes/origin/$product_branch"
-          test "$(git rev-parse refs/remotes/origin/main)" = "$main"
-          test "$(git rev-parse refs/remotes/origin/$product_branch)" = "$product"
-          mkdir -p "$snapshot_dir"
-          git archive --format=tar.gz --output="$snapshot_dir/product-$product.tar.gz" "$product"
-          git archive --format=tar.gz --output="$snapshot_dir/main-$main.tar.gz" "$main"
-          {
-            printf 'product=%s\n' "$product"
-            printf 'product_tree=%s\n' "$(git show -s --format=%T "$product")"
-            printf 'product_library_blob=%s\n' "$(git rev-parse "$product:tools/lib/industrial-exhaust.mjs")"
-            printf 'product_test_blob=%s\n' "$(git rev-parse "$product:test/industrial-exhaust.test.js")"
-            printf 'main=%s\n' "$main"
-            printf 'main_tree=%s\n' "$(git show -s --format=%T "$main")"
-            sha256sum "$snapshot_dir"/*.tar.gz
-          } | tee "$snapshot_dir/source-snapshot-manifest.txt"
-      - name: Recover and execute frozen qualification payload
-        shell: bash
-        run: |
-          set -euo pipefail
-          payload_dir=/tmp/pr2231-current-authority-state-controller
+          payload_dir=/tmp/pr2231-current-authority-state-payload
+          rm -rf "$payload_dir" "$RECEIPT_DIR"
           mkdir -p "$payload_dir"
           base64 -d .github/tmp/pr2231-current-authority-state-qualification-v1.tar.gz.b64 \
             | tar -xz -C "$payload_dir"
-          if [[ -f "$payload_dir/pr2231-current-authority-state-repair-v1.patch" ]]; then
-            cp "$payload_dir/pr2231-current-authority-state-repair-v1.patch" \
-              /tmp/pr2231-current-authority-state-repair-v1.patch
-          fi
-          chmod +x "$payload_dir/pr2231-current-authority-state-qualification-v1.sh"
-          "$payload_dir/pr2231-current-authority-state-qualification-v1.sh"
-      - name: Upload retained qualification receipt, frozen payload, and source snapshots
+          script="$payload_dir/pr2231-current-authority-state-qualification-v2.sh"
+          test -f "$script"
+          chmod +x "$script"
+          "$script"
+      - name: Upload exact-head qualification receipt and frozen payload
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pr2231-current-authority-state-qualification-v1-recovery
+          name: pr2231-current-authority-state-exact-head-read-only
           path: |
-            /tmp/pr2231-current-authority-state-controller
-            /tmp/pr2231-current-authority-state-qualification-v1
-            /tmp/pr2231-current-authority-state-source-snapshots
+            /tmp/pr2231-current-authority-state-exact-head-read-only
+            /tmp/pr2231-current-authority-state-payload
           if-no-files-found: error
           retention-days: 90
