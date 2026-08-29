@@ -1,500 +1,180 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-: "${EXPECTED_MAIN:?missing EXPECTED_MAIN}"
-: "${EXPECTED_PRODUCT:?missing EXPECTED_PRODUCT}"
-: "${EXPECTED_PRODUCT_TREE:?missing EXPECTED_PRODUCT_TREE}"
-: "${EXPECTED_LIBRARY_BLOB:?missing EXPECTED_LIBRARY_BLOB}"
-: "${EXPECTED_TEST_BLOB:?missing EXPECTED_TEST_BLOB}"
-: "${EXPECTED_CONTROLLER_PARENT:?missing EXPECTED_CONTROLLER_PARENT}"
-: "${EXPECTED_CONTROLLER_PAYLOAD_BLOB:?missing EXPECTED_CONTROLLER_PAYLOAD_BLOB}"
-: "${PRODUCT_BRANCH:?missing PRODUCT_BRANCH}"
-: "${RECEIPT_DIR:?missing RECEIPT_DIR}"
-
-REPO='BigBirdReturns/clifford-number'
-PAYLOAD_PATH='.github/tmp/pr2231-current-authority-state-qualification-v1.tar.gz.b64'
-PRODUCT_DIR='/tmp/pr2231-current-authority-state-product'
-MAIN_DIR='/tmp/pr2231-current-authority-state-main'
-PATCHED_DIR='/tmp/pr2231-current-authority-state-patched'
-
-rm -rf "$RECEIPT_DIR" "$PRODUCT_DIR" "$MAIN_DIR" "$PATCHED_DIR"
-mkdir -p "$RECEIPT_DIR/logs" "$PATCHED_DIR/tools/lib" "$PATCHED_DIR/test"
-cp "$GITHUB_WORKSPACE/$PAYLOAD_PATH" "$RECEIPT_DIR/controller-script.sh"
-cp "$GITHUB_WORKSPACE/.github/workflows/temporary-pr2231-current-authority-state-qualification-v1.yml" \
-  "$RECEIPT_DIR/controller-workflow.yml"
-
-record_ref() {
-  printf '%s=%s\n' "$1" "$2" | tee -a "$RECEIPT_DIR/leases.txt"
-}
-
-run_logged() {
-  local name="$1"
-  shift
-  printf 'RUNNING=%s\n' "$name"
-  "$@" >"$RECEIPT_DIR/logs/$name.log" 2>&1
-}
-
-git fetch --no-tags origin \
-  "+refs/heads/main:refs/remotes/origin/main" \
-  "+refs/heads/${PRODUCT_BRANCH}:refs/remotes/origin/${PRODUCT_BRANCH}"
-
-controller_head="$(git rev-parse HEAD)"
-controller_parent="$(git rev-parse HEAD^)"
-controller_payload_blob="$(git hash-object "$PAYLOAD_PATH")"
-main_head="$(git rev-parse refs/remotes/origin/main)"
-product_head="$(git rev-parse "refs/remotes/origin/${PRODUCT_BRANCH}")"
-product_tree="$(git rev-parse "${product_head}^{tree}")"
-product_parent="$(git rev-parse "${product_head}^")"
-product_count="$(git rev-list --count "${main_head}..${product_head}")"
-
-record_ref controller_head "$controller_head"
-record_ref controller_parent "$controller_parent"
-record_ref controller_payload_blob "$controller_payload_blob"
-record_ref main_head "$main_head"
-record_ref product_head "$product_head"
-record_ref product_tree "$product_tree"
-record_ref product_parent "$product_parent"
-record_ref product_count "$product_count"
-
-test "$controller_head" = "$GITHUB_SHA"
-test "$controller_parent" = "$EXPECTED_CONTROLLER_PARENT"
-test "$controller_payload_blob" = "$EXPECTED_CONTROLLER_PAYLOAD_BLOB"
-test "$main_head" = "$EXPECTED_MAIN"
-test "$product_head" = "$EXPECTED_PRODUCT"
-test "$product_tree" = "$EXPECTED_PRODUCT_TREE"
-test "$product_parent" = "$EXPECTED_MAIN"
-test "$product_count" = '1'
-
-mapfile -t product_paths < <(git diff --name-only "$EXPECTED_MAIN" "$EXPECTED_PRODUCT" | sort)
-test "${#product_paths[@]}" -eq 2
-test "${product_paths[0]}" = 'test/industrial-exhaust.test.js'
-test "${product_paths[1]}" = 'tools/lib/industrial-exhaust.mjs'
-printf '%s\n' "${product_paths[@]}" > "$RECEIPT_DIR/product-paths.txt"
-
-git worktree add --detach "$PRODUCT_DIR" "$EXPECTED_PRODUCT"
-cd "$PRODUCT_DIR"
-
-test "$(git hash-object tools/lib/industrial-exhaust.mjs)" = "$EXPECTED_LIBRARY_BLOB"
-test "$(git hash-object test/industrial-exhaust.test.js)" = "$EXPECTED_TEST_BLOB"
-
-node --input-type=module <<'NODE' | tee "$RECEIPT_DIR/predecessor-reproduction.txt"
-import assert from 'node:assert/strict';
-import { redactContactData } from './tools/lib/industrial-exhaust.mjs';
-
-const defects = [
-  {
-    name: 'invalid-interior-calendar-claim',
-    input: 'Archive 03-6216-8041-3.14',
-    expected: 'Archive [contact omitted]-3.14',
-    witness(actual) {
-      assert.equal(actual, this.input);
-    }
-  },
-  {
-    name: 'dotted-phone-decimal-prefix-precedence',
-    input: 'Phone: 09012345678 03.6216.8041',
-    expected: 'Phone: [contact omitted] [contact omitted]',
-    witness(actual) {
-      assert.equal((actual.match(/\[contact omitted\]/gu) ?? []).length, 1);
-      assert.ok(actual.includes('03.6216.8041'));
-    }
-  },
-  {
-    name: 'dash-led-decimal-after-complete-international-phone',
-    input: 'Archive +81 3 6216 8041–3.14',
-    expected: 'Archive [contact omitted]–3.14',
-    witness(actual) {
-      assert.equal(actual.includes('3.14'), false);
-    }
-  }
-];
-
-for (const defect of defects) {
-  const actual = redactContactData(defect.input);
-  assert.notEqual(actual, defect.expected, `${defect.name}: predecessor unexpectedly repaired`);
-  defect.witness(actual);
-  console.log(JSON.stringify({ name: defect.name, actual, expected: defect.expected }));
-}
-console.log('PREDECESSOR_REPRODUCTION_SUCCESS');
-NODE
-
-python - <<'PY'
-from pathlib import Path
-
-library_path = Path('tools/lib/industrial-exhaust.mjs')
-test_path = Path('test/industrial-exhaust.test.js')
-library = library_path.read_text()
-tests = test_path.read_text()
-
-def replace_once(text: str, old: str, new: str, label: str) -> str:
-    count = text.count(old)
-    if count != 1:
-        raise SystemExit(f'{label}: expected exactly one source occurrence, found {count}')
-    return text.replace(old, new, 1)
-
-helper_anchor = """const MAX_NUMERIC_OBSERVATION_SOURCE_CHARS = 256;
-
-const EVENT_RULES = ["""
-helper_replacement = """const MAX_NUMERIC_OBSERVATION_SOURCE_CHARS = 256;
-
-function completeCalendarDateMatch(source) {
-  const normalized = source.normalize('NFKC');
-  const match = DATE_OBSERVATION_PATTERN.exec(normalized);
-  if (!match) return null;
-
-  const parts = match[0].match(/\\d+/gu) ?? [];
-  if (parts.length !== 3) return null;
-
-  let yearToken;
-  let month;
-  let day;
-  if (parts[0].length === 4) {
-    yearToken = parts[0];
-    month = Number.parseInt(parts[1], 10);
-    day = Number.parseInt(parts[2], 10);
-  } else {
-    day = Number.parseInt(parts[0], 10);
-    month = Number.parseInt(parts[1], 10);
-    yearToken = parts[2];
-  }
-
-  const year = Number.parseInt(yearToken, 10);
-  if (yearToken.length === 4 && (year < 1000 || year > 2999)) return null;
-  if (month < 1 || month > 12 || day < 1) return null;
-
-  const leapYear = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
-  const maximumDay = [
-    31, leapYear ? 29 : 28, 31, 30, 31, 30,
-    31, 31, 30, 31, 30, 31
-  ][month - 1];
-  return day <= maximumDay ? match : null;
-}
-
-const EVENT_RULES = ["""
-library = replace_once(
-    library,
-    helper_anchor,
-    helper_replacement,
-    'complete calendar helper'
-)
-
-library = replace_once(
-    library,
-    "  if (DATE_LIKE_PATTERN.test(normalized)) return 0;",
-    "  if (completeCalendarDateMatch(normalized)) return 0;",
-    'phone score exact calendar precedence'
-)
-
-old_limit = """    // Complete dates and unit-bearing observations are self-bounding even
-    // when their leading separator is also accepted inside a phone candidate.
-    // The date check is exact, so dotted telephone groups such as
-    // `03.6216.8041` remain available to context-free phone validation.
-    if (DATE_OBSERVATION_PATTERN.test(tail)
-        || NUMERIC_OBSERVATION_PATTERN.test(tail)) return index - 1;
-
-    const sourceBoundary = /\\s/u.test(separator)
-      || /[()\\[\\]{}:【】]/u.test(normalizedSeparator);"""
-new_limit = """    // Complete dates and unit-bearing observations are self-bounding even
-    // when their leading separator is also accepted inside a phone candidate.
-    // Calendar authority requires a valid date, so dotted telephone groups such
-    // as `03.6216.8041` remain available to context-free phone validation.
-    if (completeCalendarDateMatch(tail)
-        || NUMERIC_OBSERVATION_PATTERN.test(tail)) return index - 1;
-
-    // A proved phone owns only its exact interval. A following dash-led decimal
-    // is a new strong observation, rather than another telephone digit group.
-    const formattedBoundary = FORMATTED_NUMERIC_OBSERVATION_PATTERN.exec(tail);
-    if (formattedBoundary
-        && /^[-‐‑‒–—−]/u.test(normalizedSeparator)
-        && !isWeakBareRangeObservation(tail)) {
-      const previousBounds = phoneWindowBounds(
-        candidate,
-        groups,
-        first,
-        index - 1
-      );
-      if (phoneCandidateScore(
-        candidate.slice(previousBounds.start, previousBounds.end),
-        '',
-        false
-      )) return index - 1;
-    }
-
-    const sourceBoundary = /\\s/u.test(separator)
-      || /[()\\[\\]{}:【】]/u.test(normalizedSeparator);"""
-library = replace_once(
-    library,
-    old_limit,
-    new_limit,
-    'dash-led observation boundary'
-)
-
-library = replace_once(
-    library,
-    "    if (DATE_OBSERVATION_PATTERN.test(tail)) return index - 1;",
-    "    if (completeCalendarDateMatch(tail)) return index - 1;",
-    'source-boundary calendar validation'
-)
-
-library = replace_once(
-    library,
-    """  if (DATE_OBSERVATION_PATTERN.test(tail)
-      || FORMATTED_NUMERIC_OBSERVATION_PATTERN.test(tail)
-      || NUMERIC_OBSERVATION_PATTERN.test(tail)) return validatedInterval;""",
-    """  if (completeCalendarDateMatch(tail)
-      || FORMATTED_NUMERIC_OBSERVATION_PATTERN.test(tail)
-      || NUMERIC_OBSERVATION_PATTERN.test(tail)) return validatedInterval;""",
-    'validated interval calendar boundary'
-)
-
-library = replace_once(
-    library,
-    """  if (DATE_OBSERVATION_PATTERN.test(normalizedCandidate)
-      || NUMERIC_OBSERVATION_PATTERN.test(normalizedCandidate)) return null;""",
-    """  if (completeCalendarDateMatch(normalizedCandidate)
-      || NUMERIC_OBSERVATION_PATTERN.test(normalizedCandidate)) return null;""",
-    'dash-boundary calendar validation'
-)
-
-old_multidot = """  if (/^\\d{1,9}\\.\\d{1,6}\\./u.test(contextual)
-      && !/^\\d{4}\\./u.test(contextual)) {
-    return FORMATTED_NUMERIC_OBSERVATION_PATTERN.exec(contextual);
-  }"""
-new_multidot = """  if (/^\\d{1,9}\\.\\d{1,6}\\./u.test(contextual)
-      && !/^\\d{4}\\./u.test(contextual)) {
-    const dottedCandidate = /^\\d{1,4}\\.\\d{1,4}\\.\\d{1,4}(?=$|[^0-9.])/u.exec(
-      normalizedSource
-    );
-    if (dottedCandidate) {
-      const dottedGroups = [...dottedCandidate[0].matchAll(DIGIT_RUN_PATTERN)];
-      if (dottedGroups.length === 3
-          && dottedGroups[0].index === 0
-          && completeIntrinsicPhoneContinuation(
-            dottedCandidate[0],
-            dottedGroups,
-            0
-          )) return null;
-    }
-    return FORMATTED_NUMERIC_OBSERVATION_PATTERN.exec(contextual);
-  }"""
-library = replace_once(
-    library,
-    old_multidot,
-    new_multidot,
-    'complete dotted phone precedence'
-)
-
-library = replace_once(
-    library,
-    """  const dateMatch = DATE_OBSERVATION_PATTERN.exec(contextual);
-  if (dateMatch) return dateMatch;""",
-    """  const dateMatch = completeCalendarDateMatch(contextual);
-  if (dateMatch) return dateMatch;""",
-    'primary date observation validation'
-)
-
-library = replace_once(
-    library,
-    "  if (DATE_OBSERVATION_PATTERN.test(contextual)) return false;",
-    "  if (completeCalendarDateMatch(contextual)) return false;",
-    'weak range calendar validation'
-)
-
-library = replace_once(
-    library,
-    "    const match = DATE_OBSERVATION_PATTERN.exec(source.normalize('NFKC'));",
-    "    const match = completeCalendarDateMatch(source);",
-    'date range calendar validation'
-)
-
-library = replace_once(
-    library,
-    "            || DATE_LIKE_PATTERN.test(normalizedTail)",
-    "            || completeCalendarDateMatch(normalizedTail)",
-    'extension calendar validation'
-)
-
-sentinel = 'exact authority-state regression: invalid calendar, dotted phone, dash decimal'
-if sentinel in tests:
-    raise SystemExit('focused regression sentinel already present')
-
-tests += f"""
-
-// {sentinel}
-for (const [input, expected, message] of [
-  [
-    'Archive 03-6216-8041-3.14',
-    'Archive [contact omitted]-3.14',
-    'an impossible interior calendar claim may not suppress an exact domestic phone'
-  ],
-  [
-    'Phone: 09012345678 03.6216.8041',
-    'Phone: [contact omitted] [contact omitted]',
-    'a complete dotted phone must outrank its decimal prefix under explicit phone authority'
-  ],
-  [
-    'Archive +81 3 6216 8041–3.14',
-    'Archive [contact omitted]–3.14',
-    'a dash-led decimal observation must begin after the proved international phone interval'
-  ]
-]) {{
-  assert.equal(redactContactData(input), expected, message);
-}}
-
-for (const observation of [
-  'Archive 2026-08-17',
-  'Archive 17.08.2026',
-  'Archive 3.14',
-  'Archive 10-20 people'
-]) {{
-  assert.equal(
-    redactContactData(observation),
-    observation,
-    'valid calendar and numeric observations must retain exact source custody'
-  );
-}}
-"""
-
-library_path.write_text(library)
-test_path.write_text(tests)
-PY
-
-git diff --check
-mapfile -t repaired_paths < <(git diff --name-only | sort)
-test "${#repaired_paths[@]}" -eq 2
-test "${repaired_paths[0]}" = 'test/industrial-exhaust.test.js'
-test "${repaired_paths[1]}" = 'tools/lib/industrial-exhaust.mjs'
-node --check tools/lib/industrial-exhaust.mjs
-
-node --input-type=module <<'NODE' | tee "$RECEIPT_DIR/repair-witness.txt"
-import assert from 'node:assert/strict';
-import { redactContactData } from './tools/lib/industrial-exhaust.mjs';
-
-for (const [input, expected] of [
-  ['Archive 03-6216-8041-3.14', 'Archive [contact omitted]-3.14'],
-  ['Phone: 09012345678 03.6216.8041', 'Phone: [contact omitted] [contact omitted]'],
-  ['Archive +81 3 6216 8041–3.14', 'Archive [contact omitted]–3.14']
-]) {
-  assert.equal(redactContactData(input), expected);
-}
-console.log('REPAIR_WITNESS_SUCCESS');
-NODE
-
-for test_file in test/industrial-exhaust*.test.js; do
-  test_name="$(basename "$test_file")"
-  run_logged "product-${test_name}" node "$test_file"
-done
-run_logged product-release-check npm run release:check
-
-cp tools/lib/industrial-exhaust.mjs "$PATCHED_DIR/tools/lib/industrial-exhaust.mjs"
-cp test/industrial-exhaust.test.js "$PATCHED_DIR/test/industrial-exhaust.test.js"
-git diff --binary "$EXPECTED_PRODUCT" > "$RECEIPT_DIR/product-predecessor.patch"
-git diff --stat "$EXPECTED_PRODUCT" > "$RECEIPT_DIR/product-predecessor.diffstat"
-
-git reset --hard "$EXPECTED_PRODUCT"
-git clean -fd
-cp "$PATCHED_DIR/tools/lib/industrial-exhaust.mjs" tools/lib/industrial-exhaust.mjs
-cp "$PATCHED_DIR/test/industrial-exhaust.test.js" test/industrial-exhaust.test.js
-git diff --check
-mapfile -t restored_paths < <(git diff --name-only | sort)
-test "${#restored_paths[@]}" -eq 2
-test "${restored_paths[0]}" = 'test/industrial-exhaust.test.js'
-test "${restored_paths[1]}" = 'tools/lib/industrial-exhaust.mjs'
-
-git worktree add --detach "$MAIN_DIR" "$EXPECTED_MAIN"
-cp "$PATCHED_DIR/tools/lib/industrial-exhaust.mjs" "$MAIN_DIR/tools/lib/industrial-exhaust.mjs"
-cp "$PATCHED_DIR/test/industrial-exhaust.test.js" "$MAIN_DIR/test/industrial-exhaust.test.js"
-cd "$MAIN_DIR"
-
-git diff --check
-mapfile -t main_paths < <(git diff --name-only | sort)
-test "${#main_paths[@]}" -eq 2
-test "${main_paths[0]}" = 'test/industrial-exhaust.test.js'
-test "${main_paths[1]}" = 'tools/lib/industrial-exhaust.mjs'
-
-for test_file in test/industrial-exhaust*.test.js; do
-  test_name="$(basename "$test_file")"
-  run_logged "main-${test_name}" node "$test_file"
-done
-run_logged main-release-check npm run release:check
-
-cp tools/lib/industrial-exhaust.mjs "$PATCHED_DIR/tools/lib/industrial-exhaust.mjs"
-cp test/industrial-exhaust.test.js "$PATCHED_DIR/test/industrial-exhaust.test.js"
-git reset --hard "$EXPECTED_MAIN"
-git clean -fd
-cp "$PATCHED_DIR/tools/lib/industrial-exhaust.mjs" tools/lib/industrial-exhaust.mjs
-cp "$PATCHED_DIR/test/industrial-exhaust.test.js" test/industrial-exhaust.test.js
-
-git diff --check
-mapfile -t final_paths < <(git diff --name-only | sort)
-test "${#final_paths[@]}" -eq 2
-test "${final_paths[0]}" = 'test/industrial-exhaust.test.js'
-test "${final_paths[1]}" = 'tools/lib/industrial-exhaust.mjs'
-git diff --binary "$EXPECTED_MAIN" > "$RECEIPT_DIR/candidate.patch"
-git diff --stat "$EXPECTED_MAIN" > "$RECEIPT_DIR/candidate.diffstat"
-sha256sum "$RECEIPT_DIR/candidate.patch" > "$RECEIPT_DIR/candidate.patch.sha256"
-
-author_name="$(git show -s --format=%an "$EXPECTED_PRODUCT")"
-author_email="$(git show -s --format=%ae "$EXPECTED_PRODUCT")"
-git config user.name "$author_name"
-git config user.email "$author_email"
-git add test/industrial-exhaust.test.js tools/lib/industrial-exhaust.mjs
-git commit -m 'fix: preserve exact numeric authority boundaries'
-
-candidate_commit="$(git rev-parse HEAD)"
-candidate_parent="$(git rev-parse HEAD^)"
-candidate_tree="$(git rev-parse 'HEAD^{tree}')"
-candidate_library_blob="$(git hash-object tools/lib/industrial-exhaust.mjs)"
-candidate_test_blob="$(git hash-object test/industrial-exhaust.test.js)"
-
-record_ref candidate_commit "$candidate_commit"
-record_ref candidate_parent "$candidate_parent"
-record_ref candidate_tree "$candidate_tree"
-record_ref candidate_library_blob "$candidate_library_blob"
-record_ref candidate_test_blob "$candidate_test_blob"
-
-test "$candidate_parent" = "$EXPECTED_MAIN"
-mapfile -t candidate_paths < <(git diff-tree --no-commit-id --name-only -r "$candidate_commit" | sort)
-test "${#candidate_paths[@]}" -eq 2
-test "${candidate_paths[0]}" = 'test/industrial-exhaust.test.js'
-test "${candidate_paths[1]}" = 'tools/lib/industrial-exhaust.mjs'
-printf '%s\n' "${candidate_paths[@]}" > "$RECEIPT_DIR/candidate-paths.txt"
-
-cd "$GITHUB_WORKSPACE"
-git fetch --no-tags origin \
-  "+refs/heads/main:refs/remotes/origin/main" \
-  "+refs/heads/${PRODUCT_BRANCH}:refs/remotes/origin/${PRODUCT_BRANCH}"
-terminal_main="$(git rev-parse refs/remotes/origin/main)"
-terminal_product="$(git rev-parse "refs/remotes/origin/${PRODUCT_BRANCH}")"
-terminal_controller="$(git ls-remote origin "refs/heads/${GITHUB_REF_NAME}" | awk '{print $1}')"
-
-record_ref terminal_main "$terminal_main"
-record_ref terminal_product "$terminal_product"
-record_ref terminal_controller "$terminal_controller"
-
-test "$terminal_main" = "$EXPECTED_MAIN"
-test "$terminal_product" = "$EXPECTED_PRODUCT"
-test "$terminal_controller" = "$GITHUB_SHA"
-
-pr_state="$(gh api "repos/${REPO}/pulls/2231" --jq '.state')"
-pr_draft="$(gh api "repos/${REPO}/pulls/2231" --jq '.draft')"
-pr_head="$(gh api "repos/${REPO}/pulls/2231" --jq '.head.sha')"
-record_ref pr_state "$pr_state"
-record_ref pr_draft "$pr_draft"
-record_ref pr_head "$pr_head"
-test "$pr_state" = 'open'
-test "$pr_draft" = 'true'
-test "$pr_head" = "$EXPECTED_PRODUCT"
-
-cat > "$RECEIPT_DIR/result.txt" <<EOF
-QUALIFICATION_SUCCESS
-product_moved=false
-draft_changed=false
-review_threads_changed=false
-candidate_commit=${candidate_commit}
-candidate_tree=${candidate_tree}
-candidate_library_blob=${candidate_library_blob}
-candidate_test_blob=${candidate_test_blob}
-EOF
-
-printf '%s\n' 'QUALIFICATION_SUCCESS'
+BASE_CONTROLLER_PAYLOAD_BLOB='b8d35fc5d881e36ea4fc906c8baf9049c4471726'
+EXPECTED_EFFECTIVE_GIT_BLOB='53986bb7661e11dfe99fa1267e9d2cf5eb4adfee'
+EXPECTED_EFFECTIVE_SHA256='da6d239017ee17ebc08e19783408d0c55c7ce7003c1f05e81d6d5541fc9bc90b'
+EFFECTIVE_SCRIPT='/tmp/pr2231-v3-effective.sh'
+PATCH_FILE='/tmp/pr2231-v2-to-v3.patch'
+
+git cat-file blob "$BASE_CONTROLLER_PAYLOAD_BLOB" > "$EFFECTIVE_SCRIPT"
+test "$(git hash-object "$EFFECTIVE_SCRIPT")" = "$BASE_CONTROLLER_PAYLOAD_BLOB"
+cat > "$PATCH_FILE" <<'PATCH'
+--- /tmp/pr2231-artifact-v2/controller-script.sh	2026-08-29 18:44:20.000000000 +0000
++++ /tmp/pr2231-v3/controller-script.sh	2026-08-29 20:19:46.465099268 +0000
+@@ -19,7 +19,8 @@
+ 
+ rm -rf "$RECEIPT_DIR" "$PRODUCT_DIR" "$MAIN_DIR" "$PATCHED_DIR"
+ mkdir -p "$RECEIPT_DIR/logs" "$PATCHED_DIR/tools/lib" "$PATCHED_DIR/test"
+-cp "$GITHUB_WORKSPACE/$PAYLOAD_PATH" "$RECEIPT_DIR/controller-script.sh"
++cp /tmp/pr2231-v3-effective.sh "$RECEIPT_DIR/controller-script.sh"
++cp "$GITHUB_WORKSPACE/$PAYLOAD_PATH" "$RECEIPT_DIR/controller-wrapper.sh"
+ cp "$GITHUB_WORKSPACE/.github/workflows/temporary-pr2231-current-authority-state-qualification-v1.yml" \
+   "$RECEIPT_DIR/controller-workflow.yml"
+ 
+@@ -106,6 +107,14 @@
+     witness(actual) {
+       assert.equal(actual.includes('3.14'), false);
+     }
++  },
++  {
++    name: 'decimal-observation-before-dash-led-independent-phone',
++    input: 'Archive 09012345678 3.14-03-6216-8041',
++    expected: 'Archive [contact omitted] 3.14-[contact omitted]',
++    witness(actual) {
++      assert.equal(actual, 'Archive [contact omitted] 3.14-03-6216-8041');
++    }
+   }
+ ];
+ 
+@@ -314,7 +323,59 @@
+     'extension calendar validation'
+ )
+ 
+-sentinel = 'exact authority-state regression: invalid calendar, dotted phone, dash decimal'
++old_optimizer_entry = """  const completeDateRanges = completeDateObservationRanges(candidate, groups);
++  const intervals = Array.from({ length: groups.length }, () => []);
++  for (let first = 0; first < groups.length; first += 1) {
++    if (!allowInitialGroup) {
++      if (first === 0) continue;
++      const previousEnd = groups[first - 1].index + groups[first - 1][0].length;
++      if (!/\s/u.test(candidate.slice(previousEnd, groups[first].index))) continue;
++    }
++    for (let last = first;
++      last < groups.length && last < first + MAX_PHONE_DIGIT_GROUPS;
++      last += 1) {"""
++new_optimizer_entry = """  const completeDateRanges = completeDateObservationRanges(candidate, groups);
++  const intervals = Array.from({ length: groups.length }, () => []);
++  for (let first = 0; first < groups.length; first += 1) {
++    if (!allowInitialGroup) {
++      if (first === 0) continue;
++      const previousEnd = groups[first - 1].index + groups[first - 1][0].length;
++      if (!/\s/u.test(candidate.slice(previousEnd, groups[first].index))) continue;
++    }
++
++    // Context-free validation may prove that one telephone beginning at this
++    // group ends before an independent telephone or strong observation. Once
++    // that exact interval exists, generic labelled optimization may not enlarge
++    // the same start across the proved boundary and consume the next source.
++    const intrinsicBoundary = validatedIntrinsicPhoneContinuation(
++      candidate,
++      groups,
++      first
++    );
++    let intrinsicBoundaryLast = groups.length - 1;
++    if (intrinsicBoundary && intrinsicBoundary.end < candidate.length) {
++      intrinsicBoundaryLast = first;
++      while (intrinsicBoundaryLast + 1 < groups.length
++          && groups[intrinsicBoundaryLast + 1].index
++            + groups[intrinsicBoundaryLast + 1][0].length
++            <= intrinsicBoundary.end) {
++        intrinsicBoundaryLast += 1;
++      }
++    }
++
++    for (let last = first;
++      last < groups.length
++        && last < first + MAX_PHONE_DIGIT_GROUPS
++        && last <= intrinsicBoundaryLast;
++      last += 1) {"""
++library = replace_once(
++    library,
++    old_optimizer_entry,
++    new_optimizer_entry,
++    'exact intrinsic interval optimizer boundary'
++)
++
++sentinel = 'exact authority-state regression: invalid calendar, dotted phone, dash decimal v3'
+ if sentinel in tests:
+     raise SystemExit('focused regression sentinel already present')
+ 
+@@ -330,12 +391,32 @@
+   [
+     'Phone: 09012345678 03.6216.8041',
+     'Phone: [contact omitted] [contact omitted]',
+-    'a complete dotted phone must outrank its decimal prefix under explicit phone authority'
++    'a complete intrinsic phone may not enlarge into the first group of a later dotted phone'
++  ],
++  [
++    'Mobile number: 09012345678 03.6216.8041',
++    'Mobile number: [contact omitted] [contact omitted]',
++    'mobile label authority must preserve two exact independent telephone intervals'
++  ],
++  [
++    'Phone: ０９０１２３４５６７８ ０３．６２１６．８０４１',
++    'Phone: [contact omitted] [contact omitted]',
++    'fullwidth dotted telephone intervals must retain the same exact boundary custody'
+   ],
+   [
+     'Archive +81 3 6216 8041–3.14',
+     'Archive [contact omitted]–3.14',
+     'a dash-led decimal observation must begin after the proved international phone interval'
++  ],
++  [
++    'Archive +81 3 6216 8041—３．１４',
++    'Archive [contact omitted]—３．１４',
++    'typographic-dash and fullwidth decimal source bytes must survive exact redaction'
++  ],
++  [
++    'Archive 09012345678 3.14-03-6216-8041',
++    'Archive [contact omitted] 3.14-[contact omitted]',
++    'a complete decimal observation must bridge to a dash-led independent telephone'
+   ]
+ ]) {{
+   assert.equal(redactContactData(input), expected, message);
+@@ -344,6 +425,7 @@
+ for (const observation of [
+   'Archive 2026-08-17',
+   'Archive 17.08.2026',
++  'Archive 29.02.2024',
+   'Archive 3.14',
+   'Archive 10-20 people'
+ ]) {{
+@@ -373,7 +455,11 @@
+ for (const [input, expected] of [
+   ['Archive 03-6216-8041-3.14', 'Archive [contact omitted]-3.14'],
+   ['Phone: 09012345678 03.6216.8041', 'Phone: [contact omitted] [contact omitted]'],
+-  ['Archive +81 3 6216 8041–3.14', 'Archive [contact omitted]–3.14']
++  ['Mobile number: 09012345678 03.6216.8041', 'Mobile number: [contact omitted] [contact omitted]'],
++  ['Phone: ０９０１２３４５６７８ ０３．６２１６．８０４１', 'Phone: [contact omitted] [contact omitted]'],
++  ['Archive +81 3 6216 8041–3.14', 'Archive [contact omitted]–3.14'],
++  ['Archive +81 3 6216 8041—３．１４', 'Archive [contact omitted]—３．１４'],
++  ['Archive 09012345678 3.14-03-6216-8041', 'Archive [contact omitted] 3.14-[contact omitted]']
+ ]) {
+   assert.equal(redactContactData(input), expected);
+ }
+@@ -487,7 +573,7 @@
+ test "$pr_head" = "$EXPECTED_PRODUCT"
+ 
+ cat > "$RECEIPT_DIR/result.txt" <<EOF
+-QUALIFICATION_SUCCESS
++QUALIFICATION_SUCCESS_V3
+ product_moved=false
+ draft_changed=false
+ review_threads_changed=false
+@@ -497,4 +583,4 @@
+ candidate_test_blob=${candidate_test_blob}
+ EOF
+ 
+-printf '%s\n' 'QUALIFICATION_SUCCESS'
++printf '%s\n' 'QUALIFICATION_SUCCESS_V3'
+PATCH
+patch --silent "$EFFECTIVE_SCRIPT" "$PATCH_FILE"
+test "$(git hash-object "$EFFECTIVE_SCRIPT")" = "$EXPECTED_EFFECTIVE_GIT_BLOB"
+printf '%s  %s\n' "$EXPECTED_EFFECTIVE_SHA256" "$EFFECTIVE_SCRIPT" | sha256sum -c -
+bash -n "$EFFECTIVE_SCRIPT"
+if [[ "${WRAPPER_ONLY:-0}" = '1' ]]; then
+  printf '%s\n' 'WRAPPER_RECONSTRUCTION_SUCCESS'
+  exit 0
+fi
+exec bash "$EFFECTIVE_SCRIPT"
