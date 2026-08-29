@@ -30,15 +30,23 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p /tmp/pr2231-current-authority-state-controller
+          payload_dir=/tmp/pr2231-current-authority-state-controller
+          mkdir -p "$payload_dir"
           base64 -d .github/tmp/pr2231-current-authority-state-qualification-v1.tar.gz.b64 \
-            | tar -xz -C /tmp/pr2231-current-authority-state-controller
-          chmod +x /tmp/pr2231-current-authority-state-controller/pr2231-current-authority-state-qualification-v1.sh
-          /tmp/pr2231-current-authority-state-controller/pr2231-current-authority-state-qualification-v1.sh
-      - name: Upload retained qualification receipt
+            | tar -xz -C "$payload_dir"
+          if [[ -f "$payload_dir/pr2231-current-authority-state-repair-v1.patch" ]]; then
+            cp "$payload_dir/pr2231-current-authority-state-repair-v1.patch" \
+              /tmp/pr2231-current-authority-state-repair-v1.patch
+          fi
+          chmod +x "$payload_dir/pr2231-current-authority-state-qualification-v1.sh"
+          "$payload_dir/pr2231-current-authority-state-qualification-v1.sh"
+      - name: Upload retained qualification receipt and frozen payload
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pr2231-current-authority-state-qualification-v1
-          path: /tmp/pr2231-current-authority-state-qualification-v1
+          name: pr2231-current-authority-state-qualification-v1-recovery
+          path: |
+            /tmp/pr2231-current-authority-state-controller
+            /tmp/pr2231-current-authority-state-qualification-v1
           if-no-files-found: error
           retention-days: 90
