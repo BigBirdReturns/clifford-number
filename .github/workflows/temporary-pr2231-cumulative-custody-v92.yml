@@ -1,4 +1,4 @@
-name: Temporary PR 2231 cumulative custody diagnostic v92
+name: Temporary PR 2231 cumulative custody diagnostic v93
 
 on:
   pull_request:
@@ -7,6 +7,7 @@ on:
     paths:
       - '.github/tmp/pr2231-cumulative-custody-v92.py.gz.b64'
       - '.github/tmp/pr2231-cumulative-custody-v92-r2.py.gz.b64'
+      - '.github/tmp/pr2231-cumulative-custody-v93.py.gz.b64'
       - '.github/workflows/temporary-pr2231-cumulative-custody-v92.yml'
 
 permissions:
@@ -14,7 +15,7 @@ permissions:
   pull-requests: read
 
 concurrency:
-  group: pr2231-cumulative-custody-diagnostic-v92
+  group: pr2231-cumulative-custody-diagnostic-v93
   cancel-in-progress: false
 
 jobs:
@@ -28,10 +29,10 @@ jobs:
     env:
       EXPECTED_MAIN: 0e57325d62cff371e6f138d4f01086b96dd202b5
       EXPECTED_PRODUCT: ec210a32b888f3717027ce8d236ac6d14fcf1c82
-      EXPECTED_LIBRARY_BLOB: 6655e9aa10ac2964e5f6289a4881f1343265fa0e
-      EXPECTED_FOCUSED_TEST_BLOB: 7f72ca8c2eb7f436471453c74b98e1227b0970d5
+      EXPECTED_V92_LIBRARY_BLOB: 6655e9aa10ac2964e5f6289a4881f1343265fa0e
+      EXPECTED_V92_FOCUSED_TEST_BLOB: 7f72ca8c2eb7f436471453c74b98e1227b0970d5
       PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
-      ARTIFACT_DIR: /tmp/pr2231-v92-diagnostic-artifact
+      ARTIFACT_DIR: /tmp/pr2231-v93-diagnostic-artifact
 
     steps:
       - uses: actions/checkout@v4
@@ -52,12 +53,12 @@ jobs:
             "+refs/heads/${PRODUCT_BRANCH}:refs/remotes/origin/${PRODUCT_BRANCH}"
           test "$(git rev-parse refs/remotes/origin/main)" = "$EXPECTED_MAIN"
           test "$(git rev-parse refs/remotes/origin/${PRODUCT_BRANCH})" = "$EXPECTED_PRODUCT"
-          rm -rf /tmp/pr2231-v92-product
-          git worktree add --detach /tmp/pr2231-v92-product "$EXPECTED_PRODUCT"
+          rm -rf /tmp/pr2231-v93-product
+          git worktree add --detach /tmp/pr2231-v93-product "$EXPECTED_PRODUCT"
 
-      - name: Reproduce all four exact-head defects before mutation
+      - name: Reproduce all four exact-head defects before V92 mutation
         shell: bash
-        working-directory: /tmp/pr2231-v92-product
+        working-directory: /tmp/pr2231-v93-product
         run: |
           set -euo pipefail
           node --input-type=module <<'NODE'
@@ -86,9 +87,9 @@ jobs:
           console.log('PREDECESSOR_REPRODUCTION_SUCCESS');
           NODE
 
-      - name: Apply the exact cumulative two-file repair
+      - name: Apply and bind the exact V92 cumulative repair
         shell: bash
-        working-directory: /tmp/pr2231-v92-product
+        working-directory: /tmp/pr2231-v93-product
         run: |
           set -euo pipefail
           base64 -d "$GITHUB_WORKSPACE/.github/tmp/pr2231-cumulative-custody-v92.py.gz.b64" | gzip -dc > /tmp/pr2231-v92-apply.py
@@ -102,13 +103,59 @@ jobs:
           test "${#changed[@]}" -eq 2
           test "${changed[0]}" = 'test/industrial-exhaust.test.js'
           test "${changed[1]}" = 'tools/lib/industrial-exhaust.mjs'
-          test "$(git hash-object tools/lib/industrial-exhaust.mjs)" = "$EXPECTED_LIBRARY_BLOB"
-          test "$(git hash-object test/industrial-exhaust.test.js)" = "$EXPECTED_FOCUSED_TEST_BLOB"
+          test "$(git hash-object tools/lib/industrial-exhaust.mjs)" = "$EXPECTED_V92_LIBRARY_BLOB"
+          test "$(git hash-object test/industrial-exhaust.test.js)" = "$EXPECTED_V92_FOCUSED_TEST_BLOB"
           node --check tools/lib/industrial-exhaust.mjs
+
+      - name: Reproduce the V92 complete-provenance no-label defect
+        shell: bash
+        working-directory: /tmp/pr2231-v93-product
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { redactContactData } from './tools/lib/industrial-exhaust.mjs';
+
+          const prefix = 'identifier '.repeat(2000);
+          const input = `Archive ${prefix}09012345678`;
+          const actual = redactContactData(input);
+          assert.equal(actual, `Archive ${prefix}[contact omitted]`);
+          console.log('V92_COMPLETE_PROVENANCE_NO_LABEL_REPRODUCTION_SUCCESS');
+          NODE
+
+      - name: Apply the bounded no-label provenance V93 overlay
+        shell: bash
+        working-directory: /tmp/pr2231-v93-product
+        run: |
+          set -euo pipefail
+          printf '%s  %s\n' '66f31083fad82c64ffb85882f2e624522ca62b98c1df770efcbc6525a1d7e17b' "$GITHUB_WORKSPACE/.github/tmp/pr2231-cumulative-custody-v93.py.gz.b64" | sha256sum -c -
+          base64 -d "$GITHUB_WORKSPACE/.github/tmp/pr2231-cumulative-custody-v93.py.gz.b64" | gzip -dc > /tmp/pr2231-v93.py
+          printf '%s  %s\n' 'c08607259988f56ee89d02bd321a1fdd04de9cf04e5b067146c474d275efe50e' /tmp/pr2231-v93.py | sha256sum -c -
+          python /tmp/pr2231-v93.py
+          git diff --check
+          mapfile -t changed < <(git diff --name-only | sort)
+          test "${#changed[@]}" -eq 2
+          test "${changed[0]}" = 'test/industrial-exhaust.test.js'
+          test "${changed[1]}" = 'tools/lib/industrial-exhaust.mjs'
+          node --check tools/lib/industrial-exhaust.mjs
+
+      - name: Prove the V93 repair before full qualification
+        shell: bash
+        working-directory: /tmp/pr2231-v93-product
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { redactContactData } from './tools/lib/industrial-exhaust.mjs';
+
+          const input = `Archive ${'identifier '.repeat(2000)}09012345678`;
+          assert.equal(redactContactData(input), input);
+          console.log('V93_COMPLETE_PROVENANCE_NO_LABEL_REPAIR_SUCCESS');
+          NODE
 
       - name: Run cumulative focused and repository-wide qualification
         shell: bash
-        working-directory: /tmp/pr2231-v92-product
+        working-directory: /tmp/pr2231-v93-product
         run: |
           set -euo pipefail
           for test_file in test/industrial-exhaust*.test.js; do
@@ -116,13 +163,13 @@ jobs:
           done
           npm run release:check
 
-      - name: Restore generated state and bind exact product bytes
+      - name: Restore generated state and bind exact V93 product bytes
         shell: bash
-        working-directory: /tmp/pr2231-v92-product
+        working-directory: /tmp/pr2231-v93-product
         run: |
           set -euo pipefail
-          cp tools/lib/industrial-exhaust.mjs /tmp/pr2231-v92-qualified-library.mjs
-          cp test/industrial-exhaust.test.js /tmp/pr2231-v92-qualified-focused-test.js
+          cp tools/lib/industrial-exhaust.mjs /tmp/pr2231-v93-qualified-library.mjs
+          cp test/industrial-exhaust.test.js /tmp/pr2231-v93-qualified-focused-test.js
 
           printf '%s\n' 'PRE_RESTORE_STATUS'
           git status --short
@@ -131,8 +178,8 @@ jobs:
 
           git restore --source="$EXPECTED_PRODUCT" --staged --worktree -- .
           git clean -fd
-          cp /tmp/pr2231-v92-qualified-library.mjs tools/lib/industrial-exhaust.mjs
-          cp /tmp/pr2231-v92-qualified-focused-test.js test/industrial-exhaust.test.js
+          cp /tmp/pr2231-v93-qualified-library.mjs tools/lib/industrial-exhaust.mjs
+          cp /tmp/pr2231-v93-qualified-focused-test.js test/industrial-exhaust.test.js
 
           printf '%s\n' 'POST_RESTORE_STATUS'
           git status --short
@@ -149,10 +196,8 @@ jobs:
 
           library_blob="$(git hash-object tools/lib/industrial-exhaust.mjs)"
           focused_test_blob="$(git hash-object test/industrial-exhaust.test.js)"
-          printf 'LIBRARY_BLOB=%s\n' "$library_blob"
-          printf 'FOCUSED_TEST_BLOB=%s\n' "$focused_test_blob"
-          test "$library_blob" = "$EXPECTED_LIBRARY_BLOB"
-          test "$focused_test_blob" = "$EXPECTED_FOCUSED_TEST_BLOB"
+          printf 'V93_LIBRARY_BLOB=%s\n' "$library_blob"
+          printf 'V93_FOCUSED_TEST_BLOB=%s\n' "$focused_test_blob"
 
           rm -rf "$ARTIFACT_DIR"
           mkdir -p "$ARTIFACT_DIR"
@@ -168,14 +213,15 @@ jobs:
             test/industrial-exhaust.test.js \
             "$GITHUB_WORKSPACE/.github/tmp/pr2231-cumulative-custody-v92.py.gz.b64" \
             "$GITHUB_WORKSPACE/.github/tmp/pr2231-cumulative-custody-v92-r2.py.gz.b64" \
+            "$GITHUB_WORKSPACE/.github/tmp/pr2231-cumulative-custody-v93.py.gz.b64" \
             > "$ARTIFACT_DIR/sha256.txt"
           printf '%s\n' QUALIFICATION_SUCCESS > "$ARTIFACT_DIR/result.txt"
 
-      - name: Upload retained diagnostic artifact
+      - name: Upload retained V93 diagnostic artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pr2231-cumulative-custody-v92-diagnostic
-          path: /tmp/pr2231-v92-diagnostic-artifact
+          name: pr2231-cumulative-custody-v93-diagnostic
+          path: /tmp/pr2231-v93-diagnostic-artifact
           if-no-files-found: warn
           retention-days: 90
