@@ -1,0 +1,262 @@
+name: Temporary PR 2231 current-main V95 publisher
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/temporary-pr2231-current-main-v95-publisher.yml'
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: pr2231-current-main-v95-publisher
+  cancel-in-progress: false
+
+jobs:
+  qualify-and-publish:
+    if: github.event.pull_request.number == 2391
+    runs-on: ubuntu-24.04
+    env:
+      EXPECTED_MAIN: 17aa3cfc22d5f9022164baf5c1d5a8e401b796cf
+      EXPECTED_PRODUCT: ec210a32b888f3717027ce8d236ac6d14fcf1c82
+      EXPECTED_BASE_LIBRARY_BLOB: 5f68254d3e44de693e83503aed879160f9b7b997
+      EXPECTED_BASE_FOCUSED_TEST_BLOB: 1659a7cc54666a2ac5a1d6b88eb8c6591d98008e
+      EXPECTED_PRODUCT_LIBRARY_BLOB: f3109756b84a44a35eac894d76ad2e70e9735b1c
+      EXPECTED_PRODUCT_FOCUSED_TEST_BLOB: 83a7653a94f8e5da85acdaab58c0a13d6ca5b62a
+      EXPECTED_QUALIFIED_LIBRARY_BLOB: 6655e9aa10ac2964e5f6289a4881f1343265fa0e
+      EXPECTED_QUALIFIED_FOCUSED_TEST_BLOB: 7f72ca8c2eb7f436471453c74b98e1227b0970d5
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      CONTROLLER_BRANCH: agent/pr2231-cumulative-custody-controller-v92
+      EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+      ARTIFACT_DIR: /tmp/pr2231-v95-publication-artifact
+      GH_TOKEN: ${{ github.token }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Initialize publication receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf "$ARTIFACT_DIR"
+          mkdir -p "$ARTIFACT_DIR/qualified/test" "$ARTIFACT_DIR/qualified/tools/lib"
+          printf '%s\n' PUBLICATION_STARTED > "$ARTIFACT_DIR/result.txt"
+          printf '%s\n' "$EXPECTED_MAIN" > "$ARTIFACT_DIR/main.sha"
+          printf '%s\n' "$EXPECTED_PRODUCT" > "$ARTIFACT_DIR/product-predecessor.sha"
+          printf '%s\n' "$EXPECTED_CONTROLLER" > "$ARTIFACT_DIR/controller.sha"
+
+      - name: Bind controller, product, live-main, and base-byte leases
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin \
+            "+refs/heads/main:refs/remotes/origin/main" \
+            "+refs/heads/${PRODUCT_BRANCH}:refs/remotes/origin/${PRODUCT_BRANCH}" \
+            "+refs/heads/${CONTROLLER_BRANCH}:refs/remotes/origin/${CONTROLLER_BRANCH}"
+          test "$(git rev-parse refs/remotes/origin/main)" = "$EXPECTED_MAIN"
+          test "$(git rev-parse refs/remotes/origin/${PRODUCT_BRANCH})" = "$EXPECTED_PRODUCT"
+          test "$(git rev-parse refs/remotes/origin/${CONTROLLER_BRANCH})" = "$EXPECTED_CONTROLLER"
+          test "$(git rev-parse "${EXPECTED_MAIN}:tools/lib/industrial-exhaust.mjs")" = "$EXPECTED_BASE_LIBRARY_BLOB"
+          test "$(git rev-parse "${EXPECTED_MAIN}:test/industrial-exhaust.test.js")" = "$EXPECTED_BASE_FOCUSED_TEST_BLOB"
+          test "$(git rev-parse "${EXPECTED_PRODUCT}:tools/lib/industrial-exhaust.mjs")" = "$EXPECTED_PRODUCT_LIBRARY_BLOB"
+          test "$(git rev-parse "${EXPECTED_PRODUCT}:test/industrial-exhaust.test.js")" = "$EXPECTED_PRODUCT_FOCUSED_TEST_BLOB"
+          rm -rf /tmp/pr2231-v95-product /tmp/pr2231-v95-main
+          git worktree add --detach /tmp/pr2231-v95-product "$EXPECTED_PRODUCT"
+          git worktree add --detach /tmp/pr2231-v95-main "$EXPECTED_MAIN"
+
+      - name: Reconstruct and bind the exact V92 product bytes
+        shell: bash
+        working-directory: /tmp/pr2231-v95-product
+        run: |
+          set -euo pipefail
+          base64 -d "$GITHUB_WORKSPACE/.github/tmp/pr2231-cumulative-custody-v92.py.gz.b64" | gzip -dc > /tmp/pr2231-v95-v92.py
+          printf '%s  %s\n' 'c5167a8800ea2616881d68feea54c72ce7ae6941a474b4d8d5e37cb88d1dc33c' /tmp/pr2231-v95-v92.py | sha256sum -c -
+          python /tmp/pr2231-v95-v92.py
+          base64 -d "$GITHUB_WORKSPACE/.github/tmp/pr2231-cumulative-custody-v92-r2.py.gz.b64" | gzip -dc > /tmp/pr2231-v95-v92-r2.py
+          printf '%s  %s\n' 'b568c5a92ffb3bde822eb018facba48da90691ba9d9ea9629b6b8afc9e4f9da4' /tmp/pr2231-v95-v92-r2.py | sha256sum -c -
+          python /tmp/pr2231-v95-v92-r2.py
+          git diff --check
+          mapfile -t changed < <(git diff --name-only | sort)
+          test "${#changed[@]}" -eq 2
+          test "${changed[0]}" = 'test/industrial-exhaust.test.js'
+          test "${changed[1]}" = 'tools/lib/industrial-exhaust.mjs'
+          test "$(git hash-object tools/lib/industrial-exhaust.mjs)" = "$EXPECTED_QUALIFIED_LIBRARY_BLOB"
+          test "$(git hash-object test/industrial-exhaust.test.js)" = "$EXPECTED_QUALIFIED_FOCUSED_TEST_BLOB"
+          node --check tools/lib/industrial-exhaust.mjs
+          cp tools/lib/industrial-exhaust.mjs /tmp/pr2231-v95-qualified-library.mjs
+          cp test/industrial-exhaust.test.js /tmp/pr2231-v95-qualified-focused-test.js
+          cp tools/lib/industrial-exhaust.mjs "$ARTIFACT_DIR/qualified/tools/lib/industrial-exhaust.mjs"
+          cp test/industrial-exhaust.test.js "$ARTIFACT_DIR/qualified/test/industrial-exhaust.test.js"
+
+      - name: Re-run predecessor focused qualification
+        shell: bash
+        working-directory: /tmp/pr2231-v95-product
+        run: |
+          set -euo pipefail
+          for test_file in test/industrial-exhaust*.test.js; do
+            node "$test_file"
+          done
+
+      - name: Re-run exact current-main transplant and complete release qualification
+        shell: bash
+        working-directory: /tmp/pr2231-v95-main
+        run: |
+          set -euo pipefail
+          cp /tmp/pr2231-v95-qualified-library.mjs tools/lib/industrial-exhaust.mjs
+          cp /tmp/pr2231-v95-qualified-focused-test.js test/industrial-exhaust.test.js
+          git diff --check
+          mapfile -t changed < <(git diff --name-only | sort)
+          test "${#changed[@]}" -eq 2
+          test "${changed[0]}" = 'test/industrial-exhaust.test.js'
+          test "${changed[1]}" = 'tools/lib/industrial-exhaust.mjs'
+          test "$(git hash-object tools/lib/industrial-exhaust.mjs)" = "$EXPECTED_QUALIFIED_LIBRARY_BLOB"
+          test "$(git hash-object test/industrial-exhaust.test.js)" = "$EXPECTED_QUALIFIED_FOCUSED_TEST_BLOB"
+          for test_file in test/industrial-exhaust*.test.js; do
+            node "$test_file"
+          done
+          npm run release:check
+
+      - name: Restore generated state and construct the exact two-file publication
+        shell: bash
+        working-directory: /tmp/pr2231-v95-main
+        run: |
+          set -euo pipefail
+          git restore --source="$EXPECTED_MAIN" --staged --worktree -- .
+          git clean -fd
+          cp /tmp/pr2231-v95-qualified-library.mjs tools/lib/industrial-exhaust.mjs
+          cp /tmp/pr2231-v95-qualified-focused-test.js test/industrial-exhaust.test.js
+          git diff --check
+          mapfile -t changed < <(git diff --name-only | sort)
+          test "${#changed[@]}" -eq 2
+          test "${changed[0]}" = 'test/industrial-exhaust.test.js'
+          test "${changed[1]}" = 'tools/lib/industrial-exhaust.mjs'
+          test "$(git hash-object tools/lib/industrial-exhaust.mjs)" = "$EXPECTED_QUALIFIED_LIBRARY_BLOB"
+          test "$(git hash-object test/industrial-exhaust.test.js)" = "$EXPECTED_QUALIFIED_FOCUSED_TEST_BLOB"
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add test/industrial-exhaust.test.js tools/lib/industrial-exhaust.mjs
+          git commit \
+            -m 'fix: preserve cumulative contact custody on current main' \
+            -m 'Rebase the independently qualified V92 two-file repair without importing controller custody.'
+
+          published_sha="$(git rev-parse HEAD)"
+          published_tree="$(git rev-parse HEAD^{tree})"
+          published_parent="$(git rev-parse HEAD^)"
+          test "$published_parent" = "$EXPECTED_MAIN"
+          mapfile -t published_paths < <(git diff-tree --no-commit-id --name-only -r HEAD | sort)
+          test "${#published_paths[@]}" -eq 2
+          test "${published_paths[0]}" = 'test/industrial-exhaust.test.js'
+          test "${published_paths[1]}" = 'tools/lib/industrial-exhaust.mjs'
+          test "$(git rev-parse "HEAD:tools/lib/industrial-exhaust.mjs")" = "$EXPECTED_QUALIFIED_LIBRARY_BLOB"
+          test "$(git rev-parse "HEAD:test/industrial-exhaust.test.js")" = "$EXPECTED_QUALIFIED_FOCUSED_TEST_BLOB"
+
+          printf '%s\n' "$published_sha" > "$ARTIFACT_DIR/workflow-product.sha"
+          printf '%s\n' "$published_tree" > "$ARTIFACT_DIR/product.tree"
+          printf '%s\n' "$published_parent" > "$ARTIFACT_DIR/product.parent"
+          printf '%s\n' "$EXPECTED_QUALIFIED_LIBRARY_BLOB" > "$ARTIFACT_DIR/library.blob"
+          printf '%s\n' "$EXPECTED_QUALIFIED_FOCUSED_TEST_BLOB" > "$ARTIFACT_DIR/focused-test.blob"
+          git show --binary --format=fuller HEAD > "$ARTIFACT_DIR/product.commit.patch"
+          git show --stat --format=fuller HEAD > "$ARTIFACT_DIR/product.commit.diffstat"
+          sha256sum \
+            test/industrial-exhaust.test.js \
+            tools/lib/industrial-exhaust.mjs \
+            /tmp/pr2231-v95-v92.py \
+            /tmp/pr2231-v95-v92-r2.py \
+            > "$ARTIFACT_DIR/sha256.txt"
+          printf '%s\n' PUBLICATION_READY > "$ARTIFACT_DIR/result.txt"
+
+      - name: Revalidate live pull-request and review-thread custody
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh api graphql \
+            -f query='query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){pullRequest(number:$number){state isDraft headRefName headRefOid baseRefName reviewThreads(first:100){totalCount nodes{id isResolved isOutdated}}}}}' \
+            -F owner='BigBirdReturns' \
+            -F name='clifford-number' \
+            -F number=2231 \
+            > /tmp/pr2231-v95-review-custody.json
+
+          jq -e \
+            --arg branch "$PRODUCT_BRANCH" \
+            --arg head "$EXPECTED_PRODUCT" \
+            '.data.repository.pullRequest.state == "OPEN" and
+             .data.repository.pullRequest.isDraft == true and
+             .data.repository.pullRequest.baseRefName == "main" and
+             .data.repository.pullRequest.headRefName == $branch and
+             .data.repository.pullRequest.headRefOid == $head' \
+            /tmp/pr2231-v95-review-custody.json > /dev/null
+
+          for thread_id in \
+            PRRT_kwDOTGqftc6dYT9g \
+            PRRT_kwDOTGqftc6dYT9i \
+            PRRT_kwDOTGqftc6dYT9j \
+            PRRT_kwDOTGqftc6dYVMi
+          do
+            jq -e \
+              --arg id "$thread_id" \
+              '.data.repository.pullRequest.reviewThreads.nodes[] |
+               select(.id == $id and .isResolved == false and .isOutdated == false)' \
+              /tmp/pr2231-v95-review-custody.json > /dev/null
+          done
+
+          cp /tmp/pr2231-v95-review-custody.json "$ARTIFACT_DIR/review-custody.json"
+          jq -r '.data.repository.pullRequest.reviewThreads.totalCount' \
+            /tmp/pr2231-v95-review-custody.json \
+            > "$ARTIFACT_DIR/review-thread-count.txt"
+          printf '%s\n' REVIEW_CUSTODY_SUCCESS > "$ARTIFACT_DIR/review-custody-result.txt"
+
+      - name: Revalidate final leases and publish through exact force-with-lease
+        shell: bash
+        working-directory: /tmp/pr2231-v95-main
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin \
+            "+refs/heads/main:refs/remotes/origin/main" \
+            "+refs/heads/${PRODUCT_BRANCH}:refs/remotes/origin/${PRODUCT_BRANCH}" \
+            "+refs/heads/${CONTROLLER_BRANCH}:refs/remotes/origin/${CONTROLLER_BRANCH}"
+          test "$(git rev-parse refs/remotes/origin/main)" = "$EXPECTED_MAIN"
+          test "$(git rev-parse refs/remotes/origin/${PRODUCT_BRANCH})" = "$EXPECTED_PRODUCT"
+          test "$(git rev-parse refs/remotes/origin/${CONTROLLER_BRANCH})" = "$EXPECTED_CONTROLLER"
+          test "$(git rev-parse HEAD^)" = "$EXPECTED_MAIN"
+          test "$(git rev-parse "HEAD:tools/lib/industrial-exhaust.mjs")" = "$EXPECTED_QUALIFIED_LIBRARY_BLOB"
+          test "$(git rev-parse "HEAD:test/industrial-exhaust.test.js")" = "$EXPECTED_QUALIFIED_FOCUSED_TEST_BLOB"
+
+          published_sha="$(git rev-parse HEAD)"
+          git push origin \
+            "HEAD:refs/heads/${PRODUCT_BRANCH}" \
+            "--force-with-lease=refs/heads/${PRODUCT_BRANCH}:${EXPECTED_PRODUCT}"
+
+          git fetch --no-tags origin \
+            "+refs/heads/main:refs/remotes/origin/main" \
+            "+refs/heads/${PRODUCT_BRANCH}:refs/remotes/origin/${PRODUCT_BRANCH}" \
+            "+refs/heads/${CONTROLLER_BRANCH}:refs/remotes/origin/${CONTROLLER_BRANCH}"
+          test "$(git rev-parse refs/remotes/origin/main)" = "$EXPECTED_MAIN"
+          test "$(git rev-parse refs/remotes/origin/${PRODUCT_BRANCH})" = "$published_sha"
+          test "$(git rev-parse refs/remotes/origin/${CONTROLLER_BRANCH})" = "$EXPECTED_CONTROLLER"
+          test "$(git rev-parse "${published_sha}^")" = "$EXPECTED_MAIN"
+          test "$(git rev-parse "${published_sha}:tools/lib/industrial-exhaust.mjs")" = "$EXPECTED_QUALIFIED_LIBRARY_BLOB"
+          test "$(git rev-parse "${published_sha}:test/industrial-exhaust.test.js")" = "$EXPECTED_QUALIFIED_FOCUSED_TEST_BLOB"
+          mapfile -t final_paths < <(git diff-tree --no-commit-id --name-only -r "$published_sha" | sort)
+          test "${#final_paths[@]}" -eq 2
+          test "${final_paths[0]}" = 'test/industrial-exhaust.test.js'
+          test "${final_paths[1]}" = 'tools/lib/industrial-exhaust.mjs'
+          printf '%s\n' "$published_sha" > "$ARTIFACT_DIR/published.sha"
+          printf '%s\n' PUBLICATION_SUCCESS > "$ARTIFACT_DIR/result.txt"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-current-main-v95-publication
+          path: /tmp/pr2231-v95-publication-artifact
+          retention-days: 90
