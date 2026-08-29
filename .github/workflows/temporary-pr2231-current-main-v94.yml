@@ -132,6 +132,11 @@ jobs:
         working-directory: /tmp/pr2231-v94-main
         run: |
           set -euo pipefail
+          rm -rf "$ARTIFACT_DIR"
+          mkdir -p "$ARTIFACT_DIR/qualified/test" "$ARTIFACT_DIR/qualified/tools/lib"
+          printf '%s\n' RECEIPT_STEP_STARTED > "$ARTIFACT_DIR/result.txt"
+
+          printf '%s\n' V94_RESTORE_BEGIN
           git restore --source="$EXPECTED_MAIN" --staged --worktree -- .
           git clean -fd
           cp /tmp/pr2231-v94-qualified-library.mjs tools/lib/industrial-exhaust.mjs
@@ -143,23 +148,43 @@ jobs:
           test "${changed[1]}" = 'tools/lib/industrial-exhaust.mjs'
           test "$(git hash-object tools/lib/industrial-exhaust.mjs)" = "$EXPECTED_QUALIFIED_LIBRARY_BLOB"
           test "$(git hash-object test/industrial-exhaust.test.js)" = "$EXPECTED_QUALIFIED_FOCUSED_TEST_BLOB"
+          printf '%s\n' V94_RESTORE_SUCCESS
 
+          printf '%s\n' V94_TREE_BEGIN
           git add test/industrial-exhaust.test.js tools/lib/industrial-exhaust.mjs
           candidate_tree="$(git write-tree)"
+          test -n "$candidate_tree"
+          printf 'CANDIDATE_TREE=%s\n' "$candidate_tree"
+          printf '%s\n' V94_TREE_SUCCESS
+
+          printf '%s\n' V94_COMMIT_OBJECT_BEGIN
+          export GIT_AUTHOR_NAME='PR2231 qualification controller'
+          export GIT_AUTHOR_EMAIL='pr2231-qualification@users.noreply.github.com'
+          export GIT_COMMITTER_NAME="$GIT_AUTHOR_NAME"
+          export GIT_COMMITTER_EMAIL="$GIT_AUTHOR_EMAIL"
+          export GIT_AUTHOR_DATE='2026-08-29T00:00:00Z'
+          export GIT_COMMITTER_DATE="$GIT_AUTHOR_DATE"
           candidate_commit="$(printf '%s\n\n%s\n' \
             'fix: preserve cumulative contact custody on current main' \
             'Rebase the independently qualified V92 two-file repair without importing controller custody.' \
             | git commit-tree "$candidate_tree" -p "$EXPECTED_MAIN")"
+          test -n "$candidate_commit"
           test "$(git rev-parse "${candidate_commit}^{commit}")" = "$candidate_commit"
           test "$(git rev-parse "${candidate_commit}^{tree}")" = "$candidate_tree"
           test "$(git rev-parse "${candidate_commit}^")" = "$EXPECTED_MAIN"
+          printf 'CANDIDATE_COMMIT=%s\n' "$candidate_commit"
+          printf '%s\n' V94_COMMIT_OBJECT_SUCCESS
+
+          printf '%s\n' V94_TOPOLOGY_BEGIN
           mapfile -t candidate_paths < <(git diff-tree --no-commit-id --name-only -r "$candidate_commit" | sort)
+          printf 'CANDIDATE_PATH_COUNT=%s\n' "${#candidate_paths[@]}"
+          printf 'CANDIDATE_PATH=%s\n' "${candidate_paths[@]}"
           test "${#candidate_paths[@]}" -eq 2
           test "${candidate_paths[0]}" = 'test/industrial-exhaust.test.js'
           test "${candidate_paths[1]}" = 'tools/lib/industrial-exhaust.mjs'
+          printf '%s\n' V94_TOPOLOGY_SUCCESS
 
-          rm -rf "$ARTIFACT_DIR"
-          mkdir -p "$ARTIFACT_DIR/qualified/test" "$ARTIFACT_DIR/qualified/tools/lib"
+          printf '%s\n' V94_ARTIFACT_BEGIN
           printf '%s\n' "$EXPECTED_MAIN" > "$ARTIFACT_DIR/main.sha"
           printf '%s\n' "$EXPECTED_PRODUCT" > "$ARTIFACT_DIR/product-predecessor.sha"
           printf '%s\n' "${{ github.event.pull_request.head.sha }}" > "$ARTIFACT_DIR/controller.sha"
@@ -170,8 +195,11 @@ jobs:
           printf '%s\n' "$candidate_tree" > "$ARTIFACT_DIR/candidate.tree"
           printf '%s\n' "$candidate_commit" > "$ARTIFACT_DIR/candidate.sha"
           printf '%s\n' "$EXPECTED_MAIN" > "$ARTIFACT_DIR/candidate.parent"
-          git diff --cached --binary "$EXPECTED_MAIN" > "$ARTIFACT_DIR/product.patch"
-          git diff --cached --stat "$EXPECTED_MAIN" > "$ARTIFACT_DIR/product.diffstat"
+          printf '%s\n' "$GIT_AUTHOR_NAME" > "$ARTIFACT_DIR/candidate.author-name"
+          printf '%s\n' "$GIT_AUTHOR_EMAIL" > "$ARTIFACT_DIR/candidate.author-email"
+          printf '%s\n' "$GIT_AUTHOR_DATE" > "$ARTIFACT_DIR/candidate.author-date"
+          git diff --cached --binary "$EXPECTED_MAIN" -- > "$ARTIFACT_DIR/product.patch"
+          git diff --cached --stat "$EXPECTED_MAIN" -- > "$ARTIFACT_DIR/product.diffstat"
           cp test/industrial-exhaust.test.js "$ARTIFACT_DIR/qualified/test/industrial-exhaust.test.js"
           cp tools/lib/industrial-exhaust.mjs "$ARTIFACT_DIR/qualified/tools/lib/industrial-exhaust.mjs"
           sha256sum \
@@ -181,6 +209,7 @@ jobs:
             /tmp/pr2231-v94-v92-r2.py \
             > "$ARTIFACT_DIR/sha256.txt"
           printf '%s\n' QUALIFICATION_SUCCESS > "$ARTIFACT_DIR/result.txt"
+          printf '%s\n' V94_ARTIFACT_SUCCESS
 
       - uses: actions/upload-artifact@v4
         if: always()
