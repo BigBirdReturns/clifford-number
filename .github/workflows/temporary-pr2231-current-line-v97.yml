@@ -1,0 +1,176 @@
+name: Temporary PR 2231 current-line V97 diagnostic
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/temporary-pr2231-current-line-v97.yml'
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: pr2231-current-line-v97-diagnostic
+  cancel-in-progress: false
+
+jobs:
+  qualify-current-line-read-only:
+    if: github.event.pull_request.number == 2391
+    runs-on: ubuntu-24.04
+    env:
+      EXPECTED_MAIN: 17aa3cfc22d5f9022164baf5c1d5a8e401b796cf
+      EXPECTED_PRODUCT: bea76f0dd155122c3a45fe82c7c1abbaf676349b
+      EXPECTED_LIBRARY_BLOB: 6655e9aa10ac2964e5f6289a4881f1343265fa0e
+      EXPECTED_FOCUSED_TEST_BLOB: 7f72ca8c2eb7f436471453c74b98e1227b0970d5
+      EXPECTED_CANDIDATE_LIBRARY_BLOB: 7cd97b5c0a235516336886cab04988f952c77a21
+      EXPECTED_CANDIDATE_FOCUSED_TEST_BLOB: 11cd5b1115cb5f623eeb7ee454c1edbe4048bc24
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      ARTIFACT_DIR: /tmp/pr2231-v97-diagnostic-artifact
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Bind controller, product, main, and predecessor bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin \
+            "+refs/heads/main:refs/remotes/origin/main" \
+            "+refs/heads/${PRODUCT_BRANCH}:refs/remotes/origin/${PRODUCT_BRANCH}"
+          test "$(git rev-parse refs/remotes/origin/main)" = "$EXPECTED_MAIN"
+          test "$(git rev-parse refs/remotes/origin/${PRODUCT_BRANCH})" = "$EXPECTED_PRODUCT"
+          test "$(git rev-parse "${EXPECTED_PRODUCT}^")" = "$EXPECTED_MAIN"
+          test "$(git rev-parse "${EXPECTED_PRODUCT}:tools/lib/industrial-exhaust.mjs")" = "$EXPECTED_LIBRARY_BLOB"
+          test "$(git rev-parse "${EXPECTED_PRODUCT}:test/industrial-exhaust.test.js")" = "$EXPECTED_FOCUSED_TEST_BLOB"
+          rm -rf /tmp/pr2231-v97-product
+          git worktree add --detach /tmp/pr2231-v97-product "$EXPECTED_PRODUCT"
+
+      - name: Reproduce all three exact-head findings
+        shell: bash
+        working-directory: /tmp/pr2231-v97-product
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { redactContactData } from './tools/lib/industrial-exhaust.mjs';
+
+          const witnesses = [
+            [
+              'synthetic interior date',
+              'Archive 03-6216-8041-3.14',
+              'Archive 03-6216-8041-3.14'
+            ],
+            [
+              'dotted second phone leak',
+              'Phone: 09012345678 03.6216.8041',
+              'Phone: [contact omitted] 03.6216.8041'
+            ],
+            [
+              'dash observation over-redaction',
+              'Archive +81 3 6216 8041–3.14',
+              'Archive [contact omitted]'
+            ]
+          ];
+          for (const [name, input, expected] of witnesses) {
+            const actual = redactContactData(input);
+            console.log(`V97_PREDECESSOR_${name.replaceAll(' ', '_').toUpperCase()}=${JSON.stringify(actual)}`);
+            assert.equal(actual, expected);
+          }
+          console.log('V97_PREDECESSOR_REPRODUCTION_SUCCESS');
+          NODE
+
+      - name: Apply the bounded V97 interval-precedence repair
+        shell: bash
+        working-directory: /tmp/pr2231-v97-product
+        run: |
+          set -euo pipefail
+          base64 -d "$GITHUB_WORKSPACE/.github/tmp/pr2231-current-line-v97.py.gz.b64" | gzip -dc > /tmp/pr2231-v97.py
+          printf '%s  %s\n' '93f6d92810a13581150b2b5918680303f7bae1b79a946c69fe68eb2e34cddb99' /tmp/pr2231-v97.py | sha256sum -c -
+          python -W error -m py_compile /tmp/pr2231-v97.py
+          python /tmp/pr2231-v97.py
+          git diff --check
+          mapfile -t changed < <(git diff --name-only | sort)
+          test "${#changed[@]}" -eq 2
+          test "${changed[0]}" = 'test/industrial-exhaust.test.js'
+          test "${changed[1]}" = 'tools/lib/industrial-exhaust.mjs'
+          node --check tools/lib/industrial-exhaust.mjs
+          test "$(git hash-object tools/lib/industrial-exhaust.mjs)" = "$EXPECTED_CANDIDATE_LIBRARY_BLOB"
+          test "$(git hash-object test/industrial-exhaust.test.js)" = "$EXPECTED_CANDIDATE_FOCUSED_TEST_BLOB"
+          cp tools/lib/industrial-exhaust.mjs /tmp/pr2231-v97-qualified-library.mjs
+          cp test/industrial-exhaust.test.js /tmp/pr2231-v97-qualified-focused-test.js
+
+      - name: Run focused and complete current-main qualification
+        shell: bash
+        working-directory: /tmp/pr2231-v97-product
+        run: |
+          set -euo pipefail
+          for test_file in test/industrial-exhaust*.test.js; do
+            node "$test_file"
+          done
+          npm run release:check
+
+      - name: Restore generated state and bind the exact candidate tree
+        shell: bash
+        working-directory: /tmp/pr2231-v97-product
+        run: |
+          set -euo pipefail
+          rm -rf "$ARTIFACT_DIR"
+          mkdir -p "$ARTIFACT_DIR/qualified/test" "$ARTIFACT_DIR/qualified/tools/lib"
+          printf '%s\n' RECEIPT_STEP_STARTED > "$ARTIFACT_DIR/result.txt"
+
+          git restore --source="$EXPECTED_PRODUCT" --staged --worktree -- .
+          git clean -fd
+          cp /tmp/pr2231-v97-qualified-library.mjs tools/lib/industrial-exhaust.mjs
+          cp /tmp/pr2231-v97-qualified-focused-test.js test/industrial-exhaust.test.js
+          git diff --check
+          mapfile -t changed < <(git diff --name-only | sort)
+          test "${#changed[@]}" -eq 2
+          test "${changed[0]}" = 'test/industrial-exhaust.test.js'
+          test "${changed[1]}" = 'tools/lib/industrial-exhaust.mjs'
+          mapfile -t cumulative < <(git diff --name-only "$EXPECTED_MAIN" | sort)
+          test "${#cumulative[@]}" -eq 2
+          test "${cumulative[0]}" = 'test/industrial-exhaust.test.js'
+          test "${cumulative[1]}" = 'tools/lib/industrial-exhaust.mjs'
+
+          library_blob="$(git hash-object tools/lib/industrial-exhaust.mjs)"
+          focused_test_blob="$(git hash-object test/industrial-exhaust.test.js)"
+          test "$library_blob" = "$EXPECTED_CANDIDATE_LIBRARY_BLOB"
+          test "$focused_test_blob" = "$EXPECTED_CANDIDATE_FOCUSED_TEST_BLOB"
+          git add test/industrial-exhaust.test.js tools/lib/industrial-exhaust.mjs
+          candidate_tree="$(git write-tree)"
+
+          printf '%s\n' "$EXPECTED_MAIN" > "$ARTIFACT_DIR/main.sha"
+          printf '%s\n' "$EXPECTED_PRODUCT" > "$ARTIFACT_DIR/product-predecessor.sha"
+          printf '%s\n' "${{ github.event.pull_request.head.sha }}" > "$ARTIFACT_DIR/controller.sha"
+          printf '%s\n' "$library_blob" > "$ARTIFACT_DIR/library.blob"
+          printf '%s\n' "$focused_test_blob" > "$ARTIFACT_DIR/focused-test.blob"
+          printf '%s\n' "$candidate_tree" > "$ARTIFACT_DIR/candidate.tree"
+          git diff --cached --binary "$EXPECTED_MAIN" -- > "$ARTIFACT_DIR/product.patch"
+          git diff --cached --stat "$EXPECTED_MAIN" -- > "$ARTIFACT_DIR/product.diffstat"
+          cp tools/lib/industrial-exhaust.mjs "$ARTIFACT_DIR/qualified/tools/lib/industrial-exhaust.mjs"
+          cp test/industrial-exhaust.test.js "$ARTIFACT_DIR/qualified/test/industrial-exhaust.test.js"
+          sha256sum \
+            tools/lib/industrial-exhaust.mjs \
+            test/industrial-exhaust.test.js \
+            /tmp/pr2231-v97.py \
+            > "$ARTIFACT_DIR/sha256.txt"
+          printf '%s\n' QUALIFICATION_SUCCESS > "$ARTIFACT_DIR/result.txt"
+          printf 'V97_LIBRARY_BLOB=%s\n' "$library_blob"
+          printf 'V97_FOCUSED_TEST_BLOB=%s\n' "$focused_test_blob"
+          printf 'V97_CANDIDATE_TREE=%s\n' "$candidate_tree"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-current-line-v97-diagnostic
+          path: /tmp/pr2231-v97-diagnostic-artifact
+          retention-days: 90
