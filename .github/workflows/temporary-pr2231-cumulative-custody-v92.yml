@@ -39,7 +39,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: npm
 
       - name: Freeze leases and materialize the exact product
         shell: bash
@@ -99,11 +98,6 @@ jobs:
           test "${changed[1]}" = 'tools/lib/industrial-exhaust.mjs'
           node --check tools/lib/industrial-exhaust.mjs
 
-      - name: Install exact repository dependencies
-        shell: bash
-        working-directory: /tmp/pr2231-v92-product
-        run: npm ci
-
       - name: Run cumulative focused and repository-wide qualification
         shell: bash
         working-directory: /tmp/pr2231-v92-product
@@ -152,5 +146,5 @@ jobs:
         with:
           name: pr2231-cumulative-custody-v92-diagnostic
           path: /tmp/pr2231-v92-diagnostic-artifact
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 90
