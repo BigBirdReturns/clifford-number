@@ -6,6 +6,7 @@ on:
     types: [opened, synchronize, reopened]
     paths:
       - '.github/tmp/pr2231-cumulative-custody-v92.py.gz.b64'
+      - '.github/tmp/pr2231-cumulative-custody-v92-r2.py.gz.b64'
       - '.github/workflows/temporary-pr2231-cumulative-custody-v92.yml'
 
 permissions:
@@ -91,6 +92,9 @@ jobs:
           base64 -d "$GITHUB_WORKSPACE/.github/tmp/pr2231-cumulative-custody-v92.py.gz.b64" | gzip -dc > /tmp/pr2231-v92-apply.py
           printf '%s  %s\n' 'c5167a8800ea2616881d68feea54c72ce7ae6941a474b4d8d5e37cb88d1dc33c' /tmp/pr2231-v92-apply.py | sha256sum -c -
           python /tmp/pr2231-v92-apply.py
+          base64 -d "$GITHUB_WORKSPACE/.github/tmp/pr2231-cumulative-custody-v92-r2.py.gz.b64" | gzip -dc > /tmp/pr2231-v92-r2.py
+          printf '%s  %s\n' 'b568c5a92ffb3bde822eb018facba48da90691ba9d9ea9629b6b8afc9e4f9da4' /tmp/pr2231-v92-r2.py | sha256sum -c -
+          python /tmp/pr2231-v92-r2.py
           git diff --check
           mapfile -t changed < <(git diff --name-only | sort)
           test "${#changed[@]}" -eq 2
@@ -137,6 +141,7 @@ jobs:
             tools/lib/industrial-exhaust.mjs \
             test/industrial-exhaust.test.js \
             "$GITHUB_WORKSPACE/.github/tmp/pr2231-cumulative-custody-v92.py.gz.b64" \
+            "$GITHUB_WORKSPACE/.github/tmp/pr2231-cumulative-custody-v92-r2.py.gz.b64" \
             > "$ARTIFACT_DIR/sha256.txt"
           printf '%s\n' QUALIFICATION_SUCCESS > "$ARTIFACT_DIR/result.txt"
 
