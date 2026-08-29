@@ -28,6 +28,8 @@ jobs:
     env:
       EXPECTED_MAIN: 0e57325d62cff371e6f138d4f01086b96dd202b5
       EXPECTED_PRODUCT: ec210a32b888f3717027ce8d236ac6d14fcf1c82
+      EXPECTED_LIBRARY_BLOB: 6655e9aa10ac2964e5f6289a4881f1343265fa0e
+      EXPECTED_FOCUSED_TEST_BLOB: 7f72ca8c2eb7f436471453c74b98e1227b0970d5
       PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
       ARTIFACT_DIR: /tmp/pr2231-v92-diagnostic-artifact
 
@@ -100,6 +102,8 @@ jobs:
           test "${#changed[@]}" -eq 2
           test "${changed[0]}" = 'test/industrial-exhaust.test.js'
           test "${changed[1]}" = 'tools/lib/industrial-exhaust.mjs'
+          test "$(git hash-object tools/lib/industrial-exhaust.mjs)" = "$EXPECTED_LIBRARY_BLOB"
+          test "$(git hash-object test/industrial-exhaust.test.js)" = "$EXPECTED_FOCUSED_TEST_BLOB"
           node --check tools/lib/industrial-exhaust.mjs
 
       - name: Run cumulative focused and repository-wide qualification
@@ -117,26 +121,48 @@ jobs:
         working-directory: /tmp/pr2231-v92-product
         run: |
           set -euo pipefail
-          while IFS= read -r changed_path; do
-            case "$changed_path" in
-              tools/lib/industrial-exhaust.mjs|test/industrial-exhaust.test.js) ;;
-              *) git restore -- "$changed_path" ;;
-            esac
-          done < <(git diff --name-only)
+          cp tools/lib/industrial-exhaust.mjs /tmp/pr2231-v92-qualified-library.mjs
+          cp test/industrial-exhaust.test.js /tmp/pr2231-v92-qualified-focused-test.js
+
+          printf '%s\n' 'PRE_RESTORE_STATUS'
+          git status --short
+          printf '%s\n' 'PRE_RESTORE_DIFF'
+          git diff --name-status
+
+          git restore --source="$EXPECTED_PRODUCT" --staged --worktree -- .
+          git clean -fd
+          cp /tmp/pr2231-v92-qualified-library.mjs tools/lib/industrial-exhaust.mjs
+          cp /tmp/pr2231-v92-qualified-focused-test.js test/industrial-exhaust.test.js
+
+          printf '%s\n' 'POST_RESTORE_STATUS'
+          git status --short
+          printf '%s\n' 'POST_RESTORE_DIFF'
+          git diff --name-status
           git diff --check
+
           mapfile -t changed < <(git diff --name-only | sort)
+          printf 'CHANGED_COUNT=%s\n' "${#changed[@]}"
+          printf 'CHANGED_PATH=%s\n' "${changed[@]}"
           test "${#changed[@]}" -eq 2
           test "${changed[0]}" = 'test/industrial-exhaust.test.js'
           test "${changed[1]}" = 'tools/lib/industrial-exhaust.mjs'
 
+          library_blob="$(git hash-object tools/lib/industrial-exhaust.mjs)"
+          focused_test_blob="$(git hash-object test/industrial-exhaust.test.js)"
+          printf 'LIBRARY_BLOB=%s\n' "$library_blob"
+          printf 'FOCUSED_TEST_BLOB=%s\n' "$focused_test_blob"
+          test "$library_blob" = "$EXPECTED_LIBRARY_BLOB"
+          test "$focused_test_blob" = "$EXPECTED_FOCUSED_TEST_BLOB"
+
+          rm -rf "$ARTIFACT_DIR"
           mkdir -p "$ARTIFACT_DIR"
           printf '%s\n' "$EXPECTED_MAIN" > "$ARTIFACT_DIR/main.sha"
           printf '%s\n' "$EXPECTED_PRODUCT" > "$ARTIFACT_DIR/product-predecessor.sha"
           printf '%s\n' "${{ github.event.pull_request.head.sha }}" > "$ARTIFACT_DIR/controller.sha"
+          printf '%s\n' "$library_blob" > "$ARTIFACT_DIR/library.blob"
+          printf '%s\n' "$focused_test_blob" > "$ARTIFACT_DIR/focused-test.blob"
           git diff --binary > "$ARTIFACT_DIR/product.patch"
           git diff --stat > "$ARTIFACT_DIR/product.diffstat"
-          git hash-object tools/lib/industrial-exhaust.mjs > "$ARTIFACT_DIR/library.blob"
-          git hash-object test/industrial-exhaust.test.js > "$ARTIFACT_DIR/focused-test.blob"
           sha256sum \
             tools/lib/industrial-exhaust.mjs \
             test/industrial-exhaust.test.js \
