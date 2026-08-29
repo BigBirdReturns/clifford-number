@@ -26,6 +26,31 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+      - name: Retain exact product and current-main source snapshots
+        shell: bash
+        run: |
+          set -euo pipefail
+          product=ec210a32b888f3717027ce8d236ac6d14fcf1c82
+          main=17aa3cfc22d5f9022164baf5c1d5a8e401b796cf
+          product_branch=agent/current-main-identifier-context-product-v1
+          snapshot_dir=/tmp/pr2231-current-authority-state-source-snapshots
+          git fetch --no-tags origin \
+            "+refs/heads/main:refs/remotes/origin/main" \
+            "+refs/heads/$product_branch:refs/remotes/origin/$product_branch"
+          test "$(git rev-parse refs/remotes/origin/main)" = "$main"
+          test "$(git rev-parse refs/remotes/origin/$product_branch)" = "$product"
+          mkdir -p "$snapshot_dir"
+          git archive --format=tar.gz --output="$snapshot_dir/product-$product.tar.gz" "$product"
+          git archive --format=tar.gz --output="$snapshot_dir/main-$main.tar.gz" "$main"
+          {
+            printf 'product=%s\n' "$product"
+            printf 'product_tree=%s\n' "$(git show -s --format=%T "$product")"
+            printf 'product_library_blob=%s\n' "$(git rev-parse "$product:tools/lib/industrial-exhaust.mjs")"
+            printf 'product_test_blob=%s\n' "$(git rev-parse "$product:test/industrial-exhaust.test.js")"
+            printf 'main=%s\n' "$main"
+            printf 'main_tree=%s\n' "$(git show -s --format=%T "$main")"
+            sha256sum "$snapshot_dir"/*.tar.gz
+          } | tee "$snapshot_dir/source-snapshot-manifest.txt"
       - name: Recover and execute frozen qualification payload
         shell: bash
         run: |
@@ -40,7 +65,7 @@ jobs:
           fi
           chmod +x "$payload_dir/pr2231-current-authority-state-qualification-v1.sh"
           "$payload_dir/pr2231-current-authority-state-qualification-v1.sh"
-      - name: Upload retained qualification receipt and frozen payload
+      - name: Upload retained qualification receipt, frozen payload, and source snapshots
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -48,5 +73,6 @@ jobs:
           path: |
             /tmp/pr2231-current-authority-state-controller
             /tmp/pr2231-current-authority-state-qualification-v1
+            /tmp/pr2231-current-authority-state-source-snapshots
           if-no-files-found: error
           retention-days: 90
