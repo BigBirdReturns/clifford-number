@@ -26,6 +26,7 @@ jobs:
       EXPECTED_FOCUSED_TEST_BLOB: 7f72ca8c2eb7f436471453c74b98e1227b0970d5
       EXPECTED_CANDIDATE_LIBRARY_BLOB: 7cd97b5c0a235516336886cab04988f952c77a21
       EXPECTED_CANDIDATE_FOCUSED_TEST_BLOB: 3a19844263765e63b9b81344c20e858d1efcce6f
+      EXPECTED_MUTATOR_SHA256: 93f6d92810a13581150b2b5918680303f7bae1b79a946c69fe68eb2e34cddb99
       PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
       ARTIFACT_DIR: /tmp/pr2231-v97-diagnostic-artifact
 
@@ -39,27 +40,80 @@ jobs:
         with:
           node-version: 20
 
-      - name: Bind controller, product, main, and predecessor bytes
+      - name: Initialize durable diagnostic receipts
         shell: bash
         run: |
           set -euo pipefail
+          rm -rf "$ARTIFACT_DIR"
+          mkdir -p "$ARTIFACT_DIR/qualified/test" "$ARTIFACT_DIR/qualified/tools/lib"
+          printf '%s\n' INITIALIZED > "$ARTIFACT_DIR/result.txt"
+          printf '%s\n' "${{ github.event.pull_request.head.sha }}" > "$ARTIFACT_DIR/controller.sha"
+          printf '%s\n' "$EXPECTED_MAIN" > "$ARTIFACT_DIR/expected-main.sha"
+          printf '%s\n' "$EXPECTED_PRODUCT" > "$ARTIFACT_DIR/expected-product.sha"
+          printf '%s\n' "$EXPECTED_LIBRARY_BLOB" > "$ARTIFACT_DIR/expected-predecessor-library.blob"
+          printf '%s\n' "$EXPECTED_FOCUSED_TEST_BLOB" > "$ARTIFACT_DIR/expected-predecessor-focused-test.blob"
+          printf '%s\n' "$EXPECTED_CANDIDATE_LIBRARY_BLOB" > "$ARTIFACT_DIR/expected-candidate-library.blob"
+          printf '%s\n' "$EXPECTED_CANDIDATE_FOCUSED_TEST_BLOB" > "$ARTIFACT_DIR/expected-candidate-focused-test.blob"
+          printf '%s\n' "$EXPECTED_MUTATOR_SHA256" > "$ARTIFACT_DIR/expected-mutator.sha256"
+          printf '%s\n' INITIALIZED > "$ARTIFACT_DIR/trace.txt"
+
+      - name: Bind controller, product, main, and predecessor bytes
+        shell: bash
+        run: |
+          set -uo pipefail
+          note() {
+            printf '%s\n' "$*" | tee -a "$ARTIFACT_DIR/trace.txt"
+            printf '::notice title=V97 diagnostic::%s\n' "$*"
+          }
+          fail() {
+            note "FAIL:$*"
+            printf '%s\n' "FAIL:$*" > "$ARTIFACT_DIR/result.txt"
+            exit 1
+          }
+          note BIND_STARTED
           git fetch --no-tags origin \
             "+refs/heads/main:refs/remotes/origin/main" \
-            "+refs/heads/${PRODUCT_BRANCH}:refs/remotes/origin/${PRODUCT_BRANCH}"
-          test "$(git rev-parse refs/remotes/origin/main)" = "$EXPECTED_MAIN"
-          test "$(git rev-parse refs/remotes/origin/${PRODUCT_BRANCH})" = "$EXPECTED_PRODUCT"
-          test "$(git rev-parse "${EXPECTED_PRODUCT}^")" = "$EXPECTED_MAIN"
-          test "$(git rev-parse "${EXPECTED_PRODUCT}:tools/lib/industrial-exhaust.mjs")" = "$EXPECTED_LIBRARY_BLOB"
-          test "$(git rev-parse "${EXPECTED_PRODUCT}:test/industrial-exhaust.test.js")" = "$EXPECTED_FOCUSED_TEST_BLOB"
-          rm -rf /tmp/pr2231-v97-product
-          git worktree add --detach /tmp/pr2231-v97-product "$EXPECTED_PRODUCT"
+            "+refs/heads/${PRODUCT_BRANCH}:refs/remotes/origin/${PRODUCT_BRANCH}" || fail GIT_FETCH
+          actual_main="$(git rev-parse refs/remotes/origin/main)" || fail RESOLVE_MAIN
+          actual_product="$(git rev-parse refs/remotes/origin/${PRODUCT_BRANCH})" || fail RESOLVE_PRODUCT
+          actual_parent="$(git rev-parse "${EXPECTED_PRODUCT}^")" || fail RESOLVE_PRODUCT_PARENT
+          actual_library="$(git rev-parse "${EXPECTED_PRODUCT}:tools/lib/industrial-exhaust.mjs")" || fail RESOLVE_PREDECESSOR_LIBRARY
+          actual_test="$(git rev-parse "${EXPECTED_PRODUCT}:test/industrial-exhaust.test.js")" || fail RESOLVE_PREDECESSOR_TEST
+          printf '%s\n' "$actual_main" > "$ARTIFACT_DIR/actual-main.sha"
+          printf '%s\n' "$actual_product" > "$ARTIFACT_DIR/actual-product.sha"
+          printf '%s\n' "$actual_parent" > "$ARTIFACT_DIR/actual-product-parent.sha"
+          printf '%s\n' "$actual_library" > "$ARTIFACT_DIR/actual-predecessor-library.blob"
+          printf '%s\n' "$actual_test" > "$ARTIFACT_DIR/actual-predecessor-focused-test.blob"
+          note "ACTUAL_MAIN=$actual_main"
+          note "ACTUAL_PRODUCT=$actual_product"
+          note "ACTUAL_PRODUCT_PARENT=$actual_parent"
+          note "ACTUAL_PREDECESSOR_LIBRARY_BLOB=$actual_library"
+          note "ACTUAL_PREDECESSOR_FOCUSED_TEST_BLOB=$actual_test"
+          [[ "$actual_main" == "$EXPECTED_MAIN" ]] || fail MAIN_LEASE
+          [[ "$actual_product" == "$EXPECTED_PRODUCT" ]] || fail PRODUCT_LEASE
+          [[ "$actual_parent" == "$EXPECTED_MAIN" ]] || fail PRODUCT_PARENT
+          [[ "$actual_library" == "$EXPECTED_LIBRARY_BLOB" ]] || fail PREDECESSOR_LIBRARY_BLOB
+          [[ "$actual_test" == "$EXPECTED_FOCUSED_TEST_BLOB" ]] || fail PREDECESSOR_FOCUSED_TEST_BLOB
+          rm -rf /tmp/pr2231-v97-product || fail REMOVE_OLD_WORKTREE
+          git worktree add --detach /tmp/pr2231-v97-product "$EXPECTED_PRODUCT" || fail ADD_WORKTREE
+          note BIND_SUCCESS
 
       - name: Reproduce all three exact-head findings
         shell: bash
         working-directory: /tmp/pr2231-v97-product
         run: |
-          set -euo pipefail
-          node --input-type=module <<'NODE'
+          set -uo pipefail
+          note() {
+            printf '%s\n' "$*" | tee -a "$ARTIFACT_DIR/trace.txt"
+            printf '::notice title=V97 diagnostic::%s\n' "$*"
+          }
+          fail() {
+            note "FAIL:$*"
+            printf '%s\n' "FAIL:$*" > "$ARTIFACT_DIR/result.txt"
+            exit 1
+          }
+          note PREDECESSOR_REPRODUCTION_STARTED
+          node --input-type=module <<'NODE' > "$ARTIFACT_DIR/predecessor-reproduction.txt" 2>&1
           import assert from 'node:assert/strict';
           import { redactContactData } from './tools/lib/industrial-exhaust.mjs';
 
@@ -87,86 +141,217 @@ jobs:
           }
           console.log('V97_PREDECESSOR_REPRODUCTION_SUCCESS');
           NODE
+          status=$?
+          cat "$ARTIFACT_DIR/predecessor-reproduction.txt"
+          [[ "$status" -eq 0 ]] || fail PREDECESSOR_REPRODUCTION
+          note PREDECESSOR_REPRODUCTION_SUCCESS
 
       - name: Apply the bounded V97 interval-precedence repair
         shell: bash
         working-directory: /tmp/pr2231-v97-product
         run: |
-          set -euo pipefail
-          base64 -d "$GITHUB_WORKSPACE/.github/tmp/pr2231-current-line-v97.py.gz.b64" | gzip -dc > /tmp/pr2231-v97.py
-          printf '%s  %s\n' '93f6d92810a13581150b2b5918680303f7bae1b79a946c69fe68eb2e34cddb99' /tmp/pr2231-v97.py | sha256sum -c -
-          python -W error -m py_compile /tmp/pr2231-v97.py
-          python /tmp/pr2231-v97.py
-          git diff --check
-          mapfile -t changed < <(git diff --name-only | sort)
-          test "${#changed[@]}" -eq 2
-          test "${changed[0]}" = 'test/industrial-exhaust.test.js'
-          test "${changed[1]}" = 'tools/lib/industrial-exhaust.mjs'
-          node --check tools/lib/industrial-exhaust.mjs
-          test "$(git hash-object tools/lib/industrial-exhaust.mjs)" = "$EXPECTED_CANDIDATE_LIBRARY_BLOB"
-          test "$(git hash-object test/industrial-exhaust.test.js)" = "$EXPECTED_CANDIDATE_FOCUSED_TEST_BLOB"
-          cp tools/lib/industrial-exhaust.mjs /tmp/pr2231-v97-qualified-library.mjs
-          cp test/industrial-exhaust.test.js /tmp/pr2231-v97-qualified-focused-test.js
+          set -uo pipefail
+          note() {
+            printf '%s\n' "$*" | tee -a "$ARTIFACT_DIR/trace.txt"
+            printf '::notice title=V97 diagnostic::%s\n' "$*"
+          }
+          fail() {
+            note "FAIL:$*"
+            printf '%s\n' "FAIL:$*" > "$ARTIFACT_DIR/result.txt"
+            exit 1
+          }
+          note APPLY_STARTED
+          if ! base64 -d "$GITHUB_WORKSPACE/.github/tmp/pr2231-current-line-v97.py.gz.b64" | gzip -dc > /tmp/pr2231-v97.py; then
+            fail MUTATOR_DECODE
+          fi
+          actual_mutator_sha="$(sha256sum /tmp/pr2231-v97.py | awk '{print $1}')" || fail MUTATOR_HASH
+          printf '%s\n' "$actual_mutator_sha" > "$ARTIFACT_DIR/actual-mutator.sha256"
+          note "ACTUAL_MUTATOR_SHA256=$actual_mutator_sha"
+          [[ "$actual_mutator_sha" == "$EXPECTED_MUTATOR_SHA256" ]] || fail MUTATOR_SHA256
+          python -W error -m py_compile /tmp/pr2231-v97.py > "$ARTIFACT_DIR/python-compile.txt" 2>&1 || {
+            cat "$ARTIFACT_DIR/python-compile.txt"
+            fail PYTHON_COMPILE
+          }
+          note PYTHON_COMPILE_SUCCESS
+          python /tmp/pr2231-v97.py > "$ARTIFACT_DIR/mutator-output.txt" 2>&1 || {
+            cat "$ARTIFACT_DIR/mutator-output.txt"
+            fail MUTATOR_EXECUTION
+          }
+          cat "$ARTIFACT_DIR/mutator-output.txt"
+          note MUTATOR_EXECUTION_SUCCESS
+          git diff --check > "$ARTIFACT_DIR/diff-check.txt" 2>&1 || {
+            cat "$ARTIFACT_DIR/diff-check.txt"
+            fail DIFF_CHECK
+          }
+          git diff --name-only | sort > "$ARTIFACT_DIR/changed-paths-after-apply.txt" || fail LIST_CHANGED_PATHS
+          mapfile -t changed < "$ARTIFACT_DIR/changed-paths-after-apply.txt"
+          printf '%s\n' "${#changed[@]}" > "$ARTIFACT_DIR/changed-count-after-apply.txt"
+          note "CHANGED_COUNT_AFTER_APPLY=${#changed[@]}"
+          for changed_path in "${changed[@]}"; do
+            note "CHANGED_PATH_AFTER_APPLY=$changed_path"
+          done
+          [[ "${#changed[@]}" -eq 2 ]] || fail CHANGED_PATH_COUNT
+          [[ "${changed[0]}" == 'test/industrial-exhaust.test.js' ]] || fail FIRST_CHANGED_PATH
+          [[ "${changed[1]}" == 'tools/lib/industrial-exhaust.mjs' ]] || fail SECOND_CHANGED_PATH
+          node --check tools/lib/industrial-exhaust.mjs > "$ARTIFACT_DIR/node-check.txt" 2>&1 || {
+            cat "$ARTIFACT_DIR/node-check.txt"
+            fail NODE_CHECK
+          }
+          note NODE_CHECK_SUCCESS
+          actual_candidate_library="$(git hash-object tools/lib/industrial-exhaust.mjs)" || fail HASH_CANDIDATE_LIBRARY
+          actual_candidate_test="$(git hash-object test/industrial-exhaust.test.js)" || fail HASH_CANDIDATE_TEST
+          printf '%s\n' "$actual_candidate_library" > "$ARTIFACT_DIR/actual-candidate-library.blob"
+          printf '%s\n' "$actual_candidate_test" > "$ARTIFACT_DIR/actual-candidate-focused-test.blob"
+          note "ACTUAL_CANDIDATE_LIBRARY_BLOB=$actual_candidate_library"
+          note "EXPECTED_CANDIDATE_LIBRARY_BLOB=$EXPECTED_CANDIDATE_LIBRARY_BLOB"
+          note "ACTUAL_CANDIDATE_FOCUSED_TEST_BLOB=$actual_candidate_test"
+          note "EXPECTED_CANDIDATE_FOCUSED_TEST_BLOB=$EXPECTED_CANDIDATE_FOCUSED_TEST_BLOB"
+          [[ "$actual_candidate_library" == "$EXPECTED_CANDIDATE_LIBRARY_BLOB" ]] || fail CANDIDATE_LIBRARY_BLOB
+          [[ "$actual_candidate_test" == "$EXPECTED_CANDIDATE_FOCUSED_TEST_BLOB" ]] || fail CANDIDATE_FOCUSED_TEST_BLOB
+          node --input-type=module <<'NODE' > "$ARTIFACT_DIR/candidate-witnesses.txt" 2>&1
+          import assert from 'node:assert/strict';
+          import { redactContactData } from './tools/lib/industrial-exhaust.mjs';
+
+          const witnesses = [
+            [
+              'synthetic interior date repaired',
+              'Archive 03-6216-8041-3.14',
+              'Archive [contact omitted]-3.14'
+            ],
+            [
+              'dotted second phone repaired',
+              'Phone: 09012345678 03.6216.8041',
+              'Phone: [contact omitted] [contact omitted]'
+            ],
+            [
+              'dash observation preserved',
+              'Archive +81 3 6216 8041–3.14',
+              'Archive [contact omitted]–3.14'
+            ]
+          ];
+          for (const [name, input, expected] of witnesses) {
+            const actual = redactContactData(input);
+            console.log(`V97_CANDIDATE_${name.replaceAll(' ', '_').toUpperCase()}=${JSON.stringify(actual)}`);
+            assert.equal(actual, expected);
+          }
+          console.log('V97_CANDIDATE_WITNESSES_SUCCESS');
+          NODE
+          status=$?
+          cat "$ARTIFACT_DIR/candidate-witnesses.txt"
+          [[ "$status" -eq 0 ]] || fail CANDIDATE_WITNESSES
+          cp tools/lib/industrial-exhaust.mjs /tmp/pr2231-v97-qualified-library.mjs || fail COPY_QUALIFIED_LIBRARY
+          cp test/industrial-exhaust.test.js /tmp/pr2231-v97-qualified-focused-test.js || fail COPY_QUALIFIED_TEST
+          printf '%s\n' APPLY_SUCCESS > "$ARTIFACT_DIR/result.txt"
+          note APPLY_SUCCESS
 
       - name: Run focused and complete current-main qualification
         shell: bash
         working-directory: /tmp/pr2231-v97-product
         run: |
-          set -euo pipefail
+          set -uo pipefail
+          note() {
+            printf '%s\n' "$*" | tee -a "$ARTIFACT_DIR/trace.txt"
+            printf '::notice title=V97 diagnostic::%s\n' "$*"
+          }
+          fail() {
+            note "FAIL:$*"
+            printf '%s\n' "FAIL:$*" > "$ARTIFACT_DIR/result.txt"
+            exit 1
+          }
+          note TESTS_STARTED
+          : > "$ARTIFACT_DIR/test-files.txt"
           for test_file in test/industrial-exhaust*.test.js; do
-            node "$test_file"
+            printf '%s\n' "$test_file" >> "$ARTIFACT_DIR/test-files.txt"
+            note "TEST_STARTED=$test_file"
+            test_log="$ARTIFACT_DIR/$(basename "$test_file").log"
+            node "$test_file" > "$test_log" 2>&1 || {
+              cat "$test_log"
+              fail "TEST_FAILED=$test_file"
+            }
+            cat "$test_log"
+            note "TEST_SUCCESS=$test_file"
           done
-          npm run release:check
+          note RELEASE_CHECK_STARTED
+          npm run release:check > "$ARTIFACT_DIR/release-check.log" 2>&1 || {
+            cat "$ARTIFACT_DIR/release-check.log"
+            fail RELEASE_CHECK
+          }
+          cat "$ARTIFACT_DIR/release-check.log"
+          printf '%s\n' TESTS_SUCCESS > "$ARTIFACT_DIR/result.txt"
+          note TESTS_SUCCESS
 
       - name: Restore generated state and bind the exact candidate tree
         shell: bash
         working-directory: /tmp/pr2231-v97-product
         run: |
-          set -euo pipefail
-          rm -rf "$ARTIFACT_DIR"
-          mkdir -p "$ARTIFACT_DIR/qualified/test" "$ARTIFACT_DIR/qualified/tools/lib"
-          printf '%s\n' RECEIPT_STEP_STARTED > "$ARTIFACT_DIR/result.txt"
-
-          git restore --source="$EXPECTED_PRODUCT" --staged --worktree -- .
-          git clean -fd
-          cp /tmp/pr2231-v97-qualified-library.mjs tools/lib/industrial-exhaust.mjs
-          cp /tmp/pr2231-v97-qualified-focused-test.js test/industrial-exhaust.test.js
-          git diff --check
-          mapfile -t changed < <(git diff --name-only | sort)
-          test "${#changed[@]}" -eq 2
-          test "${changed[0]}" = 'test/industrial-exhaust.test.js'
-          test "${changed[1]}" = 'tools/lib/industrial-exhaust.mjs'
-          mapfile -t cumulative < <(git diff --name-only "$EXPECTED_MAIN" | sort)
-          test "${#cumulative[@]}" -eq 2
-          test "${cumulative[0]}" = 'test/industrial-exhaust.test.js'
-          test "${cumulative[1]}" = 'tools/lib/industrial-exhaust.mjs'
-
-          library_blob="$(git hash-object tools/lib/industrial-exhaust.mjs)"
-          focused_test_blob="$(git hash-object test/industrial-exhaust.test.js)"
-          test "$library_blob" = "$EXPECTED_CANDIDATE_LIBRARY_BLOB"
-          test "$focused_test_blob" = "$EXPECTED_CANDIDATE_FOCUSED_TEST_BLOB"
-          git add test/industrial-exhaust.test.js tools/lib/industrial-exhaust.mjs
-          candidate_tree="$(git write-tree)"
-
+          set -uo pipefail
+          note() {
+            printf '%s\n' "$*" | tee -a "$ARTIFACT_DIR/trace.txt"
+            printf '::notice title=V97 diagnostic::%s\n' "$*"
+          }
+          fail() {
+            note "FAIL:$*"
+            printf '%s\n' "FAIL:$*" > "$ARTIFACT_DIR/result.txt"
+            exit 1
+          }
+          note RECEIPT_BINDING_STARTED
+          mkdir -p "$ARTIFACT_DIR/qualified/test" "$ARTIFACT_DIR/qualified/tools/lib" || fail CREATE_RECEIPT_DIRECTORIES
+          git restore --source="$EXPECTED_PRODUCT" --staged --worktree -- . || fail RESTORE_PRODUCT
+          git clean -fd > "$ARTIFACT_DIR/git-clean.txt" 2>&1 || {
+            cat "$ARTIFACT_DIR/git-clean.txt"
+            fail GIT_CLEAN
+          }
+          cp /tmp/pr2231-v97-qualified-library.mjs tools/lib/industrial-exhaust.mjs || fail RESTORE_QUALIFIED_LIBRARY
+          cp /tmp/pr2231-v97-qualified-focused-test.js test/industrial-exhaust.test.js || fail RESTORE_QUALIFIED_TEST
+          git diff --check > "$ARTIFACT_DIR/final-diff-check.txt" 2>&1 || {
+            cat "$ARTIFACT_DIR/final-diff-check.txt"
+            fail FINAL_DIFF_CHECK
+          }
+          git diff --name-only | sort > "$ARTIFACT_DIR/final-changed-paths.txt" || fail LIST_FINAL_CHANGED_PATHS
+          mapfile -t changed < "$ARTIFACT_DIR/final-changed-paths.txt"
+          note "FINAL_CHANGED_COUNT=${#changed[@]}"
+          for changed_path in "${changed[@]}"; do
+            note "FINAL_CHANGED_PATH=$changed_path"
+          done
+          [[ "${#changed[@]}" -eq 2 ]] || fail FINAL_CHANGED_PATH_COUNT
+          [[ "${changed[0]}" == 'test/industrial-exhaust.test.js' ]] || fail FINAL_FIRST_CHANGED_PATH
+          [[ "${changed[1]}" == 'tools/lib/industrial-exhaust.mjs' ]] || fail FINAL_SECOND_CHANGED_PATH
+          git diff --name-only "$EXPECTED_MAIN" | sort > "$ARTIFACT_DIR/cumulative-changed-paths.txt" || fail LIST_CUMULATIVE_PATHS
+          mapfile -t cumulative < "$ARTIFACT_DIR/cumulative-changed-paths.txt"
+          note "CUMULATIVE_CHANGED_COUNT=${#cumulative[@]}"
+          for changed_path in "${cumulative[@]}"; do
+            note "CUMULATIVE_CHANGED_PATH=$changed_path"
+          done
+          [[ "${#cumulative[@]}" -eq 2 ]] || fail CUMULATIVE_CHANGED_PATH_COUNT
+          [[ "${cumulative[0]}" == 'test/industrial-exhaust.test.js' ]] || fail CUMULATIVE_FIRST_CHANGED_PATH
+          [[ "${cumulative[1]}" == 'tools/lib/industrial-exhaust.mjs' ]] || fail CUMULATIVE_SECOND_CHANGED_PATH
+          library_blob="$(git hash-object tools/lib/industrial-exhaust.mjs)" || fail FINAL_LIBRARY_HASH
+          focused_test_blob="$(git hash-object test/industrial-exhaust.test.js)" || fail FINAL_TEST_HASH
+          note "FINAL_LIBRARY_BLOB=$library_blob"
+          note "FINAL_FOCUSED_TEST_BLOB=$focused_test_blob"
+          [[ "$library_blob" == "$EXPECTED_CANDIDATE_LIBRARY_BLOB" ]] || fail FINAL_LIBRARY_BLOB
+          [[ "$focused_test_blob" == "$EXPECTED_CANDIDATE_FOCUSED_TEST_BLOB" ]] || fail FINAL_FOCUSED_TEST_BLOB
+          git add test/industrial-exhaust.test.js tools/lib/industrial-exhaust.mjs || fail STAGE_CANDIDATE
+          candidate_tree="$(git write-tree)" || fail WRITE_CANDIDATE_TREE
           printf '%s\n' "$EXPECTED_MAIN" > "$ARTIFACT_DIR/main.sha"
           printf '%s\n' "$EXPECTED_PRODUCT" > "$ARTIFACT_DIR/product-predecessor.sha"
-          printf '%s\n' "${{ github.event.pull_request.head.sha }}" > "$ARTIFACT_DIR/controller.sha"
           printf '%s\n' "$library_blob" > "$ARTIFACT_DIR/library.blob"
           printf '%s\n' "$focused_test_blob" > "$ARTIFACT_DIR/focused-test.blob"
           printf '%s\n' "$candidate_tree" > "$ARTIFACT_DIR/candidate.tree"
-          git diff --cached --binary "$EXPECTED_MAIN" -- > "$ARTIFACT_DIR/product.patch"
-          git diff --cached --stat "$EXPECTED_MAIN" -- > "$ARTIFACT_DIR/product.diffstat"
-          cp tools/lib/industrial-exhaust.mjs "$ARTIFACT_DIR/qualified/tools/lib/industrial-exhaust.mjs"
-          cp test/industrial-exhaust.test.js "$ARTIFACT_DIR/qualified/test/industrial-exhaust.test.js"
+          git diff --cached --binary "$EXPECTED_MAIN" -- > "$ARTIFACT_DIR/product.patch" || fail WRITE_PRODUCT_PATCH
+          git diff --cached --stat "$EXPECTED_MAIN" -- > "$ARTIFACT_DIR/product.diffstat" || fail WRITE_PRODUCT_DIFFSTAT
+          cp tools/lib/industrial-exhaust.mjs "$ARTIFACT_DIR/qualified/tools/lib/industrial-exhaust.mjs" || fail RECEIPT_LIBRARY
+          cp test/industrial-exhaust.test.js "$ARTIFACT_DIR/qualified/test/industrial-exhaust.test.js" || fail RECEIPT_TEST
           sha256sum \
             tools/lib/industrial-exhaust.mjs \
             test/industrial-exhaust.test.js \
             /tmp/pr2231-v97.py \
-            > "$ARTIFACT_DIR/sha256.txt"
+            > "$ARTIFACT_DIR/sha256.txt" || fail WRITE_SHA256_RECEIPTS
           printf '%s\n' QUALIFICATION_SUCCESS > "$ARTIFACT_DIR/result.txt"
-          printf 'V97_LIBRARY_BLOB=%s\n' "$library_blob"
-          printf 'V97_FOCUSED_TEST_BLOB=%s\n' "$focused_test_blob"
-          printf 'V97_CANDIDATE_TREE=%s\n' "$candidate_tree"
+          note "V97_LIBRARY_BLOB=$library_blob"
+          note "V97_FOCUSED_TEST_BLOB=$focused_test_blob"
+          note "V97_CANDIDATE_TREE=$candidate_tree"
+          note QUALIFICATION_SUCCESS
 
       - uses: actions/upload-artifact@v4
         if: always()
