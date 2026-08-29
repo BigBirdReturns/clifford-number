@@ -1,0 +1,44 @@
+name: Temporary PR2231 current authority-state qualification
+
+on:
+  push:
+    branches:
+      - agent/pr2231-current-authority-state-qualification-v1
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Check out exact controller event
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Recover and execute frozen qualification payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/pr2231-current-authority-state-controller
+          base64 -d .github/tmp/pr2231-current-authority-state-qualification-v1.tar.gz.b64 \
+            | tar -xz -C /tmp/pr2231-current-authority-state-controller
+          chmod +x /tmp/pr2231-current-authority-state-controller/pr2231-current-authority-state-qualification-v1.sh
+          /tmp/pr2231-current-authority-state-controller/pr2231-current-authority-state-qualification-v1.sh
+      - name: Upload retained qualification receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr2231-current-authority-state-qualification-v1
+          path: /tmp/pr2231-current-authority-state-qualification-v1
+          if-no-files-found: error
+          retention-days: 90
