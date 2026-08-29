@@ -1,0 +1,190 @@
+name: Temporary PR 2231 current-main V94 qualification
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/temporary-pr2231-current-main-v94.yml'
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: pr2231-current-main-v94-qualification
+  cancel-in-progress: false
+
+jobs:
+  qualify-current-main-read-only:
+    if: github.event.pull_request.number == 2391
+    runs-on: ubuntu-24.04
+    env:
+      EXPECTED_MAIN: 17aa3cfc22d5f9022164baf5c1d5a8e401b796cf
+      EXPECTED_PRODUCT: ec210a32b888f3717027ce8d236ac6d14fcf1c82
+      EXPECTED_BASE_LIBRARY_BLOB: 5f68254d3e44de693e83503aed879160f9b7b997
+      EXPECTED_BASE_FOCUSED_TEST_BLOB: 1659a7cc54666a2ac5a1d6b88eb8c6591d98008e
+      EXPECTED_PRODUCT_LIBRARY_BLOB: f3109756b84a44a35eac894d76ad2e70e9735b1c
+      EXPECTED_PRODUCT_FOCUSED_TEST_BLOB: 83a7653a94f8e5da85acdaab58c0a13d6ca5b62a
+      EXPECTED_QUALIFIED_LIBRARY_BLOB: 6655e9aa10ac2964e5f6289a4881f1343265fa0e
+      EXPECTED_QUALIFIED_FOCUSED_TEST_BLOB: 7f72ca8c2eb7f436471453c74b98e1227b0970d5
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      ARTIFACT_DIR: /tmp/pr2231-v94-current-main-artifact
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Bind controller, product, and live-main leases
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin \
+            "+refs/heads/main:refs/remotes/origin/main" \
+            "+refs/heads/${PRODUCT_BRANCH}:refs/remotes/origin/${PRODUCT_BRANCH}"
+          test "$(git rev-parse refs/remotes/origin/main)" = "$EXPECTED_MAIN"
+          test "$(git rev-parse refs/remotes/origin/${PRODUCT_BRANCH})" = "$EXPECTED_PRODUCT"
+          test "$(git rev-parse "${EXPECTED_MAIN}:tools/lib/industrial-exhaust.mjs")" = "$EXPECTED_BASE_LIBRARY_BLOB"
+          test "$(git rev-parse "${EXPECTED_MAIN}:test/industrial-exhaust.test.js")" = "$EXPECTED_BASE_FOCUSED_TEST_BLOB"
+          test "$(git rev-parse "${EXPECTED_PRODUCT}:tools/lib/industrial-exhaust.mjs")" = "$EXPECTED_PRODUCT_LIBRARY_BLOB"
+          test "$(git rev-parse "${EXPECTED_PRODUCT}:test/industrial-exhaust.test.js")" = "$EXPECTED_PRODUCT_FOCUSED_TEST_BLOB"
+          rm -rf /tmp/pr2231-v94-product /tmp/pr2231-v94-main
+          git worktree add --detach /tmp/pr2231-v94-product "$EXPECTED_PRODUCT"
+          git worktree add --detach /tmp/pr2231-v94-main "$EXPECTED_MAIN"
+
+      - name: Apply and bind the exact V92 repair on its reviewed predecessor
+        shell: bash
+        working-directory: /tmp/pr2231-v94-product
+        run: |
+          set -euo pipefail
+          base64 -d "$GITHUB_WORKSPACE/.github/tmp/pr2231-cumulative-custody-v92.py.gz.b64" | gzip -dc > /tmp/pr2231-v94-v92.py
+          printf '%s  %s\n' 'c5167a8800ea2616881d68feea54c72ce7ae6941a474b4d8d5e37cb88d1dc33c' /tmp/pr2231-v94-v92.py | sha256sum -c -
+          python /tmp/pr2231-v94-v92.py
+          base64 -d "$GITHUB_WORKSPACE/.github/tmp/pr2231-cumulative-custody-v92-r2.py.gz.b64" | gzip -dc > /tmp/pr2231-v94-v92-r2.py
+          printf '%s  %s\n' 'b568c5a92ffb3bde822eb018facba48da90691ba9d9ea9629b6b8afc9e4f9da4' /tmp/pr2231-v94-v92-r2.py | sha256sum -c -
+          python /tmp/pr2231-v94-v92-r2.py
+          git diff --check
+          mapfile -t changed < <(git diff --name-only | sort)
+          test "${#changed[@]}" -eq 2
+          test "${changed[0]}" = 'test/industrial-exhaust.test.js'
+          test "${changed[1]}" = 'tools/lib/industrial-exhaust.mjs'
+          test "$(git hash-object tools/lib/industrial-exhaust.mjs)" = "$EXPECTED_QUALIFIED_LIBRARY_BLOB"
+          test "$(git hash-object test/industrial-exhaust.test.js)" = "$EXPECTED_QUALIFIED_FOCUSED_TEST_BLOB"
+          node --check tools/lib/industrial-exhaust.mjs
+          cp tools/lib/industrial-exhaust.mjs /tmp/pr2231-v94-qualified-library.mjs
+          cp test/industrial-exhaust.test.js /tmp/pr2231-v94-qualified-focused-test.js
+
+      - name: Bind the established overflow privacy boundary
+        shell: bash
+        working-directory: /tmp/pr2231-v94-product
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { redactContactData } from './tools/lib/industrial-exhaust.mjs';
+
+          const prefix = 'identifier '.repeat(2000);
+          const input = `Archive ${prefix}09012345678`;
+          assert.equal(
+            redactContactData(input),
+            `Archive ${prefix}[contact omitted]`,
+            'a distant no-phone-label chain beyond the 16 KiB authority window must remain fail-closed to redaction'
+          );
+          console.log('V94_ESTABLISHED_OVERFLOW_BOUNDARY_SUCCESS');
+          NODE
+
+      - name: Run exact-predecessor industrial-exhaust suites
+        shell: bash
+        working-directory: /tmp/pr2231-v94-product
+        run: |
+          set -euo pipefail
+          for test_file in test/industrial-exhaust*.test.js; do
+            node "$test_file"
+          done
+
+      - name: Transplant the exact qualified blobs onto live main
+        shell: bash
+        working-directory: /tmp/pr2231-v94-main
+        run: |
+          set -euo pipefail
+          cp /tmp/pr2231-v94-qualified-library.mjs tools/lib/industrial-exhaust.mjs
+          cp /tmp/pr2231-v94-qualified-focused-test.js test/industrial-exhaust.test.js
+          git diff --check
+          mapfile -t changed < <(git diff --name-only | sort)
+          test "${#changed[@]}" -eq 2
+          test "${changed[0]}" = 'test/industrial-exhaust.test.js'
+          test "${changed[1]}" = 'tools/lib/industrial-exhaust.mjs'
+          test "$(git hash-object tools/lib/industrial-exhaust.mjs)" = "$EXPECTED_QUALIFIED_LIBRARY_BLOB"
+          test "$(git hash-object test/industrial-exhaust.test.js)" = "$EXPECTED_QUALIFIED_FOCUSED_TEST_BLOB"
+          for test_file in test/industrial-exhaust*.test.js; do
+            node "$test_file"
+          done
+          npm run release:check
+
+      - name: Restore generated state and construct a read-only candidate
+        shell: bash
+        working-directory: /tmp/pr2231-v94-main
+        run: |
+          set -euo pipefail
+          git restore --source="$EXPECTED_MAIN" --staged --worktree -- .
+          git clean -fd
+          cp /tmp/pr2231-v94-qualified-library.mjs tools/lib/industrial-exhaust.mjs
+          cp /tmp/pr2231-v94-qualified-focused-test.js test/industrial-exhaust.test.js
+          git diff --check
+          mapfile -t changed < <(git diff --name-only | sort)
+          test "${#changed[@]}" -eq 2
+          test "${changed[0]}" = 'test/industrial-exhaust.test.js'
+          test "${changed[1]}" = 'tools/lib/industrial-exhaust.mjs'
+          test "$(git hash-object tools/lib/industrial-exhaust.mjs)" = "$EXPECTED_QUALIFIED_LIBRARY_BLOB"
+          test "$(git hash-object test/industrial-exhaust.test.js)" = "$EXPECTED_QUALIFIED_FOCUSED_TEST_BLOB"
+
+          git add test/industrial-exhaust.test.js tools/lib/industrial-exhaust.mjs
+          candidate_tree="$(git write-tree)"
+          candidate_commit="$(printf '%s\n\n%s\n' \
+            'fix: preserve cumulative contact custody on current main' \
+            'Rebase the independently qualified V92 two-file repair without importing controller custody.' \
+            | git commit-tree "$candidate_tree" -p "$EXPECTED_MAIN")"
+          test "$(git rev-parse "${candidate_commit}^{commit}")" = "$candidate_commit"
+          test "$(git rev-parse "${candidate_commit}^{tree}")" = "$candidate_tree"
+          test "$(git rev-parse "${candidate_commit}^")" = "$EXPECTED_MAIN"
+          mapfile -t candidate_paths < <(git diff-tree --no-commit-id --name-only -r "$candidate_commit" | sort)
+          test "${#candidate_paths[@]}" -eq 2
+          test "${candidate_paths[0]}" = 'test/industrial-exhaust.test.js'
+          test "${candidate_paths[1]}" = 'tools/lib/industrial-exhaust.mjs'
+
+          rm -rf "$ARTIFACT_DIR"
+          mkdir -p "$ARTIFACT_DIR/qualified/test" "$ARTIFACT_DIR/qualified/tools/lib"
+          printf '%s\n' "$EXPECTED_MAIN" > "$ARTIFACT_DIR/main.sha"
+          printf '%s\n' "$EXPECTED_PRODUCT" > "$ARTIFACT_DIR/product-predecessor.sha"
+          printf '%s\n' "${{ github.event.pull_request.head.sha }}" > "$ARTIFACT_DIR/controller.sha"
+          printf '%s\n' "$EXPECTED_BASE_LIBRARY_BLOB" > "$ARTIFACT_DIR/base-library.blob"
+          printf '%s\n' "$EXPECTED_BASE_FOCUSED_TEST_BLOB" > "$ARTIFACT_DIR/base-focused-test.blob"
+          printf '%s\n' "$EXPECTED_QUALIFIED_LIBRARY_BLOB" > "$ARTIFACT_DIR/library.blob"
+          printf '%s\n' "$EXPECTED_QUALIFIED_FOCUSED_TEST_BLOB" > "$ARTIFACT_DIR/focused-test.blob"
+          printf '%s\n' "$candidate_tree" > "$ARTIFACT_DIR/candidate.tree"
+          printf '%s\n' "$candidate_commit" > "$ARTIFACT_DIR/candidate.sha"
+          printf '%s\n' "$EXPECTED_MAIN" > "$ARTIFACT_DIR/candidate.parent"
+          git diff --cached --binary "$EXPECTED_MAIN" > "$ARTIFACT_DIR/product.patch"
+          git diff --cached --stat "$EXPECTED_MAIN" > "$ARTIFACT_DIR/product.diffstat"
+          cp test/industrial-exhaust.test.js "$ARTIFACT_DIR/qualified/test/industrial-exhaust.test.js"
+          cp tools/lib/industrial-exhaust.mjs "$ARTIFACT_DIR/qualified/tools/lib/industrial-exhaust.mjs"
+          sha256sum \
+            test/industrial-exhaust.test.js \
+            tools/lib/industrial-exhaust.mjs \
+            /tmp/pr2231-v94-v92.py \
+            /tmp/pr2231-v94-v92-r2.py \
+            > "$ARTIFACT_DIR/sha256.txt"
+          printf '%s\n' QUALIFICATION_SUCCESS > "$ARTIFACT_DIR/result.txt"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-current-main-v94-qualification
+          path: /tmp/pr2231-v94-current-main-artifact
+          retention-days: 90
