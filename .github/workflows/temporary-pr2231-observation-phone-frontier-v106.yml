@@ -1,4 +1,5 @@
 name: Temporary PR 2231 observation-phone frontier V106
+# Lease-bound execution trigger for the identifier-frontier rebound.
 
 on:
   pull_request:
@@ -78,11 +79,11 @@ jobs:
 
           pr_base_old = (
               '  jq -e --arg head "$EXPECTED_PRODUCT" '
-              '--arg base "$EXPECTED_MAIN" \'\n'
+              '--arg base "$EXPECTED_MAIN" \\\n'
           )
           pr_base_new = (
               '  jq -e --arg head "$EXPECTED_PRODUCT" '
-              '--arg base "$EXPECTED_PR_BASE" \'\n'
+              '--arg base "$EXPECTED_PR_BASE" \\\n'
           )
           if repaired.count(pr_base_old) != 1:
               raise SystemExit(
