@@ -1,0 +1,336 @@
+name: Temporary PR 2231 current-line V100 exact qualification
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/temporary-pr2231-current-line-v100.yml'
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: pr2231-current-line-v100-exact-qualification
+  cancel-in-progress: false
+
+jobs:
+  qualify-v100-read-only:
+    if: github.event.pull_request.number == 2391
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      EXPECTED_MAIN: 17aa3cfc22d5f9022164baf5c1d5a8e401b796cf
+      EXPECTED_PRODUCT: bea76f0dd155122c3a45fe82c7c1abbaf676349b
+      EXPECTED_PREDECESSOR_LIBRARY_BLOB: 6655e9aa10ac2964e5f6289a4881f1343265fa0e
+      EXPECTED_PREDECESSOR_FOCUSED_TEST_BLOB: 7f72ca8c2eb7f436471453c74b98e1227b0970d5
+      EXPECTED_PAYLOAD_BLOB: 22379d46e0d1d6a3782717bdcb070f68c8072042
+      EXPECTED_MUTATOR_SHA256: c124f16378d131539dccd138946cd21ac78fd6d2519288a88b8fa84cc42a3e33
+      EXPECTED_CANDIDATE_LIBRARY_BLOB: d02ac8fdb1dad6777d6a722a097706c5660ebe8a
+      EXPECTED_CANDIDATE_FOCUSED_TEST_BLOB: 1d8fd285563eea4121bbe178a4b54eb715af3ac0
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      CONTROLLER_BRANCH: agent/pr2231-cumulative-custody-controller-v92
+      PAYLOAD_PATH: .github/tmp/pr2231-current-line-v100.py.gz.b64
+      ARTIFACT_DIR: /tmp/pr2231-v100-exact-qualification
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Qualify the exact bounded V100 successor
+        shell: bash
+        run: |
+          set -uo pipefail
+          rm -rf "$ARTIFACT_DIR" /tmp/pr2231-v100-product
+          mkdir -p "$ARTIFACT_DIR/qualified/test" "$ARTIFACT_DIR/qualified/tools/lib"
+          : > "$ARTIFACT_DIR/trace.txt"
+          printf '%s\n' STARTED > "$ARTIFACT_DIR/result.txt"
+
+          note() {
+            printf '%s\n' "$*" | tee -a "$ARTIFACT_DIR/trace.txt"
+            printf '::notice title=V100 exact qualification::%s\n' "$*"
+          }
+          fail() {
+            note "FAIL:$*"
+            printf '%s\n' "FAIL:$*" > "$ARTIFACT_DIR/result.txt"
+            exit 1
+          }
+
+          controller_sha="${{ github.event.pull_request.head.sha }}"
+          printf '%s\n' "$controller_sha" > "$ARTIFACT_DIR/controller.sha"
+          note "CONTROLLER_SHA=$controller_sha"
+
+          note BIND_STARTED
+          git fetch --no-tags origin \
+            "+refs/heads/main:refs/remotes/origin/main" \
+            "+refs/heads/${PRODUCT_BRANCH}:refs/remotes/origin/${PRODUCT_BRANCH}" \
+            "+refs/heads/${CONTROLLER_BRANCH}:refs/remotes/origin/${CONTROLLER_BRANCH}" || fail GIT_FETCH
+          actual_main="$(git rev-parse refs/remotes/origin/main)" || fail RESOLVE_MAIN
+          actual_product="$(git rev-parse refs/remotes/origin/${PRODUCT_BRANCH})" || fail RESOLVE_PRODUCT
+          actual_controller="$(git rev-parse refs/remotes/origin/${CONTROLLER_BRANCH})" || fail RESOLVE_CONTROLLER
+          actual_parent="$(git rev-parse "${EXPECTED_PRODUCT}^")" || fail RESOLVE_PRODUCT_PARENT
+          ahead_count="$(git rev-list --count "${EXPECTED_MAIN}..${EXPECTED_PRODUCT}")" || fail COUNT_PRODUCT_AHEAD
+          behind_count="$(git rev-list --count "${EXPECTED_PRODUCT}..${EXPECTED_MAIN}")" || fail COUNT_PRODUCT_BEHIND
+          predecessor_library="$(git rev-parse "${EXPECTED_PRODUCT}:tools/lib/industrial-exhaust.mjs")" || fail RESOLVE_PREDECESSOR_LIBRARY
+          predecessor_test="$(git rev-parse "${EXPECTED_PRODUCT}:test/industrial-exhaust.test.js")" || fail RESOLVE_PREDECESSOR_TEST
+          payload_blob="$(git rev-parse "${controller_sha}:${PAYLOAD_PATH}")" || fail RESOLVE_PAYLOAD_BLOB
+
+          printf '%s\n' "$actual_main" > "$ARTIFACT_DIR/main.sha"
+          printf '%s\n' "$actual_product" > "$ARTIFACT_DIR/product-predecessor.sha"
+          printf '%s\n' "$actual_controller" > "$ARTIFACT_DIR/controller-ref.sha"
+          printf '%s\n' "$actual_parent" > "$ARTIFACT_DIR/product-parent.sha"
+          printf '%s\n' "$ahead_count" > "$ARTIFACT_DIR/product-ahead-count.txt"
+          printf '%s\n' "$behind_count" > "$ARTIFACT_DIR/product-behind-count.txt"
+          printf '%s\n' "$predecessor_library" > "$ARTIFACT_DIR/predecessor-library.blob"
+          printf '%s\n' "$predecessor_test" > "$ARTIFACT_DIR/predecessor-focused-test.blob"
+          printf '%s\n' "$payload_blob" > "$ARTIFACT_DIR/payload.blob"
+
+          note "ACTUAL_MAIN=$actual_main"
+          note "ACTUAL_PRODUCT=$actual_product"
+          note "ACTUAL_CONTROLLER=$actual_controller"
+          note "ACTUAL_PRODUCT_PARENT=$actual_parent"
+          note "PRODUCT_AHEAD_COUNT=$ahead_count"
+          note "PRODUCT_BEHIND_COUNT=$behind_count"
+          note "PREDECESSOR_LIBRARY_BLOB=$predecessor_library"
+          note "PREDECESSOR_FOCUSED_TEST_BLOB=$predecessor_test"
+          note "PAYLOAD_BLOB=$payload_blob"
+
+          [[ "$actual_main" == "$EXPECTED_MAIN" ]] || fail MAIN_LEASE
+          [[ "$actual_product" == "$EXPECTED_PRODUCT" ]] || fail PRODUCT_LEASE
+          [[ "$actual_controller" == "$controller_sha" ]] || fail CONTROLLER_LEASE
+          [[ "$actual_parent" == "$EXPECTED_MAIN" ]] || fail PRODUCT_PARENT
+          [[ "$ahead_count" == 1 ]] || fail PRODUCT_AHEAD_COUNT
+          [[ "$behind_count" == 0 ]] || fail PRODUCT_BEHIND_COUNT
+          [[ "$predecessor_library" == "$EXPECTED_PREDECESSOR_LIBRARY_BLOB" ]] || fail PREDECESSOR_LIBRARY_BLOB
+          [[ "$predecessor_test" == "$EXPECTED_PREDECESSOR_FOCUSED_TEST_BLOB" ]] || fail PREDECESSOR_FOCUSED_TEST_BLOB
+          [[ "$payload_blob" == "$EXPECTED_PAYLOAD_BLOB" ]] || fail PAYLOAD_BLOB
+
+          git worktree add --detach /tmp/pr2231-v100-product "$EXPECTED_PRODUCT" || fail ADD_PRODUCT_WORKTREE
+          cd /tmp/pr2231-v100-product || fail ENTER_PRODUCT_WORKTREE
+          note BIND_SUCCESS
+
+          note PREDECESSOR_REPRODUCTION_STARTED
+          node --input-type=module > "$ARTIFACT_DIR/predecessor-reproduction.txt" 2>&1 <<'NODE'
+          import assert from 'node:assert/strict';
+          import { redactContactData } from './tools/lib/industrial-exhaust.mjs';
+
+          const witnesses = [
+            ['Archive 03-6216-8041-3.14', 'Archive 03-6216-8041-3.14'],
+            ['Phone: 09012345678 03.6216.8041', 'Phone: [contact omitted] 03.6216.8041'],
+            ['Archive +81 3 6216 8041–3.14', 'Archive [contact omitted]']
+          ];
+          for (const [input, expected] of witnesses) {
+            const actual = redactContactData(input);
+            console.log(JSON.stringify({ input, expected, actual }));
+            assert.equal(actual, expected);
+          }
+          console.log('V100_PREDECESSOR_REPRODUCTION_SUCCESS');
+          NODE
+          status=$?
+          cat "$ARTIFACT_DIR/predecessor-reproduction.txt"
+          [[ "$status" -eq 0 ]] || fail PREDECESSOR_REPRODUCTION
+          note PREDECESSOR_REPRODUCTION_SUCCESS
+
+          note MUTATOR_RECOVERY_STARTED
+          base64 -d "$GITHUB_WORKSPACE/$PAYLOAD_PATH" | gzip -dc > /tmp/pr2231-v100.py || fail MUTATOR_DECODE
+          mutator_sha="$(sha256sum /tmp/pr2231-v100.py | awk '{print $1}')" || fail MUTATOR_HASH
+          printf '%s\n' "$mutator_sha" > "$ARTIFACT_DIR/mutator.sha256"
+          note "MUTATOR_SHA256=$mutator_sha"
+          [[ "$mutator_sha" == "$EXPECTED_MUTATOR_SHA256" ]] || fail MUTATOR_SHA256
+          python -W error -m py_compile /tmp/pr2231-v100.py > "$ARTIFACT_DIR/python-compile.log" 2>&1 || {
+            cat "$ARTIFACT_DIR/python-compile.log"
+            fail PYTHON_COMPILE
+          }
+          note MUTATOR_RECOVERY_SUCCESS
+
+          note MUTATOR_EXECUTION_STARTED
+          python /tmp/pr2231-v100.py > "$ARTIFACT_DIR/mutator.log" 2>&1
+          status=$?
+          cat "$ARTIFACT_DIR/mutator.log"
+          [[ "$status" -eq 0 ]] || fail MUTATOR_EXECUTION
+          git diff --check > "$ARTIFACT_DIR/diff-check.log" 2>&1 || {
+            cat "$ARTIFACT_DIR/diff-check.log"
+            fail DIFF_CHECK
+          }
+          git diff --name-only | sort > "$ARTIFACT_DIR/changed-paths.txt" || fail LIST_CHANGED_PATHS
+          mapfile -t changed < "$ARTIFACT_DIR/changed-paths.txt"
+          note "CHANGED_PATH_COUNT=${#changed[@]}"
+          for path in "${changed[@]}"; do note "CHANGED_PATH=$path"; done
+          [[ "${#changed[@]}" -eq 2 ]] || fail CHANGED_PATH_COUNT
+          [[ "${changed[0]}" == 'test/industrial-exhaust.test.js' ]] || fail FIRST_CHANGED_PATH
+          [[ "${changed[1]}" == 'tools/lib/industrial-exhaust.mjs' ]] || fail SECOND_CHANGED_PATH
+          node --check tools/lib/industrial-exhaust.mjs > "$ARTIFACT_DIR/node-check.log" 2>&1 || {
+            cat "$ARTIFACT_DIR/node-check.log"
+            fail NODE_CHECK
+          }
+
+          candidate_library="$(git hash-object tools/lib/industrial-exhaust.mjs)" || fail HASH_CANDIDATE_LIBRARY
+          candidate_test="$(git hash-object test/industrial-exhaust.test.js)" || fail HASH_CANDIDATE_TEST
+          printf '%s\n' "$candidate_library" > "$ARTIFACT_DIR/candidate-library.blob"
+          printf '%s\n' "$candidate_test" > "$ARTIFACT_DIR/candidate-focused-test.blob"
+          note "CANDIDATE_LIBRARY_BLOB=$candidate_library"
+          note "CANDIDATE_FOCUSED_TEST_BLOB=$candidate_test"
+          [[ "$candidate_library" == "$EXPECTED_CANDIDATE_LIBRARY_BLOB" ]] || fail CANDIDATE_LIBRARY_BLOB
+          [[ "$candidate_test" == "$EXPECTED_CANDIDATE_FOCUSED_TEST_BLOB" ]] || fail CANDIDATE_FOCUSED_TEST_BLOB
+
+          note CANDIDATE_WITNESSES_STARTED
+          node --input-type=module > "$ARTIFACT_DIR/candidate-witnesses.txt" 2>&1 <<'NODE'
+          import assert from 'node:assert/strict';
+          import { redactContactData } from './tools/lib/industrial-exhaust.mjs';
+
+          const witnesses = [
+            ['synthetic-ascii', 'Archive 03-6216-8041-3.14', 'Archive [contact omitted]-3.14'],
+            ['synthetic-fullwidth', 'Archive ０３－６２１６－８０４１－３．１４', 'Archive [contact omitted]－３．１４'],
+            ['synthetic-endash', 'Archive 03-6216-8041–3.14', 'Archive [contact omitted]–3.14'],
+            ['dotted-second-domestic', 'Phone: 09012345678 03.6216.8041', 'Phone: [contact omitted] [contact omitted]'],
+            ['dotted-second-mobile', 'Phone: 09012345678 050.1234.5678', 'Phone: [contact omitted] [contact omitted]'],
+            ['dotted-second-fullwidth', '電話番号：０９０１２３４５６７８ ０３．６２１６．８０４１', '電話番号：[contact omitted] [contact omitted]'],
+            ['dash-observation-endash', 'Archive +81 3 6216 8041–3.14', 'Archive [contact omitted]–3.14'],
+            ['dash-observation-emdash', 'Archive +81 3 6216 8041—3.14', 'Archive [contact omitted]—3.14'],
+            ['dash-observation-fullwidth', 'Archive ＋８１ ３ ６２１６ ８０４１—３．１４', 'Archive [contact omitted]—３．１４'],
+            ['calendar-year-first', 'Archive 2024-02-29', 'Archive 2024-02-29'],
+            ['calendar-day-first', 'Archive 29-02-2024', 'Archive 29-02-2024'],
+            ['calendar-dotted', 'Archive 03.04.2026', 'Archive 03.04.2026']
+          ];
+          for (const [name, input, expected] of witnesses) {
+            const actual = redactContactData(input);
+            console.log(JSON.stringify({ name, input, expected, actual, pass: actual === expected }));
+            assert.equal(actual, expected, name);
+          }
+          console.log(JSON.stringify({ witness_count: witnesses.length, failures: 0 }));
+          console.log('V100_CANDIDATE_WITNESSES_SUCCESS');
+          NODE
+          status=$?
+          cat "$ARTIFACT_DIR/candidate-witnesses.txt"
+          [[ "$status" -eq 0 ]] || fail CANDIDATE_WITNESSES
+          cp tools/lib/industrial-exhaust.mjs /tmp/pr2231-v100-qualified-library.mjs || fail COPY_QUALIFIED_LIBRARY
+          cp test/industrial-exhaust.test.js /tmp/pr2231-v100-qualified-focused-test.js || fail COPY_QUALIFIED_TEST
+          cp tools/lib/industrial-exhaust.mjs "$ARTIFACT_DIR/qualified/tools/lib/industrial-exhaust.mjs" || fail RECEIPT_LIBRARY
+          cp test/industrial-exhaust.test.js "$ARTIFACT_DIR/qualified/test/industrial-exhaust.test.js" || fail RECEIPT_TEST
+          note CANDIDATE_WITNESSES_SUCCESS
+          note MUTATOR_EXECUTION_SUCCESS
+
+          note TESTS_STARTED
+          shopt -s nullglob
+          tests=(test/industrial-exhaust*.test.js)
+          [[ "${#tests[@]}" -gt 0 ]] || fail NO_FOCUSED_TESTS
+          : > "$ARTIFACT_DIR/test-files.txt"
+          for test_file in "${tests[@]}"; do
+            printf '%s\n' "$test_file" >> "$ARTIFACT_DIR/test-files.txt"
+            note "TEST_STARTED=$test_file"
+            test_log="$ARTIFACT_DIR/$(basename "$test_file").log"
+            node "$test_file" > "$test_log" 2>&1
+            status=$?
+            cat "$test_log"
+            [[ "$status" -eq 0 ]] || fail "TEST_FAILED=$test_file"
+            note "TEST_SUCCESS=$test_file"
+          done
+
+          note RELEASE_CHECK_STARTED
+          npm run release:check > "$ARTIFACT_DIR/release-check.log" 2>&1
+          status=$?
+          cat "$ARTIFACT_DIR/release-check.log"
+          [[ "$status" -eq 0 ]] || fail RELEASE_CHECK
+          note RELEASE_CHECK_SUCCESS
+          note TESTS_SUCCESS
+
+          note FINAL_BINDING_STARTED
+          git restore --source="$EXPECTED_PRODUCT" --staged --worktree -- . || fail RESTORE_PRODUCT
+          git clean -fd > "$ARTIFACT_DIR/git-clean.log" 2>&1 || {
+            cat "$ARTIFACT_DIR/git-clean.log"
+            fail GIT_CLEAN
+          }
+          cp /tmp/pr2231-v100-qualified-library.mjs tools/lib/industrial-exhaust.mjs || fail RESTORE_QUALIFIED_LIBRARY
+          cp /tmp/pr2231-v100-qualified-focused-test.js test/industrial-exhaust.test.js || fail RESTORE_QUALIFIED_TEST
+          git diff --check > "$ARTIFACT_DIR/final-diff-check.log" 2>&1 || {
+            cat "$ARTIFACT_DIR/final-diff-check.log"
+            fail FINAL_DIFF_CHECK
+          }
+          git diff --name-only | sort > "$ARTIFACT_DIR/final-paths.txt" || fail LIST_FINAL_PATHS
+          mapfile -t final_paths < "$ARTIFACT_DIR/final-paths.txt"
+          [[ "${#final_paths[@]}" -eq 2 ]] || fail FINAL_PATH_COUNT
+          [[ "${final_paths[0]}" == 'test/industrial-exhaust.test.js' ]] || fail FINAL_FIRST_PATH
+          [[ "${final_paths[1]}" == 'tools/lib/industrial-exhaust.mjs' ]] || fail FINAL_SECOND_PATH
+          git diff --name-only "$EXPECTED_MAIN" | sort > "$ARTIFACT_DIR/cumulative-paths.txt" || fail LIST_CUMULATIVE_PATHS
+          mapfile -t cumulative_paths < "$ARTIFACT_DIR/cumulative-paths.txt"
+          [[ "${#cumulative_paths[@]}" -eq 2 ]] || fail CUMULATIVE_PATH_COUNT
+          [[ "${cumulative_paths[0]}" == 'test/industrial-exhaust.test.js' ]] || fail CUMULATIVE_FIRST_PATH
+          [[ "${cumulative_paths[1]}" == 'tools/lib/industrial-exhaust.mjs' ]] || fail CUMULATIVE_SECOND_PATH
+
+          final_library="$(git hash-object tools/lib/industrial-exhaust.mjs)" || fail FINAL_LIBRARY_HASH
+          final_test="$(git hash-object test/industrial-exhaust.test.js)" || fail FINAL_TEST_HASH
+          [[ "$final_library" == "$EXPECTED_CANDIDATE_LIBRARY_BLOB" ]] || fail FINAL_LIBRARY_BLOB
+          [[ "$final_test" == "$EXPECTED_CANDIDATE_FOCUSED_TEST_BLOB" ]] || fail FINAL_FOCUSED_TEST_BLOB
+          git add test/industrial-exhaust.test.js tools/lib/industrial-exhaust.mjs || fail STAGE_CANDIDATE
+          candidate_tree="$(git write-tree)" || fail WRITE_CANDIDATE_TREE
+          printf '%s\n' "$candidate_tree" > "$ARTIFACT_DIR/candidate.tree"
+          git diff --cached --binary "$EXPECTED_MAIN" -- > "$ARTIFACT_DIR/product.patch" || fail WRITE_PRODUCT_PATCH
+          git diff --cached --stat "$EXPECTED_MAIN" -- > "$ARTIFACT_DIR/product.diffstat" || fail WRITE_PRODUCT_DIFFSTAT
+          note "CANDIDATE_TREE=$candidate_tree"
+
+          note FINAL_LEASE_REVALIDATION_STARTED
+          git fetch --no-tags origin \
+            "+refs/heads/main:refs/remotes/origin/main" \
+            "+refs/heads/${PRODUCT_BRANCH}:refs/remotes/origin/${PRODUCT_BRANCH}" \
+            "+refs/heads/${CONTROLLER_BRANCH}:refs/remotes/origin/${CONTROLLER_BRANCH}" || fail FINAL_GIT_FETCH
+          final_main="$(git rev-parse refs/remotes/origin/main)" || fail FINAL_RESOLVE_MAIN
+          final_product="$(git rev-parse refs/remotes/origin/${PRODUCT_BRANCH})" || fail FINAL_RESOLVE_PRODUCT
+          final_controller="$(git rev-parse refs/remotes/origin/${CONTROLLER_BRANCH})" || fail FINAL_RESOLVE_CONTROLLER
+          final_parent="$(git rev-parse "${EXPECTED_PRODUCT}^")" || fail FINAL_RESOLVE_PARENT
+          final_predecessor_library="$(git rev-parse "${EXPECTED_PRODUCT}:tools/lib/industrial-exhaust.mjs")" || fail FINAL_RESOLVE_PREDECESSOR_LIBRARY
+          final_predecessor_test="$(git rev-parse "${EXPECTED_PRODUCT}:test/industrial-exhaust.test.js")" || fail FINAL_RESOLVE_PREDECESSOR_TEST
+          final_payload_blob="$(git rev-parse "${controller_sha}:${PAYLOAD_PATH}")" || fail FINAL_RESOLVE_PAYLOAD
+          final_candidate_tree="$(git write-tree)" || fail FINAL_WRITE_TREE
+          final_candidate_library="$(git hash-object tools/lib/industrial-exhaust.mjs)" || fail FINAL_HASH_LIBRARY
+          final_candidate_test="$(git hash-object test/industrial-exhaust.test.js)" || fail FINAL_HASH_TEST
+
+          printf '%s\n' "$final_main" > "$ARTIFACT_DIR/final-main.sha"
+          printf '%s\n' "$final_product" > "$ARTIFACT_DIR/final-product.sha"
+          printf '%s\n' "$final_controller" > "$ARTIFACT_DIR/final-controller.sha"
+          printf '%s\n' "$final_parent" > "$ARTIFACT_DIR/final-product-parent.sha"
+          printf '%s\n' "$final_predecessor_library" > "$ARTIFACT_DIR/final-predecessor-library.blob"
+          printf '%s\n' "$final_predecessor_test" > "$ARTIFACT_DIR/final-predecessor-focused-test.blob"
+          printf '%s\n' "$final_payload_blob" > "$ARTIFACT_DIR/final-payload.blob"
+          printf '%s\n' "$final_candidate_tree" > "$ARTIFACT_DIR/final-candidate.tree"
+
+          note "FINAL_MAIN=$final_main"
+          note "FINAL_PRODUCT=$final_product"
+          note "FINAL_CONTROLLER=$final_controller"
+          note "FINAL_PRODUCT_PARENT=$final_parent"
+          note "FINAL_PREDECESSOR_LIBRARY_BLOB=$final_predecessor_library"
+          note "FINAL_PREDECESSOR_FOCUSED_TEST_BLOB=$final_predecessor_test"
+          note "FINAL_PAYLOAD_BLOB=$final_payload_blob"
+          note "FINAL_CANDIDATE_TREE=$final_candidate_tree"
+          note "FINAL_CANDIDATE_LIBRARY_BLOB=$final_candidate_library"
+          note "FINAL_CANDIDATE_FOCUSED_TEST_BLOB=$final_candidate_test"
+
+          [[ "$final_main" == "$EXPECTED_MAIN" ]] || fail FINAL_MAIN_LEASE
+          [[ "$final_product" == "$EXPECTED_PRODUCT" ]] || fail FINAL_PRODUCT_LEASE
+          [[ "$final_controller" == "$controller_sha" ]] || fail FINAL_CONTROLLER_LEASE
+          [[ "$final_parent" == "$EXPECTED_MAIN" ]] || fail FINAL_PRODUCT_PARENT
+          [[ "$final_predecessor_library" == "$EXPECTED_PREDECESSOR_LIBRARY_BLOB" ]] || fail FINAL_PREDECESSOR_LIBRARY_BLOB
+          [[ "$final_predecessor_test" == "$EXPECTED_PREDECESSOR_FOCUSED_TEST_BLOB" ]] || fail FINAL_PREDECESSOR_FOCUSED_TEST_BLOB
+          [[ "$final_payload_blob" == "$EXPECTED_PAYLOAD_BLOB" ]] || fail FINAL_PAYLOAD_BLOB
+          [[ "$final_candidate_tree" == "$candidate_tree" ]] || fail FINAL_CANDIDATE_TREE
+          [[ "$final_candidate_library" == "$EXPECTED_CANDIDATE_LIBRARY_BLOB" ]] || fail FINAL_CANDIDATE_LIBRARY_BLOB
+          [[ "$final_candidate_test" == "$EXPECTED_CANDIDATE_FOCUSED_TEST_BLOB" ]] || fail FINAL_CANDIDATE_FOCUSED_TEST_BLOB
+
+          note FINAL_LEASE_REVALIDATION_SUCCESS
+          printf '%s\n' SUCCESS > "$ARTIFACT_DIR/result.txt"
+          note QUALIFICATION_SUCCESS
+
+      - name: Upload V100 exact qualification receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr2231-current-line-v100-exact-qualification
+          path: /tmp/pr2231-v100-exact-qualification
+          retention-days: 90
+          if-no-files-found: warn
