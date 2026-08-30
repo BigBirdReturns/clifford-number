@@ -1,0 +1,68 @@
+name: Temporary PR 2231 source-contiguous callback observations V113
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temporary-pr2231-source-contiguous-callback-v113.yml'
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: pr2231-source-contiguous-callback-v113
+  cancel-in-progress: false
+
+jobs:
+  qualify-source-contiguous-callbacks:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: BigBirdReturns/clifford-number
+      PRODUCT_PR: '2231'
+      CONTROLLER_PR: ${{ github.event.pull_request.number }}
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      CONTROLLER_BRANCH: ${{ github.head_ref }}
+      EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+      EXPECTED_MAIN: 0b1d8af5b86adad49b3451053dbb9166294d631c
+      EXPECTED_PRODUCT: cfd1e459efc07f57cab7117200a4a4b962fd1bac
+      EXPECTED_TREE: 17d5350c902e47f129fae0282735b4acbeff381c
+      EXPECTED_LIBRARY: dab48bfba026dc1629a4384a26d98c13366b0ea3
+      EXPECTED_TEST: 8fad1d2be93f9a286f9b95bb35751d3e908c4834
+      REVIEW_CONTROLLER_PR: '2403'
+      REVIEW_CONTROLLER_HEAD: 254c54ba12382ac2dd40f2129abc86c5a145d193
+      REVIEW_RUN: '33332368912'
+      REVIEW_JOB: '99313221135'
+      REVIEW_ARTIFACT: '9738015605'
+      REVIEW_ARTIFACT_DIGEST: sha256:ecd47420f5d6fe261465214e7c7f63fd282d9a37dbad8150a52c679f0c3c1c50
+      REVIEW_ID: '5061773183'
+      PRODUCT_WT: /tmp/pr2231-source-contiguous-product-v113
+      MAIN_WT: /tmp/pr2231-source-contiguous-main-v113
+      QUALIFIED_DIR: /tmp/pr2231-source-contiguous-qualified-v113
+      ARTIFACT_DIR: /tmp/pr2231-source-contiguous-v113
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Execute read-only qualification
+        shell: bash
+        run: |
+          cat .github/tmp/pr2231-v113-payload-*.b64 | base64 -d | gzip -d > /tmp/pr2231-v113-run.sh
+          chmod +x /tmp/pr2231-v113-run.sh
+          /tmp/pr2231-v113-run.sh
+      - name: Upload V113 qualification custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr2231-source-contiguous-callback-v113
+          path: /tmp/pr2231-source-contiguous-v113
+          if-no-files-found: error
+          retention-days: 90
