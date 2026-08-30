@@ -109,37 +109,31 @@ jobs:
 
           path = Path(sys.argv[1])
           text = path.read_text()
-          function_start = text.index(
-              "function leadingFormattedObservationPhoneTransition("
-          )
+          function_start = text.index("function phoneRedactionRanges(")
           function_end = text.index("\nfunction ", function_start + 1)
           function_source = text[function_start:function_end]
           artifact_dir = Path(os.environ['ARTIFACT_DIR'])
           artifact_dir.mkdir(parents=True, exist_ok=True)
-          (artifact_dir / 'leading-function-before-url-guard.txt').write_text(
+          (artifact_dir / 'phone-ranges-before-url-guard.txt').write_text(
               function_source
           )
 
-          marker = "  if (!laterPhone) return null;"
+          marker = """) {
+            const groups = [...candidate.matchAll(DIGIT_RUN_PATTERN)];
+          """
           if function_source.count(marker) != 1:
               raise SystemExit(
-                  'unexpected leading-function marker count: '
+                  'unexpected phoneRedactionRanges marker count: '
                   f'{function_source.count(marker)}'
               )
-          insertion = (
-              "\n\n"
-              "  const normalizedTransitionSource =\n"
-              "    `${externalPrefix}${candidate}`.normalize('NFKC');\n"
-              "  if (hasUrlTokenPrefixContext(normalizedTransitionSource)) {\n"
-              "    return null;\n"
-              "  }"
-          )
-          marker_end = function_source.index(marker) + len(marker)
-          function_source = (
-              function_source[:marker_end]
-              + insertion
-              + function_source[marker_end:]
-          )
+          replacement = """) {
+            const normalizedCandidateToken =
+              `${externalPrefix}${candidate}`.normalize('NFKC');
+            if (hasUrlTokenPrefixContext(normalizedCandidateToken)) return [];
+
+            const groups = [...candidate.matchAll(DIGIT_RUN_PATTERN)];
+          """
+          function_source = function_source.replace(marker, replacement, 1)
           path.write_text(
               text[:function_start]
               + function_source
@@ -234,7 +228,7 @@ jobs:
             printf '%s\n' '### PR 2231 callback observation frontier V110'
             for receipt in summary.json qualification-terminal.txt \
               predecessor-reproduction.jsonl direct-matrix.jsonl \
-              leading-function-before-url-guard.txt \
+              phone-ranges-before-url-guard.txt \
               url-guard-matrix.jsonl url-guard-matrix.log \
               focused-product.log product-release-check.log \
               focused-main-transplant.log main-release-check.log \
