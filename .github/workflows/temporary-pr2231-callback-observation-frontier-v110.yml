@@ -104,6 +104,7 @@ jobs:
           url_guard_injection = dedent(r'''
           python - "$PRODUCT_WT/tools/lib/industrial-exhaust.mjs" <<'PY_URL_GUARD'
           from pathlib import Path
+          import os
           import sys
 
           path = Path(sys.argv[1])
@@ -111,36 +112,34 @@ jobs:
           function_start = text.index(
               "function leadingFormattedObservationPhoneTransition("
           )
-          function_end = text.index(
-              "\nfunction formattedObservationPrecedesIntrinsicPhone(",
-              function_start
-          )
+          function_end = text.index("\nfunction ", function_start + 1)
           function_source = text[function_start:function_end]
-          needle = (
-              "  const laterPhone = intrinsicPhoneIntervalAfterObservationBoundary(\n"
-              "    candidate.slice(observationEnd)\n"
-              "  );\n"
-              "  if (!laterPhone) return null;\n\n"
-              "  return {\n"
+          artifact_dir = Path(os.environ['ARTIFACT_DIR'])
+          artifact_dir.mkdir(parents=True, exist_ok=True)
+          (artifact_dir / 'leading-function-before-url-guard.txt').write_text(
+              function_source
           )
-          replacement = (
-              "  const laterPhone = intrinsicPhoneIntervalAfterObservationBoundary(\n"
-              "    candidate.slice(observationEnd)\n"
-              "  );\n"
-              "  if (!laterPhone) return null;\n\n"
+
+          marker = "  if (!laterPhone) return null;"
+          if function_source.count(marker) != 1:
+              raise SystemExit(
+                  'unexpected leading-function marker count: '
+                  f'{function_source.count(marker)}'
+              )
+          insertion = (
+              "\n\n"
               "  const laterPhoneStart = observationEnd + laterPhone.start;\n"
               "  if (hasUrlTokenPrefixContext(\n"
               "    `${externalPrefix}${candidate.slice(0, laterPhoneStart)}`\n"
               "      .normalize('NFKC')\n"
-              "  )) return null;\n\n"
-              "  return {\n"
+              "  )) return null;"
           )
-          if function_source.count(needle) != 1:
-              raise SystemExit(
-                  'unexpected leading-function guard count: '
-                  f'{function_source.count(needle)}'
-              )
-          function_source = function_source.replace(needle, replacement, 1)
+          marker_end = function_source.index(marker) + len(marker)
+          function_source = (
+              function_source[:marker_end]
+              + insertion
+              + function_source[marker_end:]
+          )
           path.write_text(
               text[:function_start]
               + function_source
@@ -205,6 +204,7 @@ jobs:
             printf '%s\n' '### PR 2231 callback observation frontier V110'
             for receipt in summary.json qualification-terminal.txt \
               predecessor-reproduction.jsonl direct-matrix.jsonl \
+              leading-function-before-url-guard.txt \
               focused-product.log product-release-check.log \
               focused-main-transplant.log main-release-check.log \
               candidate-commit.txt candidate-paths.txt \
