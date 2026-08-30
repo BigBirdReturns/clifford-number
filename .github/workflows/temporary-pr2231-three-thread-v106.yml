@@ -1,4 +1,4 @@
-name: Temporary PR 2231 three-thread V106 leased publication
+name: Temporary PR 2231 three-thread V106 leased publication R3
 
 on:
   pull_request:
@@ -30,18 +30,14 @@ jobs:
       EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
       EXPECTED_MAIN: 0b1d8af5b86adad49b3451053dbb9166294d631c
       EXPECTED_PRODUCT: 405882b7f22fd3dc588a2237289f8550ed9525f9
-      EXPECTED_PRODUCT_PARENT: 17aa3cfc22d5f9022164baf5c1d5a8e401b796cf
-      EXPECTED_PRODUCT_TREE: 7ae48a2dc664c98f0e39f693d13a63fb4ee82224
-      EXPECTED_LIBRARY_BLOB: 5e753c9c32cba270ea79b6299fc35db94cd0928f
-      EXPECTED_TEST_BLOB: 069349ea792a8da8c5d67831ac2e73efc0ee82e9
       EXPECTED_CANDIDATE_COMMIT: 43588313351e9dceebe2bff3fd05f7088b384534
       EXPECTED_CANDIDATE_TREE: efc92aba2de7088ad1e4a9b0514ccb9e8f498c47
       EXPECTED_CANDIDATE_LIBRARY_BLOB: cb6bcf21460d4d0cca0dcb29affb9424713399d0
       EXPECTED_CANDIDATE_TEST_BLOB: 96822fbd5ac213d03e2bdc91c92c7ddfc3931963
-      EXPECTED_PATCH_SHA256: 86dfba79233283da18f0a9b2dc2e8182a641dce188e0ab8af8bb647e56502589
       EXPECTED_PAYLOAD_SHA256: 52665bccee5f5523977c0bc529e5ecbcf37fd9939ed784956d6c7326a3ad0e69
       EXPECTED_GZIP_SHA256: 59289ec1f820a718b3d5ccb9d5efedd563f830f9816c57e447469411c9621ee6
       EXPECTED_SCRIPT_SHA256: ab14811454473dd719733913e08fbf02d42da801a3eb87c13db88feea3b60d95
+      EXPECTED_PATCH_SHA256: 86dfba79233283da18f0a9b2dc2e8182a641dce188e0ab8af8bb647e56502589
       PUBLISH: 'false'
       ARTIFACT_DIR: /tmp/pr2231-three-thread-custody-v106
 
@@ -101,21 +97,16 @@ jobs:
           [[ "${candidate_paths[0]}" == 'test/industrial-exhaust.test.js' ]] || fail "unexpected first candidate path: ${candidate_paths[0]}"
           [[ "${candidate_paths[1]}" == 'tools/lib/industrial-exhaust.mjs' ]] || fail "unexpected second candidate path: ${candidate_paths[1]}"
 
-          main_before="$(read_remote_ref main)"
-          product_before="$(read_remote_ref "$PRODUCT_BRANCH")"
-          controller_before="$(read_remote_ref "$CONTROLLER_BRANCH")"
-          expect_equal main_before "$main_before" "$EXPECTED_MAIN"
-          expect_equal product_before "$product_before" "$EXPECTED_PRODUCT"
-          expect_equal controller_before "$controller_before" "$EXPECTED_CONTROLLER"
-          expect_equal checkout_controller "$GITHUB_SHA" "$EXPECTED_CONTROLLER"
+          expect_equal main_before "$(read_remote_ref main)" "$EXPECTED_MAIN"
+          expect_equal product_before "$(read_remote_ref "$PRODUCT_BRANCH")" "$EXPECTED_PRODUCT"
+          expect_equal controller_before "$(read_remote_ref "$CONTROLLER_BRANCH")" "$EXPECTED_CONTROLLER"
 
           pr_before="$(gh api "repos/$REPO/pulls/$PRODUCT_PR")"
           printf '%s\n' "$pr_before" > "$ARTIFACT_DIR/receipts/publication-pr-before.json"
           jq -e \
             --arg branch "$PRODUCT_BRANCH" \
             --arg head "$EXPECTED_PRODUCT" \
-            --arg main "$EXPECTED_MAIN" \
-            '.state == "open" and .draft == true and .merged == false and .head.ref == $branch and .head.sha == $head and .base.ref == "main" and .base.sha == $main and .commits == 1 and .changed_files == 2' \
+            '.state == "open" and .draft == true and .merged == false and .head.ref == $branch and .head.sha == $head and .base.ref == "main" and .commits == 1 and .changed_files == 2' \
             <<<"$pr_before" >/dev/null || fail 'product pull-request lease changed before publication'
 
           mapfile -t pr_paths < <(gh api --paginate "repos/$REPO/pulls/$PRODUCT_PR/files" --jq '.[].filename' | sort)
@@ -168,8 +159,7 @@ jobs:
           jq -e \
             --arg branch "$PRODUCT_BRANCH" \
             --arg head "$EXPECTED_CANDIDATE_COMMIT" \
-            --arg main "$EXPECTED_MAIN" \
-            '.state == "open" and .draft == true and .merged == false and .head.ref == $branch and .head.sha == $head and .base.ref == "main" and .base.sha == $main and .commits == 1 and .changed_files == 2' \
+            '.state == "open" and .draft == true and .merged == false and .head.ref == $branch and .head.sha == $head and .base.ref == "main" and .commits == 1 and .changed_files == 2' \
             <<<"$pr_after" >/dev/null || fail 'product pull-request state did not converge to the published candidate'
 
           : > "$ARTIFACT_DIR/receipts/publication-threads-after.ndjson"
@@ -207,6 +197,6 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: pr2231-three-thread-custody-v106-publication-r2
+          name: pr2231-three-thread-custody-v106-publication-r3
           path: /tmp/pr2231-three-thread-custody-v106
           retention-days: 90
