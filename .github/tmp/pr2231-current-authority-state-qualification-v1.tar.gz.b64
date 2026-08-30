@@ -1,61 +1,19 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-V3_WRAPPER_BLOB='f95d3e86c832f36d03ed2284b831e74dd762db1e'
-EXPECTED_V3_EFFECTIVE_BLOB='53986bb7661e11dfe99fa1267e9d2cf5eb4adfee'
-EXPECTED_V4_EFFECTIVE_BLOB='9e15a631834e3908d02f4f3e15cd4a5baa562b99'
-EXPECTED_V4_EFFECTIVE_SHA256='ecb8a0a3ebf07ab7ba1560bc02b9f386e86ad6d280595709800e5c0d25e52336'
-V3_WRAPPER='/tmp/pr2231-v3-wrapper.sh'
-V3_EFFECTIVE='/tmp/pr2231-v3-effective.sh'
-V4_EFFECTIVE='/tmp/pr2231-v4-effective.sh'
+PAYLOAD_PATH='.github/tmp/pr2231-current-authority-state-qualification-v1.payload.gz'
+EXPECTED_COMPRESSED_PAYLOAD_BLOB='7fe045e91efefbc3e5c4dc7041824aafd795d06a'
+EXPECTED_EFFECTIVE_GIT_BLOB='49a79b28466625d1234a483f4d958f88e7bb54ee'
+EXPECTED_EFFECTIVE_SHA256='3a4d611f6764e303f5658d1e8057e4126dc25bf64afb970877aef104105e3bb6'
+EFFECTIVE_SCRIPT='/tmp/pr2231-v5-effective.sh'
 
-git cat-file blob "$V3_WRAPPER_BLOB" > "$V3_WRAPPER"
-test "$(git hash-object "$V3_WRAPPER")" = "$V3_WRAPPER_BLOB"
-WRAPPER_ONLY=1 bash "$V3_WRAPPER"
-test "$(git hash-object "$V3_EFFECTIVE")" = "$EXPECTED_V3_EFFECTIVE_BLOB"
-
-python - <<'PY'
-from pathlib import Path
-source = Path('/tmp/pr2231-v3-effective.sh')
-target = Path('/tmp/pr2231-v4-effective.sh')
-s = source.read_text()
-old = """  },
-  {
-    name: 'decimal-observation-before-dash-led-independent-phone',
-    input: 'Archive 09012345678 3.14-03-6216-8041',
-    expected: 'Archive [contact omitted] 3.14-[contact omitted]',
-    witness(actual) {
-      assert.equal(actual, 'Archive [contact omitted] 3.14-03-6216-8041');
-    }
-  }
-];
-"""
-new = """  }
-];
-
-assert.equal(
-  redactContactData('Archive 09012345678 3.14-03-6216-8041'),
-  'Archive [contact omitted] 3.14-[contact omitted]',
-  'the exact live head already preserves the decimal and redacts the independent phone'
-);
-"""
-if s.count(old) != 1:
-    raise SystemExit(f'expected one false predecessor witness, found {s.count(old)}')
-s = s.replace(old, new, 1)
-s = s.replace(
-    'cp /tmp/pr2231-v3-effective.sh "$RECEIPT_DIR/controller-script.sh"',
-    'cp /tmp/pr2231-v4-effective.sh "$RECEIPT_DIR/controller-script.sh"',
-    1,
-)
-s = s.replace('QUALIFICATION_SUCCESS_V3', 'QUALIFICATION_SUCCESS_V4')
-target.write_text(s)
-PY
-
-test "$(git hash-object "$V4_EFFECTIVE")" = "$EXPECTED_V4_EFFECTIVE_BLOB"
-printf '%s  %s\n' "$EXPECTED_V4_EFFECTIVE_SHA256" "$V4_EFFECTIVE" | sha256sum -c -
-bash -n "$V4_EFFECTIVE"
+test "$(git hash-object "$GITHUB_WORKSPACE/$PAYLOAD_PATH")" = "$EXPECTED_COMPRESSED_PAYLOAD_BLOB"
+gzip -dc "$GITHUB_WORKSPACE/$PAYLOAD_PATH" > "$EFFECTIVE_SCRIPT"
+test "$(git hash-object "$EFFECTIVE_SCRIPT")" = "$EXPECTED_EFFECTIVE_GIT_BLOB"
+printf '%s  %s\n' "$EXPECTED_EFFECTIVE_SHA256" "$EFFECTIVE_SCRIPT" | sha256sum -c -
+bash -n "$EFFECTIVE_SCRIPT"
 if [[ "${WRAPPER_ONLY:-0}" = '1' ]]; then
-  printf '%s\n' 'WRAPPER_RECONSTRUCTION_SUCCESS_V4'
+  printf '%s\n' 'WRAPPER_RECONSTRUCTION_SUCCESS_V5'
   exit 0
 fi
-exec bash "$V4_EFFECTIVE"
+exec bash "$EFFECTIVE_SCRIPT"

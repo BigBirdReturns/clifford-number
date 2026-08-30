@@ -1,4 +1,4 @@
-name: Temporary PR2231 current authority-state qualification V4
+name: Temporary PR2231 current authority-state qualification V5
 
 on:
   push:
@@ -21,10 +21,10 @@ jobs:
       EXPECTED_PRODUCT_TREE: 23dde19530990df1f1daa436993b1214e83ac8fd
       EXPECTED_LIBRARY_BLOB: 6655e9aa10ac2964e5f6289a4881f1343265fa0e
       EXPECTED_TEST_BLOB: 7f72ca8c2eb7f436471453c74b98e1227b0970d5
-      EXPECTED_CONTROLLER_PARENT: 0cb4ecbda672adf5560ee8c687c39ded99cdb79b
-      EXPECTED_CONTROLLER_PAYLOAD_BLOB: 8634d75c65d0301d7f16e907480235437d783bcd
+      EXPECTED_CONTROLLER_PARENT: 879167343ef3c46c20b921852a7e97ff42d65966
+      EXPECTED_CONTROLLER_PAYLOAD_BLOB: b8f56f17d38c3a6f36aa35882c97e1237aee8986
       PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
-      RECEIPT_DIR: /tmp/pr2231-current-authority-state-exact-head-read-only-v4
+      RECEIPT_DIR: /tmp/pr2231-current-authority-state-exact-head-read-only-v5
     steps:
       - name: Check out exact controller event
         uses: actions/checkout@v4
@@ -35,16 +35,16 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Execute exact-head read-only qualification V4
+      - name: Execute exact-head read-only qualification V5
         shell: bash
         run: |
           set -euo pipefail
           bash "$GITHUB_WORKSPACE/.github/tmp/pr2231-current-authority-state-qualification-v1.tar.gz.b64"
-      - name: Upload exact-head qualification receipt V4
+      - name: Upload exact-head qualification receipt V5
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pr2231-current-authority-state-exact-head-read-only-v4
-          path: /tmp/pr2231-current-authority-state-exact-head-read-only-v4
+          name: pr2231-current-authority-state-exact-head-read-only-v5
+          path: /tmp/pr2231-current-authority-state-exact-head-read-only-v5
           if-no-files-found: error
           retention-days: 90
