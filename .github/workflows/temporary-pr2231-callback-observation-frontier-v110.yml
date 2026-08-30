@@ -76,6 +76,49 @@ jobs:
           chmod +x /tmp/pr2231-callback-observation-frontier-v110.sh
           /tmp/pr2231-callback-observation-frontier-v110.sh
 
+      - name: Capture exact focused-suite failure
+        if: failure()
+        shell: bash
+        run: |
+          set +e
+          mkdir -p "$ARTIFACT_DIR"
+          {
+            printf 'product_worktree=%s\n' "$PRODUCT_WT"
+            printf 'exists=%s\n' "$([[ -d "$PRODUCT_WT/.git" || -f "$PRODUCT_WT/.git" ]] && echo true || echo false)"
+          } > "$ARTIFACT_DIR/focused-diagnostic-state.txt"
+
+          if [[ -d "$PRODUCT_WT" ]]; then
+            cd "$PRODUCT_WT"
+            git status --short --branch > "$ARTIFACT_DIR/candidate-status.txt" 2>&1
+            git show --format=fuller --stat HEAD > "$ARTIFACT_DIR/candidate-show.txt" 2>&1
+            git diff --binary "$EXPECTED_PRODUCT"..HEAD -- \
+              tools/lib/industrial-exhaust.mjs \
+              test/industrial-exhaust.test.js \
+              > "$ARTIFACT_DIR/candidate-diagnostic.patch" 2>&1
+
+            find test -type f -name '*industrial-exhaust*.test.js' -print \
+              | sort > "$ARTIFACT_DIR/focused-test-files.txt"
+            : > "$ARTIFACT_DIR/focused-test-status.tsv"
+
+            while IFS= read -r test_file; do
+              [[ -n "$test_file" ]] || continue
+              safe_name="${test_file//\//_}"
+              node --test --test-reporter=spec "$test_file" \
+                > "$ARTIFACT_DIR/spec-${safe_name}.log" 2>&1
+              status=$?
+              printf '%s\t%s\n' "$status" "$test_file" \
+                >> "$ARTIFACT_DIR/focused-test-status.tsv"
+            done < "$ARTIFACT_DIR/focused-test-files.txt"
+
+            mapfile -t focused_files < "$ARTIFACT_DIR/focused-test-files.txt"
+            if (( ${#focused_files[@]} )); then
+              node --test --test-reporter=tap "${focused_files[@]}" \
+                > "$ARTIFACT_DIR/focused-all-tap.log" 2>&1
+              printf '%s\n' "$?" > "$ARTIFACT_DIR/focused-all-tap.status"
+            fi
+          fi
+          exit 0
+
       - name: Emit qualification diagnostics
         if: always()
         shell: bash
@@ -92,9 +135,10 @@ jobs:
             printf '%s\n' '### PR 2231 callback observation frontier V110'
             for receipt in summary.json qualification-terminal.txt \
               predecessor-reproduction.jsonl direct-matrix.jsonl \
-              focused-product.log product-release-check.log \
-              focused-main-transplant.log main-release-check.log \
-              candidate-commit.txt candidate-paths.txt \
+              focused-product.log focused-test-status.tsv \
+              focused-all-tap.log candidate-diagnostic.patch \
+              product-release-check.log focused-main-transplant.log \
+              main-release-check.log candidate-commit.txt candidate-paths.txt \
               review-comments-before.tsv review-thread-ledger-before.jsonl \
               review-comments-after.tsv review-thread-ledger-after.jsonl \
               artifact-manifest.txt; do
