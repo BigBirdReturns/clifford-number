@@ -49,12 +49,45 @@ jobs:
           controller_script=/tmp/pr2231-observation-phone-frontier-v106.sh
           base64 -d .github/tmp/pr2231-observation-phone-frontier-v106.sh.gz.b64 | gzip -dc > "$controller_script"
           original_sha=$(sha256sum "$controller_script" | awk '{print $1}')
+          python3 - "$controller_script" <<'PY'
+          import re
+          import sys
+          from pathlib import Path
+
+          path = Path(sys.argv[1])
+          source = path.read_text(encoding="utf-8")
+          call = re.compile(
+              r"(?P<prefix>(?:re\.(?:sub|subn)\(\s*pattern\s*,\s*|pattern\.(?:sub|subn)\(\s*))"
+              r"replacement(?P<suffix>\s*,)"
+          )
+
+          def use_literal_callback(match: re.Match[str]) -> str:
+              return (
+                  f"{match.group('prefix')}"
+                  "lambda _match: replacement"
+                  f"{match.group('suffix')}"
+              )
+
+          repaired, count = call.subn(use_literal_callback, source)
+          if count != 1:
+              for line_number, line in enumerate(source.splitlines(), 1):
+                  if "sub" in line and "replacement" in line:
+                      print(f"CANDIDATE {line_number}: {line}", file=sys.stderr)
+              raise SystemExit(
+                  f"controller envelope repair count={count}, expected=1"
+              )
+
+          path.write_text(repaired, encoding="utf-8")
+          print(f"CONTROLLER_ENVELOPE_REPAIR_SUCCESS count={count}")
+          PY
+          patched_sha=$(sha256sum "$controller_script" | awk '{print $1}')
+          [[ "$original_sha" == "ca6e725902cb3343fc979537f4f1b396676da6e998e4dc1cf285d2d95358c32a" ]]
+          [[ "$patched_sha" == "1daa3dd9e6c2bea3a77d8c3a208ea6b810b61101c6c1705db8cb7121bfde41fd" ]]
           {
             printf 'original_script_sha256=%s\n' "$original_sha"
-            printf 'patched_script_sha256=%s\n' "$original_sha"
-            printf 'envelope_repair=not-required-no-replacement-string-call\n'
+            printf 'patched_script_sha256=%s\n' "$patched_sha"
+            printf 'envelope_repair=compiled-pattern-literal-callback\n'
           } > "$ARTIFACT_DIR/controller-envelope.txt"
-          echo "CONTROLLER_ENVELOPE_REPAIR_NOT_REQUIRED"
           bash "$controller_script"
 
       - uses: actions/upload-artifact@v4
