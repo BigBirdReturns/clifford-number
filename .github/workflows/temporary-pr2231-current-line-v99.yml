@@ -1,0 +1,85 @@
+name: Temporary PR 2231 current-line V99 bounded interval diagnostic
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/temporary-pr2231-current-line-v99.yml'
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: pr2231-current-line-v99-bounded-interval-diagnostic
+  cancel-in-progress: false
+
+jobs:
+  diagnose-v99-read-only:
+    if: github.event.pull_request.number == 2391
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      EXPECTED_MAIN: 17aa3cfc22d5f9022164baf5c1d5a8e401b796cf
+      EXPECTED_PRODUCT: bea76f0dd155122c3a45fe82c7c1abbaf676349b
+      EXPECTED_PREDECESSOR_LIBRARY_BLOB: 6655e9aa10ac2964e5f6289a4881f1343265fa0e
+      EXPECTED_PREDECESSOR_FOCUSED_TEST_BLOB: 7f72ca8c2eb7f436471453c74b98e1227b0970d5
+      EXPECTED_PAYLOAD_BLOB: 73e61799aa544455d1c88e6e6322deb1919246d5
+      EXPECTED_MUTATOR_SHA256: 119e34dae4413cf3eb30f1e39e2fb6f7ba227ce2e44dd5034eec8c297d2cd1cd
+      EXPECTED_SCRIPT_BLOB: 1ec9bfeb09fcc3f0ac1bdc5eb49b0e6aff933441
+      EXPECTED_SCRIPT_SHA256: d1c09ed103025b833923b05b7747f73cf3fb7864d2d7fa5afcae56903226f2f0
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      PAYLOAD_PATH: .github/tmp/pr2231-current-line-v99.py.gz.b64
+      SCRIPT_PATH: .github/tmp/pr2231-current-line-v99-diagnostic.sh.gz.b64
+      ARTIFACT_DIR: /tmp/pr2231-v99-bounded-interval-diagnostic
+      CONTROLLER_SHA: ${{ github.event.pull_request.head.sha }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Recover and execute the exact V99 diagnostic
+        shell: bash
+        run: |
+          set -uo pipefail
+          rm -rf "$ARTIFACT_DIR"
+          mkdir -p "$ARTIFACT_DIR"
+          printf '%s\n' BOOTSTRAP_STARTED > "$ARTIFACT_DIR/result.txt"
+          script_blob="$(git rev-parse "${CONTROLLER_SHA}:${SCRIPT_PATH}")" || {
+            printf '%s\n' FAIL:RESOLVE_SCRIPT_BLOB > "$ARTIFACT_DIR/result.txt"
+            exit 1
+          }
+          printf '%s\n' "$script_blob" > "$ARTIFACT_DIR/script.blob"
+          if [[ "$script_blob" != "$EXPECTED_SCRIPT_BLOB" ]]; then
+            printf '%s\n' FAIL:SCRIPT_BLOB > "$ARTIFACT_DIR/result.txt"
+            exit 1
+          fi
+          if ! base64 -d "$GITHUB_WORKSPACE/$SCRIPT_PATH" | gzip -dc > /tmp/pr2231-v99-diagnostic.sh; then
+            printf '%s\n' FAIL:SCRIPT_DECODE > "$ARTIFACT_DIR/result.txt"
+            exit 1
+          fi
+          script_sha="$(sha256sum /tmp/pr2231-v99-diagnostic.sh | awk '{print $1}')"
+          printf '%s\n' "$script_sha" > "$ARTIFACT_DIR/script.sha256"
+          if [[ "$script_sha" != "$EXPECTED_SCRIPT_SHA256" ]]; then
+            printf '%s\n' FAIL:SCRIPT_SHA256 > "$ARTIFACT_DIR/result.txt"
+            exit 1
+          fi
+          bash -n /tmp/pr2231-v99-diagnostic.sh || {
+            printf '%s\n' FAIL:SCRIPT_SYNTAX > "$ARTIFACT_DIR/result.txt"
+            exit 1
+          }
+          bash /tmp/pr2231-v99-diagnostic.sh
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-current-line-v99-bounded-interval-diagnostic
+          path: /tmp/pr2231-v99-bounded-interval-diagnostic
+          retention-days: 90
