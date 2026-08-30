@@ -1,0 +1,561 @@
+name: Temporary PR 2231 source-contiguous callback observations V112
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/temporary-pr2231-source-contiguous-callback-v112.yml'
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: pr2231-source-contiguous-callback-v112
+  cancel-in-progress: false
+
+jobs:
+  qualify-source-contiguous-callbacks:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: BigBirdReturns/clifford-number
+      PRODUCT_PR: '2231'
+      CONTROLLER_PR: ${{ github.event.pull_request.number }}
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      CONTROLLER_BRANCH: ${{ github.head_ref }}
+      EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+      EXPECTED_MAIN: 0b1d8af5b86adad49b3451053dbb9166294d631c
+      EXPECTED_PRODUCT: cfd1e459efc07f57cab7117200a4a4b962fd1bac
+      EXPECTED_TREE: 17d5350c902e47f129fae0282735b4acbeff381c
+      EXPECTED_LIBRARY: dab48bfba026dc1629a4384a26d98c13366b0ea3
+      EXPECTED_TEST: 8fad1d2be93f9a286f9b95bb35751d3e908c4834
+      REVIEW_CONTROLLER_PR: '2403'
+      REVIEW_CONTROLLER_HEAD: 254c54ba12382ac2dd40f2129abc86c5a145d193
+      REVIEW_RUN: '33332368912'
+      REVIEW_ARTIFACT: '9738015605'
+      REVIEW_ARTIFACT_DIGEST: sha256:ecd47420f5d6fe261465214e7c7f63fd282d9a37dbad8150a52c679f0c3c1c50
+      REVIEW_ID: '5061773183'
+      PRODUCT_WT: /tmp/pr2231-source-contiguous-product-v112
+      MAIN_WT: /tmp/pr2231-source-contiguous-main-v112
+      QUALIFIED_DIR: /tmp/pr2231-source-contiguous-qualified-v112
+      ARTIFACT_DIR: /tmp/pr2231-source-contiguous-v112
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Execute read-only qualification
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$PRODUCT_WT" "$MAIN_WT" "$QUALIFIED_DIR" "$ARTIFACT_DIR"
+          mkdir -p "$QUALIFIED_DIR" "$ARTIFACT_DIR/receipts"
+
+          main_head=$(git ls-remote origin refs/heads/main | awk '{print $1}')
+          product_head=$(git ls-remote origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')
+          controller_head=$(git ls-remote origin "refs/heads/$CONTROLLER_BRANCH" | awk '{print $1}')
+          [[ "$main_head" == "$EXPECTED_MAIN" ]]
+          [[ "$product_head" == "$EXPECTED_PRODUCT" ]]
+          [[ "$controller_head" == "$EXPECTED_CONTROLLER" ]]
+
+          gh api "repos/$REPO/pulls/$PRODUCT_PR" > "$ARTIFACT_DIR/receipts/product-pr-before.json"
+          gh api "repos/$REPO/pulls/$CONTROLLER_PR" > "$ARTIFACT_DIR/receipts/controller-pr-before.json"
+          gh api "repos/$REPO/pulls/$REVIEW_CONTROLLER_PR" > "$ARTIFACT_DIR/receipts/review-controller-pr.json"
+          gh api "repos/$REPO/actions/artifacts/$REVIEW_ARTIFACT" > "$ARTIFACT_DIR/receipts/review-artifact.json"
+          gh api --paginate "repos/$REPO/pulls/$PRODUCT_PR/reviews" > "$ARTIFACT_DIR/receipts/product-reviews-before.json"
+
+          jq -e --arg head "$EXPECTED_PRODUCT" --arg base "$EXPECTED_MAIN" '
+            .state == "open"
+            and .draft == true
+            and .merged == false
+            and .head.sha == $head
+            and .base.sha == $base
+            and .commits == 1
+            and .changed_files == 2
+          ' "$ARTIFACT_DIR/receipts/product-pr-before.json" >/dev/null
+          jq -e --arg head "$EXPECTED_CONTROLLER" --arg base "$EXPECTED_MAIN" '
+            .state == "open"
+            and .draft == true
+            and .merged == false
+            and .head.sha == $head
+            and .base.sha == $base
+            and .commits == 1
+            and .changed_files == 1
+          ' "$ARTIFACT_DIR/receipts/controller-pr-before.json" >/dev/null
+          jq -e --arg head "$REVIEW_CONTROLLER_HEAD" '
+            .state == "closed"
+            and .merged == false
+            and .head.sha == $head
+          ' "$ARTIFACT_DIR/receipts/review-controller-pr.json" >/dev/null
+          jq -e --argjson id "$REVIEW_ARTIFACT" --arg digest "$REVIEW_ARTIFACT_DIGEST" '
+            .id == $id and .expired == false and .digest == $digest
+          ' "$ARTIFACT_DIR/receipts/review-artifact.json" >/dev/null
+          jq -e --argjson id "$REVIEW_ID" --arg commit "$EXPECTED_PRODUCT" '
+            any(.[]; .id == $id and .commit_id == $commit and .state == "COMMENTED")
+          ' "$ARTIFACT_DIR/receipts/product-reviews-before.json" >/dev/null
+
+          mapfile -t product_paths < <(gh api --paginate "repos/$REPO/pulls/$PRODUCT_PR/files" --jq '.[].filename' | sort)
+          [[ ${#product_paths[@]} -eq 2 ]]
+          [[ "${product_paths[0]}" == 'test/industrial-exhaust.test.js' ]]
+          [[ "${product_paths[1]}" == 'tools/lib/industrial-exhaust.mjs' ]]
+
+          git worktree add --detach "$PRODUCT_WT" "$EXPECTED_PRODUCT"
+          [[ "$(git -C "$PRODUCT_WT" rev-parse HEAD)" == "$EXPECTED_PRODUCT" ]]
+          [[ "$(git -C "$PRODUCT_WT" rev-parse HEAD^)" == "$EXPECTED_MAIN" ]]
+          [[ "$(git -C "$PRODUCT_WT" rev-parse HEAD^{tree})" == "$EXPECTED_TREE" ]]
+          [[ "$(git -C "$PRODUCT_WT" rev-parse HEAD:tools/lib/industrial-exhaust.mjs)" == "$EXPECTED_LIBRARY" ]]
+          [[ "$(git -C "$PRODUCT_WT" rev-parse HEAD:test/industrial-exhaust.test.js)" == "$EXPECTED_TEST" ]]
+
+          (
+            cd "$PRODUCT_WT"
+            node --input-type=module <<'NODE_PREDECESSOR'
+          import assert from 'node:assert/strict';
+          import fs from 'node:fs';
+          import { pathToFileURL } from 'node:url';
+
+          const moduleUrl = pathToFileURL(
+            `${process.cwd()}/tools/lib/industrial-exhaust.mjs`
+          ).href;
+          const { redactContactData } = await import(
+            `${moduleUrl}?v112-predecessor=${Date.now()}`
+          );
+          const canonical = value => value.replace(/ {200,}/gu, '<PAD>');
+          const controls = [
+            ['Archive +33 1 42 68 53 00–2026 people', 'Archive [contact omitted]–2026 people'],
+            ['Archive +81 3 6216 8041–17-20 people', 'Archive [contact omitted]–17-20 people'],
+            ['Archive +81 3 6216 8041–17.08.2026', 'Archive [contact omitted]–17.08.2026'],
+            ['Archive +81 3 6216 8041–03.6216.8041', 'Archive [contact omitted]–[contact omitted]'],
+            ['192.0.2.1/01/42/68/53/00', '192.0.2.1/01/42/68/53/00']
+          ].map(([input, expected]) => ({
+            input,
+            expected,
+            actual: redactContactData(input)
+          }));
+          for (const record of controls) assert.equal(record.actual, record.expected);
+
+          const input252 = `Archive +33 1 42 68 53 00–2026${' '.repeat(252)}03-6216-8041 people`;
+          const input300 = `Archive +33 1 42 68 53 00–2026${' '.repeat(300)}03-6216-8041 people`;
+          const boundary252 = canonical(redactContactData(input252));
+          const boundary300 = canonical(redactContactData(input300));
+          assert.equal(
+            boundary252,
+            'Archive [contact omitted]–2026<PAD>03-6216-8041 people'
+          );
+          assert.equal(
+            boundary300,
+            'Archive [contact omitted]–2026<PAD>[contact omitted] people'
+          );
+          const receipt = {
+            product: process.env.EXPECTED_PRODUCT,
+            controls,
+            boundary252,
+            boundary300,
+            defect_reproduced: true
+          };
+          fs.writeFileSync(
+            `${process.env.ARTIFACT_DIR}/predecessor-reproduction.json`,
+            `${JSON.stringify(receipt, null, 2)}\n`
+          );
+          NODE_PREDECESSOR
+          )
+
+          python - "$PRODUCT_WT/tools/lib/industrial-exhaust.mjs" "$PRODUCT_WT/test/industrial-exhaust.test.js" <<'PY_PATCH'
+          from pathlib import Path
+          import sys
+
+          library_path = Path(sys.argv[1])
+          test_path = Path(sys.argv[2])
+          text = library_path.read_text()
+
+          def replace_once(source: str, old: str, new: str, label: str) -> str:
+              count = source.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected one match, found {count}')
+              return source.replace(old, new, 1)
+
+          old = """function boundedObservationSource(source) {
+            return source.length > MAX_NUMERIC_OBSERVATION_SOURCE_CHARS
+              ? source.slice(0, MAX_NUMERIC_OBSERVATION_SOURCE_CHARS)
+              : source;
+          }
+          """
+          new = """function boundedObservationSource(source) {
+            return source.length > MAX_NUMERIC_OBSERVATION_SOURCE_CHARS
+              ? source.slice(0, MAX_NUMERIC_OBSERVATION_SOURCE_CHARS)
+              : source;
+          }
+
+          function boundedObservationContext(source, externalSuffix = '') {
+            const boundedSource = boundedObservationSource(source);
+            const sourceIsComplete = boundedSource.length === source.length;
+            const normalizedSource = boundedSource.normalize('NFKC');
+            const normalizedSuffix = sourceIsComplete
+              ? externalSuffix.normalize('NFKC').slice(0, 64)
+              : '';
+            return {
+              boundedSource,
+              sourceIsComplete,
+              normalizedSource,
+              contextual: `${normalizedSource}${normalizedSuffix}`
+            };
+          }
+          """
+          text = replace_once(text, old, new, 'bounded observation context')
+
+          old = """  const source = candidate.slice(sourceStart);
+            const boundedSource = boundedObservationSource(source);
+            const contextual = `${boundedSource.normalize('NFKC')}${externalSuffix
+              .normalize('NFKC')
+              .slice(0, 64)}`;
+            const formattedMatch = FORMATTED_NUMERIC_OBSERVATION_PATTERN.exec(contextual);
+          """
+          new = """  const source = candidate.slice(sourceStart);
+            const { contextual } = boundedObservationContext(
+              source,
+              externalSuffix
+            );
+            const formattedMatch = FORMATTED_NUMERIC_OBSERVATION_PATTERN.exec(contextual);
+          """
+          text = replace_once(text, old, new, 'leading formatted observation context')
+
+          old = """function numericObservationMatch(source, externalSuffix = '') {
+            const boundedSource = boundedObservationSource(source);
+            const normalizedSource = boundedSource.normalize('NFKC');
+            const contextual = `${normalizedSource}${externalSuffix.normalize('NFKC').slice(0, 64)}`;
+          """
+          new = """function numericObservationMatch(source, externalSuffix = '') {
+            const { contextual } = boundedObservationContext(
+              source,
+              externalSuffix
+            );
+          """
+          text = replace_once(text, old, new, 'numeric observation context')
+
+          old = """function isWeakBareRangeObservation(source, externalSuffix = '') {
+            const boundedSource = boundedObservationSource(source);
+            const normalizedSource = boundedSource.normalize('NFKC');
+            const contextual = `${normalizedSource}${externalSuffix.normalize('NFKC').slice(0, 64)}`;
+          """
+          new = """function isWeakBareRangeObservation(source, externalSuffix = '') {
+            const { contextual } = boundedObservationContext(
+              source,
+              externalSuffix
+            );
+          """
+          text = replace_once(text, old, new, 'weak range observation context')
+
+          old = """function crossCallbackObservationMatch(source, externalSuffix = '') {
+            const boundedSource = boundedObservationSource(source);
+            const normalizedSource = boundedSource.normalize('NFKC');
+            const contextual = `${normalizedSource}${externalSuffix.normalize('NFKC').slice(0, 64)}`;
+            const unitMatch = NUMERIC_OBSERVATION_PATTERN.exec(contextual);
+            const ordinaryMatch = numericObservationMatch(boundedSource, externalSuffix);
+          """
+          new = """function crossCallbackObservationMatch(source, externalSuffix = '') {
+            const { boundedSource, contextual } = boundedObservationContext(
+              source,
+              externalSuffix
+            );
+            const unitMatch = NUMERIC_OBSERVATION_PATTERN.exec(contextual);
+            const ordinaryMatch = numericObservationMatch(source, externalSuffix);
+          """
+          text = replace_once(text, old, new, 'cross-callback observation context')
+
+          old = """    const nextSource = next < groups.length
+              ? candidate.slice(groups[next].index, groups[next].index + MAX_NUMERIC_OBSERVATION_SOURCE_CHARS)
+              : '';
+            const contextualNextTail = `${nextSource.normalize('NFKC')}${externalSuffix
+              .normalize('NFKC')
+              .slice(0, 64)}`;
+            const nextObservation = contextualNextTail
+          """
+          new = """    const nextSource = next < groups.length
+              ? candidate.slice(groups[next].index)
+              : '';
+            const { contextual: contextualNextTail } = boundedObservationContext(
+              nextSource,
+              externalSuffix
+            );
+            const nextObservation = contextualNextTail
+          """
+          text = replace_once(text, old, new, 'initial dash transition context')
+          library_path.write_text(text)
+
+          tests = test_path.read_text()
+          marker = '// PR2231_SOURCE_CONTIGUITY_V112'
+          if marker in tests:
+              raise SystemExit('source-contiguity tests already present')
+          tests += r'''
+
+          // PR2231_SOURCE_CONTIGUITY_V112
+          const sourceContiguityPaddingLengths = [249, 250, 251, 252, 253, 254, 255, 256, 300];
+          const sourceContiguityFamilies = [
+            {
+              name: 'hyphenated phone tail',
+              tail: '03-6216-8041 people',
+              expected: 'Archive [contact omitted] 00–2026<PAD>[contact omitted] people'
+            },
+            {
+              name: 'dotted phone tail',
+              tail: '03.6216.8041 people',
+              expected: 'Archive [contact omitted] 00–2026<PAD>[contact omitted] people'
+            },
+            {
+              name: 'unit range tail',
+              tail: '17-20 people',
+              expected: 'Archive [contact omitted] 00–2026<PAD>17-20 people'
+            },
+            {
+              name: 'second scalar tail',
+              tail: '2027 people',
+              expected: 'Archive [contact omitted] 00–2026<PAD>2027 people'
+            }
+          ];
+          for (const family of sourceContiguityFamilies) {
+            for (const padding of sourceContiguityPaddingLengths) {
+              const input = `Archive +33 1 42 68 53 00–2026${' '.repeat(padding)}${family.tail}`;
+              const actual = redactContactData(input).replace(/ {200,}/gu, '<PAD>');
+              assert.equal(
+                actual,
+                family.expected,
+                `${family.name} must not change custody at the 256-character parser boundary`
+              );
+            }
+          }
+
+          const fullwidthContiguityOutputs = sourceContiguityPaddingLengths.map(padding =>
+            redactContactData(
+              `Archive ＋３３ １ ４２ ６８ ５３ ００－２０２６${' '.repeat(padding)}０３－６２１６－８０４１ people`
+            ).replace(/ {200,}/gu, '<PAD>')
+          );
+          assert.equal(new Set(fullwidthContiguityOutputs).size, 1);
+          assert.doesNotMatch(fullwidthContiguityOutputs[0], /０３－６２１６－８０４１/u);
+          '''
+          test_path.write_text(tests)
+          PY_PATCH
+
+          node --check "$PRODUCT_WT/tools/lib/industrial-exhaust.mjs"
+          node --check "$PRODUCT_WT/test/industrial-exhaust.test.js"
+
+          (
+            cd "$PRODUCT_WT"
+            node --input-type=module <<'NODE_MATRIX' 2>&1 | tee "$ARTIFACT_DIR/direct-matrix.log"
+          import assert from 'node:assert/strict';
+          import fs from 'node:fs';
+          import { pathToFileURL } from 'node:url';
+
+          const moduleUrl = pathToFileURL(
+            `${process.cwd()}/tools/lib/industrial-exhaust.mjs`
+          ).href;
+          const { redactContactData } = await import(
+            `${moduleUrl}?v112-matrix=${Date.now()}`
+          );
+          const canonical = value => value.replace(/ {200,}/gu, '<PAD>');
+          const cases = [
+            ['v110 exact scalar', 'Archive +33 1 42 68 53 00–2026 people', 'Archive [contact omitted]–2026 people'],
+            ['unit range', 'Archive +81 3 6216 8041–17-20 people', 'Archive [contact omitted]–17-20 people'],
+            ['day-first date', 'Archive +81 3 6216 8041–17.08.2026', 'Archive [contact omitted]–17.08.2026'],
+            ['dotted second phone', 'Archive +81 3 6216 8041–03.6216.8041', 'Archive [contact omitted]–[contact omitted]'],
+            ['formatted observation phone', 'Archive 3.14/03-6216-8041', 'Archive 3.14/[contact omitted]'],
+            ['weak range phone', 'Archive 62-16-03-6216-8041', 'Archive 62-16-[contact omitted]'],
+            ['callback time phone', 'Archive 12:30-03-6216-8041', 'Archive 12:30-[contact omitted]'],
+            ['url refusal', '192.0.2.1/01/42/68/53/00', '192.0.2.1/01/42/68/53/00']
+          ].map(([name, input, expected]) => {
+            const actual = redactContactData(input);
+            return { name, input, expected, actual, pass: actual === expected };
+          });
+
+          const paddings = [249, 250, 251, 252, 253, 254, 255, 256, 300];
+          const families = [
+            {
+              name: 'hyphenated-phone-tail',
+              tail: '03-6216-8041 people',
+              expected: 'Archive [contact omitted] 00–2026<PAD>[contact omitted] people'
+            },
+            {
+              name: 'dotted-phone-tail',
+              tail: '03.6216.8041 people',
+              expected: 'Archive [contact omitted] 00–2026<PAD>[contact omitted] people'
+            },
+            {
+              name: 'unit-range-tail',
+              tail: '17-20 people',
+              expected: 'Archive [contact omitted] 00–2026<PAD>17-20 people'
+            },
+            {
+              name: 'second-scalar-tail',
+              tail: '2027 people',
+              expected: 'Archive [contact omitted] 00–2026<PAD>2027 people'
+            }
+          ];
+          const boundaryRecords = [];
+          for (const family of families) {
+            for (const padding of paddings) {
+              const input = `Archive +33 1 42 68 53 00–2026${' '.repeat(padding)}${family.tail}`;
+              const actual = redactContactData(input);
+              const canonicalActual = canonical(actual);
+              boundaryRecords.push({
+                family: family.name,
+                padding,
+                expected: family.expected,
+                actual,
+                canonical: canonicalActual,
+                pass: canonicalActual === family.expected
+              });
+            }
+          }
+
+          const fullwidthRecords = paddings.map(padding => {
+            const input = `Archive ＋３３ １ ４２ ６８ ５３ ００－２０２６${' '.repeat(padding)}０３－６２１６－８０４１ people`;
+            const actual = redactContactData(input);
+            return { padding, input, actual, canonical: canonical(actual) };
+          });
+          const fullwidthInvariant = new Set(
+            fullwidthRecords.map(record => record.canonical)
+          ).size === 1 && !/０３－６２１６－８０４１/u.test(fullwidthRecords[0].canonical);
+
+          const failures = [
+            ...cases.filter(record => !record.pass),
+            ...boundaryRecords.filter(record => !record.pass),
+            ...(fullwidthInvariant ? [] : [{ name: 'fullwidth-boundary-invariance', fullwidthRecords }])
+          ];
+          fs.writeFileSync(
+            `${process.env.ARTIFACT_DIR}/direct-matrix.json`,
+            `${JSON.stringify({ cases, boundaryRecords, fullwidthRecords, fullwidthInvariant, failures }, null, 2)}\n`
+          );
+          assert.deepEqual(failures, []);
+          NODE_MATRIX
+          )
+
+          cp "$PRODUCT_WT/tools/lib/industrial-exhaust.mjs" "$QUALIFIED_DIR/industrial-exhaust.mjs"
+          cp "$PRODUCT_WT/test/industrial-exhaust.test.js" "$QUALIFIED_DIR/industrial-exhaust.test.js"
+
+          (
+            cd "$PRODUCT_WT"
+            node --test test/industrial-exhaust*.test.js 2>&1 \
+              | tee "$ARTIFACT_DIR/focused-product.log"
+            npm run release:check 2>&1 \
+              | tee "$ARTIFACT_DIR/product-release-check.log"
+          )
+
+          git -C "$PRODUCT_WT" restore --worktree --staged -- .
+          cp "$QUALIFIED_DIR/industrial-exhaust.mjs" "$PRODUCT_WT/tools/lib/industrial-exhaust.mjs"
+          cp "$QUALIFIED_DIR/industrial-exhaust.test.js" "$PRODUCT_WT/test/industrial-exhaust.test.js"
+          mapfile -t changed_paths < <(git -C "$PRODUCT_WT" diff --name-only | sort)
+          [[ ${#changed_paths[@]} -eq 2 ]]
+          [[ "${changed_paths[0]}" == 'test/industrial-exhaust.test.js' ]]
+          [[ "${changed_paths[1]}" == 'tools/lib/industrial-exhaust.mjs' ]]
+          git -C "$PRODUCT_WT" diff --binary > "$ARTIFACT_DIR/candidate.patch"
+          sha256sum "$ARTIFACT_DIR/candidate.patch" > "$ARTIFACT_DIR/candidate-patch.sha256"
+
+          git worktree add --detach "$MAIN_WT" "$EXPECTED_MAIN"
+          cp "$QUALIFIED_DIR/industrial-exhaust.mjs" "$MAIN_WT/tools/lib/industrial-exhaust.mjs"
+          cp "$QUALIFIED_DIR/industrial-exhaust.test.js" "$MAIN_WT/test/industrial-exhaust.test.js"
+          git -C "$MAIN_WT" add tools/lib/industrial-exhaust.mjs test/industrial-exhaust.test.js
+          git -C "$MAIN_WT" diff --cached --name-only | sort > "$ARTIFACT_DIR/candidate-paths.txt"
+          diff -u <(printf '%s\n' test/industrial-exhaust.test.js tools/lib/industrial-exhaust.mjs) "$ARTIFACT_DIR/candidate-paths.txt"
+
+          GIT_AUTHOR_NAME=BigBirdReturns \
+          GIT_AUTHOR_EMAIL=bigbirdreturns@proton.me \
+          GIT_COMMITTER_NAME=BigBirdReturns \
+          GIT_COMMITTER_EMAIL=bigbirdreturns@proton.me \
+            git -C "$MAIN_WT" commit -m 'fix: preserve source contiguity across callback bounds'
+
+          candidate=$(git -C "$MAIN_WT" rev-parse HEAD)
+          candidate_parent=$(git -C "$MAIN_WT" rev-parse HEAD^)
+          candidate_tree=$(git -C "$MAIN_WT" rev-parse HEAD^{tree})
+          candidate_library=$(git -C "$MAIN_WT" rev-parse HEAD:tools/lib/industrial-exhaust.mjs)
+          candidate_test=$(git -C "$MAIN_WT" rev-parse HEAD:test/industrial-exhaust.test.js)
+          [[ "$candidate_parent" == "$EXPECTED_MAIN" ]]
+          [[ "$(git -C "$MAIN_WT" rev-list --count "$EXPECTED_MAIN..$candidate")" == 1 ]]
+          printf 'candidate=%s\nparent=%s\ntree=%s\nlibrary=%s\ntest=%s\n' \
+            "$candidate" "$candidate_parent" "$candidate_tree" \
+            "$candidate_library" "$candidate_test" \
+            > "$ARTIFACT_DIR/candidate.env"
+
+          (
+            cd "$MAIN_WT"
+            node --test test/industrial-exhaust*.test.js 2>&1 \
+              | tee "$ARTIFACT_DIR/focused-main-transplant.log"
+            npm run release:check 2>&1 \
+              | tee "$ARTIFACT_DIR/main-release-check.log"
+          )
+          git -C "$MAIN_WT" restore --worktree --staged -- .
+          [[ -z "$(git -C "$MAIN_WT" status --porcelain)" ]]
+          git -C "$MAIN_WT" bundle create "$ARTIFACT_DIR/candidate.bundle" HEAD ^"$EXPECTED_MAIN"
+
+          main_after=$(git ls-remote origin refs/heads/main | awk '{print $1}')
+          product_after=$(git ls-remote origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')
+          controller_after=$(git ls-remote origin "refs/heads/$CONTROLLER_BRANCH" | awk '{print $1}')
+          [[ "$main_after" == "$EXPECTED_MAIN" ]]
+          [[ "$product_after" == "$EXPECTED_PRODUCT" ]]
+          [[ "$controller_after" == "$EXPECTED_CONTROLLER" ]]
+
+          gh api "repos/$REPO/pulls/$PRODUCT_PR" > "$ARTIFACT_DIR/receipts/product-pr-after.json"
+          gh api "repos/$REPO/pulls/$CONTROLLER_PR" > "$ARTIFACT_DIR/receipts/controller-pr-after.json"
+          gh api --paginate "repos/$REPO/pulls/$PRODUCT_PR/reviews" > "$ARTIFACT_DIR/receipts/product-reviews-after.json"
+          cmp "$ARTIFACT_DIR/receipts/product-pr-before.json" "$ARTIFACT_DIR/receipts/product-pr-after.json"
+          jq -e --arg head "$EXPECTED_CONTROLLER" '
+            .state == "open" and .draft == true and .merged == false and .head.sha == $head
+          ' "$ARTIFACT_DIR/receipts/controller-pr-after.json" >/dev/null
+          jq -e --argjson id "$REVIEW_ID" --arg commit "$EXPECTED_PRODUCT" '
+            any(.[]; .id == $id and .commit_id == $commit and .state == "COMMENTED")
+          ' "$ARTIFACT_DIR/receipts/product-reviews-after.json" >/dev/null
+
+          cat > "$ARTIFACT_DIR/result.txt" <<EOF
+          PREDECESSOR_REPRODUCED
+          SOURCE_CONTIGUITY_PATCH_APPLIED
+          DIRECT_MATRIX_SUCCESS
+          FOCUSED_PRODUCT_SUCCESS
+          PRODUCT_RELEASE_CHECK_SUCCESS
+          FROZEN_MAIN_TRANSPLANT_SUCCESS
+          FOCUSED_MAIN_SUCCESS
+          MAIN_RELEASE_CHECK_SUCCESS
+          CANDIDATE_ONE_COMMIT_TWO_PATHS
+          PRODUCT_REF_UNCHANGED
+          PRODUCT_PR_STILL_DRAFT
+          REVIEW_STATE_UNCHANGED
+          PUBLICATION_SKIPPED
+          QUALIFICATION_SUCCESS
+          EOF
+
+      - name: Emit qualification receipts
+        if: always()
+        shell: bash
+        run: |
+          upload=/tmp/pr2231-source-contiguous-v112-upload
+          rm -rf "$upload"
+          mkdir -p "$ARTIFACT_DIR" "$upload"
+          find "$ARTIFACT_DIR" -type f -printf '%P\t%s\n' \
+            | sort > "$ARTIFACT_DIR/artifact-manifest.txt"
+          cp -a "$ARTIFACT_DIR"/. "$upload"/
+          {
+            printf '%s\n' '### PR 2231 source-contiguous callback qualification V112'
+            for receipt in result.txt predecessor-reproduction.json \
+              direct-matrix.json candidate.env candidate-paths.txt \
+              candidate-patch.sha256 focused-product.log \
+              product-release-check.log focused-main-transplant.log \
+              main-release-check.log artifact-manifest.txt; do
+              printf '\n#### %s\n\n```text\n' "$receipt"
+              [[ ! -f "$ARTIFACT_DIR/$receipt" ]] \
+                || tail -n 420 "$ARTIFACT_DIR/$receipt"
+              printf '%s\n' '```'
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-source-contiguous-callback-v112
+          path: /tmp/pr2231-source-contiguous-v112-upload
+          retention-days: 90
