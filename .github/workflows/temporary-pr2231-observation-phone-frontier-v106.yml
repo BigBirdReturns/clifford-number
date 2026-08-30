@@ -1,5 +1,5 @@
-name: Temporary PR 2231 observation-phone frontier V106
-# Lease-bound execution with focused tests rooted in each qualified worktree.
+name: Temporary PR 2231 live product qualification V107
+# Read-only, lease-bound qualification of the already published exact product head.
 
 on:
   pull_request:
@@ -10,33 +10,36 @@ on:
       - '.github/tmp/pr2231-observation-phone-frontier-v106.sh.gz.b64'
 
 permissions:
-  contents: write
+  contents: read
   pull-requests: read
   actions: read
 
 concurrency:
-  group: pr2231-observation-phone-frontier-v106
+  group: pr2231-live-product-qualification-v107
   cancel-in-progress: false
 
 jobs:
-  qualify-and-publish:
+  qualify-live-product:
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     env:
       GH_TOKEN: ${{ github.token }}
       REPO: BigBirdReturns/clifford-number
+      PRODUCT_PR_NUMBER: '2231'
+      CONTROLLER_PR_NUMBER: ${{ github.event.pull_request.number }}
       PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
       CONTROLLER_BRANCH: ${{ github.head_ref }}
       EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
-      CONTROLLER_PR_NUMBER: ${{ github.event.pull_request.number }}
       EXPECTED_MAIN: 0b1d8af5b86adad49b3451053dbb9166294d631c
-      EXPECTED_PRODUCT: 405882b7f22fd3dc588a2237289f8550ed9525f9
-      EXPECTED_PRODUCT_PARENT: 17aa3cfc22d5f9022164baf5c1d5a8e401b796cf
-      EXPECTED_PR_BASE: 17aa3cfc22d5f9022164baf5c1d5a8e401b796cf
-      EXPECTED_PRODUCT_TREE: 7ae48a2dc664c98f0e39f693d13a63fb4ee82224
-      EXPECTED_LIBRARY_BLOB: 5e753c9c32cba270ea79b6299fc35db94cd0928f
-      EXPECTED_TEST_BLOB: 069349ea792a8da8c5d67831ac2e73efc0ee82e9
-      ARTIFACT_DIR: /tmp/pr2231-observation-phone-frontier-v106
+      EXPECTED_PRODUCT: 43588313351e9dceebe2bff3fd05f7088b384534
+      EXPECTED_PRODUCT_PARENT: 0b1d8af5b86adad49b3451053dbb9166294d631c
+      EXPECTED_PRODUCT_TREE: efc92aba2de7088ad1e4a9b0514ccb9e8f498c47
+      EXPECTED_LIBRARY_BLOB: cb6bcf21460d4d0cca0dcb29affb9424713399d0
+      EXPECTED_TEST_BLOB: 96822fbd5ac213d03e2bdc91c92c7ddfc3931963
+      PREDECESSOR_PRODUCT: 405882b7f22fd3dc588a2237289f8550ed9525f9
+      REVIEW_COMMENT_IDS: '3888640534 3888640536 3888645507'
+      ARTIFACT_DIR: /tmp/pr2231-live-product-v107
+      PRODUCT_WT: /tmp/pr2231-live-product-v107-worktree
 
     steps:
       - uses: actions/checkout@v4
@@ -44,107 +47,165 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
 
-      - name: Qualify and publish exact two-file successor
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Qualify exact live two-file product
         shell: bash
         run: |
-          set -euo pipefail
+          set -Eeuo pipefail
           mkdir -p "$ARTIFACT_DIR"
+          rm -rf "$PRODUCT_WT"
+
+          fail() {
+            printf 'FAIL: %s\n' "$*" >&2
+            return 1
+          }
+
+          assert_eq() {
+            local actual=$1
+            local expected=$2
+            local label=$3
+            [[ "$actual" == "$expected" ]] \
+              || fail "$label expected=$expected actual=$actual"
+          }
+
+          cleanup() {
+            git worktree remove --force "$PRODUCT_WT" >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+
           qualification_terminal="$ARTIFACT_DIR/qualification-terminal.txt"
           trap 'rc=$?; failed_command=$BASH_COMMAND; failed_line=$LINENO; trap - ERR; { printf "qualification_exit=%s\n" "$rc"; printf "failed_line=%s\n" "$failed_line"; printf "failed_command=%q\n" "$failed_command"; } > "$qualification_terminal"; exit "$rc"' ERR
 
-          controller_script=/tmp/pr2231-observation-phone-frontier-v106.sh
-          base64 -d .github/tmp/pr2231-observation-phone-frontier-v106.sh.gz.b64 | gzip -dc > "$controller_script"
-          original_sha=$(sha256sum "$controller_script" | awk '{print $1}')
-          [[ "$original_sha" == "1ed38ec30663707e56292b4d18902e1f14894caca6d139b468f1cb0240dc872c" ]]
-          {
-            printf 'original_controller_script_sha256=%s\n' "$original_sha"
-            grep -n -B24 -A40 -E \
-              'FOCUSED_PRODUCT_STARTED|focused-source\.log|focused-main\.log' \
-              "$controller_script" || true
-          } > "$ARTIFACT_DIR/focused-blocks.txt"
-          python3 - "$controller_script" 2> >(tee "$ARTIFACT_DIR/controller-patch-stderr.log" >&2) <<'PY'
-          from pathlib import Path
-          import sys
+          fetch_refs() {
+            git fetch --force origin \
+              "+refs/heads/main:refs/remotes/origin/main" \
+              "+refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/$PRODUCT_BRANCH" \
+              "+refs/heads/$CONTROLLER_BRANCH:refs/remotes/origin/$CONTROLLER_BRANCH"
+          }
 
-          path = Path(sys.argv[1])
-          text = path.read_text(encoding="utf-8")
+          capture_pr_state() {
+            local phase=$1
+            local product_json="$ARTIFACT_DIR/product-pr-$phase.json"
+            local controller_json="$ARTIFACT_DIR/controller-pr-$phase.json"
+            local threads_json="$ARTIFACT_DIR/review-threads-$phase.json"
 
-          source_old = r'''printf 'FOCUSED_PRODUCT_STARTED\n'
-          for test_file in "$SOURCE_WT"/test/industrial-exhaust*.test.js; do
-            node "$test_file"
-          done | tee "$ARTIFACT_DIR/focused-source.log"
-          printf 'FOCUSED_PRODUCT_SUCCESS\n'
-          '''
-          source_new = r'''printf 'FOCUSED_PRODUCT_STARTED\n'
-          for test_file in "$SOURCE_WT"/test/industrial-exhaust*.test.js; do
-            (
-              cd "$SOURCE_WT"
-              printf 'FOCUSED_TEST_CWD=%s FILE=%s\n' "$PWD" "${test_file#"$SOURCE_WT"/}"
-              node "$test_file"
-            )
-          done | tee "$ARTIFACT_DIR/focused-source.log"
-          printf 'FOCUSED_PRODUCT_SUCCESS\n'
-          '''
+            gh api "repos/$REPO/pulls/$PRODUCT_PR_NUMBER" > "$product_json"
+            jq -e --arg head "$EXPECTED_PRODUCT" '
+              .state == "open"
+              and .draft == true
+              and .merged == false
+              and .head.sha == $head
+              and .head.ref == "agent/current-main-identifier-context-product-v1"
+              and .base.ref == "main"
+            ' "$product_json" >/dev/null
 
-          main_old = r'''for test_file in "$MAIN_WT"/test/industrial-exhaust*.test.js; do
-            node "$test_file"
-          done | tee "$ARTIFACT_DIR/focused-main.log"
-          '''
-          main_new = r'''for test_file in "$MAIN_WT"/test/industrial-exhaust*.test.js; do
-            (
-              cd "$MAIN_WT"
-              printf 'FOCUSED_TEST_CWD=%s FILE=%s\n' "$PWD" "${test_file#"$MAIN_WT"/}"
-              node "$test_file"
-            )
-          done | tee "$ARTIFACT_DIR/focused-main.log"
-          '''
+            gh api "repos/$REPO/pulls/$CONTROLLER_PR_NUMBER" > "$controller_json"
+            jq -e --arg head "$EXPECTED_CONTROLLER" '
+              .state == "open"
+              and .draft == true
+              and .merged == false
+              and .head.sha == $head
+              and .base.ref == "main"
+            ' "$controller_json" >/dev/null
 
-          for name, old, new in (
-              ("source", source_old, source_new),
-              ("main", main_old, main_new),
-          ):
-              count = text.count(old)
-              if count != 1:
-                  raise SystemExit(
-                      f"focused {name} worktree repair count={count}, expected=1"
-                  )
-              text = text.replace(old, new)
+            gh api graphql \
+              -f 'query=query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){pullRequest(number:$number){reviewThreads(last:100){nodes{id isResolved isOutdated comments(first:100){nodes{databaseId commit{oid}}}}}}}}' \
+              -F owner=BigBirdReturns \
+              -F name=clifford-number \
+              -F number="$PRODUCT_PR_NUMBER" \
+              > "$threads_json"
 
-          program_old = r'''text = text.replace(old_call, new_call)
+            for comment_id in $REVIEW_COMMENT_IDS; do
+              gh api "repos/$REPO/pulls/comments/$comment_id" \
+                > "$ARTIFACT_DIR/review-comment-$comment_id-$phase.json"
+              jq -e \
+                --argjson id "$comment_id" \
+                --arg predecessor "$PREDECESSOR_PRODUCT" '
+                  .id == $id
+                  and .original_commit_id == $predecessor
+                ' "$ARTIFACT_DIR/review-comment-$comment_id-$phase.json" \
+                >/dev/null
+              jq -e --argjson id "$comment_id" '
+                any(.data.repository.pullRequest.reviewThreads.nodes[];
+                  .isResolved == false
+                  and any(.comments.nodes[]; .databaseId == $id)
+                )
+              ' "$threads_json" >/dev/null
+            done
+          }
 
-          helper_marker = "function identifierContextNeedsExpansion(normalizedPrefix) {\n"
-          '''
-          program_new = r'''text = text.replace(old_call, new_call)
+          printf 'LEASE_BIND_STARTED\n'
+          fetch_refs
+          assert_eq "$(git rev-parse refs/remotes/origin/main)" \
+            "$EXPECTED_MAIN" 'main lease'
+          assert_eq "$(git rev-parse "refs/remotes/origin/$PRODUCT_BRANCH")" \
+            "$EXPECTED_PRODUCT" 'product lease'
+          assert_eq "$(git rev-parse "refs/remotes/origin/$CONTROLLER_BRANCH")" \
+            "$EXPECTED_CONTROLLER" 'controller lease'
+          capture_pr_state before
+          printf 'LEASE_BIND_SUCCESS\n'
 
-          old_boundary_call = (
-              'intrinsicPhoneIntervalAfterDashBoundary(dashPhoneSource)'
+          printf 'PRODUCT_TOPOLOGY_STARTED\n'
+          mapfile -t parent_fields < <(
+            git rev-list --parents -n 1 "$EXPECTED_PRODUCT" | tr ' ' '\n'
           )
-          new_boundary_call = (
-              'intrinsicPhoneIntervalAfterObservationBoundary(dashPhoneSource)'
+          [[ "${#parent_fields[@]}" -eq 2 ]] \
+            || fail "product parent count=${#parent_fields[@]} expected=2 fields"
+          assert_eq "${parent_fields[0]}" "$EXPECTED_PRODUCT" 'product commit'
+          assert_eq "${parent_fields[1]}" "$EXPECTED_PRODUCT_PARENT" 'product parent'
+          assert_eq "$EXPECTED_PRODUCT_PARENT" "$EXPECTED_MAIN" \
+            'product parent/main identity'
+          assert_eq "$(git rev-parse "$EXPECTED_PRODUCT^{tree}")" \
+            "$EXPECTED_PRODUCT_TREE" 'product tree'
+          assert_eq "$(git rev-parse "$EXPECTED_PRODUCT:tools/lib/industrial-exhaust.mjs")" \
+            "$EXPECTED_LIBRARY_BLOB" 'library blob'
+          assert_eq "$(git rev-parse "$EXPECTED_PRODUCT:test/industrial-exhaust.test.js")" \
+            "$EXPECTED_TEST_BLOB" 'test blob'
+
+          mapfile -t product_paths < <(
+            git diff --name-only "$EXPECTED_MAIN" "$EXPECTED_PRODUCT" | sort
           )
-          if text.count(old_boundary_call) != 1:
-              raise SystemExit('cross-callback boundary call count mismatch')
-          text = text.replace(old_boundary_call, new_boundary_call)
+          [[ "${#product_paths[@]}" -eq 2 ]] \
+            || fail "product path count=${#product_paths[@]} expected=2"
+          assert_eq "${product_paths[0]}" 'test/industrial-exhaust.test.js' \
+            'first product path'
+          assert_eq "${product_paths[1]}" 'tools/lib/industrial-exhaust.mjs' \
+            'second product path'
+          printf '%s\n' "${product_paths[@]}" > "$ARTIFACT_DIR/product-paths.txt"
+          git show --no-ext-diff --format=fuller --stat "$EXPECTED_PRODUCT" \
+            > "$ARTIFACT_DIR/product-commit.txt"
+          printf 'PRODUCT_TOPOLOGY_SUCCESS\n'
 
-          helper_marker = "function identifierContextNeedsExpansion(normalizedPrefix) {\n"
-          '''
-          if text.count(program_old) != 1:
-              raise SystemExit('controller boundary-call repair count mismatch')
-          text = text.replace(program_old, program_new, 1)
+          git worktree add --detach "$PRODUCT_WT" "$EXPECTED_PRODUCT"
 
-          diagnostic_marker = r'''printf 'DIRECT_MATRIX_SUCCESS\n'
-
-          printf 'FOCUSED_PRODUCT_STARTED\n'
-          '''
-          diagnostic_block = r'''printf 'DIRECT_MATRIX_SUCCESS\n'
-          cp "$SOURCE_WT/tools/lib/industrial-exhaust.mjs" "$ARTIFACT_DIR/candidate-industrial-exhaust.mjs"
-          cp "$SOURCE_WT/test/industrial-exhaust.test.js" "$ARTIFACT_DIR/candidate-industrial-exhaust.test.js"
-          LIB_PATH="$SOURCE_WT/tools/lib/industrial-exhaust.mjs" node --input-type=module <<'NODE_CAP' \
-            > "$ARTIFACT_DIR/candidate-cap-diagnostic.jsonl"
+          printf 'DIRECT_MATRIX_STARTED\n'
+          LIB_PATH="$PRODUCT_WT/tools/lib/industrial-exhaust.mjs" \
+            node --input-type=module <<'NODE' \
+            | tee "$ARTIFACT_DIR/direct-matrix.jsonl"
+          import assert from 'node:assert/strict';
           import { pathToFileURL } from 'node:url';
+
           const { redactContactData } = await import(
-            `${pathToFileURL(process.env.LIB_PATH).href}?cap=${Date.now()}`
+            `${pathToFileURL(process.env.LIB_PATH).href}?qualification=${Date.now()}`
           );
+
+          const directCases = [
+            ['Archive 3.14/03-6216-8041', 'Archive 3.14/[contact omitted]'],
+            ['Archive 3.14.03-6216-8041', 'Archive 3.14.[contact omitted]'],
+            ['Archive 12:30:45/03-6216-8041', 'Archive 12:30:45/[contact omitted]'],
+            ['Archive 62-16-03-6216-8041', 'Archive 62-16-[contact omitted]'],
+            ['Archive +81 3 6216 8041–2027-09-18', 'Archive [contact omitted]–2027-09-18'],
+            ['電話：＋８１ ３ ６２１６ ８０４１－２０２７－０９－１８', '電話：[contact omitted]－２０２７－０９－１８']
+          ];
+          for (const [input, expected] of directCases) {
+            const actual = redactContactData(input);
+            console.log(JSON.stringify({ input, actual, expected }));
+            assert.equal(actual, expected);
+          }
+
           const chain = 'GUID '.repeat(4000);
           for (const terminalObservation of [
             '90 people',
@@ -156,90 +217,121 @@ jobs:
             const input = `Phone ${chain}record id: 09012345678 2026-08-17 01 42 68 53 00 ${terminalObservation}`;
             const expected = `Phone ${chain}record id: [contact omitted] 2026-08-17 [contact omitted] ${terminalObservation}`;
             const actual = redactContactData(input);
-            let prefix = 0;
-            while (prefix < actual.length
-                && prefix < expected.length
-                && actual[prefix] === expected[prefix]) prefix += 1;
-            let suffix = 0;
-            while (suffix < actual.length - prefix
-                && suffix < expected.length - prefix
-                && actual[actual.length - 1 - suffix]
-                  === expected[expected.length - 1 - suffix]) suffix += 1;
-            const windowStart = Math.max(0, prefix - 96);
             console.log(JSON.stringify({
               terminalObservation,
               inputLength: input.length,
               actualLength: actual.length,
               expectedLength: expected.length,
-              commonPrefix: prefix,
-              commonSuffix: suffix,
-              actualWindow: actual.slice(windowStart, Math.min(actual.length, prefix + 256)),
-              expectedWindow: expected.slice(windowStart, Math.min(expected.length, prefix + 256)),
+              equal: actual === expected,
               actualTail: actual.slice(-256),
               expectedTail: expected.slice(-256)
             }));
+            assert.equal(
+              actual,
+              expected,
+              'candidate-specific observation cap must preserve the terminal observation'
+            );
           }
-          NODE_CAP
+          NODE
+          printf 'DIRECT_MATRIX_SUCCESS\n'
 
           printf 'FOCUSED_PRODUCT_STARTED\n'
-          '''
-          if text.count(diagnostic_marker) != 1:
-              raise SystemExit('candidate diagnostic insertion count mismatch')
-          text = text.replace(diagnostic_marker, diagnostic_block, 1)
+          for test_file in "$PRODUCT_WT"/test/industrial-exhaust*.test.js; do
+            (
+              cd "$PRODUCT_WT"
+              printf 'FOCUSED_TEST_CWD=%s FILE=%s\n' \
+                "$PWD" "${test_file#"$PRODUCT_WT"/}"
+              node "$test_file"
+            )
+          done | tee "$ARTIFACT_DIR/focused-product.log"
+          printf 'FOCUSED_PRODUCT_SUCCESS\n'
 
-          path.write_text(text, encoding="utf-8")
-          print("FOCUSED_WORKTREE_REPAIR_SUCCESS count=2")
-          print("CROSS_CALLBACK_BOUNDARY_REPAIR_SUCCESS count=1")
-          print("CANDIDATE_DIAGNOSTIC_INSERTION_SUCCESS count=1")
-          PY
-          controller_sha=$(sha256sum "$controller_script" | awk '{print $1}')
-          {
-            printf 'original_controller_script_sha256=%s\n' "$original_sha"
-            printf 'controller_script_sha256=%s\n' "$controller_sha"
-          } > "$ARTIFACT_DIR/controller-preflight.txt"
-          [[ "$controller_sha" == "04d2abee8fab56867ef6cf54485c1b4004279bd040f20f7c02d023a85c0cee02" ]]
-          {
-            printf 'original_controller_script_sha256=%s\n' "$original_sha"
-            printf 'controller_script_sha256=%s\n' "$controller_sha"
-            printf 'execution_payload=corrected-controller-plus-candidate-diagnostic\n'
-            printf 'expected_main=%s\n' "$EXPECTED_MAIN"
-            printf 'expected_product_parent=%s\n' "$EXPECTED_PRODUCT_PARENT"
-            printf 'expected_pr_base=%s\n' "$EXPECTED_PR_BASE"
-          } > "$ARTIFACT_DIR/controller-envelope.txt"
-          cp "$controller_script" "$ARTIFACT_DIR/controller-script.sh"
-          grep -n -B80 -A140 -E \
-            'intrinsicPhoneIntervalAfterDashBoundary|crossCallbackPhoneObservationBridge' \
-            "$controller_script" > "$ARTIFACT_DIR/controller-symbols.txt" || true
+          printf 'RELEASE_CHECK_STARTED\n'
+          (
+            cd "$PRODUCT_WT"
+            if [[ -f package-lock.json ]]; then
+              npm ci --ignore-scripts
+            else
+              printf 'INSTALL_SKIPPED_NO_LOCKFILE\n'
+            fi
+            npm run release:check
+          ) | tee "$ARTIFACT_DIR/release-check.log"
+          printf 'RELEASE_CHECK_SUCCESS\n'
 
-          trace_path="$ARTIFACT_DIR/controller-trace.log"
-          terminal_path="$ARTIFACT_DIR/controller-terminal.txt"
-          set +e
-          BASH_XTRACEFD=9 bash -x "$controller_script" 9>"$trace_path"
-          controller_rc=$?
-          set -e
-          {
-            printf 'controller_exit=%s\n' "$controller_rc"
-            printf 'controller_script_sha256=%s\n' "$controller_sha"
-            printf '%s\n' '--- TRACE TAIL ---'
-            tail -n 240 "$trace_path" || true
-          } > "$terminal_path"
+          git -C "$PRODUCT_WT" status --porcelain=v1 \
+            > "$ARTIFACT_DIR/post-release-status.txt"
+          git -C "$PRODUCT_WT" restore --staged --worktree -- .
+          git -C "$PRODUCT_WT" clean -fd
+          [[ -z "$(git -C "$PRODUCT_WT" status --porcelain=v1)" ]] \
+            || fail 'product worktree did not restore cleanly'
+          assert_eq "$(git -C "$PRODUCT_WT" rev-parse HEAD)" \
+            "$EXPECTED_PRODUCT" 'restored product head'
+          assert_eq "$(git -C "$PRODUCT_WT" rev-parse HEAD^{tree})" \
+            "$EXPECTED_PRODUCT_TREE" 'restored product tree'
+          printf 'GENERATED_STATE_RESTORED\n'
+
+          printf 'FINAL_LEASE_REVALIDATION_STARTED\n'
+          fetch_refs
+          assert_eq "$(git rev-parse refs/remotes/origin/main)" \
+            "$EXPECTED_MAIN" 'final main lease'
+          assert_eq "$(git rev-parse "refs/remotes/origin/$PRODUCT_BRANCH")" \
+            "$EXPECTED_PRODUCT" 'final product lease'
+          assert_eq "$(git rev-parse "refs/remotes/origin/$CONTROLLER_BRANCH")" \
+            "$EXPECTED_CONTROLLER" 'final controller lease'
+          capture_pr_state after
+          printf 'FINAL_LEASE_REVALIDATION_SUCCESS\n'
+
+          jq -n \
+            --arg main "$EXPECTED_MAIN" \
+            --arg product "$EXPECTED_PRODUCT" \
+            --arg parent "$EXPECTED_PRODUCT_PARENT" \
+            --arg tree "$EXPECTED_PRODUCT_TREE" \
+            --arg library_blob "$EXPECTED_LIBRARY_BLOB" \
+            --arg test_blob "$EXPECTED_TEST_BLOB" \
+            --arg controller "$EXPECTED_CONTROLLER" \
+            '{
+              qualification:"success",
+              main:$main,
+              product:$product,
+              parent:$parent,
+              tree:$tree,
+              library_blob:$library_blob,
+              test_blob:$test_blob,
+              controller:$controller,
+              product_paths:[
+                "test/industrial-exhaust.test.js",
+                "tools/lib/industrial-exhaust.mjs"
+              ],
+              gates:[
+                "direct-matrix",
+                "focused-industrial-exhaust",
+                "release-check",
+                "final-lease-revalidation"
+              ]
+            }' > "$ARTIFACT_DIR/summary.json"
+
           trap - ERR
-          exit "$controller_rc"
+          {
+            printf 'qualification_exit=0\n'
+            printf 'qualification=success\n'
+            printf 'product=%s\n' "$EXPECTED_PRODUCT"
+          } > "$qualification_terminal"
+          printf 'QUALIFICATION_SUCCESS\n'
 
-      - name: Emit controller terminal diagnostic
+      - name: Emit live product qualification diagnostic
         if: always()
         shell: bash
         run: |
           {
-            printf '%s\n' '### V106 controller terminal diagnostic'
+            printf '%s\n' '### PR 2231 live product qualification V107'
             for receipt in \
-              focused-blocks.txt \
-              candidate-cap-diagnostic.jsonl \
-              controller-symbols.txt \
-              controller-preflight.txt \
-              controller-patch-stderr.log \
+              summary.json \
               qualification-terminal.txt \
-              controller-terminal.txt; do
+              product-paths.txt \
+              direct-matrix.jsonl \
+              focused-product.log \
+              release-check.log \
+              post-release-status.txt; do
               printf '\n#### %s\n\n' "$receipt"
               printf '%s\n' '```text'
               if [[ -f "$ARTIFACT_DIR/$receipt" ]]; then
@@ -254,6 +346,6 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: pr2231-observation-phone-frontier-v106
-          path: /tmp/pr2231-observation-phone-frontier-v106
+          name: pr2231-live-product-qualification-v107
+          path: /tmp/pr2231-live-product-v107
           retention-days: 90
