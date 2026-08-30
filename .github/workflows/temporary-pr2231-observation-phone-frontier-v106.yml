@@ -49,11 +49,14 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "$ARTIFACT_DIR"
+          qualification_terminal="$ARTIFACT_DIR/qualification-terminal.txt"
+          trap 'rc=$?; failed_command=$BASH_COMMAND; failed_line=$LINENO; trap - ERR; { printf "qualification_exit=%s\n" "$rc"; printf "failed_line=%s\n" "$failed_line"; printf "failed_command=%q\n" "$failed_command"; } > "$qualification_terminal"; exit "$rc"' ERR
+
           controller_script=/tmp/pr2231-observation-phone-frontier-v106.sh
           base64 -d .github/tmp/pr2231-observation-phone-frontier-v106.sh.gz.b64 | gzip -dc > "$controller_script"
           original_sha=$(sha256sum "$controller_script" | awk '{print $1}')
           [[ "$original_sha" == "1ed38ec30663707e56292b4d18902e1f14894caca6d139b468f1cb0240dc872c" ]]
-          python3 - "$controller_script" <<'PY'
+          python3 - "$controller_script" 2> >(tee "$ARTIFACT_DIR/controller-patch-stderr.log" >&2) <<'PY'
           from pathlib import Path
           import sys
 
@@ -105,6 +108,10 @@ jobs:
           print("FOCUSED_WORKTREE_REPAIR_SUCCESS count=2")
           PY
           controller_sha=$(sha256sum "$controller_script" | awk '{print $1}')
+          {
+            printf 'original_controller_script_sha256=%s\n' "$original_sha"
+            printf 'controller_script_sha256=%s\n' "$controller_sha"
+          } > "$ARTIFACT_DIR/controller-preflight.txt"
           [[ "$controller_sha" == "91b65c92a181464be50ad559958e20b38ea6b6896e332d6bd121e01cb2497497" ]]
           {
             printf 'original_controller_script_sha256=%s\n' "$original_sha"
@@ -114,7 +121,43 @@ jobs:
             printf 'expected_product_parent=%s\n' "$EXPECTED_PRODUCT_PARENT"
             printf 'expected_pr_base=%s\n' "$EXPECTED_PR_BASE"
           } > "$ARTIFACT_DIR/controller-envelope.txt"
-          bash "$controller_script"
+
+          trace_path="$ARTIFACT_DIR/controller-trace.log"
+          terminal_path="$ARTIFACT_DIR/controller-terminal.txt"
+          set +e
+          BASH_XTRACEFD=9 bash -x "$controller_script" 9>"$trace_path"
+          controller_rc=$?
+          set -e
+          {
+            printf 'controller_exit=%s\n' "$controller_rc"
+            printf 'controller_script_sha256=%s\n' "$controller_sha"
+            printf '%s\n' '--- TRACE TAIL ---'
+            tail -n 240 "$trace_path" || true
+          } > "$terminal_path"
+          trap - ERR
+          exit "$controller_rc"
+
+      - name: Emit controller terminal diagnostic
+        if: always()
+        shell: bash
+        run: |
+          {
+            printf '%s\n' '### V106 controller terminal diagnostic'
+            for receipt in \
+              controller-preflight.txt \
+              controller-patch-stderr.log \
+              qualification-terminal.txt \
+              controller-terminal.txt; do
+              printf '\n#### %s\n\n' "$receipt"
+              printf '%s\n' '```text'
+              if [[ -f "$ARTIFACT_DIR/$receipt" ]]; then
+                tail -n 260 "$ARTIFACT_DIR/$receipt"
+              else
+                printf '%s\n' 'unavailable'
+              fi
+              printf '%s\n' '```'
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/upload-artifact@v4
         if: always()
