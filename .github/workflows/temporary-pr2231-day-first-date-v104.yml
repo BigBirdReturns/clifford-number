@@ -42,11 +42,6 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: npm
-
       - name: Reproduce and qualify exact two-file successor
         shell: bash
         run: gzip -dc .github/tmp/pr2231-day-first-date-v104.sh.gz | bash
