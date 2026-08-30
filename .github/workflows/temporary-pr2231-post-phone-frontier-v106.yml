@@ -1,0 +1,56 @@
+name: Temporary PR 2231 post-phone frontier V106 qualification
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/temporary-pr2231-post-phone-frontier-v106.yml'
+      - '.github/tmp/pr2231-post-phone-frontier-v106.sh.gz'
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: pr2231-post-phone-frontier-v106-qualification
+  cancel-in-progress: false
+
+jobs:
+  qualify-current-candidate-read-only:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: BigBirdReturns/clifford-number
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      EXPECTED_MAIN: 17aa3cfc22d5f9022164baf5c1d5a8e401b796cf
+      EXPECTED_PRODUCT: 405882b7f22fd3dc588a2237289f8550ed9525f9
+      EXPECTED_PRODUCT_TREE: 7ae48a2dc664c98f0e39f693d13a63fb4ee82224
+      EXPECTED_LIBRARY_BLOB: 5e753c9c32cba270ea79b6299fc35db94cd0928f
+      EXPECTED_TEST_BLOB: 069349ea792a8da8c5d67831ac2e73efc0ee82e9
+      EXPECTED_CANDIDATE_LIBRARY_BLOB: 196303dc1d4229636387adcaf3b063010cba2eba
+      EXPECTED_CANDIDATE_TEST_BLOB: 76b62e930d1f30194dd323ac2c7e8c8a7ea428cd
+      EXPECTED_PATCH_SHA256: 701729a28fb2623f68507d5587e38ba64f976ceb44accef62927cc0107d270b7
+      CONTROLLER_HEAD: ${{ github.event.pull_request.head.sha }}
+      CONTROLLER_BRANCH: agent/pr2231-post-phone-frontier-controller-v106
+      CONTROLLER_PR: ${{ github.event.pull_request.number }}
+      ARTIFACT_DIR: /tmp/pr2231-post-phone-frontier-v106
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Qualify exact two-file post-phone frontier successor
+        shell: bash
+        run: gzip -dc .github/tmp/pr2231-post-phone-frontier-v106.sh.gz | bash
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-post-phone-frontier-v106
+          path: /tmp/pr2231-post-phone-frontier-v106
+          retention-days: 90
