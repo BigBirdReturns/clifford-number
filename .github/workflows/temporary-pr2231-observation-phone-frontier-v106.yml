@@ -56,6 +56,12 @@ jobs:
           base64 -d .github/tmp/pr2231-observation-phone-frontier-v106.sh.gz.b64 | gzip -dc > "$controller_script"
           original_sha=$(sha256sum "$controller_script" | awk '{print $1}')
           [[ "$original_sha" == "1ed38ec30663707e56292b4d18902e1f14894caca6d139b468f1cb0240dc872c" ]]
+          {
+            printf 'original_controller_script_sha256=%s\n' "$original_sha"
+            grep -n -B24 -A40 -E \
+              'FOCUSED_PRODUCT_STARTED|focused-source\.log|focused-main\.log' \
+              "$controller_script" || true
+          } > "$ARTIFACT_DIR/focused-blocks.txt"
           python3 - "$controller_script" 2> >(tee "$ARTIFACT_DIR/controller-patch-stderr.log" >&2) <<'PY'
           from pathlib import Path
           import sys
@@ -144,6 +150,7 @@ jobs:
           {
             printf '%s\n' '### V106 controller terminal diagnostic'
             for receipt in \
+              focused-blocks.txt \
               controller-preflight.txt \
               controller-patch-stderr.log \
               qualification-terminal.txt \
@@ -151,7 +158,7 @@ jobs:
               printf '\n#### %s\n\n' "$receipt"
               printf '%s\n' '```text'
               if [[ -f "$ARTIFACT_DIR/$receipt" ]]; then
-                tail -n 260 "$ARTIFACT_DIR/$receipt"
+                tail -n 320 "$ARTIFACT_DIR/$receipt"
               else
                 printf '%s\n' 'unavailable'
               fi
