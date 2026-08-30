@@ -91,14 +91,92 @@ jobs:
           focused_line = focused_line.replace('| tee', '2>&1 | tee', 1)
           source = source[:line_start] + focused_line + source[line_end:]
 
+          stage_marker = 'git -C "$PRODUCT_WT" add'
+          stage_positions = []
+          cursor = 0
+          while True:
+              position = source.find(stage_marker, cursor)
+              if position < 0:
+                  break
+              if position < target_index:
+                  stage_positions.append(position)
+              cursor = position + len(stage_marker)
+          if not stage_positions:
+              raise SystemExit('unable to locate candidate staging before focused execution')
+          stage_index = stage_positions[-1]
+          stage_line_start = source.rfind('\n', 0, stage_index) + 1
+
+          url_guard_injection = r'''
+          python - "$PRODUCT_WT/tools/lib/industrial-exhaust.mjs" <<'PY_URL_GUARD'
+          from pathlib import Path
+          import sys
+
+          path = Path(sys.argv[1])
+          text = path.read_text()
+          needle = """  const laterPhone = intrinsicPhoneIntervalAfterObservationBoundary(
+              candidate.slice(observationEnd)
+            );
+            if (!laterPhone) return null;
+
+            return {
+          """
+          replacement = """  const laterPhone = intrinsicPhoneIntervalAfterObservationBoundary(
+              candidate.slice(observationEnd)
+            );
+            if (!laterPhone) return null;
+
+            const laterPhoneStart = observationEnd + laterPhone.start;
+            if (hasUrlTokenPrefixContext(
+              `${externalPrefix}${candidate.slice(0, laterPhoneStart)}`
+                .normalize('NFKC')
+            )) return null;
+
+            return {
+          """
+          if text.count(needle) != 1:
+              raise SystemExit(
+                  f'unexpected leading transition guard count: {text.count(needle)}'
+              )
+          path.write_text(text.replace(needle, replacement, 1))
+          PY_URL_GUARD
+
+          (
+            cd "$PRODUCT_WT"
+            node --input-type=module <<'NODE_URL_GUARD'
+          import assert from 'node:assert/strict';
+          import { pathToFileURL } from 'node:url';
+
+          const moduleUrl = pathToFileURL(
+            `${process.cwd()}/tools/lib/industrial-exhaust.mjs`
+          ).href;
+          const { redactContactData } = await import(
+            `${moduleUrl}?url-guard=${Date.now()}`
+          );
+
+          for (const source of [
+            'https://example.test/01/42/68/53/00',
+            'example.test/01/42/68/53/00',
+            '//example.test/03/6216/5111',
+            '192.0.2.1/01/42/68/53/00',
+            `example.test/${'long-segment/'.repeat(12)}01/42/68/53/00`
+          ]) {
+            assert.equal(redactContactData(source), source);
+          }
+          assert.equal(
+            redactContactData('https://example.test/ 01 42 68 53 00'),
+            'https://example.test/ [contact omitted]'
+          );
+          NODE_URL_GUARD
+          )
+          '''
+          source = (
+              source[:stage_line_start]
+              + url_guard_injection
+              + source[stage_line_start:]
+          )
+
           path.write_text(source)
           PY
-          mkdir -p "$ARTIFACT_DIR"
-          cp /tmp/pr2231-callback-observation-frontier-v110.sh \
-            "$ARTIFACT_DIR/decoded-controller-program.sh"
-          nl -ba /tmp/pr2231-callback-observation-frontier-v110.sh \
-            | sed -n '410,455p' \
-            > "$ARTIFACT_DIR/focused-program-excerpt.txt"
           chmod +x /tmp/pr2231-callback-observation-frontier-v110.sh
           /tmp/pr2231-callback-observation-frontier-v110.sh
 
@@ -118,9 +196,9 @@ jobs:
             printf '%s\n' '### PR 2231 callback observation frontier V110'
             for receipt in summary.json qualification-terminal.txt \
               predecessor-reproduction.jsonl direct-matrix.jsonl \
-              focused-product.log focused-program-excerpt.txt \
-              product-release-check.log focused-main-transplant.log \
-              main-release-check.log candidate-commit.txt candidate-paths.txt \
+              focused-product.log product-release-check.log \
+              focused-main-transplant.log main-release-check.log \
+              candidate-commit.txt candidate-paths.txt \
               review-comments-before.tsv review-thread-ledger-before.jsonl \
               review-comments-after.tsv review-thread-ledger-after.jsonl \
               artifact-manifest.txt; do
