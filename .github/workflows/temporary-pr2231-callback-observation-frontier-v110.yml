@@ -108,26 +108,25 @@ jobs:
 
           path = Path(sys.argv[1])
           text = path.read_text()
-          needle = """  const laterPhone = intrinsicPhoneIntervalAfterObservationBoundary(
-            candidate.slice(observationEnd)
-          );
-          if (!laterPhone) return null;
-
-          return {
-          """
-          replacement = """  const laterPhone = intrinsicPhoneIntervalAfterObservationBoundary(
-            candidate.slice(observationEnd)
-          );
-          if (!laterPhone) return null;
-
-          const laterPhoneStart = observationEnd + laterPhone.start;
-          if (hasUrlTokenPrefixContext(
-            `${externalPrefix}${candidate.slice(0, laterPhoneStart)}`
-              .normalize('NFKC')
-          )) return null;
-
-          return {
-          """
+          needle = (
+              "  const laterPhone = intrinsicPhoneIntervalAfterObservationBoundary(\n"
+              "    candidate.slice(observationEnd)\n"
+              "  );\n"
+              "  if (!laterPhone) return null;\n\n"
+              "  return {\n"
+          )
+          replacement = (
+              "  const laterPhone = intrinsicPhoneIntervalAfterObservationBoundary(\n"
+              "    candidate.slice(observationEnd)\n"
+              "  );\n"
+              "  if (!laterPhone) return null;\n\n"
+              "  const laterPhoneStart = observationEnd + laterPhone.start;\n"
+              "  if (hasUrlTokenPrefixContext(\n"
+              "    `${externalPrefix}${candidate.slice(0, laterPhoneStart)}`\n"
+              "      .normalize('NFKC')\n"
+              "  )) return null;\n\n"
+              "  return {\n"
+          )
           if text.count(needle) != 1:
               raise SystemExit(
                   f'unexpected leading transition guard count: {text.count(needle)}'
