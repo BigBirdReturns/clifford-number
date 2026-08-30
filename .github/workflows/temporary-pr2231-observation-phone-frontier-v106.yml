@@ -132,20 +132,76 @@ jobs:
               raise SystemExit('controller boundary-call repair count mismatch')
           text = text.replace(program_old, program_new, 1)
 
+          diagnostic_marker = r'''printf 'DIRECT_MATRIX_SUCCESS\n'
+
+          printf 'FOCUSED_PRODUCT_STARTED\n'
+          '''
+          diagnostic_block = r'''printf 'DIRECT_MATRIX_SUCCESS\n'
+          cp "$SOURCE_WT/tools/lib/industrial-exhaust.mjs" "$ARTIFACT_DIR/candidate-industrial-exhaust.mjs"
+          cp "$SOURCE_WT/test/industrial-exhaust.test.js" "$ARTIFACT_DIR/candidate-industrial-exhaust.test.js"
+          LIB_PATH="$SOURCE_WT/tools/lib/industrial-exhaust.mjs" node --input-type=module <<'NODE_CAP' \
+            > "$ARTIFACT_DIR/candidate-cap-diagnostic.jsonl"
+          import { pathToFileURL } from 'node:url';
+          const { redactContactData } = await import(
+            `${pathToFileURL(process.env.LIB_PATH).href}?cap=${Date.now()}`
+          );
+          const chain = 'GUID '.repeat(4000);
+          for (const terminalObservation of [
+            '90 people',
+            '3.14',
+            '12:30',
+            '10-20 people',
+            '2027-09-18'
+          ]) {
+            const input = `Phone ${chain}record id: 09012345678 2026-08-17 01 42 68 53 00 ${terminalObservation}`;
+            const expected = `Phone ${chain}record id: [contact omitted] 2026-08-17 [contact omitted] ${terminalObservation}`;
+            const actual = redactContactData(input);
+            let prefix = 0;
+            while (prefix < actual.length
+                && prefix < expected.length
+                && actual[prefix] === expected[prefix]) prefix += 1;
+            let suffix = 0;
+            while (suffix < actual.length - prefix
+                && suffix < expected.length - prefix
+                && actual[actual.length - 1 - suffix]
+                  === expected[expected.length - 1 - suffix]) suffix += 1;
+            const windowStart = Math.max(0, prefix - 96);
+            console.log(JSON.stringify({
+              terminalObservation,
+              inputLength: input.length,
+              actualLength: actual.length,
+              expectedLength: expected.length,
+              commonPrefix: prefix,
+              commonSuffix: suffix,
+              actualWindow: actual.slice(windowStart, Math.min(actual.length, prefix + 256)),
+              expectedWindow: expected.slice(windowStart, Math.min(expected.length, prefix + 256)),
+              actualTail: actual.slice(-256),
+              expectedTail: expected.slice(-256)
+            }));
+          }
+          NODE_CAP
+
+          printf 'FOCUSED_PRODUCT_STARTED\n'
+          '''
+          if text.count(diagnostic_marker) != 1:
+              raise SystemExit('candidate diagnostic insertion count mismatch')
+          text = text.replace(diagnostic_marker, diagnostic_block, 1)
+
           path.write_text(text, encoding="utf-8")
           print("FOCUSED_WORKTREE_REPAIR_SUCCESS count=2")
           print("CROSS_CALLBACK_BOUNDARY_REPAIR_SUCCESS count=1")
+          print("CANDIDATE_DIAGNOSTIC_INSERTION_SUCCESS count=1")
           PY
           controller_sha=$(sha256sum "$controller_script" | awk '{print $1}')
           {
             printf 'original_controller_script_sha256=%s\n' "$original_sha"
             printf 'controller_script_sha256=%s\n' "$controller_sha"
           } > "$ARTIFACT_DIR/controller-preflight.txt"
-          [[ "$controller_sha" == "51d9078c79b4ee8523db020cf0724475aedd643cce418e14ece84f0b07a7d46a" ]]
+          [[ "$controller_sha" == "04d2abee8fab56867ef6cf54485c1b4004279bd040f20f7c02d023a85c0cee02" ]]
           {
             printf 'original_controller_script_sha256=%s\n' "$original_sha"
             printf 'controller_script_sha256=%s\n' "$controller_sha"
-            printf 'execution_payload=corrected-controller-worktree-rooting-plus-callback-symbol\n'
+            printf 'execution_payload=corrected-controller-plus-candidate-diagnostic\n'
             printf 'expected_main=%s\n' "$EXPECTED_MAIN"
             printf 'expected_product_parent=%s\n' "$EXPECTED_PRODUCT_PARENT"
             printf 'expected_pr_base=%s\n' "$EXPECTED_PR_BASE"
@@ -178,6 +234,7 @@ jobs:
             printf '%s\n' '### V106 controller terminal diagnostic'
             for receipt in \
               focused-blocks.txt \
+              candidate-cap-diagnostic.jsonl \
               controller-symbols.txt \
               controller-preflight.txt \
               controller-patch-stderr.log \
