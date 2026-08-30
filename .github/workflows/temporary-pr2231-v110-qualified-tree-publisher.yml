@@ -1,0 +1,193 @@
+name: Temporary PR 2231 V110 qualified-tree publication
+
+on:
+  push:
+    branches:
+      - agent/pr2231-v110-qualified-tree-publisher-v1
+
+permissions:
+  contents: write
+  pull-requests: read
+  issues: read
+  actions: read
+
+concurrency:
+  group: pr2231-v110-qualified-tree-publication
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: BigBirdReturns/clifford-number
+      MAIN_BRANCH: main
+      EXPECTED_MAIN: 0b1d8af5b86adad49b3451053dbb9166294d631c
+      PRODUCT_PR: '2231'
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      EXPECTED_PRODUCT: edbf7027f5de312d77a91d615ecb8cad619ce154
+      QUALIFIER_PR: '2401'
+      QUALIFIER_BRANCH: agent/pr2231-callback-complete-scalar-observation-controller-v110
+      EXPECTED_QUALIFIER: 31d726327ddbf9f38542dc01584801625c0dc7c9
+      PUBLISHER_PR: '2402'
+      PUBLISHER_BRANCH: agent/pr2231-v110-qualified-tree-publisher-v1
+      PUBLISHER_PATH: .github/workflows/temporary-pr2231-v110-qualified-tree-publisher.yml
+      EXPECTED_PUBLISHER: ${{ github.sha }}
+      ARTIFACT_ID: '9737517175'
+      ARTIFACT_RUN: '33330537436'
+      ARTIFACT_NAME: pr2231-callback-complete-scalar-observation-v110
+      ARTIFACT_DIGEST: sha256:38c4b8f0dadf73fa5240a90a4ac81bcd294a1e1117a15547c209946a3c6137f2
+      ARTIFACT_PATH: /tmp/pr2231-v110-qualified-artifact
+      PATCH_SHA256: 67823b874049cc78697954fe59a89c068ac9ba98e077a4bd110e0f3e7d69d8d9
+      EXPECTED_TREE: 17d5350c902e47f129fae0282735b4acbeff381c
+      EXPECTED_LIBRARY_BLOB: dab48bfba026dc1629a4384a26d98c13366b0ea3
+      EXPECTED_TEST_BLOB: 8fad1d2be93f9a286f9b95bb35751d3e908c4834
+      WORKTREE: /tmp/pr2231-v110-publish-product
+      RECEIPT_DIR: /tmp/pr2231-v110-qualified-tree-publication
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: pr2231-callback-complete-scalar-observation-v110
+          path: /tmp/pr2231-v110-qualified-artifact
+          github-token: ${{ github.token }}
+          repository: BigBirdReturns/clifford-number
+          run-id: 33330537436
+
+      - name: Publish the exact qualified tree under an atomic predecessor lease
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RECEIPT_DIR/receipts"
+          : > "$RECEIPT_DIR/result.txt"
+          trap 's=$?; if ((s)); then printf "PUBLICATION_FAILURE %s\n" "$s" >> "$RECEIPT_DIR/result.txt"; fi' EXIT
+          fail(){ printf 'ERROR: %s\n' "$*" >&2; exit 1; }
+          eq(){ [[ "$2" == "$3" ]] || fail "$1 expected $3 got $2"; }
+          remote(){ git ls-remote origin "refs/heads/$1" | awk 'NR==1{print $1}'; }
+          check_pr(){
+            local n="$1" branch="$2" head="$3" commits="$4" files="$5" out="$6" j
+            j="$(gh api "repos/$REPO/pulls/$n")"; printf '%s\n' "$j" > "$out"
+            jq -e --arg b "$branch" --arg h "$head" --argjson c "$commits" --argjson f "$files" \
+              '.state=="open" and .draft==true and .merged==false and .head.ref==$b and .head.sha==$h and .base.ref=="main" and .base.sha==env.EXPECTED_MAIN and .commits==$c and .changed_files==$f' \
+              <<<"$j" >/dev/null || fail "PR $n lease changed"
+          }
+          record_threads(){
+            local out="$1" id j; : > "$out"
+            for id in PRRT_kwDOTGqftc6dept0 PRRT_kwDOTGqftc6dfK4F PRRT_kwDOTGqftc6dfK4H PRRT_kwDOTGqftc6dfLu0; do
+              j="$(gh api graphql -f query='query($id:ID!){node(id:$id){... on PullRequestReviewThread{id isResolved isOutdated}}}' -f id="$id")"
+              printf '%s\n' "$j" >> "$out"
+              jq -e --arg id "$id" '.data.node.id==$id and .data.node.isResolved==false' <<<"$j" >/dev/null || fail "thread $id was resolved or changed identity"
+            done
+          }
+
+          git fetch --no-tags origin \
+            "refs/heads/$MAIN_BRANCH:refs/remotes/origin/$MAIN_BRANCH" \
+            "refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/$PRODUCT_BRANCH" \
+            "refs/heads/$QUALIFIER_BRANCH:refs/remotes/origin/$QUALIFIER_BRANCH" \
+            "refs/heads/$PUBLISHER_BRANCH:refs/remotes/origin/$PUBLISHER_BRANCH"
+          eq main "$(remote "$MAIN_BRANCH")" "$EXPECTED_MAIN"
+          eq product "$(remote "$PRODUCT_BRANCH")" "$EXPECTED_PRODUCT"
+          eq qualifier "$(remote "$QUALIFIER_BRANCH")" "$EXPECTED_QUALIFIER"
+          eq publisher "$(remote "$PUBLISHER_BRANCH")" "$EXPECTED_PUBLISHER"
+          eq publisher_parent "$(git rev-parse "${EXPECTED_PUBLISHER}^")" "$EXPECTED_MAIN"
+          mapfile -t publisher_paths < <(git diff --name-only "$EXPECTED_MAIN" "$EXPECTED_PUBLISHER" | sort)
+          [[ "${#publisher_paths[@]}" == 1 && "${publisher_paths[0]}" == "$PUBLISHER_PATH" ]] || fail 'publisher denominator changed'
+          check_pr "$PRODUCT_PR" "$PRODUCT_BRANCH" "$EXPECTED_PRODUCT" 1 2 "$RECEIPT_DIR/receipts/product-pr-before.json"
+          check_pr "$QUALIFIER_PR" "$QUALIFIER_BRANCH" "$EXPECTED_QUALIFIER" 1 1 "$RECEIPT_DIR/receipts/qualifier-pr-before.json"
+          check_pr "$PUBLISHER_PR" "$PUBLISHER_BRANCH" "$EXPECTED_PUBLISHER" 1 1 "$RECEIPT_DIR/receipts/publisher-pr-before.json"
+          record_threads "$RECEIPT_DIR/receipts/threads-before.ndjson"
+
+          artifact="$(gh api "repos/$REPO/actions/artifacts/$ARTIFACT_ID")"
+          printf '%s\n' "$artifact" > "$RECEIPT_DIR/receipts/qualifier-artifact.json"
+          jq -e --arg d "$ARTIFACT_DIGEST" --argjson r "$ARTIFACT_RUN" --arg h "$EXPECTED_QUALIFIER" \
+            '.expired==false and .digest==$d and .workflow_run.id==$r and .workflow_run.head_sha==$h' \
+            <<<"$artifact" >/dev/null || fail 'qualified artifact lease changed'
+          [[ -f "$ARTIFACT_PATH/candidate.patch" && -f "$ARTIFACT_PATH/candidate.env" && -f "$ARTIFACT_PATH/result.txt" ]] || fail 'qualified artifact is incomplete'
+          eq patch_sha "$(sha256sum "$ARTIFACT_PATH/candidate.patch" | awk '{print $1}')" "$PATCH_SHA256"
+          grep -Fxq 'QUALIFICATION_SUCCESS' "$ARTIFACT_PATH/result.txt" || fail 'qualifier success receipt missing'
+          grep -Fxq 'PUBLICATION_SKIPPED' "$ARTIFACT_PATH/result.txt" || fail 'qualifier publication refusal missing'
+          grep -Fxq 'MATRIX_SUCCESS 22/22' "$ARTIFACT_PATH/result.txt" || fail 'qualifier matrix receipt missing'
+          grep -Fxq "candidate_parent=$EXPECTED_MAIN" "$ARTIFACT_PATH/candidate.env" || fail 'candidate parent receipt changed'
+          grep -Fxq "candidate_tree=$EXPECTED_TREE" "$ARTIFACT_PATH/candidate.env" || fail 'candidate tree receipt changed'
+          grep -Fxq "candidate_library_blob=$EXPECTED_LIBRARY_BLOB" "$ARTIFACT_PATH/candidate.env" || fail 'candidate library receipt changed'
+          grep -Fxq "candidate_test_blob=$EXPECTED_TEST_BLOB" "$ARTIFACT_PATH/candidate.env" || fail 'candidate test receipt changed'
+          printf 'PUBLICATION_LEASE_BOUND\nQUALIFIED_ARTIFACT_BOUND\n' >> "$RECEIPT_DIR/result.txt"
+
+          git worktree add --detach "$WORKTREE" "$EXPECTED_PRODUCT"
+          git -C "$WORKTREE" apply --check "$ARTIFACT_PATH/candidate.patch"
+          git -C "$WORKTREE" apply --index "$ARTIFACT_PATH/candidate.patch"
+          git -C "$WORKTREE" diff --cached --check
+          eq library_blob "$(git -C "$WORKTREE" hash-object tools/lib/industrial-exhaust.mjs)" "$EXPECTED_LIBRARY_BLOB"
+          eq test_blob "$(git -C "$WORKTREE" hash-object test/industrial-exhaust.test.js)" "$EXPECTED_TEST_BLOB"
+          tree="$(git -C "$WORKTREE" write-tree)"
+          eq candidate_tree "$tree" "$EXPECTED_TREE"
+          mapfile -t product_paths < <(git -C "$WORKTREE" diff-tree --no-commit-id --name-only -r "$EXPECTED_MAIN" "$tree" | sort)
+          [[ "${product_paths[*]}" == 'test/industrial-exhaust.test.js tools/lib/industrial-exhaust.mjs' ]] || fail 'qualified product denominator changed'
+          printf 'QUALIFIED_TREE_RECONSTRUCTED\n' >> "$RECEIPT_DIR/result.txt"
+
+          node --test "$WORKTREE"/test/industrial-exhaust*.test.js 2>&1 | tee "$RECEIPT_DIR/focused.log"
+          (cd "$WORKTREE" && npm run release:check) 2>&1 | tee "$RECEIPT_DIR/release.log"
+          eq postcheck_tree "$(git -C "$WORKTREE" write-tree)" "$EXPECTED_TREE"
+          printf 'FOCUSED_SUCCESS\nRELEASE_CHECK_SUCCESS\n' >> "$RECEIPT_DIR/result.txt"
+
+          export GIT_AUTHOR_NAME='PR2231 V110 Qualified Publisher'
+          export GIT_AUTHOR_EMAIL='pr2231-v110-publisher@invalid.example'
+          export GIT_COMMITTER_NAME="$GIT_AUTHOR_NAME"
+          export GIT_COMMITTER_EMAIL="$GIT_AUTHOR_EMAIL"
+          export GIT_AUTHOR_DATE='2026-08-30T19:20:18Z'
+          export GIT_COMMITTER_DATE="$GIT_AUTHOR_DATE"
+          product_commit="$(printf '%s\n' 'fix: classify dash scalar observation across callback boundary' | git -C "$WORKTREE" commit-tree "$EXPECTED_TREE" -p "$EXPECTED_MAIN")"
+          eq product_parent "$(git -C "$WORKTREE" rev-parse "${product_commit}^")" "$EXPECTED_MAIN"
+          eq product_tree "$(git -C "$WORKTREE" rev-parse "${product_commit}^{tree}")" "$EXPECTED_TREE"
+          {
+            printf 'published_commit=%s\n' "$product_commit"
+            printf 'published_parent=%s\n' "$EXPECTED_MAIN"
+            printf 'published_tree=%s\n' "$EXPECTED_TREE"
+            printf 'published_library_blob=%s\n' "$EXPECTED_LIBRARY_BLOB"
+            printf 'published_test_blob=%s\n' "$EXPECTED_TEST_BLOB"
+          } > "$RECEIPT_DIR/published.env"
+
+          eq prepush_main "$(remote "$MAIN_BRANCH")" "$EXPECTED_MAIN"
+          eq prepush_product "$(remote "$PRODUCT_BRANCH")" "$EXPECTED_PRODUCT"
+          eq prepush_qualifier "$(remote "$QUALIFIER_BRANCH")" "$EXPECTED_QUALIFIER"
+          eq prepush_publisher "$(remote "$PUBLISHER_BRANCH")" "$EXPECTED_PUBLISHER"
+          check_pr "$PRODUCT_PR" "$PRODUCT_BRANCH" "$EXPECTED_PRODUCT" 1 2 "$RECEIPT_DIR/receipts/product-pr-prepush.json"
+          git push --force-with-lease="refs/heads/$PRODUCT_BRANCH:$EXPECTED_PRODUCT" origin "$product_commit:refs/heads/$PRODUCT_BRANCH"
+          printf 'ATOMIC_PRODUCT_REF_UPDATE_SUCCESS\n' >> "$RECEIPT_DIR/result.txt"
+
+          eq published_ref "$(remote "$PRODUCT_BRANCH")" "$product_commit"
+          git fetch --no-tags origin "refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/$PRODUCT_BRANCH"
+          eq published_parent "$(git rev-parse "${product_commit}^")" "$EXPECTED_MAIN"
+          eq published_tree "$(git rev-parse "${product_commit}^{tree}")" "$EXPECTED_TREE"
+          eq published_library "$(git rev-parse "${product_commit}:tools/lib/industrial-exhaust.mjs")" "$EXPECTED_LIBRARY_BLOB"
+          eq published_test "$(git rev-parse "${product_commit}:test/industrial-exhaust.test.js")" "$EXPECTED_TEST_BLOB"
+
+          for attempt in $(seq 1 30); do
+            product_json="$(gh api "repos/$REPO/pulls/$PRODUCT_PR")"
+            [[ "$(jq -r .head.sha <<<"$product_json")" == "$product_commit" ]] && break
+            sleep 1
+          done
+          printf '%s\n' "$product_json" > "$RECEIPT_DIR/receipts/product-pr-after.json"
+          jq -e --arg h "$product_commit" '.state=="open" and .draft==true and .merged==false and .head.sha==$h and .base.sha==env.EXPECTED_MAIN and .commits==1 and .changed_files==2' <<<"$product_json" >/dev/null || fail 'published product PR state is not exact'
+          check_pr "$QUALIFIER_PR" "$QUALIFIER_BRANCH" "$EXPECTED_QUALIFIER" 1 1 "$RECEIPT_DIR/receipts/qualifier-pr-after.json"
+          check_pr "$PUBLISHER_PR" "$PUBLISHER_BRANCH" "$EXPECTED_PUBLISHER" 1 1 "$RECEIPT_DIR/receipts/publisher-pr-after.json"
+          record_threads "$RECEIPT_DIR/receipts/threads-after.ndjson"
+          eq final_main "$(remote "$MAIN_BRANCH")" "$EXPECTED_MAIN"
+          eq final_qualifier "$(remote "$QUALIFIER_BRANCH")" "$EXPECTED_QUALIFIER"
+          eq final_publisher "$(remote "$PUBLISHER_BRANCH")" "$EXPECTED_PUBLISHER"
+          printf 'PRODUCT_PR_ONE_COMMIT_TWO_PATHS\nTHREADS_UNRESOLVED\nNONPRODUCT_REFS_UNCHANGED\nPUBLICATION_SUCCESS\n' >> "$RECEIPT_DIR/result.txt"
+          trap - EXIT
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-v110-qualified-tree-publication
+          path: /tmp/pr2231-v110-qualified-tree-publication
+          if-no-files-found: error
+          retention-days: 90
