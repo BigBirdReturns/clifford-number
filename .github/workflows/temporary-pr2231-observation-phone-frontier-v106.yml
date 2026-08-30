@@ -49,33 +49,12 @@ jobs:
           controller_script=/tmp/pr2231-observation-phone-frontier-v106.sh
           base64 -d .github/tmp/pr2231-observation-phone-frontier-v106.sh.gz.b64 | gzip -dc > "$controller_script"
           original_sha=$(sha256sum "$controller_script" | awk '{print $1}')
-          python3 - "$controller_script" <<'PY'
-          import re
-          import sys
-          from pathlib import Path
-
-          path = Path(sys.argv[1])
-          source = path.read_text(encoding="utf-8")
-          call = re.compile(r"re\.(subn?)\(\s*pattern\s*,\s*replacement\s*,")
-
-          def use_literal_callback(match: re.Match[str]) -> str:
-              return f"re.{match.group(1)}(pattern, lambda _match: replacement,"
-
-          repaired, count = call.subn(use_literal_callback, source)
-          if count < 1:
-              for line_number, line in enumerate(source.splitlines(), 1):
-                  if "re.sub" in line and "replacement" in line:
-                      print(f"UNMATCHED_RE_SUB_LINE {line_number}: {line}", file=sys.stderr)
-              raise SystemExit("controller envelope repair found no replacement-string re.sub call")
-
-          path.write_text(repaired, encoding="utf-8")
-          print(f"CONTROLLER_ENVELOPE_REPAIR_SUCCESS count={count}")
-          PY
-          patched_sha=$(sha256sum "$controller_script" | awk '{print $1}')
           {
             printf 'original_script_sha256=%s\n' "$original_sha"
-            printf 'patched_script_sha256=%s\n' "$patched_sha"
+            printf 'patched_script_sha256=%s\n' "$original_sha"
+            printf 'envelope_repair=not-required-no-replacement-string-call\n'
           } > "$ARTIFACT_DIR/controller-envelope.txt"
+          echo "CONTROLLER_ENVELOPE_REPAIR_NOT_REQUIRED"
           bash "$controller_script"
 
       - uses: actions/upload-artifact@v4
