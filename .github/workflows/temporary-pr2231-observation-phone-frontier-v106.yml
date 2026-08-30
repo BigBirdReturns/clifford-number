@@ -110,19 +110,42 @@ jobs:
                   )
               text = text.replace(old, new)
 
+          program_old = r'''text = text.replace(old_call, new_call)
+
+          helper_marker = "function identifierContextNeedsExpansion(normalizedPrefix) {\n"
+          '''
+          program_new = r'''text = text.replace(old_call, new_call)
+
+          old_boundary_call = (
+              'intrinsicPhoneIntervalAfterDashBoundary(dashPhoneSource)'
+          )
+          new_boundary_call = (
+              'intrinsicPhoneIntervalAfterObservationBoundary(dashPhoneSource)'
+          )
+          if text.count(old_boundary_call) != 1:
+              raise SystemExit('cross-callback boundary call count mismatch')
+          text = text.replace(old_boundary_call, new_boundary_call)
+
+          helper_marker = "function identifierContextNeedsExpansion(normalizedPrefix) {\n"
+          '''
+          if text.count(program_old) != 1:
+              raise SystemExit('controller boundary-call repair count mismatch')
+          text = text.replace(program_old, program_new, 1)
+
           path.write_text(text, encoding="utf-8")
           print("FOCUSED_WORKTREE_REPAIR_SUCCESS count=2")
+          print("CROSS_CALLBACK_BOUNDARY_REPAIR_SUCCESS count=1")
           PY
           controller_sha=$(sha256sum "$controller_script" | awk '{print $1}')
           {
             printf 'original_controller_script_sha256=%s\n' "$original_sha"
             printf 'controller_script_sha256=%s\n' "$controller_sha"
           } > "$ARTIFACT_DIR/controller-preflight.txt"
-          [[ "$controller_sha" == "91b65c92a181464be50ad559958e20b38ea6b6896e332d6bd121e01cb2497497" ]]
+          [[ "$controller_sha" == "51d9078c79b4ee8523db020cf0724475aedd643cce418e14ece84f0b07a7d46a" ]]
           {
             printf 'original_controller_script_sha256=%s\n' "$original_sha"
             printf 'controller_script_sha256=%s\n' "$controller_sha"
-            printf 'execution_payload=corrected-controller-plus-worktree-rooting\n'
+            printf 'execution_payload=corrected-controller-worktree-rooting-plus-callback-symbol\n'
             printf 'expected_main=%s\n' "$EXPECTED_MAIN"
             printf 'expected_product_parent=%s\n' "$EXPECTED_PRODUCT_PARENT"
             printf 'expected_pr_base=%s\n' "$EXPECTED_PR_BASE"
