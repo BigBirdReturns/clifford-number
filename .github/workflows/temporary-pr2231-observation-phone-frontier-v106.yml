@@ -69,13 +69,13 @@ jobs:
           path = Path(sys.argv[1])
           text = path.read_text(encoding="utf-8")
 
-          source_old = '''printf 'FOCUSED_PRODUCT_STARTED\n'
+          source_old = r'''printf 'FOCUSED_PRODUCT_STARTED\n'
           for test_file in "$SOURCE_WT"/test/industrial-exhaust*.test.js; do
             node "$test_file"
           done | tee "$ARTIFACT_DIR/focused-source.log"
           printf 'FOCUSED_PRODUCT_SUCCESS\n'
           '''
-          source_new = '''printf 'FOCUSED_PRODUCT_STARTED\n'
+          source_new = r'''printf 'FOCUSED_PRODUCT_STARTED\n'
           for test_file in "$SOURCE_WT"/test/industrial-exhaust*.test.js; do
             (
               cd "$SOURCE_WT"
@@ -86,11 +86,11 @@ jobs:
           printf 'FOCUSED_PRODUCT_SUCCESS\n'
           '''
 
-          main_old = '''for test_file in "$MAIN_WT"/test/industrial-exhaust*.test.js; do
+          main_old = r'''for test_file in "$MAIN_WT"/test/industrial-exhaust*.test.js; do
             node "$test_file"
           done | tee "$ARTIFACT_DIR/focused-main.log"
           '''
-          main_new = '''for test_file in "$MAIN_WT"/test/industrial-exhaust*.test.js; do
+          main_new = r'''for test_file in "$MAIN_WT"/test/industrial-exhaust*.test.js; do
             (
               cd "$MAIN_WT"
               printf 'FOCUSED_TEST_CWD=%s FILE=%s\n' "$PWD" "${test_file#"$MAIN_WT"/}"
