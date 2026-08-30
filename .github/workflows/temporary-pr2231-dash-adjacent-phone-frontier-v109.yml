@@ -1,0 +1,274 @@
+name: Temporary PR 2231 terminal-group ranking V109 qualification
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temporary-pr2231-dash-adjacent-phone-frontier-v109.yml'
+
+permissions:
+  contents: read
+  pull-requests: read
+  issues: read
+  actions: read
+
+concurrency:
+  group: pr2231-terminal-group-ranking-v109
+  cancel-in-progress: false
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: BigBirdReturns/clifford-number
+      PRODUCT_PR: '2231'
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      CONTROLLER_PR: ${{ github.event.pull_request.number }}
+      CONTROLLER_BRANCH: agent/pr2231-dash-adjacent-phone-frontier-controller-v109
+      CONTROLLER_PATH: .github/workflows/temporary-pr2231-dash-adjacent-phone-frontier-v109.yml
+      EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+      EXPECTED_MAIN: 0b1d8af5b86adad49b3451053dbb9166294d631c
+      EXPECTED_PRODUCT: edbf7027f5de312d77a91d615ecb8cad619ce154
+      EXPECTED_PRODUCT_TREE: efc92aba2de7088ad1e4a9b0514ccb9e8f498c47
+      EXPECTED_LIBRARY_BLOB: cb6bcf21460d4d0cca0dcb29affb9424713399d0
+      EXPECTED_TEST_BLOB: 96822fbd5ac213d03e2bdc91c92c7ddfc3931963
+      PREDECESSOR_ARTIFACT_ID: '9736825108'
+      EXPECTED_PREDECESSOR_DIGEST: sha256:a53bbf51c16335114baf09530b1612e7851ed50ec8818319a086c3e099cbb13a
+      WORKTREE: /tmp/pr2231-v109-product
+      CANDIDATE_FILES: /tmp/pr2231-v109-files
+      ARTIFACT_DIR: /tmp/pr2231-terminal-group-ranking-v109
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Qualify without publication authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$ARTIFACT_DIR/receipts" "$CANDIDATE_FILES"
+          : > "$ARTIFACT_DIR/result.txt"
+          trap 's=$?; if ((s)); then printf "QUALIFICATION_FAILURE %s\n" "$s" >> "$ARTIFACT_DIR/result.txt"; fi' EXIT
+          fail(){ printf 'ERROR: %s\n' "$*" >&2; exit 1; }
+          eq(){ [[ "$2" == "$3" ]] || fail "$1 expected $3 got $2"; }
+          remote(){ git ls-remote origin "refs/heads/$1" | awk 'NR==1{print $1}'; }
+          check_pr(){
+            local n="$1" branch="$2" head="$3" commits="$4" files="$5" out="$6" j
+            j="$(gh api "repos/$REPO/pulls/$n")"; printf '%s\n' "$j" > "$out"
+            jq -e --arg b "$branch" --arg h "$head" --argjson c "$commits" --argjson f "$files" \
+              '.state=="open" and .draft==true and .merged==false and .head.ref==$b and .head.sha==$h and .base.ref=="main" and .base.sha==env.EXPECTED_MAIN and .commits==$c and .changed_files==$f' \
+              <<<"$j" >/dev/null || fail "PR $n lease changed"
+          }
+          check_threads(){
+            local out="$1" id j; : > "$out"
+            for id in PRRT_kwDOTGqftc6dept0 PRRT_kwDOTGqftc6dfK4F PRRT_kwDOTGqftc6dfK4H PRRT_kwDOTGqftc6dfLu0; do
+              j="$(gh api graphql -f query='query($id:ID!){node(id:$id){... on PullRequestReviewThread{id isResolved isOutdated}}}' -f id="$id")"
+              printf '%s\n' "$j" >> "$out"
+              jq -e --arg id "$id" '.data.node.id==$id and .data.node.isResolved==false and .data.node.isOutdated==false' <<<"$j" >/dev/null || fail "thread $id changed"
+            done
+          }
+
+          git fetch --no-tags origin \
+            "refs/heads/main:refs/remotes/origin/main" \
+            "refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/$PRODUCT_BRANCH" \
+            "refs/heads/$CONTROLLER_BRANCH:refs/remotes/origin/$CONTROLLER_BRANCH"
+          eq main "$(remote main)" "$EXPECTED_MAIN"
+          eq product "$(remote "$PRODUCT_BRANCH")" "$EXPECTED_PRODUCT"
+          eq controller "$(remote "$CONTROLLER_BRANCH")" "$EXPECTED_CONTROLLER"
+          eq product_parent "$(git rev-parse "${EXPECTED_PRODUCT}^")" "$EXPECTED_MAIN"
+          eq product_tree "$(git rev-parse "${EXPECTED_PRODUCT}^{tree}")" "$EXPECTED_PRODUCT_TREE"
+          eq library_blob "$(git rev-parse "${EXPECTED_PRODUCT}:tools/lib/industrial-exhaust.mjs")" "$EXPECTED_LIBRARY_BLOB"
+          eq test_blob "$(git rev-parse "${EXPECTED_PRODUCT}:test/industrial-exhaust.test.js")" "$EXPECTED_TEST_BLOB"
+          eq controller_parent "$(git rev-parse "${EXPECTED_CONTROLLER}^")" "$EXPECTED_MAIN"
+          mapfile -t pp < <(git diff --name-only "$EXPECTED_MAIN" "$EXPECTED_PRODUCT" | sort)
+          [[ "${pp[*]}" == 'test/industrial-exhaust.test.js tools/lib/industrial-exhaust.mjs' ]] || fail 'product denominator changed'
+          mapfile -t cp < <(git diff --name-only "$EXPECTED_MAIN" "$EXPECTED_CONTROLLER" | sort)
+          [[ "${#cp[@]}" == 1 && "${cp[0]}" == "$CONTROLLER_PATH" ]] || fail 'controller denominator changed'
+          check_pr "$PRODUCT_PR" "$PRODUCT_BRANCH" "$EXPECTED_PRODUCT" 1 2 "$ARTIFACT_DIR/receipts/product-pr-initial.json"
+          check_pr "$CONTROLLER_PR" "$CONTROLLER_BRANCH" "$EXPECTED_CONTROLLER" 1 1 "$ARTIFACT_DIR/receipts/controller-pr-initial.json"
+          check_threads "$ARTIFACT_DIR/receipts/threads-initial.ndjson"
+          artifact="$(gh api "repos/$REPO/actions/artifacts/$PREDECESSOR_ARTIFACT_ID")"
+          printf '%s\n' "$artifact" > "$ARTIFACT_DIR/receipts/v108-artifact.json"
+          jq -e --arg d "$EXPECTED_PREDECESSOR_DIGEST" '.expired==false and .digest==$d and .workflow_run.id==33328082788' <<<"$artifact" >/dev/null || fail 'V108 receipt changed'
+          printf 'LEASE_BIND_SUCCESS\nV108_FAILURE_RECEIPT_BOUND\n' >> "$ARTIFACT_DIR/result.txt"
+
+          git worktree add --detach "$WORKTREE" "$EXPECTED_PRODUCT"
+          WORKTREE="$WORKTREE" ARTIFACT_DIR="$ARTIFACT_DIR" node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import fs from 'node:fs';
+          import path from 'node:path';
+          import {pathToFileURL} from 'node:url';
+          const p=path.join(process.env.WORKTREE,'tools/lib/industrial-exhaust.mjs');
+          const {redactContactData}=await import(pathToFileURL(p).href);
+          const input='Archive +33 1 42 68 53 00–2026 people';
+          const expected='Archive [contact omitted] 00–2026 people';
+          const actual=redactContactData(input);
+          fs.writeFileSync(path.join(process.env.ARTIFACT_DIR,'predecessor.json'),JSON.stringify({input,expected,actual,pass:actual===expected},null,2)+'\n');
+          assert.equal(actual,expected);
+          NODE
+          printf 'PREDECESSOR_REPRODUCTION_SUCCESS\n' >> "$ARTIFACT_DIR/result.txt"
+
+          WORKTREE="$WORKTREE" python3 - <<'PY'
+          import os
+          from pathlib import Path
+          root=Path(os.environ['WORKTREE'])
+          lib=root/'tools/lib/industrial-exhaust.mjs'
+          test=root/'test/industrial-exhaust.test.js'
+          s=lib.read_text(encoding='utf-8')
+          old=r'''    if (!strongestInitialPhone
+                  || score > strongestInitialPhone.score
+                  || (score === strongestInitialPhone.score
+                    && interval.end > strongestInitialPhone.interval.end)) {
+                strongestInitialPhone = { interval, last, score };
+              }
+          '''
+          new=r'''    const next = last + 1;
+              const previousGroupEnd = last > 0
+                ? groups[last - 1].index + groups[last - 1][0].length
+                : interval.start;
+              const currentGroupEnd = groups[last].index + groups[last][0].length;
+              const previousSeparator = last > 0
+                ? candidate.slice(previousGroupEnd, groups[last].index)
+                : '';
+              const nextSeparator = next < groups.length
+                ? candidate.slice(currentGroupEnd, groups[next].index)
+                : '';
+              const nextTail = next < groups.length
+                ? candidate.slice(groups[next].index, groups[next].index + MAX_NUMERIC_OBSERVATION_SOURCE_CHARS).normalize('NFKC')
+                : '';
+              const nextObservation = nextTail ? NUMERIC_OBSERVATION_PATTERN.exec(nextTail) : null;
+              const nextObservationIsScalar = Boolean(
+                nextObservation
+                  && !/^\d{1,9}(?:,\d{3})*(?:\.\d{1,6})?\s*[-‐‑‒–—−]\s*\d/u.test(nextObservation[0])
+              );
+              const terminalGroupBeforeScalarObservation = Boolean(
+                next < groups.length
+                  && last > 0
+                  && /^[^\S\r\n]+$/u.test(previousSeparator)
+                  && /^\s*[-‐‑‒–—−－]\s*$/u.test(nextSeparator.normalize('NFKC'))
+                  && nextObservationIsScalar
+              );
+              const outranksCurrent = !strongestInitialPhone
+                || (terminalGroupBeforeScalarObservation
+                  && !strongestInitialPhone.terminalGroupBeforeScalarObservation)
+                || (terminalGroupBeforeScalarObservation === strongestInitialPhone.terminalGroupBeforeScalarObservation
+                  && (score > strongestInitialPhone.score
+                    || (score === strongestInitialPhone.score
+                      && interval.end > strongestInitialPhone.interval.end)));
+              if (outranksCurrent) {
+                strongestInitialPhone = { interval, last, score, terminalGroupBeforeScalarObservation };
+              }
+          '''
+          if s.count(old)!=1: raise SystemExit(f'ranking block count {s.count(old)}')
+          lib.write_text(s.replace(old,new),encoding='utf-8')
+          t=test.read_text(encoding='utf-8')
+          marker='// PR2231 V109 terminal phone-group ranking regressions'
+          if marker in t: raise SystemExit('V109 block exists')
+          block=r'''
+
+          // PR2231 V109 terminal phone-group ranking regressions
+          for (const [name, input, expected] of [
+            ['two-digit terminal group','Archive +33 1 42 68 53 00–2026 people','Archive [contact omitted]–2026 people'],
+            ['fullwidth terminal group','記録 ＋３３ １ ４２ ６８ ５３ ００－２０２６ 人','記録 [contact omitted]－２０２６ 人'],
+            ['access-prefix terminal group','Archive 00 33 1 42 68 53 00–2026 people','Archive [contact omitted]–2026 people'],
+            ['three-digit terminal group','Archive +33 1 42 68 530–2026 people','Archive [contact omitted]–2026 people'],
+            ['short Japanese terminal group','Archive +81 3 6216 80–2026 people','Archive [contact omitted]–2026 people'],
+            ['later domestic phone','Archive +33 1 42 68 53 00–2026 people 03-6216-8041','Archive [contact omitted]–2026 people [contact omitted]'],
+            ['alternate scalar unit','Archive +33 1 42 68 53 00–2026 impressions','Archive [contact omitted]–2026 impressions'],
+            ['unit range control','Archive +81 3 6216 8041–17-20 people','Archive [contact omitted]–17-20 people'],
+            ['day-first date control','Archive +81 3 6216 8041–17.08.2026','Archive [contact omitted]–17.08.2026'],
+            ['year-first date control','Archive +33 1 42 68 53 00–2026-08-17','Archive [contact omitted]–2026-08-17'],
+            ['dotted second phone control','Archive +81 3 6216 8041–03.6216.8041','Archive [contact omitted]–[contact omitted]']
+          ]) assert.equal(redactContactData(input),expected,`${name}: exact source custody`);
+          '''
+          test.write_text(t+block,encoding='utf-8')
+          PY
+
+          cp "$WORKTREE/tools/lib/industrial-exhaust.mjs" "$CANDIDATE_FILES/industrial-exhaust.mjs"
+          cp "$WORKTREE/test/industrial-exhaust.test.js" "$CANDIDATE_FILES/industrial-exhaust.test.js"
+          mapfile -t changed < <(git -C "$WORKTREE" diff --name-only | sort)
+          [[ "${changed[*]}" == 'test/industrial-exhaust.test.js tools/lib/industrial-exhaust.mjs' ]] || fail 'candidate denominator changed'
+          git -C "$WORKTREE" diff --check
+          git -C "$WORKTREE" diff --binary > "$ARTIFACT_DIR/candidate.patch"
+          printf 'PATCH_APPLIED\n' >> "$ARTIFACT_DIR/result.txt"
+
+          cat > /tmp/v109-matrix.mjs <<'NODE'
+          import fs from 'node:fs'; import path from 'node:path'; import {pathToFileURL} from 'node:url';
+          const [lib,out]=process.argv.slice(2); const {redactContactData}=await import(pathToFileURL(lib).href);
+          const C=[
+          ['exact','Archive +33 1 42 68 53 00–2026 people','Archive [contact omitted]–2026 people'],
+          ['fullwidth','記録 ＋３３ １ ４２ ６８ ５３ ００－２０２６ 人','記録 [contact omitted]－２０２６ 人'],
+          ['access','Archive 00 33 1 42 68 53 00–2026 people','Archive [contact omitted]–2026 people'],
+          ['terminal-3','Archive +33 1 42 68 530–2026 people','Archive [contact omitted]–2026 people'],
+          ['terminal-2-jp','Archive +81 3 6216 80–2026 people','Archive [contact omitted]–2026 people'],
+          ['later-phone','Archive +33 1 42 68 53 00–2026 people 03-6216-8041','Archive [contact omitted]–2026 people [contact omitted]'],
+          ['unit-word','Archive +33 1 42 68 53 00–2026 impressions','Archive [contact omitted]–2026 impressions'],
+          ['day-date','Archive +81 3 6216 8041–17.08.2026','Archive [contact omitted]–17.08.2026'],
+          ['year-date','Archive +33 1 42 68 53 00–2026-08-17','Archive [contact omitted]–2026-08-17'],
+          ['time','Archive +81 3 6216 8041–12:30:45','Archive [contact omitted]–12:30:45'],
+          ['scalar','Archive +81 3 6216 8041–17 people','Archive [contact omitted]–17 people'],
+          ['range','Archive +81 3 6216 8041–17-20 people','Archive [contact omitted]–17-20 people'],
+          ['narrative','Contact +33 1 42 68 53. 00 people attended.','Contact [contact omitted]. 00 people attended.'],
+          ['two-phone','Archive +81 3 6216 8041–03.6216.8041','Archive [contact omitted]–[contact omitted]'],
+          ['mixed-date-refusal','Archive 3.12/03-6216-8041','Archive 3.12/03-6216-8041'],
+          ['url-refusal','192.0.2.1/01/42/68/53/00','192.0.2.1/01/42/68/53/00'],
+          ['decimal-phone','Archive 3.14/03-6216-8041','Archive 3.14/[contact omitted]'],
+          ['range-phone','Archive 62-16-03-6216-8041','Archive 62-16-[contact omitted]'],
+          ['range-refusal','Archive 62-16','Archive 62-16'],
+          ['short-phone-unit','+672 1234 90 people','[contact omitted] 90 people'],
+          ['space-date','+33 (0)1 42 68 53 00 2026-08-17','[contact omitted] 2026-08-17'],
+          ['complete-phone','+33 1 42 68 53 00','[contact omitted]']];
+          const records=C.map(([name,input,expected])=>{const actual=redactContactData(input);return{name,input,expected,actual,pass:actual===expected}});
+          records.forEach(r=>console.log(JSON.stringify(r))); const bad=records.filter(r=>!r.pass);
+          fs.writeFileSync(path.join(out,'matrix.json'),JSON.stringify({cases:records.length,mismatches:bad.length,records},null,2)+'\n');
+          fs.writeFileSync(path.join(out,'matrix-status.txt'),bad.length?`MATRIX_FAILURE ${bad.length}/${records.length}\n`:`MATRIX_SUCCESS ${records.length}/${records.length}\n`);
+          if(bad.length) process.exitCode=1;
+          NODE
+          node /tmp/v109-matrix.mjs "$WORKTREE/tools/lib/industrial-exhaust.mjs" "$ARTIFACT_DIR" 2>&1 | tee "$ARTIFACT_DIR/matrix.log"
+          node --test "$WORKTREE"/test/industrial-exhaust*.test.js 2>&1 | tee "$ARTIFACT_DIR/focused.log"
+          printf 'FOCUSED_SUCCESS\n' > "$ARTIFACT_DIR/focused-status.txt"
+          (cd "$WORKTREE" && npm run release:check) 2>&1 | tee "$ARTIFACT_DIR/release.log"
+          printf 'RELEASE_CHECK_SUCCESS\n' > "$ARTIFACT_DIR/release-status.txt"
+
+          git -C "$WORKTREE" reset --hard "$EXPECTED_PRODUCT"
+          git -C "$WORKTREE" clean -fdx
+          cp "$CANDIDATE_FILES/industrial-exhaust.mjs" "$WORKTREE/tools/lib/industrial-exhaust.mjs"
+          cp "$CANDIDATE_FILES/industrial-exhaust.test.js" "$WORKTREE/test/industrial-exhaust.test.js"
+          git -C "$WORKTREE" add tools/lib/industrial-exhaust.mjs test/industrial-exhaust.test.js
+          tree="$(git -C "$WORKTREE" write-tree)"
+          export GIT_AUTHOR_NAME='V109 Qualification Controller' GIT_AUTHOR_EMAIL='v109@invalid.example' GIT_COMMITTER_NAME='V109 Qualification Controller' GIT_COMMITTER_EMAIL='v109@invalid.example'
+          commit="$(printf '%s\n' 'fix: rank terminal phone group before scalar observation' | git -C "$WORKTREE" commit-tree "$tree" -p "$EXPECTED_MAIN")"
+          eq candidate_parent "$(git -C "$WORKTREE" rev-parse "${commit}^")" "$EXPECTED_MAIN"
+          mapfile -t final_paths < <(git -C "$WORKTREE" diff-tree --no-commit-id --name-only -r "$EXPECTED_MAIN" "$commit" | sort)
+          [[ "${final_paths[*]}" == 'test/industrial-exhaust.test.js tools/lib/industrial-exhaust.mjs' ]] || fail 'constructed denominator changed'
+          {
+            printf 'candidate_parent=%s\n' "$EXPECTED_MAIN"
+            printf 'candidate_commit=%s\n' "$commit"
+            printf 'candidate_tree=%s\n' "$tree"
+            printf 'candidate_library_blob=%s\n' "$(git -C "$WORKTREE" rev-parse ':tools/lib/industrial-exhaust.mjs')"
+            printf 'candidate_test_blob=%s\n' "$(git -C "$WORKTREE" rev-parse ':test/industrial-exhaust.test.js')"
+          } > "$ARTIFACT_DIR/candidate.env"
+          git -C "$WORKTREE" diff --binary "$EXPECTED_MAIN" "$commit" > "$ARTIFACT_DIR/candidate-final.patch"
+          printf 'CANDIDATE_CONSTRUCTED\n' >> "$ARTIFACT_DIR/result.txt"
+
+          eq final_main "$(remote main)" "$EXPECTED_MAIN"
+          eq final_product "$(remote "$PRODUCT_BRANCH")" "$EXPECTED_PRODUCT"
+          eq final_controller "$(remote "$CONTROLLER_BRANCH")" "$EXPECTED_CONTROLLER"
+          check_pr "$PRODUCT_PR" "$PRODUCT_BRANCH" "$EXPECTED_PRODUCT" 1 2 "$ARTIFACT_DIR/receipts/product-pr-final.json"
+          check_pr "$CONTROLLER_PR" "$CONTROLLER_BRANCH" "$EXPECTED_CONTROLLER" 1 1 "$ARTIFACT_DIR/receipts/controller-pr-final.json"
+          check_threads "$ARTIFACT_DIR/receipts/threads-final.ndjson"
+          grep -q '^MATRIX_SUCCESS 22/22$' "$ARTIFACT_DIR/matrix-status.txt"
+          printf 'MATRIX_SUCCESS 22/22\nFOCUSED_SUCCESS\nRELEASE_CHECK_SUCCESS\nFINAL_LEASE_SUCCESS\nPUBLICATION_SKIPPED\nPRODUCT_PR_METADATA_UNCHANGED\nTHREAD_STATE_UNCHANGED\nQUALIFICATION_SUCCESS\n' >> "$ARTIFACT_DIR/result.txt"
+          trap - EXIT
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-terminal-group-ranking-v109
+          path: /tmp/pr2231-terminal-group-ranking-v109
+          if-no-files-found: error
+          retention-days: 90
