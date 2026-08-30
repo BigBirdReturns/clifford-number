@@ -1,5 +1,5 @@
-name: Temporary PR 2231 live product qualification V107
-# Read-only, lease-bound qualification of the already published exact product head.
+name: Temporary PR 2231 live product qualification V108
+# Read-only, lease-bound qualification of the already published exact product head, with explicit review-lease receipts.
 
 on:
   pull_request:
@@ -15,7 +15,7 @@ permissions:
   actions: read
 
 concurrency:
-  group: pr2231-live-product-qualification-v107
+  group: pr2231-live-product-qualification-v108
   cancel-in-progress: false
 
 jobs:
@@ -31,15 +31,15 @@ jobs:
       CONTROLLER_BRANCH: ${{ github.head_ref }}
       EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
       EXPECTED_MAIN: 0b1d8af5b86adad49b3451053dbb9166294d631c
-      EXPECTED_PRODUCT: 43588313351e9dceebe2bff3fd05f7088b384534
+      EXPECTED_PRODUCT: edbf7027f5de312d77a91d615ecb8cad619ce154
       EXPECTED_PRODUCT_PARENT: 0b1d8af5b86adad49b3451053dbb9166294d631c
       EXPECTED_PRODUCT_TREE: efc92aba2de7088ad1e4a9b0514ccb9e8f498c47
       EXPECTED_LIBRARY_BLOB: cb6bcf21460d4d0cca0dcb29affb9424713399d0
       EXPECTED_TEST_BLOB: 96822fbd5ac213d03e2bdc91c92c7ddfc3931963
       PREDECESSOR_PRODUCT: 405882b7f22fd3dc588a2237289f8550ed9525f9
       REVIEW_COMMENT_IDS: '3888640534 3888640536 3888645507'
-      ARTIFACT_DIR: /tmp/pr2231-live-product-v107
-      PRODUCT_WT: /tmp/pr2231-live-product-v107-worktree
+      ARTIFACT_DIR: /tmp/pr2231-live-product-v108
+      PRODUCT_WT: /tmp/pr2231-live-product-v108-worktree
 
     steps:
       - uses: actions/checkout@v4
@@ -77,7 +77,22 @@ jobs:
           trap cleanup EXIT
 
           qualification_terminal="$ARTIFACT_DIR/qualification-terminal.txt"
-          trap 'rc=$?; failed_command=$BASH_COMMAND; failed_line=$LINENO; trap - ERR; { printf "qualification_exit=%s\n" "$rc"; printf "failed_line=%s\n" "$failed_line"; printf "failed_command=%q\n" "$failed_command"; } > "$qualification_terminal"; exit "$rc"' ERR
+          on_error() {
+            local rc=$1
+            local failed_line=$2
+            local failed_command=$3
+            trap - ERR
+            {
+              printf 'qualification_exit=%s\n' "$rc"
+              printf 'failed_line=%s\n' "$failed_line"
+              printf 'failed_command=%q\n' "$failed_command"
+            } > "$qualification_terminal"
+            find "$ARTIFACT_DIR" -maxdepth 1 -type f \
+              -printf '%f\t%s\n' | sort \
+              > "$ARTIFACT_DIR/artifact-manifest.txt"
+            exit "$rc"
+          }
+          trap 'on_error "$?" "$LINENO" "$BASH_COMMAND"' ERR
 
           fetch_refs() {
             git fetch --force origin \
@@ -86,11 +101,37 @@ jobs:
               "+refs/heads/$CONTROLLER_BRANCH:refs/remotes/origin/$CONTROLLER_BRANCH"
           }
 
+          fetch_review_comment() {
+            local comment_id=$1
+            local phase=$2
+            local final="$ARTIFACT_DIR/review-comment-$comment_id-$phase.json"
+            local attempt
+            local temporary
+            local stderr_path
+
+            for attempt in 1 2 3; do
+              temporary="$ARTIFACT_DIR/review-comment-$comment_id-$phase-attempt-$attempt.tmp"
+              stderr_path="$ARTIFACT_DIR/review-comment-$comment_id-$phase-attempt-$attempt.stderr"
+              if gh api "repos/$REPO/pulls/comments/$comment_id" \
+                  > "$temporary" 2> "$stderr_path"; then
+                mv "$temporary" "$final"
+                printf '%s\t%s\t%s\n' \
+                  "$comment_id" "$phase" "$attempt" \
+                  >> "$ARTIFACT_DIR/review-api-attempts.tsv"
+                return 0
+              fi
+              sleep "$attempt"
+            done
+            fail "review comment API retrieval failed id=$comment_id phase=$phase"
+          }
+
           capture_pr_state() {
             local phase=$1
             local product_json="$ARTIFACT_DIR/product-pr-$phase.json"
-            local controller_json="$ARTIFACT_DIR/controller-pr-$phase.json"
+            local controller_json="$ARTIFAACT_DIR/controller-pr-$phase.json"
             local threads_json="$ARTIFACT_DIR/review-threads-$phase.json"
+            local comment_ledger="$ARTIFAACT_DIR/review-comment-ledger-$phase.tsv"
+            local thread_ledger="$ARTIFACT_DIR/review-thread-ledger-$phase.jsonl"
 
             gh api "repos/$REPO/pulls/$PRODUCT_PR_NUMBER" > "$product_json"
             jq -e --arg head "$EXPECTED_PRODUCT" '
@@ -116,236 +157,4 @@ jobs:
               -F owner=BigBirdReturns \
               -F name=clifford-number \
               -F number="$PRODUCT_PR_NUMBER" \
-              > "$threads_json"
-
-            for comment_id in $REVIEW_COMMENT_IDS; do
-              gh api "repos/$REPO/pulls/comments/$comment_id" \
-                > "$ARTIFACT_DIR/review-comment-$comment_id-$phase.json"
-              jq -e \
-                --argjson id "$comment_id" \
-                --arg predecessor "$PREDECESSOR_PRODUCT" '
-                  .id == $id
-                  and .original_commit_id == $predecessor
-                ' "$ARTIFACT_DIR/review-comment-$comment_id-$phase.json" \
-                >/dev/null
-              jq -e --argjson id "$comment_id" '
-                any(.data.repository.pullRequest.reviewThreads.nodes[];
-                  .isResolved == false
-                  and any(.comments.nodes[]; .databaseId == $id)
-                )
-              ' "$threads_json" >/dev/null
-            done
-          }
-
-          printf 'LEASE_BIND_STARTED\n'
-          fetch_refs
-          assert_eq "$(git rev-parse refs/remotes/origin/main)" \
-            "$EXPECTED_MAIN" 'main lease'
-          assert_eq "$(git rev-parse "refs/remotes/origin/$PRODUCT_BRANCH")" \
-            "$EXPECTED_PRODUCT" 'product lease'
-          assert_eq "$(git rev-parse "refs/remotes/origin/$CONTROLLER_BRANCH")" \
-            "$EXPECTED_CONTROLLER" 'controller lease'
-          capture_pr_state before
-          printf 'LEASE_BIND_SUCCESS\n'
-
-          printf 'PRODUCT_TOPOLOGY_STARTED\n'
-          mapfile -t parent_fields < <(
-            git rev-list --parents -n 1 "$EXPECTED_PRODUCT" | tr ' ' '\n'
-          )
-          [[ "${#parent_fields[@]}" -eq 2 ]] \
-            || fail "product parent count=${#parent_fields[@]} expected=2 fields"
-          assert_eq "${parent_fields[0]}" "$EXPECTED_PRODUCT" 'product commit'
-          assert_eq "${parent_fields[1]}" "$EXPECTED_PRODUCT_PARENT" 'product parent'
-          assert_eq "$EXPECTED_PRODUCT_PARENT" "$EXPECTED_MAIN" \
-            'product parent/main identity'
-          assert_eq "$(git rev-parse "$EXPECTED_PRODUCT^{tree}")" \
-            "$EXPECTED_PRODUCT_TREE" 'product tree'
-          assert_eq "$(git rev-parse "$EXPECTED_PRODUCT:tools/lib/industrial-exhaust.mjs")" \
-            "$EXPECTED_LIBRARY_BLOB" 'library blob'
-          assert_eq "$(git rev-parse "$EXPECTED_PRODUCT:test/industrial-exhaust.test.js")" \
-            "$EXPECTED_TEST_BLOB" 'test blob'
-
-          mapfile -t product_paths < <(
-            git diff --name-only "$EXPECTED_MAIN" "$EXPECTED_PRODUCT" | sort
-          )
-          [[ "${#product_paths[@]}" -eq 2 ]] \
-            || fail "product path count=${#product_paths[@]} expected=2"
-          assert_eq "${product_paths[0]}" 'test/industrial-exhaust.test.js' \
-            'first product path'
-          assert_eq "${product_paths[1]}" 'tools/lib/industrial-exhaust.mjs' \
-            'second product path'
-          printf '%s\n' "${product_paths[@]}" > "$ARTIFACT_DIR/product-paths.txt"
-          git show --no-ext-diff --format=fuller --stat "$EXPECTED_PRODUCT" \
-            > "$ARTIFACT_DIR/product-commit.txt"
-          printf 'PRODUCT_TOPOLOGY_SUCCESS\n'
-
-          git worktree add --detach "$PRODUCT_WT" "$EXPECTED_PRODUCT"
-
-          printf 'DIRECT_MATRIX_STARTED\n'
-          LIB_PATH="$PRODUCT_WT/tools/lib/industrial-exhaust.mjs" \
-            node --input-type=module <<'NODE' \
-            | tee "$ARTIFACT_DIR/direct-matrix.jsonl"
-          import assert from 'node:assert/strict';
-          import { pathToFileURL } from 'node:url';
-
-          const { redactContactData } = await import(
-            `${pathToFileURL(process.env.LIB_PATH).href}?qualification=${Date.now()}`
-          );
-
-          const directCases = [
-            ['Archive 3.14/03-6216-8041', 'Archive 3.14/[contact omitted]'],
-            ['Archive 3.14.03-6216-8041', 'Archive 3.14.[contact omitted]'],
-            ['Archive 12:30:45/03-6216-8041', 'Archive 12:30:45/[contact omitted]'],
-            ['Archive 62-16-03-6216-8041', 'Archive 62-16-[contact omitted]'],
-            ['Archive +81 3 6216 8041â€“2027-09-18', 'Archive [contact omitted]â€“2027-09-18'],
-            ['é›»è©±ï¼šï¼‹ï¼˜ï¼‘ ï¼“ ï¼–ï¼’ï¼‘ï¼– ï¼˜ï¼ï¼”ï¼‘ï¼ï¼’ï¼ï¼’ï¼—ï¼ï¼ï¼™ï¼ï¼‘ï¼˜', 'é›»è©±ï¼š[contact omitted]ï¼ï¼’ï¼ï¼’ï¼—ï¼ï¼ï¼™ï¼ï¼‘ï¼˜']
-          ];
-          for (const [input, expected] of directCases) {
-            const actual = redactContactData(input);
-            console.log(JSON.stringify({ input, actual, expected }));
-            assert.equal(actual, expected);
-          }
-
-          const chain = 'GUID '.repeat(4000);
-          for (const terminalObservation of [
-            '90 people',
-            '3.14',
-            '12:30',
-            '10-20 people',
-            '2027-09-18'
-          ]) {
-            const input = `Phone ${chain}record id: 09012345678 2026-08-17 01 42 68 53 00 ${terminalObservation}`;
-            const expected = `Phone ${chain}record id: [contact omitted] 2026-08-17 [contact omitted] ${terminalObservation}`;
-            const actual = redactContactData(input);
-            console.log(JSON.stringify({
-              terminalObservation,
-              inputLength: input.length,
-              actualLength: actual.length,
-              expectedLength: expected.length,
-              equal: actual === expected,
-              actualTail: actual.slice(-256),
-              expectedTail: expected.slice(-256)
-            }));
-            assert.equal(
-              actual,
-              expected,
-              'candidate-specific observation cap must preserve the terminal observation'
-            );
-          }
-          NODE
-          printf 'DIRECT_MATRIX_SUCCESS\n'
-
-          printf 'FOCUSED_PRODUCT_STARTED\n'
-          for test_file in "$PRODUCT_WT"/test/industrial-exhaust*.test.js; do
-            (
-              cd "$PRODUCT_WT"
-              printf 'FOCUSED_TEST_CWD=%s FILE=%s\n' \
-                "$PWD" "${test_file#"$PRODUCT_WT"/}"
-              node "$test_file"
-            )
-          done | tee "$ARTIFACT_DIR/focused-product.log"
-          printf 'FOCUSED_PRODUCT_SUCCESS\n'
-
-          printf 'RELEASE_CHECK_STARTED\n'
-          (
-            cd "$PRODUCT_WT"
-            if [[ -f package-lock.json ]]; then
-              npm ci --ignore-scripts
-            else
-              printf 'INSTALL_SKIPPED_NO_LOCKFILE\n'
-            fi
-            npm run release:check
-          ) | tee "$ARTIFACT_DIR/release-check.log"
-          printf 'RELEASE_CHECK_SUCCESS\n'
-
-          git -C "$PRODUCT_WT" status --porcelain=v1 \
-            > "$ARTIFACT_DIR/post-release-status.txt"
-          git -C "$PRODUCT_WT" restore --staged --worktree -- .
-          git -C "$PRODUCT_WT" clean -fd
-          [[ -z "$(git -C "$PRODUCT_WT" status --porcelain=v1)" ]] \
-            || fail 'product worktree did not restore cleanly'
-          assert_eq "$(git -C "$PRODUCT_WT" rev-parse HEAD)" \
-            "$EXPECTED_PRODUCT" 'restored product head'
-          assert_eq "$(git -C "$PRODUCT_WT" rev-parse HEAD^{tree})" \
-            "$EXPECTED_PRODUCT_TREE" 'restored product tree'
-          printf 'GENERATED_STATE_RESTORED\n'
-
-          printf 'FINAL_LEASE_REVALIDATION_STARTED\n'
-          fetch_refs
-          assert_eq "$(git rev-parse refs/remotes/origin/main)" \
-            "$EXPECTED_MAIN" 'final main lease'
-          assert_eq "$(git rev-parse "refs/remotes/origin/$PRODUCT_BRANCH")" \
-            "$EXPECTED_PRODUCT" 'final product lease'
-          assert_eq "$(git rev-parse "refs/remotes/origin/$CONTROLLER_BRANCH")" \
-            "$EXPECTED_CONTROLLER" 'final controller lease'
-          capture_pr_state after
-          printf 'FINAL_LEASE_REVALIDATION_SUCCESS\n'
-
-          jq -n \
-            --arg main "$EXPECTED_MAIN" \
-            --arg product "$EXPECTED_PRODUCT" \
-            --arg parent "$EXPECTED_PRODUCT_PARENT" \
-            --arg tree "$EXPECTED_PRODUCT_TREE" \
-            --arg library_blob "$EXPECTED_LIBRARY_BLOB" \
-            --arg test_blob "$EXPECTED_TEST_BLOB" \
-            --arg controller "$EXPECTED_CONTROLLER" \
-            '{
-              qualification:"success",
-              main:$main,
-              product:$product,
-              parent:$parent,
-              tree:$tree,
-              library_blob:$library_blob,
-              test_blob:$test_blob,
-              controller:$controller,
-              product_paths:[
-                "test/industrial-exhaust.test.js",
-                "tools/lib/industrial-exhaust.mjs"
-              ],
-              gates:[
-                "direct-matrix",
-                "focused-industrial-exhaust",
-                "release-check",
-                "final-lease-revalidation"
-              ]
-            }' > "$ARTIFACT_DIR/summary.json"
-
-          trap - ERR
-          {
-            printf 'qualification_exit=0\n'
-            printf 'qualification=success\n'
-            printf 'product=%s\n' "$EXPECTED_PRODUCT"
-          } > "$qualification_terminal"
-          printf 'QUALIFICATION_SUCCESS\n'
-
-      - name: Emit live product qualification diagnostic
-        if: always()
-        shell: bash
-        run: |
-          {
-            printf '%s\n' '### PR 2231 live product qualification V107'
-            for receipt in \
-              summary.json \
-              qualification-terminal.txt \
-              product-paths.txt \
-              direct-matrix.jsonl \
-              focused-product.log \
-              release-check.log \
-              post-release-status.txt; do
-              printf '\n#### %s\n\n' "$receipt"
-              printf '%s\n' '```text'
-              if [[ -f "$ARTIFACT_DIR/$receipt" ]]; then
-                tail -n 360 "$ARTIFACT_DIR/$receipt"
-              else
-                printf '%s\n' 'unavailable'
-              fi
-              printf '%s\n' '```'
-            done
-          } >> "$GITHUB_STEP_SUMMARY"
-
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: pr2231-live-product-qualification-v107
-          path: /tmp/pr2231-live-product-v107
-          retention-days: 90
+              > "$threads_jsomÈˆ((€€€€€€€€€€€ÁÉ¥¹Ñ˜€¥‘qÑ½É¥¥¹…±}½µµ¥Ñ}¥‘qÑ½µµ¥Ñ}¥‘qÑÁ…Ñ¡qÑÁÕ±±}É•ÅÕ•ÍÑ}ÕÉ±qÑÁ½Í¥Ñ¥½¹qÑ½É¥¥¹…±}Á½Í¥Ñ¥½¹q¸œp(€€€€€€€€€€€€€€ø€ˆ‘½µµ•¹Ñ}±•‘•Èˆ(€€€€€€€€€€€€è€ø€ˆ‘Ñ¡É•…‘}±•‘•Èˆ((€€€€€€€€€€€±½…°½µµ•¹Ñ}¥(€€€€€€€€€€€™½È½µµ•¹Ñ}¥¥¸€‘IY%]}=559Q}%Lì‘¼(€€€€€€€€€€€€€™•Ñ¡}É•Ù¥•Ý}½µµ•¹Ð€ˆ‘½µµ•¹Ñ}¥ˆ€ˆ‘íÁ¡…Í•ôˆ(€€€€€€€€€€€€€±½…°½µµ•¹Ñ}©Í½¸ôˆ‘IQ%Q}%H½É•Ù¥•Üµ½µµ•¹Ð´‘½µµ•¹Ñ}¥´‘Á¡…Í”¹©Í½¸ˆ(€€€€€€€€€€€€€±½…°…ÑÕ…±}¥(€€€€€€€€€€€€€±½…°…ÑÕ…±}½É¥¥¹…±}½µµ¥Ð(€€€€€€€€€€€€€±½…°…ÑÕ…±}½µµ¥Ð(€€€€€€€€€€€€€±½…°…ÑÕ…±}Á…Ñ (€€€€€€€€€€€€€±½…°…ÑÕ…±}ÁÕ±±}É•ÅÕ•ÍÑ}ÕÉ°(€€€€€€€€€€€€€±½…°…ÑÕ…±}Á½Í¥Ñ¥½¸(€€€€€€€€€€€€€±½…°…ÑÕ…±}½É¥¥¹…±}Á½Í¥Ñ¥½¸(€€€€€€€€€€€€€…ÑÕ…±}¥ô¡©Ä€µÈ€œ¹¥ðÑ½ÍÑÉ¥¹œœ€ˆ‘½µµ•¹Ñ}©Í½¸ˆ¤(€€€€€€€€€€€€€…ÑÕ…±}½É¥¥¹…±}½µµ¥Ðô¡©Ä€µÈ€œ¹½É¥¥¹…±}½µµ¥Ñ}¥€¼¼€ˆˆœ€ˆ‘½µµ•¹Ñ}©Í½¸ˆ¤(€€€€€€€€€€€€€…ÑÕ…±}½µµ¥Ðô¡©Ä€µÈ€œ¹½µµ¥Ñ}¥€¼¼€ˆˆœ€ˆ‘½µµ•¹Ñ}©Í½¸ˆ¤(€€€€€€€€€€€€€…ÑÕ…±}Á…Ñ ô¡©Ä€µÈ€œ¹Á…Ñ €¼¼€ˆˆœ€ˆ‘½µµ•¹Ñ}©Í½¸ˆ¤(€€€€€€€€€€€€€…ÑÕ…±}ÁÕ±±}É•ÅÕ•ÍÑ}ÕÉ°ô¡©Ä€µÈ€œ¹ÁÕ±±}É•ÅÕ•ÍÑ}ÕÉ°€¼¼€ˆˆœ€ˆ‘½µµ•¹Ñ}©Í½¸ˆ¤(€€€€€€€€€€€€€…ÑÕ…±}Á½Í¥Ñ¥½¸ô¡©Ä€µÈ€œ¹Á½Í¥Ñ¥½¸€¼¼€‰¹Õ±°ˆðÑ½ÍÑÉ¥¹œœ€ˆ‘½µµ•¹Ñ}©Í½¸ˆ¤(€€€€€€€€€€€€€…ÑÕ…±}½É¥¥¹…±}Á½Í¥Ñ¥½¸ô¡©Ä€µÈ€œ¹½É¥¥¹…±}Á½Í¥Ñ¥½¸€¼¼€‰¹Õ±°ˆðÑ½ÍÑÉ¥¹œœ€ˆ‘½µµ•¹Ñ}©Í½¸ˆ¤((€€€€€€€€€€€€€ÁÉ¥¹Ñ˜€œ•ÍqÐ•ÍqÐ•ÍqÐ•ÍqÐ•ÍqÐ•ÍqÐ•Íq¸œp(€€€€€€€€€€€€€€€€ˆ‘…ÑÕ…±}¥ˆp(€€€€€€€€€€€€€€€€ˆ‘…ÑÕ…±}½É¥¥¹…±}½µµ¥Ðˆp(€€€€€€€€€€€€€€€€ˆ‘…ÑÕ…±}½µµ¥Ðˆp(€€€€€€€€€€€€€€€€ˆ‘…ÑÕ…±}Á…Ñ ˆp(€€€€€€€€€€€€€€€€ˆ‘…ÑÕ…±}ÁÕ±±}É•ÅÕ•ÍÑ}ÕÉ°ˆp(€€€€€€€€€€€€€€€€ˆ‘…ÑÕ…±}Á½Í¥Ñ¥½¸ˆp(€€€€€€€€€€€€€€€€ˆ‘…ÑÕ…±}½É¥¥¹…±}Á½Í¥Ñ¥½¸ˆp(€€€€€€€€€€€€€€€€øø€ˆ‘½µµ•¹Ñ}±•‘•Èˆ((€€€€€€€€€€€€€…ÍÍ•ÉÑ}•Ä€ˆ‘…ÑÕ…±}¥ˆ€ˆ‘½µµ•¹Ñ}¥ˆp(€€€€€€€€€€€€€€€€‰É•Ù¥•Ü½µµ•¹Ð¥Á¡…Í”ô‘Á¡…Í”ˆ(€€€€€€€€€€€€€…ÍÍ•ÉÑ}•Ä€ˆ‘…ÑÕ…±}½É¥¥¹…±}½µµ¥Ðˆ€ˆ‘AIMM=I}AI=UPˆp(€€€€€€€€€€€€€€€€‰É•Ù¥•Ü½µµ•¹ÐÁÉ•‘••ÍÍ½È¥ô‘½µµ•¹Ñ}¥Á¡…Í”ô‘Á¡…Í”ˆ(€€€€€€€€€€€€€…ÍÍ•ÉÑ}•Ä€ˆ‘…ÑÕ…±}½µµ¥Ðˆ€ˆ‘aAQ}AI=UPˆp(€€€€€€€€€€€€€€€€‰É•Ù¥•Ü½µµ•¹ÐÕÉÉ•¹Ð½µµ¥Ð¥ô‘½µµ•¹Ñ}¥Á¡…Í”ô‘Á¡…Í”ˆ(€€€€€€€€€€€€€…ÍÍ•ÉÑ}•Ä€ˆ‘…ÑÕ…±}Á…Ñ ˆ€Ñ½½±Ì½±¥ˆ½¥¹‘ÕÍÑÉ¥…°µ•á¡…ÕÍÐ¹µ©Ìœp(€€€€€€€€€€€€€€€€‰É•Ù¥•Ü½µµ•¹ÐÁ…Ñ ¥ô‘½µµ•¹Ñ}¥Á¡…Í”ô‘Á¡…Í”ˆ(€€€€€€€€€€€€€…ÍÍ•ÉÑ}•Ä€ˆ‘…ÑÕ…±}ÁÕ±±}É•ÅÕ•ÍÑ}ÕÉ°ˆp(€€€€€€€€€€€€€€€€‰¡ÑÑÁÌè¼½…Á¤¹¥Ñ¡Õˆ¹½´½É•Á½Ì¼‘IA<½ÁÕ±±Ì¼‘AI=UQ}AI}9U5	Hˆp(€€€€€€€€€€€€€€€€‰É•Ù¥•Ü½µµ•¹ÐÁÕ±°É•ÅÕ•ÍÐ¥ô‘½µµ•¹Ñ}¥Á¡…Í”ô‘Á¡…Í”ˆ((€€€€€€€€€€€€€©Ä€µŒ€´µ…Éœ¥€ˆ‘½µµ•¹Ñ}¥ˆ€œ(€€€€€€€€€€€€€€€l(€€€€€€€€€€€€€€€€€€¹‘…Ñ„¹É•Á½Í¥Ñ½Éä¹ÁÕ±±I•ÅÕ•ÍÐ¹É•Ù¥•ÝQ¡É•…‘Ì¹¹½‘•Ímt(€€€€€€€€€€€€€€€€€ðÍ•±•Ð¡…¹ä ¹½µµ•¹ÑÌ¹¹½‘•Ímtì€ ¹‘…Ñ…‰…Í•%ðÑ½ÍÑÉ¥¹œ¤€ôô€‘¥¤¤(€€€€€€€€€€€€€€€€€ðì(€€€€€€€€€€€€€€€€€€€¥°(€€€€€€€€€€€€€€€€€€€¥ÍI•Í½±Ù•°(€€€€€€€€€€€€€€€€€€€¥Í=ÕÑ‘…Ñ•°(€€€€€€€€€€€€€€€€€€€½µµ•¹Ñ}¥‘Ìél¹½µµ•¹ÑÌ¹¹½‘•Ímt¹‘…Ñ…‰…Í•%‘t°(€€€€€€€€€€€€€€€€€€€½µµ•¹Ñ}½µµ¥ÑÌél¹½µµ•¹ÑÌ¹¹½‘•Ímt¹½µµ¥Ð¹½¥‘t(€€€€€€€€€€€€€€€€€ô(€€€€€€€€€€€€€€€t(€€€€€€€€€€€€€€œ€ˆ‘Ñ¡É•…‘Í}©Í½¸ˆ€øø€ˆ‘Ñ¡É•…‘}±•‘•Èˆ((€€€€€€€€€€€€€±½…°µ…Ñ¡¥¹}Ñ¡É•…‘}½Õ¹Ð(€€€€€€€€€€€€€±½…°Õ¹É•Í½±Ù•‘}Ñ¡É•…‘}½Õ¹Ð(€€€€€€€€€€€€€µ…Ñ¡¥¹}Ñ¡É•…‘}½Õ¹Ðô¡©Ä€µÈ€´µ…Éœ¥€ˆ‘½µµ•¹Ñ}¥ˆ€œ(€€€€€€€€€€€€€€€l(€€€€€€€€€€€€€€€€€€¹‘…Ñ„¹É•Á½Í¥Ñ½Éä¹ÁÕ±±I•ÅÕ•ÍÐ¹É•Ù¥•ÝQ¡É•…‘Ì¹¹½‘•Ímt(€€€€€€€€€€€€€€€€€ðÍ•±•Ð¡…¹ä ¹½µµ•¹ÑÌ¹¹½‘•Ímtì€ ¹‘…Ñ…‰…Í•%ðÑ½ÍÑÉ¥¹œ¤€ôô€‘¥¤¤(€€€€€€€€€€€€€€€tð±•¹Ñ (€€€€€€€€€€€€€€œ€ˆ‘Ñ¡É•…‘Í}©Í½¸ˆ¤(€€€€€€€€€€€€€Õ¹É•Í½±Ù•‘}Ñ¡É•…‘}½Õ¹Ðô¡©Ä€µÈ€´µ…Éœ¥€ˆ‘½µµ•¹Ñ}¥ˆ€œ(€€€€€€€€€€€€€€€l(€€€€€€€€€€€€€€€€€€¹‘…Ñ„¹É•Á½Í¥Ñ½Éä¹ÁÕ±±I•ÅÕ•ÍÐ¹É•Ù¥•ÝQ¡É•…‘Ì¹¹½‘•Ímt(€€€€€€€€€€€€€€€€€ðÍ•±•Ð (€€€€€€€€€€€€€€€€€€€€¹¥ÍI•Í½±Ù•€ôô™…±Í”(€€€€€€€€€€€€€€€€€€€…¹…¹ä ¹½µµ•¹ÑÌ¹¹½‘•Ímtì€ ¹‘…Ñ…‰…Í•%ðÑ½ÍÑÉ¥¹œ¤€ôô€‘¥¤(€€€€€€€€€€€€€€€€€€¤(€€€€€€€€€€€€€€€tð±•¹Ñ (€€€€€€€€€€€€€€œ€ˆ‘Ñ¡É•…‘Í}©Í½¸ˆ¤(€€€€€€€€€€€€€…ÍÍ•ÉÑ}•Ä€ˆ‘µ…Ñ¡¥¹}Ñ¡É•…‘}½Õ¹Ðˆ€œÄœp(€€€€€€€€€€€€€€€€‰É•Ù¥•ÜÑ¡É•…½Õ¹Ð¥ô‘½µµ•¹Ñ}¥Á¡…Í”ô‘Á¡…Í”ˆ(€€€€€€€€€€€€€…ÍÍ•ÉÑ}•Ä€ˆ‘Õ¹É•Í½±Ù•‘}Ñ¡É•…‘}½Õ¹Ðˆ€œÄœp(€€€€€€€€€€€€€€€€‰Õ¹É•Í½±Ù•É•Ù¥•ÜÑ¡É•…½Õ¹Ð¥ô‘½µµ•¹Ñ}¥Á¡…Í”ô‘Á¡…Í”ˆ(€€€€€€€€€€€‘½¹”(€€€€€€€€€ô((€€€€€€€€€ÁÉ¥¹Ñ˜€1M}	%9}MQIQq¸œ(€€€€€€€€€™•Ñ¡}É•™Ì(€€€€€€€€€…ÍÍ•ÉÑ}•Ä€ˆ¡¥ÐÉ•ØµÁ…ÉÍ”É•™Ì½É•µ½Ñ•Ì½½É¥¥¸½µ…¥¸¤ˆp(€€€€€€€€€€€€ˆ‘aAQ}5%8ˆ€µ…¥¸±•…Í”œ(€€€€€€€€€…ÍÍ•ÉÑ}•Ä€ˆ¡¥ÐÉ•ØµÁ…ÉÍ”€‰É•™Ì½É•µ½Ñ•Ì½½É¥¥¸¼‘AI=UQ}	I9 ˆ¤ˆp(€€€€€€€€€€€€ˆ‘aAQ}AI=UPˆ€ÁÉ½‘ÕÐ±•…Í”œ(€€€€€€€€€…ÍÍ•ÉÑ}•Ä€ˆ¡¥ÐÉ•ØµÁ…ÉÍ”€‰É•™Ì½É•µ½Ñ•Ì½½É¥¥¸¼‘=9QI=11I}	I9 ˆ¤ˆp(€€€€€€€€€€€€ˆ‘aAQ}=9QI=11Hˆ€½¹ÑÉ½±±•È±•…Í”œ(€€€€€€€€€…ÁÑÕÉ•}ÁÉ}ÍÑ…Ñ”‰•™½É”(€€€€€€€€€ÁÉ¥¹Ñ˜€1M}	%9}MUMMq¸œ((€€€€€€€€€ÁÉ¥¹Ñ˜€AI=UQ}Q=A=1=e}MQIQq¸œ(€€€€€€€€€µ…Á™¥±”€µÐÁ…É•¹Ñ}™¥•±‘Ì€ð€ð (€€€€€€€€€€€¥ÐÉ•Øµ±¥ÍÐ€´µÁ…É•¹ÑÌ€µ¸€Ä€ˆ‘aAQ}AI=UPˆðÑÈ€œ€œ€q¸œ(€€€€€€€€€€¤(€€€€€€€€€ml€ˆ‘ìÁ…É•¹Ñ}™¥•±‘Ímuôˆ€µ•Ä€Èutp(€€€€€€€€€€€ñð™…¥°€‰ÁÉ½‘ÕÐÁ…É•¹Ð½Õ¹Ðô‘ìÁ…É•¹Ñ}™¥•±‘Ímuô•áÁ•Ñ•ôÈ™¥•±‘Ìˆ(€€€€€€€€€…ÍÍ•ÉÑ}•Ä€ˆ‘íÁ…É•¹Ñ}™¥•±‘ÍlÁuôˆ€ˆ‘aAQ}AI=UPˆ€ÁÉ½‘ÕÐ½µµ¥Ðœ(€€€€€€€€€…ÍÍ•ÉÑ}•Ä€ˆ‘íÁ…É•¹Ñ}™¥•±‘ÍlÅuôˆ€ˆ‘aAQ}AI=UQ}AI9Pˆ€ÁÉ½‘ÕÐÁ…É•¹Ðœ(€€€€€€€€€…ÍÍ•ÉÑ}•Ä€ˆ‘aAQ}AI=UQ}AI9Pˆ€ˆ‘aAQ}5%8ˆp(€€€€€€€€€€€€ÁÉ½‘ÕÐÁ…É•¹Ð½µ…¥¸¥‘•¹Ñ¥Ñäœ(€€€€€€€€€…ÍÍ•ÉÑ}•Ä€ˆ¡¥ÐÉ•ØµÁ…ÉÍ”€ˆ‘aAQ}AI=UQyíÑÉ••ôˆ¤ˆp(€€€€€€€€€€€€ˆ‘aAQ}AI=UQ}QIˆ€ÁÉ½‘ÕÐÑÉ•”œ(€€€€€€€€€…ÍÍ•ÉÑ}•Ä€ˆ¡¥ÐÉ•ØµÁ…ÉÍ”€ˆ‘aAQ}AI=UPéÑ½½±Ì½±¥ˆ½¥¹‘ÕÍÑÉ¥…°µ•á¡…ÕÍÐ¹µ©Ìˆ¤ˆp(€€€€€€€€€€€€ˆ‘aAQ}1%	IIe}	1=ˆ€±¥‰É…Éä‰±½ˆœ(€€€€€€€€€…ÍÍ•ÉÑ}•Ä€ˆ¡¥ÐÉ•ØµÁ…ÉÍ”€ˆ‘aAQ}AI=UPéÑ•ÍÐ½¥¹‘ÕÍÑÉ¥…°µ•á¡…ÕÍÐ¹Ñ•ÍÐ¹©Ìˆ¤ˆp(€€€€€€€€€€€€ˆ‘aAQ}QMQ}	1=ˆ€Ñ•ÍÐ‰±½ˆœ((€€€€€€€€€µ…Á™¥±”€µÐÁÉ½‘ÕÑ}Á…Ñ¡Ì€ð€ð (€€€€€€€€€€€¥Ð‘¥™˜€´µ¹…µ”µ½¹±ä€ˆ‘aAQ}5%8ˆ€ˆ‘aAQ}AI=UPˆðÍ½ÉÐ(€€€€€€€€€€¤(€€€€€€€€€ml€ˆ‘ìÁÉ½‘ÕÑ}Á…Ñ¡Ímuôˆ€µ•Ä€Èutp(€€€€€€€€€€€ñð™…¥°€‰ÁÉ½‘ÕÐÁ…Ñ ½Õ¹Ðô‘ìÁÉ½‘ÕÑ}Á…Ñ¡Ímuô•áÁ•Ñ•ôÈˆ(€€€€€€€€€…ÍÍ•ÉÑ}•Ä€ˆ‘íÁÉ½‘ÕÑ}Á…Ñ¡ÍlÁuôˆ€Ñ•ÍÐ½¥¹‘ÕÍÑÉ¥…°µ•á¡…ÕÍÐ¹Ñ•ÍÐ¹©Ìœp(€€€€€€€€€€€€™¥ÉÍÐÁÉ½‘ÕÐÁ…Ñ œ(€€€€€€€€€…ÍÍ•ÉÑ}•Ä€ˆ‘íÁÉ½‘ÕÑ}Á…Ñ¡ÍlÅuôˆ€Ñ½½±Ì½±¥ˆ½¥¹‘ÕÍÑÉ¥…°µ•á¡…ÕÍÐ¹µ©Ìœp(€€€€€€€€€€€€Í•½¹ÁÉ½‘ÕÐÁ…Ñ œ(€€€€€€€€€ÁÉ¥¹Ñ˜€œ•Íq¸œ€ˆ‘íÁÉ½‘ÕÑ}Á…Ñ¡Ímuôˆ€ø€ˆ‘IQ%Q}%H½ÁÉ½‘ÕÐµÁ…Ñ¡Ì¹ÑáÐˆ(€€€€€€€€€¥ÐÍ¡½Ü€´µ¹¼µ•áÐµ‘¥™˜€´µ™½Éµ…Ðõ™Õ±±•È€´µÍÑ…Ð€ˆ‘aAQ}AI=UPˆp(€€€€€€€€€€€€ø€ˆ‘IQ%Q}%H½ÁÉ½‘ÕÐµ½µµ¥Ð¹ÑáÐˆ(€€€€€€€€€ÁÉ¥¹Ñ˜€AI=UQ}Q=A=1=e}MUMMq¸œ((€€€€€€€€€¥ÐÝ½É­ÑÉ•”…‘€´µ‘•Ñ… €ˆ‘AI=UQ}]Pˆ€ˆ‘aAQ}AI=UPˆ((€€€€€€€€€ÁÉ¥¹Ñ˜€%IQ}5QI%a}MQIQq¸œ(€€€€€€€€€1%	}AQ ôˆ‘AI=UQ}]P½Ñ½½±Ì½±¥ˆ½¥¹‘ÕÍÑÉ¥…°µ•á¡…ÕÍÐ¹µ©Ìˆp(€€€€€€€€€€€¹½‘”€´µ¥¹ÁÕÐµÑåÁ”õµ½‘Õ±”€ðð9=œp(€€€€€€€€€€€ðÑ•”€ˆ‘IQ%Q}%H½‘¥É•Ðµµ…ÑÉ¥à¹©Í½¹°ˆ(€€€€€€€€€¥µÁ½ÉÐ…ÍÍ•ÉÐ™É½´€¹½‘”é…ÍÍ•ÉÐ½ÍÑÉ¥Ðœì(€€€€€€€€€¥µÁ½ÉÐìÁ…Ñ¡Q½¥±•UI0ô™É½´€¹½‘”éÕÉ°œì((€€€€€€€€€½¹ÍÐìÉ•‘…Ñ½¹Ñ…Ñ…Ñ„ô€ô…Ý…¥Ð¥µÁ½ÉÐ (€€€€€€€€€€€€‘íÁ…Ñ¡Q½¥±•UI0¡ÁÉ½•ÍÌ¹•¹Ø¹1%	}AQ ¤¹¡É•™ôýÅÕ…±¥™¥…Ñ¥½¸ô‘í…Ñ”¹¹½Ü ¥õ€(€€€€€€€€€€¤ì((€€€€€€€€€½¹ÍÐ‘¥É•Ñ…Í•Ì€ôl(€€€€€€€€€€€lÉ¡¥Ù”€Ì¸ÄÐ¼ÀÌ´ØÈÄØ´àÀÐÄœ°€É¡¥Ù”€Ì¸ÄÐ½m½¹Ñ…Ð½µ¥ÑÑ•‘tt°(€€€€€€€€€€€lÉ¡¥Ù”€Ì¸ÄÐ¸ÀÌ´ØÈÄØ´àÀÐÄœ°€É¡¥Ù”€Ì¸ÄÐ¹m½¹Ñ…Ð½µ¥ÑÑ•‘tt°(€€€€€€€€€€€lÉ¡¥Ù”€ÄÈèÌÀèÐÔ¼ÀÌ´ØÈÄØ´àÀÐÄœ°€É¡¥Ù”€ÄÈèÌÀèÐÔ½m½¹Ñ…Ð½µ¥ÑÑ•‘tt°(€€€€€€€€€€€lÉ¡¥Ù”€ØÈ´ÄØ´ÀÌ´ØÈÄØ´àÀÐÄœ°€É¡¥Ù”€ØÈ´ÄØµm½¹Ñ…Ð½µ¥ÑÑ•‘tt°(€€€€€€€€€€€lÉ¡¥Ù”€¬àÄ€Ì€ØÈÄØ€àÀÐÇŠLÈÀÈÜ´Àä´Äàœ°€É¡¥Ù”m½¹Ñ…Ð½µ¥ÑÑ•‘wŠLÈÀÈÜ´Àä´Äàt°(€€€€€€€€€€€lŸ¦nï¢¦Ç¾òk¾ò/¾òc¾òDƒ¾òLƒ¾ò[¾òK¾òG¾òXƒ¾òc¾òC¾òS¾òG¾ò7¾òK¾òC¾òK¾ò_¾ò7¾òC¾òg¾ò7¾òG¾ò`œ°€Ÿ¦nï¢¦Ç¾òim½¹Ñ…Ð½µ¥ÑÑ•‘w¾ò7¾òK¾òC¾òK¾ò_¾ò7¾òC¾òg¾ò7¾òG¾ò`t(€€€€€€€€€tì(€€€€€€€€€™½È€¡½¹ÍÐm¥¹ÁÕÐ°•áÁ•Ñ•‘t½˜‘¥É•Ñ…Í•Ì¤ì(€€€€€€€€€€€½¹ÍÐ…ÑÕ…°€ôÉ•‘…Ñ½¹Ñ…Ñ…Ñ„¡¥¹ÁÕÐ¤ì(€€€€€€€€€€€½¹Í½±”¹±½œ¡)M=8¹ÍÑÉ¥¹¥™ä¡ì¥¹ÁÕÐ°…ÑÕ…°°•áÁ•Ñ•ô¤¤ì(€€€€€€€€€€€…ÍÍ•ÉÐ¹•ÅÕ…°¡…ÑÕ…°°•áÁ•Ñ•¤ì(€€€€€€€€€ô((€€€€€€€€€½¹ÍÐ¡…¥¸€ô€U%€œ¹É•Á•…Ð ÐÀÀÀ¤ì(€€€€€€€€€™½È€¡½¹ÍÐÑ•Éµ¥¹…±=‰Í•ÉÙ…Ñ¥½¸½˜l(€€€€€€€€€€€€œäÀÁ•½Á±”œ°(€€€€€€€€€€€€œÌ¸ÄÐœ°(€€€€€€€€€€€€œÄÈèÌÀœ°(€€€€€€€€€€€€œÄÀ´ÈÀÁ•½Á±”œ°(€€€€€€€€€€€€œÈÀÈÜ´Àä´Äàœ(€€€€€€€€€t¤ì(€€€€€€€€€€€½¹ÍÐ¥¹ÁÕÐ€ôA¡½¹”€‘í¡…¥¹õÉ•½É¥è€ÀäÀÄÈÌÐÔØÜà€ÈÀÈØ´Àà´ÄÜ€ÀÄ€ÐÈ€Øà€ÔÌ€ÀÀ€‘íÑ•Éµ¥¹…±=‰Í•ÉÙ…Ñ¥½¹õ€ì(€€€€€€€€€€€½¹ÍÐ•áÁ•Ñ•€ôA¡½¹”€‘í¡…¥¹õÉ•½É¥èm½¹Ñ…Ð½µ¥ÑÑ•‘t€ÈÀÈØ´Àà´ÄÜm½¹Ñ…Ð½µ¥ÑÑ•‘t€‘íÑ•Éµ¥¹…±=‰Í•ÉÙ…Ñ¥½¹õ€ì(€€€€€€€€€€€½¹ÍÐ…ÑÕ…°€ôÉ•‘…Ñ½¹Ñ…Ñ…Ñ„¡¥¹ÁÕÐ¤ì(€€€€€€€€€€€½¹Í½±”¹±½œ¡)M=8¹ÍÑÉ¥¹¥™ä¡ì(€€€€€€€€€€€€€Ñ•Éµ¥¹…±=‰Í•ÉÙ…Ñ¥½¸°(€€€€€€€€€€€€€¥¹ÁÕÑ1•¹Ñ è¥¹ÁÕÐ¹±•¹Ñ °(€€€€€€€€€€€€€…ÑÕ…±1•¹Ñ è…ÑÕ…°¹±•¹Ñ °(€€€€€€€€€€€€€•áÁ•Ñ•‘1•¹Ñ è•áÁ•Ñ•¹±•¹Ñ °(€€€€€€€€€€€€€•ÅÕ…°è…ÑÕ…°€ôôô•áÁ•Ñ•°(€€€€€€€€€€€€€…ÑÕ…±Q…¥°è…ÑÕ…°¹Í±¥” ´ÈÔØ¤°(€€€€€€€€€€€€€•áÁ•Ñ•‘Q…¥°è•áÁ•Ñ•¹Í±¥” ´ÈÔØ¤(€€€€€€€€€€€ô¤¤ì(€€€€€€€€€€€…ÍÍ•ÉÐ¹•ÅÕ…° (€€€€€€€€€€€€€…ÑÕ…°°(€€€€€€€€€€€€€•áÁ•Ñ•°(€€€€€€€€€€€€€€…¹‘¥‘…Ñ”µÍÁ•¥™¥Œ½‰Í•ÉÙ…Ñ¥½¸…ÀµÕÍÐÁÉ•Í•ÉÙ”Ñ¡”Ñ•Éµ¥¹…°½‰Í•ÉÙ…Ñ¥½¸œ(€€€€€€€€€€€€¤ì(€€€€€€€€€ô(€€€€€€€€€9=(€€€€€€€€€ÁÉ¥¹Ñ˜€%IQ}5QI%a}MUMMq¸œ((€€€€€€€€€ÁÉ¥¹Ñ˜€=UM}AI=UQ}MQIQq¸œ(€€€€€€€€€™½ÈÑ•ÍÑ}™¥±”¥¸€ˆ‘AI=UQ}]Pˆ½Ñ•ÍÐ½¥¹‘ÕÍÑÉ¥…°µ•á¡…ÕÍÐ¨¹Ñ•ÍÐ¹©Ìì‘¼(€€€€€€€€€€€€ (€€€€€€€€€€€€€€ˆ‘AI=UQ}]Pˆ(€€€€€€€€€€€€€ÁÉ¥¹Ñ˜€=UM}QMQ}]ô•Ì%1ô•Íq¸œp(€€€€€€€€€€€€€€€€ˆ‘A]ˆ€ˆ‘íÑ•ÍÑ}™¥±”Œˆ‘AI=UQ}]Pˆ½ôˆ(€€€€€€€€€€€€€¹½‘”€ˆ‘Ñ•ÍÑ}™¥±”ˆ(€€€€€€€€€€€€¤(€€€€€€€€€‘½¹”ðÑ•”€ˆ‘IQ%Q}%H½™½ÕÍ•µÁÉ½‘ÕÐ¹±½œˆ(€€€€€€€€€ÁÉ¥¹Ñ˜€=UM}AI=UQ}MUMMq¸œ((€€€€€€€€€ÁÉ¥¹Ñ˜€I1M}!-}MQIQq¸œ(€€€€€€€€€€ (€€€€€€€€€€€€ˆ‘AI=UQ}]Pˆ(€€€€€€€€€€€¥˜ml€µ˜Á…­…”µ±½¬¹©Í½¸utìÑ¡•¸(€€€€€€€€€€€€€¹Á´¤€´µ¥¹½É”µÍÉ¥ÁÑÌ(€€€€€€€€€€€•±Í”(€€€€€€€€€€€€€ÁÉ¥¹Ñ˜€%9MQ11}M-%AA}9=}1=-%1q¸œ(€€€€€€€€€€€™¤(€€€€€€€€€€€¹Á´ÉÕ¸É•±•…Í”é¡•¬(€€€€€€€€€€¤ðÑ•”€ˆ‘IQ%Q}%H½É•±•…Í”µ¡•¬¹±½œˆ(€€€€€€€€€ÁÉ¥¹Ñ˜€I1M}!-}MUMMq¸œ((€€€€€€€€€¥Ð€µ€ˆ‘AI=UQ}]PˆÍÑ…ÑÕÌ€´µÁ½É•±…¥¸õØÄp(€€€€€€€€€€€€ø€ˆ‘IQ%Q}%H½Á½ÍÐµÉ•±•…Í”µÍÑ…ÑÕÌ¹ÑáÐˆ(€€€€€€€€€¥Ð€µ€ˆ‘AI=UQ}]PˆÉ•ÍÑ½É”€´µÍÑ…•€´µÝ½É­ÑÉ•”€´´€¸(€€€€€€€€€¥Ð€µ€ˆ‘AI=UQ}]Pˆ±•…¸€µ™(€€€€€€€€€ml€µè€ˆ¡¥Ð€µ€ˆ‘AI=UQ}]PˆÍÑ…ÑÕÌ€´µÁ½É•±…¥¸õØÄ¤ˆutp(€€€€€€€€€€€ñð™…¥°€ÁÉ½‘ÕÐÝ½É­ÑÉ•”‘¥¹½ÐÉ•ÍÑ½É”±•…¹±äœ(€€€€€€€€€…ÍÍ•ÉÑ}•Ä€ˆ¡¥Ð€µ€ˆ‘AI=UQ}]PˆÉ•ØµÁ…ÉÍ”!¤ˆp(€€€€€€€€€€€€ˆ‘aAQ}AI=UPˆ€É•ÍÑ½É•ÁÉ½‘ÕÐ¡•…œ(€€€€€€€€€…ÍÍ•ÉÑ}•Ä€ˆ¡¥Ð€µ€ˆ‘AI=UQ}]PˆÉ•ØµÁ…ÉÍ”!yíÑÉ••ô¤ˆp(€€€€€€€€€€€€ˆ‘aAQ}AI=UQ}QIˆ€É•ÍÑ½É•ÁÉ½‘ÕÐÑÉ•”œ(€€€€€€€€€ÁÉ¥¹Ñ˜€9IQ}MQQ}IMQ=Iq¸œ((€€€€€€€€€ÁÉ¥¹Ñ˜€%91}1M}IY1%Q%=9}MQIQq¸œ(€€€€€€€€€™•Ñ¡}É•™Ì(€€€€€€€€€…ÍÍ•ÉÑ}•Ä€ˆ¡¥ÐÉ•ØµÁ…ÉÍ”É•™Ì½É•µ½Ñ•Ì½½É¥¥¸½µ…¥¸¤ˆp(€€€€€€€€€€€€ˆ‘aAQ}5%8ˆ€™¥¹…°µ…¥¸±•…Í”œ(€€€€€€€€€…ÍÍ•ÉÑ}•Ä€ˆ¡¥ÐÉ•ØµÁ…ÉÍ”€‰É•™Ì½É•µ½Ñ•Ì½½É¥¥¸¼‘AI=UQ}	I9 ˆ¤ˆp(€€€€€€€€€€€€ˆ‘aAQ}AI=UPˆ€™¥¹…°ÁÉ½‘ÕÐ±•…Í”œ(€€€€€€€€€…ÍÍ•ÉÑ}•Ä€ˆ¡¥ÐÉ•ØµÁ…ÉÍ”€‰É•™Ì½É•µ½Ñ•Ì½½É¥¥¸¼‘=9QI=11I}	I9 ˆ¤ˆp(€€€€€€€€€€€€ˆ‘aAQ}=9QI=11Hˆ€™¥¹…°½¹ÑÉ½±±•È±•…Í”œ(€€€€€€€€€…ÁÑÕÉ•}ÁÉ}ÍÑ…Ñ”…™Ñ•È(€€€€€€€€€ÁÉ¥¹Ñ˜€%91}1M}IY1%Q%=9}MUMMq¸œ((€€€€€€€€€©Ä€µ¸p(€€€€€€€€€€€€´µ…Éœµ…¥¸€ˆ‘aAQ}5%8ˆp(€€€€€€€€€€€€´µ…ÉœÁÉ½‘ÕÐ€ˆ‘aAQ}AI=UPˆp(€€€€€€€€€€€€´µ…ÉœÁ…É•¹Ð€ˆ‘aAQ}AI=UQ}AI9Pˆp(€€€€€€€€€€€€´µ…ÉœÑÉ•”€ˆ‘aAQ}AI=UQ}QIˆp(€€€€€€€€€€€€´µ…Éœ±¥‰É…Éå}‰±½ˆ€ˆ‘aAQ}1%	IIe}	1=ˆp(€€€€€€€€€€€€´µ…ÉœÑ•ÍÑ}‰±½ˆ€ˆ‘aAQ}QMQ}	1=ˆp(€€€€€€€€€€€€´µ…Éœ½¹ÑÉ½±±•È€ˆ‘aAQ}=9QI=11Hˆp(€€€€€€€€€€€€ì(€€€€€€€€€€€€€ÅÕ…±¥™¥…Ñ¥½¸è‰ÍÕ•ÍÌˆ°(€€€€€€€€€€€€€µ…¥¸è‘µ…¥¸°(€€€€€€€€€€€€€ÁÉ½‘ÕÐè‘ÁÉ½‘ÕÐ°(€€€€€€€€€€€€€Á…É•¹Ðè‘Á…É•¹Ð°(€€€€€€€€€€€€€ÑÉ•”è‘ÑÉ•”°(€€€€€€€€€€€€€±¥‰É…Éå}‰±½ˆè‘±¥‰É…Éå}‰±½ˆ°(€€€€€€€€€€€€€Ñ•ÍÑ}‰±½ˆè‘Ñ•ÍÑ}‰±½ˆ°(€€€€€€€€€€€€€½¹ÑÉ½±±•Èè‘½¹ÑÉ½±±•È°(€€€€€€€€€€€€€ÁÉ½‘ÕÑ}Á…Ñ¡Ìél(€€€€€€€€€€€€€€€€‰Ñ•ÍÐ½¥¹‘ÕÍÑÉ¥…°µ•á¡…ÕÍÐ¹Ñ•ÍÐ¹©Ìˆ°(€€€€€€€€€€€€€€€€‰Ñ½½±Ì½±¥ˆ½¥¹‘ÕÍÑÉ¥…°µ•á¡…ÕÍÐ¹µ©Ìˆ(€€€€€€€€€€€€€t°(€€€€€€€€€€€€€…Ñ•Ìél(€€€€€€€€€€€€€€€€‰‘¥É•Ðµµ…ÑÉ¥àˆ°(€€€€€€€€€€€€€€€€‰™½ÕÍ•µ¥¹‘ÕÍÑÉ¥…°µ•á¡…ÕÍÐˆ°(€€€€€€€€€€€€€€€€‰É•±•…Í”µ¡•¬ˆ°(€€€€€€€€€€€€€€€€‰™¥¹…°µ±•…Í”µÉ•Ù…±¥‘…Ñ¥½¸ˆ(€€€€€€€€€€€€€t(€€€€€€€€€€€ôœ€ø€ˆ‘IQ%Q}%H½ÍÕµµ…Éä¹©Í½¸ˆ((€€€€€€€€€ÑÉ…À€´IH(€€€€€€€€€ì(€€€€€€€€€€€ÁÉ¥¹Ñ˜€ÅÕ…±¥™¥…Ñ¥½¹}•á¥ÐôÁq¸œ(€€€€€€€€€€€ÁÉ¥¹Ñ˜€ÅÕ…±¥™¥…Ñ¥½¸õÍÕ•ÍÍq¸œ(€€€€€€€€€€€ÁÉ¥¹Ñ˜€ÁÉ½‘ÕÐô•Íq¸œ€ˆ‘aAQ}AI=UPˆ(€€€€€€€€€ô€ø€ˆ‘ÅÕ…±¥™¥…Ñ¥½¹}Ñ•Éµ¥¹…°ˆ(€€€€€€€€€ÁÉ¥¹Ñ˜€EU1%%Q%=9}MUMMq¸œ((€€€€€€´¹…µ”èµ¥Ð±¥Ù”ÁÉ½‘ÕÐÅÕ…±¥™¥…Ñ¥½¸‘¥…¹½ÍÑ¥Œ(€€€€€€€¥˜è…±Ý…åÌ ¤(€€€€€€€Í¡•±°è‰…Í (€€€€€€€ÉÕ¸èð(€€€€€€€€€ÕÁ±½…‘}‘¥Èô½ÑµÀ½ÁÈÈÈÌÄµ±¥Ù”µÁÉ½‘ÕÐµØÄÀàµÕÁ±½…(€€€€€€€€€É´€µÉ˜€ˆ‘ÕÁ±½…‘}‘¥Èˆ(€€€€€€€€€µ­‘¥È€µÀ€ˆ‘IQ%Q}%Hˆ€ˆ‘ÕÁ±½…‘}‘¥Èˆ(€€€€€€€€€™¥¹€ˆ‘IQ%Q}%Hˆ€µµ…á‘•ÁÑ €Ä€µÑåÁ”˜p(€€€€€€€€€€€€µÁÉ¥¹Ñ˜€œ•™qÐ•Íq¸œðÍ½ÉÐp(€€€€€€€€€€€€ø€ˆ‘IQ%Q}%H½…ÉÑ¥™…Ðµµ…¹¥™•ÍÐ¹ÑáÐˆ(€€€€€€€€€À€µ„€ˆ‘IQ%Q}%Hˆ¼¸€ˆ‘ÕÁ±½…‘}‘¥Èˆ¼(€€€€€€€€€™¥¹€ˆ‘ÕÁ±½…‘}‘¥Èˆ€µµ…á‘•ÁÑ €Ä€µÑåÁ”˜p(€€€€€€€€€€€€µÁÉ¥¹Ñ˜€œ•™qÐ•Íq¸œðÍ½ÉÐp(€€€€€€€€€€€€ø€ˆ‘ÕÁ±½…‘}‘¥È½ÕÁ±½…µµ…¹¥™•ÍÐ¹ÑáÐˆ((€€€€€€€€€ì(€€€€€€€€€€€ÁÉ¥¹Ñ˜€œ•Íq¸œ€œŒŒŒAH€ÈÈÌÄ±¥Ù”ÁÉ½‘ÕÐÅÕ…±¥™¥…Ñ¥½¸XÄÀàœ(€€€€€€€€€€€™½ÈÉ••¥ÁÐ¥¸p(€€€€€€€€€€€€€ÍÕµµ…Éä¹©Í½¸p(€€€€€€€€€€€€€ÅÕ…±¥™¥…Ñ¥½¸µÑ•Éµ¥¹…°¹ÑáÐp(€€€€€€€€€€€€€…ÉÑ¥™…Ðµµ…¹¥™•ÍÐ¹ÑáÐp(€€€€€€€€€€€€€É•Ù¥•Üµ½µµ•¹Ðµ±•‘•Èµ‰•™½É”¹ÑÍØp(€€€€€€€€€€€€€É•Ù¥•ÜµÑ¡É•…µ±•‘•Èµ‰•™½É”¹©Í½¹°p(€€€€€€€€€€€€€É•Ù¥•Üµ½µµ•¹Ðµ±•‘•Èµ…™Ñ•È¹ÑÍØp(€€€€€€€€€€€€€É•Ù¥•ÜµÑ¡É•…µ±•‘•Èµ…™Ñ•È¹©Í½¹°p(€€€€€€€€€€€€€ÁÉ½‘ÕÐµÁ…Ñ¡Ì¹ÑáÐp(€€€€€€€€€€€€€‘¥É•Ðµµ…ÑÉ¥à¹©Í½¹°p(€€€€€€€€€€€€€™½ÕÍ•µÁÉ½‘ÕÐ¹±½œp(€€€€€€€€€€€€€É•±•…Í”µ¡•¬¹±½œp(€€€€€€€€€€€€€Á½ÍÐµÉ•±•…Í”µÍÑ…ÑÕÌ¹ÑáÐì‘¼(€€€€€€€€€€€€€ÁÉ¥¹Ñ˜€q¸ŒŒŒŒ€•Íq¹q¸œ€ˆ‘É••¥ÁÐˆ(€€€€€€€€€€€€€ÁÉ¥¹Ñ˜€œ•Íq¸œ€Ñ•áÐœ(€€€€€€€€€€€€€¥˜ml€µ˜€ˆ‘IQ%Q}%H¼‘É••¥ÁÐˆutìÑ¡•¸(€€€€€€€€€€€€€€€Ñ…¥°€µ¸€ÌØÀ€ˆ‘IQ%Q}%H¼‘É••¥ÁÐˆ(€€€€€€€€€€€€€•±Í”(€€€€€€€€€€€€€€€ÁÉ¥¹Ñ˜€œ•Íq¸œ€Õ¹…Ù…¥±…‰±”œ(€€€€€€€€€€€€€™¤(€€€€€€€€€€€€€ÁÉ¥¹Ñ˜€œ•Íq¸œ€€œ(€€€€€€€€€€€‘½¹”(€€€€€€€€€ô€øø€ˆ‘%Q!U	}MQA}MU55Idˆ((€€€€€€´ÕÍ•Ìè…Ñ¥½¹Ì½ÕÁ±½…µ…ÉÑ¥™…ÑØÐ(€€€€€€€¥˜è…±Ý…åÌ ¤(€€€€€€€Ý¥Ñ è(€€€€€€€€€¹…µ”èÁÈÈÈÌÄµ±¥Ù”µÁÉ½‘ÕÐµÅÕ…±¥™¥…Ñ¥½¸µØÄÀà(€€€€€€€€€Á…Ñ è€½ÑµÀ½ÁÈÈÈÌÄµ±¥Ù”µÁÉ½‘ÕÐµØÄÀàµÕÁ±½…(€€€€€€€€€É•Ñ•¹Ñ¥½¸µ‘…åÌè€äÀ(
