@@ -61,6 +61,7 @@ jobs:
             | gzip -d > /tmp/pr2231-callback-observation-frontier-v110.sh
           python - <<'PY'
           from pathlib import Path
+          from textwrap import dedent
 
           path = Path('/tmp/pr2231-callback-observation-frontier-v110.sh')
           source = path.read_text()
@@ -68,7 +69,10 @@ jobs:
           predecessor_needle = 'Archive 62-16-03-6216-8041'
           predecessor_replacement = 'Archive 62-16-[contact omitted]'
           first = source.find(predecessor_needle)
-          second = source.find(predecessor_needle, first + len(predecessor_needle)) if first >= 0 else -1
+          second = source.find(
+              predecessor_needle,
+              first + len(predecessor_needle)
+          ) if first >= 0 else -1
           if first < 0 or second < 0:
               raise SystemExit('unable to locate the auxiliary predecessor expectation')
           source = (
@@ -91,22 +95,13 @@ jobs:
           focused_line = focused_line.replace('| tee', '2>&1 | tee', 1)
           source = source[:line_start] + focused_line + source[line_end:]
 
-          stage_marker = 'git -C "$PRODUCT_WT" add'
-          stage_positions = []
-          cursor = 0
-          while True:
-              position = source.find(stage_marker, cursor)
-              if position < 0:
-                  break
-              if position < target_index:
-                  stage_positions.append(position)
-              cursor = position + len(stage_marker)
-          if not stage_positions:
-              raise SystemExit('unable to locate candidate staging before focused execution')
-          stage_index = stage_positions[-1]
-          stage_line_start = source.rfind('\n', 0, stage_index) + 1
+          syntax_anchor = 'node --check "$PRODUCT_WT/tools/lib/industrial-exhaust.mjs"'
+          syntax_index = source.find(syntax_anchor)
+          if syntax_index < 0:
+              raise SystemExit('unable to locate product syntax validation')
+          syntax_line_start = source.rfind('\n', 0, syntax_index) + 1
 
-          url_guard_injection = r'''
+          url_guard_injection = dedent(r'''
           python - "$PRODUCT_WT/tools/lib/industrial-exhaust.mjs" <<'PY_URL_GUARD'
           from pathlib import Path
           import sys
@@ -114,24 +109,24 @@ jobs:
           path = Path(sys.argv[1])
           text = path.read_text()
           needle = """  const laterPhone = intrinsicPhoneIntervalAfterObservationBoundary(
-              candidate.slice(observationEnd)
-            );
-            if (!laterPhone) return null;
+            candidate.slice(observationEnd)
+          );
+          if (!laterPhone) return null;
 
-            return {
+          return {
           """
           replacement = """  const laterPhone = intrinsicPhoneIntervalAfterObservationBoundary(
-              candidate.slice(observationEnd)
-            );
-            if (!laterPhone) return null;
+            candidate.slice(observationEnd)
+          );
+          if (!laterPhone) return null;
 
-            const laterPhoneStart = observationEnd + laterPhone.start;
-            if (hasUrlTokenPrefixContext(
-              `${externalPrefix}${candidate.slice(0, laterPhoneStart)}`
-                .normalize('NFKC')
-            )) return null;
+          const laterPhoneStart = observationEnd + laterPhone.start;
+          if (hasUrlTokenPrefixContext(
+            `${externalPrefix}${candidate.slice(0, laterPhoneStart)}`
+              .normalize('NFKC')
+          )) return null;
 
-            return {
+          return {
           """
           if text.count(needle) != 1:
               raise SystemExit(
@@ -168,11 +163,12 @@ jobs:
           );
           NODE_URL_GUARD
           )
-          '''
+
+          ''')
           source = (
-              source[:stage_line_start]
+              source[:syntax_line_start]
               + url_guard_injection
-              + source[stage_line_start:]
+              + source[syntax_line_start:]
           )
 
           path.write_text(source)
