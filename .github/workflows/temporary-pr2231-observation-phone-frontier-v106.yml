@@ -28,8 +28,10 @@ jobs:
       CONTROLLER_BRANCH: ${{ github.head_ref }}
       EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
       CONTROLLER_PR_NUMBER: ${{ github.event.pull_request.number }}
-      EXPECTED_MAIN: 17aa3cfc22d5f9022164baf5c1d5a8e401b796cf
+      EXPECTED_MAIN: 0b1d8af5b86adad49b3451053dbb9166294d631c
       EXPECTED_PRODUCT: 405882b7f22fd3dc588a2237289f8550ed9525f9
+      EXPECTED_PRODUCT_PARENT: 17aa3cfc22d5f9022164baf5c1d5a8e401b796cf
+      EXPECTED_PR_BASE: 17aa3cfc22d5f9022164baf5c1d5a8e401b796cf
       EXPECTED_PRODUCT_TREE: 7ae48a2dc664c98f0e39f693d13a63fb4ee82224
       EXPECTED_LIBRARY_BLOB: 5e753c9c32cba270ea79b6299fc35db94cd0928f
       EXPECTED_TEST_BLOB: 069349ea792a8da8c5d67831ac2e73efc0ee82e9
@@ -68,25 +70,53 @@ jobs:
                   f"{match.group('suffix')}"
               )
 
-          repaired, count = call.subn(use_literal_callback, source)
-          if count != 1:
-              for line_number, line in enumerate(source.splitlines(), 1):
-                  if "sub" in line and "replacement" in line:
-                      print(f"CANDIDATE {line_number}: {line}", file=sys.stderr)
+          repaired, replacement_count = call.subn(use_literal_callback, source)
+          if replacement_count != 1:
               raise SystemExit(
-                  f"controller envelope repair count={count}, expected=1"
+                  f"controller replacement-semantics repair count={replacement_count}, expected=1"
               )
 
+          pr_base_old = (
+              '  jq -e --arg head "$EXPECTED_PRODUCT" '
+              '--arg base "$EXPECTED_MAIN" \'\n'
+          )
+          pr_base_new = (
+              '  jq -e --arg head "$EXPECTED_PRODUCT" '
+              '--arg base "$EXPECTED_PR_BASE" \'\n'
+          )
+          if repaired.count(pr_base_old) != 1:
+              raise SystemExit(
+                  f"controller PR-base rebind count={repaired.count(pr_base_old)}, expected=1"
+              )
+          repaired = repaired.replace(pr_base_old, pr_base_new)
+
+          product_parent_old = (
+              'assert_eq "$(git rev-parse "$EXPECTED_PRODUCT^")" '
+              '"$EXPECTED_MAIN" "product parent"\n'
+          )
+          product_parent_new = (
+              'assert_eq "$(git rev-parse "$EXPECTED_PRODUCT^")" '
+              '"$EXPECTED_PRODUCT_PARENT" "product parent"\n'
+          )
+          if repaired.count(product_parent_old) != 1:
+              raise SystemExit(
+                  f"controller product-parent rebind count={repaired.count(product_parent_old)}, expected=1"
+              )
+          repaired = repaired.replace(product_parent_old, product_parent_new)
+
           path.write_text(repaired, encoding="utf-8")
-          print(f"CONTROLLER_ENVELOPE_REPAIR_SUCCESS count={count}")
+          print("CONTROLLER_ENVELOPE_REPAIR_SUCCESS count=3")
           PY
           patched_sha=$(sha256sum "$controller_script" | awk '{print $1}')
           [[ "$original_sha" == "ca6e725902cb3343fc979537f4f1b396676da6e998e4dc1cf285d2d95358c32a" ]]
-          [[ "$patched_sha" == "1daa3dd9e6c2bea3a77d8c3a208ea6b810b61101c6c1705db8cb7121bfde41fd" ]]
+          [[ "$patched_sha" == "63102668afc03cd33c8467d57b23852ce357082ba4f8929b3fa2515a307ca4e0" ]]
           {
             printf 'original_script_sha256=%s\n' "$original_sha"
             printf 'patched_script_sha256=%s\n' "$patched_sha"
-            printf 'envelope_repair=compiled-pattern-literal-callback\n'
+            printf 'envelope_repair=compiled-pattern-literal-callback-plus-main-rebind\n'
+            printf 'expected_main=%s\n' "$EXPECTED_MAIN"
+            printf 'expected_product_parent=%s\n' "$EXPECTED_PRODUCT_PARENT"
+            printf 'expected_pr_base=%s\n' "$EXPECTED_PR_BASE"
           } > "$ARTIFACT_DIR/controller-envelope.txt"
           bash "$controller_script"
 
