@@ -1,0 +1,251 @@
+name: Temporary PR 2231 source-contiguous callback observations V113
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/temporary-pr2231-source-contiguous-callback-v113.yml'
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: pr2231-source-contiguous-callback-v113
+  cancel-in-progress: false
+
+jobs:
+  qualify-source-contiguous-callbacks:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: BigBirdReturns/clifford-number
+      PRODUCT_PR: '2231'
+      CONTROLLER_PR: ${{ github.event.pull_request.number }}
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      CONTROLLER_BRANCH: ${{ github.head_ref }}
+      EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+      EXPECTED_MAIN: 0b1d8af5b86adad49b3451053dbb9166294d631c
+      EXPECTED_PRODUCT: cfd1e459efc07f57cab7117200a4a4b962fd1bac
+      EXPECTED_TREE: 17d5350c902e47f129fae0282735b4acbeff381c
+      EXPECTED_LIBRARY: dab48bfba026dc1629a4384a26d98c13366b0ea3
+      EXPECTED_TEST: 8fad1d2be93f9a286f9b95bb35751d3e908c4834
+      REVIEW_CONTROLLER_PR: '2403'
+      REVIEW_CONTROLLER_HEAD: 254c54ba12382ac2dd40f2129abc86c5a145d193
+      REVIEW_RUN: '33332368912'
+      REVIEW_ARTIFACT: '9738015605'
+      REVIEW_ARTIFACT_DIGEST: sha256:ecd47420f5d6fe261465214e7c7f63fd282d9a37dbad8150a52c679f0c3c1c50
+      REVIEW_ID: '5061773183'
+      SOURCE_CONTROLLER_PR: '2404'
+      SOURCE_CONTROLLER: edf861c84350477198857adc5471178875454b5d
+      SOURCE_WORKFLOW_PATH: .github/workflows/temporary-pr2231-source-contiguous-callback-v112.yml
+      SOURCE_WORKFLOW_BLOB: fa4dd6ec81fb204c4e2b44f2028da897b9aaffc6
+      SOURCE_FAILURE_RUN: '33332885484'
+      SOURCE_FAILURE_ARTIFACT: '9738153169'
+      SOURCE_FAILURE_ARTIFACT_DIGEST: sha256:7862b47f3a8f7801fc9a094dd48d0194e5ee936169c612d5fcaadf16196982b7
+      PRODUCT_WT: /tmp/pr2231-source-contiguous-product-v113
+      MAIN_WT: /tmp/pr2231-source-contiguous-main-v113
+      QUALIFIED_DIR: /tmp/pr2231-source-contiguous-qualified-v113
+      ARTIFACT_DIR: /tmp/pr2231-source-contiguous-v113
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Materialize corrected V112 qualification
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          source_receipts=/tmp/pr2231-source-contiguous-v113-source
+          source_yaml=/tmp/pr2231-source-contiguous-v112.yml
+          materialized=/tmp/pr2231-source-contiguous-v113.sh
+          rm -rf "$source_receipts" "$source_yaml" "$materialized"
+          mkdir -p "$source_receipts"
+
+          [[ "$(git rev-parse "$SOURCE_CONTROLLER^{commit}")" == "$SOURCE_CONTROLLER" ]]
+          [[ "$(git rev-parse "$SOURCE_CONTROLLER:$SOURCE_WORKFLOW_PATH")" == "$SOURCE_WORKFLOW_BLOB" ]]
+          git show "$SOURCE_CONTROLLER:$SOURCE_WORKFLOW_PATH" > "$source_yaml"
+
+          gh api "repos/$REPO/pulls/$SOURCE_CONTROLLER_PR" \
+            > "$source_receipts/source-controller-pr.json"
+          gh api "repos/$REPO/actions/runs/$SOURCE_FAILURE_RUN" \
+            > "$source_receipts/source-failure-run.json"
+          gh api "repos/$REPO/actions/artifacts/$SOURCE_FAILURE_ARTIFACT" \
+            > "$source_receipts/source-failure-artifact.json"
+
+          jq -e \
+            --arg head "$SOURCE_CONTROLLER" \
+            --arg base "$EXPECTED_MAIN" '
+              .state == "open"
+              and .draft == true
+              and .merged == false
+              and .head.sha == $head
+              and .base.sha == $base
+              and .commits == 1
+              and .changed_files == 1
+            ' "$source_receipts/source-controller-pr.json" >/dev/null
+          jq -e \
+            --arg head "$SOURCE_CONTROLLER" '
+              .id == ($ENV.SOURCE_FAILURE_RUN | tonumber)
+              and .head_sha == $head
+              and .event == "pull_request"
+              and .status == "completed"
+              and .conclusion == "failure"
+            ' "$source_receipts/source-failure-run.json" >/dev/null
+          jq -e \
+            --arg head "$SOURCE_CONTROLLER" \
+            --arg digest "$SOURCE_FAILURE_ARTIFACT_DIGEST" '
+              .id == ($ENV.SOURCE_FAILURE_ARTIFACT | tonumber)
+              and .expired == false
+              and .digest == $digest
+              and .workflow_run.id == ($ENV.SOURCE_FAILURE_RUN | tonumber)
+              and .workflow_run.head_sha == $head
+            ' "$source_receipts/source-failure-artifact.json" >/dev/null
+
+          python - "$source_yaml" "$materialized" <<'PY_MATERIALIZE'
+          from pathlib import Path
+          import sys
+
+          source = Path(sys.argv[1])
+          output = Path(sys.argv[2])
+          lines = source.read_text().splitlines()
+
+          run_markers = [
+              index for index, line in enumerate(lines)
+              if line == '        run: |'
+              and index >= 2
+              and lines[index - 2] == '      - name: Execute read-only qualification'
+          ]
+          if len(run_markers) != 1:
+              raise SystemExit(
+                  f'execute run block: expected one marker, found {len(run_markers)}'
+              )
+
+          start = run_markers[0] + 1
+          end = next(
+              (
+                  index for index in range(start, len(lines))
+                  if lines[index].startswith('      - name:')
+                  or lines[index].startswith('      - uses:')
+              ),
+              len(lines)
+          )
+
+          script_lines = []
+          for line in lines[start:end]:
+              if line == '':
+                  script_lines.append('')
+                  continue
+              if not line.startswith('          '):
+                  raise SystemExit(
+                      f'run block indentation escaped at source line {len(script_lines) + start + 1}'
+                  )
+              script_lines.append(line[10:])
+
+          markers = (
+              'old = """    const nextSource = next < groups.length',
+              'new = """    const nextSource = next < groups.length'
+          )
+          repair_receipt = []
+          for marker in markers:
+              matches = [
+                  index for index, line in enumerate(script_lines)
+                  if line == marker
+              ]
+              if len(matches) != 1:
+                  raise SystemExit(
+                      f'{marker}: expected one extracted match, found {len(matches)}'
+                  )
+              marker_index = matches[0]
+              closing_index = next(
+                  (
+                      index for index in range(marker_index + 1, len(script_lines))
+                      if script_lines[index] == '"""'
+                  ),
+                  None
+              )
+              if closing_index is None:
+                  raise SystemExit(f'{marker}: closing triple quote not found')
+              for index in range(marker_index + 1, closing_index):
+                  script_lines[index] = f'  {script_lines[index]}'
+              repair_receipt.append({
+                  'marker': marker,
+                  'start_line': marker_index + 1,
+                  'closing_line': closing_index + 1,
+                  'adjusted_lines': closing_index - marker_index - 1
+              })
+
+          output.write_text('\n'.join(script_lines) + '\n')
+          receipt = Path(f'{output}.repair.json')
+          import json
+          receipt.write_text(json.dumps({
+              'source_workflow': str(source),
+              'materialized_script': str(output),
+              'repairs': repair_receipt
+          }, indent=2) + '\n')
+          PY_MATERIALIZE
+
+          cp "$materialized.repair.json" \
+            "$source_receipts/materialization-repair.json"
+          sha256sum "$source_yaml" \
+            > "$source_receipts/source-workflow.sha256"
+          sha256sum "$materialized" \
+            > "$source_receipts/materialized-script.sha256"
+          printf '%s\n' \
+            "source_controller=$SOURCE_CONTROLLER" \
+            "source_workflow_blob=$SOURCE_WORKFLOW_BLOB" \
+            "source_failure_run=$SOURCE_FAILURE_RUN" \
+            "source_failure_artifact=$SOURCE_FAILURE_ARTIFACT" \
+            "source_failure_artifact_digest=$SOURCE_FAILURE_ARTIFACT_DIGEST" \
+            > "$source_receipts/source.env"
+
+          preserve_source_receipts() {
+            mkdir -p "$ARTIFACT_DIR/receipts"
+            cp -a "$source_receipts"/. "$ARTIFACT_DIR/receipts/" || true
+          }
+          trap preserve_source_receipts EXIT
+
+          bash "$materialized"
+
+      - name: Emit qualification receipts
+        if: always()
+        shell: bash
+        run: |
+          upload=/tmp/pr2231-source-contiguous-v113-upload
+          rm -rf "$upload"
+          mkdir -p "$ARTIFACT_DIR" "$upload"
+          find "$ARTIFACT_DIR" -type f -printf '%P\t%s\n' \
+            | sort > "$ARTIFACT_DIR/artifact-manifest.txt"
+          cp -a "$ARTIFACT_DIR"/. "$upload"/
+          {
+            printf '%s\n' '### PR 2231 source-contiguous callback qualification V113'
+            for receipt in result.txt predecessor-reproduction.json \
+              direct-matrix.json candidate.env candidate-paths.txt \
+              candidate-patch.sha256 focused-product.log \
+              product-release-check.log focused-main-transplant.log \
+              main-release-check.log receipts/source.env \
+              receipts/materialization-repair.json \
+              receipts/materialized-script.sha256 \
+              artifact-manifest.txt; do
+              printf '\n#### %s\n\n```text\n' "$receipt"
+              [[ ! -f "$ARTIFACT_DIR/$receipt" ]] \
+                || tail -n 420 "$ARTIFACT_DIR/$receipt"
+              printf '%s\n' '```'
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-source-contiguous-callback-v113
+          path: /tmp/pr2231-source-contiguous-v113-upload
+          retention-days: 90
