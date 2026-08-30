@@ -1,0 +1,73 @@
+name: Temporary PR 2231 three-thread V106 qualification
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/temporary-pr2231-three-thread-v106.yml'
+      - '.github/tmp/pr2231-three-thread-v106.sh.gz.b64'
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: pr2231-three-thread-v106-qualification
+  cancel-in-progress: false
+
+jobs:
+  qualify-current-candidate-read-only:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: BigBirdReturns/clifford-number
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      CONTROLLER_BRANCH: agent/pr2231-three-thread-custody-controller-v106
+      EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+      EXPECTED_MAIN: 0b1d8af5b86adad49b3451053dbb9166294d631c
+      EXPECTED_PRODUCT: 405882b7f22fd3dc588a2237289f8550ed9525f9
+      EXPECTED_PRODUCT_PARENT: 17aa3cfc22d5f9022164baf5c1d5a8e401b796cf
+      EXPECTED_PRODUCT_TREE: 7ae48a2dc664c98f0e39f693d13a63fb4ee82224
+      EXPECTED_LIBRARY_BLOB: 5e753c9c32cba270ea79b6299fc35db94cd0928f
+      EXPECTED_TEST_BLOB: 069349ea792a8da8c5d67831ac2e73efc0ee82e9
+      EXPECTED_CANDIDATE_LIBRARY_BLOB: cb6bcf21460d4d0cca0dcb29affb9424713399d0
+      EXPECTED_CANDIDATE_TEST_BLOB: 96822fbd5ac213d03e2bdc91c92c7ddfc3931963
+      EXPECTED_PATCH_SHA256: 86dfba79233283da18f0a9b2dc2e8182a641dce188e0ab8af8bb647e56502589
+      EXPECTED_PAYLOAD_SHA256: 52665bccee5f5523977c0bc529e5ecbcf37fd9939ed784956d6c7326a3ad0e69
+      EXPECTED_GZIP_SHA256: 59289ec1f820a718b3d5ccb9d5efedd563f830f9816c57e447469411c9621ee6
+      EXPECTED_SCRIPT_SHA256: ab14811454473dd719733913e08fbf02d42da801a3eb87c13db88feea3b60d95
+      PUBLISH: 'false'
+      ARTIFACT_DIR: /tmp/pr2231-three-thread-custody-v106
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Recover and verify frozen controller transport
+        shell: bash
+        run: |
+          set -euo pipefail
+          payload='.github/tmp/pr2231-three-thread-v106.sh.gz.b64'
+          printf '%s  %s\n' "$EXPECTED_PAYLOAD_SHA256" "$payload" | sha256sum -c -
+          base64 --decode "$payload" > /tmp/pr2231-three-thread-v106.sh.gz
+          printf '%s  %s\n' "$EXPECTED_GZIP_SHA256" '/tmp/pr2231-three-thread-v106.sh.gz' | sha256sum -c -
+          gzip --decompress --stdout /tmp/pr2231-three-thread-v106.sh.gz > /tmp/pr2231-three-thread-v106.sh
+          printf '%s  %s\n' "$EXPECTED_SCRIPT_SHA256" '/tmp/pr2231-three-thread-v106.sh' | sha256sum -c -
+          bash -n /tmp/pr2231-three-thread-v106.sh
+          chmod 700 /tmp/pr2231-three-thread-v106.sh
+
+      - name: Qualify exact three-thread successor without publication
+        shell: bash
+        run: bash /tmp/pr2231-three-thread-v106.sh
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-three-thread-custody-v106
+          path: /tmp/pr2231-three-thread-custody-v106
+          retention-days: 90
