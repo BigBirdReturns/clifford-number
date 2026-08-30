@@ -1,0 +1,99 @@
+name: Temporary PR 2231 callback observation frontier V110
+# Read-only qualification for exact-head comments 3890125090 and 3890125092.
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/temporary-pr2231-callback-observation-frontier-v110.yml'
+      - '.github/tmp/pr2231-callback-observation-frontier-v110.sh.gz.b64'
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: pr2231-callback-observation-frontier-v110
+  cancel-in-progress: false
+
+jobs:
+  qualify-callback-observation-frontier:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: BigBirdReturns/clifford-number
+      PRODUCT_PR: '2231'
+      CONTROLLER_PR: ${{ github.event.pull_request.number }}
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      CONTROLLER_BRANCH: ${{ github.head_ref }}
+      EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+      EXPECTED_MAIN: 0b1d8af5b86adad49b3451053dbb9166294d631c
+      EXPECTED_PRODUCT: edbf7027f5de312d77a91d615ecb8cad619ce154
+      EXPECTED_PARENT: 0b1d8af5b86adad49b3451053dbb9166294d631c
+      EXPECTED_TREE: efc92aba2de7088ad1e4a9b0514ccb9e8f498c47
+      EXPECTED_LIBRARY: cb6bcf21460d4d0cca0dcb29affb9424713399d0
+      EXPECTED_TEST: 96822fbd5ac213d03e2bdc91c92c7ddfc3931963
+      REVIEW_PREDECESSOR: edbf7027f5de312d77a91d615ecb8cad619ce154
+      REVIEW_IDS: '3890125090 3890125092'
+      ARTIFACT_DIR: /tmp/pr2231-callback-observation-v110
+      PRODUCT_WT: /tmp/pr2231-callback-observation-product-v110
+      MAIN_WT: /tmp/pr2231-callback-observation-main-v110
+      QUALIFIED_DIR: /tmp/pr2231-callback-observation-qualified-v110
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Decode and execute read-only qualification
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          base64 -d .github/tmp/pr2231-callback-observation-frontier-v110.sh.gz.b64 \
+            | gzip -d > /tmp/pr2231-callback-observation-frontier-v110.sh
+          chmod +x /tmp/pr2231-callback-observation-frontier-v110.sh
+          /tmp/pr2231-callback-observation-frontier-v110.sh
+
+      - name: Emit qualification diagnostics
+        if: always()
+        shell: bash
+        run: |
+          upload=/tmp/pr2231-callback-observation-v110-upload
+          rm -rf "$upload"
+          mkdir -p "$ARTIFACT_DIR" "$upload"
+          find "$ARTIFACT_DIR" -maxdepth 1 -type f -printf '%f\t%s\n' \
+            | sort > "$ARTIFACT_DIR/artifact-manifest.txt"
+          cp -a "$ARTIFACT_DIR"/. "$upload"/
+          find "$upload" -maxdepth 1 -type f -printf '%f\t%s\n' \
+            | sort > "$upload/upload-manifest.txt"
+          {
+            printf '%s\n' '### PR 2231 callback observation frontier V110'
+            for receipt in summary.json qualification-terminal.txt \
+              predecessor-reproduction.jsonl direct-matrix.jsonl \
+              focused-product.log product-release-check.log \
+              focused-main-transplant.log main-release-check.log \
+              candidate-commit.txt candidate-paths.txt \
+              review-comments-before.tsv review-thread-ledger-before.jsonl \
+              review-comments-after.tsv review-thread-ledger-after.jsonl \
+              artifact-manifest.txt; do
+              printf '\n#### %s\n\n```text\n' "$receipt"
+              [[ ! -f "$ARTIFACT_DIR/$receipt" ]] \
+                || tail -n 360 "$ARTIFACT_DIR/$receipt"
+              printf '%s\n' '```'
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-callback-observation-frontier-v110
+          path: /tmp/pr2231-callback-observation-v110-upload
+          retention-days: 90
