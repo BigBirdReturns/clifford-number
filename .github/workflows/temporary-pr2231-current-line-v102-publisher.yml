@@ -1,4 +1,4 @@
-name: Temporary PR 2231 current-line V102 leased publisher
+name: Retired PR 2231 current-line V102 publisher
 
 on:
   pull_request:
@@ -8,133 +8,11 @@ on:
       - '.github/workflows/temporary-pr2231-current-line-v102-publisher.yml'
 
 permissions:
-  contents: write
-  pull-requests: read
-  actions: read
-
-concurrency:
-  group: pr2231-current-line-v102-leased-publisher
-  cancel-in-progress: false
+  contents: read
 
 jobs:
-  publish-v102-exact-product:
-    if: github.event.pull_request.number == 2391
+  retired:
+    if: ${{ github.event.pull_request.number == 0 }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
-    env:
-      GH_TOKEN: ${{ github.token }}
-      CONTROLLER_SHA: ${{ github.event.pull_request.head.sha }}
-      CONTROLLER_BRANCH: agent/pr2231-cumulative-custody-controller-v92
-      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
-      EXPECTED_MAIN: 17aa3cfc22d5f9022164baf5c1d5a8e401b796cf
-      EXPECTED_PRODUCT: bea76f0dd155122c3a45fe82c7c1abbaf676349b
-      EXPECTED_PREDECESSOR_TREE: 23dde19530990df1f1daa436993b1214e83ac8fd
-      EXPECTED_BASE_LIBRARY_BLOB: 5f68254d3e44de693e83503aed879160f9b7b997
-      EXPECTED_BASE_FOCUSED_TEST_BLOB: 1659a7cc54666a2ac5a1d6b88eb8c6591d98008e
-      EXPECTED_PREDECESSOR_LIBRARY_BLOB: 6655e9aa10ac2964e5f6289a4881f1343265fa0e
-      EXPECTED_PREDECESSOR_FOCUSED_TEST_BLOB: 7f72ca8c2eb7f436471453c74b98e1227b0970d5
-      PAYLOAD_PATH: .github/tmp/pr2231-current-line-v100.py.gz.b64
-      EXPECTED_PAYLOAD_BLOB: 22379d46e0d1d6a3782717bdcb070f68c8072042
-      EXPECTED_MUTATOR_SHA256: c124f16378d131539dccd138946cd21ac78fd6d2519288a88b8fa84cc42a3e33
-      EXPECTED_CANDIDATE_LIBRARY_BLOB: d02ac8fdb1dad6777d6a722a097706c5660ebe8a
-      EXPECTED_CANDIDATE_FOCUSED_TEST_BLOB: 1d8fd285563eea4121bbe178a4b54eb715af3ac0
-      EXPECTED_CANDIDATE_TREE: ec2c1fdf2bc9e7b05d9fe1ec40f22c56e9ae4184
-      PUBLISHER_SCRIPT_PATH: .github/tmp/pr2231-current-line-v101-publisher.sh.gz
-      EXPECTED_PUBLISHER_SCRIPT_BLOB: 49148c09e709eb751d2121c7ec23085bf9b5b009
-      EXPECTED_ORIGINAL_SCRIPT_SHA256: 32526e81f0b54caa70dc47455460ee91f2b9be13af13abb7c9a4f67019dc265b
-      EXPECTED_PATCHED_SCRIPT_SHA256: c7c9e19565d9905a452b012916071a8c32cca61c7f547344d4f9e55511cb7ae2
-      QUALIFICATION_RUN_ID: '33289370102'
-      QUALIFICATION_ARTIFACT_ID: '9725480090'
-      ARTIFACT_DIR: /tmp/pr2231-v102-publication
-
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          fetch-depth: 0
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Recover, rebind, and execute the exact V102 leased publisher
-        shell: bash
-        run: |
-          set -uo pipefail
-          rm -rf "$ARTIFACT_DIR"
-          mkdir -p "$ARTIFACT_DIR"
-          printf '%s\n' BOOTSTRAP_STARTED > "$ARTIFACT_DIR/result.txt"
-
-          fail() {
-            printf '%s\n' "FAIL:$*" > "$ARTIFACT_DIR/result.txt"
-            exit 1
-          }
-
-          script_blob="$(git rev-parse "${CONTROLLER_SHA}:${PUBLISHER_SCRIPT_PATH}")" || fail RESOLVE_PUBLISHER_SCRIPT_BLOB
-          printf '%s\n' "$script_blob" > "$ARTIFACT_DIR/publisher-script.blob"
-          [[ "$script_blob" == "$EXPECTED_PUBLISHER_SCRIPT_BLOB" ]] || fail PUBLISHER_SCRIPT_BLOB
-
-          gzip -dc "$GITHUB_WORKSPACE/$PUBLISHER_SCRIPT_PATH" > /tmp/pr2231-v102-publisher.original.sh || fail PUBLISHER_SCRIPT_DECODE
-          original_sha="$(sha256sum /tmp/pr2231-v102-publisher.original.sh | awk '{print $1}')"
-          printf '%s\n' "$original_sha" > "$ARTIFACT_DIR/publisher-script-original.sha256"
-          [[ "$original_sha" == "$EXPECTED_ORIGINAL_SCRIPT_SHA256" ]] || fail ORIGINAL_PUBLISHER_SCRIPT_SHA256
-
-          python - \
-            /tmp/pr2231-v102-publisher.original.sh \
-            /tmp/pr2231-v102-publisher.sh \
-            "$ARTIFACT_DIR/publisher-script-rebinding.json" \
-            > "$ARTIFACT_DIR/publisher-script-rebinding.log" 2>&1 <<'PY'
-          import hashlib
-          import json
-          from pathlib import Path
-          import sys
-
-          source_path = Path(sys.argv[1])
-          output_path = Path(sys.argv[2])
-          receipt_path = Path(sys.argv[3])
-          source = source_path.read_text(encoding='utf-8')
-          replacements = {
-              '33288385779': ('33289370102', 2),
-              '6fa9a44304ab8540ad188e20eaf768a6eb1640c7': ('eafbc311c7d0d08745e6b2ee496f94127756985d', 2),
-              '9725178535': ('9725480090', 1),
-              'sha256:a9c79ce7b7c74469d7c721c3692a37093c1857af16247ed81d5fc9891246ab60': (
-                  'sha256:88750ecf67f29a5c281cb6d236c7899809af0b3706b87cae29a88494d4d64257',
-                  1,
-              ),
-          }
-          counts = {}
-          rebound = source
-          for old, (new, expected_count) in replacements.items():
-              actual_count = rebound.count(old)
-              counts[old] = actual_count
-              if actual_count != expected_count:
-                  raise SystemExit(f'REBIND_COUNT_FAIL:{old}:{actual_count}:{expected_count}')
-              rebound = rebound.replace(old, new)
-          for old in replacements:
-              if old in rebound:
-                  raise SystemExit(f'REBIND_RESIDUAL_FAIL:{old}')
-          output_path.write_text(rebound, encoding='utf-8')
-          receipt = {
-              'original_sha256': hashlib.sha256(source.encode('utf-8')).hexdigest(),
-              'patched_sha256': hashlib.sha256(rebound.encode('utf-8')).hexdigest(),
-              'replacement_counts': counts,
-          }
-          receipt_path.write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n', encoding='utf-8')
-          print(json.dumps(receipt, sort_keys=True))
-          PY
-          status=$?
-          cat "$ARTIFACT_DIR/publisher-script-rebinding.log"
-          [[ "$status" -eq 0 ]] || fail PUBLISHER_SCRIPT_REBINDING
-
-          patched_sha="$(sha256sum /tmp/pr2231-v102-publisher.sh | awk '{print $1}')"
-          printf '%s\n' "$patched_sha" > "$ARTIFACT_DIR/publisher-script-patched.sha256"
-          [[ "$patched_sha" == "$EXPECTED_PATCHED_SCRIPT_SHA256" ]] || fail PATCHED_PUBLISHER_SCRIPT_SHA256
-          bash -n /tmp/pr2231-v102-publisher.sh || fail PUBLISHER_SCRIPT_SYNTAX
-          bash /tmp/pr2231-v102-publisher.sh
-
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: pr2231-current-line-v102-publication
-          path: /tmp/pr2231-v102-publication
-          retention-days: 90
+      - run: echo 'V102 publisher retired after exact owner-origin publication'

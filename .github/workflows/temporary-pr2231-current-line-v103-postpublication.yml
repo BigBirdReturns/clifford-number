@@ -1,0 +1,398 @@
+name: Temporary PR 2231 current-line V103 postpublication receipt
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/temporary-pr2231-current-line-v101-publisher.yml'
+      - '.github/workflows/temporary-pr2231-current-line-v102-publisher.yml'
+      - '.github/workflows/temporary-pr2231-current-line-v103-postpublication.yml'
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: pr2231-current-line-v103-postpublication
+  cancel-in-progress: false
+
+jobs:
+  bind-v103-postpublication:
+    if: github.event.pull_request.number == 2391
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: BigBirdReturns/clifford-number
+      CONTROLLER_BRANCH: agent/pr2231-cumulative-custody-controller-v92
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      EXPECTED_CONTROLLER_PARENT: 4a9c6eb97f195a734474839f6049ca13c164044b
+      EXPECTED_MAIN: 17aa3cfc22d5f9022164baf5c1d5a8e401b796cf
+      EXPECTED_PRODUCT: 618d7f4fff23ea44d396f1476477e0163a1c50f1
+      EXPECTED_PRODUCT_TREE: ec2c1fdf2bc9e7b05d9fe1ec40f22c56e9ae4184
+      EXPECTED_LIBRARY_BLOB: d02ac8fdb1dad6777d6a722a097706c5660ebe8a
+      EXPECTED_FOCUSED_TEST_BLOB: 1d8fd285563eea4121bbe178a4b54eb715af3ac0
+      EXPECTED_RETIRED_V101_BLOB: df2e5da9b496ea0fa856aef172f75543d4679605
+      EXPECTED_RETIRED_V102_BLOB: 0679a5a010a1fa90f13534b08ad8a7205f8592bb
+      EXPECTED_QUALIFICATION_RUN: '33289370102'
+      EXPECTED_QUALIFICATION_HEAD: eafbc311c7d0d08745e6b2ee496f94127756985d
+      EXPECTED_QUALIFICATION_ARTIFACT: '9725480090'
+      EXPECTED_QUALIFICATION_DIGEST: sha256:88750ecf67f29a5c281cb6d236c7899809af0b3706b87cae29a88494d4d64257
+      EXPECTED_PUBLISHER_RUN: '33289612929'
+      EXPECTED_PUBLISHER_HEAD: 4a9c6eb97f195a734474839f6049ca13c164044b
+      EXPECTED_PUBLISHER_ARTIFACT: '9725553956'
+      EXPECTED_PUBLISHER_DIGEST: sha256:0af60a3c164cc413517824552ad153493197acc9aa5febacb7dbd90a43f2d34e
+      EXPECTED_NO_MAGIC_RUN: '33289794925'
+      EXPECTED_RELEASE_RUN: '33289794926'
+      EXPECTED_INTAKE_RUN: '33289794928'
+      ARTIFACT_DIR: /tmp/pr2231-v103-postpublication
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Bind exact postpublication state and retire write custody
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf "$ARTIFACT_DIR"
+          mkdir -p "$ARTIFACT_DIR"
+          : > "$ARTIFACT_DIR/trace.txt"
+          printf '%s\n' STARTED > "$ARTIFACT_DIR/result.txt"
+
+          note() {
+            printf '%s\n' "$*" | tee -a "$ARTIFACT_DIR/trace.txt"
+            printf '::notice title=V103 postpublication receipt::%s\n' "$*"
+          }
+
+          fail() {
+            note "FAIL:$*"
+            printf '%s\n' "FAIL:$*" > "$ARTIFACT_DIR/result.txt"
+            exit 1
+          }
+
+          controller_sha="${{ github.event.pull_request.head.sha }}"
+          printf '%s\n' "$controller_sha" > "$ARTIFACT_DIR/controller.sha"
+          note "CONTROLLER_SHA=$controller_sha"
+
+          note CONTROLLER_BIND_STARTED
+          git fetch --no-tags origin \
+            "+refs/heads/main:refs/remotes/origin/main" \
+            "+refs/heads/${PRODUCT_BRANCH}:refs/remotes/origin/${PRODUCT_BRANCH}" \
+            "+refs/heads/${CONTROLLER_BRANCH}:refs/remotes/origin/${CONTROLLER_BRANCH}" \
+            || fail GIT_FETCH
+
+          actual_controller="$(git rev-parse "refs/remotes/origin/${CONTROLLER_BRANCH}")" || fail RESOLVE_CONTROLLER
+          controller_parent="$(git rev-parse "${controller_sha}^")" || fail RESOLVE_CONTROLLER_PARENT
+          printf '%s\n' "$actual_controller" > "$ARTIFACT_DIR/controller-ref.sha"
+          printf '%s\n' "$controller_parent" > "$ARTIFACT_DIR/controller-parent.sha"
+          [[ "$actual_controller" == "$controller_sha" ]] || fail CONTROLLER_REF_LEASE
+          [[ "$controller_parent" == "$EXPECTED_CONTROLLER_PARENT" ]] || fail CONTROLLER_PARENT_LEASE
+
+          git diff --name-only "$EXPECTED_CONTROLLER_PARENT" "$controller_sha" | sort > "$ARTIFACT_DIR/controller-increment-paths.txt"
+          mapfile -t controller_paths < "$ARTIFACT_DIR/controller-increment-paths.txt"
+          [[ "${#controller_paths[@]}" -eq 3 ]] || fail CONTROLLER_INCREMENT_PATH_COUNT
+          [[ "${controller_paths[0]}" == '.github/workflows/temporary-pr2231-current-line-v101-publisher.yml' ]] || fail CONTROLLER_INCREMENT_PATH_1
+          [[ "${controller_paths[1]}" == '.github/workflows/temporary-pr2231-current-line-v102-publisher.yml' ]] || fail CONTROLLER_INCREMENT_PATH_2
+          [[ "${controller_paths[2]}" == '.github/workflows/temporary-pr2231-current-line-v103-postpublication.yml' ]] || fail CONTROLLER_INCREMENT_PATH_3
+
+          v101_blob="$(git rev-parse "${controller_sha}:.github/workflows/temporary-pr2231-current-line-v101-publisher.yml")" || fail RESOLVE_RETIRED_V101
+          v102_blob="$(git rev-parse "${controller_sha}:.github/workflows/temporary-pr2231-current-line-v102-publisher.yml")" || fail RESOLVE_RETIRED_V102
+          printf '%s\n' "$v101_blob" > "$ARTIFACT_DIR/retired-v101.blob"
+          printf '%s\n' "$v102_blob" > "$ARTIFACT_DIR/retired-v102.blob"
+          [[ "$v101_blob" == "$EXPECTED_RETIRED_V101_BLOB" ]] || fail RETIRED_V101_BLOB
+          [[ "$v102_blob" == "$EXPECTED_RETIRED_V102_BLOB" ]] || fail RETIRED_V102_BLOB
+
+          for workflow in \
+            .github/workflows/temporary-pr2231-current-line-v101-publisher.yml \
+            .github/workflows/temporary-pr2231-current-line-v102-publisher.yml
+          do
+            git show "${controller_sha}:${workflow}" > "$ARTIFACT_DIR/$(basename "$workflow").retired"
+            if grep -Eq '^[[:space:]]*(contents|pull-requests|actions):[[:space:]]*write[[:space:]]*$' "$ARTIFACT_DIR/$(basename "$workflow").retired"; then
+              fail "WRITE_PERMISSION_REMAINS=${workflow}"
+            fi
+            grep -Fq 'github.event.pull_request.number == 0' "$ARTIFACT_DIR/$(basename "$workflow").retired" \
+              || fail "RETIREMENT_GUARD_MISSING=${workflow}"
+          done
+          note CONTROLLER_BIND_SUCCESS
+
+          note PRODUCT_BIND_STARTED
+          actual_main="$(git rev-parse refs/remotes/origin/main)" || fail RESOLVE_MAIN
+          actual_product="$(git rev-parse "refs/remotes/origin/${PRODUCT_BRANCH}")" || fail RESOLVE_PRODUCT
+          product_parent="$(git rev-parse "${EXPECTED_PRODUCT}^")" || fail RESOLVE_PRODUCT_PARENT
+          product_tree="$(git rev-parse "${EXPECTED_PRODUCT}^{tree}")" || fail RESOLVE_PRODUCT_TREE
+          product_library="$(git rev-parse "${EXPECTED_PRODUCT}:tools/lib/industrial-exhaust.mjs")" || fail RESOLVE_LIBRARY_BLOB
+          product_test="$(git rev-parse "${EXPECTED_PRODUCT}:test/industrial-exhaust.test.js")" || fail RESOLVE_FOCUSED_TEST_BLOB
+          parent_count="$(git rev-list --parents -n 1 "$EXPECTED_PRODUCT" | awk '{print NF - 1}')"
+          ahead_count="$(git rev-list --count "${EXPECTED_MAIN}..${EXPECTED_PRODUCT}")"
+          behind_count="$(git rev-list --count "${EXPECTED_PRODUCT}..${EXPECTED_MAIN}")"
+
+          printf '%s\n' "$actual_main" > "$ARTIFACT_DIR/main.sha"
+          printf '%s\n' "$actual_product" > "$ARTIFACT_DIR/product.sha"
+          printf '%s\n' "$product_parent" > "$ARTIFACT_DIR/product-parent.sha"
+          printf '%s\n' "$product_tree" > "$ARTIFACT_DIR/product-tree.sha"
+          printf '%s\n' "$product_library" > "$ARTIFACT_DIR/library.blob"
+          printf '%s\n' "$product_test" > "$ARTIFACT_DIR/focused-test.blob"
+          printf '%s\n' "$parent_count" > "$ARTIFACT_DIR/product-parent-count.txt"
+          printf '%s\n' "$ahead_count" > "$ARTIFACT_DIR/product-ahead-count.txt"
+          printf '%s\n' "$behind_count" > "$ARTIFACT_DIR/product-behind-count.txt"
+
+          [[ "$actual_main" == "$EXPECTED_MAIN" ]] || fail MAIN_LEASE
+          [[ "$actual_product" == "$EXPECTED_PRODUCT" ]] || fail PRODUCT_LEASE
+          [[ "$product_parent" == "$EXPECTED_MAIN" ]] || fail PRODUCT_PARENT
+          [[ "$product_tree" == "$EXPECTED_PRODUCT_TREE" ]] || fail PRODUCT_TREE
+          [[ "$product_library" == "$EXPECTED_LIBRARY_BLOB" ]] || fail LIBRARY_BLOB
+          [[ "$product_test" == "$EXPECTED_FOCUSED_TEST_BLOB" ]] || fail FOCUSED_TEST_BLOB
+          [[ "$parent_count" == 1 ]] || fail PRODUCT_PARENT_COUNT
+          [[ "$ahead_count" == 1 ]] || fail PRODUCT_AHEAD_COUNT
+          [[ "$behind_count" == 0 ]] || fail PRODUCT_BEHIND_COUNT
+
+          git diff --name-only "$EXPECTED_MAIN" "$EXPECTED_PRODUCT" | sort > "$ARTIFACT_DIR/product-paths.txt"
+          mapfile -t product_paths < "$ARTIFACT_DIR/product-paths.txt"
+          [[ "${#product_paths[@]}" -eq 2 ]] || fail PRODUCT_PATH_COUNT
+          [[ "${product_paths[0]}" == 'test/industrial-exhaust.test.js' ]] || fail PRODUCT_PATH_1
+          [[ "${product_paths[1]}" == 'tools/lib/industrial-exhaust.mjs' ]] || fail PRODUCT_PATH_2
+          note PRODUCT_BIND_SUCCESS
+
+          note PULL_REQUEST_BIND_STARTED
+          gh api "repos/${REPO}/pulls/2231" > "$ARTIFACT_DIR/product-pr.json" || fail FETCH_PRODUCT_PR
+          jq -e \
+            --arg product "$EXPECTED_PRODUCT" \
+            --arg branch "$PRODUCT_BRANCH" \
+            --arg main "$EXPECTED_MAIN" \
+            --arg repo "$REPO" \
+            '.state == "open"
+             and .draft == true
+             and .merged == false
+             and .head.sha == $product
+             and .head.ref == $branch
+             and .head.repo.full_name == $repo
+             and .base.ref == "main"
+             and .base.sha == $main
+             and .commits == 1
+             and .changed_files == 2' \
+            "$ARTIFACT_DIR/product-pr.json" > /dev/null || fail PRODUCT_PR_STATE
+
+          gh api --paginate "repos/${REPO}/pulls/2231/files?per_page=100" --jq '.[].filename' \
+            | sort > "$ARTIFACT_DIR/product-pr-paths.txt" || fail FETCH_PRODUCT_PR_PATHS
+          cmp -s "$ARTIFACT_DIR/product-paths.txt" "$ARTIFACT_DIR/product-pr-paths.txt" \
+            || fail PRODUCT_PR_PATHS
+
+          gh api "repos/${REPO}/pulls/2391" > "$ARTIFACT_DIR/controller-pr.json" || fail FETCH_CONTROLLER_PR
+          jq -e \
+            --arg controller "$controller_sha" \
+            --arg branch "$CONTROLLER_BRANCH" \
+            --arg repo "$REPO" \
+            '.state == "open"
+             and .draft == true
+             and .merged == false
+             and .head.sha == $controller
+             and .head.ref == $branch
+             and .head.repo.full_name == $repo
+             and .base.ref == "main"' \
+            "$ARTIFACT_DIR/controller-pr.json" > /dev/null || fail CONTROLLER_PR_STATE
+          note PULL_REQUEST_BIND_SUCCESS
+
+          note REVIEW_CENSUS_STARTED
+          gh api graphql \
+            -F owner=BigBirdReturns \
+            -F name=clifford-number \
+            -F number=2231 \
+            -f query='
+              query($owner: String!, $name: String!, $number: Int!) {
+                repository(owner: $owner, name: $name) {
+                  pullRequest(number: $number) {
+                    reviewThreads(first: 100) {
+                      nodes {
+                        id
+                        isResolved
+                        isOutdated
+                      }
+                    }
+                  }
+                }
+              }' \
+            > "$ARTIFACT_DIR/review-threads.json" || fail FETCH_REVIEW_THREADS
+
+          jq -e '.errors == null and .data.repository.pullRequest.reviewThreads.nodes != null' \
+            "$ARTIFACT_DIR/review-threads.json" > /dev/null || fail REVIEW_THREAD_RESPONSE
+          jq -r \
+            '.data.repository.pullRequest.reviewThreads.nodes
+             | sort_by(.id)[]
+             | [.id, (.isResolved | tostring), (.isOutdated | tostring)]
+             | @tsv' \
+            "$ARTIFACT_DIR/review-threads.json" > "$ARTIFACT_DIR/review-census.tsv"
+          sha256sum "$ARTIFACT_DIR/review-census.tsv" > "$ARTIFACT_DIR/review-census.sha256"
+
+          for thread in \
+            PRRT_kwDOTGqftc6dbRfO \
+            PRRT_kwDOTGqftc6dbRfP \
+            PRRT_kwDOTGqftc6dbRfR
+          do
+            jq -e --arg id "$thread" \
+              'any(.data.repository.pullRequest.reviewThreads.nodes[];
+                   .id == $id and .isResolved == false)' \
+              "$ARTIFACT_DIR/review-threads.json" > /dev/null \
+              || fail "TARGET_THREAD_NOT_UNRESOLVED=${thread}"
+          done
+          note REVIEW_CENSUS_SUCCESS
+
+          check_owner_run() {
+            local run_id="$1"
+            local expected_name="$2"
+            local output="$3"
+            gh api "repos/${REPO}/actions/runs/${run_id}" > "$output" || fail "FETCH_RUN=${run_id}"
+            jq -e \
+              --arg name "$expected_name" \
+              --arg product "$EXPECTED_PRODUCT" \
+              --arg branch "$PRODUCT_BRANCH" \
+              --arg main "$EXPECTED_MAIN" \
+              '.name == $name
+               and .status == "completed"
+               and .conclusion == "success"
+               and .event == "pull_request"
+               and .head_sha == $product
+               and .head_branch == $branch
+               and .actor.login == "BigBirdReturns"
+               and .triggering_actor.login == "BigBirdReturns"
+               and any(.pull_requests[]?;
+                       .number == 2231
+                       and .head.sha == $product
+                       and .base.sha == $main)' \
+              "$output" > /dev/null || fail "OWNER_RUN_STATE=${run_id}"
+          }
+
+          note OWNER_WORKFLOWS_STARTED
+          check_owner_run "$EXPECTED_NO_MAGIC_RUN" 'No magic human gate' "$ARTIFACT_DIR/no-magic-run.json"
+          check_owner_run "$EXPECTED_RELEASE_RUN" 'Release checks' "$ARTIFACT_DIR/release-run.json"
+          check_owner_run "$EXPECTED_INTAKE_RUN" 'First-party industrial-exhaust intake' "$ARTIFACT_DIR/intake-run.json"
+          note OWNER_WORKFLOWS_SUCCESS
+
+          note HISTORICAL_RECEIPTS_STARTED
+          gh api "repos/${REPO}/actions/runs/${EXPECTED_QUALIFICATION_RUN}" \
+            > "$ARTIFACT_DIR/qualification-run.json" || fail FETCH_QUALIFICATION_RUN
+          jq -e \
+            --arg head "$EXPECTED_QUALIFICATION_HEAD" \
+            '.name == "Temporary PR 2231 current-line V100 exact qualification"
+             and .status == "completed"
+             and .conclusion == "success"
+             and .event == "pull_request"
+             and .head_sha == $head
+             and .actor.login == "BigBirdReturns"' \
+            "$ARTIFACT_DIR/qualification-run.json" > /dev/null || fail QUALIFICATION_RUN_STATE
+
+          gh api "repos/${REPO}/actions/artifacts/${EXPECTED_QUALIFICATION_ARTIFACT}" \
+            > "$ARTIFACT_DIR/qualification-artifact.json" || fail FETCH_QUALIFICATION_ARTIFACT
+          jq -e \
+            --argjson id "$EXPECTED_QUALIFICATION_ARTIFACT" \
+            --argjson run "$EXPECTED_QUALIFICATION_RUN" \
+            --arg head "$EXPECTED_QUALIFICATION_HEAD" \
+            --arg digest "$EXPECTED_QUALIFICATION_DIGEST" \
+            '.id == $id
+             and .name == "pr2231-current-line-v100-exact-qualification"
+             and .expired == false
+             and .digest == $digest
+             and .workflow_run.id == $run
+             and .workflow_run.head_sha == $head' \
+            "$ARTIFACT_DIR/qualification-artifact.json" > /dev/null || fail QUALIFICATION_ARTIFACT_STATE
+
+          gh api "repos/${REPO}/actions/runs/${EXPECTED_PUBLISHER_RUN}" \
+            > "$ARTIFACT_DIR/publisher-run.json" || fail FETCH_PUBLISHER_RUN
+          jq -e \
+            --arg head "$EXPECTED_PUBLISHER_HEAD" \
+            '.name == "Temporary PR 2231 current-line V102 leased publisher"
+             and .status == "completed"
+             and .conclusion == "failure"
+             and .event == "pull_request"
+             and .head_sha == $head
+             and .actor.login == "BigBirdReturns"' \
+            "$ARTIFACT_DIR/publisher-run.json" > /dev/null || fail PUBLISHER_RUN_STATE
+
+          gh api "repos/${REPO}/actions/artifacts/${EXPECTED_PUBLISHER_ARTIFACT}" \
+            > "$ARTIFACT_DIR/publisher-artifact.json" || fail FETCH_PUBLISHER_ARTIFACT
+          jq -e \
+            --argjson id "$EXPECTED_PUBLISHER_ARTIFACT" \
+            --argjson run "$EXPECTED_PUBLISHER_RUN" \
+            --arg head "$EXPECTED_PUBLISHER_HEAD" \
+            --arg digest "$EXPECTED_PUBLISHER_DIGEST" \
+            '.id == $id
+             and .name == "pr2231-current-line-v102-publication"
+             and .expired == false
+             and .digest == $digest
+             and .workflow_run.id == $run
+             and .workflow_run.head_sha == $head' \
+            "$ARTIFACT_DIR/publisher-artifact.json" > /dev/null || fail PUBLISHER_ARTIFACT_STATE
+          note HISTORICAL_RECEIPTS_SUCCESS
+
+          note POSTCONDITION_STARTED
+          git fetch --no-tags origin \
+            "+refs/heads/main:refs/remotes/origin/main" \
+            "+refs/heads/${PRODUCT_BRANCH}:refs/remotes/origin/${PRODUCT_BRANCH}" \
+            "+refs/heads/${CONTROLLER_BRANCH}:refs/remotes/origin/${CONTROLLER_BRANCH}" \
+            || fail POSTCONDITION_FETCH
+          [[ "$(git rev-parse refs/remotes/origin/main)" == "$EXPECTED_MAIN" ]] || fail POSTCONDITION_MAIN
+          [[ "$(git rev-parse "refs/remotes/origin/${PRODUCT_BRANCH}")" == "$EXPECTED_PRODUCT" ]] || fail POSTCONDITION_PRODUCT
+          [[ "$(git rev-parse "refs/remotes/origin/${CONTROLLER_BRANCH}")" == "$controller_sha" ]] || fail POSTCONDITION_CONTROLLER
+
+          gh api "repos/${REPO}/pulls/2231" > "$ARTIFACT_DIR/product-pr-post.json" || fail POSTCONDITION_PRODUCT_PR
+          gh api "repos/${REPO}/pulls/2391" > "$ARTIFACT_DIR/controller-pr-post.json" || fail POSTCONDITION_CONTROLLER_PR
+          jq -e --arg product "$EXPECTED_PRODUCT" \
+            '.state == "open" and .draft == true and .merged == false and .head.sha == $product' \
+            "$ARTIFACT_DIR/product-pr-post.json" > /dev/null || fail POSTCONDITION_PRODUCT_PR_STATE
+          jq -e --arg controller "$controller_sha" \
+            '.state == "open" and .draft == true and .merged == false and .head.sha == $controller' \
+            "$ARTIFACT_DIR/controller-pr-post.json" > /dev/null || fail POSTCONDITION_CONTROLLER_PR_STATE
+
+          jq -n \
+            --arg controller "$controller_sha" \
+            --arg controller_parent "$controller_parent" \
+            --arg main "$actual_main" \
+            --arg product "$actual_product" \
+            --arg product_parent "$product_parent" \
+            --arg product_tree "$product_tree" \
+            --arg library_blob "$product_library" \
+            --arg focused_test_blob "$product_test" \
+            --arg qualification_run "$EXPECTED_QUALIFICATION_RUN" \
+            --arg qualification_artifact "$EXPECTED_QUALIFICATION_ARTIFACT" \
+            --arg publisher_run "$EXPECTED_PUBLISHER_RUN" \
+            --arg publisher_artifact "$EXPECTED_PUBLISHER_ARTIFACT" \
+            --arg no_magic_run "$EXPECTED_NO_MAGIC_RUN" \
+            --arg release_run "$EXPECTED_RELEASE_RUN" \
+            --arg intake_run "$EXPECTED_INTAKE_RUN" \
+            '{
+              controller: $controller,
+              controller_parent: $controller_parent,
+              main: $main,
+              product: $product,
+              product_parent: $product_parent,
+              product_tree: $product_tree,
+              library_blob: $library_blob,
+              focused_test_blob: $focused_test_blob,
+              qualification_run: ($qualification_run | tonumber),
+              qualification_artifact: ($qualification_artifact | tonumber),
+              publisher_run: ($publisher_run | tonumber),
+              publisher_artifact: ($publisher_artifact | tonumber),
+              owner_runs: {
+                no_magic_human_gate: ($no_magic_run | tonumber),
+                release_checks: ($release_run | tonumber),
+                first_party_intake: ($intake_run | tonumber)
+              },
+              product_state: "open-draft-unmerged",
+              controller_state: "open-draft-unmerged",
+              write_publishers: "retired",
+              result: "POSTPUBLICATION_RECEIPT_SUCCESS"
+            }' > "$ARTIFACT_DIR/receipt.json"
+
+          printf '%s\n' POSTPUBLICATION_RECEIPT_SUCCESS > "$ARTIFACT_DIR/result.txt"
+          note POSTPUBLICATION_RECEIPT_SUCCESS
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-current-line-v103-postpublication
+          path: /tmp/pr2231-v103-postpublication
+          retention-days: 90
