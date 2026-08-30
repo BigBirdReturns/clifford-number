@@ -1,4 +1,4 @@
-name: Temporary PR 2231 day-first date V104 qualification
+name: Temporary PR 2231 day-first date V105 publisher
 
 on:
   pull_request:
@@ -9,16 +9,16 @@ on:
       - '.github/tmp/pr2231-day-first-date-v104.sh.gz'
 
 permissions:
-  contents: read
+  contents: write
   pull-requests: read
   actions: read
 
 concurrency:
-  group: pr2231-day-first-date-v104-qualification
+  group: pr2231-day-first-date-v105-publisher
   cancel-in-progress: false
 
 jobs:
-  qualify:
+  publish:
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     env:
@@ -32,8 +32,11 @@ jobs:
       EXPECTED_TEST_BLOB: 1d8fd285563eea4121bbe178a4b54eb715af3ac0
       EXPECTED_REVIEW_THREAD: PRRT_kwDOTGqftc6dept0
       EXPECTED_REVIEW_COMMENT: '3888440222'
-      PUBLISH: 'false'
-      ARTIFACT_DIR: /tmp/pr2231-day-first-date-finality-v104
+      EXPECTED_CANDIDATE_TREE: 7ae48a2dc664c98f0e39f693d13a63fb4ee82224
+      EXPECTED_CANDIDATE_LIBRARY_BLOB: 5e753c9c32cba270ea79b6299fc35db94cd0928f
+      EXPECTED_CANDIDATE_TEST_BLOB: 069349ea792a8da8c5d67831ac2e73efc0ee82e9
+      PUBLISH: 'true'
+      ARTIFACT_DIR: /tmp/pr2231-day-first-date-finality-v105
 
     steps:
       - uses: actions/checkout@v4
@@ -41,13 +44,13 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
 
-      - name: Reproduce and qualify exact two-file successor
+      - name: Qualify and publish exact two-file successor
         shell: bash
         run: gzip -dc .github/tmp/pr2231-day-first-date-v104.sh.gz | bash
 
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: pr2231-day-first-date-finality-v104
-          path: /tmp/pr2231-day-first-date-finality-v104
+          name: pr2231-day-first-date-finality-v105
+          path: /tmp/pr2231-day-first-date-finality-v105
           retention-days: 90
