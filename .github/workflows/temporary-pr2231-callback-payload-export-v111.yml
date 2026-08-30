@@ -1,0 +1,52 @@
+name: Temporary PR 2231 callback payload export V111
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/temporary-pr2231-callback-payload-export-v111.yml'
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: pr2231-callback-payload-export-v111
+  cancel-in-progress: false
+
+jobs:
+  export-decoded-qualifier:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Decode immutable V110 qualifier payload
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export_dir=/tmp/pr2231-callback-payload-export-v111
+          rm -rf "$export_dir"
+          mkdir -p "$export_dir"
+          base64 -d .github/tmp/pr2231-callback-observation-frontier-v110.sh.gz.b64 \
+            | gzip -d > "$export_dir/qualifier.sh"
+          bash -n "$export_dir/qualifier.sh"
+          sha256sum "$export_dir/qualifier.sh" \
+            | tee "$export_dir/qualifier.sha256"
+          wc -c -l "$export_dir/qualifier.sh" \
+            | tee "$export_dir/qualifier.size"
+          sed -n '1,80p' "$export_dir/qualifier.sh" \
+            > "$export_dir/qualifier-head.txt"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-callback-payload-export-v111
+          path: /tmp/pr2231-callback-payload-export-v111
+          if-no-files-found: error
+          retention-days: 90
