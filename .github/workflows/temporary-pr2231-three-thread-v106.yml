@@ -1,4 +1,4 @@
-name: Temporary PR 2231 three-thread V106 qualification
+name: Temporary PR 2231 three-thread V106 publication
 
 on:
   pull_request:
@@ -9,16 +9,16 @@ on:
       - '.github/tmp/pr2231-three-thread-v106.sh.gz.b64'
 
 permissions:
-  contents: read
+  contents: write
   pull-requests: read
   actions: read
 
 concurrency:
-  group: pr2231-three-thread-v106-qualification
+  group: pr2231-three-thread-v106-publication
   cancel-in-progress: false
 
 jobs:
-  qualify-current-candidate-read-only:
+  publish-current-candidate-with-lease:
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     env:
@@ -39,7 +39,7 @@ jobs:
       EXPECTED_PAYLOAD_SHA256: 52665bccee5f5523977c0bc529e5ecbcf37fd9939ed784956d6c7326a3ad0e69
       EXPECTED_GZIP_SHA256: 59289ec1f820a718b3d5ccb9d5efedd563f830f9816c57e447469411c9621ee6
       EXPECTED_SCRIPT_SHA256: ab14811454473dd719733913e08fbf02d42da801a3eb87c13db88feea3b60d95
-      PUBLISH: 'false'
+      PUBLISH: 'true'
       ARTIFACT_DIR: /tmp/pr2231-three-thread-custody-v106
 
     steps:
@@ -61,13 +61,13 @@ jobs:
           bash -n /tmp/pr2231-three-thread-v106.sh
           chmod 700 /tmp/pr2231-three-thread-v106.sh
 
-      - name: Qualify exact three-thread successor without publication
+      - name: Requalify and publish exact three-thread successor
         shell: bash
         run: bash /tmp/pr2231-three-thread-v106.sh
 
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: pr2231-three-thread-custody-v106
+          name: pr2231-three-thread-custody-v106-publication
           path: /tmp/pr2231-three-thread-custody-v106
           retention-days: 90
