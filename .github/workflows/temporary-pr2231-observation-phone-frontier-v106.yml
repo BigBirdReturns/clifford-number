@@ -1,5 +1,5 @@
 name: Temporary PR 2231 observation-phone frontier V106
-# Lease-bound execution trigger for the identifier-frontier rebound.
+# Lease-bound execution of the content-addressed corrected controller.
 
 on:
   pull_request:
@@ -51,143 +51,11 @@ jobs:
           mkdir -p "$ARTIFACT_DIR"
           controller_script=/tmp/pr2231-observation-phone-frontier-v106.sh
           base64 -d .github/tmp/pr2231-observation-phone-frontier-v106.sh.gz.b64 | gzip -dc > "$controller_script"
-          original_sha=$(sha256sum "$controller_script" | awk '{print $1}')
-          python3 - "$controller_script" <<'PY'
-          import re
-          import sys
-          from pathlib import Path
-
-          path = Path(sys.argv[1])
-          source = path.read_text(encoding="utf-8")
-          call = re.compile(
-              r"(?P<prefix>(?:re\.(?:sub|subn)\(\s*pattern\s*,\s*|pattern\.(?:sub|subn)\(\s*))"
-              r"replacement(?P<suffix>\s*,)"
-          )
-
-          def use_literal_callback(match: re.Match[str]) -> str:
-              return (
-                  f"{match.group('prefix')}"
-                  "lambda _match: replacement"
-                  f"{match.group('suffix')}"
-              )
-
-          repaired, replacement_count = call.subn(use_literal_callback, source)
-          if replacement_count != 1:
-              raise SystemExit(
-                  f"controller replacement-semantics repair count={replacement_count}, expected=1"
-              )
-
-          pr_base_old = (
-              '  jq -e --arg head "$EXPECTED_PRODUCT" '
-              '--arg base "$EXPECTED_MAIN" \\\n'
-          )
-          pr_base_new = (
-              '  jq -e --arg head "$EXPECTED_PRODUCT" '
-              '--arg base "$EXPECTED_PR_BASE" \\\n'
-          )
-          if repaired.count(pr_base_old) != 1:
-              raise SystemExit(
-                  f"controller PR-base rebind count={repaired.count(pr_base_old)}, expected=1"
-              )
-          repaired = repaired.replace(pr_base_old, pr_base_new)
-
-          product_parent_old = (
-              'assert_eq "$(git rev-parse "$EXPECTED_PRODUCT^")" '
-              '"$EXPECTED_MAIN" "product parent"\n'
-          )
-          product_parent_new = (
-              'assert_eq "$(git rev-parse "$EXPECTED_PRODUCT^")" '
-              '"$EXPECTED_PRODUCT_PARENT" "product parent"\n'
-          )
-          if repaired.count(product_parent_old) != 1:
-              raise SystemExit(
-                  f"controller product-parent rebind count={repaired.count(product_parent_old)}, expected=1"
-              )
-          repaired = repaired.replace(product_parent_old, product_parent_new)
-
-          patch_success_marker = "printf 'PATCH_SUCCESS\\n'\n"
-          identifier_frontier_rebind = r"""python3 - "$SOURCE_WT" <<'PY_IDENTIFIER_FRONTIER'
-from pathlib import Path
-import sys
-
-root = Path(sys.argv[1])
-lib_path = root / 'tools/lib/industrial-exhaust.mjs'
-text = lib_path.read_text()
-transition_block = '''  const boundedInitialTransition = boundedInitialIntrinsicPhone
-    ? initialContextFreePhoneTransitionRanges(
-        candidate,
-        groups,
-        boundedInitialIntrinsicPhone,
-        externalPrefix,
-        externalSuffix,
-        indeterminatePhoneContext,
-        explicitPhoneLabelContext
-      )
-    : null;
-  if (boundedInitialTransition) return boundedInitialTransition;
-'''
-if text.count(transition_block) != 1:
-    raise SystemExit(
-        f'early transition block count={text.count(transition_block)}, expected=1'
-    )
-text = text.replace(transition_block, '')
-identifier_exit = '''    ).map(range => ({
-      start: range.start + protectedEnd,
-      end: range.end + protectedEnd
-    }));
-  }
-
-  let observation = trailingObservationGroup(
-'''
-identifier_rebound = '''    ).map(range => ({
-      start: range.start + protectedEnd,
-      end: range.end + protectedEnd
-    }));
-  }
-
-  const boundedInitialTransition = boundedInitialIntrinsicPhone
-    ? initialContextFreePhoneTransitionRanges(
-        candidate,
-        groups,
-        boundedInitialIntrinsicPhone,
-        externalPrefix,
-        externalSuffix,
-        indeterminatePhoneContext,
-        explicitPhoneLabelContext
-      )
-    : null;
-  if (boundedInitialTransition) return boundedInitialTransition;
-
-  let observation = trailingObservationGroup(
-'''
-if text.count(identifier_exit) != 1:
-    raise SystemExit(
-        f'identifier frontier insertion count={text.count(identifier_exit)}, expected=1'
-    )
-text = text.replace(identifier_exit, identifier_rebound)
-lib_path.write_text(text)
-print('IDENTIFIER_FRONTIER_REBOUND_SUCCESS')
-PY_IDENTIFIER_FRONTIER
-"""
-          if repaired.count(patch_success_marker) != 1:
-              raise SystemExit(
-                  f"controller patch-success marker count={repaired.count(patch_success_marker)}, expected=1"
-              )
-          repaired = repaired.replace(
-              patch_success_marker,
-              identifier_frontier_rebind + patch_success_marker
-          )
-
-          path.write_text(repaired, encoding="utf-8")
-          print("CONTROLLER_ENVELOPE_REPAIR_SUCCESS count=4")
-          PY
-          patched_sha=$(sha256sum "$controller_script" | awk '{print $1}')
-          [[ "$original_sha" == "ca6e725902cb3343fc979537f4f1b396676da6e998e4dc1cf285d2d95358c32a" ]]
-          [[ "$patched_sha" == "1ed38ec30663707e56292b4d18902e1f14894caca6d139b468f1cb0240dc872c" ]]
+          controller_sha=$(sha256sum "$controller_script" | awk '{print $1}')
+          [[ "$controller_sha" == "1ed38ec30663707e56292b4d18902e1f14894caca6d139b468f1cb0240dc872c" ]]
           {
-            printf 'original_script_sha256=%s\n' "$original_sha"
-            printf 'patched_script_sha256=%s\n' "$patched_sha"
-            printf 'envelope_repair=compiled-pattern-literal-callback-plus-main-rebind-plus-identifier-frontier\n'
+            printf 'controller_script_sha256=%s\n' "$controller_sha"
+            printf 'execution_payload=direct-corrected-controller\n'
             printf 'expected_main=%s\n' "$EXPECTED_MAIN"
             printf 'expected_product_parent=%s\n' "$EXPECTED_PRODUCT_PARENT"
             printf 'expected_pr_base=%s\n' "$EXPECTED_PR_BASE"
