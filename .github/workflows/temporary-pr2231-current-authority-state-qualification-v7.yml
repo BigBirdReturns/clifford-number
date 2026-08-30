@@ -1,0 +1,50 @@
+name: Temporary PR2231 current authority-state qualification V7
+
+on:
+  push:
+    branches:
+      - agent/pr2231-current-authority-state-qualification-v1
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EXPECTED_MAIN: 17aa3cfc22d5f9022164baf5c1d5a8e401b796cf
+      EXPECTED_PRODUCT: bea76f0dd155122c3a45fe82c7c1abbaf676349b
+      EXPECTED_PRODUCT_TREE: 23dde19530990df1f1daa436993b1214e83ac8fd
+      EXPECTED_LIBRARY_BLOB: 6655e9aa10ac2964e5f6289a4881f1343265fa0e
+      EXPECTED_TEST_BLOB: 7f72ca8c2eb7f436471453c74b98e1227b0970d5
+      EXPECTED_CONTROLLER_PARENT: 17aa3cfc22d5f9022164baf5c1d5a8e401b796cf
+      EXPECTED_CONTROLLER_PAYLOAD_BLOB: 6b9fe185607ffdabfbd3520612598fb73c980440
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      RECEIPT_DIR: /tmp/pr2231-current-authority-state-exact-head-read-only-v7
+    steps:
+      - name: Check out exact controller event
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Execute exact-head read-only qualification V7
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash "$GITHUB_WORKSPACE/.github/tmp/pr2231-current-authority-state-qualification-v7.sh"
+      - name: Upload exact-head qualification receipt V7
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr2231-current-authority-state-exact-head-read-only-v7
+          path: /tmp/pr2231-current-authority-state-exact-head-read-only-v7
+          if-no-files-found: error
+          retention-days: 90
