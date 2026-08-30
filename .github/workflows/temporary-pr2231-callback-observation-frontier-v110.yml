@@ -128,11 +128,11 @@ jobs:
               )
           insertion = (
               "\n\n"
-              "  const laterPhoneStart = observationEnd + laterPhone.start;\n"
-              "  if (hasUrlTokenPrefixContext(\n"
-              "    `${externalPrefix}${candidate.slice(0, laterPhoneStart)}`\n"
-              "      .normalize('NFKC')\n"
-              "  )) return null;"
+              "  const normalizedTransitionSource =\n"
+              "    `${externalPrefix}${candidate}`.normalize('NFKC');\n"
+              "  if (hasUrlTokenPrefixContext(normalizedTransitionSource)) {\n"
+              "    return null;\n"
+              "  }"
           )
           marker_end = function_source.index(marker) + len(marker)
           function_source = (
