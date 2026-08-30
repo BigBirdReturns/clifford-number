@@ -127,6 +127,10 @@ jobs:
             printf 'expected_product_parent=%s\n' "$EXPECTED_PRODUCT_PARENT"
             printf 'expected_pr_base=%s\n' "$EXPECTED_PR_BASE"
           } > "$ARTIFACT_DIR/controller-envelope.txt"
+          cp "$controller_script" "$ARTIFACT_DIR/controller-script.sh"
+          grep -n -B80 -A140 -E \
+            'intrinsicPhoneIntervalAfterDashBoundary|crossCallbackPhoneObservationBridge' \
+            "$controller_script" > "$ARTIFACT_DIR/controller-symbols.txt" || true
 
           trace_path="$ARTIFACT_DIR/controller-trace.log"
           terminal_path="$ARTIFACT_DIR/controller-terminal.txt"
@@ -151,6 +155,7 @@ jobs:
             printf '%s\n' '### V106 controller terminal diagnostic'
             for receipt in \
               focused-blocks.txt \
+              controller-symbols.txt \
               controller-preflight.txt \
               controller-patch-stderr.log \
               qualification-terminal.txt \
@@ -158,7 +163,7 @@ jobs:
               printf '\n#### %s\n\n' "$receipt"
               printf '%s\n' '```text'
               if [[ -f "$ARTIFACT_DIR/$receipt" ]]; then
-                tail -n 320 "$ARTIFACT_DIR/$receipt"
+                tail -n 360 "$ARTIFACT_DIR/$receipt"
               else
                 printf '%s\n' 'unavailable'
               fi
