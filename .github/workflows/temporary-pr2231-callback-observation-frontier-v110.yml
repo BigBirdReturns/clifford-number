@@ -151,6 +151,7 @@ jobs:
             cd "$PRODUCT_WT"
             node --input-type=module <<'NODE_URL_GUARD'
           import assert from 'node:assert/strict';
+          import fs from 'node:fs';
           import { pathToFileURL } from 'node:url';
 
           const moduleUrl = pathToFileURL(
@@ -160,21 +161,50 @@ jobs:
             `${moduleUrl}?url-guard=${Date.now()}`
           );
 
-          for (const source of [
-            'https://example.test/01/42/68/53/00',
-            'example.test/01/42/68/53/00',
-            '//example.test/03/6216/5111',
-            '192.0.2.1/01/42/68/53/00',
-            `example.test/${'long-segment/'.repeat(12)}01/42/68/53/00`
-          ]) {
-            assert.equal(redactContactData(source), source);
+          const cases = [
+            {
+              source: 'https://example.test/01/42/68/53/00',
+              expected: 'https://example.test/01/42/68/53/00'
+            },
+            {
+              source: 'example.test/01/42/68/53/00',
+              expected: 'example.test/01/42/68/53/00'
+            },
+            {
+              source: '//example.test/03/6216/5111',
+              expected: '//example.test/03/6216/5111'
+            },
+            {
+              source: '192.0.2.1/01/42/68/53/00',
+              expected: '192.0.2.1/01/42/68/53/00'
+            },
+            {
+              source: `example.test/${'long-segment/'.repeat(12)}01/42/68/53/00`,
+              expected: `example.test/${'long-segment/'.repeat(12)}01/42/68/53/00`
+            },
+            {
+              source: 'https://example.test/ 01 42 68 53 00',
+              expected: 'https://example.test/ [contact omitted]'
+            }
+          ];
+
+          const matrixPath = `${process.env.ARTIFACT_DIR}/url-guard-matrix.jsonl`;
+          fs.writeFileSync(matrixPath, '');
+          const failures = [];
+          for (const entry of cases) {
+            const actual = redactContactData(entry.source);
+            const record = {
+              ...entry,
+              actual,
+              pass: actual === entry.expected
+            };
+            fs.appendFileSync(matrixPath, `${JSON.stringify(record)}\n`);
+            console.log(JSON.stringify(record));
+            if (!record.pass) failures.push(record);
           }
-          assert.equal(
-            redactContactData('https://example.test/ 01 42 68 53 00'),
-            'https://example.test/ [contact omitted]'
-          );
+          assert.deepEqual(failures, []);
           NODE_URL_GUARD
-          )
+          ) 2>&1 | tee "$ARTIFACT_DIR/url-guard-matrix.log"
 
           ''')
           source = (
@@ -205,6 +235,7 @@ jobs:
             for receipt in summary.json qualification-terminal.txt \
               predecessor-reproduction.jsonl direct-matrix.jsonl \
               leading-function-before-url-guard.txt \
+              url-guard-matrix.jsonl url-guard-matrix.log \
               focused-product.log product-release-check.log \
               focused-main-transplant.log main-release-check.log \
               candidate-commit.txt candidate-paths.txt \
