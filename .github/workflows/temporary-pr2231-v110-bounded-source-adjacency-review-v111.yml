@@ -1,0 +1,224 @@
+name: Temporary PR 2231 V110 bounded source adjacency review V111
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/temporary-pr2231-v110-bounded-source-adjacency-review-v111.yml'
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: pr2231-v110-bounded-source-adjacency-review-v111
+  cancel-in-progress: false
+
+jobs:
+  review-bounded-source-adjacency:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: BigBirdReturns/clifford-number
+      PRODUCT_PR: '2231'
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      EXPECTED_MAIN: 0b1d8af5b86adad49b3451053dbb9166294d631c
+      EXPECTED_PRODUCT: cfd1e459efc07f57cab7117200a4a4b962fd1bac
+      EXPECTED_TREE: 17d5350c902e47f129fae0282735b4acbeff381c
+      EXPECTED_LIBRARY: dab48bfba026dc1629a4384a26d98c13366b0ea3
+      EXPECTED_TEST: 8fad1d2be93f9a286f9b95bb35751d3e908c4834
+      PRODUCT_WT: /tmp/pr2231-v110-bounded-source-product-v111
+      ARTIFACT_DIR: /tmp/pr2231-v110-bounded-source-review-v111
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Execute exact-head metamorphic review
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$PRODUCT_WT" "$ARTIFACT_DIR"
+          mkdir -p "$ARTIFACT_DIR"
+
+          main_head=$(git ls-remote origin refs/heads/main | awk '{print $1}')
+          product_head=$(git ls-remote origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')
+          [[ "$main_head" == "$EXPECTED_MAIN" ]]
+          [[ "$product_head" == "$EXPECTED_PRODUCT" ]]
+
+          gh api "repos/$REPO/pulls/$PRODUCT_PR" > "$ARTIFACT_DIR/product-pr.json"
+          [[ "$(jq -r .head.sha "$ARTIFACT_DIR/product-pr.json")" == "$EXPECTED_PRODUCT" ]]
+          [[ "$(jq -r .base.sha "$ARTIFACT_DIR/product-pr.json")" == "$EXPECTED_MAIN" ]]
+          [[ "$(jq -r .state "$ARTIFACT_DIR/product-pr.json")" == open ]]
+          [[ "$(jq -r .draft "$ARTIFACT_DIR/product-pr.json")" == true ]]
+          [[ "$(jq -r .merged "$ARTIFACT_DIR/product-pr.json")" == false ]]
+          [[ "$(jq -r .commits "$ARTIFACT_DIR/product-pr.json")" == 1 ]]
+          [[ "$(jq -r .changed_files "$ARTIFACT_DIR/product-pr.json")" == 2 ]]
+
+          git worktree add --detach "$PRODUCT_WT" "$EXPECTED_PRODUCT"
+          [[ "$(git -C "$PRODUCT_WT" rev-parse HEAD)" == "$EXPECTED_PRODUCT" ]]
+          [[ "$(git -C "$PRODUCT_WT" rev-parse HEAD^{tree})" == "$EXPECTED_TREE" ]]
+          [[ "$(git -C "$PRODUCT_WT" rev-parse HEAD:tools/lib/industrial-exhaust.mjs)" == "$EXPECTED_LIBRARY" ]]
+          [[ "$(git -C "$PRODUCT_WT" rev-parse HEAD:test/industrial-exhaust.test.js)" == "$EXPECTED_TEST" ]]
+
+          node --input-type=module <<'NODE' 2>&1 | tee "$ARTIFACT_DIR/review.log"
+          import assert from 'node:assert/strict';
+          import fs from 'node:fs';
+          import { pathToFileURL } from 'node:url';
+
+          const artifactDir = process.env.ARTIFACT_DIR;
+          const moduleUrl = pathToFileURL(
+            `${process.env.PRODUCT_WT}/tools/lib/industrial-exhaust.mjs`
+          ).href;
+          const { redactContactData } = await import(
+            `${moduleUrl}?bounded-source-review=${Date.now()}`
+          );
+
+          const controls = [
+            {
+              name: 'v110-exact',
+              input: 'Archive +33 1 42 68 53 00–2026 people',
+              expected: 'Archive [contact omitted]–2026 people'
+            },
+            {
+              name: 'unit-range',
+              input: 'Archive +81 3 6216 8041–17-20 people',
+              expected: 'Archive [contact omitted]–17-20 people'
+            },
+            {
+              name: 'day-first-date',
+              input: 'Archive +81 3 6216 8041–17.08.2026',
+              expected: 'Archive [contact omitted]–17.08.2026'
+            },
+            {
+              name: 'dotted-second-phone',
+              input: 'Archive +81 3 6216 8041–03.6216.8041',
+              expected: 'Archive [contact omitted]–[contact omitted]'
+            },
+            {
+              name: 'url-refusal',
+              input: '192.0.2.1/01/42/68/53/00',
+              expected: '192.0.2.1/01/42/68/53/00'
+            }
+          ];
+
+          const controlRecords = controls.map(entry => {
+            const actual = redactContactData(entry.input);
+            return { ...entry, actual, pass: actual === entry.expected };
+          });
+          fs.writeFileSync(
+            `${artifactDir}/controls.json`,
+            `${JSON.stringify(controlRecords, null, 2)}\n`
+          );
+          assert.deepEqual(
+            controlRecords.filter(record => !record.pass),
+            [],
+            'the exact current-head controls must pass before the new probe'
+          );
+
+          const families = [
+            { name: 'hyphenated-phone-tail', tail: '03-6216-8041 people' },
+            { name: 'dotted-phone-tail', tail: '03.6216.8041 people' },
+            { name: 'unit-range-tail', tail: '17-20 people' },
+            { name: 'second-scalar-tail', tail: '2027 people' }
+          ];
+          const paddings = [249, 250, 251, 252, 253, 254, 300];
+          const records = [];
+          const failures = [];
+
+          for (const family of families) {
+            const familyRecords = paddings.map(padding => {
+              const input = `Archive +33 1 42 68 53 00–2026${' '.repeat(padding)}${family.tail}`;
+              const actual = redactContactData(input);
+              const canonical = actual.replace(/ {200,}/gu, '<PAD>');
+              return {
+                family: family.name,
+                padding,
+                inputLength: input.length,
+                actual,
+                canonical
+              };
+            });
+            records.push(...familyRecords);
+            const baseline = familyRecords.find(record => record.padding === 251);
+            for (const record of familyRecords) {
+              if (record.canonical !== baseline.canonical) {
+                failures.push({
+                  family: family.name,
+                  baselinePadding: baseline.padding,
+                  baselineCanonical: baseline.canonical,
+                  padding: record.padding,
+                  canonical: record.canonical,
+                  actual: record.actual
+                });
+              }
+            }
+          }
+
+          fs.writeFileSync(
+            `${artifactDir}/metamorphic-records.json`,
+            `${JSON.stringify(records, null, 2)}\n`
+          );
+          fs.writeFileSync(
+            `${artifactDir}/metamorphic-failures.json`,
+            `${JSON.stringify(failures, null, 2)}\n`
+          );
+          fs.writeFileSync(
+            `${artifactDir}/summary.json`,
+            `${JSON.stringify({
+              product: process.env.EXPECTED_PRODUCT,
+              tree: process.env.EXPECTED_TREE,
+              controls: controlRecords.length,
+              families: families.length,
+              records: records.length,
+              failures: failures.length,
+              status: failures.length ? 'BOUNDARY_DEPENDENT_OUTPUT' : 'METAMORPHIC_SUCCESS'
+            }, null, 2)}\n`
+          );
+
+          for (const record of records) {
+            console.log(JSON.stringify({
+              family: record.family,
+              padding: record.padding,
+              canonical: record.canonical
+            }));
+          }
+          if (failures.length) {
+            console.error(JSON.stringify({ failures }, null, 2));
+            process.exitCode = 1;
+          }
+          NODE
+
+      - name: Emit review receipts
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p "$ARTIFACT_DIR"
+          find "$ARTIFACT_DIR" -maxdepth 1 -type f -printf '%f\t%s\n' \
+            | sort > "$ARTIFACT_DIR/artifact-manifest.txt"
+          {
+            printf '%s\n' '### PR 2231 V110 bounded-source adjacency review V111'
+            for receipt in summary.json controls.json metamorphic-failures.json \
+              metamorphic-records.json review.log artifact-manifest.txt; do
+              printf '\n#### %s\n\n```text\n' "$receipt"
+              [[ ! -f "$ARTIFACT_DIR/$receipt" ]] \
+                || tail -n 420 "$ARTIFACT_DIR/$receipt"
+              printf '%s\n' '```'
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-v110-bounded-source-adjacency-review-v111
+          path: /tmp/pr2231-v110-bounded-source-review-v111
+          retention-days: 90
