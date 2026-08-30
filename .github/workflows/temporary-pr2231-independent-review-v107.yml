@@ -1,0 +1,248 @@
+name: Temporary PR 2231 independent exact-head review V107
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/temporary-pr2231-independent-review-v107.yml'
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: pr2231-independent-exact-head-review-v107
+  cancel-in-progress: false
+
+jobs:
+  review-exact-owner-head:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: BigBirdReturns/clifford-number
+      PRODUCT_PR: '2231'
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      CONTROLLER_BRANCH: agent/pr2231-independent-review-v107
+      EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+      EXPECTED_MAIN: 0b1d8af5b86adad49b3451053dbb9166294d631c
+      EXPECTED_PRODUCT: edbf7027f5de312d77a91d615ecb8cad619ce154
+      EXPECTED_PRODUCT_TREE: efc92aba2de7088ad1e4a9b0514ccb9e8f498c47
+      EXPECTED_LIBRARY_BLOB: cb6bcf21460d4d0cca0dcb29affb9424713399d0
+      EXPECTED_TEST_BLOB: 96822fbd5ac213d03e2bdc91c92c7ddfc3931963
+      ARTIFACT_DIR: /tmp/pr2231-independent-exact-head-review-v107
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Bind exact product and review leases
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          fail() {
+            printf 'ERROR: %s\n' "$*" >&2
+            exit 1
+          }
+
+          expect_equal() {
+            local label="$1" actual="$2" expected="$3"
+            [[ "$actual" == "$expected" ]] || fail "$label mismatch: expected $expected, got $actual"
+          }
+
+          read_remote_ref() {
+            git ls-remote origin "refs/heads/$1" | awk 'NR == 1 { print $1 }'
+          }
+
+          mkdir -p "$ARTIFACT_DIR/receipts"
+          git fetch --no-tags origin \
+            "refs/heads/main:refs/remotes/origin/main" \
+            "refs/heads/${PRODUCT_BRANCH}:refs/remotes/origin/${PRODUCT_BRANCH}"
+
+          expect_equal main_ref "$(read_remote_ref main)" "$EXPECTED_MAIN"
+          expect_equal product_ref "$(read_remote_ref "$PRODUCT_BRANCH")" "$EXPECTED_PRODUCT"
+          expect_equal controller_ref "$(read_remote_ref "$CONTROLLER_BRANCH")" "$EXPECTED_CONTROLLER"
+          expect_equal product_parent "$(git rev-parse "${EXPECTED_PRODUCT}^")" "$EXPECTED_MAIN"
+          expect_equal product_tree "$(git rev-parse "${EXPECTED_PRODUCT}^{tree}")" "$EXPECTED_PRODUCT_TREE"
+          expect_equal library_blob "$(git rev-parse "${EXPECTED_PRODUCT}:tools/lib/industrial-exhaust.mjs")" "$EXPECTED_LIBRARY_BLOB"
+          expect_equal focused_test_blob "$(git rev-parse "${EXPECTED_PRODUCT}:test/industrial-exhaust.test.js")" "$EXPECTED_TEST_BLOB"
+          expect_equal product_commit_count "$(git rev-list --count "${EXPECTED_MAIN}..${EXPECTED_PRODUCT}")" '1'
+
+          mapfile -t product_paths < <(git diff --name-only "$EXPECTED_MAIN" "$EXPECTED_PRODUCT" | sort)
+          [[ "${#product_paths[@]}" -eq 2 ]] || fail "product path count is ${#product_paths[@]}, expected 2"
+          [[ "${product_paths[0]}" == 'test/industrial-exhaust.test.js' ]] || fail "unexpected first product path: ${product_paths[0]}"
+          [[ "${product_paths[1]}" == 'tools/lib/industrial-exhaust.mjs' ]] || fail "unexpected second product path: ${product_paths[1]}"
+
+          product_pr="$(gh api "repos/$REPO/pulls/$PRODUCT_PR")"
+          printf '%s\n' "$product_pr" > "$ARTIFACT_DIR/receipts/product-pr-initial.json"
+          jq -e \
+            --arg branch "$PRODUCT_BRANCH" \
+            --arg head "$EXPECTED_PRODUCT" \
+            '.state == "open" and .draft == true and .merged == false and .head.ref == $branch and .head.sha == $head and .base.ref == "main" and .commits == 1 and .changed_files == 2' \
+            <<<"$product_pr" >/dev/null || fail 'product pull-request lease changed'
+
+          : > "$ARTIFACT_DIR/receipts/threads-initial.ndjson"
+          for thread_id in \
+            PRRT_kwDOTGqftc6dept0 \
+            PRRT_kwDOTGqftc6dfK4F \
+            PRRT_kwDOTGqftc6dfK4H \
+            PRRT_kwDOTGqftc6dfLu0
+          do
+            thread_json="$(gh api graphql \
+              -f query='query($id: ID!) { node(id: $id) { ... on PullRequestReviewThread { id isResolved isOutdated } } }' \
+              -f id="$thread_id")"
+            printf '%s\n' "$thread_json" >> "$ARTIFACT_DIR/receipts/threads-initial.ndjson"
+            jq -e --arg id "$thread_id" '.data.node.id == $id and .data.node.isResolved == false and .data.node.isOutdated == false' \
+              <<<"$thread_json" >/dev/null || fail "binding review thread changed: $thread_id"
+          done
+
+          cat > "$ARTIFACT_DIR/lease.env" <<EOF
+          main=$EXPECTED_MAIN
+          product=$EXPECTED_PRODUCT
+          tree=$EXPECTED_PRODUCT_TREE
+          library_blob=$EXPECTED_LIBRARY_BLOB
+          focused_test_blob=$EXPECTED_TEST_BLOB
+          controller=$EXPECTED_CONTROLLER
+          product_paths=test/industrial-exhaust.test.js,tools/lib/industrial-exhaust.mjs
+          controller_paths=.github/workflows/temporary-pr2231-independent-review-v107.yml
+          EOF
+          printf 'LEASE_BIND_SUCCESS\n' > "$ARTIFACT_DIR/result.txt"
+
+      - name: Execute independent transition matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+          git worktree add --detach /tmp/pr2231-v107-product "$EXPECTED_PRODUCT"
+
+          cat > /tmp/pr2231-v107-review.mjs <<'NODE'
+          import fs from 'node:fs';
+          import { pathToFileURL } from 'node:url';
+
+          const modulePath = process.argv[2];
+          const artifactDir = process.argv[3];
+          const { redactContactData } = await import(
+            `${pathToFileURL(modulePath).href}?review=${Date.now()}`
+          );
+
+          const cases = [
+            ['day-first control', 'Archive +81 3 6216 8041–17.08.2026', 'Archive [contact omitted]–17.08.2026'],
+            ['time control', 'Archive +81 3 6216 8041–12:30:45', 'Archive [contact omitted]–12:30:45'],
+            ['unit-range control', 'Archive +81 3 6216 8041–17-20 people', 'Archive [contact omitted]–17-20 people'],
+            ['two-phone control', 'Archive +81 3 6216 8041–03.6216.8041', 'Archive [contact omitted]–[contact omitted]'],
+            ['year-first date after short-terminal international phone', 'Archive +33 1 42 68 53 00–2026-08-17', 'Archive [contact omitted]–2026-08-17'],
+            ['fullwidth year-first date after short-terminal international phone', '記録 ＋３３ １ ４２ ６８ ５３ ００－２０２６－０８－１７', '記録 [contact omitted]－２０２６－０８－１７'],
+            ['slash year-first date after short-terminal international phone', 'Archive +33 1 42 68 53 00–2026/08/17', 'Archive [contact omitted]–2026/08/17'],
+            ['period year-first date after short-terminal international phone', 'Archive +33 1 42 68 53 00–2026.08.17', 'Archive [contact omitted]–2026.08.17'],
+            ['ASCII dash year-first date after short-terminal international phone', 'Archive +33 1 42 68 53 00-2026-08-17', 'Archive [contact omitted]-2026-08-17'],
+            ['three-digit terminal group before year-first date', 'Archive +33 1 42 68 530–2026-08-17', 'Archive [contact omitted]–2026-08-17'],
+            ['year-first date then later domestic phone', 'Archive +33 1 42 68 53 00–2026-08-17 03-6216-8041', 'Archive [contact omitted]–2026-08-17 [contact omitted]'],
+            ['wrapped year-first date after international phone', 'Archive +33 1 42 68 53 00–(2026-08-17)', 'Archive [contact omitted]–(2026-08-17)'],
+            ['short Japanese international form before year-first date', 'Archive +81 3 6216 80–2026-08-17', 'Archive [contact omitted]–2026-08-17'],
+            ['international access prefix before year-first date', 'Archive 00 33 1 42 68 53 00–2026-08-17', 'Archive [contact omitted]–2026-08-17'],
+            ['year-like unit count remains observation', 'Archive +33 1 42 68 53 00–2026 people', 'Archive [contact omitted]–2026 people'],
+            ['valid mixed short date refusal', 'Archive 3.12/03-6216-8041', 'Archive 3.12/03-6216-8041'],
+            ['IPv4 URL path refusal', '192.0.2.1/01/42/68/53/00', '192.0.2.1/01/42/68/53/00'],
+            ['decimal-to-phone control', 'Archive 3.14/03-6216-8041', 'Archive 3.14/[contact omitted]'],
+            ['weak-range-to-phone control', 'Archive 62-16-03-6216-8041', 'Archive 62-16-[contact omitted]'],
+            ['terminal weak range refusal', 'Archive 62-16', 'Archive 62-16']
+          ];
+
+          const records = [];
+          let mismatches = 0;
+          for (const [name, input, expected] of cases) {
+            const actual = redactContactData(input);
+            const pass = actual === expected;
+            if (!pass) mismatches += 1;
+            const record = { name, input, expected, actual, pass };
+            records.push(record);
+            console.log(JSON.stringify(record));
+          }
+
+          fs.writeFileSync(
+            `${artifactDir}/matrix.json`,
+            `${JSON.stringify({ cases: records.length, mismatches, records }, null, 2)}\n`
+          );
+          fs.writeFileSync(
+            `${artifactDir}/matrix-status.txt`,
+            mismatches === 0
+              ? `MATRIX_SUCCESS ${records.length}\n`
+              : `MATRIX_FAILURE ${mismatches}/${records.length}\n`
+          );
+          if (mismatches > 0) process.exitCode = 1;
+          NODE
+
+          node /tmp/pr2231-v107-review.mjs \
+            /tmp/pr2231-v107-product/tools/lib/industrial-exhaust.mjs \
+            "$ARTIFACT_DIR" 2>&1 | tee "$ARTIFACT_DIR/matrix.log"
+
+      - name: Re-run focused product suites
+        if: always()
+        shell: bash
+        run: |
+          set -o pipefail
+          if [[ ! -d /tmp/pr2231-v107-product ]]; then
+            git worktree add --detach /tmp/pr2231-v107-product "$EXPECTED_PRODUCT"
+          fi
+          node --test /tmp/pr2231-v107-product/test/industrial-exhaust*.test.js \
+            2>&1 | tee "$ARTIFACT_DIR/focused.log"
+
+      - name: Revalidate final leases without mutation
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          fail() {
+            printf 'ERROR: %s\n' "$*" >&2
+            exit 1
+          }
+
+          read_remote_ref() {
+            git ls-remote origin "refs/heads/$1" | awk 'NR == 1 { print $1 }'
+          }
+
+          [[ "$(read_remote_ref main)" == "$EXPECTED_MAIN" ]] || fail 'main lease changed'
+          [[ "$(read_remote_ref "$PRODUCT_BRANCH")" == "$EXPECTED_PRODUCT" ]] || fail 'product lease changed'
+          [[ "$(read_remote_ref "$CONTROLLER_BRANCH")" == "$EXPECTED_CONTROLLER" ]] || fail 'controller lease changed'
+
+          product_pr="$(gh api "repos/$REPO/pulls/$PRODUCT_PR")"
+          printf '%s\n' "$product_pr" > "$ARTIFACT_DIR/receipts/product-pr-final.json"
+          jq -e \
+            --arg branch "$PRODUCT_BRANCH" \
+            --arg head "$EXPECTED_PRODUCT" \
+            '.state == "open" and .draft == true and .merged == false and .head.ref == $branch and .head.sha == $head and .base.ref == "main" and .commits == 1 and .changed_files == 2' \
+            <<<"$product_pr" >/dev/null || fail 'product pull-request state changed'
+
+          : > "$ARTIFACT_DIR/receipts/threads-final.ndjson"
+          for thread_id in \
+            PRRT_kwDOTGqftc6dept0 \
+            PRRT_kwDOTGqftc6dfK4F \
+            PRRT_kwDOTGqftc6dfK4H \
+            PRRT_kwDOTGqftc6dfLu0
+          do
+            thread_json="$(gh api graphql \
+              -f query='query($id: ID!) { node(id: $id) { ... on PullRequestReviewThread { id isResolved isOutdated } } }' \
+              -f id="$thread_id")"
+            printf '%s\n' "$thread_json" >> "$ARTIFACT_DIR/receipts/threads-final.ndjson"
+            jq -e --arg id "$thread_id" '.data.node.id == $id and .data.node.isResolved == false and .data.node.isOutdated == false' \
+              <<<"$thread_json" >/dev/null || fail "binding review thread changed: $thread_id"
+          done
+
+          cat "$ARTIFACT_DIR/matrix-status.txt" >> "$ARTIFACT_DIR/result.txt"
+          printf 'FOCUSED_SUITE_RECEIPT_RETAINED\n' >> "$ARTIFACT_DIR/result.txt"
+          printf 'FINAL_LEASE_SUCCESS\n' >> "$ARTIFACT_DIR/result.txt"
+          printf 'PRODUCT_PR_METADATA_UNCHANGED\n' >> "$ARTIFACT_DIR/result.txt"
+          printf 'THREAD_STATE_UNCHANGED\n' >> "$ARTIFACT_DIR/result.txt"
+          printf 'READ_ONLY_REVIEW_COMPLETE\n' >> "$ARTIFACT_DIR/result.txt"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-independent-exact-head-review-v107
+          path: /tmp/pr2231-independent-exact-head-review-v107
+          retention-days: 90
