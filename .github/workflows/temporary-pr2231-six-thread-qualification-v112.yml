@@ -1,0 +1,232 @@
+name: Temporary PR 2231 six-thread qualification V112
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/temporary-pr2231-six-thread-qualification-v112.yml'
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: pr2231-six-thread-qualification-v112-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  qualify-six-thread-callback-frontier:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: BigBirdReturns/clifford-number
+      PRODUCT_PR: '2231'
+      CONTROLLER_PR: ${{ github.event.pull_request.number }}
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      CONTROLLER_BRANCH: ${{ github.head_ref }}
+      CONTROLLER_WORKFLOW_PATH: .github/workflows/temporary-pr2231-six-thread-qualification-v112.yml
+      EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+      EXPECTED_MAIN: 0b1d8af5b86adad49b3451053dbb9166294d631c
+      EXPECTED_PRODUCT: cfd1e459efc07f57cab7117200a4a4b962fd1bac
+      EXPECTED_PARENT: 0b1d8af5b86adad49b3451053dbb9166294d631c
+      EXPECTED_TREE: 17d5350c902e47f129fae0282735b4acbeff381c
+      EXPECTED_LIBRARY: dab48bfba026dc1629a4384a26d98c13366b0ea3
+      EXPECTED_TEST: 8fad1d2be93f9a286f9b95bb35751d3e908c4834
+      REVIEW_BINDINGS: >-
+        PRRT_kwDOTGqftc6dept0:3888440222
+        PRRT_kwDOTGqftc6dfK4F:3888640534
+        PRRT_kwDOTGqftc6dfK4H:3888640536
+        PRRT_kwDOTGqftc6dfLu0:3888645507
+        PRRT_kwDOTGqftc6di_ww:3890125090
+        PRRT_kwDOTGqftc6di_wy:3890125092
+      ARTIFACT_DIR: /tmp/pr2231-six-thread-qualification-v112
+      PRODUCT_WT: /tmp/pr2231-six-thread-product-v112
+      MAIN_WT: /tmp/pr2231-six-thread-main-v112
+      QUALIFIED_DIR: /tmp/pr2231-six-thread-qualified-v112
+      QUALIFIER_SHA256: f599c9e87030d3a4ba93011ca2aae96a6c8e3267c8f4155f50c314f6d3df9dd0
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Decode and execute read-only exact-head qualification
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          base64 -d <<'QUALIFIER_PAYLOAD' | gzip -d > /tmp/pr2231-six-thread-qualification-v112.sh
+          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
+          aQAA
+          QUALIFIER_PAYLOAD
+          printf '%s  %s\n' "$QUALIFIER_SHA256" /tmp/pr2231-six-thread-qualification-v112.sh \
+            | sha256sum -c -
+          chmod +x /tmp/pr2231-six-thread-qualification-v112.sh
+          /tmp/pr2231-six-thread-qualification-v112.sh
+
+      - name: Emit qualification diagnostics
+        if: always()
+        shell: bash
+        run: |
+          upload=/tmp/pr2231-six-thread-qualification-v112-upload
+          rm -rf "$upload"
+          mkdir -p "$ARTIFACT_DIR" "$upload"
+          find "$ARTIFACT_DIR" -maxdepth 1 -type f -printf '%f\t%s\n' \
+            | sort > "$ARTIFACT_DIR/artifact-manifest.txt"
+          cp -a "$ARTIFACT_DIR"/. "$upload"/
+          find "$upload" -maxdepth 1 -type f -printf '%f\t%s\n' \
+            | sort > "$upload/upload-manifest.txt"
+          {
+            printf '%s\n' '### PR 2231 six-thread qualification V112'
+            for receipt in summary.json qualification-terminal.txt \
+              predecessor-reproduction.jsonl direct-matrix.jsonl \
+              focused-product.log product-release-check.log \
+              focused-main-transplant.log main-release-check.log \
+              candidate-commit.txt candidate-paths.txt candidate.patch \
+              review-comments-before.tsv review-comments-after.tsv \
+              review-thread-ledger-before.jsonl review-thread-ledger-after.jsonl \
+              current-line-review-thread-count-before.txt \
+              current-line-review-thread-count-after.txt \
+              current-line-review-threads-before.json \
+              current-line-review-threads-after.json \
+              controller-paths.txt product-paths-before.txt \
+              artifact-manifest.txt; do
+              printf '\n#### %s\n\n```text\n' "$receipt"
+              [[ ! -f "$ARTIFACT_DIR/$receipt" ]] \
+                || tail -n 500 "$ARTIFACT_DIR/$receipt"
+              printf '%s\n' '```'
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-six-thread-qualification-v112
+          path: /tmp/pr2231-six-thread-qualification-v112-upload
+          retention-days: 90
