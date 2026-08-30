@@ -3,17 +3,161 @@ set -euo pipefail
 
 PAYLOAD_PATH='.github/tmp/pr2231-current-authority-state-qualification-v1.payload.gz'
 EXPECTED_COMPRESSED_PAYLOAD_BLOB='7fe045e91efefbc3e5c4dc7041824aafd795d06a'
-EXPECTED_EFFECTIVE_GIT_BLOB='49a79b28466625d1234a483f4d958f88e7bb54ee'
-EXPECTED_EFFECTIVE_SHA256='3a4d611f6764e303f5658d1e8057e4126dc25bf64afb970877aef104105e3bb6'
-EFFECTIVE_SCRIPT='/tmp/pr2231-v5-effective.sh'
+EXPECTED_V5_GIT_BLOB='49a79b28466625d1234a483f4d958f88e7bb54ee'
+EXPECTED_V6_GIT_BLOB='111bb917b5701a9399f853a7e16dcacb4ae81555'
+EXPECTED_V6_SHA256='b07702cb76cc1ab465b31b6f2dbd840c994f6b97f4a0b89532e86c1ba08ecbe7'
+V5_SCRIPT='/tmp/pr2231-v5-effective.sh'
+V6_SCRIPT='/tmp/pr2231-v6-effective.sh'
 
 test "$(git hash-object "$GITHUB_WORKSPACE/$PAYLOAD_PATH")" = "$EXPECTED_COMPRESSED_PAYLOAD_BLOB"
-gzip -dc "$GITHUB_WORKSPACE/$PAYLOAD_PATH" > "$EFFECTIVE_SCRIPT"
-test "$(git hash-object "$EFFECTIVE_SCRIPT")" = "$EXPECTED_EFFECTIVE_GIT_BLOB"
-printf '%s  %s\n' "$EXPECTED_EFFECTIVE_SHA256" "$EFFECTIVE_SCRIPT" | sha256sum -c -
-bash -n "$EFFECTIVE_SCRIPT"
+gzip -dc "$GITHUB_WORKSPACE/$PAYLOAD_PATH" > "$V5_SCRIPT"
+test "$(git hash-object "$V5_SCRIPT")" = "$EXPECTED_V5_GIT_BLOB"
+
+python - "$V5_SCRIPT" "$V6_SCRIPT" <<'PY'
+from pathlib import Path
+import sys
+src = Path(sys.argv[1]).read_text()
+src = src.replace('/tmp/pr2231-v5-effective.sh', '/tmp/pr2231-v6-effective.sh')
+src = src.replace('REPAIR_WITNESS_SUCCESS_V5', 'REPAIR_WITNESS_SUCCESS_V6')
+src = src.replace('QUALIFICATION_SUCCESS_V5', 'QUALIFICATION_SUCCESS_V6')
+anchor = """library = replace_once(
+    library,
+    old_trailing_observation_prelude,
+    new_trailing_observation_prelude,
+    'intrinsic phone observation frontier prelude'
+)
+
+old_trailing_observation_probe ="""
+insert = r'''library = replace_once(
+    library,
+    old_trailing_observation_prelude,
+    new_trailing_observation_prelude,
+    'intrinsic phone observation frontier prelude'
+)
+
+old_trailing_observation_boundary = """        const separator = candidate.slice(previousEnd, start);
+        const normalizedSeparator = separator.normalize('NFKC');
+        if (!/\\s/u.test(separator) && !/[.!?。！？]/u.test(normalizedSeparator)) continue;
+
+        const phonePrefix = candidate.slice(0, start).trimEnd();"""
+new_trailing_observation_boundary = """        const separator = candidate.slice(previousEnd, start);
+        const normalizedSeparator = separator.normalize('NFKC');
+        const dashLedObservationBoundary = /^[-‐‑‒–—−－]\\s*$/u.test(
+          normalizedSeparator
+        );
+        if (!/\\s/u.test(separator)
+            && !/[.!?。！？]/u.test(normalizedSeparator)
+            && !dashLedObservationBoundary) continue;
+
+        // A dash introducing a complete observation belongs to that later
+        // source. Score the exact preceding phone interval without lending the
+        // dash itself to the telephone candidate.
+        const phonePrefix = dashLedObservationBoundary
+          ? candidate.slice(0, previousEnd).trimEnd()
+          : candidate.slice(0, start).trimEnd();"""
+library = replace_once(
+    library,
+    old_trailing_observation_boundary,
+    new_trailing_observation_boundary,
+    'dash-led trailing observation candidate boundary'
+)
+
+old_trailing_observation_probe ='''
+if anchor not in src:
+    raise SystemExit('prelude anchor missing')
+src = src.replace(anchor, insert, 1)
+old = r'''        const observationMatch = numericObservationMatch(
+          candidate.slice(start).trimStart(),
+          normalizedSuffix
+        );
+        if (observationMatch) {
+          const observationSource = candidate.slice(start).trimStart();
+          return {
+            group: index,
+            end: start + sourceEndForNormalizedPrefix(observationSource, observationMatch[0].length)
+          };
+        }'''
+new = r'''        const observationSource = candidate.slice(start).trimStart();
+        const observationMatch = numericObservationMatch(
+          observationSource,
+          normalizedSuffix
+        );
+        if (observationMatch
+            && (!dashLedObservationBoundary
+              || !isWeakBareRangeObservation(
+                observationSource,
+                normalizedSuffix
+              ))) {
+          return {
+            group: index,
+            end: start + sourceEndForNormalizedPrefix(observationSource, observationMatch[0].length)
+          };
+        }'''
+anchor2 = """library = replace_once(
+    library,
+    old_trailing_observation_probe,
+    new_trailing_observation_probe,
+    'intrinsic phone observation frontier probe'
+)
+
+sentinel ="""
+insert2 = f'''library = replace_once(
+    library,
+    old_trailing_observation_probe,
+    new_trailing_observation_probe,
+    'intrinsic phone observation frontier probe'
+)
+
+old_dash_led_observation_claim = {old!r}
+new_dash_led_observation_claim = {new!r}
+library = replace_once(
+    library,
+    old_dash_led_observation_claim,
+    new_dash_led_observation_claim,
+    'dash-led strong observation claim'
+)
+
+sentinel ='''
+if anchor2 not in src:
+    raise SystemExit('probe anchor missing')
+src = src.replace(anchor2, insert2, 1)
+src = src.replace('// exact intrinsic telephone interval frontier v5', '// exact intrinsic telephone interval frontier v6')
+needle = """  [
+    'Phone: 09012345678 17.08.2026',
+    'Phone: [contact omitted] 17.08.2026',
+    'a valid calendar date must retain strong observation custody'
+  ]
+]) {{"""
+replacement = """  [
+    'Phone: 09012345678 17.08.2026',
+    'Phone: [contact omitted] 17.08.2026',
+    'a valid calendar date must retain strong observation custody'
+  ],
+  [
+    'Archive +81-3-6216-8041',
+    'Archive [contact omitted]',
+    'ordinary international phone separators must remain inside one exact phone interval'
+  ]
+]) {{"""
+if needle not in src:
+    raise SystemExit('focused test insertion anchor missing')
+src = src.replace(needle, replacement, 1)
+needle2 = """  ['calendar-refusal', 'Phone: 09012345678 17.08.2026', 'Phone: [contact omitted] 17.08.2026']
+]) {"""
+replacement2 = """  ['calendar-refusal', 'Phone: 09012345678 17.08.2026', 'Phone: [contact omitted] 17.08.2026'],
+  ['ordinary-international-phone-refusal', 'Archive +81-3-6216-8041', 'Archive [contact omitted]']
+]) {"""
+if needle2 not in src:
+    raise SystemExit('witness insertion anchor missing')
+src = src.replace(needle2, replacement2, 1)
+Path(sys.argv[2]).write_text(src)
+PY
+
+test "$(git hash-object "$V6_SCRIPT")" = "$EXPECTED_V6_GIT_BLOB"
+printf '%s  %s\n' "$EXPECTED_V6_SHA256" "$V6_SCRIPT" | sha256sum -c -
+bash -n "$V6_SCRIPT"
 if [[ "${WRAPPER_ONLY:-0}" = '1' ]]; then
-  printf '%s\n' 'WRAPPER_RECONSTRUCTION_SUCCESS_V5'
+  printf '%s\n' 'WRAPPER_RECONSTRUCTION_SUCCESS_V6'
   exit 0
 fi
-exec bash "$EFFECTIVE_SCRIPT"
+exec bash "$V6_SCRIPT"
