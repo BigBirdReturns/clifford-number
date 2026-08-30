@@ -1,0 +1,53 @@
+name: Temporary PR 2231 observation-phone frontier V106
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/temporary-pr2231-observation-phone-frontier-v106.yml'
+      - '.github/tmp/pr2231-observation-phone-frontier-v106.sh.gz.b64'
+
+permissions:
+  contents: write
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: pr2231-observation-phone-frontier-v106
+  cancel-in-progress: false
+
+jobs:
+  qualify-and-publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: BigBirdReturns/clifford-number
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      CONTROLLER_BRANCH: ${{ github.head_ref }}
+      EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+      CONTROLLER_PR_NUMBER: ${{ github.event.pull_request.number }}
+      EXPECTED_MAIN: 17aa3cfc22d5f9022164baf5c1d5a8e401b796cf
+      EXPECTED_PRODUCT: 405882b7f22fd3dc588a2237289f8550ed9525f9
+      EXPECTED_PRODUCT_TREE: 7ae48a2dc664c98f0e39f693d13a63fb4ee82224
+      EXPECTED_LIBRARY_BLOB: 5e753c9c32cba270ea79b6299fc35db94cd0928f
+      EXPECTED_TEST_BLOB: 069349ea792a8da8c5d67831ac2e73efc0ee82e9
+      ARTIFACT_DIR: /tmp/pr2231-observation-phone-frontier-v106
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Qualify and publish exact two-file successor
+        shell: bash
+        run: base64 -d .github/tmp/pr2231-observation-phone-frontier-v106.sh.gz.b64 | gzip -dc | bash
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-observation-phone-frontier-v106
+          path: /tmp/pr2231-observation-phone-frontier-v106
+          retention-days: 90
