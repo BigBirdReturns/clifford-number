@@ -1,4 +1,4 @@
-name: Temporary PR 2231 three-thread V106 publication
+name: Temporary PR 2231 three-thread V106 leased publication
 
 on:
   pull_request:
@@ -24,6 +24,7 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       REPO: BigBirdReturns/clifford-number
+      PRODUCT_PR: '2231'
       PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
       CONTROLLER_BRANCH: agent/pr2231-three-thread-custody-controller-v106
       EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
@@ -33,13 +34,15 @@ jobs:
       EXPECTED_PRODUCT_TREE: 7ae48a2dc664c98f0e39f693d13a63fb4ee82224
       EXPECTED_LIBRARY_BLOB: 5e753c9c32cba270ea79b6299fc35db94cd0928f
       EXPECTED_TEST_BLOB: 069349ea792a8da8c5d67831ac2e73efc0ee82e9
+      EXPECTED_CANDIDATE_COMMIT: 43588313351e9dceebe2bff3fd05f7088b384534
+      EXPECTED_CANDIDATE_TREE: efc92aba2de7088ad1e4a9b0514ccb9e8f498c47
       EXPECTED_CANDIDATE_LIBRARY_BLOB: cb6bcf21460d4d0cca0dcb29affb9424713399d0
       EXPECTED_CANDIDATE_TEST_BLOB: 96822fbd5ac213d03e2bdc91c92c7ddfc3931963
       EXPECTED_PATCH_SHA256: 86dfba79233283da18f0a9b2dc2e8182a641dce188e0ab8af8bb647e56502589
       EXPECTED_PAYLOAD_SHA256: 52665bccee5f5523977c0bc529e5ecbcf37fd9939ed784956d6c7326a3ad0e69
       EXPECTED_GZIP_SHA256: 59289ec1f820a718b3d5ccb9d5efedd563f830f9816c57e447469411c9621ee6
       EXPECTED_SCRIPT_SHA256: ab14811454473dd719733913e08fbf02d42da801a3eb87c13db88feea3b60d95
-      PUBLISH: 'true'
+      PUBLISH: 'false'
       ARTIFACT_DIR: /tmp/pr2231-three-thread-custody-v106
 
     steps:
@@ -61,13 +64,149 @@ jobs:
           bash -n /tmp/pr2231-three-thread-v106.sh
           chmod 700 /tmp/pr2231-three-thread-v106.sh
 
-      - name: Requalify and publish exact three-thread successor
+      - name: Requalify exact V106 candidate read-only
         shell: bash
         run: bash /tmp/pr2231-three-thread-v106.sh
+
+      - name: Publish exact qualified commit with force-with-lease
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          fail() {
+            printf 'ERROR: %s\n' "$*" >&2
+            exit 1
+          }
+
+          expect_equal() {
+            local label="$1" actual="$2" expected="$3"
+            [[ "$actual" == "$expected" ]] || fail "$label mismatch: expected $expected, got $actual"
+          }
+
+          read_remote_ref() {
+            git ls-remote origin "refs/heads/$1" | awk 'NR == 1 { print $1 }'
+          }
+
+          mkdir -p "$ARTIFACT_DIR/receipts"
+
+          git cat-file -e "${EXPECTED_CANDIDATE_COMMIT}^{commit}"
+          expect_equal candidate_parent "$(git rev-parse "${EXPECTED_CANDIDATE_COMMIT}^")" "$EXPECTED_MAIN"
+          expect_equal candidate_tree "$(git rev-parse "${EXPECTED_CANDIDATE_COMMIT}^{tree}")" "$EXPECTED_CANDIDATE_TREE"
+          expect_equal candidate_library_blob "$(git rev-parse "${EXPECTED_CANDIDATE_COMMIT}:tools/lib/industrial-exhaust.mjs")" "$EXPECTED_CANDIDATE_LIBRARY_BLOB"
+          expect_equal candidate_test_blob "$(git rev-parse "${EXPECTED_CANDIDATE_COMMIT}:test/industrial-exhaust.test.js")" "$EXPECTED_CANDIDATE_TEST_BLOB"
+          expect_equal candidate_commit_count "$(git rev-list --count "${EXPECTED_MAIN}..${EXPECTED_CANDIDATE_COMMIT}")" '1'
+
+          mapfile -t candidate_paths < <(git diff --name-only "$EXPECTED_MAIN" "$EXPECTED_CANDIDATE_COMMIT" | sort)
+          [[ "${#candidate_paths[@]}" -eq 2 ]] || fail "candidate path count is ${#candidate_paths[@]}, expected 2"
+          [[ "${candidate_paths[0]}" == 'test/industrial-exhaust.test.js' ]] || fail "unexpected first candidate path: ${candidate_paths[0]}"
+          [[ "${candidate_paths[1]}" == 'tools/lib/industrial-exhaust.mjs' ]] || fail "unexpected second candidate path: ${candidate_paths[1]}"
+
+          main_before="$(read_remote_ref main)"
+          product_before="$(read_remote_ref "$PRODUCT_BRANCH")"
+          controller_before="$(read_remote_ref "$CONTROLLER_BRANCH")"
+          expect_equal main_before "$main_before" "$EXPECTED_MAIN"
+          expect_equal product_before "$product_before" "$EXPECTED_PRODUCT"
+          expect_equal controller_before "$controller_before" "$EXPECTED_CONTROLLER"
+          expect_equal checkout_controller "$GITHUB_SHA" "$EXPECTED_CONTROLLER"
+
+          pr_before="$(gh api "repos/$REPO/pulls/$PRODUCT_PR")"
+          printf '%s\n' "$pr_before" > "$ARTIFACT_DIR/receipts/publication-pr-before.json"
+          jq -e \
+            --arg branch "$PRODUCT_BRANCH" \
+            --arg head "$EXPECTED_PRODUCT" \
+            --arg main "$EXPECTED_MAIN" \
+            '.state == "open" and .draft == true and .merged == false and .head.ref == $branch and .head.sha == $head and .base.ref == "main" and .base.sha == $main and .commits == 1 and .changed_files == 2' \
+            <<<"$pr_before" >/dev/null || fail 'product pull-request lease changed before publication'
+
+          mapfile -t pr_paths < <(gh api --paginate "repos/$REPO/pulls/$PRODUCT_PR/files" --jq '.[].filename' | sort)
+          [[ "${#pr_paths[@]}" -eq 2 ]] || fail "product PR path count is ${#pr_paths[@]}, expected 2"
+          [[ "${pr_paths[0]}" == 'test/industrial-exhaust.test.js' ]] || fail "unexpected first product PR path: ${pr_paths[0]}"
+          [[ "${pr_paths[1]}" == 'tools/lib/industrial-exhaust.mjs' ]] || fail "unexpected second product PR path: ${pr_paths[1]}"
+
+          : > "$ARTIFACT_DIR/receipts/publication-threads-before.ndjson"
+          for thread_id in \
+            PRRT_kwDOTGqftc6dfK4F \
+            PRRT_kwDOTGqftc6dfK4H \
+            PRRT_kwDOTGqftc6dfLu0
+          do
+            thread_json="$(gh api graphql \
+              -f query='query($id: ID!) { node(id: $id) { ... on PullRequestReviewThread { id isResolved isOutdated } } }' \
+              -f id="$thread_id")"
+            printf '%s\n' "$thread_json" >> "$ARTIFACT_DIR/receipts/publication-threads-before.ndjson"
+            jq -e --arg id "$thread_id" '.data.node.id == $id and .data.node.isResolved == false and .data.node.isOutdated == false' \
+              <<<"$thread_json" >/dev/null || fail "binding review thread changed before publication: $thread_id"
+          done
+
+          printf 'PUBLICATION_PUSH_STARTED\n' | tee -a "$ARTIFACT_DIR/result.txt" "$ARTIFACT_DIR/trace.log"
+          git push \
+            --force-with-lease="refs/heads/${PRODUCT_BRANCH}:${EXPECTED_PRODUCT}" \
+            origin \
+            "${EXPECTED_CANDIDATE_COMMIT}:refs/heads/${PRODUCT_BRANCH}"
+
+          git fetch --no-tags origin \
+            "refs/heads/${PRODUCT_BRANCH}:refs/remotes/origin/${PRODUCT_BRANCH}"
+          published="$(git rev-parse "refs/remotes/origin/${PRODUCT_BRANCH}")"
+          expect_equal published_product "$published" "$EXPECTED_CANDIDATE_COMMIT"
+          expect_equal published_parent "$(git rev-parse "${published}^")" "$EXPECTED_MAIN"
+          expect_equal published_tree "$(git rev-parse "${published}^{tree}")" "$EXPECTED_CANDIDATE_TREE"
+          expect_equal published_library_blob "$(git rev-parse "${published}:tools/lib/industrial-exhaust.mjs")" "$EXPECTED_CANDIDATE_LIBRARY_BLOB"
+          expect_equal published_test_blob "$(git rev-parse "${published}:test/industrial-exhaust.test.js")" "$EXPECTED_CANDIDATE_TEST_BLOB"
+
+          expect_equal main_after "$(read_remote_ref main)" "$EXPECTED_MAIN"
+          expect_equal controller_after "$(read_remote_ref "$CONTROLLER_BRANCH")" "$EXPECTED_CONTROLLER"
+          expect_equal product_after "$(read_remote_ref "$PRODUCT_BRANCH")" "$EXPECTED_CANDIDATE_COMMIT"
+
+          pr_after=''
+          for attempt in $(seq 1 20); do
+            pr_after="$(gh api "repos/$REPO/pulls/$PRODUCT_PR")"
+            if jq -e --arg head "$EXPECTED_CANDIDATE_COMMIT" '.head.sha == $head' <<<"$pr_after" >/dev/null; then
+              break
+            fi
+            sleep 2
+          done
+          printf '%s\n' "$pr_after" > "$ARTIFACT_DIR/receipts/publication-pr-after.json"
+          jq -e \
+            --arg branch "$PRODUCT_BRANCH" \
+            --arg head "$EXPECTED_CANDIDATE_COMMIT" \
+            --arg main "$EXPECTED_MAIN" \
+            '.state == "open" and .draft == true and .merged == false and .head.ref == $branch and .head.sha == $head and .base.ref == "main" and .base.sha == $main and .commits == 1 and .changed_files == 2' \
+            <<<"$pr_after" >/dev/null || fail 'product pull-request state did not converge to the published candidate'
+
+          : > "$ARTIFACT_DIR/receipts/publication-threads-after.ndjson"
+          for thread_id in \
+            PRRT_kwDOTGqftc6dfK4F \
+            PRRT_kwDOTGqftc6dfK4H \
+            PRRT_kwDOTGqftc6dfLu0
+          do
+            thread_json="$(gh api graphql \
+              -f query='query($id: ID!) { node(id: $id) { ... on PullRequestReviewThread { id isResolved isOutdated } } }' \
+              -f id="$thread_id")"
+            printf '%s\n' "$thread_json" >> "$ARTIFACT_DIR/receipts/publication-threads-after.ndjson"
+            jq -e --arg id "$thread_id" '.data.node.id == $id and .data.node.isResolved == false' \
+              <<<"$thread_json" >/dev/null || fail "review thread was resolved during publication: $thread_id"
+          done
+
+          cat > "$ARTIFACT_DIR/receipts/publication.txt" <<EOF
+          run_id=$GITHUB_RUN_ID
+          job=publish-current-candidate-with-lease
+          controller=$EXPECTED_CONTROLLER
+          main=$EXPECTED_MAIN
+          predecessor=$EXPECTED_PRODUCT
+          product=$EXPECTED_CANDIDATE_COMMIT
+          tree=$EXPECTED_CANDIDATE_TREE
+          library_blob=$EXPECTED_CANDIDATE_LIBRARY_BLOB
+          focused_test_blob=$EXPECTED_CANDIDATE_TEST_BLOB
+          product_paths=test/industrial-exhaust.test.js,tools/lib/industrial-exhaust.mjs
+          product_pr_state=open,draft,unmerged
+          threads_resolved=false
+          publication=force-with-lease
+          EOF
+
+          printf 'PUBLICATION_SUCCESS\n' | tee -a "$ARTIFACT_DIR/result.txt" "$ARTIFACT_DIR/trace.log"
 
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: pr2231-three-thread-custody-v106-publication
+          name: pr2231-three-thread-custody-v106-publication-r2
           path: /tmp/pr2231-three-thread-custody-v106
           retention-days: 90
