@@ -59,6 +59,20 @@ jobs:
           set -Eeuo pipefail
           base64 -d .github/tmp/pr2231-callback-observation-frontier-v110.sh.gz.b64 \
             | gzip -d > /tmp/pr2231-callback-observation-frontier-v110.sh
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('/tmp/pr2231-callback-observation-frontier-v110.sh')
+          source = path.read_text()
+          needle = 'Archive 62-16-03-6216-8041'
+          replacement = 'Archive 62-16-[contact omitted]'
+          first = source.find(needle)
+          second = source.find(needle, first + len(needle)) if first >= 0 else -1
+          if first < 0 or second < 0:
+              raise SystemExit('unable to locate the auxiliary predecessor expectation')
+          source = source[:second] + replacement + source[second + len(needle):]
+          path.write_text(source)
+          PY
           chmod +x /tmp/pr2231-callback-observation-frontier-v110.sh
           /tmp/pr2231-callback-observation-frontier-v110.sh
 
