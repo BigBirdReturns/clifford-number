@@ -1,0 +1,59 @@
+name: Temporary PR 2231 day-first date V104 qualification
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/temporary-pr2231-day-first-date-v104.yml'
+      - '.github/tmp/pr2231-day-first-date-v104.sh.gz'
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: pr2231-day-first-date-v104-qualification
+  cancel-in-progress: false
+
+jobs:
+  qualify:
+    if: github.event.pull_request.head.ref == 'agent/pr2231-day-first-date-finality-controller-v104'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: BigBirdReturns/clifford-number
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      EXPECTED_MAIN: 17aa3cfc22d5f9022164baf5c1d5a8e401b796cf
+      EXPECTED_PRODUCT: 618d7f4fff23ea44d396f1476477e0163a1c50f1
+      EXPECTED_PRODUCT_TREE: ec2c1fdf2bc9e7b05d9fe1ec40f22c56e9ae4184
+      EXPECTED_LIBRARY_BLOB: d02ac8fdb1dad6777d6a722a097706c5660ebe8a
+      EXPECTED_TEST_BLOB: 1d8fd285563eea4121bbe178a4b54eb715af3ac0
+      EXPECTED_REVIEW_THREAD: PRRT_kwDOTGqftc6dept0
+      EXPECTED_REVIEW_COMMENT: '3888440222'
+      PUBLISH: 'false'
+      ARTIFACT_DIR: /tmp/pr2231-day-first-date-finality-v104
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Reproduce and qualify exact two-file successor
+        shell: bash
+        run: gzip -dc .github/tmp/pr2231-day-first-date-v104.sh.gz | bash
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-day-first-date-finality-v104
+          path: /tmp/pr2231-day-first-date-finality-v104
+          retention-days: 90
