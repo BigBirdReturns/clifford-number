@@ -1,0 +1,122 @@
+name: Temporary PR 2231 six-thread callback frontier V112
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/temporary-pr2231-six-thread-callback-frontier-v112.yml'
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: pr2231-six-thread-callback-frontier-v112
+  cancel-in-progress: false
+
+jobs:
+  qualify-six-thread-callback-frontier:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: BigBirdReturns/clifford-number
+      PRODUCT_PR: '2231'
+      CONTROLLER_PR: ${{ github.event.pull_request.number }}
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      CONTROLLER_BRANCH: ${{ github.head_ref }}
+      CONTROLLER_WORKFLOW: '.github/workflows/temporary-pr2231-six-thread-callback-frontier-v112.yml'
+      EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+      EXPECTED_MAIN: 0b1d8af5b86adad49b3451053dbb9166294d631c
+      EXPECTED_PRODUCT: cfd1e459efc07f57cab7117200a4a4b962fd1bac
+      EXPECTED_PARENT: 0b1d8af5b86adad49b3451053dbb9166294d631c
+      EXPECTED_TREE: 17d5350c902e47f129fae0282735b4acbeff381c
+      EXPECTED_LIBRARY: dab48bfba026dc1629a4384a26d98c13366b0ea3
+      EXPECTED_TEST: 8fad1d2be93f9a286f9b95bb35751d3e908c4834
+      REVIEW_BINDINGS: >-
+        PRRT_kwDOTGqftc6dept0:3888440222
+        PRRT_kwDOTGqftc6dfK4F:3888640534
+        PRRT_kwDOTGqftc6dfK4H:3888640536
+        PRRT_kwDOTGqftc6dfLu0:3888645507
+        PRRT_kwDOTGqftc6di_ww:3890125090
+        PRRT_kwDOTGqftc6di_wy:3890125092
+      QUALIFIER_BLOB: 0df720855f9c5c31ae9352031c8a07ebc84ba3a9
+      EXPECTED_GZIP_SHA256: ccd9c08a752ee3cab197adb46b42afb1d13f737f9bf6a322fdedccbcb898ee9b
+      EXPECTED_QUALIFIER_SHA256: b83c1a19c70b0b0bc8a4c8e797fbb8257c1127cdf9e7d3b93ee8916e156b24db
+      ARTIFACT_DIR: /tmp/pr2231-six-thread-callback-frontier-v112
+      PRODUCT_WT: /tmp/pr2231-six-thread-callback-frontier-product-v112
+      MAIN_WT: /tmp/pr2231-six-thread-callback-frontier-main-v112
+      QUALIFIED_DIR: /tmp/pr2231-six-thread-callback-frontier-qualified-v112
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Fetch and execute immutable read-only qualifier
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          qualifier_gz=/tmp/pr2231-six-thread-callback-frontier-v112.sh.gz
+          qualifier=/tmp/pr2231-six-thread-callback-frontier-v112.sh
+          gh api "repos/$REPO/git/blobs/$QUALIFIER_BLOB" --jq '.content' \
+            | tr -d '\n' | base64 -d > "$qualifier_gz"
+          printf '%s  %s\n' "$EXPECTED_GZIP_SHA256" "$qualifier_gz" \
+            | sha256sum -c -
+          gzip -dc "$qualifier_gz" > "$qualifier"
+          printf '%s  %s\n' "$EXPECTED_QUALIFIER_SHA256" "$qualifier" \
+            | sha256sum -c -
+          chmod +x "$qualifier"
+          "$qualifier"
+
+      - name: Emit qualification diagnostics
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          upload=/tmp/pr2231-six-thread-callback-frontier-v112-upload
+          qualifier=/tmp/pr2231-six-thread-callback-frontier-v112.sh
+          rm -rf "$upload"
+          mkdir -p "$ARTIFACT_DIR" "$upload"
+          if [[ -f "$qualifier" ]]; then
+            cp "$qualifier" "$ARTIFACT_DIR/qualifier-v112.sh"
+            sha256sum "$qualifier" > "$ARTIFACT_DIR/qualifier-v112.sha256"
+          fi
+          printf '%s\n' "$QUALIFIER_BLOB" > "$ARTIFACT_DIR/qualifier-git-blob.txt"
+          printf '%s\n' "$EXPECTED_GZIP_SHA256" > "$ARTIFACT_DIR/qualifier-gzip-sha256.txt"
+          find "$ARTIFACT_DIR" -maxdepth 1 -type f -printf '%f\t%s\n' \
+            | sort > "$ARTIFACT_DIR/artifact-manifest.txt"
+          cp -a "$ARTIFACT_DIR"/. "$upload"/
+          find "$upload" -maxdepth 1 -type f -printf '%f\t%s\n' \
+            | sort > "$upload/upload-manifest.txt"
+          {
+            printf '%s\n' '### PR 2231 six-thread callback frontier V112'
+            for receipt in qualification-terminal.txt summary.json \
+              predecessor-reproduction.jsonl direct-matrix.jsonl \
+              phone-ranges-before-url-guard.txt focused-product.log \
+              product-release-check.log focused-main-transplant.log \
+              main-release-check.log candidate-commit.txt \
+              candidate-paths.txt controller-paths.txt \
+              review-comments-before.tsv review-thread-ledger-before.jsonl \
+              review-comments-after.tsv review-thread-ledger-after.jsonl \
+              artifact-manifest.txt qualifier-v112.sha256; do
+              printf '\n#### %s\n\n```text\n' "$receipt"
+              [[ ! -f "$ARTIFACT_DIR/$receipt" ]] \
+                || tail -n 420 "$ARTIFACT_DIR/$receipt"
+              printf '%s\n' '```'
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-six-thread-callback-frontier-v112
+          path: /tmp/pr2231-six-thread-callback-frontier-v112-upload
+          retention-days: 90
