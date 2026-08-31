@@ -1,0 +1,76 @@
+name: Temporary PR 2231 V115 identifier-custody cursor qualification
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+
+concurrency:
+  group: pr2231-v115-identifier-cursor-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  qualify-v115:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: BigBirdReturns/clifford-number
+      CONTROLLER_PR: ${{ github.event.pull_request.number }}
+      EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+      EXPECTED_MAIN: 771a64b6b467748d2f4df667b5f78e76f9432d69
+      PRODUCT_PR: '2231'
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      EXPECTED_PRODUCT: 9652029dbabcab0e2d7c51c0f8c61e57869e34cc
+      EXPECTED_PRODUCT_TREE: dbc81b437b7e98a4bfd0dc59ef13a51586c0c6c7
+      EXPECTED_LIBRARY_BLOB: 2ac63e66103fd637166d82d559269ca1b3cf7419
+      EXPECTED_TEST_BLOB: ba934a14f232af58fadf1250d1903fd774e20654
+      IDENTIFIER_REVIEW_COMMENT: '3896943486'
+      IDENTIFIER_REVIEW_COMMENT_2: '3896968531'
+      CURSOR_REVIEW_COMMENT: '3896968536'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Materialize and execute exact qualification program
+        shell: bash
+        env:
+          PROGRAM_GZIP_BASE64: >-
+            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
+        run: |
+          set -Eeuo pipefail
+          printf '%s' "${PROGRAM_GZIP_BASE64}" | base64 -d | gzip -d > /tmp/pr2231-v115-qualify.sh
+          chmod 0700 /tmp/pr2231-v115-qualify.sh
+          bash -n /tmp/pr2231-v115-qualify.sh
+          bash /tmp/pr2231-v115-qualify.sh
+
+      - name: Emit receipts
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          root=/tmp/pr2231-v115-qualified
+          if [[ -d "${root}" ]]; then
+            find "${root}" -type f -printf '%P\t%s\n' | sort
+            for receipt in "${root}/receipts/qualification.env" "${root}/receipts/terminal.env"; do
+              [[ -f "${receipt}" ]] && cat "${receipt}"
+            done
+          fi
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-v115-identifier-cursor-qualification
+          path: /tmp/pr2231-v115-qualified
+          retention-days: 90
