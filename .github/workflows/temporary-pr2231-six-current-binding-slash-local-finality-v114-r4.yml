@@ -1,0 +1,192 @@
+name: Temporary PR 2231 six-current-binding slash-local finality V114 R4
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/temporary-pr2231-six-current-binding-slash-local-finality-v114-r4.yml'
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: pr2231-six-current-binding-slash-local-finality-v114-r4
+  cancel-in-progress: false
+
+jobs:
+  qualify-six-current-binding-slash-local-finality:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: BigBirdReturns/clifford-number
+      PRODUCT_PR: '2231'
+      CONTROLLER_PR: ${{ github.event.pull_request.number }}
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      CONTROLLER_BRANCH: ${{ github.head_ref }}
+      CONTROLLER_WORKFLOW: '.github/workflows/temporary-pr2231-six-current-binding-slash-local-finality-v114-r4.yml'
+      EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+      EXPECTED_MAIN: 0b1d8af5b86adad49b3451053dbb9166294d631c
+      EXPECTED_PRODUCT: 4e1285af114d517b7304a027195857ad66987c58
+      EXPECTED_PARENT: 0b1d8af5b86adad49b3451053dbb9166294d631c
+      EXPECTED_TREE: 9984bd605c3ff2f839bd6d04b4fa0e6fb924ccaa
+      EXPECTED_LIBRARY: f7e0c9cbdd0dc2d81a24195aedc8e52401029cad
+      EXPECTED_TEST: 839e858980734dbfb8b157e64fed36cf1868820a
+      REVIEW_BINDINGS: >-
+        PRRT_kwDOTGqftc6dept0:3888440222
+        PRRT_kwDOTGqftc6dfK4F:3888640534
+        PRRT_kwDOTGqftc6dfLu0:3888645507
+        PRRT_kwDOTGqftc6di_ww:3890125090
+        PRRT_kwDOTGqftc6di_wy:3890125092
+        PRRT_kwDOTGqftc6dpMKU:3892550854
+      WRAPPER_CHUNKS: >-
+        053df66bec17d0b5420145a9b7fe1dd17f1a034d
+        4640e72dc416697b1a5f43d37af69b78247a8b8a
+        889620517b96c82417d5bd29d51ef63a624da601
+        cc3bcb6b4566fdb0d2f79e9dc0fe8fd638516398
+        04c3db005b709a68b89dc9551e94260d3610cdba
+        0705f1925a37111737d2b9b7ba35dd31f2a204e1
+        4091ceafdd57d6261cfce607f2ce989cb879c3c4
+        fb1f583ea120f9469fc7a129e0ab89089149729f
+        6ac43b3fc8b202f96497d1f909dabf9d16690918
+        a3f0f6f91968f3eb79b18ace8c4965de4096735f
+        1f37c2d3d7054732ea665b6513dd3ddd8a2c1c80
+        8ec7e1834e71c706dbf9f6ba132a596a21c14bd5
+        e231096566a73ac0e1ed3ff1e8ec2b827273adac
+        82c3d69d01e497def83ee35a784de785bfe7d8c7
+        d1cbdb3076968c748260dc0cba6afddfda31e6f6
+        5f8f0a117210166b3a850842fef8fab4ae8161ea
+      EXPECTED_WRAPPER_BASE64_BYTES: '6064'
+      EXPECTED_WRAPPER_BASE64_SHA256: dd1d098a4a61305957709b472395d9cbc6444fd50078a531e09f34caf30e8820
+      EXPECTED_WRAPPER_GZIP_SHA256: 50d2fed2ae7eb4d0e7d8ee2335a65ba1f2282644156479bde15fb0d0e2c632e0
+      EXPECTED_R3_WRAPPER_SHA256: 799c9a5ec6777dcbbb3e4284013d035b22f4d7113542c3c17dbc4359bf0f9b9c
+      EXPECTED_R4_WRAPPER_SHA256: 0899505403bb0af32a274929af2f9cf7af1ba6519bf30bae3e44944d9b01c7eb
+      ARTIFACT_DIR: /tmp/pr2231-six-current-binding-slash-local-finality-v114-r4
+      PRODUCT_WT: /tmp/pr2231-six-current-binding-slash-local-finality-product-v114-r4
+      MAIN_WT: /tmp/pr2231-six-current-binding-slash-local-finality-main-v114-r4
+      QUALIFIED_DIR: /tmp/pr2231-six-current-binding-slash-local-finality-qualified-v114-r4
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Reconstruct, patch, and execute immutable R4 wrapper
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          wrapper_b64=/tmp/pr2231-six-current-binding-slash-local-finality-v114-r3.sh.gz.b64
+          wrapper_gz=/tmp/pr2231-six-current-binding-slash-local-finality-v114-r3.sh.gz
+          wrapper_r3=/tmp/pr2231-six-current-binding-slash-local-finality-v114-r3.sh
+          wrapper_r4=/tmp/pr2231-six-current-binding-slash-local-finality-v114-r4.sh
+          : > "$wrapper_b64"
+          for blob in $WRAPPER_CHUNKS; do
+            gh api "repos/$REPO/git/blobs/$blob" --jq '.content' \
+              | tr -d '\n' | base64 -d >> "$wrapper_b64"
+          done
+          test "$(wc -c < "$wrapper_b64" | tr -d ' ')" \
+            = "$EXPECTED_WRAPPER_BASE64_BYTES"
+          printf '%s  %s\n' "$EXPECTED_WRAPPER_BASE64_SHA256" "$wrapper_b64" \
+            | sha256sum -c -
+          base64 -d "$wrapper_b64" > "$wrapper_gz"
+          printf '%s  %s\n' "$EXPECTED_WRAPPER_GZIP_SHA256" "$wrapper_gz" \
+            | sha256sum -c -
+          gzip -dc "$wrapper_gz" > "$wrapper_r3"
+          printf '%s  %s\n' "$EXPECTED_R3_WRAPPER_SHA256" "$wrapper_r3" \
+            | sha256sum -c -
+          cp "$wrapper_r3" "$wrapper_r4"
+          python3 - "$wrapper_r4" <<'PY'
+          from pathlib import Path
+          import sys
+
+          path = Path(sys.argv[1])
+          text = path.read_text()
+          old = "\n".join([
+              "set +e",
+              'ARTIFACT_DIR="$BASE_RUN_DIR" PRODUCT_WT="$PRODUCT_WT" MAIN_WT="$MAIN_WT" \\',
+              'QUALIFIED_DIR="$QUALIFIED_DIR" bash "$BASE_EXEC" \\',
+              '  > "$FINAL_ARTIFACT_DIR/v114-base-execution.log" 2>&1',
+              'base_rc=$?',
+              'set -e',
+          ])
+          new = "\n".join([
+              'if ARTIFACT_DIR="$BASE_RUN_DIR" PRODUCT_WT="$PRODUCT_WT" MAIN_WT="$MAIN_WT" \\',
+              'QUALIFIED_DIR="$QUALIFIED_DIR" bash "$BASE_EXEC" \\',
+              '  > "$FINAL_ARTIFACT_DIR/v114-base-execution.log" 2>&1; then',
+              '  base_rc=0',
+              'else',
+              '  base_rc=$?',
+              'fi',
+          ])
+          count = text.count(old)
+          if count != 1:
+              raise SystemExit(f"expected one R3 replay block, found {count}")
+          path.write_text(text.replace(old, new, 1))
+          PY
+          printf '%s  %s\n' "$EXPECTED_R4_WRAPPER_SHA256" "$wrapper_r4" \
+            | sha256sum -c -
+          bash -n "$wrapper_r4"
+          chmod +x "$wrapper_r4"
+          "$wrapper_r4"
+
+      - name: Emit qualification diagnostics
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          upload=/tmp/pr2231-six-current-binding-slash-local-finality-v114-r4-upload
+          wrapper_r3=/tmp/pr2231-six-current-binding-slash-local-finality-v114-r3.sh
+          wrapper_r4=/tmp/pr2231-six-current-binding-slash-local-finality-v114-r4.sh
+          rm -rf "$upload"
+          mkdir -p "$ARTIFACT_DIR" "$upload"
+          printf '%s\n' $WRAPPER_CHUNKS > "$ARTIFACT_DIR/wrapper-chunks.txt"
+          printf '%s\n' "$EXPECTED_WRAPPER_BASE64_SHA256" \
+            > "$ARTIFACT_DIR/wrapper-base64-sha256.txt"
+          printf '%s\n' "$EXPECTED_WRAPPER_GZIP_SHA256" \
+            > "$ARTIFACT_DIR/wrapper-gzip-sha256.txt"
+          if [[ -f "$wrapper_r3" ]]; then
+            cp "$wrapper_r3" "$ARTIFACT_DIR/wrapper-v114-r3.sh"
+            sha256sum "$wrapper_r3" > "$ARTIFACT_DIR/wrapper-v114-r3.sha256"
+          fi
+          if [[ -f "$wrapper_r4" ]]; then
+            cp "$wrapper_r4" "$ARTIFACT_DIR/wrapper-v114-r4.sh"
+            sha256sum "$wrapper_r4" > "$ARTIFACT_DIR/wrapper-v114-r4.sha256"
+          fi
+          find "$ARTIFACT_DIR" -maxdepth 1 -type f -printf '%f\t%s\n' \
+            | sort > "$ARTIFACT_DIR/artifact-manifest.txt"
+          cp -a "$ARTIFACT_DIR"/. "$upload"/
+          find "$upload" -maxdepth 1 -type f -printf '%f\t%s\n' \
+            | sort > "$upload/upload-manifest.txt"
+          {
+            printf '%s\n' '### PR 2231 slash-local finality V114 R4'
+            for receipt in qualification-terminal.txt summary.json \
+              predecessor-reproduction.jsonl v114-base-failure-terminal.txt \
+              v114-base-direct-matrix.jsonl direct-matrix.jsonl \
+              focused-product.log product-release-check.log \
+              focused-main-transplant.log main-release-check.log \
+              candidate-commit.txt candidate-paths.txt controller-paths.txt \
+              review-comments-before.tsv review-thread-ledger-before.jsonl \
+              review-comments-after.tsv review-thread-ledger-after.jsonl \
+              incremental-patch.sha256 wrapper-v114-r3.sha256 \
+              wrapper-v114-r4.sha256 artifact-manifest.txt; do
+              printf '\n#### %s\n\n```text\n' "$receipt"
+              [[ ! -f "$ARTIFACT_DIR/$receipt" ]] \
+                || tail -n 420 "$ARTIFACT_DIR/$receipt"
+              printf '%s\n' '```'
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-six-current-binding-slash-local-finality-v114-r4
+          path: /tmp/pr2231-six-current-binding-slash-local-finality-v114-r4-upload
+          retention-days: 90
