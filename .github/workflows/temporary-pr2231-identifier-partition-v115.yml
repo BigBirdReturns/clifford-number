@@ -1,0 +1,92 @@
+name: Temporary PR 2231 identifier authority ordering V115
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/temporary-pr2231-identifier-partition-v115.yml'
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: pr2231-identifier-authority-ordering-v115
+  cancel-in-progress: false
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: BigBirdReturns/clifford-number
+      PRODUCT_PR: '2231'
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      CONTROLLER_PR: ${{ github.event.pull_request.number }}
+      CONTROLLER_BRANCH: agent/pr2231-six-current-binding-identifier-partition-v115
+      CONTROLLER_WORKFLOW: .github/workflows/temporary-pr2231-identifier-partition-v115.yml
+      EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+      EXPECTED_MAIN: 771a64b6b467748d2f4df667b5f78e76f9432d69
+      EXPECTED_MAIN_TREE: 86c91755f16245168ddb230d53e5b9920af5342c
+      EXPECTED_PARENT: 771a64b6b467748d2f4df667b5f78e76f9432d69
+      EXPECTED_MAIN_DELTA_COUNT: '0'
+      EXPECTED_PRODUCT: 9652029dbabcab0e2d7c51c0f8c61e57869e34cc
+      EXPECTED_TREE: dbc81b437b7e98a4bfd0dc59ef13a51586c0c6c7
+      EXPECTED_LIBRARY: 2ac63e66103fd637166d82d559269ca1b3cf7419
+      EXPECTED_TEST: ba934a14f232af58fadf1250d1903fd774e20654
+      EXPECTED_CANDIDATE_LIBRARY: ed96bb6babcef8bfa95b6770aac199cca56489d5
+      EXPECTED_CANDIDATE_TEST: 42271e275e23610944cee59ad217c8646b11dc7c
+      REVIEW_COMMENT_IDS: >-
+        3888440222 3888640534 3888645507 3890125090 3890125092 3892926264
+      QUALIFIER_BLOB: e0805c8d84fe87bd69ad20a2f5eb49a82362e65b
+      QUALIFIER_XZ_SHA256: 60750943aac0cb48cf70299b622d9cf1c59717ba2ca3534c09adee68ba600380
+      QUALIFIER_SOURCE_SHA256: 02d020837f6c317fd15dd0ec9f96209da9c3a2f333c8a055bb287a726dea60eb
+      ARTIFACT_DIR: /tmp/pr2231-six-current-binding-identifier-partition-v115
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Reconstruct and execute immutable read-only qualifier
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          xz_payload=/tmp/pr2231-v115-qualifier.sh.xz
+          qualifier=/tmp/pr2231-v115-qualifier.sh
+          preserve_qualifier() {
+            rc=$?
+            trap - EXIT
+            set +e
+            mkdir -p "$ARTIFACT_DIR"
+            cp "$xz_payload" "$ARTIFACT_DIR/v115-qualifier.sh.xz"
+            cp "$qualifier" "$ARTIFACT_DIR/v115-qualifier.sh"
+            git show "$EXPECTED_PRODUCT:tools/lib/industrial-exhaust.mjs" > "$ARTIFACT_DIR/v114-industrial-exhaust.mjs"
+            git show "$EXPECTED_PRODUCT:test/industrial-exhaust.test.js" > "$ARTIFACT_DIR/v114-industrial-exhaust.test.js"
+            printf '%s\n' "$rc" > "$ARTIFACT_DIR/controller-child-exit-code.txt"
+            exit "$rc"
+          }
+          trap preserve_qualifier EXIT
+          gh api "repos/$REPO/git/blobs/$QUALIFIER_BLOB" --jq '.content' \
+            | tr -d '\n' | base64 -d > "$xz_payload"
+          printf '%s  %s\n' "$QUALIFIER_XZ_SHA256" "$xz_payload" | sha256sum -c -
+          xz -dc "$xz_payload" > "$qualifier"
+          printf '%s  %s\n' "$QUALIFIER_SOURCE_SHA256" "$qualifier" | sha256sum -c -
+          bash -n "$qualifier"
+          bash "$qualifier"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-six-current-binding-identifier-partition-v115
+          path: /tmp/pr2231-six-current-binding-identifier-partition-v115
+          if-no-files-found: error
+          retention-days: 90
