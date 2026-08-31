@@ -1,0 +1,110 @@
+name: Temporary PR 2231 identifier-observation V116 qualifier V3
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: pr2231-v116-v3-identifier-observation-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  qualify-identifier-observation-v116-v3:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Check out exact controller head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Materialize and execute read-only V116 qualifier
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: BigBirdReturns/clifford-number
+          PRODUCT_PR: '2231'
+          PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+          CONTROLLER_PR: ${{ github.event.pull_request.number }}
+          CONTROLLER_BRANCH: ${{ github.event.pull_request.head.ref }}
+          EXPECTED_CONTROLLER_BRANCH: agent/pr2231-v116-review-actor-binding-v3
+          EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+          CONTROLLER_WORKFLOW: .github/workflows/temporary-pr2231-identifier-observation-v116-v3.yml
+          EXPECTED_MAIN: 771a64b6b467748d2f4df667b5f78e76f9432d69
+          EXPECTED_PRODUCT: 97e32764de6fbdbf2381fc478d71a5b4cae23ef6
+          EXPECTED_PRODUCT_TREE: e2968f35273af94f6f45ba66770153bb25eb6cb2
+          EXPECTED_LIBRARY: 408313240904304912fe8afdd8edf5db60cb723e
+          EXPECTED_TEST: a8c124caf09edf94c050f05e70e23b90c9119a5b
+          EXPECTED_LIBRARY_SHA256: 45efcf2d7403ca03e76d867873434f2d4060db6bbdf45dbd52e98ff325b7cb2c
+          EXPECTED_TEST_SHA256: ead48f71877f412c43c92c0d6583bd826c8b9809445591e31632f781fc1978ec
+          EXPECTED_PATCH_SHA256: e861032f42abe3ef151c3a3ef8cec26973a38f059326f4c70b233ee18247c945
+          EXPECTED_PATCH_BLOB: 834a15bf6eac3a9361ba08a4639c7482180692d6
+          EXPECTED_CANDIDATE_LIBRARY: 2dcc2238e7263624131d959a02668659bcacd0e8
+          EXPECTED_CANDIDATE_TEST: 0bf25f1da477fb4882bcb00cb2876f8c4a2ac1a2
+          EXPECTED_CANDIDATE_LIBRARY_SHA256: cecfaa1312936a0726a910bada6af97633fabfe79833386102c5f6159f1ca354
+          EXPECTED_CANDIDATE_TEST_SHA256: d40316f04a848db95742338a6bf92b8e85570ee967f64130ba410feac3cdae05
+          EXPECTED_REVIEW_ID: '5071977195'
+          EXPECTED_REVIEW_COMMENT: '3898975358'
+          QUALIFIER_ENVELOPE_BLOB: a574c5e6555d2f438cd972a4741d6cc572d636e3
+          QUALIFIER_ENVELOPE_BYTES: '7088'
+          QUALIFIER_ENVELOPE_SHA256: 8c360966196a1355080dd2b32212e6c75cb85b027b51ab487e0198cb7219a681
+          QUALIFIER_SOURCE_BYTES: '22977'
+          QUALIFIER_SOURCE_SHA256: 67f3fc7d3c9fc4f4cfb364b6667e7d2bca1528f77fae62a26ab2ea2b80f5bca8
+          QUALIFIER_SOURCE_BLOB: e0f43487f6db9a57a8fc9cdfad9b3852b1451323
+          ARTIFACT_ROOT: /tmp/pr2231-identifier-observation-v116-r3
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          d=/tmp/pr2231-v116-r3-envelope
+          rm -rf "$d" "$ARTIFACT_ROOT"
+          mkdir -p "$d" "$ARTIFACT_ROOT/inputs"
+          exec > >(tee "$ARTIFACT_ROOT/wrapper.log") 2>&1
+          trap 'rc=$?; trap - EXIT; printf "wrapper_exit=%s\n" "$rc" > "$ARTIFACT_ROOT/wrapper-status.env"; exit "$rc"' EXIT
+
+          gh api "repos/$REPO/git/blobs/$QUALIFIER_ENVELOPE_BLOB" --jq '.content' \
+            | tr -d '\n' | base64 -d > "$d/envelope.tar.xz"
+          test "$(wc -c < "$d/envelope.tar.xz")" = "$QUALIFIER_ENVELOPE_BYTES"
+          test "$(sha256sum "$d/envelope.tar.xz" | awk '{print $1}')" = "$QUALIFIER_ENVELOPE_SHA256"
+          test "$(git hash-object "$d/envelope.tar.xz")" = "$QUALIFIER_ENVELOPE_BLOB"
+          xz -t "$d/envelope.tar.xz"
+          tar -xJf "$d/envelope.tar.xz" -C "$d"
+
+          test "$(wc -c < "$d/qualifier-v116.sh")" = "$QUALIFIER_SOURCE_BYTES"
+          test "$(sha256sum "$d/qualifier-v116.sh" | awk '{print $1}')" = "$QUALIFIER_SOURCE_SHA256"
+          test "$(git hash-object "$d/qualifier-v116.sh")" = "$QUALIFIER_SOURCE_BLOB"
+          test "$(wc -c < "$d/pr2231-v116.patch")" = '7049'
+          test "$(sha256sum "$d/pr2231-v116.patch" | awk '{print $1}')" = "$EXPECTED_PATCH_SHA256"
+          test "$(git hash-object "$d/pr2231-v116.patch")" = "$EXPECTED_PATCH_BLOB"
+          grep -Fx "qualifier-v116.sh $QUALIFIER_SOURCE_BYTES $QUALIFIER_SOURCE_SHA256 $QUALIFIER_SOURCE_BLOB" "$d/manifest.txt"
+          grep -Fx "pr2231-v116.patch 7049 $EXPECTED_PATCH_SHA256 $EXPECTED_PATCH_BLOB" "$d/manifest.txt"
+
+          cp "$d/manifest.txt" "$ARTIFACT_ROOT/inputs/manifest.txt"
+          cp "$d/qualifier-v116.sh" "$ARTIFACT_ROOT/inputs/qualifier-v116.sh"
+          cp "$d/pr2231-v116.patch" "$ARTIFACT_ROOT/inputs/pr2231-v116.patch"
+          printf 'envelope_blob=%s\nenvelope_bytes=%s\nenvelope_sha256=%s\n' \
+            "$QUALIFIER_ENVELOPE_BLOB" "$QUALIFIER_ENVELOPE_BYTES" "$QUALIFIER_ENVELOPE_SHA256" \
+            > "$ARTIFACT_ROOT/inputs/envelope-identity.env"
+
+          bash -n "$d/qualifier-v116.sh"
+          ARTIFACT_DIR="$ARTIFACT_ROOT/qualification" \
+            PATCH_FILE="$d/pr2231-v116.patch" \
+            bash "$d/qualifier-v116.sh"
+
+      - name: Upload terminal V116 R3 qualification artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr2231-identifier-observation-v116-r3
+          path: /tmp/pr2231-identifier-observation-v116-r3
+          if-no-files-found: error
+          retention-days: 90
