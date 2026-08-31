@@ -1,0 +1,149 @@
+name: Temporary PR 2231 V114 current-main transplant qualification
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: pr2231-v114-current-main-transplant-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  qualify-current-main-transplant:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: BigBirdReturns/clifford-number
+      MAIN_BRANCH: main
+      CURRENT_MAIN: ${{ github.event.pull_request.base.sha }}
+      OLD_MAIN: 0b1d8af5b86adad49b3451053dbb9166294d631c
+      PRODUCT_PR: '2231'
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      EXPECTED_PRODUCT: 4e1285af114d517b7304a027195857ad66987c58
+      EXPECTED_PRODUCT_TREE: 9984bd605c3ff2f839bd6d04b4fa0e6fb924ccaa
+      EXPECTED_PRODUCT_LIBRARY: f7e0c9cbdd0dc2d81a24195aedc8e52401029cad
+      EXPECTED_PRODUCT_TEST: 839e858980734dbfb8b157e64fed36cf1868820a
+      QUALIFIER_PR: '2431'
+      QUALIFIER_BRANCH: agent/pr2231-six-current-binding-slash-local-finality-controller-v114-r4
+      EXPECTED_QUALIFIER: 051e6c4ec0f7581e1014b30331bcfb1efb6c7ac6
+      CONTROLLER_PR: ${{ github.event.pull_request.number }}
+      CONTROLLER_BRANCH: ${{ github.event.pull_request.head.ref }}
+      CONTROLLER_PATH: .github/workflows/temporary-pr2231-v114-current-main-transplant-qualification.yml
+      EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+      REVIEW_BINDINGS: >-
+        PRRT_kwDOTGqftc6dept0:3888440222
+        PRRT_kwDOTGqftc6dfK4F:3888640534
+        PRRT_kwDOTGqftc6dfLu0:3888645507
+        PRRT_kwDOTGqftc6di_ww:3890125090
+        PRRT_kwDOTGqftc6di_wy:3890125092
+        PRRT_kwDOTGqftc6dpMKU:3892550854
+      ARTIFACT_ID: '9752557127'
+      ARTIFACT_RUN: '33377690828'
+      ARTIFACT_NAME: pr2231-six-current-binding-slash-local-finality-v114-r4
+      ARTIFACT_DIGEST: sha256:0ca9dea8f064d7121896c25d9a4dcd80f0106305c806db31991157ea23f80dd4
+      ARTIFACT_PATH: /tmp/pr2231-v114-source-artifact
+      SOURCE_CANDIDATE_TREE: 8e77c64d40ab8105502bc67afbdefb9f499f2706
+      CANDIDATE_LIBRARY_BLOB: fa5b2b1c90e6f635d2df730d78023a9575623fdb
+      CANDIDATE_TEST_BLOB: 5f7051a7c9a66a1a26b7c090cabb7af116ddef56
+      CANDIDATE_LIBRARY_SHA256: 720b83eb625978f1c0bc18aad365da15408412764f4a7bd15c1b3ca9a6c98df5
+      CANDIDATE_TEST_SHA256: af4affe5f50dc0d03713ba4573d513066ddb842c43cb581056891025b4169090
+      CANDIDATE_PATCH_SHA256: bf67e4ac2749951e71a3f371f2527f5182ca88ca39446601eba5edc788754fde
+      MAIN_WT: /tmp/pr2231-v114-current-main-worktree
+      RECEIPT_DIR: /tmp/pr2231-v114-current-main-qualification
+      QUALIFIED_DIR: /tmp/pr2231-v114-current-main-qualified
+      SCRIPT_B64_SHA256: 6ee8e3a03ae8fc6ee3fd90e79cc6d9829f80239a92febd9b7cab9bf87fc46051
+      SCRIPT_GZIP_SHA256: a9f894f33505b815bcb415f512998c4d8c14d6960dd2e0322a2249a8ae30078a
+      SCRIPT_SHA256: 73edab95ea6a0019f4446c6fba6ce5b5bdb64c06c1061a38843d95047d6d4a21
+      SCRIPT_B64_BYTES: '5261'
+      PAYLOAD_CHUNKS: >-
+        0082fa7e3cec712af1e11eb655f8114715fb9aad
+        d6665d8597ad7d45811f0601a3a6d5cea2b64ae6
+        0f51c1c9a8306f60ffcf3dbaad6d55464b408f5d
+        0769a6ae2ab02f8bd432df7276335c6440d54e4a
+        53148ce3ec9d15940a74c83021976eb400b160f9
+        580d3910a356417edebac330b83e35e5468acfe7
+        6289d36f2a7cf0576e464037a129d9a6eec9cd67
+        6d64f43f250788cae2f378c109a28cedc483842e
+        1d5e43f6a74f74343d96c34c0d2e461a158ca06b
+        aa7e57fa3b7277e257753dcd6715e61a1505a84a
+        a53c7d1f225daf29d028d3ef5d0f0b4d107b3dc5
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: pr2231-six-current-binding-slash-local-finality-v114-r4
+          path: /tmp/pr2231-v114-source-artifact
+          github-token: ${{ github.token }}
+          repository: BigBirdReturns/clifford-number
+          run-id: 33377690828
+
+      - name: Materialize and execute exact current-main qualifier
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          b64=/tmp/pr2231-v114-current-main-qualifier.sh.gz.b64
+          gz=/tmp/pr2231-v114-current-main-qualifier.sh.gz
+          script=/tmp/pr2231-v114-current-main-qualifier.sh
+          : > "$b64"
+          for sha in $PAYLOAD_CHUNKS; do
+            blob_json="$(mktemp)"
+            gh api "repos/$REPO/git/blobs/$sha" > "$blob_json"
+            [[ "$(jq -r '.sha' "$blob_json")" == "$sha" ]]
+            jq -r '.content' "$blob_json" | tr -d '\n' | base64 -d >> "$b64"
+            rm -f "$blob_json"
+          done
+          [[ "$(wc -c < "$b64" | tr -d ' ')" == "$SCRIPT_B64_BYTES" ]]
+          printf '%s  %s\n' "$SCRIPT_B64_SHA256" "$b64" | sha256sum -c -
+          base64 -d "$b64" > "$gz"
+          printf '%s  %s\n' "$SCRIPT_GZIP_SHA256" "$gz" | sha256sum -c -
+          gzip -dc "$gz" > "$script"
+          printf '%s  %s\n' "$SCRIPT_SHA256" "$script" | sha256sum -c -
+          bash -n "$script"
+          chmod +x "$script"
+          "$script"
+
+      - name: Emit qualification receipts
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RECEIPT_DIR"
+          find "$RECEIPT_DIR" -type f -printf '%P\t%s\n' | sort > "$RECEIPT_DIR/artifact-manifest.txt"
+          {
+            printf '%s\n' '### PR 2231 V114 current-main transplant qualification'
+            for receipt in result.txt summary.json candidate.env candidate-paths.txt \
+              current-main-delta-paths.txt current-main-focused.log \
+              current-main-release-check.log qualified.sha256 artifact-manifest.txt; do
+              printf '\n#### %s\n\n```text\n' "$receipt"
+              if [[ -f "$RECEIPT_DIR/$receipt" ]]; then
+                tail -n 500 "$RECEIPT_DIR/$receipt"
+              fi
+              printf '%s\n' '```'
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-v114-current-main-transplant-qualification-v1
+          path: |
+            /tmp/pr2231-v114-current-main-qualification
+            /tmp/pr2231-v114-current-main-qualified
+          if-no-files-found: error
+          retention-days: 90
