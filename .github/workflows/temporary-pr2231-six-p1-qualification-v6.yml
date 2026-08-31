@@ -1,0 +1,237 @@
+name: Temporary PR 2231 six-P1 qualification v6
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+
+concurrency:
+  group: pr2231-six-p1-qualification-v6-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  capture-reordered-qualifier-failure-v6:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: BigBirdReturns/clifford-number
+      CURRENT_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+      CURRENT_PR: ${{ github.event.pull_request.number }}
+      EXPECTED_MAIN: 0b1d8af5b86adad49b3451053dbb9166294d631c
+      V4_CONTROLLER: d725a3235e002f386119983a74b459e68856db32
+      V4_WORKFLOW_PATH: .github/workflows/temporary-pr2231-six-p1-qualification-v4.yml
+      V4_WORKFLOW_BLOB: e5047df25cecc102cd45f259e6709632cb7d6dad
+      V5_FAILED_CONTROLLER: efa08f7e022f8b1f902f1755582937c2defa9fd4
+      V5_FAILED_RUN: '33367761201'
+      V5_FAILED_ARTIFACT: '9748890286'
+      V5_FAILED_DIGEST: sha256:e5e4e2d9ea2af415ea1e8250bf97bd46214e5a11285785569145335671972024
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Materialize V4 with corrected cleanup matcher and durable logs
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          artifact_root=/tmp/pr2231-six-p1-qualification-v1
+          wrapper_log=/tmp/pr2231-six-p1-qualification-v6-wrapper.log
+          failure_env=/tmp/pr2231-six-p1-qualification-v6-failure.env
+          : > "${wrapper_log}"
+          exec > >(tee -a "${wrapper_log}") 2>&1
+          preserve_wrapper_receipts() {
+            rc=$?
+            set +e
+            mkdir -p "${artifact_root}/receipts"
+            install -m 0644 "${wrapper_log}" "${artifact_root}/v6-wrapper.log"
+            printf '%s\n' \
+              "controller_envelope=v6" \
+              "outer_status=${rc}" \
+              "product_mutation=none" \
+              > "${failure_env}"
+            install -m 0644 "${failure_env}" "${artifact_root}/receipts/v6-outer-status.env"
+            exit "${rc}"
+          }
+          trap preserve_wrapper_receipts EXIT
+          source_json=/tmp/pr2231-v4-workflow.json
+          source_yaml=/tmp/pr2231-v4-workflow.yml
+          transformed=/tmp/pr2231-v6-transformed.sh
+          transform_receipt=/tmp/pr2231-v6-transform.json
+          rm -f "${source_json}" "${source_yaml}" "${transformed}" "${transform_receipt}"
+
+          v5_failed_run_json=/tmp/pr2231-v5-failed-run.json
+          v5_failed_artifact_json=/tmp/pr2231-v5-failed-artifact.json
+          rm -f "${v5_failed_run_json}" "${v5_failed_artifact_json}"
+          gh api -H 'Accept: application/vnd.github+json' -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "repos/${REPO}/actions/runs/${V5_FAILED_RUN}" > "${v5_failed_run_json}"
+          gh api -H 'Accept: application/vnd.github+json' -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "repos/${REPO}/actions/artifacts/${V5_FAILED_ARTIFACT}" > "${v5_failed_artifact_json}"
+          jq -e --argjson id "${V5_FAILED_RUN}" --arg head "${V5_FAILED_CONTROLLER}" \
+            '.id == $id and .head_sha == $head and .status == "completed" and .conclusion == "failure"' \
+            "${v5_failed_run_json}" >/dev/null
+          jq -e --argjson id "${V5_FAILED_ARTIFACT}" --argjson run "${V5_FAILED_RUN}" \
+            --arg head "${V5_FAILED_CONTROLLER}" --arg digest "${V5_FAILED_DIGEST}" \
+            '.id == $id and .expired == false and .digest == $digest and .workflow_run.id == $run and .workflow_run.head_sha == $head' \
+            "${v5_failed_artifact_json}" >/dev/null
+
+          [[ "$(git rev-parse HEAD)" == "${CURRENT_CONTROLLER}" ]]
+          [[ "$(git rev-parse HEAD^)" == "${EXPECTED_MAIN}" ]]
+          [[ "$(git rev-parse origin/main)" == "${EXPECTED_MAIN}" ]]
+
+          gh api -H 'Accept: application/vnd.github+json' -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "repos/${REPO}/contents/${V4_WORKFLOW_PATH}?ref=${V4_CONTROLLER}" > "${source_json}"
+
+          python - "${source_json}" "${source_yaml}" "${transformed}" "${transform_receipt}" <<'PY'
+          from pathlib import Path
+          import base64, hashlib, json, shlex, sys
+
+          payload = json.loads(Path(sys.argv[1]).read_text())
+          source_path = Path(sys.argv[2])
+          output_path = Path(sys.argv[3])
+          receipt_path = Path(sys.argv[4])
+          expected_blob = 'e5047df25cecc102cd45f259e6709632cb7d6dad'
+          expected_path = '.github/workflows/temporary-pr2231-six-p1-qualification-v4.yml'
+          if payload.get('sha') != expected_blob or payload.get('path') != expected_path:
+              raise SystemExit('V4 source identity mismatch')
+          content = base64.b64decode(payload['content'])
+          if payload.get('size') != len(content):
+              raise SystemExit('V4 source size mismatch')
+          source_path.write_bytes(content)
+          lines = content.decode().splitlines()
+
+          env_start = lines.index('    env:') + 1
+          env_end = lines.index('    steps:', env_start)
+          env = {}
+          for line in lines[env_start:env_end]:
+              if not line.startswith('      ') or ': ' not in line:
+                  continue
+              key, value = line.strip().split(': ', 1)
+              if value.startswith("'") and value.endswith("'"):
+                  value = value[1:-1]
+              env[key] = value
+          env['CONTROLLER_PR'] = '${CURRENT_PR}'
+          env['EXPECTED_CONTROLLER'] = '${CURRENT_CONTROLLER}'
+          env['FAILED_CONTROLLER'] = 'd725a3235e002f386119983a74b459e68856db32'
+          env['FAILED_RUN'] = '33366785240'
+          env['FAILED_ARTIFACT'] = '9748557446'
+          env['FAILED_DIGEST'] = 'sha256:04c7e43019a31e18fb643fd4d6ec86e4eef0a11fbc2833f5b87ea513d35ef414'
+
+          name = '      - name: Reorder and execute content-addressed qualifier'
+          marker = '        run: |'
+          name_index = lines.index(name)
+          marker_index = lines.index(marker, name_index)
+          end = next(i for i in range(marker_index + 1, len(lines))
+                     if lines[i].startswith('      - name: Emit qualification receipts'))
+          body = []
+          for line in lines[marker_index + 1:end]:
+              if line == '':
+                  body.append('')
+              elif line.startswith('          '):
+                  body.append(line[10:])
+              else:
+                  body.append(line)
+          script = '\n'.join(body) + '\n'
+
+          old = 'reorder_receipt=/tmp/pr2231-six-p1-qualification-v4-reorder.json\n'
+          new = old + 'qualifier_log=/tmp/pr2231-six-p1-qualification-v6-inner.log\n'
+          if script.count(old) != 1:
+              raise SystemExit('reorder receipt insertion point mismatch')
+          script = script.replace(old, new, 1)
+          old = '  "${materialization_receipt}" "${reorder_receipt}"\n'
+          new = '  "${materialization_receipt}" "${reorder_receipt}" "${qualifier_log}"\n'
+          if script.count(old) != 1:
+              raise SystemExit(f'rm continuation insertion point mismatch: {script.count(old)}')
+          script = script.replace(old, new, 1)
+          old = 'bash "${materialized}"\nqualifier_status=$?'
+          new = 'bash "${materialized}" > "${qualifier_log}" 2>&1\nqualifier_status=$?'
+          if script.count(old) != 1:
+              raise SystemExit('inner execution point mismatch')
+          script = script.replace(old, new, 1)
+          old = 'mkdir -p "${ARTIFACT_DIR}/receipts"\n'
+          new = old + 'install -m 0644 "${qualifier_log}" "${ARTIFACT_DIR}/qualifier.log"\n'
+          if script.count(old) != 1:
+              raise SystemExit('log custody point mismatch')
+          script = script.replace(old, new, 1)
+          if script.count('controller_envelope=v4') != 1:
+              raise SystemExit('controller envelope marker mismatch')
+          script = script.replace('controller_envelope=v4', 'controller_envelope=v6', 1)
+
+          exports = []
+          for key, value in env.items():
+              if key == 'GH_TOKEN':
+                  continue
+              if value == '${CURRENT_PR}' or value == '${CURRENT_CONTROLLER}':
+                  exports.append(f'export {key}="{value}"')
+              else:
+                  exports.append(f'export {key}={shlex.quote(value)}')
+          output = '\n'.join(exports) + '\n' + script
+          output_path.write_text(output)
+          receipt_path.write_text(json.dumps({
+              'source_controller': 'd725a3235e002f386119983a74b459e68856db32',
+              'source_workflow_blob': expected_blob,
+              'source_sha256': hashlib.sha256(content).hexdigest(),
+              'transformed_sha256': hashlib.sha256(output.encode()).hexdigest(),
+              'transforms': [
+                  'correct multiline cleanup matcher',
+                  'capture inner stdout and stderr',
+                  'retain qualifier.log after inner workspace reset',
+                  'lease V4 failed run and artifact',
+                  'rebind current controller and PR only'
+              ]
+          }, indent=2) + '\n')
+          PY
+
+          [[ "$(git hash-object "${source_yaml}")" == "${V4_WORKFLOW_BLOB}" ]]
+          bash -n "${transformed}"
+          set +e
+          bash "${transformed}"
+          status=$?
+          set -e
+          mkdir -p /tmp/pr2231-six-p1-qualification-v1/receipts
+          install -m 0644 "${v5_failed_run_json}" \
+            /tmp/pr2231-six-p1-qualification-v1/receipts/v5-failed-run.json
+          install -m 0644 "${v5_failed_artifact_json}" \
+            /tmp/pr2231-six-p1-qualification-v1/receipts/v5-failed-artifact.json
+          install -m 0644 "${transform_receipt}" \
+            /tmp/pr2231-six-p1-qualification-v1/receipts/v6-transform.json
+          exit "${status}"
+
+      - name: Emit V5 receipts
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          root=/tmp/pr2231-six-p1-qualification-v1
+          mkdir -p "${root}"
+          find "${root}" -type f -printf '%P\t%s\n' | sort > "${root}/artifact-manifest.txt"
+          {
+            printf '%s\n' '### PR 2231 six-P1 qualification v6'
+            for receipt in v6-wrapper.log qualifier.log receipts/v6-outer-status.env \
+              receipts/controller-envelope.env receipts/v6-transform.json receipts/reorder.json \
+              receipts/v5-failed-run.json receipts/v5-failed-artifact.json \
+              receipts/materialization.json artifact-manifest.txt; do
+              printf '\n#### %s\n\n```text\n' "${receipt}"
+              if [[ -f "${root}/${receipt}" ]]; then tail -n 500 "${root}/${receipt}"; fi
+              printf '%s\n' '```'
+            done
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-six-p1-qualification-v6
+          path: |
+            /tmp/pr2231-six-p1-qualification-v1
+            /tmp/pr2231-six-p1-qualified-v1
+          retention-days: 90
