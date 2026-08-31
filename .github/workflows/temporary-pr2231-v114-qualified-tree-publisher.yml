@@ -1,0 +1,148 @@
+name: Temporary PR 2231 V114 qualified-tree publication R2
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/temporary-pr2231-v114-qualified-tree-publisher.yml'
+
+permissions:
+  contents: write
+  pull-requests: read
+  issues: read
+  actions: read
+
+concurrency:
+  group: pr2231-v114-qualified-tree-publication
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: BigBirdReturns/clifford-number
+      MAIN_BRANCH: main
+      EXPECTED_MAIN: 771a64b6b467748d2f4df667b5f78e76f9432d69
+      EXPECTED_PARENT: 0b1d8af5b86adad49b3451053dbb9166294d631c
+      PRODUCT_PR: '2231'
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      EXPECTED_PRODUCT: 4e1285af114d517b7304a027195857ad66987c58
+      QUALIFIER_PR: '2436'
+      QUALIFIER_BRANCH: agent/pr2231-six-current-binding-slash-finality-v114-r3
+      EXPECTED_QUALIFIER: 18889857209482e3171fd373ecd7a18ea1e5a805
+      PUBLISHER_PR: ${{ github.event.pull_request.number }}
+      PUBLISHER_BRANCH: ${{ github.head_ref }}
+      PUBLISHER_PATH: .github/workflows/temporary-pr2231-v114-qualified-tree-publisher.yml
+      EXPECTED_PUBLISHER: ${{ github.event.pull_request.head.sha }}
+      REVIEW_BINDINGS: >-
+        PRRT_kwDOTGqftc6dept0:3888440222
+        PRRT_kwDOTGqftc6dfK4F:3888640534
+        PRRT_kwDOTGqftc6dfLu0:3888645507
+        PRRT_kwDOTGqftc6di_ww:3890125090
+        PRRT_kwDOTGqftc6di_wy:3890125092
+        PRRT_kwDOTGqftc6dpMKU:3892550854
+      ARTIFACT_ID: '9768217051'
+      ARTIFACT_RUN: '33419045586'
+      ARTIFACT_NAME: pr2231-six-current-binding-slash-finality-v114-r3
+      ARTIFACT_DIGEST: sha256:de048ce4ff47528cbb07631160b5adf575a972973c2b3a2a10f18dcc6c31aca4
+      ARTIFACT_PATH: /tmp/pr2231-v114-qualified-artifact
+      EXPECTED_QUALIFIED_COMMIT: 97bb2544e4b5d49d95991b01e5bd5d141038f2af
+      EXPECTED_TREE: dbc81b437b7e98a4bfd0dc59ef13a51586c0c6c7
+      EXPECTED_LIBRARY_BLOB: 2ac63e66103fd637166d82d559269ca1b3cf7419
+      EXPECTED_TEST_BLOB: ba934a14f232af58fadf1250d1903fd774e20654
+      EXPECTED_LIBRARY_SHA256: 83057ac054a50a870549f4a782a23fd8e2c644ff2b4dc5d9d883df9d64a08162
+      EXPECTED_TEST_SHA256: 7e461bff006d5c95015d12cd050e6df8427833742ce7a34fda02f05492b16e2f
+      EXPECTED_PATCH_SHA256: 3e219e9222abb08d2f3fe61f7b1f0db556234a837b1ede567641c73e6705f963
+      WORKTREE: /tmp/pr2231-v114-publish-product
+      QUALIFIED_DIR: /tmp/pr2231-v114-qualified-files
+      RECEIPT_DIR: /tmp/pr2231-v114-qualified-tree-publication
+      BASE_PUBLISHER_SCRIPT_BLOB: 93f6e33a349802b5120c92bc1420eb67c1069c31
+      BASE_PUBLISHER_SCRIPT_SHA256: 31936b66ed9694066b73d7f028b25fe68c8a023d063d313c2b4fe00588334bc5
+      SOURCE_WORKFLOW_BLOB: ad0264db95568b686f0f32d0c27fb20797467908
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: pr2231-six-current-binding-slash-finality-v114-r3
+          path: /tmp/pr2231-v114-qualified-artifact
+          github-token: ${{ github.token }}
+          repository: BigBirdReturns/clifford-number
+          run-id: 33419045586
+
+      - name: Execute the immutable publisher with an explicit Bash interpreter
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          source_workflow=/tmp/pr2231-v114-publisher-source.yml
+          extracted_step=/tmp/pr2231-v114-publisher-step.sh
+
+          gh api "repos/$REPO/git/blobs/$SOURCE_WORKFLOW_BLOB" --jq '.content' \
+            | tr -d '\n' | base64 -d > "$source_workflow"
+          [[ "$(git hash-object "$source_workflow")" == "$SOURCE_WORKFLOW_BLOB" ]]
+
+          python3 - "$source_workflow" "$extracted_step" <<'PY'
+          from pathlib import Path
+          import sys
+
+          source_path = Path(sys.argv[1])
+          output_path = Path(sys.argv[2])
+          lines = source_path.read_text().splitlines(keepends=True)
+          step_name = "      - name: Publish the exact V114 qualified tree under atomic predecessor custody\n"
+          try:
+              step_index = lines.index(step_name)
+          except ValueError as exc:
+              raise SystemExit("immutable publisher step name not found") from exc
+
+          run_index = None
+          for index in range(step_index + 1, len(lines)):
+              if lines[index] == "        run: |\n":
+                  run_index = index
+                  break
+              if lines[index].startswith("      - "):
+                  break
+          if run_index is None:
+              raise SystemExit("immutable publisher run block not found")
+
+          block = []
+          for line in lines[run_index + 1:]:
+              if line.strip() == "":
+                  block.append("\n")
+                  continue
+              indentation = len(line) - len(line.lstrip(" "))
+              if indentation < 10:
+                  break
+              block.append(line[10:])
+
+          script = "".join(block)
+          direct = '\n"$d/publisher-v114.sh"\n'
+          interpreted = '\nbash "$d/publisher-v114.sh"\n'
+          if script.count(direct) != 1:
+              raise SystemExit(
+                  f"publisher invocation precondition failed: count={script.count(direct)}"
+              )
+          script = script.replace(direct, interpreted, 1)
+          output_path.write_text(script)
+          PY
+
+          bash -n "$extracted_step"
+          bash "$extracted_step"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-v114-qualified-tree-publication-r2
+          path: /tmp/pr2231-v114-qualified-tree-publication
+          if-no-files-found: error
+          retention-days: 90
