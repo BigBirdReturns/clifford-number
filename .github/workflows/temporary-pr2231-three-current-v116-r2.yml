@@ -1,0 +1,127 @@
+name: Temporary PR 2231 three-current V116 R2 qualification
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+
+concurrency:
+  group: pr2231-three-current-v116-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  qualify-three-current-v116:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+      CONTROLLER_PR: ${{ github.event.pull_request.number }}
+      CONTROLLER_BRANCH: ${{ github.event.pull_request.head.ref }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Execute exact self-contained V116 read-only qualifier
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          repo=BigBirdReturns/clifford-number
+          expected_main=771a64b6b467748d2f4df667b5f78e76f9432d69
+          expected_branch=agent/pr2231-three-current-binding-v116-r2
+          root=/tmp/pr2231-v116-transport
+          artifact=/tmp/pr2231-v116-qualification
+          payload="$root/v116-payload.tar.xz"
+          unpacked="$root/unpacked"
+          wrapper_log="$root/v116-wrapper.log"
+          chunk_manifest="$root/v116-chunks.txt"
+          rm -rf "$root" "$artifact"
+          mkdir -p "$root" "$unpacked"
+          : > "$wrapper_log"
+          : > "$chunk_manifest"
+          exec > >(tee -a "$wrapper_log") 2>&1
+          preserve() {
+            rc=$?
+            trap - EXIT
+            set +e
+            mkdir -p "$artifact/envelope"
+            install -m 0644 "$wrapper_log" "$artifact/envelope/v116-wrapper.log"
+            install -m 0644 "$chunk_manifest" "$artifact/envelope/v116-chunks.txt"
+            printf '%s\n' \
+              'controller_envelope=v116-r2' \
+              "outer_status=$rc" \
+              'mode=read-only' \
+              'product_mutation=none' \
+              > "$artifact/envelope/v116-outer-status.env"
+            find "$artifact" -type f -printf '%P\t%s\n' | sort \
+              > "$artifact/envelope/v116-final-manifest.txt"
+            exit "$rc"
+          }
+          trap preserve EXIT
+
+          [[ "$(git rev-parse HEAD)" == "$EXPECTED_CONTROLLER" ]]
+          [[ "$(git rev-parse HEAD^)" == "$expected_main" ]]
+          [[ "$(git rev-parse origin/main)" == "$expected_main" ]]
+          [[ "$CONTROLLER_BRANCH" == "$expected_branch" ]]
+
+          blobs=(
+            3dc03f09322fe0c72016b1cf67e741a82599077f
+            6db97bd5ec8bbbb0c3466f74f6d7d5a3269c12d8
+            f9acafd182776e82d46b8db42a73089d562fef5b
+          )
+          sizes=(4096 4096 1176)
+          shas=(
+            bf0d2e05311a4ca3b91c70d1beab2b93164f966c7547b2431a9e7a00806689f4
+            db44fee04b9e72ad2d62e3f61a9eab695739aaa116c5e4bef48d1272313d92f1
+            3b7bf51b17d3de48beb56c0d1ae82e639725cd5c13c4fe3a2361c86c42c4261a
+          )
+          : > "$payload"
+          for index in "${!blobs[@]}"; do
+            blob="${blobs[$index]}"
+            expected_size="${sizes[$index]}"
+            expected_sha="${shas[$index]}"
+            chunk=$(printf '%s/chunk-%02d.bin' "$root" "$index")
+            gh api -H 'Accept: application/vnd.github+json' \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              "repos/$repo/git/blobs/$blob" --jq '.content' \
+              | tr -d '\n' | base64 -d > "$chunk"
+            [[ "$(wc -c < "$chunk")" == "$expected_size" ]]
+            [[ "$(git hash-object "$chunk")" == "$blob" ]]
+            actual_sha=$(sha256sum "$chunk" | awk '{print $1}')
+            [[ "$actual_sha" == "$expected_sha" ]]
+            printf '%02d\t%s\t%s\t%s\n' "$index" "$blob" "$actual_sha" "$expected_size" \
+              >> "$chunk_manifest"
+            cat "$chunk" >> "$payload"
+          done
+
+          [[ "$(wc -c < "$payload")" == 9368 ]]
+          [[ "$(git hash-object "$payload")" == fa38546084102c8469658509913686964c90a433 ]]
+          [[ "$(sha256sum "$payload" | awk '{print $1}')" == 1b693e961cd23fb68ab0086f01d80ab12fdc18d6471b148e8210c750ab170c68 ]]
+          xz -t "$payload"
+          tar -xJf "$payload" -C "$unpacked"
+          [[ "$(wc -c < "$unpacked/qualifier-v116.sh")" == 26804 ]]
+          [[ "$(git hash-object "$unpacked/qualifier-v116.sh")" == dca2ea72ba168707f133005765ef78cd99b3f5f7 ]]
+          [[ "$(sha256sum "$unpacked/qualifier-v116.sh" | awk '{print $1}')" == 1117af3ee4edf30cea69bcd3ca6da7e62fc30faa3cda926f9d20963380c486e2 ]]
+          [[ "$(wc -c < "$unpacked/v116.patch")" == 11118 ]]
+          [[ "$(git hash-object "$unpacked/v116.patch")" == ed4a64acb1c6b31b0214dbaf643e7015e59ffb15 ]]
+          [[ "$(sha256sum "$unpacked/v116.patch" | awk '{print $1}')" == 00ab37c0c3295d5288886dcebde1f7d83bc7d62dd1bc7e05c3af03fb13bfe147 ]]
+          bash -n "$unpacked/qualifier-v116.sh"
+          bash "$unpacked/qualifier-v116.sh"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-three-current-v116-r2
+          path: /tmp/pr2231-v116-qualification
+          retention-days: 90
