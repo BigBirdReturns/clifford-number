@@ -1,0 +1,113 @@
+name: Temporary PR 2231 V116 qualified-tree publication
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: write
+  actions: read
+  pull-requests: read
+
+concurrency:
+  group: pr2231-v116-publisher-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  publish-qualified-v116:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EXPECTED_PUBLISHER: ${{ github.event.pull_request.head.sha }}
+      PUBLISHER_PR: ${{ github.event.pull_request.number }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Reconstruct and execute exact V116 publisher
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          repo=BigBirdReturns/clifford-number
+          root=/tmp/pr2231-v116-publisher-envelope
+          receipt=/tmp/pr2231-v116-publication
+          payload="$root/publisher-v116.sh.xz"
+          script="$root/publisher-v116.sh"
+          wrapper_log="$root/publisher-wrapper.log"
+          chunk_manifest="$root/publisher-chunks.txt"
+          rm -rf "$root" "$receipt"
+          mkdir -p "$root"
+          : > "$wrapper_log"
+          : > "$chunk_manifest"
+          exec > >(tee -a "$wrapper_log") 2>&1
+          preserve() {
+            rc=$?
+            trap - EXIT
+            set +e
+            mkdir -p "$receipt/wrapper"
+            install -m 0644 "$wrapper_log" "$receipt/wrapper/publisher-wrapper.log"
+            install -m 0644 "$chunk_manifest" "$receipt/wrapper/publisher-chunks.txt"
+            printf '%s\n' \
+              'controller_envelope=v116-publisher-wrapper-r1' \
+              "outer_status=$rc" \
+              > "$receipt/wrapper/wrapper-status.env"
+            find "$receipt" -type f -printf '%P\t%s\n' | sort \
+              > "$receipt/wrapper/final-manifest.txt"
+            exit "$rc"
+          }
+          trap preserve EXIT
+
+          blobs=(
+            0bd3de83410c7a64f02e273b26e54c90231a89b6
+            799a031916a7241777e6d6f8794281a52c4274e2
+          )
+          sizes=(4096 2444)
+          shas=(
+            7c73d9a2782c90ac7c383d85e66715a1c95127b29745f4145750814f2e440fd0
+            7f68b0864840e40a459efb5fe275783ad484c919b4437ca1cadca9e5a7e9e060
+          )
+          : > "$payload"
+          for index in "${!blobs[@]}"; do
+            blob="${blobs[$index]}"
+            expected_size="${sizes[$index]}"
+            expected_sha="${shas[$index]}"
+            chunk=$(printf '%s/chunk-%02d.bin' "$root" "$index")
+            gh api -H 'Accept: application/vnd.github+json' \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              "repos/$repo/git/blobs/$blob" --jq '.content' \
+              | tr -d '\n' | base64 -d > "$chunk"
+            [[ "$(wc -c < "$chunk")" == "$expected_size" ]]
+            [[ "$(git hash-object "$chunk")" == "$blob" ]]
+            actual_sha=$(sha256sum "$chunk" | awk '{print $1}')
+            [[ "$actual_sha" == "$expected_sha" ]]
+            printf '%02d\t%s\t%s\t%s\n' "$index" "$blob" "$actual_sha" "$expected_size" \
+              >> "$chunk_manifest"
+            cat "$chunk" >> "$payload"
+          done
+
+          [[ "$(wc -c < "$payload")" == 6540 ]]
+          [[ "$(git hash-object "$payload")" == 4673afff52764461c1b71d8a7f79016cb6cb9970 ]]
+          [[ "$(sha256sum "$payload" | awk '{print $1}')" == dc946dacea6f2e3f6d780e5072cd5e752999e83dbeda22ae50094669c788c289 ]]
+          xz -t "$payload"
+          xz -dc "$payload" > "$script"
+          [[ "$(wc -c < "$script")" == 27136 ]]
+          [[ "$(git hash-object "$script")" == f6eac5fa3aaab57b785bbb8f75c298d67882d997 ]]
+          [[ "$(sha256sum "$script" | awk '{print $1}')" == 50d67345b81935271b7d43437585a72b87ca199fbfbc1966727d12bc0ce7e177 ]]
+          chmod +x "$script"
+          bash -n "$script"
+          bash "$script"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-v116-qualified-tree-publication-r1
+          path: /tmp/pr2231-v116-publication
+          retention-days: 90
