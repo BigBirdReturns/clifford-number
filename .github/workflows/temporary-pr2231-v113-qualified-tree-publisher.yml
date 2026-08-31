@@ -1,0 +1,99 @@
+name: Temporary PR 2231 V113 qualified-tree publication
+
+on:
+  push:
+    branches:
+      - agent/pr2231-v113-qualified-tree-publisher-v1
+
+permissions:
+  contents: write
+  pull-requests: read
+  issues: read
+  actions: read
+
+concurrency:
+  group: pr2231-v113-qualified-tree-publication
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: BigBirdReturns/clifford-number
+      MAIN_BRANCH: main
+      EXPECTED_MAIN: 0b1d8af5b86adad49b3451053dbb9166294d631c
+      PRODUCT_PR: '2231'
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      EXPECTED_PRODUCT: 53aa560c583b943b1aacdfff425423f9812752bb
+      QUALIFIER_PR: '2420'
+      QUALIFIER_BRANCH: agent/pr2231-six-current-binding-separator-finality-controller-v113-r3
+      EXPECTED_QUALIFIER: d9bbaa20033d486c194a8f0690e9732f23e038cf
+      PUBLISHER_PR: '2421'
+      PUBLISHER_BRANCH: agent/pr2231-v113-qualified-tree-publisher-v1
+      PUBLISHER_PATH: .github/workflows/temporary-pr2231-v113-qualified-tree-publisher.yml
+      EXPECTED_PUBLISHER: ${{ github.sha }}
+      REVIEW_BINDINGS: >-
+        PRRT_kwDOTGqftc6dept0:3888440222
+        PRRT_kwDOTGqftc6dfK4F:3888640534
+        PRRT_kwDOTGqftc6dfLu0:3888645507
+        PRRT_kwDOTGqftc6di_ww:3890125090
+        PRRT_kwDOTGqftc6di_wy:3890125092
+        PRRT_kwDOTGqftc6dnFe0:3891723035
+      ARTIFACT_ID: '9748832081'
+      ARTIFACT_RUN: '33367496433'
+      ARTIFACT_NAME: pr2231-six-current-binding-separator-finality-v113-r3
+      ARTIFACT_DIGEST: sha256:14f823ccb4d12b28db68ddfc526d1294eaac8673771bb9df348ccc5cbc1a5138
+      ARTIFACT_PATH: /tmp/pr2231-v113-qualified-artifact
+      EXPECTED_TREE: 9984bd605c3ff2f839bd6d04b4fa0e6fb924ccaa
+      EXPECTED_LIBRARY_BLOB: f7e0c9cbdd0dc2d81a24195aedc8e52401029cad
+      EXPECTED_TEST_BLOB: 839e858980734dbfb8b157e64fed36cf1868820a
+      EXPECTED_LIBRARY_SHA256: fd61d24a12d716aeec677e6164f3b75e8a1c12432d11dce0e1f60835a65a87c0
+      EXPECTED_TEST_SHA256: 2a18896c19609cf55987fda9e4a199346bbfeaf451484705fab67bf19f34ac63
+      EXPECTED_PATCH_SHA256: 32c2ed6053f77684fcdba38ee982e445539ebd6f315fdf92cc21fd5daa5890f9
+      WORKTREE: /tmp/pr2231-v113-publish-product
+      QUALIFIED_DIR: /tmp/pr2231-v113-qualified-files
+      RECEIPT_DIR: /tmp/pr2231-v113-qualified-tree-publication
+      PUBLISHER_SCRIPT_BLOB: 93f6e33a349802b5120c92bc1420eb67c1069c31
+      PUBLISHER_SCRIPT_SHA256: 31936b66ed9694066b73d7f028b25fe68c8a023d063d313c2b4fe00588334bc5
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: pr2231-six-current-binding-separator-finality-v113-r3
+          path: /tmp/pr2231-v113-qualified-artifact
+          github-token: ${{ github.token }}
+          repository: BigBirdReturns/clifford-number
+          run-id: 33367496433
+
+      - name: Publish the exact qualified tree under atomic predecessor custody
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          d=/tmp/pr2231-v113-publisher-source
+          rm -rf "$d"
+          mkdir -p "$d"
+          gh api "repos/$REPO/git/blobs/$PUBLISHER_SCRIPT_BLOB" --jq '.content' \
+            | tr -d '\n' | base64 -d > "$d/publisher.sh"
+          printf '%s  %s\n' "$PUBLISHER_SCRIPT_SHA256" "$d/publisher.sh" \
+            | sha256sum -c -
+          chmod +x "$d/publisher.sh"
+          "$d/publisher.sh"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-v113-qualified-tree-publication
+          path: /tmp/pr2231-v113-qualified-tree-publication
+          if-no-files-found: error
+          retention-days: 90
