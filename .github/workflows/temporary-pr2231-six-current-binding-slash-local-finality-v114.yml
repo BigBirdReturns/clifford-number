@@ -1,0 +1,121 @@
+name: Temporary PR 2231 six-current-binding slash-local finality V114
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/temporary-pr2231-six-current-binding-slash-local-finality-v114.yml'
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: pr2231-six-current-binding-slash-local-finality-v114
+  cancel-in-progress: false
+
+jobs:
+  qualify-six-current-binding-slash-local-finality:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: BigBirdReturns/clifford-number
+      PRODUCT_PR: '2231'
+      CONTROLLER_PR: ${{ github.event.pull_request.number }}
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      CONTROLLER_BRANCH: ${{ github.head_ref }}
+      CONTROLLER_WORKFLOW: '.github/workflows/temporary-pr2231-six-current-binding-slash-local-finality-v114.yml'
+      EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+      EXPECTED_MAIN: 0b1d8af5b86adad49b3451053dbb9166294d631c
+      EXPECTED_PRODUCT: 4e1285af114d517b7304a027195857ad66987c58
+      EXPECTED_PARENT: 0b1d8af5b86adad49b3451053dbb9166294d631c
+      EXPECTED_TREE: 9984bd605c3ff2f839bd6d04b4fa0e6fb924ccaa
+      EXPECTED_LIBRARY: f7e0c9cbdd0dc2d81a24195aedc8e52401029cad
+      EXPECTED_TEST: 839e858980734dbfb8b157e64fed36cf1868820a
+      REVIEW_BINDINGS: >-
+        PRRT_kwDOTGqftc6dept0:3888440222
+        PRRT_kwDOTGqftc6dfK4F:3888640534
+        PRRT_kwDOTGqftc6dfLu0:3888645507
+        PRRT_kwDOTGqftc6di_ww:3890125090
+        PRRT_kwDOTGqftc6di_wy:3890125092
+        PRRT_kwDOTGqftc6dpMKU:3892550854
+      QUALIFIER_BLOB: dbcdba188b7e998be9c4ff336b3e9fcd47bc6b26
+      EXPECTED_GZIP_SHA256: 775967f6ada0f470f06948e3a651b75f88edbf14dbab888b233f0f18ce348069
+      EXPECTED_QUALIFIER_SHA256: 01082e66634658877e398a18f26a1d23d4cb0c1d3699e117bac02be8f2607a8a
+      ARTIFACT_DIR: /tmp/pr2231-six-current-binding-slash-local-finality-v114
+      PRODUCT_WT: /tmp/pr2231-six-current-binding-slash-local-finality-product-v114
+      MAIN_WT: /tmp/pr2231-six-current-binding-slash-local-finality-main-v114
+      QUALIFIED_DIR: /tmp/pr2231-six-current-binding-slash-local-finality-qualified-v114
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Fetch and execute immutable read-only qualifier
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          qualifier_gz=/tmp/pr2231-six-current-binding-slash-local-finality-v114.sh.gz
+          qualifier=/tmp/pr2231-six-current-binding-slash-local-finality-v114.sh
+          gh api "repos/$REPO/git/blobs/$QUALIFIER_BLOB" --jq '.content' \
+            | tr -d '\n' | base64 -d > "$qualifier_gz"
+          printf '%s  %s\n' "$EXPECTED_GZIP_SHA256" "$qualifier_gz" \
+            | sha256sum -c -
+          gzip -dc "$qualifier_gz" > "$qualifier"
+          printf '%s  %s\n' "$EXPECTED_QUALIFIER_SHA256" "$qualifier" \
+            | sha256sum -c -
+          chmod +x "$qualifier"
+          "$qualifier"
+
+      - name: Emit qualification diagnostics
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          upload=/tmp/pr2231-six-current-binding-slash-local-finality-v114-upload
+          qualifier=/tmp/pr2231-six-current-binding-slash-local-finality-v114.sh
+          rm -rf "$upload"
+          mkdir -p "$ARTIFACT_DIR" "$upload"
+          if [[ -f "$qualifier" ]]; then
+            cp "$qualifier" "$ARTIFACT_DIR/qualifier-v114.sh"
+            sha256sum "$qualifier" > "$ARTIFACT_DIR/qualifier-v114.sha256"
+          fi
+          printf '%s\n' "$QUALIFIER_BLOB" > "$ARTIFACT_DIR/qualifier-git-blob.txt"
+          printf '%s\n' "$EXPECTED_GZIP_SHA256" > "$ARTIFACT_DIR/qualifier-gzip-sha256.txt"
+          find "$ARTIFACT_DIR" -maxdepth 1 -type f -printf '%f\t%s\n' \
+            | sort > "$ARTIFACT_DIR/artifact-manifest.txt"
+          cp -a "$ARTIFACT_DIR"/. "$upload"/
+          find "$upload" -maxdepth 1 -type f -printf '%f\t%s\n' \
+            | sort > "$upload/upload-manifest.txt"
+          {
+            printf '%s\n' '### PR 2231 six-current-binding slash-local finality V114'
+            for receipt in qualification-terminal.txt summary.json \
+              predecessor-reproduction.jsonl direct-matrix.jsonl \
+              focused-product.log product-release-check.log \
+              focused-main-transplant.log main-release-check.log \
+              candidate-commit.txt candidate-paths.txt controller-paths.txt \
+              review-comments-before.tsv review-thread-ledger-before.jsonl \
+              review-comments-after.tsv review-thread-ledger-after.jsonl \
+              artifact-manifest.txt qualifier-v114.sha256; do
+              printf '\n#### %s\n\n```text\n' "$receipt"
+              [[ ! -f "$ARTIFACT_DIR/$receipt" ]] \
+                || tail -n 420 "$ARTIFACT_DIR/$receipt"
+              printf '%s\n' '```'
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-six-current-binding-slash-local-finality-v114
+          path: /tmp/pr2231-six-current-binding-slash-local-finality-v114-upload
+          retention-days: 90
