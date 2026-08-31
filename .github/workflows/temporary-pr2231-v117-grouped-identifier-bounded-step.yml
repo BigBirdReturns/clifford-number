@@ -1,0 +1,83 @@
+name: Temporary PR2231 V117 grouped-identifier and bounded-step qualifier
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+    paths:
+      - .github/workflows/temporary-pr2231-v117-grouped-identifier-bounded-step.yml
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+  issues: read
+
+concurrency:
+  group: pr2231-v117-grouped-identifier-bounded-step-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  qualify-v117:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Materialize and execute exact V117 qualifier
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          wrapper=/tmp/pr2231-v117-wrapper
+          rm -rf "$wrapper"
+          mkdir -p "$wrapper/parts"
+          specs=(
+            '2c272933f97d52977d0a8b240a8358c988220ffc:1800:209b9e08255b056ec43b0cf7be910def487a50a2e646c5a8bc869b7e73939bda'
+            'b130c2256d999e22778beabf16f7ecbdcdb21dc5:1800:a716daec728a3393584acef89658f5e185aa1ef4d3a5e63243ed4b90dc47207f'
+            'b5a2fe8bf2c6f5a9473d61c8534c4d6efc1fe394:1312:daad870566d436bde5359d4bb1a71b478f3e2bf1e29235af32e60e986f63021e'
+          )
+          : > "$wrapper/qualifier.sh.xz"
+          for index in "${!specs[@]}"; do
+            IFS=: read -r blob size digest <<< "${specs[$index]}"
+            json="$wrapper/parts/$index.json"
+            part="$wrapper/parts/$index.bin"
+            gh api "repos/BigBirdReturns/clifford-number/git/blobs/$blob" > "$json"
+            jq -e --arg sha "$blob" --argjson size "$size" \
+              '.sha == $sha and .size == $size and .encoding == "base64"' "$json" >/dev/null
+            jq -r '.content' "$json" | tr -d '\n' | base64 -d > "$part"
+            [[ "$(git hash-object "$part")" == "$blob" ]]
+            [[ "$(stat -c %s "$part")" == "$size" ]]
+            printf '%s  %s\n' "$digest" "$part" | sha256sum -c -
+            cat "$part" >> "$wrapper/qualifier.sh.xz"
+          done
+          [[ "$(stat -c %s "$wrapper/qualifier.sh.xz")" == 4912 ]]
+          printf '%s  %s\n' \
+            '5fadf9869f8f8234fca0fe6193163b77263298372952e040bba9b14d40046e4b' \
+            "$wrapper/qualifier.sh.xz" | sha256sum -c -
+          xz -t "$wrapper/qualifier.sh.xz"
+          xz -dc "$wrapper/qualifier.sh.xz" > "$wrapper/qualifier.sh"
+          [[ "$(stat -c %s "$wrapper/qualifier.sh")" == 19671 ]]
+          printf '%s  %s\n' \
+            'fe8df90fbb7eccedbe3a51ff5f9958731046054734e2fafa2600dafbc6af8ca3' \
+            "$wrapper/qualifier.sh" | sha256sum -c -
+          bash -n "$wrapper/qualifier.sh"
+          bash "$wrapper/qualifier.sh"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-grouped-identifier-bounded-step-v117
+          path: |
+            /tmp/pr2231-v117-wrapper
+            /tmp/pr2231-v117-qualification
+          retention-days: 90
