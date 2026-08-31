@@ -1,0 +1,280 @@
+name: Temporary PR 2231 V111 R3 exact-head diagnostic
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - .github/workflows/temporary-pr2231-v111-r3-current-head-diagnostic.yml
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: pr2231-v111-r3-current-head-diagnostic-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  reproduce-current-head-findings:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: BigBirdReturns/clifford-number
+      PRODUCT_PR: '2231'
+      CONTROLLER_PR: ${{ github.event.pull_request.number }}
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      CONTROLLER_BRANCH: agent/pr2231-v111-r3-current-head-diagnostic-v1
+      EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+      EXPECTED_MAIN: 0b1d8af5b86adad49b3451053dbb9166294d631c
+      EXPECTED_PRODUCT: 53aa560c583b943b1aacdfff425423f9812752bb
+      EXPECTED_TREE: 74d7bab76498a1dd2e7705fbd73b43e45402b24f
+      EXPECTED_LIBRARY: 99ddf7d069203ccd0afbda6bd0c860f54473b347
+      EXPECTED_TEST: 664e4f949a53b44acb2760cd4e083236b5616c2e
+      PRODUCT_WT: /tmp/pr2231-v111-r3-product
+      ARTIFACT_DIR: /tmp/pr2231-v111-r3-current-head-diagnostic
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Reproduce five exact-head findings without mutation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "${PRODUCT_WT}" "${ARTIFACT_DIR}"
+          mkdir -p "${ARTIFACT_DIR}"
+          exec > >(tee "${ARTIFACT_DIR}/diagnostic.log") 2>&1
+
+          record_terminal() {
+            status=$?
+            printf 'exit_status=%s\n' "${status}" > "${ARTIFACT_DIR}/terminal.env"
+            printf 'controller=%s\nmain=%s\nproduct=%s\n' \
+              "${EXPECTED_CONTROLLER}" "${EXPECTED_MAIN}" "${EXPECTED_PRODUCT}" \
+              >> "${ARTIFACT_DIR}/terminal.env"
+            find "${ARTIFACT_DIR}" -type f -printf '%P\t%s\n' \
+              | sort > "${ARTIFACT_DIR}/artifact-manifest.txt" || true
+            return "${status}"
+          }
+          trap record_terminal EXIT
+
+          [[ "$(git rev-parse HEAD)" == "${EXPECTED_CONTROLLER}" ]]
+          [[ "$(git rev-parse "${EXPECTED_CONTROLLER}^{commit}")" == "${EXPECTED_CONTROLLER}" ]]
+          [[ "$(git rev-list --parents -n 1 "${EXPECTED_CONTROLLER}")" == "${EXPECTED_CONTROLLER} ${EXPECTED_MAIN}" ]]
+          [[ "$(git rev-parse "${EXPECTED_PRODUCT}^{commit}")" == "${EXPECTED_PRODUCT}" ]]
+          [[ "$(git rev-list --parents -n 1 "${EXPECTED_PRODUCT}")" == "${EXPECTED_PRODUCT} ${EXPECTED_MAIN}" ]]
+          [[ "$(git rev-parse "${EXPECTED_PRODUCT}^{tree}")" == "${EXPECTED_TREE}" ]]
+          [[ "$(git rev-parse "${EXPECTED_PRODUCT}:tools/lib/industrial-exhaust.mjs")" == "${EXPECTED_LIBRARY}" ]]
+          [[ "$(git rev-parse "${EXPECTED_PRODUCT}:test/industrial-exhaust.test.js")" == "${EXPECTED_TEST}" ]]
+
+          mapfile -t controller_paths < <(git diff --name-only "${EXPECTED_MAIN}" "${EXPECTED_CONTROLLER}")
+          [[ "${#controller_paths[@]}" -eq 1 ]]
+          [[ "${controller_paths[0]}" == '.github/workflows/temporary-pr2231-v111-r3-current-head-diagnostic.yml' ]]
+
+          mapfile -t product_paths < <(git diff --name-only "${EXPECTED_MAIN}" "${EXPECTED_PRODUCT}")
+          [[ "${#product_paths[@]}" -eq 2 ]]
+          [[ "${product_paths[0]}" == 'test/industrial-exhaust.test.js' ]]
+          [[ "${product_paths[1]}" == 'tools/lib/industrial-exhaust.mjs' ]]
+          printf '%s\n' "${product_paths[@]}" > "${ARTIFACT_DIR}/product-paths.txt"
+
+          gh api "repos/${REPO}/pulls/${PRODUCT_PR}" > "${ARTIFACT_DIR}/product-pr-before.json"
+          gh api "repos/${REPO}/pulls/${CONTROLLER_PR}" > "${ARTIFACT_DIR}/controller-pr-before.json"
+          jq -e --arg head "${EXPECTED_PRODUCT}" --arg base "${EXPECTED_MAIN}" \
+            '.state == "open" and .draft == true and .merged == false and .head.sha == $head and .base.sha == $base and .commits == 1 and .changed_files == 2' \
+            "${ARTIFACT_DIR}/product-pr-before.json" >/dev/null
+          jq -e --arg head "${EXPECTED_CONTROLLER}" --arg base "${EXPECTED_MAIN}" --arg branch "${CONTROLLER_BRANCH}" \
+            '.state == "open" and .draft == true and .merged == false and .head.sha == $head and .head.ref == $branch and .base.sha == $base and .commits == 1 and .changed_files == 1' \
+            "${ARTIFACT_DIR}/controller-pr-before.json" >/dev/null
+
+          cat > "${ARTIFACT_DIR}/review-query.graphql" <<'GRAPHQL'
+          query {
+            unitRange: node(id: "PRRT_kwDOTGqftc6dm3zi") {
+              ... on PullRequestReviewThread {
+                id isResolved isOutdated
+                comments(first: 20) { nodes { databaseId path commit { oid } originalCommit { oid } } }
+              }
+            }
+            recursion: node(id: "PRRT_kwDOTGqftc6dm3zj") {
+              ... on PullRequestReviewThread {
+                id isResolved isOutdated
+                comments(first: 20) { nodes { databaseId path commit { oid } originalCommit { oid } } }
+              }
+            }
+            sourceBoundary: node(id: "PRRT_kwDOTGqftc6dm7Lo") {
+              ... on PullRequestReviewThread {
+                id isResolved isOutdated
+                comments(first: 20) { nodes { databaseId path commit { oid } originalCommit { oid } } }
+              }
+            }
+            weakRange: node(id: "PRRT_kwDOTGqftc6dm7Ls") {
+              ... on PullRequestReviewThread {
+                id isResolved isOutdated
+                comments(first: 20) { nodes { databaseId path commit { oid } originalCommit { oid } } }
+              }
+            }
+            groupedScalar: node(id: "PRRT_kwDOTGqftc6dm7Lx") {
+              ... on PullRequestReviewThread {
+                id isResolved isOutdated
+                comments(first: 20) { nodes { databaseId path commit { oid } originalCommit { oid } } }
+              }
+            }
+          }
+          GRAPHQL
+
+          query_review_threads() {
+            output=$1
+            gh api graphql -f query="$(cat "${ARTIFACT_DIR}/review-query.graphql")" > "${output}"
+            jq -e --arg head "${EXPECTED_PRODUCT}" '
+              .data.unitRange.isResolved == false and .data.unitRange.isOutdated == false and
+              .data.recursion.isResolved == false and .data.recursion.isOutdated == false and
+              .data.sourceBoundary.isResolved == false and .data.sourceBoundary.isOutdated == false and
+              .data.weakRange.isResolved == false and .data.weakRange.isOutdated == false and
+              .data.groupedScalar.isResolved == false and .data.groupedScalar.isOutdated == false and
+              (.data.unitRange.comments.nodes | any(.databaseId == 3891639349 and .path == "tools/lib/industrial-exhaust.mjs" and .commit.oid == $head)) and
+              (.data.recursion.comments.nodes | any(.databaseId == 3891639351 and .path == "tools/lib/industrial-exhaust.mjs" and .commit.oid == $head)) and
+              (.data.sourceBoundary.comments.nodes | any(.databaseId == 3891659953 and .path == "tools/lib/industrial-exhaust.mjs" and .commit.oid == $head)) and
+              (.data.weakRange.comments.nodes | any(.databaseId == 3891659960 and .path == "tools/lib/industrial-exhaust.mjs" and .commit.oid == $head)) and
+              (.data.groupedScalar.comments.nodes | any(.databaseId == 3891659966 and .path == "tools/lib/industrial-exhaust.mjs" and .commit.oid == $head))
+            ' "${output}" >/dev/null
+          }
+          query_review_threads "${ARTIFACT_DIR}/review-threads-before.json"
+
+          git worktree add --detach "${PRODUCT_WT}" "${EXPECTED_PRODUCT}"
+          node --input-type=module - \
+            "${PRODUCT_WT}/tools/lib/industrial-exhaust.mjs" \
+            "${ARTIFACT_DIR}/predecessor-reproduction.json" <<'NODE'
+          import fs from 'node:fs';
+          import { pathToFileURL } from 'node:url';
+          import { performance } from 'node:perf_hooks';
+
+          const [, , modulePath, outputPath] = process.argv;
+          const { redactContactData } = await import(pathToFileURL(modulePath).href);
+
+          const unitRangeInput = 'Archive +33 1 42 68 53 00 17-20 people';
+          const sourceBoundaryInput = `Archive 90${' '.repeat(254)}03-6216-8041 people`;
+          const weakRangeInput = 'Archive 09012345678 62-16-03-6216-8041';
+          const groupedScalarInput = 'Archive 123,456.03.6216.8041';
+
+          const cases = [
+            {
+              id: 'whitespace_unit_range_absorbed',
+              input: unitRangeInput,
+              output: redactContactData(unitRangeInput),
+              observedDefect: 'Archive [contact omitted]-20 people',
+              required: 'Archive [contact omitted] 17-20 people'
+            },
+            {
+              id: 'truncated_source_spliced_to_callback_suffix',
+              input: sourceBoundaryInput,
+              output: redactContactData(sourceBoundaryInput),
+              observedDefectContains: '03-6216-8041 people',
+              required: sourceBoundaryInput.replace('03-6216-8041', '[contact omitted]')
+            },
+            {
+              id: 'nonleading_weak_range_blocks_later_phone',
+              input: weakRangeInput,
+              output: redactContactData(weakRangeInput),
+              observedDefect: 'Archive [contact omitted] 62-16-03-6216-8041',
+              required: 'Archive [contact omitted] 62-16-[contact omitted]'
+            },
+            {
+              id: 'grouped_scalar_consumes_dotted_phone_prefix',
+              input: groupedScalarInput,
+              output: redactContactData(groupedScalarInput),
+              observedDefect: groupedScalarInput,
+              required: 'Archive 123,456.[contact omitted]'
+            }
+          ];
+
+          const stressInput = `Archive ${'3.14/03-6216-8041 '.repeat(1300)}`;
+          const stressStart = performance.now();
+          let stressOutput = null;
+          let stressError = null;
+          try {
+            stressOutput = redactContactData(stressInput);
+          } catch (error) {
+            stressError = {
+              name: error?.name ?? null,
+              message: error?.message ?? String(error)
+            };
+          }
+          const stressElapsedMs = performance.now() - stressStart;
+
+          const assertions = {
+            whitespaceUnitRange: cases[0].output === cases[0].observedDefect,
+            truncatedSourceBoundary: cases[1].output.includes(cases[1].observedDefectContains),
+            nonleadingWeakRange: cases[2].output === cases[2].observedDefect,
+            groupedScalar: cases[3].output === cases[3].observedDefect,
+            recursiveRemainder: Boolean(
+              stressError && (
+                stressError.name === 'RangeError'
+                || /call stack|recurs/i.test(stressError.message)
+              )
+            )
+          };
+
+          const receipt = {
+            productHead: process.env.EXPECTED_PRODUCT,
+            cases,
+            stress: {
+              inputLength: stressInput.length,
+              outputLength: stressOutput?.length ?? null,
+              redactionCount: stressOutput
+                ? stressOutput.split('[contact omitted]').length - 1
+                : null,
+              elapsedMs: stressElapsedMs,
+              error: stressError
+            },
+            assertions,
+            allFindingsReproduced: Object.values(assertions).every(Boolean)
+          };
+          fs.writeFileSync(outputPath, `${JSON.stringify(receipt, null, 2)}\n`);
+          console.log(JSON.stringify(receipt, null, 2));
+          if (!receipt.allFindingsReproduced) process.exit(1);
+          NODE
+
+          gh api "repos/${REPO}/pulls/${PRODUCT_PR}" > "${ARTIFACT_DIR}/product-pr-after.json"
+          gh api "repos/${REPO}/pulls/${CONTROLLER_PR}" > "${ARTIFACT_DIR}/controller-pr-after.json"
+          jq -e --arg head "${EXPECTED_PRODUCT}" --arg base "${EXPECTED_MAIN}" \
+            '.state == "open" and .draft == true and .merged == false and .head.sha == $head and .base.sha == $base and .commits == 1 and .changed_files == 2' \
+            "${ARTIFACT_DIR}/product-pr-after.json" >/dev/null
+          jq -e --arg head "${EXPECTED_CONTROLLER}" --arg base "${EXPECTED_MAIN}" \
+            '.state == "open" and .draft == true and .merged == false and .head.sha == $head and .base.sha == $base and .commits == 1 and .changed_files == 1' \
+            "${ARTIFACT_DIR}/controller-pr-after.json" >/dev/null
+          query_review_threads "${ARTIFACT_DIR}/review-threads-after.json"
+
+          [[ "$(git ls-remote origin "refs/heads/${PRODUCT_BRANCH}" | awk '{print $1}')" == "${EXPECTED_PRODUCT}" ]]
+          [[ "$(git ls-remote origin refs/heads/main | awk '{print $1}')" == "${EXPECTED_MAIN}" ]]
+          [[ "$(git ls-remote origin "refs/heads/${CONTROLLER_BRANCH}" | awk '{print $1}')" == "${EXPECTED_CONTROLLER}" ]]
+          [[ "$(git rev-parse "${EXPECTED_PRODUCT}^{tree}")" == "${EXPECTED_TREE}" ]]
+          [[ "$(git rev-parse "${EXPECTED_PRODUCT}:tools/lib/industrial-exhaust.mjs")" == "${EXPECTED_LIBRARY}" ]]
+          [[ "$(git rev-parse "${EXPECTED_PRODUCT}:test/industrial-exhaust.test.js")" == "${EXPECTED_TEST}" ]]
+
+          printf '%s\n' \
+            'CURRENT_HEAD_FINDINGS_REPRODUCED' \
+            'PRODUCT_MUTATION_NONE' \
+            'THREADS_UNRESOLVED' \
+            'PUBLICATION_SKIPPED' \
+            'DIAGNOSTIC_SUCCESS' \
+            > "${ARTIFACT_DIR}/result.txt"
+          sha256sum \
+            "${ARTIFACT_DIR}/predecessor-reproduction.json" \
+            "${ARTIFACT_DIR}/review-threads-before.json" \
+            "${ARTIFACT_DIR}/review-threads-after.json" \
+            "${ARTIFACT_DIR}/product-pr-before.json" \
+            "${ARTIFACT_DIR}/product-pr-after.json" \
+            > "${ARTIFACT_DIR}/receipt-sha256.txt"
+
+      - name: Upload exact-head diagnostic receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr2231-v111-r3-current-head-diagnostic
+          path: /tmp/pr2231-v111-r3-current-head-diagnostic
+          retention-days: 90
+          if-no-files-found: error
