@@ -1,0 +1,152 @@
+name: Temporary PR 2231 slash partition V114 R4
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temporary-pr2231-slash-partition-v114-r4.yml'
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: pr2231-slash-partition-v114-r4
+  cancel-in-progress: false
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: BigBirdReturns/clifford-number
+      PRODUCT_PR: '2231'
+      CONTROLLER_PR: ${{ github.event.pull_request.number }}
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      CONTROLLER_WORKFLOW: .github/workflows/temporary-pr2231-slash-partition-v114-r4.yml
+      EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+      EXPECTED_MAIN: 0b1d8af5b86adad49b3451053dbb9166294d631c
+      EXPECTED_PRODUCT: 4e1285af114d517b7304a027195857ad66987c58
+      EXPECTED_PARENT: 0b1d8af5b86adad49b3451053dbb9166294d631c
+      EXPECTED_TREE: 9984bd605c3ff2f839bd6d04b4fa0e6fb924ccaa
+      EXPECTED_LIBRARY: f7e0c9cbdd0dc2d81a24195aedc8e52401029cad
+      EXPECTED_TEST: 839e858980734dbfb8b157e64fed36cf1868820a
+      REVIEW_BINDINGS: >-
+        PRRT_kwDOTGqftc6dept0:3888440222
+        PRRT_kwDOTGqftc6dfK4F:3888640534
+        PRRT_kwDOTGqftc6dfLu0:3888645507
+        PRRT_kwDOTGqftc6di_ww:3890125090
+        PRRT_kwDOTGqftc6di_wy:3890125092
+        PRRT_kwDOTGqftc6dpMKU:3892550854
+      ARTIFACT_DIR: /tmp/pr2231-slash-partition-v114-r4
+      BOOTSTRAP_DIR: /tmp/pr2231-slash-partition-v114-r4-bootstrap
+      PRODUCT_WT: /tmp/pr2231-slash-partition-product-v114-r4
+      MAIN_WT: /tmp/pr2231-slash-partition-main-v114-r4
+      PATCH_SCRIPT: /tmp/pr2231-v114-r4-patch.py
+      QUALIFIER_SCRIPT: /tmp/pr2231-v114-r4-qualifier.sh
+      SOURCE_BRANCH: agent/pr2231-slash-partition-controller-v114-r2
+      SOURCE_COMMIT: 906887ddcb77f4b9271b0e6c468ba2fd9ba8869e
+      SOURCE_PATH: .github/workflows/temporary-pr2231-slash-partition-v114-r2.yml
+      SOURCE_BLOB: 4cd827ae67b95106eb1fe8ae9e99a7bd88806228
+      SOURCE_GZIP_SHA256: a233e4c0c2519f2f4877f68f37b272028ac08f8feed45daaeb4555d28bbe5bee
+      SOURCE_SCRIPT_SHA256: 91079d5697c2600bec6ad1249e8c2e1d1f23c3028eade4a8281a527979288fbb
+      SOURCE_PATCH_SHA256: 3301c4fdfa2079e0f3a4b8fc9f3c148ec3270809e9ca653fab53eb1838d5187b
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Recover exact R2 payload and remove the invalid install step
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$BOOTSTRAP_DIR"
+          mkdir -p "$BOOTSTRAP_DIR"
+          exec > >(tee "$BOOTSTRAP_DIR/bootstrap.log") 2>&1
+          printf 'BOOTSTRAP_STARTED\n' > "$BOOTSTRAP_DIR/status.txt"
+
+          git fetch --no-tags --force origin \
+            "+refs/heads/$SOURCE_BRANCH:refs/remotes/origin/$SOURCE_BRANCH"
+          test "$(git rev-parse refs/remotes/origin/$SOURCE_BRANCH)" = "$SOURCE_COMMIT"
+          test "$(git rev-parse "$SOURCE_COMMIT:$SOURCE_PATH")" = "$SOURCE_BLOB"
+          git show "$SOURCE_COMMIT:$SOURCE_PATH" > "$BOOTSTRAP_DIR/source-workflow.yml"
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import base64
+          import gzip
+          import hashlib
+          import re
+          import os
+
+          bootstrap = Path(os.environ['BOOTSTRAP_DIR'])
+          text = (bootstrap / 'source-workflow.yml').read_text(encoding='utf-8')
+
+          def extract(marker: str) -> bytes:
+              pattern = rf"<<'{marker}'\n(?P<body>.*?)\n\s*{marker}"
+              match = re.search(pattern, text, flags=re.S)
+              if not match:
+                  raise SystemExit(f'missing payload block: {marker}')
+              encoded = ''.join(line.strip() for line in match.group('body').splitlines())
+              return base64.b64decode(encoded, validate=True)
+
+          qualifier_gzip = extract('QUALIFIER_B64')
+          if hashlib.sha256(qualifier_gzip).hexdigest() != os.environ['SOURCE_GZIP_SHA256']:
+              raise SystemExit('historical qualifier gzip hash mismatch')
+          qualifier = gzip.decompress(qualifier_gzip)
+          if hashlib.sha256(qualifier).hexdigest() != os.environ['SOURCE_SCRIPT_SHA256']:
+              raise SystemExit('historical qualifier source hash mismatch')
+
+          lines = qualifier.decode('utf-8').splitlines(keepends=True)
+          install_indexes = [index for index, line in enumerate(lines) if line.strip() == 'npm ci']
+          if len(install_indexes) != 2:
+              raise SystemExit(f'expected exactly two invalid npm ci lines, found {len(install_indexes)}')
+          transformed = ''.join(
+              line for index, line in enumerate(lines) if index not in install_indexes
+          ).replace('v114.patch', 'v114-r4.patch')
+          Path(os.environ['QUALIFIER_SCRIPT']).write_text(transformed, encoding='utf-8')
+
+          patch = extract('PATCH_B64')
+          if hashlib.sha256(patch).hexdigest() != os.environ['SOURCE_PATCH_SHA256']:
+              raise SystemExit('historical patch hash mismatch')
+          Path(os.environ['PATCH_SCRIPT']).write_bytes(patch)
+
+          (bootstrap / 'payload.env').write_text(
+              'SOURCE_COMMIT=' + os.environ['SOURCE_COMMIT'] + '\n'
+              'SOURCE_BLOB=' + os.environ['SOURCE_BLOB'] + '\n'
+              'SOURCE_GZIP_SHA256=' + os.environ['SOURCE_GZIP_SHA256'] + '\n'
+              'SOURCE_SCRIPT_SHA256=' + os.environ['SOURCE_SCRIPT_SHA256'] + '\n'
+              'SOURCE_PATCH_SHA256=' + os.environ['SOURCE_PATCH_SHA256'] + '\n'
+              'TRANSFORMED_SCRIPT_SHA256=' + hashlib.sha256(transformed.encode()).hexdigest() + '\n',
+              encoding='utf-8'
+          )
+          PY
+
+          chmod 700 "$QUALIFIER_SCRIPT"
+          bash -n "$QUALIFIER_SCRIPT"
+          python3 -m py_compile "$PATCH_SCRIPT"
+          sha256sum "$QUALIFIER_SCRIPT" "$PATCH_SCRIPT" | tee "$BOOTSTRAP_DIR/materialized.sha256"
+          printf 'BOOTSTRAP_SUCCESS\n' >> "$BOOTSTRAP_DIR/status.txt"
+
+      - name: Qualify exact two-file successor without publication
+        shell: bash
+        run: "$QUALIFIER_SCRIPT"
+
+      - name: Upload retained qualification receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr2231-slash-partition-v114-r4
+          path: |
+            /tmp/pr2231-slash-partition-v114-r4-bootstrap
+            /tmp/pr2231-slash-partition-v114-r4
+          if-no-files-found: error
+          retention-days: 30
