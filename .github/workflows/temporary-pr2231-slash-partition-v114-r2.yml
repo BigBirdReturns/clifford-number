@@ -1,0 +1,224 @@
+name: Temporary PR 2231 slash partition V114 R2
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temporary-pr2231-slash-partition-v114-r2.yml'
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: pr2231-slash-partition-v114-r2
+  cancel-in-progress: false
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: BigBirdReturns/clifford-number
+      PRODUCT_PR: '2231'
+      CONTROLLER_PR: ${{ github.event.pull_request.number }}
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      CONTROLLER_WORKFLOW: .github/workflows/temporary-pr2231-slash-partition-v114-r2.yml
+      EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+      EXPECTED_MAIN: 0b1d8af5b86adad49b3451053dbb9166294d631c
+      EXPECTED_PRODUCT: 4e1285af114d517b7304a027195857ad66987c58
+      EXPECTED_PARENT: 0b1d8af5b86adad49b3451053dbb9166294d631c
+      EXPECTED_TREE: 9984bd605c3ff2f839bd6d04b4fa0e6fb924ccaa
+      EXPECTED_LIBRARY: f7e0c9cbdd0dc2d81a24195aedc8e52401029cad
+      EXPECTED_TEST: 839e858980734dbfb8b157e64fed36cf1868820a
+      REVIEW_BINDINGS: >-
+        PRRT_kwDOTGqftc6dept0:3888440222
+        PRRT_kwDOTGqftc6dfK4F:3888640534
+        PRRT_kwDOTGqftc6dfLu0:3888645507
+        PRRT_kwDOTGqftc6di_ww:3890125090
+        PRRT_kwDOTGqftc6di_wy:3890125092
+        PRRT_kwDOTGqftc6dpMKU:3892550854
+      ARTIFACT_DIR: /tmp/pr2231-slash-partition-v114-r2
+      PRODUCT_WT: /tmp/pr2231-slash-partition-product-v114-r2
+      MAIN_WT: /tmp/pr2231-slash-partition-main-v114-r2
+      PATCH_SCRIPT: /tmp/pr2231-v114-r2-patch.py
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Recover immutable qualifier and patch payload
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cat > /tmp/pr2231-v114-r2-qualifier.sh.gz.b64 <<'QUALIFIER_B64'
+          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
+          +UWz3d6kNbPk55mbVvWYSa4Y/g/krjtCmisAAA==
+          QUALIFIER_B64
+          base64 -d /tmp/pr2231-v114-r2-qualifier.sh.gz.b64 > /tmp/pr2231-v114-r2-qualifier.sh.gz
+          printf '%s  %s\n' 'a233e4c0c2519f2f4877f68f37b272028ac08f8feed45daaeb4555d28bbe5bee' /tmp/pr2231-v114-r2-qualifier.sh.gz | sha256sum -c -
+          gzip -dc /tmp/pr2231-v114-r2-qualifier.sh.gz > /tmp/pr2231-v114-r2-qualifier.sh
+          printf '%s  %s\n' '91079d5697c2600bec6ad1249e8c2e1d1f23c3028eade4a8281a527979288fbb' /tmp/pr2231-v114-r2-qualifier.sh | sha256sum -c -
+          chmod 700 /tmp/pr2231-v114-r2-qualifier.sh
+
+          cat > /tmp/pr2231-v114-r2-patch.py.b64 <<'PATCH_B64'
+          ZnJvbSBwYXRobGliIGltcG9ydCBQYXRoCgpsaWJyYXJ5ID0gUGF0aCgndG9vbHMvbGliL2luZHVz
+          dHJpYWwtZXhoYXVzdC5tanMnKQpzb3VyY2UgPSBsaWJyYXJ5LnJlYWRfdGV4dChlbmNvZGluZz0n
+          dXRmLTgnKQoKb2xkX25hbWUgPSAnaW5pdGlhbEludHJpbnNpY1Bob25lRGFzaFRyYW5zaXRpb24n
+          CmNvdW50ID0gc291cmNlLmNvdW50KG9sZF9uYW1lKQppZiBjb3VudCAhPSAyOgogICAgcmFpc2Ug
+          U3lzdGVtRXhpdChmJ3VuZXhwZWN0ZWQgdHJhbnNpdGlvbiBzeW1ib2wgY291bnQ6IHtjb3VudH0n
+          KQpzb3VyY2UgPSBzb3VyY2UucmVwbGFjZShvbGRfbmFtZSwgJ2luaXRpYWxJbnRyaW5zaWNQaG9u
+          ZUJvdW5kYXJ5VHJhbnNpdGlvbicpCgpvbGRfdGVybWluYWwgPSByIiYmIC9eXHMqWy3igJDigJHi
+          gJLigJPigJTiiJItXVxzKiQvdS50ZXN0KG5vcm1hbGl6ZWROZXh0U2VwYXJhdG9yKSIKbmV3X3Rl
+          cm1pbmFsID0gciImJiAvXlxzKig/Olst4oCQ4oCR4oCS4oCT4oCU4oiSLV18Wy/vvI9dKVxzKiQv
+          dS50ZXN0KG5vcm1hbGl6ZWROZXh0U2VwYXJhdG9yKSIKY291bnQgPSBzb3VyY2UuY291bnQob2xk
+          X3Rlcm1pbmFsKQppZiBjb3VudCAhPSAxOgogICAgcmFpc2UgU3lzdGVtRXhpdChmJ3VuZXhwZWN0
+          ZWQgdGVybWluYWwgYm91bmRhcnkgY291bnQ6IHtjb3VudH0nKQpzb3VyY2UgPSBzb3VyY2UucmVw
+          bGFjZShvbGRfdGVybWluYWwsIG5ld190ZXJtaW5hbCkKCm9sZF9kaXNwYXRjaCA9IHIiaWYgKCEv
+          XlxzKlst4oCQ4oCR4oCS4oCT4oCU4oiS77yNXVxzKiQvdS50ZXN0KCIKbmV3X2Rpc3BhdGNoID0g
+          ciJpZiAoIS9eXHMqKD86Wy3igJDigJHigJLigJPigJTiiJLvvI1dfFsv77yPXSlccyokL3UudGVz
+          dCgiCmNvdW50ID0gc291cmNlLmNvdW50KG9sZF9kaXNwYXRjaCkKaWYgY291bnQgIT0gMToKICAg
+          IHJhaXNlIFN5c3RlbUV4aXQoZid1bmV4cGVjdGVkIGRpc3BhdGNoIGJvdW5kYXJ5IGNvdW50OiB7
+          Y291bnR9JykKc291cmNlID0gc291cmNlLnJlcGxhY2Uob2xkX2Rpc3BhdGNoLCBuZXdfZGlzcGF0
+          Y2gpCgpvbGRfY29tbWVudCA9ICgKICAgICcvLyBSZXNvbHZlIGFuIGV4YWN0IGNvbnRleHQtZnJl
+          ZSB0ZWxlcGhvbmUgYmVmb3JlIGEgZGFzaC1hdHRhY2hlZCBjb21wbGV0ZVxuJwogICAgJy8vIG9i
+          c2VydmF0aW9uIG9yIGEgc2Vjb25kIGluZGVwZW5kZW50bHkgY29tcGxldGUgdGVsZXBob25lLiBU
+          aGUgcGFydGl0aW9uXG4nCiAgICAnLy8gaXMgcHJvdmVkIGF0IHRoZSBzb3VyY2UgZGFzaCBpdHNl
+          bGYsIHNvIGFuIG9ic2VydmF0aW9uIGNhbm5vdCBiZWdpbiBpbnNpZGVcbicKKQpuZXdfY29tbWVu
+          dCA9ICgKICAgICcvLyBSZXNvbHZlIGFuIGV4YWN0IGNvbnRleHQtZnJlZSB0ZWxlcGhvbmUgYmVm
+          b3JlIGEgZGFzaC0gb3Igc2xhc2gtYXR0YWNoZWRcbicKICAgICcvLyBjb21wbGV0ZSBvYnNlcnZh
+          dGlvbiBvciBhIHNlY29uZCBpbmRlcGVuZGVudGx5IGNvbXBsZXRlIHRlbGVwaG9uZS4gVGhlXG4n
+          CiAgICAnLy8gcGFydGl0aW9uIGlzIHByb3ZlZCBhdCB0aGUgc291cmNlIGJvdW5kYXJ5IGl0c2Vs
+          Ziwgc28gbm8gbGF0ZXIgb2JqZWN0IGJlZ2luc1xuJwopCmNvdW50ID0gc291cmNlLmNvdW50KG9s
+          ZF9jb21tZW50KQppZiBjb3VudCAhPSAxOgogICAgcmFpc2UgU3lzdGVtRXhpdChmJ3VuZXhwZWN0
+          ZWQgZGlzcGF0Y2ggY29tbWVudCBjb3VudDoge2NvdW50fScpCnNvdXJjZSA9IHNvdXJjZS5yZXBs
+          YWNlKG9sZF9jb21tZW50LCBuZXdfY29tbWVudCkKCmZvciBvbGQsIG5ldywgZXhwZWN0ZWQgaW4g
+          WwogICAgKCdjb25zdCBpbml0aWFsRGFzaFRyYW5zaXRpb24gPSBhbGxvd0luaXRpYWxHcm91cCcs
+          ICdjb25zdCBpbml0aWFsQm91bmRhcnlUcmFuc2l0aW9uID0gYWxsb3dJbml0aWFsR3JvdXAnLCAx
+          KSwKICAgICgnaWYgKGluaXRpYWxEYXNoVHJhbnNpdGlvbikgeycsICdpZiAoaW5pdGlhbEJvdW5k
+          YXJ5VHJhbnNpdGlvbikgeycsIDEpLAogICAgKCd9ID0gaW5pdGlhbERhc2hUcmFuc2l0aW9uOycs
+          ICd9ID0gaW5pdGlhbEJvdW5kYXJ5VHJhbnNpdGlvbjsnLCAxKSwKXToKICAgIGNvdW50ID0gc291
+          cmNlLmNvdW50KG9sZCkKICAgIGlmIGNvdW50ICE9IGV4cGVjdGVkOgogICAgICAgIHJhaXNlIFN5
+          c3RlbUV4aXQoZid1bmV4cGVjdGVkIHJlbmFtZSBjb3VudCBmb3Ige29sZCFyfToge2NvdW50fScp
+          CiAgICBzb3VyY2UgPSBzb3VyY2UucmVwbGFjZShvbGQsIG5ldykKCmxpYnJhcnkud3JpdGVfdGV4
+          dChzb3VyY2UsIGVuY29kaW5nPSd1dGYtOCcpCgp0ZXN0ID0gUGF0aCgndGVzdC9pbmR1c3RyaWFs
+          LWV4aGF1c3QudGVzdC5qcycpCnRlc3RzID0gdGVzdC5yZWFkX3RleHQoZW5jb2Rpbmc9J3V0Zi04
+          JykKbWFya2VyID0gJy8vIFBSMjIzMSBzbGFzaC1ib3VuZGFyeSBpbml0aWFsLXBob25lIHBhcnRp
+          dGlvbiByZWdyZXNzaW9ucycKaWYgbWFya2VyIGluIHRlc3RzOgogICAgcmFpc2UgU3lzdGVtRXhp
+          dCgnc2xhc2gtcGFydGl0aW9uIHRlc3RzIGFscmVhZHkgcHJlc2VudCcpCnRlc3RzICs9IHInJycK
+          Ci8vIFBSMjIzMSBzbGFzaC1ib3VuZGFyeSBpbml0aWFsLXBob25lIHBhcnRpdGlvbiByZWdyZXNz
+          aW9ucwpmb3IgKGNvbnN0IFtuYW1lLCBpbnB1dCwgZXhwZWN0ZWRdIG9mIFsKICBbCiAgICAnZG90
+          dGVkIGludGVybmF0aW9uYWwgcGhvbmUgZW5kcyBiZWZvcmUgYSBzbGFzaC1hdHRhY2hlZCBkZWNp
+          bWFsJywKICAgICdQaG9uZTogKzMzIDEuNDIuNjguNTMuMDAvMy4xNCcsCiAgICAnUGhvbmU6IFtj
+          b250YWN0IG9taXR0ZWRdLzMuMTQnCiAgXSwKICBbCiAgICAnZnVsbHdpZHRoIGRvdHRlZCBpbnRl
+          cm5hdGlvbmFsIHBob25lIGVuZHMgYmVmb3JlIGEgc2xhc2gtYXR0YWNoZWQgZGVjaW1hbCcsCiAg
+          ICAn6Zu76Kmx77ya77yL77yT77yTIO+8ke+8ju+8lO+8ku+8ju+8lu+8mO+8ju+8le+8k++8ju+8
+          kO+8kO+8j++8k++8ju+8ke+8lCcsCiAgICAn6Zu76Kmx77yaW2NvbnRhY3Qgb21pdHRlZF3vvI/v
+          vJPvvI7vvJHvvJQnCiAgXSwKICBbCiAgICAnZG90dGVkIGludGVybmF0aW9uYWwgcGhvbmUgZW5k
+          cyBiZWZvcmUgYSBzbGFzaC1hdHRhY2hlZCBzY2FsYXInLAogICAgJ1Bob25lOiArMzMgMS40Mi42
+          OC41My4wMC8yMDI2IHBlb3BsZScsCiAgICAnUGhvbmU6IFtjb250YWN0IG9taXR0ZWRdLzIwMjYg
+          cGVvcGxlJwogIF0sCiAgWwogICAgJ2RvdHRlZCBpbnRlcm5hdGlvbmFsIHBob25lIGVuZHMgYmVm
+          b3JlIGEgc2xhc2gtYXR0YWNoZWQgdW5pdCByYW5nZScsCiAgICAnQXJjaGl2ZSArMzMgMS40Mi42
+          OC41My4wMC8xNy0yMCBwZW9wbGUnLAogICAgJ0FyY2hpdmUgW2NvbnRhY3Qgb21pdHRlZF0vMTct
+          MjAgcGVvcGxlJwogIF0sCiAgWwogICAgJ2RvdHRlZCBpbnRlcm5hdGlvbmFsIHBob25lIGVuZHMg
+          YmVmb3JlIGEgc2xhc2gtYXR0YWNoZWQgdGltZScsCiAgICAnQXJjaGl2ZSArMzMgMS40Mi42OC41
+          My4wMC8xMjozMDo0NScsCiAgICAnQXJjaGl2ZSBbY29udGFjdCBvbWl0dGVkXS8xMjozMDo0NScK
+          ICBdLAogIFsKICAgICdkb3R0ZWQgaW50ZXJuYXRpb25hbCBwaG9uZSBlbmRzIGJlZm9yZSBhIHNs
+          YXNoLWF0dGFjaGVkIGRhdGUnLAogICAgJ0FyY2hpdmUgKzMzIDEuNDIuNjguNTMuMDAvMjAyNi0w
+          OC0xNycsCiAgICAnQXJjaGl2ZSBbY29udGFjdCBvbWl0dGVkXS8yMDI2LTA4LTE3JwogIF0sCiAg
+          WwogICAgJ2RvdHRlZCBpbnRlcm5hdGlvbmFsIHBob25lIGVuZHMgYmVmb3JlIGEgc2xhc2gtYXR0
+          YWNoZWQgZG9tZXN0aWMgcGhvbmUnLAogICAgJ1Bob25lOiArMzMgMS40Mi42OC41My4wMC8wMy02
+          MjE2LTgwNDEnLAogICAgJ1Bob25lOiBbY29udGFjdCBvbWl0dGVkXS9bY29udGFjdCBvbWl0dGVk
+          XScKICBdLAogIFsKICAgICdkb3R0ZWQgaW50ZXJuYXRpb25hbCBwaG9uZSBlbmRzIGJlZm9yZSBh
+          IHNsYXNoLWF0dGFjaGVkIGRvdHRlZCBwaG9uZScsCiAgICAnQXJjaGl2ZSArMzMgMS40Mi42OC41
+          My4wMC8wMy42MjE2LjgwNDEnLAogICAgJ0FyY2hpdmUgW2NvbnRhY3Qgb21pdHRlZF0vW2NvbnRh
+          Y3Qgb21pdHRlZF0nCiAgXSwKICBbCiAgICAnaHlwaGVuLWdyb3VwZWQgaW50ZXJuYXRpb25hbCBw
+          aG9uZSBlbmRzIGJlZm9yZSBhIHNsYXNoLWF0dGFjaGVkIHRpbWUnLAogICAgJ0FyY2hpdmUgKzMz
+          IDEtNDItNjgtNTMtMDAvMTI6MzA6NDUnLAogICAgJ0FyY2hpdmUgW2NvbnRhY3Qgb21pdHRlZF0v
+          MTI6MzA6NDUnCiAgXSwKICBbCiAgICAnc3BhY2UtZ3JvdXBlZCBpbnRlcm5hdGlvbmFsIHBob25l
+          IGVuZHMgYmVmb3JlIGEgc2xhc2gtYXR0YWNoZWQgc2NhbGFyJywKICAgICdBcmNoaXZlICszMyAx
+          IDQyIDY4IDUzIDAwLzIwMjYgcGVvcGxlJywKICAgICdBcmNoaXZlIFtjb250YWN0IG9taXR0ZWRd
+          LzIwMjYgcGVvcGxlJwogIF0sCiAgWwogICAgJ2V4aXN0aW5nIHNsYXNoLWdyb3VwZWQgZGFzaCBw
+          YXJ0aXRpb24gcmVtYWlucyBleGFjdCcsCiAgICAnQXJjaGl2ZSArMzMgMS80Mi82OC81My8wMOKA
+          kzAzLTYyMTYtODA0MScsCiAgICAnQXJjaGl2ZSBbY29udGFjdCBvbWl0dGVkXeKAk1tjb250YWN0
+          IG9taXR0ZWRdJwogIF0KXSkgewogIGFzc2VydC5lcXVhbCgKICAgIHJlZGFjdENvbnRhY3REYXRh
+          KGlucHV0KSwKICAgIGV4cGVjdGVkLAogICAgYCR7bmFtZX06IGFuIGFjY2VwdGVkIHNsYXNoIGJv
+          dW5kYXJ5IG11c3QgcHJlc2VydmUgYm90aCBpbmRlcGVuZGVudGx5IHByb3ZlZCBzb3VyY2Ugb2Jq
+          ZWN0c2AKICApOwp9CicnJwp0ZXN0LndyaXRlX3RleHQodGVzdHMsIGVuY29kaW5nPSd1dGYtOCcp
+          Cg==
+          PATCH_B64
+          base64 -d /tmp/pr2231-v114-r2-patch.py.b64 > "$PATCH_SCRIPT"
+          printf '%s  %s\n' '3301c4fdfa2079e0f3a4b8fc9f3c148ec3270809e9ca653fab53eb1838d5187b' "$PATCH_SCRIPT" | sha256sum -c -
+
+      - name: Qualify exact two-file successor without publication
+        shell: bash
+        run: /tmp/pr2231-v114-r2-qualifier.sh
+
+      - name: Upload retained qualification receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr2231-slash-partition-v114-r2
+          path: /tmp/pr2231-slash-partition-v114-r2
+          if-no-files-found: error
+          retention-days: 30
