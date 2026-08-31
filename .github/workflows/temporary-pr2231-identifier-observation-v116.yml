@@ -1,4 +1,4 @@
-name: Temporary PR 2231 identifier-observation V116 qualifier
+name: Temporary PR 2231 identifier-observation V116 diagnostic
 
 on:
   pull_request:
@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  qualify-identifier-observation-v116:
+  diagnose-identifier-observation-v116:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -29,7 +29,7 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Materialize and execute read-only V116 qualifier
+      - name: Materialize and trace read-only V116 qualifier
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: BigBirdReturns/clifford-number
@@ -55,7 +55,7 @@ jobs:
           EXPECTED_CANDIDATE_TEST_SHA256: d40316f04a848db95742338a6bf92b8e85570ee967f64130ba410feac3cdae05
           EXPECTED_REVIEW_ID: '5071977195'
           EXPECTED_REVIEW_COMMENT: '3898975358'
-          ARTIFACT_DIR: /tmp/pr2231-identifier-observation-v116-qualification
+          ARTIFACT_DIR: /tmp/pr2231-identifier-observation-v116-diagnostic
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -90,14 +90,20 @@ jobs:
           test "$(wc -c < "$d/pr2231-v116.patch")" = '7049'
           test "$(sha256sum "$d/pr2231-v116.patch" | awk '{print $1}')" = 'e861032f42abe3ef151c3a3ef8cec26973a38f059326f4c70b233ee18247c945'
           test "$(git hash-object "$d/pr2231-v116.patch")" = '834a15bf6eac3a9361ba08a4639c7482180692d6'
+          cp "$d/qualifier-v116.sh" "$ARTIFACT_DIR/qualifier-v116.sh"
+          cp "$d/pr2231-v116.patch" "$ARTIFACT_DIR/pr2231-v116.patch"
           bash -n "$d/qualifier-v116.sh"
-          PATCH_FILE="$d/pr2231-v116.patch" bash "$d/qualifier-v116.sh"
+          (
+            export PS4='+${BASH_SOURCE}:${LINENO}:${FUNCNAME[0]:-main}: '
+            export BASH_XTRACEFD=3
+            PATCH_FILE="$d/pr2231-v116.patch" bash -x "$d/qualifier-v116.sh"
+          ) 3> "$ARTIFACT_DIR/qualifier-xtrace.log"
 
-      - name: Upload terminal V116 qualification artifact
+      - name: Upload terminal V116 diagnostic artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pr2231-identifier-observation-v116-r1
-          path: /tmp/pr2231-identifier-observation-v116-qualification
+          name: pr2231-identifier-observation-v116-diagnostic-r2
+          path: /tmp/pr2231-identifier-observation-v116-diagnostic
           if-no-files-found: error
           retention-days: 90
