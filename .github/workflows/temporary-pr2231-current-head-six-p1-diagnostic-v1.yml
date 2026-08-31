@@ -1,0 +1,211 @@
+name: Temporary PR 2231 current-head six-P1 diagnostic v1
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+
+concurrency:
+  group: pr2231-current-head-six-p1-diagnostic-v1-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  reproduce-current-head-six-p1:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: BigBirdReturns/clifford-number
+      PRODUCT_PR: '2231'
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      EXPECTED_MAIN: 0b1d8af5b86adad49b3451053dbb9166294d631c
+      EXPECTED_PRODUCT: 53aa560c583b943b1aacdfff425423f9812752bb
+      EXPECTED_TREE: 74d7bab76498a1dd2e7705fbd73b43e45402b24f
+      EXPECTED_LIBRARY: 99ddf7d069203ccd0afbda6bd0c860f54473b347
+      EXPECTED_TEST: 664e4f949a53b44acb2760cd4e083236b5616c2e
+      PRODUCT_WT: /tmp/pr2231-current-head-six-p1-product-v1
+      ARTIFACT_DIR: /tmp/pr2231-current-head-six-p1-diagnostic-v1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Reproduce all six current-head P1 witnesses without mutation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "${PRODUCT_WT}" "${ARTIFACT_DIR}"
+          mkdir -p "${ARTIFACT_DIR}/receipts"
+
+          controller="$(git rev-parse HEAD)"
+          [[ "${controller}" == "${{ github.event.pull_request.head.sha }}" ]]
+          [[ "$(git rev-parse HEAD^)" == "${EXPECTED_MAIN}" ]]
+          [[ "$(git rev-parse origin/main)" == "${EXPECTED_MAIN}" ]]
+          [[ "$(git rev-parse "origin/${PRODUCT_BRANCH}")" == "${EXPECTED_PRODUCT}" ]]
+          [[ "$(git rev-parse "${EXPECTED_PRODUCT}^{tree}")" == "${EXPECTED_TREE}" ]]
+          [[ "$(git rev-parse "${EXPECTED_PRODUCT}:tools/lib/industrial-exhaust.mjs")" == "${EXPECTED_LIBRARY}" ]]
+          [[ "$(git rev-parse "${EXPECTED_PRODUCT}:test/industrial-exhaust.test.js")" == "${EXPECTED_TEST}" ]]
+
+          gh api "repos/${REPO}/pulls/${PRODUCT_PR}" > "${ARTIFACT_DIR}/receipts/product-pr.json"
+          gh api "repos/${REPO}/pulls/${{ github.event.pull_request.number }}" > "${ARTIFACT_DIR}/receipts/controller-pr.json"
+          jq -e --arg head "${EXPECTED_PRODUCT}" --arg base "${EXPECTED_MAIN}" '
+            .state == "open"
+            and .draft == true
+            and .merged == false
+            and .head.sha == $head
+            and .base.sha == $base
+            and .commits == 1
+            and .changed_files == 2
+          ' "${ARTIFACT_DIR}/receipts/product-pr.json" >/dev/null
+          jq -e --arg head "${controller}" --arg base "${EXPECTED_MAIN}" '
+            .state == "open"
+            and .draft == true
+            and .merged == false
+            and .head.sha == $head
+            and .base.sha == $base
+            and .commits == 1
+            and .changed_files == 1
+          ' "${ARTIFACT_DIR}/receipts/controller-pr.json" >/dev/null
+
+          git diff --name-only "${EXPECTED_MAIN}..${EXPECTED_PRODUCT}" | sort > "${ARTIFACT_DIR}/product-paths.txt"
+          diff -u <(printf '%s\n' test/industrial-exhaust.test.js tools/lib/industrial-exhaust.mjs | sort) "${ARTIFACT_DIR}/product-paths.txt"
+
+          git worktree add --detach "${PRODUCT_WT}" "${EXPECTED_PRODUCT}"
+          export PRODUCT_WT ARTIFACT_DIR
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import fs from 'node:fs';
+          import { performance } from 'node:perf_hooks';
+          import { pathToFileURL } from 'node:url';
+
+          const moduleUrl = pathToFileURL(
+            `${process.env.PRODUCT_WT}/tools/lib/industrial-exhaust.mjs`
+          ).href;
+          const { redactContactData } = await import(moduleUrl);
+          const observations = [];
+
+          function record(id, input, repairedExpected, verifyDefect) {
+            const output = redactContactData(input);
+            assert.notEqual(output, repairedExpected, `${id}: predecessor unexpectedly satisfies repaired contract`);
+            verifyDefect(output);
+            observations.push({ id, input, output, repaired_expected: repairedExpected });
+          }
+
+          record(
+            'complete-unit-range-before-terminal-group-preference',
+            'Archive +33 1 42 68 53 00 17-20 people',
+            'Archive [contact omitted] 17-20 people',
+            output => assert.equal(output, 'Archive [contact omitted]-20 people')
+          );
+
+          const omittedBoundaryInput = `Archive 90${' '.repeat(254)}03-6216-8041 people`;
+          record(
+            'external-suffix-must-not-cross-omitted-source',
+            omittedBoundaryInput,
+            `Archive 90${' '.repeat(254)}[contact omitted] people`,
+            output => assert.match(output, /03-6216-8041/u)
+          );
+
+          record(
+            'nonleading-weak-range-frontier',
+            'Archive 09012345678 62-16-03-6216-8041',
+            'Archive [contact omitted] 62-16-[contact omitted]',
+            output => assert.match(output, /03-6216-8041/u)
+          );
+
+          record(
+            'grouped-scalar-before-dotted-phone',
+            'Archive 123,456.03.6216.8041',
+            'Archive 123,456.[contact omitted]',
+            output => assert.match(output, /03\.6216\.8041/u)
+          );
+
+          record(
+            'nonwhitespace-internal-phone-separator-before-dash-partition',
+            'Archive +33 1/42/68/53/00–03-6216-8041',
+            'Archive [contact omitted]–[contact omitted]',
+            output => assert.equal(output, 'Archive [contact omitted]/00–[contact omitted]')
+          );
+
+          const repeatedInput = `Archive ${'3.14/03-6216-8041 '.repeat(1300)}`;
+          const started = performance.now();
+          let repeatedError = null;
+          let repeatedOutput = null;
+          try {
+            repeatedOutput = redactContactData(repeatedInput);
+          } catch (error) {
+            repeatedError = {
+              name: error?.name ?? null,
+              message: error?.message ?? String(error)
+            };
+          }
+          const elapsedMs = performance.now() - started;
+          assert.equal(repeatedError?.name, 'RangeError', 'recursive witness must reproduce stack exhaustion on exact head');
+          observations.push({
+            id: 'recursive-remainder-stack-exhaustion',
+            repetitions: 1300,
+            input_length: repeatedInput.length,
+            output_length: repeatedOutput?.length ?? null,
+            error: repeatedError,
+            elapsed_ms: elapsedMs
+          });
+
+          fs.writeFileSync(
+            `${process.env.ARTIFACT_DIR}/predecessor-reproduction.json`,
+            `${JSON.stringify({
+              product_commit: '53aa560c583b943b1aacdfff425423f9812752bb',
+              product_tree: '74d7bab76498a1dd2e7705fbd73b43e45402b24f',
+              observations
+            }, null, 2)}\n`
+          );
+          console.log('SIX_P1_PREDECESSOR_REPRODUCTION_SUCCESS');
+          NODE
+
+          [[ -z "$(git -C "${PRODUCT_WT}" status --porcelain)" ]]
+          [[ "$(git rev-parse origin/main)" == "${EXPECTED_MAIN}" ]]
+          [[ "$(git rev-parse "origin/${PRODUCT_BRANCH}")" == "${EXPECTED_PRODUCT}" ]]
+          printf '%s\n' \
+            "controller=${controller}" \
+            "main=${EXPECTED_MAIN}" \
+            "product=${EXPECTED_PRODUCT}" \
+            "tree=${EXPECTED_TREE}" \
+            "library=${EXPECTED_LIBRARY}" \
+            "test=${EXPECTED_TEST}" \
+            "product_mutation=none" \
+            "publication=skipped" \
+            > "${ARTIFACT_DIR}/result.txt"
+
+      - name: Emit diagnostic receipts
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "${ARTIFACT_DIR}"
+          find "${ARTIFACT_DIR}" -type f -printf '%P\t%s\n' | sort > "${ARTIFACT_DIR}/artifact-manifest.txt"
+          {
+            printf '%s\n' '### PR 2231 exact-head six-P1 diagnostic v1'
+            for receipt in result.txt predecessor-reproduction.json product-paths.txt artifact-manifest.txt; do
+              printf '\n#### %s\n\n```text\n' "${receipt}"
+              if [[ -f "${ARTIFACT_DIR}/${receipt}" ]]; then
+                tail -n 500 "${ARTIFACT_DIR}/${receipt}"
+              fi
+              printf '%s\n' '```'
+            done
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-current-head-six-p1-diagnostic-v1
+          path: /tmp/pr2231-current-head-six-p1-diagnostic-v1
+          retention-days: 90
