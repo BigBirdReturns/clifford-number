@@ -1,0 +1,195 @@
+name: Temporary PR 2231 V115 qualified-tree publisher R2
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+    paths:
+      - .github/workflows/temporary-pr2231-v115-qualified-tree-publisher.yml
+
+permissions:
+  contents: write
+  actions: read
+  pull-requests: read
+  issues: read
+
+concurrency:
+  group: pr2231-v115-qualified-tree-publisher-r2-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  publish-qualified-v115-tree-r2:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: BigBirdReturns/clifford-number
+      MAIN_BRANCH: main
+      EXPECTED_MAIN: 771a64b6b467748d2f4df667b5f78e76f9432d69
+      EXPECTED_MAIN_TREE: 86c91755f16245168ddb230d53e5b9920af5342c
+      PRODUCT_PR: '2231'
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      EXPECTED_PRODUCT: 9652029dbabcab0e2d7c51c0f8c61e57869e34cc
+      EXPECTED_PRODUCT_TREE: dbc81b437b7e98a4bfd0dc59ef13a51586c0c6c7
+      EXPECTED_PRODUCT_LIBRARY: 2ac63e66103fd637166d82d559269ca1b3cf7419
+      EXPECTED_PRODUCT_TEST: ba934a14f232af58fadf1250d1903fd774e20654
+      QUALIFIER_PR: '2441'
+      QUALIFIER_BRANCH: agent/pr2231-eight-current-binding-identifier-iteration-v115-r7
+      EXPECTED_QUALIFIER: c8c460e5050cb0cbfc0094700f4850bb7a96f6cd
+      EXPECTED_QUALIFIER_TREE: 7070a90a08942d798d8b278ac548c65c59d09b4f
+      QUALIFIER_PATH: .github/workflows/temporary-pr2231-identifier-iteration-v115-r2.yml
+      EXPECTED_QUALIFIER_WORKFLOW_BLOB: 833b2e8d14ac5743e7914a43aeae2349106a0588
+      PUBLISHER_PR: ${{ github.event.pull_request.number }}
+      PUBLISHER_BRANCH: agent/pr2231-v115-qualified-tree-publisher-v1
+      EXPECTED_PUBLISHER: ${{ github.event.pull_request.head.sha }}
+      PUBLISHER_PATH: .github/workflows/temporary-pr2231-v115-qualified-tree-publisher.yml
+      ARTIFACT_RUN: '33438499526'
+      ARTIFACT_ID: '9775373414'
+      ARTIFACT_NAME: pr2231-identifier-iterative-v115-r7
+      ARTIFACT_DIGEST: sha256:e8cc6c3edd5753a87d1e9651a957d562b50ffe61480065790a059d9c43af1eb4
+      ARTIFACT_PATH: /tmp/pr2231-v115-qualified-artifact
+      ARTIFACT_CHECKSUM_ROOT: /tmp/pr2231-identifier-iterative-v115-r4-qualification/
+      EXPECTED_QUALIFIED_COMMIT: 8d10339b80c9fda58968651729d0ed4fe6bbcfd5
+      EXPECTED_TREE: e2968f35273af94f6f45ba66770153bb25eb6cb2
+      EXPECTED_LIBRARY_BLOB: 408313240904304912fe8afdd8edf5db60cb723e
+      EXPECTED_TEST_BLOB: a8c124caf09edf94c050f05e70e23b90c9119a5b
+      EXPECTED_LIBRARY_SHA256: 45efcf2d7403ca03e76d867873434f2d4060db6bbdf45dbd52e98ff325b7cb2c
+      EXPECTED_TEST_SHA256: ead48f71877f412c43c92c0d6583bd826c8b9809445591e31632f781fc1978ec
+      EXPECTED_PATCH_SHA256: abc55a624b6f37a701708fc5bc1e0c9e98110b3548a3044b981e70150d2b9044
+      EXPECTED_PATCH_FILE_SHA256: 53ff9a01e2b1524e24ec89dbb3d6457ee70babb13e894eb4ee49be853e705c0f
+      WORKTREE: /tmp/pr2231-v115-publish-product
+      RECEIPT_DIR: /tmp/pr2231-v115-qualified-tree-publication-r2
+      REVIEW_BINDINGS: 'PRRT_kwDOTGqftc6dept0:3888440222 PRRT_kwDOTGqftc6dfK4F:3888640534 PRRT_kwDOTGqftc6dfLu0:3888645507 PRRT_kwDOTGqftc6di_ww:3890125090 PRRT_kwDOTGqftc6di_wy:3890125092 PRRT_kwDOTGqftc6d0ca_:3896943486 PRRT_kwDOTGqftc6d0gjq:3896968531 PRRT_kwDOTGqftc6d0gjr:3896968536'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: pr2231-identifier-iterative-v115-r7
+          path: /tmp/pr2231-v115-qualified-artifact
+          repository: BigBirdReturns/clifford-number
+          run-id: '33438499526'
+          github-token: ${{ github.token }}
+
+      - name: Materialize and execute exact publisher R2
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          wrapper=/tmp/pr2231-v115-publisher-wrapper-r2
+          rm -rf "$wrapper"
+          mkdir -p "$wrapper/parts"
+          inner_status=missing
+          on_exit() {
+            rc=$?
+            printf '%s\n' \
+              'controller_envelope=v115-qualified-tree-publisher-wrapper-r2' \
+              "outer_status=$rc" \
+              "inner_status=$inner_status" \
+              > "$wrapper/wrapper-status.env"
+          }
+          trap on_exit EXIT
+
+          specs=(
+            '805e6b3242535f00f2837baf65e400c7010acbd4:2000:a11c251bb2a8a3b5793470deb291f24db32a416c2935ec9a44cfc4e1a4642e17'
+            '2df304bca3bced62384c4477ff379a65e9e4999e:2000:13152e7a89a991dfcfe9f6ecebb623f79fbc0837948eb14bccf156b1d4d75c25'
+            '7b30128b59a852d0eab92ab335dfed5f40682112:1668:faa59e804c275c1e30f87126caf43b2fde97777d8171c4eebb9eb247f643ec53'
+          )
+          : > "$wrapper/publisher.sh.xz"
+          for index in "${!specs[@]}"; do
+            IFS=: read -r blob size digest <<< "${specs[$index]}"
+            json="$wrapper/parts/$index.json"
+            part="$wrapper/parts/$index.bin"
+            gh api "repos/$REPO/git/blobs/$blob" > "$json"
+            jq -e --arg sha "$blob" --argjson size "$size" \
+              '.sha == $sha and .size == $size and .encoding == "base64"' "$json" >/dev/null
+            jq -r '.content' "$json" | tr -d '\n' | base64 -d > "$part"
+            [[ "$(git hash-object "$part")" == "$blob" ]]
+            [[ "$(stat -c %s "$part")" == "$size" ]]
+            printf '%s  %s\n' "$digest" "$part" | sha256sum -c -
+            cat "$part" >> "$wrapper/publisher.sh.xz"
+          done
+
+          [[ "$(stat -c %s "$wrapper/publisher.sh.xz")" == 5668 ]]
+          printf '%s  %s\n' \
+            '47305a680c9797df90fd36797feb6da77643b4d0fdaa378c54e28e0b40de76f2' \
+            "$wrapper/publisher.sh.xz" | sha256sum -c -
+          xz -t "$wrapper/publisher.sh.xz"
+          xz -dc "$wrapper/publisher.sh.xz" > "$wrapper/publisher.sh"
+          [[ "$(stat -c %s "$wrapper/publisher.sh")" == 25689 ]]
+          printf '%s  %s\n' \
+            '32570fff3ceba9fa400c2c084ccea16b55eb3c1da35a5bc2c479df35d22bea28' \
+            "$wrapper/publisher.sh" | sha256sum -c -
+          bash -n "$wrapper/publisher.sh"
+          python3 - "$wrapper/publisher.sh" "$wrapper/publisher-r2.sh" "$wrapper/transform.json" <<'PY_TRANSFORM'
+          from hashlib import sha256
+          from pathlib import Path
+          import json
+          import sys
+
+          source = Path(sys.argv[1])
+          output = Path(sys.argv[2])
+          receipt = Path(sys.argv[3])
+          text = source.read_text()
+          old = "printf '%s  %s\\n' \"$EXPECTED_PATCH_SHA256\" \"$ARTIFACT_PATH/candidate.patch\" | sha256sum -c -"
+          new = "printf '%s  %s\\n' \"$EXPECTED_PATCH_FILE_SHA256\" \"$ARTIFACT_PATH/candidate.patch\" | sha256sum -c -"
+          if text.count(old) != 1:
+              raise SystemExit(f'patch-file checksum command count expected=1 actual={text.count(old)}')
+          transformed = text.replace(old, new, 1)
+          output.write_text(transformed)
+          receipt.write_text(json.dumps({
+              'source_bytes': len(text.encode()),
+              'source_sha256': sha256(text.encode()).hexdigest(),
+              'output_bytes': len(transformed.encode()),
+              'output_sha256': sha256(transformed.encode()).hexdigest(),
+              'transform': 'separate semantic patch digest from candidate.patch file digest',
+          }, indent=2) + '\n')
+          PY_TRANSFORM
+          [[ "$(stat -c %s "$wrapper/publisher-r2.sh")" == 25694 ]]
+          printf '%s  %s\n' \
+            'fedbeaf84f6b5b57ab9fe13548cb2c520637a7d451accbdaa1b5d3bf5cbdb69e' \
+            "$wrapper/publisher-r2.sh" | sha256sum -c -
+          bash -n "$wrapper/publisher-r2.sh"
+          set +e
+          bash "$wrapper/publisher-r2.sh"
+          inner_status=$?
+          set -e
+          exit "$inner_status"
+
+      - name: Emit wrapper receipts
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          wrapper=/tmp/pr2231-v115-publisher-wrapper-r2
+          mkdir -p "$wrapper"
+          find "$wrapper" -type f -printf '%P\t%s\n' | sort > "$wrapper/artifact-manifest.txt"
+          {
+            printf '%s\n' '### PR 2231 V115 qualified-tree publication wrapper R2'
+            for receipt in wrapper-status.env transform.json artifact-manifest.txt; do
+              printf '\n#### %s\n\n```text\n' "$receipt"
+              [[ ! -f "$wrapper/$receipt" ]] || tail -n 500 "$wrapper/$receipt"
+              printf '%s\n' '```'
+            done
+            for receipt in result.txt published.env controller-envelope.env; do
+              printf '\n#### publication/%s\n\n```text\n' "$receipt"
+              [[ ! -f "$RECEIPT_DIR/$receipt" ]] || tail -n 500 "$RECEIPT_DIR/$receipt"
+              printf '%s\n' '```'
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-v115-qualified-tree-publication-r2
+          path: |
+            /tmp/pr2231-v115-publisher-wrapper-r2
+            /tmp/pr2231-v115-qualified-tree-publication-r2
+          retention-days: 90
