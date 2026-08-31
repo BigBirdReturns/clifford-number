@@ -1,0 +1,103 @@
+name: Temporary PR 2231 identifier-observation V116 qualifier
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: pr2231-v116-identifier-observation-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  qualify-identifier-observation-v116:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Check out exact controller head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Materialize and execute read-only V116 qualifier
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: BigBirdReturns/clifford-number
+          PRODUCT_PR: '2231'
+          PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+          CONTROLLER_PR: ${{ github.event.pull_request.number }}
+          CONTROLLER_BRANCH: ${{ github.event.pull_request.head.ref }}
+          EXPECTED_CONTROLLER_BRANCH: agent/pr2231-v116-identifier-observation-qualifier-v1
+          EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+          CONTROLLER_WORKFLOW: .github/workflows/temporary-pr2231-identifier-observation-v116.yml
+          EXPECTED_MAIN: 771a64b6b467748d2f4df667b5f78e76f9432d69
+          EXPECTED_PRODUCT: 97e32764de6fbdbf2381fc478d71a5b4cae23ef6
+          EXPECTED_PRODUCT_TREE: e2968f35273af94f6f45ba66770153bb25eb6cb2
+          EXPECTED_LIBRARY: 408313240904304912fe8afdd8edf5db60cb723e
+          EXPECTED_TEST: a8c124caf09edf94c050f05e70e23b90c9119a5b
+          EXPECTED_LIBRARY_SHA256: 45efcf2d7403ca03e76d867873434f2d4060db6bbdf45dbd52e98ff325b7cb2c
+          EXPECTED_TEST_SHA256: ead48f71877f412c43c92c0d6583bd826c8b9809445591e31632f781fc1978ec
+          EXPECTED_PATCH_SHA256: e861032f42abe3ef151c3a3ef8cec26973a38f059326f4c70b233ee18247c945
+          EXPECTED_PATCH_BLOB: 834a15bf6eac3a9361ba08a4639c7482180692d6
+          EXPECTED_CANDIDATE_LIBRARY: 2dcc2238e7263624131d959a02668659bcacd0e8
+          EXPECTED_CANDIDATE_TEST: 0bf25f1da477fb4882bcb00cb2876f8c4a2ac1a2
+          EXPECTED_CANDIDATE_LIBRARY_SHA256: cecfaa1312936a0726a910bada6af97633fabfe79833386102c5f6159f1ca354
+          EXPECTED_CANDIDATE_TEST_SHA256: d40316f04a848db95742338a6bf92b8e85570ee967f64130ba410feac3cdae05
+          EXPECTED_REVIEW_ID: '5071977195'
+          EXPECTED_REVIEW_COMMENT: '3898975358'
+          ARTIFACT_DIR: /tmp/pr2231-identifier-observation-v116-qualification
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          d=/tmp/pr2231-v116-envelope
+          rm -rf "$d" "$ARTIFACT_DIR"
+          mkdir -p "$d" "$ARTIFACT_DIR"
+          exec > >(tee "$ARTIFACT_DIR/wrapper.log") 2>&1
+          trap 'rc=$?; trap - EXIT; printf "wrapper_exit=%s\n" "$rc" > "$ARTIFACT_DIR/wrapper-status.env"; exit "$rc"' EXIT
+          : > "$d/envelope.b64"
+          while IFS=: read -r blob size digest; do
+            gh api "repos/$REPO/git/blobs/$blob" --jq -r .content | tr -d '\n' | base64 -d > "$d/$blob.chunk"
+            test "$(wc -c < "$d/$blob.chunk")" = "$size"
+            test "$(sha256sum "$d/$blob.chunk" | awk '{print $1}')" = "$digest"
+            test "$(git hash-object "$d/$blob.chunk")" = "$blob"
+            cat "$d/$blob.chunk" >> "$d/envelope.b64"
+          done <<'V116_CHUNKS'
+          fe5ac36389cea9c1dd624836927e398bc8527c61:2360:f6df30689b8c5243ee320f058b24ffa94e12b7b355e07b40408889ed801f2f37
+          0d602e22de43ce7a553f598673710898712ee795:2360:c82c4aa44b2822065cd73fbaf73d3fd3a4e70bc205315e588c6d4a3c4d013571
+          caa5eef16dabf897c1092a88bebc100a3a9650d9:2360:6c1dd1b36461618dc757c2428790e4ba44b9ff1ac81727c4fc9658f20c0bc36e
+          773971aee7207b6c21b0bbb131f3c3418ce62551:2360:60a0d1edaccd9846cfffffe2027d4a4d9cd2542d1c36d1d005c9c47ab8f102b4
+          V116_CHUNKS
+          test "$(wc -c < "$d/envelope.b64")" = '9440'
+          base64 -d "$d/envelope.b64" > "$d/envelope.tar.xz"
+          test "$(wc -c < "$d/envelope.tar.xz")" = '7080'
+          test "$(sha256sum "$d/envelope.tar.xz" | awk '{print $1}')" = '8fd75f6ef09556660967adfa61c53eea78b674ac91ab0a25a3ec3a3045a3147b'
+          test "$(git hash-object "$d/envelope.tar.xz")" = 'd38098f02f195440d0b15a96af6fe6a7a4a38502'
+          xz -t "$d/envelope.tar.xz"
+          tar -xJf "$d/envelope.tar.xz" -C "$d"
+          test "$(wc -c < "$d/qualifier-v116.sh")" = '22967'
+          test "$(sha256sum "$d/qualifier-v116.sh" | awk '{print $1}')" = '495165673d223522bf4ab431cda3251337cc07b3dbc63610974d78772bc58239'
+          test "$(git hash-object "$d/qualifier-v116.sh")" = '79624dd7df8d13488074e1d9ee01b0211ca9f44f'
+          test "$(wc -c < "$d/pr2231-v116.patch")" = '7049'
+          test "$(sha256sum "$d/pr2231-v116.patch" | awk '{print $1}')" = 'e861032f42abe3ef151c3a3ef8cec26973a38f059326f4c70b233ee18247c945'
+          test "$(git hash-object "$d/pr2231-v116.patch")" = '834a15bf6eac3a9361ba08a4639c7482180692d6'
+          bash -n "$d/qualifier-v116.sh"
+          PATCH_FILE="$d/pr2231-v116.patch" bash "$d/qualifier-v116.sh"
+
+      - name: Upload terminal V116 qualification artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr2231-identifier-observation-v116-r1
+          path: /tmp/pr2231-identifier-observation-v116-qualification
+          if-no-files-found: error
+          retention-days: 90
