@@ -1,0 +1,108 @@
+name: Temporary PR 2231 V117 grouped-identifier linear qualifier
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+    paths:
+      - .github/workflows/temporary-pr2231-v117-grouped-identifier-linear-qualifier-v1.yml
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: pr2231-v117-grouped-identifier-linear-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  qualify-v117:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: BigBirdReturns/clifford-number
+      PRODUCT_PR: '2231'
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      EXPECTED_MAIN: 771a64b6b467748d2f4df667b5f78e76f9432d69
+      EXPECTED_PRODUCT: 0c0ec19938e76d83d646c79d02bea9a724e6773b
+      EXPECTED_PRODUCT_TREE: 326186e534735e8fc108c3bb7cab115d5db08dce
+      EXPECTED_LIBRARY: 123b88403265fa4193a44a97b27aebc7661c1528
+      EXPECTED_TEST: a71e670bbf85a399e02a184e0a8fce19d127bfaf
+      PATCH_BLOB: 3db1ada9bf4c9d3cc64a5bb16f448a0a4115d6fb
+      PATCH_SIZE: '5483'
+      PATCH_SHA256: d094ecf3f015ba26c0840399b19217737bd3cf49f6668f52c21fed6c417b5bc1
+      EXPECTED_CANDIDATE_LIBRARY: b35dbf01d2ade812428439dfe79687a9ec7bb212
+      EXPECTED_CANDIDATE_TEST: 93b223c1178050a306e5fc4ccd55210c32a85e0d
+      EXPECTED_CANDIDATE_LIBRARY_SHA256: b7d614b1fb0207011b4e62dd6e13a58e9849a7e4e8da9d49fc0c142d376120a0
+      EXPECTED_CANDIDATE_TEST_SHA256: b0ca233a512440239fb3830536e77e9f103716f313b0cb62ef9696617ddeab96
+      REVIEW_COMMENT_GROUPED: '3899391559'
+      REVIEW_COMMENT_RESOURCE: '3899391565'
+      CONTROLLER_PR: ${{ github.event.pull_request.number }}
+      CONTROLLER_BRANCH: agent/pr2231-v117-grouped-identifier-linear-qualifier-v1
+      EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+      CONTROLLER_PATH: .github/workflows/temporary-pr2231-v117-grouped-identifier-linear-qualifier-v1.yml
+      PRODUCT_DIR: /tmp/pr2231-v117-product
+      MAIN_DIR: /tmp/pr2231-v117-main
+      ARTIFACT_DIR: /tmp/pr2231-v117-qualification
+    steps:
+      - name: Check out exact controller head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Materialize and execute read-only V117 qualifier
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          wrapper=/tmp/pr2231-v117-envelope
+          rm -rf "$wrapper" "$ARTIFACT_DIR"
+          mkdir -p "$wrapper" "$ARTIFACT_DIR"
+          exec > >(tee "$ARTIFACT_DIR/wrapper.log") 2>&1
+          trap 'rc=$?; printf "wrapper_exit=%s\n" "$rc" > "$ARTIFACT_DIR/wrapper-status.env"' EXIT
+          : > "$wrapper/qualifier.sh.xz.b64"
+          while IFS=: read -r blob size digest; do
+            json="$wrapper/$blob.json"
+            chunk="$wrapper/$blob.chunk"
+            gh api "repos/$REPO/git/blobs/$blob" > "$json"
+            jq -e --arg sha "$blob" --argjson size "$size" '.sha == $sha and .size == $size and .encoding == "base64"' "$json" >/dev/null
+            jq -r '.content' "$json" | tr -d '\n' | base64 -d > "$chunk"
+            test "$(wc -c < "$chunk")" = "$size"
+            test "$(sha256sum "$chunk" | awk '{print $1}')" = "$digest"
+            test "$(git hash-object "$chunk")" = "$blob"
+            cat "$chunk" >> "$wrapper/qualifier.sh.xz.b64"
+          done <<'V117_CHUNKS'
+          27980528575c44c28b103ff90fc47c7310860e48:2360:e1b499ea995dc7a7912508e5ba0371a7de571fc3b2879c206e6116805c49c29d
+          f1d4cd0527bd4c24264aed264e75d1320c88060d:1748:fa8fbcd4184763584d28d431efcf53163d242fb9b9cc86958ffd39c28947507d
+          V117_CHUNKS
+          test "$(wc -c < "$wrapper/qualifier.sh.xz.b64")" = 4108
+          test "$(sha256sum "$wrapper/qualifier.sh.xz.b64" | awk '{print $1}')" = 0ee224bece2ff5fdbc137b893c0ff7a0d0f14fe01b5f057f3546a3b54111464b
+          test "$(git hash-object "$wrapper/qualifier.sh.xz.b64")" = 195a9c094960c6b769bbfa64a56e5f4f7f303976
+          base64 -d "$wrapper/qualifier.sh.xz.b64" > "$wrapper/qualifier.sh.xz"
+          test "$(wc -c < "$wrapper/qualifier.sh.xz")" = 3080
+          test "$(sha256sum "$wrapper/qualifier.sh.xz" | awk '{print $1}')" = e4dc16291345188c783d1909efec9f6addd13980724a4198c39eb2e6b2fa4b72
+          test "$(git hash-object "$wrapper/qualifier.sh.xz")" = 234400b178190527d308c9e413db6d9029be37f3
+          xz -t "$wrapper/qualifier.sh.xz"
+          xz -dc "$wrapper/qualifier.sh.xz" > "$wrapper/qualifier.sh"
+          test "$(wc -c < "$wrapper/qualifier.sh")" = 13116
+          test "$(sha256sum "$wrapper/qualifier.sh" | awk '{print $1}')" = 60968eff4d64fb59d5f536a40020bebd19427ff246f47d01d32e06c5894afb41
+          test "$(git hash-object "$wrapper/qualifier.sh")" = e186dedf587c1e208a245d6b0f7315377eb9ed48
+          bash -n "$wrapper/qualifier.sh"
+          bash "$wrapper/qualifier.sh"
+
+      - name: Upload terminal V117 qualification artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr2231-v117-grouped-identifier-linear-r1
+          path: /tmp/pr2231-v117-qualification
+          if-no-files-found: error
+          retention-days: 90
