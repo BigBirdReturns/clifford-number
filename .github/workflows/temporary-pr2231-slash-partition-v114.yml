@@ -1,0 +1,395 @@
+name: Temporary PR 2231 slash partition V114
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temporary-pr2231-slash-partition-v114.yml'
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: pr2231-slash-partition-v114
+  cancel-in-progress: false
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: BigBirdReturns/clifford-number
+      PRODUCT_PR: '2231'
+      CONTROLLER_PR: ${{ github.event.pull_request.number }}
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      CONTROLLER_WORKFLOW: .github/workflows/temporary-pr2231-slash-partition-v114.yml
+      EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+      EXPECTED_MAIN: 0b1d8af5b86adad49b3451053dbb9166294d631c
+      EXPECTED_PRODUCT: 4e1285af114d517b7304a027195857ad66987c58
+      EXPECTED_PARENT: 0b1d8af5b86adad49b3451053dbb9166294d631c
+      EXPECTED_TREE: 9984bd605c3ff2f839bd6d04b4fa0e6fb924ccaa
+      EXPECTED_LIBRARY: f7e0c9cbdd0dc2d81a24195aedc8e52401029cad
+      EXPECTED_TEST: 839e858980734dbfb8b157e64fed36cf1868820a
+      REVIEW_BINDINGS: >-
+        PRRT_kwDOTGqftc6dept0:3888440222
+        PRRT_kwDOTGqftc6dfK4F:3888640534
+        PRRT_kwDOTGqftc6dfLu0:3888645507
+        PRRT_kwDOTGqftc6di_ww:3890125090
+        PRRT_kwDOTGqftc6di_wy:3890125092
+        PRRT_kwDOTGqftc6dpMKU:3892550854
+      ARTIFACT_DIR: /tmp/pr2231-slash-partition-v114
+      PRODUCT_WT: /tmp/pr2231-slash-partition-product-v114
+      MAIN_WT: /tmp/pr2231-slash-partition-main-v114
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Qualify exact slash-partition successor without publication
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$ARTIFACT_DIR" "$PRODUCT_WT" "$MAIN_WT"
+          mkdir -p "$ARTIFACT_DIR"
+          exec > >(tee "$ARTIFACT_DIR/qualification.log") 2>&1
+
+          fail() {
+            printf 'QUALIFICATION_FAILURE: %s\n' "$*" | tee -a "$ARTIFACT_DIR/status.txt"
+            exit 1
+          }
+
+          assert_eq() {
+            local actual="$1" expected="$2" label="$3"
+            [[ "$actual" == "$expected" ]] || fail "$label expected=$expected actual=$actual"
+          }
+
+          printf 'QUALIFICATION_STARTED\n' > "$ARTIFACT_DIR/status.txt"
+          printf 'controller=%s\n' "$EXPECTED_CONTROLLER" >> "$ARTIFACT_DIR/status.txt"
+
+          assert_eq "$(git rev-parse HEAD)" "$EXPECTED_CONTROLLER" 'controller head lease'
+          assert_eq "$(git rev-parse HEAD^)" "$EXPECTED_MAIN" 'controller parent lease'
+          mapfile -t controller_paths < <(git diff --name-only "$EXPECTED_MAIN" "$EXPECTED_CONTROLLER")
+          [[ ${#controller_paths[@]} -eq 1 ]] || fail 'controller path count'
+          assert_eq "${controller_paths[0]}" "$CONTROLLER_WORKFLOW" 'controller workflow denominator'
+
+          git fetch --no-tags --force origin \
+            "+refs/heads/main:refs/remotes/origin/main" \
+            "+refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/$PRODUCT_BRANCH"
+          assert_eq "$(git rev-parse refs/remotes/origin/main)" "$EXPECTED_MAIN" 'live main lease'
+          assert_eq "$(git rev-parse refs/remotes/origin/$PRODUCT_BRANCH)" "$EXPECTED_PRODUCT" 'live product lease'
+          assert_eq "$(git rev-parse "$EXPECTED_PRODUCT^")" "$EXPECTED_PARENT" 'product parent lease'
+          assert_eq "$(git rev-parse "$EXPECTED_PRODUCT^{tree}")" "$EXPECTED_TREE" 'product tree lease'
+          assert_eq "$(git rev-parse "$EXPECTED_PRODUCT:tools/lib/industrial-exhaust.mjs")" "$EXPECTED_LIBRARY" 'library blob lease'
+          assert_eq "$(git rev-parse "$EXPECTED_PRODUCT:test/industrial-exhaust.test.js")" "$EXPECTED_TEST" 'test blob lease'
+
+          gh api "repos/$REPO/pulls/$PRODUCT_PR" > "$ARTIFACT_DIR/product-pr-before.json"
+          jq -e \
+            --arg head "$EXPECTED_PRODUCT" \
+            --arg base "$EXPECTED_MAIN" \
+            '.state == "open" and .draft == true and .merged == false and .head.sha == $head and .base.sha == $base and .commits == 1 and .changed_files == 2' \
+            "$ARTIFACT_DIR/product-pr-before.json" >/dev/null || fail 'product PR state lease'
+          mapfile -t product_paths < <(gh api --paginate "repos/$REPO/pulls/$PRODUCT_PR/files" --jq '.[].filename' | sort)
+          [[ ${#product_paths[@]} -eq 2 ]] || fail 'product path count lease'
+          assert_eq "${product_paths[0]}" 'test/industrial-exhaust.test.js' 'product path one'
+          assert_eq "${product_paths[1]}" 'tools/lib/industrial-exhaust.mjs' 'product path two'
+
+          : > "$ARTIFACT_DIR/review-ledger-before.tsv"
+          for binding in $REVIEW_BINDINGS; do
+            thread="${binding%%:*}"
+            comment="${binding##*:}"
+            payload="$ARTIFACT_DIR/thread-${thread}.json"
+            gh api graphql \
+              -f query='query($id:ID!){node(id:$id){... on PullRequestReviewThread{id isResolved isOutdated comments(first:100){nodes{databaseId}}}}}' \
+              -f id="$thread" > "$payload"
+            jq -e '.data.node.id != null and .data.node.isResolved == false and .data.node.isOutdated == false' "$payload" >/dev/null \
+              || fail "review thread lease $thread"
+            jq -e --argjson id "$comment" '[.data.node.comments.nodes[].databaseId] | index($id) != null' "$payload" >/dev/null \
+              || fail "review comment lease $comment"
+            printf '%s\t%s\tfalse\tfalse\n' "$thread" "$comment" >> "$ARTIFACT_DIR/review-ledger-before.tsv"
+          done
+
+          git worktree add --detach "$PRODUCT_WT" "$EXPECTED_PRODUCT"
+          cd "$PRODUCT_WT"
+          npm ci
+
+          node --input-type=module <<'NODE' > "$ARTIFACT_DIR/predecessor-reproduction.json"
+          import { redactContactData } from './tools/lib/industrial-exhaust.mjs';
+
+          const cases = [
+            ['dotted international before decimal', 'Phone: +33 1.42.68.53.00/3.14', 'Phone: [contact omitted]/3.14'],
+            ['fullwidth dotted international before decimal', '電話：＋３３ １．４２．６８．５３．００／３．１４', '電話：[contact omitted]／３．１４'],
+            ['dotted international before scalar', 'Phone: +33 1.42.68.53.00/2026 people', 'Phone: [contact omitted]/2026 people'],
+            ['dotted international before domestic phone', 'Phone: +33 1.42.68.53.00/03-6216-8041', 'Phone: [contact omitted]/[contact omitted]']
+          ];
+          const records = cases.map(([name, input, required]) => ({
+            name,
+            input,
+            actual: redactContactData(input),
+            required
+          }));
+          if (records.some(record => record.actual === record.required)) {
+            throw new Error('exact predecessor unexpectedly satisfies a reviewed slash-partition requirement');
+          }
+          console.log(JSON.stringify(records, null, 2));
+          NODE
+          printf 'PREDECESSOR_REPRODUCED\n' >> "$ARTIFACT_DIR/status.txt"
+
+          node --input-type=module <<'NODE' > "$ARTIFACT_DIR/refusal-baseline.json"
+          import { redactContactData } from './tools/lib/industrial-exhaust.mjs';
+          const inputs = [
+            'Archive +33 1/42/68/53/00/2026 people',
+            'Archive +33 1.42.68.53.00.2026 people',
+            'Archive +33 1-42-68-53-00-2026 people',
+            'Archive 3.12/03-6216-8041',
+            'https://example.test/01/42/68/53/00/2026'
+          ];
+          console.log(JSON.stringify(inputs.map(input => ({ input, output: redactContactData(input) })), null, 2));
+          NODE
+
+          python3 <<'PY'
+          from pathlib import Path
+
+          library = Path('tools/lib/industrial-exhaust.mjs')
+          source = library.read_text(encoding='utf-8')
+
+          old_name = 'initialIntrinsicPhoneDashTransition'
+          if source.count(old_name) != 2:
+              raise SystemExit(f'unexpected transition symbol count: {source.count(old_name)}')
+          source = source.replace(old_name, 'initialIntrinsicPhoneBoundaryTransition')
+
+          old_terminal = r"&& /^\s*[-‐‑‒–—−-]\s*$/u.test(normalizedNextSeparator)"
+          new_terminal = r"&& /^\s*(?:[-‐‑‒–—−-]|[/／])\s*$/u.test(normalizedNextSeparator)"
+          if source.count(old_terminal) != 1:
+              raise SystemExit(f'unexpected terminal boundary count: {source.count(old_terminal)}')
+          source = source.replace(old_terminal, new_terminal)
+
+          old_dispatch = r"if (!/^\s*[-‐‑‒–—−－]\s*$/u.test("
+          new_dispatch = r"if (!/^\s*(?:[-‐‑‒–—−－]|[/／])\s*$/u.test("
+          if source.count(old_dispatch) != 1:
+              raise SystemExit(f'unexpected dispatch boundary count: {source.count(old_dispatch)}')
+          source = source.replace(old_dispatch, new_dispatch)
+
+          source = source.replace(
+              '// Resolve an exact context-free telephone before a dash-attached complete\n'
+              '// observation or a second independently complete telephone. The partition\n'
+              '// is proved at the source dash itself, so an observation cannot begin inside\n',
+              '// Resolve an exact context-free telephone before a dash- or slash-attached\n'
+              '// complete observation or a second independently complete telephone. The\n'
+              '// partition is proved at the source boundary itself, so no later object begins\n'
+          )
+          source = source.replace('const initialDashTransition = allowInitialGroup', 'const initialBoundaryTransition = allowInitialGroup')
+          source = source.replace('if (initialDashTransition) {', 'if (initialBoundaryTransition) {')
+          source = source.replace('} = initialDashTransition;', '} = initialBoundaryTransition;')
+          library.write_text(source, encoding='utf-8')
+
+          test = Path('test/industrial-exhaust.test.js')
+          tests = test.read_text(encoding='utf-8')
+          marker = '// PR2231 slash-boundary initial-phone partition regressions'
+          if marker in tests:
+              raise SystemExit('slash-partition tests already present')
+          tests += r'''
+
+// PR2231 slash-boundary initial-phone partition regressions
+for (const [name, input, expected] of [
+  [
+    'dotted international phone ends before a slash-attached decimal',
+    'Phone: +33 1.42.68.53.00/3.14',
+    'Phone: [contact omitted]/3.14'
+  ],
+  [
+    'fullwidth dotted international phone ends before a slash-attached decimal',
+    '電話：＋３３ １．４２．６８．５３．００／３．１４',
+    '電話：[contact omitted]／３．１４'
+  ],
+  [
+    'dotted international phone ends before a slash-attached scalar',
+    'Phone: +33 1.42.68.53.00/2026 people',
+    'Phone: [contact omitted]/2026 people'
+  ],
+  [
+    'dotted international phone ends before a slash-attached unit range',
+    'Archive +33 1.42.68.53.00/17-20 people',
+    'Archive [contact omitted]/17-20 people'
+  ],
+  [
+    'dotted international phone ends before a slash-attached time',
+    'Archive +33 1.42.68.53.00/12:30:45',
+    'Archive [contact omitted]/12:30:45'
+  ],
+  [
+    'dotted international phone ends before a slash-attached date',
+    'Archive +33 1.42.68.53.00/2026-08-17',
+    'Archive [contact omitted]/2026-08-17'
+  ],
+  [
+    'dotted international phone ends before a slash-attached domestic phone',
+    'Phone: +33 1.42.68.53.00/03-6216-8041',
+    'Phone: [contact omitted]/[contact omitted]'
+  ],
+  [
+    'dotted international phone ends before a slash-attached dotted phone',
+    'Archive +33 1.42.68.53.00/03.6216.8041',
+    'Archive [contact omitted]/[contact omitted]'
+  ],
+  [
+    'hyphen-grouped international phone ends before a slash-attached time',
+    'Archive +33 1-42-68-53-00/12:30:45',
+    'Archive [contact omitted]/12:30:45'
+  ],
+  [
+    'space-grouped international phone ends before a slash-attached scalar',
+    'Archive +33 1 42 68 53 00/2026 people',
+    'Archive [contact omitted]/2026 people'
+  ],
+  [
+    'existing slash-grouped dash partition remains exact',
+    'Archive +33 1/42/68/53/00–03-6216-8041',
+    'Archive [contact omitted]–[contact omitted]'
+  ]
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    `${name}: an accepted slash boundary must preserve both independently proved source objects`
+  );
+}
+'''
+          test.write_text(tests, encoding='utf-8')
+          PY
+
+          git diff -- tools/lib/industrial-exhaust.mjs test/industrial-exhaust.test.js > "$ARTIFACT_DIR/v114.patch"
+          sha256sum "$ARTIFACT_DIR/v114.patch" | tee "$ARTIFACT_DIR/patch.sha256"
+          node --check tools/lib/industrial-exhaust.mjs
+          node --check test/industrial-exhaust.test.js
+
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import assert from 'node:assert/strict';
+          import { redactContactData } from './tools/lib/industrial-exhaust.mjs';
+
+          const intended = [
+            ['Phone: +33 1.42.68.53.00/3.14', 'Phone: [contact omitted]/3.14'],
+            ['電話：＋３３ １．４２．６８．５３．００／３．１４', '電話：[contact omitted]／３．１４'],
+            ['Phone: +33 1.42.68.53.00/2026 people', 'Phone: [contact omitted]/2026 people'],
+            ['Phone: +33 1.42.68.53.00/03-6216-8041', 'Phone: [contact omitted]/[contact omitted]'],
+            ['Archive +33 1.42.68.53.00/03.6216.8041', 'Archive [contact omitted]/[contact omitted]']
+          ];
+          for (const [input, expected] of intended) assert.equal(redactContactData(input), expected, input);
+
+          const baseline = JSON.parse(fs.readFileSync(process.env.ARTIFACT_DIR + '/refusal-baseline.json', 'utf8'));
+          for (const { input, output } of baseline) assert.equal(redactContactData(input), output, `refusal drift: ${input}`);
+          NODE
+          printf 'DIRECT_MATRIX_SUCCESS\n' >> "$ARTIFACT_DIR/status.txt"
+
+          for test_file in test/industrial-exhaust*.test.js; do
+            printf 'running %s\n' "$test_file"
+            node "$test_file"
+          done
+          printf 'FOCUSED_SUCCESS\n' >> "$ARTIFACT_DIR/status.txt"
+          npm run release:check
+          printf 'PRODUCT_RELEASE_CHECK_SUCCESS\n' >> "$ARTIFACT_DIR/status.txt"
+
+          git worktree add --detach "$MAIN_WT" "$EXPECTED_MAIN"
+          cp tools/lib/industrial-exhaust.mjs "$MAIN_WT/tools/lib/industrial-exhaust.mjs"
+          cp test/industrial-exhaust.test.js "$MAIN_WT/test/industrial-exhaust.test.js"
+          cd "$MAIN_WT"
+          npm ci
+          for test_file in test/industrial-exhaust*.test.js; do
+            printf 'main transplant running %s\n' "$test_file"
+            node "$test_file"
+          done
+          npm run release:check
+          printf 'MAIN_TRANSPLANT_RELEASE_CHECK_SUCCESS\n' >> "$ARTIFACT_DIR/status.txt"
+
+          mapfile -t dirty_paths < <(git status --porcelain | sed -E 's/^.. //' | sort -u)
+          for path in "${dirty_paths[@]}"; do
+            if [[ "$path" != 'tools/lib/industrial-exhaust.mjs' && "$path" != 'test/industrial-exhaust.test.js' ]]; then
+              if git ls-files --error-unmatch "$path" >/dev/null 2>&1; then
+                git checkout -- "$path"
+              else
+                rm -rf -- "$path"
+              fi
+            fi
+          done
+          mapfile -t final_paths < <(git status --porcelain | sed -E 's/^.. //' | sort -u)
+          [[ ${#final_paths[@]} -eq 2 ]] || fail 'candidate dirty path count'
+          assert_eq "${final_paths[0]}" 'test/industrial-exhaust.test.js' 'candidate path one'
+          assert_eq "${final_paths[1]}" 'tools/lib/industrial-exhaust.mjs' 'candidate path two'
+
+          git add tools/lib/industrial-exhaust.mjs test/industrial-exhaust.test.js
+          git -c user.name='BigBirdReturns' \
+              -c user.email='219768509+BigBirdReturns@users.noreply.github.com' \
+              commit -m 'fix: preserve exact phones across slash partitions (v114)'
+          candidate="$(git rev-parse HEAD)"
+          assert_eq "$(git rev-parse HEAD^)" "$EXPECTED_MAIN" 'candidate parent'
+          mapfile -t candidate_paths < <(git diff-tree --no-commit-id --name-only -r HEAD | sort)
+          [[ ${#candidate_paths[@]} -eq 2 ]] || fail 'candidate committed path count'
+          assert_eq "${candidate_paths[0]}" 'test/industrial-exhaust.test.js' 'candidate committed path one'
+          assert_eq "${candidate_paths[1]}" 'tools/lib/industrial-exhaust.mjs' 'candidate committed path two'
+
+          cat > "$ARTIFACT_DIR/candidate.env" <<EOF
+          CANDIDATE_COMMIT=$candidate
+          CANDIDATE_PARENT=$(git rev-parse HEAD^)
+          CANDIDATE_TREE=$(git rev-parse HEAD^{tree})
+          CANDIDATE_LIBRARY=$(git rev-parse HEAD:tools/lib/industrial-exhaust.mjs)
+          CANDIDATE_TEST=$(git rev-parse HEAD:test/industrial-exhaust.test.js)
+          EOF
+          cp tools/lib/industrial-exhaust.mjs "$ARTIFACT_DIR/industrial-exhaust.mjs"
+          cp test/industrial-exhaust.test.js "$ARTIFACT_DIR/industrial-exhaust.test.js"
+          git show --stat --oneline HEAD > "$ARTIFACT_DIR/candidate-stat.txt"
+
+          cd "$GITHUB_WORKSPACE"
+          assert_eq "$(git ls-remote origin refs/heads/main | cut -f1)" "$EXPECTED_MAIN" 'final main lease'
+          assert_eq "$(git ls-remote origin refs/heads/$PRODUCT_BRANCH | cut -f1)" "$EXPECTED_PRODUCT" 'final product lease'
+          gh api "repos/$REPO/pulls/$PRODUCT_PR" > "$ARTIFACT_DIR/product-pr-after.json"
+          jq -e \
+            --arg head "$EXPECTED_PRODUCT" \
+            --arg base "$EXPECTED_MAIN" \
+            '.state == "open" and .draft == true and .merged == false and .head.sha == $head and .base.sha == $base and .commits == 1 and .changed_files == 2' \
+            "$ARTIFACT_DIR/product-pr-after.json" >/dev/null || fail 'final product PR state lease'
+
+          : > "$ARTIFACT_DIR/review-ledger-after.tsv"
+          for binding in $REVIEW_BINDINGS; do
+            thread="${binding%%:*}"
+            comment="${binding##*:}"
+            payload="$ARTIFACT_DIR/thread-after-${thread}.json"
+            gh api graphql \
+              -f query='query($id:ID!){node(id:$id){... on PullRequestReviewThread{id isResolved isOutdated comments(first:100){nodes{databaseId}}}}}' \
+              -f id="$thread" > "$payload"
+            jq -e '.data.node.id != null and .data.node.isResolved == false and .data.node.isOutdated == false' "$payload" >/dev/null \
+              || fail "final review thread lease $thread"
+            jq -e --argjson id "$comment" '[.data.node.comments.nodes[].databaseId] | index($id) != null' "$payload" >/dev/null \
+              || fail "final review comment lease $comment"
+            printf '%s\t%s\tfalse\tfalse\n' "$thread" "$comment" >> "$ARTIFACT_DIR/review-ledger-after.tsv"
+          done
+          cmp "$ARTIFACT_DIR/review-ledger-before.tsv" "$ARTIFACT_DIR/review-ledger-after.tsv" \
+            || fail 'review ledger changed'
+
+          gh api "repos/$REPO/pulls/$CONTROLLER_PR" > "$ARTIFACT_DIR/controller-pr-final.json"
+          jq -e \
+            --arg head "$EXPECTED_CONTROLLER" \
+            --arg base "$EXPECTED_MAIN" \
+            '.state == "open" and .draft == true and .merged == false and .head.sha == $head and .base.sha == $base and .commits == 1 and .changed_files == 1' \
+            "$ARTIFACT_DIR/controller-pr-final.json" >/dev/null || fail 'controller PR final lease'
+
+          printf 'PUBLICATION_SKIPPED\n' >> "$ARTIFACT_DIR/status.txt"
+          printf 'QUALIFICATION_SUCCESS\n' >> "$ARTIFACT_DIR/status.txt"
+          cat "$ARTIFACT_DIR/status.txt"
+
+      - name: Upload retained qualification receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr2231-slash-partition-v114
+          path: /tmp/pr2231-slash-partition-v114
+          if-no-files-found: error
+          retention-days: 30
