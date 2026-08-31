@@ -1,0 +1,314 @@
+name: Temporary PR 2231 parenthesized dash-partition diagnostic V114
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/temporary-pr2231-parenthesized-dash-partition-diagnostic-v114.yml'
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: pr2231-parenthesized-dash-partition-diagnostic-v114
+  cancel-in-progress: false
+
+jobs:
+  diagnose-parenthesized-dash-partition:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: BigBirdReturns/clifford-number
+      PRODUCT_PR: '2231'
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      CONTROLLER_BRANCH: ${{ github.head_ref }}
+      CONTROLLER_WORKFLOW: '.github/workflows/temporary-pr2231-parenthesized-dash-partition-diagnostic-v114.yml'
+      EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+      EXPECTED_MAIN: 0b1d8af5b86adad49b3451053dbb9166294d631c
+      EXPECTED_PRODUCT: 4e1285af114d517b7304a027195857ad66987c58
+      EXPECTED_TREE: 9984bd605c3ff2f839bd6d04b4fa0e6fb924ccaa
+      EXPECTED_LIBRARY: f7e0c9cbdd0dc2d81a24195aedc8e52401029cad
+      EXPECTED_TEST: 839e858980734dbfb8b157e64fed36cf1868820a
+      WORKTREE: /tmp/pr2231-parenthesized-dash-partition-product-v114
+      RECEIPT_DIR: /tmp/pr2231-parenthesized-dash-partition-diagnostic-v114
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Reproduce exact-current-head parenthesized partition failures
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$WORKTREE" "$RECEIPT_DIR"
+          mkdir -p "$RECEIPT_DIR"
+          cleanup() { git worktree remove --force "$WORKTREE" >/dev/null 2>&1 || true; }
+          trap cleanup EXIT
+          fail() { printf 'FAIL: %s\n' "$*" >&2; exit 1; }
+          eq() {
+            local actual=$1 expected=$2 label=$3
+            [[ "$actual" == "$expected" ]] || fail "$label expected=$expected actual=$actual"
+          }
+
+          git fetch --force origin \
+            "+refs/heads/main:refs/remotes/origin/main" \
+            "+refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/$PRODUCT_BRANCH" \
+            "+refs/heads/$CONTROLLER_BRANCH:refs/remotes/origin/$CONTROLLER_BRANCH"
+          eq "$(git rev-parse refs/remotes/origin/main)" "$EXPECTED_MAIN" 'main lease'
+          eq "$(git rev-parse refs/remotes/origin/$PRODUCT_BRANCH)" "$EXPECTED_PRODUCT" 'product lease'
+          eq "$(git rev-parse refs/remotes/origin/$CONTROLLER_BRANCH)" "$EXPECTED_CONTROLLER" 'controller lease'
+          eq "$(git rev-parse HEAD)" "$EXPECTED_CONTROLLER" 'controller checkout'
+
+          mapfile -t controller_line < <(git rev-list --parents -n 1 "$EXPECTED_CONTROLLER" | tr ' ' '\n')
+          [[ "${#controller_line[@]}" -eq 2 ]] || fail "controller parent count=${#controller_line[@]}"
+          eq "${controller_line[1]}" "$EXPECTED_MAIN" 'controller parent/main identity'
+          mapfile -t controller_paths < <(git diff --name-only "$EXPECTED_MAIN" "$EXPECTED_CONTROLLER" | sort)
+          [[ "${#controller_paths[@]}" -eq 1 ]] || fail "controller path count=${#controller_paths[@]}"
+          eq "${controller_paths[0]}" "$CONTROLLER_WORKFLOW" 'controller workflow path'
+          printf '%s\n' "${controller_paths[@]}" > "$RECEIPT_DIR/controller-paths.txt"
+
+          gh api "repos/$REPO/pulls/$PRODUCT_PR" > "$RECEIPT_DIR/product-pr-before.json"
+          jq -e --arg head "$EXPECTED_PRODUCT" --arg main "$EXPECTED_MAIN" '
+            .state == "open" and .draft == true and .merged == false
+            and .head.sha == $head and .head.ref == "agent/current-main-identifier-context-product-v1"
+            and .base.ref == "main" and .base.sha == $main
+            and .commits == 1 and .changed_files == 2
+          ' "$RECEIPT_DIR/product-pr-before.json" >/dev/null
+
+          gh api graphql \
+            -f 'query=query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){pullRequest(number:$number){reviewThreads(last:100){nodes{id isResolved isOutdated}}}}}' \
+            -F owner=BigBirdReturns -F name=clifford-number -F number="$PRODUCT_PR" \
+            > "$RECEIPT_DIR/review-threads-before.json"
+          jq -S '.data.repository.pullRequest.reviewThreads.nodes | sort_by(.id)' \
+            "$RECEIPT_DIR/review-threads-before.json" > "$RECEIPT_DIR/review-thread-states-before.json"
+
+          mapfile -t product_line < <(git rev-list --parents -n 1 "$EXPECTED_PRODUCT" | tr ' ' '\n')
+          [[ "${#product_line[@]}" -eq 2 ]] || fail "product parent count=${#product_line[@]}"
+          eq "${product_line[1]}" "$EXPECTED_MAIN" 'product parent/main identity'
+          eq "$(git rev-parse "$EXPECTED_PRODUCT^{tree}")" "$EXPECTED_TREE" 'product tree'
+          eq "$(git rev-parse "$EXPECTED_PRODUCT:tools/lib/industrial-exhaust.mjs")" "$EXPECTED_LIBRARY" 'library blob'
+          eq "$(git rev-parse "$EXPECTED_PRODUCT:test/industrial-exhaust.test.js")" "$EXPECTED_TEST" 'test blob'
+          mapfile -t product_paths < <(git diff --name-only "$EXPECTED_MAIN" "$EXPECTED_PRODUCT" | sort)
+          [[ "${#product_paths[@]}" -eq 2 ]] || fail "product path count=${#product_paths[@]}"
+          eq "${product_paths[0]}" 'test/industrial-exhaust.test.js' 'product first path'
+          eq "${product_paths[1]}" 'tools/lib/industrial-exhaust.mjs' 'product second path'
+          printf '%s\n' "${product_paths[@]}" > "$RECEIPT_DIR/product-paths.txt"
+
+          git worktree add --detach "$WORKTREE" "$EXPECTED_PRODUCT"
+          cat > "$RECEIPT_DIR/diagnostic.mjs" <<'NODE'
+          import assert from 'node:assert/strict';
+          import { pathToFileURL } from 'node:url';
+
+          const modulePath = process.argv[2];
+          const outputPath = process.argv[3];
+          const { redactContactData } = await import(pathToFileURL(modulePath).href);
+
+          const failures = [
+            {
+              name: 'slash scalar wrapper',
+              input: 'Archive +33 1/42/68/53/00–(2026 people)',
+              current: 'Archive [contact omitted] people)',
+              required: 'Archive [contact omitted]–(2026 people)'
+            },
+            {
+              name: 'slash unit range wrapper',
+              input: 'Archive +33 1/42/68/53/00–(17-20 people)',
+              current: 'Archive [contact omitted] people)',
+              required: 'Archive [contact omitted]–(17-20 people)'
+            },
+            {
+              name: 'slash time wrapper',
+              input: 'Archive +33 1/42/68/53/00–(12:30:45)',
+              current: 'Archive [contact omitted]:30:45)',
+              required: 'Archive [contact omitted]–(12:30:45)'
+            },
+            {
+              name: 'slash decimal wrapper',
+              input: 'Archive +33 1/42/68/53/00–(3.14)',
+              current: 'Archive [contact omitted]',
+              required: 'Archive [contact omitted]–(3.14)'
+            },
+            {
+              name: 'slash domestic-phone wrapper',
+              input: 'Archive +33 1/42/68/53/00–(03-6216-8041)',
+              current: 'Archive [contact omitted]/00–[contact omitted]',
+              required: 'Archive [contact omitted]–[contact omitted]'
+            },
+            {
+              name: 'period domestic-phone wrapper',
+              input: 'Archive +33 1.42.68.53.00–(03-6216-8041)',
+              current: 'Archive [contact omitted].53.00–[contact omitted]',
+              required: 'Archive [contact omitted]–[contact omitted]'
+            },
+            {
+              name: 'hyphen domestic-phone wrapper',
+              input: 'Archive +33 1‐42‐68‐53‐00–(03-6216-8041)',
+              current: 'Archive [contact omitted]‐00–[contact omitted]',
+              required: 'Archive [contact omitted]–[contact omitted]'
+            },
+            {
+              name: 'fullwidth slash scalar wrapper',
+              input: 'Archive ＋３３ １／４２／６８／５３／００－（２０２６ 人）',
+              current: 'Archive [contact omitted] 人）',
+              required: 'Archive [contact omitted]－（２０２６ 人）'
+            },
+            {
+              name: 'fullwidth slash domestic-phone wrapper',
+              input: 'Archive ＋３３ １／４２／６８／５３／００－（０３－６２１６－８０４１）',
+              current: 'Archive [contact omitted]／００－[contact omitted]',
+              required: 'Archive [contact omitted]－[contact omitted]'
+            },
+            {
+              name: 'nested scalar wrapper',
+              input: 'Archive +33 1/42/68/53/00–((2026 people))',
+              current: 'Archive [contact omitted] people))',
+              required: 'Archive [contact omitted]–((2026 people))'
+            },
+            {
+              name: 'nested domestic-phone wrapper',
+              input: 'Archive +33 1/42/68/53/00–((03-6216-8041))',
+              current: 'Archive [contact omitted]/00–([contact omitted]',
+              required: 'Archive [contact omitted]–([contact omitted])'
+            }
+          ];
+
+          const controls = [
+            {
+              name: 'bare scalar partition',
+              input: 'Archive +33 1/42/68/53/00–2026 people',
+              expected: 'Archive [contact omitted]–2026 people'
+            },
+            {
+              name: 'bare second-phone partition',
+              input: 'Archive +33 1/42/68/53/00–03-6216-8041',
+              expected: 'Archive [contact omitted]–[contact omitted]'
+            },
+            {
+              name: 'square-wrapped scalar remains outside phone candidate',
+              input: 'Archive +33 1/42/68/53/00–[2026 people]',
+              expected: 'Archive [contact omitted]–[2026 people]'
+            },
+            {
+              name: 'square-wrapped phone remains independently redacted',
+              input: 'Archive +33 1/42/68/53/00–[03-6216-8041]',
+              expected: 'Archive [contact omitted]–[[contact omitted]]'
+            },
+            {
+              name: 'first slash-grouped phone standalone',
+              input: 'Archive +33 1/42/68/53/00',
+              expected: 'Archive [contact omitted]'
+            },
+            {
+              name: 'parenthesized scalar standalone',
+              input: 'Archive (2026 people)',
+              expected: 'Archive (2026 people)'
+            },
+            {
+              name: 'parenthesized phone standalone',
+              input: 'Archive (03-6216-8041)',
+              expected: 'Archive [contact omitted]'
+            },
+            {
+              name: 'plus-prefixed wrapped second phone',
+              input: 'Archive +33 1/42/68/53/00–(+81 3 6216 5111)',
+              expected: 'Archive [contact omitted]–([contact omitted])'
+            },
+            {
+              name: 'wrapped complete date',
+              input: 'Archive +33 1/42/68/53/00–(2026-08-17)',
+              expected: 'Archive [contact omitted]–(2026-08-17)'
+            }
+          ];
+
+          const records = [];
+          for (const row of failures) {
+            const actual = redactContactData(row.input);
+            assert.equal(actual, row.current, `${row.name}: current-head reproduction changed`);
+            assert.notEqual(actual, row.required, `${row.name}: defect unexpectedly absent`);
+            records.push({ matrix: 'current-head-defect', ...row, actual });
+          }
+          for (const row of controls) {
+            const actual = redactContactData(row.input);
+            assert.equal(actual, row.expected, `${row.name}: control changed`);
+            records.push({ matrix: 'retained-control', ...row, actual });
+          }
+          await import('node:fs').then(({ writeFileSync }) => {
+            writeFileSync(outputPath, `${records.map(record => JSON.stringify(record)).join('\n')}\n`);
+          });
+          console.log(`CURRENT_HEAD_DEFECTS_REPRODUCED=${failures.length}`);
+          console.log(`RETAINED_CONTROLS_PASSED=${controls.length}`);
+          NODE
+
+          node "$RECEIPT_DIR/diagnostic.mjs" \
+            "$WORKTREE/tools/lib/industrial-exhaust.mjs" \
+            "$RECEIPT_DIR/diagnostic-matrix.jsonl" \
+            | tee "$RECEIPT_DIR/diagnostic.log"
+          jq -s -e '
+            length == 20
+            and ([.[] | select(.matrix == "current-head-defect")] | length == 11)
+            and ([.[] | select(.matrix == "retained-control")] | length == 9)
+            and all(.[]; .actual == (.current // .expected))
+          ' "$RECEIPT_DIR/diagnostic-matrix.jsonl" >/dev/null
+
+          git fetch --force origin \
+            "+refs/heads/main:refs/remotes/origin/main" \
+            "+refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/$PRODUCT_BRANCH" \
+            "+refs/heads/$CONTROLLER_BRANCH:refs/remotes/origin/$CONTROLLER_BRANCH"
+          eq "$(git rev-parse refs/remotes/origin/main)" "$EXPECTED_MAIN" 'final main lease'
+          eq "$(git rev-parse refs/remotes/origin/$PRODUCT_BRANCH)" "$EXPECTED_PRODUCT" 'final product lease'
+          eq "$(git rev-parse refs/remotes/origin/$CONTROLLER_BRANCH)" "$EXPECTED_CONTROLLER" 'final controller lease'
+          gh api "repos/$REPO/pulls/$PRODUCT_PR" > "$RECEIPT_DIR/product-pr-after.json"
+          jq -e --arg head "$EXPECTED_PRODUCT" --arg main "$EXPECTED_MAIN" '
+            .state == "open" and .draft == true and .merged == false
+            and .head.sha == $head and .base.sha == $main
+            and .commits == 1 and .changed_files == 2
+          ' "$RECEIPT_DIR/product-pr-after.json" >/dev/null
+
+          gh api graphql \
+            -f 'query=query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){pullRequest(number:$number){reviewThreads(last:100){nodes{id isResolved isOutdated}}}}}' \
+            -F owner=BigBirdReturns -F name=clifford-number -F number="$PRODUCT_PR" \
+            > "$RECEIPT_DIR/review-threads-after.json"
+          jq -S '.data.repository.pullRequest.reviewThreads.nodes | sort_by(.id)' \
+            "$RECEIPT_DIR/review-threads-after.json" > "$RECEIPT_DIR/review-thread-states-after.json"
+          jq -e --slurpfile before "$RECEIPT_DIR/review-thread-states-before.json" '
+            ($before[0]) as $b
+            | . as $a
+            | all($b[]; . as $old
+                | any($a[]; .id == $old.id
+                    and .isResolved == $old.isResolved
+                    and .isOutdated == $old.isOutdated))
+          ' "$RECEIPT_DIR/review-thread-states-after.json" >/dev/null
+
+          {
+            printf 'DIAGNOSTIC_SUCCESS\n'
+            printf 'mode=read-only\n'
+            printf 'main=%s\n' "$EXPECTED_MAIN"
+            printf 'product=%s\n' "$EXPECTED_PRODUCT"
+            printf 'tree=%s\n' "$EXPECTED_TREE"
+            printf 'library=%s\n' "$EXPECTED_LIBRARY"
+            printf 'test=%s\n' "$EXPECTED_TEST"
+            printf 'current_head_defects=11\n'
+            printf 'retained_controls=9\n'
+            printf 'product_ref_unchanged=true\n'
+            printf 'draft_unchanged=true\n'
+            printf 'existing_thread_states_unchanged=true\n'
+          } > "$RECEIPT_DIR/terminal.txt"
+          cat "$RECEIPT_DIR/terminal.txt"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-parenthesized-dash-partition-diagnostic-v114
+          path: /tmp/pr2231-parenthesized-dash-partition-diagnostic-v114
+          if-no-files-found: error
+          retention-days: 90
