@@ -1,0 +1,158 @@
+name: Temporary PR 2231 V115 source custody R4
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/temporary-pr2231-identifier-iteration-v115-r2.yml'
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: pr2231-v115-source-custody-r4
+  cancel-in-progress: false
+
+jobs:
+  capture:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: BigBirdReturns/clifford-number
+      PRODUCT_PR: '2231'
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      CONTROLLER_PR: ${{ github.event.pull_request.number }}
+      CONTROLLER_BRANCH: agent/pr2231-eight-current-binding-identifier-iteration-v115-r2
+      CONTROLLER_WORKFLOW: .github/workflows/temporary-pr2231-identifier-iteration-v115-r2.yml
+      EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+      EXPECTED_MAIN: 771a64b6b467748d2f4df667b5f78e76f9432d69
+      EXPECTED_MAIN_TREE: 86c91755f16245168ddb230d53e5b9920af5342c
+      EXPECTED_PRODUCT: 9652029dbabcab0e2d7c51c0f8c61e57869e34cc
+      EXPECTED_PRODUCT_TREE: dbc81b437b7e98a4bfd0dc59ef13a51586c0c6c7
+      EXPECTED_LIBRARY: 2ac63e66103fd637166d82d559269ca1b3cf7419
+      EXPECTED_TEST: ba934a14f232af58fadf1250d1903fd774e20654
+      ARTIFACT_DIR: /tmp/pr2231-v115-source-custody-r4
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Capture exact V114 source
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p \
+            "${ARTIFACT_DIR}/current/tools/lib" \
+            "${ARTIFACT_DIR}/current/test" \
+            "${ARTIFACT_DIR}/receipts"
+          failure_line=none
+          emit_receipts() {
+            local rc="$1"
+            {
+              printf 'controller=%s\n' "${EXPECTED_CONTROLLER}"
+              printf 'main=%s\n' "${EXPECTED_MAIN}"
+              printf 'product=%s\n' "${EXPECTED_PRODUCT}"
+              printf 'failure_line=%s\n' "${failure_line}"
+              printf 'exit_status=%s\n' "${rc}"
+              printf 'product_mutation=none\n'
+              printf 'qualification=skipped\n'
+              printf 'publication=none\n'
+            } > "${ARTIFACT_DIR}/result.env"
+            find "${ARTIFACT_DIR}" -type f \
+              ! -path "${ARTIFACT_DIR}/artifact-manifest.txt" \
+              -printf '%P\t%s\n' | sort \
+              > "${ARTIFACT_DIR}/artifact-manifest.txt"
+          }
+          trap 'failure_line=${LINENO}' ERR
+          trap 'rc=$?; emit_receipts "${rc}"; exit "${rc}"' EXIT
+
+          [[ "$(git rev-parse HEAD)" == "${EXPECTED_CONTROLLER}" ]]
+          [[ "$(git rev-parse HEAD^)" == "${EXPECTED_MAIN}" ]]
+          [[ "$(git rev-parse origin/main)" == "${EXPECTED_MAIN}" ]]
+          [[ "$(git rev-parse "${EXPECTED_MAIN}^{tree}")" == "${EXPECTED_MAIN_TREE}" ]]
+          [[ "$(git rev-list --count "${EXPECTED_MAIN}..${EXPECTED_CONTROLLER}")" == 1 ]]
+
+          mapfile -t controller_paths < <(
+            git diff --name-only "${EXPECTED_MAIN}" "${EXPECTED_CONTROLLER}" | sort
+          )
+          [[ "${#controller_paths[@]}" -eq 1 ]]
+          [[ "${controller_paths[0]}" == "${CONTROLLER_WORKFLOW}" ]]
+
+          gh api \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "repos/${REPO}/pulls/${CONTROLLER_PR}" \
+            > "${ARTIFACT_DIR}/receipts/controller-pr.json"
+          jq -e \
+            --arg head "${EXPECTED_CONTROLLER}" \
+            --arg base "${EXPECTED_MAIN}" \
+            '.state == "open"
+             and .draft == true
+             and .merged_at == null
+             and .head.sha == $head
+             and .base.sha == $base' \
+            "${ARTIFACT_DIR}/receipts/controller-pr.json" >/dev/null
+
+          gh api \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "repos/${REPO}/pulls/${PRODUCT_PR}" \
+            > "${ARTIFACT_DIR}/receipts/product-pr.json"
+          jq -e \
+            --arg head "${EXPECTED_PRODUCT}" \
+            --arg base "${EXPECTED_MAIN}" \
+            --arg branch "${PRODUCT_BRANCH}" \
+            '.state == "open"
+             and .draft == true
+             and .merged_at == null
+             and .head.sha == $head
+             and .head.ref == $branch
+             and .base.sha == $base' \
+            "${ARTIFACT_DIR}/receipts/product-pr.json" >/dev/null
+
+          git cat-file -e "${EXPECTED_PRODUCT}^{commit}"
+          [[ "$(git rev-parse "${EXPECTED_PRODUCT}^")" == "${EXPECTED_MAIN}" ]]
+          [[ "$(git rev-parse "${EXPECTED_PRODUCT}^{tree}")" == "${EXPECTED_PRODUCT_TREE}" ]]
+          [[ "$(git rev-list --count "${EXPECTED_MAIN}..${EXPECTED_PRODUCT}")" == 1 ]]
+          [[ "$(git rev-parse "${EXPECTED_PRODUCT}:tools/lib/industrial-exhaust.mjs")" == "${EXPECTED_LIBRARY}" ]]
+          [[ "$(git rev-parse "${EXPECTED_PRODUCT}:test/industrial-exhaust.test.js")" == "${EXPECTED_TEST}" ]]
+
+          mapfile -t product_paths < <(
+            git diff --name-only "${EXPECTED_MAIN}" "${EXPECTED_PRODUCT}" | sort
+          )
+          [[ "${#product_paths[@]}" -eq 2 ]]
+          [[ "${product_paths[0]}" == "test/industrial-exhaust.test.js" ]]
+          [[ "${product_paths[1]}" == "tools/lib/industrial-exhaust.mjs" ]]
+
+          git show "${EXPECTED_PRODUCT}:tools/lib/industrial-exhaust.mjs" \
+            > "${ARTIFACT_DIR}/current/tools/lib/industrial-exhaust.mjs"
+          git show "${EXPECTED_PRODUCT}:test/industrial-exhaust.test.js" \
+            > "${ARTIFACT_DIR}/current/test/industrial-exhaust.test.js"
+
+          [[ "$(git hash-object "${ARTIFACT_DIR}/current/tools/lib/industrial-exhaust.mjs")" == "${EXPECTED_LIBRARY}" ]]
+          [[ "$(git hash-object "${ARTIFACT_DIR}/current/test/industrial-exhaust.test.js")" == "${EXPECTED_TEST}" ]]
+
+          git show -s --format=raw "${EXPECTED_PRODUCT}" \
+            > "${ARTIFACT_DIR}/receipts/product-commit.txt"
+          git diff --name-status "${EXPECTED_MAIN}" "${EXPECTED_PRODUCT}" \
+            > "${ARTIFACT_DIR}/receipts/product-paths.txt"
+          sha256sum \
+            "${ARTIFACT_DIR}/current/tools/lib/industrial-exhaust.mjs" \
+            "${ARTIFACT_DIR}/current/test/industrial-exhaust.test.js" \
+            > "${ARTIFACT_DIR}/receipts/source.sha256"
+          printf '%s\n' SOURCE_CUSTODY_SUCCESS \
+            > "${ARTIFACT_DIR}/success.txt"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-v115-source-custody-r4
+          path: /tmp/pr2231-v115-source-custody-r4
+          if-no-files-found: error
+          retention-days: 90
