@@ -1,0 +1,224 @@
+name: Temporary PR 2231 identifier authority and iterative custody V115 R5
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+
+concurrency:
+  group: pr2231-identifier-iterative-v115-r5-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  qualify-identifier-authority-iterative-v115-r5:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: BigBirdReturns/clifford-number
+      PRODUCT_PR: '2231'
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      EXPECTED_MAIN: 771a64b6b467748d2f4df667b5f78e76f9432d69
+      EXPECTED_MAIN_TREE: 86c91755f16245168ddb230d53e5b9920af5342c
+      EXPECTED_PRODUCT: 9652029dbabcab0e2d7c51c0f8c61e57869e34cc
+      EXPECTED_PRODUCT_TREE: dbc81b437b7e98a4bfd0dc59ef13a51586c0c6c7
+      EXPECTED_LIBRARY: 2ac63e66103fd637166d82d559269ca1b3cf7419
+      EXPECTED_TEST: ba934a14f232af58fadf1250d1903fd774e20654
+      EXPECTED_LIBRARY_SHA256: 83057ac054a50a870549f4a782a23fd8e2c644ff2b4dc5d9d883df9d64a08162
+      EXPECTED_TEST_SHA256: 7e461bff006d5c95015d12cd050e6df8427833742ce7a34fda02f05492b16e2f
+      EXPECTED_CANDIDATE_LIBRARY: 408313240904304912fe8afdd8edf5db60cb723e
+      EXPECTED_CANDIDATE_TEST: a8c124caf09edf94c050f05e70e23b90c9119a5b
+      EXPECTED_CANDIDATE_LIBRARY_SHA256: 45efcf2d7403ca03e76d867873434f2d4060db6bbdf45dbd52e98ff325b7cb2c
+      EXPECTED_CANDIDATE_TEST_SHA256: ead48f71877f412c43c92c0d6583bd826c8b9809445591e31632f781fc1978ec
+      EXPECTED_PATCH_SHA256: abc55a624b6f37a701708fc5bc1e0c9e98110b3548a3044b981e70150d2b9044
+      EXPECTED_PATCH_BLOB: cd410b46abc0a4cdb0d58ece55c651a04cb0b4b0
+      FAILED_R2_CONTROLLER: a31c898c870e81bd4c3413be23eb261ee934167a
+      FAILED_R2_RUN: '33430544986'
+      FAILED_R3_CONTROLLER: 2d828a9aacc7fb08703ce847d880d10f71e838b6
+      FAILED_R3_RUN: '33431763114'
+      FAILED_R3_ARTIFACT: '9772864702'
+      FAILED_R3_ARTIFACT_DIGEST: sha256:eba97cfd9b062c24c2c81e5954543e5edd43ac4bb68419b4c63643dc767d9e91
+      BROKEN_QUALIFIER_BLOB: c38f0c279baaf40bfcf5434b450a526788841f10
+      BROKEN_QUALIFIER_SHA256: dd71ca3c8d450d0378abbf9ad0518c4ebf0b4b228903b03c8e46b465c9af9573
+      BROKEN_CLAIMED_XZ_SHA256: f1db8006f2d2ee54d8e28f8cc3e4ae5994534c42a18884aa79fe005d7b6f4b48
+      EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+      CONTROLLER_PR: ${{ github.event.pull_request.number }}
+      CONTROLLER_BRANCH: ${{ github.event.pull_request.head.ref }}
+      EXPECTED_CONTROLLER_BRANCH: agent/pr2231-eight-current-binding-identifier-iteration-v115-r5
+      CONTROLLER_WORKFLOW: .github/workflows/temporary-pr2231-identifier-iteration-v115-r2.yml
+      REVIEW_BINDINGS: >-
+        PRRT_kwDOTGqftc6dept0:3888440222
+        PRRT_kwDOTGqftc6dfK4F:3888640534
+        PRRT_kwDOTGqftc6dfLu0:3888645507
+        PRRT_kwDOTGqftc6di_ww:3890125090
+        PRRT_kwDOTGqftc6di_wy:3890125092
+        PRRT_kwDOTGqftc6d0ca_:3896943486
+        PRRT_kwDOTGqftc6d0gjq:3896968531
+        PRRT_kwDOTGqftc6d0gjr:3896968536
+      TRANSPORT_CHUNK_BLOBS: >-
+        d6e2ccd6c9ed1752180355b88fc37c13d09ee3bd
+        d91f53af805ab0e427d47609bb7bf029bf159b51
+        0243fc81331ff6c8b77371f756b2a721a048e489
+        6b40bbf39c67a8ef01076fb3364eb65c359a28e6
+        952a90ac205c3614b0ad4a7c71206d56910fa411
+        ad890177a156e7b34ff37aa69750702caf9c3145
+        5e493f4027f5e42b049398c7de0a2cc67c69d245
+        7bc94b8e38cbd96c50781faea4df4a4a398b9eb6
+      TRANSPORT_CHUNK_SHA256S: >-
+        c692fcbd51a6379f4ceeb0786bd3a52b8abbc7cdbde644ddbb0cdcc1dfad289c
+        4dbf09391ad6a6c4eb7f5d8ce4dd06ff5f6f7939eaf819148b3015ea203b009e
+        d9afad6bed7829946dd5a84c6fc8e340ef80bb807c57ffbd4872150f3a4c60c8
+        acf58511d5e52db6e9ad8e9094fd2b5003098f7a773bc68dcb1eca4c20887592
+        68d4db87e7b11edb8f85a265e6ee0849493962cf24f91f81d1e66c62c6a1bbfc
+        4876b0c128abf42162b5599b8e175393e525c4ac07e3a46c65821a9548f8a80c
+        8528597df5f3a1bd68a8c213c03ad2d6d8fb50dc7c0126deb25394a6437427f9
+        ce72b0de23c54eeaaccd91b78328703904272b6b9104122724a1dded84bdb242
+      TRANSPORT_CHUNK_SIZE: '2976'
+      TRANSPORT_XZ_SIZE: '23808'
+      TRANSPORT_XZ_BLOB: 871d977433a01bcbfee3c728aaa3afd213fdaa50
+      TRANSPORT_XZ_SHA256: 04c5517d37cee6458321e483a5532659cb8c7dd16b33b880076a65962e7609da
+      MATERIALIZATION_SIZE: '81511'
+      MATERIALIZATION_BLOB: 0cdcebd57c164a1f3b106ba305791766738e655a
+      MATERIALIZATION_SHA256: 0c30d3645416ba95e4e1decbc522f6873205d341fd9891e9b57c483015b9f5f0
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Reconstruct and execute exact V115 R4 materializer
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          transport_root=/tmp/pr2231-v115-r5-transport
+          artifact=/tmp/pr2231-identifier-iterative-v115-r4-qualification
+          wrapper_log=/tmp/pr2231-v115-r5-wrapper.log
+          payload="$transport_root/materialization-shell.sh.xz"
+          materialized="$transport_root/materialization-shell.sh"
+          chunk_list="$transport_root/chunk-blobs.txt"
+          transport_env="$transport_root/transport.env"
+          rm -rf "$transport_root" "$artifact"
+          rm -f "$wrapper_log"
+          mkdir -p "$transport_root"
+          : > "$wrapper_log"
+          : > "$chunk_list"
+          : > "$transport_env"
+          exec > >(tee -a "$wrapper_log") 2>&1
+
+          preserve_transport_receipts() {
+            rc=$?
+            trap - EXIT
+            set +e
+            mkdir -p "$artifact/envelope"
+            [[ -f "$wrapper_log" ]] && install -m 0644 "$wrapper_log" "$artifact/envelope/r5-wrapper.log"
+            [[ -f "$chunk_list" ]] && install -m 0644 "$chunk_list" "$artifact/envelope/r5-chunk-blobs.txt"
+            [[ -f "$transport_env" ]] && install -m 0644 "$transport_env" "$artifact/envelope/r5-transport.env"
+            find "$artifact" -type f -printf '%P\t%s\n' | sort > "$artifact/envelope/r5-final-manifest.txt"
+            exit "$rc"
+          }
+          trap preserve_transport_receipts EXIT
+
+          [[ "$(git rev-parse HEAD)" == "$EXPECTED_CONTROLLER" ]]
+          [[ "$(git rev-parse HEAD^)" == "$EXPECTED_MAIN" ]]
+          [[ "$(git rev-parse origin/main)" == "$EXPECTED_MAIN" ]]
+          [[ "$CONTROLLER_BRANCH" == "$EXPECTED_CONTROLLER_BRANCH" ]]
+
+          read -r -a blobs <<< "$TRANSPORT_CHUNK_BLOBS"
+          read -r -a shas <<< "$TRANSPORT_CHUNK_SHA256S"
+          [[ "${#blobs[@]}" == 8 ]]
+          [[ "${#shas[@]}" == 8 ]]
+          : > "$payload"
+          for index in "${!blobs[@]}"; do
+            blob="${blobs[$index]}"
+            expected_sha="${shas[$index]}"
+            chunk=$(printf '%s/chunk-%02d.bin' "$transport_root" "$index")
+            gh api -H 'Accept: application/vnd.github+json' \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              "repos/${REPO}/git/blobs/${blob}" --jq '.content' \
+              | tr -d '\n' | base64 -d > "$chunk"
+            [[ "$(wc -c < "$chunk")" == "$TRANSPORT_CHUNK_SIZE" ]]
+            [[ "$(git hash-object "$chunk")" == "$blob" ]]
+            actual_sha="$(sha256sum "$chunk" | awk '{print $1}')"
+            [[ "$actual_sha" == "$expected_sha" ]]
+            printf '%02d\t%s\t%s\t%s\n' "$index" "$blob" "$actual_sha" \
+              "$(wc -c < "$chunk")" >> "$chunk_list"
+            cat "$chunk" >> "$payload"
+          done
+
+          [[ "$(wc -c < "$payload")" == "$TRANSPORT_XZ_SIZE" ]]
+          [[ "$(git hash-object "$payload")" == "$TRANSPORT_XZ_BLOB" ]]
+          [[ "$(sha256sum "$payload" | awk '{print $1}')" == "$TRANSPORT_XZ_SHA256" ]]
+          xz -t "$payload"
+          xz -dc "$payload" > "$materialized"
+          [[ "$(wc -c < "$materialized")" == "$MATERIALIZATION_SIZE" ]]
+          [[ "$(git hash-object "$materialized")" == "$MATERIALIZATION_BLOB" ]]
+          [[ "$(sha256sum "$materialized" | awk '{print $1}')" == "$MATERIALIZATION_SHA256" ]]
+          bash -n "$materialized"
+
+          printf '%s\n' \
+            'controller_envelope=v115-r5' \
+            'mode=read-only' \
+            'product_mutation=none' \
+            'chunk_count=8' \
+            "chunk_size=$TRANSPORT_CHUNK_SIZE" \
+            "compressed_size=$TRANSPORT_XZ_SIZE" \
+            "compressed_blob=$TRANSPORT_XZ_BLOB" \
+            "compressed_sha256=$TRANSPORT_XZ_SHA256" \
+            "materialization_size=$MATERIALIZATION_SIZE" \
+            "materialization_blob=$MATERIALIZATION_BLOB" \
+            "materialization_sha256=$MATERIALIZATION_SHA256" \
+            'transport_integrity=verified' \
+            > "$transport_env"
+
+          set +e
+          bash "$materialized"
+          status=$?
+          set -e
+          printf '%s\n' "materializer_status=$status" >> "$transport_env"
+          exit "$status"
+
+      - name: Emit V115 R5 qualification receipts
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          root=/tmp/pr2231-identifier-iterative-v115-r4-qualification
+          mkdir -p "$root"
+          find "$root" -type f -printf '%P\t%s\n' | sort > "$root/artifact-manifest.txt"
+          {
+            printf '%s\n' '### PR 2231 identifier authority and iterative custody V115 R5 qualification'
+            for receipt in qualification-terminal.txt summary.json \
+              predecessor-reproduction.jsonl direct-v115.jsonl \
+              differential-summary.json focused-product.log \
+              product-release-check.log focused-main-transplant.log \
+              main-release-check.log candidate-commit.txt \
+              review-state-before.json review-state-after.json \
+              target-review-bindings-before.jsonl \
+              target-review-bindings-after.jsonl \
+              envelope/r5-transport.env envelope/r5-chunk-blobs.txt \
+              envelope/r5-wrapper.log envelope/negative-custody.env \
+              envelope/broken-xz-error.log envelope/outer-status.env \
+              envelope/final-artifact-manifest.txt \
+              envelope/r5-final-manifest.txt artifact-manifest.txt; do
+              printf '\n#### %s\n\n```text\n' "$receipt"
+              if [[ -f "$root/$receipt" ]]; then tail -n 500 "$root/$receipt"; fi
+              printf '%s\n' '```'
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-identifier-iterative-v115-r5
+          path: /tmp/pr2231-identifier-iterative-v115-r4-qualification
+          retention-days: 90
