@@ -1,0 +1,144 @@
+name: Temporary PR 2231 six-current-binding slash finality V114 R1
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/temporary-pr2231-six-current-binding-slash-finality-v114-r1.yml'
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: pr2231-six-current-binding-slash-finality-v114-r1
+  cancel-in-progress: false
+
+jobs:
+  qualify-six-current-binding-slash-finality:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: BigBirdReturns/clifford-number
+      PRODUCT_PR: '2231'
+      CONTROLLER_PR: ${{ github.event.pull_request.number }}
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      CONTROLLER_BRANCH: ${{ github.head_ref }}
+      CONTROLLER_WORKFLOW: '.github/workflows/temporary-pr2231-six-current-binding-slash-finality-v114-r1.yml'
+      EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+      EXPECTED_MAIN: 2eb08609c4f9bdec0da66958e9e3fc1d6bf1cb4e
+      EXPECTED_MAIN_TREE: b844146992f40d4d3704fe72e45b3ef7d5b9b4e1
+      EXPECTED_PRODUCT: 4e1285af114d517b7304a027195857ad66987c58
+      EXPECTED_PARENT: 0b1d8af5b86adad49b3451053dbb9166294d631c
+      EXPECTED_TREE: 9984bd605c3ff2f839bd6d04b4fa0e6fb924ccaa
+      EXPECTED_LIBRARY: f7e0c9cbdd0dc2d81a24195aedc8e52401029cad
+      EXPECTED_TEST: 839e858980734dbfb8b157e64fed36cf1868820a
+      REVIEW_BINDINGS: >-
+        PRRT_kwDOTGqftc6dept0:3888440222
+        PRRT_kwDOTGqftc6dfK4F:3888640534
+        PRRT_kwDOTGqftc6dfLu0:3888645507
+        PRRT_kwDOTGqftc6di_ww:3890125090
+        PRRT_kwDOTGqftc6di_wy:3890125092
+        PRRT_kwDOTGqftc6dpMKU:3892550854
+      QUALIFIER_CHUNK_BLOBS: >-
+        007d042f67377717ec58d299e6c0357f746b2b50
+        21fb4547d73cf6a2bf327440931a6cb84d68f0e6
+        11b3e7fdbed0265477577e664219f0f866d42935
+        c8e377b8dd55ad5d6f30a13098f84590a81601cd
+        c63699f372d279df2a8c51da95329218f11266cd
+        16bb1f16c2257fe7e20d7f50bc3c6a4d92b9322b
+        0c8607090b62e7604c1a4a083228ad52b2b47406
+        60b68cbe78ee80c3cc4c824a9fdbf3029a1d8758
+        1b54d7612b3f90683eddbf07ebf9720c50e40fe6
+        2cd6c268e7a3ccca6dd7241361d69ccf1969e2c4
+        42cf792d8673d97092e6fbd09d11a75e20d9e361
+      EXPECTED_BASE64_SHA256: cf52d526f7641e99fda34bc4e5cf3d6c70ec537b6e76d6f8d34f8fbfc815cc31
+      EXPECTED_GZIP_SHA256: d9393cef9b01193c857fd7fe8e5c0246f8907e617137a1c55fae2de9053d2715
+      EXPECTED_QUALIFIER_SHA256: 34704e1c07db8600dc002b584f280d3c49ab6b3439dfc8ed3bdadc36c4e7c169
+      ARTIFACT_DIR: /tmp/pr2231-six-current-binding-slash-finality-v114-r1
+      PRODUCT_WT: /tmp/pr2231-six-current-binding-slash-finality-product-v114-r1
+      MAIN_WT: /tmp/pr2231-six-current-binding-slash-finality-main-v114-r1
+      QUALIFIED_DIR: /tmp/pr2231-six-current-binding-slash-finality-qualified-v114-r1
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Reconstruct and execute immutable read-only qualifier
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          qualifier_b64=/tmp/pr2231-six-current-binding-slash-finality-v114-r1.sh.gz.b64
+          qualifier_gz=/tmp/pr2231-six-current-binding-slash-finality-v114-r1.sh.gz
+          qualifier=/tmp/pr2231-six-current-binding-slash-finality-v114-r1.sh
+          : > "$qualifier_b64"
+          for chunk in $QUALIFIER_CHUNK_BLOBS; do
+            gh api "repos/$REPO/git/blobs/$chunk" --jq '.content' \
+              | tr -d '\n' | base64 -d >> "$qualifier_b64"
+          done
+          printf '%s  %s\n' "$EXPECTED_BASE64_SHA256" "$qualifier_b64" \
+            | sha256sum -c -
+          base64 -d "$qualifier_b64" > "$qualifier_gz"
+          printf '%s  %s\n' "$EXPECTED_GZIP_SHA256" "$qualifier_gz" \
+            | sha256sum -c -
+          gzip -dc "$qualifier_gz" > "$qualifier"
+          printf '%s  %s\n' "$EXPECTED_QUALIFIER_SHA256" "$qualifier" \
+            | sha256sum -c -
+          chmod +x "$qualifier"
+          "$qualifier"
+
+      - name: Emit qualification diagnostics
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          upload=/tmp/pr2231-six-current-binding-slash-finality-v114-r1-upload
+          qualifier=/tmp/pr2231-six-current-binding-slash-finality-v114-r1.sh
+          rm -rf "$upload"
+          mkdir -p "$ARTIFACT_DIR" "$upload"
+          if [[ -f "$qualifier" ]]; then
+            cp "$qualifier" "$ARTIFACT_DIR/qualifier-v114-r1.sh"
+            sha256sum "$qualifier" > "$ARTIFACT_DIR/qualifier-v114-r1.sha256"
+          fi
+          printf '%s\n' $QUALIFIER_CHUNK_BLOBS > "$ARTIFACT_DIR/qualifier-chunk-blobs.txt"
+          printf '%s\n' "$EXPECTED_BASE64_SHA256" > "$ARTIFACT_DIR/qualifier-base64-sha256.txt"
+          printf '%s\n' "$EXPECTED_GZIP_SHA256" > "$ARTIFACT_DIR/qualifier-gzip-sha256.txt"
+          find "$ARTIFACT_DIR" -maxdepth 1 -type f -printf '%f\t%s\n' \
+            | sort > "$ARTIFACT_DIR/artifact-manifest.txt"
+          cp -a "$ARTIFACT_DIR"/. "$upload"/
+          find "$upload" -maxdepth 1 -type f -printf '%f\t%s\n' \
+            | sort > "$upload/upload-manifest.txt"
+          {
+            printf '%s\n' '### PR 2231 six-current-binding slash finality V114 R1'
+            for receipt in qualification-terminal.txt summary.json \
+              predecessor-reproduction.jsonl direct-matrix.jsonl \
+              focused-product.log product-release-check.log \
+              focused-main-transplant.log main-release-check.log \
+              candidate-commit.txt candidate-paths.txt controller-paths.txt \
+              current-main-delta-paths.txt \
+              review-comments-before.tsv review-thread-ledger-before.jsonl \
+              review-comments-after.tsv review-thread-ledger-after.jsonl \
+              artifact-manifest.txt qualifier-v114-r1.sha256 \
+              qualifier-chunk-blobs.txt; do
+              printf '\n#### %s\n\n```text\n' "$receipt"
+              [[ ! -f "$ARTIFACT_DIR/$receipt" ]] \
+                || tail -n 420 "$ARTIFACT_DIR/$receipt"
+              printf '%s\n' '```'
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-six-current-binding-slash-finality-v114-r1
+          path: /tmp/pr2231-six-current-binding-slash-finality-v114-r1-upload
+          retention-days: 90
