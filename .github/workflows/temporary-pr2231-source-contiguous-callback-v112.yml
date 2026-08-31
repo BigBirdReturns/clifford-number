@@ -1,0 +1,89 @@
+name: Temporary PR 2231 source-contiguous callback V112
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temporary-pr2231-source-contiguous-callback-v112.yml'
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: pr2231-source-contiguous-callback-v112
+  cancel-in-progress: false
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: BigBirdReturns/clifford-number
+      PRODUCT_PR: '2231'
+      CONTROLLER_PR: ${{ github.event.pull_request.number }}
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      CONTROLLER_BRANCH: ${{ github.head_ref }}
+      CONTROLLER_WORKFLOW: .github/workflows/temporary-pr2231-source-contiguous-callback-v112.yml
+      EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+      EXPECTED_MAIN: 0b1d8af5b86adad49b3451053dbb9166294d631c
+      EXPECTED_PRODUCT: 53aa560c583b943b1aacdfff425423f9812752bb
+      EXPECTED_PARENT: 0b1d8af5b86adad49b3451053dbb9166294d631c
+      EXPECTED_TREE: 74d7bab76498a1dd2e7705fbd73b43e45402b24f
+      EXPECTED_LIBRARY: 99ddf7d069203ccd0afbda6bd0c860f54473b347
+      EXPECTED_TEST: 664e4f949a53b44acb2760cd4e083236b5616c2e
+      SOURCE_COMMENT: '5473589549'
+      REVIEW_BINDINGS: >-
+        PRRT_kwDOTGqftc6dept0:3888440222 PRRT_kwDOTGqftc6dfK4F:3888640534
+        PRRT_kwDOTGqftc6dfK4H:3888640536 PRRT_kwDOTGqftc6dfLu0:3888645507
+        PRRT_kwDOTGqftc6di_ww:3890125090 PRRT_kwDOTGqftc6di_wy:3890125092
+      ARTIFACT_DIR: /tmp/pr2231-source-contiguous-callback-v112
+      PRODUCT_WT: /tmp/pr2231-source-contiguous-callback-product-v112
+      MAIN_WT: /tmp/pr2231-source-contiguous-callback-main-v112
+      QUALIFIED_DIR: /tmp/pr2231-source-contiguous-callback-qualified-v112
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Recover and execute read-only qualifier
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          d=/tmp/pr2231-v112-source
+          rm -rf "$d"
+          mkdir -p "$d"
+          cat > "$d/qualifier.sh.gz.b64" <<'QUALIFIER_B64'
+          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
+          QUALIFIER_B64
+          base64 -d "$d/qualifier.sh.gz.b64" > "$d/qualifier.sh.gz"
+          echo 'a74f40932b578570b933c579f6803a0b1cda5a4503a5b84f2562300c13180c05  /tmp/pr2231-v112-source/qualifier.sh.gz' | sha256sum -c -
+          gzip -dc "$d/qualifier.sh.gz" > "$d/qualifier.sh"
+          echo 'abdbf945ff58b13bcc33bf354849d684ab0305d31b915de20d680119cd1fe11f  /tmp/pr2231-v112-source/qualifier.sh' | sha256sum -c -
+          chmod +x "$d/qualifier.sh"
+          "$d/qualifier.sh"
+
+      - name: Retain source and reconstruction inputs
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$ARTIFACT_DIR"
+          [[ ! -f /tmp/pr2231-v112-source/qualifier.sh ]] || cp /tmp/pr2231-v112-source/qualifier.sh "$ARTIFACT_DIR/qualifier-v112.sh"
+          [[ ! -f /tmp/pr2231-v112-source-contiguity.patch ]] || cp /tmp/pr2231-v112-source-contiguity.patch "$ARTIFACT_DIR/source-contiguity.patch"
+          find "$ARTIFACT_DIR" -maxdepth 1 -type f -printf '%f\t%s\n' | sort > "$ARTIFACT_DIR/artifact-manifest.txt"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-source-contiguous-callback-v112
+          path: /tmp/pr2231-source-contiguous-callback-v112
+          retention-days: 90
