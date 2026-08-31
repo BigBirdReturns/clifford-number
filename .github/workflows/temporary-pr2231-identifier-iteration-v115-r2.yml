@@ -1,0 +1,130 @@
+name: Temporary PR 2231 identifier authority and iterative custody V115 R7
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+
+concurrency:
+  group: pr2231-identifier-iterative-v115-r7-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  qualify-identifier-authority-iterative-v115-r7:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+      CONTROLLER_PR: ${{ github.event.pull_request.number }}
+      CONTROLLER_BRANCH: ${{ github.event.pull_request.head.ref }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Execute exact self-contained V115 R7 qualifier
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          repo=BigBirdReturns/clifford-number
+          expected_main=771a64b6b467748d2f4df667b5f78e76f9432d69
+          expected_branch=agent/pr2231-eight-current-binding-identifier-iteration-v115-r7
+          root=/tmp/pr2231-v115-r7-transport
+          artifact=/tmp/pr2231-identifier-iterative-v115-r4-qualification
+          payload="$root/materializer.sh.xz"
+          materialized="$root/materializer.sh"
+          wrapper_log="$root/r7-wrapper.log"
+          chunk_manifest="$root/r7-chunks.txt"
+          rm -rf "$root" "$artifact"
+          mkdir -p "$root"
+          : > "$wrapper_log"
+          : > "$chunk_manifest"
+          exec > >(tee -a "$wrapper_log") 2>&1
+          preserve() {
+            rc=$?
+            trap - EXIT
+            set +e
+            mkdir -p "$artifact/envelope"
+            install -m 0644 "$wrapper_log" "$artifact/envelope/r7-wrapper.log"
+            install -m 0644 "$chunk_manifest" "$artifact/envelope/r7-chunks.txt"
+            printf '%s\n' \
+              'controller_envelope=v115-r7' \
+              "outer_status=$rc" \
+              'mode=read-only' \
+              'product_mutation=none' \
+              > "$artifact/envelope/r7-outer-status.env"
+            find "$artifact" -type f -printf '%P\t%s\n' | sort > "$artifact/envelope/r7-final-manifest.txt"
+            exit "$rc"
+          }
+          trap preserve EXIT
+
+          [[ "$(git rev-parse HEAD)" == "$EXPECTED_CONTROLLER" ]]
+          [[ "$(git rev-parse HEAD^)" == "$expected_main" ]]
+          [[ "$(git rev-parse origin/main)" == "$expected_main" ]]
+          [[ "$CONTROLLER_BRANCH" == "$expected_branch" ]]
+
+          blobs=(
+            228d55f44923b3a059771eb7c87e39471ef6c9ee
+            7970764bb01d78c90d00bee58dac30c5099a310a
+            bbbca4ec6a556b0c5da0fbafb6fb42b928c78323
+            7c8a38b3c9d42d81389747576199ac9094ad327b
+            280903de407c066d076cc2d8d0349fae84741e4b
+            f0dd873f14d2afdcb29fdd1740ccdbea0f2aa5d2
+            c3fbdadc2c7b425d45d44e034e915049d2107895
+            610a44ea6e3dd6ca3bb735e46c56bad6e83dd8b0
+          )
+          shas=(
+            9e3568e2ec2f0b7c889bc9588f1e20d5f955f77c34b50099149ad5cd52d64c72
+            a65dc26b670dfaf911db55063a29c8938619d5efef35d8c9d20e8091c4672acb
+            c1354ff22a6bf9b5c4246983ce8e710f24881e19db8787fd5bd1387c9caaedfd
+            0d316f3825f141c71ba1d0b10ec7a1bb25088235e0743341afa97ce2c446ee8c
+            33ee5549461a784a474a143222870451c48b451e08d6eb84f2c6634a94ae5bae
+            4e987f1d458e78534b33a104b59333d99a967ad34daaacf1fa66b7ab7041f6f2
+            6c3c9c1389a9f5ccf6ee9a04159f42348f5167a2213a74784d900c0f293e1bed
+            194a922d84cfbca6f85f06748cb47175525b3e16b4a0885617192fb24b310f73
+          )
+          : > "$payload"
+          for index in "${!blobs[@]}"; do
+            blob="${blobs[$index]}"
+            expected_sha="${shas[$index]}"
+            chunk=$(printf '%s/chunk-%02d.bin' "$root" "$index")
+            gh api -H 'Accept: application/vnd.github+json' \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              "repos/$repo/git/blobs/$blob" --jq '.content' \
+              | tr -d '\n' | base64 -d > "$chunk"
+            [[ "$(wc -c < "$chunk")" == 3097 ]]
+            [[ "$(git hash-object "$chunk")" == "$blob" ]]
+            actual_sha=$(sha256sum "$chunk" | awk '{print $1}')
+            [[ "$actual_sha" == "$expected_sha" ]]
+            printf '%02d\t%s\t%s\t%s\n' "$index" "$blob" "$actual_sha" "$(wc -c < "$chunk")" >> "$chunk_manifest"
+            cat "$chunk" >> "$payload"
+          done
+
+          [[ "$(wc -c < "$payload")" == 24776 ]]
+          [[ "$(git hash-object "$payload")" == 148d26788fe08942d45eafc4029eb8c1adbfac9e ]]
+          [[ "$(sha256sum "$payload" | awk '{print $1}')" == 62b70d744b4c6f1e09d267c762e2df3507dd54d03662d43fbdd25a749e9af4c9 ]]
+          xz -t "$payload"
+          xz -dc "$payload" > "$materialized"
+          [[ "$(wc -c < "$materialized")" == 83946 ]]
+          [[ "$(git hash-object "$materialized")" == f07ca6429c86ba5a8fad37ef567b44ed34cfa734 ]]
+          [[ "$(sha256sum "$materialized" | awk '{print $1}')" == fdb6910a12e0000a9fc9dffa440efcfb5c419685a4bbe4bb25a60e72e1672159 ]]
+          bash -n "$materialized"
+          bash "$materialized"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-identifier-iterative-v115-r7
+          path: /tmp/pr2231-identifier-iterative-v115-r4-qualification
+          retention-days: 90
