@@ -1,0 +1,209 @@
+name: Temporary PR 2231 V116 grouped-identifier resource and closer diagnostic
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+    paths:
+      - .github/workflows/temporary-pr2231-v116-grouped-identifier-resource-closer-diagnostic-v1.yml
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: pr2231-v116-grouped-identifier-resource-closer-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  diagnose-v116-current-head:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: BigBirdReturns/clifford-number
+      PRODUCT_PR: '2231'
+      EXPECTED_MAIN: 771a64b6b467748d2f4df667b5f78e76f9432d69
+      EXPECTED_PRODUCT: 0c0ec19938e76d83d646c79d02bea9a724e6773b
+      EXPECTED_PRODUCT_TREE: 326186e534735e8fc108c3bb7cab115d5db08dce
+      EXPECTED_LIBRARY: 123b88403265fa4193a44a97b27aebc7661c1528
+      EXPECTED_TEST: a71e670bbf85a399e02a184e0a8fce19d127bfaf
+      CONTROLLER_PR: ${{ github.event.pull_request.number }}
+      CONTROLLER_BRANCH: agent/pr2231-v116-grouped-identifier-resource-closer-diagnostic-v1
+      EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+      CONTROLLER_PATH: .github/workflows/temporary-pr2231-v116-grouped-identifier-resource-closer-diagnostic-v1.yml
+      ARTIFACT_DIR: /tmp/pr2231-v116-grouped-identifier-resource-closer-diagnostic
+    steps:
+      - name: Check out exact V116 product head
+        uses: actions/checkout@v4
+        with:
+          ref: 0c0ec19938e76d83d646c79d02bea9a724e6773b
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Execute exact-head read-only diagnostic
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$ARTIFACT_DIR"
+          mkdir -p "$ARTIFACT_DIR"
+          exec > >(tee "$ARTIFACT_DIR/diagnostic.log") 2>&1
+          trap 'rc=$?; printf "diagnostic_exit=%s\n" "$rc" > "$ARTIFACT_DIR/status.env"' EXIT
+
+          test "$(git rev-parse HEAD)" = "$EXPECTED_PRODUCT"
+          test "$(git rev-parse HEAD^)" = "$EXPECTED_MAIN"
+          test "$(git rev-parse HEAD^{tree})" = "$EXPECTED_PRODUCT_TREE"
+          test "$(git rev-parse HEAD:tools/lib/industrial-exhaust.mjs)" = "$EXPECTED_LIBRARY"
+          test "$(git rev-parse HEAD:test/industrial-exhaust.test.js)" = "$EXPECTED_TEST"
+          test "$(git diff --name-only "$EXPECTED_MAIN" "$EXPECTED_PRODUCT" | paste -sd ',' -)" = 'test/industrial-exhaust.test.js,tools/lib/industrial-exhaust.mjs'
+
+          main_sha="$(gh api "repos/$REPO/branches/main" --jq '.commit.sha')"
+          test "$main_sha" = "$EXPECTED_MAIN"
+          product_json="$ARTIFACT_DIR/product-pr.json"
+          controller_json="$ARTIFACT_DIR/controller-pr.json"
+          gh api "repos/$REPO/pulls/$PRODUCT_PR" > "$product_json"
+          gh api "repos/$REPO/pulls/$CONTROLLER_PR" > "$controller_json"
+          jq -e --arg head "$EXPECTED_PRODUCT" --arg base "$EXPECTED_MAIN" '
+            .state == "open"
+            and .draft == true
+            and .merged == false
+            and .head.sha == $head
+            and .base.sha == $base
+            and .commits == 1
+            and .changed_files == 2
+          ' "$product_json" >/dev/null
+          jq -e --arg head "$EXPECTED_CONTROLLER" --arg branch "$CONTROLLER_BRANCH" --arg base "$EXPECTED_MAIN" '
+            .state == "open"
+            and .draft == true
+            and .merged == false
+            and .head.sha == $head
+            and .head.ref == $branch
+            and .base.sha == $base
+            and .commits == 1
+            and .changed_files == 1
+          ' "$controller_json" >/dev/null
+
+          if grep -Fq 'return { valid: false, sawClosing: true, openers };' tools/lib/industrial-exhaust.mjs; then
+            printf 'mismatched_closer_returns_original_openers=true\n' > "$ARTIFACT_DIR/static-state.env"
+          else
+            printf 'mismatched_closer_returns_original_openers=false\n' > "$ARTIFACT_DIR/static-state.env"
+          fi
+          if grep -Fq '2027-09-18) 12345678' test/industrial-exhaust.test.js; then
+            printf 'stale_opener_regression_present=true\n' >> "$ARTIFACT_DIR/static-state.env"
+          else
+            printf 'stale_opener_regression_present=false\n' >> "$ARTIFACT_DIR/static-state.env"
+          fi
+
+          ARTIFACT_DIR="$ARTIFACT_DIR" node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import crypto from 'node:crypto';
+          import fs from 'node:fs';
+          import path from 'node:path';
+          import { performance } from 'node:perf_hooks';
+          import { redactContactData } from './tools/lib/industrial-exhaust.mjs';
+
+          const artifactDir = process.env.ARTIFACT_DIR;
+          const sha256 = value => crypto.createHash('sha256').update(value).digest('hex');
+          const omissions = value => (value.match(/\[contact omitted\]/gu) ?? []).length;
+          const writeText = (name, value) => fs.writeFileSync(path.join(artifactDir, name), value);
+
+          const overflow = 'GUID '.repeat(4000);
+          const cases = [
+            {
+              name: 'grouped-identifier-progression',
+              input: 'ID: 1234 5678/2026-08-17-03-6216-8041',
+              contract: 'ID: 1234 5678/2026-08-17-[contact omitted]'
+            },
+            {
+              name: 'stale-opener-laundering-ascii',
+              input: `Archive ${overflow}record id: 09012345678 (2026-08-17] 2027-09-18) 12345678`,
+              contract: `Archive ${overflow}record id: [contact omitted] (2026-08-17] 2027-09-18) 12345678`
+            },
+            {
+              name: 'stale-opener-laundering-fullwidth',
+              input: `Archive ${overflow}record id: 09012345678 （２０２６－０８－１７］ ２０２７－０９－１８） １２３４５６７８`,
+              contract: `Archive ${overflow}record id: [contact omitted] （２０２６－０８－１７］ ２０２７－０９－１８） １２３４５６７８`
+            }
+          ];
+
+          const semantic = [];
+          for (const testCase of cases) {
+            const actual = redactContactData(testCase.input);
+            writeText(`${testCase.name}.input.txt`, testCase.input);
+            writeText(`${testCase.name}.actual.txt`, actual);
+            writeText(`${testCase.name}.contract.txt`, testCase.contract);
+            semantic.push({
+              name: testCase.name,
+              input_sha256: sha256(testCase.input),
+              actual_sha256: sha256(actual),
+              contract_sha256: sha256(testCase.contract),
+              input_length: testCase.input.length,
+              actual_length: actual.length,
+              contract_length: testCase.contract.length,
+              omissions: omissions(actual),
+              contract_match: actual === testCase.contract,
+              unchanged: actual === testCase.input,
+              final_numeric_tail_redacted: actual.endsWith('[contact omitted]')
+            });
+          }
+
+          assert.equal(
+            semantic[0].unchanged,
+            true,
+            'the exact V116 head must reproduce the grouped-identifier progression defect'
+          );
+
+          const unit = '09012345678/2026-08-17-03-6216-8041 ';
+          redactContactData(`Archive ${unit.repeat(50)}`);
+          const timings = [];
+          for (const repetitions of [500, 1000, 2000]) {
+            const input = `Archive ${unit.repeat(repetitions)}`;
+            const started = performance.now();
+            const output = redactContactData(input);
+            const elapsedMs = performance.now() - started;
+            timings.push({
+              repetitions,
+              input_length: input.length,
+              output_length: output.length,
+              elapsed_ms: Number(elapsedMs.toFixed(3)),
+              omissions: omissions(output),
+              output_sha256: sha256(output)
+            });
+          }
+          const ratios = {
+            ratio_1000_to_500: Number((timings[1].elapsed_ms / timings[0].elapsed_ms).toFixed(3)),
+            ratio_2000_to_1000: Number((timings[2].elapsed_ms / timings[1].elapsed_ms).toFixed(3)),
+            normalized_growth_2000_to_500: Number(
+              ((timings[2].elapsed_ms / 2000) / (timings[0].elapsed_ms / 500)).toFixed(3)
+            )
+          };
+
+          fs.writeFileSync(
+            path.join(artifactDir, 'semantic-results.json'),
+            `${JSON.stringify(semantic, null, 2)}\n`
+          );
+          fs.writeFileSync(
+            path.join(artifactDir, 'timings.json'),
+            `${JSON.stringify({ timings, ratios }, null, 2)}\n`
+          );
+          console.log(JSON.stringify({ semantic, timings, ratios }, null, 2));
+          NODE
+
+          git status --short > "$ARTIFACT_DIR/git-status.txt"
+          test ! -s "$ARTIFACT_DIR/git-status.txt"
+          printf 'DIAGNOSTIC_COMPLETE\n'
+
+      - name: Upload exact-head diagnostic artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr2231-v116-grouped-identifier-resource-closer-diagnostic-v1
+          path: /tmp/pr2231-v116-grouped-identifier-resource-closer-diagnostic
+          if-no-files-found: error
+          retention-days: 90
