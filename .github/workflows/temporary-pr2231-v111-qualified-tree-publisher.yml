@@ -1,0 +1,103 @@
+name: Temporary PR 2231 V111 qualified-tree publication
+
+on:
+  push:
+    branches:
+      - agent/pr2231-v111-qualified-tree-publisher-v1
+
+permissions:
+  contents: write
+  pull-requests: read
+  issues: read
+  actions: read
+
+concurrency:
+  group: pr2231-v111-qualified-tree-publication
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: BigBirdReturns/clifford-number
+      MAIN_BRANCH: main
+      EXPECTED_MAIN: 0b1d8af5b86adad49b3451053dbb9166294d631c
+      PRODUCT_PR: '2231'
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      EXPECTED_PRODUCT: cfd1e459efc07f57cab7117200a4a4b962fd1bac
+      QUALIFIER_PR: '2410'
+      QUALIFIER_BRANCH: agent/pr2231-six-thread-callback-frontier-controller-v111
+      EXPECTED_QUALIFIER: 33225018022b2e73b2a861e73640a13d350d1680
+      PUBLISHER_PR: '2412'
+      PUBLISHER_BRANCH: agent/pr2231-v111-qualified-tree-publisher-v1
+      PUBLISHER_PATH: .github/workflows/temporary-pr2231-v111-qualified-tree-publisher.yml
+      EXPECTED_PUBLISHER: ${{ github.sha }}
+      ARTIFACT_ID: '9744790550'
+      ARTIFACT_RUN: '33354752424'
+      ARTIFACT_NAME: pr2231-six-thread-callback-frontier-v111-r2
+      ARTIFACT_DIGEST: sha256:fa960ddcaaf84ff51484148934482823257342e8ecfc0946a54b11cf12458d0b
+      ARTIFACT_PATH: /tmp/pr2231-v111-qualified-artifact
+      EXPECTED_TREE: 74d7bab76498a1dd2e7705fbd73b43e45402b24f
+      EXPECTED_LIBRARY_BLOB: 99ddf7d069203ccd0afbda6bd0c860f54473b347
+      EXPECTED_TEST_BLOB: 664e4f949a53b44acb2760cd4e083236b5616c2e
+      EXPECTED_LIBRARY_SHA256: 832dfcc1e53ee66015562ea4128955a93600bae942ee82a472e69fd52029e682
+      EXPECTED_TEST_SHA256: 8b20619aaf134892a44ab8e867d1d80f6842a9cac3ad1336d209410ef9b56796
+      EXPECTED_PATCH_SHA256: 911852fd6c0b9f09751972783152a3045df6e30f325d4b3d2891910647a22ced
+      WORKTREE: /tmp/pr2231-v111-publish-product
+      QUALIFIED_DIR: /tmp/pr2231-v111-qualified-files
+      RECEIPT_DIR: /tmp/pr2231-v111-qualified-tree-publication
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: pr2231-six-thread-callback-frontier-v111-r2
+          path: /tmp/pr2231-v111-qualified-artifact
+          github-token: ${{ github.token }}
+          repository: BigBirdReturns/clifford-number
+          run-id: 33354752424
+
+      - name: Publish the exact qualified tree under atomic predecessor custody
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          d=/tmp/pr2231-v111-publisher-source
+          blob=68854ecd0321d969ea6f9fd69ca9ad5a5567f5ac
+          rm -rf "$d"
+          mkdir -p "$d"
+          gh api "repos/$REPO/git/blobs/$blob" > "$d/$blob.json"
+          python3 - "$d/$blob.json" "$d/publisher.sh.gz" <<'PY_BLOB'
+          import base64
+          import json
+          import sys
+
+          with open(sys.argv[1], encoding='utf-8') as handle:
+              payload = json.load(handle)
+          with open(sys.argv[2], 'wb') as handle:
+              handle.write(base64.b64decode(payload['content']))
+          PY_BLOB
+          echo '075043a4ddfa66278d91bfb15702032b4de5d3ccc49eb24e45d61899722e4e02  '$d'/publisher.sh.gz' \
+            | sha256sum -c -
+          gzip -dc "$d/publisher.sh.gz" > "$d/publisher.sh"
+          echo 'f1e1950f25c6e8ab8743c399a1a3a8fc0c9c385869d2844b07830d89445e8128  '$d'/publisher.sh' \
+            | sha256sum -c -
+          chmod +x "$d/publisher.sh"
+          "$d/publisher.sh"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-v111-qualified-tree-publication
+          path: /tmp/pr2231-v111-qualified-tree-publication
+          if-no-files-found: error
+          retention-days: 90
