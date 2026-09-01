@@ -1,0 +1,136 @@
+name: Temporary PR2231 V119 current-three qualification R1
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+    paths:
+      - .github/workflows/temporary-pr2231-v119-current-three-qualifier-r1.yml
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+  issues: read
+
+concurrency:
+  group: pr2231-v119-current-three-r1-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  qualify-v119-r1:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: BigBirdReturns/clifford-number
+      PRODUCT_PR: '2231'
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      CONTROLLER_PR: ${{ github.event.pull_request.number }}
+      CONTROLLER_BRANCH: agent/pr2231-v119-current-three-qualifier-r1
+      CONTROLLER_WORKFLOW: .github/workflows/temporary-pr2231-v119-current-three-qualifier-r1.yml
+      EXPECTED_MAIN: 771a64b6b467748d2f4df667b5f78e76f9432d69
+      EXPECTED_PRODUCT: 2d7555363d2fe6bcb06b629dc9e06e3c7ad4a9bb
+      EXPECTED_PRODUCT_TREE: aa5c55523ac82b06f3c3632bfaa76620fbe17aea
+      EXPECTED_LIBRARY: 25866adcbe4f95cb2f149d078f7a70bfd84570c5
+      EXPECTED_TEST: 771393e3f0c40ce3bb60288ab162e46649f17e6a
+      EXPECTED_REVIEW_ID: '5074636863'
+      EXPECTED_REVIEW_COMMENTS: '3901336773 3901336781 3901336788'
+      EXPECTED_PATCH_BLOB: 9a87cec7fa542f72f9dfda694d75da329a048bf4
+      EXPECTED_PATCH_SHA256: 6ac633c4abc7fabf6cab64c7fd6b1a0ceb9b5ef7701304890a0d83dd0eeda6f7
+      EXPECTED_CANDIDATE_LIBRARY: 632c6731935be5b0cce72cd185cc59fe67b1a585
+      EXPECTED_CANDIDATE_TEST: 7a5a24eb9c0ecc13473a3ea29e611c65444a064d
+      EXPECTED_CANDIDATE_LIBRARY_SHA256: 6de156caf8ede58e4d986fd6698e0f3cc3b69b88105922cab865eff98a3aca8c
+      EXPECTED_CANDIDATE_TEST_SHA256: 273bdace0072bca31059956c25cf5c56bd912a39feee89233e08d4342c22a663
+      ARTIFACT_DIR: /tmp/pr2231-v119-current-three-r1
+      QUALIFIER_BLOB: aa5d807dee5595261d7af7897b8361c54d7012b2
+      QUALIFIER_XZ_BYTES: '4872'
+      QUALIFIER_XZ_SHA256: 55f81d82868b7f7bd3e32c471ca897218c2495843210cc1c7f0cffa6290ad5cb
+      QUALIFIER_BYTES: '24834'
+      QUALIFIER_SHA256: 28491bd74b97c1f18146a75c78102c6f16509584e4690bb84ddddba5bfa2339c
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Materialize and execute exact V119 qualifier
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          wrapper=/tmp/pr2231-v119-current-three-wrapper-r1
+          rm -rf "$wrapper"
+          mkdir -p "$wrapper"
+          inner_status=not-run
+          failed=none
+          trap 'failed=$BASH_COMMAND' ERR
+          trap 'rc=$?; trap - ERR EXIT; set +e; printf "controller_envelope=v119-current-three-r1\nouter_status=%s\ninner_status=%s\nfailed_command=%s\npublication=skipped\nproduct_mutation=false\nreview_mutation=false\nreadiness_mutation=false\nmerge_mutation=false\n" "$rc" "$inner_status" "$failed" > "$wrapper/wrapper-status.env"; find "$wrapper" -type f -printf "%P\t%s\n" | sort > "$wrapper/manifest.txt"; exit "$rc"' EXIT
+
+          blob_json="$wrapper/qualifier-blob.json"
+          qualifier_xz="$wrapper/qualifier-v119.sh.xz"
+          qualifier="$wrapper/qualifier-v119.sh"
+          gh api "repos/$REPO/git/blobs/$QUALIFIER_BLOB" > "$blob_json"
+          jq -e --arg sha "$QUALIFIER_BLOB" --argjson size "$QUALIFIER_XZ_BYTES" '
+            .sha == $sha and .size == $size and .encoding == "base64"
+          ' "$blob_json" >/dev/null
+          jq -r '.content' "$blob_json" | tr -d '\n' | base64 -d > "$qualifier_xz"
+          test "$(stat -c %s "$qualifier_xz")" = "$QUALIFIER_XZ_BYTES"
+          test "$(git hash-object "$qualifier_xz")" = "$QUALIFIER_BLOB"
+          printf '%s  %s\n' "$QUALIFIER_XZ_SHA256" "$qualifier_xz" | sha256sum -c -
+          xz -t "$qualifier_xz"
+          xz -dc "$qualifier_xz" > "$qualifier"
+          test "$(stat -c %s "$qualifier")" = "$QUALIFIER_BYTES"
+          printf '%s  %s\n' "$QUALIFIER_SHA256" "$qualifier" | sha256sum -c -
+          bash -n "$qualifier"
+          {
+            printf 'qualifier_blob=%s\n' "$QUALIFIER_BLOB"
+            printf 'qualifier_xz_bytes=%s\n' "$QUALIFIER_XZ_BYTES"
+            printf 'qualifier_xz_sha256=%s\n' "$QUALIFIER_XZ_SHA256"
+            printf 'qualifier_bytes=%s\n' "$QUALIFIER_BYTES"
+            printf 'qualifier_sha256=%s\n' "$QUALIFIER_SHA256"
+          } > "$wrapper/qualifier-identity.env"
+
+          set +e
+          bash -x "$qualifier" > "$wrapper/inner.log" 2>&1
+          inner_status=$?
+          set -e
+          exit "$inner_status"
+
+      - name: Emit controller receipts
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          wrapper=/tmp/pr2231-v119-current-three-wrapper-r1
+          mkdir -p "$wrapper"
+          {
+            printf '### PR2231 V119 current-three qualification R1\n\n'
+            for receipt in wrapper-status.env qualifier-identity.env manifest.txt; do
+              printf '\n#### %s\n\n```text\n' "$receipt"
+              test ! -f "$wrapper/$receipt" || cat "$wrapper/$receipt"
+              printf '```\n'
+            done
+            printf '\n#### qualifier status\n\n```text\n'
+            test ! -f "$ARTIFACT_DIR/status.env" || cat "$ARTIFACT_DIR/status.env"
+            printf '```\n'
+            printf '\n#### terminal\n\n```text\n'
+            test ! -f "$ARTIFACT_DIR/terminal.txt" || cat "$ARTIFACT_DIR/terminal.txt"
+            printf '```\n'
+            printf '\n#### inner.log tail\n\n```text\n'
+            test ! -f "$wrapper/inner.log" || tail -n 1200 "$wrapper/inner.log"
+            printf '```\n'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-v119-current-three-r1
+          path: |
+            /tmp/pr2231-v119-current-three-wrapper-r1
+            /tmp/pr2231-v119-current-three-r1
+          retention-days: 90
