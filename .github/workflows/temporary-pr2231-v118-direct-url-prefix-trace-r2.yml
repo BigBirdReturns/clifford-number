@@ -1,0 +1,137 @@
+name: Temporary PR 2231 V118 direct-URL and prefix trace R2
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: pr2231-v118-direct-url-prefix-trace-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  trace-v118:
+    if: github.event.pull_request.head.ref == 'agent/pr2231-v118-direct-url-prefix-trace-r2'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+      CONTROLLER_PR: ${{ github.event.pull_request.number }}
+      CONTROLLER_BRANCH: ${{ github.event.pull_request.head.ref }}
+      EXPECTED_CONTROLLER_BRANCH: agent/pr2231-v118-direct-url-prefix-trace-r2
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Reconstruct, retain, and trace exact failed V118 qualifier
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export LC_ALL=C
+          repo=BigBirdReturns/clifford-number
+          root=/tmp/pr2231-v118-trace-envelope-r2
+          artifact=/tmp/pr2231-v118-direct-url-prefix-trace-r2
+          payload="$root/v118-payload.tar.xz"
+          unpacked="$root/unpacked"
+          trace_log="$root/v118-trace.log"
+          chunk_manifest="$root/v118-chunks.txt"
+          rm -rf "$root" "$artifact"
+          mkdir -p "$root" "$unpacked" "$artifact/envelope" "$artifact/payload"
+          : > "$trace_log"
+          : > "$chunk_manifest"
+          exec > >(tee -a "$trace_log") 2>&1
+          preserve() {
+            rc=$?
+            trap - EXIT
+            set +e
+            mkdir -p "$artifact/envelope" "$artifact/payload"
+            install -m 0644 "$trace_log" "$artifact/envelope/v118-trace.log"
+            install -m 0644 "$chunk_manifest" "$artifact/envelope/v118-chunks.txt"
+            test ! -f "$payload" || install -m 0644 "$payload" "$artifact/payload/v118-payload.tar.xz"
+            test ! -f "$unpacked/qualifier-v118.sh" || install -m 0644 "$unpacked/qualifier-v118.sh" "$artifact/payload/qualifier-v118.sh"
+            test ! -f "$unpacked/v118.patch" || install -m 0644 "$unpacked/v118.patch" "$artifact/payload/v118.patch"
+            printf '%s\n' \
+              'controller_envelope=v118-direct-url-prefix-trace-r2' \
+              "outer_status=$rc" \
+              'mode=read-only' \
+              'product_mutation=none' \
+              'review_mutation=none' \
+              > "$artifact/envelope/v118-outer-status.env"
+            find "$artifact" -type f -printf '%P\t%s\n' | sort \
+              > "$artifact/envelope/v118-final-manifest.txt"
+            exit "$rc"
+          }
+          trap preserve EXIT
+
+          test "$(git rev-parse HEAD)" = "$EXPECTED_CONTROLLER"
+          test "$(git rev-parse HEAD^)" = 771a64b6b467748d2f4df667b5f78e76f9432d69
+          test "$CONTROLLER_BRANCH" = "$EXPECTED_CONTROLLER_BRANCH"
+
+          blobs=(
+            94b6577f5638fa461309ec8c1a412c7e9c6a4335
+            348b9a5e69118cd56015e6f70b863c45617f5bc9
+            d2509e68c42a834f7e8701461d97963dc3e89b25
+          )
+          sizes=(4096 4096 1004)
+          shas=(
+            198b17a4e5005b91d4e075ddc8303232c2fd1f96cba2b8344982de733aa7c2ca
+            57a902c58ca2c08fb0cbb03987a0ad5568212d5ede781315c6f3a1fa633dd3b2
+            acd7ce12c8b89e6b2972136cb9ef8e6efec3b105adaaf628d67783c7f1f84c53
+          )
+          : > "$payload"
+          for index in "${!blobs[@]}"; do
+            blob="${blobs[$index]}"
+            chunk=$(printf '%s/chunk-%02d.bin' "$root" "$index")
+            gh api -H 'Accept: application/vnd.github+json' \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              "repos/$repo/git/blobs/$blob" --jq '.content' \
+              | tr -d '\n' | base64 -d > "$chunk"
+            test "$(wc -c < "$chunk")" = "${sizes[$index]}"
+            test "$(git hash-object "$chunk")" = "$blob"
+            actual_sha=$(sha256sum "$chunk" | awk '{print $1}')
+            test "$actual_sha" = "${shas[$index]}"
+            printf '%02d\t%s\t%s\t%s\n' "$index" "$blob" "$actual_sha" "${sizes[$index]}" \
+              >> "$chunk_manifest"
+            cat "$chunk" >> "$payload"
+          done
+
+          test "$(wc -c < "$payload")" = 9196
+          test "$(git hash-object "$payload")" = 2f3e8563cc98f5f44ec73723f9aebcc62ed5f7ab
+          test "$(sha256sum "$payload" | awk '{print $1}')" = 9a5ce8e2a6cce95e7c1a6bb645da0b2b9d872240fe4c67ba273504bd94a51032
+          xz -t "$payload"
+          tar -xJf "$payload" -C "$unpacked"
+          test "$(wc -c < "$unpacked/qualifier-v118.sh")" = 21544
+          test "$(git hash-object "$unpacked/qualifier-v118.sh")" = 9d17562074121f04a9c656019922a15f953e127e
+          test "$(sha256sum "$unpacked/qualifier-v118.sh" | awk '{print $1}')" = 18cbb0d3e839870cc377b0a5faa2434ff0a2ed89e3eb27550675a48a1f9b754d
+          test "$(wc -c < "$unpacked/v118.patch")" = 16218
+          test "$(git hash-object "$unpacked/v118.patch")" = a4fc4e931726a2801faac267e2d538f942a9ffc1
+          test "$(sha256sum "$unpacked/v118.patch" | awk '{print $1}')" = bd87f816fdba784f28c634d2809af64c4b251a2916617c191d6e4eb942ffded9
+          bash -n "$unpacked/qualifier-v118.sh"
+
+          export PS4='+ ${BASH_SOURCE}:${LINENO}: '
+          set +e
+          bash -x "$unpacked/qualifier-v118.sh"
+          qualifier_rc=$?
+          set -e
+          exit "$qualifier_rc"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-v118-direct-url-prefix-trace-r2
+          path: /tmp/pr2231-v118-direct-url-prefix-trace-r2
+          if-no-files-found: error
+          retention-days: 90
