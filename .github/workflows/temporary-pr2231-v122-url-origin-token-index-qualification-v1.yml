@@ -1,0 +1,96 @@
+name: Temporary PR 2231 V122 URL origin and token-index qualification
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: pr2231-v122-url-origin-token-index-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  qualify-v122:
+    if: github.event.pull_request.head.ref == 'agent/pr2231-v122-url-origin-token-index-qualification-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+      CONTROLLER_PR: ${{ github.event.pull_request.number }}
+      CONTROLLER_BRANCH: ${{ github.event.pull_request.head.ref }}
+      EXPECTED_CONTROLLER_BRANCH: agent/pr2231-v122-url-origin-token-index-qualification-v1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Recover and execute the exact read-only V122 qualifier
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export LC_ALL=C
+          repo=BigBirdReturns/clifford-number
+          payload_blob=4be410566a53ec0984730924f8f812647cf194d4
+          payload_size=4756
+          payload_sha256=f762f32556faa75fdfe2deb8a1c30e29882b85a6e7f1b36909f7c290375b5ccc
+          qualifier_blob=44fe3cfcb2c8abf2d03e2e7f401d022996481bef
+          qualifier_size=19462
+          qualifier_sha256=64fed8f34ed4d1f6e581d69cdb46977e6df146663ab745491b39a15fd2eacda1
+          envelope=/tmp/pr2231-v122-url-origin-token-index-controller-v1
+          payload="$envelope/qualifier-v122.sh.xz"
+          qualifier="$envelope/qualifier-v122.sh"
+          wrapper_log="$envelope/controller.log"
+          rm -rf "$envelope"
+          mkdir -p "$envelope"
+          : > "$wrapper_log"
+          exec > >(tee -a "$wrapper_log") 2>&1
+
+          preserve() {
+            rc=$?
+            trap - EXIT
+            set +e
+            printf 'outer_status=%s\nmode=read-only-qualification\n' "$rc" > "$envelope/controller-status.env"
+            find "$envelope" -type f -printf '%P\t%s\n' | sort > "$envelope/envelope-manifest.txt"
+            find "$envelope" -type f ! -name envelope-sha256.txt -print0 \
+              | sort -z | xargs -0 sha256sum > "$envelope/envelope-sha256.txt"
+            exit "$rc"
+          }
+          trap preserve EXIT
+
+          gh api "repos/$repo/git/blobs/$payload_blob" --jq '.content' \
+            | tr -d '\n' | base64 -d > "$payload"
+          test "$(wc -c < "$payload")" = "$payload_size"
+          test "$(git hash-object "$payload")" = "$payload_blob"
+          test "$(sha256sum "$payload" | awk '{print $1}')" = "$payload_sha256"
+          xz -dc "$payload" > "$qualifier"
+          test "$(wc -c < "$qualifier")" = "$qualifier_size"
+          test "$(git hash-object "$qualifier")" = "$qualifier_blob"
+          test "$(sha256sum "$qualifier" | awk '{print $1}')" = "$qualifier_sha256"
+          chmod 0755 "$qualifier"
+          bash -n "$qualifier"
+          printf 'payload_blob=%s\npayload_sha256=%s\nqualifier_blob=%s\nqualifier_sha256=%s\n' \
+            "$payload_blob" "$payload_sha256" "$qualifier_blob" "$qualifier_sha256" \
+            > "$envelope/qualifier-provenance.txt"
+          bash "$qualifier"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-v122-url-origin-token-index-qualification-v1
+          path: |
+            /tmp/pr2231-v122-url-origin-token-index-qualification-v1
+            /tmp/pr2231-v122-url-origin-token-index-controller-v1
+          if-no-files-found: error
+          retention-days: 90
