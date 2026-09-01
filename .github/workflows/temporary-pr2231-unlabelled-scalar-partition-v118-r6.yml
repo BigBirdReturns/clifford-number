@@ -1,0 +1,212 @@
+name: Temporary PR 2231 unlabelled scalar-partition V118 qualifier R6
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+jobs:
+  qualify-unlabelled-scalar-partition-v118-r6:
+    if: github.event.pull_request.head.ref == 'agent/pr2231-unlabelled-scalar-partition-v118-qualifier-r6'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    env:
+      REPO: BigBirdReturns/clifford-number
+      PRODUCT_PR: '2231'
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      CONTROLLER_BRANCH: agent/pr2231-unlabelled-scalar-partition-v118-qualifier-r6
+      CONTROLLER_WORKFLOW: .github/workflows/temporary-pr2231-unlabelled-scalar-partition-v118-r6.yml
+      EXPECTED_MAIN: 771a64b6b467748d2f4df667b5f78e76f9432d69
+      EXPECTED_PRODUCT: 0c0ec19938e76d83d646c79d02bea9a724e6773b
+      EXPECTED_PRODUCT_TREE: 326186e534735e8fc108c3bb7cab115d5db08dce
+      EXPECTED_LIBRARY: 123b88403265fa4193a44a97b27aebc7661c1528
+      EXPECTED_TEST: a71e670bbf85a399e02a184e0a8fce19d127bfaf
+      EXPECTED_REVIEW_ID: '5072486871'
+      EXPECTED_REVIEW_COMMENT: '3899391565'
+      EXPECTED_PATCH_BLOB: 3cee9edc8ab2976dad9b1578433b0e116adf94ed
+      EXPECTED_PATCH_SHA256: 12e099998370d7df416f7e0872fbda8bcf13f58c4a9e990226d9ad04d25e2421
+      EXPECTED_CANDIDATE_LIBRARY: 666f4b53fa676c6cfedd27748988301fcfe67efe
+      EXPECTED_CANDIDATE_TEST: 3a8f092bba87f14d4870c656a2a887e73eec39b7
+      EXPECTED_CANDIDATE_LIBRARY_SHA256: f8e36b516e25ffef801fc87af08ca2ae5bdbe246144f602708207826c666852e
+      EXPECTED_CANDIDATE_TEST_SHA256: 925626a9a9d77aa40d97d3c0826f52615de0d4eccfac5b6c824f283e881f61fc
+      QUALIFIER_XZ_BLOB: 8782aa4e764562fb1d0b6741a381c5f2e4b71cfb
+      QUALIFIER_XZ_BYTES: '4228'
+      QUALIFIER_XZ_SHA256: 838ef94d68890037a87bae8c9d2bba3100876dedbff0699e12e2e049c6e95ae5
+      QUALIFIER_BLOB: ff77229fdf7b6161ba9dc81e1112a193c9760c91
+      QUALIFIER_BYTES: '20362'
+      QUALIFIER_SHA256: a92561a426082b273949e90dbaff62600b79319e2b163c20fae01e7e6f7544ad
+      PATCH_BYTES: '4665'
+      ARTIFACT_DIR: /tmp/pr2231-unlabelled-scalar-partition-v118-r6-qualification
+    steps:
+      - name: Check out exact controller head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Materialize, repair generated-state restoration, and execute V118 qualifier R6
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CONTROLLER_PR: ${{ github.event.pull_request.number }}
+          EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          d=/tmp/pr2231-v118-r6-envelope
+          rm -rf "$d" "$ARTIFACT_DIR"
+          mkdir -p "$d" "$ARTIFACT_DIR"
+          exec > >(tee "$ARTIFACT_DIR/wrapper.log") 2>&1
+          trap 'rc=$?; trap - EXIT; mkdir -p "$ARTIFACT_DIR"; cp -f "$d/qualifier-v118.sh" "$ARTIFACT_DIR/original-qualifier-v118.sh" 2>/dev/null || true; cp -f "$d/qualifier-v118-r6.sh" "$ARTIFACT_DIR/repaired-qualifier-v118-r6.sh" 2>/dev/null || true; cp -f "$d/repaired-qualifier-objects.env" "$ARTIFACT_DIR/" 2>/dev/null || true; printf "wrapper_exit=%s\n" "$rc" > "$ARTIFACT_DIR/wrapper-status.env"; exit "$rc"' EXIT
+
+          gh api "repos/$REPO/git/blobs/$QUALIFIER_XZ_BLOB" --jq .content \
+            | tr -d '\n' | base64 -d > "$d/qualifier-v118.sh.xz"
+          test "$(wc -c < "$d/qualifier-v118.sh.xz")" = "$QUALIFIER_XZ_BYTES"
+          test "$(sha256sum "$d/qualifier-v118.sh.xz" | awk '{print $1}')" = "$QUALIFIER_XZ_SHA256"
+          test "$(git hash-object "$d/qualifier-v118.sh.xz")" = "$QUALIFIER_XZ_BLOB"
+          xz -t "$d/qualifier-v118.sh.xz"
+          xz -dc "$d/qualifier-v118.sh.xz" > "$d/qualifier-v118.sh"
+          test "$(wc -c < "$d/qualifier-v118.sh")" = "$QUALIFIER_BYTES"
+          test "$(sha256sum "$d/qualifier-v118.sh" | awk '{print $1}')" = "$QUALIFIER_SHA256"
+          test "$(git hash-object "$d/qualifier-v118.sh")" = "$QUALIFIER_BLOB"
+          bash -n "$d/qualifier-v118.sh"
+
+          python - "$d/qualifier-v118.sh" "$d/qualifier-v118-r6.sh" <<'PY'
+          from pathlib import Path
+          import sys
+
+          source_path = Path(sys.argv[1])
+          output_path = Path(sys.argv[2])
+          source = source_path.read_text()
+
+          paths = [
+              'build/axm-identity.json',
+              'build/build-hop-report.json',
+              'build/hop-graph.json',
+              'build/migration-review.md',
+              'build/migration-summary.json',
+              'build/receipt-graph.json',
+              'build/scores.json',
+              'build/scout-report.json',
+              'build/scout-report.md',
+              'build/surface-graph.json',
+              'build/topology-admission-frontier.json',
+          ]
+
+          def replacement(prefix: str, status_name: str) -> str:
+              expected_var = f'{prefix}_expected_generated_drift'
+              actual_var = f'{prefix}_actual_generated_drift'
+              remaining_var = f'{prefix}_remaining_paths'
+              expected_ref = '${' + expected_var + '[@]}'
+              actual_ref = '${' + actual_var + '[@]}'
+              remaining_count_ref = '${#' + remaining_var + '[@]}'
+              remaining_first_ref = '${' + remaining_var + '[0]}'
+              remaining_second_ref = '${' + remaining_var + '[1]}'
+              return '\n'.join([
+                  f'git diff --binary > "$ARTIFACT_DIR/{prefix}-after-tests-pre-restore.patch"',
+                  f'git status --porcelain=v1 > "$ARTIFACT_DIR/{prefix}-status-after-tests-pre-restore.txt"',
+                  f'{expected_var}=(',
+                  *[f'  {p}' for p in paths],
+                  ')',
+                  f'mapfile -t {actual_var} < <(',
+                  "  git status --porcelain=v1 | awk '$2 ~ /^build\\// { print $2 }' | sort",
+                  ')',
+                  f'printf \'%s\\n\' "{expected_ref}" > "$ARTIFACT_DIR/{prefix}-expected-generated-drift.txt"',
+                  f'printf \'%s\\n\' "{actual_ref}" > "$ARTIFACT_DIR/{prefix}-actual-generated-drift.txt"',
+                  f'diff -u "$ARTIFACT_DIR/{prefix}-expected-generated-drift.txt" "$ARTIFACT_DIR/{prefix}-actual-generated-drift.txt"',
+                  f'git restore -- "{expected_ref}"',
+                  f'git status --porcelain=v1 > "$ARTIFACT_DIR/{prefix}-status-after-generated-restore.txt"',
+                  f'mapfile -t {remaining_var} < <(git diff --name-only)',
+                  f'test "{remaining_count_ref}" -eq 2',
+                  f'test "{remaining_first_ref}" = \'test/industrial-exhaust.test.js\'',
+                  f'test "{remaining_second_ref}" = \'tools/lib/industrial-exhaust.mjs\'',
+                  f'git diff --binary > "$ARTIFACT_DIR/{prefix}-after-tests.patch"',
+                  f'git status --porcelain=v1 > "$ARTIFACT_DIR/{status_name}"',
+                  f'cmp "$ARTIFACT_DIR/{prefix}-before-tests.patch" "$ARTIFACT_DIR/{prefix}-after-tests.patch"',
+                  f'cmp "$ARTIFACT_DIR/{prefix}-status-before-tests.txt" "$ARTIFACT_DIR/{status_name}"',
+              ])
+
+          for prefix in ('candidate', 'transplant'):
+              status_name = f'{prefix}-status-after-tests.txt'
+              old = '\n'.join([
+                  f'git diff --binary > "$ARTIFACT_DIR/{prefix}-after-tests.patch"',
+                  f'git status --porcelain=v1 > "$ARTIFACT_DIR/{status_name}"',
+                  f'cmp "$ARTIFACT_DIR/{prefix}-before-tests.patch" "$ARTIFACT_DIR/{prefix}-after-tests.patch"',
+                  f'cmp "$ARTIFACT_DIR/{prefix}-status-before-tests.txt" "$ARTIFACT_DIR/{status_name}"',
+              ])
+              count = source.count(old)
+              if count != 1:
+                  raise SystemExit(f'{prefix} generated-state comparison lease count was {count}, expected 1')
+              source = source.replace(old, replacement(prefix, status_name), 1)
+
+          topology_anchor = '\n'.join([
+              'candidate_index="$ARTIFACT_DIR/candidate.index"',
+              'rm -f "$candidate_index"',
+              'GIT_INDEX_FILE="$candidate_index" git read-tree "$EXPECTED_MAIN"',
+          ])
+          topology_replacement = '\n'.join([
+              'test "$(git hash-object -w tools/lib/industrial-exhaust.mjs)" = "$EXPECTED_CANDIDATE_LIBRARY"',
+              'test "$(git hash-object -w test/industrial-exhaust.test.js)" = "$EXPECTED_CANDIDATE_TEST"',
+              'test "$(git cat-file -t "$EXPECTED_CANDIDATE_LIBRARY")" = blob',
+              'test "$(git cat-file -t "$EXPECTED_CANDIDATE_TEST")" = blob',
+              'candidate_index="$ARTIFACT_DIR/candidate.index"',
+              'rm -f "$candidate_index"',
+              'GIT_INDEX_FILE="$candidate_index" git read-tree "$EXPECTED_MAIN"',
+          ])
+          topology_count = source.count(topology_anchor)
+          if topology_count != 1:
+              raise SystemExit(
+                  f'candidate blob-materialization lease count was {topology_count}, expected 1'
+              )
+          source = source.replace(topology_anchor, topology_replacement, 1)
+
+          identity_anchor = '  | git commit-tree "$candidate_tree" -p "$EXPECTED_MAIN")'
+          identity_replacement = (
+              '  | git -c user.name=\'PR 2231 V118 Qualifier\' '
+              '-c user.email=\'pr2231-v118-qualifier@example.invalid\' '
+              'commit-tree "$candidate_tree" -p "$EXPECTED_MAIN")'
+          )
+          identity_count = source.count(identity_anchor)
+          if identity_count != 1:
+              raise SystemExit(
+                  f'candidate commit identity lease count was {identity_count}, expected 1'
+              )
+          source = source.replace(identity_anchor, identity_replacement, 1)
+
+          output_path.write_text(source)
+          PY
+          bash -n "$d/qualifier-v118-r6.sh"
+          {
+            printf 'original_qualifier_blob=%s\n' "$QUALIFIER_BLOB"
+            printf 'original_qualifier_sha256=%s\n' "$QUALIFIER_SHA256"
+            printf 'repaired_qualifier_blob=%s\n' "$(git hash-object "$d/qualifier-v118-r6.sh")"
+            printf 'repaired_qualifier_sha256=%s\n' "$(sha256sum "$d/qualifier-v118-r6.sh" | awk '{print $1}')"
+            printf 'repaired_qualifier_bytes=%s\n' "$(wc -c < "$d/qualifier-v118-r6.sh")"
+          } > "$d/repaired-qualifier-objects.env"
+          cat "$d/repaired-qualifier-objects.env"
+
+          gh api "repos/$REPO/git/blobs/$EXPECTED_PATCH_BLOB" --jq .content \
+            | tr -d '\n' | base64 -d > "$d/pr2231-v118.patch"
+          test "$(wc -c < "$d/pr2231-v118.patch")" = "$PATCH_BYTES"
+          test "$(sha256sum "$d/pr2231-v118.patch" | awk '{print $1}')" = "$EXPECTED_PATCH_SHA256"
+          test "$(git hash-object "$d/pr2231-v118.patch")" = "$EXPECTED_PATCH_BLOB"
+
+          PATCH_FILE="$d/pr2231-v118.patch" bash "$d/qualifier-v118-r6.sh"
+
+      - name: Upload terminal V118 R6 qualification artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr2231-unlabelled-scalar-partition-v118-r6
+          path: /tmp/pr2231-unlabelled-scalar-partition-v118-r6-qualification
+          if-no-files-found: error
+          retention-days: 90
