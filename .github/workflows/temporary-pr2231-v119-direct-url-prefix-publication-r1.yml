@@ -1,0 +1,327 @@
+name: Temporary PR 2231 V119 direct-URL and prefix publisher R1
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: pr2231-v119-direct-url-prefix-publication-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  publish-v119:
+    if: github.event.pull_request.head.ref == 'agent/pr2231-v119-direct-url-prefix-publication-r1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+      CONTROLLER_PR: ${{ github.event.pull_request.number }}
+      CONTROLLER_BRANCH: ${{ github.event.pull_request.head.ref }}
+      EXPECTED_CONTROLLER_BRANCH: agent/pr2231-v119-direct-url-prefix-publication-r1
+      EXPECTED_MAIN: 771a64b6b467748d2f4df667b5f78e76f9432d69
+      EXPECTED_PRODUCT: 2d7555363d2fe6bcb06b629dc9e06e3c7ad4a9bb
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      PRODUCT_PR: '2231'
+      QUALIFIER_PR: '2489'
+      QUALIFIER_HEAD: e392dec766fa7ae38600c3cf28c136e113c17afe
+      QUALIFIER_RUN: '33481175532'
+      QUALIFIER_ARTIFACT: '9790023231'
+      QUALIFIER_ZIP_SHA256: 66496d75bec4e036cf69c191736629ea54f67b639df0635fe96b818ee0f23e1a
+      EXPECTED_CANDIDATE: 4fd80c0638cd97f45c6f2ce39820c42e85b5c162
+      EXPECTED_TREE: f60e8e9b4bbb2c258d044d49c5ccf02b78b65792
+      EXPECTED_SOURCE_BLOB: a6e1ddbfdfe7f8bdc1737ec6f0076cf19de17c64
+      EXPECTED_TEST_BLOB: c781368f043278eaf00f3576cac1d34ab13e2da9
+      EXPECTED_SOURCE_SHA256: 16ec6060b02da6a412f898eb0ba62f9dbafc0102a4dd1b134e871b330337f838
+      EXPECTED_TEST_SHA256: 060b1231f2f15f55d5642790bfcefd1e2abfdb8797b8884d861515af9653c693
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Reconstruct, requalify, and publish exact V119 candidate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export LC_ALL=C
+          export GIT_TERMINAL_PROMPT=0
+          repo=BigBirdReturns/clifford-number
+          owner=BigBirdReturns
+          name=clifford-number
+          root=/tmp/pr2231-v119-publication-work
+          artifact=/tmp/pr2231-v119-direct-url-prefix-publication-r1
+          qualifier_zip="$root/qualifier.zip"
+          qualifier="$root/qualifier"
+          work="$root/work"
+          candidate_files="$root/candidate-files"
+          log="$artifact/publisher.log"
+          pushed=0
+          rm -rf "$root" "$artifact"
+          mkdir -p "$root" "$artifact" "$qualifier" "$candidate_files"
+          : > "$log"
+          exec > >(tee -a "$log") 2>&1
+
+          preserve() {
+            rc=$?
+            trap - EXIT
+            set +e
+            printf 'outer_status=%s\npush_completed=%s\n' "$rc" "$pushed" \
+              > "$artifact/outer-status.env"
+            if [[ "$rc" -eq 0 && "$pushed" -eq 1 ]]; then
+              printf '%s\n' \
+                'QUALIFIER_REBOUND' \
+                'FOCUSED_QUALIFICATION_SUCCESS' \
+                'RELEASE_QUALIFICATION_SUCCESS' \
+                'PRODUCT_PUBLICATION_SUCCESS' \
+                'REVIEW_MUTATION_SKIPPED' \
+                'QUALIFICATION_SUCCESS' \
+                > "$artifact/publication-terminal.txt"
+            else
+              printf '%s\n' \
+                'PRODUCT_PUBLICATION_NOT_ADMITTED' \
+                'REVIEW_MUTATION_SKIPPED' \
+                'QUALIFICATION_FAILED' \
+                > "$artifact/publication-terminal.txt"
+            fi
+            find "$artifact" -type f -printf '%P\t%s\n' | sort \
+              > "$artifact/artifact-manifest.txt"
+            find "$artifact" -type f ! -name artifact-sha256.txt -print0 \
+              | sort -z \
+              | xargs -0 sha256sum \
+              > "$artifact/artifact-sha256.txt"
+            exit "$rc"
+          }
+          trap preserve EXIT
+
+          snapshot_threads() {
+            local destination=$1
+            gh api graphql \
+              -F owner="$owner" \
+              -F name="$name" \
+              -F number="$PRODUCT_PR" \
+              -f query='query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){pullRequest(number:$number){reviewThreads(first:100){nodes{id isResolved} pageInfo{hasNextPage endCursor}}}}}' \
+              > "$destination.raw"
+            test "$(jq -r '.data.repository.pullRequest.reviewThreads.pageInfo.hasNextPage' "$destination.raw")" = false
+            jq -c '.data.repository.pullRequest.reviewThreads.nodes | sort_by(.id)' \
+              "$destination.raw" > "$destination"
+          }
+
+          test "$(git rev-parse HEAD)" = "$EXPECTED_CONTROLLER"
+          test "$(git rev-parse HEAD^)" = "$EXPECTED_MAIN"
+          test "$CONTROLLER_BRANCH" = "$EXPECTED_CONTROLLER_BRANCH"
+
+          controller_json=$(gh api "repos/$repo/pulls/$CONTROLLER_PR")
+          test "$(jq -r '.head.sha' <<<"$controller_json")" = "$EXPECTED_CONTROLLER"
+          test "$(jq -r '.base.sha' <<<"$controller_json")" = "$EXPECTED_MAIN"
+          test "$(jq -r '.draft' <<<"$controller_json")" = true
+          test "$(jq -r '.state' <<<"$controller_json")" = open
+          test "$(jq -r '.merged' <<<"$controller_json")" = false
+
+          qualifier_json=$(gh api "repos/$repo/pulls/$QUALIFIER_PR")
+          test "$(jq -r '.head.sha' <<<"$qualifier_json")" = "$QUALIFIER_HEAD"
+          test "$(jq -r '.base.sha' <<<"$qualifier_json")" = "$EXPECTED_MAIN"
+          test "$(jq -r '.draft' <<<"$qualifier_json")" = true
+          test "$(jq -r '.state' <<<"$qualifier_json")" = open
+          test "$(jq -r '.merged' <<<"$qualifier_json")" = false
+
+          qualifier_run_json=$(gh api "repos/$repo/actions/runs/$QUALIFIER_RUN")
+          test "$(jq -r '.head_sha' <<<"$qualifier_run_json")" = "$QUALIFIER_HEAD"
+          test "$(jq -r '.status' <<<"$qualifier_run_json")" = completed
+          test "$(jq -r '.conclusion' <<<"$qualifier_run_json")" = success
+
+          main_before=$(gh api "repos/$repo/git/ref/heads/main" --jq '.object.sha')
+          product_before=$(gh api "repos/$repo/git/ref/heads/$PRODUCT_BRANCH" --jq '.object.sha')
+          test "$main_before" = "$EXPECTED_MAIN"
+          test "$product_before" = "$EXPECTED_PRODUCT"
+
+          product_json=$(gh api "repos/$repo/pulls/$PRODUCT_PR")
+          test "$(jq -r '.head.sha' <<<"$product_json")" = "$EXPECTED_PRODUCT"
+          test "$(jq -r '.base.sha' <<<"$product_json")" = "$EXPECTED_MAIN"
+          test "$(jq -r '.draft' <<<"$product_json")" = true
+          test "$(jq -r '.state' <<<"$product_json")" = open
+          test "$(jq -r '.merged' <<<"$product_json")" = false
+          jq -S '{number,state,draft,merged,title,body,base_sha:.base.sha}' <<<"$product_json" \
+            > "$artifact/product-pr-before.json"
+          snapshot_threads "$artifact/review-threads-before.json"
+          printf 'main=%s\nproduct=%s\nqualifier=%s\npublisher=%s\n' \
+            "$main_before" "$product_before" "$QUALIFIER_HEAD" "$EXPECTED_CONTROLLER" \
+            > "$artifact/initial-leases.txt"
+
+          curl -fsSL \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/$repo/actions/artifacts/$QUALIFIER_ARTIFACT/zip" \
+            -o "$qualifier_zip"
+          test "$(sha256sum "$qualifier_zip" | awk '{print $1}')" = "$QUALIFIER_ZIP_SHA256"
+          unzip -q "$qualifier_zip" -d "$qualifier"
+          printf 'artifact_id=%s\nzip_sha256=%s\n' \
+            "$QUALIFIER_ARTIFACT" "$QUALIFIER_ZIP_SHA256" \
+            > "$artifact/qualifier-rebind.txt"
+
+          test "$(cat "$qualifier/qualification-terminal.txt")" = $'PUBLICATION_SKIPPED\nPRODUCT_MUTATION_SKIPPED\nREVIEW_MUTATION_SKIPPED\nQUALIFICATION_SUCCESS'
+          test "$(sed -n 's/^candidate_commit=//p' "$qualifier/candidate-identity.txt")" = "$EXPECTED_CANDIDATE"
+          test "$(sed -n 's/^parent=//p' "$qualifier/candidate-identity.txt")" = "$EXPECTED_MAIN"
+          test "$(sed -n 's/^tree=//p' "$qualifier/candidate-identity.txt")" = "$EXPECTED_TREE"
+          test "$(sed -n 's/^source_blob=//p' "$qualifier/candidate-identity.txt")" = "$EXPECTED_SOURCE_BLOB"
+          test "$(sed -n 's/^test_blob=//p' "$qualifier/candidate-identity.txt")" = "$EXPECTED_TEST_BLOB"
+          test "$(sed -n 's/^source_sha256=//p' "$qualifier/candidate-identity.txt")" = "$EXPECTED_SOURCE_SHA256"
+          test "$(sed -n 's/^test_sha256=//p' "$qualifier/candidate-identity.txt")" = "$EXPECTED_TEST_SHA256"
+          test "$(cat "$qualifier/candidate-paths.txt")" = $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          test "$(sha256sum "$qualifier/industrial-exhaust.mjs" | awk '{print $1}')" = "$EXPECTED_SOURCE_SHA256"
+          test "$(sha256sum "$qualifier/industrial-exhaust.test.js" | awk '{print $1}')" = "$EXPECTED_TEST_SHA256"
+          test "$(git hash-object "$qualifier/industrial-exhaust.mjs")" = "$EXPECTED_SOURCE_BLOB"
+          test "$(git hash-object "$qualifier/industrial-exhaust.test.js")" = "$EXPECTED_TEST_BLOB"
+          test -s "$qualifier/successor-focused.log"
+          test -s "$qualifier/successor-release.log"
+          test -s "$qualifier/main-transplant-focused.log"
+          test -s "$qualifier/main-transplant-release.log"
+          install -m 0644 "$qualifier/candidate-identity.txt" "$artifact/qualified-candidate-identity.txt"
+          install -m 0644 "$qualifier/industrial-exhaust.mjs" "$candidate_files/industrial-exhaust.mjs"
+          install -m 0644 "$qualifier/industrial-exhaust.test.js" "$candidate_files/industrial-exhaust.test.js"
+
+          git fetch --no-tags origin \
+            "refs/heads/main:refs/remotes/origin/v119-publisher-main" \
+            "refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/v119-publisher-product"
+          test "$(git rev-parse refs/remotes/origin/v119-publisher-main)" = "$EXPECTED_MAIN"
+          test "$(git rev-parse refs/remotes/origin/v119-publisher-product)" = "$EXPECTED_PRODUCT"
+          git worktree add --detach "$work" "$EXPECTED_MAIN"
+          cp "$candidate_files/industrial-exhaust.mjs" "$work/tools/lib/industrial-exhaust.mjs"
+          cp "$candidate_files/industrial-exhaust.test.js" "$work/test/industrial-exhaust.test.js"
+          test "$(git -C "$work" diff --name-only)" = $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          git -C "$work" diff --check
+
+          (
+            cd "$work"
+            node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { redactContactData } from './tools/lib/industrial-exhaust.mjs';
+
+          const cases = [
+            ['https://user@example.test/03-6216-8041', 'https://user@example.test/03-6216-8041'],
+            ['<https://user@example.test/03-6216-8041>', '<https://user@example.test/03-6216-8041>'],
+            ['URL:https://example.test/user@example.org/03-6216-8041', 'URL:https://example.test/user@example.org/03-6216-8041'],
+            ['//user@example.test/03-6216-8041', '//user@example.test/03-6216-8041'],
+            ['example.test/user@example.org/03-6216-8041', 'example.test/user@example.org/03-6216-8041'],
+            ['ID: 1.42.68.53.00/user@example.test', 'ID: 1.42.68.53.00/[contact omitted]'],
+            ['Contact user@example.test or 03-6216-8041', 'Contact [contact omitted] or [contact omitted]'],
+            ['mailto:user@example.test', 'mailto:[contact omitted]'],
+            ['ID: 123-45678/3.14/(03) 6216 8041', 'ID: 123-45678/3.14/[contact omitted]']
+          ];
+          for (const [input, expected] of cases) {
+            assert.equal(redactContactData(input), expected, input);
+          }
+          console.log(`direct transition matrix passed: ${cases.length}`);
+          NODE
+            node --test test/industrial-exhaust*.test.js
+          ) > "$artifact/focused-qualification.log" 2>&1
+
+          (
+            cd "$work"
+            npm run release:check
+          ) > "$artifact/release-qualification.log" 2>&1
+
+          git -C "$work" reset --hard "$EXPECTED_MAIN"
+          git -C "$work" clean -fd
+          cp "$candidate_files/industrial-exhaust.mjs" "$work/tools/lib/industrial-exhaust.mjs"
+          cp "$candidate_files/industrial-exhaust.test.js" "$work/test/industrial-exhaust.test.js"
+          git -C "$work" add tools/lib/industrial-exhaust.mjs test/industrial-exhaust.test.js
+          test "$(git -C "$work" diff --cached --name-only)" = $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          candidate_tree=$(git -C "$work" write-tree)
+          test "$candidate_tree" = "$EXPECTED_TREE"
+          test "$(git -C "$work" rev-parse "$candidate_tree:tools/lib/industrial-exhaust.mjs")" = "$EXPECTED_SOURCE_BLOB"
+          test "$(git -C "$work" rev-parse "$candidate_tree:test/industrial-exhaust.test.js")" = "$EXPECTED_TEST_BLOB"
+
+          export GIT_AUTHOR_NAME=clifford-intake-bot
+          export GIT_AUTHOR_EMAIL=clifford-intake-bot@users.noreply.github.com
+          export GIT_COMMITTER_NAME=clifford-intake-bot
+          export GIT_COMMITTER_EMAIL=clifford-intake-bot@users.noreply.github.com
+          export GIT_AUTHOR_DATE=2026-09-01T07:30:00Z
+          export GIT_COMMITTER_DATE=2026-09-01T07:30:00Z
+          candidate_commit=$(printf '%s\n\n%s\n' \
+            'fix: preserve direct URL and bounded prefix context' \
+            'Protect URL-owned email text and index callback prefix state.' \
+            | git -C "$work" commit-tree "$candidate_tree" -p "$EXPECTED_MAIN")
+          test "$candidate_commit" = "$EXPECTED_CANDIDATE"
+          test "$(git -C "$work" rev-parse "$candidate_commit^")" = "$EXPECTED_MAIN"
+          git -C "$work" diff-tree --no-commit-id --name-only -r "$candidate_commit" \
+            > "$artifact/candidate-paths.txt"
+          test "$(cat "$artifact/candidate-paths.txt")" = $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          printf 'candidate_commit=%s\nparent=%s\ntree=%s\nsource_blob=%s\ntest_blob=%s\n' \
+            "$candidate_commit" "$EXPECTED_MAIN" "$candidate_tree" "$EXPECTED_SOURCE_BLOB" "$EXPECTED_TEST_BLOB" \
+            > "$artifact/reconstructed-candidate.txt"
+
+          main_lease=$(gh api "repos/$repo/git/ref/heads/main" --jq '.object.sha')
+          product_lease=$(gh api "repos/$repo/git/ref/heads/$PRODUCT_BRANCH" --jq '.object.sha')
+          test "$main_lease" = "$EXPECTED_MAIN"
+          test "$product_lease" = "$EXPECTED_PRODUCT"
+          controller_lease=$(gh api "repos/$repo/pulls/$CONTROLLER_PR")
+          qualifier_lease=$(gh api "repos/$repo/pulls/$QUALIFIER_PR")
+          product_lease_json=$(gh api "repos/$repo/pulls/$PRODUCT_PR")
+          test "$(jq -r '.head.sha' <<<"$controller_lease")" = "$EXPECTED_CONTROLLER"
+          test "$(jq -r '.draft' <<<"$controller_lease")" = true
+          test "$(jq -r '.state' <<<"$controller_lease")" = open
+          test "$(jq -r '.merged' <<<"$controller_lease")" = false
+          test "$(jq -r '.head.sha' <<<"$qualifier_lease")" = "$QUALIFIER_HEAD"
+          test "$(jq -r '.draft' <<<"$qualifier_lease")" = true
+          test "$(jq -r '.state' <<<"$qualifier_lease")" = open
+          test "$(jq -r '.merged' <<<"$qualifier_lease")" = false
+          test "$(jq -r '.head.sha' <<<"$product_lease_json")" = "$EXPECTED_PRODUCT"
+          test "$(jq -r '.draft' <<<"$product_lease_json")" = true
+          test "$(jq -r '.state' <<<"$product_lease_json")" = open
+          test "$(jq -r '.merged' <<<"$product_lease_json")" = false
+          snapshot_threads "$artifact/review-threads-prepush.json"
+          cmp "$artifact/review-threads-before.json" "$artifact/review-threads-prepush.json"
+
+          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${repo}.git"
+          git -C "$work" push origin \
+            "$candidate_commit:refs/heads/$PRODUCT_BRANCH" \
+            --force-with-lease="$PRODUCT_BRANCH:$EXPECTED_PRODUCT"
+          pushed=1
+          printf 'before=%s\nafter=%s\n' "$EXPECTED_PRODUCT" "$candidate_commit" \
+            > "$artifact/push-receipt.txt"
+
+          published_ref=''
+          for attempt in $(seq 1 20); do
+            published_ref=$(gh api "repos/$repo/git/ref/heads/$PRODUCT_BRANCH" --jq '.object.sha' 2>/dev/null || true)
+            [[ "$published_ref" == "$candidate_commit" ]] && break
+            sleep 1
+          done
+          test "$published_ref" = "$candidate_commit"
+          test "$(gh api "repos/$repo/git/ref/heads/main" --jq '.object.sha')" = "$EXPECTED_MAIN"
+
+          product_after=$(gh api "repos/$repo/pulls/$PRODUCT_PR")
+          test "$(jq -r '.draft' <<<"$product_after")" = true
+          test "$(jq -r '.state' <<<"$product_after")" = open
+          test "$(jq -r '.merged' <<<"$product_after")" = false
+          jq -S '{number,state,draft,merged,title,body,base_sha:.base.sha}' <<<"$product_after" \
+            > "$artifact/product-pr-after.json"
+          cmp "$artifact/product-pr-before.json" "$artifact/product-pr-after.json"
+
+          snapshot_threads "$artifact/review-threads-after.json"
+          cmp "$artifact/review-threads-before.json" "$artifact/review-threads-after.json"
+          test "$(gh api "repos/$repo/pulls/$CONTROLLER_PR" --jq '.head.sha')" = "$EXPECTED_CONTROLLER"
+          test "$(gh api "repos/$repo/pulls/$QUALIFIER_PR" --jq '.head.sha')" = "$QUALIFIER_HEAD"
+          printf 'main=%s\nproduct=%s\nqualifier=%s\npublisher=%s\nproduct_pr_draft=true\nreview_resolution_unchanged=true\n' \
+            "$EXPECTED_MAIN" "$candidate_commit" "$QUALIFIER_HEAD" "$EXPECTED_CONTROLLER" \
+            > "$artifact/final-leases.txt"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-v119-direct-url-prefix-publication-r1
+          path: /tmp/pr2231-v119-direct-url-prefix-publication-r1
+          if-no-files-found: error
+          retention-days: 90
