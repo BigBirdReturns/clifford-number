@@ -1,6 +1,6 @@
 {
   "schema_version": "clifford-cross-corpus-public-interest-map@1",
-  "generated_at": "2026-08-22",
+  "generated_at": "2026-09-01",
   "scope": "Repository evidence only; no new external acquisition.",
   "infrastructure_contract": {
     "mode": "discovery_not_adjudication",
@@ -241,7 +241,7 @@
         "scout_findings": 157,
         "crawl_candidates_minimum": 6,
         "crawl_rejections_preserved_minimum": 61,
-        "crawl_source_gaps": 1,
+        "crawl_source_gaps": 2,
         "public_interest_seeds": 24,
         "field_autopsy_searches": 17,
         "formation_signature_searches": 66
@@ -251,9 +251,17 @@
           "source_id": "sam-opportunities",
           "status": "skipped_missing_credential",
           "interpretation": "Acquisition did not run; this is not a zero result."
+        },
+        {
+          "source_id": "sec-form-d",
+          "status": "partial",
+          "records_seen": 10,
+          "failed_queries": 1,
+          "failure_class": "upstream_503",
+          "interpretation": "Coverage is incomplete; failed queries are not negative results."
         }
       ],
-      "what_the_data_shows": "The repository generated at least 316 inspectable research tasks; the live target branch may contain more as official-record intake advances. Batch count varies with the configured batch size and is presentation geometry, not a research-data count. Rejections, failed routes, source gaps, and inferred scout findings remain part of the discovery map rather than disappearing from it. The current committed crawl exposes one source gap: SAM.gov did not execute because its credential is unavailable. The Federal Register source completed successfully in the current crawl and is no longer represented as an active coverage gap. The remaining SAM state supports neither a zero-result interpretation nor evidence of absence.",
+      "what_the_data_shows": "The repository generated at least 316 inspectable research tasks; the live target branch may contain more as official-record intake advances. Batch count varies with the configured batch size and is presentation geometry, not a research-data count. Rejections, failed routes, source gaps, and inferred scout findings remain part of the discovery map rather than disappearing from it. The current committed crawl exposes two source gaps: SAM.gov did not execute because its credential is unavailable, and the SEC Form D run is partial because one configured query returned an upstream 503 while ten records were still observed. Neither state supports a zero-result interpretation or evidence of absence.",
       "open_join": "A fanout item is a research lead or coverage state, not a verified finding; each item retains its evidence and availability labels.",
       "source_paths": [
         "tools/build-research-fanout.mjs",
