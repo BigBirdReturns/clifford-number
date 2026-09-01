@@ -1,0 +1,98 @@
+name: Temporary PR 2231 unlabelled scalar-partition V118 qualifier
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+jobs:
+  qualify-unlabelled-scalar-partition-v118:
+    if: github.event.pull_request.head.ref == 'agent/pr2231-unlabelled-scalar-partition-v118-qualifier-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    env:
+      REPO: BigBirdReturns/clifford-number
+      PRODUCT_PR: '2231'
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      CONTROLLER_BRANCH: agent/pr2231-unlabelled-scalar-partition-v118-qualifier-v1
+      CONTROLLER_WORKFLOW: .github/workflows/temporary-pr2231-unlabelled-scalar-partition-v118.yml
+      EXPECTED_MAIN: 771a64b6b467748d2f4df667b5f78e76f9432d69
+      EXPECTED_PRODUCT: 0c0ec19938e76d83d646c79d02bea9a724e6773b
+      EXPECTED_PRODUCT_TREE: 326186e534735e8fc108c3bb7cab115d5db08dce
+      EXPECTED_LIBRARY: 123b88403265fa4193a44a97b27aebc7661c1528
+      EXPECTED_TEST: a71e670bbf85a399e02a184e0a8fce19d127bfaf
+      EXPECTED_REVIEW_ID: '5072486871'
+      EXPECTED_REVIEW_COMMENT: '3899391565'
+      EXPECTED_PATCH_BLOB: 3cee9edc8ab2976dad9b1578433b0e116adf94ed
+      EXPECTED_PATCH_SHA256: 12e099998370d7df416f7e0872fbda8bcf13f58c4a9e990226d9ad04d25e2421
+      EXPECTED_CANDIDATE_LIBRARY: 666f4b53fa676c6cfedd27748988301fcfe67efe
+      EXPECTED_CANDIDATE_TEST: 3a8f092bba87f14d4870c656a2a887e73eec39b7
+      EXPECTED_CANDIDATE_LIBRARY_SHA256: f8e36b516e25ffef801fc87af08ca2ae5bdbe246144f602708207826c666852e
+      EXPECTED_CANDIDATE_TEST_SHA256: 925626a9a9d77aa40d97d3c0826f52615de0d4eccfac5b6c824f283e881f61fc
+      QUALIFIER_XZ_BLOB: 8782aa4e764562fb1d0b6741a381c5f2e4b71cfb
+      QUALIFIER_XZ_BYTES: '4228'
+      QUALIFIER_XZ_SHA256: 838ef94d68890037a87bae8c9d2bba3100876dedbff0699e12e2e049c6e95ae5
+      QUALIFIER_BLOB: ff77229fdf7b6161ba9dc81e1112a193c9760c91
+      QUALIFIER_BYTES: '20362'
+      QUALIFIER_SHA256: a92561a426082b273949e90dbaff62600b79319e2b163c20fae01e7e6f7544ad
+      PATCH_BYTES: '4665'
+      ARTIFACT_DIR: /tmp/pr2231-unlabelled-scalar-partition-v118-qualification
+    steps:
+      - name: Check out exact controller head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Materialize and execute read-only V118 qualifier
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CONTROLLER_PR: ${{ github.event.pull_request.number }}
+          EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          d=/tmp/pr2231-v118-envelope
+          rm -rf "$d" "$ARTIFACT_DIR"
+          mkdir -p "$d" "$ARTIFACT_DIR"
+          exec > >(tee "$ARTIFACT_DIR/wrapper.log") 2>&1
+          trap 'rc=$?; trap - EXIT; printf "wrapper_exit=%s\n" "$rc" > "$ARTIFACT_DIR/wrapper-status.env"; exit "$rc"' EXIT
+
+          gh api "repos/$REPO/git/blobs/$QUALIFIER_XZ_BLOB" --jq .content \
+            | tr -d '\n' | base64 -d > "$d/qualifier-v118.sh.xz"
+          test "$(wc -c < "$d/qualifier-v118.sh.xz")" = "$QUALIFIER_XZ_BYTES"
+          test "$(sha256sum "$d/qualifier-v118.sh.xz" | awk '{print $1}')" = "$QUALIFIER_XZ_SHA256"
+          test "$(git hash-object "$d/qualifier-v118.sh.xz")" = "$QUALIFIER_XZ_BLOB"
+          xz -t "$d/qualifier-v118.sh.xz"
+          xz -dc "$d/qualifier-v118.sh.xz" > "$d/qualifier-v118.sh"
+          test "$(wc -c < "$d/qualifier-v118.sh")" = "$QUALIFIER_BYTES"
+          test "$(sha256sum "$d/qualifier-v118.sh" | awk '{print $1}')" = "$QUALIFIER_SHA256"
+          test "$(git hash-object "$d/qualifier-v118.sh")" = "$QUALIFIER_BLOB"
+          bash -n "$d/qualifier-v118.sh"
+
+          gh api "repos/$REPO/git/blobs/$EXPECTED_PATCH_BLOB" --jq .content \
+            | tr -d '\n' | base64 -d > "$d/pr2231-v118.patch"
+          test "$(wc -c < "$d/pr2231-v118.patch")" = "$PATCH_BYTES"
+          test "$(sha256sum "$d/pr2231-v118.patch" | awk '{print $1}')" = "$EXPECTED_PATCH_SHA256"
+          test "$(git hash-object "$d/pr2231-v118.patch")" = "$EXPECTED_PATCH_BLOB"
+
+          PATCH_FILE="$d/pr2231-v118.patch" bash "$d/qualifier-v118.sh"
+
+      - name: Upload terminal V118 qualification artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr2231-unlabelled-scalar-partition-v118-r1
+          path: /tmp/pr2231-unlabelled-scalar-partition-v118-qualification
+          if-no-files-found: error
+          retention-days: 90
