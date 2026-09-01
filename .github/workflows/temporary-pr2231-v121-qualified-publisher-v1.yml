@@ -1,0 +1,132 @@
+name: Temporary PR 2231 V121 qualified publisher V4
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: pr2231-v121-qualified-publisher-v4-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  publish-v121:
+    if: github.event.pull_request.head.ref == 'agent/pr2231-v121-qualified-publisher-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+      CONTROLLER_PR: ${{ github.event.pull_request.number }}
+      CONTROLLER_BRANCH: ${{ github.event.pull_request.head.ref }}
+      EXPECTED_CONTROLLER_BRANCH: agent/pr2231-v121-qualified-publisher-v1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Recover, instrument, and execute exact V121 qualified publisher
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export LC_ALL=C
+          repo=BigBirdReturns/clifford-number
+          base_xz_blob=4eafc89fe0961cbe37e7244bf0501b02bac7afbc
+          base_xz_size=6108
+          base_xz_sha256=44ca92134ce8ac19a945ecc6f52b38df7bfd8e333ee0e8364e248eabd15aa504
+          base_blob=add4de7f61d0c798e1bd641a3104462b09c1e6b3
+          base_size=26956
+          base_sha256=0b51958dc5474c7179cd430536f8f1abb41d4f3ee1d26c60647d728585b083a2
+          publisher_blob=175871e01e8be9a8b4854c9cf7bd769f37daea37
+          publisher_size=27325
+          publisher_sha256=56040fa31327e248bb4572002f777608f7f7ce6587f34a3a17f473a87758a78f
+          envelope=/tmp/pr2231-v121-qualified-publisher-controller-envelope-v4
+          publisher_xz="$envelope/publisher-v121-base.sh.xz"
+          publisher="$envelope/publisher-v121.sh"
+          wrapper_log="$envelope/controller.log"
+          rm -rf "$envelope"
+          mkdir -p "$envelope"
+          : > "$wrapper_log"
+          exec > >(tee -a "$wrapper_log") 2>&1
+
+          preserve() {
+            rc=$?
+            trap - EXIT
+            set +e
+            printf 'outer_status=%s\nmode=qualified-compare-and-swap-publication\n' "$rc" > "$envelope/controller-status.env"
+            find "$envelope" -type f -printf '%P\t%s\n' | sort > "$envelope/envelope-manifest.txt"
+            find "$envelope" -type f ! -name envelope-sha256.txt -print0 \
+              | sort -z | xargs -0 sha256sum > "$envelope/envelope-sha256.txt"
+            exit "$rc"
+          }
+          trap preserve EXIT
+
+          gh api "repos/$repo/git/blobs/$base_xz_blob" --jq '.content' \
+            | tr -d '\n' | base64 -d > "$publisher_xz"
+          test "$(wc -c < "$publisher_xz")" = "$base_xz_size"
+          test "$(git hash-object "$publisher_xz")" = "$base_xz_blob"
+          test "$(sha256sum "$publisher_xz" | awk '{print $1}')" = "$base_xz_sha256"
+          xz -dc "$publisher_xz" > "$publisher"
+          test "$(wc -c < "$publisher")" = "$base_size"
+          test "$(git hash-object "$publisher")" = "$base_blob"
+          test "$(sha256sum "$publisher" | awk '{print $1}')" = "$base_sha256"
+
+          python - "$publisher" <<'PY'
+          from pathlib import Path
+          import sys
+          path = Path(sys.argv[1])
+          source = path.read_text()
+          replacements = [
+              (
+                  'test "$(git -C "$work" diff --cached --name-only)" = $\'test/industrial-exhaust.test.js\\ntools/lib/industrial-exhaust.mjs\'',
+                  'replay_paths=$(git -C "$work" diff --cached --name-only)\nprintf \'REPLAY_PATHS_BEGIN\\n%s\\nREPLAY_PATHS_END\\n\' "$replay_paths"\ntest "$replay_paths" = $\'test/industrial-exhaust.test.js\\ntools/lib/industrial-exhaust.mjs\'',
+              ),
+              (
+                  'test "$(git -C "$work" diff --cached --numstat)" = $\'56\\t1\\ttest/industrial-exhaust.test.js\\n22\\t7\\ttools/lib/industrial-exhaust.mjs\'',
+                  'replay_numstat=$(git -C "$work" diff --cached --numstat)\nprintf \'REPLAY_NUMSTAT_BEGIN\\n%s\\nREPLAY_NUMSTAT_END\\n\' "$replay_numstat"\ntest "$replay_numstat" = $\'4425\\t1009\\ttest/industrial-exhaust.test.js\\n3210\\t151\\ttools/lib/industrial-exhaust.mjs\'',
+              ),
+              (
+                  'test "$replay_tree" = "$candidate_tree"',
+                  'printf \'REPLAY_TREE=%s EXPECTED_TREE=%s\\n\' "$replay_tree" "$candidate_tree"\ntest "$replay_tree" = "$candidate_tree"',
+              ),
+              (
+                  'test "$replay_commit" = "$candidate_commit"',
+                  'printf \'REPLAY_COMMIT=%s EXPECTED_COMMIT=%s\\n\' "$replay_commit" "$candidate_commit"\ntest "$replay_commit" = "$candidate_commit"',
+              ),
+          ]
+          for old, new in replacements:
+              if source.count(old) != 1:
+                  raise SystemExit(f'unexpected replacement count for {old!r}: {source.count(old)}')
+              source = source.replace(old, new)
+          path.write_text(source)
+          PY
+          chmod 0755 "$publisher"
+          test "$(wc -c < "$publisher")" = "$publisher_size"
+          test "$(git hash-object "$publisher")" = "$publisher_blob"
+          test "$(sha256sum "$publisher" | awk '{print $1}')" = "$publisher_sha256"
+          bash -n "$publisher"
+          printf 'base_xz_blob=%s\nbase_xz_sha256=%s\nbase_blob=%s\nbase_sha256=%s\npublisher_blob=%s\npublisher_sha256=%s\n' \
+            "$base_xz_blob" "$base_xz_sha256" "$base_blob" "$base_sha256" "$publisher_blob" "$publisher_sha256" \
+            > "$envelope/publisher-provenance.txt"
+          bash "$publisher"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-v121-qualified-publisher-v4
+          path: |
+            /tmp/pr2231-v121-qualified-publisher-v1
+            /tmp/pr2231-v121-qualified-publisher-controller-envelope-v4
+          if-no-files-found: error
+          retention-days: 90
