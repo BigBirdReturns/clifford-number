@@ -1,0 +1,227 @@
+name: Temporary PR 2231 V120 weak-range current-main qualification R3
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: pr2231-v120-weak-range-current-main-qualification-r3-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  qualify-v120-r3:
+    if: github.event.pull_request.head.ref == 'agent/pr2231-v120-weak-range-current-main-qualification-r3'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+      CONTROLLER_PR: ${{ github.event.pull_request.number }}
+      CONTROLLER_BRANCH: ${{ github.event.pull_request.head.ref }}
+      EXPECTED_CONTROLLER_BRANCH: agent/pr2231-v120-weak-range-current-main-qualification-r3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Recover and execute exact V120 read-only qualifier
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export LC_ALL=C
+          export GIT_TERMINAL_PROMPT=0
+
+          repo=BigBirdReturns/clifford-number
+          qualifier_xz_size=5596
+          qualifier_xz_blob=7100b27c14be65b0c506c08135510d4367d79e50
+          qualifier_xz_sha256=83ece63da214600d2bd0ba08966e726376dcf48883dbdb1696fdc3b80582a210
+          qualifier_size=22132
+          qualifier_blob=9dacc711b7a54f86fec9d840a7aca123063d135f
+          qualifier_sha256=f27b2c6f6855cad919ff889754d2a478d95cdb246caecddaf6b3ac9d4fc9e301
+          envelope=/tmp/pr2231-v120-weak-range-current-main-controller-envelope-r3
+          qualifier_xz="$envelope/qualifier-v120-r3.sh.xz"
+          qualifier="$envelope/qualifier-v120-r3.sh"
+          wrapper_log="$envelope/controller-wrapper.log"
+          artifact=/tmp/pr2231-v120-weak-range-current-main-qualification-r3
+
+          rm -rf "$envelope" "$artifact"
+          mkdir -p "$envelope"
+          : > "$wrapper_log"
+          exec > >(tee -a "$wrapper_log") 2>&1
+
+          preserve() {
+            rc=$?
+            trap - EXIT
+            set +e
+            printf 'outer_status=%s\nmode=read-only\npublication=skipped\nproduct_mutation=none\nreview_mutation=none\n' "$rc" \
+              > "$envelope/controller-status.env"
+            manifest_tmp="$envelope/.envelope-manifest.tmp"
+            find "$envelope" -type f \
+              ! -name envelope-manifest.txt \
+              ! -name envelope-sha256.txt \
+              ! -name .envelope-manifest.tmp \
+              -printf '%P\t%s\n' | sort > "$manifest_tmp"
+            mv "$manifest_tmp" "$envelope/envelope-manifest.txt"
+            find "$envelope" -type f ! -name envelope-sha256.txt -print0 \
+              | sort -z | xargs -0 sha256sum > "$envelope/envelope-sha256.txt"
+            exit "$rc"
+          }
+          trap preserve EXIT
+
+          failed_pr_json=$(gh api "repos/$repo/pulls/2497")
+          test "$(jq -r '.head.sha' <<<"$failed_pr_json")" = 1a2bdbb698bec5ec8e0ca1031c8d51e17464e095
+          test "$(jq -r '.draft' <<<"$failed_pr_json")" = true
+          test "$(jq -r '.merged' <<<"$failed_pr_json")" = false
+          failed_run_json=$(gh api "repos/$repo/actions/runs/33545593378")
+          test "$(jq -r '.head_sha' <<<"$failed_run_json")" = 1a2bdbb698bec5ec8e0ca1031c8d51e17464e095
+          test "$(jq -r '.status' <<<"$failed_run_json")" = completed
+          test "$(jq -r '.conclusion' <<<"$failed_run_json")" = failure
+          failed_jobs_json=$(gh api "repos/$repo/actions/runs/33545593378/jobs")
+          test "$(jq -r '.jobs[] | select(.id == 99982162519) | .conclusion' <<<"$failed_jobs_json")" = failure
+          failed_artifacts_json=$(gh api "repos/$repo/actions/runs/33545593378/artifacts")
+          test "$(jq -r '.artifacts[] | select(.id == 9815337190) | .size_in_bytes' <<<"$failed_artifacts_json")" = 1817
+          test "$(jq -r '.artifacts[] | select(.id == 9815337190) | .digest' <<<"$failed_artifacts_json")" = sha256:bae4205e36ced89407565e5b57ffc46ab9a8cb4e6c709566bb699ef736b0df2f
+          printf 'failed_controller_pr=2497\nfailed_controller=1a2bdbb698bec5ec8e0ca1031c8d51e17464e095\nfailed_run=33545593378\nfailed_job=99982162519\nfailed_artifact=9815337190\nfailed_artifact_digest=sha256:bae4205e36ced89407565e5b57ffc46ab9a8cb4e6c709566bb699ef736b0df2f\nfailure_mode=unpublished_qualifier_source_blob\n' \
+            > "$envelope/r2-failure-lease.txt"
+
+          base64 -d > "$qualifier_xz" <<'QUALIFIER_XZ_B64'
+          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
+          Z/sCAAAAAARZWg==
+          QUALIFIER_XZ_B64
+          test "$(wc -c < "$qualifier_xz")" = "$qualifier_xz_size"
+          test "$(git hash-object "$qualifier_xz")" = "$qualifier_xz_blob"
+          test "$(sha256sum "$qualifier_xz" | awk '{print $1}')" = "$qualifier_xz_sha256"
+          xz -dc -- "$qualifier_xz" > "$qualifier"
+          chmod 0755 "$qualifier"
+          test "$(wc -c < "$qualifier")" = "$qualifier_size"
+          test "$(git hash-object "$qualifier")" = "$qualifier_blob"
+          test "$(sha256sum "$qualifier" | awk '{print $1}')" = "$qualifier_sha256"
+          bash -n "$qualifier"
+          printf 'qualifier_source_blob=417dfa633b820ff2543e9804cf4c19644907889a\nqualifier_source_sha256=1a0bf9a6646d73d87be02a1e22525d42bc57cb4d53c968c4e808c2c5faa2b339\nqualifier_blob=%s\nqualifier_sha256=%s\nqualifier_transport_blob=%s\nqualifier_transport_sha256=%s\n' \
+            "$qualifier_blob" "$qualifier_sha256" "$qualifier_xz_blob" "$qualifier_xz_sha256" \
+            > "$envelope/qualifier-provenance.txt"
+
+          set +e
+          bash "$qualifier"
+          qualifier_rc=$?
+          set -e
+          exit "$qualifier_rc"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-v120-weak-range-current-main-qualification-r3
+          path: |
+            /tmp/pr2231-v120-weak-range-current-main-qualification-r3
+            /tmp/pr2231-v120-weak-range-current-main-controller-envelope-r3
+          if-no-files-found: error
+          retention-days: 90
