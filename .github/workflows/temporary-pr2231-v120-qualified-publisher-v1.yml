@@ -1,0 +1,146 @@
+name: Temporary PR 2231 V120 qualified publisher V1
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: pr2231-v120-qualified-publisher-v1-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  publish-v120:
+    if: github.event.pull_request.head.ref == 'agent/pr2231-v120-qualified-publisher-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+      CONTROLLER_PR: ${{ github.event.pull_request.number }}
+      CONTROLLER_BRANCH: ${{ github.event.pull_request.head.ref }}
+      EXPECTED_CONTROLLER_BRANCH: agent/pr2231-v120-qualified-publisher-v1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Recover and execute exact qualified publisher
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export LC_ALL=C
+          envelope=/tmp/pr2231-v120-qualified-publisher-controller-envelope-v1
+          publisher_xz="$envelope/publisher-v1.sh.xz"
+          publisher="$envelope/publisher-v1.sh"
+          rm -rf "$envelope"
+          mkdir -p "$envelope"
+          exec > >(tee "$envelope/controller.log") 2>&1
+
+          preserve() {
+            rc=$?
+            trap - EXIT
+            set +e
+            printf 'outer_status=%s\nmode=qualified-compare-and-swap-publication\n' "$rc" > "$envelope/controller-status.env"
+            find "$envelope" -type f ! -name envelope-sha256.txt -print0 | sort -z | xargs -0 sha256sum > "$envelope/envelope-sha256.txt"
+            find "$envelope" -type f -printf '%P\t%s\n' | sort > "$envelope/envelope-manifest.txt"
+            exit "$rc"
+          }
+          trap preserve EXIT
+
+          base64 -d > "$publisher_xz" <<'PUBLISHER_XZ_B64'
+          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
+          PUBLISHER_XZ_B64
+          test "$(wc -c < "$publisher_xz")" = 3568
+          test "$(git hash-object "$publisher_xz")" = aa8037e7d4a189ef4855d4a5081f135192e07334
+          test "$(sha256sum "$publisher_xz" | awk '{print $1}')" = baa6f7d52577f847a3e7b3e1a18de3cdf23b035691ec97d4c7594408db87a383
+          xz -dc -- "$publisher_xz" > "$publisher"
+          chmod 0755 "$publisher"
+          test "$(wc -c < "$publisher")" = 13990
+          test "$(git hash-object "$publisher")" = e7f6ef824179c3ff28bc8bf5da23125157f953ea
+          test "$(sha256sum "$publisher" | awk '{print $1}')" = 67c1a5f56cd6f681056eb6a4487abf574d874cb8b5ab3d79c334db72ec56c75b
+          bash -n "$publisher"
+          bash "$publisher"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-v120-qualified-publisher-v1
+          path: |
+            /tmp/pr2231-v120-qualified-publisher-v1
+            /tmp/pr2231-v120-qualified-publisher-controller-envelope-v1
+          if-no-files-found: error
+          retention-days: 90
