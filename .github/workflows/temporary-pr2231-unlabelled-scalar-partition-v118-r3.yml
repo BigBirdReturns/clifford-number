@@ -105,6 +105,12 @@ jobs:
           def replacement(prefix: str, status_name: str) -> str:
               expected_var = f'{prefix}_expected_generated_drift'
               actual_var = f'{prefix}_actual_generated_drift'
+              remaining_var = f'{prefix}_remaining_paths'
+              expected_ref = '${' + expected_var + '[@]}'
+              actual_ref = '${' + actual_var + '[@]}'
+              remaining_count_ref = '${#' + remaining_var + '[@]}'
+              remaining_first_ref = '${' + remaining_var + '[0]}'
+              remaining_second_ref = '${' + remaining_var + '[1]}'
               return '\n'.join([
                   f'git diff --binary > "$ARTIFACT_DIR/{prefix}-after-tests-pre-restore.patch"',
                   f'git status --porcelain=v1 > "$ARTIFACT_DIR/{prefix}-status-after-tests-pre-restore.txt"',
@@ -114,15 +120,15 @@ jobs:
                   f'mapfile -t {actual_var} < <(',
                   "  git status --porcelain=v1 | awk '$2 ~ /^build\\// { print $2 }' | sort",
                   ')',
-                  f'printf \'%s\\n\' "${{{expected_var}[@]}}" > "$ARTIFACT_DIR/{prefix}-expected-generated-drift.txt"',
-                  f'printf \'%s\\n\' "${{{actual_var}[@]}}" > "$ARTIFACT_DIR/{prefix}-actual-generated-drift.txt"',
+                  f'printf \'%s\\n\' "{expected_ref}" > "$ARTIFACT_DIR/{prefix}-expected-generated-drift.txt"',
+                  f'printf \'%s\\n\' "{actual_ref}" > "$ARTIFACT_DIR/{prefix}-actual-generated-drift.txt"',
                   f'diff -u "$ARTIFACT_DIR/{prefix}-expected-generated-drift.txt" "$ARTIFACT_DIR/{prefix}-actual-generated-drift.txt"',
-                  f'git restore -- "${{{expected_var}[@]}}"',
+                  f'git restore -- "{expected_ref}"',
                   f'git status --porcelain=v1 > "$ARTIFACT_DIR/{prefix}-status-after-generated-restore.txt"',
-                  f'mapfile -t {prefix}_remaining_paths < <(git diff --name-only)',
-                  f'test "${{#{prefix}_remaining_paths[@]}}" -eq 2',
-                  f'test "${{{prefix}_remaining_paths[0]}}" = \'test/industrial-exhaust.test.js\'',
-                  f'test "${{{prefix}_remaining_paths[1]}}" = \'tools/lib/industrial-exhaust.mjs\'',
+                  f'mapfile -t {remaining_var} < <(git diff --name-only)',
+                  f'test "{remaining_count_ref}" -eq 2',
+                  f'test "{remaining_first_ref}" = \'test/industrial-exhaust.test.js\'',
+                  f'test "{remaining_second_ref}" = \'tools/lib/industrial-exhaust.mjs\'',
                   f'git diff --binary > "$ARTIFACT_DIR/{prefix}-after-tests.patch"',
                   f'git status --porcelain=v1 > "$ARTIFACT_DIR/{status_name}"',
                   f'cmp "$ARTIFACT_DIR/{prefix}-before-tests.patch" "$ARTIFACT_DIR/{prefix}-after-tests.patch"',
