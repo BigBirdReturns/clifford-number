@@ -1,0 +1,207 @@
+name: Temporary PR 2231 V118 three-P1 source composition R3
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: pr2231-v118-three-p1-source-composition-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  compose-current-head:
+    if: github.event.pull_request.head.ref == 'agent/pr2231-v118-three-p1-source-composition-r3'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+      CONTROLLER_PR: ${{ github.event.pull_request.number }}
+      CONTROLLER_BRANCH: ${{ github.event.pull_request.head.ref }}
+      EXPECTED_CONTROLLER_BRANCH: agent/pr2231-v118-three-p1-source-composition-r3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Export current product and probe exact three-P1 composition
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export LC_ALL=C
+          repo=BigBirdReturns/clifford-number
+          expected_main=771a64b6b467748d2f4df667b5f78e76f9432d69
+          expected_product=2d7555363d2fe6bcb06b629dc9e06e3c7ad4a9bb
+          expected_tree=aa5c55523ac82b06f3c3632bfaa76620fbe17aea
+          expected_library=25866adcbe4f95cb2f149d078f7a70bfd84570c5
+          expected_test=771393e3f0c40ce3bb60288ab162e46649f17e6a
+          product_branch=agent/current-main-identifier-context-product-v1
+          workflow=.github/workflows/temporary-pr2231-v118-three-p1-source-composition-r3.yml
+          root=/tmp/pr2231-v118-three-p1-source-composition-r3
+          artifact=/tmp/pr2231-v118-three-p1-source-composition-r3-artifact
+          work=$root/product
+          old_patch=$root/pre-v118-two-p1.patch
+          log=$artifact/composition.log
+          rm -rf "$root" "$artifact"
+          mkdir -p "$root" "$artifact/source" "$artifact/probes" "$artifact/composition"
+          exec > >(tee "$log") 2>&1
+
+          terminal() {
+            rc=$?
+            trap - EXIT
+            set +e
+            printf 'outer_status=%s\nproduct_mutation=none\nreview_mutation=none\n' "$rc" > "$artifact/terminal.env"
+            find "$artifact" -type f -printf '%P\t%s\n' | sort > "$artifact/manifest.txt"
+            (cd "$artifact" && find . -type f ! -name sha256.txt -print0 | sort -z | xargs -0 sha256sum) > "$artifact/sha256.txt"
+            exit "$rc"
+          }
+          trap terminal EXIT
+
+          [[ "$(git rev-parse HEAD)" == "$EXPECTED_CONTROLLER" ]]
+          [[ "$(git rev-parse HEAD^)" == "$expected_main" ]]
+          [[ "$CONTROLLER_BRANCH" == "$EXPECTED_CONTROLLER_BRANCH" ]]
+          mapfile -t controller_paths < <(git diff --name-only "$expected_main" "$EXPECTED_CONTROLLER")
+          [[ ${#controller_paths[@]} -eq 1 ]]
+          [[ "${controller_paths[0]}" == "$workflow" ]]
+          [[ "$(git ls-remote origin refs/heads/main | awk '{print $1}')" == "$expected_main" ]]
+          [[ "$(git ls-remote origin "refs/heads/$product_branch" | awk '{print $1}')" == "$expected_product" ]]
+
+          git fetch --no-tags origin "+refs/heads/$product_branch:refs/remotes/origin/product-current"
+          [[ "$(git rev-parse refs/remotes/origin/product-current)" == "$expected_product" ]]
+          [[ "$(git rev-parse "$expected_product^")" == "$expected_main" ]]
+          [[ "$(git rev-parse "$expected_product^{tree}")" == "$expected_tree" ]]
+          [[ "$(git rev-parse "$expected_product:tools/lib/industrial-exhaust.mjs")" == "$expected_library" ]]
+          [[ "$(git rev-parse "$expected_product:test/industrial-exhaust.test.js")" == "$expected_test" ]]
+          mapfile -t product_paths < <(git diff --name-only "$expected_main" "$expected_product")
+          [[ ${#product_paths[@]} -eq 2 ]]
+          [[ "${product_paths[0]}" == test/industrial-exhaust.test.js ]]
+          [[ "${product_paths[1]}" == tools/lib/industrial-exhaust.mjs ]]
+
+          git worktree add --detach "$work" "$expected_product"
+          install -m 0644 "$work/tools/lib/industrial-exhaust.mjs" "$artifact/source/industrial-exhaust.mjs"
+          install -m 0644 "$work/test/industrial-exhaust.test.js" "$artifact/source/industrial-exhaust.test.js"
+          install -m 0644 "$work/package.json" "$artifact/source/package.json"
+          git show "$expected_product" > "$artifact/source/product-commit.txt"
+          git diff --binary "$expected_main" "$expected_product" > "$artifact/source/product.patch"
+
+          blobs=(
+            94b6577f5638fa461309ec8c1a412c7e9c6a4335
+            348b9a5e69118cd56015e6f70b863c45617f5bc9
+            d2509e68c42a834f7e8701461d97963dc3e89b25
+          )
+          : > "$root/payload.tar.xz"
+          for blob in "${blobs[@]}"; do
+            gh api -H 'Accept: application/vnd.github+json' -H 'X-GitHub-Api-Version: 2022-11-28' \
+              "repos/$repo/git/blobs/$blob" --jq '.content' | tr -d '\n' | base64 -d >> "$root/payload.tar.xz"
+          done
+          [[ "$(wc -c < "$root/payload.tar.xz")" == 9196 ]]
+          [[ "$(git hash-object "$root/payload.tar.xz")" == 2f3e8563cc98f5f44ec73723f9aebcc62ed5f7ab ]]
+          tar -xJf "$root/payload.tar.xz" -C "$root"
+          [[ "$(git hash-object "$root/v118.patch")" == a4fc4e931726a2801faac267e2d538f942a9ffc1 ]]
+          install -m 0644 "$root/v118.patch" "$old_patch"
+          install -m 0644 "$old_patch" "$artifact/composition/pre-v118-two-p1.patch"
+
+          set +e
+          git -C "$work" apply --check "$old_patch" > "$artifact/composition/apply-check.txt" 2>&1
+          apply_rc=$?
+          git -C "$work" apply --3way --check "$old_patch" > "$artifact/composition/apply-3way-check.txt" 2>&1
+          apply_3way_rc=$?
+          set -e
+          printf 'apply_check_status=%s\napply_3way_check_status=%s\n' "$apply_rc" "$apply_3way_rc" \
+            > "$artifact/composition/apply-status.env"
+
+          cat > "$root/probe.mjs" <<'NODE'
+          import { pathToFileURL } from 'node:url';
+          const { redactContactData } = await import(`${pathToFileURL(process.env.MODULE_PATH).href}?probe=${Date.now()}`);
+          const cases = [
+            {
+              id: 'weak-range-disjoint-phone',
+              input: '>190/hr employees 090-1234-5678',
+              expected: '>190/hr employees [contact omitted]'
+            },
+            {
+              id: 'direct-tel-token-before-email',
+              input: 'tel:090-1234-5678 hr@example.com',
+              expected: 'tel:090-1234-5678 [email omitted]'
+            }
+          ];
+          for (const entry of cases) {
+            const actual = redactContactData(entry.input);
+            console.log(JSON.stringify({ ...entry, actual, matches: actual === entry.expected }));
+          }
+          NODE
+          MODULE_PATH="$work/tools/lib/industrial-exhaust.mjs" node "$root/probe.mjs" \
+            | tee "$artifact/probes/direct-current-head.jsonl"
+
+          cat > "$root/resource.mjs" <<'NODE'
+          import { pathToFileURL } from 'node:url';
+          const { redactContactData } = await import(`${pathToFileURL(process.env.MODULE_PATH).href}?resource=${Date.now()}`);
+          const originalNormalize = String.prototype.normalize;
+          const originalArrayFrom = Array.from;
+          let oneCharacterNormalizations = 0;
+          let arrayFromStringCharacters = 0;
+          let arrayFromStringCalls = 0;
+          try {
+            String.prototype.normalize = function instrumentedNormalize(...args) {
+              if (this.length === 1) oneCharacterNormalizations += 1;
+              return originalNormalize.apply(this, args);
+            };
+            Array.from = function instrumentedArrayFrom(value, ...args) {
+              if (typeof value === 'string') {
+                arrayFromStringCalls += 1;
+                arrayFromStringCharacters += value.length;
+              }
+              return originalArrayFrom.call(this, value, ...args);
+            };
+            const repetitions = Number(process.env.REPETITIONS);
+            const input = `Archive ${'123,456/03-6216-8041 '.repeat(repetitions)}`;
+            const started = performance.now();
+            const output = redactContactData(input);
+            console.log(JSON.stringify({
+              repetitions,
+              oneCharacterNormalizations,
+              arrayFromStringCalls,
+              arrayFromStringCharacters,
+              redactions: output.match(/\[contact omitted\]/gu)?.length ?? 0,
+              inputLength: input.length,
+              elapsedMilliseconds: performance.now() - started
+            }));
+          } finally {
+            String.prototype.normalize = originalNormalize;
+            Array.from = originalArrayFrom;
+          }
+          NODE
+          for repetitions in 400 1000 2000; do
+            MODULE_PATH="$work/tools/lib/industrial-exhaust.mjs" REPETITIONS="$repetitions" \
+              node "$root/resource.mjs" | tee -a "$artifact/probes/resource-current-head.jsonl"
+          done
+
+          gh api "repos/$repo/pulls/2231" > "$artifact/source/product-pr.json"
+          jq -e --arg head "$expected_product" --arg base "$expected_main" '
+            .state == "open" and .draft == true and .merged == false
+            and .head.sha == $head and .base.sha == $base
+            and .commits == 1 and .changed_files == 2
+          ' "$artifact/source/product-pr.json" >/dev/null
+          [[ "$(git ls-remote origin "refs/heads/$product_branch" | awk '{print $1}')" == "$expected_product" ]]
+          printf 'SOURCE_COMPOSITION_SUCCESS\nPRODUCT_MUTATION_SKIPPED\nREVIEW_MUTATION_SKIPPED\n' \
+            > "$artifact/terminal.txt"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-v118-three-p1-source-composition-r3
+          path: /tmp/pr2231-v118-three-p1-source-composition-r3-artifact
+          if-no-files-found: error
+          retention-days: 90
