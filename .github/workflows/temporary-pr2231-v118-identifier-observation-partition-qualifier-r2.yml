@@ -1,0 +1,221 @@
+name: Temporary PR 2231 V118 identifier observation partition qualifier R2
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+    paths:
+      - .github/workflows/temporary-pr2231-v118-identifier-observation-partition-qualifier-r2.yml
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: pr2231-v118-identifier-observation-partition-r2-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  qualify-v118-r2:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: BigBirdReturns/clifford-number
+      PRODUCT_PR: '2231'
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      EXPECTED_MAIN: 771a64b6b467748d2f4df667b5f78e76f9432d69
+      EXPECTED_PRODUCT: 6c4acfb15047dcc6a28dca87732fe2c4c7e7b1e6
+      EXPECTED_PRODUCT_TREE: d0e42c6312bda625474e557a691b1b2b981e9902
+      EXPECTED_LIBRARY: 5582c5310f6413de43c13a151abddc84cb206c8d
+      EXPECTED_TEST: 02794c0c3f18f439871cd3695c8fd9d77d083549
+      REVIEW_ID: '5074298652'
+      REVIEW_COMMENT_ID: '3901036540'
+      REVIEW_THREAD_ID: PRRT_kwDOTGqftc6d-sYp
+      R1_PR: '2478'
+      R1_RUN: '33474670382'
+      R1_JOB: '99751342082'
+      R1_ARTIFACT_ID: '9787746145'
+      R1_ARTIFACT: pr2231-v118-identifier-observation-partition-r1
+      R1_DIGEST: sha256:68b65c0114c8a2e77789441290b28b08a17b490615fb89eb57eb2c2b68c11988
+      CANDIDATE_LIBRARY_BLOB: 25866adcbe4f95cb2f149d078f7a70bfd84570c5
+      CANDIDATE_TEST_BLOB: 771393e3f0c40ce3bb60288ab162e46649f17e6a
+      CANDIDATE_LIBRARY_SHA256: aa3dc4b679c331c8113c455fa46f9feb577d7ce7d437c69594607656068369ed
+      CANDIDATE_TEST_SHA256: 11f3bcf6b216bbf378e5d6669adb79e3cf84b0f7446824ecbf4843ab940d63a5
+      CANDIDATE_PATCH_SHA256: d3d630fd0839554d5eb33d4c26a594c0cf434def4742afc1f0a69af648a22259
+      CONTROLLER_BRANCH: agent/pr2231-v118-identifier-observation-partition-qualifier-r2
+      ARTIFACT_DIR: /tmp/pr2231-v118-identifier-observation-partition-r2
+
+    steps:
+      - name: Check out exact product head
+        uses: actions/checkout@v4
+        with:
+          repository: BigBirdReturns/clifford-number
+          ref: 6c4acfb15047dcc6a28dca87732fe2c4c7e7b1e6
+          path: product
+          fetch-depth: 2
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Bind R1 bytes and execute exact R2 qualification
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$ARTIFACT_DIR"
+          mkdir -p "$ARTIFACT_DIR/input" "$ARTIFACT_DIR/candidate"
+          exec > >(tee "$ARTIFACT_DIR/qualification.log") 2>&1
+          preserve() {
+            rc=$?
+            trap - EXIT
+            set +e
+            printf 'qualification_exit=%s\npublication=skipped\nproduct_mutation=false\nreview_mutation=false\nreadiness_mutation=false\nmerge_mutation=false\n' "$rc" > "$ARTIFACT_DIR/status.env"
+            find "$ARTIFACT_DIR" -type f -printf '%P\t%s\n' | sort > "$ARTIFACT_DIR/final-manifest.txt"
+            exit "$rc"
+          }
+          trap preserve EXIT
+
+          controller_pr='${{ github.event.pull_request.number }}'
+          controller_head='${{ github.event.pull_request.head.sha }}'
+          test "${{ github.event.pull_request.head.ref }}" = "$CONTROLLER_BRANCH"
+          test "$(gh api "repos/$REPO/git/ref/heads/main" --jq '.object.sha')" = "$EXPECTED_MAIN"
+
+          gh api "repos/$REPO/pulls/$PRODUCT_PR" > "$ARTIFACT_DIR/product-before.json"
+          gh api "repos/$REPO/pulls/$controller_pr" > "$ARTIFACT_DIR/controller-before.json"
+          gh api "repos/$REPO/pulls/$R1_PR" > "$ARTIFACT_DIR/r1-pr.json"
+          jq -e --arg head "$EXPECTED_PRODUCT" --arg base "$EXPECTED_MAIN" --arg branch "$PRODUCT_BRANCH" '
+            .state == "open" and .draft == true and .merged == false
+            and .head.sha == $head and .head.ref == $branch
+            and .base.sha == $base and .commits == 1 and .changed_files == 2
+          ' "$ARTIFACT_DIR/product-before.json" >/dev/null
+          jq -e --arg head "$controller_head" --arg base "$EXPECTED_MAIN" --arg branch "$CONTROLLER_BRANCH" '
+            .state == "open" and .draft == true and .merged == false
+            and .head.sha == $head and .head.ref == $branch
+            and .base.sha == $base and .commits == 1 and .changed_files == 1
+          ' "$ARTIFACT_DIR/controller-before.json" >/dev/null
+          jq -e '.state == "closed" and .draft == true and .merged == false' "$ARTIFACT_DIR/r1-pr.json" >/dev/null
+
+          gh api "repos/$REPO/pulls/comments/$REVIEW_COMMENT_ID" > "$ARTIFACT_DIR/review-comment-before.json"
+          jq -e --arg commit "$EXPECTED_PRODUCT" --argjson review "$REVIEW_ID" '
+            .pull_request_review_id == $review and .commit_id == $commit
+            and (.body | contains("Preserve observations before accepting identifier partitions"))
+          ' "$ARTIFACT_DIR/review-comment-before.json" >/dev/null
+          gh api graphql -f query='query($id: ID!) { node(id: $id) { ... on PullRequestReviewThread { id isResolved isOutdated comments(first: 20) { nodes { databaseId } } } } }' -F id="$REVIEW_THREAD_ID" > "$ARTIFACT_DIR/review-thread-before.json"
+          jq -e --arg id "$REVIEW_THREAD_ID" --argjson comment "$REVIEW_COMMENT_ID" '
+            .data.node.id == $id and .data.node.isResolved == false
+            and .data.node.isOutdated == false
+            and any(.data.node.comments.nodes[]; .databaseId == $comment)
+          ' "$ARTIFACT_DIR/review-thread-before.json" >/dev/null
+
+          gh api "repos/$REPO/actions/artifacts/$R1_ARTIFACT_ID" > "$ARTIFACT_DIR/r1-artifact.json"
+          jq -e --arg digest "$R1_DIGEST" --arg name "$R1_ARTIFACT" --argjson run "$R1_RUN" '
+            .name == $name and .digest == $digest and .expired == false
+            and .workflow_run.id == $run
+          ' "$ARTIFACT_DIR/r1-artifact.json" >/dev/null
+          gh run download "$R1_RUN" -R "$REPO" -n "$R1_ARTIFACT" -D "$ARTIFACT_DIR/input"
+          test "$(cat "$ARTIFACT_DIR/input/status.env" | sed -n 's/^qualification_exit=//p')" = 128
+          test "$(sha256sum "$ARTIFACT_DIR/input/candidate/industrial-exhaust.mjs" | awk '{print $1}')" = "$CANDIDATE_LIBRARY_SHA256"
+          test "$(sha256sum "$ARTIFACT_DIR/input/candidate/industrial-exhaust.test.js" | awk '{print $1}')" = "$CANDIDATE_TEST_SHA256"
+          test "$(sha256sum "$ARTIFACT_DIR/input/v118.patch" | awk '{print $1}')" = "$CANDIDATE_PATCH_SHA256"
+          test "$(git hash-object "$ARTIFACT_DIR/input/candidate/industrial-exhaust.mjs")" = "$CANDIDATE_LIBRARY_BLOB"
+          test "$(git hash-object "$ARTIFACT_DIR/input/candidate/industrial-exhaust.test.js")" = "$CANDIDATE_TEST_BLOB"
+          grep -Fq 'BUILD SUCCESS' "$ARTIFACT_DIR/input/release.log"
+          grep -Fq 'industrial-exhaust.test.js: OK' "$ARTIFACT_DIR/input/focused.log"
+
+          cd product
+          test "$(git rev-parse HEAD)" = "$EXPECTED_PRODUCT"
+          test "$(git rev-parse HEAD^)" = "$EXPECTED_MAIN"
+          test "$(git rev-parse HEAD^{tree})" = "$EXPECTED_PRODUCT_TREE"
+          test "$(git rev-parse HEAD:tools/lib/industrial-exhaust.mjs)" = "$EXPECTED_LIBRARY"
+          test "$(git rev-parse HEAD:test/industrial-exhaust.test.js)" = "$EXPECTED_TEST"
+          cp "$ARTIFACT_DIR/input/candidate/industrial-exhaust.mjs" tools/lib/industrial-exhaust.mjs
+          cp "$ARTIFACT_DIR/input/candidate/industrial-exhaust.test.js" test/industrial-exhaust.test.js
+          git diff -- tools/lib/industrial-exhaust.mjs test/industrial-exhaust.test.js > "$ARTIFACT_DIR/candidate/v118.patch"
+          test "$(sha256sum "$ARTIFACT_DIR/candidate/v118.patch" | awk '{print $1}')" = "$CANDIDATE_PATCH_SHA256"
+
+          node --check tools/lib/industrial-exhaust.mjs
+          node --check test/industrial-exhaust.test.js
+          node --input-type=module <<'NODE' | tee "$ARTIFACT_DIR/direct-matrix.json"
+          import assert from 'node:assert/strict';
+          import { redactContactData } from './tools/lib/industrial-exhaust.mjs';
+          const cases = [
+            ['ID: 123-45678/3.14/(03) 6216 8041', 'ID: 123-45678/3.14/[contact omitted]'],
+            ['ID: 123-45678/2026-08-17/(03) 6216 8041', 'ID: 123-45678/2026-08-17/[contact omitted]'],
+            ['ID: 1234 5678/2026 people/(03) 6216 8041', 'ID: 1234 5678/2026 people/[contact omitted]'],
+            ['ＩＤ：１２３－４５６７８／３．１４／（０３） ６２１６ ８０４１', 'ＩＤ：１２３－４５６７８／３．１４／[contact omitted]'],
+            ['ID: 123-45678/(03) 6216 8041', 'ID: 123-45678/[contact omitted]'],
+            ['ID: 123-45678/3.14/12345678', 'ID: 123-45678/3.14/12345678'],
+            ['Phone: ID: +33 1.42.68.53.00 / 03-6216-8041', 'Phone: ID: [contact omitted] / [contact omitted]'],
+            ['Visit 192.0.2.1/+81 3 6216 5111', 'Visit 192.0.2.1/+81 3 6216 5111']
+          ];
+          const results = cases.map(([input, expected]) => {
+            const actual = redactContactData(input);
+            assert.equal(actual, expected, input);
+            return { input, expected, actual, pass: true };
+          });
+          console.log(JSON.stringify(results, null, 2));
+          NODE
+
+          : > "$ARTIFACT_DIR/focused.log"
+          for test_file in test/industrial-exhaust*.test.js; do
+            printf 'RUN %s\n' "$test_file" | tee -a "$ARTIFACT_DIR/focused.log"
+            node "$test_file" 2>&1 | tee -a "$ARTIFACT_DIR/focused.log"
+          done
+          npm run release:check 2>&1 | tee "$ARTIFACT_DIR/release.log"
+
+          git reset --hard "$EXPECTED_PRODUCT"
+          git clean -fd
+          cp "$ARTIFACT_DIR/input/candidate/industrial-exhaust.mjs" tools/lib/industrial-exhaust.mjs
+          cp "$ARTIFACT_DIR/input/candidate/industrial-exhaust.test.js" test/industrial-exhaust.test.js
+          test "$(git diff --name-only | sort | paste -sd ',' -)" = 'test/industrial-exhaust.test.js,tools/lib/industrial-exhaust.mjs'
+
+          export GIT_AUTHOR_NAME='BigBirdReturns'
+          export GIT_AUTHOR_EMAIL='219768509+BigBirdReturns@users.noreply.github.com'
+          export GIT_COMMITTER_NAME='BigBirdReturns'
+          export GIT_COMMITTER_EMAIL='219768509+BigBirdReturns@users.noreply.github.com'
+          git add tools/lib/industrial-exhaust.mjs test/industrial-exhaust.test.js
+          candidate_tree="$(git write-tree)"
+          candidate_commit="$(printf '%s\n\n%s\n' 'fix: preserve observations before identifier partitions' 'Give complete observations exclusive source custody before identifier-partition telephone admission.' | git commit-tree "$candidate_tree" -p "$EXPECTED_MAIN")"
+          candidate_library="$(git rev-parse "$candidate_commit:tools/lib/industrial-exhaust.mjs")"
+          candidate_test="$(git rev-parse "$candidate_commit:test/industrial-exhaust.test.js")"
+          test "$candidate_library" = "$CANDIDATE_LIBRARY_BLOB"
+          test "$candidate_test" = "$CANDIDATE_TEST_BLOB"
+          test "$(git rev-parse "$candidate_commit^")" = "$EXPECTED_MAIN"
+          test "$(git diff --name-only "$EXPECTED_MAIN" "$candidate_commit" | sort | paste -sd ',' -)" = 'test/industrial-exhaust.test.js,tools/lib/industrial-exhaust.mjs'
+          git cat-file -p "$candidate_commit" > "$ARTIFACT_DIR/candidate/commit.txt"
+          cp tools/lib/industrial-exhaust.mjs "$ARTIFACT_DIR/candidate/industrial-exhaust.mjs"
+          cp test/industrial-exhaust.test.js "$ARTIFACT_DIR/candidate/industrial-exhaust.test.js"
+          {
+            printf 'candidate_commit=%s\n' "$candidate_commit"
+            printf 'parent=%s\n' "$EXPECTED_MAIN"
+            printf 'tree=%s\n' "$candidate_tree"
+            printf 'library_blob=%s\n' "$candidate_library"
+            printf 'test_blob=%s\n' "$candidate_test"
+            printf 'library_sha256=%s\n' "$CANDIDATE_LIBRARY_SHA256"
+            printf 'test_sha256=%s\n' "$CANDIDATE_TEST_SHA256"
+          } | tee "$ARTIFACT_DIR/candidate.env"
+
+          cd ..
+          test "$(gh api "repos/$REPO/git/ref/heads/main" --jq '.object.sha')" = "$EXPECTED_MAIN"
+          gh api "repos/$REPO/pulls/$PRODUCT_PR" > "$ARTIFACT_DIR/product-after.json"
+          gh api "repos/$REPO/pulls/comments/$REVIEW_COMMENT_ID" > "$ARTIFACT_DIR/review-comment-after.json"
+          gh api graphql -f query='query($id: ID!) { node(id: $id) { ... on PullRequestReviewThread { id isResolved isOutdated comments(first: 20) { nodes { databaseId } } } } }' -F id="$REVIEW_THREAD_ID" > "$ARTIFACT_DIR/review-thread-after.json"
+          jq '{state,draft,merged,head_ref:.head.ref,head_sha:.head.sha,base_ref:.base.ref,base_sha:.base.sha,commits,changed_files}' "$ARTIFACT_DIR/product-before.json" > "$ARTIFACT_DIR/product-before-stable.json"
+          jq '{state,draft,merged,head_ref:.head.ref,head_sha:.head.sha,base_ref:.base.ref,base_sha:.base.sha,commits,changed_files}' "$ARTIFACT_DIR/product-after.json" > "$ARTIFACT_DIR/product-after-stable.json"
+          cmp "$ARTIFACT_DIR/product-before-stable.json" "$ARTIFACT_DIR/product-after-stable.json"
+          cmp "$ARTIFACT_DIR/review-comment-before.json" "$ARTIFACT_DIR/review-comment-after.json"
+          cmp "$ARTIFACT_DIR/review-thread-before.json" "$ARTIFACT_DIR/review-thread-after.json"
+          printf 'PUBLICATION_SKIPPED\nQUALIFICATION_SUCCESS\n' | tee "$ARTIFACT_DIR/terminal.txt"
+
+      - name: Upload V118 R2 qualification artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr2231-v118-identifier-observation-partition-r2
+          path: /tmp/pr2231-v118-identifier-observation-partition-r2
+          if-no-files-found: error
+          retention-days: 90
