@@ -1,0 +1,94 @@
+name: Temporary PR 2231 V119 direct-URL and prefix transplant R4
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: pr2231-v119-direct-url-prefix-transplant-r4-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  qualify-v119:
+    if: github.event.pull_request.head.ref == 'agent/pr2231-v119-direct-url-prefix-transplant-r4'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+      CONTROLLER_PR: ${{ github.event.pull_request.number }}
+      CONTROLLER_BRANCH: ${{ github.event.pull_request.head.ref }}
+      EXPECTED_CONTROLLER_BRANCH: agent/pr2231-v119-direct-url-prefix-transplant-r4
+      EXPECTED_MAIN: 771a64b6b467748d2f4df667b5f78e76f9432d69
+      EXPECTED_PRODUCT: 2d7555363d2fe6bcb06b629dc9e06e3c7ad4a9bb
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      PRODUCT_PR: '2231'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Execute corrected content-addressed R2 envelope
+        shell: bash
+        run: |
+          set -u
+          export LC_ALL=C
+          repo=BigBirdReturns/clifford-number
+          source_blob=f20ec12c2723a555ab97949b0135cf289a8a739c
+          source=/tmp/v119-r2-workflow.yml
+          runner=/tmp/v119-r4-runner.sh
+          artifact=/tmp/pr2231-v119-direct-url-prefix-transplant-r4
+
+          gh api "repos/$repo/git/blobs/$source_blob" --jq '.content' \
+            | tr -d '\n' | base64 -d > "$source"
+          test "$(git hash-object "$source")" = "$source_blob"
+
+          awk '
+            /^        run: \|$/ { capture = 1; next }
+            capture && /^      - uses: actions\/upload-artifact@v4$/ { exit }
+            capture { sub(/^          /, ""); print }
+          ' "$source" > "$runner"
+
+          sed -i \
+            -e 's/pr2231-v119-direct-url-prefix-transplant-r2/pr2231-v119-direct-url-prefix-transplant-r4/g' \
+            -e '/^npm ci > /d' \
+            -e '/^ln -s "\$GITHUB_WORKSPACE\/node_modules"/d' \
+            -e 's#https://user@example\.test/\[contact omitted\]#https://user@example.test/03-6216-8041#g' \
+            "$runner"
+          chmod 0755 "$runner"
+          bash -n "$runner"
+
+          set +e
+          bash "$runner"
+          rc=$?
+          set -e
+          mkdir -p "$artifact/controller-envelope"
+          install -m 0644 "$source" "$artifact/controller-envelope/source-r2-workflow.yml"
+          install -m 0755 "$runner" "$artifact/controller-envelope/transformed-r4-runner.sh"
+          printf 'source_workflow_blob=%s\nsource_workflow_sha256=%s\ntransformed_runner_sha256=%s\nouter_runner_status=%s\n' \
+            "$source_blob" \
+            "$(sha256sum "$source" | awk '{print $1}')" \
+            "$(sha256sum "$runner" | awk '{print $1}')" \
+            "$rc" \
+            > "$artifact/controller-envelope/r4-transform.txt"
+          exit "$rc"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-v119-direct-url-prefix-transplant-r4
+          path: /tmp/pr2231-v119-direct-url-prefix-transplant-r4
+          if-no-files-found: error
+          retention-days: 90
