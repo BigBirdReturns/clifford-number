@@ -1,0 +1,60 @@
+name: Temporary PR 2231 V117 read-only qualification
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+    paths:
+      - .github/workflows/temporary-pr2231-v117-read-only-qualification.yml
+      - .github/pr2231-v117/payload.part-*
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+
+concurrency:
+  group: pr2231-v117-read-only-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  qualify-v117-read-only:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+      CONTROLLER_PR: ${{ github.event.pull_request.number }}
+      CONTROLLER_BRANCH: ${{ github.event.pull_request.head.ref }}
+      EXPECTED_PAYLOAD_PARTS: '3'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.EXPECTED_CONTROLLER }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Reconstruct and execute exact V117 read-only qualifier
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          root=/tmp/pr2231-v117-payload
+          rm -rf "$root"
+          mkdir -p "$root"
+          cat .github/pr2231-v117/payload.part-* | base64 -d > "$root/payload.tar.xz"
+          [[ "$(sha256sum "$root/payload.tar.xz" | awk '{print $1}')" == '95ba509dc79bc9dd744203a81761b63aa15f672ee0789f1469763a81e5155c88' ]]
+          [[ "$(wc -c < "$root/payload.tar.xz")" == '8960' ]]
+          tar -xJf "$root/payload.tar.xz" -C "$root"
+          bash -n "$root/qualifier.sh"
+          QUALIFIER_PAYLOAD_ROOT="$root" bash "$root/qualifier.sh"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-v117-read-only-qualification
+          path: /tmp/pr2231-v117-read-only-qualification
+          retention-days: 90
