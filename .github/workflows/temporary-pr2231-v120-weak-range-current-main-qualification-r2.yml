@@ -1,0 +1,218 @@
+name: Temporary PR 2231 V120 weak-range current-main qualification R2
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: pr2231-v120-weak-range-current-main-qualification-r2-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  qualify-v120-r2:
+    if: github.event.pull_request.head.ref == 'agent/pr2231-v120-weak-range-current-main-qualification-r2'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+      CONTROLLER_PR: ${{ github.event.pull_request.number }}
+      CONTROLLER_BRANCH: ${{ github.event.pull_request.head.ref }}
+      EXPECTED_CONTROLLER_BRANCH: agent/pr2231-v120-weak-range-current-main-qualification-r2
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Rebind and execute exact V120 read-only qualifier
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export LC_ALL=C
+          export GIT_TERMINAL_PROMPT=0
+
+          repo=BigBirdReturns/clifford-number
+          source_blob=417dfa633b820ff2543e9804cf4c19644907889a
+          source_size=21179
+          source_sha256=1a0bf9a6646d73d87be02a1e22525d42bc57cb4d53c968c4e808c2c5faa2b339
+          expected_blob=dcfa5538cca8c5c2341ef27d62568e93b2632c4f
+          expected_size=22132
+          expected_sha256=35543474b1c6df894d3f38a62d8dd547f4c712145a1e1508f1f62fb10b2f25f5
+          envelope=/tmp/pr2231-v120-weak-range-current-main-controller-envelope-r2
+          original="$envelope/qualifier-v120-r1.sh"
+          qualifier="$envelope/qualifier-v120-r2.sh"
+          wrapper_log="$envelope/controller-wrapper.log"
+          artifact=/tmp/pr2231-v120-weak-range-current-main-qualification-r2
+
+          rm -rf "$envelope" "$artifact"
+          mkdir -p "$envelope"
+          : > "$wrapper_log"
+          exec > >(tee -a "$wrapper_log") 2>&1
+
+          preserve() {
+            rc=$?
+            trap - EXIT
+            set +e
+            printf 'outer_status=%s\nmode=read-only\npublication=skipped\nproduct_mutation=none\nreview_mutation=none\n' "$rc" \
+              > "$envelope/controller-status.env"
+            test ! -f "$original" || install -m 0644 "$original" "$envelope/qualifier-v120-r1.sh"
+            test ! -f "$qualifier" || install -m 0755 "$qualifier" "$envelope/qualifier-v120-r2.sh"
+            find "$envelope" -type f ! -name envelope-sha256.txt -print0 \
+              | sort -z | xargs -0 sha256sum > "$envelope/envelope-sha256.txt"
+            find "$envelope" -type f -printf '%P\t%s\n' | sort \
+              > "$envelope/envelope-manifest.txt"
+            exit "$rc"
+          }
+          trap preserve EXIT
+
+          gh api "repos/$repo/git/blobs/$source_blob" --jq '.content' \
+            | tr -d '\n' | base64 -d > "$original"
+          test "$(wc -c < "$original")" = "$source_size"
+          test "$(git hash-object "$original")" = "$source_blob"
+          test "$(sha256sum "$original" | awk '{print $1}')" = "$source_sha256"
+
+          python - "$original" "$qualifier" <<'PY'
+          from pathlib import Path
+          import sys
+
+          source = Path(sys.argv[1]).read_text()
+
+          def replace_once(old: str, new: str) -> None:
+              global source
+              count = source.count(old)
+              if count != 1:
+                  raise SystemExit(f'replacement count {count}, expected 1: {old[:80]!r}')
+              source = source.replace(old, new)
+
+          replace_once(
+              'expected_main=771a64b6b467748d2f4df667b5f78e76f9432d69',
+              'expected_main=c68e6c91fdee4679535dd77d0adc44562823d517',
+          )
+          replace_once(
+              'expected_product=4fd80c0638cd97f45c6f2ce39820c42e85b5c162',
+              'expected_product=41be29ff3e56d592b6b746ed2bcaf5a412871da4',
+          )
+          replace_once(
+              'expected_product_tree=f60e8e9b4bbb2c258d044d49c5ccf02b78b65792',
+              'expected_product_parent=771a64b6b467748d2f4df667b5f78e76f9432d69\n'
+              'expected_product_tree=f60e8e9b4bbb2c258d044d49c5ccf02b78b65792',
+          )
+          replace_once(
+              'controller_workflow=.github/workflows/temporary-pr2231-v120-weak-range-qualification-r1.yml',
+              'controller_workflow=.github/workflows/temporary-pr2231-v120-weak-range-current-main-qualification-r2.yml',
+          )
+          replace_once(
+              'root=/tmp/pr2231-v120-weak-range\n'
+              'artifact=/tmp/pr2231-v120-weak-range-qualification-r1',
+              'root=/tmp/pr2231-v120-weak-range-current-main-r2\n'
+              'artifact=/tmp/pr2231-v120-weak-range-current-main-qualification-r2',
+          )
+          replace_once(
+              '''compare_json=$(gh api "repos/$repo/compare/$expected_main...$expected_product")
+          test "$(jq -r '.ahead_by' <<<"$compare_json")" = 1
+          test "$(jq -r '.behind_by' <<<"$compare_json")" = 0
+          mapfile -t product_paths < <(jq -r '.files[].filename' <<<"$compare_json" | sort)
+          test "${#product_paths[@]}" -eq 2
+          test "${product_paths[0]}" = test/industrial-exhaust.test.js
+          test "${product_paths[1]}" = tools/lib/industrial-exhaust.mjs
+          ''',
+              '''# The live PR base has advanced through data-only commits while the product
+          # object remains one exact owner-authenticated commit over its frozen parent.
+          # Prove the product's own topology against that parent, then transplant only
+          # the two admitted blobs onto current main for qualification and construction.
+          compare_json=$(gh api "repos/$repo/compare/$expected_product_parent...$expected_product")
+          test "$(jq -r '.ahead_by' <<<"$compare_json")" = 1
+          test "$(jq -r '.behind_by' <<<"$compare_json")" = 0
+          mapfile -t product_paths < <(jq -r '.files[].filename' <<<"$compare_json" | sort)
+          test "${#product_paths[@]}" -eq 2
+          test "${product_paths[0]}" = test/industrial-exhaust.test.js
+          test "${product_paths[1]}" = tools/lib/industrial-exhaust.mjs
+          ''',
+          )
+          replace_once(
+              'test "$(git rev-parse "$expected_product^")" = "$expected_main"',
+              'test "$(git rev-parse "$expected_product^")" = "$expected_product_parent"',
+          )
+          replace_once(
+              """  ['V119 direct URL custody', 'https://alice@example.com/03-6216-8041', 'https://alice@example.com/03-6216-8041'],
+            ['ordinary email and phone', 'alice@example.com 03-6216-8041', '[contact omitted] [contact omitted]']
+          """,
+              """  ['V119 direct URL custody', 'https://alice@example.com/03-6216-8041', 'https://alice@example.com/03-6216-8041'],
+            ['ordinary email and phone', 'alice@example.com 03-6216-8041', '[contact omitted] [contact omitted]'],
+            ['ordinary international pair remains two contacts', '+33 1 42 68 53 00 / 03-6216-5111', '[contact omitted] / [contact omitted]'],
+            ['international identifier ends before a later contact', 'ID: +33 1 42 68 53 00 / 03-6216-5111', 'ID: +33 1 42 68 53 00 / [contact omitted]']
+          """,
+          )
+          replace_once(
+              'git -C "$successor" reset --hard "$expected_product"',
+              'git -C "$successor" reset --hard "$expected_main"',
+          )
+          replace_once(
+              'export GIT_AUTHOR_DATE=2026-09-01T08:00:00Z\n'
+              'export GIT_COMMITTER_DATE=2026-09-01T08:00:00Z',
+              'export GIT_AUTHOR_DATE=2026-09-01T18:00:00Z\n'
+              'export GIT_COMMITTER_DATE=2026-09-01T18:00:00Z',
+          )
+          replace_once(
+              '# Prove that the exact candidate bytes also qualify when transplanted directly onto frozen main.',
+              '# Prove that the exact candidate bytes also qualify when transplanted directly onto current main.',
+          )
+          replace_once(
+              """assert.equal(
+            redactContactData('https://alice@example.com/03-6216-8041'),
+            'https://alice@example.com/03-6216-8041'
+          );
+          console.log('MAIN_TRANSPLANT_DIRECT_MATRIX_SUCCESS');
+          """,
+              """assert.equal(
+            redactContactData('https://alice@example.com/03-6216-8041'),
+            'https://alice@example.com/03-6216-8041'
+          );
+          assert.equal(
+            redactContactData('+33 1 42 68 53 00 / 03-6216-5111'),
+            '[contact omitted] / [contact omitted]'
+          );
+          assert.equal(
+            redactContactData('ID: +33 1 42 68 53 00 / 03-6216-5111'),
+            'ID: +33 1 42 68 53 00 / [contact omitted]'
+          );
+          console.log('MAIN_TRANSPLANT_DIRECT_MATRIX_SUCCESS');
+          """,
+          )
+
+          Path(sys.argv[2]).write_text(source)
+          PY
+
+          chmod 0755 "$qualifier"
+          test "$(wc -c < "$qualifier")" = "$expected_size"
+          test "$(git hash-object "$qualifier")" = "$expected_blob"
+          test "$(sha256sum "$qualifier" | awk '{print $1}')" = "$expected_sha256"
+          bash -n "$qualifier"
+
+          set +e
+          bash "$qualifier"
+          qualifier_rc=$?
+          set -e
+          exit "$qualifier_rc"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-v120-weak-range-current-main-qualification-r2
+          path: |
+            /tmp/pr2231-v120-weak-range-current-main-qualification-r2
+            /tmp/pr2231-v120-weak-range-current-main-controller-envelope-r2
+          if-no-files-found: error
+          retention-days: 90
