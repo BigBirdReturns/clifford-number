@@ -1,0 +1,566 @@
+name: Temporary PR 2231 bounded-iteration-window V117 diagnostic
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+jobs:
+  diagnose-bounded-iteration-v117:
+    if: github.event.pull_request.head.ref == 'agent/pr2231-bounded-iteration-window-v117-controller-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    env:
+      REPO: BigBirdReturns/clifford-number
+      PRODUCT_PR: '2231'
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      EXPECTED_MAIN: 771a64b6b467748d2f4df667b5f78e76f9432d69
+      EXPECTED_PRODUCT: 0c0ec19938e76d83d646c79d02bea9a724e6773b
+      EXPECTED_PRODUCT_TREE: 326186e534735e8fc108c3bb7cab115d5db08dce
+      EXPECTED_LIBRARY: 123b88403265fa4193a44a97b27aebc7661c1528
+      EXPECTED_TEST: a71e670bbf85a399e02a184e0a8fce19d127bfaf
+      EXPECTED_REVIEW_ID: '5072486871'
+      EXPECTED_REVIEW_COMMENT: '3899391565'
+      CONTROLLER_BRANCH: agent/pr2231-bounded-iteration-window-v117-controller-v1
+      CONTROLLER_WORKFLOW: .github/workflows/temporary-pr2231-bounded-iteration-window-v117.yml
+      ARTIFACT_DIR: /tmp/pr2231-bounded-iteration-window-v117-diagnostic
+    steps:
+      - name: Check out exact controller head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Materialize and execute read-only V117 diagnostic
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CONTROLLER_PR: ${{ github.event.pull_request.number }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$ARTIFACT_DIR" /tmp/pr2231-v117-product
+          mkdir -p "$ARTIFACT_DIR"
+          exec > >(tee "$ARTIFACT_DIR/diagnostic.log") 2>&1
+          trap 'rc=$?; trap - EXIT; printf "diagnostic_exit=%s\n" "$rc" > "$ARTIFACT_DIR/diagnostic-status.env"; exit "$rc"' EXIT
+
+          controller_head="$(git rev-parse HEAD)"
+          controller_parent="$(git rev-parse HEAD^)"
+          controller_tree="$(git rev-parse HEAD^{tree})"
+          test "$controller_parent" = "$EXPECTED_MAIN"
+          mapfile -t controller_paths < <(git diff --name-only "$EXPECTED_MAIN" "$controller_head")
+          test "${#controller_paths[@]}" -eq 1
+          test "${controller_paths[0]}" = "$CONTROLLER_WORKFLOW"
+
+          gh api "repos/$REPO/pulls/$CONTROLLER_PR" > "$ARTIFACT_DIR/controller-pr-before.json"
+          jq -e --arg head "$controller_head" --arg base "$EXPECTED_MAIN" '
+            .state == "open"
+            and .draft == true
+            and .merged == false
+            and .head.sha == $head
+            and .base.sha == $base
+          ' "$ARTIFACT_DIR/controller-pr-before.json" >/dev/null
+
+          gh api "repos/$REPO/pulls/$PRODUCT_PR" > "$ARTIFACT_DIR/product-pr-before.json"
+          jq -e --arg head "$EXPECTED_PRODUCT" --arg base "$EXPECTED_MAIN" '
+            .state == "open"
+            and .draft == true
+            and .merged == false
+            and .head.sha == $head
+            and .base.sha == $base
+          ' "$ARTIFACT_DIR/product-pr-before.json" >/dev/null
+          gh api "repos/$REPO/pulls/$PRODUCT_PR/reviews/$EXPECTED_REVIEW_ID" \
+            > "$ARTIFACT_DIR/review-before.json"
+          jq -e --argjson review "$EXPECTED_REVIEW_ID" --arg head "$EXPECTED_PRODUCT" '
+            .id == $review and .commit_id == $head
+          ' "$ARTIFACT_DIR/review-before.json" >/dev/null
+          gh api "repos/$REPO/pulls/comments/$EXPECTED_REVIEW_COMMENT" \
+            > "$ARTIFACT_DIR/review-comment-before.json"
+          jq -e --argjson review "$EXPECTED_REVIEW_ID" --arg head "$EXPECTED_PRODUCT" '
+            .pull_request_review_id == $review
+            and .commit_id == $head
+            and (.body | contains("Stop rebuilding the shrinking candidate in the iterative loop"))
+          ' "$ARTIFACT_DIR/review-comment-before.json" >/dev/null
+
+          test "$(git ls-remote origin refs/heads/main | awk '{print $1}')" = "$EXPECTED_MAIN"
+          test "$(git ls-remote origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')" = "$EXPECTED_PRODUCT"
+          git fetch --no-tags origin "+refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/$PRODUCT_BRANCH"
+          git cat-file -e "$EXPECTED_PRODUCT^{commit}"
+          test "$(git rev-parse "$EXPECTED_PRODUCT^{tree}")" = "$EXPECTED_PRODUCT_TREE"
+          test "$(git rev-parse "$EXPECTED_PRODUCT:tools/lib/industrial-exhaust.mjs")" = "$EXPECTED_LIBRARY"
+          test "$(git rev-parse "$EXPECTED_PRODUCT:test/industrial-exhaust.test.js")" = "$EXPECTED_TEST"
+
+          git worktree add --detach /tmp/pr2231-v117-product "$EXPECTED_PRODUCT"
+          work=/tmp/pr2231-v117-product
+          cd "$work"
+          git status --porcelain=v1 > "$ARTIFACT_DIR/product-status-initial.txt"
+          test ! -s "$ARTIFACT_DIR/product-status-initial.txt"
+
+          timeout 90s node --expose-gc --input-type=module <<'NODE' \
+            | tee "$ARTIFACT_DIR/predecessor-benchmark.json"
+          import assert from 'node:assert/strict';
+          import { performance } from 'node:perf_hooks';
+          import { redactContactData } from './tools/lib/industrial-exhaust.mjs';
+
+          const unit = '09012345678/2026-08-17-03-6216-8041 ';
+          const expectedUnit = '[contact omitted]/2026-08-17-[contact omitted] ';
+          redactContactData(`Archive ${unit.repeat(32)}`);
+          const results = [];
+          for (const repetitions of [500, 1000, 2000]) {
+            global.gc?.();
+            const input = `Archive ${unit.repeat(repetitions)}`;
+            const expected = `Archive ${expectedUnit.repeat(repetitions)}`;
+            const started = performance.now();
+            const output = redactContactData(input);
+            const milliseconds = performance.now() - started;
+            assert.equal(output, expected);
+            results.push({ repetitions, milliseconds });
+          }
+          console.log(JSON.stringify({
+            head: '0c0ec19938e76d83d646c79d02bea9a724e6773b',
+            witness: 'ordinary shrinking-candidate transition',
+            results
+          }, null, 2));
+          NODE
+
+          python - "$work" <<'PY'
+          from pathlib import Path
+          import sys
+
+          root = Path(sys.argv[1])
+          library = root / 'tools/lib/industrial-exhaust.mjs'
+          source = library.read_text()
+
+          old_signature = """function shiftedDigitGroupView(allGroups, firstGroup, sourceOffset, candidate) {
+            const cache = new Map();
+            const localLength = Math.max(0, allGroups.length - firstGroup);
+          """
+          new_signature = """function shiftedDigitGroupView(
+            allGroups,
+            firstGroup,
+            sourceOffset,
+            candidate,
+            lastGroupExclusive = allGroups.length
+          ) {
+            const cache = new Map();
+            const localLength = Math.max(0, lastGroupExclusive - firstGroup);
+          """
+          if source.count(old_signature) != 1:
+              raise SystemExit('shiftedDigitGroupView signature lease failed')
+          source = source.replace(old_signature, new_signature, 1)
+
+          function_start = source.index('function phoneRedactionRanges(')
+          loop_start = source.index('  while (true) {', function_start)
+          function_end = source.index(
+              '\n}\n\nfunction phoneRedactionRangesStep(',
+              loop_start
+          )
+          old_loop = source[loop_start:function_end]
+          if old_loop.count(
+              'const localCandidate = sourceCandidate.slice(sourceOffset);'
+          ) != 1:
+              raise SystemExit('phoneRedactionRanges loop lease failed')
+          if old_loop.count('phoneRedactionRangesStep(') != 1:
+              raise SystemExit('step-call lease failed')
+
+          new_loop = """  const minimumWindowGroups = (MAX_PHONE_DIGIT_GROUPS * 4) + 16;
+            const guardGroups = (MAX_PHONE_DIGIT_GROUPS * 2) + 8;
+
+            while (true) {
+              const remainingGroups = allGroups.length - firstGroup;
+              let windowGroupSpan = Math.min(
+                remainingGroups,
+                minimumWindowGroups
+              );
+              let localCandidate = '';
+              let result = null;
+
+              while (true) {
+                const lastGroupExclusive = Math.min(
+                  allGroups.length,
+                  firstGroup + windowGroupSpan
+                );
+                const windowEnd = lastGroupExclusive < allGroups.length
+                  ? allGroups[lastGroupExclusive].index
+                  : sourceCandidate.length;
+                localCandidate = sourceCandidate.slice(sourceOffset, windowEnd);
+                const localGroups = shiftedDigitGroupView(
+                  allGroups,
+                  firstGroup,
+                  sourceOffset,
+                  localCandidate,
+                  lastGroupExclusive
+                );
+                const stepExternalSuffix = windowEnd < sourceCandidate.length
+                  ? `${sourceCandidate.slice(
+                      windowEnd,
+                      windowEnd + 64
+                    )}${state.externalSuffix}`
+                  : state.externalSuffix;
+                result = phoneRedactionRangesStep(
+                  localCandidate,
+                  state.externalPrefix,
+                  stepExternalSuffix,
+                  state.allowInitialGroup,
+                  state.indeterminatePhoneContext,
+                  state.inheritedExplicitPhoneLabelContext,
+                  localGroups,
+                  sourceOffset === 0 && candidateEntryUrlContext
+                );
+
+                if (windowEnd >= sourceCandidate.length) break;
+
+                const safeGroup = Math.max(
+                  firstGroup,
+                  lastGroupExclusive - guardGroups
+                );
+                const safeEnd = allGroups[safeGroup].index - sourceOffset;
+                const localRanges = Array.isArray(result)
+                  ? result
+                  : result.ranges;
+                const boundedContinuation = !Array.isArray(result)
+                  && result.next
+                  && result.next.offset > 0
+                  && result.next.offset <= localCandidate.length
+                  && result.next.offset <= safeEnd
+                  && localRanges.every(
+                    range => range.end <= result.next.offset
+                  );
+                if (boundedContinuation) {
+                  result = {
+                    ...result,
+                    next: {
+                      ...result.next,
+                      externalSuffix: state.externalSuffix
+                    }
+                  };
+                  break;
+                }
+
+                const expandedSpan = Math.min(
+                  remainingGroups,
+                  Math.max(windowGroupSpan + 1, windowGroupSpan * 2)
+                );
+                if (expandedSpan === windowGroupSpan) break;
+                windowGroupSpan = expandedSpan;
+              }
+
+              const localRanges = Array.isArray(result)
+                ? result
+                : result.ranges;
+              for (const range of localRanges) {
+                ranges.push({
+                  start: range.start + sourceOffset,
+                  end: range.end + sourceOffset
+                });
+              }
+              if (Array.isArray(result)) return ranges;
+
+              const { next } = result;
+              if (!next
+                  || next.offset <= 0
+                  || next.offset > localCandidate.length) {
+                return ranges;
+              }
+              sourceOffset += next.offset;
+              while (firstGroup < allGroups.length
+                  && allGroups[firstGroup].index < sourceOffset) {
+                firstGroup += 1;
+              }
+              state = {
+                externalPrefix: compactPhoneRedactionContinuationPrefix(
+                  next.externalPrefix
+                ),
+                externalSuffix: next.externalSuffix,
+                allowInitialGroup: next.allowInitialGroup,
+                indeterminatePhoneContext: next.indeterminatePhoneContext,
+                inheritedExplicitPhoneLabelContext:
+                  next.inheritedExplicitPhoneLabelContext
+              };
+            }
+          """
+          source = source[:loop_start] + new_loop + source[function_end:]
+          library.write_text(source)
+
+          test_path = root / 'test/industrial-exhaust.test.js'
+          test_source = test_path.read_text()
+          marker = 'shrinking-candidate work must remain bounded per transition'
+          if marker in test_source:
+              raise SystemExit('V117 focused-test marker already exists')
+          test_source += r"""
+
+          const shrinkingCandidateUnitV117 =
+            '09012345678/2026-08-17-03-6216-8041 ';
+          const shrinkingCandidateExpectedUnitV117 =
+            '[contact omitted]/2026-08-17-[contact omitted] ';
+          function shrinkingCandidateDurationV117(repetitions) {
+            const input =
+              `Archive ${shrinkingCandidateUnitV117.repeat(repetitions)}`;
+            const expected =
+              `Archive ${shrinkingCandidateExpectedUnitV117.repeat(repetitions)}`;
+            const started = process.hrtime.bigint();
+            assert.equal(
+              redactContactData(input),
+              expected,
+              'every repeated identifier/date/phone partition must preserve exact source custody'
+            );
+            return Number(process.hrtime.bigint() - started) / 1e6;
+          }
+          shrinkingCandidateDurationV117(32);
+          const shrinkingCandidateSmallV117 = Math.min(
+            shrinkingCandidateDurationV117(256),
+            shrinkingCandidateDurationV117(256)
+          );
+          const shrinkingCandidateLargeV117 = Math.min(
+            shrinkingCandidateDurationV117(1024),
+            shrinkingCandidateDurationV117(1024)
+          );
+          assert.ok(
+            shrinkingCandidateLargeV117 < 5000
+              && shrinkingCandidateLargeV117
+                < (shrinkingCandidateSmallV117 * 8) + 250,
+            `shrinking-candidate work must remain bounded per transition: `
+              + `256=${shrinkingCandidateSmallV117.toFixed(1)}ms, `
+              + `1024=${shrinkingCandidateLargeV117.toFixed(1)}ms`
+          );
+          """
+          test_path.write_text(test_source)
+          PY
+
+          node --check tools/lib/industrial-exhaust.mjs
+          node --check test/industrial-exhaust.test.js
+          git diff --check
+          mapfile -t candidate_paths < <(git diff --name-only)
+          test "${#candidate_paths[@]}" -eq 2
+          test "${candidate_paths[0]}" = "test/industrial-exhaust.test.js"
+          test "${candidate_paths[1]}" = "tools/lib/industrial-exhaust.mjs"
+
+          git diff --binary > "$ARTIFACT_DIR/v117-candidate.patch"
+          git status --porcelain=v1 > "$ARTIFACT_DIR/candidate-status-before-tests.txt"
+          git diff --stat > "$ARTIFACT_DIR/candidate-stat.txt"
+          {
+            printf 'controller_head=%s\n' "$controller_head"
+            printf 'controller_parent=%s\n' "$controller_parent"
+            printf 'controller_tree=%s\n' "$controller_tree"
+            printf 'product_head=%s\n' "$EXPECTED_PRODUCT"
+            printf 'product_tree=%s\n' "$EXPECTED_PRODUCT_TREE"
+            printf 'candidate_library_blob=%s\n' \
+              "$(git hash-object tools/lib/industrial-exhaust.mjs)"
+            printf 'candidate_test_blob=%s\n' \
+              "$(git hash-object test/industrial-exhaust.test.js)"
+            printf 'candidate_library_sha256=%s\n' \
+              "$(sha256sum tools/lib/industrial-exhaust.mjs | awk '{print $1}')"
+            printf 'candidate_test_sha256=%s\n' \
+              "$(sha256sum test/industrial-exhaust.test.js | awk '{print $1}')"
+            printf 'candidate_patch_sha256=%s\n' \
+              "$(sha256sum "$ARTIFACT_DIR/v117-candidate.patch" | awk '{print $1}')"
+          } | tee "$ARTIFACT_DIR/candidate-objects.env"
+
+          node --input-type=module <<'NODE' \
+            | tee "$ARTIFACT_DIR/direct-matrix.log"
+          import assert from 'node:assert/strict';
+          import { redactContactData } from './tools/lib/industrial-exhaust.mjs';
+
+          const cases = [
+            [
+              'ID: 09012345678/2026-08-17-03-6216-8041',
+              'ID: 09012345678/2026-08-17-[contact omitted]'
+            ],
+            [
+              'Archive 3.14/03-6216-8041',
+              'Archive 3.14/[contact omitted]'
+            ],
+            [
+              'Archive +33 1.42.68.53.00/17-20',
+              'Archive +33 1.42.68.53.00/17-20'
+            ],
+            [
+              'ID: +33 1.42.68.53.00/+81 3 6216 5111',
+              'ID: +33 1.42.68.53.00/[contact omitted]'
+            ],
+            [
+              'Phone: 03.6216.8041 2026-08-17',
+              'Phone: [contact omitted] 2026-08-17'
+            ]
+          ];
+          for (const [input, expected] of cases) {
+            assert.equal(redactContactData(input), expected, input);
+          }
+          console.log(`DIRECT_MATRIX_SUCCESS ${cases.length}`);
+          NODE
+
+          timeout 120s node --expose-gc --input-type=module <<'NODE' \
+            | tee "$ARTIFACT_DIR/candidate-benchmark.json"
+          import assert from 'node:assert/strict';
+          import { performance } from 'node:perf_hooks';
+          import { redactContactData } from './tools/lib/industrial-exhaust.mjs';
+
+          const unit = '09012345678/2026-08-17-03-6216-8041 ';
+          const expectedUnit = '[contact omitted]/2026-08-17-[contact omitted] ';
+          const duration = repetitions => {
+            global.gc?.();
+            const input = `Archive ${unit.repeat(repetitions)}`;
+            const expected = `Archive ${expectedUnit.repeat(repetitions)}`;
+            const started = performance.now();
+            const output = redactContactData(input);
+            const milliseconds = performance.now() - started;
+            assert.equal(output, expected);
+            return milliseconds;
+          };
+          duration(32);
+          const results = [];
+          for (const repetitions of [500, 1000, 2000, 4000]) {
+            const milliseconds = Math.min(
+              duration(repetitions),
+              duration(repetitions)
+            );
+            results.push({ repetitions, milliseconds });
+          }
+          const ratios = results.slice(1).map((item, index) => ({
+            from: results[index].repetitions,
+            to: item.repetitions,
+            ratio: item.milliseconds / Math.max(results[index].milliseconds, 1)
+          }));
+          assert.ok(
+            results.at(-1).milliseconds < 20000,
+            `4000-transition run exceeded 20 seconds: ${results.at(-1).milliseconds}`
+          );
+          for (const ratio of ratios) {
+            assert.ok(
+              ratio.ratio < 3.25,
+              `accelerating transition ratio ${ratio.from}->${ratio.to}: ${ratio.ratio}`
+            );
+          }
+          assert.ok(
+            results.at(-1).milliseconds
+              / Math.max(results[0].milliseconds, 1) < 13,
+            '500-to-4000 work expanded beyond the bounded scaling envelope'
+          );
+          console.log(JSON.stringify({
+            candidate: 'bounded geometric source windows',
+            results,
+            ratios
+          }, null, 2));
+          NODE
+
+          mapfile -t focused_tests < <(
+            find test -maxdepth 1 -type f -name 'industrial-exhaust*.test.js' -print \
+              | sort
+          )
+          test "${#focused_tests[@]}" -gt 0
+          : > "$ARTIFACT_DIR/focused-tests.log"
+          for test_file in "${focused_tests[@]}"; do
+            printf 'RUN %s\n' "$test_file" | tee -a "$ARTIFACT_DIR/focused-tests.log"
+            node "$test_file" 2>&1 | tee -a "$ARTIFACT_DIR/focused-tests.log"
+          done
+          printf 'FOCUSED_TESTS_SUCCESS count=%s\n' "${#focused_tests[@]}" \
+            | tee -a "$ARTIFACT_DIR/focused-tests.log"
+
+          npm run release:check 2>&1 | tee "$ARTIFACT_DIR/release-check.log"
+          printf 'RELEASE_CHECK_SUCCESS\n' | tee "$ARTIFACT_DIR/release-status.txt"
+
+          git status --porcelain=v1 > "$ARTIFACT_DIR/candidate-status-after-tests.txt"
+          git diff --binary > "$ARTIFACT_DIR/v117-candidate-after-tests.patch"
+          cmp "$ARTIFACT_DIR/candidate-status-before-tests.txt" \
+              "$ARTIFACT_DIR/candidate-status-after-tests.txt"
+          cmp "$ARTIFACT_DIR/v117-candidate.patch" \
+              "$ARTIFACT_DIR/v117-candidate-after-tests.patch"
+
+          cd "$GITHUB_WORKSPACE"
+          gh api "repos/$REPO/pulls/$PRODUCT_PR" > "$ARTIFACT_DIR/product-pr-after.json"
+          jq -S '{
+            state,
+            draft,
+            merged,
+            head: .head.sha,
+            base: .base.sha,
+            commits,
+            changed_files
+          }' "$ARTIFACT_DIR/product-pr-before.json" \
+            > "$ARTIFACT_DIR/product-pr-before.lease.json"
+          jq -S '{
+            state,
+            draft,
+            merged,
+            head: .head.sha,
+            base: .base.sha,
+            commits,
+            changed_files
+          }' "$ARTIFACT_DIR/product-pr-after.json" \
+            > "$ARTIFACT_DIR/product-pr-after.lease.json"
+          cmp "$ARTIFACT_DIR/product-pr-before.lease.json" \
+              "$ARTIFACT_DIR/product-pr-after.lease.json"
+          gh api "repos/$REPO/pulls/$PRODUCT_PR/reviews/$EXPECTED_REVIEW_ID" \
+            > "$ARTIFACT_DIR/review-after.json"
+          jq -S '{id, commit_id, state, body, submitted_at}' \
+            "$ARTIFACT_DIR/review-before.json" \
+            > "$ARTIFACT_DIR/review-before.lease.json"
+          jq -S '{id, commit_id, state, body, submitted_at}' \
+            "$ARTIFACT_DIR/review-after.json" \
+            > "$ARTIFACT_DIR/review-after.lease.json"
+          cmp "$ARTIFACT_DIR/review-before.lease.json" \
+              "$ARTIFACT_DIR/review-after.lease.json"
+          gh api "repos/$REPO/pulls/comments/$EXPECTED_REVIEW_COMMENT" \
+            > "$ARTIFACT_DIR/review-comment-after.json"
+          jq -S '{
+            id,
+            pull_request_review_id,
+            commit_id,
+            original_commit_id,
+            body,
+            path,
+            side,
+            line,
+            start_line
+          }' "$ARTIFACT_DIR/review-comment-before.json" \
+            > "$ARTIFACT_DIR/review-comment-before.lease.json"
+          jq -S '{
+            id,
+            pull_request_review_id,
+            commit_id,
+            original_commit_id,
+            body,
+            path,
+            side,
+            line,
+            start_line
+          }' "$ARTIFACT_DIR/review-comment-after.json" \
+            > "$ARTIFACT_DIR/review-comment-after.lease.json"
+          cmp "$ARTIFACT_DIR/review-comment-before.lease.json" \
+              "$ARTIFACT_DIR/review-comment-after.lease.json"
+          gh api "repos/$REPO/pulls/$CONTROLLER_PR" > "$ARTIFACT_DIR/controller-pr-after.json"
+          jq -e --arg head "$controller_head" --arg base "$EXPECTED_MAIN" '
+            .state == "open"
+            and .draft == true
+            and .merged == false
+            and .head.sha == $head
+            and .base.sha == $base
+          ' "$ARTIFACT_DIR/controller-pr-after.json" >/dev/null
+          test "$(git ls-remote origin refs/heads/main | awk '{print $1}')" = "$EXPECTED_MAIN"
+          test "$(git ls-remote origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')" = "$EXPECTED_PRODUCT"
+          test "$(git ls-remote origin "refs/heads/$CONTROLLER_BRANCH" | awk '{print $1}')" = "$controller_head"
+
+          {
+            printf 'PUBLICATION_SKIPPED\n'
+            printf 'PRODUCT_MUTATION_SKIPPED\n'
+            printf 'REVIEW_MUTATION_SKIPPED\n'
+            printf 'DIAGNOSTIC_SUCCESS\n'
+          } | tee "$ARTIFACT_DIR/terminal.txt"
+
+      - name: Upload terminal V117 diagnostic artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr2231-bounded-iteration-window-v117-r1
+          path: /tmp/pr2231-bounded-iteration-window-v117-diagnostic
+          if-no-files-found: error
+          retention-days: 90
