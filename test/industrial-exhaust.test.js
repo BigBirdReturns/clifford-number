@@ -177,6 +177,1240 @@ for (const labelledCompactPhone of ['Phone: 06012345678', 'Phone: 09012345678'])
     'phone labels must continue to redact compact domestic numbers'
   );
 }
+for (const labelledIdentifier of [
+  'ID: 09012345678',
+  'ＩＤ：０９０１２３４５６７８',
+  'GUID: 03-6216-8041',
+  'reference: +81 3 6216 5111',
+  'reference: +1 212 555 1234',
+  'ID: +44 (0)20 7123 4567',
+  '管理番号：03-6216-8041',
+  '識別子：+81 3 6216 5111'
+]) {
+  assert.equal(
+    redactContactData(labelledIdentifier),
+    labelledIdentifier,
+    'explicit identifier labels must protect every phone-shaped candidate and subspan'
+  );
+}
+for (const [labelledPhone, expected] of [
+  ['Phone: ID: 09012345678', 'Phone: ID: [contact omitted]'],
+  ['Phone ID: 09012345678', 'Phone ID: [contact omitted]'],
+  ['電話番号 ＩＤ：０９０１２３４５６７８', '電話番号 ＩＤ：[contact omitted]']
+]) {
+  assert.equal(
+    redactContactData(labelledPhone),
+    expected,
+    'an affirmative phone label must override a trailing identifier label'
+  );
+}
+assert.equal(
+  redactContactData('ID: 09012345678 Phone: 03-6216-8041'),
+  'ID: 09012345678 Phone: [contact omitted]',
+  'identifier protection must not suppress a later independently labelled phone'
+);
+
+for (const [identifierThenPhone, expected] of [
+  ['ID: 09012345678 / 03-6216-8041', 'ID: 09012345678 / [contact omitted]'],
+  ['reference: 09012345678 03-6216-8041', 'reference: 09012345678 [contact omitted]'],
+  ['ID: 03-6216-8041 090-1234-5678', 'ID: 03-6216-8041 [contact omitted]'],
+  ['ID: 01 42 68 53 00 03 62 16 80 41', 'ID: 01 42 68 53 00 [contact omitted]'],
+  ['reference: +1 212 555 1234 03-6216-8041', 'reference: +1 212 555 1234 [contact omitted]'],
+  ['ID: +44 (0)20 7123 4567 03-6216-8041', 'ID: +44 (0)20 7123 4567 [contact omitted]'],
+  ['ID: 09012345678 +81 90 1234 5678', 'ID: 09012345678 [contact omitted]']
+]) {
+  assert.equal(
+    redactContactData(identifierThenPhone),
+    expected,
+    'identifier protection must end after the first phone-shaped value in one scanner span'
+  );
+}
+
+for (const [unscoredIdentifierThenPhone, expected] of [
+  ['ID: 12345678 / 03-6216-8041', 'ID: 12345678 / [contact omitted]'],
+  ['ID: 12345678. 03-6216-8041', 'ID: 12345678. [contact omitted]'],
+  ['ID: 12345678 / +81 3 6216 5111', 'ID: 12345678 / [contact omitted]'],
+  ['ID: 12345678; 03-6216-8041', 'ID: 12345678; [contact omitted]'],
+  ['ID: 12345678 Phone: 03-6216-8041', 'ID: 12345678 Phone: [contact omitted]']
+]) {
+  assert.equal(
+    redactContactData(unscoredIdentifierThenPhone),
+    expected,
+    'an unscored numeric identifier must not protect a later independently complete phone'
+  );
+}
+for (const [reviewBoundaryInput, expected] of [
+  [
+    'ID: 09012345678 / (03) 6216 8041',
+    'ID: 09012345678 / [contact omitted]'
+  ],
+  [
+    'ＩＤ：０９０１２３４５６７８／（０３） ６２１６ ８０４１',
+    'ＩＤ：０９０１２３４５６７８／[contact omitted]'
+  ],
+  [
+    'ID: 01 42 68 53 00 / (03) 6216 8041',
+    'ID: 01 42 68 53 00 / [contact omitted]'
+  ],
+  [
+    'ID: 12345678 03-6216-8041',
+    'ID: 12345678 [contact omitted]'
+  ],
+  [
+    'ID: 12345678 (03) 6216 8041',
+    'ID: 12345678 [contact omitted]'
+  ],
+  [
+    'ID: 09012345678 (03) 6216 8041',
+    'ID: 09012345678 [contact omitted]'
+  ]
+]) {
+  assert.equal(
+    redactContactData(reviewBoundaryInput),
+    expected,
+    'validated boundaries must be selected before a later phone group can extend identifier scope'
+  );
+}
+for (const unsplitWhitespaceIdentifier of [
+  'ID: 1 212 555 1234',
+  'ID: 999 212 555 1234',
+  'ID: 12345678 87654321'
+]) {
+  assert.equal(
+    redactContactData(unsplitWhitespaceIdentifier),
+    unsplitWhitespaceIdentifier,
+    'whitespace alone must not split a complete or insufficiently bounded numeric identifier'
+  );
+}
+
+for (const [groupedUnscoredIdentifierThenPhone, expected] of [
+  [
+    'ID: 1234 5678 03-6216-8041',
+    'ID: 1234 5678 [contact omitted]'
+  ],
+  [
+    'ID: 123-45678 090-1234-5678',
+    'ID: 123-45678 [contact omitted]'
+  ],
+  [
+    'ＩＤ：１２３４ ５６７８ ０３－６２１６－８０４１',
+    'ＩＤ：１２３４ ５６７８ [contact omitted]'
+  ],
+  [
+    'ID: 1234 5678 (03) 6216 8041',
+    'ID: 1234 5678 [contact omitted]'
+  ]
+]) {
+  assert.equal(
+    redactContactData(groupedUnscoredIdentifierThenPhone),
+    expected,
+    'grouped unscored identifiers must end before an independently valid phone suffix'
+  );
+}
+
+for (const nestedIdentifierWrapper of [
+  'ID: [(+81 3 6216 5111)]',
+  'ID: [ (+81 3 6216 5111)]',
+  'ＩＤ：（（＋８１ ３ ６２１６ ５１１１））'
+]) {
+  assert.equal(
+    redactContactData(nestedIdentifierWrapper),
+    nestedIdentifierWrapper,
+    'a sequence of accepted opening wrappers must remain in explicit identifier context'
+  );
+}
+
+const nestedPhoneLabelRedaction = redactContactData(
+  'Phone: ID: [(+81 3 6216 5111)]'
+);
+assert.match(
+  nestedPhoneLabelRedaction,
+  /\[contact omitted\]/u,
+  'nested identifier wrappers must not suppress an affirmative phone-label override'
+);
+assert.doesNotMatch(
+  nestedPhoneLabelRedaction.normalize('NFKC'),
+  /81362165111/u,
+  'phone-labelled nested values must not survive redaction'
+);
+
+const nestedWrapperUrlSegment = 'a'.repeat(140);
+const nestedWrapperUrlPrefix = `https://example.test/${nestedWrapperUrlSegment}/id: [`;
+const nestedWrapperUrlRedaction = redactContactData(
+  `${nestedWrapperUrlPrefix}(+81 3 6216 5111)]`
+);
+assert.ok(
+  nestedWrapperUrlRedaction.startsWith(nestedWrapperUrlPrefix),
+  'nested wrapper support must preserve the complete preceding URL token'
+);
+assert.match(
+  nestedWrapperUrlRedaction,
+  /\[contact omitted\]/u,
+  'a URL-embedded identifier label must not protect a nested wrapped phone after whitespace'
+);
+assert.doesNotMatch(
+  nestedWrapperUrlRedaction.normalize('NFKC'),
+  /81362165111/u,
+  'URL-adjacent nested wrapped phones must not survive redaction'
+);
+
+for (const [lateParenthesizedPhone, expected] of [
+  [
+    'ID: 1234567 / (123) 4567',
+    'ID: 1234567 / [contact omitted]'
+  ],
+  [
+    'ID: 1234567/(123)4567',
+    'ID: 1234567/[contact omitted]'
+  ],
+  [
+    'ＩＤ：１２３４５６７／（１２３）４５６７',
+    'ＩＤ：１２３４５６７／[contact omitted]'
+  ],
+  [
+    'ID: 1234567.(123)4567',
+    'ID: 1234567.[contact omitted]'
+  ]
+]) {
+  assert.equal(
+    redactContactData(lateParenthesizedPhone),
+    expected,
+    'a validated later-phone boundary must be selected before whole-span scoring'
+  );
+}
+
+for (const [barePeriodIdentifierThenPhone, expected] of [
+  [
+    'ID: 12345678.03.6216.8041',
+    'ID: 12345678.[contact omitted]'
+  ],
+  [
+    'ＩＤ：１２３４５６７８．０３．６２１６．８０４１',
+    'ＩＤ：１２３４５６７８．[contact omitted]'
+  ],
+  [
+    'ID: 12345678.212.555.1234',
+    'ID: 12345678.[contact omitted]'
+  ]
+]) {
+  assert.equal(
+    redactContactData(barePeriodIdentifierThenPhone),
+    expected,
+    'a bare ASCII or fullwidth period must permit an independently valid phone suffix'
+  );
+}
+
+for (const unsplitBoundaryGuard of [
+  'ID: 1234567 / 7654321',
+  'ID: 12345678.87654321',
+  'ID: 03.6216.8041',
+  'ID: 1.212.555.1234',
+  'ＩＤ：１．２１２．５５５．１２３４'
+]) {
+  assert.equal(
+    redactContactData(unsplitBoundaryGuard),
+    unsplitBoundaryGuard,
+    'boundary punctuation must not split an invalid suffix or a complete period-formatted identifier'
+  );
+}
+
+for (const [firstValidIdentifierBoundary, expected] of [
+  [
+    'ID: 1234567 / (123) 4567 / (234) 5678',
+    'ID: 1234567 / [contact omitted] / [contact omitted]'
+  ],
+  [
+    'ID: 1234567/(123)4567/(234)5678',
+    'ID: 1234567/[contact omitted]/[contact omitted]'
+  ],
+  [
+    'ＩＤ：１２３４５６７／（１２３）４５６７／（２３４）５６７８',
+    'ＩＤ：１２３４５６７／[contact omitted]／[contact omitted]'
+  ],
+  [
+    'ID: 1234567.(123)4567.(234)5678',
+    'ID: 1234567.[contact omitted].[contact omitted]'
+  ]
+]) {
+  assert.equal(
+    redactContactData(firstValidIdentifierBoundary),
+    expected,
+    'identifier protection must end at the first independently valid later-phone boundary'
+  );
+}
+
+for (const completeGroupedIdentifier of [
+  'ID: +1 212 555 1234',
+  'reference: +1 212 555 1234',
+  'ID: +44 (0)20 7123 4567',
+  'ID: (+81 3 6216 5111)',
+  'ＩＤ：（＋８１ ３ ６２１６ ５１１１）'
+]) {
+  assert.equal(
+    redactContactData(completeGroupedIdentifier),
+    completeGroupedIdentifier,
+    'a complete grouped identifier must not be split at an internally phone-shaped suffix'
+  );
+}
+
+for (const [urlPathLabel, expected] of [
+  ['https://example.test/id: 09012345678', 'https://example.test/id: [contact omitted]'],
+  ['https://example.test/reference: +81 3 6216 5111', 'https://example.test/reference: [contact omitted]'],
+  ['example.test/id: 03-6216-8041', 'example.test/id: [contact omitted]']
+]) {
+  assert.equal(
+    redactContactData(urlPathLabel),
+    expected,
+    'an identifier word embedded in a URL token must not protect a later phone after whitespace'
+  );
+}
+
+const longIdentifierUrlSegment = 'a'.repeat(140);
+for (const [longUrlPathLabel, expected] of [
+  [
+    `https://example.test/${longIdentifierUrlSegment}/id: 09012345678`,
+    `https://example.test/${longIdentifierUrlSegment}/id: [contact omitted]`
+  ],
+  [
+    `//example.test/${longIdentifierUrlSegment}/reference: +81 3 6216 5111`,
+    `//example.test/${longIdentifierUrlSegment}/reference: [contact omitted]`
+  ],
+  [
+    `example.test/${longIdentifierUrlSegment}/id: 03-6216-8041`,
+    `example.test/${longIdentifierUrlSegment}/id: [contact omitted]`
+  ],
+  [
+    `192.0.2.1/${longIdentifierUrlSegment}/reference: 090-1234-5678`,
+    `192.0.2.1/${longIdentifierUrlSegment}/reference: [contact omitted]`
+  ]
+]) {
+  assert.equal(
+    redactContactData(longUrlPathLabel),
+    expected,
+    'a long URL token must retain URL provenance when rejecting an embedded identifier label'
+  );
+}
+
+const finalBoundaryLongUrlSegment = 'a'.repeat(140);
+for (const [finalBoundaryInput, expected] of [
+  ['ID: 12345678/03-6216-8041', 'ID: 12345678/[contact omitted]'],
+  ['ＩＤ：１２３４５６７８／０３－６２１６－８０４１', 'ＩＤ：１２３４５６７８／[contact omitted]'],
+  ['ID: 12345678/87654321', 'ID: 12345678/87654321'],
+  [
+    `https://example.test/${finalBoundaryLongUrlSegment}/reference: (+81 3 6216 5111)`,
+    `https://example.test/${finalBoundaryLongUrlSegment}/reference: ([contact omitted])`
+  ],
+  [
+    `//example.test/${finalBoundaryLongUrlSegment}/id: （＋８１ ３ ６２１６ ５１１１）`,
+    `//example.test/${finalBoundaryLongUrlSegment}/id: （[contact omitted]）`
+  ]
+]) {
+  assert.equal(
+    redactContactData(finalBoundaryInput),
+    expected,
+    'final identifier boundaries must preserve the identifier and redact only an independent phone'
+  );
+}
+
+for (const wrappedIdentifier of [
+  'ID: (+81 3 6216 5111)',
+  'ＩＤ：（＋８１ ３ ６２１６ ５１１１）'
+]) {
+  assert.equal(
+    redactContactData(wrappedIdentifier),
+    wrappedIdentifier,
+    'an opening wrapper after an identifier label must remain in identifier context'
+  );
+}
+
+for (const punctuatedPhoneId of [
+  'Phone: (ID: 09012345678)',
+  'Phone / ID: 09012345678',
+  'Phone-ID: 09012345678',
+  'Phone/ID: 09012345678',
+  '電話番号／ＩＤ：０９０１２３４５６７８'
+]) {
+  const redacted = redactContactData(punctuatedPhoneId);
+  assert.match(
+    redacted,
+    /\[contact omitted\]/u,
+    'separator punctuation must not suppress a phone-label override before standalone ID'
+  );
+  assert.doesNotMatch(
+    redacted.normalize('NFKC'),
+    /09012345678/u,
+    'phone-labelled values must not survive redaction'
+  );
+}
+
+for (const [phoneLabelThenIdentifier, expected] of [
+  [
+    'Phone: reference: +81 3 6216 5111',
+    'Phone: reference: [contact omitted]'
+  ],
+  [
+    'Phone / GUID: 09012345678',
+    'Phone / GUID: [contact omitted]'
+  ],
+  [
+    'Phone: record id: 03-6216-8041',
+    'Phone: record id: [contact omitted]'
+  ],
+  [
+    'contact: reference: +81 3 6216 5111',
+    'contact: reference: [contact omitted]'
+  ],
+  [
+    'contact number reference: +81 3 6216 5111',
+    'contact number reference: [contact omitted]'
+  ],
+  [
+    '電話番号／管理番号：０９０１２３４５６７８',
+    '電話番号／管理番号：[contact omitted]'
+  ],
+  [
+    'Phone / GUID / record id: 09012345678',
+    'Phone / GUID / record id: [contact omitted]'
+  ],
+  [
+    'Phone GUID record id: 03-6216-8041',
+    'Phone GUID record id: [contact omitted]'
+  ],
+  [
+    'contact: GUID / record id: +81 3 6216 5111',
+    'contact: GUID / record id: [contact omitted]'
+  ],
+  [
+    'contact number GUID reference: 09012345678',
+    'contact number GUID reference: [contact omitted]'
+  ],
+  [
+    'contact ID reference: 09012345678',
+    'contact ID reference: [contact omitted]'
+  ],
+  [
+    '電話番号／管理番号／参照番号：０９０１２３４５６７８',
+    '電話番号／管理番号／参照番号：[contact omitted]'
+  ]
+]) {
+  assert.equal(
+    redactContactData(phoneLabelThenIdentifier),
+    expected,
+    'phone authority must traverse the complete trailing identifier-label chain'
+  );
+}
+
+const longPhoneLabelUrlSegment = 'a'.repeat(140);
+const longPhoneLabelIdentifierChain = `${'GUID '.repeat(40)}record id: `;
+for (const urlEmbeddedPhoneLabelIdentifier of [
+  'https://example.test/phone GUID: 09012345678',
+  `https://example.test/${longPhoneLabelUrlSegment}/mobile record id: +81 3 6216 5111`,
+  '//example.test/tel reference: 03-6216-8041',
+  'example.test/fax identifier: 09012345678',
+  '192.0.2.1/contact ID reference: 09012345678',
+  'www.example.test/phone (GUID: 09012345678)',
+  'https://example.test/path?kind=phone GUID: 09012345678',
+  'https://example.test/path#fax reference: 03-6216-8041',
+  `https://example.test/${longPhoneLabelUrlSegment}/phone ${longPhoneLabelIdentifierChain}09012345678`
+]) {
+  assert.equal(
+    redactContactData(urlEmbeddedPhoneLabelIdentifier),
+    urlEmbeddedPhoneLabelIdentifier,
+    'a phone-label word embedded in a URL token must not override an explicit identifier label'
+  );
+}
+
+for (const [narrativePhoneLabelAfterUrl, expected] of [
+  [
+    'https://example.test/path Phone GUID: 09012345678',
+    'https://example.test/path Phone GUID: [contact omitted]'
+  ],
+  [
+    `https://example.test/${longPhoneLabelUrlSegment}/ Mobile record id: +81 3 6216 5111`,
+    `https://example.test/${longPhoneLabelUrlSegment}/ Mobile record id: [contact omitted]`
+  ],
+  [
+    '//example.test/path Fax reference: 03-6216-8041',
+    '//example.test/path Fax reference: [contact omitted]'
+  ],
+  [
+    'example.test/path Tel GUID: 09012345678',
+    'example.test/path Tel GUID: [contact omitted]'
+  ],
+  [
+    `https://example.test/${longPhoneLabelUrlSegment}/ Mobile ${longPhoneLabelIdentifierChain}+81 3 6216 5111`,
+    `https://example.test/${longPhoneLabelUrlSegment}/ Mobile ${longPhoneLabelIdentifierChain}[contact omitted]`
+  ]
+]) {
+  assert.equal(
+    redactContactData(narrativePhoneLabelAfterUrl),
+    expected,
+    'URL provenance must end at whitespace before a genuine narrative phone label'
+  );
+}
+
+const thousandIdentifierLabelChain = 'GUID '.repeat(1000);
+for (const narrativePhoneLabel of [
+  'Phone number',
+  'Telephone number',
+  'Mobile number',
+  'Phone number is'
+]) {
+  const input = `${narrativePhoneLabel} ${thousandIdentifierLabelChain}record id: 09012345678`;
+  assert.equal(
+    redactContactData(input),
+    `${narrativePhoneLabel} ${thousandIdentifierLabelChain}record id: [contact omitted]`,
+    'multi-token phone-label authority must survive a long identifier-label chain'
+  );
+}
+
+const nonPhoneThousandLabelChain = `Archive ${thousandIdentifierLabelChain}record id: 09012345678`;
+assert.equal(
+  redactContactData(nonPhoneThousandLabelChain),
+  nonPhoneThousandLabelChain,
+  'linear long-chain recovery must not invent telephone authority'
+);
+
+const overflowIdentifierLabelChain = 'GUID '.repeat(4000);
+const overflowPhoneLabelChain = `Phone ${overflowIdentifierLabelChain}record id: 09012345678`;
+assert.equal(
+  redactContactData(overflowPhoneLabelChain),
+  `Phone ${overflowIdentifierLabelChain}record id: [contact omitted]`,
+  'identifier-label context beyond the firm bound must fail conservatively to redaction'
+);
+
+for (const overflowObservationTail of [
+  '2026 people',
+  '2026-08-17',
+  '12:30',
+  '3.14',
+  '10-20 people'
+]) {
+  const input = `Phone ${overflowIdentifierLabelChain}record id: 09012345678 ${overflowObservationTail}`;
+  assert.equal(
+    redactContactData(input),
+    `Phone ${overflowIdentifierLabelChain}record id: [contact omitted] ${overflowObservationTail}`,
+    'bounded context must preserve a strong numeric observation after the redacted phone'
+  );
+}
+
+for (const [overflowObservation, laterPhone] of [
+  ['2026 people', '03-6216-8041'],
+  ['2026-08-17', '03-6216-8041'],
+  ['12:30', '(03) 6216 8041'],
+  ['3.14', '(03) 6216 8041'],
+  ['10-20 people', '+81 3 6216 5111']
+]) {
+  const input = `Phone ${overflowIdentifierLabelChain}record id: 09012345678 ${overflowObservation} ${laterPhone}`;
+  assert.equal(
+    redactContactData(input),
+    `Phone ${overflowIdentifierLabelChain}record id: [contact omitted] ${overflowObservation} [contact omitted]`,
+    'a proven observation boundary must survive recursion to a later independent phone'
+  );
+}
+
+for (const [overflowObservation, separator, laterPhone] of [
+  ['2026-08-17', '.', '03-6216-8041'],
+  ['3.14', '.', '03-6216-8041'],
+  ['２０２６－０８－１７', '．', '０３－６２１６－８０４１'],
+  ['2026-08-17', '.', '1 212 555 1234']
+]) {
+  const input = `Phone ${overflowIdentifierLabelChain}record id: 09012345678 ${overflowObservation}${separator}${laterPhone}`;
+  assert.equal(
+    redactContactData(input),
+    `Phone ${overflowIdentifierLabelChain}record id: [contact omitted] ${overflowObservation}${separator}[contact omitted]`,
+    'period boundaries after proven observations must reach the complete later phone'
+  );
+}
+
+for (const [prefix, observation, separator, laterPhone] of [
+  ['ID: 09012345678', '2026-08-17', '.', '1 212 555 1234'],
+  ['Phone: 09012345678', '2026-08-17', ' ', '01 42 68 53 00'],
+  ['Phone: 09012345678', '2026.08.17', '.', '03 62 16 80 41'],
+  ['ＩＤ：０９０１２３４５６７８', '２０２６－０８－１７', '．', '１ ２１２ ５５５ １２３４']
+]) {
+  const input = `${prefix} ${observation}${separator}${laterPhone}`;
+  const redactedPrefix = prefix.startsWith('Phone:')
+    ? 'Phone: [contact omitted]'
+    : prefix;
+  assert.equal(
+    redactContactData(input),
+    `${redactedPrefix} ${observation}${separator}[contact omitted]`,
+    'post-observation intervals must retain the exact validated phone start and end'
+  );
+}
+
+for (const terminalObservation of [
+  '90 people',
+  '3.14',
+  '12:30',
+  '10-20 people',
+  '2027-09-18'
+]) {
+  const input = `Phone ${overflowIdentifierLabelChain}record id: 09012345678 2026-08-17 01 42 68 53 00 ${terminalObservation}`;
+  assert.equal(
+    redactContactData(input),
+    `Phone ${overflowIdentifierLabelChain}record id: [contact omitted] 2026-08-17 [contact omitted] ${terminalObservation}`,
+    'a candidate-specific observation cap must bound the exact later-phone interval'
+  );
+}
+
+const sequentialObservationPhones = `Phone ${overflowIdentifierLabelChain}record id: 09012345678 2026-08-17 01 42 68 53 00 90 people +81 3 6216 5111`;
+assert.equal(
+  redactContactData(sequentialObservationPhones),
+  `Phone ${overflowIdentifierLabelChain}record id: [contact omitted] 2026-08-17 [contact omitted] 90 people [contact omitted]`,
+  'sequential observation/phone transitions must retain each exact interval'
+);
+
+for (const [observations, laterPhone] of [
+  ['2026-08-17 2027-09-18', '03-6216-8041'],
+  ['2026-08-17 12:30', '+81 3 6216 5111'],
+  ['3.14 90 people', '(03) 6216 8041'],
+  ['２０２６－０８－１７ ２０２７－０９－１８', '０３－６２１６－８０４１']
+]) {
+  const input = `Phone ${overflowIdentifierLabelChain}record id: 09012345678 ${observations} ${laterPhone}`;
+  assert.equal(
+    redactContactData(input),
+    `Phone ${overflowIdentifierLabelChain}record id: [contact omitted] ${observations} [contact omitted]`,
+    'each complete consecutive observation must be skipped before validating a later phone'
+  );
+}
+
+for (const [observations, laterPhone] of [
+  ['2026-08-17(3.14)', '03-6216-8041'],
+  ['2026-08-17(12:30)', '+81 3 6216 5111'],
+  ['3.14((2027-09-18))', '(03) 6216 8041'],
+  ['２０２６－０８－１７（３．１４）', '０３－６２１６－８０４１']
+]) {
+  const input = `Phone ${overflowIdentifierLabelChain}record id: 09012345678 ${observations} ${laterPhone}`;
+  assert.equal(
+    redactContactData(input),
+    `Phone ${overflowIdentifierLabelChain}record id: [contact omitted] ${observations} [contact omitted]`,
+    'an accepted opening wrapper must advance complete observation custody before phone validation'
+  );
+}
+
+for (const [observations, laterPhone] of [
+  ['2026-08-17(3.14)', '03-6216-8041'],
+  ['2026-08-17(12:30)', '03-6216-8041'],
+  ['3.14((2027-09-18))', '1 212 555 1234'],
+  ['２０２６－０８－１７（３．１４）', '０３－６２１６－８０４１'],
+  ['2026-08-17(12:30)', '+81 3 6216 5111']
+]) {
+  const input = `Phone ${overflowIdentifierLabelChain}record id: 09012345678 ${observations}${laterPhone}`;
+  assert.equal(
+    redactContactData(input),
+    `Phone ${overflowIdentifierLabelChain}record id: [contact omitted] ${observations}[contact omitted]`,
+    'closing wrappers after complete observations must reach the later phone interval'
+  );
+}
+
+const closingWrapperObservationTail = `Phone ${overflowIdentifierLabelChain}record id: 09012345678 2026-08-17(3.14)90 people`;
+assert.equal(
+  redactContactData(closingWrapperObservationTail),
+  `Phone ${overflowIdentifierLabelChain}record id: [contact omitted] 2026-08-17(3.14)90 people`,
+  'closing-wrapper admission must defer to a complete later numeric observation'
+);
+
+for (const [observations, laterPhone, extension, expectedExtension] of [
+  ['2026-08-17(3.14)', '03-6216-8041', ' ext 55', ' ext [contact omitted]'],
+  ['2026-08-17(12:30)', '+81 3 6216 5111', ' #1234', ' #[contact omitted]'],
+  ['3.14((2027-09-18))', '(03) 6216 8041', '内線1234', '内線[contact omitted]'],
+  ['２０２６－０８－１７（３．１４）', '０３－６２１６－８０４１', '内線１２３４', '内線[contact omitted]']
+]) {
+  const input = `Phone ${overflowIdentifierLabelChain}record id: 09012345678 ${observations} ${laterPhone}${extension}`;
+  assert.equal(
+    redactContactData(input),
+    `Phone ${overflowIdentifierLabelChain}record id: [contact omitted] ${observations} [contact omitted]${expectedExtension}`,
+    'extension authority must follow complete observation custody and exact later-phone validation'
+  );
+}
+
+const extensionYearEndingPhone = `Phone ${overflowIdentifierLabelChain}record id: 09012345678 2026-08-17(3.14) +882 13 123 456 2026 #1234`;
+assert.equal(
+  redactContactData(extensionYearEndingPhone),
+  `Phone ${overflowIdentifierLabelChain}record id: [contact omitted] 2026-08-17(3.14) [contact omitted] #[contact omitted]`,
+  'observation custody must not truncate a structurally valid year-ending phone before its extension'
+);
+
+for (const [unmatchedTail, expectedTail] of [
+  ['2026-08-17-)12345678', '2026-08-17-)12345678'],
+  ['2026-08-17-) 12345678', '2026-08-17-) 12345678'],
+  ['２０２６－０８－１７－）１２３４５６７８', '２０２６－０８－１７－）１２３４５６７８']
+]) {
+  const input = `Archive ${overflowIdentifierLabelChain}record id: 09012345678 ${unmatchedTail}`;
+  assert.equal(
+    redactContactData(input),
+    `Archive ${overflowIdentifierLabelChain}record id: [contact omitted] ${expectedTail}`,
+    'an unmatched closing wrapper may not invent a later telephone boundary'
+  );
+}
+
+for (const [input, expected] of [
+  [
+    'Phone: 09012345678 2026-08-17-) 03-6216-8041',
+    'Phone: [contact omitted] 2026-08-17-) [contact omitted]'
+  ],
+  [
+    'Phone: 09012345678 ２０２６－０８－１７－） ０３－６２１６－８０４１',
+    'Phone: [contact omitted] ２０２６－０８－１７－） [contact omitted]'
+  ],
+  [
+    `Phone ${overflowIdentifierLabelChain}record id: 09012345678 2026-08-17-) 03-6216-8041`,
+    `Phone ${overflowIdentifierLabelChain}record id: [contact omitted] 2026-08-17-) [contact omitted]`
+  ],
+  [
+    `Phone ${overflowIdentifierLabelChain}record id: 09012345678 2026-08-17(3.14] +81 3 6216 5111`,
+    `Phone ${overflowIdentifierLabelChain}record id: [contact omitted] 2026-08-17(3.14] [contact omitted]`
+  ]
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    'an unowned closer may not veto independent evidence for a complete later phone'
+  );
+}
+
+for (const [input, expected] of [
+  [
+    'Phone: 09012345678 2026-08-17-) 050-12345678',
+    'Phone: [contact omitted] 2026-08-17-) [contact omitted]'
+  ],
+  [
+    'Phone: 09012345678 2026-08-17-) 03-62165111',
+    'Phone: [contact omitted] 2026-08-17-) [contact omitted]'
+  ],
+  [
+    'Phone: 09012345678 ２０２６－０８－１７－） ０５０－１２３４５６７８',
+    'Phone: [contact omitted] ２０２６－０８－１７－） [contact omitted]'
+  ],
+  [
+    `Phone ${overflowIdentifierLabelChain}record id: 09012345678 2026-08-17-) 050-12345678`,
+    `Phone ${overflowIdentifierLabelChain}record id: [contact omitted] 2026-08-17-) [contact omitted]`
+  ]
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    'an intrinsically complete range-shaped phone must outrank an overlapping observation spelling'
+  );
+}
+
+for (const observationTail of [
+  '10-20 people',
+  '2027-09-18',
+  '3.14'
+]) {
+  const input = `Archive ${overflowIdentifierLabelChain}record id: 09012345678 2026-08-17-) ${observationTail}`;
+  assert.equal(
+    redactContactData(input),
+    `Archive ${overflowIdentifierLabelChain}record id: [contact omitted] 2026-08-17-) ${observationTail}`,
+    'intrinsic-phone precedence must preserve genuine numeric observations'
+  );
+}
+
+for (const contaminatedTail of [
+  '03.6216.12345678',
+  '０３．６２１６．１２３４５６７８'
+]) {
+  const input = `Archive ${overflowIdentifierLabelChain}record id: 09012345678 2026-08-17-) ${contaminatedTail}`;
+  assert.equal(
+    redactContactData(input),
+    `Archive ${overflowIdentifierLabelChain}record id: [contact omitted] 2026-08-17-) ${contaminatedTail}`,
+    'invalid-closer suppression must survive every observation restart'
+  );
+}
+
+for (const [attachedCloser, attachedTail] of [
+  [')', '03.6216.12345678'],
+  [']', '03.6216.12345678'],
+  ['）', '０３．６２１６．１２３４５６７８'],
+  ['］', '０３．６２１６．１２３４５６７８']
+]) {
+  const input = `Archive ${overflowIdentifierLabelChain}record id: 09012345678 2026-08-17${attachedCloser}${attachedTail}`;
+  assert.equal(
+    redactContactData(input),
+    `Archive ${overflowIdentifierLabelChain}record id: [contact omitted] 2026-08-17${attachedCloser}${attachedTail}`,
+    'invalid-closer suppression must be acquired before an ineligible transition exits'
+  );
+}
+
+for (const [input, expected] of [
+  [
+    'Phone: 09012345678 2026-08-17)03-6216-8041',
+    'Phone: [contact omitted] 2026-08-17)[contact omitted]'
+  ],
+  [
+    'Phone: ０９０１２３４５６７８ ２０２６－０８－１７）０３－６２１６－８０４１',
+    'Phone: [contact omitted] ２０２６－０８－１７）[contact omitted]'
+  ]
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    'an attached invalid closer must still admit an intrinsically complete phone'
+  );
+}
+
+for (const [tail, expectedTail] of [
+  ['12345678', '12345678'],
+  ['03.6216.12345678', '03.6216.12345678'],
+  ['０３．６２１６．１２３４５６７８', '０３．６２１６．１２３４５６７８']
+]) {
+  const input =
+    `Archive ${overflowIdentifierLabelChain}record id: 09012345678 2026-08-17-) 03-6216-8041 ${tail}`;
+  assert.equal(
+    redactContactData(input),
+    `Archive ${overflowIdentifierLabelChain}record id: [contact omitted] 2026-08-17-) [contact omitted] ${expectedTail}`,
+    'invalid-closer suppression must persist through every recursive suffix scan'
+  );
+}
+
+assert.equal(
+  redactContactData(
+    `Archive ${overflowIdentifierLabelChain}record id: 09012345678 2026-08-17)12345678`
+  ),
+  `Archive ${overflowIdentifierLabelChain}record id: [contact omitted] 2026-08-17)12345678`,
+  'an attached invalid closer must not grant phone authority to a bare numeric tail'
+);
+
+for (const [name, input, expected] of [
+  [
+    'split-four-four',
+    `Archive ${overflowIdentifierLabelChain}(record id: 1234) 5678`,
+    `Archive ${overflowIdentifierLabelChain}(record id: 1234) 5678`
+  ],
+  [
+    'split-six-two',
+    `Archive ${overflowIdentifierLabelChain}(record id: 123456) 78`,
+    `Archive ${overflowIdentifierLabelChain}(record id: 123456) 78`
+  ],
+  [
+    'first-seven-tail-one',
+    `Archive ${overflowIdentifierLabelChain}(record id: 1234567) 8`,
+    `Archive ${overflowIdentifierLabelChain}(record id: [contact omitted]) 8`
+  ],
+  [
+    'fullwidth-split-four-four',
+    `Archive ${overflowIdentifierLabelChain}（record id: １２３４） ５６７８`,
+    `Archive ${overflowIdentifierLabelChain}（record id: １２３４） ５６７８`
+  ],
+  [
+    'intrinsic-after-short-prefix',
+    `Archive ${overflowIdentifierLabelChain}(record id: 1234) 050-12345678`,
+    `Archive ${overflowIdentifierLabelChain}(record id: 1234) [contact omitted]`
+  ],
+  [
+    'observation-after-short-prefix',
+    `Archive ${overflowIdentifierLabelChain}(record id: 1234) 2027-09-18`,
+    `Archive ${overflowIdentifierLabelChain}(record id: 1234) 2027-09-18`
+  ],
+  [
+    'two-intrinsic-segments',
+    `Archive ${overflowIdentifierLabelChain}(record id: 050-12345678) 03-6216-8041`,
+    `Archive ${overflowIdentifierLabelChain}(record id: [contact omitted]) [contact omitted]`
+  ],
+  [
+    'explicit-phone-label-crossing',
+    'Phone: (1234) 5678',
+    'Phone: [contact omitted]'
+  ]
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    `${name}: a removed closer may be suppressed only by context-free interval evidence`
+  );
+}
+
+for (const [name, input, expectedRedactions, expectedTail] of [
+  [
+    'ascii-bare-tail',
+    `Archive ${overflowIdentifierLabelChain}(record id: 09012345678 2026-08-17-)03-6216-8041) 12345678`,
+    2,
+    ' 12345678'
+  ],
+  [
+    'ascii-dotted-tail',
+    `Archive ${overflowIdentifierLabelChain}(record id: 09012345678 2026-08-17-)03-6216-8041) 03.6216.12345678`,
+    2,
+    ' 03.6216.12345678'
+  ],
+  [
+    'fullwidth-bare-tail',
+    `Archive ${overflowIdentifierLabelChain}（record id: ０９０１２３４５６７８ ２０２６－０８－１７－）０３－６２１６－８０４１） １２３４５６７８`,
+    2,
+    ' １２３４５６７８'
+  ],
+  [
+    'post-wrapper-intrinsic-phone',
+    `Archive ${overflowIdentifierLabelChain}(record id: 09012345678 2026-08-17-)03-6216-8041) 050-12345678`,
+    3,
+    ' [contact omitted]'
+  ],
+  [
+    'plus-wrapper-bare-tail',
+    `Archive ${overflowIdentifierLabelChain}(record id: +81 3 6216 5111 2026-08-17-)03-6216-8041) 12345678`,
+    2,
+    ' 12345678'
+  ]
+]) {
+  const actual = redactContactData(input);
+  assert.equal(
+    (actual.match(/\[contact omitted\]/gu) ?? []).length,
+    expectedRedactions,
+    `${name}: an outer-wrapper boundary must not restore overflow authority`
+  );
+  assert.ok(
+    actual.endsWith(expectedTail),
+    `${name}: the post-wrapper suffix must retain only independently proved telephone ranges`
+  );
+  assert.match(
+    actual,
+    /2026-08-17-|２０２６－０８－１７－/u,
+    `${name}: the complete pre-boundary observation must remain intact`
+  );
+}
+
+const ownedWrapperObservationTail =
+  `Archive ${overflowIdentifierLabelChain}(record id: 09012345678 2026-08-17-)03-6216-8041) 2027-09-18`;
+const ownedWrapperObservationActual = redactContactData(
+  ownedWrapperObservationTail
+);
+assert.equal(
+  (ownedWrapperObservationActual.match(/\[contact omitted\]/gu) ?? []).length,
+  2,
+  'a strong observation after an outer wrapper must not be promoted as contact data'
+);
+assert.ok(
+  ownedWrapperObservationActual.endsWith(' 2027-09-18'),
+  'the post-wrapper date must remain byte-for-byte intact'
+);
+
+const attachedParenthesizedPhone = `Phone ${overflowIdentifierLabelChain}record id: 09012345678 2026-08-17(03) 6216 8041`;
+assert.equal(
+  redactContactData(attachedParenthesizedPhone),
+  `Phone ${overflowIdentifierLabelChain}record id: [contact omitted] 2026-08-17[contact omitted]`,
+  'an opening wrapper that begins a genuine phone must retain exact telephone interval custody'
+);
+
+const overflowAmbiguousContinuation = `Phone ${overflowIdentifierLabelChain}record id: 09012345678 2026`;
+assert.equal(
+  redactContactData(overflowAmbiguousContinuation),
+  `Phone ${overflowIdentifierLabelChain}record id: [contact omitted]`,
+  'a bare numeric continuation must remain inside conservative bounded-context redaction'
+);
+
+for (const trailingDotUrlPhoneLabelIdentifier of [
+  'example.test./path/phone GUID: 09012345678',
+  '192.0.2.1./path/mobile record id: +81 3 6216 5111'
+]) {
+  assert.equal(
+    redactContactData(trailingDotUrlPhoneLabelIdentifier),
+    trailingDotUrlPhoneLabelIdentifier,
+    'a phone-label word inside a trailing-dot bare host token must not override an identifier label'
+  );
+}
+
+for (const [trailingDotUrlIdentifierLabelPhone, expected] of [
+  [
+    'example.test./path/id: 09012345678',
+    'example.test./path/id: [contact omitted]'
+  ],
+  [
+    '192.0.2.1./path/reference: +81 3 6216 5111',
+    '192.0.2.1./path/reference: [contact omitted]'
+  ],
+  [
+    'example.test./path Phone GUID: 09012345678',
+    'example.test./path Phone GUID: [contact omitted]'
+  ]
+]) {
+  assert.equal(
+    redactContactData(trailingDotUrlIdentifierLabelPhone),
+    expected,
+    'trailing-dot host provenance must end at whitespace before narrative labels'
+  );
+}
+
+for (const [labelledObservationPhone, expected] of [
+  [
+    'Phone: 09012345678 2026-08-17 555-1212',
+    'Phone: [contact omitted] 2026-08-17 [contact omitted]'
+  ],
+  [
+    'Phone: (09012345678) 2026-08-17 555-1212',
+    'Phone: [contact omitted] 2026-08-17 [contact omitted]'
+  ],
+  [
+    'Mobile number: 2125551234 2026-08-17 555-1212',
+    'Mobile number: [contact omitted] 2026-08-17 [contact omitted]'
+  ],
+  [
+    'Phone / GUID / record id: 09012345678 2026-08-17 555-1212',
+    'Phone / GUID / record id: [contact omitted] 2026-08-17 [contact omitted]'
+  ],
+  [
+    '電話番号：０９０１２３４５６７８ ２０２６－０８－１７ ５５５－１２１２',
+    '電話番号：[contact omitted] ２０２６－０８－１７ [contact omitted]'
+  ],
+  [
+    'Phone: 09012345678 2026-08-17 555-1212 90 people',
+    'Phone: [contact omitted] 2026-08-17 [contact omitted] 90 people'
+  ],
+  [
+    'Phone: 09012345678 2026-08-17 555-1212 ext 55',
+    'Phone: [contact omitted] 2026-08-17 [contact omitted] ext [contact omitted]'
+  ]
+]) {
+  assert.equal(
+    redactContactData(labelledObservationPhone),
+    expected,
+    'established phone-label authority must survive preserved observations'
+  );
+}
+
+for (const [observationControl, expected] of [
+  [
+    'Phone: 09012345678 2026-08-17 10-20 people',
+    'Phone: [contact omitted] 2026-08-17 10-20 people'
+  ],
+  [
+    'Phone: 09012345678 2026-08-17 2027-09-18',
+    'Phone: [contact omitted] 2026-08-17 2027-09-18'
+  ],
+  [
+    'Phone: 09012345678 2026-08-17 3.14',
+    'Phone: [contact omitted] 2026-08-17 3.14'
+  ],
+  [
+    'Phone: 09012345678 2026-08-17 12:30',
+    'Phone: [contact omitted] 2026-08-17 12:30'
+  ],
+  [
+    'Archive 09012345678 2026-08-17 555-1212',
+    'Archive [contact omitted] 2026-08-17 555-1212'
+  ],
+  [
+    'Phone: 09012345678 2026-08-17)555-1212',
+    'Phone: [contact omitted] 2026-08-17)555-1212'
+  ],
+  [
+    'Phone: 09012345678 2026-08-17-) 555-1212',
+    'Phone: [contact omitted] 2026-08-17-) [contact omitted]'
+  ]
+]) {
+  assert.equal(
+    redactContactData(observationControl),
+    expected,
+    'phone-label custody must not steal observations or grant invalid closers authority'
+  );
+}
+
+for (const [recursiveLabelCase, input, expected] of [
+  [
+    'two later local phones',
+    'Phone: 09012345678 2026-08-17 555-1212 555-3434',
+    'Phone: [contact omitted] 2026-08-17 [contact omitted] [contact omitted]'
+  ],
+  [
+    'three later local phones',
+    'Phone: 09012345678 2026-08-17 555-1212 555-3434 555-5656',
+    'Phone: [contact omitted] 2026-08-17 [contact omitted] [contact omitted] [contact omitted]'
+  ],
+  [
+    'wrapped initial phone',
+    'Phone: (09012345678) 2026-08-17 555-1212 555-3434',
+    'Phone: [contact omitted] 2026-08-17 [contact omitted] [contact omitted]'
+  ],
+  [
+    'repeated identifier-label chain',
+    'Phone / GUID / record id: 09012345678 2026-08-17 555-1212 555-3434',
+    'Phone / GUID / record id: [contact omitted] 2026-08-17 [contact omitted] [contact omitted]'
+  ],
+  [
+    'fullwidth recursive locals',
+    '電話番号：０９０１２３４５６７８ ２０２６－０８－１７ ５５５－１２１２ ５５５－３４３４',
+    '電話番号：[contact omitted] ２０２６－０８－１７ [contact omitted] [contact omitted]'
+  ],
+  [
+    'second complete observation',
+    'Phone: 09012345678 2026-08-17 555-1212 2027-09-18 555-3434',
+    'Phone: [contact omitted] 2026-08-17 [contact omitted] 2027-09-18 [contact omitted]'
+  ],
+  [
+    'invalid closer suppression',
+    'Phone: 09012345678 2026-08-17-) 555-1212 555-3434',
+    'Phone: [contact omitted] 2026-08-17-) [contact omitted] [contact omitted]'
+  ],
+  [
+    'extension after recursive local',
+    'Phone: 09012345678 2026-08-17 555-1212 555-3434 ext 55',
+    'Phone: [contact omitted] 2026-08-17 [contact omitted] [contact omitted] ext [contact omitted]'
+  ]
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    `${recursiveLabelCase}: explicit phone-label authority must survive same-candidate recursion`
+  );
+}
+
+for (const [strongObservationCase, input, expected] of [
+  [
+    'long unit-labelled count',
+    'Phone: 09012345678 2026-08-17 12345678 people',
+    'Phone: [contact omitted] 2026-08-17 12345678 people'
+  ],
+  [
+    'unit-bearing long range',
+    'Phone: 09012345678 2026-08-17 1234-5678 people',
+    'Phone: [contact omitted] 2026-08-17 1234-5678 people'
+  ],
+  [
+    'long decimal',
+    'Phone: 09012345678 2026-08-17 1234.5678',
+    'Phone: [contact omitted] 2026-08-17 1234.5678'
+  ],
+  [
+    'long percentage',
+    'Phone: 09012345678 2026-08-17 12345678 percent',
+    'Phone: [contact omitted] 2026-08-17 12345678 percent'
+  ],
+  [
+    'fullwidth unit-bearing range',
+    '電話番号：０９０１２３４５６７８ ２０２６－０８－１７ １２３４－５６７８人',
+    '電話番号：[contact omitted] ２０２６－０８－１７ １２３４－５６７８人'
+  ]
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    `${strongObservationCase}: strong observation custody must precede label-authorized scoring`
+  );
+}
+
+assert.equal(
+  redactContactData('Phone: 09012345678 2026-08-17 555-1212'),
+  'Phone: [contact omitted] 2026-08-17 [contact omitted]',
+  'a weak bare range governed by an explicit phone label must still redact'
+);
+assert.equal(
+  redactContactData('Phone: 09012345678 2026-08-17 050-12345678'),
+  'Phone: [contact omitted] 2026-08-17 [contact omitted]',
+  'an intrinsically complete range-shaped phone must retain intrinsic precedence'
+);
+assert.equal(
+  redactContactData('Archive 09012345678 2026-08-17 555-1212 555-3434'),
+  'Archive [contact omitted] 2026-08-17 555-1212 555-3434',
+  'same-candidate recursive label state must not be invented for an unlabelled suffix'
+);
+
+const literalTruncationSentinel = '\u0000phone-label-context-truncated\u0000 GUID: 09012345678';
+assert.equal(
+  redactContactData(literalTruncationSentinel),
+  literalTruncationSentinel,
+  'literal input must not impersonate bounded-context state'
+);
+
+const detachedWrapperCount = 8000;
+const detachedWrapperPrefix = '( '.repeat(detachedWrapperCount);
+const detachedWrapperSuffix = ')'.repeat(detachedWrapperCount);
+const deeplyDetachedIdentifier = `ID: ${detachedWrapperPrefix}09012345678${detachedWrapperSuffix}`;
+assert.equal(
+  redactContactData(deeplyDetachedIdentifier),
+  deeplyDetachedIdentifier,
+  'detached wrapper traversal must remain linear and preserve identifier authority'
+);
+
+const slashIdentifierLabelChain = 'GUID/'.repeat(1000);
+assert.equal(
+  redactContactData(`Phone/${slashIdentifierLabelChain}record id: 09012345678`),
+  `Phone/${slashIdentifierLabelChain}record id: [contact omitted]`,
+  'unspaced identifier-label chains must retain telephone authority without rescanning one token'
+);
+assert.equal(
+  redactContactData(`Archive/${slashIdentifierLabelChain}record id: 09012345678`),
+  `Archive/${slashIdentifierLabelChain}record id: 09012345678`,
+  'unspaced identifier-label chains must not invent telephone authority'
+);
+assert.equal(
+  redactContactData(`https://example.test/${slashIdentifierLabelChain}id: 09012345678`),
+  `https://example.test/${slashIdentifierLabelChain}id: [contact omitted]`,
+  'a long unspaced URL token must not lend identifier-label authority'
+);
+
+for (const [wrappedPhoneLabelThenIdentifier, preservedPrefix, leakedDigits] of [
+  [
+    'Phone: (record id: 03-6216-8041)',
+    'Phone: (record id: ',
+    '0362168041'
+  ],
+  [
+    '電話番号：（参照番号：＋８１ ３ ６２１６ ５１１１）',
+    '電話番号：（参照番号：',
+    '81362165111'
+  ]
+]) {
+  const redacted = redactContactData(wrappedPhoneLabelThenIdentifier);
+  assert.ok(
+    redacted.startsWith(preservedPrefix),
+    'a wrapped identifier label must remain outside the telephone redaction range'
+  );
+  assert.match(
+    redacted,
+    /\[contact omitted\]/u,
+    'wrappers must not suppress affirmative phone-label authority'
+  );
+  assert.ok(
+    !redacted.normalize('NFKC').replace(/\D/gu, '').includes(leakedDigits),
+    'a phone-labelled wrapped value must not survive redaction'
+  );
+}
+
+for (const ambiguousContactIdentifier of [
+  'contact identifier: 09012345678',
+  'contact reference: +81 3 6216 5111',
+  'contact identifier reference: 09012345678',
+  'contact GUID record id: +81 3 6216 5111'
+]) {
+  assert.equal(
+    redactContactData(ambiguousContactIdentifier),
+    ambiguousContactIdentifier,
+    'bare unpunctuated contact must remain ambiguous across an identifier-label chain'
+  );
+}
+
+const longIdentifierWrapperCount = 126;
+for (const longWrappedIdentifier of [
+  `ID: ${'('.repeat(longIdentifierWrapperCount)}09012345678${')'.repeat(longIdentifierWrapperCount)}`,
+  `ＩＤ：${'（'.repeat(longIdentifierWrapperCount)}＋８１ ３ ６２１６ ５１１１${'）'.repeat(longIdentifierWrapperCount)}`
+]) {
+  assert.equal(
+    redactContactData(longWrappedIdentifier),
+    longWrappedIdentifier,
+    'accepted wrapper depth must not discard explicit identifier-label provenance'
+  );
+}
+
+const longUrlWrapperPrefix = `https://example.test/${'a'.repeat(140)}/id: `;
+const longUrlWrappedPhone = `${longUrlWrapperPrefix}${'('.repeat(longIdentifierWrapperCount)}09012345678${')'.repeat(longIdentifierWrapperCount)}`;
+const longUrlWrappedRedaction = redactContactData(longUrlWrappedPhone);
+assert.ok(
+  longUrlWrappedRedaction.startsWith(longUrlWrapperPrefix),
+  'long wrappers must not erase the retained URL token'
+);
+assert.match(
+  longUrlWrappedRedaction,
+  /\[contact omitted\]/u,
+  'a URL-embedded identifier label must not protect a later long-wrapped phone'
+);
+assert.doesNotMatch(
+  longUrlWrappedRedaction.normalize('NFKC'),
+  /09012345678/u,
+  'the long-wrapped phone after a URL token must not survive redaction'
+);
+
 for (const compactNumericIdentifier of [
   '1234567890',
   '00012345678',
@@ -1696,6 +2930,703 @@ for (const [input, expected] of [
   );
 }
 
+for (const [crossCallbackCase, input, expected] of [
+  [
+    'formatted time with seconds',
+    'Phone: 09012345678 12:30:45 555-1212',
+    'Phone: [contact omitted] 12:30:45 [contact omitted]'
+  ],
+  [
+    'formatted time without seconds',
+    'Phone: 09012345678 12:30 555-1212',
+    'Phone: [contact omitted] 12:30 [contact omitted]'
+  ],
+  [
+    'unit count after a date',
+    'Mobile number: 09012345678 2026-08-17 90 people 666-1212',
+    'Mobile number: [contact omitted] 2026-08-17 90 people [contact omitted]'
+  ],
+  [
+    'long unit count after a date',
+    'Phone: 09012345678 2026-08-17 12345678 people 555-1212',
+    'Phone: [contact omitted] 2026-08-17 12345678 people [contact omitted]'
+  ],
+  [
+    'unit-bearing range',
+    'Phone: 09012345678 1234-5678 people 555-1212',
+    'Phone: [contact omitted] 1234-5678 people [contact omitted]'
+  ],
+  [
+    'unit-bearing decimal',
+    'Phone: 09012345678 1234.5678 people 555-1212',
+    'Phone: [contact omitted] 1234.5678 people [contact omitted]'
+  ],
+  [
+    'two local phones after one bridged time',
+    'Phone: 09012345678 12:30:45 555-1212 555-3434',
+    'Phone: [contact omitted] 12:30:45 [contact omitted] [contact omitted]'
+  ],
+  [
+    'parenthesized local phone after one bridged time',
+    'Phone: 09012345678 12:30:45 (555-1212)',
+    'Phone: [contact omitted] 12:30:45 [contact omitted]'
+  ],
+  [
+    'fullwidth labelled time bridge',
+    '電話：０９０１２３４５６７８ １２：３０：４５ ５５５－１２１２',
+    '電話：[contact omitted] １２：３０：４５ [contact omitted]'
+  ]
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    `a source-proved ${crossCallbackCase} must carry the established phone label only to the next callback`
+  );
+}
+
+for (const [crossCallbackRefusal, input, expected] of [
+  [
+    'unlabelled sequence',
+    'Archive 09012345678 12:30:45 555-1212',
+    'Archive [contact omitted] 12:30:45 555-1212'
+  ],
+  [
+    'ordinary narrative conjunction',
+    'Phone: 09012345678 and 555-1212',
+    'Phone: [contact omitted] and 555-1212'
+  ],
+  [
+    'redacted phone digits reused as a count',
+    'Phone: 09012345678 people 555-1212',
+    'Phone: [contact omitted] people 555-1212'
+  ],
+  [
+    'date component reused as a count',
+    'Phone: 09012345678 2026-08-17 people 555-1212',
+    'Phone: [contact omitted] 2026-08-17 people 555-1212'
+  ],
+  [
+    'newline inside a possible unit observation',
+    'Phone: 09012345678 90\npeople 555-1212',
+    'Phone: [contact omitted] 90\npeople 555-1212'
+  ],
+  [
+    'sentence boundary after a complete unit observation',
+    'Phone: 09012345678 90 people. 555-1212',
+    'Phone: [contact omitted] 90 people. 555-1212'
+  ],
+  [
+    'semicolon after a complete unit observation',
+    'Phone: 09012345678 90 people; 555-1212',
+    'Phone: [contact omitted] 90 people; 555-1212'
+  ]
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    `cross-callback phone-label authority must refuse ${crossCallbackRefusal}`
+  );
+}
+
+for (const [wrappedBridgeCase, input, expected] of [
+  [
+    'ASCII narrative wrapper before formatted time',
+    '(Phone: 09012345678) 12:30:45 555-1212',
+    '(Phone: [contact omitted]) 12:30:45 [contact omitted]'
+  ],
+  [
+    'plus-prefixed narrative wrapper before formatted time',
+    '(Phone: +81 90 1234 5678) 12:30:45 555-1212',
+    '(Phone: [contact omitted]) 12:30:45 [contact omitted]'
+  ],
+  [
+    'fullwidth narrative wrapper before formatted time',
+    '（電話：０９０１２３４５６７８） １２：３０：４５ ５５５－１２１２',
+    '（電話：[contact omitted]） １２：３０：４５ [contact omitted]'
+  ],
+  [
+    'ASCII narrative wrapper before unit observation',
+    '(Phone: 09012345678) 90 people 555-1212',
+    '(Phone: [contact omitted]) 90 people [contact omitted]'
+  ]
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    `a ${wrappedBridgeCase} must retain exact first-phone range custody for the next callback`
+  );
+}
+
+for (const [wrappedBridgeRefusal, input, expected] of [
+  [
+    'fresh sentence',
+    '(Phone: 09012345678). 12:30:45 555-1212',
+    '(Phone: [contact omitted]). 12:30:45 555-1212'
+  ],
+  [
+    'fresh sentence period before an owned closer',
+    'Context (Phone: 09012345678.) 12:30:45 555-1212',
+    'Context (Phone: [contact omitted].) 12:30:45 555-1212'
+  ],
+  [
+    'fresh sentence period before nested owned closers',
+    'Context ((Phone: 09012345678.)) 12:30:45 555-1212',
+    'Context ((Phone: [contact omitted].)) 12:30:45 555-1212'
+  ],
+  [
+    'fullwidth fresh sentence period before an owned closer',
+    '文脈（電話：０９０１２３４５６７８．） １２：３０：４５ ５５５－１２１２',
+    '文脈（電話：[contact omitted]．） １２：３０：４５ ５５５－１２１２'
+  ],
+  [
+    'unlabelled wrapper',
+    '(Archive 09012345678) 12:30:45 555-1212',
+    '(Archive [contact omitted]) 12:30:45 555-1212'
+  ],
+  [
+    'narrative conjunction',
+    '(Phone: 09012345678) and 555-1212',
+    '(Phone: [contact omitted]) and 555-1212'
+  ]
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    `wrapped cross-callback label custody must refuse ${wrappedBridgeRefusal}`
+  );
+}
+
+assert.equal(
+  redactContactData('Phone: ((09012345678)) 12:30:45 555-1212'),
+  'Phone: ([contact omitted]) 12:30:45 [contact omitted]',
+  'a nested value wrapper must not terminate phone-label authority before a cross-callback time bridge'
+);
+
+for (const [nestedLabelWrapperCase, input, observation, firstDigits, laterDigits] of [
+  [
+    'plus-prefixed phone',
+    'Phone: (+81 90 1234 5678) 12:30:45 555-1212',
+    '12:30:45',
+    '819012345678',
+    '5551212'
+  ],
+  [
+    'fullwidth plus-prefixed phone',
+    '電話：（＋８１ ９０ １２３４ ５６７８） １２：３０：４５ ５５５－１２１２',
+    '12:30:45',
+    '819012345678',
+    '5551212'
+  ],
+  [
+    'unit observation',
+    'Phone: ((09012345678)) 90 people 555-1212',
+    '90 people',
+    '09012345678',
+    '5551212'
+  ]
+]) {
+  const actual = redactContactData(input);
+  const normalizedActual = actual.normalize('NFKC');
+  assert.ok(
+    normalizedActual.includes(observation),
+    `${nestedLabelWrapperCase}: the complete observation must remain source-faithful`
+  );
+  assert.ok(
+    !normalizedActual.replace(/\D/gu, '').includes(firstDigits),
+    `${nestedLabelWrapperCase}: the first labelled phone must not survive`
+  );
+  assert.ok(
+    !normalizedActual.replace(/\D/gu, '').includes(laterDigits),
+    `${nestedLabelWrapperCase}: the later phone must inherit only the proved label lease`
+  );
+  assert.ok(
+    (actual.match(/\[contact omitted\]/gu) ?? []).length >= 2,
+    `${nestedLabelWrapperCase}: both governed phones must redact`
+  );
+}
+
+for (const [nestedLabelWrapperRefusal, input, observation, laterDigits] of [
+  [
+    'closed square wrapper boundary',
+    'Phone: [((09012345678))] 12:30:45 555-1212',
+    '12:30:45',
+    '5551212'
+  ],
+  [
+    'URL-embedded phone word',
+    'https://example.test/phone: ((09012345678)) 12:30:45 555-1212',
+    '12:30:45',
+    '5551212'
+  ],
+  [
+    'unlabelled nested wrapper',
+    'Archive ((09012345678)) 12:30:45 555-1212',
+    '12:30:45',
+    '5551212'
+  ],
+  [
+    'fresh sentence after nested wrapper',
+    'Phone: ((09012345678)). 12:30:45 555-1212',
+    '12:30:45',
+    '5551212'
+  ]
+]) {
+  const actual = redactContactData(input);
+  const normalizedActual = actual.normalize('NFKC');
+  assert.ok(
+    normalizedActual.includes(observation),
+    `${nestedLabelWrapperRefusal}: the observation must remain intact`
+  );
+  assert.ok(
+    normalizedActual.replace(/\D/gu, '').includes(laterDigits),
+    `${nestedLabelWrapperRefusal}: refused authority must leave the later local number unchanged`
+  );
+  assert.equal(
+    (actual.match(/\[contact omitted\]/gu) ?? []).length,
+    1,
+    `${nestedLabelWrapperRefusal}: refusal must redact only the intrinsically valid first phone`
+  );
+}
+
+for (const [wrappedObservationName, input] of [
+  [
+    'nested ISO date',
+    'Phone: ((2026-08-17)) 12:30:45 555-1212'
+  ],
+  [
+    'fullwidth nested ISO date',
+    '電話：（（２０２６－０８－１７）） １２：３０：４５ ５５５－１２１２'
+  ],
+  [
+    'nested long decimal',
+    'Phone: ((1234567.890123)) 12:30:45 555-1212'
+  ],
+  [
+    'nested unit observation',
+    'Phone: ((90 people)) 12:30:45 555-1212'
+  ]
+]) {
+  assert.equal(
+    redactContactData(input),
+    input,
+    `${wrappedObservationName}: a wrapped strong observation must keep exclusive custody and mint no phone-label lease`
+  );
+}
+
+assert.equal(
+  redactContactData('Phone: ((03-62165111)) 12:30:45 555-1212'),
+  'Phone: ([contact omitted]) 12:30:45 [contact omitted]',
+  'a weak range-shaped domestic phone must retain its intrinsic telephone route before wrapped label authority is minted'
+);
+
+for (const [name, input, expected] of [
+  [
+    'nested phone-shaped unit observation',
+    'Phone: ((03-62165111 people)) 12:30:45 555-1212',
+    'Phone: ((03-62165111 people)) 12:30:45 555-1212'
+  ],
+  [
+    'fullwidth nested phone-shaped unit observation',
+    '電話：（（０３－６２１６５１１１ 人）） １２：３０：４５ ５５５－１２１２',
+    '電話：（（０３－６２１６５１１１ 人）） １２：３０：４５ ５５５－１２１２'
+  ],
+  [
+    'label-dependent closer-spanning range with bare tail',
+    'Phone: (555-1212)12345678',
+    'Phone: [contact omitted]12345678'
+  ],
+  [
+    'fullwidth label-dependent closer-spanning range with bare tail',
+    '電話：（５５５－１２１２）１２３４５６７８',
+    '電話：[contact omitted]１２３４５６７８'
+  ]
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    `${name}: wrapper or closer geometry must not lend telephone authority to an independently classified numeric tail`
+  );
+}
+
+for (const [name, input, expected] of [
+  [
+    'labelled weak local before intrinsic grouped phone',
+    'Phone: 555-1212 03-6216-8041',
+    'Phone: [contact omitted] [contact omitted]'
+  ],
+  [
+    'wrapped labelled weak local before intrinsic grouped phone',
+    'Phone: (555-1212) 03-6216-8041',
+    'Phone: [contact omitted] [contact omitted]'
+  ],
+  [
+    'fullwidth wrapped labelled weak local before intrinsic grouped phone',
+    '電話：（５５５－１２１２） ０３－６２１６－８０４１',
+    '電話：[contact omitted] [contact omitted]'
+  ],
+  [
+    'square-wrapped phone-shaped unit observation',
+    'Phone: [03-62165111 people] 12:30:45 555-1212',
+    'Phone: [03-62165111 people] 12:30:45 555-1212'
+  ],
+  [
+    'brace-wrapped phone-shaped unit observation',
+    'Phone: {03-62165111 people} 12:30:45 555-1212',
+    'Phone: {03-62165111 people} 12:30:45 555-1212'
+  ],
+  [
+    'Japanese-wrapped phone-shaped unit observation',
+    'Phone: 【03-62165111 people】 12:30:45 555-1212',
+    'Phone: 【03-62165111 people】 12:30:45 555-1212'
+  ],
+  [
+    'fullwidth square-wrapped phone-shaped unit observation',
+    '電話：［０３－６２１６５１１１ 人］ １２：３０：４５ ５５５－１２１２',
+    '電話：［０３－６２１６５１１１ 人］ １２：３０：４５ ５５５－１２１２'
+  ],
+  [
+    'sentence boundary expires a possible later callback bridge',
+    'Phone: 09012345678. 2026-08-17 12:30:45 555-1212',
+    'Phone: [contact omitted]. 2026-08-17 12:30:45 555-1212'
+  ],
+  [
+    'a bridged phone cannot renew the explicit-label lease',
+    'Phone: 09012345678 12:30:45 555-1212 13:40:50 666-1212',
+    'Phone: [contact omitted] 12:30:45 [contact omitted] 13:40:50 666-1212'
+  ]
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    `${name}: phone authority, observation custody, and callback leases must remain disjoint`
+  );
+}
+
+for (const [name, input, expected] of [
+  [
+    'intrinsic weak-range domestic phone before a later phone',
+    '050-12345678 03-6216-8041',
+    '[contact omitted] [contact omitted]'
+  ],
+  [
+    'intrinsic compact range-shaped phone before a later phone',
+    '03-62165111 09012345678',
+    '[contact omitted] [contact omitted]'
+  ],
+  [
+    'fullwidth intrinsic weak-range phone before a later phone',
+    '０５０－１２３４５６７８ ０３－６２１６－８０４１',
+    '[contact omitted] [contact omitted]'
+  ],
+  [
+    'labelled strong unwrapped hyphen-date observations',
+    'Phone: 2026-08-17 2027-09-18',
+    'Phone: 2026-08-17 2027-09-18'
+  ],
+  [
+    'labelled strong unwrapped slash-date observations',
+    'Phone: 2026/08/17 2027/09/18',
+    'Phone: 2026/08/17 2027/09/18'
+  ],
+  [
+    'labelled strong unwrapped period-date observations',
+    'Phone: 2026.08.17 2027.09.18',
+    'Phone: 2026.08.17 2027.09.18'
+  ],
+  [
+    'fullwidth labelled strong unwrapped observations',
+    '電話：２０２６－０８－１７ ２０２７－０９－１８',
+    '電話：２０２６－０８－１７ ２０２７－０９－１８'
+  ],
+  [
+    'identifier-period suffix remains independently classifiable',
+    'ID: 12345678.03.6216.8041',
+    'ID: 12345678.[contact omitted]'
+  ],
+  [
+    'unlabelled ambiguous weak range remains an observation',
+    '10-20 03-6216-8041',
+    '10-20 [contact omitted]'
+  ],
+  [
+    'unlabelled local weak range remains unclassified',
+    '555-1212 03-6216-8041',
+    '555-1212 [contact omitted]'
+  ],
+  [
+    'labelled weak local remains telephone-eligible',
+    'Phone: 555-1212 03-6216-8041',
+    'Phone: [contact omitted] [contact omitted]'
+  ],
+  [
+    'unwrapped unit-bearing observation retains custody under a label',
+    'Phone: 03-62165111 people 03-6216-8041',
+    'Phone: 03-62165111 people [contact omitted]'
+  ]
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    `${name}: intrinsic telephone proof must demote only a weak range while explicit label authority must not consume a complete strong observation`
+  );
+}
+
+for (const [name, input, expected] of [
+  [
+    'labelled dotted domestic phone outranks decimal-prefix observation',
+    'Phone: 03.6216.8041',
+    'Phone: [contact omitted]'
+  ],
+  [
+    'labelled dotted mobile phone outranks decimal-prefix observation',
+    'Phone: 090.1234.5678',
+    'Phone: [contact omitted]'
+  ],
+  [
+    'fullwidth labelled dotted domestic phone',
+    '電話：０３．６２１６．８０４１',
+    '電話：[contact omitted]'
+  ],
+  [
+    'fullwidth labelled dotted mobile phone',
+    '電話：０９０．１２３４．５６７８',
+    '電話：[contact omitted]'
+  ],
+  [
+    'unlabelled dotted domestic phone remains intrinsically eligible',
+    '03.6216.8041',
+    '[contact omitted]'
+  ],
+  [
+    'labelled decimal observation retains custody',
+    'Phone: 3.1415',
+    'Phone: 3.1415'
+  ],
+  [
+    'labelled period-date observation retains custody',
+    'Phone: 2026.08.17',
+    'Phone: 2026.08.17'
+  ],
+  [
+    'labelled unit-bearing phone-shaped observation retains custody',
+    'Phone: 03-62165111 people',
+    'Phone: 03-62165111 people'
+  ],
+  [
+    'inherited label admits an attached wrapped grouped phone after time',
+    'Phone: 09012345678 12:30:45(03-6216-8041)',
+    'Phone: [contact omitted] 12:30:45[contact omitted]'
+  ],
+  [
+    'fullwidth inherited label admits attached wrapped grouped phone',
+    '電話：０９０１２３４５６７８ １２：３０：４５（０３－６２１６－８０４１）',
+    '電話：[contact omitted] １２：３０：４５[contact omitted]'
+  ],
+  [
+    'inherited label admits an attached wrapped weak local phone',
+    'Phone: 09012345678 12:30:45(555-1212)',
+    'Phone: [contact omitted] 12:30:45[contact omitted]'
+  ],
+  [
+    'bridged attached-wrapper use does not renew the one-use label lease',
+    'Phone: 09012345678 12:30:45(03-6216-8041) 13:40:50 666-1212',
+    'Phone: [contact omitted] 12:30:45[contact omitted] 13:40:50 666-1212'
+  ],
+  [
+    'unproved alphanumeric adjacency cannot inherit phone-label authority',
+    'A(03-6216-8041)',
+    'A(03-6216-8041)'
+  ],
+  [
+    'intervening letter blocks the cross-callback label bridge',
+    'Phone: 09012345678 12:30:45A(03-6216-8041)',
+    'Phone: [contact omitted] 12:30:45A(03-6216-8041)'
+  ]
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    `${name}: intrinsic full-source telephone proof and inherited callback authority must remain separately bounded`
+  );
+}
+
+
+const repeatedObservationCount = 1200;
+const repeatedObservationBridgeInput =
+  `Phone: 09012345678 ${'1.1 '.repeat(repeatedObservationCount)}12:30 555-1212`;
+const repeatedObservationBridgeStart = performance.now();
+const repeatedObservationBridgeOutput = redactContactData(
+  repeatedObservationBridgeInput
+);
+const repeatedObservationBridgeElapsed =
+  performance.now() - repeatedObservationBridgeStart;
+assert.equal(
+  repeatedObservationBridgeOutput,
+  `Phone: [contact omitted] ${'1.1 '.repeat(repeatedObservationCount)}12:30 [contact omitted]`,
+  'one-pass observation custody must preserve every decimal while carrying the label to the later local phone'
+);
+assert.ok(
+  repeatedObservationBridgeElapsed < 5000,
+  `repeated observation bridge must remain bounded; elapsed=${repeatedObservationBridgeElapsed.toFixed(1)}ms`
+);
+for (const [name, input, expected] of [
+  [
+    'consecutive observations still skip internal digit seeds',
+    'Phone: 09012345678 2026-08-17 12:30:45 555-1212',
+    'Phone: [contact omitted] 2026-08-17 12:30:45 [contact omitted]'
+  ],
+  [
+    'fullwidth observation bridge retains source geometry',
+    '電話：０９０１２３４５６７８ ３．１４ １２：３０：４５ ５５５－１２１２',
+    '電話：[contact omitted] ３．１４ １２：３０：４５ [contact omitted]'
+  ],
+  [
+    'a sentence boundary still terminates the label before repeated observations',
+    `Phone: 09012345678. ${'1.1 '.repeat(20)}12:30 555-1212`,
+    `Phone: [contact omitted]. ${'1.1 '.repeat(20)}12:30 555-1212`
+  ]
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    `${name}: the monotone observation frontier must not widen cross-callback authority`
+  );
+}
+
+for (const [name, input, expected] of [
+  [
+    'inherited label enters an ASCII square wrapper after time',
+    'Phone: 09012345678 12:30:45[555-1212]',
+    'Phone: [contact omitted] 12:30:45[[contact omitted]]'
+  ],
+  [
+    'inherited label enters a fullwidth square wrapper after time',
+    '電話：０９０１２３４５６７８ １２：３０：４５［５５５－１２１２］',
+    '電話：[contact omitted] １２：３０：４５［[contact omitted]］'
+  ],
+  [
+    'inherited label enters an ASCII brace wrapper after time',
+    'Phone: 09012345678 12:30:45{555-1212}',
+    'Phone: [contact omitted] 12:30:45{[contact omitted]}'
+  ],
+  [
+    'inherited label enters a fullwidth brace wrapper after time',
+    '電話：０９０１２３４５６７８ １２：３０：４５｛５５５－１２１２｝',
+    '電話：[contact omitted] １２：３０：４５｛[contact omitted]｝'
+  ],
+  [
+    'inherited label enters a corner wrapper after time',
+    'Phone: 09012345678 12:30:45【555-1212】',
+    'Phone: [contact omitted] 12:30:45【[contact omitted]】'
+  ],
+  [
+    'inherited label traverses nested accepted openers',
+    'Phone: 09012345678 12:30:45[{555-1212}]',
+    'Phone: [contact omitted] 12:30:45[{[contact omitted]}]'
+  ],
+  [
+    'accepted external wrapper retains a plus-prefixed phone',
+    'Phone: 09012345678 12:30:45[+1 212 555 1234]',
+    'Phone: [contact omitted] 12:30:45[[contact omitted]]'
+  ],
+  [
+    'accepted external wrapper consumes but does not renew the one-use lease',
+    'Phone: 09012345678 12:30:45[555-1212] 13:40:50 666-1212',
+    'Phone: [contact omitted] 12:30:45[[contact omitted]] 13:40:50 666-1212'
+  ],
+  [
+    'strong date inside an accepted external wrapper retains observation custody',
+    'Phone: 09012345678 12:30:45[2027-09-18]',
+    'Phone: [contact omitted] 12:30:45[2027-09-18]'
+  ],
+  [
+    'unit-bearing range inside an accepted external wrapper retains observation custody',
+    'Phone: 09012345678 12:30:45[555-1212 people]',
+    'Phone: [contact omitted] 12:30:45[555-1212 people]'
+  ],
+  [
+    'fresh sentence refuses external-wrapper inheritance',
+    'Phone: 09012345678. 12:30:45[555-1212]',
+    'Phone: [contact omitted]. 12:30:45[555-1212]'
+  ],
+  [
+    'unlabelled source refuses external-wrapper inheritance',
+    'Archive 09012345678 12:30:45[555-1212]',
+    'Archive [contact omitted] 12:30:45[555-1212]'
+  ],
+  [
+    'intervening letter refuses external-wrapper inheritance',
+    'Phone: 09012345678 12:30:45A[555-1212]',
+    'Phone: [contact omitted] 12:30:45A[555-1212]'
+  ],
+  [
+    'a closer without an accepted opener cannot enter the bridge',
+    'Phone: 09012345678 12:30:45]555-1212[',
+    'Phone: [contact omitted] 12:30:45]555-1212['
+  ],
+  [
+    'labelled dotted domestic phone remains intrinsic before a date',
+    'Phone: 03.6216.8041 2026-08-17',
+    'Phone: [contact omitted] 2026-08-17'
+  ],
+  [
+    'fullwidth labelled dotted domestic phone remains intrinsic before a date',
+    '電話：０３．６２１６．８０４１ ２０２６－０８－１７',
+    '電話：[contact omitted] ２０２６－０８－１７'
+  ],
+  [
+    'labelled dotted mobile phone remains intrinsic before a time',
+    'Phone: 090.1234.5678 12:30:45',
+    'Phone: [contact omitted] 12:30:45'
+  ],
+  [
+    'labelled dotted domestic phone remains intrinsic before a decimal',
+    'Phone: 03.6216.8041 3.1415',
+    'Phone: [contact omitted] 3.1415'
+  ],
+  [
+    'labelled dotted domestic phone remains intrinsic before a unit count',
+    'Phone: 03.6216.8041 90 people',
+    'Phone: [contact omitted] 90 people'
+  ],
+  [
+    'unlabelled dotted domestic phone remains intrinsic before a date',
+    '03.6216.8041 2026-08-17',
+    '[contact omitted] 2026-08-17'
+  ],
+  [
+    'identifier-labelled dotted value retains identifier custody',
+    'ID: 03.6216.8041 2026-08-17',
+    'ID: 03.6216.8041 2026-08-17'
+  ],
+  [
+    'leading decimal and date remain observations',
+    'Phone: 3.1415 2026-08-17',
+    'Phone: 3.1415 2026-08-17'
+  ],
+  [
+    'period-date remains an observation before an intrinsic dotted phone',
+    'Phone: 2026.08.17 03.6216.8041',
+    'Phone: 2026.08.17 [contact omitted]'
+  ],
+  [
+    'dotted phone retains authority through a date to one later weak local phone',
+    'Phone: 03.6216.8041 2026-08-17 555-1212',
+    'Phone: [contact omitted] 2026-08-17 [contact omitted]'
+  ],
+  [
+    'dotted phone extension remains separately redacted',
+    'Phone: 03.6216.8041 ext 55',
+    'Phone: [contact omitted] ext [contact omitted]'
+  ]
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    `${name}: accepted-wrapper entry and intrinsic-phone precedence must retain separate proof obligations`
+  );
+}
+
 const crawlerRuntimeSource = fs.readFileSync(
   new URL('../tools/crawl-industrial-exhaust.mjs', import.meta.url),
   'utf8'
@@ -1711,4 +3642,1399 @@ assert.match(
   'an acquisition error must reset the current-run observation count'
 );
 
+
+for (const [input, expected] of [
+  [
+    'Archive 03-6216-8041-3.14',
+    'Archive [contact omitted]-3.14'
+  ],
+  [
+    'Archive ０３－６２１６－８０４１－３．１４',
+    'Archive [contact omitted]－３．１４'
+  ],
+  [
+    'Archive 03-6216-8041–3.14',
+    'Archive [contact omitted]–3.14'
+  ]
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    'an invalid synthetic date beginning inside a phone must not suppress the complete phone interval'
+  );
+}
+
+for (const [input, expected] of [
+  [
+    'Phone: 09012345678 03.6216.8041',
+    'Phone: [contact omitted] [contact omitted]'
+  ],
+  [
+    'Phone: 09012345678 050.1234.5678',
+    'Phone: [contact omitted] [contact omitted]'
+  ],
+  [
+    '電話番号：０９０１２３４５６７８ ０３．６２１６．８０４１',
+    '電話番号：[contact omitted] [contact omitted]'
+  ]
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    'a complete intrinsic dotted phone must win before a decimal observation can claim its prefix'
+  );
+}
+
+for (const [input, expected] of [
+  [
+    'Archive +81 3 6216 8041–3.14',
+    'Archive [contact omitted]–3.14'
+  ],
+  [
+    'Archive +81 3 6216 8041—3.14',
+    'Archive [contact omitted]—3.14'
+  ],
+  [
+    'Archive ＋８１ ３ ６２１６ ８０４１—３．１４',
+    'Archive [contact omitted]—３．１４'
+  ]
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    'a complete formatted observation after a dash must terminate the preceding intrinsic phone'
+  );
+}
+
+for (const calendarControl of [
+  'Archive 2024-02-29',
+  'Archive 29-02-2024',
+  'Archive 03.04.2026'
+]) {
+  assert.equal(
+    redactContactData(calendarControl),
+    calendarControl,
+    'valid calendar observations must retain observation custody'
+  );
+}
+
+
+for (const [input, expected] of [
+  [
+    'https://user@example.test/03-6216-8041',
+    'https://user@example.test/03-6216-8041'
+  ],
+  [
+    '<https://user@example.test/03-6216-8041>',
+    '<https://user@example.test/03-6216-8041>'
+  ],
+  [
+    'URL:https://example.test/user@example.org/03-6216-8041',
+    'URL:https://example.test/user@example.org/03-6216-8041'
+  ],
+  [
+    '//user@example.test/03-6216-8041',
+    '//user@example.test/03-6216-8041'
+  ],
+  [
+    'example.test/user@example.org/03-6216-8041',
+    'example.test/user@example.org/03-6216-8041'
+  ],
+  [
+    'ID: 1.42.68.53.00/user@example.test',
+    'ID: 1.42.68.53.00/[contact omitted]'
+  ],
+  [
+    'Contact user@example.test or 03-6216-8041',
+    'Contact [contact omitted] or [contact omitted]'
+  ],
+  [
+    'mailto:user@example.test',
+    'mailto:[contact omitted]'
+  ]
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    'email-shaped text inside a proved direct URL must retain URL custody without protecting ordinary email or dotted-identifier text'
+  );
+}
+
+{
+  const repetitions = 400;
+  const input = `Archive ${'123,456/03-6216-8041 '.repeat(repetitions)}`;
+  const originalNormalize = String.prototype.normalize;
+  const originalArrayFrom = Array.from;
+  let singleCharacterNormalizations = 0;
+  let arrayFromStringCharacters = 0;
+  try {
+    String.prototype.normalize = function instrumentedNormalize(...args) {
+      if (this.length === 1) singleCharacterNormalizations += 1;
+      return originalNormalize.apply(this, args);
+    };
+    Array.from = function instrumentedArrayFrom(value, ...args) {
+      if (typeof value === 'string') arrayFromStringCharacters += value.length;
+      return originalArrayFrom.call(this, value, ...args);
+    };
+
+    const output = redactContactData(input);
+    assert.equal(
+      output.match(/\[contact omitted\]/gu)?.length,
+      repetitions,
+      'every independently complete phone in the alternating scalar sequence must redact'
+    );
+  } finally {
+    String.prototype.normalize = originalNormalize;
+    Array.from = originalArrayFrom;
+  }
+
+  assert.ok(
+    singleCharacterNormalizations < repetitions * 100,
+    `narrative-wrapper custody must be indexed once rather than rescanned per callback: ${singleCharacterNormalizations}`
+  );
+  assert.equal(
+    arrayFromStringCharacters,
+    0,
+    'adjacent-character inspection must not materialize every growing callback prefix'
+  );
+}
+
 console.log('industrial-exhaust tests passed');
+
+// PR2231 attached-observation invalid-closer regressions
+for (const [name, input, expected] of [
+  [
+    'ASCII decimal attached after an invalid closer',
+    'Phone: 09012345678 2026-08-17)3.14 03-6216-8041',
+    'Phone: [contact omitted] 2026-08-17)3.14 [contact omitted]'
+  ],
+  [
+    'ASCII date attached after a mismatched closer',
+    'Phone: 09012345678 2026-08-17]2027-09-18 03-6216-8041',
+    'Phone: [contact omitted] 2026-08-17]2027-09-18 [contact omitted]'
+  ],
+  [
+    'fullwidth decimal attached after an invalid closer',
+    '電話：０９０１２３４５６７８ ２０２６－０８－１７）３．１４ ０３－６２１６－８０４１',
+    '電話：[contact omitted] ２０２６－０８－１７）３．１４ [contact omitted]'
+  ],
+  [
+    'unlabelled attached observation cannot mint weak-phone authority',
+    'Archive 09012345678 2026-08-17)3.14 555-1212',
+    'Archive [contact omitted] 2026-08-17)3.14 555-1212'
+  ]
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    `${name}: a complete attached observation must claim its source interval before any interior restart`
+  );
+}
+
+// PR2231 complete observation interval custody regressions
+for (const [name, input, expected] of [
+  [
+    'ordinary unit observation outranks an intrinsic numeric prefix after a date',
+    'Archive 2026-08-17 03-62165111 people',
+    'Archive 2026-08-17 03-62165111 people'
+  ],
+  [
+    'ordinary unit observation remains intact between two phones',
+    'Phone: 09012345678 2026-08-17 03-62165111 people 03-6216-8041',
+    'Phone: [contact omitted] 2026-08-17 03-62165111 people [contact omitted]'
+  ],
+  [
+    'fullwidth ordinary unit observation outranks an intrinsic numeric prefix',
+    '資料 ２０２６－０８－１７ ０３－６２１６５１１１ 人',
+    '資料 ２０２６－０８－１７ ０３－６２１６５１１１ 人'
+  ],
+  [
+    'ordinary intrinsic phone remains eligible without a unit suffix',
+    'Archive 2026-08-17 03-62165111',
+    'Archive 2026-08-17 [contact omitted]'
+  ],
+  [
+    'unit observation outranks an intrinsic numeric prefix after an invalid closer',
+    'Phone: 09012345678 2026-08-17)03-62165111 people 03-6216-8041',
+    'Phone: [contact omitted] 2026-08-17)03-62165111 people [contact omitted]'
+  ],
+  [
+    'fullwidth unit observation outranks an intrinsic prefix after an invalid closer',
+    '電話：０９０１２３４５６７８ ２０２６－０８－１７）０３－６２１６５１１１ 人 ０３－６２１６－８０４１',
+    '電話：[contact omitted] ２０２６－０８－１７）０３－６２１６５１１１ 人 [contact omitted]'
+  ],
+  [
+    'decimal unit observation owns its first group across a mismatched callback boundary',
+    'Phone: 09012345678 2026-08-17]03.621651 people 03-6216-8041',
+    'Phone: [contact omitted] 2026-08-17]03.621651 people [contact omitted]'
+  ],
+  [
+    'nonleading ISO date is excluded from interior phone optimization',
+    'Phone: 12:30:45 2026-08-17 555-1212',
+    'Phone: 12:30:45 2026-08-17 555-1212'
+  ],
+  [
+    'unlabelled nonleading date is excluded from interior phone optimization',
+    'Archive 12:30:45 2026-08-17 555-1212',
+    'Archive 12:30:45 2026-08-17 555-1212'
+  ],
+  [
+    'identifier context cannot donate a nonleading date group to a phone',
+    'ID: 12:30:45 2026-08-17 555-1212',
+    'ID: 12:30:45 2026-08-17 555-1212'
+  ],
+  [
+    'leading labelled date remains intact before a weak local phone',
+    'Phone: 2026-08-17 555-1212',
+    'Phone: 2026-08-17 [contact omitted]'
+  ],
+  [
+    'day-first date remains intact before a disjoint domestic phone',
+    'Archive 12:30:45 17/08/2026 03-6216-8041',
+    'Archive 12:30:45 17/08/2026 [contact omitted]'
+  ],
+  [
+    'period date remains intact before a disjoint dotted phone',
+    'Archive 12:30:45 17.08.2026 03.6216.8041',
+    'Archive 12:30:45 17.08.2026 [contact omitted]'
+  ],
+  [
+    'fullwidth period date remains intact before a disjoint dotted phone',
+    '電話：１２：３０：４５ ２０２６．０８．１７ ０３．６２１６．８０４１',
+    '電話：１２：３０：４５ ２０２６．０８．１７ [contact omitted]'
+  ],
+  [
+    'intrinsic dotted phone before a date retains precedence',
+    'Phone: 03.6216.8041 2026-08-17',
+    'Phone: [contact omitted] 2026-08-17'
+  ],
+  [
+    'consecutive complete dates remain intact before a disjoint phone',
+    'Archive 12:30:45 2026-08-17 2027-09-18 03-6216-8041',
+    'Archive 12:30:45 2026-08-17 2027-09-18 [contact omitted]'
+  ]
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    `${name}: complete observations and disjoint telephone intervals must retain exact source custody`
+  );
+}
+
+// PR2231 period-date precedence regressions
+for (const [name, input, expected] of [
+  [
+    'day-first dotted date after a labelled phone retains all three groups',
+    'Phone: 03-6216-8041 17.08.2026 03-6216-8041',
+    'Phone: [contact omitted] 17.08.2026 [contact omitted]'
+  ],
+  [
+    'fullwidth day-first dotted date retains all three groups',
+    '電話：０３－６２１６－８０４１ １７．０８．２０２６ ０３－６２１６－８０４１',
+    '電話：[contact omitted] １７．０８．２０２６ [contact omitted]'
+  ],
+  [
+    'unlabelled day-first dotted date retains all three groups',
+    'Archive 03-6216-8041 17.08.2026 03-6216-8041',
+    'Archive [contact omitted] 17.08.2026 [contact omitted]'
+  ],
+  [
+    'identifier custody ends before a later dotted date and independent phone',
+    'ID: 03-6216-8041 17.08.2026 03-6216-8041',
+    'ID: 03-6216-8041 17.08.2026 [contact omitted]'
+  ],
+  [
+    'short-year day-first dotted date remains complete',
+    'Phone: 03-6216-8041 17.08.26 03-6216-8041',
+    'Phone: [contact omitted] 17.08.26 [contact omitted]'
+  ],
+  [
+    'attached period after a complete dotted date reaches the next phone',
+    'Phone: 03-6216-8041 17.08.2026.03-6216-8041',
+    'Phone: [contact omitted] 17.08.2026.[contact omitted]'
+  ],
+  [
+    'year-first dotted date retains established custody',
+    'Phone: 03-6216-8041 2026.08.17 03-6216-8041',
+    'Phone: [contact omitted] 2026.08.17 [contact omitted]'
+  ],
+  [
+    'decimal followed by a dotted phone remains a decimal then a phone',
+    'Phone: 03-6216-8041 3.14.03-6216-8041',
+    'Phone: [contact omitted] 3.14.[contact omitted]'
+  ],
+  [
+    'decimal with a calendar-valid fractional group retains a domestic phone',
+    'Phone: 03-6216-8041 3.12.03-6216-8041',
+    'Phone: [contact omitted] 3.12.[contact omitted]'
+  ],
+  [
+    'decimal with a calendar-valid fractional group retains a mobile phone',
+    'Phone: 03-6216-8041 3.12.090-1234-5678',
+    'Phone: [contact omitted] 3.12.[contact omitted]'
+  ],
+  [
+    'fullwidth decimal does not absorb the following phone prefix as a short year',
+    '電話：０３－６２１６－８０４１ ３．１２．０９０－１２３４－５６７８',
+    '電話：[contact omitted] ３．１２．[contact omitted]'
+  ],
+  [
+    'short-year continuation stops before a later unit observation',
+    'Archive 3.12.03 62-16 20 people',
+    'Archive 3.12.03 62-16 20 people'
+  ],
+  [
+    'fullwidth short-year continuation stops before a later unit observation',
+    '資料 ３．１２．０３ ６２－１６ ２０人',
+    '資料 ３．１２．０３ ６２－１６ ２０人'
+  ],
+  [
+    'short-year continuation stops before a later formatted time',
+    'Archive 3.12.03 62-16 12:30:45',
+    'Archive 3.12.03 62-16 12:30:45'
+  ],
+  [
+    'short-year continuation stops before a later decimal',
+    'Archive 3.12.03 62-16 3.14',
+    'Archive 3.12.03 62-16 3.14'
+  ],
+  [
+    'short-year continuation stops before a later date',
+    'Archive 3.12.03 62-16 2026-08-17',
+    'Archive 3.12.03 62-16 2026-08-17'
+  ],
+  [
+    'short-year continuation stops before a wrapped unit observation',
+    'Archive 3.12.03 62-16 (20 people)',
+    'Archive 3.12.03 62-16 (20 people)'
+  ],
+  [
+    'short-year continuation stops before an attached slash date',
+    'Archive 3.12.03/20-08-17',
+    'Archive 3.12.03/20-08-17'
+  ],
+  [
+    'short-year continuation stops before an attached period date',
+    'Archive 3.12.03.20.08.17',
+    'Archive 3.12.03.20.08.17'
+  ],
+  [
+    'short-year continuation stops before an attached dash date',
+    'Archive 3.12.03-20-08-17',
+    'Archive 3.12.03-20-08-17'
+  ],
+  [
+    'fullwidth short-year continuation stops before an attached slash date',
+    '資料 ３．１２．０３／２０－０８－１７',
+    '資料 ３．１２．０３／２０－０８－１７'
+  ],
+  [
+    'dotted phone continuation remains intrinsic across period separators',
+    'Archive 3.12.03.6216.8041',
+    'Archive 3.12.[contact omitted]'
+  ],
+  [
+    'short-year domestic phone remains intrinsic before an extension',
+    'Phone: 3.12.03-6216-8041 ext 55',
+    'Phone: 3.12.[contact omitted] ext [contact omitted]'
+  ],
+  [
+    'short-year mobile phone remains intrinsic before a hash extension',
+    'Phone: 3.12.090-1234-5678 #1234',
+    'Phone: 3.12.[contact omitted] #[contact omitted]'
+  ],
+  [
+    'fullwidth short-year phone remains intrinsic before a Japanese extension',
+    '電話：３．１２．０３－６２１６－８０４１ 内線５５',
+    '電話：３．１２．[contact omitted] 内線[contact omitted]'
+  ],
+  [
+    'short-year dotted phone remains intrinsic before an extension',
+    'Phone: 3.12.03.6216.8041 extension 55',
+    'Phone: 3.12.[contact omitted] extension [contact omitted]'
+  ],
+  [
+    'short-year nonphone date tail remains outside extension authority',
+    'Archive 3.12.03-20-26 ext 55',
+    'Archive 3.12.03-20-26 ext 55'
+  ],
+  [
+    'intrinsic dotted phone still outranks an overlapping decimal prefix',
+    'Phone: 03.6216.8041 17.08.2026 03.6216.8041',
+    'Phone: [contact omitted] 17.08.2026 [contact omitted]'
+  ],
+  [
+    'consecutive day-first dotted dates remain complete before a later phone',
+    'Phone: 03-6216-8041 17.08.2026 18.09.2027 03-6216-8041',
+    'Phone: [contact omitted] 17.08.2026 18.09.2027 [contact omitted]'
+  ]
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    `${name}: complete dotted dates must precede decimal-prefix classification`
+  );
+}
+
+
+// PR2231 dash-boundary telephone admission regressions
+for (const [name, input, expected] of [
+  [
+    'ASCII dash after a short-year date admits a disjoint domestic phone',
+    'Phone: 09012345678 3.12.03-03-6216-8041',
+    'Phone: [contact omitted] 3.12.03-[contact omitted]'
+  ],
+  [
+    'ASCII dash after an ISO date admits a disjoint domestic phone',
+    'Phone: 09012345678 2026-08-17-03-6216-8041',
+    'Phone: [contact omitted] 2026-08-17-[contact omitted]'
+  ],
+  [
+    'fullwidth dash after a short-year date admits a disjoint domestic phone',
+    '電話：０９０１２３４５６７８ ３．１２．０３－０３－６２１６－８０４１',
+    '電話：[contact omitted] ３．１２．０３－[contact omitted]'
+  ],
+  [
+    'hyphen after an ISO date admits a disjoint domestic phone',
+    'Phone: 09012345678 2026-08-17‐03-6216-8041',
+    'Phone: [contact omitted] 2026-08-17‐[contact omitted]'
+  ],
+  [
+    'nonbreaking hyphen after an ISO date admits a disjoint domestic phone',
+    'Phone: 09012345678 2026-08-17‑03-6216-8041',
+    'Phone: [contact omitted] 2026-08-17‑[contact omitted]'
+  ],
+  [
+    'figure dash after an ISO date admits a disjoint domestic phone',
+    'Phone: 09012345678 2026-08-17‒03-6216-8041',
+    'Phone: [contact omitted] 2026-08-17‒[contact omitted]'
+  ],
+  [
+    'en dash after an ISO date admits a disjoint domestic phone',
+    'Phone: 09012345678 2026-08-17–03-6216-8041',
+    'Phone: [contact omitted] 2026-08-17–[contact omitted]'
+  ],
+  [
+    'em dash after an ISO date admits a disjoint domestic phone',
+    'Phone: 09012345678 2026-08-17—03-6216-8041',
+    'Phone: [contact omitted] 2026-08-17—[contact omitted]'
+  ],
+  [
+    'minus sign after an ISO date admits a disjoint domestic phone',
+    'Phone: 09012345678 2026-08-17−03-6216-8041',
+    'Phone: [contact omitted] 2026-08-17−[contact omitted]'
+  ],
+  [
+    'dash-separated complete unit observation retains source custody',
+    'Phone: 09012345678 2026-08-17-03-62165111 people 03-6216-8041',
+    'Phone: [contact omitted] 2026-08-17-03-62165111 people [contact omitted]'
+  ],
+  [
+    'dash-separated subsequent date retains source custody',
+    'Phone: 09012345678 2026-08-17-2027-09-18 03-6216-8041',
+    'Phone: [contact omitted] 2026-08-17-2027-09-18 [contact omitted]'
+  ],
+  [
+    'unlabelled bare tail gains no authority from a dash boundary',
+    'Archive 09012345678 2026-08-17-12345678',
+    'Archive [contact omitted] 2026-08-17-12345678'
+  ]
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    `${name}: accepted dash boundaries must preserve complete observations before validating a disjoint telephone interval`
+  );
+}
+
+// PR2231 formatted-observation dash and identifier-overflow custody regressions
+for (const [name, input, expected] of [
+  [
+    'labelled formatted time admits an attached intrinsic domestic phone',
+    'Phone: 09012345678 12:30:45-03-6216-8041',
+    'Phone: [contact omitted] 12:30:45-[contact omitted]'
+  ],
+  [
+    'unlabelled formatted time admits only an attached intrinsic domestic phone',
+    'Archive 09012345678 12:30:45-03-6216-8041',
+    'Archive [contact omitted] 12:30:45-[contact omitted]'
+  ],
+  [
+    'minute-formatted time admits an attached intrinsic domestic phone',
+    'Phone: 09012345678 12:30-03-6216-8041',
+    'Phone: [contact omitted] 12:30-[contact omitted]'
+  ],
+  [
+    'fullwidth formatted time admits an attached intrinsic domestic phone',
+    '電話：０９０１２３４５６７８ １２：３０：４５－０３－６２１６－８０４１',
+    '電話：[contact omitted] １２：３０：４５－[contact omitted]'
+  ],
+  [
+    'unlabelled weak local range does not become a dash-boundary phone',
+    'Archive 09012345678 12:30:45-555-1212',
+    'Archive [contact omitted] 12:30:45-555-1212'
+  ],
+  [
+    'unlabelled bare numeric tail does not become a dash-boundary phone',
+    'Archive 09012345678 12:30:45-12345678',
+    'Archive [contact omitted] 12:30:45-12345678'
+  ]
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    `${name}: a dash after a complete formatted observation must carry only source-proved telephone geometry`
+  );
+}
+
+for (const labelCount of [4096, 4097]) {
+  const input = `Archive ${'ID '.repeat(labelCount)}09012345678`;
+  assert.equal(
+    redactContactData(input),
+    input,
+    `${labelCount} terminal identifier labels must remain protective rather than minting telephone authority at the scan cap`
+  );
+}
+
+
+// PR2231 cumulative exact-state and bounded-probe regressions v92
+for (const [name, input, expected] of [
+  [
+    'unlabelled decimal admits a dash-following intrinsic domestic phone',
+    'Archive 09012345678 3.14-03-6216-8041',
+    'Archive [contact omitted] 3.14-[contact omitted]'
+  ],
+  [
+    'fullwidth decimal admits a dash-following intrinsic domestic phone',
+    '記録 ０９０１２３４５６７８ ３．１４－０３－６２１６－８０４１',
+    '記録 [contact omitted] ３．１４－[contact omitted]'
+  ],
+  [
+    'dash bridge retains a North American country code with spaces',
+    'Archive 09012345678 12:30:45-1 212 555 1234',
+    'Archive [contact omitted] 12:30:45-[contact omitted]'
+  ],
+  [
+    'dash bridge retains a North American country code with hyphens',
+    'Archive 09012345678 12:30-1-212-555-1234',
+    'Archive [contact omitted] 12:30-[contact omitted]'
+  ],
+  [
+    'dash bridge retains a North American country code with periods',
+    'Archive 09012345678 12:30:45-1.212.555.1234',
+    'Archive [contact omitted] 12:30:45-[contact omitted]'
+  ],
+  [
+    'fullwidth dash bridge retains the complete North American interval',
+    '記録 ０９０１２３４５６７８ １２：３０：４５－１ ２１２ ５５５ １２３４',
+    '記録 [contact omitted] １２：３０：４５－[contact omitted]'
+  ]
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    `${name}: complete observation custody must hand one exact disjoint phone interval to rendering`
+  );
+}
+
+for (const [name, label, count] of [
+  ['short identifier labels beyond 16 KiB', 'ID ', 6000],
+  ['long identifier labels beyond 16 KiB', 'identifier ', 5000]
+]) {
+  const input = `Archive ${label.repeat(count)}09012345678`;
+  assert.equal(
+    redactContactData(input),
+    input,
+    `${name}: exhausted provenance must remain identifier-protective rather than affirmative phone authority`
+  );
+}
+
+{
+  const input = `Phone ${'GUID '.repeat(4000)}record id: 09012345678`;
+  assert.equal(
+    redactContactData(input),
+    `Phone ${'GUID '.repeat(4000)}record id: [contact omitted]`,
+    'bounded provenance must still recover an actually present phone label within the 4,096-label parser ceiling'
+  );
+}
+
+{
+  const observationCount = 6000;
+  const observations = '1.1 '.repeat(observationCount);
+  const input = `Phone: 09012345678 ${observations}12:30 555-1212`;
+  const expected = `Phone: [contact omitted] ${observations}12:30 [contact omitted]`;
+  const started = Date.now();
+  const actual = redactContactData(input);
+  const elapsed = Date.now() - started;
+  assert.equal(
+    actual,
+    expected,
+    'the monotone observation frontier must preserve every decimal and the final label-authorized local phone'
+  );
+  assert.ok(
+    elapsed < 4000,
+    `6,000 observation groups must remain within the bounded runtime envelope; observed ${elapsed} ms`
+  );
+}
+
+
+// PR2231 V104 complete day-first date interval-finality regressions
+for (const [name, input, expected] of [
+  [
+    'international phone terminates before an en-dash day-first dotted date',
+    'Archive +81 3 6216 8041–17.08.2026',
+    'Archive [contact omitted]–17.08.2026'
+  ],
+  [
+    'labelled international phone terminates before an em-dash day-first slash date',
+    'Phone: +81 3 6216 8041—17/08/2026',
+    'Phone: [contact omitted]—17/08/2026'
+  ],
+  [
+    'domestic phone terminates before a hyphen day-first date',
+    'Archive 03-6216-8041-17-08-2026',
+    'Archive [contact omitted]-17-08-2026'
+  ],
+  [
+    'fullwidth phone terminates before a fullwidth day-first dotted date',
+    '電話：＋８１ ３ ６２１６ ８０４１－１７．０８．２０２６',
+    '電話：[contact omitted]－１７．０８．２０２６'
+  ],
+  [
+    'dash-owned decimal remains outside the preceding international phone',
+    'Archive +81 3 6216 8041–3.14',
+    'Archive [contact omitted]–3.14'
+  ],
+  [
+    'standalone day-first dotted date remains source-faithful',
+    'Archive 17.08.2026',
+    'Archive 17.08.2026'
+  ],
+  [
+    'intrinsic dotted domestic phone remains eligible',
+    'Archive 03.6216.8041',
+    'Archive [contact omitted]'
+  ]
+]) {
+  assert.equal(redactContactData(input), expected, name);
+}
+
+// PR2231 V106 observation-to-phone and dash-partition custody regressions
+for (const [name, input, expected] of [
+  [
+    'slash after a complete decimal exposes an intrinsic domestic phone',
+    'Archive 3.14/03-6216-8041',
+    'Archive 3.14/[contact omitted]'
+  ],
+  [
+    'fullwidth slash after a complete decimal exposes an intrinsic domestic phone',
+    '記録 ３．１４／０３－６２１６－８０４１',
+    '記録 ３．１４／[contact omitted]'
+  ],
+  [
+    'slash after a complete decimal exposes an intrinsic mobile phone',
+    'Archive 3.14/090-1234-5678',
+    'Archive 3.14/[contact omitted]'
+  ],
+  [
+    'complete bare range retains custody before a dash-local domestic phone',
+    'Archive 62-16-03-6216-8041',
+    'Archive 62-16-[contact omitted]'
+  ],
+  [
+    'fullwidth bare range retains custody before a dash-local domestic phone',
+    '記録 ６２－１６－０３－６２１６－８０４１',
+    '記録 ６２－１６－[contact omitted]'
+  ],
+  [
+    'complete bare range retains custody before a dotted intrinsic phone',
+    'Archive 62-16-03.6216.8041',
+    'Archive 62-16-[contact omitted]'
+  ],
+  [
+    'international phone terminates before a dash-attached complete time',
+    'Archive +81 3 6216 8041–12:30:45',
+    'Archive [contact omitted]–12:30:45'
+  ],
+  [
+    'fullwidth international phone terminates before a complete time',
+    '記録 ＋８１ ３ ６２１６ ８０４１－１２：３０：４５',
+    '記録 [contact omitted]－１２：３０：４５'
+  ],
+  [
+    'international phone terminates before a dash-attached unit count',
+    'Archive +81 3 6216 8041–17 people',
+    'Archive [contact omitted]–17 people'
+  ],
+  [
+    'international phone terminates before a dash-attached unit range',
+    'Archive +81 3 6216 8041–17-20 people',
+    'Archive [contact omitted]–17-20 people'
+  ],
+  [
+    'international phone retains exact custody before a dotted phone',
+    'Archive +81 3 6216 8041–03.6216.8041',
+    'Archive [contact omitted]–[contact omitted]'
+  ],
+  [
+    'fullwidth international and dotted phones retain disjoint exact intervals',
+    '記録 ＋８１ ３ ６２１６ ８０４１－０３．６２１６．８０４１',
+    '記録 [contact omitted]－[contact omitted]'
+  ],
+  [
+    'international phone retains exact custody before a parenthesized phone',
+    'Archive +81 3 6216 8041–(03) 6216 8041',
+    'Archive [contact omitted]–[contact omitted]'
+  ],
+  [
+    'domestic phone terminates before a dash-attached complete time',
+    'Archive 03-6216-8041–12:30:45',
+    'Archive [contact omitted]–12:30:45'
+  ],
+  [
+    'international phone and later domestic phone remain disjoint around a unit observation',
+    'Archive +81 3 6216 8041–17 people 03-6216-8041',
+    'Archive [contact omitted]–17 people [contact omitted]'
+  ],
+  [
+    'dotted second phone remains exact before a later complete date',
+    'Archive +81 3 6216 8041–03.6216.8041 2026-08-17',
+    'Archive [contact omitted]–[contact omitted] 2026-08-17'
+  ],
+  [
+    'valid mixed-separator short date does not become decimal-to-phone custody',
+    'Archive 3.12/03-6216-8041',
+    'Archive 3.12/03-6216-8041'
+  ],
+  [
+    'IPv4 URL path remains outside observation-to-phone custody',
+    '192.0.2.1/01/42/68/53/00',
+    '192.0.2.1/01/42/68/53/00'
+  ],
+  [
+    'terminal weak bare range remains an observation rather than a phone',
+    'Archive 62-16',
+    'Archive 62-16'
+  ]
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    `${name}: each complete observation and independently proved phone must retain its exact source interval`
+  );
+}
+
+
+// PR2231 V110 callback-complete scalar observation regressions
+for (const [name, input, expected] of [
+  ['two-digit terminal group','Archive +33 1 42 68 53 00–2026 people','Archive [contact omitted]–2026 people'],
+  ['fullwidth terminal group','記録 ＋３３ １ ４２ ６８ ５３ ００－２０２６ 人','記録 [contact omitted]－２０２６ 人'],
+  ['access-prefix terminal group','Archive 00 33 1 42 68 53 00–2026 people','Archive [contact omitted]–2026 people'],
+  ['three-digit terminal group','Archive +33 1 42 68 530–2026 people','Archive [contact omitted]–2026 people'],
+  ['short Japanese terminal group','Archive +81 3 6216 80–2026 people','Archive [contact omitted]–2026 people'],
+  ['later domestic phone','Archive +33 1 42 68 53 00–2026 people 03-6216-8041','Archive [contact omitted]–2026 people [contact omitted]'],
+  ['alternate scalar unit','Archive +33 1 42 68 53 00–2026 impressions','Archive [contact omitted]–2026 impressions'],
+  ['unit range control','Archive +81 3 6216 8041–17-20 people','Archive [contact omitted]–17-20 people'],
+  ['day-first date control','Archive +81 3 6216 8041–17.08.2026','Archive [contact omitted]–17.08.2026'],
+  ['year-first date control','Archive +33 1 42 68 53 00–2026-08-17','Archive [contact omitted]–2026-08-17'],
+  ['dotted second phone control','Archive +81 3 6216 8041–03.6216.8041','Archive [contact omitted]–[contact omitted]']
+]) assert.equal(redactContactData(input),expected,`${name}: exact source custody`);
+
+
+// PR2231 callback-local observation frontier regressions
+for (const [name, input, expected] of [
+  [
+    'minute-formatted time remains intact before an attached domestic phone',
+    'Archive 12:30-03-6216-8041',
+    'Archive 12:30-[contact omitted]'
+  ],
+  [
+    'second-formatted time remains intact before an attached domestic phone',
+    'Archive 12:30:45-03-6216-8041',
+    'Archive 12:30:45-[contact omitted]'
+  ],
+  [
+    'fullwidth minute-formatted time retains exact callback custody',
+    '資料 １２：３０－０３－６２１６－８０４１',
+    '資料 １２：３０－[contact omitted]'
+  ],
+  [
+    'minute-formatted time can hand a slash-local intrinsic phone its interval',
+    'Archive 12:30/03-6216-8041',
+    'Archive 12:30/[contact omitted]'
+  ],
+  [
+    'nonleading decimal keeps custody before a slash-local phone',
+    'Phone: 09012345678 3.14/03-6216-8041',
+    'Phone: [contact omitted] 3.14/[contact omitted]'
+  ],
+  [
+    'unlabelled nonleading decimal keeps custody before a slash-local phone',
+    'Archive 09012345678 3.14/03-6216-8041',
+    'Archive [contact omitted] 3.14/[contact omitted]'
+  ],
+  [
+    'weak bare range keeps custody before a dash-local intrinsic phone',
+    'Archive 62-16-03-6216-8041',
+    'Archive 62-16-[contact omitted]'
+  ],
+  [
+    'fullwidth weak range keeps custody before a fullwidth dash-local phone',
+    '資料 ６２－１６－０３－６２１６－８０４１',
+    '資料 ６２－１６－[contact omitted]'
+  ],
+  [
+    'invalid slash-local bare tail gains no telephone authority',
+    'Phone: 09012345678 3.14/12345678',
+    'Phone: [contact omitted] 3.14/12345678'
+  ],
+  [
+    'weak range followed by a bare tail remains unchanged',
+    'Archive 62-16-12345678',
+    'Archive 62-16-12345678'
+  ],
+  [
+    'minute-formatted time before a date remains a pure observation sequence',
+    'Archive 12:30-2026-08-17',
+    'Archive 12:30-2026-08-17'
+  ],
+  [
+    'current terminal-group scalar observation remains source-faithful',
+    'Archive +33 1 42 68 53 00–2026 people',
+    'Archive [contact omitted]–2026 people'
+  ],
+  [
+    'current terminal-group unit range remains source-faithful',
+    'Archive +33 1 42 68 53 00–17-20 people',
+    'Archive [contact omitted]–17-20 people'
+  ],
+  [
+    'short-terminal international phone ends before a complete time',
+    'Archive +33 1 42 68 53 00–12:30:45',
+    'Archive [contact omitted]–12:30:45'
+  ],
+  [
+    'short-terminal international phone ends before a dotted phone',
+    'Archive +33 1 42 68 53 00–03.6216.8041',
+    'Archive [contact omitted]–[contact omitted]'
+  ],
+  [
+    'fullwidth short-terminal phone ends before a unit range',
+    '資料 ＋３３ １ ４２ ６８ ５３ ００－１７－２０ people',
+    '資料 [contact omitted]－１７－２０ people'
+  ],
+  [
+    'absolute URL numeric path remains outside contact classification',
+    'https://example.test/01/42/68/53/00',
+    'https://example.test/01/42/68/53/00'
+  ],
+  [
+    'bare-domain numeric path remains outside contact classification',
+    'example.test/01/42/68/53/00',
+    'example.test/01/42/68/53/00'
+  ],
+  [
+    'scheme-relative numeric path remains outside contact classification',
+    '//example.test/03/6216/5111',
+    '//example.test/03/6216/5111'
+  ],
+  [
+    'IP-host numeric path remains outside contact classification',
+    '192.0.2.1/01/42/68/53/00',
+    '192.0.2.1/01/42/68/53/00'
+  ],
+  [
+    'long URL token retains provenance beyond the ordinary context window',
+    `example.test/${'long-segment/'.repeat(12)}01/42/68/53/00`,
+    `example.test/${'long-segment/'.repeat(12)}01/42/68/53/00`
+  ],
+  [
+    'whitespace after a URL token terminates URL custody before a phone',
+    'https://example.test/ 01 42 68 53 00',
+    'https://example.test/ [contact omitted]'
+  ]
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    `${name}: complete time, decimal, and weak-range observations must terminate before one independently proved suffix phone`
+  );
+}
+
+
+// PR2231 separator-independent initial-phone finality regressions
+for (const [name, input, expected] of [
+  [
+    'slash-grouped international phone retains its terminal group before a scalar',
+    'Archive +33 1/42/68/53/00–2026 people',
+    'Archive [contact omitted]–2026 people'
+  ],
+  [
+    'slash-grouped international phone retains its terminal group before a unit range',
+    'Archive +33 1/42/68/53/00–17-20 people',
+    'Archive [contact omitted]–17-20 people'
+  ],
+  [
+    'slash-grouped international phone ends before a complete time',
+    'Archive +33 1/42/68/53/00–12:30:45',
+    'Archive [contact omitted]–12:30:45'
+  ],
+  [
+    'slash-grouped international phone ends before a later domestic phone',
+    'Archive +33 1/42/68/53/00–03-6216-8041',
+    'Archive [contact omitted]–[contact omitted]'
+  ],
+  [
+    'slash-grouped international phone ends before a later dotted phone',
+    'Archive +33 1/42/68/53/00–03.6216.8041',
+    'Archive [contact omitted]–[contact omitted]'
+  ],
+  [
+    'hyphen-grouped international phone ends at a distinct typographic dash',
+    'Archive +33 1-42-68-53-00–2026 people',
+    'Archive [contact omitted]–2026 people'
+  ],
+  [
+    'hyphen-grouped international phone preserves a following unit range',
+    'Archive +33 1-42-68-53-00–17-20 people',
+    'Archive [contact omitted]–17-20 people'
+  ],
+  [
+    'hyphen-grouped international phone ends before a later domestic phone',
+    'Archive +33 1-42-68-53-00–03-6216-8041',
+    'Archive [contact omitted]–[contact omitted]'
+  ],
+  [
+    'period-grouped international phone ends before a scalar',
+    'Archive +33 1.42.68.53.00–2026 people',
+    'Archive [contact omitted]–2026 people'
+  ],
+  [
+    'period-grouped international phone ends before a complete time',
+    'Archive +33 1.42.68.53.00–12:30:45',
+    'Archive [contact omitted]–12:30:45'
+  ],
+  [
+    'fullwidth slash-grouped international phone retains exact terminal geometry',
+    '資料 ＋３３ １／４２／６８／５３／００－０３－６２１６－８０４１',
+    '資料 [contact omitted]－[contact omitted]'
+  ],
+  [
+    'fullwidth slash-grouped international phone preserves a unit range',
+    '資料 ＋３３ １／４２／６８／５３／００－１７－２０ people',
+    '資料 [contact omitted]－１７－２０ people'
+  ],
+  [
+    'access-prefix slash-grouped phone retains its terminal group before a scalar',
+    'Archive 00 33 1/42/68/53/00–2026 people',
+    'Archive [contact omitted]–2026 people'
+  ],
+  [
+    'space-grouped current scalar finality remains unchanged',
+    'Archive +33 1 42 68 53 00–2026 people',
+    'Archive [contact omitted]–2026 people'
+  ],
+  [
+    'varying horizontal whitespace retains the prior terminal-group contract',
+    'Archive +33 1  42 68  53 00–2026 people',
+    'Archive [contact omitted]–2026 people'
+  ],
+  [
+    'same-glyph hyphen ambiguity gains no new partition authority',
+    'Archive +33 1-42-68-53-00-2026 people',
+    'Archive [contact omitted] people'
+  ],
+  [
+    'mixed day-first short date refusal remains unchanged',
+    'Archive 3.12/03-6216-8041',
+    'Archive 3.12/03-6216-8041'
+  ],
+  [
+    'slash-grouped terminal phone without a unit gains no new boundary',
+    'Archive +33 1/42/68/53/00–17-20',
+    'Archive [contact omitted]'
+  ]
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    `${name}: the dash partition must preserve both independently proved source objects`
+  );
+}
+
+
+
+// PR2231 slash-attached dotted international finality regressions
+for (const [name, input, expected] of [
+  [
+    'labelled dotted international phone ends before a decimal through slash partition',
+    'Phone: +33 1.42.68.53.00/3.14',
+    'Phone: [contact omitted]/3.14'
+  ],
+  [
+    'unlabelled dotted international phone ends before a decimal through slash partition',
+    'Archive +33 1.42.68.53.00/3.14',
+    'Archive [contact omitted]/3.14'
+  ],
+  [
+    'dotted international phone ends before a scalar unit observation',
+    'Archive +33 1.42.68.53.00/2026 people',
+    'Archive [contact omitted]/2026 people'
+  ],
+  [
+    'dotted international phone ends before a complete unit range',
+    'Archive +33 1.42.68.53.00/17-20 people',
+    'Archive [contact omitted]/17-20 people'
+  ],
+  [
+    'dotted international phone ends before a complete date',
+    'Archive +33 1.42.68.53.00/2026-08-17',
+    'Archive [contact omitted]/2026-08-17'
+  ],
+  [
+    'dotted international phone ends before a complete time',
+    'Archive +33 1.42.68.53.00/12:30:45',
+    'Archive [contact omitted]/12:30:45'
+  ],
+  [
+    'dotted international phone ends before a later domestic phone',
+    'Archive +33 1.42.68.53.00/03-6216-8041',
+    'Archive [contact omitted]/[contact omitted]'
+  ],
+  [
+    'dotted international phone ends before a later dotted phone',
+    'Archive +33 1.42.68.53.00/03.6216.8041',
+    'Archive [contact omitted]/[contact omitted]'
+  ],
+  [
+    'access-prefix dotted international phone retains exact finality',
+    'Archive 0033 1.42.68.53.00/2026 people',
+    'Archive [contact omitted]/2026 people'
+  ],
+  [
+    'Japanese dotted international phone ends before a later domestic phone',
+    'Archive +81 3.6216.80.41/03-6216-8041',
+    'Archive [contact omitted]/[contact omitted]'
+  ],
+  [
+    'fullwidth dotted international phone ends before a fullwidth decimal',
+    '資料 ＋３３ １．４２．６８．５３．００／３．１４',
+    '資料 [contact omitted]／３．１４'
+  ],
+  [
+    'fullwidth dotted international phone ends before a scalar unit observation',
+    '資料 ＋３３ １．４２．６８．５３．００／２０２６ 人',
+    '資料 [contact omitted]／２０２６ 人'
+  ],
+  [
+    'fullwidth dotted international phone ends before a later domestic phone',
+    '資料 ＋３３ １．４２．６８．５３．００／０３－６２１６－８０４１',
+    '資料 [contact omitted]／[contact omitted]'
+  ],
+  [
+    'ASCII dotted phone accepts a fullwidth slash boundary only through exact partition proof',
+    'Archive +33 1.42.68.53.00／03-6216-8041',
+    'Archive [contact omitted]／[contact omitted]'
+  ],
+  [
+    'absolute URL-like IP path remains outside contact classification',
+    'Visit https://192.0.2.1/03-6216-8041',
+    'Visit https://192.0.2.1/03-6216-8041'
+  ],
+  [
+    'bare IP path remains outside contact classification',
+    'Visit 192.0.2.1/3.14',
+    'Visit 192.0.2.1/3.14'
+  ],
+  [
+    'bare-domain path remains outside contact classification',
+    'Visit example.test/03-6216-8041',
+    'Visit example.test/03-6216-8041'
+  ],
+  [
+    'space after a URL token ends URL custody before a genuine dotted phone',
+    'Visit https://example.test/ +33 1.42.68.53.00/3.14',
+    'Visit https://example.test/ [contact omitted]/3.14'
+  ],
+  [
+    'same-glyph hyphen partition refusal remains unchanged',
+    'Archive +33 1-42-68-53-00-2026 people',
+    'Archive [contact omitted] people'
+  ],
+  [
+    'slash partition without a proved competing object gains no authority',
+    'Archive +33 1.42.68.53.00/17-20',
+    'Archive +33 1.42.68.53.00/17-20'
+  ]
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    `${name}: URL provenance may be bypassed only by two exact independently proved source objects`
+  );
+}
+
+// PR2231 V115 identifier-first partition custody and iterative remainder transport
+for (const [name, input, expected] of [
+  [
+    'identifier custody precedes dotted-phone slash partitioning',
+    'ID: +33 1.42.68.53.00 / 03-6216-8041',
+    'ID: +33 1.42.68.53.00 / [contact omitted]'
+  ],
+  [
+    'identifier-owned dotted value remains intact before a decimal observation',
+    'ID: +33 1.42.68.53.00/3.14',
+    'ID: +33 1.42.68.53.00/3.14'
+  ],
+  [
+    'reference custody preserves its initial value before a fullwidth suffix phone',
+    'reference: +33 1.42.68.53.00 / ０３－６２１６－８０４１',
+    'reference: +33 1.42.68.53.00 / [contact omitted]'
+  ],
+  [
+    'identifier custody is separator-parity complete for a dash suffix phone',
+    'ID: +33 1.42.68.53.00 - 03-6216-8041',
+    'ID: +33 1.42.68.53.00 - [contact omitted]'
+  ],
+  [
+    'identifier custody is NFKC-complete for a fullwidth slash and suffix phone',
+    'ＩＤ： ＋３３ １．４２．６８．５３．００／０３－６２１６－８０４１',
+    'ＩＤ： ＋３３ １．４２．６８．５３．００／[contact omitted]'
+  ],
+  [
+    'ASCII identifier labels retain custody across a fullwidth slash',
+    'Reference: +33 1.42.68.53.00／03-6216-8041',
+    'Reference: +33 1.42.68.53.00／[contact omitted]'
+  ],
+  [
+    'identifier custody survives an intervening decimal before a later phone',
+    'ID: +33 1.42.68.53.00/3.14/03-6216-8041',
+    'ID: +33 1.42.68.53.00/3.14/[contact omitted]'
+  ],
+  [
+    'identifier custody survives an intervening scalar before a later phone',
+    'ID: +33 1.42.68.53.00/2026 people/03-6216-8041',
+    'ID: +33 1.42.68.53.00/2026 people/[contact omitted]'
+  ],
+  [
+    'identifier-owned dotted value remains intact before a scalar observation',
+    'ID: +33 1.42.68.53.00/2026 people',
+    'ID: +33 1.42.68.53.00/2026 people'
+  ],
+  [
+    'explicit phone authority still overrides an intervening identifier label',
+    'Phone: ID: +33 1.42.68.53.00 / 03-6216-8041',
+    'Phone: ID: [contact omitted] / [contact omitted]'
+  ],
+  [
+    'ordinary dotted-phone slash partitioning remains affirmative without identifier provenance',
+    'Archive +33 1.42.68.53.00/03-6216-8041',
+    'Archive [contact omitted]/[contact omitted]'
+  ]
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    `${name}: a neutral separator cannot preempt explicit identifier or phone-label provenance`
+  );
+}
+
+{
+  const transitionCount = 2200;
+  const input = `Archive ${'3.14/03-6216-8041 '.repeat(transitionCount)}`;
+  const expected = `Archive ${'3.14/[contact omitted] '.repeat(transitionCount)}`;
+  const started = Date.now();
+  const actual = redactContactData(input);
+  const elapsed = Date.now() - started;
+  assert.equal(
+    actual,
+    expected,
+    '2,200 observation-to-phone transitions must retain exact ranges without recursive remainder transport'
+  );
+  assert.ok(
+    elapsed < 30_000,
+    `2,200 iterative transitions must remain inside the bounded execution envelope; observed ${elapsed} ms`
+  );
+}
+
+
+// PR2231 V116 identifier progression, callback-local URL provenance, and linear entry-token custody
+for (const [name, input, expected] of [
+  [
+    'compact identifier custody advances across an ISO date to a disjoint phone',
+    'ID: 09012345678/2026-08-17-03-6216-8041',
+    'ID: 09012345678/2026-08-17-[contact omitted]'
+  ],
+  [
+    'compact identifier custody advances across a decimal to a disjoint phone',
+    'ID: 09012345678/3.14/03-6216-8041',
+    'ID: 09012345678/3.14/[contact omitted]'
+  ],
+  [
+    'compact identifier custody refuses a weak range without a proved transition',
+    'ID: 09012345678/62-16-03-6216-8041',
+    'ID: 09012345678/62-16-03-6216-8041'
+  ],
+  [
+    'compact identifier custody advances across a unit observation to a disjoint phone',
+    'ID: 09012345678/2026 people/03-6216-8041',
+    'ID: 09012345678/2026 people/[contact omitted]'
+  ],
+  [
+    'compact identifier custody refuses a bare tail after a complete date',
+    'ID: 09012345678/2026-08-17-12345678',
+    'ID: 09012345678/2026-08-17-12345678'
+  ],
+  [
+    'dotted identifier suffix cannot mint IPv4 URL custody over an international phone',
+    'ID: +33 1.42.68.53.00/+81 3 6216 5111',
+    'ID: +33 1.42.68.53.00/[contact omitted]'
+  ],
+  [
+    'dotted identifier suffix retains the complete North American interval',
+    'ID: +33 1.42.68.53.00/+1 212 555 1234',
+    'ID: +33 1.42.68.53.00/[contact omitted]'
+  ],
+  [
+    'dotted identifier custody survives an intervening observation before a later international phone',
+    'ID: +33 1.42.68.53.00/3.14/+81 3 6216 5111',
+    'ID: +33 1.42.68.53.00/3.14/[contact omitted]'
+  ],
+  [
+    'fullwidth dotted identifier suffix cannot mint URL custody',
+    'Ｒｅｆｅｒｅｎｃｅ： ＋３３ １．４２．６８．５３．００／＋８１ ３ ６２１６ ５１１１',
+    'Ｒｅｆｅｒｅｎｃｅ： ＋３３ １．４２．６８．５３．００／[contact omitted]'
+  ],
+  [
+    'genuine IPv4 URL custody remains terminal-token anchored',
+    'Visit 192.0.2.1/+81 3 6216 5111',
+    'Visit 192.0.2.1/+81 3 6216 5111'
+  ],
+  [
+    'genuine absolute URL custody remains terminal-token anchored',
+    'Visit https://example.test/+81 3 6216 5111',
+    'Visit https://example.test/+81 3 6216 5111'
+  ],
+  [
+    'genuine bare-domain URL custody remains terminal-token anchored',
+    'Visit example.test/+81 3 6216 5111',
+    'Visit example.test/+81 3 6216 5111'
+  ]
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    `${name}: identifier, URL, observation, and telephone intervals must retain independent source custody`
+  );
+}
+
+// PR2231 V117 grouped-identifier progression and compact-transition resource safety
+for (const [name, input, expected] of [
+  [
+    'grouped identifier custody advances across an ISO date to a disjoint phone',
+    'ID: 1234 5678/2026-08-17-03-6216-8041',
+    'ID: 1234 5678/2026-08-17-[contact omitted]'
+  ],
+  [
+    'hyphen-grouped identifier custody advances across a decimal to a disjoint phone',
+    'ID: 123-45678/3.14-03-6216-8041',
+    'ID: 123-45678/3.14-[contact omitted]'
+  ],
+  [
+    'grouped identifier custody advances across a callback-split time to a disjoint phone',
+    'ID: 1234 5678/12:30:45-03-6216-8041',
+    'ID: 1234 5678/12:30:45-[contact omitted]'
+  ],
+  [
+    'grouped identifier custody advances across a complete unit observation',
+    'ID: 1234 5678/2026 people-03-6216-8041',
+    'ID: 1234 5678/2026 people-[contact omitted]'
+  ],
+  [
+    'grouped identifier custody advances across a complete unit range',
+    'ID: 1234 5678/17-20 people-03-6216-8041',
+    'ID: 1234 5678/17-20 people-[contact omitted]'
+  ],
+  [
+    'fullwidth grouped identifier custody advances across a date to a disjoint phone',
+    'ＩＤ：１２３４ ５６７８／２０２６－０８－１７－０３－６２１６－８０４１',
+    'ＩＤ：１２３４ ５６７８／２０２６－０８－１７－[contact omitted]'
+  ],
+  [
+    'grouped identifier custody refuses a bare numeric suffix after a complete date',
+    'ID: 1234 5678/2026-08-17-12345678',
+    'ID: 1234 5678/2026-08-17-12345678'
+  ],
+  [
+    'grouped identifier custody refuses progression without a complete observation',
+    'ID: 1234 5678/03-6216-8041',
+    'ID: 1234 5678/[contact omitted]'
+  ]
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    `${name}: the identifier owns only its exact initial value and a later interval requires independent source proof`
+  );
+}
+
+{
+  const transitionCount = 4000;
+  const sourcePair = '09012345678/2026-08-17-03-6216-8041 ';
+  const expectedPair = '[contact omitted]/2026-08-17-[contact omitted] ';
+  const input = `Archive ${sourcePair.repeat(transitionCount)}`;
+  const expected = `Archive ${expectedPair.repeat(transitionCount)}`;
+  const started = Date.now();
+  const actual = redactContactData(input);
+  const elapsed = Date.now() - started;
+  assert.equal(
+    actual,
+    expected,
+    '4,000 compact-phone/date/phone transitions must preserve every exact interval under iterative transport'
+  );
+  assert.ok(
+    elapsed < 20_000,
+    `4,000 compact transitions must avoid shrinking-remainder normalization; observed ${elapsed} ms`
+  );
+}
+
+
+// PR2231 V118 identifier-partition observation finality
+for (const [name, input, expected] of [
+  [
+    'hyphen-grouped identifier preserves a decimal before a parenthesized phone',
+    'ID: 123-45678/3.14/(03) 6216 8041',
+    'ID: 123-45678/3.14/[contact omitted]'
+  ],
+  [
+    'hyphen-grouped identifier preserves an ISO date before a parenthesized phone',
+    'ID: 123-45678/2026-08-17/(03) 6216 8041',
+    'ID: 123-45678/2026-08-17/[contact omitted]'
+  ],
+  [
+    'space-grouped identifier preserves a unit observation before a parenthesized phone',
+    'ID: 1234 5678/2026 people/(03) 6216 8041',
+    'ID: 1234 5678/2026 people/[contact omitted]'
+  ],
+  [
+    'fullwidth grouped identifier preserves a decimal before a parenthesized phone',
+    'ＩＤ：１２３－４５６７８／３．１４／（０３） ６２１６ ８０４１',
+    'ＩＤ：１２３－４５６７８／３．１４／[contact omitted]'
+  ],
+  [
+    'direct parenthesized phone remains independently redactable after an identifier',
+    'ID: 123-45678/(03) 6216 8041',
+    'ID: 123-45678/[contact omitted]'
+  ],
+  [
+    'bare numeric tail gains no authority through an intervening decimal',
+    'ID: 123-45678/3.14/12345678',
+    'ID: 123-45678/3.14/12345678'
+  ]
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    `${name}: identifier custody must end before a complete observation and only a disjoint validated phone may enter rendering`
+  );
+}
