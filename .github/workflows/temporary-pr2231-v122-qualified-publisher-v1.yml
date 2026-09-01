@@ -1,0 +1,96 @@
+name: Temporary PR 2231 V122 qualified publisher
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: pr2231-v122-qualified-publisher-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  publish-v122:
+    if: github.event.pull_request.head.ref == 'agent/pr2231-v122-qualified-publisher-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+      CONTROLLER_PR: ${{ github.event.pull_request.number }}
+      CONTROLLER_BRANCH: ${{ github.event.pull_request.head.ref }}
+      EXPECTED_CONTROLLER_BRANCH: agent/pr2231-v122-qualified-publisher-v1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Recover and execute the exact V122 qualified publisher
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export LC_ALL=C
+          repo=BigBirdReturns/clifford-number
+          payload_blob=ef7b93577a11b51030bf861ff2cfba23b7b5558c
+          payload_size=6228
+          payload_sha256=871eee5dff078628c12cbe3962537156ca796ea1e228ed83c48e83f30049f6b0
+          publisher_blob=03ddc6d8920c3444a6ad35b87670d9c7c4eddfa0
+          publisher_size=27734
+          publisher_sha256=15be56180cf3e4b511f3128bb486487d3bba414ac620ef9a4c959b78381c78bc
+          envelope=/tmp/pr2231-v122-qualified-publisher-controller-v1
+          payload="$envelope/publisher-v122.sh.xz"
+          publisher="$envelope/publisher-v122.sh"
+          wrapper_log="$envelope/controller.log"
+          rm -rf "$envelope"
+          mkdir -p "$envelope"
+          : > "$wrapper_log"
+          exec > >(tee -a "$wrapper_log") 2>&1
+
+          preserve() {
+            rc=$?
+            trap - EXIT
+            set +e
+            printf 'outer_status=%s\nmode=qualified-compare-and-swap-publication\n' "$rc" > "$envelope/controller-status.env"
+            find "$envelope" -type f -printf '%P\t%s\n' | sort > "$envelope/envelope-manifest.txt"
+            find "$envelope" -type f ! -name envelope-sha256.txt -print0 \
+              | sort -z | xargs -0 sha256sum > "$envelope/envelope-sha256.txt"
+            exit "$rc"
+          }
+          trap preserve EXIT
+
+          gh api "repos/$repo/git/blobs/$payload_blob" --jq '.content' \
+            | tr -d '\n' | base64 -d > "$payload"
+          test "$(wc -c < "$payload")" = "$payload_size"
+          test "$(git hash-object "$payload")" = "$payload_blob"
+          test "$(sha256sum "$payload" | awk '{print $1}')" = "$payload_sha256"
+          xz -dc "$payload" > "$publisher"
+          test "$(wc -c < "$publisher")" = "$publisher_size"
+          test "$(git hash-object "$publisher")" = "$publisher_blob"
+          test "$(sha256sum "$publisher" | awk '{print $1}')" = "$publisher_sha256"
+          chmod 0755 "$publisher"
+          bash -n "$publisher"
+          printf 'payload_blob=%s\npayload_sha256=%s\npublisher_blob=%s\npublisher_sha256=%s\n' \
+            "$payload_blob" "$payload_sha256" "$publisher_blob" "$publisher_sha256" \
+            > "$envelope/publisher-provenance.txt"
+          bash "$publisher"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-v122-qualified-publisher-v1
+          path: |
+            /tmp/pr2231-v122-qualified-publisher-v1
+            /tmp/pr2231-v122-qualified-publisher-controller-v1
+          if-no-files-found: error
+          retention-days: 90
