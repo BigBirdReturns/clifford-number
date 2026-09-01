@@ -1,0 +1,154 @@
+name: Temporary PR 2231 V121 owned-closer qualification R1
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: pr2231-v121-owned-closer-qualification-r1-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  qualify-v121-r1:
+    if: github.event.pull_request.head.ref == 'agent/pr2231-v121-owned-closer-qualification-r1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+      CONTROLLER_PR: ${{ github.event.pull_request.number }}
+      CONTROLLER_BRANCH: ${{ github.event.pull_request.head.ref }}
+      EXPECTED_CONTROLLER_BRANCH: agent/pr2231-v121-owned-closer-qualification-r1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Recover and execute exact V121 read-only qualifier
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export LC_ALL=C
+          export GIT_TERMINAL_PROMPT=0
+
+          repo=BigBirdReturns/clifford-number
+          prior_run=33548228979
+          prior_job=99990952632
+          prior_artifact_id=9816413162
+          prior_artifact_size=148928
+          prior_artifact_sha256=38e49996f6dd453d293f2018e495db4e0dfb29e06923f9d6c36054e1dc55149f
+          prior_qualifier_size=22085
+          prior_qualifier_blob=d14835e638fc9ce8ce211c72df0181f9600c862f
+          prior_qualifier_sha256=3e9ffaa92f86758a6e18db80a8a423585dd46900cceb36381fdf195029ce79d5
+          qualifier_patch_size=14499
+          qualifier_patch_blob=e6c8adcb061bfbd9172711eda3d252b24467fd0b
+          qualifier_patch_sha256=b2c7ad400a698b96c43f69c8452d8fa3ec6838c9b8fd3ef2b388aff8925c46fc
+          qualifier_size=23914
+          qualifier_blob=4777fd20b9f1878241d7eb87b2b1a82aa5dcfef2
+          qualifier_sha256=e3af8ecf1e28e2f7794fda0962d310ed1a2369281ed9be5ade6d0d102405b2d6
+          envelope=/tmp/pr2231-v121-owned-closer-controller-envelope-r1
+          prior_zip="$envelope/v120-qualification.zip"
+          prior_qualifier="$envelope/qualifier-v120-r6.sh"
+          qualifier_patch="$envelope/qualifier-v121.patch"
+          qualifier="$envelope/qualifier.sh"
+          wrapper_log="$envelope/controller-wrapper.log"
+          artifact=/tmp/pr2231-v121-owned-closer-qualification-r1
+
+          rm -rf "$envelope" "$artifact"
+          mkdir -p "$envelope"
+          : > "$wrapper_log"
+          exec > >(tee -a "$wrapper_log") 2>&1
+
+          preserve() {
+            rc=$?
+            trap - EXIT
+            set +e
+            printf 'outer_status=%s\nmode=read-only\npublication=skipped\nproduct_mutation=none\nreview_mutation=none\n' "$rc" \
+              > "$envelope/controller-status.env"
+            manifest_tmp="$envelope/.envelope-manifest.tmp"
+            find "$envelope" -type f \
+              ! -name envelope-manifest.txt \
+              ! -name envelope-sha256.txt \
+              ! -name .envelope-manifest.tmp \
+              -printf '%P\t%s\n' | sort > "$manifest_tmp"
+            mv "$manifest_tmp" "$envelope/envelope-manifest.txt"
+            find "$envelope" -type f ! -name envelope-sha256.txt -print0 \
+              | sort -z | xargs -0 sha256sum > "$envelope/envelope-sha256.txt"
+            exit "$rc"
+          }
+          trap preserve EXIT
+
+          prior_run_json=$(gh api "repos/$repo/actions/runs/$prior_run")
+          test "$(jq -r '.status' <<<"$prior_run_json")" = completed
+          test "$(jq -r '.conclusion' <<<"$prior_run_json")" = success
+          prior_jobs_json=$(gh api "repos/$repo/actions/runs/$prior_run/jobs")
+          test "$(jq -r --argjson id "$prior_job" '.jobs[] | select(.id == $id) | .conclusion' <<<"$prior_jobs_json")" = success
+          prior_artifacts_json=$(gh api "repos/$repo/actions/runs/$prior_run/artifacts")
+          test "$(jq -r --argjson id "$prior_artifact_id" '.artifacts[] | select(.id == $id) | .size_in_bytes' <<<"$prior_artifacts_json")" = "$prior_artifact_size"
+          test "$(jq -r --argjson id "$prior_artifact_id" '.artifacts[] | select(.id == $id) | .digest' <<<"$prior_artifacts_json")" = "sha256:$prior_artifact_sha256"
+
+          curl -fsSL \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/$repo/actions/artifacts/$prior_artifact_id/zip" \
+            -o "$prior_zip"
+          test "$(wc -c < "$prior_zip")" = "$prior_artifact_size"
+          test "$(sha256sum "$prior_zip" | awk '{print $1}')" = "$prior_artifact_sha256"
+          unzip -p "$prior_zip" \
+            'pr2231-v120-weak-range-current-main-controller-envelope-r6/qualifier-v120-r6.sh' \
+            > "$prior_qualifier"
+          test "$(wc -c < "$prior_qualifier")" = "$prior_qualifier_size"
+          test "$(git hash-object "$prior_qualifier")" = "$prior_qualifier_blob"
+          test "$(sha256sum "$prior_qualifier" | awk '{print $1}')" = "$prior_qualifier_sha256"
+
+          gh api "repos/$repo/git/blobs/$qualifier_patch_blob" --jq '.content' \
+            | tr -d '\n' | base64 -d > "$qualifier_patch"
+          test "$(wc -c < "$qualifier_patch")" = "$qualifier_patch_size"
+          test "$(git hash-object "$qualifier_patch")" = "$qualifier_patch_blob"
+          test "$(sha256sum "$qualifier_patch" | awk '{print $1}')" = "$qualifier_patch_sha256"
+
+          cp "$prior_qualifier" "$qualifier"
+          (
+            cd "$envelope"
+            git apply --check "$qualifier_patch"
+            git apply "$qualifier_patch"
+          )
+          chmod 0755 "$prior_qualifier" "$qualifier"
+          test "$(wc -c < "$qualifier")" = "$qualifier_size"
+          test "$(git hash-object "$qualifier")" = "$qualifier_blob"
+          test "$(sha256sum "$qualifier" | awk '{print $1}')" = "$qualifier_sha256"
+          bash -n "$qualifier"
+          printf 'prior_run=%s\nprior_job=%s\nprior_artifact=%s\nprior_artifact_digest=sha256:%s\nprior_qualifier_blob=%s\nprior_qualifier_sha256=%s\nqualifier_patch_blob=%s\nqualifier_patch_sha256=%s\nqualifier_blob=%s\nqualifier_sha256=%s\n' \
+            "$prior_run" "$prior_job" "$prior_artifact_id" "$prior_artifact_sha256" \
+            "$prior_qualifier_blob" "$prior_qualifier_sha256" \
+            "$qualifier_patch_blob" "$qualifier_patch_sha256" \
+            "$qualifier_blob" "$qualifier_sha256" \
+            > "$envelope/qualifier-provenance.txt"
+
+          set +e
+          bash "$qualifier"
+          qualifier_rc=$?
+          set -e
+          exit "$qualifier_rc"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-v121-owned-closer-qualification-r1
+          path: |
+            /tmp/pr2231-v121-owned-closer-qualification-r1
+            /tmp/pr2231-v121-owned-closer-controller-envelope-r1
+          if-no-files-found: error
+          retention-days: 90
