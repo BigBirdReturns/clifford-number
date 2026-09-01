@@ -1,0 +1,240 @@
+name: Temporary PR 2231 V117 exact-head ordinary frontier diagnostic R9
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: pr2231-v117-r9-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  diagnose:
+    if: github.repository == 'BigBirdReturns/clifford-number'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      REPO: BigBirdReturns/clifford-number
+      PRODUCT_PR: '2231'
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      EXPECTED_MAIN: 771a64b6b467748d2f4df667b5f78e76f9432d69
+      EXPECTED_PRODUCT: 6c4acfb15047dcc6a28dca87732fe2c4c7e7b1e6
+      EXPECTED_TREE: d0e42c6312bda625474e557a691b1b2b981e9902
+      EXPECTED_LIBRARY_BLOB: 5582c5310f6413de43c13a151abddc84cb206c8d
+      EXPECTED_TEST_BLOB: 02794c0c3f18f439871cd3695c8fd9d77d083549
+
+    steps:
+      - name: Validate exact live leases
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          live_main="$(gh api "repos/${REPO}/git/ref/heads/main" --jq '.object.sha')"
+          live_pr="$(gh api "repos/${REPO}/pulls/${PRODUCT_PR}")"
+          live_head="$(jq -r '.head.sha' <<<"${live_pr}")"
+          live_head_ref="$(jq -r '.head.ref' <<<"${live_pr}")"
+          live_base="$(jq -r '.base.sha' <<<"${live_pr}")"
+          live_state="$(jq -r '.state' <<<"${live_pr}")"
+          live_draft="$(jq -r '.draft' <<<"${live_pr}")"
+          live_merged="$(jq -r '.merged' <<<"${live_pr}")"
+
+          test "${live_main}" = "${EXPECTED_MAIN}"
+          test "${live_head}" = "${EXPECTED_PRODUCT}"
+          test "${live_head_ref}" = "${PRODUCT_BRANCH}"
+          test "${live_base}" = "${EXPECTED_MAIN}"
+          test "${live_state}" = open
+          test "${live_draft}" = true
+          test "${live_merged}" = false
+
+          mapfile -t changed_paths < <(
+            gh api --paginate "repos/${REPO}/pulls/${PRODUCT_PR}/files?per_page=100" --jq '.[].filename'
+          )
+          test "${#changed_paths[@]}" -eq 2
+          printf '%s\n' "${changed_paths[@]}" | sort > /tmp/changed-paths.txt
+          printf '%s\n' \
+            test/industrial-exhaust.test.js \
+            tools/lib/industrial-exhaust.mjs | sort > /tmp/expected-paths.txt
+          diff -u /tmp/expected-paths.txt /tmp/changed-paths.txt
+
+          {
+            printf 'main=%s\n' "${live_main}"
+            printf 'product=%s\n' "${live_head}"
+            printf 'base=%s\n' "${live_base}"
+            printf 'head_ref=%s\n' "${live_head_ref}"
+            printf 'state=%s\n' "${live_state}"
+            printf 'draft=%s\n' "${live_draft}"
+            printf 'merged=%s\n' "${live_merged}"
+            printf 'paths=%s\n' "$(paste -sd, /tmp/changed-paths.txt)"
+          } | tee lease.txt
+
+      - name: Check out exact product head
+        uses: actions/checkout@v4
+        with:
+          repository: BigBirdReturns/clifford-number
+          ref: 6c4acfb15047dcc6a28dca87732fe2c4c7e7b1e6
+          path: product
+          fetch-depth: 2
+          persist-credentials: false
+
+      - name: Verify exact Git objects
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C product rev-parse HEAD)" = "${EXPECTED_PRODUCT}"
+          test "$(git -C product rev-parse 'HEAD^{tree}')" = "${EXPECTED_TREE}"
+          test "$(git -C product rev-parse 'HEAD^')" = "${EXPECTED_MAIN}"
+          test "$(git -C product hash-object tools/lib/industrial-exhaust.mjs)" = "${EXPECTED_LIBRARY_BLOB}"
+          test "$(git -C product hash-object test/industrial-exhaust.test.js)" = "${EXPECTED_TEST_BLOB}"
+          mapfile -t product_paths < <(git -C product diff --name-only "${EXPECTED_MAIN}" "${EXPECTED_PRODUCT}" | sort)
+          test "${#product_paths[@]}" -eq 2
+          printf '%s\n' "${product_paths[@]}" > /tmp/product-paths.txt
+          diff -u /tmp/expected-paths.txt /tmp/product-paths.txt
+          {
+            printf 'commit=%s\n' "$(git -C product rev-parse HEAD)"
+            printf 'parent=%s\n' "$(git -C product rev-parse 'HEAD^')"
+            printf 'tree=%s\n' "$(git -C product rev-parse 'HEAD^{tree}')"
+            printf 'library_blob=%s\n' "$(git -C product hash-object tools/lib/industrial-exhaust.mjs)"
+            printf 'test_blob=%s\n' "$(git -C product hash-object test/industrial-exhaust.test.js)"
+          } | tee object.txt
+
+      - name: Run exact focused suite
+        shell: bash
+        working-directory: product
+        run: |
+          set -euo pipefail
+          node --check tools/lib/industrial-exhaust.mjs
+          node --check test/industrial-exhaust.test.js
+          node test/industrial-exhaust.test.js | tee ../focused.log
+
+      - name: Measure ordinary phone-first iterative frontier
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --expose-gc --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import fs from 'node:fs';
+          import { performance } from 'node:perf_hooks';
+          import { redactContactData } from './product/tools/lib/industrial-exhaust.mjs';
+
+          const source = fs.readFileSync(
+            './product/tools/lib/industrial-exhaust.mjs',
+            'utf8'
+          );
+          const sourcePair = '09012345678/2026-08-17-03-6216-8041 ';
+          const expectedPair = '[contact omitted]/2026-08-17-[contact omitted] ';
+          const sizes = [500, 1000, 2000];
+          const timings = {};
+          const samples = {};
+          let semanticError = null;
+
+          function execute(count) {
+            global.gc?.();
+            const input = `Archive ${sourcePair.repeat(count)}`;
+            const expected = `Archive ${expectedPair.repeat(count)}`;
+            const started = performance.now();
+            const actual = redactContactData(input);
+            const elapsed = performance.now() - started;
+            assert.equal(
+              actual,
+              expected,
+              `${count} ordinary phone/date/phone transitions changed source geometry`
+            );
+            return elapsed;
+          }
+
+          try {
+            execute(50);
+            for (const size of sizes) {
+              const measured = [execute(size), execute(size)];
+              samples[size] = measured;
+              timings[size] = Math.min(...measured);
+            }
+          } catch (error) {
+            semanticError = String(error?.stack ?? error);
+          }
+
+          const ratio1000To500 = semanticError
+            ? null
+            : timings[1000] / timings[500];
+          const ratio2000To1000 = semanticError
+            ? null
+            : timings[2000] / timings[1000];
+          const exponent500To2000 = semanticError
+            ? null
+            : Math.log(timings[2000] / timings[500]) / Math.log(4);
+          const staticResidual = source.includes(
+            'const localCandidate = sourceCandidate.slice(sourceOffset);'
+          ) && source.includes(
+            'phoneRedactionRangesStep(\n      localCandidate,'
+          );
+          const superlinear = !semanticError
+            && timings[2000] > 1000
+            && exponent500To2000 > 1.25
+            && ratio2000To1000 > 2.2;
+
+          const report = {
+            schema: 'clifford-number/pr2231-v117-current-head-diagnostic-r9@1',
+            product_commit: process.env.EXPECTED_PRODUCT,
+            product_tree: process.env.EXPECTED_TREE,
+            library_blob: process.env.EXPECTED_LIBRARY_BLOB,
+            test_blob: process.env.EXPECTED_TEST_BLOB,
+            source_pair: sourcePair,
+            sizes,
+            samples_ms: samples,
+            best_ms: timings,
+            ratio_1000_to_500: ratio1000To500,
+            ratio_2000_to_1000: ratio2000To1000,
+            exponent_500_to_2000: exponent500To2000,
+            static_complete_remainder_transport: staticResidual,
+            semantic_error: semanticError,
+            superlinear_reproduced: superlinear,
+            publication: 'skipped',
+            product_mutation: false,
+            review_mutation: false,
+            readiness_mutation: false,
+            merge_mutation: false
+          };
+          fs.writeFileSync('diagnostic.json', `${JSON.stringify(report, null, 2)}\n`);
+          console.log(JSON.stringify(report, null, 2));
+          NODE
+
+      - name: Upload diagnostic receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr2231-v117-current-head-diagnostic-r9
+          path: |
+            lease.txt
+            object.txt
+            focused.log
+            diagnostic.json
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Adjudicate exact-head diagnostic
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f diagnostic.json
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const report = JSON.parse(fs.readFileSync('diagnostic.json', 'utf8'));
+          if (report.semantic_error) {
+            console.error('DIAGNOSTIC_SEMANTIC_FAILURE');
+            console.error(report.semantic_error);
+            process.exit(1);
+          }
+          if (report.superlinear_reproduced) {
+            console.error('DIAGNOSTIC_P1_REPRODUCED');
+            process.exit(1);
+          }
+          console.log('DIAGNOSTIC_P1_NOT_REPRODUCED');
+          NODE
