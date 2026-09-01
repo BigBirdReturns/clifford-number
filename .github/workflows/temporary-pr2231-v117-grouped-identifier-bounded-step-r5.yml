@@ -1,0 +1,169 @@
+name: Temporary PR2231 V117 grouped-identifier and bounded-step qualifier R5
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+    paths:
+      - .github/workflows/temporary-pr2231-v117-grouped-identifier-bounded-step-r5.yml
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+  issues: read
+
+concurrency:
+  group: pr2231-v117-grouped-identifier-bounded-step-r5-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  qualify-v117-r5:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: BigBirdReturns/clifford-number
+      PRODUCT_PR: '2231'
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      PRODUCT_SHA: 0c0ec19938e76d83d646c79d02bea9a724e6773b
+      PRODUCT_TREE: 326186e534735e8fc108c3bb7cab115d5db08dce
+      PRODUCT_LIBRARY: 123b88403265fa4193a44a97b27aebc7661c1528
+      PRODUCT_TEST: a71e670bbf85a399e02a184e0a8fce19d127bfaf
+      MAIN_SHA: 771a64b6b467748d2f4df667b5f78e76f9432d69
+      MAIN_TREE: 86c91755f16245168ddb230d53e5b9920af5342c
+      REVIEW_ID: '5072486871'
+      GROUPED_COMMENT_ID: '3899391559'
+      COMPLEXITY_COMMENT_ID: '3899391565'
+      WORKTREE: /tmp/pr2231-v117-product-r5
+      MAIN_WORKTREE: /tmp/pr2231-v117-main-r5
+      RECEIPTS: /tmp/pr2231-v117-qualification-r5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Materialize and execute exact V117 qualifier R5
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          wrapper=/tmp/pr2231-v117-wrapper-r5
+          rm -rf "$wrapper"
+          mkdir -p "$wrapper/parts"
+          inner_status=missing
+          on_exit() {
+            rc=$?
+            mkdir -p "$wrapper"
+            printf '%s\n' \
+              'controller_envelope=v117-grouped-identifier-bounded-step-r5' \
+              "outer_status=$rc" \
+              "inner_status=$inner_status" \
+              > "$wrapper/wrapper-status.env"
+          }
+          trap on_exit EXIT
+          specs=(
+            '75d2b9fab81bd8ef9746faaa1d3cda56b42f31e6:1800:aa4e63860965f3e2c3b24a7ded39693c7382b76c0f760b871bbe9ff8ba751b79'
+            '618e6aa84aea372f3351e849d14e949659c79a55:1800:30d4900ea56b6c1936415d3cb753e0ecdcb5089c21bd4d7769ab1ed8c22a6a6c'
+            '34df47e7edf898d81e841dab4c91f8434d1eee00:1312:cbd617ae2258d6edabf5751e36413fa92303416861f8a98d36a1934dde8a89d3'
+          )
+          : > "$wrapper/qualifier-r3.sh.xz"
+          for index in "${!specs[@]}"; do
+            IFS=: read -r blob size digest <<< "${specs[$index]}"
+            json="$wrapper/parts/$index.json"
+            part="$wrapper/parts/$index.bin"
+            gh api "repos/$REPO/git/blobs/$blob" > "$json"
+            jq -e --arg sha "$blob" --argjson size "$size" \
+              '.sha == $sha and .size == $size and .encoding == "base64"' "$json" >/dev/null
+            jq -r '.content' "$json" | tr -d '\n' | base64 -d > "$part"
+            [[ "$(git hash-object "$part")" == "$blob" ]]
+            [[ "$(stat -c %s "$part")" == "$size" ]]
+            printf '%s  %s\n' "$digest" "$part" | sha256sum -c -
+            cat "$part" >> "$wrapper/qualifier-r3.sh.xz"
+          done
+          [[ "$(stat -c %s "$wrapper/qualifier-r3.sh.xz")" == 4912 ]]
+          printf '%s  %s\n' \
+            '379cf8e4385babadfa4b31c49ec41ca70ae51780b1805743bcf7ab2cd9875029' \
+            "$wrapper/qualifier-r3.sh.xz" | sha256sum -c -
+          xz -t "$wrapper/qualifier-r3.sh.xz"
+          xz -dc "$wrapper/qualifier-r3.sh.xz" > "$wrapper/qualifier-r3.sh"
+          [[ "$(stat -c %s "$wrapper/qualifier-r3.sh")" == 19639 ]]
+          printf '%s  %s\n' \
+            '02b9a818058f742907b554fdd04d074da9dbd49a4b1e87289c061f12228a269f' \
+            "$wrapper/qualifier-r3.sh" | sha256sum -c -
+          bash -n "$wrapper/qualifier-r3.sh"
+
+          python3 - "$wrapper/qualifier-r3.sh" "$wrapper/qualifier-r5.sh" "$wrapper/harness-transform.json" <<'PY_TRANSFORM'
+          from hashlib import sha256
+          from pathlib import Path
+          import json
+          import sys
+
+          source = Path(sys.argv[1])
+          output = Path(sys.argv[2])
+          receipt = Path(sys.argv[3])
+          text = source.read_text()
+          needle = 'node --check tools/industrial-exhaust.mjs\n'
+          count = text.count(needle)
+          if count != 2:
+              raise SystemExit(f'nonexistent-path check count expected=2 actual={count}')
+          transformed = text.replace(needle, '')
+          output.write_text(transformed)
+          receipt.write_text(json.dumps({
+              'source_bytes': len(text.encode()),
+              'source_sha256': sha256(text.encode()).hexdigest(),
+              'removed_exact_lines': count,
+              'output_bytes': len(transformed.encode()),
+              'output_sha256': sha256(transformed.encode()).hexdigest(),
+              'transform': 'remove two syntax checks for nonexistent tools/industrial-exhaust.mjs; retain exact library and focused-test checks',
+          }, indent=2) + '\n')
+          PY_TRANSFORM
+          [[ "$(stat -c %s "$wrapper/qualifier-r5.sh")" == 19555 ]]
+          printf '%s  %s\n' \
+            'cbf1213db63a7c9996bb4d3bce56058b6a38865767e3f658d313e45a1de68516' \
+            "$wrapper/qualifier-r5.sh" | sha256sum -c -
+          bash -n "$wrapper/qualifier-r5.sh"
+          set +e
+          bash -x "$wrapper/qualifier-r5.sh" > "$wrapper/inner.log" 2>&1
+          inner_status=$?
+          set -e
+          exit "$inner_status"
+
+      - name: Emit controller receipts
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          wrapper=/tmp/pr2231-v117-wrapper-r5
+          mkdir -p "$wrapper"
+          find "$wrapper" -type f -printf '%P\t%s\n' | sort > "$wrapper/artifact-manifest.txt"
+          {
+            printf '%s\n' '### PR2231 V117 grouped-identifier and bounded-step qualifier R5'
+            for receipt in wrapper-status.env harness-transform.json artifact-manifest.txt; do
+              printf '\n#### %s\n\n```text\n' "$receipt"
+              [[ ! -f "$wrapper/$receipt" ]] || tail -n 500 "$wrapper/$receipt"
+              printf '%s\n' '```'
+            done
+            for receipt in predecessor.json direct-v117.json qualification-terminal.txt summary.json candidate-sha256.txt candidate-commit.txt product-post-release-status.txt main-post-release-status.txt; do
+              printf '\n#### qualification/%s\n\n```text\n' "$receipt"
+              [[ ! -f "$RECEIPTS/$receipt" ]] || tail -n 500 "$RECEIPTS/$receipt"
+              printf '%s\n' '```'
+            done
+            printf '\n#### inner.log tail\n\n```text\n'
+            [[ ! -f "$wrapper/inner.log" ]] || tail -n 1500 "$wrapper/inner.log"
+            printf '%s\n' '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-grouped-identifier-bounded-step-v117-r5
+          path: |
+            /tmp/pr2231-v117-wrapper-r5
+            /tmp/pr2231-v117-qualification-r5
+          retention-days: 90
