@@ -1,0 +1,181 @@
+name: Temporary PR 2231 V119 direct-URL and prefix publisher R2
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: pr2231-v119-direct-url-prefix-publication-r2-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  publish-v119:
+    if: github.event.pull_request.head.ref == 'agent/pr2231-v119-direct-url-prefix-publication-r2'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+      CONTROLLER_PR: ${{ github.event.pull_request.number }}
+      CONTROLLER_BRANCH: ${{ github.event.pull_request.head.ref }}
+      EXPECTED_CONTROLLER_BRANCH: agent/pr2231-v119-direct-url-prefix-publication-r2
+      EXPECTED_MAIN: 771a64b6b467748d2f4df667b5f78e76f9432d69
+      EXPECTED_PRODUCT: 2d7555363d2fe6bcb06b629dc9e06e3c7ad4a9bb
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      PRODUCT_PR: '2231'
+      QUALIFIER_PR: '2489'
+      QUALIFIER_HEAD: e392dec766fa7ae38600c3cf28c136e113c17afe
+      QUALIFIER_RUN: '33481175532'
+      QUALIFIER_ARTIFACT: '9790023231'
+      QUALIFIER_ZIP_SHA256: 66496d75bec4e036cf69c191736629ea54f67b639df0635fe96b818ee0f23e1a
+      EXPECTED_CANDIDATE: 4fd80c0638cd97f45c6f2ce39820c42e85b5c162
+      EXPECTED_TREE: f60e8e9b4bbb2c258d044d49c5ccf02b78b65792
+      EXPECTED_SOURCE_BLOB: a6e1ddbfdfe7f8bdc1737ec6f0076cf19de17c64
+      EXPECTED_TEST_BLOB: c781368f043278eaf00f3576cac1d34ab13e2da9
+      EXPECTED_SOURCE_SHA256: 16ec6060b02da6a412f898eb0ba62f9dbafc0102a4dd1b134e871b330337f838
+      EXPECTED_TEST_SHA256: 060b1231f2f15f55d5642790bfcefd1e2abfdb8797b8884d861515af9653c693
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Execute R1 publisher with complete paginated review ledger
+        shell: bash
+        run: |
+          set -u
+          export LC_ALL=C
+          repo=BigBirdReturns/clifford-number
+          source_blob=0005fcb9799a3000ce9b9e71bb6da15d1c58d5a9
+          source=/tmp/v119-publisher-r1.yml
+          runner=/tmp/v119-publisher-r2.sh
+          artifact=/tmp/pr2231-v119-direct-url-prefix-publication-r2
+
+          gh api "repos/$repo/git/blobs/$source_blob" --jq '.content' \
+            | tr -d '\n' | base64 -d > "$source"
+          test "$(git hash-object "$source")" = "$source_blob"
+
+          awk '
+            /^        run: \|$/ { capture = 1; next }
+            capture && /^      - uses: actions\/upload-artifact@v4$/ { exit }
+            capture { sub(/^          /, ""); print }
+          ' "$source" > "$runner"
+
+          sed -i \
+            's/pr2231-v119-direct-url-prefix-publication-r1/pr2231-v119-direct-url-prefix-publication-r2/g' \
+            "$runner"
+
+          python - "$runner" <<'PY'
+          from pathlib import Path
+          import sys
+
+          path = Path(sys.argv[1])
+          text = path.read_text()
+          start = text.index('snapshot_threads() {')
+          end = text.index('\n\ntest "$(git rev-parse HEAD)"', start)
+          replacement = r'''snapshot_threads() {
+            local destination=$1
+            local cursor=''
+            local page=0
+            local response nodes has_next
+            local accumulated="$destination.accumulated"
+            local next="$destination.next"
+            : > "$destination.raw"
+            printf '[]\n' > "$accumulated"
+
+            while :; do
+              if [[ -z "$cursor" ]]; then
+                response=$(gh api graphql \
+                  -F owner="$owner" \
+                  -F name="$name" \
+                  -F number="$PRODUCT_PR" \
+                  -f query='query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){pullRequest(number:$number){reviewThreads(first:100){nodes{id isResolved} pageInfo{hasNextPage endCursor}}}}}')
+              else
+                response=$(gh api graphql \
+                  -F owner="$owner" \
+                  -F name="$name" \
+                  -F number="$PRODUCT_PR" \
+                  -F after="$cursor" \
+                  -f query='query($owner:String!,$name:String!,$number:Int!,$after:String!){repository(owner:$owner,name:$name){pullRequest(number:$number){reviewThreads(first:100,after:$after){nodes{id isResolved} pageInfo{hasNextPage endCursor}}}}}')
+              fi
+              page=$((page + 1))
+              printf '%s\n' "$response" >> "$destination.raw"
+              nodes=$(jq -c '.data.repository.pullRequest.reviewThreads.nodes' <<<"$response")
+              jq -s '.[0] + .[1]' "$accumulated" <(printf '%s\n' "$nodes") > "$next"
+              mv "$next" "$accumulated"
+              has_next=$(jq -r '.data.repository.pullRequest.reviewThreads.pageInfo.hasNextPage' <<<"$response")
+              [[ "$has_next" == true ]] || break
+              cursor=$(jq -r '.data.repository.pullRequest.reviewThreads.pageInfo.endCursor' <<<"$response")
+              test -n "$cursor"
+              test "$cursor" != null
+            done
+
+            jq -c 'sort_by(.id)' "$accumulated" > "$destination"
+            test "$(jq 'length' "$destination")" = "$(jq 'unique_by(.id) | length' "$destination")"
+            printf 'pages=%s\nthreads=%s\n' "$page" "$(jq 'length' "$destination")" \
+              > "$destination.ledger"
+            rm -f "$accumulated" "$next"
+          }
+
+          assert_thread_resolutions_unchanged() {
+            local before=$1
+            local after=$2
+            jq -e -s '
+              .[0] as $before
+              | .[1] as $after
+              | all(
+                  $before[];
+                  . as $entry
+                  | (($after | map(select(.id == $entry.id)) | first) as $current
+                    | ($current != null and $current.isResolved == $entry.isResolved))
+                )
+            ' "$before" "$after" > /dev/null
+          }'''
+          text = text[:start] + replacement + text[end:]
+          text = text.replace(
+              'cmp "$artifact/review-threads-before.json" "$artifact/review-threads-prepush.json"',
+              'assert_thread_resolutions_unchanged "$artifact/review-threads-before.json" "$artifact/review-threads-prepush.json"'
+          )
+          text = text.replace(
+              'cmp "$artifact/review-threads-before.json" "$artifact/review-threads-after.json"',
+              'assert_thread_resolutions_unchanged "$artifact/review-threads-before.json" "$artifact/review-threads-after.json"'
+          )
+          path.write_text(text)
+          PY
+
+          chmod 0755 "$runner"
+          bash -n "$runner"
+
+          set +e
+          bash "$runner"
+          rc=$?
+          set -e
+          mkdir -p "$artifact/controller-envelope"
+          install -m 0644 "$source" "$artifact/controller-envelope/source-r1-workflow.yml"
+          install -m 0755 "$runner" "$artifact/controller-envelope/transformed-r2-publisher.sh"
+          printf 'source_workflow_blob=%s\nsource_workflow_sha256=%s\ntransformed_runner_sha256=%s\nouter_runner_status=%s\n' \
+            "$source_blob" \
+            "$(sha256sum "$source" | awk '{print $1}')" \
+            "$(sha256sum "$runner" | awk '{print $1}')" \
+            "$rc" \
+            > "$artifact/controller-envelope/r2-transform.txt"
+          exit "$rc"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-v119-direct-url-prefix-publication-r2
+          path: /tmp/pr2231-v119-direct-url-prefix-publication-r2
+          if-no-files-found: error
+          retention-days: 90
