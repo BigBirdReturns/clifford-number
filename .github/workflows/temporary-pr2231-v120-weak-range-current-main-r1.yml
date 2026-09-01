@@ -1,0 +1,251 @@
+name: Temporary PR 2231 V120 weak-range current-main qualification R1
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: pr2231-v120-weak-range-current-main-r1-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  qualify-v120:
+    if: github.event.pull_request.head.ref == 'agent/pr2231-v120-weak-range-current-main-qualification-r1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: BigBirdReturns/clifford-number
+      EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+      CONTROLLER_PR: ${{ github.event.pull_request.number }}
+      EXPECTED_CONTROLLER_BRANCH: agent/pr2231-v120-weak-range-current-main-qualification-r1
+      EXPECTED_MAIN: c68e6c91fdee4679535dd77d0adc44562823d517
+      EXPECTED_PRODUCT: 4fd80c0638cd97f45c6f2ce39820c42e85b5c162
+      EXPECTED_PRODUCT_PARENT: 771a64b6b467748d2f4df667b5f78e76f9432d69
+      EXPECTED_PRODUCT_TREE: f60e8e9b4bbb2c258d044d49c5ccf02b78b65792
+      EXPECTED_SOURCE_BLOB: a6e1ddbfdfe7f8bdc1737ec6f0076cf19de17c64
+      EXPECTED_TEST_BLOB: c781368f043278eaf00f3576cac1d34ab13e2da9
+      PATCH_BLOB: 4b7020b1ba10868abeb565158c535690060b5627
+      PATCH_SHA256: a6895d2c5bdfcce7ec2c2dc8b5bbf4dd0e58d4e35b6925f9f14e2541089a23e4
+      NEXT_SOURCE_BLOB: 149a89fdd769e3416f65738428545a76293320ef
+      NEXT_TEST_BLOB: 76e6061997716963f1679fbfc448009e2c6dc7cc
+      NEXT_SOURCE_SHA256: e899d44e14bc28dc021c72d2748465346dbd346d3a6a72b64498108e34c1c9b4
+      NEXT_TEST_SHA256: bedfe4635ddbdb07d666232918d2a8946f2dceb5fbd8be29def5f75def88a46e
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      PRODUCT_PR: '2231'
+      THREAD_WEAK_RANGE: PRRT_kwDOTGqftc6d_dcL
+      THREAD_REMAINDER: PRRT_kwDOTGqftc6d_dcP
+      THREAD_DIRECT_URL: PRRT_kwDOTGqftc6d_dcR
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Reproduce V119 weak-range failure and qualify V120 on current main
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export LC_ALL=C
+          export GIT_TERMINAL_PROMPT=0
+
+          root=/tmp/pr2231-v120-current-main-r1
+          work="$root/work"
+          candidate_files="$root/candidate-files"
+          patch="$root/v120.patch"
+          artifact=/tmp/pr2231-v120-weak-range-current-main-qualification-r1
+          rm -rf "$root" "$artifact"
+          mkdir -p "$root" "$candidate_files" "$artifact"
+          exec > >(tee "$artifact/qualification.log") 2>&1
+
+          finish() {
+            rc=$?
+            trap - EXIT
+            set +e
+            printf 'outer_status=%s\ncontroller_mode=read-only\npublication=skipped\nproduct_mutation=none\nreview_mutation=none\n' "$rc" > "$artifact/outer-status.env"
+            if [[ "$rc" -eq 0 ]]; then
+              printf '%s\n' PUBLICATION_SKIPPED PRODUCT_MUTATION_SKIPPED REVIEW_MUTATION_SKIPPED QUALIFICATION_SUCCESS > "$artifact/qualification-terminal.txt"
+            else
+              printf '%s\n' PUBLICATION_SKIPPED PRODUCT_MUTATION_SKIPPED REVIEW_MUTATION_SKIPPED QUALIFICATION_FAILED > "$artifact/qualification-terminal.txt"
+            fi
+            find "$artifact" -type f ! -name artifact-sha256.txt -print0 | sort -z | xargs -0 sha256sum > "$artifact/artifact-sha256.txt"
+            find "$artifact" -type f -printf '%P\t%s\n' | sort > "$artifact/artifact-manifest.txt"
+            exit "$rc"
+          }
+          trap finish EXIT
+
+          test "$(git rev-parse HEAD)" = "$EXPECTED_CONTROLLER"
+          test "$(git rev-parse HEAD^)" = "$EXPECTED_MAIN"
+          test "${{ github.event.pull_request.head.ref }}" = "$EXPECTED_CONTROLLER_BRANCH"
+          test "$(git rev-list --count "$EXPECTED_MAIN..HEAD")" = 1
+          test "$(git diff-tree --no-commit-id --name-only -r HEAD)" = '.github/workflows/temporary-pr2231-v120-weak-range-current-main-r1.yml'
+
+          controller_json=$(gh api "repos/$REPO/pulls/$CONTROLLER_PR")
+          test "$(jq -r '.head.sha' <<<"$controller_json")" = "$EXPECTED_CONTROLLER"
+          test "$(jq -r '.base.sha' <<<"$controller_json")" = "$EXPECTED_MAIN"
+          test "$(jq -r '.draft' <<<"$controller_json")" = true
+          test "$(jq -r '.state' <<<"$controller_json")" = open
+          test "$(jq -r '.merged' <<<"$controller_json")" = false
+
+          main_head=$(gh api "repos/$REPO/git/ref/heads/main" --jq '.object.sha')
+          product_head=$(gh api "repos/$REPO/git/ref/heads/$PRODUCT_BRANCH" --jq '.object.sha')
+          test "$main_head" = "$EXPECTED_MAIN"
+          test "$product_head" = "$EXPECTED_PRODUCT"
+
+          product_json=$(gh api "repos/$REPO/pulls/$PRODUCT_PR")
+          test "$(jq -r '.head.sha' <<<"$product_json")" = "$EXPECTED_PRODUCT"
+          test "$(jq -r '.base.sha' <<<"$product_json")" = "$EXPECTED_MAIN"
+          test "$(jq -r '.draft' <<<"$product_json")" = true
+          test "$(jq -r '.state' <<<"$product_json")" = open
+          test "$(jq -r '.merged' <<<<"$product_json")" = false
+          test "$(jq -r '.commits' <<<"$product_json")" = 1
+          test "$(jq -r '.changed_files' <<<"$product_json")" = 2
+
+          thread_query='query($a:ID!,$b:ID!R,$c:ID!){a:node(id:$a){... on PullRequestReviewThread{id isResolved}} b:node(id:$b){... on PullRequestReviewThread{id isResolved}} c:node(id:$c){... on PullRequestReviewThread{id isResolved}}}'
+          thread_before=$(gh api graphql -f query="$thread_query" -F a="$THREAD_WEAK_RANGE" -F b="$THREAD_REMAINDER" -F c="$THREAD_DIRECT_URL")
+          test "$(jq -r '.data.a.isResolved' <<<"$thread_before")" = false
+          test "$(jq -r '.data.b.isResolved' <<<"$thread_before")" = false
+          test "$(jq -r '.data.c.isResolved' <<<"$thread_before")" = false
+          jq -S '.data' <<<"$thread_before" > "$artifact/review-threads-before.json"
+
+          gh api "repos/$REPO/git/blobs/$PATCH_BLOB" --jq '.content' | tr -d '\n' | base64 -d > "$patch"
+          test "$(git hash-object "$patch")" = "$PATCH_BLOB"
+          test "$(sha256sum "$patch" | awk '{print $1}')" = "$PATCH_SHA256"
+          install -m 0644 "$patch" "$artifact/v120.patch"
+
+          git fetch --no-tags origin \
+            "refs/heads/main:refs/remotes/origin/v120-main" \
+            "refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/v119-product"
+          test "$(git rev-parse refs/remotes/origin/v120-main)" = "$EXPECTED_MAIN"
+          test "$(git rev-parse refs/remotes/origin/v119-product)" = "$EXPECTED_PRODUCT"
+          test "$(git rev-parse "$EXPECTED_PRODUCT^)" = "$EXPECTED_PRODUCT_PARENT"
+          test "$(git rev-parse "$EXPECTED_PRODUCT^{tree}")" = "$EXPECTED_PRODUCT_TREE"
+          test "$(git rev-parse "$EXPECTED_PRODUCT:tools/lib/industrial-exhaust.mjs")" = "$EXPECTED_SOURCE_BLOB"
+          test "$(git rev-parse "$EXPECTED_PRODUCT:test/industrial-exhaust.test.js")" = "$EXPECTED_TEST_BLOB"
+
+          git worktree add --detach "$work" "$EXPECTED_MAIN"
+          git -C "$work" checkout "$EXPECTED_PRODUCT" -- tools/lib/industrial-exhaust.mjs test/industrial-exhaust.test.js
+          test "$(git -C "$work" hash-object tools/lib/industrial-exhaust.mjs)" = "$EXPECTED_SOURCE_BLOB"
+          test "$(git -C "$work" hash-object test/industrial-exhaust.test.js)" = "$EXPECTED_TEST_BLOB"
+
+          (
+            cd "$work"
+            node --input-type=module <<'NODE'
+          import { redactContactData } from './tools/lib/industrial-exhaust.mjs';
+          const weakInput = 'ID: 123-45678/62-16/(03) 6216 8041';
+          const weakActual = redactContactData(weakInput);
+          console.log(JSON.stringify({ weakInput, weakActual }));
+          if (weakActual !== 'ID: 123-45678/[contact omitted]') process.exit(1);
+          const urlInput = 'https://alice@example.com/03-6216-8041';
+          const urlActual = redactContactData(urlInput);
+          console.log(JSON.stringify({ urlInput, urlActual }));
+          if (urlActual !== urlInput) process.exit(1);
+          NODE
+          ) > "$artifact/predecessor-reproduction.log" 2>&1
+
+          git -C "$work" apply --index --check "$patch"
+          git -C "$work" apply --index "$patch"
+          git -C "$work" diff --check
+          test "$(git -C "$work" diff --cached --name-only)" = $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          test "$(git -C "$work" hash-object tools/lib/industrial-exhaust.mjs)" = "$NEXT_SOURCE_BLOB"
+          test "$(git -C "$work" hash-object test/industrial-exhaust.test.js)" = "$NEXT_TEST_BLOB"
+          cp "$work/tools/lib/industrial-exhaust.mjs" "$candidate_files/industrial-exhaust.mjs"
+          cp "$work/test/industrial-exhaust.test.js" "$candidate_files/industrial-exhaust.test.js"
+          git -C "$work" diff --cached --stat > "$artifact/current-main-transplant-stat.txt"
+          git -C "$work" diff --cached --binary > "$artifact/current-main-transplant.patch"
+
+          (
+            cd "$work"
+            node --check tools/lib/industrial-exhaust.mjs
+            node --input-type=module <<'NODE'
+          import { redactContactData } from './tools/lib/industrial-exhaust.mjs';
+          const cases = [
+            ['ID: 123-45678/62-16/(03) 6216 8041', 'ID: 123-45678/62-16/[contact omitted]'],
+            ['ID: 1234 5678/10-20/03-6216-8041', 'ID: 1234 5678/10-20/[contact omitted]'],
+            ['ID: 123-45678/62-16/12345678', 'ID: 123-45678/62-16/12345678'],
+            ['ID: 123-45678/050-12345678', 'ID: 123-45678/[contact omitted]'],
+            ['https://alice@example.com/03-6216-8041', 'https://alice@example.com/03-6216-8041'],
+            ['alice@example.com / 03-6216-8041', '[contact omitted] / [contact omitted]']
+          ];
+          for (const [input, expected] of cases) {
+            const actual = redactContactData(input);
+            console.log(JSON.stringify({ input, expected, actual }));
+            if (actual !== expected) process.exit(1);
+          }
+          NODE
+            node --test test/industrial-exhaust*.test.js
+          ) > "$artifact/focused-suite.log" 2>&1
+
+          (
+            cd "$work"
+            npm run release:check
+          ) > "$artifact/release-check.log" 2>&1
+
+          cmp "$candidate_files/industrial-exhaust.mjs" "$work/tools/lib/industrial-exhaust.mjs"
+          cmp "$candidate_files/industrial-exhaust.test.js" "$work/test/industrial-exhaust.test.js"
+          git -C "$work" reset --hard "$EXPECTED_MAIN"
+          git -C "$work" clean -fd
+          cp "$candidate_files/industrial-exhaust.mjs" "$work/tools/lib/industrial-exhaust.mjs"
+          cp "$candidate_files/industrial-exhaust.test.js" "$work/test/industrial-exhaust.test.js"
+          git -C "$work" add tools/lib/industrial-exhaust.mjs test/industrial-exhaust.test.js
+          test "$(git -C "$work" diff --cached --name-only)" = $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          test "$(git -C "$work" hash-object tools/lib/industrial-exhaust.mjs)" = "$NEXT_SOURCE_BLOB"
+          test "$(git -C "$work" hash-object test/industrial-exhaust.test.js)" = "$NEXT_TEST_BLOB"
+          test "$(sha256sum "$candidate_files/industrial-exhaust.mjs" | awk '{print $1}')" = "$NEXT_SOURCE_SHA256"
+          test "$(sha256sum "$candidate_files/industrial-exhaust.test.js" | awk '{print $1}')" = "$NEXT_TEST_SHA256"
+
+          candidate_tree=$(git -C "$work" write-tree)
+          export GIT_AUTHOR_NAME=clifford-intake-bot
+          export GIT_AUTHOR_EMAIL=clifford-intake-bot@users.noreply.github.com
+          export GIT_COMMITTER_NAME=clifford-intake-bot
+          export GIT_COMMITTER_EMAIL=clifford-intake-bot@users.noreply.github.com
+          export GIT_AUTHOR_DATE=2026-09-01T16:45:00Z
+          export GIT_COMMITTER_DATE=2026-09-01T16:45:00Z
+          candidate_commit=$(printf '%s\n\n%s\n' \
+            'fix: preserve weak-range custody after identifiers' \
+            'Keep complete bare ranges outside disjoint telephone intervals.' \
+            | git -C "$work" commit-tree "$candidate_tree" -p "$EXPECTED_MAIN")
+          test "$(git -C "$work" rev-parse "$candidate_commit^")" = "$EXPECTED_MAIN"
+          test "$(git -C "$work" rev-parse "$candidate_commit^{tree}")" = "$candidate_tree"
+          git -C "$work" diff-tree --no-commit-id --name-only -r "$candidate_commit" > "$artifact/candidate-paths.txt"
+          test "$(cat "$artifact/candidate-paths.txt")" = $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          printf 'candidate_commit=%s\nparent=%s\ntree=%s\nsource_blob=%s\ntest_blob=%s\nsource_sha256=%s\ntest_sha256=%s\n' \
+            "$candidate_commit" "$EXPECTED_MAIN" "$candidate_tree" "$NEXT_SOURCE_BLOB" "$NEXT_TEST_BLOB" "$NEXT_SOURCE_SHA256" "$NEXT_TEST_SHA256" \
+            > "$artifact/candidate-identity.txt"
+          install -m 0644 "$candidate_files/industrial-exhaust.mjs" "$artifact/industrial-exhaust.mjs"
+          install -m 0644 "$candidate_files/industrial-exhaust.test.js" "$artifact/industrial-exhaust.test.js"
+
+          test "$(gh api "repos/$REPO/git/ref/heads/main" --jq '.object.sha'))" = "$EXPECTED_MAIN"
+          test "$(gh api "repos/$REPO/git/ref/heads/$PRODUCT_BRANCH" --jq '.object.sha')" = "$EXPECTED_PRODUCT"
+          product_after=$(gh api "repos/$REPO/pulls/$PRODUCT_PR")
+          test "$(jq -r '.head.sha' <<<"$product_after")" = "$EXPECTED_PRODUCT"
+          test "$(jq -r '.draft' <<<<"$product_after")" = true
+          test "$(jq -r '.state' <<<<"$product_after")" = open
+          test "$(jq -r '.merged' <<<"$product_after")" = false
+          thread_after=$(gh api graphql -f query="$thread_query" -F a="$THREAD_WEAK_RANGE" -F b="$THREAD_REMAINDER" -F c="$THREAD_DIRECT_URL")
+          test "$(jq -r '.data.a.isResolved' <<<<"$thread_after")" = false
+          test "$(jq -r '.data.b.isResolved' <<<<"$thread_after")" = false
+          test "$(jq -r '.data.c.isResolved' <<<<"$thread_after")" = false
+          jq -S '.data' <<<<"$thread_after" > "$artifact/review-threads-after.json"
+          cmp "$artifact/review-threads-before.json" "$artifact/review-threads-after.json"
+          printf 'main=%s\nproduct=%s\ncontroller=%s\nproduct_pr_draft=true\nproduct_pr_merged=fals`nreview_resolution_unchanged=true\n ' \
+            "$EXPECTED_MAIN" "$EXPECTED_PRODUCT" "$EXPECTED_CONTROLLER" > "$artifact/final-leases.txt"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-v120-weak-range-current-main-qualification-r1
+          path: /tmp/pr2231-v120-weak-range-current-main-qualification-r1
+          if-no-files-found: error
+          retention-days: 90
