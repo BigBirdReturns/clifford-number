@@ -1,0 +1,317 @@
+name: Temporary PR 2231 V119 direct-URL and prefix transplant R2
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: pr2231-v119-direct-url-prefix-transplant-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  qualify-v119:
+    if: github.event.pull_request.head.ref == 'agent/pr2231-v119-direct-url-prefix-transplant-r2'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+      CONTROLLER_PR: ${{ github.event.pull_request.number }}
+      CONTROLLER_BRANCH: ${{ github.event.pull_request.head.ref }}
+      EXPECTED_CONTROLLER_BRANCH: agent/pr2231-v119-direct-url-prefix-transplant-r2
+      EXPECTED_MAIN: 771a64b6b467748d2f4df667b5f78e76f9432d69
+      EXPECTED_PRODUCT: 2d7555363d2fe6bcb06b629dc9e06e3c7ad4a9bb
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      PRODUCT_PR: '2231'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Reconstruct and qualify the V119 transplant without publication
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export LC_ALL=C
+          export GIT_TERMINAL_PROMPT=0
+          repo=BigBirdReturns/clifford-number
+          root=/tmp/pr2231-v119-transplant
+          artifact=/tmp/pr2231-v119-direct-url-prefix-transplant-r2
+          payload="$root/prepared-v118-adjacent-patch.tar.xz"
+          unpacked="$root/unpacked"
+          predecessor="$root/predecessor"
+          successor="$root/successor"
+          transplant="$root/main-transplant"
+          candidate_files="$root/candidate-files"
+          wrapper_log="$artifact/v119-wrapper.log"
+          rm -rf "$root" "$artifact"
+          mkdir -p "$root" "$artifact" "$unpacked" "$candidate_files"
+          : > "$wrapper_log"
+          exec > >(tee -a "$wrapper_log") 2>&1
+
+          preserve() {
+            rc=$?
+            trap - EXIT
+            set +e
+            printf 'outer_status=%s\n' "$rc" > "$artifact/outer-status.env"
+            printf '%s\n' \
+              'controller_mode=read-only' \
+              'publication=skipped' \
+              'product_mutation=none' \
+              'review_mutation=none' \
+              >> "$artifact/outer-status.env"
+            if [[ "$rc" -eq 0 ]]; then
+              printf '%s\n' \
+                'PUBLICATION_SKIPPED' \
+                'PRODUCT_MUTATION_SKIPPED' \
+                'REVIEW_MUTATION_SKIPPED' \
+                'QUALIFICATION_SUCCESS' \
+                > "$artifact/qualification-terminal.txt"
+            else
+              printf '%s\n' \
+                'PUBLICATION_SKIPPED' \
+                'PRODUCT_MUTATION_SKIPPED' \
+                'REVIEW_MUTATION_SKIPPED' \
+                'QUALIFICATION_FAILED' \
+                > "$artifact/qualification-terminal.txt"
+            fi
+            find "$artifact" -type f -printf '%P\t%s\n' | sort \
+              > "$artifact/artifact-manifest.txt"
+            find "$artifact" -type f ! -name artifact-sha256.txt -print0 \
+              | sort -z \
+              | xargs -0 sha256sum \
+              > "$artifact/artifact-sha256.txt"
+            exit "$rc"
+          }
+          trap preserve EXIT
+
+          test "$(git rev-parse HEAD)" = "$EXPECTED_CONTROLLER"
+          test "$(git rev-parse HEAD^)" = "$EXPECTED_MAIN"
+          test "$CONTROLLER_BRANCH" = "$EXPECTED_CONTROLLER_BRANCH"
+
+          controller_json=$(gh api -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "repos/$repo/pulls/$CONTROLLER_PR")
+          test "$(jq -r '.head.sha' <<<"$controller_json")" = "$EXPECTED_CONTROLLER"
+          test "$(jq -r '.base.sha' <<<"$controller_json")" = "$EXPECTED_MAIN"
+          test "$(jq -r '.draft' <<<"$controller_json")" = true
+          test "$(jq -r '.state' <<<"$controller_json")" = open
+          test "$(jq -r '.merged' <<<"$controller_json")" = false
+
+          main_head=$(gh api "repos/$repo/git/ref/heads/main" --jq '.object.sha')
+          product_head=$(gh api "repos/$repo/git/ref/heads/$PRODUCT_BRANCH" --jq '.object.sha')
+          test "$main_head" = "$EXPECTED_MAIN"
+          test "$product_head" = "$EXPECTED_PRODUCT"
+
+          product_json=$(gh api "repos/$repo/pulls/$PRODUCT_PR")
+          test "$(jq -r '.head.sha' <<<"$product_json")" = "$EXPECTED_PRODUCT"
+          test "$(jq -r '.base.sha' <<<"$product_json")" = "$EXPECTED_MAIN"
+          test "$(jq -r '.draft' <<<"$product_json")" = true
+          test "$(jq -r '.state' <<<"$product_json")" = open
+          test "$(jq -r '.merged' <<<"$product_json")" = false
+          printf 'main=%s\nproduct=%s\ncontroller=%s\ncontroller_pr=%s\n' \
+            "$main_head" "$product_head" "$EXPECTED_CONTROLLER" "$CONTROLLER_PR" \
+            > "$artifact/initial-leases.txt"
+
+          blobs=(
+            94b6577f5638fa461309ec8c1a412c7e9c6a4335
+            348b9a5e69118cd56015e6f70b863c45617f5bc9
+            d2509e68c42a834f7e8701461d97963dc3e89b25
+          )
+          sizes=(4096 4096 1004)
+          shas=(
+            198b17a4e5005b91d4e075ddc8303232c2fd1f96cba2b8344982de733aa7c2ca
+            57a902c58ca2c08fb0cbb03987a0ad5568212d5ede781315c6f3a1fa633dd3b2
+            acd7ce12c8b89e6b2972136cb9ef8e6efec3b105adaaf628d67783c7f1f84c53
+          )
+          : > "$payload"
+          : > "$artifact/payload-chunks.txt"
+          for index in "${!blobs[@]}"; do
+            blob="${blobs[$index]}"
+            chunk=$(printf '%s/chunk-%02d.bin' "$root" "$index")
+            gh api -H 'Accept: application/vnd.github+json' \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              "repos/$repo/git/blobs/$blob" --jq '.content' \
+              | tr -d '\n' | base64 -d > "$chunk"
+            test "$(wc -c < "$chunk")" = "${sizes[$index]}"
+            test "$(git hash-object "$chunk")" = "$blob"
+            actual_sha=$(sha256sum "$chunk" | awk '{print $1}')
+            test "$actual_sha" = "${shas[$index]}"
+            printf '%02d\t%s\t%s\t%s\n' "$index" "$blob" "$actual_sha" "${sizes[$index]}" \
+              >> "$artifact/payload-chunks.txt"
+            cat "$chunk" >> "$payload"
+          done
+
+          test "$(wc -c < "$payload")" = 9196
+          test "$(git hash-object "$payload")" = 2f3e8563cc98f5f44ec73723f9aebcc62ed5f7ab
+          test "$(sha256sum "$payload" | awk '{print $1}')" = 9a5ce8e2a6cce95e7c1a6bb645da0b2b9d872240fe4c67ba273504bd94a51032
+          xz -t "$payload"
+          tar -xJf "$payload" -C "$unpacked"
+          test "$(wc -c < "$unpacked/v118.patch")" = 16218
+          test "$(git hash-object "$unpacked/v118.patch")" = a4fc4e931726a2801faac267e2d538f942a9ffc1
+          test "$(sha256sum "$unpacked/v118.patch" | awk '{print $1}')" = bd87f816fdba784f28c634d2809af64c4b251a2916617c191d6e4eb942ffded9
+          install -m 0644 "$unpacked/v118.patch" "$artifact/prepared-v118-adjacent.patch"
+
+          git fetch --no-tags origin \
+            "refs/heads/main:refs/remotes/origin/v119-main" \
+            "refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/v119-product"
+          test "$(git rev-parse refs/remotes/origin/v119-main)" = "$EXPECTED_MAIN"
+          test "$(git rev-parse refs/remotes/origin/v119-product)" = "$EXPECTED_PRODUCT"
+
+          for base_blob in \
+            5582c5310f6413de43c13a151abddc84cb206c8d \
+            02794c0c3f18f439871cd3695c8fd9d77d083549; do
+            decoded="$root/base-$base_blob"
+            gh api "repos/$repo/git/blobs/$base_blob" --jq '.content' \
+              | tr -d '\n' | base64 -d > "$decoded"
+            test "$(git hash-object -w "$decoded")" = "$base_blob"
+          done
+
+          npm ci > "$artifact/npm-ci.log" 2>&1
+          git worktree add --detach "$predecessor" "$EXPECTED_PRODUCT"
+          git worktree add --detach "$successor" "$EXPECTED_PRODUCT"
+          git worktree add --detach "$transplant" "$EXPECTED_MAIN"
+          ln -s "$GITHUB_WORKSPACE/node_modules" "$predecessor/node_modules"
+          ln -s "$GITHUB_WORKSPACE/node_modules" "$successor/node_modules"
+          ln -s "$GITHUB_WORKSPACE/node_modules" "$transplant/node_modules"
+
+          (
+            cd "$predecessor"
+            node --input-type=module <<'NODE'
+          import { redactContactData } from './tools/lib/industrial-exhaust.mjs';
+          const input = 'https://user@example.test/03-6216-8041';
+          const output = redactContactData(input);
+          console.log(`input=${input}`);
+          console.log(`output=${output}`);
+          if (output !== 'https://[contact omitted]/[contact omitted]') process.exit(1);
+          NODE
+            grep -nF 'Array.from(input.slice(0, contactOffset))' tools/lib/industrial-exhaust.mjs
+            grep -nF 'currentNarrativeParenthesisContext(input.slice(0, contactOffset))' tools/lib/industrial-exhaust.mjs
+          ) > "$artifact/predecessor-reproduction.log" 2>&1
+
+          (
+            cd "$successor"
+            git apply --3way --index "$unpacked/v118.patch"
+          ) > "$artifact/patch-application.log" 2>&1
+          test -z "$(git -C "$successor" ls-files -u)"
+          git -C "$successor" diff --check
+          git -C "$successor" diff --cached --stat > "$artifact/transplant-stat.txt"
+          git -C "$successor" diff --cached --name-only > "$artifact/transplant-paths.txt"
+          test "$(cat "$artifact/transplant-paths.txt")" = $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          git -C "$successor" diff --cached --binary > "$artifact/v119-rebased.patch"
+
+          (
+            cd "$successor"
+            node --input-type=module <<'NODE'
+          import { redactContactData } from './tools/lib/industrial-exhaust.mjs';
+          const input = 'https://user@example.test/03-6216-8041';
+          const output = redactContactData(input);
+          console.log(`input=${input}`);
+          console.log(`output=${output}`);
+          if (output !== 'https://user@example.test/[contact omitted]') process.exit(1);
+          NODE
+            if grep -nF 'Array.from(input.slice(0, contactOffset))' tools/lib/industrial-exhaust.mjs; then
+              exit 1
+            fi
+            node --test test/industrial-exhaust*.test.js
+          ) > "$artifact/successor-focused.log" 2>&1
+
+          cp "$successor/tools/lib/industrial-exhaust.mjs" "$candidate_files/industrial-exhaust.mjs"
+          cp "$successor/test/industrial-exhaust.test.js" "$candidate_files/industrial-exhaust.test.js"
+          (
+            cd "$successor"
+            npm run release:check
+          ) > "$artifact/successor-release.log" 2>&1
+
+          git -C "$successor" reset --hard "$EXPECTED_PRODUCT"
+          git -C "$successor" clean -fd
+          cp "$candidate_files/industrial-exhaust.mjs" "$successor/tools/lib/industrial-exhaust.mjs"
+          cp "$candidate_files/industrial-exhaust.test.js" "$successor/test/industrial-exhaust.test.js"
+          git -C "$successor" add tools/lib/industrial-exhaust.mjs test/industrial-exhaust.test.js
+          test "$(git -C "$successor" diff --cached --name-only)" = $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+
+          candidate_tree=$(git -C "$successor" write-tree)
+          export GIT_AUTHOR_NAME=clifford-intake-bot
+          export GIT_AUTHOR_EMAIL=clifford-intake-bot@users.noreply.github.com
+          export GIT_COMMITTER_NAME=clifford-intake-bot
+          export GIT_COMMITTER_EMAIL=clifford-intake-bot@users.noreply.github.com
+          export GIT_AUTHOR_DATE=2026-09-01T07:30:00Z
+          export GIT_COMMITTER_DATE=2026-09-01T07:30:00Z
+          candidate_commit=$(printf '%s\n\n%s\n' \
+            'fix: preserve direct URL and bounded prefix context' \
+            'Protect URL-owned email text and index callback prefix state.' \
+            | git -C "$successor" commit-tree "$candidate_tree" -p "$EXPECTED_MAIN")
+          test "$(git -C "$successor" rev-parse "$candidate_commit^")" = "$EXPECTED_MAIN"
+          git -C "$successor" diff-tree --no-commit-id --name-only -r "$candidate_commit" \
+            > "$artifact/candidate-paths.txt"
+          test "$(cat "$artifact/candidate-paths.txt")" = $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+
+          source_blob=$(git -C "$successor" rev-parse "$candidate_commit:tools/lib/industrial-exhaust.mjs")
+          test_blob=$(git -C "$successor" rev-parse "$candidate_commit:test/industrial-exhaust.test.js")
+          source_sha=$(sha256sum "$candidate_files/industrial-exhaust.mjs" | awk '{print $1}')
+          test_sha=$(sha256sum "$candidate_files/industrial-exhaust.test.js" | awk '{print $1}')
+          printf 'candidate_commit=%s\nparent=%s\ntree=%s\nsource_blob=%s\ntest_blob=%s\nsource_sha256=%s\ntest_sha256=%s\n' \
+            "$candidate_commit" "$EXPECTED_MAIN" "$candidate_tree" "$source_blob" "$test_blob" "$source_sha" "$test_sha" \
+            > "$artifact/candidate-identity.txt"
+          install -m 0644 "$candidate_files/industrial-exhaust.mjs" "$artifact/industrial-exhaust.mjs"
+          install -m 0644 "$candidate_files/industrial-exhaust.test.js" "$artifact/industrial-exhaust.test.js"
+
+          cp "$candidate_files/industrial-exhaust.mjs" "$transplant/tools/lib/industrial-exhaust.mjs"
+          cp "$candidate_files/industrial-exhaust.test.js" "$transplant/test/industrial-exhaust.test.js"
+          test "$(git -C "$transplant" diff --name-only)" = $'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          (
+            cd "$transplant"
+            node --input-type=module <<'NODE'
+          import { redactContactData } from './tools/lib/industrial-exhaust.mjs';
+          const input = 'https://user@example.test/03-6216-8041';
+          const output = redactContactData(input);
+          console.log(`input=${input}`);
+          console.log(`output=${output}`);
+          if (output !== 'https://user@example.test/[contact omitted]') process.exit(1);
+          NODE
+            node --test test/industrial-exhaust*.test.js
+          ) > "$artifact/main-transplant-focused.log" 2>&1
+          (
+            cd "$transplant"
+            npm run release:check
+          ) > "$artifact/main-transplant-release.log" 2>&1
+          test "$(sha256sum "$transplant/tools/lib/industrial-exhaust.mjs" | awk '{print $1}')" = "$source_sha"
+          test "$(sha256sum "$transplant/test/industrial-exhaust.test.js" | awk '{print $1}')" = "$test_sha"
+
+          main_after=$(gh api "repos/$repo/git/ref/heads/main" --jq '.object.sha')
+          product_after=$(gh api "repos/$repo/git/ref/heads/$PRODUCT_BRANCH" --jq '.object.sha')
+          test "$main_after" = "$EXPECTED_MAIN"
+          test "$product_after" = "$EXPECTED_PRODUCT"
+          controller_after=$(gh api "repos/$repo/pulls/$CONTROLLER_PR")
+          product_after_json=$(gh api "repos/$repo/pulls/$PRODUCT_PR")
+          test "$(jq -r '.head.sha' <<<"$controller_after")" = "$EXPECTED_CONTROLLER"
+          test "$(jq -r '.draft' <<<"$controller_after")" = true
+          test "$(jq -r '.state' <<<"$controller_after")" = open
+          test "$(jq -r '.merged' <<<"$controller_after")" = false
+          test "$(jq -r '.head.sha' <<<"$product_after_json")" = "$EXPECTED_PRODUCT"
+          test "$(jq -r '.draft' <<<"$product_after_json")" = true
+          test "$(jq -r '.state' <<<"$product_after_json")" = open
+          test "$(jq -r '.merged' <<<"$product_after_json")" = false
+          printf 'main=%s\nproduct=%s\ncontroller=%s\nproduct_pr_draft=true\ncontroller_pr_draft=true\n' \
+            "$main_after" "$product_after" "$EXPECTED_CONTROLLER" \
+            > "$artifact/final-leases.txt"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-v119-direct-url-prefix-transplant-r2
+          path: /tmp/pr2231-v119-direct-url-prefix-transplant-r2
+          if-no-files-found: error
+          retention-days: 90
