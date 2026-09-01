@@ -1,0 +1,169 @@
+name: Temporary PR2231 V117 exact qualification R8
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+    paths:
+      - .github/workflows/temporary-pr2231-v117-exact-qualification-r8.yml
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+  issues: read
+
+concurrency:
+  group: pr2231-v117-exact-qualification-r8-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  qualify-v117-r8:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: BigBirdReturns/clifford-number
+      PRODUCT_PR: '2231'
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      PRODUCT_SHA: 0c0ec19938e76d83d646c79d02bea9a724e6773b
+      PRODUCT_TREE: 326186e534735e8fc108c3bb7cab115d5db08dce
+      PRODUCT_LIBRARY: 123b88403265fa4193a44a97b27aebc7661c1528
+      PRODUCT_TEST: a71e670bbf85a399e02a184e0a8fce19d127bfaf
+      MAIN_SHA: 771a64b6b467748d2f4df667b5f78e76f9432d69
+      MAIN_TREE: 86c91755f16245168ddb230d53e5b9920af5342c
+      REVIEW_ID: '5072486871'
+      GROUPED_COMMENT_ID: '3899391559'
+      COMPLEXITY_COMMENT_ID: '3899391565'
+      WORKTREE: /tmp/pr2231-v117-product-r8
+      MAIN_WORKTREE: /tmp/pr2231-v117-main-r8
+      RECEIPTS: /tmp/pr2231-v117-qualification-r8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Materialize and execute exact V117 qualifier R8
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          wrapper=/tmp/pr2231-v117-wrapper-r8
+          rm -rf "$wrapper"
+          mkdir -p "$wrapper/parts"
+          inner_status=missing
+          on_exit() {
+            rc=$?
+            mkdir -p "$wrapper"
+            printf '%s\n' \
+              'controller_envelope=v117-exact-qualification-r8' \
+              "outer_status=$rc" \
+              "inner_status=$inner_status" \
+              > "$wrapper/wrapper-status.env"
+          }
+          trap on_exit EXIT
+          specs=(
+            '9e4e6006231940f4bd5f3ee6725d8faff59e7e83:2400:7a5ea91a9e43dc8d6828b417eb173c52e03e564387ec6476e48109c0997b0370'
+            'd1da705e46261d2f111aafedfc38cb71e2fa701f:2400:41df057a3327e80dfb4b25ec81edb9852bd4e89efa08b9081dd09fa3d346ffb3'
+            '299fc463e584ba6e80f56e132911b6e59970b924:668:71e8cfe6d3cc1835487753fb396d522f187f8f0c725863be5decf6049157a0a8'
+          )
+          : > "$wrapper/qualifier-r6.sh.xz"
+          for index in "${!specs[@]}"; do
+            IFS=: read -r blob size digest <<< "${specs[$index]}"
+            json="$wrapper/parts/$index.json"
+            part="$wrapper/parts/$index.bin"
+            gh api "repos/$REPO/git/blobs/$blob" > "$json"
+            jq -e --arg sha "$blob" --argjson size "$size" \
+              '.sha == $sha and .size == $size and .encoding == "base64"' "$json" >/dev/null
+            jq -r '.content' "$json" | tr -d '\n' | base64 -d > "$part"
+            [[ "$(git hash-object "$part")" == "$blob" ]]
+            [[ "$(stat -c %s "$part")" == "$size" ]]
+            printf '%s  %s\n' "$digest" "$part" | sha256sum -c -
+            cat "$part" >> "$wrapper/qualifier-r6.sh.xz"
+          done
+          [[ "$(stat -c %s "$wrapper/qualifier-r6.sh.xz")" == 5468 ]]
+          printf '%s  %s\n' \
+            '15734b7fd22843f15777fa72d6df05b5280635ec387cca64b9f7576712eff5e1' \
+            "$wrapper/qualifier-r6.sh.xz" | sha256sum -c -
+          xz -t "$wrapper/qualifier-r6.sh.xz"
+          xz -dc "$wrapper/qualifier-r6.sh.xz" > "$wrapper/qualifier-r6.sh"
+          [[ "$(stat -c %s "$wrapper/qualifier-r6.sh")" == 22981 ]]
+          printf '%s  %s\n' \
+            '310fbfd2dd08e3006f5f42cc240e30e329dda5caf58b0931e4a901012f30cc22' \
+            "$wrapper/qualifier-r6.sh" | sha256sum -c -
+          bash -n "$wrapper/qualifier-r6.sh"
+
+          python3 - "$wrapper/qualifier-r6.sh" "$wrapper/qualifier-r8.sh" "$wrapper/state-transform.json" <<'PY_TRANSFORM'
+          from hashlib import sha256
+          from pathlib import Path
+          import json
+          import sys
+
+          source = Path(sys.argv[1])
+          output = Path(sys.argv[2])
+          receipt = Path(sys.argv[3])
+          text = source.read_text()
+          old = '''python3 - "$RECEIPTS/product-pr-before.json" "$RECEIPTS/product-pr-after.json" <<'PY_PR_STATE'\nimport json, sys\nbefore=json.load(open(sys.argv[1])); after=json.load(open(sys.argv[2]))\nkeys=['state','draft','merged','head','base']\nfor key in keys:\n    if before.get(key)!=after.get(key):\n        raise SystemExit(f'PR state changed: {key}: {before.get(key)!r} -> {after.get(key)!r}')\nPY_PR_STATE\n'''
+          new = '''python3 - "$RECEIPTS/product-pr-before.json" "$RECEIPTS/product-pr-after.json" <<'PY_PR_STATE'\nimport json, sys\nbefore=json.load(open(sys.argv[1])); after=json.load(open(sys.argv[2]))\n\ndef stable(pr):\n    head = pr.get('head') or {}\n    base = pr.get('base') or {}\n    return {\n        'state': pr.get('state'),\n        'draft': pr.get('draft'),\n        'merged': pr.get('merged'),\n        'head': {'ref': head.get('ref'), 'sha': head.get('sha'), 'label': head.get('label')},\n        'base': {'ref': base.get('ref'), 'sha': base.get('sha'), 'label': base.get('label')},\n    }\n\nbefore_stable = stable(before)\nafter_stable = stable(after)\nif before_stable != after_stable:\n    raise SystemExit(f'PR stable state changed: {before_stable!r} -> {after_stable!r}')\nPY_PR_STATE\n'''
+          count = text.count(old)
+          if count != 1:
+              raise SystemExit(f'PR comparator transform count expected=1 actual={count}')
+          transformed = text.replace(old, new, 1)
+          output.write_text(transformed)
+          receipt.write_text(json.dumps({
+              'source_bytes': len(text.encode()),
+              'source_sha256': sha256(text.encode()).hexdigest(),
+              'output_bytes': len(transformed.encode()),
+              'output_sha256': sha256(transformed.encode()).hexdigest(),
+              'transform': 'compare stable PR topology and adjudication fields; exclude volatile nested repository metadata',
+          }, indent=2) + '\n')
+          PY_TRANSFORM
+          [[ "$(stat -c %s "$wrapper/qualifier-r8.sh")" == 23357 ]]
+          printf '%s  %s\n' \
+            '50c20e19abc1a3fea86c3a507cb3e32ef241d1e54d414ef511cccd3927549b2b' \
+            "$wrapper/qualifier-r8.sh" | sha256sum -c -
+          bash -n "$wrapper/qualifier-r8.sh"
+          set +e
+          bash -x "$wrapper/qualifier-r8.sh" > "$wrapper/inner.log" 2>&1
+          inner_status=$?
+          set -e
+          exit "$inner_status"
+
+      - name: Emit controller receipts
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          wrapper=/tmp/pr2231-v117-wrapper-r8
+          mkdir -p "$wrapper"
+          find "$wrapper" -type f -printf '%P\t%s\n' | sort > "$wrapper/artifact-manifest.txt"
+          {
+            printf '%s\n' '### PR2231 V117 exact qualification R8'
+            for receipt in wrapper-status.env state-transform.json artifact-manifest.txt; do
+              printf '\n#### %s\n\n```text\n' "$receipt"
+              [[ ! -f "$wrapper/$receipt" ]] || tail -n 500 "$wrapper/$receipt"
+              printf '%s\n' '```'
+            done
+            for receipt in predecessor.json direct-v117.json qualification-terminal.txt summary.json candidate-sha256.txt product-post-release-status.txt main-post-release-status.txt; do
+              printf '\n#### qualification/%s\n\n```text\n' "$receipt"
+              [[ ! -f "$RECEIPTS/$receipt" ]] || tail -n 500 "$RECEIPTS/$receipt"
+              printf '%s\n' '```'
+            done
+            printf '\n#### inner.log tail\n\n```text\n'
+            [[ ! -f "$wrapper/inner.log" ]] || tail -n 1000 "$wrapper/inner.log"
+            printf '%s\n' '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-exact-qualification-v117-r8
+          path: |
+            /tmp/pr2231-v117-wrapper-r8
+            /tmp/pr2231-v117-qualification-r8
+          retention-days: 90
