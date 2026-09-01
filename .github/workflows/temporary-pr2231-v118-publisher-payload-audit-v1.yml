@@ -1,0 +1,119 @@
+name: Temporary PR 2231 V118 publisher payload audit V1
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+jobs:
+  audit-v118-publisher-payload:
+    if: github.event.pull_request.head.ref == 'agent/pr2231-v118-publisher-payload-audit-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      REPO: BigBirdReturns/clifford-number
+      CONTROLLER_BRANCH: agent/pr2231-v118-publisher-payload-audit-v1
+      CONTROLLER_WORKFLOW: .github/workflows/temporary-pr2231-v118-publisher-payload-audit-v1.yml
+      EXPECTED_MAIN: 771a64b6b467748d2f4df667b5f78e76f9432d69
+      PUBLISHER_BRANCH: agent/pr2231-unlabelled-scalar-partition-v118-publisher-r1
+      EXPECTED_PUBLISHER_CONTROLLER: 83eda6703699327379e9765efed202ad59724986
+      PUBLISHER_WORKFLOW: .github/workflows/temporary-pr2231-unlabelled-scalar-partition-v118-publisher-r1.yml
+      PUBLISHER_WORKFLOW_BLOB: 6ba161e21f72b6fc685dfb92505b7fea1932b8c9
+      PUBLISHER_XZ_BLOB: c49ce0bc71b73a2d1ea6840adf04d1f2893fb633
+      PUBLISHER_XZ_BYTES: '4792'
+      PUBLISHER_XZ_SHA256: a5f84ecdaa853a19974f0b24fd7bc28d7725438d5cbf1c0d67edbc262b36f2f0
+      PUBLISHER_BLOB: e32a048c430e44cf058de16c0df17d1f4f0c193f
+      PUBLISHER_BYTES: '21873'
+      PUBLISHER_SHA256: d46ca4cc7e8d89c8f8e5deb071f49351fc71f419a9816990af8430acefc8d4fa
+      ARTIFACT_DIR: /tmp/pr2231-v118-publisher-payload-audit-v1
+    steps:
+      - name: Check out exact audit controller
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Materialize and preserve exact publisher payload
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CONTROLLER_PR: ${{ github.event.pull_request.number }}
+          EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export LC_ALL=C
+          rm -rf "$ARTIFACT_DIR"
+          mkdir -p "$ARTIFACT_DIR"
+          exec > >(tee "$ARTIFACT_DIR/audit.log") 2>&1
+          trap 'rc=$?; trap - EXIT; printf "audit_exit=%s\n" "$rc" > "$ARTIFACT_DIR/audit-status.env"; exit "$rc"' EXIT
+
+          controller_head=$(git rev-parse HEAD)
+          controller_parent=$(git rev-parse HEAD^)
+          controller_tree=$(git rev-parse HEAD^{tree})
+          test "$controller_head" = "$EXPECTED_CONTROLLER"
+          test "$controller_parent" = "$EXPECTED_MAIN"
+          mapfile -t controller_paths < <(git diff --name-only "$EXPECTED_MAIN" "$controller_head")
+          test "${#controller_paths[@]}" -eq 1
+          test "${controller_paths[0]}" = "$CONTROLLER_WORKFLOW"
+
+          gh api "repos/$REPO/pulls/$CONTROLLER_PR" > "$ARTIFACT_DIR/controller-pr.json"
+          jq -e --arg head "$EXPECTED_CONTROLLER" --arg base "$EXPECTED_MAIN" '
+            .state == "open"
+            and .draft == true
+            and .merged == false
+            and .head.sha == $head
+            and .base.sha == $base
+            and .commits == 1
+            and .changed_files == 1
+          ' "$ARTIFACT_DIR/controller-pr.json" >/dev/null
+
+          test "$(git ls-remote origin refs/heads/main | awk '{print $1}')" = "$EXPECTED_MAIN"
+          test "$(git ls-remote origin "refs/heads/$PUBLISHER_BRANCH" | awk '{print $1}')" = "$EXPECTED_PUBLISHER_CONTROLLER"
+          git fetch --no-tags origin "+refs/heads/$PUBLISHER_BRANCH:refs/remotes/origin/$PUBLISHER_BRANCH"
+          test "$(git rev-parse "$EXPECTED_PUBLISHER_CONTROLLER^")" = "$EXPECTED_MAIN"
+          test "$(git rev-parse "$EXPECTED_PUBLISHER_CONTROLLER:$PUBLISHER_WORKFLOW")" = "$PUBLISHER_WORKFLOW_BLOB"
+
+          gh api "repos/$REPO/git/blobs/$PUBLISHER_XZ_BLOB" --jq .content \
+            | tr -d '\n' | base64 -d > "$ARTIFACT_DIR/publisher-v118-r1.sh.xz"
+          test "$(wc -c < "$ARTIFACT_DIR/publisher-v118-r1.sh.xz")" = "$PUBLISHER_XZ_BYTES"
+          test "$(sha256sum "$ARTIFACT_DIR/publisher-v118-r1.sh.xz" | awk '{print $1}')" = "$PUBLISHER_XZ_SHA256"
+          test "$(git hash-object "$ARTIFACT_DIR/publisher-v118-r1.sh.xz")" = "$PUBLISHER_XZ_BLOB"
+          xz -t "$ARTIFACT_DIR/publisher-v118-r1.sh.xz"
+          xz -dc "$ARTIFACT_DIR/publisher-v118-r1.sh.xz" > "$ARTIFACT_DIR/publisher-v118-r1.sh"
+          test "$(wc -c < "$ARTIFACT_DIR/publisher-v118-r1.sh")" = "$PUBLISHER_BYTES"
+          test "$(sha256sum "$ARTIFACT_DIR/publisher-v118-r1.sh" | awk '{print $1}')" = "$PUBLISHER_SHA256"
+          test "$(git hash-object "$ARTIFACT_DIR/publisher-v118-r1.sh")" = "$PUBLISHER_BLOB"
+          bash -n "$ARTIFACT_DIR/publisher-v118-r1.sh"
+
+          grep -nE 'git push|update-ref|refs/heads|gh api|pulls/|reviews|ready|merge|resolve|curl|wget|rm -rf|chmod|commit-tree|write-tree|hash-object' \
+            "$ARTIFACT_DIR/publisher-v118-r1.sh" \
+            > "$ARTIFACT_DIR/command-surface.txt" || true
+          {
+            printf 'controller_head=%s\n' "$controller_head"
+            printf 'controller_parent=%s\n' "$controller_parent"
+            printf 'controller_tree=%s\n' "$controller_tree"
+            printf 'publisher_controller=%s\n' "$EXPECTED_PUBLISHER_CONTROLLER"
+            printf 'publisher_workflow_blob=%s\n' "$PUBLISHER_WORKFLOW_BLOB"
+            printf 'publisher_xz_blob=%s\n' "$PUBLISHER_XZ_BLOB"
+            printf 'publisher_xz_sha256=%s\n' "$PUBLISHER_XZ_SHA256"
+            printf 'publisher_blob=%s\n' "$PUBLISHER_BLOB"
+            printf 'publisher_sha256=%s\n' "$PUBLISHER_SHA256"
+            printf 'publisher_execution=skipped\n'
+            printf 'remote_mutation=none\n'
+          } > "$ARTIFACT_DIR/payload-objects.env"
+          printf 'PAYLOAD_AUDIT_SUCCESS\n' | tee "$ARTIFACT_DIR/terminal.txt"
+
+      - name: Upload exact publisher payload audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr2231-v118-publisher-payload-audit-v1
+          path: /tmp/pr2231-v118-publisher-payload-audit-v1
+          if-no-files-found: error
+          retention-days: 90
