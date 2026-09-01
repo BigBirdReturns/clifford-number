@@ -1,0 +1,106 @@
+name: Temporary PR 2231 V120 current-main transplant qualification R3
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: pr2231-v120-current-main-transplant-qualification-r3-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  qualify-v120:
+    if: github.event.pull_request.head.ref == 'agent/pr2231-v120-current-main-transplant-qualification-r3'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+      CONTROLLER_PR: ${{ github.event.pull_request.number }}
+      CONTROLLER_BRANCH: ${{ github.event.pull_request.head.ref }}
+      EXPECTED_CONTROLLER_BRANCH: agent/pr2231-v120-current-main-transplant-qualification-r3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Reconstruct and execute exact V120 current-main read-only qualifier
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export LC_ALL=C
+          repo=BigBirdReturns/clifford-number
+          root=/tmp/pr2231-v120-current-main-transplant-envelope-r3
+          artifact=/tmp/pr2231-v120-current-main-transplant-qualification-r3
+          payload="$root/qualifier-v120-current-main-transplant-r3.sh.xz"
+          qualifier="$root/qualifier-v120-current-main-transplant-r3.sh"
+          wrapper_log="$root/v120-current-main-controller-wrapper.log"
+          rm -rf "$root" "$artifact"
+          mkdir -p "$root"
+          : > "$wrapper_log"
+          exec > >(tee -a "$wrapper_log") 2>&1
+
+          preserve() {
+            rc=$?
+            trap - EXIT
+            set +e
+            mkdir -p "$artifact/controller-envelope"
+            test ! -f "$payload" || install -m 0644 "$payload" "$artifact/controller-envelope/qualifier-v120-current-main-transplant-r3.sh.xz"
+            test ! -f "$qualifier" || install -m 0755 "$qualifier" "$artifact/controller-envelope/qualifier-v120-current-main-transplant-r3.sh"
+            install -m 0644 "$wrapper_log" "$artifact/controller-envelope/v120-current-main-controller-wrapper.log"
+            printf '%s\n' \
+              'controller_envelope=v120-current-main-transplant-qualification-r3' \
+              "outer_status=$rc" \
+              'mode=read-only' \
+              'product_mutation=none' \
+              'review_mutation=none' \
+              > "$artifact/controller-envelope/v120-current-main-controller-status.env"
+            find "$artifact" -type f -printf '%P\t%s\n' | sort \
+              > "$artifact/controller-envelope/v120-current-main-final-manifest.txt"
+            exit "$rc"
+          }
+          trap preserve EXIT
+
+          test "$(git rev-parse HEAD)" = "$EXPECTED_CONTROLLER"
+          test "$(git rev-parse HEAD^)" = c68e6c91fdee4679535dd77d0adc44562823d517
+          test "$CONTROLLER_BRANCH" = "$EXPECTED_CONTROLLER_BRANCH"
+
+          compressed_blob=2750505ae5010a597ceb81e45509dbd2fd7a17d5
+          gh api "repos/$repo/git/blobs/$compressed_blob" --jq '.content' \
+            | tr -d '\n' | base64 -d > "$payload"
+          test "$(wc -c < "$payload")" = 6004
+          test "$(git hash-object "$payload")" = "$compressed_blob"
+          test "$(sha256sum "$payload" | awk '{print $1}')" = 122fd8735c0cf1ba6514cdb1e784ff6bce598fa974f014007e7588c52959fcea
+          xz -t "$payload"
+          xz -dc "$payload" > "$qualifier"
+          chmod 0755 "$qualifier"
+          test "$(wc -c < "$qualifier")" = 26560
+          test "$(git hash-object "$qualifier")" = 51f758a29f374af2d75f47ccf63752efff3d5cf3
+          test "$(sha256sum "$qualifier" | awk '{print $1}')" = a81e042b03544581dbe0edb8054d7d911d3472b70cff9994080bf6ec890aab48
+          bash -n "$qualifier"
+
+          set +e
+          bash "$qualifier"
+          qualifier_rc=$?
+          set -e
+          exit "$qualifier_rc"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-v120-current-main-transplant-qualification-r3
+          path: /tmp/pr2231-v120-current-main-transplant-qualification-r3
+          if-no-files-found: error
+          retention-days: 90
