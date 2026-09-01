@@ -1,0 +1,101 @@
+name: Temporary PR 2231 V118 qualified-tree publication R1
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: write
+  actions: read
+  pull-requests: read
+
+concurrency:
+  group: pr2231-v118-publisher-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  publish-qualified-v118:
+    if: github.event.pull_request.head.ref == 'agent/pr2231-unlabelled-scalar-partition-v118-publisher-r1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    env:
+      PUBLISHER_BRANCH: agent/pr2231-unlabelled-scalar-partition-v118-publisher-r1
+      PUBLISHER_WORKFLOW: .github/workflows/temporary-pr2231-unlabelled-scalar-partition-v118-publisher-r1.yml
+      PUBLISHER_XZ_BLOB: c49ce0bc71b73a2d1ea6840adf04d1f2893fb633
+      PUBLISHER_XZ_BYTES: '4792'
+      PUBLISHER_XZ_SHA256: a5f84ecdaa853a19974f0b24fd7bc28d7725438d5cbf1c0d67edbc262b36f2f0
+      PUBLISHER_BLOB: e32a048c430e44cf058de16c0df17d1f4f0c193f
+      PUBLISHER_BYTES: '21873'
+      PUBLISHER_SHA256: d46ca4cc7e8d89c8f8e5deb071f49351fc71f419a9816990af8430acefc8d4fa
+    steps:
+      - name: Check out exact publisher head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Reconstruct and execute exact V118 publisher
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PUBLISHER_PR: ${{ github.event.pull_request.number }}
+          EXPECTED_PUBLISHER: ${{ github.event.pull_request.head.sha }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          repo=BigBirdReturns/clifford-number
+          root=/tmp/pr2231-v118-publisher-wrapper
+          receipt=/tmp/pr2231-v118-publication
+          payload="$root/publisher-v118-r1.sh.xz"
+          script="$root/publisher-v118-r1.sh"
+          wrapper_log="$root/publisher-wrapper.log"
+          rm -rf "$root" "$receipt"
+          mkdir -p "$root"
+          : > "$wrapper_log"
+          exec > >(tee -a "$wrapper_log") 2>&1
+          preserve() {
+            rc=$?
+            trap - EXIT
+            set +e
+            mkdir -p "$receipt/wrapper"
+            install -m 0644 "$wrapper_log" "$receipt/wrapper/publisher-wrapper.log"
+            printf '%s\n' \
+              'controller_envelope=v118-publisher-wrapper-r1' \
+              "outer_status=$rc" \
+              > "$receipt/wrapper/wrapper-status.env"
+            find "$receipt" -type f -printf '%P\t%s\n' | sort \
+              > "$receipt/wrapper/final-manifest.txt"
+            exit "$rc"
+          }
+          trap preserve EXIT
+
+          gh api -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "repos/$repo/git/blobs/$PUBLISHER_XZ_BLOB" --jq .content \
+            | tr -d '\n' | base64 -d > "$payload"
+          test "$(wc -c < "$payload")" = "$PUBLISHER_XZ_BYTES"
+          test "$(sha256sum "$payload" | awk '{print $1}')" = "$PUBLISHER_XZ_SHA256"
+          test "$(git hash-object "$payload")" = "$PUBLISHER_XZ_BLOB"
+          xz -t "$payload"
+          xz -dc "$payload" > "$script"
+          test "$(wc -c < "$script")" = "$PUBLISHER_BYTES"
+          test "$(sha256sum "$script" | awk '{print $1}')" = "$PUBLISHER_SHA256"
+          test "$(git hash-object "$script")" = "$PUBLISHER_BLOB"
+          chmod +x "$script"
+          bash -n "$script"
+          bash "$script"
+
+      - name: Upload terminal V118 publication artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr2231-v118-qualified-tree-publication-r1
+          path: /tmp/pr2231-v118-publication
+          if-no-files-found: error
+          retention-days: 90
