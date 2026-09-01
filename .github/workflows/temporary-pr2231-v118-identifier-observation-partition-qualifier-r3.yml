@@ -1,0 +1,162 @@
+name: Temporary PR 2231 V118 identifier observation partition qualifier R3
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+    paths:
+      - .github/workflows/temporary-pr2231-v118-identifier-observation-partition-qualifier-r3.yml
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: BigBirdReturns/clifford-number
+      MAIN: 771a64b6b467748d2f4df667b5f78e76f9432d69
+      PRODUCT: 6c4acfb15047dcc6a28dca87732fe2c4c7e7b1e6
+      PRODUCT_TREE: d0e42c6312bda625474e557a691b1b2b981e9902
+      PRODUCT_LIBRARY: 5582c5310f6413de43c13a151abddc84cb206c8d
+      PRODUCT_TEST: 02794c0c3f18f439871cd3695c8fd9d77d083549
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      REVIEW_ID: '5074298652'
+      COMMENT_ID: '3901036540'
+      THREAD_ID: PRRT_kwDOTGqftc6d-sYp
+      R1_RUN: '33474670382'
+      R1_ARTIFACT_ID: '9787746145'
+      R1_ARTIFACT: pr2231-v118-identifier-observation-partition-r1
+      R1_DIGEST: sha256:68b65c0114c8a2e77789441290b28b08a17b490615fb89eb57eb2c2b68c11988
+      R2_ARTIFACT_ID: '9787833962'
+      R2_DIGEST: sha256:db7703c79bff5f70d961616946107aa406f29f3a833741c2392ce10980db9708
+      LIBRARY_BLOB: 25866adcbe4f95cb2f149d078f7a70bfd84570c5
+      TEST_BLOB: 771393e3f0c40ce3bb60288ab162e46649f17e6a
+      LIBRARY_SHA256: aa3dc4b679c331c8113c455fa46f9feb577d7ce7d437c69594607656068369ed
+      TEST_SHA256: 11f3bcf6b216bbf378e5d6669adb79e3cf84b0f7446824ecbf4843ab940d63a5
+      PATCH_SHA256: d3d630fd0839554d5eb33d4c26a594c0cf434def4742afc1f0a69af648a22259
+      OUT: /tmp/pr2231-v118-r3
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 6c4acfb15047dcc6a28dca87732fe2c4c7e7b1e6
+          fetch-depth: 2
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Bind exact candidate and qualify
+        shell: bash
+        run: |
+          set -Eeuxo pipefail
+          rm -rf "$OUT" && mkdir -p "$OUT/r1" "$OUT/candidate"
+          exec > >(tee "$OUT/qualification.log") 2>&1
+          failed=none
+          trap 'failed=$BASH_COMMAND' ERR
+          trap 'rc=$?; trap - ERR EXIT; set +e; printf "qualification_exit=%s\nfailed_command=%s\npublication=skipped\nproduct_mutation=false\nreview_mutation=false\nreadiness_mutation=false\nmerge_mutation=false\n" "$rc" "$failed" > "$OUT/status.env"; find "$OUT" -type f -printf "%P\t%s\n" | sort > "$OUT/manifest.txt"; exit "$rc"' EXIT
+
+          controller=${{ github.event.pull_request.number }}
+          test "${{ github.event.pull_request.head.ref }}" = agent/pr2231-v118-identifier-observation-partition-qualifier-r3
+          test "$(gh api repos/$REPO/git/ref/heads/main --jq .object.sha)" = "$MAIN"
+          gh api repos/$REPO/pulls/2231 > "$OUT/product-before.json"
+          gh api repos/$REPO/pulls/$controller > "$OUT/controller-before.json"
+          gh api repos/$REPO/pulls/2478 > "$OUT/r1-pr.json"
+          gh api repos/$REPO/pulls/2479 > "$OUT/r2-pr.json"
+          jq -e --arg h "$PRODUCT" --arg b "$MAIN" --arg r "$PRODUCT_BRANCH" '.state=="open" and .draft and (.merged|not) and .head.sha==$h and .head.ref==$r and .base.sha==$b and .commits==1 and .changed_files==2' "$OUT/product-before.json" >/dev/null
+          jq -e '.state=="closed" and .draft and (.merged|not)' "$OUT/r1-pr.json" >/dev/null
+          jq -e '.state=="closed" and .draft and (.merged|not)' "$OUT/r2-pr.json" >/dev/null
+
+          gh api repos/$REPO/pulls/comments/$COMMENT_ID > "$OUT/comment-before.json"
+          jq -e --arg h "$PRODUCT" --argjson r "$REVIEW_ID" '.commit_id==$h and .pull_request_review_id==$r and (.body|contains("Preserve observations before accepting identifier partitions"))' "$OUT/comment-before.json" >/dev/null
+          gh api graphql -f query='query($id:ID!){node(id:$id){... on PullRequestReviewThread{id isResolved isOutdated comments(first:20){nodes{databaseId}}}}}' -F id="$THREAD_ID" > "$OUT/thread-before.json"
+          jq -e --arg id "$THREAD_ID" --argjson c "$COMMENT_ID" '.data.node.id==$id and (.data.node.isResolved|not) and (.data.node.isOutdated|not) and any(.data.node.comments.nodes[];.databaseId==$c)' "$OUT/thread-before.json" >/dev/null
+
+          gh api repos/$REPO/actions/artifacts/$R1_ARTIFACT_ID > "$OUT/r1-artifact.json"
+          gh api repos/$REPO/actions/artifacts/$R2_ARTIFACT_ID > "$OUT/r2-artifact.json"
+          jq -e --arg d "$R1_DIGEST" --arg n "$R1_ARTIFACT" --argjson r "$R1_RUN" '.digest==$d and .name==$n and (.expired|not) and .workflow_run.id==$r' "$OUT/r1-artifact.json" >/dev/null
+          jq -e --arg d "$R2_DIGEST" '.digest==$d and (.expired|not)' "$OUT/r2-artifact.json" >/dev/null
+          gh run download "$R1_RUN" -R "$REPO" -n "$R1_ARTIFACT" -D "$OUT/r1"
+
+          mapfile -t lib < <(find "$OUT/r1" -type f -path '*/candidate/industrial-exhaust.mjs')
+          mapfile -t tst < <(find "$OUT/r1" -type f -path '*/candidate/industrial-exhaust.test.js')
+          mapfile -t pat < <(find "$OUT/r1" -type f -name v118.patch)
+          mapfile -t sta < <(find "$OUT/r1" -type f -name status.env)
+          test ${#lib[@]} = 1 && test ${#tst[@]} = 1 && test ${#pat[@]} = 1 && test ${#sta[@]} = 1
+          test "$(sed -n 's/^qualification_exit=//p' "${sta[0]}")" = 128
+          test "$(sha256sum "${lib[0]}"|awk '{print $1}')" = "$LIBRARY_SHA256"
+          test "$(sha256sum "${tst[0]}"|awk '{print $1}')" = "$TEST_SHA256"
+          test "$(sha256sum "${pat[0]}"|awk '{print $1}')" = "$PATCH_SHA256"
+          test "$(git hash-object "${lib[0]}")" = "$LIBRARY_BLOB"
+          test "$(git hash-object "${tst[0]}")" = "$TEST_BLOB"
+
+          test "$(git rev-parse HEAD)" = "$PRODUCT"
+          test "$(git rev-parse HEAD^)" = "$MAIN"
+          test "$(git rev-parse HEAD^{tree})" = "$PRODUCT_TREE"
+          test "$(git rev-parse HEAD:tools/lib/industrial-exhaust.mjs)" = "$PRODUCT_LIBRARY"
+          test "$(git rev-parse HEAD:test/industrial-exhaust.test.js)" = "$PRODUCT_TEST"
+          cp "${lib[0]}" tools/lib/industrial-exhaust.mjs
+          cp "${tst[0]}" test/industrial-exhaust.test.js
+          git diff -- tools/lib/industrial-exhaust.mjs test/industrial-exhaust.test.js > "$OUT/candidate/v118.patch"
+          test "$(sha256sum "$OUT/candidate/v118.patch"|awk '{print $1}')" = "$PATCH_SHA256"
+
+          node --check tools/lib/industrial-exhaust.mjs
+          node --check test/industrial-exhaust.test.js
+          node --input-type=module <<'NODE' | tee "$OUT/direct.json"
+          import assert from 'node:assert/strict';
+          import { redactContactData } from './tools/lib/industrial-exhaust.mjs';
+          const cases = [
+            ['ID: 123-45678/3.14/(03) 6216 8041','ID: 123-45678/3.14/[contact omitted]'],
+            ['ID: 123-45678/2026-08-17/(03) 6216 8041','ID: 123-45678/2026-08-17/[contact omitted]'],
+            ['ID: 1234 5678/2026 people/(03) 6216 8041','ID: 1234 5678/2026 people/[contact omitted]'],
+            ['ＩＤ：１２３－４５６７８／３．１４／（０３） ６２１６ ８０４１','ＩＤ：１２３－４５６７８／３．１４／[contact omitted]'],
+            ['ID: 123-45678/(03) 6216 8041','ID: 123-45678/[contact omitted]'],
+            ['ID: 123-45678/3.14/12345678','ID: 123-45678/3.14/12345678'],
+            ['Phone: ID: +33 1.42.68.53.00 / 03-6216-8041','Phone: ID: [contact omitted] / [contact omitted]'],
+            ['Visit 192.0.2.1/+81 3 6216 5111','Visit 192.0.2.1/+81 3 6216 5111']
+          ];
+          console.log(JSON.stringify(cases.map(([input,expected])=>{const actual=redactContactData(input);assert.equal(actual,expected,input);return{input,actual,pass:true}}),null,2));
+          NODE
+          : > "$OUT/focused.log"
+          for f in test/industrial-exhaust*.test.js; do echo "RUN $f" | tee -a "$OUT/focused.log"; node "$f" 2>&1 | tee -a "$OUT/focused.log"; done
+          npm run release:check 2>&1 | tee "$OUT/release.log"
+
+          git reset --hard "$MAIN" && git clean -fd
+          cp "${lib[0]}" tools/lib/industrial-exhaust.mjs
+          cp "${tst[0]}" test/industrial-exhaust.test.js
+          export GIT_AUTHOR_NAME=BigBirdReturns GIT_COMMITTER_NAME=BigBirdReturns
+          export GIT_AUTHOR_EMAIL=219768509+BigBirdReturns@users.noreply.github.com GIT_COMMITTER_EMAIL=219768509+BigBirdReturns@users.noreply.github.com
+          export GIT_AUTHOR_DATE=2026-09-01T05:00:00Z GIT_COMMITTER_DATE=2026-09-01T05:00:00Z
+          git add tools/lib/industrial-exhaust.mjs test/industrial-exhaust.test.js
+          tree=$(git write-tree)
+          commit=$(printf '%s\n\n%s\n' 'fix: preserve observations before identifier partitions' 'Give complete observations exclusive source custody before identifier-partition telephone admission.' | git commit-tree "$tree" -p "$MAIN")
+          test "$(git rev-parse "$commit:tools/lib/industrial-exhaust.mjs")" = "$LIBRARY_BLOB"
+          test "$(git rev-parse "$commit:test/industrial-exhaust.test.js")" = "$TEST_BLOB"
+          test "$(git diff --name-only "$MAIN" "$commit"|sort|paste -sd, -)" = test/industrial-exhaust.test.js,tools/lib/industrial-exhaust.mjs
+          git cat-file -p "$commit" > "$OUT/candidate/commit.txt"
+          printf 'candidate_commit=%s\nparent=%s\ntree=%s\nlibrary_blob=%s\ntest_blob=%s\n' "$commit" "$MAIN" "$tree" "$LIBRARY_BLOB" "$TEST_BLOB" | tee "$OUT/candidate.env"
+
+          test "$(gh api repos/$REPO/git/ref/heads/main --jq .object.sha)" = "$MAIN"
+          gh api repos/$REPO/pulls/2231 > "$OUT/product-after.json"
+          gh api repos/$REPO/pulls/comments/$COMMENT_ID > "$OUT/comment-after.json"
+          gh api graphql -f query='query($id:ID!){node(id:$id){... on PullRequestReviewThread{id isResolved isOutdated comments(first:20){nodes{databaseId}}}}}' -F id="$THREAD_ID" > "$OUT/thread-after.json"
+          jq '{state,draft,merged,head:.head.sha,base:.base.sha,commits,changed_files}' "$OUT/product-before.json" > "$OUT/before-stable.json"
+          jq '{state,draft,merged,head:.head.sha,base:.base.sha,commits,changed_files}' "$OUT/product-after.json" > "$OUT/after-stable.json"
+          cmp "$OUT/before-stable.json" "$OUT/after-stable.json"
+          cmp "$OUT/comment-before.json" "$OUT/comment-after.json"
+          cmp "$OUT/thread-before.json" "$OUT/thread-after.json"
+          printf 'PUBLICATION_SKIPPED\nQUALIFICATION_SUCCESS\n' | tee "$OUT/terminal.txt"
+
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr2231-v118-identifier-observation-partition-r3
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          retention-days: 90
