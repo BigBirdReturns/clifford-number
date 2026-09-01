@@ -1,0 +1,138 @@
+name: Temporary PR2231 V117 grouped-identifier and common-prefix qualifier R6
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+    paths:
+      - .github/workflows/temporary-pr2231-v117-grouped-identifier-common-prefix-r6.yml
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+  issues: read
+
+concurrency:
+  group: pr2231-v117-grouped-identifier-common-prefix-r6-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  qualify-v117-r6:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: BigBirdReturns/clifford-number
+      PRODUCT_PR: '2231'
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      PRODUCT_SHA: 0c0ec19938e76d83d646c79d02bea9a724e6773b
+      PRODUCT_TREE: 326186e534735e8fc108c3bb7cab115d5db08dce
+      PRODUCT_LIBRARY: 123b88403265fa4193a44a97b27aebc7661c1528
+      PRODUCT_TEST: a71e670bbf85a399e02a184e0a8fce19d127bfaf
+      MAIN_SHA: 771a64b6b467748d2f4df667b5f78e76f9432d69
+      MAIN_TREE: 86c91755f16245168ddb230d53e5b9920af5342c
+      REVIEW_ID: '5072486871'
+      GROUPED_COMMENT_ID: '3899391559'
+      COMPLEXITY_COMMENT_ID: '3899391565'
+      WORKTREE: /tmp/pr2231-v117-product-r6
+      MAIN_WORKTREE: /tmp/pr2231-v117-main-r6
+      RECEIPTS: /tmp/pr2231-v117-qualification-r6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Materialize and execute exact V117 qualifier R6
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          wrapper=/tmp/pr2231-v117-wrapper-r6
+          rm -rf "$wrapper"
+          mkdir -p "$wrapper/parts"
+          inner_status=missing
+          on_exit() {
+            rc=$?
+            mkdir -p "$wrapper"
+            printf '%s\n' \
+              'controller_envelope=v117-grouped-identifier-common-prefix-r6' \
+              "outer_status=$rc" \
+              "inner_status=$inner_status" \
+              > "$wrapper/wrapper-status.env"
+          }
+          trap on_exit EXIT
+          specs=(
+            '9e4e6006231940f4bd5f3ee6725d8faff59e7e83:2400:7a5ea91a9e43dc8d6828b417eb173c52e03e564387ec6476e48109c0997b0370'
+            'd1da705e46261d2f111aafedfc38cb71e2fa701f:2400:41df057a3327e80dfb4b25ec81edb9852bd4e89efa08b9081dd09fa3d346ffb3'
+            '299fc463e584ba6e80f56e132911b6e59970b924:668:71e8cfe6d3cc1835487753fb396d522f187f8f0c725863be5decf6049157a0a8'
+          )
+          : > "$wrapper/qualifier.sh.xz"
+          for index in "${!specs[@]}"; do
+            IFS=: read -r blob size digest <<< "${specs[$index]}"
+            json="$wrapper/parts/$index.json"
+            part="$wrapper/parts/$index.bin"
+            gh api "repos/$REPO/git/blobs/$blob" > "$json"
+            jq -e --arg sha "$blob" --argjson size "$size" \
+              '.sha == $sha and .size == $size and .encoding == "base64"' "$json" >/dev/null
+            jq -r '.content' "$json" | tr -d '\n' | base64 -d > "$part"
+            [[ "$(git hash-object "$part")" == "$blob" ]]
+            [[ "$(stat -c %s "$part")" == "$size" ]]
+            printf '%s  %s\n' "$digest" "$part" | sha256sum -c -
+            cat "$part" >> "$wrapper/qualifier.sh.xz"
+          done
+          [[ "$(stat -c %s "$wrapper/qualifier.sh.xz")" == 5468 ]]
+          printf '%s  %s\n' \
+            '15734b7fd22843f15777fa72d6df05b5280635ec387cca64b9f7576712eff5e1' \
+            "$wrapper/qualifier.sh.xz" | sha256sum -c -
+          xz -t "$wrapper/qualifier.sh.xz"
+          xz -dc "$wrapper/qualifier.sh.xz" > "$wrapper/qualifier.sh"
+          [[ "$(stat -c %s "$wrapper/qualifier.sh")" == 22981 ]]
+          printf '%s  %s\n' \
+            '310fbfd2dd08e3006f5f42cc240e30e329dda5caf58b0931e4a901012f30cc22' \
+            "$wrapper/qualifier.sh" | sha256sum -c -
+          bash -n "$wrapper/qualifier.sh"
+          set +e
+          bash -x "$wrapper/qualifier.sh" > "$wrapper/inner.log" 2>&1
+          inner_status=$?
+          set -e
+          exit "$inner_status"
+
+      - name: Emit controller receipts
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          wrapper=/tmp/pr2231-v117-wrapper-r6
+          mkdir -p "$wrapper"
+          find "$wrapper" -type f -printf '%P\t%s\n' | sort > "$wrapper/artifact-manifest.txt"
+          {
+            printf '%s\n' '### PR2231 V117 grouped-identifier and common-prefix qualifier R6'
+            for receipt in wrapper-status.env artifact-manifest.txt; do
+              printf '\n#### %s\n\n```text\n' "$receipt"
+              [[ ! -f "$wrapper/$receipt" ]] || tail -n 500 "$wrapper/$receipt"
+              printf '%s\n' '```'
+            done
+            for receipt in predecessor.json direct-v117.json qualification-terminal.txt summary.json candidate-sha256.txt candidate-commit.txt product-post-release-status.txt main-post-release-status.txt; do
+              printf '\n#### qualification/%s\n\n```text\n' "$receipt"
+              [[ ! -f "$RECEIPTS/$receipt" ]] || tail -n 500 "$RECEIPTS/$receipt"
+              printf '%s\n' '```'
+            done
+            printf '\n#### inner.log tail\n\n```text\n'
+            [[ ! -f "$wrapper/inner.log" ]] || tail -n 1500 "$wrapper/inner.log"
+            printf '%s\n' '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-grouped-identifier-common-prefix-v117-r6
+          path: |
+            /tmp/pr2231-v117-wrapper-r6
+            /tmp/pr2231-v117-qualification-r6
+          retention-days: 90
