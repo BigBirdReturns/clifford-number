@@ -1,0 +1,105 @@
+name: Temporary PR 2231 V121 URL token wrapper qualification R2
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: pr2231-v121-url-token-wrapper-qualification-r2-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  qualify-v121-r2:
+    if: github.event.pull_request.head.ref == 'agent/pr2231-v121-url-token-wrapper-qualification-r2'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+      CONTROLLER_PR: ${{ github.event.pull_request.number }}
+      CONTROLLER_BRANCH: ${{ github.event.pull_request.head.ref }}
+      EXPECTED_CONTROLLER_BRANCH: agent/pr2231-v121-url-token-wrapper-qualification-r2
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Reconstruct, correct, and trace the exact read-only qualifier
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          original=/tmp/pr2231-v121-qualifier-r1.sh
+          script=/tmp/pr2231-v121-qualifier-r2.sh
+          : > "$original"
+          for part in \
+            b2a28ff80f6a7070ccd4d0e4828b2fa002832795 \
+            f970c2679e83f866b7c6459145fd4dc01897f8a9 \
+            5dc27032b8a0a370470a60b6c06bf0f75180b46a \
+            96b5247fb72e47af5adaef1c9eb23026f8afa7a7 \
+            231573cb84bbc0af2ea13b5c43366a221bbb8808
+          do
+            gh api "repos/BigBirdReturns/clifford-number/git/blobs/$part" --jq '.content' |
+              tr -d '\n' | base64 -d >> "$original"
+          done
+          test "$(wc -c < "$original")" = 18966
+          test "$(git hash-object "$original")" = 24b23adb53bd26399b55a4b3baaafba3fae32fea
+          test "$(sha256sum "$original" | awk '{print $1}')" = 1ae0cd7c1c3b8574cc61f04240429c344cc6851fed3f6756bf375919f177e203
+
+          python3 - "$original" "$script" <<'PY'
+          from pathlib import Path
+          import sys
+
+          source = Path(sys.argv[1]).read_text()
+          replacements = (
+              ('join("\\\\n")', 'join("\\n")'),
+              ('temporary-pr2231-v121-url-token-wrapper-qualification-r1.yml',
+               'temporary-pr2231-v121-url-token-wrapper-qualification-r2.yml'),
+              ('/tmp/pr2231-v121-url-token-wrapper-r1',
+               '/tmp/pr2231-v121-url-token-wrapper-r2'),
+              ('/tmp/pr2231-v121-url-token-wrapper-qualification-r1',
+               '/tmp/pr2231-v121-url-token-wrapper-qualification-r2'),
+          )
+          for old, new in replacements:
+              count = source.count(old)
+              if count != 1:
+                  raise SystemExit(f'expected exactly one occurrence of {old!r}, found {count}')
+              source = source.replace(old, new, 1)
+          Path(sys.argv[2]).write_text(source)
+          PY
+
+          bash -n "$script"
+          printf 'bytes=%s\nblob=%s\nsha256=%s\n' \
+            "$(wc -c < "$script")" \
+            "$(git hash-object "$script")" \
+            "$(sha256sum "$script" | awk '{print $1}')" \
+            > /tmp/pr2231-v121-r2-script-identity.txt
+
+          set +e
+          bash -x "$script"
+          rc=$?
+          set -e
+          artifact=/tmp/pr2231-v121-url-token-wrapper-qualification-r2
+          mkdir -p "$artifact"
+          install -m 0644 "$script" "$artifact/qualifier-r2.sh"
+          install -m 0644 /tmp/pr2231-v121-r2-script-identity.txt "$artifact/qualifier-r2-identity.txt"
+          exit "$rc"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-v121-url-token-wrapper-qualification-r2
+          path: /tmp/pr2231-v121-url-token-wrapper-qualification-r2
+          if-no-files-found: error
+          retention-days: 90
