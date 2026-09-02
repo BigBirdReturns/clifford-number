@@ -1,4 +1,4 @@
-name: Temporary PR 2231 V128 wrapper and embedded-email qualification V4 R2
+name: Temporary PR 2231 V128 wrapper and embedded-email qualification V4 R3
 
 on:
   pull_request:
@@ -41,12 +41,12 @@ jobs:
           set -Eeuo pipefail
           export LC_ALL=C
           export EXPECTED_CONTROLLER="$(git rev-parse HEAD)"
-          payload_blob=eb59a6083bee640d8e44a74eb64f838282fd4571
-          payload_size=6400
-          payload_sha256=3788fb2a63e38be4494b688a249bd96e402d687684e89c6b4ebc79dc4b93dc40
-          qualifier_blob=acf86e55d39d25c023b6aea7e69cc0d0afb9cf2d
-          qualifier_size=24819
-          qualifier_sha256=7045569d03e78e3de651016b5fdb4f8274970906f34089c316846c2d1170b82c
+          payload_blob=2b668f0ccb3124d320905f3a911dc2b73c3a464a
+          payload_size=6404
+          payload_sha256=3cffc330175ec048e8ea8379c1a347a6a6dfa6b08843e43a4aa10ffd08e35639
+          qualifier_blob=081ea8455935a0d7fd3a9bd12ea0baaae294e58b
+          qualifier_size=24825
+          qualifier_sha256=07e18b45dcde61933a12553b0b861921b97148e12350e2daaee2bef7458e3519
           envelope=/tmp/pr2231-v128-wrapper-email-controller-v4
           payload="$envelope/qualifier-v128-v4.sh.xz"
           qualifier="$envelope/qualifier-v128-v4.sh"
@@ -60,7 +60,7 @@ jobs:
             rc=$?
             trap - EXIT
             set +e
-            printf 'outer_status=%s\nmode=read-only-v128-qualification-v4-r2\n' "$rc" > "$envelope/controller-status.env"
+            printf 'outer_status=%s\nmode=read-only-v128-qualification-v4-r3\n' "$rc" > "$envelope/controller-status.env"
             find "$envelope" -type f -printf '%P\t%s\n' | sort > "$envelope/envelope-manifest.txt"
             find "$envelope" -type f ! -name envelope-sha256.txt -print0 \
               | sort -z | xargs -0 sha256sum > "$envelope/envelope-sha256.txt"
@@ -89,7 +89,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: pr2231-v128-wrapper-email-qualification-v4-r2
+          name: pr2231-v128-wrapper-email-qualification-v4-r3
           path: |
             /tmp/pr2231-v128-qualification-v1
             /tmp/pr2231-v128-wrapper-email-controller-v4
