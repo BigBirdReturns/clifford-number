@@ -110,6 +110,10 @@ jobs:
                   'require_equal "$(jq -r \'.commits\' "$out/product-pr.before.json")" 1 product-pr-commit-count',
                   'require_equal "$(jq -r \'.commits\' "$out/product-pr.before.json")" 2 product-pr-commit-count',
               ),
+              (
+                  "review_commits=(\n  e0c772e962078878a1e4b659a861581cb2957a73\n  e0c772e962078878a1e4b659a861581cb2957a73\n  e0c772e962078878a1e4b659a861581cb2957a73\n  e0c772e962078878a1e4b659a861581cb2957a73\n  e0c772e962078878a1e4b659a861581cb2957a73\n)",
+                  "review_commits=(\n  c10beb52cc37c3933e7a0d2e452c1d6502b36a39\n  c10beb52cc37c3933e7a0d2e452c1d6502b36a39\n  c10beb52cc37c3933e7a0d2e452c1d6502b36a39\n  c10beb52cc37c3933e7a0d2e452c1d6502b36a39\n  c10beb52cc37c3933e7a0d2e452c1d6502b36a39\n)",
+              ),
           ]
           for old, new in replacements:
               count = text.count(old)
