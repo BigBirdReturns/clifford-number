@@ -1,4 +1,4 @@
-name: Temporary PR 2231 V128 wrapper and embedded-email qualification V4 R3
+name: Temporary PR 2231 V128 wrapper and embedded-email qualification V4 R4 recovery
 
 on:
   pull_request:
@@ -15,7 +15,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  qualify-v128-v4:
+  qualify-v128-v4-recovery:
     if: github.event.pull_request.head.ref == 'agent/pr2231-v128-wrapper-email-qualification-v4'
     runs-on: ubuntu-24.04
     timeout-minutes: 180
@@ -35,21 +35,21 @@ jobs:
         with:
           node-version: 22
 
-      - name: Execute the attached read-only V128 qualifier
+      - name: Execute the current-head V128 recovery qualifier
         shell: bash
         run: |
           set -Eeuo pipefail
           export LC_ALL=C
           export EXPECTED_CONTROLLER="$(git rev-parse HEAD)"
-          payload_blob=2b668f0ccb3124d320905f3a911dc2b73c3a464a
+          payload_blob=233393286c479a29c46f02ce5a04c9de98794470
           payload_size=6404
-          payload_sha256=3cffc330175ec048e8ea8379c1a347a6a6dfa6b08843e43a4aa10ffd08e35639
-          qualifier_blob=081ea8455935a0d7fd3a9bd12ea0baaae294e58b
-          qualifier_size=24825
-          qualifier_sha256=07e18b45dcde61933a12553b0b861921b97148e12350e2daaee2bef7458e3519
-          envelope=/tmp/pr2231-v128-wrapper-email-controller-v4
-          payload="$envelope/qualifier-v128-v4.sh.xz"
-          qualifier="$envelope/qualifier-v128-v4.sh"
+          payload_sha256=09f363ac017f7ab1b00757af3add8579dc2c56d7d55b548d6e3022e6ec2929a2
+          qualifier_blob=bc8ebd84f05e264137348a4997ccd84d6a628a6d
+          qualifier_size=24881
+          qualifier_sha256=9bfb5aef84e6d8384c1019c69a60d783a10044a65ce49ac92c41081c4e05a269
+          envelope=/tmp/pr2231-v128-wrapper-email-controller-v4-recovery
+          payload="$envelope/qualifier-v128-v4-recovery.sh.xz"
+          qualifier="$envelope/qualifier-v128-v4-recovery.sh"
           wrapper_log="$envelope/controller.log"
           rm -rf "$envelope"
           mkdir -p "$envelope"
@@ -60,7 +60,7 @@ jobs:
             rc=$?
             trap - EXIT
             set +e
-            printf 'outer_status=%s\nmode=read-only-v128-qualification-v4-r3\n' "$rc" > "$envelope/controller-status.env"
+            printf 'outer_status=%s\nmode=read-only-v128-current-head-recovery-r4\n' "$rc" > "$envelope/controller-status.env"
             find "$envelope" -type f -printf '%P\t%s\n' | sort > "$envelope/envelope-manifest.txt"
             find "$envelope" -type f ! -name envelope-sha256.txt -print0 \
               | sort -z | xargs -0 sha256sum > "$envelope/envelope-sha256.txt"
@@ -89,9 +89,9 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: pr2231-v128-wrapper-email-qualification-v4-r3
+          name: pr2231-v128-wrapper-email-qualification-v4-r4-recovery
           path: |
             /tmp/pr2231-v128-qualification-v1
-            /tmp/pr2231-v128-wrapper-email-controller-v4
+            /tmp/pr2231-v128-wrapper-email-controller-v4-recovery
           if-no-files-found: error
           retention-days: 90
