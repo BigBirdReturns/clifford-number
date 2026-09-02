@@ -1,0 +1,102 @@
+name: Temporary PR 2231 V127 qualified publisher v1
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: pr2231-v127-qualified-publisher-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  publish-v127:
+    if: github.event.pull_request.head.ref == 'agent/pr2231-v127-qualified-publisher-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+      CONTROLLER_PR: ${{ github.event.pull_request.number }}
+      CONTROLLER_BRANCH: ${{ github.event.pull_request.head.ref }}
+      EXPECTED_CONTROLLER_BRANCH: agent/pr2231-v127-qualified-publisher-v1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Recover and execute the exact V127 qualified publisher
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export LC_ALL=C
+          repo=BigBirdReturns/clifford-number
+          payload_blob=63ddfbdf91acf4a7a53d193558122c8ecfbdc0bd
+          payload_size=6948
+          payload_sha256=dc29f112499474b66a54f67072934165ae698ac4199b5511902f5c62c138cbe8
+          publisher_blob=eda5b4d35703a67b77ccee759e514b512815b769
+          publisher_size=31680
+          publisher_sha256=1abb19d799bdf8857f9baaf39d68f26605eabb82b6dcb9b5259c7758cab3fc96
+          envelope=/tmp/pr2231-v127-qualified-publisher-controller-v1
+          payload="$envelope/publisher-v127.sh.xz"
+          publisher="$envelope/publisher-v127.sh"
+          wrapper_log="$envelope/controller.log"
+          rm -rf "$envelope"
+          mkdir -p "$envelope"
+          : > "$wrapper_log"
+          exec > >(tee -a "$wrapper_log") 2>&1
+
+          preserve() {
+            rc=$?
+            trap - EXIT
+            set +e
+            printf 'outer_status=%s\nmode=qualified-compare-and-swap-publication\npayload_mode=repository-blob\n' "$rc" \
+              > "$envelope/controller-status.env"
+            find "$envelope" -type f -printf '%P\t%s\n' | sort \
+              > "$envelope/envelope-manifest.txt"
+            find "$envelope" -type f ! -name envelope-sha256.txt -print0 \
+              | sort -z | xargs -0 sha256sum \
+              > "$envelope/envelope-sha256.txt"
+            exit "$rc"
+          }
+          trap preserve EXIT
+
+          test "$CONTROLLER_BRANCH" = "$EXPECTED_CONTROLLER_BRANCH"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_CONTROLLER"
+
+          gh api "repos/$repo/git/blobs/$payload_blob" --jq '.content' \
+            | tr -d '\n' | base64 -d > "$payload"
+          test "$(wc -c < "$payload")" = "$payload_size"
+          test "$(git hash-object "$payload")" = "$payload_blob"
+          test "$(sha256sum "$payload" | awk '{print $1}')" = "$payload_sha256"
+          xz -dc "$payload" > "$publisher"
+          test "$(wc -c < "$publisher")" = "$publisher_size"
+          test "$(git hash-object "$publisher")" = "$publisher_blob"
+          test "$(sha256sum "$publisher" | awk '{print $1}')" = "$publisher_sha256"
+          chmod 0755 "$publisher"
+          bash -n "$publisher"
+          printf 'payload_mode=repository-blob\npayload_blob=%s\npayload_sha256=%s\npublisher_blob=%s\npublisher_sha256=%s\n' \
+            "$payload_blob" "$payload_sha256" "$publisher_blob" "$publisher_sha256" \
+            > "$envelope/publisher-provenance.txt"
+          bash "$publisher"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-v127-qualified-publisher-v1
+          path: |
+            /tmp/pr2231-v127-qualified-publisher-v1
+            /tmp/pr2231-v127-qualified-publisher-controller-v1
+          if-no-files-found: error
+          retention-days: 90
