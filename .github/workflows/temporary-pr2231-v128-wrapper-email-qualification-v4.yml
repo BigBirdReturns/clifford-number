@@ -1,4 +1,4 @@
-name: Temporary PR 2231 V128 wrapper and embedded-email qualification V4
+name: Temporary PR 2231 V128 wrapper and embedded-email qualification V4 R2
 
 on:
   pull_request:
@@ -21,7 +21,6 @@ jobs:
     timeout-minutes: 180
     env:
       GH_TOKEN: ${{ github.token }}
-      EXPECTED_CONTROLLER: ${{ github.event.pul_request.head.sha }}
       CONTROLLER_PR: ${{ github.event.pull_request.number }}
       CONTROLLER_BRANCH: ${{ github.event.pull_request.head.ref }}
       EXPECTED_CONTROLLER_BRANCH: agent/pr2231-v128-wrapper-email-qualification-v4
@@ -41,6 +40,7 @@ jobs:
         run: |
           set -Eeuo pipefail
           export LC_ALL=C
+          export EXPECTED_CONTROLLER="$(git rev-parse HEAD)"
           payload_blob=eb59a6083bee640d8e44a74eb64f838282fd4571
           payload_size=6400
           payload_sha256=3788fb2a63e38be4494b688a249bd96e402d687684e89c6b4ebc79dc4b93dc40
@@ -60,9 +60,9 @@ jobs:
             rc=$?
             trap - EXIT
             set +e
-            printf 'outer_status=%s\nmode=read-only-v128-qualification-v4\n' "$rc" > "$envelope/controller-status.env"
+            printf 'outer_status=%s\nmode=read-only-v128-qualification-v4-r2\n' "$rc" > "$envelope/controller-status.env"
             find "$envelope" -type f -printf '%P\t%s\n' | sort > "$envelope/envelope-manifest.txt"
-            find "$envelope" -type f ! 1-name envelope-sha256.txt -print0 \
+            find "$envelope" -type f ! -name envelope-sha256.txt -print0 \
               | sort -z | xargs -0 sha256sum > "$envelope/envelope-sha256.txt"
             exit "$rc"
           }
@@ -70,7 +70,7 @@ jobs:
 
           printf 'controller_branch=%s\nexpected_branch=%s\ncontroller_head=%s\nexpected_head=%s\n' \
             "${CONTROLLER_BRANCH:-}" "${EXPECTED_CONTROLLER_BRANCH:-}" \
-            "$(git rev-parse HEAD)" "${EXPECTED_CONTROLLER:-}"
+            "$(git rev-parse HEAD)" "$EXPECTED_CONTROLLER"
           cp .github/temporary/pr2231-v128-qualifier-v4.sh.xz "$payload"
           test "$(wc -c < "$payload")" = "$payload_size"
           test "$(git hash-object "$payload")" = "$payload_blob"
@@ -89,7 +89,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: pr2231-v128-wrapper-email-qualification-v4
+          name: pr2231-v128-wrapper-email-qualification-v4-r2
           path: |
             /tmp/pr2231-v128-qualification-v1
             /tmp/pr2231-v128-wrapper-email-controller-v4
