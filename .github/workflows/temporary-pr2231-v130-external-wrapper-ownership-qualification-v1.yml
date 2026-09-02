@@ -1,0 +1,136 @@
+name: Temporary PR 2231 V130 external-wrapper qualification recovery
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: pr2231-v130-external-wrapper-recovery-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  qualify-v130-external-wrapper-recovery:
+    if: github.event.pull_request.head.ref == 'agent/pr2231-v130-external-wrapper-qualification-recovery-v2'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+      CONTROLLER_PR: ${{ github.event.pull_request.number }}
+      CONTROLLER_BRANCH: ${{ github.event.pull_request.head.ref }}
+      EXPECTED_CONTROLLER_BRANCH: agent/pr2231-v130-external-wrapper-qualification-recovery-v2
+      SOURCE_RUN: '33690330835'
+      SOURCE_ARTIFACT: pr2231-v130-external-wrapper-qualification-v1
+      SOURCE_ARTIFACT_ID: '9869772976'
+      SOURCE_ARTIFACT_DIGEST: sha256:39e1cdb8db4d390918b44fc17b10a2eaa8feb03e8742db351ee2f4e38d8a1eb8
+      SOURCE_QUALIFIER_SIZE: '33203'
+      SOURCE_QUALIFIER_SHA256: adccbb2d59a4940e578725b77d4d6f79d5ddfa0015ca6327296503cd95720a83
+      RECOVERED_QUALIFIER_SIZE: '33384'
+      RECOVERED_QUALIFIER_SHA256: 11a511b3ceedea827329c7ccfadaf9af9fbe708a092403bb98f380c0ebe77210
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Recover the failed receipt and execute the hygiene-corrected qualifier
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export LC_ALL=C
+          envelope=/tmp/pr2231-v130-external-wrapper-controller-envelope-v2
+          source=/tmp/pr2231-v130-external-wrapper-source-v1
+          qualifier="$envelope/qualifier-v130-recovered-v2.sh"
+          rm -rf "$envelope" "$source"
+          mkdir -p "$envelope" "$source"
+          exec > >(tee -a "$envelope/controller.log") 2>&1
+
+          preserve() {
+            rc=$?
+            trap - EXIT
+            set +e
+            printf 'outer_status=%s\nmode=read-only-qualification-recovery\n' "$rc" > "$envelope/controller-status.env"
+            (cd "$envelope" && find . -type f -printf '%P\t%s\n' | sort) > "$envelope/envelope-manifest.txt"
+            (cd "$envelope" && find . -type f ! -name envelope-sha256.txt -print0 \
+              | sort -z | xargs -0 sha256sum) > "$envelope/envelope-sha256.txt"
+            exit "$rc"
+          }
+          trap preserve EXIT
+
+          test "$CONTROLLER_BRANCH" = "$EXPECTED_CONTROLLER_BRANCH"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_CONTROLLER"
+          test "$(git rev-parse HEAD^)" = 5b992ba8b7573cc9a859ac0dcb0d5edd20ea81ed
+
+          gh run download "$SOURCE_RUN" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name "$SOURCE_ARTIFACT" \
+            --dir "$source"
+
+          test -f "$source/pr2231-v130-external-wrapper-controller-envelope-v1/envelope-sha256.txt"
+          test -f "$source/pr2231-v130-external-wrapper-qualification-v1/artifact-sha256.txt"
+          (cd "$source/pr2231-v130-external-wrapper-controller-envelope-v1" \
+            && sha256sum -c envelope-sha256.txt)
+          (cd "$source/pr2231-v130-external-wrapper-qualification-v1" \
+            && sha256sum -c artifact-sha256.txt)
+
+          mapfile -t source_qualifiers < <(find "$source" -type f -name qualifier-v130.sh | sort)
+          test "${#source_qualifiers[@]}" = 1
+          source_qualifier=${source_qualifiers[0]}
+          test "$(wc -c < "$source_qualifier")" = "$SOURCE_QUALIFIER_SIZE"
+          test "$(sha256sum "$source_qualifier" | awk '{print $1}')" = "$SOURCE_QUALIFIER_SHA256"
+
+          python3 - "$source_qualifier" "$qualifier" <<'PY'
+          from pathlib import Path
+          import sys
+
+          source = Path(sys.argv[1]).read_text(encoding='utf-8')
+          target = Path(sys.argv[2])
+          old = '''python3 "$out/apply-v130.py" \\
+            "$work/product/$library_path" \\
+            "$work/product/$test_path"
+          '''
+          new = old + '''python3 -c 'from pathlib import Path; import sys; p=Path(sys.argv[1]); p.write_text(p.read_text(encoding="utf-8").rstrip("\\n") + "\\n", encoding="utf-8")' "$work/product/$test_path"
+          '''
+          if source.count(old) != 1:
+              raise SystemExit(f'expected one patch-application anchor, found {source.count(old)}')
+          target.write_text(source.replace(old, new, 1), encoding='utf-8')
+          PY
+
+          test "$(wc -c < "$qualifier")" = "$RECOVERED_QUALIFIER_SIZE"
+          test "$(sha256sum "$qualifier" | awk '{print $1}')" = "$RECOVERED_QUALIFIER_SHA256"
+          chmod 0755 "$qualifier"
+          bash -n "$qualifier"
+          cat > "$envelope/qualifier-provenance.txt" <<EOF
+          source_run=$SOURCE_RUN
+          source_artifact=$SOURCE_ARTIFACT
+          source_artifact_id=$SOURCE_ARTIFACT_ID
+          source_artifact_digest=$SOURCE_ARTIFACT_DIGEST
+          source_qualifier_size=$SOURCE_QUALIFIER_SIZE
+          source_qualifier_sha256=$SOURCE_QUALIFIER_SHA256
+          recovered_qualifier_size=$RECOVERED_QUALIFIER_SIZE
+          recovered_qualifier_sha256=$RECOVERED_QUALIFIER_SHA256
+          repair=trim_appended_focused_test_to_one_terminal_newline_before_diff_check
+          EOF
+          bash "$qualifier"
+
+      - name: Upload V130 recovered read-only qualification receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr2231-v130-external-wrapper-qualification-v2
+          path: |
+            /tmp/pr2231-v130-external-wrapper-controller-envelope-v2
+            /tmp/pr2231-v130-external-wrapper-qualification-v1
+          if-no-files-found: error
+          retention-days: 30
