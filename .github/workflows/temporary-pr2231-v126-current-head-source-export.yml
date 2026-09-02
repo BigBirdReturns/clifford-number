@@ -1,0 +1,70 @@
+name: Temporary PR2231 V126 current-head source export
+
+on:
+  push:
+    branches:
+      - agent/pr2231-v126-current-head-source-export
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out exact live V125 product head
+        uses: actions/checkout@v4
+        with:
+          ref: 724807145aee13d838791bcfd30050b2a3c3789a
+          fetch-depth: 2
+
+      - name: Verify exact product lease and export admitted files
+        shell: bash
+        run: |
+          set -euo pipefail
+          product_head='724807145aee13d838791bcfd30050b2a3c3789a'
+          main_head='9de137e64b51339087c47028b9b0fc5f78d1fcff'
+          product_tree='fa3d0bb162b68bebd6c331adc2a63f25b57b3c09'
+          classifier_blob='985ccb31ad028302e0cf1c875b5cd2023be54104'
+          focused_test_blob='f7b3cf472b794c8a681eac632770726da56482dc'
+
+          test "$(git rev-parse HEAD)" = "$product_head"
+          test "$(git rev-parse HEAD^)" = "$main_head"
+          test "$(git rev-parse HEAD^{tree})" = "$product_tree"
+          test "$(git hash-object tools/lib/industrial-exhaust.mjs)" = "$classifier_blob"
+          test "$(git hash-object test/industrial-exhaust.test.js)" = "$focused_test_blob"
+
+          mapfile -t changed < <(git diff --name-only "$main_head"..HEAD | sort)
+          expected=(
+            'test/industrial-exhaust.test.js'
+            'tools/lib/industrial-exhaust.mjs'
+          )
+          test "${#changed[@]}" -eq 2
+          test "${changed[0]}" = "${expected[0]}"
+          test "${changed[1]}" = "${expected[1]}"
+
+          mkdir -p export/tools/lib export/test
+          cp tools/lib/industrial-exhaust.mjs export/tools/lib/
+          cp test/industrial-exhaust.test.js export/test/
+          {
+            printf 'PRODUCT_HEAD=%s\n' "$product_head"
+            printf 'MAIN_HEAD=%s\n' "$main_head"
+            printf 'PRODUCT_TREE=%s\n' "$product_tree"
+            printf 'CLASSIFIER_BLOB=%s\n' "$classifier_blob"
+            printf 'FOCUSED_TEST_BLOB=%s\n' "$focused_test_blob"
+            printf 'CLASSIFIER_SHA256=%s\n' "$(sha256sum tools/lib/industrial-exhaust.mjs | cut -d' ' -f1)"
+            printf 'FOCUSED_TEST_SHA256=%s\n' "$(sha256sum test/industrial-exhaust.test.js | cut -d' ' -f1)"
+            printf 'PUBLICATION_SKIPPED\n'
+            printf 'PRODUCT_MUTATION_SKIPPED\n'
+            printf 'REVIEW_MUTATION_SKIPPED\n'
+            printf 'SOURCE_EXPORT_SUCCESS\n'
+          } > export/receipt.txt
+
+      - name: Upload exact current-head source package
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr2231-v126-current-head-source-export
+          path: export
+          if-no-files-found: error
+          retention-days: 7
