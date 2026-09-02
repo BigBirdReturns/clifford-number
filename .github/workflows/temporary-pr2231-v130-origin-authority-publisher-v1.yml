@@ -1,0 +1,60 @@
+name: Temporary PR 2231 V130 origin-authority publisher
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - .github/workflows/temporary-pr2231-v130-origin-authority-publisher-v1.yml
+
+permissions:
+  actions: read
+  contents: write
+  issues: read
+  pull-requests: read
+
+jobs:
+  publish-v130-origin-authority:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Recover publisher program
+        env:
+          PUBLISHER_XZ_SHA256: ea899b4448cb5d2aca1d4949759ba372d620f94af6c7d99a5749a841bfb48397
+        run: |
+          cat > /tmp/pr2231-v130-publisher.sh.xz.b64 <<'PAYLOAD'
+          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
+          PAYLOAD
+          base64 -d /tmp/pr2231-v130-publisher.sh.xz.b64 > /tmp/pr2231-v130-publisher.sh.xz
+          test "$(sha256sum /tmp/pr2231-v130-publisher.sh.xz | awk '{print $1}')" = "$PUBLISHER_XZ_SHA256"
+          xz -dc /tmp/pr2231-v130-publisher.sh.xz > /tmp/pr2231-v130-publisher.sh
+          chmod +x /tmp/pr2231-v130-publisher.sh
+          bash -n /tmp/pr2231-v130-publisher.sh
+
+      - name: Reconstruct, requalify, and atomically publish exact V130
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CONTROLLER_PR: ${{ github.event.pull_request.number }}
+          CONTROLLER_BRANCH: ${{ github.head_ref }}
+          EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+          EXPECTED_CONTROLLER_BRANCH: agent/pr2231-v130-origin-authority-publisher-v1
+        run: bash /tmp/pr2231-v130-publisher.sh
+
+      - name: Upload V130 publication receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr2231-v130-origin-authority-publication-v1
+          path: /tmp/pr2231-v130-origin-authority-publisher-v1
+          if-no-files-found: error
+          retention-days: 30
