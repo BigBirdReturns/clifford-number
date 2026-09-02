@@ -1,0 +1,118 @@
+name: Temporary PR 2231 c4f exact source export
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: pr2231-c4f-source-export-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  export-c4f:
+    if: github.event.pull_request.head.ref == 'agent/pr2231-c4f-source-export-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: BigBirdReturns/clifford-number
+      EXPECTED_MAIN: 9de137e64b51339087c47028b9b0fc5f78d1fcff
+      EXPECTED_PRODUCT: c4f51ed1ecb6893d417385067f493487f7156623
+      EXPECTED_PRODUCT_TREE: 60305b5795c8e6f3c47ebf5eaf19173492744dfb
+      EXPECTED_CLASSIFIER_BLOB: 543e0b2e7fe64bbb568c11023ef7ce4dc1110428
+      EXPECTED_TEST_BLOB: fb7c875f4e79a45be07381555e02ace288bfc766
+      PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
+      PRODUCT_PR: '2231'
+      EXPECTED_CONTROLLER_BRANCH: agent/pr2231-c4f-source-export-v1
+      CONTROLLER_HEAD: ${{ github.event.pull_request.head.sha }}
+      CONTROLLER_PR: ${{ github.event.pull_request.number }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Export exact live c4f product bytes
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export LC_ALL=C
+          envelope=/tmp/pr2231-c4f-source-export-v1
+          worktree=/tmp/pr2231-c4f-source-worktree
+          rm -rf "$envelope" "$worktree"
+          mkdir -p "$envelope"
+          exec > >(tee "$envelope/export.log") 2>&1
+
+          test "${{ github.event.pull_request.head.ref }}" = "$EXPECTED_CONTROLLER_BRANCH"
+          test "$(git rev-parse HEAD)" = "$CONTROLLER_HEAD"
+          test "$(gh api "repos/$REPO/git/ref/heads/main" --jq '.object.sha')" = "$EXPECTED_MAIN"
+          test "$(gh api "repos/$REPO/git/ref/heads/$PRODUCT_BRANCH" --jq '.object.sha')" = "$EXPECTED_PRODUCT"
+
+          gh api "repos/$REPO/pulls/$PRODUCT_PR" > "$envelope/product-pr.json"
+          test "$(jq -r '.state' "$envelope/product-pr.json")" = open
+          test "$(jq -r '.draft' "$envelope/product-pr.json")" = true
+          test "$(jq -r '.merged' "$envelope/product-pr.json")" = false
+          test "$(jq -r '.base.sha' "$envelope/product-pr.json")" = "$EXPECTED_MAIN"
+          test "$(jq -r '.head.sha' "$envelope/product-pr.json")" = "$EXPECTED_PRODUCT"
+          test "$(jq -r '.commits' "$envelope/product-pr.json")" = 1
+          test "$(jq -r '.changed_files' "$envelope/product-pr.json")" = 2
+
+          git fetch --no-tags origin \
+            "+refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/pr2231-product"
+          test "$(git rev-parse refs/remotes/origin/pr2231-product^{commit})" = "$EXPECTED_PRODUCT"
+          test "$(git rev-parse "$EXPECTED_PRODUCT^{commit}")" = "$EXPECTED_PRODUCT"
+          test "$(git rev-parse "$EXPECTED_PRODUCT^{tree}")" = "$EXPECTED_PRODUCT_TREE"
+          test "$(git rev-parse "$EXPECTED_PRODUCT^1")" = "$EXPECTED_MAIN"
+          test "$(git rev-list --count "$EXPECTED_MAIN..$EXPECTED_PRODUCT")" = 1
+
+          git worktree add --detach "$worktree" "$EXPECTED_PRODUCT"
+          mkdir -p "$envelope/tools/lib" "$envelope/test"
+          cp "$worktree/tools/lib/industrial-exhaust.mjs" "$envelope/tools/lib/industrial-exhaust.mjs"
+          cp "$worktree/test/industrial-exhaust.test.js" "$envelope/test/industrial-exhaust.test.js"
+
+          git -C "$worktree" show -s --format='%H%n%P%n%T%n%an%n%ae%n%ad%n%s' HEAD \
+            > "$envelope/product-commit.txt"
+          git -C "$worktree" diff --name-only "$EXPECTED_MAIN...$EXPECTED_PRODUCT" \
+            | sort > "$envelope/product-paths.txt"
+          printf '%s\n' \
+            test/industrial-exhaust.test.js \
+            tools/lib/industrial-exhaust.mjs \
+            | sort > "$envelope/expected-product-paths.txt"
+          cmp "$envelope/product-paths.txt" "$envelope/expected-product-paths.txt"
+
+          {
+            printf 'classifier_blob=%s\n' "$(git -C "$worktree" hash-object tools/lib/industrial-exhaust.mjs)"
+            printf 'classifier_sha256=%s\n' "$(sha256sum "$worktree/tools/lib/industrial-exhaust.mjs" | awk '{print $1}')"
+            printf 'classifier_bytes=%s\n' "$(wc -c < "$worktree/tools/lib/industrial-exhaust.mjs")"
+            printf 'focused_test_blob=%s\n' "$(git -C "$worktree" hash-object test/industrial-exhaust.test.js)"
+            printf 'focused_test_sha256=%s\n' "$(sha256sum "$worktree/test/industrial-exhaust.test.js" | awk '{print $1}')"
+            printf 'focused_test_bytes=%s\n' "$(wc -c < "$worktree/test/industrial-exhaust.test.js")"
+          } > "$envelope/source-identities.env"
+
+          grep -qx "classifier_blob=$EXPECTED_CLASSIFIER_BLOB" "$envelope/source-identities.env"
+          grep -qx "focused_test_blob=$EXPECTED_TEST_BLOB" "$envelope/source-identities.env"
+
+          gh api "repos/$REPO/pulls/$PRODUCT_PR/reviews?per_page=100" \
+            --paginate > "$envelope/reviews.jsonl"
+          gh api graphql -f query='query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){pullRequest(number:$number){reviewThreads(first:100){nodes{id isResolved isOutdated path line startLine comments(first:100){nodes{id databaseId body createdAt updatedAt author{login} commit{oid} originalCommit{oid}}}} pageInfo{hasNextPage endCursor}}}}}' \
+            -f owner=BigBirdReturns -f name=clifford-number -F number="$PRODUCT_PR" \
+            > "$envelope/review-threads-page-1.json"
+
+          find "$envelope" -type f ! -name manifest.sha256 -print0 \
+            | sort -z | xargs -0 sha256sum > "$envelope/manifest.sha256"
+          printf '%s\n' SOURCE_EXPORT_SUCCESS
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-c4f-exact-source-export-v1
+          path: /tmp/pr2231-c4f-source-export-v1
+          if-no-files-found: error
+          retention-days: 90
