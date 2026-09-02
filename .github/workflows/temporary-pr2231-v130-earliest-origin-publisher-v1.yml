@@ -1,0 +1,79 @@
+name: Temporary PR 2231 V130 exact leased publisher
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  actions: read
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: pr2231-v130-earliest-origin-exact-leased-publisher
+  cancel-in-progress: false
+
+jobs:
+  publish-v130:
+    if: github.event.pull_request.head.ref == 'agent/pr2231-v130-earliest-origin-publisher-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    env:
+      GH_TOKEN: ${{ github.token }}
+      CONTROLLER_PR: ${{ github.event.pull_request.number }}
+      CONTROLLER_BRANCH: ${{ github.event.pull_request.head.ref }}
+      EXPECTED_CONTROLLER_BRANCH: agent/pr2231-v130-earliest-origin-publisher-v1
+      EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+    steps:
+      - name: Check out exact publisher head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Execute exact V130 replay and leased publication
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          payload=.github/temporary/pr2231-v130-earliest-origin-publisher-v1.tar.xz
+          payload_size=7952
+          payload_blob=acf68f5d482ea4469a6c597c343c2b17eb8a12bf
+          payload_sha256=e73f775500ce138445ced9c7b31121739b0033662326fa8ffcd66ee3435f8001
+          runroot=/tmp/pr2231-v130-earliest-origin-publisher-controller-v1
+          script="$runroot/.github/scripts/pr2231-v130-earliest-origin-publisher-v1.sh"
+          patch="$runroot/.github/scripts/pr2231-v130-earliest-origin-v1.patch"
+
+          test "$(wc -c < "$payload")" = "$payload_size"
+          test "$(git hash-object "$payload")" = "$payload_blob"
+          test "$(sha256sum "$payload" | awk '{print $1}')" = "$payload_sha256"
+          rm -rf "$runroot"
+          mkdir -p "$runroot"
+          tar -xJf "$payload" -C "$runroot"
+          mapfile -t members < <(tar -tJf "$payload" | sort)
+          test "${#members[@]}" = 2
+          test "${members[0]}" = .github/scripts/pr2231-v130-earliest-origin-publisher-v1.sh
+          test "${members[1]}" = .github/scripts/pr2231-v130-earliest-origin-v1.patch
+          test "$(wc -c < "$script")" = 24831
+          test "$(git hash-object "$script")" = ef8849e7b23839a1e522a7f4a8674f78b800893a
+          test "$(sha256sum "$script" | awk '{print $1}')" = 7ca7b21796e886f30a8ff210d9f0fdb9552d54bb8699a28491fcd8bb26ec1b49
+          test "$(wc -c < "$patch")" = 9056
+          test "$(git hash-object "$patch")" = 8109cb0d72411c9cfbe4c00bbb322ebecf9ac1b4
+          test "$(sha256sum "$patch" | awk '{print $1}')" = 31cfa973a1a73beb0f213d4a8bdc8f6688211497a0216843ca11793d34eaecd2
+          chmod 0755 "$script"
+          bash -n "$script"
+          V130_PATCH_FILE="$patch" bash "$script"
+
+      - name: Retain V130 publication receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr2231-v130-earliest-origin-exact-leased-publication-v1
+          path: /tmp/pr2231-v130-earliest-origin-publisher-v1
+          if-no-files-found: error
+          retention-days: 90
