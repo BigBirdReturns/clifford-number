@@ -1,0 +1,232 @@
+name: Temporary PR 2231 V128 current-main rebind qualification
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: pr2231-v128-current-main-rebind-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  qualify-v128-current-main-rebind:
+    if: github.event.pull_request.head.ref == 'agent/pr2231-v128-current-main-rebind-qualification-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+      CONTROLLER_PR: ${{ github.event.pull_request.number }}
+      CONTROLLER_BRANCH: ${{ github.event.pull_request.head.ref }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Qualify exact V127 blobs over current main without publication
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export LC_ALL=C
+
+          repo=BigBirdReturns/clifford-number
+          product_pr=2231
+          product_branch=agent/current-main-identifier-context-product-v1
+          controller_branch=agent/pr2231-v128-current-main-rebind-qualification-v1
+
+          expected_main=5b992ba8b7573cc9a859ac0dcb0d5edd20ea81ed
+          expected_main_tree=6ca3a5dd146ac9e8a0860de4e25ee5242a5152ff
+          expected_product=73e4501c6da942ba326ecf146df1a71bbf953b25
+          expected_product_parent=9de137e64b51339087c47028b9b0fc5f78d1fcff
+          expected_product_tree=1f80e709833c4b30a7ab2cb50d14f773c87cbae8
+          expected_library=cdf13a780f97f42c64bdac2e745da52be44850a1
+          expected_test=711003e4ce56e99cf51ceb0d8fd03df1e4473c31
+
+          current_threads=(
+            PRRT_kwDOTGqftc6eVVFm
+            PRRT_kwDOTGqftc6eYaRa
+            PRRT_kwDOTGqftc6eYaRe
+            PRRT_kwDOTGqftc6eZWl3
+            PRRT_kwDOTGqftc6eZhAV
+          )
+
+          root=/tmp/pr2231-v128-current-main-rebind-qualification-v1
+          exact_product="$root/exact-product"
+          transplant="$root/current-main-transplant"
+          artifact="$root/artifact"
+          rm -rf "$root"
+          mkdir -p "$artifact"
+          exec > >(tee "$artifact/qualification.log") 2>&1
+
+          preserve() {
+            rc=$?
+            trap - EXIT
+            set +e
+            printf 'outer_status=%s\nmode=read-only-qualification\n' "$rc" > "$artifact/outer-status.env"
+            find "$root" -type f -printf '%P\t%s\n' | sort > "$artifact/file-manifest.txt"
+            find "$root" -type f ! -name sha256-manifest.txt -print0 \
+              | sort -z | xargs -0 sha256sum > "$artifact/sha256-manifest.txt"
+            exit "$rc"
+          }
+          trap preserve EXIT
+
+          stable_pr_snapshot() {
+            gh api "repos/$repo/pulls/$1" \
+              | jq -S '{number,state,draft,merged,mergeable,head:.head.sha,base:.base.sha,commits,changed_files,title}'
+          }
+
+          snapshot_threads() {
+            local destination=$1
+            local cursor=''
+            local pages="$destination.pages"
+            : > "$pages"
+            while true; do
+              if [[ -z "$cursor" ]]; then
+                response=$(gh api graphql -F owner=BigBirdReturns -F name=clifford-number -F number="$product_pr" \
+                  -f query='query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){pullRequest(number:$number){reviewThreads(first:100){nodes{id isResolved comments(first:100){nodes{databaseId}}} pageInfo{hasNextPage endCursor}}}}}')
+              else
+                response=$(gh api graphql -F owner=BigBirdReturns -F name=clifford-number -F number="$product_pr" -F after="$cursor" \
+                  -f query='query($owner:String!,$name:String!,$number:Int!,$after:String!){repository(owner:$owner,name:$name){pullRequest(number:$number){reviewThreads(first:100,after:$after){nodes{id isResolved comments(first:100){nodes{databaseId}}} pageInfo{hasNextPage endCursor}}}}}')
+              fi
+              jq -c '.data.repository.pullRequest.reviewThreads.nodes[] | {id,isResolved,commentIds:[.comments.nodes[].databaseId]}' <<<"$response" >> "$pages"
+              [[ "$(jq -r '.data.repository.pullRequest.reviewThreads.pageInfo.hasNextPage' <<<"$response")" == true ]] || break
+              cursor=$(jq -r '.data.repository.pullRequest.reviewThreads.pageInfo.endCursor' <<<"$response")
+            done
+            jq -s 'sort_by(.id)' "$pages" > "$destination"
+            rm -f "$pages"
+          }
+
+          assert_thread_unresolved() {
+            local snapshot=$1 thread=$2
+            test "$(jq -r --arg thread "$thread" '.[] | select(.id==$thread) | .isResolved' "$snapshot")" = false
+          }
+
+          test "$CONTROLLER_BRANCH" = "$controller_branch"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_CONTROLLER"
+          test "$(gh api "repos/$repo/git/ref/heads/main" --jq '.object.sha')" = "$expected_main"
+          test "$(gh api "repos/$repo/git/ref/heads/$product_branch" --jq '.object.sha')" = "$expected_product"
+          test "$(git rev-parse "$expected_main^{tree}")" = "$expected_main_tree"
+
+          product_json=$(gh api "repos/$repo/pulls/$product_pr")
+          test "$(jq -r '.head.sha' <<<"$product_json")" = "$expected_product"
+          test "$(jq -r '.draft' <<<"$product_json")" = true
+          test "$(jq -r '.state' <<<"$product_json")" = open
+          test "$(jq -r '.merged' <<<"$product_json")" = false
+          test "$(jq -r '.commits' <<<"$product_json")" = 1
+          test "$(jq -r '.changed_files' <<<"$product_json")" = 2
+
+          git fetch --no-tags origin \
+            "refs/heads/main:refs/remotes/origin/v128-main" \
+            "refs/heads/$product_branch:refs/remotes/origin/v128-product"
+          test "$(git rev-parse refs/remotes/origin/v128-main)" = "$expected_main"
+          test "$(git rev-parse refs/remotes/origin/v128-product)" = "$expected_product"
+          test "$(git rev-parse "$expected_product^")" = "$expected_product_parent"
+          test "$(git rev-parse "$expected_product^{tree}")" = "$expected_product_tree"
+          test "$(git rev-parse "$expected_product:tools/lib/industrial-exhaust.mjs")" = "$expected_library"
+          test "$(git rev-parse "$expected_product:test/industrial-exhaust.test.js")" = "$expected_test"
+
+          stable_pr_snapshot "$product_pr" > "$artifact/product-pr-before.json"
+          stable_pr_snapshot "$CONTROLLER_PR" > "$artifact/controller-pr-before.json"
+          snapshot_threads "$artifact/review-threads-before.json"
+          for thread in "${current_threads[@]}"; do
+            assert_thread_unresolved "$artifact/review-threads-before.json" "$thread"
+          done
+
+          git worktree add --detach "$exact_product" "$expected_product"
+          node --check "$exact_product/tools/lib/industrial-exhaust.mjs"
+          (cd "$exact_product" && node --test test/industrial-exhaust*.test.js) \
+            | tee "$artifact/exact-product-focused.log"
+          (cd "$exact_product" && npm run release:check) \
+            | tee "$artifact/exact-product-release.log"
+
+          git worktree add --detach "$transplant" "$expected_main"
+          git show "$expected_product:tools/lib/industrial-exhaust.mjs" > "$transplant/tools/lib/industrial-exhaust.mjs"
+          git show "$expected_product:test/industrial-exhaust.test.js" > "$transplant/test/industrial-exhaust.test.js"
+          test "$(git -C "$transplant" hash-object tools/lib/industrial-exhaust.mjs)" = "$expected_library"
+          test "$(git -C "$transplant" hash-object test/industrial-exhaust.test.js)" = "$expected_test"
+          node --check "$transplant/tools/lib/industrial-exhaust.mjs"
+          (cd "$transplant" && node --test test/industrial-exhaust*.test.js) \
+            | tee "$artifact/current-main-focused.log"
+          (cd "$transplant" && npm run release:check) \
+            | tee "$artifact/current-main-release.log"
+
+          # Restore generated state, then reconstruct only the two admitted product files.
+          git -C "$transplant" reset --hard "$expected_main"
+          git -C "$transplant" clean -ffd
+          git show "$expected_product:tools/lib/industrial-exhaust.mjs" > "$transplant/tools/lib/industrial-exhaust.mjs"
+          git show "$expected_product:test/industrial-exhaust.test.js" > "$transplant/test/industrial-exhaust.test.js"
+          git -C "$transplant" add tools/lib/industrial-exhaust.mjs test/industrial-exhaust.test.js
+          mapfile -t changed < <(git -C "$transplant" diff --cached --name-only | sort)
+          test "${#changed[@]}" = 2
+          test "${changed[0]}" = test/industrial-exhaust.test.js
+          test "${changed[1]}" = tools/lib/industrial-exhaust.mjs
+          test "$(git -C "$transplant" hash-object tools/lib/industrial-exhaust.mjs)" = "$expected_library"
+          test "$(git -C "$transplant" hash-object test/industrial-exhaust.test.js)" = "$expected_test"
+
+          candidate_tree=$(git -C "$transplant" write-tree)
+          candidate_commit=$(
+            export GIT_AUTHOR_NAME=clifford-intake-bot
+            export GIT_AUTHOR_EMAIL=clifford-intake-bot@users.noreply.github.com
+            export GIT_AUTHOR_DATE=2026-09-02T14:30:00Z
+            export GIT_COMMITTER_NAME=clifford-intake-bot
+            export GIT_COMMITTER_EMAIL=clifford-intake-bot@users.noreply.github.com
+            export GIT_COMMITTER_DATE=2026-09-02T14:30:00Z
+            printf '%s\n\n%s\n' \
+              'chore: rebind V127 product to current main' \
+              'Retain the qualified V127 classifier and focused-test blobs over current main without semantic changes.' \
+              | git -C "$transplant" commit-tree "$candidate_tree" -p "$expected_main"
+          )
+          test "$(git -C "$transplant" rev-parse "$candidate_commit^")" = "$expected_main"
+          test "$(git -C "$transplant" rev-parse "$candidate_commit^{tree}")" = "$candidate_tree"
+          mapfile -t candidate_paths < <(git -C "$transplant" diff-tree --no-commit-id --name-only -r "$candidate_commit" | sort)
+          test "${#candidate_paths[@]}" = 2
+          test "${candidate_paths[0]}" = test/industrial-exhaust.test.js
+          test "${candidate_paths[1]}" = tools/lib/industrial-exhaust.mjs
+
+          printf 'candidate_commit=%s\ncandidate_parent=%s\ncandidate_tree=%s\nlibrary_blob=%s\ntest_blob=%s\n' \
+            "$candidate_commit" "$expected_main" "$candidate_tree" "$expected_library" "$expected_test" \
+            | tee "$artifact/candidate-identity.env"
+          git -C "$transplant" show --no-patch --format=fuller "$candidate_commit" > "$artifact/candidate-commit.txt"
+          git -C "$transplant" diff-tree --stat --summary "$candidate_commit" > "$artifact/candidate-summary.txt"
+
+          test "$(gh api "repos/$repo/git/ref/heads/main" --jq '.object.sha')" = "$expected_main"
+          test "$(gh api "repos/$repo/git/ref/heads/$product_branch" --jq '.object.sha')" = "$expected_product"
+          test "$(gh api "repos/$repo/git/ref/heads/$controller_branch" --jq '.object.sha')" = "$EXPECTED_CONTROLLER"
+          stable_pr_snapshot "$product_pr" > "$artifact/product-pr-after.json"
+          stable_pr_snapshot "$CONTROLLER_PR" > "$artifact/controller-pr-after.json"
+          cmp "$artifact/product-pr-before.json" "$artifact/product-pr-after.json"
+          cmp "$artifact/controller-pr-before.json" "$artifact/controller-pr-after.json"
+          snapshot_threads "$artifact/review-threads-after.json"
+          cmp "$artifact/review-threads-before.json" "$artifact/review-threads-after.json"
+          for thread in "${current_threads[@]}"; do
+            assert_thread_unresolved "$artifact/review-threads-after.json" "$thread"
+          done
+
+          printf '%s\n' \
+            PUBLICATION_SKIPPED \
+            PRODUCT_MUTATION_SKIPPED \
+            REVIEW_MUTATION_SKIPPED \
+            DRAFT_MUTATION_SKIPPED \
+            MERGE_SKIPPED \
+            QUALIFICATION_SUCCESS \
+            | tee "$artifact/qualification-terminal.txt"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-v128-current-main-rebind-qualification-v1
+          path: /tmp/pr2231-v128-current-main-rebind-qualification-v1
+          if-no-files-found: error
+          retention-days: 90
