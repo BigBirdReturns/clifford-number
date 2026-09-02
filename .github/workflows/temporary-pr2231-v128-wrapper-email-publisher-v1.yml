@@ -1,0 +1,54 @@
+name: Temporary PR2231 V128 exact leased publisher
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  actions: read
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: pr2231-v128-wrapper-email-publisher-v1
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.event.pull_request.head.ref == 'agent/pr2231-v128-wrapper-email-publisher-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+      CONTROLLER_PR: ${{ github.event.pull_request.number }}
+      CONTROLLER_BRANCH: ${{ github.event.pull_request.head.ref }}
+      EXPECTED_CONTROLLER_BRANCH: agent/pr2231-v128-wrapper-email-publisher-v1
+      EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+    steps:
+      - name: Check out exact controller head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Materialize content-addressed publisher programs
+        run: |
+          xz -dc .github/scripts/pr2231-v128-qualified-replay-v1.sh.xz > .github/scripts/pr2231-v128-qualified-replay-v1.sh
+          xz -dc .github/scripts/pr2231-v128-publisher-v1.sh.xz > .github/scripts/pr2231-v128-publisher-v1.sh
+          chmod +x .github/scripts/pr2231-v128-qualified-replay-v1.sh .github/scripts/pr2231-v128-publisher-v1.sh
+          bash -n .github/scripts/pr2231-v128-qualified-replay-v1.sh
+          bash -n .github/scripts/pr2231-v128-publisher-v1.sh
+
+      - name: Execute exact V128 replay and leased publication
+        run: bash .github/scripts/pr2231-v128-publisher-v1.sh
+
+      - name: Retain publication and qualification receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr2231-v128-exact-leased-publication-v1
+          path: |
+            /tmp/pr2231-v128-publisher-v1
+            /tmp/pr2231-v128-qualification-v1
+          if-no-files-found: warn
+          retention-days: 30
