@@ -1,4 +1,4 @@
-name: Temporary PR 2231 V123 indexed provenance qualification
+name: Temporary PR 2231 V123 exact live-head qualification
 
 on:
   pull_request:
@@ -11,11 +11,11 @@ permissions:
   actions: read
 
 concurrency:
-  group: pr2231-v123-indexed-provenance-${{ github.event.pull_request.number }}
+  group: pr2231-v123-live-head-${{ github.event.pull_request.number }}
   cancel-in-progress: false
 
 jobs:
-  qualify-v123:
+  qualify-v123-live-head:
     if: github.event.pull_request.head.ref == 'agent/pr2231-v123-indexed-provenance-qualification-v1'
     runs-on: ubuntu-24.04
     timeout-minutes: 120
@@ -23,11 +23,11 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       PRODUCT_BRANCH: agent/current-main-identifier-context-product-v1
       PRODUCT_PR: "2231"
-      EXPECTED_PRODUCT: 914af980b7b11d421d056404a7116e2cc5e95bc2
+      EXPECTED_PRODUCT: 792e49d5e14b7d2590dae0d925147c0815367e43
       EXPECTED_MAIN: 9de137e64b51339087c47028b9b0fc5f78d1fcff
-      EXPECTED_PRODUCT_TREE: 96ee4387f1457628109a9e9b1d1a89291075a541
-      EXPECTED_LIBRARY_BLOB: 32535700ee66fb962895a2a8e73cad279892f4ea
-      EXPECTED_TEST_BLOB: 327c68d1d7b0f8055f72529663fb90580288fff8
+      EXPECTED_PRODUCT_TREE: ffc83e90c4ed281ce8c8d4adc2505c577191bdd5
+      EXPECTED_LIBRARY_BLOB: 53bd803ddf1360b5606986fa12d0d135da9ab1bd
+      EXPECTED_TEST_BLOB: 846f08174c7e77ea10171a37e97bc8f4ef60d133
       EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
       CONTROLLER_PR: ${{ github.event.pull_request.number }}
       CONTROLLER_BRANCH: ${{ github.event.pull_request.head.ref }}
@@ -43,22 +43,21 @@ jobs:
         with:
           node-version: 22
 
-      - name: Recover and execute the exact read-only V123 qualifier
+      - name: Recover and execute exact read-only live-head qualifier
         shell: bash
         run: |
           set -Eeuo pipefail
           export LC_ALL=C
           repo=BigBirdReturns/clifford-number
-          payload_blob=b090cad80e7b7b1ba5e8347c975cadc96260e790
-          payload_size=6256
-          payload_sha256=3ef848131a3f6c1ccd7dae599327d9ab432776389b6c420e5d3880d401c784aa
-          base_qualifier_size=28940
-          base_qualifier_sha256=dbd5c3da6a346ce26ba69428c47c86f1a7fe8952325486701f57473ffced200d
-          qualifier_size=29112
-          qualifier_sha256=552988918bf5898640311db26182f6e83d3a6e9c7b36b4877547e38541e069e2
-          envelope=/tmp/pr2231-v123-indexed-provenance-controller-v1
-          payload="$envelope/qualifier-v123.sh.xz"
-          qualifier="$envelope/qualifier-v123.sh"
+          source_blob=333078362ec50bc62c59c7be66713e79e3897228
+          source_size=18307
+          source_sha256=378be1b4c5d08b466fe2e175684e6543c22f9188fb83e098370848783f4d158a
+          qualifier_blob=c2293259f40b1c4e93f973a6e7c644b3c9b54967
+          qualifier_size=18306
+          qualifier_sha256=50dea7987e131042db5e5c4cc7f5ddf861fe96f4e222507e6babe66e58a9ff56
+          envelope=/tmp/pr2231-v123-live-head-controller-v1
+          source="$envelope/qualifier-source.sh"
+          qualifier="$envelope/qualifier.sh"
           wrapper_log="$envelope/controller.log"
           rm -rf "$envelope"
           mkdir -p "$envelope"
@@ -69,7 +68,7 @@ jobs:
             rc=$?
             trap - EXIT
             set +e
-            printf 'outer_status=%s\nmode=read-only-qualification\n' "$rc" \
+            printf 'outer_status=%s\nmode=read-only-live-head-qualification\n' "$rc" \
               > "$envelope/controller-status.env"
             find "$envelope" -type f -printf '%P\t%s\n' | sort \
               > "$envelope/envelope-manifest.txt"
@@ -83,14 +82,12 @@ jobs:
           test "$CONTROLLER_BRANCH" = "$EXPECTED_CONTROLLER_BRANCH"
           test "$(git rev-parse HEAD)" = "$EXPECTED_CONTROLLER"
 
-          gh api "repos/$repo/git/blobs/$payload_blob" --jq '.content' \
-            | tr -d '\n' | base64 -d > "$payload"
-          test "$(wc -c < "$payload")" = "$payload_size"
-          test "$(git hash-object "$payload")" = "$payload_blob"
-          test "$(sha256sum "$payload" | awk '{print $1}')" = "$payload_sha256"
-          xz -dc "$payload" > "$qualifier"
-          test "$(wc -c < "$qualifier")" = "$base_qualifier_size"
-          test "$(sha256sum "$qualifier" | awk '{print $1}')" = "$base_qualifier_sha256"
+          gh api "repos/$repo/git/blobs/$source_blob" --jq '.content' \
+            | tr -d '\n' | base64 -d > "$source"
+          test "$(wc -c < "$source")" = "$source_size"
+          test "$(git hash-object "$source")" = "$source_blob"
+          test "$(sha256sum "$source" | awk '{print $1}')" = "$source_sha256"
+          cp "$source" "$qualifier"
 
           QUALIFIER_PATH="$qualifier" python3 <<'PY'
           from os import environ
@@ -98,42 +95,32 @@ jobs:
 
           path = Path(environ['QUALIFIER_PATH'])
           source = path.read_text()
-
-          def replace_exact(old, new, label):
-              global source
-              count = source.count(old)
-              if count != 1:
-                  raise SystemExit(f'{label}: expected one anchor, found {count}')
-              source = source.replace(old, new, 1)
-
-          replace_exact(
-              '''cd "$work"\n\nnode --input-type=module <<'NODE' | tee "$out/predecessor-reproduction.txt"''',
-              '''cd "$work"\n\ncp tools/lib/industrial-exhaust.mjs "$out/predecessor-industrial-exhaust.mjs"\ncp test/industrial-exhaust.test.js "$out/predecessor-industrial-exhaust.test.js"\n\nnode --input-type=module <<'NODE' | tee "$out/predecessor-reproduction.txt"''',
-              'retain exact predecessor source bytes'
-          )
-          replace_exact(
-              '''  if (tokenBoundaryIndex?.isApprovedUrlTokenStart(boundedTokenStart)) {\n  contextStart = Math.min(contextStart, boundedTokenStart);\n}\nif (currentToken\n    && tokenBoundaryIndex?.isApprovedUrlTokenStart(currentToken.start)) {\n  contextStart = Math.min(contextStart, currentToken.start);\n}\n''',
-              '''  if (tokenBoundaryIndex?.isApprovedUrlTokenStart(boundedTokenStart)) {\n    contextStart = Math.min(contextStart, boundedTokenStart);\n  }\n  if (currentToken\n      && tokenBoundaryIndex?.isApprovedUrlTokenStart(currentToken.start)) {\n    contextStart = Math.min(contextStart, currentToken.start);\n  }\n''',
-              'bind exact V122 URL-context indentation'
-          )
-          path.write_text(source)
+          old = '%ntcommitter_time=%cI%nsubject=%s'
+          new = '%ncommitter_time=%cI%nsubject=%s'
+          count = source.count(old)
+          if count != 1:
+              raise SystemExit(
+                  f'qualifier receipt-field repair expected one anchor, found {count}'
+              )
+          path.write_text(source.replace(old, new, 1))
           PY
 
           test "$(wc -c < "$qualifier")" = "$qualifier_size"
+          test "$(git hash-object "$qualifier")" = "$qualifier_blob"
           test "$(sha256sum "$qualifier" | awk '{print $1}')" = "$qualifier_sha256"
           chmod 0755 "$qualifier"
           bash -n "$qualifier"
-          printf 'payload_blob=%s\npayload_sha256=%s\nbase_qualifier_sha256=%s\nqualifier_sha256=%s\n' \
-            "$payload_blob" "$payload_sha256" "$base_qualifier_sha256" "$qualifier_sha256" \
+          printf 'source_blob=%s\nsource_sha256=%s\nqualifier_blob=%s\nqualifier_sha256=%s\n' \
+            "$source_blob" "$source_sha256" "$qualifier_blob" "$qualifier_sha256" \
             > "$envelope/qualifier-provenance.txt"
           bash "$qualifier"
 
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: pr2231-v123-indexed-provenance-qualification-v1
+          name: pr2231-v123-live-head-qualification-v1
           path: |
-            /tmp/pr2231-v123-indexed-provenance-qualification-v1
-            /tmp/pr2231-v123-indexed-provenance-controller-v1
+            /tmp/pr2231-v123-live-head-qualification-v1
+            /tmp/pr2231-v123-live-head-controller-v1
           if-no-files-found: error
           retention-days: 90
