@@ -1,4 +1,4 @@
-name: Temporary PR 2231 V129 cumulative source-custody qualification V1
+name: Temporary PR 2231 V129 current-V128 source-custody qualification
 
 on:
   pull_request:
@@ -11,11 +11,11 @@ permissions:
   actions: read
 
 concurrency:
-  group: pr2231-v129-cumulative-${{ github.event.pull_request.number }}
+  group: pr2231-v129-source-custody-${{ github.event.pull_request.number }}
   cancel-in-progress: false
 
 jobs:
-  qualify-v129:
+  qualify-v129-current-v128:
     if: github.event.pull_request.head.ref == 'agent/pr2231-v129-scheme-nfkc-cumulative-qualification-v1'
     runs-on: ubuntu-24.04
     timeout-minutes: 180
@@ -35,25 +35,22 @@ jobs:
         with:
           node-version: 22
 
-      - name: Execute attached read-only V129 qualifier
+      - name: Execute the current-V128 V129 qualifier
         shell: bash
         run: |
           set -Eeuo pipefail
           export LC_ALL=C
           export EXPECTED_CONTROLLER="$(git rev-parse HEAD)"
-
-          payload_blob=23ebbbd7cede1060b63b22d9944ad86c25811815
-          payload_size=7572
-          payload_sha256=21bc52461519a524652074b32c6d03b63d4ce51ab2ec621c1e93fd33fd8a2c1d
-          qualifier_blob=e624c6a4b4d42ee3e0eed0846238c13cb3312015
-          qualifier_size=31289
-          qualifier_sha256=3b20d07d403e89baa5d46a469ab8488d0faaaf23e033bcd7abda590e9e9fb472
-
-          envelope=/tmp/pr2231-v129-controller-v1
-          payload="$envelope/qualifier-v129.sh.xz"
-          qualifier="$envelope/qualifier-v129.sh"
+          payload_blob=5d750169a68598a68b99beb99d2b83038e6c6dae
+          payload_size=6500
+          payload_sha256=c273bef8037b982075373101751369e6dd3b43b914aad47db74025f9753f4ea2
+          qualifier_blob=7585deb837d9272aa90521e1e78f363ff7d0f5cb
+          qualifier_size=25142
+          qualifier_sha256=39059452aae65c911c688c2cd4ecc41c6fd5f68ec461faf6284996ff08f5fea1
+          envelope=/tmp/pr2231-v129-current-v128-controller-v2
+          payload="$envelope/qualifier-v129-current-v128.sh.xz"
+          qualifier="$envelope/qualifier-v129-current-v128.sh"
           wrapper_log="$envelope/controller.log"
-
           rm -rf "$envelope"
           mkdir -p "$envelope"
           : > "$wrapper_log"
@@ -63,13 +60,10 @@ jobs:
             rc=$?
             trap - EXIT
             set +e
-            printf 'outer_status=%s\nmode=read-only-v129-cumulative-qualification\n' "$rc" \
-              > "$envelope/controller-status.env"
-            find "$envelope" -type f -printf '%P\t%s\n' | sort \
-              > "$envelope/envelope-manifest.txt"
+            printf 'outer_status=%s\nmode=read-only-v129-current-v128-controller\n' "$rc" > "$envelope/controller-status.env"
+            find "$envelope" -type f -printf '%P\t%s\n' | sort > "$envelope/envelope-manifest.txt"
             find "$envelope" -type f ! -name envelope-sha256.txt -print0 \
-              | sort -z | xargs -0 sha256sum \
-              > "$envelope/envelope-sha256.txt"
+              | sort -z | xargs -0 sha256sum > "$envelope/envelope-sha256.txt"
             exit "$rc"
           }
           trap preserve EXIT
@@ -77,31 +71,27 @@ jobs:
           printf 'controller_branch=%s\nexpected_branch=%s\ncontroller_head=%s\nexpected_head=%s\n' \
             "${CONTROLLER_BRANCH:-}" "${EXPECTED_CONTROLLER_BRANCH:-}" \
             "$(git rev-parse HEAD)" "$EXPECTED_CONTROLLER"
-
           cp .github/temporary/pr2231-v129-qualifier-v1.sh.xz "$payload"
           test "$(wc -c < "$payload")" = "$payload_size"
           test "$(git hash-object "$payload")" = "$payload_blob"
           test "$(sha256sum "$payload" | awk '{print $1}')" = "$payload_sha256"
-
           xz -dc "$payload" > "$qualifier"
           test "$(wc -c < "$qualifier")" = "$qualifier_size"
           test "$(git hash-object "$qualifier")" = "$qualifier_blob"
           test "$(sha256sum "$qualifier" | awk '{print $1}')" = "$qualifier_sha256"
-
           chmod 0755 "$qualifier"
           bash -n "$qualifier"
           printf 'payload_blob=%s\npayload_sha256=%s\nqualifier_blob=%s\nqualifier_sha256=%s\n' \
             "$payload_blob" "$payload_sha256" "$qualifier_blob" "$qualifier_sha256" \
             > "$envelope/qualifier-provenance.txt"
-
           bash "$qualifier"
 
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: pr2231-v129-cumulative-source-custody-qualification-v1
+          name: pr2231-v129-current-v128-source-custody-qualification-v2
           path: |
-            /tmp/pr2231-v129-qualification-v1
-            /tmp/pr2231-v129-controller-v1
+            /tmp/pr2231-v129-qualification-v2
+            /tmp/pr2231-v129-current-v128-controller-v2
           if-no-files-found: error
           retention-days: 90
