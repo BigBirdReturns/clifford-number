@@ -47,7 +47,7 @@ jobs:
           qualifier_blob=7585deb837d9272aa90521e1e78f363ff7d0f5cb
           qualifier_size=25142
           qualifier_sha256=39059452aae65c911c688c2cd4ecc41c6fd5f68ec461faf6284996ff08f5fea1
-          envelope=/tmp/pr2231-v129-current-v128-controller-v3
+          envelope=/tmp/pr2231-v129-current-v128-controller-v4
           payload="$envelope/qualifier-v129-current-v128.sh.xz"
           qualifier="$envelope/qualifier-v129-current-v128.sh"
           wrapper_log="$envelope/controller.log"
@@ -60,7 +60,7 @@ jobs:
             rc=$?
             trap - EXIT
             set +e
-            printf 'outer_status=%s\nmode=read-only-v129-owner-attested-v128-controller\n' "$rc" > "$envelope/controller-status.env"
+            printf 'outer_status=%s\nmode=read-only-v129-quoted-origin-repair-controller\n' "$rc" > "$envelope/controller-status.env"
             find "$envelope" -type f -printf '%P\t%s\n' | sort > "$envelope/envelope-manifest.txt"
             find "$envelope" -type f ! -name envelope-sha256.txt -print0 \
               | sort -z | xargs -0 sha256sum > "$envelope/envelope-sha256.txt"
@@ -85,7 +85,7 @@ jobs:
             "$payload_blob" "$payload_sha256" "$qualifier_blob" "$qualifier_sha256" \
             > "$envelope/qualifier-provenance.txt"
 
-          python3 - "$qualifier" "$envelope/runtime-rebind.txt" <<'PY'
+          python3 - "$qualifier" "$envelope/runtime-rebind.txt" <<'PY_RUNTIME_REBIND'
           import hashlib
           import sys
           from pathlib import Path
@@ -93,6 +93,94 @@ jobs:
           path = Path(sys.argv[1])
           ledger = Path(sys.argv[2])
           text = path.read_text()
+
+          correction_block = r'''python3 "$out/apply-v129.py" "$work/product/$library_path" "$work/product/$test_path"
+          cat > "$out/apply-v129-quoted-origin.py" <<'PY_QUOTED_ORIGIN'
+          from pathlib import Path
+          import sys
+
+          library = Path(sys.argv[1])
+          test = Path(sys.argv[2])
+          text = library.read_text()
+
+          def replace_once(source: str, old: str, new: str, label: str) -> str:
+              count = source.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected one anchor, found {count}')
+              return source.replace(old, new, 1)
+
+          text = replace_once(text, r''' + "'''" + r'''const LEGACY_DIRECT_URL_ORIGIN_PATTERN = /(?:^|[<([{=:;,|])((?:https?:\/\/|www\.|(?:[\p{L}\p{N}](?:[\p{L}\p{N}-]*[\p{L}\p{N}])?\.)+(?:[\p{L}]{2,}|xn--[\p{L}\p{N}-]{2,})(?=\.?[:/?#])|(?:\d{1,3}\.){3}\d{1,3}(?=\.?[:/?#]))[^\s]*|\/\/[^\s]*)/iu;
+          ''' + "'''" + r''', r''' + "'''" + r'''const LEGACY_DIRECT_URL_ORIGIN_PATTERN = /(?:^|[<([{=:;,|])(?:["'“”‘’]+)?((?:https?:\/\/|www\.|(?:[\p{L}\p{N}](?:[\p{L}\p{N}-]*[\p{L}\p{N}])?\.)+(?:[\p{L}]{2,}|xn--[\p{L}\p{N}-]{2,})(?=\.?[:/?#])|(?:\d{1,3}\.){3}\d{1,3}(?=\.?[:/?#]))[^\s]*|\/\/[^\s]*)/iu;
+          ''' + "'''" + r''', 'quoted legacy URL-origin capture')
+
+          text = replace_once(text, r''' + "'''" + r'''const LEGACY_URL_ORIGIN_DELIMITER_PATTERN = /[<([{=:;,|]/u;
+          const URL_TOKEN_LEADING_WRAPPER_PATTERN = /[\p{P}\p{S}]/u;
+
+          function malformedSchemeLikeUrlOrigin(value) {
+          ''' + "'''" + r''', r''' + "'''" + r'''const LEGACY_URL_ORIGIN_DELIMITER_PATTERN = /[<([{=:;,|]/u;
+          const LEGACY_URL_ORIGIN_QUOTE_WRAPPER_PATTERN = /["'“”‘’]/u;
+          const URL_TOKEN_LEADING_WRAPPER_PATTERN = /[\p{P}\p{S}]/u;
+
+          function approvedLegacySchemeBoundary(value, start) {
+            let cursor = start;
+            while (cursor > 0) {
+              const prior = previousCodePoint(value, cursor);
+              if (!LEGACY_URL_ORIGIN_QUOTE_WRAPPER_PATTERN.test(prior)) break;
+              cursor -= prior.length;
+            }
+            return cursor === 0 || LEGACY_URL_ORIGIN_DELIMITER_PATTERN.test(
+              previousCodePoint(value, cursor)
+            );
+          }
+
+          function malformedSchemeLikeUrlOrigin(value) {
+          ''' + "'''" + r''', 'quoted approved-scheme boundary helper')
+
+          text = replace_once(text, ''' + "'''" + r'''    const prior = previousCodePoint(value, start);
+              const approvedLegacyScheme = /^https?$/iu.test(origin)
+                && (start === 0 || LEGACY_URL_ORIGIN_DELIMITER_PATTERN.test(prior));
+          ''' + "'''" + r''', ''' + "'''" + r'''    const approvedLegacyScheme = /^https?$/iu.test(origin)
+                && approvedLegacySchemeBoundary(value, start);
+          ''' + "'''" + r''', 'quoted approved-scheme boundary use')
+
+          library.write_text(text)
+
+          tests = test.read_text()
+          marker = 'PR2231 V129 quoted legacy URL-origin boundary'
+          if marker in tests:
+              raise SystemExit('quoted-origin regression block already present')
+          tests += r''' + "'''" + r'''
+
+          // PR2231 V129 quoted legacy URL-origin boundary
+          for (const [name, input, expected] of [
+            [
+              'curly-quoted HTTPS origin after a source delimiter retains suffix custody',
+              'Phone: 03-6216-8041=“https://example.test/03-6216-8041',
+              'Phone: [contact omitted]=“https://example.test/03-6216-8041'
+            ],
+            [
+              'single-quoted HTTPS origin after a source delimiter retains suffix custody',
+              "Phone: 03-6216-8041='https://example.test/03-6216-8041",
+              "Phone: [contact omitted]='https://example.test/03-6216-8041"
+            ],
+            [
+              'quoted unsupported scheme grants no numeric-path custody',
+              'Phone: 03-6216-8041="mailto://example.test/03-6216-8041',
+              'Phone: [contact omitted]="mailto://example.test/[contact omitted]'
+            ]
+          ]) {
+            assert.equal(
+              redactContactData(input),
+              expected,
+              `${name}: quote wrappers may carry an approved HTTP origin only from an established source delimiter`
+            );
+          }
+          ''' + "'''" + r'''
+          test.write_text(tests)
+          PY_QUOTED_ORIGIN
+          python3 "$out/apply-v129-quoted-origin.py" "$work/product/$library_path" "$work/product/$test_path"
+          node --check "$work/product/$library_path"'''
+
           replacements = [
               (
                   'product_parent=5b992ba8b7573cc9a859ac0dcb0d5edd20ea81ed',
@@ -118,32 +206,39 @@ jobs:
                   "expected_review_titles=(\n  'Preserve a later phone-owned opener after the clean observation closer'\n  'Compare embedded-email bounds in source coordinates'\n  'Index token bounds before processing embedded emails'\n  'Reject bare-host matches followed by scheme syntax'\n  'Map normalized origins across composing code points'\n)",
                   "expected_review_titles=(\n  'Preserve a later phone-owned opener after the clean observation closer'\n  'Compare embedded-email bounds in source coordinates'\n  'Index token bounds before processing embedded emails'\n  'Reject scheme syntax after a bare-host match'\n  'Map URL origins using whole-prefix normalization'\n)",
               ),
+              (
+                  'python3 "$out/apply-v129.py" "$work/product/$library_path" "$work/product/$test_path"\nnode --check "$work/product/$library_path"',
+                  correction_block,
+              ),
           ]
+
           for old, new in replacements:
               count = text.count(old)
               if count != 1:
                   raise SystemExit(f'expected one runtime-rebind target, found {count}: {old}')
               text = text.replace(old, new)
+
           path.write_text(text)
           digest = hashlib.sha256(text.encode()).hexdigest()
           ledger.write_text(
-              'mode=owner-attested-v128-runtime-lease-rebind\n'
+              'mode=owner-attested-v128-plus-quoted-origin-runtime-rebind\n'
               'product_head=c10beb52cc37c3933e7a0d2e452c1d6502b36a39\n'
               'product_commit_parent=e0c772e962078878a1e4b659a861581cb2957a73\n'
               'product_pr_base=5b992ba8b7573cc9a859ac0dcb0d5edd20ea81ed\n'
               'product_pr_commits=2\n'
+              'semantic_correction=quoted-approved-origin-after-established-delimiter\n'
               f'runtime_qualifier_sha256={digest}\n'
           )
-          PY
+          PY_RUNTIME_REBIND
           bash -n "$qualifier"
           bash "$qualifier"
 
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: pr2231-v129-owner-attested-v128-source-custody-qualification-v3
+          name: pr2231-v129-owner-attested-v128-source-custody-qualification-v4
           path: |
             /tmp/pr2231-v129-qualification-v2
-            /tmp/pr2231-v129-current-v128-controller-v3
+            /tmp/pr2231-v129-current-v128-controller-v4
           if-no-files-found: error
           retention-days: 90
