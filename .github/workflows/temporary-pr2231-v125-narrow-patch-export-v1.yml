@@ -1,0 +1,58 @@
+name: Temporary PR2231 V125 narrow patch export
+
+on:
+  push:
+    branches:
+      - agent/pr2231-v125-narrow-patch-export-v1
+
+permissions:
+  contents: read
+
+env:
+  GH_TOKEN: ${{ github.token }}
+
+jobs:
+  export:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Recover and verify the exact narrow V125 patch
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          repo='BigBirdReturns/clifford-number'
+          blob='34566d4a1fe041ef7beef62efa46fe3a4cffbc9e'
+          compressed_sha256='5f746b7ced54dbbb30324eb3bef26493d528a0d1c14a70c27c28953729b5ce0f'
+          raw_sha256='8a9a971422dff34cc42515a9fed8f833071d84036faf0ddc12d30a441fb63d0b'
+          mkdir -p export
+          gh api "repos/$repo/git/blobs/$blob" --jq '.content' \
+            | tr -d '\n' | base64 -d > export/pr2231-v125-narrow.patch.xz
+          test "$(git hash-object export/pr2231-v125-narrow.patch.xz)" = "$blob"
+          test "$(sha256sum export/pr2231-v125-narrow.patch.xz | awk '{print $1}')" = "$compressed_sha256"
+          xz -t export/pr2231-v125-narrow.patch.xz
+          xz -dc export/pr2231-v125-narrow.patch.xz > export/pr2231-v125-narrow.patch
+          test "$(sha256sum export/pr2231-v125-narrow.patch | awk '{print $1}')" = "$raw_sha256"
+          {
+            printf 'PATCH_BLOB=%s\n' "$blob"
+            printf 'PATCH_XZ_SHA256=%s\n' "$compressed_sha256"
+            printf 'PATCH_SHA256=%s\n' "$raw_sha256"
+            printf 'PATCH_XZ_SIZE=%s\n' "$(wc -c < export/pr2231-v125-narrow.patch.xz)"
+            printf 'PATCH_SIZE=%s\n' "$(wc -c < export/pr2231-v125-narrow.patch)"
+            printf 'PUBLICATION_SKIPPED\n'
+            printf 'PRODUCT_MUTATION_SKIPPED\n'
+            printf 'REVIEW_MUTATION_SKIPPED\n'
+            printf 'PATCH_EXPORT_SUCCESS\n'
+          } > export/receipt.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pr2231-v125-narrow-patch-export-v1
+          path: export
+          if-no-files-found: error
+          retention-days: 7
