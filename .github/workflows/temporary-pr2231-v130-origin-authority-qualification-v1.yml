@@ -1,0 +1,111 @@
+name: Temporary PR 2231 V130 origin-authority qualification
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: pr2231-v130-origin-authority-read-only-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  qualify-v130-origin-authority:
+    if: github.event.pull_request.head.ref == 'agent/pr2231-v130-origin-authority-qualification-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+      CONTROLLER_PR: ${{ github.event.pull_request.number }}
+      CONTROLLER_BRANCH: ${{ github.event.pull_request.head.ref }}
+      EXPECTED_CONTROLLER_BRANCH: agent/pr2231-v130-origin-authority-qualification-v1
+      EXPECTED_MAIN: 5b992ba8b7573cc9a859ac0dcb0d5edd20ea81ed
+      EXPECTED_WORKFLOW: .github/workflows/temporary-pr2231-v130-origin-authority-qualification-v1.yml
+      QUALIFIER_XZ_BLOB: 529878a3ca95306527fa845851a524e5c4dad626
+      QUALIFIER_XZ_SIZE: '11632'
+      QUALIFIER_XZ_SHA256: 907b9486a84d4a65295b4d22d2e80db4f7ab4497aaa0ca1830c06b9864ecbe9e
+      QUALIFIER_BLOB: 6ff25415a24fedfcb317b480960f9b554a222dd7
+      QUALIFIER_SIZE: '38170'
+      QUALIFIER_SHA256: 220c8b1a5c5a180b7b79ec85ee2fd63a6097d852dc9442cc434fd114cb6fb932
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Recover and execute the exact V130 read-only qualifier
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export LC_ALL=C
+          envelope=/tmp/pr2231-v130-origin-authority-controller-envelope-v1
+          payload="$envelope/qualifier-v130-origin-authority.sh.xz"
+          qualifier="$envelope/qualifier-v130-origin-authority.sh"
+          rm -rf "$envelope"
+          mkdir -p "$envelope"
+          exec > >(tee -a "$envelope/controller.log") 2>&1
+
+          preserve() {
+            rc=$?
+            trap - EXIT
+            set +e
+            printf 'outer_status=%s\nmode=read-only-v130-origin-authority-qualification\n' "$rc" > "$envelope/controller-status.env"
+            (cd "$envelope" && find . -type f -printf '%P\t%s\n' | sort) > "$envelope/envelope-manifest.txt"
+            (cd "$envelope" && find . -type f ! -name envelope-sha256.txt -print0 \
+              | sort -z | xargs -0 sha256sum) > "$envelope/envelope-sha256.txt"
+            exit "$rc"
+          }
+          trap preserve EXIT
+
+          test "$CONTROLLER_BRANCH" = "$EXPECTED_CONTROLLER_BRANCH"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_CONTROLLER"
+          test "$(git rev-parse HEAD^)" = "$EXPECTED_MAIN"
+          test "$(git rev-list --count "$EXPECTED_MAIN"..HEAD)" = 1
+          mapfile -t changed < <(git diff-tree --no-commit-id --name-only -r HEAD | sort)
+          test "${#changed[@]}" = 1
+          test "${changed[0]}" = "$EXPECTED_WORKFLOW"
+          test "$(gh api "repos/${GITHUB_REPOSITORY}/pulls/$CONTROLLER_PR" --jq '.head.sha')" = "$EXPECTED_CONTROLLER"
+          test "$(gh api "repos/${GITHUB_REPOSITORY}/pulls/$CONTROLLER_PR" --jq '.head.ref')" = "$EXPECTED_CONTROLLER_BRANCH"
+          test "$(gh api "repos/${GITHUB_REPOSITORY}/pulls/$CONTROLLER_PR" --jq '.base.sha')" = "$EXPECTED_MAIN"
+          test "$(gh api "repos/${GITHUB_REPOSITORY}/pulls/$CONTROLLER_PR" --jq '.commits')" = 1
+          test "$(gh api "repos/${GITHUB_REPOSITORY}/pulls/$CONTROLLER_PR" --jq '.changed_files')" = 1
+          test "$(gh api "repos/${GITHUB_REPOSITORY}/pulls/$CONTROLLER_PR" --jq '.draft')" = true
+          test "$(gh api "repos/${GITHUB_REPOSITORY}/pulls/$CONTROLLER_PR" --jq '.state')" = open
+
+          gh api "repos/${GITHUB_REPOSITORY}/git/blobs/$QUALIFIER_XZ_BLOB" --jq '.content' \
+            | tr -d '\n' | base64 -d > "$payload"
+          test "$(wc -c < "$payload")" = "$QUALIFIER_XZ_SIZE"
+          test "$(git hash-object "$payload")" = "$QUALIFIER_XZ_BLOB"
+          test "$(sha256sum "$payload" | awk '{print $1}')" = "$QUALIFIER_XZ_SHA256"
+          xz -dc "$payload" > "$qualifier"
+          test "$(wc -c < "$qualifier")" = "$QUALIFIER_SIZE"
+          test "$(git hash-object "$qualifier")" = "$QUALIFIER_BLOB"
+          test "$(sha256sum "$qualifier" | awk '{print $1}')" = "$QUALIFIER_SHA256"
+          chmod 0755 "$qualifier"
+          bash -n "$qualifier"
+          printf 'qualifier_xz_blob=%s\nqualifier_xz_sha256=%s\nqualifier_blob=%s\nqualifier_sha256=%s\n' \
+            "$QUALIFIER_XZ_BLOB" "$QUALIFIER_XZ_SHA256" "$QUALIFIER_BLOB" "$QUALIFIER_SHA256" \
+            > "$envelope/qualifier-provenance.txt"
+          bash "$qualifier"
+
+      - name: Upload V130 read-only qualification receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr2231-v130-origin-authority-qualification-v1
+          path: |
+            /tmp/pr2231-v130-origin-authority-controller-envelope-v1
+            /tmp/pr2231-v130-origin-authority-qualification-v1
+          if-no-files-found: error
+          retention-days: 30
