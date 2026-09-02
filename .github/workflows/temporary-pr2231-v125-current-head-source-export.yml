@@ -1,0 +1,67 @@
+name: Temporary PR2231 V125 current-head source export
+
+on:
+  push:
+    branches:
+      - agent/pr2231-v125-current-head-source-export
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out exact live product head
+        uses: actions/checkout@v4
+        with:
+          ref: c4f51ed1ecb6893d417385067f493487f7156623
+          fetch-depth: 2
+
+      - name: Verify exact product lease and export admitted files
+        shell: bash
+        run: |
+          set -euo pipefail
+          product_head='c4f51ed1ecb6893d417385067f493487f7156623'
+          main_head='9de137e64b51339087c47028b9b0fc5f78d1fcff'
+          classifier_blob='543e0b2e7fe64bbb568c11023ef7ce4dc1110428'
+          focused_test_blob='fb7c875f4e79a45be07381555e02ace288bfc766'
+
+          test "$(git rev-parse HEAD)" = "$product_head"
+          test "$(git rev-parse HEAD^)" = "$main_head"
+          test "$(git hash-object tools/lib/industrial-exhaust.mjs)" = "$classifier_blob"
+          test "$(git hash-object test/industrial-exhaust.test.js)" = "$focused_test_blob"
+
+          mapfile -t changed < <(git diff --name-only "$main_head"..HEAD | sort)
+          expected=(
+            'test/industrial-exhaust.test.js'
+            'tools/lib/industrial-exhaust.mjs'
+          )
+          test "${#changed[@]}" -eq 2
+          test "${changed[0]}" = "${expected[0]}"
+          test "${changed[1]}" = "${expected[1]}"
+
+          mkdir -p export/tools/lib export/test
+          cp tools/lib/industrial-exhaust.mjs export/tools/lib/
+          cp test/industrial-exhaust.test.js export/test/
+          {
+            printf 'PRODUCT_HEAD=%s\n' "$product_head"
+            printf 'MAIN_HEAD=%s\n' "$main_head"
+            printf 'CLASSIFIER_BLOB=%s\n' "$classifier_blob"
+            printf 'FOCUSED_TEST_BLOB=%s\n' "$focused_test_blob"
+            printf 'CLASSIFIER_SHA256=%s\n' "$(sha256sum tools/lib/industrial-exhaust.mjs | cut -d' ' -f1)"
+            printf 'FOCUSED_TEST_SHA256=%s\n' "$(sha256sum test/industrial-exhaust.test.js | cut -d' ' -f1)"
+            printf 'PUBLICATION_SKIPPED\n'
+            printf 'PRODUCT_MUTATION_SKIPPED\n'
+            printf 'REVIEW_MUTATION_SKIPPED\n'
+            printf 'SOURCE_EXPORT_SUCCESS\n'
+          } > export/receipt.txt
+
+      - name: Upload exact current-head source package
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr2231-v125-current-head-source-export
+          path: export
+          if-no-files-found: error
+          retention-days: 7
