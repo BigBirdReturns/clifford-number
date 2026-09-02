@@ -1,0 +1,98 @@
+name: Temporary PR 2231 V130 earliest URL-origin qualification
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: pr2231-v130-earliest-origin-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  qualify-v130-earliest-origin:
+    if: github.event.pull_request.head.ref == 'agent/pr2231-v130-earliest-origin-qualification-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    env:
+      GH_TOKEN: ${{ github.token }}
+      CONTROLLER_PR: ${{ github.event.pull_request.number }}
+      CONTROLLER_BRANCH: ${{ github.event.pull_request.head.ref }}
+      EXPECTED_CONTROLLER_BRANCH: agent/pr2231-v130-earliest-origin-qualification-v1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Execute the read-only V130 qualifier
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export LC_ALL=C
+          export EXPECTED_CONTROLLER="$(git rev-parse HEAD)"
+          payload_blob=a2d65e078b1df77f8515ac82fdc351c315122848
+          payload_size=6436
+          payload_sha256=ef96bf4df859102ee30a3f1dd0c6e24c9df2bb91e087583965485be0b058624c
+          qualifier_blob=ea01f797fcfc0fceba2f944af61227ca435fb801
+          qualifier_size=25747
+          qualifier_sha256=f0edf133a9fc9fdf34a3f6c19ba814d41337a6dc729e9e21547cc31c5dc22ed3
+          envelope=/tmp/pr2231-v130-earliest-origin-controller-v1
+          payload="$envelope/qualifier-v130.sh.xz"
+          qualifier="$envelope/qualifier-v130.sh"
+          wrapper_log="$envelope/controller.log"
+          rm -rf "$envelope"
+          mkdir -p "$envelope"
+          : > "$wrapper_log"
+          exec > >(tee -a "$wrapper_log") 2>&1
+
+          preserve() {
+            rc=$?
+            trap - EXIT
+            set +e
+            printf 'outer_status=%s\nmode=read-only-v130-earliest-origin-controller\n' "$rc" > "$envelope/controller-status.env"
+            find "$envelope" -type f -printf '%P\t%s\n' | sort > "$envelope/envelope-manifest.txt"
+            find "$envelope" -type f ! -name envelope-sha256.txt -print0 \
+              | sort -z | xargs -0 sha256sum > "$envelope/envelope-sha256.txt"
+            exit "$rc"
+          }
+          trap preserve EXIT
+
+          printf 'controller_branch=%s\nexpected_branch=%s\ncontroller_head=%s\nexpected_head=%s\n' \
+            "${CONTROLLER_BRANCH:-}" "${EXPECTED_CONTROLLER_BRANCH:-}" \
+            "$(git rev-parse HEAD)" "$EXPECTED_CONTROLLER"
+          cp .github/temporary/pr2231-v130-qualifier-v1.sh.xz "$payload"
+          test "$(wc -c < "$payload")" = "$payload_size"
+          test "$(git hash-object "$payload")" = "$payload_blob"
+          test "$(sha256sum "$payload" | awk '{print $1}')" = "$payload_sha256"
+          xz -dc "$payload" > "$qualifier"
+          test "$(wc -c < "$qualifier")" = "$qualifier_size"
+          test "$(git hash-object "$qualifier")" = "$qualifier_blob"
+          test "$(sha256sum "$qualifier" | awk '{print $1}')" = "$qualifier_sha256"
+          chmod 0755 "$qualifier"
+          bash -n "$qualifier"
+          printf 'payload_blob=%s\npayload_sha256=%s\nqualifier_blob=%s\nqualifier_sha256=%s\n' \
+            "$payload_blob" "$payload_sha256" "$qualifier_blob" "$qualifier_sha256" \
+            > "$envelope/qualifier-provenance.txt"
+          "$qualifier"
+
+      - name: Upload V130 qualification receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr2231-v130-earliest-origin-qualification-v1
+          path: |
+            /tmp/pr2231-v130-earliest-origin-controller-v1
+            /tmp/pr2231-v130-earliest-origin-qualification-v1
+          if-no-files-found: warn
+          retention-days: 30
