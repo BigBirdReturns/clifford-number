@@ -156,7 +156,7 @@ jobs:
             pr2231-v128-qualified-current-main-publisher-v1 "$publication_size" \
             "$publication_digest" "$publication_receipt"
           test "$(awk -F= '$1=="outer_status"{print $2}' "$publication_receipt/outer-status.env")" = 1
-          grep -Fq "$old_product...${product:0:8}" "$publication_receipt/publisher.log"
+          grep -Fq "${old_product:0:8}...${product:0:8}" "$publication_receipt/publisher.log"
           grep -Fq "$product -> $product_branch (forced update)" "$publication_receipt/publisher.log"
 
           stable_product > "$artifact/product-before.json"
