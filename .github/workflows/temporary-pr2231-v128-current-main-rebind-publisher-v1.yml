@@ -1,0 +1,260 @@
+name: Temporary PR 2231 V128 qualified current-main publisher
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: pr2231-v128-current-main-publisher-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  publish-v128-current-main:
+    if: github.event.pull_request.head.ref == 'agent/pr2231-v128-current-main-rebind-publisher-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+      CONTROLLER_PR: ${{ github.event.pull_request.number }}
+      CONTROLLER_BRANCH: ${{ github.event.pull_request.head.ref }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Reconstruct, requalify, and publish the exact V128 candidate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export LC_ALL=C
+
+          repo=BigBirdReturns/clifford-number
+          product_pr=2231
+          product_branch=agent/current-main-identifier-context-product-v1
+          qualifier_branch=agent/pr2231-v128-current-main-rebind-qualification-v1
+          controller_branch=agent/pr2231-v128-current-main-rebind-publisher-v1
+
+          main=5b992ba8b7573cc9a859ac0dcb0d5edd20ea81ed
+          main_tree=6ca3a5dd146ac9e8a0860de4e25ee5242a5152ff
+          old_product=73e4501c6da942ba326ecf146df1a71bbf953b25
+          old_tree=1f80e709833c4b30a7ab2cb50d14f773c87cbae8
+          library=cdf13a780f97f42c64bdac2e745da52be44850a1
+          focused_test=711003e4ce56e99cf51ceb0d8fd03df1e4473c31
+          candidate=7d5d43d4215eb621f361a1e4c834e994fe98c136
+          candidate_tree=8252807a4b840ba20d69cd478c8fdb53a851a826
+
+          qualifier_pr=2543
+          qualifier_controller=391578a83776ee1031d33ede5b8815ddcccabb74
+          qualifier_run=33667441792
+          qualifier_job=100372553230
+          qualifier_artifact=9861189921
+          qualifier_digest=sha256:59b44b5e2a7b27ae8b1d46f15ea3a97626b570d1adfb15636c349187da7b9a39
+          qualifier_size=39736
+
+          threads=(
+            PRRT_kwDOTGqftc6eVVFm
+            PRRT_kwDOTGqftc6eYaRa
+            PRRT_kwDOTGqftc6eYaRe
+            PRRT_kwDOTGqftc6eZWl3
+            PRRT_kwDOTGqftc6eZhAV
+          )
+
+          root=/tmp/pr2231-v128-current-main-rebind-publisher-v1
+          receipt="$root/qualifier"
+          work="$root/work"
+          artifact="$root/artifact"
+          zip="$root/qualifier.zip"
+          rm -rf "$root"
+          mkdir -p "$receipt" "$artifact"
+          exec > >(tee "$artifact/publisher.log") 2>&1
+
+          preserve() {
+            rc=$?
+            trap - EXIT
+            set +e
+            printf 'outer_status=%s\nmode=qualified-product-publication\n' "$rc" > "$artifact/outer-status.env"
+            find "$artifact" -type f -printf '%f\t%s\n' | sort > "$artifact/file-manifest.txt"
+            find "$artifact" -type f ! -name sha256-manifest.txt -print0 \
+              | sort -z | xargs -0 sha256sum > "$artifact/sha256-manifest.txt"
+            exit "$rc"
+          }
+          trap preserve EXIT
+
+          stable_product() {
+            gh api "repos/$repo/pulls/$product_pr" \
+              | jq -S '{number,state,draft,merged,base:.base.sha,commits,changed_files,title}'
+          }
+
+          assert_thread_unresolved() {
+            local id=$1
+            local resolved
+            resolved=$(gh api graphql -F id="$id" \
+              -f query='query($id:ID!){node(id:$id){... on PullRequestReviewThread{isResolved}}}' \
+              --jq '.data.node.isResolved')
+            test "$resolved" = false
+          }
+
+          wait_for_product_head() {
+            local expected=$1
+            for attempt in $(seq 1 20); do
+              observed=$(gh api "repos/$repo/pulls/$product_pr" --jq '.head.sha')
+              [[ "$observed" = "$expected" ]] && return 0
+              sleep 2
+            done
+            return 1
+          }
+
+          test "$CONTROLLER_BRANCH" = "$controller_branch"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_CONTROLLER"
+          test "$(git rev-parse "$main^{tree}")" = "$main_tree"
+          test "$(gh api "repos/$repo/git/ref/heads/main" --jq '.object.sha')" = "$main"
+          test "$(gh api "repos/$repo/git/ref/heads/$product_branch" --jq '.object.sha')" = "$old_product"
+          test "$(gh api "repos/$repo/git/ref/heads/$qualifier_branch" --jq '.object.sha')" = "$qualifier_controller"
+
+          product_json=$(gh api "repos/$repo/pulls/$product_pr")
+          test "$(jq -r '.head.sha' <<<"$product_json")" = "$old_product"
+          test "$(jq -r '.state' <<<"$product_json")" = open
+          test "$(jq -r '.draft' <<<"$product_json")" = true
+          test "$(jq -r '.merged' <<<"$product_json")" = false
+          test "$(jq -r '.commits' <<<"$product_json")" = 1
+          test "$(jq -r '.changed_files' <<<"$product_json")" = 2
+          stable_product > "$artifact/product-before.json"
+          for id in "${threads[@]}"; do
+            assert_thread_unresolved "$id"
+          done
+
+          qualifier_json=$(gh api "repos/$repo/pulls/$qualifier_pr")
+          test "$(jq -r '.head.sha' <<<"$qualifier_json")" = "$qualifier_controller"
+          test "$(jq -r '.draft' <<<"$qualifier_json")" = true
+          test "$(jq -r '.merged' <<<"$qualifier_json")" = false
+
+          run_json=$(gh api "repos/$repo/actions/runs/$qualifier_run")
+          test "$(jq -r '.head_sha' <<<"$run_json")" = "$qualifier_controller"
+          test "$(jq -r '.status' <<<"$run_json")" = completed
+          test "$(jq -r '.conclusion' <<<"$run_json")" = success
+
+          job_json=$(gh api "repos/$repo/actions/jobs/$qualifier_job")
+          test "$(jq -r '.run_id' <<<"$job_json")" = "$qualifier_run"
+          test "$(jq -r '.conclusion' <<<"$job_json")" = success
+
+          receipt_json=$(gh api "repos/$repo/actions/artifacts/$qualifier_artifact")
+          test "$(jq -r '.name' <<<"$receipt_json")" = pr2231-v128-current-main-rebind-qualification-v1
+          test "$(jq -r '.workflow_run.id' <<<"$receipt_json")" = "$qualifier_run"
+          test "$(jq -r '.expired' <<<"$receipt_json")" = false
+          test "$(jq -r '.size_in_bytes' <<<"$receipt_json")" = "$qualifier_size"
+          test "$(jq -r '.digest' <<<"$receipt_json")" = "$qualifier_digest"
+
+          gh api "repos/$repo/actions/artifacts/$qualifier_artifact/zip" > "$zip"
+          test "$(sha256sum "$zip" | awk '{print "sha256:"$1}')" = "$qualifier_digest"
+          unzip -q "$zip" -d "$receipt"
+          test "$(awk -F= '$1=="outer_status"{print $2}' "$receipt/outer-status.env")" = 0
+          for marker in PUBLICATION_SKIPPED PRODUCT_MUTATION_SKIPPED REVIEW_MUTATION_SKIPPED DRAFT_MUTATION_SKIPPED MERGE_SKIPPED QUALIFICATION_SUCCESS; do
+            grep -Fxq "$marker" "$receipt/qualification-terminal.txt"
+          done
+          test "$(awk -F= '$1=="candidate_commit"{print $2}' "$receipt/candidate-identity.env")" = "$candidate"
+          test "$(awk -F= '$1=="candidate_parent"{print $2}' "$receipt/candidate-identity.env")" = "$main"
+          test "$(awk -F= '$1=="candidate_tree"{print $2}' "$receipt/candidate-identity.env")" = "$candidate_tree"
+          test "$(awk -F= '$1=="library_blob"{print $2}' "$receipt/candidate-identity.env")" = "$library"
+          test "$(awk -F= '$1=="test_blob"{print $2}' "$receipt/candidate-identity.env")" = "$focused_test"
+
+          git fetch --no-tags origin \
+            "refs/heads/main:refs/remotes/origin/v128-main" \
+            "refs/heads/$product_branch:refs/remotes/origin/v128-product"
+          test "$(git rev-parse refs/remotes/origin/v128-main)" = "$main"
+          test "$(git rev-parse refs/remotes/origin/v128-product)" = "$old_product"
+          test "$(git rev-parse "$old_product^{tree}")" = "$old_tree"
+          test "$(git rev-parse "$old_product:tools/lib/industrial-exhaust.mjs")" = "$library"
+          test "$(git rev-parse "$old_product:test/industrial-exhaust.test.js")" = "$focused_test"
+
+          git worktree add --detach "$work" "$main"
+          git show "$old_product:tools/lib/industrial-exhaust.mjs" > "$work/tools/lib/industrial-exhaust.mjs"
+          git show "$old_product:test/industrial-exhaust.test.js" > "$work/test/industrial-exhaust.test.js"
+          test "$(git -C "$work" hash-object tools/lib/industrial-exhaust.mjs)" = "$library"
+          test "$(git -C "$work" hash-object test/industrial-exhaust.test.js)" = "$focused_test"
+          node --check "$work/tools/lib/industrial-exhaust.mjs"
+          (cd "$work" && node --test test/industrial-exhaust*.test.js) | tee "$artifact/focused.log"
+          (cd "$work" && npm run release:check) | tee "$artifact/release.log"
+
+          git -C "$work" reset --hard "$main"
+          git -C "$work" clean -ffd
+          git show "$old_product:tools/lib/industrial-exhaust.mjs" > "$work/tools/lib/industrial-exhaust.mjs"
+          git show "$old_product:test/industrial-exhaust.test.js" > "$work/test/industrial-exhaust.test.js"
+          git -C "$work" add tools/lib/industrial-exhaust.mjs test/industrial-exhaust.test.js
+          rebuilt_tree=$(git -C "$work" write-tree)
+          test "$rebuilt_tree" = "$candidate_tree"
+
+          rebuilt=$(
+            export GIT_AUTHOR_NAME=clifford-intake-bot
+            export GIT_AUTHOR_EMAIL=clifford-intake-bot@users.noreply.github.com
+            export GIT_AUTHOR_DATE=2026-09-02T14:30:00Z
+            export GIT_COMMITTER_NAME=clifford-intake-bot
+            export GIT_COMMITTER_EMAIL=clifford-intake-bot@users.noreply.github.com
+            export GIT_COMMITTER_DATE=2026-09-02T14:30:00Z
+            printf '%s\n\n%s\n' \
+              'chore: rebind V127 product to current main' \
+              'Retain the qualified V127 classifier and focused-test blobs over current main without semantic changes.' \
+              | git -C "$work" commit-tree "$rebuilt_tree" -p "$main"
+          )
+          test "$rebuilt" = "$candidate"
+          test "$(git -C "$work" rev-parse "$rebuilt:tools/lib/industrial-exhaust.mjs")" = "$library"
+          test "$(git -C "$work" rev-parse "$rebuilt:test/industrial-exhaust.test.js")" = "$focused_test"
+          mapfile -t paths < <(git -C "$work" diff-tree --no-commit-id --name-only -r "$rebuilt" | sort)
+          test "${#paths[@]}" = 2
+          test "${paths[0]}" = test/industrial-exhaust.test.js
+          test "${paths[1]}" = tools/lib/industrial-exhaust.mjs
+
+          test "$(gh api "repos/$repo/git/ref/heads/main" --jq '.object.sha')" = "$main"
+          test "$(gh api "repos/$repo/git/ref/heads/$product_branch" --jq '.object.sha')" = "$old_product"
+          test "$(gh api "repos/$repo/git/ref/heads/$qualifier_branch" --jq '.object.sha')" = "$qualifier_controller"
+          test "$(gh api "repos/$repo/git/ref/heads/$controller_branch" --jq '.object.sha')" = "$EXPECTED_CONTROLLER"
+
+          git -C "$work" push \
+            "https://x-access-token:${GH_TOKEN}@github.com/${repo}.git" \
+            "$rebuilt:refs/heads/$product_branch" \
+            --force-with-lease="refs/heads/$product_branch:$old_product"
+
+          test "$(gh api "repos/$repo/git/ref/heads/main" --jq '.object.sha')" = "$main"
+          test "$(gh api "repos/$repo/git/ref/heads/$product_branch" --jq '.object.sha')" = "$candidate"
+          test "$(gh api "repos/$repo/git/ref/heads/$qualifier_branch" --jq '.object.sha')" = "$qualifier_controller"
+          test "$(gh api "repos/$repo/git/ref/heads/$controller_branch" --jq '.object.sha')" = "$EXPECTED_CONTROLLER"
+          wait_for_product_head "$candidate"
+
+          stable_product > "$artifact/product-after.json"
+          cmp "$artifact/product-before.json" "$artifact/product-after.json"
+          for id in "${threads[@]}"; do
+            assert_thread_unresolved "$id"
+          done
+
+          printf 'qualifier_controller=%s\nqualifier_run=%s\nqualifier_job=%s\nqualifier_artifact=%s\nqualifier_digest=%s\nold_product=%s\nnew_product=%s\nparent=%s\ntree=%s\nlibrary_blob=%s\ntest_blob=%s\n' \
+            "$qualifier_controller" "$qualifier_run" "$qualifier_job" "$qualifier_artifact" "$qualifier_digest" \
+            "$old_product" "$candidate" "$main" "$candidate_tree" "$library" "$focused_test" \
+            | tee "$artifact/publication-identity.env"
+
+          printf '%s\n' \
+            PRODUCT_PUBLICATION_SUCCESS \
+            REVIEW_MUTATION_SKIPPED \
+            DRAFT_MUTATION_SKIPPED \
+            MERGE_SKIPPED \
+            QUALIFICATION_SUCCESS \
+            | tee "$artifact/publication-terminal.txt"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-v128-qualified-current-main-publisher-v1
+          path: /tmp/pr2231-v128-current-main-rebind-publisher-v1/artifact
+          if-no-files-found: error
+          retention-days: 90
