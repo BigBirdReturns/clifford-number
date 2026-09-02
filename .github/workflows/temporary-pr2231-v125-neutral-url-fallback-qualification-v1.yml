@@ -1,0 +1,100 @@
+name: Temporary PR 2231 V125 neutral URL fallback qualification
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: pr2231-v125-neutral-url-fallback-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  qualify-v125-narrow:
+    if: github.event.pull_request.head.ref == 'agent/pr2231-v125-neutral-url-fallback-qualification-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+      CONTROLLER_PR: ${{ github.event.pull_request.number }}
+      CONTROLLER_BRANCH: ${{ github.event.pull_request.head.ref }}
+      EXPECTED_CONTROLLER_BRANCH: agent/pr2231-v125-neutral-url-fallback-qualification-v1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Recover and execute the exact read-only narrow V125 qualifier
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export LC_ALL=C
+          repo=BigBirdReturns/clifford-number
+          payload_blob=497eef5fbb47f84c469181197396835828cf908c
+          payload_size=5140
+          payload_sha256=956c96c8ec512584ce5c2bb04a9f100bb99d8d16b1bdf0b2d6ef3ca0332cbe54
+          qualifier_size=21053
+          qualifier_sha256=70a91a3fa9720e53a31eb602f5107a1b26a2563faf1381bfb3bd5b5fa9bd8dff
+          envelope=/tmp/pr2231-v125-neutral-url-fallback-controller-v1
+          payload="$envelope/qualifier-v125-narrow.sh.xz"
+          qualifier="$envelope/qualifier-v125-narrow.sh"
+          wrapper_log="$envelope/controller.log"
+          rm -rf "$envelope"
+          mkdir -p "$envelope"
+          : > "$wrapper_log"
+          exec > >(tee -a "$wrapper_log") 2>&1
+
+          preserve() {
+            rc=$?
+            trap - EXIT
+            set +e
+            printf 'outer_status=%s\nmode=read-only-qualification\n' "$rc" \
+              > "$envelope/controller-status.env"
+            find "$envelope" -type f -printf '%P\t%s\n' | sort \
+              > "$envelope/envelope-manifest.txt"
+            find "$envelope" -type f ! -name envelope-sha256.txt -print0 \
+              | sort -z | xargs -0 sha256sum \
+              > "$envelope/envelope-sha256.txt"
+            exit "$rc"
+          }
+          trap preserve EXIT
+
+          test "$CONTROLLER_BRANCH" = "$EXPECTED_CONTROLLER_BRANCH"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_CONTROLLER"
+
+          gh api "repos/$repo/git/blobs/$payload_blob" --jq '.content' \
+            | tr -d '\n' | base64 -d > "$payload"
+          test "$(wc -c < "$payload")" = "$payload_size"
+          test "$(git hash-object "$payload")" = "$payload_blob"
+          test "$(sha256sum "$payload" | awk '{print $1}')" = "$payload_sha256"
+          xz -dc "$payload" > "$qualifier"
+          test "$(wc -c < "$qualifier")" = "$qualifier_size"
+          test "$(sha256sum "$qualifier" | awk '{print $1}')" = "$qualifier_sha256"
+          chmod 0755 "$qualifier"
+          bash -n "$qualifier"
+          printf 'payload_blob=%s\npayload_sha256=%s\nqualifier_sha256=%s\n' \
+            "$payload_blob" "$payload_sha256" "$qualifier_sha256" \
+            > "$envelope/qualifier-provenance.txt"
+          bash "$qualifier"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-v125-neutral-url-fallback-qualification-v1
+          path: |
+            /tmp/pr2231-v125-neutral-url-fallback-qualification-v1
+            /tmp/pr2231-v125-neutral-url-fallback-controller-v1
+          if-no-files-found: error
+          retention-days: 90
