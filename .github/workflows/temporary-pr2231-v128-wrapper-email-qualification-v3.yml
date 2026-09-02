@@ -1,0 +1,98 @@
+name: Temporary PR 2231 V128 wrapper and embedded-email qualification V3
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: pr2231-v128-wrapper-email-v3-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  qualify-v128-v3:
+    if: github.event.pull_request.head.ref == 'agent/pr2231-v128-wrapper-email-qualification-v3'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EXPECTED_CONTROLLER: ${{ github.event.pul_request.head.sha }}
+      CONTROLLER_PR: ${{ github.event.pull_request.number }}
+      CONTROLLER_BRANCH: ${{ github.event.pull_request.head.ref }}
+      EXPECTED_CONTROLLER_BRANCH: agent/pr2231-v128-wrapper-email-qualification-v3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Recover and execute the read-only V128 qualifier
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export LC_ALL=C
+          repo=BigBirdReturns/clifford-number
+          payload_blob=eb59a6083bee640d8e44a74eb64f838282fd4571
+          payload_size=6400
+          payload_sha256=3788fb2a63e38be4494b688a249bd96e402d687684e89c6b4ebc79dc4b93dc40
+          qualifier_blob=acf86e55d39d25c023b6aea7e69cc0d0afb9cf2d
+          qualifier_size=24819
+          qualifier_sha256=7045569d03e78e3de651016b5fdb4f8274970906f34089c316846c2d1170b82c
+          envelope=/tmp/pr2231-v128-wrapper-email-controller-v3
+          payload="$envelope/qualifier-v128-v3.sh.xz"
+          qualifier="$envelope/qualifier-v128-v3.sh"
+          wrapper_log="$envelope/controller.log"
+          rm -rf "$envelope"
+          mkdir -p "$envelope"
+          : > "$wrapper_log"
+          exec > >(tee -a "$wrapper_log") 2>&1
+
+          preserve() {
+            rc=$?
+            trap - EXIT
+            set +e
+            printf 'outer_status=%s\nmode=read-only-v128-qualification-v3\n' "$rc" > "$envelope/controller-status.env"
+            find "$envelope" -type f -printf '%P\t%s\n' | sort > "$envelope/envelope-manifest.txt"
+            find "$envelope" -type f ! -name envelope-sha256.txt -print0 \
+              | sort -z | xargs -0 sha256sum > "$envelope/envelope-sha256.txt"
+            exit "$rc"
+          }
+          trap preserve EXIT
+
+          test "$CONTROLLER_BRANCH" = "$EXPECTED_CONTROLLER_BRANCH"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_CONTROLLER"
+          gh api "repos/$repo/git/blobs/$payload_blob" --jq '.content' \
+            | tr -d '\n' | base64 -d > "$payload"
+          test "$(wc -c < "$payload")" = "$payload_size"
+          test "$(git hash-object "$payload")" = "$payload_blob"
+          test "$(sha256sum "$payload" | awk '{print $1}')" = "$payload_sha256"
+           xz -dc "$payload" > "$qualifier"
+          test "$(wc -c < "$qualifier")" = "$qualifier_size"
+          test "$(git hash-object "$qualifier")" = "$qualifier_blob"
+          test "$(sha256sum "$qualifier" | awk '{print $1}')" = "$qualifier_sha256"
+          chmod 0755 "$qualifier"
+          bash -n "$qualifier"
+          printf 'payload_blob=%s\npayload_sha256=%s\nqualifier_blob=%s\nqualifier_sha256=%s\n' \
+            "$payload_blob" "$payload_sha256" "$qualifier_blob" "$qualifier_sha256" \
+            > "$envelope/qualifier-provenance.txt"
+          bash "$qualifier"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-v128-wrapper-email-qualification-v3
+          path: |
+            /tmp/pr2231-v128-qualification-v1
+            /tmp/pr2231-v128-wrapper-email-controller-v3
+          if-no-files-found: error
+          retention-days: 90
