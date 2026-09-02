@@ -41,13 +41,13 @@ jobs:
           set -Eeuo pipefail
           export LC_ALL=C
           export EXPECTED_CONTROLLER="$(git rev-parse HEAD)"
-          payload_blob=a2d65e078b1df77f8515ac82fdc351c315122848
-          payload_size=6436
-          payload_sha256=ef96bf4df859102ee30a3f1dd0c6e24c9df2bb91e087583965485be0b058624c
-          qualifier_blob=ea01f797fcfc0fceba2f944af61227ca435fb801
-          qualifier_size=25747
-          qualifier_sha256=f0edf133a9fc9fdf34a3f6c19ba814d41337a6dc729e9e21547cc31c5dc22ed3
-          envelope=/tmp/pr2231-v130-earliest-origin-controller-v1
+          payload_blob=58e14f8ead220872c8dc87aa6982c50f34e6849e
+          payload_size=6480
+          payload_sha256=f398a2c1a78b9acb5e3cbbd95a4c9dccadbfca569de584e4db8a676d0cf8a476
+          qualifier_blob=2a24f8b886e9523edb72ba0e0c8233ed85911b50
+          qualifier_size=26019
+          qualifier_sha256=2091550cd1cf43dd2df64c05e87c04f6ffb75d14f4a897c44addc6c60f49a6f3
+          envelope=/tmp/pr2231-v130-earliest-origin-controller-v2
           payload="$envelope/qualifier-v130.sh.xz"
           qualifier="$envelope/qualifier-v130.sh"
           wrapper_log="$envelope/controller.log"
@@ -90,9 +90,9 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pr2231-v130-earliest-origin-qualification-v1
+          name: pr2231-v130-earliest-origin-qualification-v2
           path: |
-            /tmp/pr2231-v130-earliest-origin-controller-v1
-            /tmp/pr2231-v130-earliest-origin-qualification-v1
+            /tmp/pr2231-v130-earliest-origin-controller-v2
+            /tmp/pr2231-v130-earliest-origin-qualification-v2
           if-no-files-found: warn
           retention-days: 30
