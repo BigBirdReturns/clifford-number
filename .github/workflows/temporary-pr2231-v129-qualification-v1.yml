@@ -114,6 +114,10 @@ jobs:
                   "review_commits=(\n  e0c772e962078878a1e4b659a861581cb2957a73\n  e0c772e962078878a1e4b659a861581cb2957a73\n  e0c772e962078878a1e4b659a861581cb2957a73\n  e0c772e962078878a1e4b659a861581cb2957a73\n  e0c772e962078878a1e4b659a861581cb2957a73\n)",
                   "review_commits=(\n  c10beb52cc37c3933e7a0d2e452c1d6502b36a39\n  bd1523d86a562be91acdc175f73607dab0fcac09\n  bd1523d86a562be91acdc175f73607dab0fcac09\n  c10beb52cc37c3933e7a0d2e452c1d6502b36a39\n  c10beb52cc37c3933e7a0d2e452c1d6502b36a39\n)",
               ),
+              (
+                  "expected_review_titles=(\n  'Preserve a later phone-owned opener after the clean observation closer'\n  'Compare embedded-email bounds in source coordinates'\n  'Index token bounds before processing embedded emails'\n  'Reject bare-host matches followed by scheme syntax'\n  'Map normalized origins across composing code points'\n)",
+                  "expected_review_titles=(\n  'Preserve a later phone-owned opener after the clean observation closer'\n  'Compare embedded-email bounds in source coordinates'\n  'Index token bounds before processing embedded emails'\n  'Reject scheme syntax after a bare-host match'\n  'Map URL origins using whole-prefix normalization'\n)",
+              ),
           ]
           for old, new in replacements:
               count = text.count(old)
