@@ -47,7 +47,7 @@ jobs:
           qualifier_blob=7585deb837d9272aa90521e1e78f363ff7d0f5cb
           qualifier_size=25142
           qualifier_sha256=39059452aae65c911c688c2cd4ecc41c6fd5f68ec461faf6284996ff08f5fea1
-          envelope=/tmp/pr2231-v129-current-v128-controller-v2
+          envelope=/tmp/pr2231-v129-current-v128-controller-v3
           payload="$envelope/qualifier-v129-current-v128.sh.xz"
           qualifier="$envelope/qualifier-v129-current-v128.sh"
           wrapper_log="$envelope/controller.log"
@@ -60,7 +60,7 @@ jobs:
             rc=$?
             trap - EXIT
             set +e
-            printf 'outer_status=%s\nmode=read-only-v129-current-v128-controller\n' "$rc" > "$envelope/controller-status.env"
+            printf 'outer_status=%s\nmode=read-only-v129-owner-attested-v128-controller\n' "$rc" > "$envelope/controller-status.env"
             find "$envelope" -type f -printf '%P\t%s\n' | sort > "$envelope/envelope-manifest.txt"
             find "$envelope" -type f ! -name envelope-sha256.txt -print0 \
               | sort -z | xargs -0 sha256sum > "$envelope/envelope-sha256.txt"
@@ -84,14 +84,58 @@ jobs:
           printf 'payload_blob=%s\npayload_sha256=%s\nqualifier_blob=%s\nqualifier_sha256=%s\n' \
             "$payload_blob" "$payload_sha256" "$qualifier_blob" "$qualifier_sha256" \
             > "$envelope/qualifier-provenance.txt"
+
+          python3 - "$qualifier" "$envelope/runtime-rebind.txt" <<'PY'
+          import hashlib
+          import sys
+          from pathlib import Path
+
+          path = Path(sys.argv[1])
+          ledger = Path(sys.argv[2])
+          text = path.read_text()
+          replacements = [
+              (
+                  'product_parent=5b992ba8b7573cc9a859ac0dcb0d5edd20ea81ed',
+                  'product_parent=e0c772e962078878a1e4b659a861581cb2957a73',
+              ),
+              (
+                  'product_head=e0c772e962078878a1e4b659a861581cb2957a73',
+                  'product_head=c10beb52cc37c3933e7a0d2e452c1d6502b36a39',
+              ),
+              (
+                  'require_equal "$(jq -r \'.base_sha\' "$out/product-pr.before.json")" "$product_parent" product-pr-base',
+                  'require_equal "$(jq -r \'.base_sha\' "$out/product-pr.before.json")" "$main_sha" product-pr-base',
+              ),
+              (
+                  'require_equal "$(jq -r \'.commits\' "$out/product-pr.before.json")" 1 product-pr-commit-count',
+                  'require_equal "$(jq -r \'.commits\' "$out/product-pr.before.json")" 2 product-pr-commit-count',
+              ),
+          ]
+          for old, new in replacements:
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'expected one runtime-rebind target, found {count}: {old}')
+              text = text.replace(old, new)
+          path.write_text(text)
+          digest = hashlib.sha256(text.encode()).hexdigest()
+          ledger.write_text(
+              'mode=owner-attested-v128-runtime-lease-rebind\n'
+              'product_head=c10beb52cc37c3933e7a0d2e452c1d6502b36a39\n'
+              'product_commit_parent=e0c772e962078878a1e4b659a861581cb2957a73\n'
+              'product_pr_base=5b992ba8b7573cc9a859ac0dcb0d5edd20ea81ed\n'
+              'product_pr_commits=2\n'
+              f'runtime_qualifier_sha256={digest}\n'
+          )
+          PY
+          bash -n "$qualifier"
           bash "$qualifier"
 
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: pr2231-v129-current-v128-source-custody-qualification-v2
+          name: pr2231-v129-owner-attested-v128-source-custody-qualification-v3
           path: |
             /tmp/pr2231-v129-qualification-v2
-            /tmp/pr2231-v129-current-v128-controller-v2
+            /tmp/pr2231-v129-current-v128-controller-v3
           if-no-files-found: error
           retention-days: 90
