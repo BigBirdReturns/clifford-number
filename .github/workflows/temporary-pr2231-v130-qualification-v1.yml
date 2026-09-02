@@ -35,19 +35,19 @@ jobs:
         with:
           node-version: 22
 
-      - name: Execute the read-only V130 qualifier
+      - name: Execute the read-only V130 R3 qualifier
         shell: bash
         run: |
           set -Eeuo pipefail
           export LC_ALL=C
           export EXPECTED_CONTROLLER="$(git rev-parse HEAD)"
-          payload_blob=58e14f8ead220872c8dc87aa6982c50f34e6849e
-          payload_size=6480
-          payload_sha256=f398a2c1a78b9acb5e3cbbd95a4c9dccadbfca569de584e4db8a676d0cf8a476
-          qualifier_blob=2a24f8b886e9523edb72ba0e0c8233ed85911b50
-          qualifier_size=26019
-          qualifier_sha256=2091550cd1cf43dd2df64c05e87c04f6ffb75d14f4a897c44addc6c60f49a6f3
-          envelope=/tmp/pr2231-v130-earliest-origin-controller-v2
+          payload_blob=36f9ec3b6ed25f2a6539e4e84b262294fc731cdc
+          payload_size=6792
+          payload_sha256=863b87254af6d7a2259de052c2b254786ac29ca5a9cd3680848860c29c105314
+          qualifier_blob=84c4c13154afb697369c6629cafe40119889b144
+          qualifier_size=27280
+          qualifier_sha256=328c0b8d324444225f80877089ab0f37131b2b8c20edf27fa574f0104575cb34
+          envelope=/tmp/pr2231-v130-earliest-origin-controller-v3
           payload="$envelope/qualifier-v130.sh.xz"
           qualifier="$envelope/qualifier-v130.sh"
           wrapper_log="$envelope/controller.log"
@@ -60,7 +60,7 @@ jobs:
             rc=$?
             trap - EXIT
             set +e
-            printf 'outer_status=%s\nmode=read-only-v130-earliest-origin-controller\n' "$rc" > "$envelope/controller-status.env"
+            printf 'outer_status=%s\nmode=read-only-v130-earliest-origin-controller-r3\n' "$rc" > "$envelope/controller-status.env"
             find "$envelope" -type f -printf '%P\t%s\n' | sort > "$envelope/envelope-manifest.txt"
             find "$envelope" -type f ! -name envelope-sha256.txt -print0 \
               | sort -z | xargs -0 sha256sum > "$envelope/envelope-sha256.txt"
@@ -86,13 +86,13 @@ jobs:
             > "$envelope/qualifier-provenance.txt"
           "$qualifier"
 
-      - name: Upload V130 qualification receipt
+      - name: Upload V130 R3 qualification receipt
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pr2231-v130-earliest-origin-qualification-v2
+          name: pr2231-v130-earliest-origin-qualification-v3
           path: |
-            /tmp/pr2231-v130-earliest-origin-controller-v2
-            /tmp/pr2231-v130-earliest-origin-qualification-v2
+            /tmp/pr2231-v130-earliest-origin-controller-v3
+            /tmp/pr2231-v130-earliest-origin-qualification-v3
           if-no-files-found: warn
           retention-days: 30
