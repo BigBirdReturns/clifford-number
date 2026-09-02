@@ -75,8 +75,8 @@ jobs:
             trap - EXIT
             set +e
             printf 'outer_status=%s\nmode=read-only-qualification\n' "$rc" > "$artifact/outer-status.env"
-            find "$root" -type f -printf '%P\t%s\n' | sort > "$artifact/file-manifest.txt"
-            find "$root" -type f ! -name sha256-manifest.txt -print0 \
+            find "$artifact" -type f -printf '%f\t%s\n' | sort > "$artifact/file-manifest.txt"
+            find "$artifact" -type f ! -name sha256-manifest.txt -print0 \
               | sort -z | xargs -0 sha256sum > "$artifact/sha256-manifest.txt"
             exit "$rc"
           }
@@ -162,7 +162,6 @@ jobs:
           (cd "$transplant" && npm run release:check) \
             | tee "$artifact/current-main-release.log"
 
-          # Restore generated state, then reconstruct only the two admitted product files.
           git -C "$transplant" reset --hard "$expected_main"
           git -C "$transplant" clean -ffd
           git show "$expected_product:tools/lib/industrial-exhaust.mjs" > "$transplant/tools/lib/industrial-exhaust.mjs"
@@ -227,6 +226,6 @@ jobs:
         if: always()
         with:
           name: pr2231-v128-current-main-rebind-qualification-v1
-          path: /tmp/pr2231-v128-current-main-rebind-qualification-v1
+          path: /tmp/pr2231-v128-current-main-rebind-qualification-v1/artifact
           if-no-files-found: error
           retention-days: 90
