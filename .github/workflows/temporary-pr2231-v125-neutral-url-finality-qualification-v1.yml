@@ -1,0 +1,56 @@
+name: Temporary PR 2231 V125 neutral URL finality qualification
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+jobs:
+  qualify:
+    if: github.event.pull_request.head.ref == 'agent/pr2231-v125-neutral-url-finality-qualification-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+      CONTROLLER_PR: ${{ github.event.pull_request.number }}
+      CONTROLLER_BRANCH: ${{ github.event.pull_request.head.ref }}
+      EXPECTED_CONTROLLER_BRANCH: agent/pr2231-v125-neutral-url-finality-qualification-v1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - shell: bash
+        run: |
+          set -Eeuo pipefail
+          d=/tmp/pr2231-v125-neutral-url-finality-bootstrap-v1
+          rm -rf "$d"; mkdir -p "$d"
+          for spec in 72341c627429d113846dd47fe578d9b944cbc2cb:00 44d39ec92021d40dedcece4702575267fe09b3c6:01; do
+            sha=${spec%:*}; out="$d/${spec#*:}"
+            curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H 'Accept: application/vnd.github+json' "https://api.github.com/repos/$GITHUB_REPOSITORY/git/blobs/$sha" | python3 -c 'import base64,json,sys;sys.stdout.buffer.write(base64.b64decode(json.load(sys.stdin)["content"]))' > "$out"
+            test "$(git hash-object "$out")" = "$sha"
+          done
+          cat "$d/00" "$d/01" > "$d/controller.sh.xz"
+          test "$(git hash-object "$d/controller.sh.xz")" = 1d0bb0f0b7af6396a6be7ec957aa2c5d7c2f9da8
+          test "$(sha256sum "$d/controller.sh.xz" | cut -d' ' -f1)" = 39a9bb732ce92cdee0927ab818818574fb92d18893d6194cfdc2fd0ac7063faf
+          xz -dc "$d/controller.sh.xz" > "$d/controller.sh"
+          test "$(git hash-object "$d/controller.sh")" = 63219b4e52d3a8bdb952341cacf31d04a3e58b2c
+          test "$(sha256sum "$d/controller.sh" | cut -d' ' -f1)" = ad00b81f0f5968cd7a07afd4fce40ebe2e6ff8ed805d55c8b9e5b12dd767eb92
+          chmod 0755 "$d/controller.sh"; "$d/controller.sh"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr2231-v125-neutral-url-finality-qualification-v1-r3
+          path: |
+            /tmp/pr2231-v125-neutral-url-finality-qualification-v1
+            /tmp/pr2231-v125-neutral-url-finality-controller-v1
+            /tmp/pr2231-v125-neutral-url-finality-bootstrap-v1
+          if-no-files-found: error
+          retention-days: 90
