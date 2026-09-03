@@ -1,0 +1,118 @@
+name: TEMP publish RD-01 cleanup SEC-gap repair
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/materializers/rd01-wave03-cleanup-gap-repair.py
+      - .github/workflows/temp-rd01-wave03-cleanup-gap-repair-publisher.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: rd01-wave03-cleanup-gap-repair-product
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.pull_request.head.ref == 'agent/rd01-wave03-cleanup-gap-repair-controller-v1'
+    runs-on: ubuntu-latest
+    env:
+      EXPECTED_BASE: 50c3363206ac469932b8404a4fa605d0920f668b
+      PRODUCT_BRANCH: agent/rd01-wave03-cleanup-gap-repair-product-v1
+      PRODUCT_PATH: data/research/clifford-cross-corpus-public-interest-map.json
+    steps:
+      - name: Check out controller branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Materialize, qualify, and publish product
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git fetch --no-tags origin main
+          actual_base="$(git rev-parse origin/main)"
+          if [[ "$actual_base" != "$EXPECTED_BASE" ]]; then
+            echo "main moved: expected $EXPECTED_BASE, observed $actual_base" >&2
+            exit 1
+          fi
+
+          if git ls-remote --exit-code --heads origin "$PRODUCT_BRANCH" >/dev/null 2>&1; then
+            echo "product branch already exists: $PRODUCT_BRANCH" >&2
+            exit 1
+          fi
+
+          worktree="$(mktemp -d)"
+          product_copy="$(mktemp)"
+          cleanup() {
+            git worktree remove --force "$worktree" >/dev/null 2>&1 || true
+            rm -rf "$worktree" "$product_copy"
+          }
+          trap cleanup EXIT
+
+          git worktree add --detach "$worktree" "$EXPECTED_BASE"
+          python "$GITHUB_WORKSPACE/.github/materializers/rd01-wave03-cleanup-gap-repair.py" "$worktree"
+
+          cd "$worktree"
+          git diff --check
+          mapfile -t changed_paths < <(git diff --name-only | sort)
+          expected_paths=("$PRODUCT_PATH")
+          if [[ "${changed_paths[*]}" != "${expected_paths[*]}" ]]; then
+            printf 'unexpected product denominator:\n' >&2
+            printf '  %s\n' "${changed_paths[@]}" >&2
+            exit 1
+          fi
+
+          cp "$PRODUCT_PATH" "$product_copy"
+          npm ci
+          npm run fanout
+          npm run validate:fanout
+          npm run validate:cross-corpus-map
+          node test/clifford-cross-corpus-public-interest-map.test.js
+          npm run release:check
+
+          git reset --hard "$EXPECTED_BASE"
+          git clean -fdx
+          cp "$product_copy" "$PRODUCT_PATH"
+
+          git diff --check
+          mapfile -t post_test_paths < <(git status --porcelain | sed -E 's/^...//' | sort)
+          if [[ "${post_test_paths[*]}" != "${expected_paths[*]}" ]]; then
+            printf 'qualification changed the product denominator:\n' >&2
+            printf '  %s\n' "${post_test_paths[@]}" >&2
+            exit 1
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$PRODUCT_BRANCH"
+          git add -- "$PRODUCT_PATH"
+          git diff --cached --check
+          git commit -m "fix(research): retire resolved SEC crawl gap"
+
+          if [[ "$(git rev-parse HEAD^)" != "$EXPECTED_BASE" ]]; then
+            echo "product commit is not directly parented to the leased base" >&2
+            exit 1
+          fi
+          mapfile -t committed_paths < <(git diff-tree --no-commit-id --name-only -r HEAD | sort)
+          if [[ "${committed_paths[*]}" != "${expected_paths[*]}" ]]; then
+            echo "committed path denominator drifted" >&2
+            exit 1
+          fi
+
+          git push origin "HEAD:refs/heads/$PRODUCT_BRANCH"
+          echo "published product $(git rev-parse HEAD)"
+          echo "published map blob $(git rev-parse HEAD:$PRODUCT_PATH)"
