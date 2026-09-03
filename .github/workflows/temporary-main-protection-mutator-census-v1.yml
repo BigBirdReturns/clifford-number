@@ -1,0 +1,268 @@
+name: Temporary main-protection mutator census v1
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temporary-main-protection-mutator-census-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: temporary-main-protection-mutator-census-v1
+  cancel-in-progress: false
+
+jobs:
+  census:
+    name: Census workflow mutation authority
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out exact controller head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Audit exact workflow mutation surface
+        shell: bash
+        env:
+          EXPECTED_MAIN: 304dbe1268e351555181cfd2e5eee94555c417e7
+          CONTROLLER_PATH: .github/workflows/temporary-main-protection-mutator-census-v1.yml
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha || '304dbe1268e351555181cfd2e5eee94555c417e7' }}
+          ARTIFACT_DIR: ${{ runner.temp }}/main-protection-mutator-census
+        run: |
+          set -euo pipefail
+          rm -rf "$ARTIFACT_DIR"
+          mkdir -p "$ARTIFACT_DIR"
+
+          [[ "$(git rev-parse HEAD)" == "$HEAD_SHA" ]] || {
+            echo "::error::controller checkout drift"; exit 1;
+          }
+          read -r commit parent extra < <(git rev-list --parents -n 1 HEAD)
+          [[ "$commit" == "$HEAD_SHA" && "$parent" == "$EXPECTED_MAIN" && -z "${extra:-}" ]] || {
+            echo "::error::controller is not one direct child of exact main"; exit 1;
+          }
+          remote_main="$(git ls-remote origin refs/heads/main | awk '{print $1}')"
+          [[ "$remote_main" == "$EXPECTED_MAIN" ]] || {
+            echo "::error::live main drifted before census"; exit 1;
+          }
+          mapfile -t changed < <(git diff --name-only "$BASE_SHA" "$HEAD_SHA")
+          [[ "${#changed[@]}" -eq 1 && "${changed[0]}" == "$CONTROLLER_PATH" ]] || {
+            printf 'unexpected controller paths:\n'; printf '  %s\n' "${changed[@]}"; exit 1;
+          }
+
+          python3 - <<'PY'
+          import hashlib, json, os, re, subprocess
+          from collections import Counter
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          ROOT=Path('.github/workflows')
+          OUT=Path(os.environ['ARTIFACT_DIR'])
+          KV=re.compile(r'^( *)([A-Za-z0-9_.-]+):(.*)$')
+          MUTATIONS=[
+            ('git_push',re.compile(r'\bgit\s+(?:-[^\s]+\s+)*push\b',re.I)),
+            ('gh_api_write',re.compile(r'\bgh\s+api\b.*(?:(?:--method|-X)\s+(?:POST|PUT|PATCH|DELETE)\b|\s-[fF]\s|--(?:raw-)?field\b|--input\b)',re.I)),
+            ('gh_issue_write',re.compile(r'\bgh\s+issue\s+(?:comment|create|edit|close|reopen|delete|transfer|lock|unlock)\b',re.I)),
+            ('gh_pr_write',re.compile(r'\bgh\s+pr\s+(?:comment|create|edit|close|reopen|merge|ready|review)\b',re.I)),
+            ('gh_release_write',re.compile(r'\bgh\s+release\s+(?:create|upload|edit|delete)\b',re.I)),
+            ('curl_api_write',re.compile(r'\bcurl\b.*(?:-X|--request)\s*(?:POST|PUT|PATCH|DELETE)\b',re.I)),
+            ('octokit_ref_write',re.compile(r'(?:github|octokit)\.rest\.(?:git\.(?:updateRef|createRef|deleteRef)|repos\.createOrUpdateFileContents)',re.I)),
+            ('octokit_issue_write',re.compile(r'(?:github|octokit)\.rest\.issues\.(?:create|update|createComment|lock|unlock|addLabels|removeLabel)',re.I)),
+            ('octokit_pr_write',re.compile(r'(?:github|octokit)\.rest\.pulls\.(?:create|update|merge|createReview|requestReviewers)',re.I)),
+            ('pages_deploy_action',re.compile(r'\buses:\s*actions/deploy-pages@',re.I)),
+            ('create_pr_action',re.compile(r'\buses:\s*peter-evans/create-pull-request@',re.I)),
+            ('push_action',re.compile(r'\buses:\s*(?:ad-m/github-push-action|stefanzweifel/git-auto-commit-action)@',re.I)),
+            ('release_action',re.compile(r'\buses:\s*(?:softprops/action-gh-release|ncipollo/release-action)@',re.I)),
+          ]
+
+          def indent(line): return len(line)-len(line.lstrip(' '))
+          def top(lines,key):
+            for i,line in enumerate(lines):
+              m=KV.match(line)
+              if m and not m.group(1) and m.group(2)==key:
+                for j in range(i+1,len(lines)):
+                  if lines[j].strip() and not lines[j].lstrip().startswith('#') and indent(lines[j])==0:
+                    return i,j
+                return i,len(lines)
+            return None
+
+          def name(lines,fallback):
+            for line in lines:
+              m=KV.match(line)
+              if m and not m.group(1) and m.group(2)=='name':
+                return m.group(3).strip().strip("'\"") or fallback
+            return fallback
+
+          def events(lines):
+            b=top(lines,'on')
+            if not b:return []
+            i,j=b; scalar=KV.match(lines[i]).group(3).strip()
+            if scalar:
+              if scalar.startswith('[') and scalar.endswith(']'):
+                return sorted(x.strip().strip("'\"") for x in scalar[1:-1].split(',') if x.strip())
+              return [scalar.strip("'\"")]
+            return sorted({m.group(2) for line in lines[i+1:j] if (m:=KV.match(line)) and len(m.group(1))==2})
+
+          def permissions(lines):
+            out={'top_level':{},'jobs':{}}
+            b=top(lines,'permissions')
+            if b:
+              i,j=b; scalar=KV.match(lines[i]).group(3).strip().strip("'\"")
+              if scalar:out['top_level']['*']=scalar
+              else:
+                for line in lines[i+1:j]:
+                  m=KV.match(line)
+                  if m and len(m.group(1))==2:out['top_level'][m.group(2)]=m.group(3).strip().strip("'\"")
+            b=top(lines,'jobs')
+            if not b:return out
+            i,j=b; job=None
+            for n in range(i+1,j):
+              m=KV.match(lines[n])
+              if m and len(m.group(1))==2:job=m.group(2)
+              if job and m and len(m.group(1))==4 and m.group(2)=='permissions':
+                p={}; scalar=m.group(3).strip().strip("'\"")
+                if scalar:p['*']=scalar
+                else:
+                  for line in lines[n+1:j]:
+                    if line.strip() and not line.lstrip().startswith('#') and indent(line)<=4:break
+                    q=KV.match(line)
+                    if q and len(q.group(1))==6:p[q.group(2)]=q.group(3).strip().strip("'\"")
+                out['jobs'][job]=p
+            return out
+
+          def write_scopes(p):
+            rows=[]
+            for scope,value in p['top_level'].items():
+              if value.lower() in ('write','write-all'):rows.append({'location':'top_level','scope':scope,'value':value})
+            for job,values in p['jobs'].items():
+              for scope,value in values.items():
+                if value.lower() in ('write','write-all'):rows.append({'location':'job:'+job,'scope':scope,'value':value})
+            return rows
+
+          def evidence(lines):
+            rows=[]
+            for no,raw in enumerate(lines,1):
+              s=raw.strip()
+              if not s or s.startswith('#'):continue
+              for kind,rx in MUTATIONS:
+                if rx.search(s):rows.append({'line':no,'kind':kind,'text':s[:500]})
+            return rows
+
+          def targets(text,ev):
+            lower=text.lower(); out=set()
+            main_hint=bool(re.search(r'(?m)^\s*ref:\s*[\'\"]?main[\'\"]?\s*$',text) or re.search(r'\bgit\s+pull\b[^\n]*\borigin\s+main\b',lower))
+            for row in ev:
+              kind,s=row['kind'],row['text']; low=s.lower()
+              if kind=='git_push':
+                a=re.split(r'\bgit\s+(?:-[^\s]+\s+)*push\b',s,flags=re.I,maxsplit=1)
+                args=a[1] if len(a)==2 else ''
+                if re.search(r'(?:refs/heads/|head:)?main\b',args,re.I):out.add('refs/heads/main')
+                elif re.search(r'(?:--tags\b|refs/tags/)',args,re.I):out.add('refs/tags/*')
+                elif not args.strip() or args.lstrip().startswith(('&&','||',';')):out.add('refs/heads/main' if main_hint else 'implicit-current-branch')
+                else:out.add('dynamic-or-explicit-remote-ref')
+              elif kind in ('gh_release_write','release_action'):out.add('release-or-tag')
+              elif kind=='pages_deploy_action':out.add('github-pages-environment')
+              elif kind in ('gh_issue_write','octokit_issue_write'):out.add('issues')
+              elif kind in ('gh_pr_write','octokit_pr_write','create_pr_action'):out.add('pull-requests')
+              elif kind=='octokit_ref_write':out.add('refs/heads/main' if 'main' in low else 'dynamic-repository-ref')
+              elif kind in ('gh_api_write','curl_api_write'):out.add('refs/heads/main' if 'refs/heads/main' in low else 'github-api-dynamic')
+              elif kind=='push_action':out.add('dynamic-repository-ref')
+            return sorted(out)
+
+          def classify(writes,ev,tgts):
+            scopes={x['scope'] for x in writes}; c=set()
+            if 'refs/heads/main' in tgts:c.add('direct_main_writer')
+            if any(x in tgts for x in ('implicit-current-branch','dynamic-or-explicit-remote-ref','dynamic-repository-ref','github-api-dynamic')):c.add('repository_ref_writer_or_dynamic')
+            if 'release-or-tag' in tgts:c.add('release_or_tag_writer')
+            if 'issues' in tgts or 'issues' in scopes:c.add('issue_writer')
+            if 'pull-requests' in tgts or 'pull-requests' in scopes:c.add('pull_request_writer')
+            if 'github-pages-environment' in tgts or 'pages' in scopes:c.add('pages_deployer')
+            for scope,label in [('actions','actions_writer'),('deployments','deployment_writer'),('checks','check_or_status_writer'),('statuses','check_or_status_writer'),('packages','package_writer'),('security-events','security_event_writer')]:
+              if scope in scopes:c.add(label)
+            if 'contents' in scopes and not c.intersection({'direct_main_writer','repository_ref_writer_or_dynamic','release_or_tag_writer','pull_request_writer'}):c.add('contents_write_without_observed_ref_mutation')
+            if writes and not c:c.add('write_scoped_without_observed_mutation')
+            if not writes and not ev:c.add('read_only')
+            elif not writes and ev:c.add('mutation_command_without_matching_explicit_write_scope')
+            order=['direct_main_writer','repository_ref_writer_or_dynamic','release_or_tag_writer','pages_deployer','pull_request_writer','issue_writer','actions_writer','deployment_writer','check_or_status_writer','package_writer','security_event_writer','contents_write_without_observed_ref_mutation','write_scoped_without_observed_mutation','mutation_command_without_matching_explicit_write_scope','read_only']
+            return next((x for x in order if x in c),'read_only'),sorted(c)
+
+          records=[]
+          paths=sorted([*ROOT.glob('*.yml'),*ROOT.glob('*.yaml')])
+          if not paths:raise SystemExit('no workflows found')
+          for path in paths:
+            raw=path.read_bytes(); text=raw.decode(); lines=text.splitlines()
+            p=permissions(lines); w=write_scopes(p); ev=evidence(lines); tgts=targets(text,ev); primary,classes=classify(w,ev,tgts)
+            blob=subprocess.check_output(['git','rev-parse',f'HEAD:{path.as_posix()}'],text=True).strip()
+            records.append({'path':path.as_posix(),'name':name(lines,path.name),'git_blob':blob,'sha256':hashlib.sha256(raw).hexdigest(),'bytes':len(raw),'events':events(lines),'permissions':p,'write_permissions':w,'observed_mutation_evidence':ev,'observed_targets':tgts,'primary_classification':primary,'classifications':classes})
+
+          interesting=[r for r in records if r['write_permissions'] or r['primary_classification']!='read_only']
+          direct=[r for r in records if 'direct_main_writer' in r['classifications']]
+          ambiguous=[r for r in records if 'repository_ref_writer_or_dynamic' in r['classifications'] and 'direct_main_writer' not in r['classifications']]
+          primary=Counter(r['primary_classification'] for r in records)
+          classes=Counter(c for r in records for c in r['classifications'])
+          tree=subprocess.check_output(['git','rev-parse','HEAD:.github/workflows'],text=True).strip()
+          result={
+            'schema':'main-protection-mutator-census@1',
+            'repository':os.environ.get('GITHUB_REPOSITORY',''),
+            'generated_at':datetime.now(timezone.utc).isoformat().replace('+00:00','Z'),
+            'controller':{'head_sha':os.environ['HEAD_SHA'],'path':os.environ['CONTROLLER_PATH'],'expected_main':os.environ['EXPECTED_MAIN'],'workflow_tree':tree},
+            'summary':{'workflow_count':len(records),'interesting_count':len(interesting),'direct_main_writer_count':len(direct),'ambiguous_ref_writer_count':len(ambiguous),'primary_counts':dict(sorted(primary.items())),'class_counts':dict(sorted(classes.items()))},
+            'direct_main_writers':[r['path'] for r in direct],
+            'ambiguous_repository_ref_writers':[r['path'] for r in ambiguous],
+            'policy_findings':{
+              'broad_github_actions_bypass_safe':False,
+              'reason':'GitHub Actions is shared by direct-main, metadata, Pages, artifact-only, and read-only workflows; actor-wide bypass does not isolate the enumerated mutators.',
+              'recommended_sequence':['Move direct-main writers to dedicated automation branches or a separately installed narrow App identity.','Promote automation output through exact-scope pull requests and stable checks.','Then refuse deletion and non-fast-forward updates and require pull requests and checks on main without a broad Actions bypass.','Run one admitted automation promotion and one refused direct or force update.'],
+              'proposed_human_change_checks':['Release checks','No magic human gate']
+            },
+            'workflows':records
+          }
+          data=(json.dumps(result,indent=2,sort_keys=True)+'\n').encode()
+          digest=hashlib.sha256(data).hexdigest()
+          (OUT/'mutator-census.json').write_bytes(data)
+          (OUT/'mutator-census.sha256').write_text(f'{digest}  mutator-census.json\n')
+          md=['# Main-protection workflow mutator census','',f"- Repository: `{result['repository']}`",f"- Controller head: `{os.environ['HEAD_SHA']}`",f"- Expected main: `{os.environ['EXPECTED_MAIN']}`",f"- Workflow tree: `{tree}`",f"- Workflow files: `{len(records)}`",f"- Write-capable or command-bearing: `{len(interesting)}`",f"- Direct-main writers: `{len(direct)}`",f"- Ambiguous ref writers: `{len(ambiguous)}`",f"- Census SHA-256: `{digest}`",'','| Workflow | Primary class | Write scopes | Targets | Evidence |','|---|---|---|---|---:|']
+          for r in interesting:
+            scopes=', '.join(sorted({x['scope'] for x in r['write_permissions']})) or 'none'
+            tg=', '.join(r['observed_targets']) or 'none observed'
+            md.append(f"| `{r['path']}` | `{r['primary_classification']}` | `{scopes}` | `{tg}` | {len(r['observed_mutation_evidence'])} |")
+          md+=['','## Direct-main writers','']
+          for r in direct:
+            authority=', '.join('`'+x['location']+'/'+x['scope']+'`' for x in r['write_permissions'])
+            observed=', '.join('`'+x+'`' for x in r['observed_targets'])
+            md += [f"### `{r['path']}`",'',f"Write authority: {authority}",'',f"Observed targets: {observed}",'']
+            for x in r['observed_mutation_evidence']:
+              md.append(f"- Line {x['line']} `{x['kind']}`: `{x['text'].replace('|','&#124;')}`")
+            md.append('')
+          md += ['## Control disposition','','An actor-wide GitHub Actions bypass is not admitted. Direct-main scheduled writers must first move to dedicated automation branches or a separately installed narrow App identity. Main can then refuse deletion and non-fast-forward updates and require pull requests plus stable checks without granting unrelated workflows a bypass.','','Control question: can every direct-main workflow be migrated or separately identified before enforcement, so the policy preserves admitted acquisition while refusing unrelated mutation?']
+          (OUT/'mutator-census.md').write_text('\n'.join(md)+'\n')
+          receipt={'result':'success','controller_head':os.environ['HEAD_SHA'],'expected_main':os.environ['EXPECTED_MAIN'],'workflow_tree':tree,'workflow_count':len(records),'interesting_count':len(interesting),'direct_main_writer_count':len(direct),'ambiguous_ref_writer_count':len(ambiguous),'census_sha256':digest,'publication':'skipped','repository_mutation':'skipped','branch_protection_mutation':'skipped'}
+          (OUT/'receipt.json').write_text(json.dumps(receipt,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(receipt,indent=2,sort_keys=True))
+          PY
+
+          remote_main_after="$(git ls-remote origin refs/heads/main | awk '{print $1}')"
+          [[ "$remote_main_after" == "$EXPECTED_MAIN" ]] || {
+            echo "::error::live main drifted during census"; exit 1;
+          }
+          git diff --exit-code
+          echo "PUBLICATION_SKIPPED"
+          echo "REPOSITORY_MUTATION_SKIPPED"
+          echo "BRANCH_PROTECTION_MUTATION_SKIPPED"
+          echo "MUTATOR_CENSUS_SUCCESS"
+
+      - name: Upload exact census receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: main-protection-mutator-census-${{ github.run_id }}
+          path: ${{ runner.temp }}/main-protection-mutator-census
+          if-no-files-found: error
+          retention-days: 90
