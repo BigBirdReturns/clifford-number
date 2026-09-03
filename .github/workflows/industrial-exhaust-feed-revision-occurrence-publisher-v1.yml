@@ -29,7 +29,7 @@ jobs:
 
       - name: Materialize exact current-main repair
         env:
-          EXPECTED_BASE: fe1f8e7ff4f4f597e56236f8508026d1226b7422
+          EXPECTED_BASE: e0285ce9d5c43be8f983c45c83a1c07a73ac906f
         run: |
           set -euo pipefail
           git fetch --no-tags origin main
@@ -54,7 +54,9 @@ jobs:
 
           function latestObservationIndex(observations) {"""
           if source.count(helper_anchor) != 1:
-              raise SystemExit(f'expected one latestObservationIndex anchor, found {source.count(helper_anchor)}')
+              raise SystemExit(
+                  f'expected one latestObservationIndex anchor, found {source.count(helper_anchor)}'
+              )
           source = source.replace(helper_anchor, helper, 1)
 
           old_id = "      observation_id: contentId('xobs', source.id, item.source_record_key, item.content_sha256),"
@@ -65,7 +67,9 @@ jobs:
                 item.content_sha256
               ),"""
           if source.count(old_id) != 1:
-              raise SystemExit(f'expected one legacy observation identifier, found {source.count(old_id)}')
+              raise SystemExit(
+                  f'expected one legacy observation identifier, found {source.count(old_id)}'
+              )
           source = source.replace(old_id, new_id, 1)
           source_path.write_text(source, encoding='utf-8')
 
@@ -117,26 +121,34 @@ jobs:
 
           const alerts = buildAlerts(revisionMerge.observations, watch);"""
           if tests.count(alert_anchor) != 1:
-              raise SystemExit(f'expected one alert anchor, found {tests.count(alert_anchor)}')
+              raise SystemExit(
+                  f'expected one alert anchor, found {tests.count(alert_anchor)}'
+              )
           tests = tests.replace(alert_anchor, regression, 1)
           test_path.write_text(tests, encoding='utf-8')
           PY
 
       - name: Qualify exact two-file product
         env:
-          EXPECTED_BASE: fe1f8e7ff4f4f597e56236f8508026d1226b7422
+          EXPECTED_BASE: e0285ce9d5c43be8f983c45c83a1c07a73ac906f
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$EXPECTED_BASE"
+
           npm ci
           node --check tools/lib/industrial-exhaust.mjs
           node --check test/industrial-exhaust.test.js
           node test/industrial-exhaust.test.js
           npm run release:check
 
-          unexpected_untracked="$(git ls-files --others --exclude-standard | awk '$0 !~ /^node_modules\// { print }' | LC_ALL=C sort)"
+          unexpected_untracked="$(
+            git ls-files --others --exclude-standard |
+              awk '$0 !~ /^node_modules\// { print }' |
+              LC_ALL=C sort
+          )"
           if test -n "$unexpected_untracked"; then
-            printf 'Unexpected untracked paths outside dependency workspace:\n%s\n' "$unexpected_untracked" >&2
+            printf 'Unexpected untracked paths outside dependency workspace:\n%s\n' \
+              "$unexpected_untracked" >&2
             exit 1
           fi
           if test -L node_modules; then
@@ -146,15 +158,10 @@ jobs:
           rm -rf -- node_modules
           untracked_after_cleanup="$(git ls-files --others --exclude-standard | LC_ALL=C sort)"
           if test -n "$untracked_after_cleanup"; then
-            printf 'Untracked paths remain after dependency cleanup:\n%s\n' "$untracked_after_cleanup" >&2
+            printf 'Untracked paths remain after dependency cleanup:\n%s\n' \
+              "$untracked_after_cleanup" >&2
             exit 1
           fi
-
-          echo "::group::Post-release worktree census"
-          git status --short
-          tracked_before="$(git diff --name-only | LC_ALL=C sort)"
-          printf 'Tracked paths before generated-state restore:\n%s\n' "$tracked_before"
-          echo "::endgroup::"
 
           expected_product="$(printf '%s\n' \
             test/industrial-exhaust.test.js \
@@ -171,7 +178,17 @@ jobs:
             build/scout-report.md \
             build/surface-graph.json \
             build/topology-admission-frontier.json | LC_ALL=C sort)"
-          permitted_before="$(printf '%s\n%s\n' "$expected_product" "$permitted_generated" | sed '/^$/d' | LC_ALL=C sort -u)"
+          permitted_before="$(
+            printf '%s\n%s\n' "$expected_product" "$permitted_generated" |
+              sed '/^$/d' |
+              LC_ALL=C sort -u
+          )"
+          tracked_before="$(git diff --name-only | LC_ALL=C sort)"
+
+          echo "::group::Post-release worktree census"
+          git status --short
+          printf 'Tracked paths before generated-state restore:\n%s\n' "$tracked_before"
+          echo "::endgroup::"
 
           missing_required=""
           while IFS= read -r required_path; do
@@ -212,7 +229,8 @@ jobs:
           tracked_after="$(git diff --name-only | LC_ALL=C sort)"
           printf 'Tracked product paths after generated-state restore:\n%s\n' "$tracked_after"
           if test "$tracked_after" != "$expected_product"; then
-            printf 'Unexpected product denominator after generated-state restore.\nExpected:\n%s\nActual:\n%s\n' "$expected_product" "$tracked_after" >&2
+            printf 'Unexpected product denominator after generated-state restore.\nExpected:\n%s\nActual:\n%s\n' \
+              "$expected_product" "$tracked_after" >&2
             git diff --stat >&2
             exit 1
           fi
@@ -222,17 +240,21 @@ jobs:
 
       - name: Publish qualified product branch
         env:
-          EXPECTED_BASE: fe1f8e7ff4f4f597e56236f8508026d1226b7422
+          EXPECTED_BASE: e0285ce9d5c43be8f983c45c83a1c07a73ac906f
+          EXPECTED_REMOTE_PRODUCT_HEAD: be9e8a2ba6a6cff336b4965a8b3cde45077ddeeb
+          EXPECTED_REMOTE_PRODUCT_PARENT: fe1f8e7ff4f4f597e56236f8508026d1226b7422
           PRODUCT_BRANCH: agent/industrial-exhaust-feed-revision-occurrence-current-main-v1
         run: |
           set -euo pipefail
           git fetch --no-tags origin main
           test "$(git rev-parse origin/main)" = "$EXPECTED_BASE"
           test "$(git rev-parse HEAD)" = "$EXPECTED_BASE"
+
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -- test/industrial-exhaust.test.js tools/lib/industrial-exhaust.mjs
           git commit -m "fix(exhaust): bind feed revisions to predecessor occurrences"
+
           test "$(git rev-parse HEAD^)" = "$EXPECTED_BASE"
           test -z "$(git status --porcelain)"
           actual="$(git diff-tree --no-commit-id --name-only -r HEAD | LC_ALL=C sort)"
@@ -240,13 +262,18 @@ jobs:
             test/industrial-exhaust.test.js \
             tools/lib/industrial-exhaust.mjs | LC_ALL=C sort)"
           test "$actual" = "$expected"
+
+          remote_line="$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH")"
+          test -n "$remote_line"
+          remote_sha="${remote_line%%$'\t\'*}"
+          test "$remote_sha" = "$EXPECTED_REMOTE_PRODUCT_HEAD"
+          git fetch --no-tags origin "$remote_sha"
+          test "$(git rev-parse "$remote_sha^")" = "$EXPECTED_REMOTE_PRODUCT_PARENT"
+          remote_paths="$(git diff-tree --no-commit-id --name-only -r "$remote_sha" | LC_ALL=C sort)"
+          test "$remote_paths" = "$expected"
+
           local_tree="$(git rev-parse HEAD^{tree})"
-          if remote_line="$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH")" && test -n "$remote_line"; then
-            remote_sha="${remote_line%%$'\t'*}"
-            git fetch --no-tags origin "$remote_sha"
-            test "$(git rev-parse "$remote_sha^{tree}")" = "$local_tree"
-            echo "Existing product branch already carries qualified tree $local_tree at $remote_sha"
-            exit 0
-          fi
-          git push origin "HEAD:refs/heads/$PRODUCT_BRANCH"
-          echo "Published product $(git rev-parse HEAD) with tree $local_tree"
+          git push \
+            --force-with-lease="refs/heads/$PRODUCT_BRANCH:$EXPECTED_REMOTE_PRODUCT_HEAD" \
+            origin "HEAD:refs/heads/$PRODUCT_BRANCH"
+          echo "Rebound product $(git rev-parse HEAD) with tree $local_tree from $EXPECTED_BASE"
