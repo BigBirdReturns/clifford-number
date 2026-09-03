@@ -1,0 +1,91 @@
+name: Materialize checks-first scheduled promotion repair
+
+on:
+  push:
+    branches:
+      - agent/main-protection-status-check-promotion-materializer-v1
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      EXPECTED_BASE: d727d71268e0c7b4a3eaba924a03add68c96bbb9
+      PRODUCT_BRANCH: agent/main-protection-status-check-promotion-v1
+      CONTROLLER_BRANCH: agent/main-protection-status-check-promotion-materializer-v1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Lease exact main and refuse preexisting product ref
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_BASE"
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$EXPECTED_BASE"
+          if git ls-remote --exit-code --heads origin "refs/heads/$PRODUCT_BRANCH" >/dev/null 2>&1; then
+            echo "::error::Product branch already exists: $PRODUCT_BRANCH"
+            exit 1
+          fi
+      - name: Materialize exact four-file repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import base64, gzip
+          payloads = {".github/scripts/promote-scheduled-crawl.sh":"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",".github/workflows/crawl-industrial-exhaust.yml":"H4sIAAAAAAAC/+1XbW/TSBD+nl8x10PKHcJJoIBORpUutIFWUILaVAIhFG3sdbxg75p9SYgo//1m/JI4zkvL66dzpdTenZndfWbmmVnJUu7DM6GN9TKm7QKEDJ2xWrDE459jhu84ZNlH3mr9Cccss05zYDIEkplyUDJZdOBY6UxpZjlkbpKIgFmhpAHNUyYkMIvCE2d5CNFqKbRnLKqkXFqTmwyYlMpC6miYvpREUwlMNcviexAkTKT3wARKc/xiBn+VBhZY/M1NdVpK+i3ATSTJWPNPjhtL3zjCbGyKVwAP2p2psLGbdOdKf4wSNTfdQLN54m0ev7NIk/ZKMWSWdcup7t27tRmrVLLHTPrBbAjHi5BAu614IibdHxL1EHcRIWCmqYRAbTNN453bSNYs13QyZ+IC9IlmMoi58eEdhcT7X+iUi0H/5HzQScNdAkY5HXCDe1Ryl8yc2SD2LNfpfrnq2N4Oo/8HxUZQGIyD0CW8cLwHgcakhfbD+/AP3KU/EqpCYBwKk5EvCmkhM2eXIVNgXn0BhNwEWmTEPT4M8//IHvwz7qCUBREupYkfhOahDxFLDK9ZiZhLLG6p3WplGAHCGGIzWidQ0hJd+ajNwlYLvwOnNZfBgqanWrnMr5PcFi96d758gSLSO3yG1sYSWRi+fiX7mCWcIsXLtJpqbky1u9YHNcm3MGOJwBAsj62dNB4d102ctM5LGCGdTxnLs1p2OUPZh1DQWbrog+Cjcvbf2cMdEoZbl3lShXwlg37Bfa8AB6B5b8a1yTFvP+itokLmteVygdXjc07vLCRBRliUNQVos2blEYc2rhvWwfPyzcJN4f49euuxv9/CviTer7k/o5u6N6TdLcU3c6/hmL4LhaWAjsQUa/paaQbjNOrym1xzMzCIBKOFtmvuB6ahW238pZjxPP086j0g4rj3PLzKA4NJVRlay1W5nNWjdvDmtH91ORqPzs4Hw6vR+PwSY/ewh097i9R5/8342WBwMn76djQgyUe93i7Z/sXo7Fn/uFCq5B/fQv5k8LL/ttjIg0c10R8APtQLD9XxjaaD7/VB0wy+JCIV9uhBr0WURZso2TnytxDbH0fQrjdkxdkkug3ZpmKzm8jMipQjXXmpkNhHouLjXj7eIGB6ShKuykzoFTBR20Gsmirit1J2N9/m/ck6+dNTsqMPcy1sVTNWVWE1+o3su8msmiOatOnaWMSpKwl5hqLQ+7XEfcr0jFP3n1I/Pkn4GkHkWYcVietZ0ev/rlTbyIfL4dXF8QAT6flRu25SRPAOPAkHVG6LvqFTNgHX11jbseAewPsnYGMu60YOvLKXO9pURJUnCMN3ZWOZPHdWSzUAPxF4s0GP5GRWZiVMlJMhQp1fq0xMsxWv/xzEfwZhHW4Q1rfwS4NVHvUauFzwnH7KjgGDkM9ZktxEkL+niL7O+YQv25kYuWcawyeHtBYJ9BtdS52BPOFXqwpsOgsqWrWdRCJIbhwJ0ONaK+3jFdvxXV5+fjoeDV8MXvlAYWp4oDnu8vnZ6PTqaTFTdJTV8/pieD4cnQ1fjV+cvTrxt9zz1xGdMBNDdSEr2mrTLffsNbi1Y+INn1m6+C/lYEm8yGsBR2MrLJDmWDJnC/PX38vBdUZzWaKw3FfO2Etr+fJN7l+uXu+98ZhjESJKzUFmLU8zu44f3VULrFFEct0hGRTp7l6reVI6K/KyF4mEGy+izPYhd/Ua7VMpIfUQIfHhsJkOAxkp4qLt2Bq8ueyHthFHq7i4HA1ej5EwjofngzKqqIZ1Sqd3sF4Fqrqo1CKFMgNZdruhAzjCZjLAVtK0/gOx20VhbRIAAA==",".github/workflows/crawl-official.yml":"H4sIAAAAAAAC/6VWbW8aRxD+zq8YpVHcVL2DJlGrnlQpxEb2ycZYBqv1p9OyOwcb3+1e9wWCkvz3zt7BARfsLwUJjpnZeXlm5lkUKzGBSZ5LLlkRGeTaCJDKsSfs9X6CC2m5XqHZgFbFJobZUlpYa/OUF3oNJdsAqypUAhR6Z1gBem7RrJiTWllgpOD0IQVzaGPylzqyJH+AQjoblFpJTucKFAs09lcSWaQvKVA56WR4tt7kjNdPlF741gYe0rinVdIDEi5R+ALDM0AE3JAczn77A/6EX8L7jBS7nDMhbcUcXzbWUlXe2eYZqJ4vWQNBKwIQaLmRVagogTH7IktfUhFrkGXpHZsXeFT0wbmc+cKFTAaDs16vQlNKa4NNcM61clSiTcAgE70e/ebeGFR8E9QLo32VtLWJiBu2LqKSSRVVRpc6BAtumOJYRI10QeCQw5wVlrr3mdKqI4WTTT3GKxuFOvzcK+ejIvTF1SonS9TeRaVUnoQJ/D6o5Z20w4vxutIE1kY63Ar39eyl1mHVnorA2+B3e7pPlfEnivhx9aHFbC3dco885Yt5AqHmA1mO1L1IYEWmMHjGuUXnq0hpgS+5D/qIptHWvT17F9q086fqzRh6mtNQWy4X3qAAJljl6ETrBdXq0OV0OM6Gd2l2PXpM4PXXr2CRG3Q2PlDA9+/tCepIAqoqw8O2UyzE7CZyxcyKWgV6u6qnZ+5/JkMnRufZw3R0nw0vR7ezBHgh85z2IVK+nNPa6g5T1BmTfC4Xc2kEOfdG2Y80i06ruMQD1+f3w79vsvHwnyaVZvPig5WDb9+aXTlOqTl3k47TWb1LZz/oLkY3w8dsPA3qd4MTBultOkuH5GQyuf40PL/OLoaPwfr9ge2JRuyK7fZipAgSjluahFwaXLOiOO1qxYqa/pLaJ7x5U08dhL3rt2jWujjI4s+2G27q2AJ3SEd6rXDH0GC0dvY47oLmlQkBFJP1m5iELxKB2eZn1/1dzSZtNW5JzLNYwr+eEs8lxbKOOU9cHfZ1H0yKBBoi2jc5cADRBxLFRGiMNgk44/G58by8ymaT69Ht8WxeprOrh0+N5ngS7u4n48ksndxm1+ntRdIdxmMc5swuISY0ln7ebxjc9rcJRx1aje2yA8o9OmKdPf1Cy7k7NPdAEEWxYs029ue3rfCYjXxVaCYiZpyki+xFxmvCd2m/jR4FpJqiYiozk4Ig6gqZc1hW7hg8uvSWDdBkotDEwYZM+s/H6lYaaiVOjXJZoI1y7RXNQN3nI8oO10A4LgiSBN4Pntme09haujJfhrYzRPuhmM5Gd9nkYXY+GY+2IxXun3jb9JjuGq5L/IF9w9rBq9enHb2Cv+j/B6d/H7b3H9elfN8tCQAA","test/scheduled-crawl-promotion.test.js":"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"}
+          for path, encoded in payloads.items():
+              target = Path(path)
+              target.parent.mkdir(parents=True, exist_ok=True)
+              target.write_bytes(gzip.decompress(base64.b64decode(encoded)))
+          Path('.github/scripts/promote-scheduled-crawl.sh').chmod(0o755)
+          PY
+          git diff --check
+          expected="$(mktemp)"
+          actual="$(mktemp)"
+          cat > "$expected" <<'EOF'
+          .github/scripts/promote-scheduled-crawl.sh
+          .github/workflows/crawl-industrial-exhaust.yml
+          .github/workflows/crawl-official.yml
+          test/scheduled-crawl-promotion.test.js
+          EOF
+          git diff --name-only | sort > "$actual"
+          diff -u "$expected" "$actual"
+          bash -n .github/scripts/promote-scheduled-crawl.sh
+          node test/scheduled-crawl-promotion.test.js
+      - name: Publish one direct-child product commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "BigBirdReturns"
+          git config user.email "bigbirdreturns@proton.me"
+          git add -- \
+            .github/scripts/promote-scheduled-crawl.sh \
+            .github/workflows/crawl-industrial-exhaust.yml \
+            .github/workflows/crawl-official.yml \
+            test/scheduled-crawl-promotion.test.js
+          git diff --cached --check
+          git commit -m "Protect scheduled crawlers with checks-first fast-forward"
+          candidate="$(git rev-parse HEAD)"
+          test "$(git rev-parse "$candidate^")" = "$EXPECTED_BASE"
+          test -z "$(git status --porcelain)"
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$EXPECTED_BASE"
+          git push origin "$candidate:refs/heads/$PRODUCT_BRANCH"
+          test "$(git ls-remote origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')" = "$candidate"
+          printf 'PRODUCT_SHA=%s\n' "$candidate"
+      - name: Retire controller ref
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          git push origin ":refs/heads/$CONTROLLER_BRANCH"
