@@ -1,0 +1,233 @@
+name: Rebind checks-first scheduled promotion over recovery custody v3
+
+on:
+  push:
+    branches:
+      - agent/main-protection-status-check-promotion-rebind-v3
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      EXPECTED_BASE: ae0d3435edddedb6bf6621f7fb62c44cc048c929
+      PRODUCT_BRANCH: agent/main-protection-status-check-promotion-v2
+      EXPECTED_PRODUCT_HEAD: 4901d9cebe721eebc16a8e52060972eb480a29dd
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          show-progress: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Lease exact main and exact predecessor product
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_BASE"
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$EXPECTED_BASE"
+          git fetch --no-tags origin "$PRODUCT_BRANCH:refs/remotes/origin/$PRODUCT_BRANCH"
+          test "$(git rev-parse "refs/remotes/origin/$PRODUCT_BRANCH")" = "$EXPECTED_PRODUCT_HEAD"
+
+      - name: Compose checks-first authority with recovery custody
+        shell: bash
+        run: |
+          set -euo pipefail
+          git show "$EXPECTED_PRODUCT_HEAD:.github/scripts/promote-scheduled-crawl.sh" \
+            > .github/scripts/promote-scheduled-crawl.sh
+          python3 - <<'PY'
+          from pathlib import Path
+          import os
+          import subprocess
+
+          product = os.environ['EXPECTED_PRODUCT_HEAD']
+          helper_path = '.github/scripts/promote-scheduled-crawl.sh'
+          test_path = 'test/scheduled-crawl-promotion.test.js'
+          workflow_paths = [
+              '.github/workflows/crawl-industrial-exhaust.yml',
+              '.github/workflows/crawl-official.yml',
+          ]
+
+          def show(path):
+              return subprocess.check_output(
+                  ['git', 'show', f'{product}:{path}'],
+                  text=True,
+              )
+
+          def replace_once(text, old, new, label):
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected one match, observed {count}')
+              return text.replace(old, new, 1)
+
+          for path in workflow_paths:
+              text = Path(path).read_text()
+              text = replace_once(
+                  text,
+                  '      pull-requests: write\n',
+                  '',
+                  f'{path} pull-request scope',
+              )
+              text = replace_once(
+                  text,
+                  '      - name: Promote intake through qualified pull request\n',
+                  '      - name: Promote intake through qualified status checks\n',
+                  f'{path} promotion label',
+              )
+              Path(path).write_text(text)
+
+          main_test = Path(test_path).read_text()
+          candidate_test = show(test_path)
+
+          main_header_end = main_test.index('\n\nconst paths =')
+          candidate_header_end = candidate_test.index('\n\nconst paths =')
+          merged = main_test[:main_header_end] + candidate_test[candidate_header_end:]
+
+          main_paths_start = main_test.index('const paths = {')
+          main_paths_end = main_test.index('\n};', main_paths_start) + len('\n};')
+          merged_paths_start = merged.index('const paths = {')
+          merged_paths_end = merged.index('\n};', merged_paths_start) + len('\n};')
+          merged = (
+              merged[:merged_paths_start]
+              + main_test[main_paths_start:main_paths_end]
+              + merged[merged_paths_end:]
+          )
+
+          helper_assertion = (
+              "    requireMatch(errors, workflow, /run: bash \\.github\\/scripts\\/promote-scheduled-crawl\\.sh/, "
+              "`${label} must invoke the common promotion helper`);\n"
+          )
+          recovery_assertion_start = main_test.index(
+              '    requireMatch(errors, workflow, /- name: Retain exact candidate recovery bundle'
+          )
+          recovery_assertion_end = main_test.index('\n', recovery_assertion_start) + 1
+          recovery_assertion = main_test[recovery_assertion_start:recovery_assertion_end]
+          merged = replace_once(
+              merged,
+              helper_assertion,
+              helper_assertion + recovery_assertion,
+              'recovery workflow assertion insertion',
+          )
+
+          pull_rebase_assertion = (
+              "    requireAbsent(errors, workflow, /git pull --rebase/, "
+              "`${label} must not rebase generated intake over a moved main`);\n"
+          )
+          ordered_start = main_test.index(
+              '    requireOrdered(errors, workflow, [',
+              main_test.index(pull_rebase_assertion),
+          )
+          ordered_closer = (
+              "    ], `${label} must bundle the candidate before uploading the promotion receipt`);\n"
+          )
+          ordered_end = main_test.index(ordered_closer, ordered_start) + len(ordered_closer)
+          recovery_ordering = main_test[ordered_start:ordered_end]
+          merged = replace_once(
+              merged,
+              pull_rebase_assertion,
+              pull_rebase_assertion + recovery_ordering,
+              'recovery workflow ordering insertion',
+          )
+
+          recovery_validation_start = main_test.index('  const recovery = files.recovery;')
+          recovery_validation_end = main_test.index('\n  return errors;', recovery_validation_start)
+          recovery_validation = main_test[recovery_validation_start:recovery_validation_end] + '\n'
+          merged = replace_once(
+              merged,
+              '  return errors;\n',
+              recovery_validation + '  return errors;\n',
+              'recovery validation insertion',
+          )
+
+          recovery_mutations_start = main_test.index(
+              "  ['drop the industrial recovery custodian'"
+          )
+          recovery_mutations_end = main_test.index('\n];', recovery_mutations_start)
+          recovery_mutations = main_test[recovery_mutations_start:recovery_mutations_end]
+          mutations_start = merged.index('const mutations = [')
+          mutations_end = merged.index('\n];', mutations_start)
+          prefix = merged[:mutations_end]
+          if not prefix.endswith('  }]'):
+              raise SystemExit('candidate mutation array did not end at the expected entry boundary')
+          merged = prefix + ',\n' + recovery_mutations + merged[mutations_end:]
+
+          fixture_start = main_test.index('function git(cwd, args)')
+          fixture = main_test[fixture_start:]
+          console_start = merged.index(
+              'console.log(`scheduled-crawl-promotion.test:'
+          )
+          merged = merged[:console_start] + fixture
+          Path(test_path).write_text(merged)
+
+          expected_helper_blob = subprocess.check_output(
+              ['git', 'rev-parse', f'{product}:{helper_path}'],
+              text=True,
+          ).strip()
+          actual_helper_blob = subprocess.check_output(
+              ['git', 'hash-object', helper_path],
+              text=True,
+          ).strip()
+          if actual_helper_blob != expected_helper_blob:
+              raise SystemExit(
+                  f'helper blob mismatch: expected {expected_helper_blob}, observed {actual_helper_blob}'
+              )
+          PY
+
+      - name: Validate the exact four-path composition
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected="$(mktemp)"
+          actual="$(mktemp)"
+          cat > "$expected" <<'EOF'
+          .github/scripts/promote-scheduled-crawl.sh
+          .github/workflows/crawl-industrial-exhaust.yml
+          .github/workflows/crawl-official.yml
+          test/scheduled-crawl-promotion.test.js
+          EOF
+          git diff --name-only | sort > "$actual"
+          diff -u "$expected" "$actual"
+          git diff --check
+          git diff --quiet -- .github/scripts/retain-scheduled-crawl-candidate.sh
+          bash -n .github/scripts/promote-scheduled-crawl.sh
+          bash -n .github/scripts/retain-scheduled-crawl-candidate.sh
+          node test/scheduled-crawl-promotion.test.js
+          sha256sum \
+            .github/scripts/promote-scheduled-crawl.sh \
+            .github/workflows/crawl-industrial-exhaust.yml \
+            .github/workflows/crawl-official.yml \
+            test/scheduled-crawl-promotion.test.js
+
+      - name: Publish one direct-child replacement product
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "BigBirdReturns"
+          git config user.email "bigbirdreturns@proton.me"
+          git add -- \
+            .github/scripts/promote-scheduled-crawl.sh \
+            .github/workflows/crawl-industrial-exhaust.yml \
+            .github/workflows/crawl-official.yml \
+            test/scheduled-crawl-promotion.test.js
+          git diff --cached --check
+          git commit -m "Protect scheduled crawlers with checks-first fast-forward"
+          candidate="$(git rev-parse HEAD)"
+          tree="$(git rev-parse "$candidate^{tree}")"
+          test "$(git rev-parse "$candidate^")" = "$EXPECTED_BASE"
+          test -z "$(git status --porcelain)"
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$EXPECTED_BASE"
+          test "$(git ls-remote origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')" = "$EXPECTED_PRODUCT_HEAD"
+          git push \
+            --force-with-lease="refs/heads/$PRODUCT_BRANCH:$EXPECTED_PRODUCT_HEAD" \
+            origin "$candidate:refs/heads/$PRODUCT_BRANCH"
+          test "$(git ls-remote origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')" = "$candidate"
+          printf 'PRODUCT_SHA=%s\nPRODUCT_TREE=%s\n' "$candidate" "$tree"
