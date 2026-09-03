@@ -1,0 +1,122 @@
+name: Materialize checks-first scheduled promotion repair v2
+
+on:
+  push:
+    branches:
+      - agent/main-protection-status-check-promotion-materializer-v2
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      EXPECTED_BASE: 77b758a33d0e24504f5843279d9f3dc9086c26e8
+      PRODUCT_BRANCH: agent/main-protection-status-check-promotion-v2
+      CONTROLLER_BRANCH: agent/main-protection-status-check-promotion-materializer-v2
+      PAYLOAD_BRANCH: agent/main-protection-status-check-promotion-materializer-v1
+      PAYLOAD_COMMIT: 3bfc0d93be6f45b29b3dd992ced88051840df107
+      PAYLOAD_PATH: .github/workflows/temp-main-protection-status-check-promotion-materializer-v1.yml
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Lease exact main and refuse preexisting product ref
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_BASE"
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$EXPECTED_BASE"
+          if git ls-remote --exit-code --heads origin "refs/heads/$PRODUCT_BRANCH" >/dev/null 2>&1; then
+            echo "::error::Product branch already exists: $PRODUCT_BRANCH"
+            exit 1
+          fi
+
+      - name: Recover the content-addressed four-file payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin "$PAYLOAD_BRANCH:refs/remotes/origin/$PAYLOAD_BRANCH"
+          test "$(git rev-parse "refs/remotes/origin/$PAYLOAD_BRANCH")" = "$PAYLOAD_COMMIT"
+          git show "$PAYLOAD_COMMIT:$PAYLOAD_PATH" > /tmp/payload-controller.yml
+          python3 - <<'PY'
+          from pathlib import Path
+
+          source = Path('/tmp/payload-controller.yml').read_text()
+          opener = "          python3 - <<'PY'\n"
+          closer = "\n          PY\n"
+          start = source.index(opener) + len(opener)
+          end = source.index(closer, start)
+          body = source[start:end]
+          lines = []
+          for number, line in enumerate(body.splitlines(), start=1):
+              if not line.startswith('          '):
+                  raise SystemExit(f'payload line {number} escaped the literal-block indent')
+              lines.append(line[10:])
+          Path('/tmp/materialize.py').write_text('\n'.join(lines) + '\n')
+          PY
+          python3 /tmp/materialize.py
+          sha256sum -c <<'EOF'
+          eb1930861a4cd5cac0749152177cc4dc86f4af08b8aa5b636dfbfae66fcaf59d  .github/scripts/promote-scheduled-crawl.sh
+          369007f9095fa7efff05a29d4f9bc8182c36af08c4e07d45f7087bb328089722  .github/workflows/crawl-industrial-exhaust.yml
+          db45ce53d9dbc6a40eae772060de5a6b7d3d580cfb98aea33c81e35460bfcf50  .github/workflows/crawl-official.yml
+          1cc5b606e4d9c64dc66a9eb89f15f62ad1e05ea8d56e994ef6262e0af9a31ba8  test/scheduled-crawl-promotion.test.js
+          EOF
+
+      - name: Validate the exact repair denominator
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected="$(mktemp)"
+          actual="$(mktemp)"
+          cat > "$expected" <<'EOF'
+          .github/scripts/promote-scheduled-crawl.sh
+          .github/workflows/crawl-industrial-exhaust.yml
+          .github/workflows/crawl-official.yml
+          test/scheduled-crawl-promotion.test.js
+          EOF
+          git diff --name-only | sort > "$actual"
+          diff -u "$expected" "$actual"
+          git diff --check
+          bash -n .github/scripts/promote-scheduled-crawl.sh
+          node test/scheduled-crawl-promotion.test.js
+
+      - name: Publish one direct-child product commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "BigBirdReturns"
+          git config user.email "bigbirdreturns@proton.me"
+          git add -- \
+            .github/scripts/promote-scheduled-crawl.sh \
+            .github/workflows/crawl-industrial-exhaust.yml \
+            .github/workflows/crawl-official.yml \
+            test/scheduled-crawl-promotion.test.js
+          git diff --cached --check
+          git commit -m "Protect scheduled crawlers with checks-first fast-forward"
+          candidate="$(git rev-parse HEAD)"
+          test "$(git rev-parse "$candidate^")" = "$EXPECTED_BASE"
+          test -z "$(git status --porcelain)"
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$EXPECTED_BASE"
+          git push origin "$candidate:refs/heads/$PRODUCT_BRANCH"
+          test "$(git ls-remote origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')" = "$candidate"
+          printf 'PRODUCT_SHA=%s\n' "$candidate"
+
+      - name: Retire disposable controller refs
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          git push origin \
+            ":refs/heads/$CONTROLLER_BRANCH" \
+            ":refs/heads/$PAYLOAD_BRANCH"
