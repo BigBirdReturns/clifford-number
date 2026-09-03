@@ -77,12 +77,19 @@ jobs:
     if: github.event_name != 'pull_request'
     needs: validate
     runs-on: ubuntu-latest
+    timeout-minutes: 60
+    concurrency:
+      group: scheduled-crawl-main-promotion
+      cancel-in-progress: false
     permissions:
+      actions: write
       contents: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
         with:
           ref: main
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -104,12 +111,23 @@ jobs:
         run: |
           node test/industrial-exhaust.test.js
           node test/industrial-exhaust-artifacts.test.js
-      - name: Commit intake only
-        run: |
-          git config user.name "clifford-exhaust-bot"
-          git config user.email "clifford-exhaust-bot@users.noreply.github.com"
-          git add data/exhaust receipts/exhaust
-          git diff --cached --quiet && exit 0
-          git commit -m "crawl: first-party industrial exhaust ($(date -u +%F))"
-          for i in 1 2 3; do git pull --rebase --autostash origin main && git push && exit 0 || sleep $((i*3)); done
-          echo "push failed after retries"; exit 1
+      - name: Promote intake through qualified pull request
+        id: promote
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PROMOTION_KIND: industrial-exhaust
+        run: bash .github/scripts/promote-scheduled-crawl.sh
+      - name: Retain scheduled promotion receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scheduled-crawl-promotion-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/scheduled-crawl-promotion-receipt
+          if-no-files-found: error
+          retention-days: 30
+      - name: Enforce scheduled promotion result
+        if: always()
+        env:
+          PROMOTION_STEP_OUTCOME: ${{ steps.promote.outcome }}
+        run: test "$PROMOTION_STEP_OUTCOME" = success
