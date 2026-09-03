@@ -135,6 +135,9 @@ jobs:
             exit 1
           fi
 
+      - name: Bind deployment artifact to exact commit
+        run: printf '%s\n' "$GITHUB_SHA" > dist/deployment-sha.txt
+
       - name: Upload pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
@@ -146,3 +149,104 @@ jobs:
         uses: actions/deploy-pages@v4
         with:
           artifact_name: github-pages-${{ github.run_attempt }}
+
+      - name: Smoke deployed public inspection routes
+        shell: bash
+        env:
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          set -euo pipefail
+
+          if [[ -z "${PAGE_URL:-}" ]]; then
+            echo "::error::Pages deployment did not return a page_url."
+            exit 1
+          fi
+          base_url="${PAGE_URL%/}/"
+
+          exact_artifact=false
+          observed_sha=""
+          for _ in {1..60}; do
+            observed_sha="$(curl -fsS -H 'Cache-Control: no-cache' "${base_url}deployment-sha.txt?expected=${GITHUB_SHA}" 2>/dev/null || true)"
+            observed_sha="${observed_sha//$'\r'/}"
+            observed_sha="${observed_sha//$'\n'/}"
+            if [[ "$observed_sha" == "$GITHUB_SHA" ]]; then
+              exact_artifact=true
+              break
+            fi
+            sleep 2
+          done
+          if [[ "$exact_artifact" != true ]]; then
+            echo "::error::Deployed Pages artifact did not expose exact commit ${GITHUB_SHA}; observed '${observed_sha}'."
+            exit 1
+          fi
+
+          chrome="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser || true)"
+          if [[ -z "$chrome" ]]; then
+            echo "::error::No supported Chromium browser is installed on the runner."
+            exit 1
+          fi
+
+          failures=0
+
+          smoke() {
+            local viewport="$1"
+            local route="$2"
+            shift 2
+            local profile dom expected route_failed
+            route_failed=0
+            profile="$(mktemp -d)"
+            dom="$(mktemp)"
+            "$chrome" \
+              --headless=new \
+              --no-sandbox \
+              --disable-dev-shm-usage \
+              --disable-gpu \
+              --hide-scrollbars \
+              --run-all-compositor-stages-before-draw \
+              --window-size="$viewport" \
+              --user-data-dir="$profile" \
+              --virtual-time-budget=10000 \
+              --dump-dom \
+              "${base_url}${route}" > "$dom" 2>/dev/null
+            rm -rf "$profile"
+
+            for expected in "$@"; do
+              if ! grep -Fq "$expected" "$dom"; then
+                echo "::error::Deployed route ${route} at ${viewport} did not render expected text: ${expected}"
+                route_failed=1
+              fi
+            done
+            if [[ "$route_failed" -ne 0 ]]; then
+              tail -c 5000 "$dom"
+            fi
+            rm -f "$dom"
+            return "$route_failed"
+          }
+
+          for viewport in "1440,1000" "390,844"; do
+            smoke "$viewport" \
+              "#desk/keir-starmer/matt-clifford/2025" \
+              "Documented: 1 step as of 2025" \
+              "AI Opportunities Action Plan publication and government response, 13 January 2025" \
+              || failures=$((failures + 1))
+            smoke "$viewport" \
+              "#desk/demet-mutlu/matt-clifford" \
+              "No documented connection" \
+              "That is a statement about the documentation gathered here, not proof of absence." \
+              || failures=$((failures + 1))
+            smoke "$viewport" \
+              "#desk/keir-starmer/matt-clifford/2020" \
+              "Not documented for 2020" \
+              "documented all-time connection exists" \
+              || failures=$((failures + 1))
+            smoke "$viewport" \
+              "#surface/dialog-public-directory-exposure-2026-06-16" \
+              "Dialog public-directory exposure, 16 June 2026" \
+              "The 112-name roster is dense and semantically insufficient for pairwise topology." \
+              || failures=$((failures + 1))
+          done
+
+          if [[ "$failures" -ne 0 ]]; then
+            echo "::error::${failures} deployed public inspection route smoke case(s) failed."
+            exit 1
+          fi
