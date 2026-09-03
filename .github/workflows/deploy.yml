@@ -2,7 +2,7 @@ name: Deploy surface-hop app to GitHub Pages
 
 on:
   push:
-    branches: [main]
+    branches: [main, master]
   workflow_dispatch:
 
 permissions:
@@ -12,19 +12,31 @@ permissions:
 
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
-  build:
+  deploy:
+    name: Compile, validate, deploy
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Checkout
+      - name: Check out code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          show-progress: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Verify release
+      - name: Release check
         run: npm run release:check
 
       - name: Smoke public inspection routes
@@ -32,7 +44,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          npm run serve > /tmp/clifford-number-server.log 2>&1 &
+          python3 -m http.server 8080 --bind 127.0.0.1 --directory dist > /tmp/clifford-number-server.log 2>&1 &
           server_pid=$!
           cleanup() {
             kill "$server_pid" 2>/dev/null || true
@@ -109,21 +121,14 @@ jobs:
               "The 112-name roster is dense and semantically insufficient for pairwise topology."
           done
 
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
-
-      - name: Upload Pages artifact
+      - name: Upload pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: docs
+          name: github-pages-${{ github.run_attempt }}
+          path: dist
 
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+        with:
+          artifact_name: github-pages-${{ github.run_attempt }}
