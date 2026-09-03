@@ -1,0 +1,79 @@
+name: Temporary PR 2231 V131 exact leased publisher
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  actions: read
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: pr2231-v131-phone-label-bare-host-exact-leased-publisher
+  cancel-in-progress: false
+
+jobs:
+  publish-v131:
+    if: github.event.pull_request.head.ref == 'agent/pr2231-v131-phone-label-bare-host-publisher-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    env:
+      GH_TOKEN: ${{ github.token }}
+      CONTROLLER_PR: ${{ github.event.pull_request.number }}
+      CONTROLLER_BRANCH: ${{ github.event.pull_request.head.ref }}
+      EXPECTED_CONTROLLER_BRANCH: agent/pr2231-v131-phone-label-bare-host-publisher-v1
+      EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+    steps:
+      - name: Check out exact publisher head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Execute exact V131 replay and leased publication
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          payload=.github/temporary/pr2231-v131-phone-label-bare-host-publisher-v1.tar.xz
+          payload_size=10084
+          payload_blob=415c105b74ebb349ef8159bf36d10dfa3a5de9ad
+          payload_sha256=f9de97ed15d996881c36295e9737198baf002b52d0ef8a148b824dba641c34e9
+          runroot=/tmp/pr2231-v131-phone-label-bare-host-publisher-controller-v1
+          script="$runroot/.github/scripts/pr2231-v131-phone-label-bare-host-publisher-v1.sh"
+          patch="$runroot/.github/scripts/pr2231-v131-phone-label-bare-host-v1.patch"
+
+          test "$(wc -c < "$payload")" = "$payload_size"
+          test "$(git hash-object "$payload")" = "$payload_blob"
+          test "$(sha256sum "$payload" | awk '{print $1}')" = "$payload_sha256"
+          rm -rf "$runroot"
+          mkdir -p "$runroot"
+          tar -xJf "$payload" -C "$runroot"
+          mapfile -t members < <(tar -tJf "$payload")
+          test "${#members[@]}" = 2
+          test "${members[0]}" = .github/scripts/pr2231-v131-phone-label-bare-host-publisher-v1.sh
+          test "${members[1]}" = .github/scripts/pr2231-v131-phone-label-bare-host-v1.patch
+          test "$(wc -c < "$script")" = 37673
+          test "$(git hash-object "$script")" = 2a15b9c5a52e428919f38de1723692f2be130d1b
+          test "$(sha256sum "$script" | awk '{print $1}')" = a200f3707ed00d12faacb0883ba0c80214026cc0b0edd9ac9abebb77975b9553
+          test "$(wc -c < "$patch")" = 8695
+          test "$(git hash-object "$patch")" = a1b0f675294882c33d8501193c1e34b746eb3194
+          test "$(sha256sum "$patch" | awk '{print $1}')" = 038cdfc8d067cfba7799dbe3d8980004ff588b848a95c47f287dcb9e61cfb5ff
+          chmod 0755 "$script"
+          bash -n "$script"
+          V131_PATCH_FILE="$patch" bash "$script"
+
+      - name: Retain V131 publication receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr2231-v131-phone-label-bare-host-exact-leased-publication-v1
+          path: /tmp/pr2231-v131-phone-label-bare-host-publication-v1
+          if-no-files-found: error
+          retention-days: 90
