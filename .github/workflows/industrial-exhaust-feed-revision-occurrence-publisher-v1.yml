@@ -1,0 +1,252 @@
+name: Publish feed revision-occurrence repair
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/industrial-exhaust-feed-revision-occurrence-publisher-v1.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    if: github.head_ref == 'agent/industrial-exhaust-feed-revision-occurrence-controller-v1'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out controller
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Materialize exact current-main repair
+        env:
+          EXPECTED_BASE: fe1f8e7ff4f4f597e56236f8508026d1226b7422
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$EXPECTED_BASE"
+          git checkout --detach "$EXPECTED_BASE"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_BASE"
+
+          python - <<'PY'
+          from pathlib import Path
+
+          source_path = Path('tools/lib/industrial-exhaust.mjs')
+          test_path = Path('test/industrial-exhaust.test.js')
+
+          source = source_path.read_text(encoding='utf-8')
+          helper_anchor = "function latestObservationIndex(observations) {"
+          helper = """function revisionOccurrenceId(prefix, stableParts, previousId, contentSha256) {
+            const parts = Array.isArray(stableParts) ? stableParts : [stableParts];
+            return previousId
+              ? contentId(prefix, ...parts, previousId, contentSha256)
+              : contentId(prefix, ...parts, contentSha256);
+          }
+
+          function latestObservationIndex(observations) {"""
+          if source.count(helper_anchor) != 1:
+              raise SystemExit(f'expected one latestObservationIndex anchor, found {source.count(helper_anchor)}')
+          source = source.replace(helper_anchor, helper, 1)
+
+          old_id = "      observation_id: contentId('xobs', source.id, item.source_record_key, item.content_sha256),"
+          new_id = """      observation_id: revisionOccurrenceId(
+                'xobs',
+                [source.id, item.source_record_key],
+                previous?.observation_id ?? null,
+                item.content_sha256
+              ),"""
+          if source.count(old_id) != 1:
+              raise SystemExit(f'expected one legacy observation identifier, found {source.count(old_id)}')
+          source = source.replace(old_id, new_id, 1)
+          source_path.write_text(source, encoding='utf-8')
+
+          tests = test_path.read_text(encoding='utf-8')
+          alert_anchor = "const alerts = buildAlerts(revisionMerge.observations, watch);"
+          regression = """const initialReleaseObservation = firstMerge.observations.find(item => item.source_record_id === 'release-1');
+          const revertedMerge = mergeFeedItems({
+            observations: revisionMerge.observations,
+            source,
+            parsedFeed: parsed,
+            capturedAt: '2026-07-17T09:00:00.000Z',
+            feedReceiptPath: `receipts/exhaust/${source.id}/${parsed.feed_sha256}.json`
+          });
+          assert.equal(revertedMerge.added.length, 1, 'A → B → A must append a new observation occurrence');
+          const revertedObservation = revertedMerge.added[0];
+          assert.equal(revertedObservation.content_sha256, initialReleaseObservation.content_sha256);
+          assert.notEqual(
+            revertedObservation.observation_id,
+            initialReleaseObservation.observation_id,
+            'reverted feed content must not reuse the first occurrence identifier'
+          );
+          assert.equal(revertedObservation.revision_of, revisionMerge.added[0].observation_id);
+          assert.equal(revertedObservation.revision_number, 3);
+
+          const repeatedRevisionMerge = mergeFeedItems({
+            observations: revertedMerge.observations,
+            source,
+            parsedFeed: revised,
+            capturedAt: '2026-07-18T09:00:00.000Z',
+            feedReceiptPath: `receipts/exhaust/${source.id}/${revised.feed_sha256}.json`
+          });
+          assert.equal(repeatedRevisionMerge.added.length, 1, 'A → B → A → B must append a fourth occurrence');
+          const repeatedRevision = repeatedRevisionMerge.added[0];
+          assert.equal(repeatedRevision.content_sha256, revisionMerge.added[0].content_sha256);
+          assert.notEqual(
+            repeatedRevision.observation_id,
+            revisionMerge.added[0].observation_id,
+            'repeated revised content must not reuse the earlier revised occurrence identifier'
+          );
+          assert.equal(repeatedRevision.revision_of, revertedObservation.observation_id);
+          assert.equal(repeatedRevision.revision_number, 4);
+          assert.equal(
+            new Set(repeatedRevisionMerge.observations
+              .filter(item => item.source_record_id === 'release-1')
+              .map(item => item.observation_id)).size,
+            4,
+            'every feed revision occurrence must retain a unique identifier'
+          );
+
+          const alerts = buildAlerts(revisionMerge.observations, watch);"""
+          if tests.count(alert_anchor) != 1:
+              raise SystemExit(f'expected one alert anchor, found {tests.count(alert_anchor)}')
+          tests = tests.replace(alert_anchor, regression, 1)
+          test_path.write_text(tests, encoding='utf-8')
+          PY
+
+      - name: Qualify exact two-file product
+        env:
+          EXPECTED_BASE: fe1f8e7ff4f4f597e56236f8508026d1226b7422
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_BASE"
+          npm ci
+          node --check tools/lib/industrial-exhaust.mjs
+          node --check test/industrial-exhaust.test.js
+          node test/industrial-exhaust.test.js
+          npm run release:check
+
+          unexpected_untracked="$(git ls-files --others --exclude-standard | awk '$0 !~ /^node_modules\// { print }' | LC_ALL=C sort)"
+          if test -n "$unexpected_untracked"; then
+            printf 'Unexpected untracked paths outside dependency workspace:\n%s\n' "$unexpected_untracked" >&2
+            exit 1
+          fi
+          if test -L node_modules; then
+            echo 'Refusing symlinked node_modules dependency workspace' >&2
+            exit 1
+          fi
+          rm -rf -- node_modules
+          untracked_after_cleanup="$(git ls-files --others --exclude-standard | LC_ALL=C sort)"
+          if test -n "$untracked_after_cleanup"; then
+            printf 'Untracked paths remain after dependency cleanup:\n%s\n' "$untracked_after_cleanup" >&2
+            exit 1
+          fi
+
+          echo "::group::Post-release worktree census"
+          git status --short
+          tracked_before="$(git diff --name-only | LC_ALL=C sort)"
+          printf 'Tracked paths before generated-state restore:\n%s\n' "$tracked_before"
+          echo "::endgroup::"
+
+          expected_product="$(printf '%s\n' \
+            test/industrial-exhaust.test.js \
+            tools/lib/industrial-exhaust.mjs | LC_ALL=C sort)"
+          permitted_generated="$(printf '%s\n' \
+            build/axm-identity.json \
+            build/build-hop-report.json \
+            build/hop-graph.json \
+            build/migration-review.md \
+            build/migration-summary.json \
+            build/receipt-graph.json \
+            build/scores.json \
+            build/scout-report.json \
+            build/scout-report.md \
+            build/surface-graph.json \
+            build/topology-admission-frontier.json | LC_ALL=C sort)"
+          permitted_before="$(printf '%s\n%s\n' "$expected_product" "$permitted_generated" | sed '/^$/d' | LC_ALL=C sort -u)"
+
+          missing_required=""
+          while IFS= read -r required_path; do
+            test -n "$required_path" || continue
+            if ! grep -Fqx -- "$required_path" <<<"$tracked_before"; then
+              missing_required="${missing_required}${missing_required:+$'\n'}${required_path}"
+            fi
+          done <<<"$expected_product"
+          unexpected_before="$(comm -23 \
+            <(printf '%s\n' "$tracked_before") \
+            <(printf '%s\n' "$permitted_before"))"
+          if test -n "$missing_required" || test -n "$unexpected_before"; then
+            printf 'Unexpected post-release tracked denominator.\nRequired product paths:\n%s\nPermitted generated paths:\n%s\nActual:\n%s\n' \
+              "$expected_product" "$permitted_generated" "$tracked_before" >&2
+            if test -n "$missing_required"; then
+              printf 'Missing required product paths:\n%s\n' "$missing_required" >&2
+            fi
+            if test -n "$unexpected_before"; then
+              printf 'Unexpected tracked paths:\n%s\n' "$unexpected_before" >&2
+            fi
+            git diff --stat >&2
+            exit 1
+          fi
+
+          git restore --source="$EXPECTED_BASE" --worktree -- \
+            build/axm-identity.json \
+            build/build-hop-report.json \
+            build/hop-graph.json \
+            build/migration-review.md \
+            build/migration-summary.json \
+            build/receipt-graph.json \
+            build/scores.json \
+            build/scout-report.json \
+            build/scout-report.md \
+            build/surface-graph.json \
+            build/topology-admission-frontier.json
+
+          tracked_after="$(git diff --name-only | LC_ALL=C sort)"
+          printf 'Tracked product paths after generated-state restore:\n%s\n' "$tracked_after"
+          if test "$tracked_after" != "$expected_product"; then
+            printf 'Unexpected product denominator after generated-state restore.\nExpected:\n%s\nActual:\n%s\n' "$expected_product" "$tracked_after" >&2
+            git diff --stat >&2
+            exit 1
+          fi
+
+          git diff --check
+          test "$(git rev-parse HEAD)" = "$EXPECTED_BASE"
+
+      - name: Publish qualified product branch
+        env:
+          EXPECTED_BASE: fe1f8e7ff4f4f597e56236f8508026d1226b7422
+          PRODUCT_BRANCH: agent/industrial-exhaust-feed-revision-occurrence-current-main-v1
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$EXPECTED_BASE"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_BASE"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- test/industrial-exhaust.test.js tools/lib/industrial-exhaust.mjs
+          git commit -m "fix(exhaust): bind feed revisions to predecessor occurrences"
+          test "$(git rev-parse HEAD^)" = "$EXPECTED_BASE"
+          test -z "$(git status --porcelain)"
+          actual="$(git diff-tree --no-commit-id --name-only -r HEAD | LC_ALL=C sort)"
+          expected="$(printf '%s\n' \
+            test/industrial-exhaust.test.js \
+            tools/lib/industrial-exhaust.mjs | LC_ALL=C sort)"
+          test "$actual" = "$expected"
+          local_tree="$(git rev-parse HEAD^{tree})"
+          if remote_line="$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH")" && test -n "$remote_line"; then
+            remote_sha="${remote_line%%$'\t'*}"
+            git fetch --no-tags origin "$remote_sha"
+            test "$(git rev-parse "$remote_sha^{tree}")" = "$local_tree"
+            echo "Existing product branch already carries qualified tree $local_tree at $remote_sha"
+            exit 0
+          fi
+          git push origin "HEAD:refs/heads/$PRODUCT_BRANCH"
+          echo "Published product $(git rev-parse HEAD) with tree $local_tree"
