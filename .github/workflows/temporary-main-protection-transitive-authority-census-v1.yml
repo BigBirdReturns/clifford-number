@@ -1,0 +1,66 @@
+name: Temporary main-protection transitive authority census v1
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temporary-main-protection-transitive-authority-census-v1.yml'
+      - '.github/tmp/main-protection-transitive-authority-census-v1.part00.b64'
+      - '.github/tmp/main-protection-transitive-authority-census-v1.part01.b64'
+      - '.github/tmp/main-protection-transitive-authority-census-v1.part02.b64'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: temporary-main-protection-transitive-authority-census-v1
+  cancel-in-progress: false
+
+jobs:
+  census:
+    name: Census transitive workflow mutation authority
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out exact controller head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Materialize content-addressed census program
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat \
+            .github/tmp/main-protection-transitive-authority-census-v1.part00.b64 \
+            .github/tmp/main-protection-transitive-authority-census-v1.part01.b64 \
+            .github/tmp/main-protection-transitive-authority-census-v1.part02.b64 \
+            > /tmp/transitive-census.py.gz.b64
+          base64 -d /tmp/transitive-census.py.gz.b64 > /tmp/transitive-census.py.gz
+          echo 'd98a842031f5892163f75691f1844d30e9d51080a774d020a9c89cb0454a6091  /tmp/transitive-census.py.gz' | sha256sum -c -
+          gzip -dc /tmp/transitive-census.py.gz > /tmp/transitive-census.py
+          echo '2b79f2564e99fc3a62d91160b9a3975eef5755e578cbe811f6c10a4af03eba01  /tmp/transitive-census.py' | sha256sum -c -
+          python3 -m py_compile /tmp/transitive-census.py
+
+      - name: Audit transitive mutation authority
+        shell: bash
+        env:
+          EXPECTED_MAIN: 304dbe1268e351555181cfd2e5eee94555c417e7
+          CONTROLLER_PATHS: .github/tmp/main-protection-transitive-authority-census-v1.part00.b64,.github/tmp/main-protection-transitive-authority-census-v1.part01.b64,.github/tmp/main-protection-transitive-authority-census-v1.part02.b64,.github/workflows/temporary-main-protection-transitive-authority-census-v1.yml
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha || '304dbe1268e351555181cfd2e5eee94555c417e7' }}
+          ARTIFACT_DIR: ${{ runner.temp }}/main-protection-transitive-authority-census
+        run: python3 /tmp/transitive-census.py
+
+      - name: Upload exact transitive census receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: main-protection-transitive-authority-census-${{ github.run_id }}
+          path: ${{ runner.temp }}/main-protection-transitive-authority-census
+          if-no-files-found: error
+          retention-days: 90
