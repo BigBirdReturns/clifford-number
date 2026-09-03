@@ -1,0 +1,64 @@
+name: Temporary PR 2231 V132 external-wrapper cumulative qualification
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: pr2231-v132-external-wrapper-cumulative-read-only-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  qualify-v132-external-wrapper-cumulative:
+    if: github.event.pull_request.head.ref == 'agent/pr2231-v132-external-wrapper-cumulative-qualification-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EXPECTED_CONTROLLER: ${{ github.event.pull_request.head.sha }}
+      CONTROLLER_PR: ${{ github.event.pull_request.number }}
+      CONTROLLER_BRANCH: ${{ github.event.pull_request.head.ref }}
+      EXPECTED_CONTROLLER_BRANCH: agent/pr2231-v132-external-wrapper-cumulative-qualification-v1
+      QUALIFIER_XZ_SHA256: 662697e84168d0a45022c1dd46baf43705d2f70e6af4d3d82a8794d872d89bf5
+      QUALIFIER_SHA256: 3f9c83f99f6b524dc4df916af84759e667fb4a6b3ea3d423935f0bbaab07ecee
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Materialize exact V132 read-only qualifier
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          payload=.github/temporary/pr2231-v132-external-wrapper-cumulative-qualifier-v1.sh.xz.b64
+          base64 -d "$payload" > /tmp/pr2231-v132-qualifier.sh.xz
+          test "$(sha256sum /tmp/pr2231-v132-qualifier.sh.xz | awk '{print $1}')" = "$QUALIFIER_XZ_SHA256"
+          xz -dc /tmp/pr2231-v132-qualifier.sh.xz > /tmp/pr2231-v132-qualifier.sh
+          test "$(sha256sum /tmp/pr2231-v132-qualifier.sh | awk '{print $1}')" = "$QUALIFIER_SHA256"
+          chmod 0755 /tmp/pr2231-v132-qualifier.sh
+          bash -n /tmp/pr2231-v132-qualifier.sh
+
+      - name: Execute exact V132 read-only qualifier
+        shell: bash
+        run: bash /tmp/pr2231-v132-qualifier.sh
+
+      - name: Upload V132 qualification ledger
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr2231-v132-external-wrapper-cumulative-qualification-v1
+          path: /tmp/pr2231-v132-external-wrapper-cumulative-qualification-v1
+          if-no-files-found: error
+          retention-days: 30
