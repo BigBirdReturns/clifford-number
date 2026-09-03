@@ -1,0 +1,195 @@
+name: Temporary release-closure branch retirement wave 01
+
+on:
+  push:
+    branches:
+      - agent/release-closure-branch-retirement-wave-01
+    paths:
+      - .github/workflows/temporary-release-closure-branch-retirement-wave-01.yml
+
+permissions:
+  contents: write
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: release-closure-branch-retirement-wave-01
+  cancel-in-progress: false
+
+jobs:
+  retire:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify exact closed-controller denominator
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected_main='304dbe1268e351555181cfd2e5eee94555c417e7'
+          repo="$GITHUB_REPOSITORY"
+          live_main="$(git ls-remote --exit-code origin refs/heads/main | awk '{print $1}')"
+          test "$live_main" = "$expected_main"
+
+          open_prs="$(gh api --method GET "repos/${repo}/pulls?state=open&per_page=100" --paginate --jq '.[].number' | wc -l | tr -d ' ')"
+          test "$open_prs" = '0'
+
+          mkdir -p branch-retirement-receipt
+          cat > branch-retirement-receipt/targets.txt <<'EOF'
+          pr branch expected_sha
+          2189 agent/dentsu-identifier-context-followup 70032d081078e98180e9ebb5e45396fb5dfa3ad1
+          2227 agent/current-main-identifier-context-v1 9274c3ed88b065063287732a3d87542ea166a8ef
+          2229 agent/industrial-exhaust-revision-occurrence-controller-v1 9b59d005e6ddf0944d47052517e01c2a08559664
+          2232 agent/m05-s03-l7-stage-tree-custody-final-materializer-v1 4063087eb7ef0b51551a6ee852e0e6c37e122392
+          2250 agent/cross-corpus-fanout-gap-current-state-controller-v1 cd7383536fb3c8865ec14c227d9edc3a85def865
+          2270 agent/industrial-exhaust-receipt-parent-custody-controller-v1 b2068a7a412b84f304157305a62adf89b0e0648f
+          2273 agent/industrial-exhaust-receipt-publication-path-custody-controller-v1 c104db9efc177d866b8201aa9fb58b476e8263f1
+          2274 agent/industrial-exhaust-receipt-publication-path-custody-controller-v2 6fcd09aaa16508158bcd4638ee1350b4a1189765
+          2275 agent/industrial-exhaust-receipt-publication-path-custody-controller-v3 e4015668609e858c4f8a803a1e45f8144bcfd5d3
+          2395 agent/pr2231-post-phone-frontier-controller-v106 60083fa5f455277dc4ae8e74050588588bc4a360
+          2398 agent/pr2231-terminal-group-observation-controller-v108 14b57acd070d5ae12d7b4962f00c1155cc413a51
+          2404 agent/pr2231-source-contiguous-callback-controller-v112 edf861c84350477198857adc5471178875454b5d
+          2405 agent/pr2231-source-contiguous-callback-controller-v113 2a1e09c120a5c4549b8774e696cf8f65907f69b3
+          2407 agent/pr2231-source-contiguous-callback-controller-v114 a94004ff095745139826dddd34d76fb2d1cfccb1
+          2409 agent/pr2231-six-thread-qualifier-v114 5e82d5948ca111e6686880c581565ceaac6f0f4a
+          2411 agent/pr2231-source-contiguous-callback-time-controller-v115 6a0029aced6c18d6738a97add3e0d9607ded1484
+          2414 agent/pr2231-source-contiguous-callback-controller-v112-r2 5e70e4a2d83aa9c4fd282a613cc534e633640831
+          2415 agent/pr2231-v111-r3-current-head-diagnostic-v1 dc8bc5afc144cd62162447610ba2ba0e2ea3f73d
+          2416 agent/pr2231-current-head-six-p1-diagnostic-v1 1782957f3500a0ac06bf1a033a2f2db74e9a153f
+          2422 agent/pr2231-parenthesized-dash-partition-diagnostic-v114 383bd889e6fd097169d84dfcc794b9ae182f185d
+          2427 agent/pr2231-slash-partition-controller-v114-r5 0cb96b38cb79bd34d3cb647d3da155ac7b9b9195
+          EOF
+          sed -i 's/^          //' branch-retirement-receipt/targets.txt
+
+          : > branch-retirement-receipt/present.txt
+          : > branch-retirement-receipt/status.tsv
+          while read -r pr branch expected_sha; do
+            test "$pr" = 'pr' && continue
+            pr_json="$(gh api "repos/${repo}/pulls/${pr}")"
+            state="$(jq -r '.state' <<<"$pr_json")"
+            merged="$(jq -r '.merged' <<<"$pr_json")"
+            head_ref="$(jq -r '.head.ref' <<<"$pr_json")"
+            head_sha="$(jq -r '.head.sha' <<<"$pr_json")"
+            test "$state" = 'closed'
+            test "$merged" = 'false'
+            test "$head_ref" = "$branch"
+            test "$head_sha" = "$expected_sha"
+
+            live_sha="$(git ls-remote origin "refs/heads/${branch}" | awk '{print $1}')"
+            if test -z "$live_sha"; then
+              printf '%s\t%s\t%s\t%s\n' "$pr" "$branch" "$expected_sha" 'already_absent' >> branch-retirement-receipt/status.tsv
+            else
+              test "$live_sha" = "$expected_sha"
+              printf '%s %s\n' "$branch" "$expected_sha" >> branch-retirement-receipt/present.txt
+              printf '%s\t%s\t%s\t%s\n' "$pr" "$branch" "$expected_sha" 'present_exact' >> branch-retirement-receipt/status.tsv
+            fi
+          done < branch-retirement-receipt/targets.txt
+
+          printf '%s\n' "$live_main" > branch-retirement-receipt/main-before.txt
+          printf '%s\n' "$GITHUB_SHA" > branch-retirement-receipt/controller-head.txt
+          sha256sum branch-retirement-receipt/targets.txt branch-retirement-receipt/status.tsv > branch-retirement-receipt/preflight.sha256
+
+      - name: Atomically delete exact live controller refs
+        shell: bash
+        run: |
+          set -euo pipefail
+          if test -s branch-retirement-receipt/present.txt; then
+            command=(git push --atomic)
+            while read -r branch expected_sha; do
+              command+=("--force-with-lease=refs/heads/${branch}:${expected_sha}")
+            done < branch-retirement-receipt/present.txt
+            command+=(origin)
+            while read -r branch expected_sha; do
+              command+=(":refs/heads/${branch}")
+            done < branch-retirement-receipt/present.txt
+            "${command[@]}"
+          fi
+
+      - name: Verify absence and seal retirement receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected_main='304dbe1268e351555181cfd2e5eee94555c417e7'
+          while read -r pr branch expected_sha; do
+            test "$pr" = 'pr' && continue
+            if git ls-remote --exit-code origin "refs/heads/${branch}" >/tmp/retired-ref 2>/dev/null; then
+              cat /tmp/retired-ref
+              echo "retired branch still exists: ${branch}" >&2
+              exit 1
+            fi
+          done < branch-retirement-receipt/targets.txt
+
+          live_main="$(git ls-remote --exit-code origin refs/heads/main | awk '{print $1}')"
+          test "$live_main" = "$expected_main"
+          printf '%s\n' "$live_main" > branch-retirement-receipt/main-after.txt
+
+          python - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+
+          root = Path('branch-retirement-receipt')
+          targets = []
+          for line in root.joinpath('targets.txt').read_text().splitlines()[1:]:
+              pr, branch, expected = line.split()
+              targets.append({'pr': int(pr), 'branch': branch, 'expected_sha': expected})
+          states = {}
+          for line in root.joinpath('status.tsv').read_text().splitlines():
+              pr, branch, expected, state = line.split('\t')
+              states[branch] = state
+          for target in targets:
+              target['preflight_state'] = states[target['branch']]
+              target['terminal_state'] = 'absent'
+          receipt = {
+              'schema': 'release-closure-branch-retirement@1',
+              'run_id': os.environ['GITHUB_RUN_ID'],
+              'controller_head': os.environ['GITHUB_SHA'],
+              'controller_branch': os.environ['GITHUB_REF_NAME'],
+              'main_before': root.joinpath('main-before.txt').read_text().strip(),
+              'main_after': root.joinpath('main-after.txt').read_text().strip(),
+              'open_pull_requests_before': 0,
+              'target_count': len(targets),
+              'present_exact_count': sum(v == 'present_exact' for v in states.values()),
+              'already_absent_count': sum(v == 'already_absent' for v in states.values()),
+              'retired_count': len(targets),
+              'targets': targets,
+              'main_mutation': False,
+              'product_mutation': False,
+              'issue_mutation': False,
+              'pull_request_mutation': False,
+              'merged_product_refs_preserved': True,
+              'controller_self_deletion_pending': True,
+          }
+          payload = json.dumps(receipt, indent=2, sort_keys=True) + '\n'
+          root.joinpath('retirement-receipt.json').write_text(payload)
+          digest = hashlib.sha256(payload.encode()).hexdigest()
+          root.joinpath('retirement-receipt.sha256').write_text(f'{digest}  retirement-receipt.json\n')
+          print(payload)
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-closure-branch-retirement-wave-01-${{ github.run_id }}
+          path: branch-retirement-receipt
+          if-no-files-found: error
+          retention-days: 180
+
+      - name: Delete disposable controller ref
+        shell: bash
+        run: |
+          set -euo pipefail
+          self_branch="$GITHUB_REF_NAME"
+          self_head="$GITHUB_SHA"
+          live_self="$(git ls-remote --exit-code origin "refs/heads/${self_branch}" | awk '{print $1}')"
+          test "$live_self" = "$self_head"
+          git push --force-with-lease="refs/heads/${self_branch}:${self_head}" origin ":refs/heads/${self_branch}"
+          if git ls-remote --exit-code origin "refs/heads/${self_branch}" >/tmp/self-ref 2>/dev/null; then
+            cat /tmp/self-ref
+            exit 1
+          fi
