@@ -1,13 +1,18 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 const paths = {
   industrial: '.github/workflows/crawl-industrial-exhaust.yml',
   official: '.github/workflows/crawl-official.yml',
   release: '.github/workflows/ci.yml',
   noMagic: '.github/workflows/no-magic-human-gate.yml',
-  helper: '.github/scripts/promote-scheduled-crawl.sh'
+  helper: '.github/scripts/promote-scheduled-crawl.sh',
+  recovery: '.github/scripts/retain-scheduled-crawl-candidate.sh'
 };
 
 const load = () => Object.fromEntries(
@@ -47,12 +52,18 @@ export function validateScheduledCrawlPromotion(files) {
     requireMatch(errors, workflow, /ref: main\n          fetch-depth: 0/, `${label} must crawl from a full-history main checkout`);
     requireMatch(errors, workflow, new RegExp(`PROMOTION_KIND: ${kind.replace('-', '\\-')}`), `${label} must bind the exact promotion kind`);
     requireMatch(errors, workflow, /run: bash \.github\/scripts\/promote-scheduled-crawl\.sh/, `${label} must invoke the common promotion helper`);
+    requireMatch(errors, workflow, /- name: Retain exact candidate recovery bundle\n        if: always\(\)\n        run: bash \.github\/scripts\/retain-scheduled-crawl-candidate\.sh/, `${label} must retain the exact candidate bundle after promotion`);
     requireMatch(errors, workflow, /uses: actions\/upload-artifact@v4/, `${label} must retain a promotion receipt`);
     requireMatch(errors, workflow, /path: \$\{\{ runner\.temp \}\}\/scheduled-crawl-promotion-receipt/, `${label} must upload the exact receipt directory`);
     requireMatch(errors, workflow, /PROMOTION_STEP_OUTCOME: \$\{\{ steps\.promote\.outcome \}\}/, `${label} must expose the helper outcome to the terminal gate`);
     requireMatch(errors, workflow, /run: test "\$PROMOTION_STEP_OUTCOME" = success/, `${label} must fail the workflow when promotion fails`);
     requireAbsent(errors, workflow, /git push(?:\s|$)/, `${label} must not push main or any branch directly inside the workflow`);
     requireAbsent(errors, workflow, /git pull --rebase/, `${label} must not rebase generated intake over a moved main`);
+    requireOrdered(errors, workflow, [
+      'run: bash .github/scripts/promote-scheduled-crawl.sh',
+      'run: bash .github/scripts/retain-scheduled-crawl-candidate.sh',
+      'uses: actions/upload-artifact@v4'
+    ], `${label} must bundle the candidate before uploading the promotion receipt`);
   }
 
   requireMatch(errors, files.industrial, /if: github\.event_name != 'pull_request'/, 'industrial-exhaust mutation must remain disabled on pull_request');
@@ -96,6 +107,21 @@ export function validateScheduledCrawlPromotion(files) {
     "STAGE='merge-qualified-pull-request'"
   ], 'required checks, lease revalidation, and merge must occur in that order');
 
+  const recovery = files.recovery;
+  requireMatch(errors, recovery, /^#!\/usr\/bin\/env bash\nset -Eeuo pipefail\n/, 'candidate recovery custodian must use strict Bash error handling');
+  requireMatch(errors, recovery, /CHECKPOINT="\$RECEIPT_DIR\/checkpoint\.txt"/, 'candidate recovery must consume the helper checkpoint');
+  requireMatch(errors, recovery, /BASE_SHA="\$\(checkpoint_value base_sha\)"/, 'candidate recovery must bind the checkpoint base SHA');
+  requireMatch(errors, recovery, /CANDIDATE_SHA="\$\(checkpoint_value candidate_sha\)"/, 'candidate recovery must bind the checkpoint candidate SHA');
+  requireMatch(errors, recovery, /git cat-file -e "\$BASE_SHA\^\{commit\}"[\s\S]*git cat-file -e "\$CANDIDATE_SHA\^\{commit\}"/, 'candidate recovery must require both commit objects');
+  requireMatch(errors, recovery, /test "\$\(git rev-parse HEAD\)" = "\$CANDIDATE_SHA"/, 'candidate recovery must bind local HEAD to the checkpoint candidate');
+  requireMatch(errors, recovery, /test "\$\(git rev-parse "\$CANDIDATE_SHA\^"\)" = "\$BASE_SHA"/, 'candidate recovery must authenticate direct-parent topology');
+  requireMatch(errors, recovery, /git bundle create "\$BUNDLE" HEAD "\^\$BASE_SHA"/, 'candidate recovery must create a base-bound Git bundle');
+  requireMatch(errors, recovery, /git bundle verify "\$BUNDLE"/, 'candidate recovery must verify the emitted bundle');
+  requireMatch(errors, recovery, /BUNDLE_SHA256="\$\(sha256sum "\$BUNDLE" \| awk '\{print \$1\}'\)"/, 'candidate recovery must digest the exact bundle bytes');
+  requireMatch(errors, recovery, /restore_hint=git fetch candidate\.bundle HEAD:refs\/heads\/recovered-scheduled-crawl/, 'candidate recovery must publish an executable restore hint');
+  requireAbsent(errors, recovery, /gh api|git push/, 'candidate recovery must remain local and read-only with respect to GitHub');
+  requireAbsent(errors, recovery, /branches\/main\/protection|repos\/\$REPO\/rulesets/, 'candidate recovery must not mutate branch policy');
+
   return errors;
 }
 
@@ -128,6 +154,15 @@ const mutations = [
     c.helper = c.helper.replace("STAGE='dispatch-required-checks'", "STAGE='temporary-swap-marker'")
       .replace("STAGE='merge-qualified-pull-request'", "STAGE='dispatch-required-checks'")
       .replace("STAGE='temporary-swap-marker'", "STAGE='merge-qualified-pull-request'");
+  }],
+  ['drop the industrial recovery custodian', (c) => {
+    c.industrial = c.industrial.replace("      - name: Retain exact candidate recovery bundle\n        if: always()\n        run: bash .github/scripts/retain-scheduled-crawl-candidate.sh\n", '');
+  }],
+  ['remove recovery direct-parent authentication', (c) => {
+    c.recovery = c.recovery.replace('test "$(git rev-parse "$CANDIDATE_SHA^")" = "$BASE_SHA"', 'true # parent binding removed');
+  }],
+  ['replace exact bundle digest with a constant', (c) => {
+    c.recovery = c.recovery.replace('BUNDLE_SHA256="$(sha256sum "$BUNDLE" | awk \'{print $1}\')"', 'BUNDLE_SHA256=unverified');
   }]
 ];
 
@@ -138,4 +173,67 @@ for (const [label, mutate] of mutations) {
   assert.ok(errors.length > 0, `mutation should fail closed: ${label}`);
 }
 
-console.log(`scheduled-crawl-promotion.test: ${mutations.length} adversarial mutations PASS`);
+function git(cwd, args) {
+  return execFileSync('git', args, { cwd, encoding: 'utf8' }).trim();
+}
+
+function verifyRecoveryBundleFixture() {
+  const root = mkdtempSync(join(tmpdir(), 'scheduled-crawl-recovery-'));
+  try {
+    const workspace = join(root, 'workspace');
+    const runnerTemp = join(root, 'runner');
+    const receiptDir = join(runnerTemp, 'scheduled-crawl-promotion-receipt');
+    mkdirSync(workspace, { recursive: true });
+    mkdirSync(receiptDir, { recursive: true });
+
+    git(workspace, ['init', '-q']);
+    git(workspace, ['config', 'user.name', 'scheduled-crawl-test']);
+    git(workspace, ['config', 'user.email', 'scheduled-crawl-test@example.invalid']);
+    writeFileSync(join(workspace, 'state.txt'), 'base\n');
+    git(workspace, ['add', 'state.txt']);
+    git(workspace, ['commit', '-q', '-m', 'base']);
+    const baseSha = git(workspace, ['rev-parse', 'HEAD']);
+
+    writeFileSync(join(workspace, 'state.txt'), 'candidate\n');
+    git(workspace, ['commit', '-q', '-am', 'candidate']);
+    const candidateSha = git(workspace, ['rev-parse', 'HEAD']);
+
+    writeFileSync(join(receiptDir, 'checkpoint.txt'), [
+      'outcome=failed_closed',
+      `base_sha=${baseSha}`,
+      `candidate_sha=${candidateSha}`,
+      ''
+    ].join('\n'));
+
+    execFileSync('bash', [join(process.cwd(), paths.recovery)], {
+      cwd: process.cwd(),
+      env: {
+        ...process.env,
+        GITHUB_WORKSPACE: workspace,
+        RUNNER_TEMP: runnerTemp
+      },
+      stdio: 'pipe'
+    });
+
+    const bundle = join(receiptDir, 'candidate.bundle');
+    const heads = git(workspace, ['bundle', 'list-heads', bundle]);
+    assert.equal(heads, `${candidateSha} HEAD`, 'bundle must retain the exact candidate HEAD');
+    git(workspace, ['bundle', 'verify', bundle]);
+
+    const digestLine = readFileSync(join(receiptDir, 'candidate-bundle.sha256'), 'utf8').trim();
+    const [recordedDigest, recordedName] = digestLine.split(/\s+/);
+    const computedDigest = createHash('sha256').update(readFileSync(bundle)).digest('hex');
+    assert.equal(recordedName, 'candidate.bundle', 'digest receipt must name the exact bundle');
+    assert.equal(recordedDigest, computedDigest, 'digest receipt must bind the exact bundle bytes');
+
+    const bundleReceipt = readFileSync(join(receiptDir, 'candidate-bundle.txt'), 'utf8');
+    assert.match(bundleReceipt, new RegExp(`base_sha=${baseSha}`));
+    assert.match(bundleReceipt, new RegExp(`candidate_sha=${candidateSha}`));
+    assert.match(bundleReceipt, new RegExp(`bundle_sha256=${computedDigest}`));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+}
+
+verifyRecoveryBundleFixture();
+console.log(`scheduled-crawl-promotion.test: ${mutations.length} adversarial mutations and recovery bundle fixture PASS`);
