@@ -2,7 +2,7 @@ name: Deploy surface-hop app to GitHub Pages
 
 on:
   push:
-    branches: [main, master]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -12,38 +12,118 @@ permissions:
 
 concurrency:
   group: pages
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
-  deploy:
-    name: Compile, validate, deploy
+  build:
     runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify release
+        run: npm run release:check
+
+      - name: Smoke public inspection routes
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          npm run serve > /tmp/clifford-number-server.log 2>&1 &
+          server_pid=$!
+          cleanup() {
+            kill "$server_pid" 2>/dev/null || true
+          }
+          trap cleanup EXIT
+
+          ready=false
+          for _ in {1..30}; do
+            if curl -fsS http://127.0.0.1:8080/ > /dev/null; then
+              ready=true
+              break
+            fi
+            sleep 1
+          done
+          if [[ "$ready" != true ]]; then
+            cat /tmp/clifford-number-server.log
+            exit 1
+          fi
+
+          chrome="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser || true)"
+          if [[ -z "$chrome" ]]; then
+            echo "::error::No supported Chromium browser is installed on the runner."
+            exit 1
+          fi
+
+          smoke() {
+            local viewport="$1"
+            local route="$2"
+            shift 2
+            local profile dom expected
+            profile="$(mktemp -d)"
+            dom="$(mktemp)"
+            "$chrome" \
+              --headless=new \
+              --no-sandbox \
+              --disable-dev-shm-usage \
+              --disable-gpu \
+              --hide-scrollbars \
+              --run-all-compositor-stages-before-draw \
+              --window-size="$viewport" \
+              --user-data-dir="$profile" \
+              --virtual-time-budget=10000 \
+              --dump-dom \
+              "http://127.0.0.1:8080/${route}" > "$dom" 2>/dev/null
+            rm -rf "$profile"
+
+            for expected in "$@"; do
+              if ! grep -Fq "$expected" "$dom"; then
+                echo "::error::Route ${route} at ${viewport} did not render expected text: ${expected}"
+                tail -c 5000 "$dom"
+                rm -f "$dom"
+                return 1
+              fi
+            done
+            rm -f "$dom"
+          }
+
+          for viewport in "1440,1000" "390,844"; do
+            smoke "$viewport" \
+              "#desk/keir-starmer/matt-clifford/2025" \
+              "Documented: 1 step as of 2025" \
+              "AI Opportunities Action Plan publication and government response, 13 January 2025"
+            smoke "$viewport" \
+              "#desk/demet-mutlu/matt-clifford" \
+              "No documented connection" \
+              "Demet Mutlu"
+            smoke "$viewport" \
+              "#desk/keir-starmer/matt-clifford/2020" \
+              "Not documented for 2020" \
+              "documented all-time connection exists"
+            smoke "$viewport" \
+              "#surface/dialog-public-directory-exposure-2026-06-16" \
+              "Dialog public-directory exposure, 16 June 2026" \
+              "The 112-name roster is dense and semantically insufficient for pairwise topology."
+          done
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+  deploy:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
     steps:
-      - name: Check out code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          show-progress: false
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Release check
-        run: npm run release:check
-
-      - name: Upload pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          name: github-pages-${{ github.run_attempt }}
-          path: dist
-
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-        with:
-          artifact_name: github-pages-${{ github.run_attempt }}

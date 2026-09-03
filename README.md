@@ -4,6 +4,18 @@ The Clifford Number is a surface-hop topology compiler. It maps how bounded legi
 
 Governance: [BUILD-INSTRUCTIONS.md](BUILD-INSTRUCTIONS.md) is the governing document — the constitutional invariants (Section 1) and the phased build plan through 2037. Agents and maintainers read it before executing work in this repository.
 
+## Public inspection path
+
+A reviewer can inspect the current public release in about a minute:
+
+1. Open the [live application](https://bigbirdreturns.github.io/clifford-number/).
+2. Read the in-app [method overview](https://bigbirdreturns.github.io/clifford-number/#method/overview) and the fuller [methodology](docs/methodology.md).
+3. Inspect the canonical source-of-truth ledgers: [`claims`](data/ledger/claims.jsonl), [`surfaces`](data/ledger/surfaces.jsonl), [`participation`](data/ledger/participation.jsonl), [`receipts`](data/ledger/receipts.jsonl), and [`chains`](data/ledger/chains.jsonl). Generated files under `build/` and the Pages artifact are disposable views, not authority.
+4. Open the existing [Starmer → Clifford result, as of 2025](https://bigbirdreturns.github.io/clifford-number/#desk/keir-starmer/matt-clifford/2025). The one-day 13 January 2025 surface exposes both participation roles, the overlap window, the evidence class, and its receipt links. It supports documented shared context on that bounded policy surface only.
+5. Reproduce the release gate from a clean checkout with `npm ci` followed by `npm run release:check`.
+
+The standing forbidden-inference boundary is unchanged: co-presence is never coordination, and no undocumented relationship, intent, influence, benefit, wrongdoing, common purpose, or causation may be inferred from a shared surface or from absence in this corpus.
+
 This release abandons the generic shortest-path edge graph. The old graph is preserved under `legacy/`, but it is no longer the product.
 
 ## Public app
@@ -63,9 +75,10 @@ data/ledger/claims.jsonl
 data/ledger/surfaces.jsonl
 data/ledger/participation.jsonl
 data/ledger/receipts.jsonl
+data/ledger/chains.jsonl
 ```
 
-Claims preserve sourced facts. Surfaces define bounded adjacency objects. Participation rows link actors and organizations to surfaces. Receipts preserve source support.
+Claims preserve sourced facts. Surfaces define bounded adjacency objects. Participation rows link actors and organizations to surfaces. Receipts preserve source support. Chains preserve separately typed multi-stage analytical sequences without creating actor hops.
 
 ## Canonical registries
 
@@ -137,4 +150,3 @@ npm run query:hops -- --from e_cxoy37udrurtowdj47suemrw   # "Ben Warner" (alias-
 ## Estate frontier and game trails
 
 M-02 surveys ten additional macro estates and reruns all preserved, source-route, and custody trails through the [Game-Trail Aperture](gametrails/). See [the milestone record](docs/milestones/estate-frontier-game-trails-v1.md).
-
