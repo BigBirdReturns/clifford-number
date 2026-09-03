@@ -40,6 +40,8 @@ jobs:
           exit "$status"
       - name: Run topology admission frontier mutation tests
         run: node test/topology-admission-frontier.test.js
+      - name: Run scheduled crawler promotion contract tests
+        run: node test/scheduled-crawl-promotion.test.js
       - name: Smoke public inspection routes
         shell: bash
         run: |
