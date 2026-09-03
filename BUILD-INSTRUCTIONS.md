@@ -280,14 +280,10 @@ inconvenient. Silence is not consent; unreviewed drift is reverted.
   conclusions against receipts, in their own names.
 - Not an identity-clustering instrument, per 1.6, under any framing.
 - Not a subscription oracle whose facts are checkable only by customers.
-- Not dependent m½ß¿m¢G§²ÚîÆ­yØ]\İXÛ\™HHØ[YH[™HQË‰ÊJNÂˆB‚ˆ™]\›ˆÈÚÎˆ\œ›ÜœË›[™İOOH\œ›ÜœÈNÂŸB‚™^Ü[˜İ[Ûˆ›Ü›X]ÛÛœİ[\[Û‘\œ›ÜœÊ\œ›ÜœÊHÂˆ™]\›ˆ\œ›ÜœË›X\
-\œ›ÜˆOˆHÉÙ\œ›Ü‹˜ÛÙ_WH	Ù\œ›Ü‹™š[_Nˆ	Ù\œ›Ü‹›Y\ÜØYÙ_X
-Kš›Ú[Š	×‰ÊNÂŸB‚˜ÛÛœİ[›ÚÙYH›ØÙ\ÜË˜\™İ–ÌWHÈ]œ™\ÛÛ™J›ØÙ\ÜË˜\™İ–ÌWJHˆ	ÉÎÂšYˆ
-[›ÚÙYOOHš[UT“Ô]
-[\Ü›Y]K\›
-JHÂˆÛÛœİ›ÛİH›ØÙ\ÜË˜\™İ–Ì—HÈ]œ™\ÛÛ™J›ØÙ\ÜË˜\™İ–Ì—JHˆ›ØÙ\ÜË˜İÙ
+- Not dependent on any single AI vendor: agents accelerate intake and
+  narration, but every pipeline must be executable by a human with a text
+  editor and the documented commands.
 
-NÂˆÛÛœİ™\İ[H˜[Y]PÛÛœİ[\[ÛÛÛ˜Xİ
-È›ÛİJNÂˆYˆ
-\™\İ[›ÚÊHÂˆÛÛœÛÛK™\œ›ÜŠÛÛœİ[\[ÛˆÛÛ˜Xİ˜Z[YÚ]	Ü™\İ[™\œ›ÜœË›[™İH\œ›ÜŠÊN—‰Ù›Ü›X]ÛÛœİ[\[Û‘\œ›ÜœÊ™\İ[™\œ›ÜœÊ_X
-NÂˆ›ØÙ\ÜË™^]ÛÙHHNÂˆH[ÙHÂˆÛÛœÛÛK›ÙÊ	ĞÛÛœİ[\[ÛˆÛÛ˜XİˆÒÉÊNÂˆBŸB
+The instrument's authority comes from one property and one property only:
+anyone can check it. Protect that property and the rest survives to 2037.
+Lose it and nothing else here matters.
