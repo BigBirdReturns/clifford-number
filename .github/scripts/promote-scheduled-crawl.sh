@@ -17,11 +17,10 @@ OUTCOME='failed_closed'
 BASE_SHA=''
 CANDIDATE_SHA=''
 CANDIDATE_BRANCH=''
-PR_NUMBER=''
 RELEASE_RUN_ID=''
 NO_MAGIC_RUN_ID=''
-MERGE_SHA=''
-MERGED='false'
+MAIN_UPDATE='not_attempted'
+MAIN_SHA=''
 REMOTE_CLEANUP='not_needed'
 
 case "$PROMOTION_KIND" in
@@ -29,29 +28,11 @@ case "$PROMOTION_KIND" in
     SLUG='industrial-exhaust'
     ALLOWED_ROOTS=('data/exhaust' 'receipts/exhaust')
     COMMIT_MESSAGE="crawl: first-party industrial exhaust ($(date -u +%F))"
-    PR_TITLE="$COMMIT_MESSAGE"
-    PR_BODY=$(cat <<'BODY'
-This automated pull request contains only immutable first-party industrial-exhaust intake and retained source receipts produced by the scheduled crawler. The actors are the scheduled intake workflow, the exact leased main commit, the run-scoped candidate branch, the Release checks workflow, the No magic human gate workflow, and GitHub's ordinary pull-request merge API.
-
-The mechanism refuses main drift, rejects every path outside `data/exhaust/**` and `receipts/exhaust/**`, publishes one direct-child candidate commit, explicitly dispatches both required checks on that exact candidate SHA, revalidates the remote comparison and pull-request head, and merges only while main remains at the leased base. This object does not admit a graph edge, claim, score, case, identity, or conclusion.
-
-The wider control purpose is to preserve scheduled acquisition after main receives deletion refusal, non-fast-forward refusal, required pull requests, and stable required checks without granting GitHub Actions a broad direct-main bypass. Does the exact run-scoped candidate pass both required gates and preserve the two-root intake denominator before ordinary merge?
-BODY
-)
     ;;
   official-record)
     SLUG='official-record'
     ALLOWED_ROOTS=('data/crawl' 'receipts/crawl')
     COMMIT_MESSAGE="crawl: official-record intake ($(date -u +%F))"
-    PR_TITLE="$COMMIT_MESSAGE"
-    PR_BODY=$(cat <<'BODY'
-This automated pull request contains only neutral official-record observations, candidates, rejections, crawl state, and retained crawl receipts produced by the scheduled intake workflow. The actors are the scheduled official-record crawler, the exact leased main commit, the run-scoped candidate branch, the Release checks workflow, the No magic human gate workflow, and GitHub's ordinary pull-request merge API.
-
-The mechanism refuses main drift, rejects every path outside `data/crawl/**` and `receipts/crawl/**`, publishes one direct-child candidate commit, explicitly dispatches both required checks on that exact candidate SHA, revalidates the remote comparison and pull-request head, and merges only while main remains at the leased base. This object remains below canonical graph, case, identity, score, claim, and conclusion authority.
-
-The wider control purpose is to preserve scheduled acquisition after main receives deletion refusal, non-fast-forward refusal, required pull requests, and stable required checks without granting GitHub Actions a broad direct-main bypass. Does the exact run-scoped candidate pass both required gates and preserve the two-root intake denominator before ordinary merge?
-BODY
-)
     ;;
   *)
     echo "unsupported PROMOTION_KIND: $PROMOTION_KIND" >&2
@@ -74,11 +55,10 @@ write_checkpoint() {
     printf 'base_sha=%s\n' "$BASE_SHA"
     printf 'candidate_branch=%s\n' "$CANDIDATE_BRANCH"
     printf 'candidate_sha=%s\n' "$CANDIDATE_SHA"
-    printf 'pull_request=%s\n' "$PR_NUMBER"
     printf 'release_run_id=%s\n' "$RELEASE_RUN_ID"
     printf 'no_magic_run_id=%s\n' "$NO_MAGIC_RUN_ID"
-    printf 'merged=%s\n' "$MERGED"
-    printf 'merge_sha=%s\n' "$MERGE_SHA"
+    printf 'main_update=%s\n' "$MAIN_UPDATE"
+    printf 'main_sha=%s\n' "$MAIN_SHA"
     printf 'remote_cleanup=%s\n' "$REMOTE_CLEANUP"
     printf 'time_utc=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   } > "$RECEIPT_DIR/checkpoint.txt"
@@ -87,16 +67,6 @@ write_checkpoint() {
 safe_remote_cleanup() {
   local cleanup_errors=0
   REMOTE_CLEANUP='attempted'
-
-  if [[ "$MERGED" != 'true' && -n "$PR_NUMBER" ]]; then
-    local pr_state
-    pr_state="$(gh api "repos/$REPO/pulls/$PR_NUMBER" --jq .state 2>/dev/null || true)"
-    if [[ "$pr_state" == 'open' ]]; then
-      gh api --method PATCH "repos/$REPO/pulls/$PR_NUMBER" -f state=closed \
-        > "$RECEIPT_DIR/cleanup-pr.json" 2> "$RECEIPT_DIR/cleanup-pr.stderr" \
-        || cleanup_errors=$((cleanup_errors + 1))
-    fi
-  fi
 
   if [[ -n "$CANDIDATE_SHA" && -n "$CANDIDATE_BRANCH" ]]; then
     local remote_candidate
@@ -203,6 +173,9 @@ wait_for_run_success() {
     status="$(jq -r .status <<< "$payload")"
     if [[ "$status" == 'completed' ]]; then
       printf '%s\n' "$payload" > "$output_file"
+      test "$(jq -r .head_sha <<< "$payload")" = "$CANDIDATE_SHA"
+      test "$(jq -r .head_branch <<< "$payload")" = "$CANDIDATE_BRANCH"
+      test "$(jq -r .event <<< "$payload")" = 'workflow_dispatch'
       conclusion="$(jq -r .conclusion <<< "$payload")"
       if [[ "$conclusion" != 'success' ]]; then
         echo "$label run $run_id concluded $conclusion" >&2
@@ -226,7 +199,13 @@ assert_check_success() {
     "repos/$REPO/commits/$CANDIDATE_SHA/check-runs?per_page=100")"
   printf '%s\n' "$payload" > "$checks_file"
   jq -e --arg name "$check_name" --arg sha "$CANDIDATE_SHA" \
-    '[.check_runs[] | select(.name == $name and .head_sha == $sha and .status == "completed" and .conclusion == "success")] | length >= 1' \
+    '[.check_runs[] | select(
+      .name == $name
+      and .head_sha == $sha
+      and .status == "completed"
+      and .conclusion == "success"
+      and .app.slug == "github-actions"
+    )] | length >= 1' \
     <<< "$payload" >/dev/null
 }
 
@@ -281,19 +260,6 @@ fi
 git push origin "$CANDIDATE_SHA:refs/heads/$CANDIDATE_BRANCH"
 test "$(gh api "repos/$REPO/git/ref/heads/$CANDIDATE_BRANCH" --jq .object.sha)" = "$CANDIDATE_SHA"
 
-STAGE='open-ordinary-pull-request'
-PR_PAYLOAD="$(jq -n \
-  --arg title "$PR_TITLE" \
-  --arg body "$PR_BODY" \
-  --arg head "$CANDIDATE_BRANCH" \
-  '{title: $title, body: $body, head: $head, base: "main", draft: false}')"
-gh api --method POST "repos/$REPO/pulls" --input - <<< "$PR_PAYLOAD" \
-  > "$RECEIPT_DIR/pull-request-created.json"
-PR_NUMBER="$(jq -r .number "$RECEIPT_DIR/pull-request-created.json")"
-test "$PR_NUMBER" != 'null'
-test "$(jq -r .head.sha "$RECEIPT_DIR/pull-request-created.json")" = "$CANDIDATE_SHA"
-test "$(jq -r .base.sha "$RECEIPT_DIR/pull-request-created.json")" = "$BASE_SHA"
-
 STAGE='dispatch-required-checks'
 gh api --method POST "repos/$REPO/actions/workflows/ci.yml/dispatches" \
   -f ref="$CANDIDATE_BRANCH"
@@ -315,37 +281,37 @@ assert_check_success 'no-magic-human-gate' "$RECEIPT_DIR/no-magic-check-runs.jso
 STAGE='revalidate-lease-and-remote-denominator'
 test "$(gh api "repos/$REPO/git/ref/heads/main" --jq .object.sha)" = "$BASE_SHA"
 test "$(gh api "repos/$REPO/git/ref/heads/$CANDIDATE_BRANCH" --jq .object.sha)" = "$CANDIDATE_SHA"
-gh api "repos/$REPO/pulls/$PR_NUMBER" > "$RECEIPT_DIR/pull-request-premerge.json"
-test "$(jq -r .state "$RECEIPT_DIR/pull-request-premerge.json")" = 'open'
-test "$(jq -r .head.sha "$RECEIPT_DIR/pull-request-premerge.json")" = "$CANDIDATE_SHA"
-test "$(jq -r .base.sha "$RECEIPT_DIR/pull-request-premerge.json")" = "$BASE_SHA"
-gh api "repos/$REPO/compare/$BASE_SHA...$CANDIDATE_SHA" > "$RECEIPT_DIR/compare-premerge.json"
+git fetch --no-tags origin main
+test "$(git rev-parse origin/main)" = "$BASE_SHA"
+gh api "repos/$REPO/git/commits/$CANDIDATE_SHA" > "$RECEIPT_DIR/candidate-commit.json"
+test "$(jq -r '.parents | length' "$RECEIPT_DIR/candidate-commit.json")" = '1'
+test "$(jq -r '.parents[0].sha' "$RECEIPT_DIR/candidate-commit.json")" = "$BASE_SHA"
+gh api "repos/$REPO/compare/$BASE_SHA...$CANDIDATE_SHA" > "$RECEIPT_DIR/compare-prepush.json"
 jq -e '.status == "ahead" and .ahead_by == 1 and .behind_by == 0 and .total_commits == 1' \
-  "$RECEIPT_DIR/compare-premerge.json" >/dev/null
-mapfile -t REMOTE_PATHS < <(jq -r '.files[].filename' "$RECEIPT_DIR/compare-premerge.json" | sort -u)
+  "$RECEIPT_DIR/compare-prepush.json" >/dev/null
+mapfile -t REMOTE_PATHS < <(jq -r '.files[].filename' "$RECEIPT_DIR/compare-prepush.json" | sort -u)
 printf '%s\n' "${REMOTE_PATHS[@]}" > "$RECEIPT_DIR/remote-paths.txt"
 test "${#REMOTE_PATHS[@]}" -gt 0
 assert_paths_allowed 'remote comparison' "${REMOTE_PATHS[@]}"
+assert_check_success 'release-check' "$RECEIPT_DIR/release-check-runs-prepush.json"
+assert_check_success 'no-magic-human-gate' "$RECEIPT_DIR/no-magic-check-runs-prepush.json"
 
-STAGE='merge-qualified-pull-request'
-MERGE_PAYLOAD="$(jq -n \
-  --arg title "$PR_TITLE" \
-  --arg message "Qualified scheduled intake from $CANDIDATE_BRANCH at $CANDIDATE_SHA." \
-  --arg sha "$CANDIDATE_SHA" \
-  '{commit_title: $title, commit_message: $message, sha: $sha, merge_method: "merge"}')"
-gh api --method PUT "repos/$REPO/pulls/$PR_NUMBER/merge" --input - <<< "$MERGE_PAYLOAD" \
-  > "$RECEIPT_DIR/merge.json"
-test "$(jq -r .merged "$RECEIPT_DIR/merge.json")" = 'true'
-MERGE_SHA="$(jq -r .sha "$RECEIPT_DIR/merge.json")"
-test "$MERGE_SHA" != 'null'
-MERGED='true'
+STAGE='advance-qualified-main'
+MAIN_UPDATE='attempting'
+git push --porcelain origin "$CANDIDATE_SHA:refs/heads/main" \
+  > "$RECEIPT_DIR/main-push.stdout" 2> "$RECEIPT_DIR/main-push.stderr"
+MAIN_SHA="$(gh api "repos/$REPO/git/ref/heads/main" --jq .object.sha)"
+test "$MAIN_SHA" = "$CANDIDATE_SHA"
+MAIN_UPDATE='complete'
 
-STAGE='verify-merge-topology'
-gh api "repos/$REPO/git/commits/$MERGE_SHA" > "$RECEIPT_DIR/merge-commit.json"
-test "$(jq -r '.parents[0].sha' "$RECEIPT_DIR/merge-commit.json")" = "$BASE_SHA"
-test "$(jq -r '.parents[1].sha' "$RECEIPT_DIR/merge-commit.json")" = "$CANDIDATE_SHA"
+STAGE='verify-main-update'
 git fetch --no-tags origin main
-git merge-base --is-ancestor "$MERGE_SHA" origin/main
+test "$(git rev-parse origin/main)" = "$CANDIDATE_SHA"
+gh api "repos/$REPO/git/commits/$CANDIDATE_SHA" > "$RECEIPT_DIR/main-commit.json"
+test "$(jq -r '.parents | length' "$RECEIPT_DIR/main-commit.json")" = '1'
+test "$(jq -r '.parents[0].sha' "$RECEIPT_DIR/main-commit.json")" = "$BASE_SHA"
+assert_check_success 'release-check' "$RECEIPT_DIR/release-check-runs-postpush.json"
+assert_check_success 'no-magic-human-gate' "$RECEIPT_DIR/no-magic-check-runs-postpush.json"
 
 STAGE='retire-run-scoped-candidate'
 test "$(gh api "repos/$REPO/git/ref/heads/$CANDIDATE_BRANCH" --jq .object.sha)" = "$CANDIDATE_SHA"

@@ -42,16 +42,18 @@ export function validateScheduledCrawlPromotion(files) {
     ['official-record workflow', files.official, 'official-record']
   ]) {
     requireMatch(errors, workflow, /permissions:\n  contents: read\n/, `${label} must default to read-only contents`);
-    requireMatch(errors, workflow, /permissions:\n(?:      .+\n)*      actions: write\n      contents: write\n      pull-requests: write\n/, `${label} promotion job must carry only the required mutation scopes`);
+    requireMatch(errors, workflow, /permissions:\n(?:      .+\n)*      actions: write\n      contents: write\n/, `${label} promotion job must carry only actions and contents write authority`);
+    requireAbsent(errors, workflow, /pull-requests:\s*write/, `${label} must not retain pull-request write authority`);
     requireMatch(errors, workflow, /group: scheduled-crawl-main-promotion\n      cancel-in-progress: false|group: scheduled-crawl-main-promotion\n  cancel-in-progress: false/, `${label} must share the serialized main-promotion concurrency group`);
     requireMatch(errors, workflow, /ref: main\n          fetch-depth: 0/, `${label} must crawl from a full-history main checkout`);
     requireMatch(errors, workflow, new RegExp(`PROMOTION_KIND: ${kind.replace('-', '\\-')}`), `${label} must bind the exact promotion kind`);
+    requireMatch(errors, workflow, /name: Promote intake through qualified status checks/, `${label} must identify checks-first promotion`);
     requireMatch(errors, workflow, /run: bash \.github\/scripts\/promote-scheduled-crawl\.sh/, `${label} must invoke the common promotion helper`);
     requireMatch(errors, workflow, /uses: actions\/upload-artifact@v4/, `${label} must retain a promotion receipt`);
     requireMatch(errors, workflow, /path: \$\{\{ runner\.temp \}\}\/scheduled-crawl-promotion-receipt/, `${label} must upload the exact receipt directory`);
     requireMatch(errors, workflow, /PROMOTION_STEP_OUTCOME: \$\{\{ steps\.promote\.outcome \}\}/, `${label} must expose the helper outcome to the terminal gate`);
     requireMatch(errors, workflow, /run: test "\$PROMOTION_STEP_OUTCOME" = success/, `${label} must fail the workflow when promotion fails`);
-    requireAbsent(errors, workflow, /git push(?:\s|$)/, `${label} must not push main or any branch directly inside the workflow`);
+    requireAbsent(errors, workflow, /git push(?:\s|$)/, `${label} must not push any ref directly inside the workflow`);
     requireAbsent(errors, workflow, /git pull --rebase/, `${label} must not rebase generated intake over a moved main`);
   }
 
@@ -68,23 +70,21 @@ export function validateScheduledCrawlPromotion(files) {
   requireMatch(errors, helper, /CANDIDATE_BRANCH="automation-crawl-\$\{SLUG\}-run-\$\{RUN_ID\}-\$\{RUN_ATTEMPT\}"/, 'candidate branch must be unique to workflow run and attempt');
   requireMatch(errors, helper, /BASE_SHA="\$\(git rev-parse HEAD\)"/, 'promotion must lease the exact checked-out base SHA');
   const mainLeaseAssertions = helper.match(/test "\$\(git rev-parse origin\/main\)" = "\$BASE_SHA"/g) || [];
-  if (mainLeaseAssertions.length < 2) errors.push('promotion must refuse a moved main before candidate construction and again before publication');
+  if (mainLeaseAssertions.length < 3) errors.push('promotion must refuse a moved main before construction, publication, and final advancement');
   requireMatch(errors, helper, /test "\$\(git rev-parse "\$CANDIDATE_SHA\^"\)" = "\$BASE_SHA"/, 'candidate must be one direct child of the leased base');
-  requireMatch(errors, helper, /git push origin "\$CANDIDATE_SHA:refs\/heads\/\$CANDIDATE_BRANCH"/, 'promotion may publish only the run-scoped candidate branch');
-  requireAbsent(errors, helper, /git push[^\n]*(?:refs\/heads\/main|\s+main(?=\s|$)|:main(?=\s|$))/, 'promotion helper must never push main');
-  requireMatch(errors, helper, /repos\/\$REPO\/pulls" --input/, 'promotion must open an ordinary pull request');
+  requireMatch(errors, helper, /git push origin "\$CANDIDATE_SHA:refs\/heads\/\$CANDIDATE_BRANCH"/, 'promotion may first publish only the run-scoped candidate branch');
+  requireAbsent(errors, helper, /repos\/\$REPO\/pulls/, 'promotion must not depend on pull-request creation or merge authority');
   requireMatch(errors, helper, /actions\/workflows\/ci\.yml\/dispatches/, 'promotion must dispatch Release checks explicitly');
   requireMatch(errors, helper, /actions\/workflows\/no-magic-human-gate\.yml\/dispatches/, 'promotion must dispatch No magic human gate explicitly');
   requireMatch(errors, helper, /assert_check_success 'release-check'/, 'promotion must bind the stable Release checks context');
   requireMatch(errors, helper, /assert_check_success 'no-magic-human-gate'/, 'promotion must bind the stable No magic human gate context');
+  requireMatch(errors, helper, /\.app\.slug == "github-actions"/, 'promotion must bind successful checks to the GitHub Actions app');
   requireMatch(errors, helper, /\.status == "ahead" and \.ahead_by == 1 and \.behind_by == 0 and \.total_commits == 1/, 'remote comparison must remain exactly one commit ahead and zero behind');
-  const mergePayloadStart = helper.indexOf('MERGE_PAYLOAD=');
-  const mergeCallStart = helper.indexOf('gh api --method PUT "repos/$REPO/pulls/$PR_NUMBER/merge"', mergePayloadStart);
-  const mergeSection = mergePayloadStart >= 0 && mergeCallStart > mergePayloadStart
-    ? helper.slice(mergePayloadStart, mergeCallStart)
-    : '';
-  requireMatch(errors, mergeSection, /--arg sha "\$CANDIDATE_SHA"[\s\S]*sha: \$sha, merge_method: "merge"/, 'merge request must be leased to the exact candidate SHA');
-  requireMatch(errors, helper, /test "\$\(jq -r '\.parents\[0\]\.sha'[^\n]*\)" = "\$BASE_SHA"[\s\S]*test "\$\(jq -r '\.parents\[1\]\.sha'[^\n]*\)" = "\$CANDIDATE_SHA"/, 'post-merge receipt must authenticate both merge parents');
+  requireMatch(errors, helper, /test "\$\(jq -r '\.parents \| length' "\$RECEIPT_DIR\/candidate-commit\.json"\)" = '1'/, 'remote candidate receipt must contain exactly one parent');
+  requireMatch(errors, helper, /test "\$\(jq -r '\.parents\[0\]\.sha' "\$RECEIPT_DIR\/candidate-commit\.json"\)" = "\$BASE_SHA"/, 'remote candidate receipt must bind its parent to the leased base');
+  requireMatch(errors, helper, /git push --porcelain origin "\$CANDIDATE_SHA:refs\/heads\/main"/, 'promotion must advance main only to the exact qualified candidate');
+  requireAbsent(errors, helper, /git push[^\n]*(?:--force|-f(?:\s|$)|\+)/, 'promotion must never force-update a ref');
+  requireMatch(errors, helper, /MAIN_UPDATE='attempting'[\s\S]*MAIN_SHA="\$\(gh api "repos\/\$REPO\/git\/ref\/heads\/main" --jq \.object\.sha\)"[\s\S]*test "\$MAIN_SHA" = "\$CANDIDATE_SHA"[\s\S]*MAIN_UPDATE='complete'/, 'main advancement must be observed and bound to the exact candidate');
   requireMatch(errors, helper, /remote_candidate" == "\$CANDIDATE_SHA"/, 'cleanup may delete a candidate ref only while it retains the leased SHA');
   requireMatch(errors, helper, /cleanup-branch-refused\.txt/, 'cleanup must record and refuse a moved candidate ref');
   requireAbsent(errors, helper, /branches\/main\/protection|repos\/\$REPO\/rulesets/, 'scheduled promotion must not mutate branch policy');
@@ -93,8 +93,9 @@ export function validateScheduledCrawlPromotion(files) {
     "STAGE='dispatch-required-checks'",
     "STAGE='qualify-exact-candidate'",
     "STAGE='revalidate-lease-and-remote-denominator'",
-    "STAGE='merge-qualified-pull-request'"
-  ], 'required checks, lease revalidation, and merge must occur in that order');
+    "STAGE='advance-qualified-main'",
+    "STAGE='verify-main-update'"
+  ], 'required checks, lease revalidation, main advancement, and final verification must occur in that order');
 
   return errors;
 }
@@ -107,7 +108,8 @@ const mutations = [
   ['remove the release-gate contract test', (c) => { c.release = c.release.replace('      - name: Run scheduled crawler promotion contract tests\n        run: node test/scheduled-crawl-promotion.test.js\n', ''); }],
   ['reintroduce a direct workflow push', (c) => { c.official += '\n      - run: git push origin main\n'; }],
   ['remove actions dispatch authority', (c) => { c.industrial = c.industrial.replace('      actions: write\n', ''); }],
-  ['remove pull-request authority', (c) => { c.official = c.official.replace('      pull-requests: write\n', ''); }],
+  ['remove contents update authority', (c) => { c.official = c.official.replace('      contents: write\n', ''); }],
+  ['reintroduce pull-request authority', (c) => { c.official = c.official.replace('      contents: write\n', '      contents: write\n      pull-requests: write\n'); }],
   ['split the crawler concurrency lock', (c) => { c.official = c.official.replace('scheduled-crawl-main-promotion', 'official-only-promotion'); }],
   ['allow shallow candidate ancestry', (c) => { c.industrial = c.industrial.replace('          fetch-depth: 0', '          fetch-depth: 1'); }],
   ['misbind the official promotion kind', (c) => { c.official = c.official.replace('PROMOTION_KIND: official-record', 'PROMOTION_KIND: industrial-exhaust'); }],
@@ -115,19 +117,17 @@ const mutations = [
   ['drop run-attempt branch uniqueness', (c) => { c.helper = c.helper.replace('-${RUN_ATTEMPT}', ''); }],
   ['remove exact-main lease refusal', (c) => { c.helper = c.helper.replaceAll('test "$(git rev-parse origin/main)" = "$BASE_SHA"', 'true # main lease removed'); }],
   ['skip No magic workflow dispatch', (c) => { c.helper = c.helper.replace('gh api --method POST "repos/$REPO/actions/workflows/no-magic-human-gate.yml/dispatches"', 'echo skipped-no-magic'); }],
-  ['bind a generic no-magic check', (c) => { c.helper = c.helper.replace("assert_check_success 'no-magic-human-gate'", "assert_check_success 'validate'"); }],
+  ['bind a generic no-magic check', (c) => { c.helper = c.helper.replaceAll("assert_check_success 'no-magic-human-gate'", "assert_check_success 'validate'"); }],
+  ['drop check app binding', (c) => { c.helper = c.helper.replace('and .app.slug == "github-actions"', 'and true'); }],
   ['weaken remote one-commit topology', (c) => { c.helper = c.helper.replace('and .ahead_by == 1 and .behind_by == 0 and .total_commits == 1', 'and .ahead_by >= 1'); }],
-  ['merge against the base instead of candidate', (c) => {
-    const marker = 'MERGE_PAYLOAD=';
-    const start = c.helper.indexOf(marker);
-    c.helper = c.helper.slice(0, start) + c.helper.slice(start).replace('--arg sha "$CANDIDATE_SHA"', '--arg sha "$BASE_SHA"');
-  }],
+  ['advance main to the base instead of candidate', (c) => { c.helper = c.helper.replace('"$CANDIDATE_SHA:refs/heads/main"', '"$BASE_SHA:refs/heads/main"'); }],
+  ['force-update main', (c) => { c.helper = c.helper.replace('git push --porcelain origin', 'git push --porcelain --force origin'); }],
   ['delete a moved candidate ref', (c) => { c.helper = c.helper.replace('if [[ "$remote_candidate" == "$CANDIDATE_SHA" ]]; then', 'if [[ -n "$remote_candidate" ]]; then'); }],
   ['let scheduled promotion mutate policy', (c) => { c.helper += '\ngh api --method PUT "repos/$REPO/branches/main/protection"\n'; }],
-  ['merge before exact check qualification', (c) => {
+  ['advance main before exact check qualification', (c) => {
     c.helper = c.helper.replace("STAGE='dispatch-required-checks'", "STAGE='temporary-swap-marker'")
-      .replace("STAGE='merge-qualified-pull-request'", "STAGE='dispatch-required-checks'")
-      .replace("STAGE='temporary-swap-marker'", "STAGE='merge-qualified-pull-request'");
+      .replace("STAGE='advance-qualified-main'", "STAGE='dispatch-required-checks'")
+      .replace("STAGE='temporary-swap-marker'", "STAGE='advance-qualified-main'");
   }]
 ];
 

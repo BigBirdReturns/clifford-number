@@ -84,7 +84,6 @@ jobs:
     permissions:
       actions: write
       contents: write
-      pull-requests: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -111,7 +110,7 @@ jobs:
         run: |
           node test/industrial-exhaust.test.js
           node test/industrial-exhaust-artifacts.test.js
-      - name: Promote intake through qualified pull request
+      - name: Promote intake through qualified status checks
         id: promote
         continue-on-error: true
         env:

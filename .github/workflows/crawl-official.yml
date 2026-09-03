@@ -25,7 +25,6 @@ jobs:
     permissions:
       actions: write
       contents: write
-      pull-requests: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -56,7 +55,7 @@ jobs:
       - name: Stage crawler-owned intake roots
         run: git add data/crawl receipts/crawl
 
-      - name: Promote intake through qualified pull request
+      - name: Promote intake through qualified status checks
         id: promote
         continue-on-error: true
         env:
