@@ -118,6 +118,12 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PROMOTION_KIND: industrial-exhaust
         run: bash .github/scripts/promote-scheduled-crawl.sh
+      - name: Preserve candidate when pull-request creation is blocked
+        if: steps.promote.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PROMOTION_KIND: industrial-exhaust
+        run: bash .github/scripts/preserve-scheduled-crawl-candidate.sh
       - name: Retain scheduled promotion receipt
         if: always()
         uses: actions/upload-artifact@v4
