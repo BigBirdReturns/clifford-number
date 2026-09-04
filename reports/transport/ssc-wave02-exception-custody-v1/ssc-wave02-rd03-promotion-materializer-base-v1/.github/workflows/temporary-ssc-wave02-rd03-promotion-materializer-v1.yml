@@ -1,0 +1,392 @@
+name: TEMP repair RD-06 successor custody for Wave 02 ledger
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-wave02-rd03-promotion-materializer-v1.yml'
+      - '.ssc-wave02-rd03-promotion/**'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temp-ssc-wave02-rd06-successor-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    if: github.event.pull_request.head.ref == 'agent/ssc-wave02-rd03-promotion-materializer-trigger-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      TARGET_BRANCH: agent/ssc-wave02-current-ledger-five-closures
+      EXPECTED_TARGET_HEAD: f0d71a46ba2b098b054d6246d7ff00250af1961e
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-wave02-current-ledger-five-closures
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Patch, qualify, and publish exact successor compatibility repair
+        run: |
+          set -Eeuo pipefail
+          out="$RUNNER_TEMP/ssc-rd06-successor-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          rm -rf "$out"
+          mkdir -p "$out"
+          echo "RECEIPT_DIR=$out" >> "$GITHUB_ENV"
+          exec > >(tee "$out/trace.log") 2>&1
+          step=initialize
+          finish() {
+            rc=$?
+            set +e
+            trap - EXIT
+            printf '%s\n' "$rc" > "$out/exit-code.txt"
+            printf '%s\n' "$step" > "$out/final-step.txt"
+            git rev-parse HEAD > "$out/head.txt" 2>&1 || true
+            git rev-parse 'HEAD^{tree}' > "$out/tree.txt" 2>&1 || true
+            git status --porcelain=v1 --untracked-files=all > "$out/status.txt" 2>&1 || true
+            git diff --name-status "$EXPECTED_TARGET_HEAD" HEAD > "$out/name-status.txt" 2>&1 || true
+            git diff --name-only "$EXPECTED_TARGET_HEAD" HEAD | sort > "$out/paths.txt" 2>&1 || true
+            git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" > "$out/remote-target.txt" 2>&1 || true
+            OUT="$out" RC="$rc" STEP="$step" python - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          out = Path(os.environ['OUT'])
+          receipt = {
+              'schema_version': 'ssc-rd06-successor-compatibility-repair@2',
+              'run': int(os.environ['GITHUB_RUN_ID']),
+              'attempt': int(os.environ['GITHUB_RUN_ATTEMPT']),
+              'exit_code': int(os.environ['RC']),
+              'final_step': os.environ['STEP'],
+              'target_branch': os.environ['TARGET_BRANCH'],
+              'expected_target_head': os.environ['EXPECTED_TARGET_HEAD'],
+              'permanent_paths': 2,
+              'accepted_rd06_custody_worlds': [
+                  'pre_promotion_three_closures',
+                  'post_promotion_four_closures',
+                  'post_rd03_promotion_five_closures',
+              ],
+              'canonical_residual_classes': 42,
+              'closed_residual_classes': 5,
+              'open_residual_classes': 37,
+              'open_selected_class_ids': ['RD-02-C04'],
+              'outside_human_dependency': False,
+              'external_contacts': 0,
+              'external_reviews': 0,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+          }
+          (out / 'receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          for path in sorted(out.iterdir()):
+              if path.is_file() and not path.name.endswith('.sha256'):
+                  digest = hashlib.sha256(path.read_bytes()).hexdigest()
+                  (out / f'{path.name}.sha256').write_text(f'{digest}  {path.name}\n')
+          PY
+            exit "$rc"
+          }
+          trap finish EXIT
+
+          step=verify-target-lease
+          git fetch origin "+refs/heads/$TARGET_BRANCH:refs/remotes/origin/$TARGET_BRANCH"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_TARGET_HEAD"
+          test "$(git rev-parse "origin/$TARGET_BRANCH")" = "$EXPECTED_TARGET_HEAD"
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$EXPECTED_TARGET_HEAD"
+
+          step=patch-two-compatibility-paths
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path: str, old: str, new: str, label: str) -> None:
+              target = Path(path)
+              text = target.read_text()
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected exactly one match, found {count}')
+              target.write_text(text.replace(old, new, 1))
+
+          def replace_section(path: str, start_marker: str, end_marker: str, replacement: str, label: str) -> None:
+              target = Path(path)
+              text = target.read_text()
+              start_count = text.count(start_marker)
+              end_count = text.count(end_marker)
+              if start_count != 1 or end_count != 1:
+                  raise SystemExit(
+                      f'{label}: expected unique markers, found start={start_count} end={end_count}'
+                  )
+              start = text.index(start_marker)
+              end = text.index(end_marker, start)
+              target.write_text(text[:start] + replacement + text[end:])
+
+          validator = 'tools/validate-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs'
+          old = '\n'.join([
+              "  const rd06Promoted = current.promoted_class_receipts.find((row) => row.class_id === 'RD-06-C01');",
+              "  const rd06Open = current.selected_classes_open.find((row) => row.class_id === 'RD-06-C01');",
+              '',
+          ])
+          new = '\n'.join([
+              "  const rd06Promoted = current.promoted_class_receipts.find((row) => row.class_id === 'RD-06-C01');",
+              "  const rd06Open = current.selected_classes_open.find((row) => row.class_id === 'RD-06-C01');",
+              "  const rd03Promoted = current.promoted_class_receipts.find((row) => row.class_id === 'RD-03-C04');",
+              "  const rd03Open = current.selected_classes_open.find((row) => row.class_id === 'RD-03-C04');",
+              '',
+          ])
+          replace_once(validator, old, new, 'RD-03 successor row declarations')
+
+          old = '\n'.join([
+              '    current.counts.open_residual_classes === 39 &&',
+              "    current.current_result.terminal_state === 'three_of_forty_two_residual_classes_closed_three_selected_attempts_open' &&",
+          ])
+          new = '\n'.join([
+              '    current.counts.open_residual_classes === 39 &&',
+              '    current.counts.label_reconciliations === 1 &&',
+              "    current.current_result.terminal_state === 'three_of_forty_two_residual_classes_closed_three_selected_attempts_open' &&",
+          ])
+          replace_once(validator, old, new, 'pre-promotion label reconciliation custody')
+
+          old = '\n'.join([
+              '    current.counts.open_residual_classes === 38 &&',
+              "    current.current_result.terminal_state === 'four_of_forty_two_residual_classes_closed_two_selected_attempts_open' &&",
+          ])
+          new = '\n'.join([
+              '    current.counts.open_residual_classes === 38 &&',
+              '    current.counts.label_reconciliations === 1 &&',
+              "    current.current_result.terminal_state === 'four_of_forty_two_residual_classes_closed_two_selected_attempts_open' &&",
+          ])
+          replace_once(validator, old, new, 'post-promotion label reconciliation custody')
+
+          old = '\n'.join([
+              "  ok(prePromotion || postPromotion, 'current atlas is neither exact pre-promotion nor exact post-promotion RD-06 custody');",
+              "  return prePromotion ? 'pre_promotion' : 'post_promotion';",
+          ])
+          new = '\n'.join([
+              '  const postRd03Promotion =',
+              "    current.authority === 'five_terminal_class_receipts_promoted_without_cross_lane_empirical_authority' &&",
+              '    current.counts.terminal_class_receipts === 5 &&',
+              '    current.counts.classes_closed_this_wave === 5 &&',
+              '    current.counts.closed_residual_classes === 5 &&',
+              '    current.counts.open_residual_classes === 37 &&',
+              '    current.counts.label_reconciliations === 2 &&',
+              "    current.current_result.terminal_state === 'five_of_forty_two_residual_classes_closed_one_selected_attempt_open' &&",
+              '    current.current_result.classes_closed === 5 &&',
+              '    current.current_result.classes_open === 37 &&',
+              '    current.current_result.all_six_selected_classes_closed === false &&',
+              '    current.current_result.wave_complete === false &&',
+              "    equal(promotedIds, ['RD-04-C01','RD-05-C03','RD-01-C03','RD-06-C01','RD-03-C04']) &&",
+              "    equal(openIds, ['RD-02-C04']) &&",
+              "    equal(current.current_result.closed_class_ids, ['RD-04-C01','RD-05-C03','RD-01-C03','RD-06-C01','RD-03-C04']) &&",
+              "    equal(current.current_result.open_selected_class_ids, ['RD-02-C04']) &&",
+              '    rd06Open === undefined &&',
+              '    rd03Open === undefined &&',
+              '    equal(rd06Promoted, {',
+              "      lane_id: 'RD-06',",
+              "      class_id: 'RD-06-C01',",
+              '      issue: 791,',
+              '      source_pr: 806,',
+              "      merge_commit: 'd7983e19c0783a048afb19adde0fb65ccf94c726',",
+              '      constitutional_exact_label: CLASS_LABEL,',
+              '      receipt_class_label: CLASS_LABEL,',
+              '      labels_exact_match: true,',
+              "      label_reconciliation: 'none',",
+              '      terminal_state: TERMINAL_STATE,',
+              '      closure_reference_path: CLOSURE_REFERENCE_PATH,',
+              '      class_receipt_path: `${PRODUCT_ROOT}/class-receipt.json`,',
+              "      manifest_combined_sha256: '2a17904180dac7b250e2b0ffb82e8124354e89c39be267b0f4c4ebe65c6516c5',",
+              '      class_closed: true',
+              '    }) &&',
+              '    equal(rd03Promoted, {',
+              "      lane_id: 'RD-03',",
+              "      class_id: 'RD-03-C04',",
+              '      issue: 788,',
+              '      source_pr: 803,',
+              "      merge_commit: '580d9c998f747330d190bed5011c7a1a517a1c0d',",
+              "      constitutional_exact_label: 'complete negotiated loan, warrant, security, covenant, milestone, pricing, and seniority terms',",
+              "      receipt_class_label: 'complete negotiated loan, warrant, security, covenant, milestone, pricing, and seniority terms',",
+              '      labels_exact_match: false,',
+              "      label_reconciliation: 'constitution_adds_complete_and_negotiated_qualifiers_while_seed_label_is_retained_exact',",
+              "      terminal_state: 'bounded_source_unavailable',",
+              "      closure_reference_path: 'data/project/ssc-residual-wave02/closures/RD-03-C04.json',",
+              "      class_receipt_path: 'data/research/status-sovereignty-rd-wave02-rd03-negotiated-terms/class-receipt.json',",
+              "      manifest_combined_sha256: '1323477ae4b4bda480eb9bf1484cde7db9783920c834a69996ca0428c57fb16e',",
+              '      class_closed: true',
+              '    });',
+              '',
+              '  ok(',
+              '    prePromotion || postPromotion || postRd03Promotion,',
+              "    'current atlas is neither exact pre-promotion, post-promotion, nor post-RD-03-promotion RD-06 custody'",
+              '  );',
+              "  if (prePromotion) return 'pre_promotion';",
+              "  if (postPromotion) return 'post_promotion';",
+              "  return 'post_rd03_promotion';",
+          ])
+          replace_once(validator, old, new, 'RD-06 successor custody state')
+
+          test_path = 'test/status-sovereignty-rd-wave02-rd06-offeror-universe.test.js'
+          fixture_lines = [
+              "const currentLedger = read('data/research/status-sovereignty-residual-denominator-wave-02-current.json');",
+              "assert.equal(validateCurrentAtlasCustody(currentLedger), 'post_rd03_promotion');",
+              '',
+              'const postPromotionLedger = clone(currentLedger);',
+              "postPromotionLedger.authority = 'four_terminal_class_receipts_promoted_without_cross_lane_empirical_authority';",
+              'postPromotionLedger.promoted_class_receipts = postPromotionLedger.promoted_class_receipts.slice(0, 4);',
+              'postPromotionLedger.selected_classes_open.push({',
+              "  lane_id: 'RD-03',",
+              "  class_id: 'RD-03-C04',",
+              '  issue: 788,',
+              "  constitutional_exact_label: 'complete negotiated loan, warrant, security, covenant, milestone, pricing, and seniority terms',",
+              "  state: 'open',",
+              '  class_closed: false',
+              '});',
+              'postPromotionLedger.counts.terminal_class_receipts = 4;',
+              'postPromotionLedger.counts.classes_closed_this_wave = 4;',
+              'postPromotionLedger.counts.closed_residual_classes = 4;',
+              'postPromotionLedger.counts.open_residual_classes = 38;',
+              'postPromotionLedger.counts.label_reconciliations = 1;',
+              "postPromotionLedger.current_result.terminal_state = 'four_of_forty_two_residual_classes_closed_two_selected_attempts_open';",
+              'postPromotionLedger.current_result.classes_closed = 4;',
+              'postPromotionLedger.current_result.classes_open = 38;',
+              "postPromotionLedger.current_result.closed_class_ids = ['RD-04-C01','RD-05-C03','RD-01-C03','RD-06-C01'];",
+              "postPromotionLedger.current_result.open_selected_class_ids = ['RD-02-C04','RD-03-C04'];",
+              "assert.equal(validateCurrentAtlasCustody(postPromotionLedger), 'post_promotion');",
+              '',
+              'const prePromotionLedger = clone(postPromotionLedger);',
+              "prePromotionLedger.authority = 'three_terminal_class_receipts_promoted_without_cross_lane_empirical_authority';",
+              'prePromotionLedger.promoted_class_receipts = prePromotionLedger.promoted_class_receipts.slice(0, 3);',
+              'prePromotionLedger.selected_classes_open.push({',
+              "  lane_id: 'RD-06',",
+              "  class_id: 'RD-06-C01',",
+              '  issue: 791,',
+              "  constitutional_exact_label: 'complete bidder, offeror, architecture, subcontractor, withdrawal, and nonresponsive universe',",
+              "  state: 'open',",
+              '  class_closed: false',
+              '});',
+              'prePromotionLedger.counts.terminal_class_receipts = 3;',
+              'prePromotionLedger.counts.classes_closed_this_wave = 3;',
+              'prePromotionLedger.counts.closed_residual_classes = 3;',
+              'prePromotionLedger.counts.open_residual_classes = 39;',
+              'prePromotionLedger.counts.label_reconciliations = 1;',
+              "prePromotionLedger.current_result.terminal_state = 'three_of_forty_two_residual_classes_closed_three_selected_attempts_open';",
+              'prePromotionLedger.current_result.classes_closed = 3;',
+              'prePromotionLedger.current_result.classes_open = 39;',
+              "prePromotionLedger.current_result.closed_class_ids = ['RD-04-C01','RD-05-C03','RD-01-C03'];",
+              "prePromotionLedger.current_result.open_selected_class_ids = ['RD-02-C04','RD-03-C04','RD-06-C01'];",
+              "assert.equal(validateCurrentAtlasCustody(prePromotionLedger), 'pre_promotion');",
+          ]
+          replace_section(
+              test_path,
+              "const currentLedger = read('data/research/status-sovereignty-residual-denominator-wave-02-current.json');",
+              '\n\nconst custodyMutations = [',
+              '\n'.join(fixture_lines),
+              'three exact RD-06 custody fixtures',
+          )
+
+          old = '\n'.join([
+              'for (const [name, mutate] of custodyMutations) {',
+              '  const candidate = clone(currentLedger);',
+              '  mutate(candidate);',
+              '  assert.throws(() => validateCurrentAtlasCustody(candidate), undefined, name);',
+              '}',
+          ])
+          new = '\n'.join([
+              'for (const [name, mutate] of custodyMutations) {',
+              '  for (const [state, source] of [',
+              "    ['post_rd03_promotion', currentLedger],",
+              "    ['post_promotion', postPromotionLedger]",
+              '  ]) {',
+              '    const candidate = clone(source);',
+              '    mutate(candidate);',
+              '    assert.throws(',
+              '      () => validateCurrentAtlasCustody(candidate),',
+              '      undefined,',
+              '      `${name} (${state})`',
+              '    );',
+              '  }',
+              '}',
+          ])
+          replace_once(test_path, old, new, 'post-promotion mutation replay across two exact worlds')
+
+          old = 'console.log(`RD-06 terminal adversarial suite: ${mutations.length + schemaMutations.length + custodyMutations.length + preCustodyMutations.length} mutations refused`);'
+          new = 'console.log(`RD-06 terminal adversarial suite: ${mutations.length + schemaMutations.length + (custodyMutations.length * 2) + preCustodyMutations.length} mutations refused`);'
+          replace_once(test_path, old, new, 'expanded RD-06 refusal count')
+          PY
+
+          step=verify-two-path-diff
+          cat > "$out/expected-paths.txt" <<'PATHS'
+          test/status-sovereignty-rd-wave02-rd06-offeror-universe.test.js
+          tools/validate-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs
+          PATHS
+          sed -i 's/^          //' "$out/expected-paths.txt"
+          git diff --name-only | sort > "$out/worktree-paths.txt"
+          cmp "$out/expected-paths.txt" "$out/worktree-paths.txt"
+          test -z "$(git diff --name-status | awk '$1 != "M" {print}')"
+          git diff --check
+          node --check tools/validate-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs
+          node --check test/status-sovereignty-rd-wave02-rd06-offeror-universe.test.js
+
+          step=commit-two-path-repair
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- $(cat "$out/expected-paths.txt")
+          git commit -m 'Make RD-06 custody validation successor-aware'
+          repair_commit="$(git rev-parse HEAD)"
+          repair_tree="$(git rev-parse 'HEAD^{tree}')"
+          printf '%s\n' "$repair_commit" > "$out/repair-commit.txt"
+          printf '%s\n' "$repair_tree" > "$out/repair-tree.txt"
+
+          step=focused-compatibility-qualification
+          node tools/build-status-sovereignty-residual-denominator-wave-02-current.mjs --check
+          node tools/validate-status-sovereignty-residual-denominator-wave-02-current.mjs
+          node test/status-sovereignty-residual-denominator-wave-02-current.test.js
+          node tools/build-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs --check
+          node tools/validate-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs
+          node test/status-sovereignty-rd-wave02-rd06-offeror-universe.test.js
+          node tools/build-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs --check
+          node tools/validate-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs
+          node test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --exit-code
+
+          step=complete-repository-release-gate
+          npm run release:check
+
+          step=deterministic-clean-replay
+          git reset --hard HEAD
+          git clean -fdx
+          node tools/build-status-sovereignty-residual-denominator-wave-02-current.mjs --check
+          node tools/validate-status-sovereignty-residual-denominator-wave-02-current.mjs
+          node test/status-sovereignty-residual-denominator-wave-02-current.test.js
+          node tools/build-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs --check
+          node tools/validate-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs
+          node test/status-sovereignty-rd-wave02-rd06-offeror-universe.test.js
+          node tools/build-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs --check
+          node tools/validate-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs
+          node test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          step=final-target-lease
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$EXPECTED_TARGET_HEAD"
+
+          step=publish-successor-compatibility-repair
+          git push \
+            --force-with-lease="refs/heads/$TARGET_BRANCH:$EXPECTED_TARGET_HEAD" \
+            origin "HEAD:refs/heads/$TARGET_BRANCH"
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$repair_commit"
+
+          step=repair-complete
+          trap - EXIT
+          finish
+
+      - name: Preserve successor compatibility receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd06-wave02-successor-compatibility-v2
+          path: ${{ env.RECEIPT_DIR }}
+          if-no-files-found: error
+          retention-days: 90

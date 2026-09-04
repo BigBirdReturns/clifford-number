@@ -1,0 +1,105 @@
+name: TEMP materialize RD-02 Wave-02 cumulative promotion v2
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd02-wave02-promotion-v2.yml'
+      - '.rd02-promotion-v1/**'
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: temp-ssc-rd02-wave02-promotion-v2-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd02-wave02-promotion-trigger-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      EXPECTED_MAIN: 72abc35c408d172d9be33b619b630a96ac317193
+      TARGET_BRANCH: agent/ssc-rd02-wave02-cumulative-promotion-v1
+      CONTROLLER_BRANCH: agent/ssc-rd02-wave02-promotion-controller-v1
+      MATERIALIZER_B64_SHA256: dc91c6a9810587b8b8ad1efca9dfb21ffe5bf6f844532bccb590e59280805320
+      MATERIALIZER_XZ_SHA256: 0bac65d01372a95118e1d037e5a11454326e486886ef6be406d613402d7ccafb
+      MATERIALIZER_SHA256: 8453f796024612d9ac33a90952f23c73013403cafc6a45587b8d39fcd1eea106
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 72abc35c408d172d9be33b619b630a96ac317193
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Derive the audited transaction body under corrected checksum bindings
+        run: |
+          set -Eeuo pipefail
+          bootstrap="$RUNNER_TEMP/ssc-rd02-wave02-promotion-v2-bootstrap-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          rm -rf "$bootstrap"
+          mkdir -p "$bootstrap"
+          echo "RECEIPT_DIR=$bootstrap" >> "$GITHUB_ENV"
+          export RECEIPT_DIR="$bootstrap"
+          printf '%s\n' 1 > "$bootstrap/exit-code.txt"
+          printf '%s\n' derive-audited-transaction > "$bootstrap/final-step.txt"
+
+          git fetch --no-tags origin "+refs/heads/${CONTROLLER_BRANCH}:refs/remotes/origin/rd02-promotion-controller-v2"
+          git show "origin/rd02-promotion-controller-v2:.github/workflows/temporary-ssc-rd02-wave02-promotion-v1.yml" > "$RUNNER_TEMP/rd02-promotion-v1.yml"
+          python - <<'PY'
+          import hashlib
+          import os
+          import textwrap
+          from pathlib import Path
+
+          source = Path(os.environ['RUNNER_TEMP']) / 'rd02-promotion-v1.yml'
+          lines = source.read_text().splitlines()
+          marker = '      - name: Reconstruct, qualify, replay, and split-publish cumulative promotion'
+          start = lines.index(marker) + 1
+          if lines[start] != '        run: |':
+              raise RuntimeError('audited transaction run-block anchor changed')
+          start += 1
+          end = next(
+              i for i in range(start, len(lines))
+              if lines[i].startswith('      - name: Preserve exact cumulative-promotion qualification receipt')
+          )
+          script = textwrap.dedent('\n'.join(lines[start:end])) + '\n'
+          required = {
+              'finish() {': 1,
+              'trap finish EXIT': 1,
+              'step=verify-exact-leases': 1,
+              'step=reconstruct-checksum-bound-materializer': 1,
+              'step=complete-qualified-repository-gate': 1,
+              'step=deterministic-clean-replay': 1,
+              'step=publish-runner-product': 1,
+              'step=cumulative-promotion-materialization-complete': 1,
+          }
+          for anchor, expected in required.items():
+              actual = script.count(anchor)
+              if actual != expected:
+                  raise RuntimeError(
+                      f'audited transaction anchor changed: {anchor!r} expected={expected} actual={actual}'
+                  )
+          output = Path('/tmp/ssc-rd02-wave02-cumulative-promotion-v2.sh')
+          output.write_text(script)
+          digest = hashlib.sha256(script.encode()).hexdigest()
+          (Path(os.environ['RUNNER_TEMP']) / 'derived-transaction.sha256').write_text(
+              f'{digest}  ssc-rd02-wave02-cumulative-promotion-v2.sh\n'
+          )
+          PY
+          bash -n /tmp/ssc-rd02-wave02-cumulative-promotion-v2.sh
+          cp "$RUNNER_TEMP/derived-transaction.sha256" "$bootstrap/"
+          printf '%s\n' 0 > "$bootstrap/exit-code.txt"
+          printf '%s\n' audited-transaction-derived > "$bootstrap/final-step.txt"
+      - name: Execute corrected exact cumulative-promotion transaction
+        run: bash /tmp/ssc-rd02-wave02-cumulative-promotion-v2.sh
+      - name: Preserve exact cumulative-promotion qualification receipt v2
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd02-wave02-cumulative-promotion-v2
+          path: ${{ env.RECEIPT_DIR }}
+          if-no-files-found: error
+          retention-days: 90
