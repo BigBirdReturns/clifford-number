@@ -1,0 +1,277 @@
+name: TEMP RD-01 Wave-03 exact ref retirement R2
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/temp-rd01-wave03-exact-ref-retirement-v2.yml'
+
+permissions:
+  contents: write
+  pull-requests: read
+  issues: read
+  actions: read
+
+concurrency:
+  group: rd01-wave03-exact-ref-retirement-v2
+  cancel-in-progress: false
+
+jobs:
+  retire:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'agent/rd01-wave03-exact-ref-retirement-v2'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      API_ROOT: https://api.github.com/repos/${{ github.repository }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      CONTROLLER_BRANCH: agent/rd01-wave03-exact-ref-retirement-v2
+      CONTROLLER_PARENT: b278ba79c9923f9a51c2718831c2dc1d62979d9d
+      CONTROLLER_PATH: .github/workflows/temp-rd01-wave03-exact-ref-retirement-v2.yml
+      AUTHORITY_COMMENT_ID: '5533656397'
+      AUTHORITY_COMMENT_UPDATED_AT: '2026-09-03T23:54:39Z'
+      AUTHORITY_BODY_SHA256: ca3be1e2b7ba4de5c51b0b503c64bd3e91f2f1b6456578a996cccee6deecdd8a
+      ARCHIVE_BRANCH: archive/ssc-rd01-wave03-promotion-materializer-receipt
+      ARCHIVE_SHA: cb45a12a347bed8eeaa4e8e11878139e5d4a290a
+      FAILED_CONTROLLER_BRANCH: agent/rd01-wave03-exact-ref-retirement-v1
+      FAILED_CONTROLLER_SHA: 0c1982e206e558acf3c22568a79205ed5f8bb8cb
+    steps:
+      - name: Validate and atomically retire the exact transport denominator
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p receipt
+
+          headers=(
+            -H 'Accept: application/vnd.github+json'
+            -H "Authorization: Bearer ${GH_TOKEN}"
+            -H 'X-GitHub-Api-Version: 2022-11-28'
+          )
+          api_get() {
+            curl --fail-with-body --silent --show-error \
+              "${headers[@]}" "${API_ROOT}/$1"
+          }
+          ref_status() {
+            local branch="$1"
+            local output="$2"
+            curl --silent --show-error "${headers[@]}" \
+              --output "${output}" --write-out '%{http_code}' \
+              "${API_ROOT}/git/ref/heads/${branch}"
+          }
+          require_ref() {
+            local branch="$1"
+            local expected="$2"
+            local output="$(mktemp)"
+            local code
+            code="$(ref_status "${branch}" "${output}")"
+            [[ "${code}" == '200' ]]
+            [[ "$(jq -r '.object.sha' "${output}")" == "${expected}" ]]
+            rm -f "${output}"
+          }
+          require_absent() {
+            local branch="$1"
+            local output="$(mktemp)"
+            local code
+            code="$(ref_status "${branch}" "${output}")"
+            rm -f "${output}"
+            [[ "${code}" == '404' ]]
+          }
+          require_parent_on_main() {
+            local main_sha="$1"
+            api_get "compare/${CONTROLLER_PARENT}...${main_sha}" > receipt/compare-main.json
+            jq -e --arg parent "${CONTROLLER_PARENT}" \
+              '(.merge_base_commit.sha == $parent) and ((.status == "ahead") or (.status == "identical"))' \
+              receipt/compare-main.json >/dev/null
+          }
+
+          cat > receipt/targets.tsv <<'EOF'
+          agent/cleanup-remove-rd01-wave03-transport-v1 fd46638c2d60d2e06e51b1ea25ac5899168f6fd2
+          agent/rd01-wave03-cleanup-gap-repair-controller-v1 b3a6175a730b2d786ba9836044553e2b3b523389
+          agent/rd01-wave03-cleanup-gap-repair-product-v1 075e87a822c6df8f57c78917aca3f0a409a36dc4
+          agent/retire-rd01-wave03-readonly-postmerge-proofs-v1 3d60ffe24d6d504a640bab9e72ac6a310cced307
+          agent/retire-rd01-wave03-temporary-workflow-authority-v1 951c59f920db1347d1517adb2cbd24284bdf8150
+          agent/ssc-rd01-wave03-capture-base-v1 947ae24a8e9130abf4ea2e9d00243bf7465f6ed5
+          agent/ssc-rd01-wave03-capture-trigger-v1 3634b4ef3efc90dc56b392ef3c08b09137f53dbb
+          agent/ssc-rd01-wave03-intake-materializer-base-v1 8c00c877112a7d3e5af1bba4d5990286ad9a2cd9
+          agent/ssc-rd01-wave03-intake-materializer-trigger-v1 4eb4c57c9f73719b6b1817927d47fa0c76654310
+          agent/ssc-rd01-wave03-pdf-capture-base-v1 e86c0e4efc0e8c042721b6541477202e9ea4d2de
+          agent/ssc-rd01-wave03-pdf-capture-trigger-v1 9cdb2ae88d540d17a7e3ea438acee261b547a786
+          agent/ssc-rd01-wave03-promotion-source-export-base-v1 3b3b7ec3da39831ba7eae645d4a2c6cd18dccde5
+          agent/ssc-rd01-wave03-promotion-source-export-trigger-v1 f2592cc9a88659a569bb1d615b75d698d9c745f0
+          agent/ssc-rd01-wave03-terminal-materializer-base-v1 83680514f58dfeafe5f5dabfb2b71905d53efbd7
+          agent/ssc-rd01-wave03-terminal-materializer-base-v2 c6ff7437738edcc50f35d3ab4f411b3f23b92cf5
+          agent/ssc-rd01-wave03-terminal-materializer-trigger-v1 c8aa0210d2f10ecf19ba0cfc0763504cc0135314
+          agent/ssc-rd01-wave03-terminal-materializer-trigger-v2 b44ca6f632745114a30659ec9781f26819c966ed
+          agent/ssc-rd01-wave03-terminal-materializer-v1 dee2bd5c842eaa3edd5997c1af8907bd3040e6b1
+          EOF
+          sed -i 's/^          //' receipt/targets.tsv
+
+          [[ "$(wc -l < receipt/targets.tsv)" -eq 18 ]]
+          [[ "$(awk '{print $1}' receipt/targets.tsv | sort -u | wc -l)" -eq 18 ]]
+          [[ "$(awk '{print $2}' receipt/targets.tsv | grep -Ec '^[0-9a-f]{40}$')" -eq 18 ]]
+          ! awk '{print $1}' receipt/targets.tsv | grep -Eq '^(main|archive/)'
+
+          api_get "pulls/${PR_NUMBER}" > receipt/controller-pr.json
+          jq -e \
+            --arg branch "${CONTROLLER_BRANCH}" \
+            --arg head "${EVENT_HEAD_SHA}" \
+            '.state == "open" and .base.ref == "main" and .head.ref == $branch and .head.sha == $head and .head.repo.full_name == .base.repo.full_name and .commits == 1 and .changed_files == 1' \
+            receipt/controller-pr.json >/dev/null
+          api_get "git/commits/${EVENT_HEAD_SHA}" > receipt/controller-commit.json
+          jq -e --arg parent "${CONTROLLER_PARENT}" \
+            '(.parents | length) == 1 and .parents[0].sha == $parent' \
+            receipt/controller-commit.json >/dev/null
+          api_get "pulls/${PR_NUMBER}/files?per_page=100" > receipt/controller-files.json
+          jq -e --arg path "${CONTROLLER_PATH}" \
+            'length == 1 and .[0].filename == $path and .[0].status == "added"' \
+            receipt/controller-files.json >/dev/null
+
+          api_get 'pulls/2582' > receipt/failed-controller-pr.json
+          jq -e --arg head "${FAILED_CONTROLLER_SHA}" \
+            '.state == "closed" and .merged_at == null and .head.sha == $head' \
+            receipt/failed-controller-pr.json >/dev/null
+          require_ref "${FAILED_CONTROLLER_BRANCH}" "${FAILED_CONTROLLER_SHA}"
+
+          api_get "issues/comments/${AUTHORITY_COMMENT_ID}" > receipt/authority-comment.json
+          jq -e --arg updated "${AUTHORITY_COMMENT_UPDATED_AT}" \
+            '.id == 5533656397 and .user.login == "BigBirdReturns" and .author_association == "OWNER" and .created_at == $updated and .updated_at == $updated and (.issue_url | endswith("/issues/2573"))' \
+            receipt/authority-comment.json >/dev/null
+
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import os
+          import pathlib
+          import re
+
+          root = pathlib.Path('receipt')
+          body = json.loads((root / 'authority-comment.json').read_text())['body']
+          digest = hashlib.sha256(body.encode()).hexdigest()
+          if digest != os.environ['AUTHORITY_BODY_SHA256']:
+              raise SystemExit('authority body digest changed')
+          targets = [line.split()[0] for line in (root / 'targets.tsv').read_text().splitlines()]
+          marker = 'An authenticated ref-deletion operation should remove exactly these eighteen refs:'
+          if body.count(marker) != 1:
+              raise SystemExit('authority marker count is not one')
+          match = re.search(r'```text\n(.*?)\n```', body.split(marker, 1)[1], flags=re.S)
+          if not match or match.group(1).splitlines() != targets:
+              raise SystemExit('authority target block differs')
+          archive = os.environ['ARCHIVE_BRANCH']
+          archive_sha = os.environ['ARCHIVE_SHA']
+          if archive in targets or body.count(archive) != 1 or body.count(archive_sha) != 2:
+              raise SystemExit('archive preservation statement differs')
+          (root / 'authority.json').write_text(json.dumps({
+              'comment_id': int(os.environ['AUTHORITY_COMMENT_ID']),
+              'body_sha256': digest,
+              'target_count': len(targets),
+              'target_list_sha256': hashlib.sha256(('\n'.join(targets) + '\n').encode()).hexdigest(),
+              'archive_branch': archive,
+              'archive_sha': archive_sha,
+          }, indent=2, sort_keys=True) + '\n')
+          PY
+
+          main_before="$(api_get 'git/ref/heads/main' | jq -r '.object.sha')"
+          printf '%s\n' "${main_before}" > receipt/main-before.txt
+          require_parent_on_main "${main_before}"
+          require_ref "${ARCHIVE_BRANCH}" "${ARCHIVE_SHA}"
+
+          : > receipt/preflight.tsv
+          while read -r branch expected; do
+            require_ref "${branch}" "${expected}"
+            printf '%s\t%s\tpresent_exact\n' "${branch}" "${expected}" >> receipt/preflight.tsv
+          done < receipt/targets.tsv
+
+          repo_url="https://github.com/${GITHUB_REPOSITORY}.git"
+          basic_auth="$(printf 'x-access-token:%s' "${GH_TOKEN}" | base64 -w0)"
+          bare_repo="${RUNNER_TEMP}/rd01-ref-retirement-v2.git"
+          git init --bare "${bare_repo}" >/dev/null
+          cd "${bare_repo}"
+          push_args=(push --atomic --porcelain)
+          refspecs=()
+          while read -r branch expected; do
+            push_args+=("--force-with-lease=refs/heads/${branch}:${expected}")
+            refspecs+=(":refs/heads/${branch}")
+          done < "${GITHUB_WORKSPACE}/receipt/targets.tsv"
+          git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic ${basic_auth}" \
+            "${push_args[@]}" "${repo_url}" "${refspecs[@]}" \
+            > "${GITHUB_WORKSPACE}/receipt/atomic-delete.log" 2>&1
+          cd "${GITHUB_WORKSPACE}"
+
+          : > receipt/verification.tsv
+          while read -r branch expected; do
+            require_absent "${branch}"
+            printf '%s\t%s\tabsent\n' "${branch}" "${expected}" >> receipt/verification.tsv
+          done < receipt/targets.tsv
+          require_ref "${ARCHIVE_BRANCH}" "${ARCHIVE_SHA}"
+          require_ref "${FAILED_CONTROLLER_BRANCH}" "${FAILED_CONTROLLER_SHA}"
+
+          main_after="$(api_get 'git/ref/heads/main' | jq -r '.object.sha')"
+          printf '%s\n' "${main_after}" > receipt/main-after.txt
+          require_parent_on_main "${main_after}"
+
+          python3 - <<'PY'
+          import json
+          import os
+          import pathlib
+
+          root = pathlib.Path('receipt')
+          deleted = []
+          for line in (root / 'targets.tsv').read_text().splitlines():
+              branch, sha = line.split()
+              deleted.append({'branch': branch, 'leased_sha': sha, 'final_state': 'absent'})
+          result = {
+              'schema_version': 'rd01-wave03-exact-ref-retirement@2',
+              'repository': os.environ['GITHUB_REPOSITORY'],
+              'run_id': os.environ['GITHUB_RUN_ID'],
+              'run_attempt': os.environ['GITHUB_RUN_ATTEMPT'],
+              'controller_branch': os.environ['CONTROLLER_BRANCH'],
+              'controller_head': os.environ['EVENT_HEAD_SHA'],
+              'controller_parent': os.environ['CONTROLLER_PARENT'],
+              'authority_comment_id': int(os.environ['AUTHORITY_COMMENT_ID']),
+              'authority_body_sha256': os.environ['AUTHORITY_BODY_SHA256'],
+              'main_before': (root / 'main-before.txt').read_text().strip(),
+              'main_after': (root / 'main-after.txt').read_text().strip(),
+              'deleted_ref_count': len(deleted),
+              'deleted_refs': deleted,
+              'archive_ref': {'branch': os.environ['ARCHIVE_BRANCH'], 'sha': os.environ['ARCHIVE_SHA'], 'final_state': 'present_exact'},
+              'failed_controller_cleanup': {'branch': os.environ['FAILED_CONTROLLER_BRANCH'], 'sha': os.environ['FAILED_CONTROLLER_SHA'], 'state': 'pending_post_artifact_atomic_cleanup'},
+              'current_controller_cleanup': {'branch': os.environ['CONTROLLER_BRANCH'], 'sha': os.environ['EVENT_HEAD_SHA'], 'state': 'pending_post_artifact_atomic_cleanup'},
+              'main_mutation': 'skipped',
+              'archive_mutation': 'skipped',
+              'pr_2573_mutation': 'skipped',
+              'target_ref_transaction': 'atomic_success',
+              'terminal_state': 'TARGET_REF_RETIREMENT_SUCCESS',
+          }
+          (root / 'result.json').write_text(json.dumps(result, indent=2, sort_keys=True) + '\n')
+          PY
+          find receipt -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > receipt/SHA256SUMS
+          cat receipt/result.json
+
+      - name: Retain exact R2 retirement receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rd01-wave03-exact-ref-retirement-r2-${{ github.run_id }}-${{ github.run_attempt }}
+          path: receipt
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Atomically retire failed and current controller refs
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          repo_url="https://github.com/${GITHUB_REPOSITORY}.git"
+          basic_auth="$(printf 'x-access-token:%s' "${GH_TOKEN}" | base64 -w0)"
+          bare_repo="${RUNNER_TEMP}/rd01-controller-cleanup-v2.git"
+          git init --bare "${bare_repo}" >/dev/null
+          cd "${bare_repo}"
+          git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic ${basic_auth}" \
+            push --atomic --porcelain \
+            "--force-with-lease=refs/heads/${FAILED_CONTROLLER_BRANCH}:${FAILED_CONTROLLER_SHA}" \
+            "--force-with-lease=refs/heads/${CONTROLLER_BRANCH}:${EVENT_HEAD_SHA}" \
+            "${repo_url}" \
+            ":refs/heads/${FAILED_CONTROLLER_BRANCH}" \
+            ":refs/heads/${CONTROLLER_BRANCH}"
