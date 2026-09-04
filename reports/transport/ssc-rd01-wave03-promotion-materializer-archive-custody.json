@@ -1,0 +1,117 @@
+{
+  "archive_retirement_preconditions": [
+    "destination commit is merged into canonical main",
+    "destination directory resolves to exact source directory tree",
+    "all nine destination entries retain exact source modes, Git blobs, and sizes",
+    "custody manifest is present on canonical main",
+    "archive ref still names the exact leased source commit",
+    "archive ref is deleted under an exact SHA lease after retained hosted verification"
+  ],
+  "authority": {
+    "branch_retirement": {
+      "artifact_digest": "sha256:a0ebb4391bb4c7672a236cd7f6401d18caf4b574d3e1de2ae2bdaa9547b5ba38",
+      "artifact_id": 9920273051,
+      "job_id": 100881304925,
+      "run_id": 33826871927
+    },
+    "disposition_comment_id": 5533656397,
+    "disposition_pr": 2573,
+    "terminal_disposition_comment_id": 5534505143
+  },
+  "authority_effects": {
+    "analytical_product": "none",
+    "branch_policy": "none",
+    "case": "none",
+    "claim": "none",
+    "execution": "none",
+    "graph": "none",
+    "identity": "none",
+    "score": "none",
+    "source_configuration": "none"
+  },
+  "classification": "historical_transport_receipt",
+  "destination": {
+    "base_commit": "b278ba79c9923f9a51c2718831c2dc1d62979d9d",
+    "base_tree": "4dcab92bf79d80984ef2c744d97051517608b7ac",
+    "directory": "reports/transport/ssc-rd01-wave03-promotion-materializer-latest",
+    "manifest_path": "reports/transport/ssc-rd01-wave03-promotion-materializer-archive-custody.json",
+    "migration_mode": "exact_git_blob_reuse_addition_only"
+  },
+  "entries": [
+    {
+      "git_blob": "0609c9e704e3aa9c78d088326c1a3dc6a4eb878d",
+      "mode": "100644",
+      "path": "actual-paths.txt",
+      "size": 645,
+      "type": "blob"
+    },
+    {
+      "git_blob": "bfa87679201e47c28e249dfc2f9629aecd55c2c2",
+      "mode": "100644",
+      "path": "apply-script-recovery.json",
+      "size": 625,
+      "type": "blob"
+    },
+    {
+      "git_blob": "1d1e23ee3bc3d2c303bf731fe9920a445cb33a98",
+      "mode": "100644",
+      "path": "base-counts.json",
+      "size": 139,
+      "type": "blob"
+    },
+    {
+      "git_blob": "64de5d25b4fbdfc0ba50083ddbd9e4d2af78c46b",
+      "mode": "100644",
+      "path": "corrupt-apply-script.mjs",
+      "size": 27819,
+      "type": "blob"
+    },
+    {
+      "git_blob": "0609c9e704e3aa9c78d088326c1a3dc6a4eb878d",
+      "mode": "100644",
+      "path": "expected-paths.txt",
+      "size": 645,
+      "type": "blob"
+    },
+    {
+      "git_blob": "5dc41f9764d7a17681726723f532d0a7f5dfad82",
+      "mode": "100644",
+      "path": "materializer.log",
+      "size": 37034,
+      "type": "blob"
+    },
+    {
+      "git_blob": "66bdaf1f43f0cb281783ef93f288b3a2855b1a6c",
+      "mode": "100644",
+      "path": "product.txt",
+      "size": 378,
+      "type": "blob"
+    },
+    {
+      "git_blob": "f76dd567ef6f7df42211333e0b3a47d2500560bf",
+      "mode": "100644",
+      "path": "status.txt",
+      "size": 84,
+      "type": "blob"
+    },
+    {
+      "git_blob": "5683cb8fa1b162a143739d1fdcfaa07ead5ab4db",
+      "mode": "100644",
+      "path": "workflow.txt",
+      "size": 112,
+      "type": "blob"
+    }
+  ],
+  "schema_version": "rd01-wave03-promotion-materializer-archive-custody@1",
+  "source": {
+    "commit": "cb45a12a347bed8eeaa4e8e11878139e5d4a290a",
+    "directory": "reports/transport/ssc-rd01-wave03-promotion-materializer-latest",
+    "directory_tree": "6b5cbbc0d2096aeb7688f718f783e6136ca8a67f",
+    "entry_count": 9,
+    "merge_base_with_destination_base": "fd34ca0a2726ff6972ccbc32ea7e5e13101b161b",
+    "parent": "c987c61c557879ef3128b30b75870f59cf4ebd22",
+    "ref": "archive/ssc-rd01-wave03-promotion-materializer-receipt",
+    "side_line_commit_count": 9,
+    "tree": "304f3cc91b4d4bd893164635450cbf6c906753fe"
+  }
+}
