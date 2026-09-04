@@ -1,0 +1,107 @@
+name: TEMP SSC Wave-02 final ref retirement v1
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/temp-ssc-wave02-final-ref-retirement-v1.yml'
+
+permissions:
+  contents: write
+  pull-requests: read
+  issues: read
+  actions: read
+
+concurrency:
+  group: ssc-wave02-final-ref-retirement-v1
+  cancel-in-progress: false
+
+jobs:
+  retire:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'agent/ssc-wave02-final-ref-retirement-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+      API_ROOT: https://api.github.com/repos/${{ github.repository }}
+      OWNER: ${{ github.repository_owner }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      CONTROLLER_BRANCH: agent/ssc-wave02-final-ref-retirement-v1
+      CONTROLLER_PARENT: b48019eacf6c480872b60a1dfa01e70c619db176
+      CONTROLLER_PARENT_TREE: 43603d3ecbf438a6062d8264b988ff504820b95f
+      CONTROLLER_PATH: .github/workflows/temp-ssc-wave02-final-ref-retirement-v1.yml
+      AUTHORITY_MARKER: SSC_WAVE02_FINAL_REF_RETIREMENT_AUTHORITY_V1
+      AUTHORITY_PR: '2593'
+      ARCHIVE_PR: '2593'
+      ARCHIVE_BASE: fb3a3809afeee9b31ff50a6bef8ed9b53396f513
+      ARCHIVE_PRODUCT_HEAD: bb9649995c1224b8862b940b6dd0655852191ea9
+      ARCHIVE_MAIN: 5bda4c662841eceea9233cd3fe70e27b810a193b
+      ARCHIVE_TREE: 681f7648177ed7645290f9b71f3cfe74ddb26f24
+      ARCHIVE_MANIFEST_PATH: reports/transport/ssc-wave02-exception-custody-archive-v1.json
+      ARCHIVE_MANIFEST_BLOB: 0f1bb2f15b834cf75d33cb7df979666d70a2844c
+      ARCHIVE_MANIFEST_SHA256: 0abe177ec67eca07a3fb392a45baa4dcba52ac95f26b1d4ba4a5306dfac9b28c
+      ARCHIVE_INVENTORY_SHA256: 340650b19ae05e315afd1bd0831d09b083a962fbcf3ad1c5cdc105b5050f11b1
+      ARCHIVE_RELEASE_RUN: '33911568634'
+      ARCHIVE_NMH_RUN: '33911568659'
+      V2_HEAD: 78412ab4fb187138b12f6d64f0e45949c0f8188a
+      V2_RUN: '33910179288'
+      V2_JOB: '101144501691'
+      V2_ARTIFACT: '9951101110'
+      V2_ARTIFACT_NAME: ssc-wave02-exception-reachability-census-v2-33910179288-1
+      V2_ARTIFACT_SIZE: '10353237'
+      V2_ARTIFACT_SHA256: b9f034c89249497745b98d28f425c19411a3640aa44a101f6456081a97c7fb10
+
+    steps:
+      - name: Check out the exact controller head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          filter: blob:none
+          persist-credentials: true
+
+      - name: Authenticate custody and atomically retire exact refs
+        shell: bash
+        env:
+          CONTROLLER_SCRIPT_SHA256: e97f4816899d4769894261c762a0c8a2070ba19b07bb30191b9dfc1f40cf71ae
+          CONTROLLER_SCRIPT_GZIP_SHA256: 2ac327d66549a157b52b8b42dbb86feb2731050cb6b9eb797b7e9acdf44f2e87
+          CONTROLLER_BASE64_SHA256: 52604e2f4cdd4b9458919ac8bec8334656a17d35eb90392cd7c6f87ce471f2e0
+          PART_00_SHA256: 9e7ca5a8f3ae736421325cd3c0851f3f25a4d717f1fb6acd4fbaf47e9e1b3bd4
+          PART_01_SHA256: 4710c7d03cfc0b7fed2f43c86ae01d5e26e70a6f8b09e5c01f2709a8c9370af0
+          PART_02_SHA256: 3d9b5f0a69790a32e18873d6402ccf8f0428a7a48323aa3fbe63df445f8e29d4
+          PART_03_SHA256: 0321f36c368ddc6d020eaa34df9eb64a9630ec20c51c480f693ac75334dcc9e3
+        run: |
+          set -Eeuo pipefail
+          mkdir -p receipt
+          echo payload_reconstruction > receipt/wrapper-stage.txt
+          prefix=.github/tmp/ssc-wave02-final-ref-retirement-v1.sh.gz.b64.part-
+          [[ "$(sha256sum "${prefix}00" | cut -d' ' -f1)" == "$PART_00_SHA256" ]]
+          [[ "$(sha256sum "${prefix}01" | cut -d' ' -f1)" == "$PART_01_SHA256" ]]
+          [[ "$(sha256sum "${prefix}02" | cut -d' ' -f1)" == "$PART_02_SHA256" ]]
+          [[ "$(sha256sum "${prefix}03" | cut -d' ' -f1)" == "$PART_03_SHA256" ]]
+          payload_b64="$RUNNER_TEMP/ssc-wave02-final-ref-retirement-v1.sh.gz.b64"
+          payload_gz="$RUNNER_TEMP/ssc-wave02-final-ref-retirement-v1.sh.gz"
+          payload_sh="$RUNNER_TEMP/ssc-wave02-final-ref-retirement-v1.sh"
+          cat "${prefix}"{00,01,02,03} > "$payload_b64"
+          [[ "$(sha256sum "$payload_b64" | cut -d' ' -f1)" == "$CONTROLLER_BASE64_SHA256" ]]
+          base64 --decode "$payload_b64" > "$payload_gz"
+          [[ "$(sha256sum "$payload_gz" | cut -d' ' -f1)" == "$CONTROLLER_SCRIPT_GZIP_SHA256" ]]
+          gzip --decompress --stdout "$payload_gz" > "$payload_sh"
+          [[ "$(sha256sum "$payload_sh" | cut -d' ' -f1)" == "$CONTROLLER_SCRIPT_SHA256" ]]
+          bash -n "$payload_sh"
+          echo controller_execution > receipt/wrapper-stage.txt
+          chmod 700 "$payload_sh"
+          "$payload_sh"
+          echo complete > receipt/wrapper-stage.txt
+
+      - name: Upload checksum-bound final retirement receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-wave02-final-ref-retirement-${{ github.run_id }}-${{ github.run_attempt }}
+          path: receipt/
+          if-no-files-found: error
+          retention-days: 90
