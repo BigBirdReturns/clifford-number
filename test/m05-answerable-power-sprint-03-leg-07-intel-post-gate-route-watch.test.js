@@ -110,9 +110,14 @@ async function test(name, fn) {
 await test('contract validates and binds one canonical POST body', () => {
   validateContract(contract);
   assert.equal(contract.routes.length, 5);
+  assert.equal(
+    contract.execution_policy.user_agent,
+    'BigBirdReturns M05-Intel-Post-Gate-Route-Watch/1.0 bigbirdreturns@proton.me (+https://github.com/BigBirdReturns/clifford-number)'
+  );
   const post = contract.routes.filter((route) => route.method === 'POST');
   assert.equal(post.length, 1);
   assert.equal(post[0].monitor_route_id, 'US-INTEL-REALIZATION-05');
+  assert.equal(post[0].request_body.filters.time_period[0].end_date, '2027-09-30');
   assert.equal(post[0].request_body_sha256, semanticSha256(post[0].request_body));
 });
 
