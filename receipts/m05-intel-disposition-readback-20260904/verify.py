@@ -11,6 +11,29 @@ def require(ok, message):
     if not ok:
         raise ValueError(message)
 
+
+CORRECTED_DOMAIN = 'http_payload_octets_before_content_decoding'
+CORRECTION_FIELDS = {'body_capture_mode','transfer_coding_chain','content_coding_chain','content_decoding_applied','decoder_chain','normalization_applied','payload_body_sha256_before_content_decoding','payload_body_length_bytes_before_content_decoding','representation_body_sha256_after_content_decoding_if_used','representation_body_length_bytes_after_content_decoding_if_used','metadata_correction'}
+
+def check_body_domain(receipt, original, source, correction):
+    require(original['body_hash_domain']=='http_representation_octets_before_content_decoding','unexpected original domain')
+    require(not (set(original) & CORRECTION_FIELDS),'original already contains correction fields')
+    require(set(receipt)==set(original)|CORRECTION_FIELDS,'corrected receipt fields drift')
+    restored={k:v for k,v in receipt.items() if k not in CORRECTION_FIELDS}
+    restored['body_hash_domain']=original['body_hash_domain']
+    require(restored==original,'acquisition facts changed during correction')
+    require(receipt['body_hash_domain']==receipt['body_capture_mode']==source['body_domain']==CORRECTED_DOMAIN,'unsupported or mismatched hash domain')
+    transfer=[v.strip().lower() for k,val in receipt['response_headers'] if k.lower()=='transfer-encoding' for v in val.split(',')] or ['identity']
+    require(transfer in (['identity'],['chunked']) and receipt['transfer_coding_chain']==transfer,'transfer chain drift')
+    require(receipt['content_coding_chain']==['identity'],'explicit identity content coding required')
+    require(receipt['content_decoding_applied'] is False and receipt['decoder_chain']==[],'identity capture cannot claim content decoding')
+    require(receipt['normalization_applied'] is False,'normalization forbidden')
+    require(receipt['payload_body_sha256_before_content_decoding']==source['body_sha256'] and receipt['payload_body_length_bytes_before_content_decoding']==source['body_bytes'],'payload digest or length mismatch')
+    require(receipt['representation_body_sha256_after_content_decoding_if_used'] is None and receipt['representation_body_length_bytes_after_content_decoding_if_used'] is None,'unused decoded domain must be null')
+    c=receipt['metadata_correction']
+    require(c['original_receipt_member']==source['original_receipt_member'] and c['original_receipt_sha256']==source['original_receipt_sha256'],'correction predecessor mismatch')
+    require(c['corrected_at']==correction['corrected_at'],'correction timestamp mismatch')
+
 def check(manifest, projection, archive):
     require(manifest['object_class']=='bounded_primary_source_readback_without_stage_admission','wrong object class')
     require(manifest['base_commit']=='06ecd1d0e3aecc9910342920a7a78699fc706128','base lease drift')
@@ -22,13 +45,20 @@ def check(manifest, projection, archive):
     for key in ['global_nonoccurrence_asserted','holder_filings_outside_intel_cik_censused','commerce_or_treasury_transaction_records_censused','conference_replay_reviewed','all_five_watcher_routes_reexecuted','frozen_five_route_denominator_changed','frozen_96_route_contract_satisfied','answer_changes_authorized','issue_345_may_close']:
         require(result[key] is False,'authority or scope drift: '+key)
     require(result['new_federal_realization_candidates']==0 and result['new_stage_registry_entries']==0 and result['stage_admission']=='none' and result['graph_effect']=='none','stage or graph promotion')
+    correction=manifest['custody_metadata_correction']
+    require(correction['corrected_body_hash_domain']==CORRECTED_DOMAIN,'correction domain drift')
+    require(correction['source_body_bytes_changed'] is False and correction['new_acquisition_performed'] is False and correction['original_receipts_retained_byte_for_byte'] is True,'correction custody drift')
+    require(correction['original_receipts_are_stage_admissible'] is False and correction['correction_confers_stage_admission'] is False,'correction cannot admit a stage')
     sources=manifest['sources']
     require(len(sources)==10 and {s['source_id'] for s in sources}==SOURCE_IDS,'source denominator drift')
-    expected={s[k] for s in sources for k in ['receipt_member','body_member']}
-    require(len(expected)==20 and set(archive)==expected,'archive member denominator drift')
+    expected={s[k] for s in sources for k in ['receipt_member','body_member','original_receipt_member']}
+    require(len(expected)==30 and set(archive)==expected,'archive member denominator drift')
     for source in sources:
         body=archive[source['body_member']]; rb=archive[source['receipt_member']]; receipt=json.loads(rb)
         require(sha(rb)==source['receipt_sha256'],'receipt checksum mismatch')
+        original_bytes=archive[source['original_receipt_member']]
+        require(sha(original_bytes)==source['original_receipt_sha256'],'original receipt checksum mismatch')
+        check_body_domain(receipt,json.loads(original_bytes),source,correction)
         require(sha(body)==source['body_sha256']==receipt['body_sha256'],'source body checksum mismatch')
         require(len(body)==source['body_bytes']==receipt['body_bytes'],'body length mismatch')
         require(receipt['source_url']==receipt['final_url']==source['source_url'],'address drift')
@@ -90,7 +120,7 @@ def main():
     require(sha(pb)==manifest['projection_sha256'],'projection digest mismatch')
     require(sha(ab)==manifest['archive']['sha256'] and len(ab)==manifest['archive']['bytes'],'archive digest mismatch')
     with zipfile.ZipFile(io.BytesIO(ab)) as z:
-        require(len(z.infolist())==20 and len(set(z.namelist()))==20 and z.testzip() is None,'ZIP integrity or uniqueness failure')
+        require(len(z.infolist())==30 and len(set(z.namelist()))==30 and z.testzip() is None,'ZIP integrity or uniqueness failure')
         require(all('/' not in n and '\\' not in n and n not in ('.','..') for n in z.namelist()),'unsafe archive path')
         archive={n:z.read(n) for n in z.namelist()}
     check(manifest,projection,archive)
@@ -105,12 +135,19 @@ def main():
         m=copy.deepcopy(manifest); m['result']['new_stage_registry_entries']=1; cases.append((m,projection,archive))
         m=copy.deepcopy(manifest); m['window']['end_of_day_completeness_claimed']=True; cases.append((m,projection,archive))
         q=copy.deepcopy(projection); q['selected_news']=[]; cases.append((manifest,q,archive))
+        # Rehash altered receipts to test semantic rejection beyond checksums.
+        changes=[('body_hash_domain','http_representation_octets_before_content_decoding'),('body_hash_domain','http_representation_octets_after_content_decoding'),('content_coding_chain',[]),('content_decoding_applied',True),('decoder_chain',[{'coding':'identity'}]),('normalization_applied',True),('transfer_coding_chain',['gzip'])]
+        for key,value in changes:
+            m=copy.deepcopy(manifest); a=copy.deepcopy(archive); s=m['sources'][0]
+            r=json.loads(a[s['receipt_member']]); r[key]=value
+            a[s['receipt_member']]=(json.dumps(r,indent=2,ensure_ascii=False)+'\n').encode('utf-8'); s['receipt_sha256']=sha(a[s['receipt_member']])
+            cases.append((m,projection,a))
         for args in cases:
             try: check(*args)
             except (ValueError,KeyError): negative+=1
             else: raise ValueError('negative control was accepted')
-        require(negative==8,'negative control count drift')
-    print(json.dumps({'verified':True,'captured_bodies':10,'archive_members':20,'in_window_filings':1,'in_window_news_items':1,'rejected_negative_controls':negative,'stage_admission':'none'}))
+        require(negative==15,'negative control count drift')
+    print(json.dumps({'verified':True,'captured_bodies':10,'archive_members':30,'in_window_filings':1,'in_window_news_items':1,'rejected_negative_controls':negative,'stage_admission':'none'}))
 
 if __name__=='__main__':
     try: main()
