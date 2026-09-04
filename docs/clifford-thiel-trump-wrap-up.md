@@ -131,3 +131,17 @@ The machine-readable evidence trail is
 `data/research/clifford-cross-corpus-public-interest-map.json`. Their validators fail if
 a signal or entire corpus lane is hidden merely because it is inferred,
 reported, dense, non-hop, staged, held, or still waiting on a stronger receipt.
+
+## Crawl-health snapshot and current public view
+
+`data/research/clifford-cross-corpus-public-interest-map.json` is the authored editorial snapshot. Its `generated_at` date and `crawl_health_snapshot` identify the historical scope of its source-health counts. It is not rewritten by the scheduled crawlers.
+
+`npm run build:cross-corpus-map` derives `build/cross-corpus-map/current.json` from that snapshot and the committed `data/crawl/sources.json` and `data/crawl/state.json`. The projection replaces only the fanout source-gap count, exact source/status ledger, and availability statement, and adds input fingerprints and per-source observation timestamps. It does not promote an observation, alter another lane, manufacture a zero result, or admit a claim or graph edge. The editorial snapshot date remains distinct from the source observation times.
+
+The release pipeline builds this view after the research fanout. The map validator checks the entire materialization against its three inputs, retains the independent exact gap-count comparison with the fanout, and rejects a missing fanout. Validation does not regenerate or repair an invalid view. Healthy, failed, partial, unobserved, and recovered sources therefore change the generated availability view without requiring the crawler to edit a research ledger. Disabled sources remain outside the enabled-source denominator.
+
+The Pages builder refuses stale materializations and publishes the validated view at both `build/cross-corpus-map/current.json` and the legacy `data/research/clifford-cross-corpus-public-interest-map.json` URL. Pages validation checks both copies against the current inputs. The repository source retains the original snapshot; unpublished crawl rows and receipts remain excluded from Pages under the existing publication rules.
+
+A changed availability state does not rewrite the independent SAM acquisition contract or the other lane-specific evidence checks. A source marked healthy is not proof of exhaustive coverage, a failed source is not proof of absent records, and recovery does not delete preserved observations or rejections.
+
+The standalone `npm run build:pages` entrypoint explicitly builds the fanout and current map first. Direct low-level Pages assembly and all validators still require an existing valid view and refuse stale inputs. This keeps focused publication workflows independent of the larger release orchestration without allowing validation to repair its own evidence.

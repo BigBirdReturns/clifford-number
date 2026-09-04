@@ -253,7 +253,7 @@
           "interpretation": "Acquisition did not run; this is not a zero result."
         }
       ],
-      "what_the_data_shows": "The repository generated at least 316 inspectable research tasks; the live target branch may contain more as official-record intake advances. Batch count varies with the configured batch size and is presentation geometry, not a research-data count. Rejections, failed routes, source gaps, and inferred scout findings remain part of the discovery map rather than disappearing from it. The current committed crawl exposes one source gap: SAM.gov did not execute because its credential is unavailable. The SEC Form D source completed successfully in the current crawl and is no longer represented as an active coverage gap. The remaining SAM state supports neither a zero-result interpretation nor evidence of absence.",
+      "what_the_data_shows": "The repository generated at least 316 inspectable research tasks; the live target branch may contain more as official-record intake advances. Batch count varies with the configured batch size and is presentation geometry, not a research-data count. Rejections, failed routes, source gaps, and inferred scout findings remain part of the discovery map rather than disappearing from it. Source availability is reported separately from responsive records and cannot establish a zero-result search or evidence of absence.",
       "open_join": "A fanout item is a research lead or coverage state, not a verified finding; each item retains its evidence and availability labels.",
       "source_paths": [
         "tools/build-research-fanout.mjs",
@@ -311,5 +311,11 @@
     "conclusion_generated": false,
     "instruction": "The infrastructure shows the observations, their different weights, the corridors they form, and the joins still missing. It does not collapse a large discovery corpus into the much smaller canonical hop graph, and it supplies no final verdict.",
     "graph_effect": "none"
+  },
+  "crawl_health_snapshot": {
+    "scope": "editorial_snapshot",
+    "as_of": "2026-09-03",
+    "current_projection_path": "build/cross-corpus-map/current.json",
+    "interpretation": "Source-file crawl health is a dated editorial snapshot. Generated views replace only fanout availability fields from committed crawl configuration and state; other lane claims remain independently validated."
   }
 }

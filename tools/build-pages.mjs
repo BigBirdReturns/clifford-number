@@ -2,15 +2,24 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { root } from './lib/ledger.mjs';
+import { loadCliffordCrossCorpusPublicInterestMap, validateCliffordCrossCorpusPublicInterestMap } from './lib/clifford-cross-corpus-public-interest-map.mjs';
+import { MAP_SOURCE_PATH, MAP_VIEW_PATH } from './lib/crawl-health-map-projection.mjs';
 
 const destination = path.join(root, 'dist');
 const files = ['index.html', 'app.js', 'styles.css', 'package.json', 'graph.json'];
 const directories = ['assets', 'docs', 'data', 'build', 'cases', 'contributions', 'legacy', 'src', 'receipts', 'briefs', 'reports', 'estates', 'gametrails'];
 
+const mapBundle = loadCliffordCrossCorpusPublicInterestMap();
+const mapErrors = validateCliffordCrossCorpusPublicInterestMap(mapBundle);
+if (mapErrors.length) throw new Error(`public map is stale or invalid: ${mapErrors.join('; ')}`);
+
 fs.rmSync(destination, { recursive: true, force: true });
 fs.mkdirSync(destination, { recursive: true });
 for (const file of files) fs.copyFileSync(path.join(root, file), path.join(destination, file));
 for (const directory of directories) fs.cpSync(path.join(root, directory), path.join(destination, directory), { recursive: true });
+// Publish the validated current view at both its generated and legacy map URLs.
+// The editorial snapshot remains untouched in repository custody.
+fs.copyFileSync(path.join(root, MAP_VIEW_PATH), path.join(destination, MAP_SOURCE_PATH));
 // Intake is public-record research material in the repository, but it is not
 // part of the published corpus until separately promoted into canonical truth.
 // Local support data is private and must never enter a deploy artifact.

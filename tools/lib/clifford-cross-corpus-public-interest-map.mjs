@@ -1,5 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { isDeepStrictEqual } from 'node:util';
+import { MAP_SOURCE_PATH, MAP_VIEW_PATH, projectCrawlHealthMap } from './crawl-health-map-projection.mjs';
 import { readJson, readJsonl, root } from './ledger.mjs';
 
 const optionalJson = file => {
@@ -9,7 +11,8 @@ const optionalJson = file => {
 
 export function loadCliffordCrossCorpusPublicInterestMap() {
   return {
-    map: readJson('data/research/clifford-cross-corpus-public-interest-map.json'),
+    sourceMap: readJson(MAP_SOURCE_PATH),
+    map: readJson(MAP_VIEW_PATH),
     wrap: readJson('data/research/clifford-thiel-trump-wrap-up.json'),
     actors: readJson('data/canonical/actors.json').actors,
     organizations: readJson('data/canonical/organizations.json').organizations,
@@ -50,10 +53,17 @@ export function loadCliffordCrossCorpusPublicInterestMap() {
 export function validateCliffordCrossCorpusPublicInterestMap(bundle) {
   const errors = [];
   const {
-    map, wrap, actors, organizations, surfaces, participation, receipts, hopGraph,
+    map, sourceMap, wrap, actors, organizations, surfaces, participation, receipts, hopGraph,
     scout, crawlCandidates, crawlObservations, crawlRejections, crawlSources, crawlState,
     publicInterestSeeds, fanout, natsec, corridor, routers, linkedin, natsecAwards, presidential,
   } = bundle;
+  try {
+    const expected = projectCrawlHealthMap(sourceMap, crawlSources, crawlState);
+    if (!isDeepStrictEqual(map, expected)) errors.push('materialized map must exactly match its editorial source and current committed crawl inputs');
+  } catch (error) {
+    errors.push(error.message);
+  }
+  if (!fanout) errors.push('current research fanout is required to validate the materialized map');
   const lanes = new Map((map.lanes ?? []).map(lane => [lane.lane_id, lane]));
   const requiredLaneIds = [
     'clifford-policy-dialog-core',

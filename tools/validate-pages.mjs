@@ -2,8 +2,18 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { root } from './lib/ledger.mjs';
+import { isDeepStrictEqual } from 'node:util';
+import { loadCliffordCrossCorpusPublicInterestMap, validateCliffordCrossCorpusPublicInterestMap } from './lib/clifford-cross-corpus-public-interest-map.mjs';
+import { MAP_SOURCE_PATH, MAP_VIEW_PATH } from './lib/crawl-health-map-projection.mjs';
 
 const destination = path.join(root, 'dist');
+const mapBundle = loadCliffordCrossCorpusPublicInterestMap();
+const mapErrors = validateCliffordCrossCorpusPublicInterestMap(mapBundle);
+if (mapErrors.length) throw new Error(`public map is stale or invalid: ${mapErrors.join('; ')}`);
+for (const file of [MAP_SOURCE_PATH, MAP_VIEW_PATH]) {
+  const published = JSON.parse(fs.readFileSync(path.join(destination, file), 'utf8'));
+  if (!isDeepStrictEqual(published, mapBundle.map)) throw new Error(`published current map drift: ${file}`);
+}
 const required = [
   'index.html', 'Clifford-Number-standalone.html', 'Clifford-Estate-Aperture-standalone.html', 'Clifford-Game-Trail-Aperture-standalone.html', 'app.js', 'styles.css', '.nojekyll',
   'build/surface-graph.json', 'build/hop-graph.json', 'build/receipt-graph.json',
