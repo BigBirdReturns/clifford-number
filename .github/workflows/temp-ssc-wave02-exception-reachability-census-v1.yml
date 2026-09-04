@@ -1,0 +1,718 @@
+name: TEMP SSC Wave-02 exception reachability census v1
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/temp-ssc-wave02-exception-reachability-census-v1.yml'
+
+permissions:
+  contents: read
+  pull-requests: read
+  issues: read
+  actions: read
+
+concurrency:
+  group: ssc-wave02-exception-reachability-census-v1
+  cancel-in-progress: false
+
+jobs:
+  census:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'agent/ssc-wave02-exception-reachability-census-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      GH_TOKEN: ${{ github.token }}
+      API_ROOT: https://api.github.com/repos/${{ github.repository }}
+      OWNER: ${{ github.repository_owner }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      CONTROLLER_BRANCH: agent/ssc-wave02-exception-reachability-census-v1
+      CONTROLLER_PARENT: 2fd3d20802595797fc7618dcb2c1c72391e275c5
+      CONTROLLER_PATH: .github/workflows/temp-ssc-wave02-exception-reachability-census-v1.yml
+      FIRST_RETIREMENT_PR: '2587'
+      FIRST_RETIREMENT_HEAD: fe33aa3bba890037b9bbb39e332162553ab0df2e
+      FIRST_RETIREMENT_BRANCH: agent/ssc-wave02-provisional-ref-retirement-v1
+      FIRST_RETIREMENT_RUN: '33903952003'
+      FIRST_RETIREMENT_JOB: '101124328680'
+      FIRST_RETIREMENT_ARTIFACT: '9948735321'
+      FIRST_RETIREMENT_ARTIFACT_NAME: ssc-wave02-first-ref-retirement-33903952003-1
+      FIRST_RETIREMENT_ARTIFACT_SIZE: '1393340'
+      FIRST_RETIREMENT_ARTIFACT_SHA256: b35531922e184f67296fa33f8232376747c825cf05d2b4cafedf3281849d3bf9
+      CENSUS_PR: '2586'
+      CENSUS_BRANCH: agent/ssc-wave02-authority-census-v1
+      CENSUS_HEAD: 9d487252288652712b32547a68ce4b58d5209918
+
+    steps:
+      - name: Check out the exact controller head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          filter: blob:none
+          persist-credentials: true
+
+      - name: Prove durable reachability for every exception object
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p receipt/api receipt/first-retirement receipt/branches receipt/paths
+          printf 'running\n' > receipt/phase.txt
+          printf '1\n' > receipt/exit-code.txt
+          trap 'code=$?; if [[ "$code" -ne 0 ]]; then printf "failed\n" > receipt/phase.txt; printf "%s\n" "$code" > receipt/exit-code.txt; fi' EXIT
+
+          headers=(
+            -H 'Accept: application/vnd.github+json'
+            -H "Authorization: Bearer ${GH_TOKEN}"
+            -H 'X-GitHub-Api-Version: 2022-11-28'
+          )
+          api_get() {
+            curl --fail-with-body --silent --show-error \
+              "${headers[@]}" "${API_ROOT}/$1"
+          }
+          ref_status() {
+            local branch="$1"
+            local output="$2"
+            curl --silent --show-error "${headers[@]}" \
+              --output "${output}" --write-out '%{http_code}' \
+              "${API_ROOT}/git/ref/heads/${branch}"
+          }
+          require_ref() {
+            local branch="$1"
+            local expected="$2"
+            local output
+            output="$(mktemp)"
+            local code
+            code="$(ref_status "${branch}" "${output}")"
+            [[ "${code}" == '200' ]]
+            [[ "$(jq -r '.object.sha' "${output}")" == "${expected}" ]]
+            rm -f "${output}"
+          }
+          require_absent() {
+            local branch="$1"
+            local output
+            output="$(mktemp)"
+            local code
+            code="$(ref_status "${branch}" "${output}")"
+            rm -f "${output}"
+            [[ "${code}" == '404' ]]
+          }
+
+          cat > receipt/exceptions.tsv <<'EOF_EXCEPTIONS'
+          agent/ssc-rd01-wave02-roster-capture-trigger-v1 805a9a65f122f2f6e01aa7f7fe6719114bd989ae
+          agent/ssc-rd01-wave02-roster-materializer-trigger-v1 f75c615ee71e13326dbd7615cebc6ecdba0ff732
+          agent/ssc-rd01-wave02-roster-materializer-trigger-v2 5992510d3854a5f205d701556ef51436ba680fb6
+          agent/ssc-rd02-wave02-promotion-controller-v1 2e33dc044fb4b7e17ec73f1a86369a9ff395636c
+          agent/ssc-rd02-wave02-promotion-trigger-v1 af56416b30d869bdd188daffd6da447715787447
+          agent/ssc-rd05-wave02-object-universe-materializer-trigger-v1 4a6df2315c34c2e35c789dca6b09601615b3bab0
+          agent/ssc-rd05-wave02-official-object-census-trigger-v1 07b891f0884b4eb0c418721e5c25c07ba8bd040f
+          agent/ssc-rd06-wave02-exact-head-proof-trigger-v1 b96913fa067db9c71fca585a957b3f53cdbc1710
+          agent/ssc-rd06-wave02-matrix-materializer-trigger-v1 c26d21478ebd8c5d066fca7fb6f6ba88dd76e833
+          agent/ssc-wave02-final-reconciliation-materializer-base 19aaf2260dc45da9c4cccbc5b15922d875c35ef1
+          agent/ssc-wave02-final-reconciliation-materializer-trigger 66467e5d08cc210749992e5ec3d0050be91fa01b
+          agent/ssc-wave02-final-reconciliation-materializer-trigger-v2 0ed8a9dad61560dcdec513107c64cd869997c4d7
+          agent/ssc-wave02-ledger3-materializer-base-v1 d89aab82cc8cbf042ad08468c7568cc0c8d7de3e
+          agent/ssc-wave02-ledger3-materializer-trigger-v1 0f1044e778aec1169425f16241f7f1917866b9e0
+          agent/ssc-wave02-ledger4-materializer-base-v1 fe49d31aed8ed722ba9c4ba5054263f812653398
+          agent/ssc-wave02-ledger4-materializer-trigger-v1 307dd415766e22e35366db767f8f15d6ef49bcf7
+          agent/ssc-wave02-maintainer-review-sg10 70183d64eec8cbdf1f825e3e610d14a9ca7f2c43
+          agent/ssc-wave02-rd01-rd05-universe-capture-trigger-v1 489dd999fd677216f23fd9a18398aecd139f3fee
+          agent/ssc-wave02-rd02-rd03-matrix-materializer-trigger-v1 ac6c8d683c1de74365e00bc53a2d615556d91a38
+          agent/ssc-wave02-rd03-promotion-materializer-base-v1 6489ee5e2ee97c1e5dcabc0dd587e09128982415
+          agent/ssc-wave02-rd03-promotion-materializer-trigger-v1 883c39cd93a0ff2090ecc0b4dc6de4e477bd65e9
+          agent/ssc-wave02-review-sg10-transport fe396a7ffaaf21125e71141e5092e3d51244b088
+          agent/ssc-wave02-sg10-carrier-v3 f26f103ffcfaae59c29a2921917eeb6bc1dfcda9
+          agent/ssc-wave02-six-closure-source-export-v1 abc7b28e27c9eac8aa6b9c02793329e130f7bfff
+          agent/ssc-wave02-spr-campaign-materializer 7fb616883ec3e8a420d34d70fe9f6026973e933a
+          agent/ssc-wave02-stale-ref-cleanup-trigger-v1 87b4b622ae7a89f09ac471acbc054af5332fb58e
+          agent/ssc-wave02-structure-census-trigger-v1 e04268ef9d582d7035d6b948c3766b2f92da0baa
+          EOF_EXCEPTIONS
+
+          [[ "$(wc -l < receipt/exceptions.tsv)" -eq 27 ]]
+          [[ "$(cut -d' ' -f1 receipt/exceptions.tsv | sort -u | wc -l)" -eq 27 ]]
+          [[ "$(cut -d' ' -f2 receipt/exceptions.tsv | grep -Ec '^[0-9a-f]{40}$')" -eq 27 ]]
+
+          api_get "pulls/${PR_NUMBER}" > receipt/api/controller-pr.json
+          jq -e \
+            --arg branch "${CONTROLLER_BRANCH}" \
+            --arg head "${EVENT_HEAD_SHA}" \
+            '.state == "open" and .draft == true and .merged_at == null and
+             .base.ref == "main" and .head.ref == $branch and .head.sha == $head and
+             .head.repo.full_name == .base.repo.full_name and
+             .commits == 1 and .changed_files == 1' \
+            receipt/api/controller-pr.json >/dev/null
+
+          api_get "git/commits/${EVENT_HEAD_SHA}" > receipt/api/controller-commit.json
+          jq -e --arg parent "${CONTROLLER_PARENT}" \
+            '(.parents | length) == 1 and .parents[0].sha == $parent' \
+            receipt/api/controller-commit.json >/dev/null
+
+          api_get "pulls/${PR_NUMBER}/files?per_page=100" > receipt/api/controller-files.json
+          jq -e --arg path "${CONTROLLER_PATH}" \
+            'length == 1 and .[0].filename == $path and .[0].status == "added"' \
+            receipt/api/controller-files.json >/dev/null
+
+          main_before="$(api_get 'git/ref/heads/main' | jq -r '.object.sha')"
+          [[ "${main_before}" == "${CONTROLLER_PARENT}" ]]
+          printf '%s\n' "${main_before}" > receipt/main-before.txt
+
+          api_get "pulls/${FIRST_RETIREMENT_PR}" > receipt/api/first-retirement-pr.json
+          jq -e \
+            --arg head "${FIRST_RETIREMENT_HEAD}" \
+            --arg branch "${FIRST_RETIREMENT_BRANCH}" \
+            '.state == "closed" and .merged_at == null and
+             .head.sha == $head and .head.ref == $branch' \
+            receipt/api/first-retirement-pr.json >/dev/null
+          require_absent "${FIRST_RETIREMENT_BRANCH}"
+
+          api_get "actions/runs/${FIRST_RETIREMENT_RUN}" > receipt/api/first-retirement-run.json
+          jq -e \
+            --arg head "${FIRST_RETIREMENT_HEAD}" \
+            --arg branch "${FIRST_RETIREMENT_BRANCH}" \
+            '.status == "completed" and .conclusion == "success" and
+             .event == "pull_request" and .head_sha == $head and .head_branch == $branch' \
+            receipt/api/first-retirement-run.json >/dev/null
+
+          api_get "actions/jobs/${FIRST_RETIREMENT_JOB}" > receipt/api/first-retirement-job.json
+          jq -e --arg run "${FIRST_RETIREMENT_RUN}" \
+            '.status == "completed" and .conclusion == "success" and
+             .name == "retire" and (.run_url | endswith("/actions/runs/" + $run))' \
+            receipt/api/first-retirement-job.json >/dev/null
+
+          api_get "actions/artifacts/${FIRST_RETIREMENT_ARTIFACT}" > receipt/api/first-retirement-artifact.json
+          jq -e \
+            --arg name "${FIRST_RETIREMENT_ARTIFACT_NAME}" \
+            --arg digest "sha256:${FIRST_RETIREMENT_ARTIFACT_SHA256}" \
+            --argjson size "${FIRST_RETIREMENT_ARTIFACT_SIZE}" \
+            --argjson run "${FIRST_RETIREMENT_RUN}" \
+            '.name == $name and .size_in_bytes == $size and .digest == $digest and
+             .expired == false and .workflow_run.id == $run' \
+            receipt/api/first-retirement-artifact.json >/dev/null
+
+          curl --fail-with-body --silent --show-error --location \
+            "${headers[@]}" \
+            "${API_ROOT}/actions/artifacts/${FIRST_RETIREMENT_ARTIFACT}/zip" \
+            --output receipt/first-retirement/receipt.zip
+          [[ "$(sha256sum receipt/first-retirement/receipt.zip | cut -d' ' -f1)" == "${FIRST_RETIREMENT_ARTIFACT_SHA256}" ]]
+          unzip -q receipt/first-retirement/receipt.zip -d receipt/first-retirement/extracted
+
+          api_get "pulls/${CENSUS_PR}" > receipt/api/census-pr.json
+          jq -e \
+            --arg branch "${CENSUS_BRANCH}" \
+            --arg head "${CENSUS_HEAD}" \
+            '.state == "open" and .draft == true and .merged_at == null and
+             .head.ref == $branch and .head.sha == $head' \
+            receipt/api/census-pr.json >/dev/null
+          require_ref "${CENSUS_BRANCH}" "${CENSUS_HEAD}"
+
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import os
+          import pathlib
+          import re
+
+          root = pathlib.Path('receipt')
+          extracted = root / 'first-retirement' / 'extracted'
+          checked = 0
+          for line in (extracted / 'SHA256SUMS').read_text().splitlines():
+              match = re.fullmatch(r'([0-9a-f]{64})\s+(.+)', line)
+              if not match:
+                  raise SystemExit(f'malformed first-retirement checksum line: {line!r}')
+              expected, rel = match.groups()
+              rel = rel.lstrip('*')
+              if rel.startswith('receipt/'):
+                  rel = rel[len('receipt/'):]
+              path = extracted / rel
+              if not path.is_file():
+                  raise SystemExit(f'first-retirement manifest path missing: {rel}')
+              if hashlib.sha256(path.read_bytes()).hexdigest() != expected:
+                  raise SystemExit(f'first-retirement digest mismatch: {rel}')
+              checked += 1
+          if checked != 196:
+              raise SystemExit(f'first-retirement manifest count changed: {checked}')
+
+          result = json.loads((extracted / 'result.json').read_text())
+          required = {
+              'phase': 'success',
+              'exit_code': 0,
+              'deleted_ref_count': 40,
+              'preserved_exception_count': 27,
+              'controller_final_state': 'absent',
+              'main_before': os.environ['CONTROLLER_PARENT'],
+              'main_after': os.environ['CONTROLLER_PARENT'],
+              'main_mutation': 'none',
+          }
+          for key, expected in required.items():
+              if result.get(key) != expected:
+                  raise SystemExit(f'first-retirement result mismatch for {key}: {result.get(key)!r}')
+
+          expected_exceptions = []
+          for line in (root / 'exceptions.tsv').read_text().splitlines():
+              branch, sha = line.split()
+              expected_exceptions.append((branch, sha))
+          recorded = sorted(
+              (row['branch'], row['leased_sha'])
+              for row in result['preserved_exceptions']
+          )
+          if recorded != sorted(expected_exceptions):
+              raise SystemExit('first-retirement exception denominator differs')
+
+          (root / 'first-retirement-verification.json').write_text(json.dumps({
+              'artifact_sha256': os.environ['FIRST_RETIREMENT_ARTIFACT_SHA256'],
+              'manifest_files_verified': checked,
+              'exception_count': len(expected_exceptions),
+              'phase': result['phase'],
+              'exit_code': result['exit_code'],
+          }, indent=2, sort_keys=True) + '\n')
+          PY
+
+          git ls-remote --heads origin | sort -k2,2 > receipt/live-heads-before.tsv
+          python3 - <<'PY'
+          import os
+          import pathlib
+          import re
+
+          root = pathlib.Path('receipt')
+          excluded = {os.environ['CENSUS_BRANCH'], os.environ['CONTROLLER_BRANCH']}
+          scope = []
+          for line in (root / 'live-heads-before.tsv').read_text().splitlines():
+              sha, ref = line.split('\t')
+              branch = ref.removeprefix('refs/heads/')
+              if branch in excluded:
+                  continue
+              if re.match(r'^(agent|archive)/ssc-', branch) and re.search(r'(wave02|w02)', branch):
+                  scope.append((branch, sha))
+          expected = []
+          for line in (root / 'exceptions.tsv').read_text().splitlines():
+              branch, sha = line.split()
+              expected.append((branch, sha))
+          if sorted(scope) != sorted(expected):
+              missing = sorted(set(expected) - set(scope))
+              extra = sorted(set(scope) - set(expected))
+              raise SystemExit(f'live exception denominator drift; missing={missing}; extra={extra}')
+          (root / 'live-exception-scope.tsv').write_text(
+              ''.join(f'{branch}\t{sha}\n' for branch, sha in sorted(scope))
+          )
+          PY
+
+          while read -r branch expected; do
+            require_ref "${branch}" "${expected}"
+          done < receipt/exceptions.tsv
+          require_ref "${CENSUS_BRANCH}" "${CENSUS_HEAD}"
+          require_ref "${CONTROLLER_BRANCH}" "${EVENT_HEAD_SHA}"
+
+          git fetch --force --filter=blob:none --no-recurse-submodules origin \
+            '+refs/heads/*:refs/remotes/origin/*' \
+            '+refs/tags/*:refs/tags/*' \
+            '+refs/pull/*/head:refs/remotes/pull/*/head' \
+            '+refs/pull/*/merge:refs/remotes/pull/*/merge'
+
+          git for-each-ref \
+            --format='%(refname)%09%(objectname)%09%(objecttype)' \
+            refs/remotes/origin refs/remotes/pull refs/tags \
+            | sort -u > receipt/fetched-ref-inventory.tsv
+
+          python3 - <<'PY'
+          import os
+          import pathlib
+
+          root = pathlib.Path('receipt')
+          exceptions = {
+              line.split()[0] for line in (root / 'exceptions.tsv').read_text().splitlines()
+          }
+          excluded_heads = exceptions | {
+              os.environ['CENSUS_BRANCH'],
+              os.environ['CONTROLLER_BRANCH'],
+          }
+
+          canonical = []
+          other_heads = []
+          pull_refs = []
+          for line in (root / 'fetched-ref-inventory.tsv').read_text().splitlines():
+              ref, sha, obj_type = line.split('\t')
+              if ref == 'refs/remotes/origin/HEAD':
+                  continue
+              if ref == 'refs/remotes/origin/main' or ref.startswith('refs/tags/'):
+                  canonical.append(sha)
+              elif ref.startswith('refs/remotes/origin/'):
+                  branch = ref.removeprefix('refs/remotes/origin/')
+                  if branch not in excluded_heads:
+                      other_heads.append(sha)
+              elif ref.startswith('refs/remotes/pull/'):
+                  pull_refs.append(sha)
+
+          for name, values in (
+              ('canonical-tip-shas.txt', canonical),
+              ('other-head-tip-shas.txt', other_heads),
+              ('pull-tip-shas.txt', pull_refs),
+          ):
+              (root / name).write_text(''.join(f'{sha}\n' for sha in sorted(set(values))))
+
+          (root / 'ref-category-counts.json').write_text(
+              __import__('json').dumps({
+                  'canonical_tip_count': len(set(canonical)),
+                  'other_live_head_tip_count': len(set(other_heads)),
+                  'pull_ref_tip_count': len(set(pull_refs)),
+              }, indent=2, sort_keys=True) + '\n'
+          )
+          PY
+
+          build_object_set() {
+            local tips="$1"
+            local output="$2"
+            if [[ -s "${tips}" ]]; then
+              git rev-list --objects --stdin < "${tips}" \
+                | cut -d' ' -f1 \
+                | sort -u > "${output}"
+            else
+              : > "${output}"
+            fi
+          }
+          build_object_set receipt/canonical-tip-shas.txt receipt/canonical-object-ids.txt
+          build_object_set receipt/other-head-tip-shas.txt receipt/other-head-object-ids.txt
+          build_object_set receipt/pull-tip-shas.txt receipt/pull-object-ids.txt
+
+          python3 - <<'PY'
+          import csv
+          import hashlib
+          import json
+          import os
+          import pathlib
+          import re
+          import subprocess
+          import urllib.parse
+          import urllib.request
+          from collections import Counter
+
+          root = pathlib.Path('receipt')
+          main_sha = os.environ['CONTROLLER_PARENT']
+
+          def read_ids(name):
+              return set((root / name).read_text().splitlines())
+
+          canonical_ids = read_ids('canonical-object-ids.txt')
+          other_head_ids = read_ids('other-head-object-ids.txt')
+          pull_ids = read_ids('pull-object-ids.txt')
+
+          exceptions = []
+          for line in (root / 'exceptions.tsv').read_text().splitlines():
+              branch, sha = line.split()
+              exceptions.append((branch, sha))
+
+          def git_bytes(*args, check=True):
+              proc = subprocess.run(
+                  ['git', *args],
+                  check=check,
+                  stdout=subprocess.PIPE,
+                  stderr=subprocess.PIPE,
+              )
+              return proc.stdout
+
+          def git_text(*args, check=True):
+              return git_bytes(*args, check=check).decode('utf-8', 'surrogateescape').strip()
+
+          def object_at(commit, path):
+              proc = subprocess.run(
+                  ['git', 'rev-parse', f'{commit}:{path}'],
+                  stdout=subprocess.PIPE,
+                  stderr=subprocess.DEVNULL,
+              )
+              return proc.stdout.decode().strip() if proc.returncode == 0 else ''
+
+          def tree_entry(commit, path):
+              raw = git_bytes('-c', 'core.quotepath=false', 'ls-tree', '-z', commit, '--', path)
+              if not raw:
+                  return {'mode': '', 'type': '', 'oid': ''}
+              meta, listed_path = raw.rstrip(b'\0').split(b'\t', 1)
+              mode, obj_type, oid = meta.decode().split()
+              return {'mode': mode, 'type': obj_type, 'oid': oid}
+
+          def object_status(oid):
+              if not oid:
+                  return 'absent'
+              if oid in canonical_ids:
+                  return 'canonical_main_or_tag'
+              if oid in other_head_ids:
+                  return 'other_live_head'
+              if oid in pull_ids:
+                  return 'pull_ref'
+              return 'unreferenced_outside_exception_refs'
+
+          def path_category(path):
+              name = pathlib.PurePosixPath(path).name
+              upper = name.upper()
+              if path.startswith('.github/workflows/'):
+                  return 'workflow'
+              if name.endswith('.trigger') or upper == 'TRIGGER' or upper.startswith('MATERIALIZE') or upper.startswith('PROMOTE'):
+                  return 'control_marker'
+              if (
+                  path.endswith(('.b64', '.xz.b64', '.tgz', '.tgz.b64', '.part-00', '.part-01', '.part-02',
+                                 '.part-03', '.part-04', '.part-05', '.part-06', '.part-07', '.part-08'))
+                  or '.part-' in name
+              ):
+                  return 'transport_payload'
+              if (
+                  path.startswith(('.github/tmp/', '.rd02-', '.ssc-'))
+                  and path.endswith(('.py', '.sh', '.mjs', '.js', '.patch'))
+              ):
+                  return 'transport_program'
+              if path == 'package.json' or path.startswith(('data/', 'reports/', 'build/', 'test/', 'tools/', 'src/', 'public/')):
+                  return 'analytical_or_product'
+              if path.startswith(('.github/tmp/', '.rd02-', '.ssc-')):
+                  return 'transport_other'
+              return 'other'
+
+          def containing_refs(sha):
+              refs = git_text('for-each-ref', '--format=%(refname)', '--contains', sha).splitlines()
+              excluded = {
+                  f'refs/remotes/origin/{branch}' for branch, _ in exceptions
+              } | {
+                  f"refs/remotes/origin/{os.environ['CENSUS_BRANCH']}",
+                  f"refs/remotes/origin/{os.environ['CONTROLLER_BRANCH']}",
+                  f"refs/heads/{os.environ['CONTROLLER_BRANCH']}",
+              }
+              return sorted(ref for ref in refs if ref and ref not in excluded)
+
+          api_root = os.environ['API_ROOT']
+          owner = os.environ['OWNER']
+          token = os.environ['GH_TOKEN']
+
+          def branch_pulls(branch):
+              query = urllib.parse.urlencode({
+                  'state': 'all',
+                  'head': f'{owner}:{branch}',
+                  'per_page': '100',
+              })
+              request = urllib.request.Request(
+                  f'{api_root}/pulls?{query}',
+                  headers={
+                      'Accept': 'application/vnd.github+json',
+                      'Authorization': f'Bearer {token}',
+                      'X-GitHub-Api-Version': '2022-11-28',
+                  },
+              )
+              with urllib.request.urlopen(request, timeout=30) as response:
+                  return json.load(response)
+
+          classification_counts = Counter()
+          head_status_counts = Counter()
+          object_status_counts = Counter()
+          unpreserved_category_counts = Counter()
+          all_rows = []
+          unpreserved_rows = []
+
+          for index, (branch, sha) in enumerate(exceptions, start=1):
+              remote_ref = f'refs/remotes/origin/{branch}'
+              remote_sha = git_text('rev-parse', f'{remote_ref}^{{commit}}')
+              if remote_sha != sha:
+                  raise SystemExit(f'exception ref moved: {branch}')
+
+              tree_sha = git_text('rev-parse', f'{sha}^{{tree}}')
+              merge_base = git_text('merge-base', sha, main_sha)
+              changed_raw = git_bytes(
+                  '-c', 'core.quotepath=false',
+                  'diff', '--name-only', '-z', '--diff-filter=ACDMRTUXB',
+                  merge_base, sha,
+              )
+              changed_paths = [
+                  item.decode('utf-8', 'surrogateescape')
+                  for item in changed_raw.split(b'\0')
+                  if item
+              ]
+
+              path_key = hashlib.sha256(branch.encode()).hexdigest()[:20]
+              path_records = []
+              unique_records = []
+              for path in changed_paths:
+                  branch_oid = object_at(sha, path)
+                  main_oid = object_at(main_sha, path)
+                  if branch_oid and branch_oid == main_oid:
+                      state = 'same_object_on_main'
+                  elif not branch_oid and not main_oid:
+                      state = 'absent_in_both'
+                  elif branch_oid and not main_oid:
+                      state = 'branch_object_absent_on_current_main'
+                  elif not branch_oid and main_oid:
+                      state = 'branch_deletion_not_current_on_main'
+                  else:
+                      state = 'branch_object_differs_from_current_main'
+
+                  entry = tree_entry(sha, path) if branch_oid else {'mode': '', 'type': '', 'oid': ''}
+                  size = int(git_text('cat-file', '-s', branch_oid)) if branch_oid else 0
+                  category = path_category(path)
+                  preservation = object_status(branch_oid)
+                  record = {
+                      'branch': branch,
+                      'head_sha': sha,
+                      'path': path,
+                      'state': state,
+                      'branch_object': branch_oid,
+                      'main_object': main_oid,
+                      'mode': entry['mode'],
+                      'object_type': entry['type'],
+                      'size': size,
+                      'category': category,
+                      'object_preservation': preservation,
+                  }
+                  path_records.append(record)
+                  if state not in {'same_object_on_main', 'absent_in_both'}:
+                      unique_records.append(record)
+                      object_status_counts[preservation] += 1
+                      if preservation == 'unreferenced_outside_exception_refs':
+                          unpreserved_category_counts[category] += 1
+                          unpreserved_rows.append(record)
+
+              pulls = branch_pulls(branch)
+              open_pulls = [pr for pr in pulls if pr['state'] == 'open']
+              if open_pulls:
+                  raise SystemExit(f'exception branch acquired open PR: {branch}')
+              pull_summary = [
+                  {
+                      'number': pr['number'],
+                      'state': pr['state'],
+                      'merged_at': pr.get('merged_at'),
+                      'head_sha': pr['head']['sha'],
+                      'exact_head': pr['head']['sha'] == sha,
+                  }
+                  for pr in sorted(pulls, key=lambda item: item['number'])
+              ]
+
+              head_preservation = object_status(sha)
+              head_status_counts[head_preservation] += 1
+              nonworkflow = [row for row in unique_records if row['category'] != 'workflow']
+              unpreserved_nonworkflow = [
+                  row for row in nonworkflow
+                  if row['object_preservation'] == 'unreferenced_outside_exception_refs'
+              ]
+
+              if head_preservation == 'canonical_main_or_tag':
+                  retirement_class = 'exact_head_canonical'
+              elif head_preservation == 'other_live_head':
+                  retirement_class = 'exact_head_other_live'
+              elif head_preservation == 'pull_ref':
+                  retirement_class = 'exact_head_pull_ref'
+              elif not unpreserved_nonworkflow:
+                  nonworkflow_statuses = {row['object_preservation'] for row in nonworkflow}
+                  if nonworkflow_statuses <= {'canonical_main_or_tag'}:
+                      retirement_class = 'nonworkflow_objects_canonical_exact_head_disposition_required'
+                  elif 'other_live_head' in nonworkflow_statuses:
+                      retirement_class = 'nonworkflow_objects_cross_branch_exact_head_disposition_required'
+                  else:
+                      retirement_class = 'nonworkflow_objects_pull_ref_exact_head_disposition_required'
+              elif all(row['category'] == 'control_marker' for row in unpreserved_nonworkflow):
+                  retirement_class = 'explicit_control_disposition_required'
+              elif any(row['category'] == 'analytical_or_product' for row in unpreserved_nonworkflow):
+                  retirement_class = 'canonical_archive_required'
+              else:
+                  retirement_class = 'transport_archive_or_explicit_disposition_required'
+
+              classification_counts[retirement_class] += 1
+              refs = containing_refs(sha)
+              record = {
+                  'branch': branch,
+                  'head_sha': sha,
+                  'tree_sha': tree_sha,
+                  'merge_base': merge_base,
+                  'commit_date': git_text('show', '-s', '--format=%cI', sha),
+                  'commit_subject': git_text('show', '-s', '--format=%s', sha),
+                  'head_preservation': head_preservation,
+                  'containing_durable_refs': refs,
+                  'changed_path_count': len(changed_paths),
+                  'unique_path_count': len(unique_records),
+                  'unique_nonworkflow_path_count': len(nonworkflow),
+                  'unpreserved_nonworkflow_path_count': len(unpreserved_nonworkflow),
+                  'pulls': pull_summary,
+                  'retirement_class': retirement_class,
+                  'path_receipt': f'paths/{path_key}.tsv',
+              }
+              (root / 'branches' / f'{path_key}.json').write_text(
+                  json.dumps(record, indent=2, sort_keys=True) + '\n'
+              )
+              with (root / 'paths' / f'{path_key}.tsv').open('w', newline='') as handle:
+                  fieldnames = [
+                      'branch', 'head_sha', 'path', 'state', 'branch_object', 'main_object',
+                      'mode', 'object_type', 'size', 'category', 'object_preservation',
+                  ]
+                  writer = csv.DictWriter(handle, fieldnames=fieldnames, delimiter='\t', lineterminator='\n')
+                  writer.writeheader()
+                  writer.writerows(path_records)
+              all_rows.append(record)
+              print(f'[{index}/{len(exceptions)}] {branch}: {retirement_class}')
+
+          summary_fields = [
+              'branch', 'head_sha', 'tree_sha', 'merge_base', 'commit_date', 'commit_subject',
+              'head_preservation', 'changed_path_count', 'unique_path_count',
+              'unique_nonworkflow_path_count', 'unpreserved_nonworkflow_path_count',
+              'retirement_class', 'path_receipt',
+          ]
+          with (root / 'exception-classifications.tsv').open('w', newline='') as handle:
+              writer = csv.DictWriter(handle, fieldnames=summary_fields, delimiter='\t', lineterminator='\n')
+              writer.writeheader()
+              for record in all_rows:
+                  writer.writerow({key: record[key] for key in summary_fields})
+
+          unpreserved_fields = [
+              'branch', 'head_sha', 'path', 'state', 'branch_object', 'main_object',
+              'mode', 'object_type', 'size', 'category', 'object_preservation',
+          ]
+          with (root / 'unpreserved-objects.tsv').open('w', newline='') as handle:
+              writer = csv.DictWriter(handle, fieldnames=unpreserved_fields, delimiter='\t', lineterminator='\n')
+              writer.writeheader()
+              writer.writerows(unpreserved_rows)
+
+          summary = {
+              'schema_version': 'ssc-wave02-exception-reachability-census@1',
+              'repository': os.environ['GITHUB_REPOSITORY'],
+              'controller_branch': os.environ['CONTROLLER_BRANCH'],
+              'controller_head': os.environ['EVENT_HEAD_SHA'],
+              'controller_parent': os.environ['CONTROLLER_PARENT'],
+              'exception_ref_count': len(exceptions),
+              'classification_counts': dict(sorted(classification_counts.items())),
+              'head_preservation_counts': dict(sorted(head_status_counts.items())),
+              'unique_object_preservation_counts': dict(sorted(object_status_counts.items())),
+              'unpreserved_category_counts': dict(sorted(unpreserved_category_counts.items())),
+              'unpreserved_object_count': len(unpreserved_rows),
+              'mutation_performed': False,
+              'authority_created': 'none',
+              'next_control_question': (
+                  'Which exception subtrees must enter canonical zero-authority custody, and which '
+                  'remaining control or transport objects can receive explicit disposal before final ref retirement?'
+              ),
+          }
+          (root / 'summary.json').write_text(
+              json.dumps(summary, indent=2, sort_keys=True) + '\n'
+          )
+          PY
+
+          while read -r branch expected; do
+            require_ref "${branch}" "${expected}"
+          done < receipt/exceptions.tsv
+          require_ref "${CENSUS_BRANCH}" "${CENSUS_HEAD}"
+          require_ref "${CONTROLLER_BRANCH}" "${EVENT_HEAD_SHA}"
+
+          main_after="$(api_get 'git/ref/heads/main' | jq -r '.object.sha')"
+          [[ "${main_after}" == "${CONTROLLER_PARENT}" ]]
+          printf '%s\n' "${main_after}" > receipt/main-after.txt
+
+          printf 'success\n' > receipt/phase.txt
+          printf '0\n' > receipt/exit-code.txt
+          find receipt -type f ! -name SHA256SUMS -print0 \
+            | sort -z \
+            | xargs -0 sha256sum > receipt/SHA256SUMS
+          sha256sum -c receipt/SHA256SUMS
+          jq -e \
+            '.exception_ref_count == 27 and .mutation_performed == false and
+             .authority_created == "none"' \
+            receipt/summary.json >/dev/null
+
+      - name: Upload checksum-bound exception reachability receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-wave02-exception-reachability-census-${{ github.run_id }}-${{ github.run_attempt }}
+          path: receipt/
+          if-no-files-found: error
+          retention-days: 90
