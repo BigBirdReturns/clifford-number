@@ -1,0 +1,331 @@
+name: Temporary M-05 Intel route-contract repair R5
+
+on:
+  push:
+    branches:
+      - agent/m05-intel-post-gate-route-watch-contract-repair-r5-controller
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temporary-m05-intel-route-contract-repair-r5
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      BASE_SHA: 4d16050df56988320e1ea3b634068880e43cd890
+      BASE_TREE: ae0c082d38896f2db8080a845ca5a2dee7b6a258
+      PRODUCT_BRANCH: agent/m05-intel-post-gate-route-watch-contract-repair-r1
+      CONTRACT_PATH: data/project/m05-answerable-power-sprint-03-leg-07-intel-post-gate-route-watch-contract.json
+      TEST_PATH: test/m05-answerable-power-sprint-03-leg-07-intel-post-gate-route-watch.test.js
+      CONTRACT_BEFORE: 84b159158992ae3dd8590dc5ec18f0b4d1103ea3
+      TEST_BEFORE: e4833c64630d1d7eebe1d66f446b2f13ce2923f3
+      CONTRACT_AFTER: 88aaf6aa73c3eb430980d5b75ff18800a2b0e517
+      CONTRACT_SEMANTIC_AFTER: dc174348aaa333be5ceae997b2a34d53a46ffbc4966b615aa598b893d6649097
+      RECEIPT_DIR: /tmp/m05-intel-route-contract-repair-r5-receipt
+
+    steps:
+      - name: Check out exact controller head
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.sha }}
+          show-progress: false
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Authenticate controller, base, preimages, and remote product lease
+        shell: bash
+        env:
+          CONTROLLER_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$CONTROLLER_SHA"
+          test "$(git rev-parse HEAD^)" = "$BASE_SHA"
+          test "$(git rev-parse "${BASE_SHA}^{tree}")" = "$BASE_TREE"
+          test "$(git rev-parse "${BASE_SHA}:${CONTRACT_PATH}")" = "$CONTRACT_BEFORE"
+          test "$(git rev-parse "${BASE_SHA}:${TEST_PATH}")" = "$TEST_BEFORE"
+          test -f .github/workflows/temporary-m05-intel-route-contract-repair-r5.yml
+          remote_product="$(git ls-remote --heads origin "refs/heads/${PRODUCT_BRANCH}" | cut -f1)"
+          test "$remote_product" = "$BASE_SHA"
+
+      - name: Materialize a clean detached product worktree
+        shell: bash
+        run: |
+          set -euo pipefail
+          git checkout --detach "$BASE_SHA"
+          git reset --hard "$BASE_SHA"
+          git clean -fdx
+          test "$(git rev-parse HEAD)" = "$BASE_SHA"
+          git diff-index --quiet HEAD --
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Apply exact request-contract substitutions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import os
+          from pathlib import Path
+
+          contract_path = Path(os.environ['CONTRACT_PATH'])
+          test_path = Path(os.environ['TEST_PATH'])
+          line_break = chr(10)
+
+          contract = contract_path.read_text(encoding='utf-8')
+          replacements = [
+              (
+                  'CliffordNumber-M05-Intel-Post-Gate-Route-Watch/1.0 (+https://github.com/BigBirdReturns/clifford-number)',
+                  'BigBirdReturns M05-Intel-Post-Gate-Route-Watch/1.0 bigbirdreturns@proton.me (+https://github.com/BigBirdReturns/clifford-number)',
+              ),
+              ('"end_date": "2030-12-31"', '"end_date": "2027-09-30"'),
+              (
+                  '151b8811b52a342aadc84a6c108af2648881a64006a3d2dac4300cd8cbe529b5',
+                  '0fc396354b28fa9b1276f8fe1b4309582da4c0689c4e21382a6c7574b50b643d',
+              ),
+          ]
+          for old, new in replacements:
+              count = contract.count(old)
+              if count != 1:
+                  raise SystemExit(f'contract preimage count for {old!r}: {count}')
+              contract = contract.replace(old, new, 1)
+          contract_path.write_text(contract, encoding='utf-8')
+
+          test_source = test_path.read_text(encoding='utf-8')
+          route_marker = '  assert.equal(contract.routes.length, 5);'
+          route_block = line_break.join([
+              route_marker,
+              '  assert.equal(',
+              '    contract.execution_policy.user_agent,',
+              "    'BigBirdReturns M05-Intel-Post-Gate-Route-Watch/1.0 bigbirdreturns@proton.me (+https://github.com/BigBirdReturns/clifford-number)'",
+              '  );',
+          ])
+          monitor_marker = "  assert.equal(post[0].monitor_route_id, 'US-INTEL-REALIZATION-05');"
+          monitor_block = line_break.join([
+              monitor_marker,
+              "  assert.equal(post[0].request_body.filters.time_period[0].end_date, '2027-09-30');",
+          ])
+          for old, new in [(route_marker, route_block), (monitor_marker, monitor_block)]:
+              count = test_source.count(old)
+              if count != 1:
+                  raise SystemExit(f'test preimage count for {old!r}: {count}')
+              test_source = test_source.replace(old, new, 1)
+          test_path.write_text(test_source, encoding='utf-8')
+          PY
+
+      - name: Verify exact postimage, semantic digest, and two-path scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --check
+          {
+            echo "$CONTRACT_PATH"
+            echo "$TEST_PATH"
+          } | sort > /tmp/expected-paths
+          git diff --name-only | sort > /tmp/actual-paths
+          cmp /tmp/expected-paths /tmp/actual-paths
+          test "$(git hash-object "$CONTRACT_PATH")" = "$CONTRACT_AFTER"
+          python - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+
+          contract = json.loads(Path(os.environ['CONTRACT_PATH']).read_text(encoding='utf-8'))
+          canonical = json.dumps(contract, sort_keys=True, separators=(',', ':'), ensure_ascii=False).encode('utf-8')
+          semantic = hashlib.sha256(canonical).hexdigest()
+          if semantic != os.environ['CONTRACT_SEMANTIC_AFTER']:
+              raise SystemExit(f'contract semantic digest drift: {semantic}')
+          route = contract['routes'][-1]
+          period = route['request_body']['filters']['time_period'][0]
+          if period != {'start_date': '2025-08-27', 'end_date': '2027-09-30'}:
+              raise SystemExit(f'USAspending time-period drift: {period!r}')
+          if route['request_body_sha256'] != '0fc396354b28fa9b1276f8fe1b4309582da4c0689c4e21382a6c7574b50b643d':
+              raise SystemExit('USAspending request-body digest drift')
+          user_agent = contract['execution_policy']['user_agent']
+          if user_agent != 'BigBirdReturns M05-Intel-Post-Gate-Route-Watch/1.0 bigbirdreturns@proton.me (+https://github.com/BigBirdReturns/clifford-number)':
+              raise SystemExit(f'User-Agent drift: {user_agent!r}')
+          PY
+
+      - name: Run focused request-contract tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          node "$TEST_PATH" | tee /tmp/m05-focused-test.log
+
+      - name: Construct exact two-file product commit
+        id: product
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add -- "$CONTRACT_PATH" "$TEST_PATH"
+          git diff --cached --check
+          git config user.name BigBirdReturns
+          git config user.email bigbirdreturns@proton.me
+          git commit -m 'Repair M-05 Intel post-gate request contract'
+          product_sha="$(git rev-parse HEAD)"
+          product_tree="$(git rev-parse 'HEAD^{tree}')"
+          contract_blob="$(git rev-parse "HEAD:${CONTRACT_PATH}")"
+          test_blob="$(git rev-parse "HEAD:${TEST_PATH}")"
+          test "$(git rev-parse HEAD^)" = "$BASE_SHA"
+          test "$contract_blob" = "$CONTRACT_AFTER"
+          git diff-tree --no-commit-id --name-only -r HEAD | sort > /tmp/commit-paths
+          cmp /tmp/expected-paths /tmp/commit-paths
+          echo "product_sha=$product_sha" >> "$GITHUB_OUTPUT"
+          echo "product_tree=$product_tree" >> "$GITHUB_OUTPUT"
+          echo "contract_blob=$contract_blob" >> "$GITHUB_OUTPUT"
+          echo "test_blob=$test_blob" >> "$GITHUB_OUTPUT"
+
+      - name: Run complete repository release gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run release:check | tee /tmp/m05-release-check.log
+
+      - name: Retain and classify release-gate worktree residue
+        shell: bash
+        env:
+          PRODUCT_SHA: ${{ steps.product.outputs.product_sha }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RECEIPT_DIR"
+          git status --porcelain=v1 > "$RECEIPT_DIR/release-worktree-status.txt"
+          git diff --stat --no-renames > "$RECEIPT_DIR/release-worktree-diff-stat.txt"
+          git diff --binary --no-renames > "$RECEIPT_DIR/release-worktree-diff.patch"
+          git ls-files --others --exclude-standard > "$RECEIPT_DIR/release-worktree-untracked.txt"
+          test "$(git rev-parse HEAD)" = "$PRODUCT_SHA"
+
+      - name: Restore and reauthenticate the exact qualified product commit
+        shell: bash
+        env:
+          PRODUCT_SHA: ${{ steps.product.outputs.product_sha }}
+          PRODUCT_TREE: ${{ steps.product.outputs.product_tree }}
+          CONTRACT_BLOB: ${{ steps.product.outputs.contract_blob }}
+          TEST_BLOB: ${{ steps.product.outputs.test_blob }}
+        run: |
+          set -euo pipefail
+          git reset --hard "$PRODUCT_SHA"
+          git clean -fdx
+          test "$(git rev-parse HEAD)" = "$PRODUCT_SHA"
+          test "$(git rev-parse 'HEAD^{tree}')" = "$PRODUCT_TREE"
+          test "$(git rev-parse HEAD^)" = "$BASE_SHA"
+          test "$(git rev-parse "HEAD:${CONTRACT_PATH}")" = "$CONTRACT_BLOB"
+          test "$(git rev-parse "HEAD:${TEST_PATH}")" = "$TEST_BLOB"
+          test "$CONTRACT_BLOB" = "$CONTRACT_AFTER"
+          git diff-index --quiet HEAD --
+          git diff-tree --no-commit-id --name-only -r HEAD | sort > /tmp/final-paths
+          cmp /tmp/expected-paths /tmp/final-paths
+
+      - name: Prepare qualification receipt
+        shell: bash
+        env:
+          CONTROLLER_SHA: ${{ github.sha }}
+          PRODUCT_SHA: ${{ steps.product.outputs.product_sha }}
+          PRODUCT_TREE: ${{ steps.product.outputs.product_tree }}
+          CONTRACT_BLOB: ${{ steps.product.outputs.contract_blob }}
+          TEST_BLOB: ${{ steps.product.outputs.test_blob }}
+        run: |
+          set -euo pipefail
+          cp /tmp/m05-focused-test.log "$RECEIPT_DIR/focused-test.log"
+          cp /tmp/m05-release-check.log "$RECEIPT_DIR/release-check.log"
+          git show --format=fuller --stat --no-renames HEAD > "$RECEIPT_DIR/product-commit.txt"
+          git diff --binary --no-renames "$BASE_SHA" "$PRODUCT_SHA" > "$RECEIPT_DIR/product-diff.patch"
+          git show "$BASE_SHA:$CONTRACT_PATH" > "$RECEIPT_DIR/contract-before.json"
+          git show "$PRODUCT_SHA:$CONTRACT_PATH" > "$RECEIPT_DIR/contract-after.json"
+          git show "$BASE_SHA:$TEST_PATH" > "$RECEIPT_DIR/focused-test-before.js"
+          git show "$PRODUCT_SHA:$TEST_PATH" > "$RECEIPT_DIR/focused-test-after.js"
+          cat > "$RECEIPT_DIR/MANIFEST.txt" <<EOF
+          phase: qualified_push_pending
+          repository: BigBirdReturns/clifford-number
+          controller_branch: agent/m05-intel-post-gate-route-watch-contract-repair-r5-controller
+          controller_sha: $CONTROLLER_SHA
+          product_branch: $PRODUCT_BRANCH
+          base_sha: $BASE_SHA
+          base_tree: $BASE_TREE
+          product_sha: $PRODUCT_SHA
+          product_tree: $PRODUCT_TREE
+          contract_blob_before: $CONTRACT_BEFORE
+          contract_blob_after: $CONTRACT_BLOB
+          focused_test_blob_before: $TEST_BEFORE
+          focused_test_blob_after: $TEST_BLOB
+          changed_paths: 2
+          focused_test: success
+          release_check: success
+          release_worktree_residue_retained: true
+          release_worktree_residue_is_product_authority: false
+          promotion_authority: false
+          answer_changes_authorized: false
+          graph_effect: none
+          issue_345_may_close: false
+          EOF
+          sed -i 's/^          //' "$RECEIPT_DIR/MANIFEST.txt"
+
+      - name: Publish exact product branch under SHA lease
+        id: publish
+        shell: bash
+        env:
+          PRODUCT_SHA: ${{ steps.product.outputs.product_sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$PRODUCT_SHA"
+          remote_before="$(git ls-remote --heads origin "refs/heads/${PRODUCT_BRANCH}" | cut -f1)"
+          test "$remote_before" = "$BASE_SHA"
+          git push --force-with-lease="refs/heads/${PRODUCT_BRANCH}:${BASE_SHA}" origin "HEAD:refs/heads/${PRODUCT_BRANCH}"
+          remote_after="$(git ls-remote --heads origin "refs/heads/${PRODUCT_BRANCH}" | cut -f1)"
+          test "$remote_after" = "$PRODUCT_SHA"
+          echo "remote_after=$remote_after" >> "$GITHUB_OUTPUT"
+
+      - name: Finalize receipt and step summary
+        shell: bash
+        env:
+          PRODUCT_SHA: ${{ steps.product.outputs.product_sha }}
+          PRODUCT_TREE: ${{ steps.product.outputs.product_tree }}
+          CONTRACT_BLOB: ${{ steps.product.outputs.contract_blob }}
+          TEST_BLOB: ${{ steps.product.outputs.test_blob }}
+          REMOTE_AFTER: ${{ steps.publish.outputs.remote_after }}
+        run: |
+          set -euo pipefail
+          test "$REMOTE_AFTER" = "$PRODUCT_SHA"
+          cat >> "$RECEIPT_DIR/MANIFEST.txt" <<EOF
+          phase_final: success
+          remote_product_sha: $REMOTE_AFTER
+          exact_product_readback: true
+          EOF
+          sed -i 's/^          //' "$RECEIPT_DIR/MANIFEST.txt"
+          (
+            cd "$RECEIPT_DIR"
+            find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+            sha256sum -c SHA256SUMS
+          )
+          {
+            echo '## M-05 Intel route-contract repair R5'
+            echo
+            echo '```text'
+            echo "base:          $BASE_SHA"
+            echo "product:       $PRODUCT_SHA"
+            echo "tree:          $PRODUCT_TREE"
+            echo "contract blob: $CONTRACT_BLOB"
+            echo "test blob:     $TEST_BLOB"
+            echo 'focused test:  success'
+            echo 'release check: success'
+            echo 'residue reset: success'
+            echo 'remote lease:  success'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Retain qualification receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: m05-intel-route-contract-repair-r5-${{ github.run_id }}
+          path: /tmp/m05-intel-route-contract-repair-r5-receipt
+          if-no-files-found: error
+          retention-days: 30
