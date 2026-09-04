@@ -1,0 +1,216 @@
+name: TEMP materialize RD-02 Wave-02 cumulative promotion v3
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd02-wave02-promotion-v3.yml'
+      - '.rd02-promotion-v1/**'
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: temp-ssc-rd02-wave02-promotion-v3-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd02-wave02-promotion-trigger-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      EXPECTED_MAIN: 72abc35c408d172d9be33b619b630a96ac317193
+      TARGET_BRANCH: agent/ssc-rd02-wave02-cumulative-promotion-v1
+      CONTROLLER_BRANCH: agent/ssc-rd02-wave02-promotion-controller-v1
+      MATERIALIZER_B64_SHA256: dc91c6a9810587b8b8ad1efca9dfb21ffe5bf6f844532bccb590e59280805320
+      MATERIALIZER_XZ_SHA256: 0bac65d01372a95118e1d037e5a11454326e486886ef6be406d613402d7ccafb
+      MATERIALIZER_SHA256: 8453f796024612d9ac33a90952f23c73013403cafc6a45587b8d39fcd1eea106
+      RD02_TEST_COMPAT_SHA256: 3fdb2a3611f86e00be22db7d3a6081998a28192eb2fcc643c3d14450f76aef23
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 72abc35c408d172d9be33b619b630a96ac317193
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Derive audited twelve-path transaction with successor-safe RD-02 custody test
+        run: |
+          set -Eeuo pipefail
+          bootstrap="$RUNNER_TEMP/ssc-rd02-wave02-promotion-v3-bootstrap-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          rm -rf "$bootstrap" /tmp/rd02-test-compat.py /tmp/ssc-rd02-wave02-cumulative-promotion-v3.sh
+          mkdir -p "$bootstrap"
+          echo "RECEIPT_DIR=$bootstrap" >> "$GITHUB_ENV"
+          echo "PROMOTION_V3_BOOTSTRAP=$bootstrap" >> "$GITHUB_ENV"
+          export RECEIPT_DIR="$bootstrap"
+          export PROMOTION_V3_BOOTSTRAP="$bootstrap"
+          printf '%s\n' 1 > "$bootstrap/exit-code.txt"
+          printf '%s\n' derive-twelve-path-transaction > "$bootstrap/final-step.txt"
+
+          git fetch --no-tags origin "+refs/heads/${CONTROLLER_BRANCH}:refs/remotes/origin/rd02-promotion-controller-v3"
+          git show "origin/rd02-promotion-controller-v3:.github/workflows/temporary-ssc-rd02-wave02-promotion-v1.yml" > "$RUNNER_TEMP/rd02-promotion-v1.yml"
+          git show "origin/rd02-promotion-controller-v3:.rd02-promotion-v1/rd02-test-compat.py" > /tmp/rd02-test-compat.py
+          test "$(sha256sum /tmp/rd02-test-compat.py | cut -d' ' -f1)" = "$RD02_TEST_COMPAT_SHA256"
+          python -m py_compile /tmp/rd02-test-compat.py
+
+          python - <<'PY'
+          import hashlib
+          import json
+          import os
+          import textwrap
+          from pathlib import Path
+
+          runner_temp = Path(os.environ['RUNNER_TEMP'])
+          bootstrap = Path(os.environ['RECEIPT_DIR'])
+          source = runner_temp / 'rd02-promotion-v1.yml'
+          lines = source.read_text().splitlines()
+          marker = '      - name: Reconstruct, qualify, replay, and split-publish cumulative promotion'
+          start = lines.index(marker) + 1
+          if lines[start] != '        run: |':
+              raise RuntimeError('audited transaction run-block anchor changed')
+          start += 1
+          end = next(
+              i for i in range(start, len(lines))
+              if lines[i].startswith('      - name: Preserve exact cumulative-promotion qualification receipt')
+          )
+          script = textwrap.dedent('\n'.join(lines[start:end])) + '\n'
+
+          def replace_once(old: str, new: str, label: str) -> None:
+              global script
+              count = script.count(old)
+              if count != 1:
+                  raise RuntimeError(f'{label}: expected one anchor, found {count}')
+              script = script.replace(old, new, 1)
+
+          required = {
+              'finish() {': 1,
+              'trap finish EXIT': 1,
+              'step=verify-exact-leases': 1,
+              'step=reconstruct-checksum-bound-materializer': 1,
+              'step=complete-qualified-repository-gate': 1,
+              'step=deterministic-clean-replay': 1,
+              'step=publish-runner-product': 1,
+              'step=cumulative-promotion-materialization-complete': 1,
+          }
+          for anchor, expected in required.items():
+              actual = script.count(anchor)
+              if actual != expected:
+                  raise RuntimeError(
+                      f'audited transaction anchor changed: {anchor!r} expected={expected} actual={actual}'
+                  )
+
+          replace_once("'qualified_paths':11,", "'qualified_paths':12,", 'qualified receipt path count')
+          replace_once("'runner_paths':10,", "'runner_paths':11,", 'runner receipt path count')
+          replace_once(
+              'mkdir -p "$out"\n',
+              'mkdir -p "$out"\n'
+              + 'cp "$PROMOTION_V3_BOOTSTRAP/transaction-extension.json" "$out/"\n'
+              + 'cp "$PROMOTION_V3_BOOTSTRAP/derived-transaction.sha256" "$out/"\n'
+              + 'sha256sum /tmp/rd02-test-compat.py > "$out/rd02-test-compat.py.sha256"\n',
+              'v3 receipt custody',
+          )
+          replace_once(
+              "schemas/status-sovereignty-residual-denominator-wave-02-current.schema.json\n"
+              "test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js\n"
+              "test/status-sovereignty-rd-wave02-rd06-offeror-universe.test.js\n",
+              "schemas/status-sovereignty-residual-denominator-wave-02-current.schema.json\n"
+              "test/status-sovereignty-rd-wave02-rd02-license-leverage.test.js\n"
+              "test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js\n"
+              "test/status-sovereignty-rd-wave02-rd06-offeror-universe.test.js\n",
+              'expected path manifest',
+          )
+          replace_once(
+              'test "$(wc -l < "$out/expected-paths.txt")" = 11',
+              'test "$(wc -l < "$out/expected-paths.txt")" = 12',
+              'expected path denominator',
+          )
+          replace_once(
+              'test "$(wc -l < "$out/runner-paths.txt")" = 10',
+              'test "$(wc -l < "$out/runner-paths.txt")" = 11',
+              'runner path denominator',
+          )
+          replace_once(
+              'step=commit-qualified-eleven-path-product',
+              'step=commit-qualified-twelve-path-product',
+              'qualified step label',
+          )
+          replace_once(
+              'test "$(git diff --cached --name-only | wc -l)" = 11',
+              'test "$(git diff --cached --name-only | wc -l)" = 12',
+              'qualified staged path denominator',
+          )
+          replace_once(
+              'step=build-runner-publishable-ten-path-product',
+              'step=build-runner-publishable-eleven-path-product',
+              'runner step label',
+          )
+          replace_once(
+              'test "$(git diff --cached --name-only | wc -l)" = 10',
+              'test "$(git diff --cached --name-only | wc -l)" = 11',
+              'runner staged path denominator',
+          )
+          initial_materializer = (
+              'python /tmp/ssc-rd02-wave02-promotion-materializer.py --repo . '
+              '| tee "$out/materializer-result.json"\n'
+          )
+          replace_once(
+              initial_materializer,
+              initial_materializer
+              + 'python /tmp/rd02-test-compat.py --repo . | tee "$out/rd02-test-compat-path.txt"\n',
+              'initial RD-02 compatibility patch',
+          )
+          replay_materializer = (
+              'python /tmp/ssc-rd02-wave02-promotion-materializer.py --repo . '
+              '> "$out/replay-materializer-result.json"\n'
+          )
+          replace_once(
+              replay_materializer,
+              replay_materializer
+              + 'python /tmp/rd02-test-compat.py --repo . > "$out/replay-rd02-test-compat-path.txt"\n',
+              'replay RD-02 compatibility patch',
+          )
+
+          if script.count('test/status-sovereignty-rd-wave02-rd02-license-leverage.test.js') != 2:
+              raise RuntimeError('RD-02 test path must appear once in manifest and once in focused checks')
+          if script.count('python /tmp/rd02-test-compat.py --repo .') != 2:
+              raise RuntimeError('RD-02 compatibility patch must execute in both materialization worlds')
+          if "'qualified_paths':11," in script or "'runner_paths':10," in script:
+              raise RuntimeError('stale promotion path counts remain')
+
+          output = Path('/tmp/ssc-rd02-wave02-cumulative-promotion-v3.sh')
+          output.write_text(script)
+          digest = hashlib.sha256(script.encode()).hexdigest()
+          (runner_temp / 'derived-transaction.sha256').write_text(
+              f'{digest}  ssc-rd02-wave02-cumulative-promotion-v3.sh\n'
+          )
+          (bootstrap / 'transaction-extension.json').write_text(
+              json.dumps(
+                  {
+                      'schema_version': 'ssc-rd02-wave02-promotion-transaction-extension@1',
+                      'qualified_paths': 12,
+                      'runner_paths': 11,
+                      'successor_safe_test_path': 'test/status-sovereignty-rd-wave02-rd02-license-leverage.test.js',
+                      'successor_safe_test_patcher_sha256': os.environ['RD02_TEST_COMPAT_SHA256'],
+                      'patch_executions': 2,
+                      'derived_transaction_sha256': digest,
+                  },
+                  indent=2,
+              ) + '\n'
+          )
+          PY
+          bash -n /tmp/ssc-rd02-wave02-cumulative-promotion-v3.sh
+          cp "$RUNNER_TEMP/derived-transaction.sha256" "$bootstrap/"
+          printf '%s\n' 0 > "$bootstrap/exit-code.txt"
+          printf '%s\n' twelve-path-transaction-derived > "$bootstrap/final-step.txt"
+      - name: Execute exact twelve-path cumulative-promotion transaction
+        run: bash /tmp/ssc-rd02-wave02-cumulative-promotion-v3.sh
+      - name: Preserve exact cumulative-promotion qualification receipt v3
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd02-wave02-cumulative-promotion-v3
+          path: ${{ env.RECEIPT_DIR }}
+          if-no-files-found: error
+          retention-days: 90

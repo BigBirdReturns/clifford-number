@@ -1,0 +1,171 @@
+name: TEMP materialize SSC Wave 02 six-closure ledger v2
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-wave02-six-closure-materializer-v2.yml'
+      - '.ssc-wave02-six-closure-source-export-v1/MATERIALIZE-V2'
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: temp-ssc-wave02-six-closure-materializer-v2-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: github.event.pull_request.head.ref == 'agent/ssc-wave02-six-closure-source-export-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      EXPECTED_MAIN: 72abc35c408d172d9be33b619b630a96ac317193
+      CONTROLLER_BRANCH: agent/ssc-wave02-six-closure-source-export-v1
+      TARGET_BRANCH: agent/ssc-wave02-current-ledger-six-closures
+      PACKAGE_B64_SHA256: 5e96f693219ae055177e245b5587fd744620c8bf7f28045ae0e5fbe7d6b07473
+      PACKAGE_TGZ_SHA256: c8288e0629303e720ac88a600480f28a002f7591876e439d7313c58a939956c9
+      PACKAGE_PATHS_SHA256: c82b72dd49f26a34f43e62aa09d1aa940feb05bcdd5bb8c8792b1e3d15ec9943
+      NONWORKFLOW_PATHS_SHA256: 0d659c3822434d57a00d9d3236f3ccb42079789fb7e2460e181c58b193f8e390
+      STANDING_WORKFLOW_SHA256: 02f907c466ce6445a12fb5c21ae1a7d89d77fe27438e288c1dabf3755a2dc3aa
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Derive exact volatile-output-custody controller from v1
+        run: |
+          set -Eeuo pipefail
+          bootstrap="$RUNNER_TEMP/ssc-wave02-six-closure-v2-bootstrap-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          rm -rf "$bootstrap"
+          mkdir -p "$bootstrap"
+          echo "RECEIPT_DIR=$bootstrap" >> "$GITHUB_ENV"
+          export RECEIPT_DIR="$bootstrap"
+          printf '%s\n' derive-v2-controller > "$bootstrap/final-step.txt"
+          printf '%s\n' 1 > "$bootstrap/exit-code.txt"
+
+          git fetch --no-tags origin "+refs/heads/${CONTROLLER_BRANCH}:refs/remotes/origin/six-closure-controller-v2"
+          git show "origin/six-closure-controller-v2:.github/workflows/temporary-ssc-wave02-six-closure-materializer-v1.yml" > "$RUNNER_TEMP/six-closure-materializer-v1.yml"
+
+          python - <<'PY'
+          import hashlib
+          import json
+          import os
+          import textwrap
+          from pathlib import Path
+
+          runner_temp = Path(os.environ['RUNNER_TEMP'])
+          bootstrap = Path(os.environ['RECEIPT_DIR'])
+          lines = (runner_temp / 'six-closure-materializer-v1.yml').read_text().splitlines()
+          step = lines.index('      - name: Qualify and publish exact non-workflow product')
+          start = next(i for i in range(step + 1, len(lines)) if lines[i] == '        run: |') + 1
+          end = next(
+              i for i in range(start, len(lines))
+              if lines[i].startswith('      - name: Preserve exact materialization receipt')
+          )
+          script = textwrap.dedent('\n'.join(lines[start:end])) + '\n'
+
+          insertion_anchor = '''hash_product() {
+            while IFS= read -r path; do sha256sum "$path"; done < "$receipt/expected-paths.txt"
+          }
+'''
+          insertion = '''restore_release_outputs() {
+            label="$1"
+            cat > "$receipt/expected-release-output-paths.txt" <<'VOLATILE'
+            build/axm-identity.json
+            build/build-hop-report.json
+            build/hop-graph.json
+            build/migration-review.md
+            build/migration-summary.json
+            build/receipt-graph.json
+            build/scores.json
+            build/scout-report.json
+            build/scout-report.md
+            build/surface-graph.json
+            VOLATILE
+            sed -i 's/^            //' "$receipt/expected-release-output-paths.txt"
+            git diff --name-only -- . | LC_ALL=C sort > "$receipt/postcheck-all-paths-${label}.txt"
+            comm -13 "$receipt/expected-paths.txt" "$receipt/postcheck-all-paths-${label}.txt" > "$receipt/actual-release-output-paths-${label}.txt"
+            cmp "$receipt/expected-release-output-paths.txt" "$receipt/actual-release-output-paths-${label}.txt"
+            while IFS= read -r path; do git restore --worktree -- "$path"; done < "$receipt/expected-release-output-paths.txt"
+          }
+          hash_product() {
+            while IFS= read -r path; do sha256sum "$path"; done < "$receipt/expected-paths.txt"
+          }
+'''
+          if script.count(insertion_anchor) != 1:
+              raise RuntimeError('hash-product insertion anchor changed')
+          script = script.replace(insertion_anchor, insertion, 1)
+
+          first = '''run_checks
+          assert_paths
+          hash_product > "$receipt/product-pass-1.sha256"'''
+          first_new = '''run_checks
+          restore_release_outputs pass-1
+          assert_paths
+          hash_product > "$receipt/product-pass-1.sha256"'''
+          if script.count(first) != 1:
+              raise RuntimeError('pass-1 release-output anchor changed')
+          script = script.replace(first, first_new, 1)
+
+          second = '''run_checks
+          assert_paths
+          hash_product > "$receipt/product-pass-2.sha256"'''
+          second_new = '''run_checks
+          restore_release_outputs pass-2
+          assert_paths
+          hash_product > "$receipt/product-pass-2.sha256"'''
+          if script.count(second) != 1:
+              raise RuntimeError('pass-2 release-output anchor changed')
+          script = script.replace(second, second_new, 1)
+
+          output = Path('/tmp/ssc-wave02-six-closure-materializer-v2.sh')
+          output.write_text(script)
+          digest = hashlib.sha256(script.encode()).hexdigest()
+          (bootstrap / 'derived-script.sha256').write_text(
+              f'{digest}  ssc-wave02-six-closure-materializer-v2.sh\n'
+          )
+          (bootstrap / 'controller-repair.json').write_text(
+              json.dumps(
+                  {
+                      'schema_version': 'ssc-wave02-six-closure-controller-repair@1',
+                      'repair': 'exact_release_output_custody',
+                      'expected_volatile_output_count': 10,
+                      'expected_volatile_outputs': [
+                          'build/axm-identity.json',
+                          'build/build-hop-report.json',
+                          'build/hop-graph.json',
+                          'build/migration-review.md',
+                          'build/migration-summary.json',
+                          'build/receipt-graph.json',
+                          'build/scores.json',
+                          'build/scout-report.json',
+                          'build/scout-report.md',
+                          'build/surface-graph.json',
+                      ],
+                      'product_archive_sha256': os.environ['PACKAGE_TGZ_SHA256'],
+                      'product_paths_sha256': os.environ['PACKAGE_PATHS_SHA256'],
+                      'derived_script_sha256': digest,
+                  },
+                  indent=2,
+              ) + '\n'
+          )
+          PY
+
+          bash -n /tmp/ssc-wave02-six-closure-materializer-v2.sh
+          printf '%s\n' 0 > "$bootstrap/exit-code.txt"
+          printf '%s\n' derived-v2-controller > "$bootstrap/final-step.txt"
+      - name: Execute unchanged product with exact volatile-output custody
+        run: bash /tmp/ssc-wave02-six-closure-materializer-v2.sh
+      - name: Preserve exact v2 materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-wave02-six-closure-materialization-v2
+          path: ${{ env.RECEIPT_DIR }}
+          if-no-files-found: error
+          retention-days: 90

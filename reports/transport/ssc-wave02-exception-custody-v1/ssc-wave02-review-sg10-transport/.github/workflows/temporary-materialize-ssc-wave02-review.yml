@@ -1,0 +1,137 @@
+name: Temporary materialize SSC Wave 02 review
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/tmp/ssc-wave02-review.part-*.b64'
+      - '.github/workflows/temporary-materialize-ssc-wave02-review.yml'
+  push:
+    branches: [agent/ssc-wave02-review-sg10-transport]
+    paths:
+      - '.github/tmp/ssc-wave02-review.part-*.b64'
+      - '.github/workflows/temporary-materialize-ssc-wave02-review.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      BASE: 52a363704857a2da5035c24898f9dfdc38b56754
+      TARGET: agent/ssc-wave02-maintainer-review-sg10
+      B64_SHA: 12fc38949e31597563ec39d95b625f40beca0e28efbf25b8f1e97a57aae15b2a
+      XZ_SHA: 9cd790f4167cab683d5b9f9cc858a8e4c18ac886db3f83b5381b889b18877ce6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-wave02-review-sg10-transport
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify carrier and publish non-workflow review transition
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'OpenAI'
+          git config user.email 'noreply@openai.com'
+
+          cat > /tmp/transport-paths.txt <<'EOF'
+          .github/tmp/ssc-wave02-review.part-00.b64
+          .github/tmp/ssc-wave02-review.part-01.b64
+          .github/tmp/ssc-wave02-review.part-02.b64
+          .github/tmp/ssc-wave02-review.part-03.b64
+          .github/workflows/temporary-materialize-ssc-wave02-review.yml
+          EOF
+          git diff --name-only "$BASE" HEAD | sort > /tmp/observed-transport.txt
+          sort /tmp/transport-paths.txt > /tmp/expected-transport.txt
+          diff -u /tmp/expected-transport.txt /tmp/observed-transport.txt
+
+          echo 'e6e379d0d439d0964ae8907f7992b7d8456bec3e4e64ee3fe15252eac5728613  .github/tmp/ssc-wave02-review.part-00.b64' | sha256sum -c -
+          echo '444bb10b667713420e9568949997329367025436f6eb077d0f16af0b276a72f2  .github/tmp/ssc-wave02-review.part-01.b64' | sha256sum -c -
+          echo '0cfe6d01a234af1714725160adb386b0d8c366e75412c61195f2c29bee81a7d9  .github/tmp/ssc-wave02-review.part-02.b64' | sha256sum -c -
+          echo '14b83923fe57cf4ca024fb152be4b34f50e3aaa28bd4e12c13ff93c2e1719394  .github/tmp/ssc-wave02-review.part-03.b64' | sha256sum -c -
+          cat .github/tmp/ssc-wave02-review.part-0{0..3}.b64 > /tmp/review.patch.xz.b64
+          echo "$B64_SHA  /tmp/review.patch.xz.b64" | sha256sum -c -
+          base64 --decode /tmp/review.patch.xz.b64 > /tmp/review.patch.xz
+          echo "$XZ_SHA  /tmp/review.patch.xz" | sha256sum -c -
+          xz -dc /tmp/review.patch.xz > /tmp/review.patch
+
+          git fetch origin "$TARGET"
+          test "$(git rev-parse "refs/remotes/origin/$TARGET")" = "$BASE"
+          work=/tmp/ssc-wave02-review
+          rm -rf "$work"
+          git worktree add --detach "$work" "$BASE"
+          git -C "$work" apply --index /tmp/review.patch
+          rm -f "$work/.github/workflows/status-sovereignty-wave-02-review.yml"
+          git -C "$work" add -A
+
+          cat > /tmp/permanent-paths.txt <<'EOF'
+          build/core-thesis/status-sovereignty/data.json
+          build/core-thesis/status-sovereignty/manifest.json
+          build/core-thesis/status-sovereignty/wave-02-review/data.json
+          build/core-thesis/status-sovereignty/wave-02-review/manifest.json
+          data/project/poof-clifford-ecology-release-manifest.json
+          data/project/status-sovereignty-compact.json
+          data/project/status-sovereignty-fanout.json
+          data/project/status-sovereignty-release-manifest.json
+          data/project/status-sovereignty-source-registry.json
+          data/project/status-sovereignty-wave-02-maintainer-review-release-manifest.json
+          data/research/status-sovereignty-wave-02-maintainer-review.json
+          data/research/status-sovereignty-wave-02.json
+          docs/milestones/m05-status-sovereignty-wave-02-review.md
+          package.json
+          reports/core-thesis/poof-clifford-ecology/release-manifest.json
+          reports/core-thesis/status-sovereignty/data.json
+          reports/core-thesis/status-sovereignty/index.html
+          reports/core-thesis/status-sovereignty/wave-02-review/data.json
+          reports/core-thesis/status-sovereignty/wave-02-review/index.html
+          schemas/status-sovereignty-wave-02-review.schema.json
+          test/status-sovereignty-compact.test.js
+          test/status-sovereignty-wave-01-review.test.js
+          test/status-sovereignty-wave-01.test.js
+          test/status-sovereignty-wave-02-intake.test.js
+          test/status-sovereignty-wave-02-review.test.js
+          tools/build-pages.mjs
+          tools/build-status-sovereignty-compact.mjs
+          tools/build-status-sovereignty-wave-02-review.mjs
+          tools/validate-pages.mjs
+          tools/validate-status-sovereignty-compact.mjs
+          tools/validate-status-sovereignty-wave-01-review.mjs
+          tools/validate-status-sovereignty-wave-01-second-party-review.mjs
+          tools/validate-status-sovereignty-wave-01.mjs
+          tools/validate-status-sovereignty-wave-02-intake.mjs
+          tools/validate-status-sovereignty-wave-02-review.mjs
+          EOF
+          git -C "$work" diff --cached --name-only | sort > /tmp/observed-permanent.txt
+          sort /tmp/permanent-paths.txt > /tmp/expected-permanent.txt
+          diff -u /tmp/expected-permanent.txt /tmp/observed-permanent.txt
+          test "$(wc -l < /tmp/observed-permanent.txt)" -eq 35
+
+          cd "$work"
+          node tools/build-status-sovereignty-wave-02-review.mjs
+          node tools/validate-status-sovereignty-wave-02-review.mjs
+          node test/status-sovereignty-wave-02-review.test.js
+          node tools/build-status-sovereignty-compact.mjs
+          node tools/validate-status-sovereignty-compact.mjs
+          node test/status-sovereignty-compact.test.js
+          node tools/validate-status-sovereignty-wave-01.mjs
+          node tools/validate-status-sovereignty-wave-01-review.mjs
+          node tools/validate-status-sovereignty-wave-01-second-party-review.mjs
+          node tools/validate-status-sovereignty-wave-02-intake.mjs
+          node tools/validate-poof-clifford-ecology.mjs
+          npm run build:pages
+          npm run build:standalone
+          npm run validate:pages
+          test ! -e dist/data/research/status-sovereignty-wave-02-maintainer-review.json
+          test ! -e dist/reports/core-thesis/status-sovereignty/wave-02-review
+          git diff --exit-code
+          test -z "$(git status --porcelain | grep -v '^A  ' || true)"
+
+          git commit -m 'Review SSC-H01 Wave 02 without promoting the compact'
+          test "$(git diff --name-only "$BASE" HEAD | wc -l)" -eq 35
+          git push --force-with-lease="refs/heads/$TARGET:$BASE" origin "HEAD:refs/heads/$TARGET"
