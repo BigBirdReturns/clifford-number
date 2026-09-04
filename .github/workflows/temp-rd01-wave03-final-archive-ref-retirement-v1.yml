@@ -1,0 +1,326 @@
+name: TEMP RD-01 Wave-03 final archive ref retirement
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/temp-rd01-wave03-final-archive-ref-retirement-v1.yml'
+
+permissions:
+  contents: write
+  pull-requests: read
+  issues: read
+  checks: read
+  actions: read
+
+concurrency:
+  group: rd01-wave03-final-archive-ref-retirement-v1
+  cancel-in-progress: false
+
+jobs:
+  retire:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'agent/rd01-wave03-final-archive-ref-retirement-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      API_ROOT: https://api.github.com/repos/${{ github.repository }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      CONTROLLER_BRANCH: agent/rd01-wave03-final-archive-ref-retirement-v1
+      CONTROLLER_PARENT: 2fd3d20802595797fc7618dcb2c1c72391e275c5
+      CONTROLLER_PATH: .github/workflows/temp-rd01-wave03-final-archive-ref-retirement-v1.yml
+      AUTHORITY_COMMENT_ID: '5533656397'
+      AUTHORITY_COMMENT_UPDATED_AT: '2026-09-03T23:54:39Z'
+      AUTHORITY_BODY_SHA256: ca3be1e2b7ba4de5c51b0b503c64bd3e91f2f1b6456578a996cccee6deecdd8a
+      MIGRATION_PR: '2584'
+      MIGRATION_BASE: b278ba79c9923f9a51c2718831c2dc1d62979d9d
+      MIGRATION_PRODUCT: c8889ea88c3716ec6672d9a53bdbbb0f51e2a34a
+      MIGRATION_TREE: 4f8017c8d9b03aef0be65e4ad00f9bd044cf3fea
+      MIGRATION_MERGE: 2fd3d20802595797fc7618dcb2c1c72391e275c5
+      RELEASE_RUN: '33827473787'
+      RELEASE_JOB: '100883096495'
+      NO_MAGIC_RUN: '33827473767'
+      NO_MAGIC_JOB: '100883096348'
+      ARCHIVE_BRANCH: archive/ssc-rd01-wave03-promotion-materializer-receipt
+      ARCHIVE_SHA: cb45a12a347bed8eeaa4e8e11878139e5d4a290a
+      ARCHIVE_PARENT: c987c61c557879ef3128b30b75870f59cf4ebd22
+      ARCHIVE_TREE: 304f3cc91b4d4bd893164635450cbf6c906753fe
+      ARCHIVE_SUBTREE: 6b5cbbc0d2096aeb7688f718f783e6136ca8a67f
+      PRODUCT_BRANCH: agent/rd01-wave03-promotion-receipt-archive-migration-v1
+      MANIFEST_PATH: reports/transport/ssc-rd01-wave03-promotion-materializer-archive-custody.json
+      MANIFEST_BLOB: da4497684b5c79ff7df1668a088c13bfce191694
+      MANIFEST_SHA256: 7186067584875d09e564791b1957b7fa04ba940cfb6655329dfbe769776798b7
+      RECEIPT_DIRECTORY: reports/transport/ssc-rd01-wave03-promotion-materializer-latest
+    steps:
+      - name: Validate migration, atomically retire refs, and verify custody
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p receipt
+          phase='initialization'
+          trap 'rc=$?; set +e; printf "phase: %s\nexit_code: %s\n" "${phase}" "${rc}" > receipt/status.txt; exit "${rc}"' EXIT
+
+          headers=(
+            -H 'Accept: application/vnd.github+json'
+            -H "Authorization: Bearer ${GH_TOKEN}"
+            -H 'X-GitHub-Api-Version: 2022-11-28'
+          )
+          api_get() {
+            curl --fail-with-body --silent --show-error \
+              "${headers[@]}" "${API_ROOT}/$1"
+          }
+          ref_status() {
+            local branch="$1"
+            local output="$2"
+            curl --silent --show-error "${headers[@]}" \
+              --output "${output}" --write-out '%{http_code}' \
+              "${API_ROOT}/git/ref/heads/${branch}"
+          }
+          require_ref() {
+            local branch="$1"
+            local expected="$2"
+            local output="$(mktemp)"
+            local code
+            code="$(ref_status "${branch}" "${output}")"
+            [[ "${code}" == '200' ]]
+            [[ "$(jq -r '.object.sha' "${output}")" == "${expected}" ]]
+            rm -f "${output}"
+          }
+          require_absent() {
+            local branch="$1"
+            local output="$(mktemp)"
+            local code
+            code="$(ref_status "${branch}" "${output}")"
+            rm -f "${output}"
+            [[ "${code}" == '404' ]]
+          }
+          require_descendant() {
+            local ancestor="$1"
+            local descendant="$2"
+            local label="$3"
+            api_get "compare/${ancestor}...${descendant}" > "receipt/compare-${label}.json"
+            jq -e --arg ancestor "${ancestor}" \
+              '(.merge_base_commit.sha == $ancestor) and ((.status == "ahead") or (.status == "identical"))' \
+              "receipt/compare-${label}.json" >/dev/null
+          }
+          require_destination() {
+            local main_sha="$1"
+            local label="$2"
+            local root_tree reports_tree transport_tree directory_tree manifest_blob
+
+            api_get "git/commits/${main_sha}" > "receipt/main-${label}-commit.json"
+            root_tree="$(jq -r '.tree.sha' "receipt/main-${label}-commit.json")"
+            api_get "git/trees/${root_tree}" > "receipt/main-${label}-root-tree.json"
+            reports_tree="$(jq -r '.tree[] | select(.path == "reports" and .mode == "040000" and .type == "tree") | .sha' "receipt/main-${label}-root-tree.json")"
+            [[ "${reports_tree}" =~ ^[0-9a-f]{40}$ ]]
+
+            api_get "git/trees/${reports_tree}" > "receipt/main-${label}-reports-tree.json"
+            transport_tree="$(jq -r '.tree[] | select(.path == "transport" and .mode == "040000" and .type == "tree") | .sha' "receipt/main-${label}-reports-tree.json")"
+            [[ "${transport_tree}" =~ ^[0-9a-f]{40}$ ]]
+
+            api_get "git/trees/${transport_tree}" > "receipt/main-${label}-transport-tree.json"
+            directory_tree="$(jq -r '.tree[] | select(.path == "ssc-rd01-wave03-promotion-materializer-latest" and .mode == "040000" and .type == "tree") | .sha' "receipt/main-${label}-transport-tree.json")"
+            manifest_blob="$(jq -r '.tree[] | select(.path == "ssc-rd01-wave03-promotion-materializer-archive-custody.json" and .mode == "100644" and .type == "blob") | .sha' "receipt/main-${label}-transport-tree.json")"
+            [[ "${directory_tree}" == "${ARCHIVE_SUBTREE}" ]]
+            [[ "${manifest_blob}" == "${MANIFEST_BLOB}" ]]
+
+            api_get "git/trees/${directory_tree}" > "receipt/main-${label}-receipt-subtree.json"
+            jq -e '
+              .truncated == false and
+              (.tree | length) == 9 and
+              [.tree[] | {path, mode, type, sha, size}] == [
+                {"path":"actual-paths.txt","mode":"100644","type":"blob","sha":"0609c9e704e3aa9c78d088326c1a3dc6a4eb878d","size":645},
+                {"path":"apply-script-recovery.json","mode":"100644","type":"blob","sha":"bfa87679201e47c28e249dfc2f9629aecd55c2c2","size":625},
+                {"path":"base-counts.json","mode":"100644","type":"blob","sha":"1d1e23ee3bc3d2c303bf731fe9920a445cb33a98","size":139},
+                {"path":"corrupt-apply-script.mjs","mode":"100644","type":"blob","sha":"64de5d25b4fbdfc0ba50083ddbd9e4d2af78c46b","size":27819},
+                {"path":"expected-paths.txt","mode":"100644","type":"blob","sha":"0609c9e704e3aa9c78d088326c1a3dc6a4eb878d","size":645},
+                {"path":"materializer.log","mode":"100644","type":"blob","sha":"5dc41f9764d7a17681726723f532d0a7f5dfad82","size":37034},
+                {"path":"product.txt","mode":"100644","type":"blob","sha":"66bdaf1f43f0cb281783ef93f288b3a2855b1a6c","size":378},
+                {"path":"status.txt","mode":"100644","type":"blob","sha":"f76dd567ef6f7df42211333e0b3a47d2500560bf","size":84},
+                {"path":"workflow.txt","mode":"100644","type":"blob","sha":"5683cb8fa1b162a143739d1fdcfaa07ead5ab4db","size":112}
+              ]' "receipt/main-${label}-receipt-subtree.json" >/dev/null
+
+            api_get "git/blobs/${MANIFEST_BLOB}" > "receipt/main-${label}-manifest-blob.json"
+            jq -r '.content' "receipt/main-${label}-manifest-blob.json" | tr -d '\n' | base64 -d > "receipt/main-${label}-manifest.json"
+            [[ "$(sha256sum "receipt/main-${label}-manifest.json" | awk '{print $1}')" == "${MANIFEST_SHA256}" ]]
+            jq -e \
+              --arg archive "${ARCHIVE_SHA}" \
+              --arg subtree "${ARCHIVE_SUBTREE}" \
+              --arg merge "${MIGRATION_MERGE}" \
+              '.classification == "historical_transport_receipt" and
+               .source.commit == $archive and
+               .source.directory_tree == $subtree and
+               .source.entry_count == 9 and
+               .destination.migration_mode == "exact_git_blob_reuse_addition_only" and
+               .authority_effects.execution == "none" and
+               .authority_effects.analytical_product == "none" and
+               (.archive_retirement_preconditions | length) == 6' \
+              "receipt/main-${label}-manifest.json" >/dev/null
+            printf '%s\t%s\t%s\n' "${main_sha}" "${directory_tree}" "${manifest_blob}" > "receipt/main-${label}-custody.tsv"
+          }
+
+          phase='controller-topology'
+          api_get "pulls/${PR_NUMBER}" > receipt/controller-pr.json
+          jq -e \
+            --arg branch "${CONTROLLER_BRANCH}" \
+            --arg head "${EVENT_HEAD_SHA}" \
+            '.state == "open" and .base.ref == "main" and .head.ref == $branch and .head.sha == $head and .head.repo.full_name == .base.repo.full_name and .commits == 1 and .changed_files == 1' \
+            receipt/controller-pr.json >/dev/null
+          api_get "git/commits/${EVENT_HEAD_SHA}" > receipt/controller-commit.json
+          jq -e --arg parent "${CONTROLLER_PARENT}" \
+            '(.parents | length) == 1 and .parents[0].sha == $parent' \
+            receipt/controller-commit.json >/dev/null
+          api_get "pulls/${PR_NUMBER}/files?per_page=100" > receipt/controller-files.json
+          jq -e --arg path "${CONTROLLER_PATH}" \
+            'length == 1 and .[0].filename == $path and .[0].status == "added"' \
+            receipt/controller-files.json >/dev/null
+
+          phase='owner-authority'
+          api_get "issues/comments/${AUTHORITY_COMMENT_ID}" > receipt/authority-comment.json
+          jq -e --arg updated "${AUTHORITY_COMMENT_UPDATED_AT}" \
+            '.id == 5533656397 and .user.login == "BigBirdReturns" and .author_association == "OWNER" and .created_at == $updated and .updated_at == $updated and (.issue_url | endswith("/issues/2573"))' \
+            receipt/authority-comment.json >/dev/null
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import os
+          import pathlib
+
+          body = json.loads(pathlib.Path('receipt/authority-comment.json').read_text())['body']
+          if hashlib.sha256(body.encode()).hexdigest() != os.environ['AUTHORITY_BODY_SHA256']:
+              raise SystemExit('owner authority body changed')
+          if os.environ['ARCHIVE_BRANCH'] not in body or os.environ['ARCHIVE_SHA'] not in body:
+              raise SystemExit('archive preservation authority missing')
+          if 'Retain that ref until the exact bytes are migrated to another durable, content-addressed venue and the destination commit is recorded.' not in body:
+              raise SystemExit('archive migration condition missing')
+          PY
+
+          phase='migration-custody'
+          api_get "pulls/${MIGRATION_PR}" > receipt/migration-pr.json
+          jq -e \
+            --arg base "${MIGRATION_BASE}" \
+            --arg head "${MIGRATION_PRODUCT}" \
+            --arg merge "${MIGRATION_MERGE}" \
+            '.state == "closed" and .merged_at != null and .base.sha == $base and .head.sha == $head and .merge_commit_sha == $merge and .commits == 1 and .changed_files == 10 and .additions == 1483 and .deletions == 0' \
+            receipt/migration-pr.json >/dev/null
+          api_get "git/commits/${MIGRATION_MERGE}" > receipt/migration-merge.json
+          jq -e \
+            --arg tree "${MIGRATION_TREE}" \
+            --arg base "${MIGRATION_BASE}" \
+            --arg product "${MIGRATION_PRODUCT}" \
+            '.tree.sha == $tree and (.parents | length) == 2 and .parents[0].sha == $base and .parents[1].sha == $product and .verification.verified == true' \
+            receipt/migration-merge.json >/dev/null
+
+          api_get "commits/${MIGRATION_PRODUCT}/check-runs?per_page=100" > receipt/migration-check-runs.json
+          jq -e \
+            --arg sha "${MIGRATION_PRODUCT}" \
+            --arg release_run "${RELEASE_RUN}" \
+            --arg release_job "${RELEASE_JOB}" \
+            --arg no_magic_run "${NO_MAGIC_RUN}" \
+            --arg no_magic_job "${NO_MAGIC_JOB}" \
+            '([.check_runs[] | select(.name == "release-check" and .head_sha == $sha and .status == "completed" and .conclusion == "success" and (.details_url | contains("/actions/runs/" + $release_run + "/job/" + $release_job)))] | length) == 1 and
+             ([.check_runs[] | select(.name == "no-magic-human-gate" and .head_sha == $sha and .status == "completed" and .conclusion == "success" and (.details_url | contains("/actions/runs/" + $no_magic_run + "/job/" + $no_magic_job)))] | length) == 1' \
+            receipt/migration-check-runs.json >/dev/null
+
+          phase='preflight-ref-and-main-leases'
+          require_ref "${ARCHIVE_BRANCH}" "${ARCHIVE_SHA}"
+          require_ref "${PRODUCT_BRANCH}" "${MIGRATION_PRODUCT}"
+          api_get "git/commits/${ARCHIVE_SHA}" > receipt/archive-commit.json
+          jq -e \
+            --arg parent "${ARCHIVE_PARENT}" \
+            --arg tree "${ARCHIVE_TREE}" \
+            '.tree.sha == $tree and (.parents | length) == 1 and .parents[0].sha == $parent' \
+            receipt/archive-commit.json >/dev/null
+          main_before="$(api_get 'git/ref/heads/main' | jq -r '.object.sha')"
+          printf '%s\n' "${main_before}" > receipt/main-before.txt
+          require_descendant "${MIGRATION_MERGE}" "${main_before}" main-before
+          require_destination "${main_before}" before
+
+          phase='atomic-archive-and-product-ref-retirement'
+          repo_url="https://github.com/${GITHUB_REPOSITORY}.git"
+          basic_auth="$(printf 'x-access-token:%s' "${GH_TOKEN}" | base64 -w0)"
+          bare_repo="${RUNNER_TEMP}/rd01-final-archive-retirement.git"
+          git init --bare "${bare_repo}" >/dev/null
+          cd "${bare_repo}"
+          git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic ${basic_auth}" \
+            push --atomic --porcelain \
+            "--force-with-lease=refs/heads/${ARCHIVE_BRANCH}:${ARCHIVE_SHA}" \
+            "--force-with-lease=refs/heads/${PRODUCT_BRANCH}:${MIGRATION_PRODUCT}" \
+            "${repo_url}" \
+            ":refs/heads/${ARCHIVE_BRANCH}" \
+            ":refs/heads/${PRODUCT_BRANCH}" \
+            > "${GITHUB_WORKSPACE}/receipt/atomic-delete.log" 2>&1
+          cd "${GITHUB_WORKSPACE}"
+
+          phase='post-retirement-verification'
+          require_absent "${ARCHIVE_BRANCH}"
+          require_absent "${PRODUCT_BRANCH}"
+          main_after="$(api_get 'git/ref/heads/main' | jq -r '.object.sha')"
+          printf '%s\n' "${main_after}" > receipt/main-after.txt
+          require_descendant "${MIGRATION_MERGE}" "${main_after}" main-after
+          require_destination "${main_after}" after
+
+          python3 - <<'PY'
+          import json
+          import os
+          import pathlib
+
+          root = pathlib.Path('receipt')
+          result = {
+              'schema_version': 'rd01-wave03-final-archive-ref-retirement@1',
+              'repository': os.environ['GITHUB_REPOSITORY'],
+              'run_id': os.environ['GITHUB_RUN_ID'],
+              'run_attempt': os.environ['GITHUB_RUN_ATTEMPT'],
+              'controller_branch': os.environ['CONTROLLER_BRANCH'],
+              'controller_head': os.environ['EVENT_HEAD_SHA'],
+              'controller_parent': os.environ['CONTROLLER_PARENT'],
+              'owner_authority_comment_id': int(os.environ['AUTHORITY_COMMENT_ID']),
+              'migration_pr': int(os.environ['MIGRATION_PR']),
+              'migration_product': os.environ['MIGRATION_PRODUCT'],
+              'migration_merge': os.environ['MIGRATION_MERGE'],
+              'migration_tree': os.environ['MIGRATION_TREE'],
+              'main_before': (root / 'main-before.txt').read_text().strip(),
+              'main_after': (root / 'main-after.txt').read_text().strip(),
+              'canonical_receipt_subtree': os.environ['ARCHIVE_SUBTREE'],
+              'canonical_manifest_blob': os.environ['MANIFEST_BLOB'],
+              'retired_refs': [
+                  {'branch': os.environ['ARCHIVE_BRANCH'], 'leased_sha': os.environ['ARCHIVE_SHA'], 'final_state': 'absent'},
+                  {'branch': os.environ['PRODUCT_BRANCH'], 'leased_sha': os.environ['MIGRATION_PRODUCT'], 'final_state': 'absent'},
+              ],
+              'main_mutation': 'skipped',
+              'canonical_custody': 'present_exact',
+              'ref_transaction': 'atomic_success',
+              'controller_cleanup': 'pending_post_artifact_exact_lease',
+              'terminal_state': 'FINAL_ARCHIVE_REF_RETIREMENT_SUCCESS',
+          }
+          (root / 'result.json').write_text(json.dumps(result, indent=2, sort_keys=True) + '\n')
+          PY
+          find receipt -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > receipt/SHA256SUMS
+          phase='success'
+          cat receipt/result.json
+
+      - name: Retain final archive-retirement receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rd01-wave03-final-archive-ref-retirement-${{ github.run_id }}-${{ github.run_attempt }}
+          path: receipt
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Delete disposable controller ref under exact lease
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          repo_url="https://github.com/${GITHUB_REPOSITORY}.git"
+          basic_auth="$(printf 'x-access-token:%s' "${GH_TOKEN}" | base64 -w0)"
+          bare_repo="${RUNNER_TEMP}/rd01-final-controller-cleanup.git"
+          git init --bare "${bare_repo}" >/dev/null
+          cd "${bare_repo}"
+          git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic ${basic_auth}" \
+            push --porcelain \
+            "--force-with-lease=refs/heads/${CONTROLLER_BRANCH}:${EVENT_HEAD_SHA}" \
+            "${repo_url}" ":refs/heads/${CONTROLLER_BRANCH}"
