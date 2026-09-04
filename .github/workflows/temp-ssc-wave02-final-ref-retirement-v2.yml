@@ -1,0 +1,211 @@
+name: TEMP SSC Wave-02 final ref retirement v2
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/temp-ssc-wave02-final-ref-retirement-v2.yml'
+
+permissions:
+  contents: write
+  pull-requests: read
+  issues: read
+  actions: read
+
+concurrency:
+  group: ssc-wave02-final-ref-retirement-v2
+  cancel-in-progress: false
+
+jobs:
+  retire:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'agent/ssc-wave02-final-ref-retirement-v2'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      GH_TOKEN: ${{ github.token }}
+      API_ROOT: 'https://api.github.com/repos/${{ github.repository }}'
+      OWNER: '${{ github.repository_owner }}'
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      CONTROLLER_BRANCH: 'agent/ssc-wave02-final-ref-retirement-v2'
+      CONTROLLER_PARENT: '06ecd1d0e3aecc9910342920a7a78699fc706128'
+      CONTROLLER_PATH: '.github/workflows/temp-ssc-wave02-final-ref-retirement-v2.yml'
+      ARCHIVE_PR: '2593'
+      ARCHIVE_HEAD: 'bb9649995c1224b8862b940b6dd0655852191ea9'
+      ARCHIVE_MERGE: '5bda4c662841eceea9233cd3fe70e27b810a193b'
+      ARCHIVE_MANIFEST_PATH: 'reports/transport/ssc-wave02-exception-custody-archive-v1.json'
+      ARCHIVE_MANIFEST_BLOB: '0f1bb2f15b834cf75d33cb7df979666d70a2844c'
+      ARCHIVE_MANIFEST_SHA256: '0abe177ec67eca07a3fb392a45baa4dcba52ac95f26b1d4ba4a5306dfac9b28c'
+      ARCHIVE_INVENTORY_SHA256: '340650b19ae05e315afd1bd0831d09b083a962fbcf3ad1c5cdc105b5050f11b1'
+      ARCHIVE_RELEASE_RUN: '33911568634'
+      ARCHIVE_NO_MAGIC_RUN: '33911568659'
+      ARCHIVE_NOMAGIC_RUN: '33911568659'
+      V2_PR: '2591'
+      V2_BRANCH: 'agent/ssc-wave02-exception-reachability-census-v2'
+      V2_HEAD: '78412ab4fb187138b12f6d64f0e45949c0f8188a'
+      V2_RUN: '33910179288'
+      V2_JOB: '101144501691'
+      V2_ARTIFACT: '9951101110'
+      V2_ARTIFACT_NAME: 'ssc-wave02-exception-reachability-census-v2-33910179288-1'
+      V2_ARTIFACT_SIZE: '10353237'
+      V2_ARTIFACT_SHA256: 'b9f034c89249497745b98d28f425c19411a3640aa44a101f6456081a97c7fb10'
+      PREVIOUS_CONTROLLER_PR: '2595'
+      FAILED_V1_PR: '2595'
+      PREVIOUS_CONTROLLER_BRANCH: 'agent/ssc-wave02-final-ref-retirement-v1'
+      PREVIOUS_CONTROLLER_HEAD: 'f15ce311a16e6330d342256d07b8acad35784d41'
+      FAILED_V1_HEAD: 'f15ce311a16e6330d342256d07b8acad35784d41'
+      FAILED_V1_PARENT: 'b48019eacf6c480872b60a1dfa01e70c619db176'
+      PREVIOUS_CONTROLLER_RUN: '33913785731'
+      FAILED_V1_RUN: '33913785731'
+      PREVIOUS_CONTROLLER_JOB: '101156141190'
+      FAILED_V1_JOB: '101156141190'
+      PREVIOUS_CONTROLLER_ARTIFACT: '9952363314'
+      FAILED_V1_ARTIFACT: '9952363314'
+      PREVIOUS_CONTROLLER_ARTIFACT_NAME: 'ssc-wave02-final-ref-retirement-v1-33913785731-1'
+      FAILED_V1_ARTIFACT_NAME: 'ssc-wave02-final-ref-retirement-v1-33913785731-1'
+      PREVIOUS_CONTROLLER_ARTIFACT_SIZE: '21777'
+      FAILED_V1_ARTIFACT_SIZE: '21777'
+      PREVIOUS_CONTROLLER_ARTIFACT_SHA256: '43138f08b3bd2a3b3d332d7e0e9650fc72b658ccc03318ba357a15964687e39f'
+      FAILED_V1_ARTIFACT_SHA256: '43138f08b3bd2a3b3d332d7e0e9650fc72b658ccc03318ba357a15964687e39f'
+      PREVIOUS_AUTHORITY_COMMENT_ID: '5545772824'
+      PRIOR_AUTHORITY_COMMENT: '5545772824'
+      PREVIOUS_AUTHORITY_COMMENT_UPDATED_AT: '2026-09-04T19:53:32Z'
+      PREVIOUS_AUTHORITY_BODY_SHA256: '14b323f9aae0d4f3f310aae4505ce3a76c7e2558cfa96eb67df442f5a6e254e9'
+      PRIOR_AUTHORITY_BODY_SHA256: '14b323f9aae0d4f3f310aae4505ce3a76c7e2558cfa96eb67df442f5a6e254e9'
+      AUTHORITY_MARKER: 'SSC_WAVE02_FINAL_REF_RETIREMENT_AUTHORITY_V2'
+      AUTHORITY_VENUE_PR: '2593'
+      ORIGINAL_TARGETS_SHA256: 'fb7806a85bc1a3e676437d886852d04aaa0015177137ea685286084742b39a34'
+      TARGETS_SHA256: '710d6b30ccb0117257997f7b812f0e3e94b305611bdfb96c53bc17b3b49d9337'
+      EXCEPTIONS_SHA256: '1c0281d1d6b23264888a32f3838e20fa104411796016842445054cf356fa04d0'
+      CONTROL_TARGETS_SHA256: 'ab9a4a1ae3014624383826859e1ae8aa4ca965b9c42ff0bb023682080a03845b'
+      EXCEPTION_WITNESSES_SHA256: '5dd0844c69f5d2c6ecfcf1206fe12ada3d6d7b57cf76b776ce6d69703cb7974f'
+      CONTROL_WITNESSES_SHA256: '008dbfef452d53861a846619729827520d265bdd536001f86ba88dff09c83cbe'
+      WITNESSES_SHA256: 'cb1d6fe6ffc574440cc31944905421869b20972ae8ac28d246f9e8e3017f5010'
+      LOOKALIKES_SHA256: 'd97fa5811587145160353cc9e130ec356a4ff4d310ce266a9ae072ded469ae56'
+      PAYLOAD_COMMENT_IDS: '5546268686,5546277511,5546286543,5546296118'
+      PAYLOAD_COMMENT_BODY_SHA256S: '63839b5b1b68a6fa2cf7533ec7d546c8993371c3a00ee845e01a192e183f75f0,c8982bdf74beeef0b4ae92a7d3ffe56f6d73b343dedd5d0aee294d8480be8c45,6c0e5d0cdf1d04605f75d522fc59482f93f4778972f16681571869f23ff5fd77,419ea406595734d78052da499c077df1681d0ee0464dda469c39725a84ff09a0'
+      PAYLOAD_CHUNK_SHA256S: '50d695f0d8998a0d25243dccec1ca3e7148f8f7e0f43f055962cf81da1accd9f,d2c90d681d057e657356a89423cf1056ebc5e1d162808836dd070000a325a2c1,67160ca234255707614e35ebee2173b19af30379c9ea55a7913348c805f8ae51,b4979885031e0cbcb6fa3c8be07d3d39c6a4eba189236073be015e0b72fb141b'
+      PAYLOAD_CHUNK_BYTES: '3234,3234,3234,3494'
+      PAYLOAD_COMPLETE_BASE64_BYTES: '13196'
+      PAYLOAD_COMPLETE_BASE64_SHA256: '6ea05f4c93774dbdb2628955ddb2c894ab5dd4ed23fbb32b3b70b6e5c3cf5ff0'
+      PAYLOAD_GZIP_BYTES: '9768'
+      PAYLOAD_GZIP_SHA256: '683fffaf7b835f99ed420ed47dc8255c68f44339ac8bf8e2c6ea97f0529f63fa'
+      PAYLOAD_SCRIPT_BYTES: '40383'
+      PAYLOAD_SCRIPT_SHA256: 'e334f28f3ee8c4826e483a501852e26a8ec7540a48ae1205c10948daa21216dc'
+
+    steps:
+      - name: Check out the exact successor controller head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          filter: blob:none
+          persist-credentials: true
+
+      - name: Reconstruct and execute checksum-bound successor controller
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          work="$RUNNER_TEMP/ssc-wave02-final-retirement-v2"
+          mkdir -p "$work"
+          headers=(
+            -H 'Accept: application/vnd.github+json'
+            -H "Authorization: Bearer $GH_TOKEN"
+            -H 'X-GitHub-Api-Version: 2022-11-28'
+          )
+          IFS=',' read -r -a ids <<< "$PAYLOAD_COMMENT_IDS"
+          IFS=',' read -r -a body_hashes <<< "$PAYLOAD_COMMENT_BODY_SHA256S"
+          IFS=',' read -r -a chunk_hashes <<< "$PAYLOAD_CHUNK_SHA256S"
+          IFS=',' read -r -a chunk_sizes <<< "$PAYLOAD_CHUNK_BYTES"
+          [[ "${#ids[@]}" -eq 4 ]]
+          [[ "${#body_hashes[@]}" -eq 4 ]]
+          [[ "${#chunk_hashes[@]}" -eq 4 ]]
+          [[ "${#chunk_sizes[@]}" -eq 4 ]]
+
+          for index in 0 1 2 3; do
+            json="$work/comment-$index.json"
+            body="$work/comment-$index.md"
+            chunk="$work/chunk-$index.b64"
+            curl --fail-with-body --silent --show-error \
+              "${headers[@]}" \
+              "${API_ROOT}/issues/comments/${ids[$index]}" \
+              --output "$json"
+            jq -e \
+              --argjson id "${ids[$index]}" \
+              --arg owner "$OWNER" \
+              '.id == $id and .user.login == $owner and .author_association == "OWNER" and
+               .created_at == .updated_at and
+               (.issue_url | endswith("/issues/2593"))' \
+              "$json" >/dev/null
+            jq -j '.body' "$json" > "$body"
+            [[ "$(sha256sum "$body" | cut -d' ' -f1)" == "${body_hashes[$index]}" ]]
+            python3 - "$body" "$chunk" "$index" "${chunk_sizes[$index]}" "${chunk_hashes[$index]}" <<'PY_PAYLOAD'
+          import hashlib
+          import json
+          import os
+          import pathlib
+          import re
+          import sys
+
+          body_path, chunk_path, index_text, size_text, expected_chunk_hash = sys.argv[1:]
+          index = int(index_text)
+          text = pathlib.Path(body_path).read_text()
+          marker = re.search(
+              r'<!-- SSC_WAVE02_FINAL_REF_RETIREMENT_V2_PAYLOAD_CHUNK (\{.*?\}) -->',
+              text,
+          )
+          if not marker:
+              raise SystemExit('payload marker missing')
+          meta = json.loads(marker.group(1))
+          expected = {
+              'authority_effect': 'none_payload_custody_only',
+              'chunk_bytes': int(size_text),
+              'chunk_count': 4,
+              'chunk_index': index,
+              'chunk_sha256': expected_chunk_hash,
+              'complete_base64_bytes': int(os.environ['PAYLOAD_COMPLETE_BASE64_BYTES']),
+              'complete_base64_sha256': os.environ['PAYLOAD_COMPLETE_BASE64_SHA256'],
+              'gzip_bytes': int(os.environ['PAYLOAD_GZIP_BYTES']),
+              'gzip_sha256': os.environ['PAYLOAD_GZIP_SHA256'],
+              'repository': os.environ['GITHUB_REPOSITORY'],
+              'schema_version': 'ssc-wave02-final-ref-retirement-payload-chunk@2',
+              'script_bytes': int(os.environ['PAYLOAD_SCRIPT_BYTES']),
+              'script_sha256': os.environ['PAYLOAD_SCRIPT_SHA256'],
+          }
+          if meta != expected:
+              raise SystemExit(f'payload metadata mismatch for chunk {index}')
+          block = re.search(r'```text\n(.*?)```\n?\Z', text, re.S)
+          if not block:
+              raise SystemExit('payload code block missing or not terminal')
+          payload = block.group(1).encode()
+          if len(payload) != int(size_text):
+              raise SystemExit(f'payload chunk size mismatch for {index}: {len(payload)}')
+          if hashlib.sha256(payload).hexdigest() != expected_chunk_hash:
+              raise SystemExit(f'payload chunk digest mismatch for {index}')
+          pathlib.Path(chunk_path).write_bytes(payload)
+          PY_PAYLOAD
+          done
+
+          cat "$work"/chunk-{0,1,2,3}.b64 > "$work/controller.sh.gz.b64"
+          [[ "$(wc -c < "$work/controller.sh.gz.b64")" -eq "$PAYLOAD_COMPLETE_BASE64_BYTES" ]]
+          [[ "$(sha256sum "$work/controller.sh.gz.b64" | cut -d' ' -f1)" == "$PAYLOAD_COMPLETE_BASE64_SHA256" ]]
+          base64 --decode "$work/controller.sh.gz.b64" > "$work/controller.sh.gz"
+          [[ "$(wc -c < "$work/controller.sh.gz")" -eq "$PAYLOAD_GZIP_BYTES" ]]
+          [[ "$(sha256sum "$work/controller.sh.gz" | cut -d' ' -f1)" == "$PAYLOAD_GZIP_SHA256" ]]
+          gzip -dc "$work/controller.sh.gz" > "$work/controller.sh"
+          [[ "$(wc -c < "$work/controller.sh")" -eq "$PAYLOAD_SCRIPT_BYTES" ]]
+          [[ "$(sha256sum "$work/controller.sh" | cut -d' ' -f1)" == "$PAYLOAD_SCRIPT_SHA256" ]]
+          bash -n "$work/controller.sh"
+          bash "$work/controller.sh"
+
+
+      - name: Upload checksum-bound final-retirement receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-wave02-final-ref-retirement-v2-${{ github.run_id }}-${{ github.run_attempt }}
+          path: receipt/
+          if-no-files-found: error
+          retention-days: 90
