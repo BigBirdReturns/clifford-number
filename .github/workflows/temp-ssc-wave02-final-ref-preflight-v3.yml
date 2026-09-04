@@ -1,0 +1,138 @@
+name: TEMP SSC Wave-02 final ref preflight v3
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/temp-ssc-wave02-final-ref-preflight-v3.yml'
+      - 'reports/transport/ssc-wave02-final-ref-preflight-v3/**'
+
+permissions:
+  actions: read
+  contents: read
+  issues: read
+  pull-requests: read
+
+concurrency:
+  group: ssc-wave02-final-ref-preflight-v3-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.head_ref == 'agent/ssc-wave02-final-ref-preflight-v3'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+      API_ROOT: https://api.github.com/repos/BigBirdReturns/clifford-number
+      OWNER: BigBirdReturns
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      CONTROLLER_BRANCH: agent/ssc-wave02-final-ref-preflight-v3
+      CONTROLLER_PATH: .github/workflows/temp-ssc-wave02-final-ref-preflight-v3.yml
+      CONTROLLER_CHUNK_DIR: reports/transport/ssc-wave02-final-ref-preflight-v3
+      CONTROLLER_CHUNK_COUNT: '8'
+      EXPECTED_MAIN: 0fc2fa718a8a2a49c22d7923f7cce2ee6ec8aa05
+      EXPECTED_MAIN_TREE: 744308401ec8a0496499169e04297b4fe96d8801
+      AUTHORITY_VENUE_PR: '2593'
+      ARCHIVE_PR: '2593'
+      ARCHIVE_HEAD: bb9649995c1224b8862b940b6dd0655852191ea9
+      ARCHIVE_MERGE: 5bda4c662841eceea9233cd3fe70e27b810a193b
+      ARCHIVE_MANIFEST_PATH: reports/transport/ssc-wave02-exception-custody-archive-v1.json
+      ARCHIVE_MANIFEST_BLOB: 0f1bb2f15b834cf75d33cb7df979666d70a2844c
+      ARCHIVE_MANIFEST_SHA256: 0abe177ec67eca07a3fb392a45baa4dcba52ac95f26b1d4ba4a5306dfac9b28c
+      ARCHIVE_INVENTORY_SHA256: 340650b19ae05e315afd1bd0831d09b083a962fbcf3ad1c5cdc105b5050f11b1
+      ARCHIVE_RELEASE_RUN: '33911568634'
+      ARCHIVE_NO_MAGIC_RUN: '33911568659'
+      V2_PR: '2591'
+      V2_HEAD: 78412ab4fb187138b12f6d64f0e45949c0f8188a
+      V2_RUN: '33910179288'
+      V2_JOB: '101144501691'
+      V2_ARTIFACT: '9951101110'
+      V2_ARTIFACT_SIZE: '10353237'
+      V2_ARTIFACT_SHA256: b9f034c89249497745b98d28f425c19411a3640aa44a101f6456081a97c7fb10
+      FAILED_V1_PR: '2595'
+      FAILED_V1_HEAD: f15ce311a16e6330d342256d07b8acad35784d41
+      FAILED_V1_RUN: '33913785731'
+      FAILED_V1_JOB: '101156141190'
+      FAILED_V1_ARTIFACT: '9952363314'
+      FAILED_V1_ARTIFACT_SIZE: '48972'
+      FAILED_V1_ARTIFACT_SHA256: f428dd3025a6f2649e1409976af224938e26e2f42d7a0144b7c4cfbd178d22d0
+      FAILED_V2_PR: '2598'
+      FAILED_V2_HEAD: 1a0ed1290b7722b9647ee2d3778f76be075f8597
+      FAILED_V2_MAIN_AT_FAILURE: 06ecd1d0e3aecc9910342920a7a78699fc706128
+      FAILED_V2_RUN: '33919278249'
+      FAILED_V2_JOB: '101173605011'
+      FAILED_V2_ARTIFACT: '9954370721'
+      FAILED_V2_ARTIFACT_SIZE: '6838'
+      FAILED_V2_ARTIFACT_SHA256: 24c54f3d11142f38822b43ce75d718a1bbb456e974dd4fb996fc531b3da3b681
+      FUTURE_TARGETS_SHA256: 7bcfa975f2a72ff53d23422bd646bc10d22fa14d9039e3a64dbd2a21e64b9ad6
+      WITNESS_REFS_SHA256: ca2d93817abedc47e8070e74a2f58bc4066f92a0c52b4847eafcd1234f8aadbe
+      LOOKALIKES_SHA256: d97f4af360fdf12d70493b28c6e7c68d14b4a3168ea9626866cc31141aa446fb
+      PAYLOAD_BASE64_BYTES: '12232'
+      PAYLOAD_BASE64_SHA256: 6a554b344d6ec08623a77f563ec0d51c8531ce09604565cf3019c61e95c7e3d8
+      PAYLOAD_GZIP_BYTES: '9173'
+      PAYLOAD_GZIP_SHA256: 45336674f4eb07959ee1164efeab417243702f2bdd9c69508b41bb058f227ad5
+      PAYLOAD_SCRIPT_BYTES: '34961'
+      PAYLOAD_SCRIPT_SHA256: ddee96a7a3d4445484455d6f404530eff0aa7e2f9ba011991945495e3047ab81
+
+    steps:
+      - name: Check out the exact read-only controller head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          filter: blob:none
+          persist-credentials: true
+
+      - name: Reconstruct and execute branch-bound read-only preflight
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf receipt
+          mkdir -p receipt "$RUNNER_TEMP/ssc-wave02-final-ref-preflight-v3"
+          export EXECUTED_SCRIPT_PATH="$RUNNER_TEMP/ssc-wave02-final-ref-preflight-v3/controller.sh"
+          phase=failed
+          stage=loader-initializing
+          loader_exit() {
+            code=$?
+            trap - EXIT
+            set +e
+            printf '%s\n' "$phase" > receipt/phase.txt
+            printf '%s\n' "$stage" > receipt/stage.txt
+            printf '%s\n' "$code" > receipt/exit-code.txt
+            find receipt -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > receipt/SHA256SUMS
+            exit "$code"
+          }
+          trap loader_exit EXIT
+          printf '%s\n' "$phase" > receipt/phase.txt
+          printf '%s\n' "$stage" > receipt/stage.txt
+
+          [[ "$(git rev-parse HEAD)" == "$EVENT_HEAD_SHA" ]]
+          mapfile -t chunks < <(find "$CONTROLLER_CHUNK_DIR" -maxdepth 1 -type f -name 'chunk-*.b64' -print | sort)
+          [[ "${#chunks[@]}" -eq "$CONTROLLER_CHUNK_COUNT" ]]
+          cat "${chunks[@]}" > "$RUNNER_TEMP/ssc-wave02-final-ref-preflight-v3/controller.sh.gz.b64"
+          stream="$RUNNER_TEMP/ssc-wave02-final-ref-preflight-v3/controller.sh.gz.b64"
+          [[ "$(wc -c < "$stream")" -eq "$PAYLOAD_BASE64_BYTES" ]]
+          [[ "$(sha256sum "$stream" | cut -d' ' -f1)" == "$PAYLOAD_BASE64_SHA256" ]]
+          base64 --decode "$stream" > "$RUNNER_TEMP/ssc-wave02-final-ref-preflight-v3/controller.sh.gz"
+          compressed="$RUNNER_TEMP/ssc-wave02-final-ref-preflight-v3/controller.sh.gz"
+          [[ "$(wc -c < "$compressed")" -eq "$PAYLOAD_GZIP_BYTES" ]]
+          [[ "$(sha256sum "$compressed" | cut -d' ' -f1)" == "$PAYLOAD_GZIP_SHA256" ]]
+          gzip -dc "$compressed" > "$EXECUTED_SCRIPT_PATH"
+          [[ "$(wc -c < "$EXECUTED_SCRIPT_PATH")" -eq "$PAYLOAD_SCRIPT_BYTES" ]]
+          [[ "$(sha256sum "$EXECUTED_SCRIPT_PATH" | cut -d' ' -f1)" == "$PAYLOAD_SCRIPT_SHA256" ]]
+          bash -n "$EXECUTED_SCRIPT_PATH"
+          trap - EXIT
+          bash "$EXECUTED_SCRIPT_PATH"
+
+      - name: Upload checksum-bound preflight receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-wave02-final-ref-preflight-v3-${{ github.run_id }}-${{ github.run_attempt }}
+          path: receipt/
+          if-no-files-found: error
+          retention-days: 90
