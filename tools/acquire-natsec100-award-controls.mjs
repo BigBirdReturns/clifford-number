@@ -3,6 +3,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { evaluateGenericCrossing } from './lib/generic-crossing.mjs';
+import { diagnoseAwardSearch } from './lib/award-search-evidence.mjs';
 
 const root = process.cwd();
 const outputDir = path.resolve(root, 'build/source-acquisition/natsec100-award-controls');
@@ -43,14 +44,11 @@ for (const lead of leads) {
     fy2025_period_overlap: overlapsFy25(row), graph_effect: 'none',
   }));
   allRows.push(...rows);
-  const exactAmountRows = rows.filter(row => Number(row.award_amount) === lead.reported_amount);
-  const programTokens = normalize(lead.reported_program).split(' ').filter(token => token.length >= 5);
-  const descriptionRows = rows.filter(row => programTokens.some(token => normalize(row.description).includes(token)));
+  const summaryDiagnostics = diagnoseAwardSearch(rows, lead);
   queryRuns.push({
     ...lead, request_body: body, response_sha256: sha256(responseText), response_bytes: Buffer.byteLength(responseText),
     result_rows: rows.length, distinct_recipient_ueis: [...new Set(rows.map(row => row.recipient_uei).filter(Boolean))].sort(),
-    exact_reported_amount_rows: exactAmountRows.length, program_token_match_rows: descriptionRows.length,
-    trade_summary_exactly_verified: exactAmountRows.length > 0 && descriptionRows.length > 0,
+    ...summaryDiagnostics,
   });
   fs.writeFileSync(path.join(outputDir, `${lead.company_id}.response.json`), responseText);
 }
