@@ -23,6 +23,14 @@ NO_MAGIC_RUN_ID=''
 MERGE_SHA=''
 MERGED='false'
 REMOTE_CLEANUP='not_needed'
+PUBLISHED_CANDIDATE='false'
+PRESERVE_CANDIDATE='false'
+NATIVE_ADMISSION='not_observed'
+NATIVE_ADMISSION_ATTEMPTS=0
+NATIVE_ADMISSION_POLLS="${NATIVE_ADMISSION_POLLS:-120}"
+NATIVE_ADMISSION_POLL_SECONDS="${NATIVE_ADMISSION_POLL_SECONDS:-15}"
+[[ "$NATIVE_ADMISSION_POLLS" =~ ^[1-9][0-9]*$ ]]
+[[ "$NATIVE_ADMISSION_POLL_SECONDS" =~ ^[1-9][0-9]*$ ]]
 
 case "$PROMOTION_KIND" in
   industrial-exhaust)
@@ -80,6 +88,10 @@ write_checkpoint() {
     printf 'merged=%s\n' "$MERGED"
     printf 'merge_sha=%s\n' "$MERGE_SHA"
     printf 'remote_cleanup=%s\n' "$REMOTE_CLEANUP"
+    printf 'native_admission=%s\n' "$NATIVE_ADMISSION"
+    printf 'native_admission_attempts=%s\n' "$NATIVE_ADMISSION_ATTEMPTS"
+    printf 'native_admission_poll_limit=%s\n' "$NATIVE_ADMISSION_POLLS"
+    printf 'candidate_preserved=%s\n' "$PRESERVE_CANDIDATE"
     printf 'time_utc=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   } > "$RECEIPT_DIR/checkpoint.txt"
 }
@@ -98,12 +110,13 @@ safe_remote_cleanup() {
     fi
   fi
 
-  if [[ -n "$CANDIDATE_SHA" && -n "$CANDIDATE_BRANCH" ]]; then
+  if [[ "$PUBLISHED_CANDIDATE" == 'true' && -n "$CANDIDATE_SHA" && -n "$CANDIDATE_BRANCH" ]]; then
     local remote_candidate
     remote_candidate="$(gh api "repos/$REPO/git/ref/heads/$CANDIDATE_BRANCH" --jq .object.sha 2>/dev/null || true)"
     if [[ "$remote_candidate" == "$CANDIDATE_SHA" ]]; then
-      gh api --method DELETE "repos/$REPO/git/refs/heads/$CANDIDATE_BRANCH" \
-        > "$RECEIPT_DIR/cleanup-branch.json" 2> "$RECEIPT_DIR/cleanup-branch.stderr" \
+      git push --force-with-lease="refs/heads/$CANDIDATE_BRANCH:$CANDIDATE_SHA" \
+        origin ":refs/heads/$CANDIDATE_BRANCH" \
+        > "$RECEIPT_DIR/cleanup-branch.txt" 2> "$RECEIPT_DIR/cleanup-branch.stderr" \
         || cleanup_errors=$((cleanup_errors + 1))
     elif [[ -n "$remote_candidate" ]]; then
       printf 'candidate ref moved: expected %s observed %s\n' \
@@ -123,7 +136,11 @@ finish() {
   local rc=$?
   trap - EXIT
   if [[ "$rc" -ne 0 ]]; then
-    safe_remote_cleanup || true
+    if [[ "$PRESERVE_CANDIDATE" == 'true' ]]; then
+      REMOTE_CLEANUP='preserved_pending_native_admission'
+    else
+      safe_remote_cleanup || true
+    fi
   fi
   write_checkpoint "$rc"
   exit "$rc"
@@ -155,13 +172,13 @@ assert_paths_allowed() {
 
 collect_worktree_paths() {
   {
-    git diff --name-only -z HEAD --
+    git diff --no-renames --name-only -z HEAD --
     git ls-files --others --exclude-standard -z
   } | sort -zu
 }
 
 collect_commit_paths() {
-  git diff-tree --no-commit-id --name-only -r -z "$1" | sort -zu
+  git diff-tree --no-commit-id --no-renames --name-only -r -z "$1" | sort -zu
 }
 
 wait_for_dispatched_run() {
@@ -220,13 +237,19 @@ wait_for_run_success() {
 assert_check_success() {
   local check_name="$1"
   local checks_file="$2"
-  local payload
+  local run_id="$3"
+  local run_payload suite_id payload
 
+  run_payload="$(gh api "repos/$REPO/actions/runs/$run_id")"
+  jq -e --arg sha "$CANDIDATE_SHA" --arg branch "$CANDIDATE_BRANCH" \
+    '.head_sha == $sha and .head_branch == $branch and .event == "workflow_dispatch" and .status == "completed" and .conclusion == "success"' \
+    <<< "$run_payload" >/dev/null
+  suite_id="$(jq -er .check_suite_id <<< "$run_payload")"
   payload="$(gh api -H 'Accept: application/vnd.github+json' \
     "repos/$REPO/commits/$CANDIDATE_SHA/check-runs?per_page=100")"
   printf '%s\n' "$payload" > "$checks_file"
-  jq -e --arg name "$check_name" --arg sha "$CANDIDATE_SHA" \
-    '[.check_runs[] | select(.name == $name and .head_sha == $sha and .status == "completed" and .conclusion == "success")] | length >= 1' \
+  jq -e --arg name "$check_name" --arg sha "$CANDIDATE_SHA" --argjson suite "$suite_id" \
+    '[.check_runs[] | select(.name == $name and .head_sha == $sha and .app.id == 15368 and .check_suite.id == $suite and .status == "completed" and .conclusion == "success")] | length == 1' \
     <<< "$payload" >/dev/null
 }
 
@@ -270,6 +293,20 @@ assert_paths_allowed 'candidate commit' "${COMMIT_PATHS[@]}"
 printf 'candidate_sha=%s\ncandidate_tree=%s\n' \
   "$CANDIDATE_SHA" "$(git rev-parse "$CANDIDATE_SHA^{tree}")" > "$RECEIPT_DIR/candidate.txt"
 
+STAGE='refuse-duplicate-pending-candidate'
+# Retain this local acquisition in the recovery bundle without publishing a
+# second crawler PR while an existing candidate still requires disposition.
+gh api --paginate --slurp "repos/$REPO/pulls?state=open&base=main&per_page=100" \
+  > "$RECEIPT_DIR/open-pull-requests.json"
+OPEN_CRAWLER_COUNT="$(jq -er --arg repo "$REPO" \
+  '[.[][] | select(.state == "open" and .base.ref == "main" and .head.repo.full_name == $repo and (.head.ref | test("^automation-crawl-(industrial-exhaust|official-record)-run-[0-9]+-[0-9]+$")))] | length' \
+  "$RECEIPT_DIR/open-pull-requests.json")"
+if [[ "$OPEN_CRAWLER_COUNT" -gt 0 ]]; then
+  OUTCOME='blocked_by_open_crawler_candidate'
+  echo 'An open scheduled crawler candidate requires disposition before another PR can be published.' >&2
+  exit 1
+fi
+
 STAGE='publish-run-scoped-candidate'
 git fetch --no-tags origin main
 test "$(git rev-parse origin/main)" = "$BASE_SHA"
@@ -279,6 +316,7 @@ if gh api "repos/$REPO/git/ref/heads/$CANDIDATE_BRANCH" \
   exit 1
 fi
 git push origin "$CANDIDATE_SHA:refs/heads/$CANDIDATE_BRANCH"
+PUBLISHED_CANDIDATE='true'
 test "$(gh api "repos/$REPO/git/ref/heads/$CANDIDATE_BRANCH" --jq .object.sha)" = "$CANDIDATE_SHA"
 
 STAGE='open-ordinary-pull-request'
@@ -309,8 +347,8 @@ printf 'release_run_id=%s\nno_magic_run_id=%s\n' \
 STAGE='qualify-exact-candidate'
 wait_for_run_success "$RELEASE_RUN_ID" 'Release checks' "$RECEIPT_DIR/release-run-final.json"
 wait_for_run_success "$NO_MAGIC_RUN_ID" 'No magic human gate' "$RECEIPT_DIR/no-magic-run-final.json"
-assert_check_success 'release-check' "$RECEIPT_DIR/release-check-runs.json"
-assert_check_success 'no-magic-human-gate' "$RECEIPT_DIR/no-magic-check-runs.json"
+assert_check_success 'release-check' "$RECEIPT_DIR/release-check-runs.json" "$RELEASE_RUN_ID"
+assert_check_success 'no-magic-human-gate' "$RECEIPT_DIR/no-magic-check-runs.json" "$NO_MAGIC_RUN_ID"
 
 STAGE='revalidate-lease-and-remote-denominator'
 test "$(gh api "repos/$REPO/git/ref/heads/main" --jq .object.sha)" = "$BASE_SHA"
@@ -322,10 +360,58 @@ test "$(jq -r .base.sha "$RECEIPT_DIR/pull-request-premerge.json")" = "$BASE_SHA
 gh api "repos/$REPO/compare/$BASE_SHA...$CANDIDATE_SHA" > "$RECEIPT_DIR/compare-premerge.json"
 jq -e '.status == "ahead" and .ahead_by == 1 and .behind_by == 0 and .total_commits == 1' \
   "$RECEIPT_DIR/compare-premerge.json" >/dev/null
-mapfile -t REMOTE_PATHS < <(jq -r '.files[].filename' "$RECEIPT_DIR/compare-premerge.json" | sort -u)
+mapfile -t REMOTE_PATHS < <(jq -r '.files[] | .filename, (.previous_filename // empty)' "$RECEIPT_DIR/compare-premerge.json" | sort -u)
 printf '%s\n' "${REMOTE_PATHS[@]}" > "$RECEIPT_DIR/remote-paths.txt"
 test "${#REMOTE_PATHS[@]}" -gt 0
 assert_paths_allowed 'remote comparison' "${REMOTE_PATHS[@]}"
+
+STAGE='inspect-native-pr-admission'
+# Dispatch success cannot substitute for an approval-gated PR workflow. Keep
+# the originating job alive for a bounded approval window, then preserve the
+# exact PR and branch for the separate resumption workflow if approval is late.
+PRESERVE_CANDIDATE='true'
+OUTCOME='awaiting_native_pr_admission'
+: > "$RECEIPT_DIR/native-admission-timeline.jsonl"
+for ((attempt = 1; attempt <= NATIVE_ADMISSION_POLLS; attempt++)); do
+  NATIVE_ADMISSION_ATTEMPTS="$attempt"
+  node .github/scripts/inspect-scheduled-crawl-admission.mjs \
+    "$REPO" "$PR_NUMBER" "$BASE_SHA" "$CANDIDATE_SHA" "$CANDIDATE_BRANCH" \
+    > "$RECEIPT_DIR/native-admission.json"
+  NATIVE_ADMISSION="$(jq -er .decision "$RECEIPT_DIR/native-admission.json")"
+  jq -c --argjson poll "$attempt" --arg observed_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+    '. + {poll: $poll, observed_at: $observed_at}' "$RECEIPT_DIR/native-admission.json" \
+    >> "$RECEIPT_DIR/native-admission-timeline.jsonl"
+  case "$NATIVE_ADMISSION" in
+    ready)
+      OUTCOME='native_admission_ready'
+      break
+      ;;
+    failed)
+      PRESERVE_CANDIDATE='false'
+      OUTCOME='failed_closed'
+      exit 1
+      ;;
+    pending|awaiting_approval)
+      if [[ "$attempt" -eq "$NATIVE_ADMISSION_POLLS" ]]; then
+        echo "Native PR admission remained $NATIVE_ADMISSION after $attempt bounded observations; preserving PR $PR_NUMBER." >&2
+        exit 1
+      fi
+      sleep "$NATIVE_ADMISSION_POLL_SECONDS"
+      ;;
+    *)
+      echo "Native PR admission is $NATIVE_ADMISSION; preserving PR $PR_NUMBER for adjudication." >&2
+      exit 1
+      ;;
+  esac
+done
+
+# Native inspection takes time. Re-read mutable leases before the merge call.
+test "$(gh api "repos/$REPO/git/ref/heads/main" --jq .object.sha)" = "$BASE_SHA"
+test "$(gh api "repos/$REPO/git/ref/heads/$CANDIDATE_BRANCH" --jq .object.sha)" = "$CANDIDATE_SHA"
+gh api "repos/$REPO/pulls/$PR_NUMBER" > "$RECEIPT_DIR/pull-request-admission-final.json"
+jq -e --arg head "$CANDIDATE_SHA" --arg base "$BASE_SHA" \
+  '.state == "open" and .draft == false and .merged == false and .head.sha == $head and .base.sha == $base' \
+  "$RECEIPT_DIR/pull-request-admission-final.json" >/dev/null
 
 STAGE='merge-qualified-pull-request'
 MERGE_PAYLOAD="$(jq -n \
@@ -339,9 +425,12 @@ test "$(jq -r .merged "$RECEIPT_DIR/merge.json")" = 'true'
 MERGE_SHA="$(jq -r .sha "$RECEIPT_DIR/merge.json")"
 test "$MERGE_SHA" != 'null'
 MERGED='true'
+PRESERVE_CANDIDATE='false'
 
 STAGE='verify-merge-topology'
 gh api "repos/$REPO/git/commits/$MERGE_SHA" > "$RECEIPT_DIR/merge-commit.json"
+jq -e '.parents | length == 2' "$RECEIPT_DIR/merge-commit.json" >/dev/null
+test "$(jq -r .tree.sha "$RECEIPT_DIR/merge-commit.json")" = "$(git rev-parse "$CANDIDATE_SHA^{tree}")"
 test "$(jq -r '.parents[0].sha' "$RECEIPT_DIR/merge-commit.json")" = "$BASE_SHA"
 test "$(jq -r '.parents[1].sha' "$RECEIPT_DIR/merge-commit.json")" = "$CANDIDATE_SHA"
 git fetch --no-tags origin main
@@ -349,8 +438,8 @@ git merge-base --is-ancestor "$MERGE_SHA" origin/main
 
 STAGE='retire-run-scoped-candidate'
 test "$(gh api "repos/$REPO/git/ref/heads/$CANDIDATE_BRANCH" --jq .object.sha)" = "$CANDIDATE_SHA"
-gh api --method DELETE "repos/$REPO/git/refs/heads/$CANDIDATE_BRANCH" \
-  > "$RECEIPT_DIR/delete-candidate.json"
+git push --force-with-lease="refs/heads/$CANDIDATE_BRANCH:$CANDIDATE_SHA" \
+  origin ":refs/heads/$CANDIDATE_BRANCH" > "$RECEIPT_DIR/delete-candidate.txt"
 REMOTE_CLEANUP='complete'
 OUTCOME='complete'
 STAGE='complete'

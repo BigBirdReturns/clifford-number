@@ -71,6 +71,8 @@ export function validateScheduledCrawlPromotion(files) {
   requireMatch(errors, files.noMagic, /jobs:\n  no-magic-human-gate:\n/, 'No magic human gate must publish a unique stable check name');
   requireAbsent(errors, files.noMagic, /jobs:\n  validate:\n/, 'No magic human gate must not reuse the generic validate check name');
   requireMatch(errors, files.release, /Run scheduled crawler promotion contract tests\n        run: node test\/scheduled-crawl-promotion\.test\.js/, 'Release checks must execute the scheduled promotion contract test');
+  requireMatch(errors, files.release, /Run scheduled crawler admission observation tests\n        run: node test\/scheduled-crawl-admission\.test\.js/, 'Release checks must execute native-admission observation tests');
+  requireMatch(errors, files.release, /Run scheduled crawler resumption tests\n        run: node test\/scheduled-crawl-resumption\.test\.js/, 'Release checks must execute protected resumption tests');
 
   const helper = files.helper;
   requireMatch(errors, helper, /^#!\/usr\/bin\/env bash\nset -Eeuo pipefail\n/, 'promotion helper must use strict Bash error handling');
@@ -81,6 +83,9 @@ export function validateScheduledCrawlPromotion(files) {
   const mainLeaseAssertions = helper.match(/test "\$\(git rev-parse origin\/main\)" = "\$BASE_SHA"/g) || [];
   if (mainLeaseAssertions.length < 2) errors.push('promotion must refuse a moved main before candidate construction and again before publication');
   requireMatch(errors, helper, /test "\$\(git rev-parse "\$CANDIDATE_SHA\^"\)" = "\$BASE_SHA"/, 'candidate must be one direct child of the leased base');
+  requireMatch(errors, helper, /git diff --no-renames --name-only -z HEAD --/, 'worktree path census must expand renames into both paths');
+  requireMatch(errors, helper, /git diff-tree --no-commit-id --no-renames --name-only -r -z/, 'commit path census must expand renames into both paths');
+  requireMatch(errors, helper, /previous_filename \/\/ empty/, 'remote comparison must include a renamed source path');
   requireMatch(errors, helper, /git push origin "\$CANDIDATE_SHA:refs\/heads\/\$CANDIDATE_BRANCH"/, 'promotion may publish only the run-scoped candidate branch');
   requireAbsent(errors, helper, /git push[^\n]*(?:refs\/heads\/main|\s+main(?=\s|$)|:main(?=\s|$))/, 'promotion helper must never push main');
   requireMatch(errors, helper, /repos\/\$REPO\/pulls" --input/, 'promotion must open an ordinary pull request');
@@ -88,6 +93,17 @@ export function validateScheduledCrawlPromotion(files) {
   requireMatch(errors, helper, /actions\/workflows\/no-magic-human-gate\.yml\/dispatches/, 'promotion must dispatch No magic human gate explicitly');
   requireMatch(errors, helper, /assert_check_success 'release-check'/, 'promotion must bind the stable Release checks context');
   requireMatch(errors, helper, /assert_check_success 'no-magic-human-gate'/, 'promotion must bind the stable No magic human gate context');
+  requireMatch(errors, helper, /\.app\.id == 15368 and \.check_suite\.id == \$suite/, 'dispatched checks must bind the GitHub Actions app and exact suite');
+  requireMatch(errors, helper, /if \[\[ "\$OPEN_CRAWLER_COUNT" -gt 0 \]\]; then[\s\S]*blocked_by_open_crawler_candidate/, 'promotion must refuse a second open crawler candidate');
+  requireMatch(errors, helper, /PRESERVE_CANDIDATE='true'[\s\S]*OUTCOME='awaiting_native_pr_admission'/, 'promotion must preserve a candidate while native admission is unresolved');
+  requireMatch(errors, helper, /NATIVE_ADMISSION_POLLS="\$\{NATIVE_ADMISSION_POLLS:-120\}"/, 'native admission must use a bounded default polling window');
+  requireMatch(errors, helper, /for \(\(attempt = 1; attempt <= NATIVE_ADMISSION_POLLS; attempt\+\+\)\)/, 'native admission must poll within the bounded window');
+  requireMatch(errors, helper, /native-admission-timeline\.jsonl/, 'native admission must retain every polling observation');
+  requireMatch(errors, helper, /pending\|awaiting_approval\)/, 'pending and approval-required states must remain non-mergeable');
+  requireMatch(errors, helper, /node \.github\/scripts\/inspect-scheduled-crawl-admission\.mjs/, 'promotion must inspect native PR admission before merge');
+  requireMatch(errors, helper, /preserved_pending_native_admission/, 'failure cleanup must retain an approval-pending candidate');
+  requireMatch(errors, helper, /ready\)[\s\S]*OUTCOME='native_admission_ready'[\s\S]*break/, 'native readiness must retain the candidate until merge admission');
+  requireOrdered(errors, helper, ["MERGED='true'", "PRESERVE_CANDIDATE='false'", "STAGE='verify-merge-topology'"], 'candidate preservation may clear only after the exact merge is admitted');
   requireMatch(errors, helper, /\.status == "ahead" and \.ahead_by == 1 and \.behind_by == 0 and \.total_commits == 1/, 'remote comparison must remain exactly one commit ahead and zero behind');
   const mergePayloadStart = helper.indexOf('MERGE_PAYLOAD=');
   const mergeCallStart = helper.indexOf('gh api --method PUT "repos/$REPO/pulls/$PR_NUMBER/merge"', mergePayloadStart);
@@ -96,6 +112,8 @@ export function validateScheduledCrawlPromotion(files) {
     : '';
   requireMatch(errors, mergeSection, /--arg sha "\$CANDIDATE_SHA"[\s\S]*sha: \$sha, merge_method: "merge"/, 'merge request must be leased to the exact candidate SHA');
   requireMatch(errors, helper, /test "\$\(jq -r '\.parents\[0\]\.sha'[^\n]*\)" = "\$BASE_SHA"[\s\S]*test "\$\(jq -r '\.parents\[1\]\.sha'[^\n]*\)" = "\$CANDIDATE_SHA"/, 'post-merge receipt must authenticate both merge parents');
+  requireMatch(errors, helper, /jq -e '\.parents \| length == 2'/, 'post-merge receipt must require exactly two parents');
+  requireMatch(errors, helper, /\.tree\.sha[^\n]*CANDIDATE_SHA\^\{tree\}/, 'post-merge receipt must preserve the candidate tree');
   requireMatch(errors, helper, /remote_candidate" == "\$CANDIDATE_SHA"/, 'cleanup may delete a candidate ref only while it retains the leased SHA');
   requireMatch(errors, helper, /cleanup-branch-refused\.txt/, 'cleanup must record and refuse a moved candidate ref');
   requireAbsent(errors, helper, /branches\/main\/protection|repos\/\$REPO\/rulesets/, 'scheduled promotion must not mutate branch policy');
@@ -104,8 +122,9 @@ export function validateScheduledCrawlPromotion(files) {
     "STAGE='dispatch-required-checks'",
     "STAGE='qualify-exact-candidate'",
     "STAGE='revalidate-lease-and-remote-denominator'",
+    "STAGE='inspect-native-pr-admission'",
     "STAGE='merge-qualified-pull-request'"
-  ], 'required checks, lease revalidation, and merge must occur in that order');
+  ], 'dispatched checks, native PR admission, lease revalidation, and merge must occur in order');
 
   const recovery = files.recovery;
   requireMatch(errors, recovery, /^#!\/usr\/bin\/env bash\nset -Eeuo pipefail\n/, 'candidate recovery custodian must use strict Bash error handling');
@@ -131,6 +150,8 @@ assert.deepEqual(validateScheduledCrawlPromotion(canonical), [], 'canonical sche
 const mutations = [
   ['restore generic no-magic check name', (c) => { c.noMagic = c.noMagic.replace('  no-magic-human-gate:', '  validate:'); }],
   ['remove the release-gate contract test', (c) => { c.release = c.release.replace('      - name: Run scheduled crawler promotion contract tests\n        run: node test/scheduled-crawl-promotion.test.js\n', ''); }],
+  ['remove native-admission tests from release', (c) => { c.release = c.release.replace('      - name: Run scheduled crawler admission observation tests\n        run: node test/scheduled-crawl-admission.test.js\n', ''); }],
+  ['remove resumption tests from release', (c) => { c.release = c.release.replace('      - name: Run scheduled crawler resumption tests\n        run: node test/scheduled-crawl-resumption.test.js\n', ''); }],
   ['reintroduce a direct workflow push', (c) => { c.official += '\n      - run: git push origin main\n'; }],
   ['remove actions dispatch authority', (c) => { c.industrial = c.industrial.replace('      actions: write\n', ''); }],
   ['remove pull-request authority', (c) => { c.official = c.official.replace('      pull-requests: write\n', ''); }],
@@ -142,12 +163,24 @@ const mutations = [
   ['remove exact-main lease refusal', (c) => { c.helper = c.helper.replaceAll('test "$(git rev-parse origin/main)" = "$BASE_SHA"', 'true # main lease removed'); }],
   ['skip No magic workflow dispatch', (c) => { c.helper = c.helper.replace('gh api --method POST "repos/$REPO/actions/workflows/no-magic-human-gate.yml/dispatches"', 'echo skipped-no-magic'); }],
   ['bind a generic no-magic check', (c) => { c.helper = c.helper.replace("assert_check_success 'no-magic-human-gate'", "assert_check_success 'validate'"); }],
+  ['drop dispatched-check app binding', (c) => { c.helper = c.helper.replace('.app.id == 15368 and .check_suite.id == $suite and ', ''); }],
+  ['drop duplicate pending-candidate refusal', (c) => { c.helper = c.helper.replace("if [[ \"$OPEN_CRAWLER_COUNT\" -gt 0 ]]; then", 'if false; then'); }],
+  ['drop native-admission inspection', (c) => { c.helper = c.helper.replace('node .github/scripts/inspect-scheduled-crawl-admission.mjs', 'node -e true'); }],
+  ['drop pending-candidate preservation', (c) => { c.helper = c.helper.replace("PRESERVE_CANDIDATE='true'", "PRESERVE_CANDIDATE='false'"); }],
+  ['remove bounded native polling', (c) => { c.helper = c.helper.replace('NATIVE_ADMISSION_POLLS="${NATIVE_ADMISSION_POLLS:-120}"', 'NATIVE_ADMISSION_POLLS=unbounded'); }],
+  ['drop native-admission timeline', (c) => { c.helper = c.helper.replaceAll('native-admission-timeline.jsonl', 'discarded-native-admission'); }],
+  ['clear preservation before merge admission', (c) => { c.helper = c.helper.replace("MERGED='true'\nPRESERVE_CANDIDATE='false'", "PRESERVE_CANDIDATE='false'\nMERGED='true'"); }],
+  ['allow worktree rename collapse', (c) => { c.helper = c.helper.replace('git diff --no-renames --name-only -z HEAD --', 'git diff --name-only -z HEAD --'); }],
+  ['allow commit rename collapse', (c) => { c.helper = c.helper.replace('git diff-tree --no-commit-id --no-renames --name-only -r -z', 'git diff-tree --no-commit-id --name-only -r -z'); }],
+  ['omit remote renamed source path', (c) => { c.helper = c.helper.replace(".filename, (.previous_filename // empty)", '.filename'); }],
   ['weaken remote one-commit topology', (c) => { c.helper = c.helper.replace('and .ahead_by == 1 and .behind_by == 0 and .total_commits == 1', 'and .ahead_by >= 1'); }],
   ['merge against the base instead of candidate', (c) => {
     const marker = 'MERGE_PAYLOAD=';
     const start = c.helper.indexOf(marker);
     c.helper = c.helper.slice(0, start) + c.helper.slice(start).replace('--arg sha "$CANDIDATE_SHA"', '--arg sha "$BASE_SHA"');
   }],
+  ['drop exact two-parent merge proof', (c) => { c.helper = c.helper.replace("jq -e '.parents | length == 2'", 'true # parent count removed'); }],
+  ['drop candidate-tree merge proof', (c) => { c.helper = c.helper.replace('test "$(jq -r .tree.sha "$RECEIPT_DIR/merge-commit.json")" = "$(git rev-parse "$CANDIDATE_SHA^{tree}")"', 'true # tree proof removed'); }],
   ['delete a moved candidate ref', (c) => { c.helper = c.helper.replace('if [[ "$remote_candidate" == "$CANDIDATE_SHA" ]]; then', 'if [[ -n "$remote_candidate" ]]; then'); }],
   ['let scheduled promotion mutate policy', (c) => { c.helper += '\ngh api --method PUT "repos/$REPO/branches/main/protection"\n'; }],
   ['merge before exact check qualification', (c) => {
@@ -175,6 +208,31 @@ for (const [label, mutate] of mutations) {
 
 function git(cwd, args) {
   return execFileSync('git', args, { cwd, encoding: 'utf8' }).trim();
+}
+
+function gitPaths(cwd, args) {
+  return execFileSync('git', args, { cwd }).toString('utf8').split('\0').filter(Boolean).sort();
+}
+
+function verifyRenamePathExpansionFixture() {
+  const root = mkdtempSync(join(tmpdir(), 'scheduled-crawl-rename-'));
+  try {
+    mkdirSync(join(root, 'data', 'crawl'), { recursive: true });
+    git(root, ['init', '-q']);
+    git(root, ['config', 'user.name', 'scheduled-crawl-test']);
+    git(root, ['config', 'user.email', 'scheduled-crawl-test@example.invalid']);
+    writeFileSync(join(root, 'graph.json'), '{}\n');
+    git(root, ['add', 'graph.json']);
+    git(root, ['commit', '-q', '-m', 'base']);
+    git(root, ['mv', 'graph.json', 'data/crawl/state.json']);
+    assert.deepEqual(gitPaths(root, ['diff', '--no-renames', '--name-only', '-z', 'HEAD', '--']),
+      ['data/crawl/state.json', 'graph.json']);
+    git(root, ['commit', '-q', '-am', 'rename']);
+    assert.deepEqual(gitPaths(root, ['diff-tree', '--no-commit-id', '--no-renames', '--name-only', '-r', '-z', 'HEAD']),
+      ['data/crawl/state.json', 'graph.json']);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
 }
 
 function verifyRecoveryBundleFixture() {
@@ -235,5 +293,6 @@ function verifyRecoveryBundleFixture() {
   }
 }
 
+verifyRenamePathExpansionFixture();
 verifyRecoveryBundleFixture();
-console.log(`scheduled-crawl-promotion.test: ${mutations.length} adversarial mutations and recovery bundle fixture PASS`);
+console.log(`scheduled-crawl-promotion.test: ${mutations.length} adversarial mutations, rename-expansion and recovery bundle fixtures PASS`);

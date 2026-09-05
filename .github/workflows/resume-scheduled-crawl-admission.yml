@@ -1,0 +1,100 @@
+name: Resume scheduled crawl admission
+
+on:
+  workflow_run:
+    workflows:
+      - Release checks
+      - No magic human gate
+    types:
+      - completed
+
+permissions:
+  contents: read
+
+concurrency:
+  group: scheduled-crawl-main-promotion
+  cancel-in-progress: false
+
+jobs:
+  resume:
+    outputs:
+      outcome: ${{ steps.receipt.outputs.outcome }}
+      promotion_kind: ${{ steps.receipt.outputs.promotion_kind }}
+      merge_sha: ${{ steps.receipt.outputs.merge_sha }}
+    if: >-
+      github.event.workflow_run.event == 'pull_request' &&
+      (startsWith(github.event.workflow_run.head_branch, 'automation-crawl-official-record-run-') ||
+       startsWith(github.event.workflow_run.head_branch, 'automation-crawl-industrial-exhaust-run-'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      actions: read
+      checks: read
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Inspect and resume exact crawler admission
+        id: resume
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node .github/scripts/resume-scheduled-crawl-admission.mjs
+      - name: Classify resumption receipt
+        id: receipt
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          result="${{ runner.temp }}/scheduled-crawl-resumption-receipt/result.json"
+          test -s "$result"
+          printf 'outcome=%s\n' "$(jq -er .outcome "$result")" >> "$GITHUB_OUTPUT"
+          printf 'promotion_kind=%s\n' "$(jq -r '.promotion_kind // ""' "$result")" >> "$GITHUB_OUTPUT"
+          printf 'merge_sha=%s\n' "$(jq -r '.merge_sha // ""' "$result")" >> "$GITHUB_OUTPUT"
+      - name: Retain resumption receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scheduled-crawl-resumption-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/scheduled-crawl-resumption-receipt
+          if-no-files-found: error
+          retention-days: 30
+      - name: Enforce resumption result
+        if: always()
+        env:
+          RESUME_STEP_OUTCOME: ${{ steps.resume.outcome }}
+        run: test "$RESUME_STEP_OUTCOME" = success
+
+  dispatch-official-fanout:
+    needs: resume
+    if: >-
+      needs.resume.outputs.outcome == 'merged' &&
+      needs.resume.outputs.promotion_kind == 'official-record'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: write
+      contents: read
+    steps:
+      - name: Dispatch research fan-out from admitted main
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ADMITTED_MERGE: ${{ needs.resume.outputs.merge_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$ADMITTED_MERGE" =~ ^[a-f0-9]{40}$ ]]
+          current="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq .object.sha)"
+          if [[ "$current" != "$ADMITTED_MERGE" ]]; then
+            gh api "repos/$GITHUB_REPOSITORY/compare/$ADMITTED_MERGE...$current" \
+              --jq 'select(.status == "ahead" or .status == "identical")' > /dev/null
+          fi
+          gh api --method POST \
+            "repos/$GITHUB_REPOSITORY/actions/workflows/research-fanout.yml/dispatches" \
+            -f ref=main
