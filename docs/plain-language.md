@@ -34,6 +34,12 @@ profile is shown as unfinished, never papered over.
 Discipline: if the `who` sentence cannot be written from receipts already in
 the ledger, the actor probably is not ready to be canonical.
 
+The narration test resolves every `plain.receipt_ids` entry and walks the
+compiled hop graph from its declared anchor. The anchor and every actor at
+Clifford Number 1 or 2 must carry both editorial sentences, so adding a new
+anchor-adjacent actor without a receipt-backed profile fails the release test
+rather than silently restoring a mechanical introduction.
+
 ## Usage
 
 ```bash
