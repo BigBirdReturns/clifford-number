@@ -8,9 +8,9 @@
 // --as-of accepts a year, month, or day and means "at any point during that
 // period". Time-sliced paths traverse only fully dated hop bases whose
 // overlap window intersects the period.
-// --from/--to also accept a provisional AXM entity id (e_… from
-// build/axm-identity.json, canonical or alias-derived), resolved to the
-// local actor id before traversal.
+// --from/--to also accept reconciled e1_ identifiers and unique historical
+// e_ case-local tokens from build/axm-identity.json. They resolve to the
+// local actor id before traversal without changing graph admission.
 import { readJson } from './lib/ledger.mjs';
 import { buildAdjacency, shortestPath } from './lib/hops.mjs';
 import { formatWindow } from './lib/temporal.mjs';

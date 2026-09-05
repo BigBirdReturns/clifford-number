@@ -1,36 +1,19 @@
-// Temporal identity layer — provisional AXM integration.
-//
-// Builds a content-addressed identity view of the canonical registries and
-// the participation ledger:
-//
-//   entities: every actor, organization, and surface gets a provisional AXM
-//     entity id derived from (namespace, label). Aliases yield additional
-//     alias-derived ids pointing at the same entity, so a corpus that says
-//     "Sir Simon Case" and one that says "Simon Case" can still join.
-//
-//   claims: participation rows become `participates_in` claims. The claim id
-//     is content-addressed over (subject, predicate, object, obj_type) ONLY —
-//     identity is time-stable. Temporal validity attaches to the claim as
-//     windows (AXM temporal@1 vocabulary: valid_from / valid_until, null for
-//     an open end, dated=false when the row carried no temporal claim at
-//     all). Multiple stints of the same participant on the same surface are
-//     one claim with several windows, not several claims.
-//
-// PROVISIONAL: the hash envelope is authoritative (axm-core IDENTITY.md) but
-// the (namespace, label) / (subj, pred, obj, obj_type) input serialization is
-// this repo's best effort and must be reconciled byte-for-byte against
-// axm-genesis `axm_verify.identity` before any id here is used as a
-// cross-system join key. See tools/lib/axm-id.mjs. Every artifact this module
-// produces carries that caveat in its `scheme` block.
-import { entityId, claimId } from './axm-id.mjs';
+// AXM identity projection reconciled against axm-genesis spec/v1 section 10.
+// The shared fixture pins reference commit 74db57b32ca5c02c7d340aa6caa25df993818667.
+// Entities and aliases use case-qualified namespace/label identities.
+// Participation becomes time-stable claims with separately retained windows,
+// roles, evidence classes, and receipt IDs. Matching IDs do not establish
+// equivalence across different case namespaces or add actor hops.
+import { entityId, claimId, legacyEntityId } from './axm-id.mjs';
 import { windowOf } from './temporal.mjs';
 
 export const PARTICIPATES_IN = 'participates_in';
 
 export const SCHEME = Object.freeze({
-  status: 'provisional',
-  envelope: 'sha256 → first 15 bytes → base32 lowercase no padding, type prefix (axm-core IDENTITY.md — authoritative)',
-  serialization: 'provisional — reconcile byte-for-byte against axm-genesis axm_verify.identity before cross-system use',
+  status: 'reconciled',
+  legacy_query_tokens: 'historical e_ tokens resolve only to a unique local entity; never cross-case identity authority',
+  envelope: 'sha256 full 32-byte digest, base32 lowercase no padding, versioned prefix e1_/c1_ (axm-genesis spec/v1 section 10)',
+  serialization: 'reconciled byte-for-byte against axm-genesis axm_verify.identity (CN-P0-1); shared fixture committed to both repositories',
   temporal: 'axm temporal@1: valid_from / valid_until, ISO 8601, null = open end; windows qualify claims, they are not part of claim identity',
 });
 
@@ -59,7 +42,7 @@ export function buildIdentityLayer({ namespace, actors, organizations, surfaces,
     if (clash && clash.local_id !== localId) {
       throw new Error(`axm entity id collision: ${clash.local_id} and ${localId} both derive ${axmId} (label ${JSON.stringify(label)})`);
     }
-    const entity = { local_id: localId, kind, label, axm_entity_id: axmId, alias_axm_ids: [] };
+    const entity = { local_id: localId, kind, label, axm_entity_id: axmId, alias_axm_ids: [], legacy_axm_ids: [legacyEntityId(namespace, label)] };
     entities.push(entity);
     byLocalId.set(localId, entity);
     byAxmId.set(axmId, entity);
@@ -75,6 +58,8 @@ export function buildIdentityLayer({ namespace, actors, organizations, surfaces,
   for (const alias of aliases) {
     const entity = byLocalId.get(alias.canonical_id);
     if (!entity) continue; // legacy-graph aliases have no canonical registry entry
+    const legacyId = legacyEntityId(namespace, alias.alias);
+    if (!entity.legacy_axm_ids.includes(legacyId)) entity.legacy_axm_ids.push(legacyId);
     const aliasId = entityId(namespace, alias.alias);
     if (aliasId === entity.axm_entity_id) continue;
     const clash = byAxmId.get(aliasId);
@@ -119,10 +104,13 @@ export function buildIdentityLayer({ namespace, actors, organizations, surfaces,
   return { scheme: { ...SCHEME, namespace }, entities, claims };
 }
 
-// Resolve a --from/--to style token: a local id passes through; a provisional
-// AXM entity id (canonical or alias-derived) resolves to its local id.
+// Resolve a --from/--to style token: a local id passes through; an AXM
+// entity id (canonical or alias-derived, reconciled e1_ or legacy e_ shape)
+// resolves to its local id.
 export function resolveLocalId(identity, token) {
-  if (!/^e_[a-z2-7]{24}$/.test(token)) return token;
-  const entity = identity.entities.find(e => e.axm_entity_id === token || e.alias_axm_ids.includes(token));
-  return entity ? entity.local_id : token;
+  if (!/^(?:e1_[a-z2-7]{52}|e_[a-z2-7]{24})$/.test(token)) return token;
+  const matches = identity.entities.filter(e => e.axm_entity_id === token
+    || e.alias_axm_ids.includes(token) || (e.legacy_axm_ids ?? []).includes(token));
+  // Never resolve an ambiguous legacy token by array order.
+  return matches.length === 1 ? matches[0].local_id : token;
 }

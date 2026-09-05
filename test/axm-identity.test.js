@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { buildIdentityLayer, resolveLocalId, PARTICIPATES_IN } from '../tools/lib/axm-identity.mjs';
-import { entityId, claimId } from '../tools/lib/axm-id.mjs';
+import { entityId, claimId, legacyEntityId } from '../tools/lib/axm-id.mjs';
 
 const fixture = () => ({
   namespace: 'test-case',
@@ -33,8 +33,8 @@ const layer = buildIdentityLayer(fixture());
 // Deterministic: same ledger, same layer, byte for byte.
 assert.deepEqual(layer, buildIdentityLayer(fixture()), 'identity layer must be deterministic');
 
-// Provisional honesty marker travels with the artifact.
-assert.equal(layer.scheme.status, 'provisional');
+// Reconciliation state travels with the artifact.
+assert.equal(layer.scheme.status, 'reconciled');
 assert.equal(layer.scheme.namespace, 'test-case');
 
 // Entities cover actors, organizations, and surfaces, ids composed exactly
@@ -82,9 +82,25 @@ assert.equal(resolveLocalId(layer, ada.axm_entity_id), 'ada');
 assert.equal(resolveLocalId(layer, entityId('test-case', 'Countess of Lovelace')), 'ada');
 assert.equal(resolveLocalId(layer, 'e_aaaaaaaaaaaaaaaaaaaaaaaa'), 'e_aaaaaaaaaaaaaaaaaaaaaaaa');
 
-// GOLDEN self-consistency pin for the whole layer (see axm-id.test.js for the
-// envelope pins): any drift in the provisional serialization shows up here.
-assert.equal(ada.axm_entity_id, 'e_yy2jyebjgnch3csy4ww3ys6m');
-assert.equal(salonClaim.claim_id, 'c_h2h5cqpashhl3mkzptiljdtd');
+// GOLDEN pin for the whole layer under the RECONCILED genesis scheme
+// (see axm-id.test.js and the shared reconciliation fixture): any drift in
+// the serialization shows up here.
+assert.match(ada.axm_entity_id, /^e1_[a-z2-7]{52}$/);
+assert.match(salonClaim.claim_id, /^c1_[a-z2-7]{52}$/);
+assert.equal(ada.axm_entity_id, 'e1_vqj4adj5zfa43l75q3lngtlxf6646enrpakuw3jtripg6yfbfceq');
+assert.equal(salonClaim.claim_id, 'c1_2gieyzzglt2m5znxz474eh6xjvtp752jxb3sqflcsvabmgjywy3q');
+
+// Existing case-local query handles survive the identity migration.
+assert.equal(resolveLocalId(layer, legacyEntityId('test-case', 'Ada Lovelace')), 'ada');
+assert.equal(resolveLocalId(layer, legacyEntityId('test-case', 'Countess of Lovelace')), 'ada');
+// Legacy Unicode lowercasing can collapse names that the reference distinguishes.
+const legacyCollision = fixture();
+legacyCollision.actors.push({ id: 'upper-sharp-s', label: '\u1e9e' }, { id: 'lower-sharp-s', label: '\u00df' });
+const collisionLayer = buildIdentityLayer(legacyCollision);
+const ambiguousToken = legacyEntityId('test-case', '\u1e9e');
+assert.equal(ambiguousToken, legacyEntityId('test-case', '\u00df'));
+assert.equal(resolveLocalId(collisionLayer, ambiguousToken), ambiguousToken, 'ambiguous legacy handles must remain unresolved');
+assert.equal(resolveLocalId(collisionLayer, entityId('test-case', '\u1e9e')), 'upper-sharp-s');
+assert.equal(resolveLocalId(collisionLayer, entityId('test-case', '\u00df')), 'lower-sharp-s');
 
 console.log('axm-identity.test: OK');

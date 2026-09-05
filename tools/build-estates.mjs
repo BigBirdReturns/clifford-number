@@ -2,6 +2,7 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { readJson, readJsonl, root, writeJson } from './lib/ledger.mjs';
 
 export const ESTATE_REGISTRY_SCHEMA_VERSION = 'estate-registry@1';
@@ -258,7 +259,8 @@ export function buildEstates({ write = true } = {}) {
   return compiled;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+const invokedPath = process.argv[1] ? path.resolve(process.argv[1]) : null;
+if (invokedPath && invokedPath === path.resolve(fileURLToPath(import.meta.url))) {
   const output = buildEstates();
   console.log(`estates: ${output.counts.estates} macro estates, ${output.counts.mapped_slices} slices, ${output.counts.mapped_cases} cases, ${output.counts.mapped_tracks} tracks`);
 }
