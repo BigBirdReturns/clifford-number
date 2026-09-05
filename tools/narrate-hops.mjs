@@ -225,8 +225,8 @@ for (let i = 0; i < path.length - 1; i++) {
 }
 lines.push('');
 lines.push(args.md
-  ? '_Every sentence above is rendered mechanically from the case ledger. A shared surface is a documented co-presence, not a claim of coordination, intent, or wrongdoing. Verify any hop through its receipt IDs._'
-  : 'NOTE: rendered mechanically from the case ledger. A shared surface is documented co-presence, not a claim of coordination, intent, or wrongdoing. Verify any hop through its receipt IDs.');
+  ? '_Every sentence above is rendered from receipt-backed canonical profiles or case-ledger rows. A shared surface is a documented co-presence, not a claim of coordination, intent, or wrongdoing. Verify any hop through its receipt IDs._'
+  : 'NOTE: rendered from receipt-backed canonical profiles or case-ledger rows. A shared surface is documented co-presence, not a claim of coordination, intent, or wrongdoing. Verify any hop through its receipt IDs.');
 
 if (args.json) {
   console.log(JSON.stringify({ from, to: target, number: base.number, path, narration: lines.join('\n') }, null, 2));
