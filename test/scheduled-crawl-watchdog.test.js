@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
+  assertWatchdogInvocation,
   crawlerNamespacePulls,
   selectWatchdogCandidate,
   selectWatchdogTriggerRun
@@ -9,6 +10,7 @@ import {
 const repository = 'test-owner/test-repository';
 const candidateSha = 'b'.repeat(40);
 const baseSha = 'a'.repeat(40);
+const mainSha = 'c'.repeat(40);
 const branch = 'automation-crawl-industrial-exhaust-run-100-1';
 
 function pull(overrides = {}) {
@@ -44,7 +46,88 @@ function run(overrides = {}) {
   };
 }
 
+function wakeRun(overrides = {}) {
+  const repo = { id: 123, full_name: repository };
+  return {
+    id: 101,
+    run_attempt: 1,
+    name: 'No magic human gate',
+    path: '.github/workflows/no-magic-human-gate.yml',
+    event: 'push',
+    status: 'completed',
+    conclusion: 'success',
+    head_branch: 'main',
+    head_sha: mainSha,
+    repository: { ...repo },
+    head_repository: { ...repo },
+    ...overrides
+  };
+}
+
+function wakeEvent(runOverrides = {}, eventOverrides = {}) {
+  return {
+    action: 'completed',
+    workflow_run: wakeRun(runOverrides),
+    ...eventOverrides
+  };
+}
+
 let count = 0;
+
+assert.deepEqual(assertWatchdogInvocation('schedule', null, repository),
+  { event_name: 'schedule' });
+count++;
+
+assert.deepEqual(assertWatchdogInvocation('workflow_dispatch', null, repository),
+  { event_name: 'workflow_dispatch' });
+count++;
+
+assert.deepEqual(assertWatchdogInvocation('workflow_run', wakeEvent(), repository), {
+  event_name: 'workflow_run',
+  action: 'completed',
+  trigger_run_id: 101,
+  trigger_run_attempt: 1,
+  trigger_workflow_name: 'No magic human gate',
+  trigger_workflow_path: '.github/workflows/no-magic-human-gate.yml',
+  trigger_head_sha: mainSha
+});
+count++;
+
+assert.throws(() => assertWatchdogInvocation('push', null, repository),
+  /watchdog requires schedule, workflow_dispatch/);
+count++;
+
+for (const [label, mutate, pattern] of [
+  ['incomplete action', (event) => { event.action = 'requested'; }, /action is not completed/],
+  ['missing payload', (event) => { delete event.workflow_run; }, /payload is missing/],
+  ['non-push workflow', (event) => { event.workflow_run.event = 'pull_request'; }, /not a push/],
+  ['unfinished workflow', (event) => { event.workflow_run.status = 'queued'; }, /not completed/],
+  ['failed workflow', (event) => { event.workflow_run.conclusion = 'failure'; }, /did not succeed/],
+  ['non-main workflow', (event) => { event.workflow_run.head_branch = 'topic'; }, /not on main/],
+  ['unrelated workflow', (event) => { event.workflow_run.path = '.github/workflows/other.yml'; },
+    /not a required workflow/],
+  ['name and path mismatch', (event) => { event.workflow_run.name = 'Release checks'; },
+    /name\/path mismatch/],
+  ['foreign repository', (event) => {
+    event.workflow_run.repository.full_name = 'other/repository';
+  }, /foreign repository/],
+  ['foreign head repository', (event) => {
+    event.workflow_run.head_repository.full_name = 'other/repository';
+  }, /foreign head repository/],
+  ['invalid repository id', (event) => { event.workflow_run.repository.id = 0; },
+    /repository id is invalid/],
+  ['different repository ids', (event) => { event.workflow_run.head_repository.id = 999; },
+    /repository ids disagree/],
+  ['invalid run id', (event) => { event.workflow_run.id = 0; }, /run id is invalid/],
+  ['invalid attempt', (event) => { event.workflow_run.run_attempt = 0; }, /attempt is invalid/],
+  ['invalid head SHA', (event) => { event.workflow_run.head_sha = 'not-a-sha'; },
+    /not a commit SHA/]
+]) {
+  const event = wakeEvent();
+  mutate(event);
+  assert.throws(() => assertWatchdogInvocation('workflow_run', event, repository), pattern, label);
+  count++;
+}
 
 assert.deepEqual(crawlerNamespacePulls([pull(), {
   head: { ref: 'agent/ordinary-product' }
@@ -167,6 +250,9 @@ const source = readFileSync(
   new URL('../.github/scripts/watch-scheduled-crawl-admission.mjs', import.meta.url),
   'utf8'
 );
+assert.match(source, /assertWatchdogInvocation/);
+assert.match(source, /readFileSync\(process\.env\.GITHUB_EVENT_PATH/);
+assert.match(source, /workflow_run watchdog trigger did not succeed/);
 assert.match(source, /\['api', '--method', 'GET'/);
 assert.match(source, /GITHUB_EVENT_PATH: eventPath/);
 assert.match(source, /resume-scheduled-crawl-admission\.mjs/);
