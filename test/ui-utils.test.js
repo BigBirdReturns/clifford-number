@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { decodeHashPart, formatCitation, safeExternalUrl, safeLocalReceiptPath, validAsOf } from '../src/ui-utils.js';
+import { decodeHashPart, formatCitation, safeExternalUrl, safeLocalReceiptPath, validAsOf, partitionParticipantRows } from '../src/ui-utils.js';
 import { normalizeLocale, translate } from '../src/i18n.js';
 
 assert.equal(safeExternalUrl('https://example.com/source'), 'https://example.com/source');
@@ -38,3 +38,32 @@ assert.equal(translate('fr', 'themeDark'), 'Sombre');
 assert.equal(translate('es', 'browseShowing', { count: 12 }), 'Índice: se muestran 12 registros públicos.');
 
 console.log('ui-utils.test.js: OK');
+
+// Display budgeting must retain every record without changing its meaning.
+const participantRows = Object.freeze(Array.from({ length: 25 }, (_, i) => Object.freeze({
+  participant_type: i % 2 ? 'actor' : 'organization', actor_id: 'same-actor',
+  organization_id: 'same-organization', role: `record-${i}`,
+  time_start: i % 3 ? null : '2020', receipt_ids: Object.freeze([`receipt-${i}`]),
+})));
+for (const limit of [0, 1, 18, 24, 25, 26, Number.MAX_SAFE_INTEGER]) {
+  const result = partitionParticipantRows(participantRows, limit);
+  assert.equal(result.total, 25);
+  assert.equal(result.preview.length, Math.min(limit, 25));
+  assert.equal(result.preview.length + result.remaining.length, result.total);
+  assert.deepEqual([...result.preview, ...result.remaining], participantRows);
+  [...result.preview, ...result.remaining].forEach((row, i) => assert.equal(row, participantRows[i]));
+}
+assert.equal(partitionParticipantRows(participantRows).preview.length, 18);
+assert.deepEqual(partitionParticipantRows([]), { preview: [], remaining: [], total: 0 });
+for (const rows of [null, undefined, {}, 'rows']) assert.throws(() => partitionParticipantRows(rows), TypeError);
+for (const limit of [-1, 1.5, NaN, Infinity, '18', null]) assert.throws(() => partitionParticipantRows([], limit), RangeError);
+const { readFileSync } = await import('node:fs');
+const surfacesForPreview = JSON.parse(readFileSync('build/surface-graph.json', 'utf8')).surfaces;
+for (const surface of surfacesForPreview) {
+  const rows = surface.participants ?? [];
+  const before = JSON.stringify(rows);
+  const result = partitionParticipantRows(rows);
+  assert.deepEqual([...result.preview, ...result.remaining], rows, surface.surface_id);
+  assert.equal(JSON.stringify(rows), before, surface.surface_id);
+}
+console.log(`participant preview: ${surfacesForPreview.length} surface rosters preserve all records`);

@@ -246,3 +246,33 @@ assert.match(ciWorkflow, /pull_request:/);
 assert.match(ciWorkflow, /npm run release:check/);
 
 console.log('ui-contract.test.js: OK');
+
+// Exercise the actual surface renderer, not just the presence of a source string.
+const { runInNewContext } = await import('node:vm');
+const { partitionParticipantRows } = await import('../src/ui-utils.js');
+const renderer = app.slice(app.indexOf('function renderSurface(id) {'), app.indexOf('/* ---------------- Claims Desk'));
+for (const count of [0, 1, 18, 19, 112]) {
+  const participants = Array.from({ length: count }, (_, i) => ({
+    participant_type: i % 2 ? 'actor' : 'organization', actor_id: `actor-${i}`,
+    organization_id: `org-${i}`, role: `row-${i}`, participation_type: 'listed',
+  }));
+  const fixture = { surface_id: 'test-roster', surface_label: 'Test roster', participants, hop_eligible: false };
+  const slots = { '#summary': { innerHTML: '' }, '#detail': { innerHTML: '' } };
+  runInNewContext(`${renderer}\nrenderSurface('test-roster');`, {
+    surface: () => fixture, setDocumentTitle: () => {}, $: id => slots[id],
+    metricPanel: () => '', partitionParticipantRows, labelActor: id => id,
+    labelOrg: id => id, esc: value => String(value ?? ''), entityHeading: () => '',
+    entityReceiptIds: () => [], renderReceiptGrid: () => '<div>receipt sentinel</div>',
+  });
+  const rendered = slots['#detail'].innerHTML;
+  assert.equal((rendered.match(/<li>/g) ?? []).length, count, 'no participant record may disappear');
+  assert.match(rendered, /receipt sentinel/, 'surface receipts remain accessible');
+  if (count > 18) {
+    const remainingCount = count - 18;
+    const remainingNoun = remainingCount === 1 ? 'record' : 'records';
+    assert.match(rendered, /<details class="participant-overflow"><summary>/);
+    assert.ok(rendered.includes(`Show remaining ${remainingCount} participant ${remainingNoun}`));
+    assert.equal((rendered.split('<details')[0].match(/<li>/g) ?? []).length, 18);
+  } else assert.ok(!rendered.includes('participant-overflow'), 'small rosters need no disclosure');
+}
+console.log('participant disclosure renderer: five roster sizes retain every row');

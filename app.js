@@ -1,4 +1,4 @@
-import { decodeHashPart, formatCitation, safeExternalUrl, safeLocalReceiptPath, validAsOf } from './src/ui-utils.js';
+import { decodeHashPart, formatCitation, safeExternalUrl, safeLocalReceiptPath, validAsOf, partitionParticipantRows } from './src/ui-utils.js';
 import { applyTranslations, normalizeLocale, translate } from './src/i18n.js';
 
 const PREFERENCES_KEY = 'clifford-preferences';
@@ -1568,10 +1568,15 @@ function renderSurface(id) {
     metricPanel('Participants', s.participants?.length ?? 0),
     metricPanel('Type', s.surface_type),
   ].join('');
-  const parts = (s.participants ?? []).map(p => `<li>${p.participant_type === 'actor' ? esc(labelActor(p.actor_id)) : esc(labelOrg(p.organization_id))}: ${esc(p.role)} <span class="meta">${esc(p.participation_type)}</span></li>`).join('');
+  const roster = partitionParticipantRows(s.participants ?? []);
+  const renderRows = rows => rows.map(p => `<li>${p.participant_type === 'actor' ? esc(labelActor(p.actor_id)) : esc(labelOrg(p.organization_id))}: ${esc(p.role)} <span class="meta">${esc(p.participation_type)}</span></li>`).join('');
+  const remainingParticipantLabel = `${roster.remaining.length} participant ${roster.remaining.length === 1 ? 'record' : 'records'}`;
+  const parts = `<ul>${renderRows(roster.preview)}</ul>${roster.remaining.length ? `
+    <p class="meta">First ${roster.preview.length} of ${roster.total} participant records. Display order is unchanged; this is not a count of unique people.</p>
+    <details class="participant-overflow"><summary>Show remaining ${remainingParticipantLabel}</summary><ul>${renderRows(roster.remaining)}</ul></details>` : ''}`;
   $('#detail').innerHTML = `
     <div class="panel">${entityHeading(s.surface_label, entityReceiptIds('surface', id))}<div class="badge-row"><span class="badge">${esc(s.surface_type)}</span>${(s.secondary_surface_types ?? []).map(t => `<span class="badge">${esc(t)}</span>`).join('')}</div><p>${esc(s.notes || '')}</p></div>
-    <div class="panel"><h3>Participants</h3><ul>${parts}</ul></div>
+    <div class="panel"><h3>Participants</h3>${parts}</div>
     <div class="panel"><h3>Bounded by</h3><p>${(s.bounded_by ?? []).map(esc).join(', ')}</p>${renderReceiptGrid(s.receipt_ids, 'Surface receipts')}</div>
   `;
 }

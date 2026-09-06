@@ -84,3 +84,18 @@ export function formatCitation({ title, url, accessed, receipts = [] }, format =
   }
   return `The Clifford Number. “${safeTitle}.” Accessed ${safeDate}. ${safeUrl}.${sourceText}`;
 }
+
+// Presentation-only partition of participation records, not a person count.
+// Keep input order, duplicates, dates and evidence intact. The remainder must
+// remain reachable in the same view; display budgeting never filters evidence.
+export function partitionParticipantRows(rows, limit = 18) {
+  if (!Array.isArray(rows)) throw new TypeError('participant rows must be an array');
+  if (!Number.isSafeInteger(limit) || limit < 0) {
+    throw new RangeError('participant preview limit must be a nonnegative safe integer');
+  }
+  return {
+    preview: rows.slice(0, limit),
+    remaining: rows.slice(limit),
+    total: rows.length,
+  };
+}
