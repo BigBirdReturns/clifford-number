@@ -1,0 +1,136 @@
+name: Temporary M-05 S03-L7 candidate materializer
+
+on:
+  push:
+    branches:
+      - agent/m05-s03-l7-terminal-regression-v1
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      BASE_SHA: 9da5b9da5f147656a30612387e3227dbb2c6d16e
+      BASE_TREE: 430fab38d13c738cf44d58346e976ae6c620e452
+      SOURCE_RUN_SHA: f66142f5ed6770538f6377466d7160c2045b9a3d
+      ARTIFACT_ID: '9977463115'
+      ARTIFACT_SHA256: 9db5ed27b0b14179d744b752439b5e0ea2736519699b5438e73c6b12d4b047c8
+      PAYLOAD_SHA256: 96624ffcee200b343aaae8bbc1986b081b909e6d374c0fe69540f51c4626fecf
+      BRANCH: agent/m05-s03-l7-terminal-regression-v1
+      GH_TOKEN: ${{ github.token }}
+      REPOSITORY: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          show-progress: false
+
+      - name: Materialize, verify, and publish candidate objects
+        shell: bash
+        run: |
+          set -euo pipefail
+          payload=/tmp/m05-terminal-payload.tar.xz
+          cat .bootstrap/m05-terminal-payload.b64.part-* | base64 --decode > "$payload"
+          echo "$PAYLOAD_SHA256  $payload" | sha256sum --check --strict
+
+          git fetch --no-tags origin main
+          test "$(git rev-parse "${BASE_SHA}^{tree}")" = "$BASE_TREE"
+          git checkout -B "$BRANCH" "$BASE_SHA"
+          tar -xJf "$payload"
+
+          receipt_dir=receipts/m05-s03-l7-source-ecology-v2-orbit-20260905
+          mkdir -p "$receipt_dir"
+          curl --fail --location --retry 3 --retry-all-errors \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${REPOSITORY}/actions/artifacts/${ARTIFACT_ID}/zip" \
+            --output "$receipt_dir/orbit.zip"
+          echo "$ARTIFACT_SHA256  $receipt_dir/orbit.zip" | sha256sum --check --strict
+          unzip -q -o "$receipt_dir/orbit.zip" -d "$receipt_dir"
+
+          git cat-file -e "${SOURCE_RUN_SHA}^{commit}"
+          policy_blob=$(git rev-parse "${SOURCE_RUN_SHA}:data/project/m04g-source-ecology-v2-policy.json")
+          registry_blob=$(git rev-parse "${SOURCE_RUN_SHA}:data/project/m04g-global-circulation-polls.json")
+          git cat-file blob "$policy_blob" > "$receipt_dir/source-policy.json"
+          git cat-file blob "$registry_blob" > "$receipt_dir/source-registry.json"
+
+          python3 "$receipt_dir/verify.py"
+          npm ci --no-audit --no-fund
+          M05_VALIDATE_SOURCE_BINDINGS_FROM_WORKTREE=1 npm run validate:m05-source-health-evidence-state
+
+          git add -A
+          python3 - <<'PY'
+          import subprocess
+          expected = {
+            '.github/workflows/m04g-source-ecology-v2.yml':'ed604b7846c3fb451331b921363d24945423baea',
+            '.gitignore':'1872940dcca654b00c16d633023f0223f18499b1',
+            'data/project/m05-answerable-power-sprint-03-leg-07-terminal-cross-domain-regression.json':'2bece6b1b4dee6bbe82d9bd0d13e8493cbba8005',
+            'docs/milestones/m05-answerable-power-sprint-03-leg-07.md':'19e455c19d39701d5ef99c2f2f2a166570b92255',
+            'package.json':'ff05dc18e62a8e29218a4c2353491573eeb63320',
+            'receipts/m05-s03-l7-source-ecology-v2-orbit-20260905/SHA256SUMS':'7cc27bdd9f87a431cb23c3dd0bcd6bc696441281',
+            'receipts/m05-s03-l7-source-ecology-v2-orbit-20260905/m04g-source-ecology-v2-basin-health.json':'1c6cd80cfc630e3f2bea8ce77eabc0d73e6d57bc',
+            'receipts/m05-s03-l7-source-ecology-v2-orbit-20260905/m04g-source-ecology-v2-common-crawl-global-serial-catalog.json':'d24ee16e30207c33c464cd326edbec779fe00897',
+            'receipts/m05-s03-l7-source-ecology-v2-orbit-20260905/m04g-source-ecology-v2-common-crawl-global-serial-catalog.normalized.json':'fce5c8cb87bc5686a35dc0b16a359ec486758157',
+            'receipts/m05-s03-l7-source-ecology-v2-orbit-20260905/m04g-source-ecology-v2-failures.json':'5a1efa96c56d90fe9a753ca7073d1d2bcdf1bbc4',
+            'receipts/m05-s03-l7-source-ecology-v2-orbit-20260905/m04g-source-ecology-v2-gdelt-global-serial.json':'64370f188d1e8739e21ffdcbad5af324aad0afe3',
+            'receipts/m05-s03-l7-source-ecology-v2-orbit-20260905/m04g-source-ecology-v2-gdelt-global-serial.json.gz':'29037e9da830ad2cd7c24170c7eade1ecf80df01',
+            'receipts/m05-s03-l7-source-ecology-v2-orbit-20260905/m04g-source-ecology-v2-global-tides.json':'9c7ef8834f56edb1aadeb69eb8d5bc7586d60230',
+            'receipts/m05-s03-l7-source-ecology-v2-orbit-20260905/m04g-source-ecology-v2-observations.json':'f58b80e8c30fe8186c8a487e13cee8b132f97ec8',
+            'receipts/m05-s03-l7-source-ecology-v2-orbit-20260905/m04g-source-ecology-v2-proof.sha256':'fa0e62794a95a9101d673e6bc1b561865405c95a',
+            'receipts/m05-s03-l7-source-ecology-v2-orbit-20260905/m04g-source-ecology-v2-receipt.json':'82b075fc27c6f45d388d35aa7ed0c2fb5d9d5f6c',
+            'receipts/m05-s03-l7-source-ecology-v2-orbit-20260905/manifest.json':'f63a983a57af83e62227457e7cf421b6e1409240',
+            'receipts/m05-s03-l7-source-ecology-v2-orbit-20260905/orbit.zip':'a34fdbdc9efde085e331982a95626f64021df89c',
+            'receipts/m05-s03-l7-source-ecology-v2-orbit-20260905/review.md':'0707768a63cd59692b3eb2e917d67721b2234f42',
+            'receipts/m05-s03-l7-source-ecology-v2-orbit-20260905/source-policy.json':'49daf4eb2e469799d00ff183e515926ccc1fc9bf',
+            'receipts/m05-s03-l7-source-ecology-v2-orbit-20260905/source-registry.json':'33ebf45abaff435c6172f3213129645778e13a7a',
+            'receipts/m05-s03-l7-source-ecology-v2-orbit-20260905/verify.py':'598ebbef2671715f892aeea4ef5553e0cd67e80f',
+            'reports/core-thesis/answerable-power/sprint-03-leg-07.html':'8a962f678f1deb431e9a0270e804ab6b941bd385',
+            'reports/core-thesis/answerable-power/sprint-03-leg-07.json':'f580194e4c8e4dde0770c4253a04dc2af3215953',
+            'test/m05-answerable-power-sprint-03-leg-07-terminal-cross-domain-regression.test.js':'a937c8345ac95895ea1d58f01e08908fc1924c83',
+            'test/m05-answerable-power-sprint-03-leg-07.test.js':'7b12fd77d4aae7cf500eecddd3077f18c4ca78ca',
+            'tools/build-m05-answerable-power-sprint-03-leg-07.mjs':'c26921d2cae9c0ef76c0edb1b2955a3360638088',
+            'tools/validate-m05-answerable-power-sprint-03-leg-07-terminal-cross-domain-regression.mjs':'6dd29e2eaeb2116b28599ceef23ef7c3a2b973e2',
+            'tools/validate-m05-answerable-power-sprint-03-leg-07.mjs':'27b95a21c4c79e7b7077431bb2e65c8452d4b296',
+            'tools/validate-m05-source-health-evidence-state-regression.mjs':'61387ad5f80649ac3e8b1d13d825dfedd79e2ed3',
+          }
+          rows = subprocess.check_output(['git','ls-files','-s'], text=True).splitlines()
+          actual = {}
+          for row in rows:
+            meta, path = row.split('\t', 1)
+            if path in expected:
+              actual[path] = meta.split()[1]
+          if actual != expected:
+            missing = sorted(set(expected) - set(actual))
+            extra = sorted(set(actual) - set(expected))
+            wrong = sorted(p for p in set(actual) & set(expected) if actual[p] != expected[p])
+            raise SystemExit(f'exact blob census failed: missing={missing} extra={extra} wrong={wrong}')
+          changed = subprocess.check_output(['git','diff','--cached','--name-only','--diff-filter=ACMR'], text=True).splitlines()
+          if sorted(changed) != sorted(expected):
+            raise SystemExit(f'changed-path census failed: {changed}')
+          deleted = subprocess.check_output(['git','diff','--cached','--name-only','--diff-filter=D'], text=True).splitlines()
+          if deleted:
+            raise SystemExit(f'unexpected deletions: {deleted}')
+          print(f'exact candidate census: {len(actual)} paths')
+          PY
+
+          git config user.name 'BigBirdReturns'
+          git config user.email 'bigbirdreturns@proton.me'
+          git commit -m 'Materialize M-05 S03-L7 terminal candidate objects'
+          candidate_sha=$(git rev-parse HEAD)
+          candidate_tree=$(git rev-parse 'HEAD^{tree}')
+          candidate_parent=$(git rev-parse 'HEAD^')
+          printf '{"candidate_sha":"%s","tree_sha":"%s","parent_sha":"%s","paths":30}\n' \
+            "$candidate_sha" "$candidate_tree" "$candidate_parent" | tee /tmp/candidate-metadata.json
+          git push --force origin "HEAD:refs/heads/$BRANCH"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: temporary-m05-s03-l7-materialized-${{ github.run_id }}
+          path: /tmp/candidate-metadata.json
+          if-no-files-found: error
+          retention-days: 1
