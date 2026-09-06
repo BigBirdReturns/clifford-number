@@ -11,12 +11,14 @@ import { receiptSupportsPublishedWindow } from './lib/hops.mjs';
 import { validateCorpusSelection } from './validate-corpus-selection.mjs';
 import { validateConsumptionContract } from './validate-consumption-contract.mjs';
 import { validateOfficeholderCohort } from './validate-officeholder-cohort.mjs';
+import { evaluateReportedHopEvidenceUpgrades } from './lib/reported-hop-evidence-upgrades.mjs';
 
 const data = loadAll();
 const scores = readJson('build/scores.json');
 const hopGraph = readJson('build/hop-graph.json');
 const surfaceGraph = readJson('build/surface-graph.json');
 const migration = readJson('build/migration-summary.json');
+const reportedHopEvidenceUpgradeContract = readJson('data/research/reported-hop-evidence-upgrades.json');
 const surfaceById = indexBy(surfaceGraph.surfaces, 'surface_id');
 const surfaceTypeById = indexBy(data.surfaceTypes, 'id');
 const actorScore = new Map(scores.actors.map(a => [a.actor_id, a]));
@@ -1980,6 +1982,17 @@ assert(claimById.has('electric-twin-virgin-madfest-shared-stage-2026-07-08'),
   'MAD//Fest shared-stage claim is missing');
 assert(claimById.has('electric-twin-virgin-madfest-identity-and-contract-boundary-2026-07-08'),
   'MAD//Fest identity and contract boundary claim is missing');
+
+const reportedHopEvidenceUpgrade = evaluateReportedHopEvidenceUpgrades({
+  actors: data.actors,
+  contract: reportedHopEvidenceUpgradeContract,
+  hopGraph,
+  participation: data.participation,
+  surfaces: data.surfaces,
+});
+for (const error of reportedHopEvidenceUpgrade.errors) {
+  errors.push(`reported-hop evidence upgrade ${error.code}: ${error.detail}`);
+}
 
 if (errors.length) {
   console.error('validate-release failed:');

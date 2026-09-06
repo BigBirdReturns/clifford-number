@@ -64,6 +64,7 @@ A candidate is a research question. It may preserve a non-hop fact, pattern, seq
 - [`estates.md`](estates.md) — the estate compiler, source-route registry, closure compiler, and Estate Aperture projection.
 - [`adr-reporter-briefing-platform.md`](adr-reporter-briefing-platform.md) — architectural decision that cases are primary truth and reports, graphs, frontiers, routes, and tables are projections.
 - [`plain-language.md`](plain-language.md) — narration contract and flags.
+- [`methods/reported-hop-evidence-upgrade.md`](methods/reported-hop-evidence-upgrade.md) — the Phase 0 §2.4 gate requiring a source-bounded upgrade disposition for every accepted `reported` hop basis.
 - [`self-assembling-architecture.md`](self-assembling-architecture.md) — proposed future intake architecture; it does not override the current compiler law.
 - [`design-system.md`](design-system.md) — interface design guidance.
 - [`mcp.md`](mcp.md) — legacy MCP implementation notes; verify package scripts and current graph inputs before relying on them.
