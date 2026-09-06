@@ -15,6 +15,7 @@ function run(cmd, args) {
 
 run(process.execPath, ['tools/compile.mjs']);
 run(process.execPath, ['tools/validate-release.mjs']);
+run(process.execPath, ['test/reported-hop-evidence-upgrades.test.js']);
 
 const hop = JSON.parse(fs.readFileSync('build/hop-graph.json', 'utf8'));
 const surface = JSON.parse(fs.readFileSync('build/surface-graph.json', 'utf8'));
