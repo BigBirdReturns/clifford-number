@@ -1,0 +1,31 @@
+# Intel shared-registration counterexample
+
+This packet preserves two issuer-filed primary records for a bounded classification review. It adds one newly acquired historical filing, Intel's April 30, 2026 Form 8-K, and reuses the January 23 government-resale supplement retained in the preceding desktop custody package. Both documents use SEC registration number 333-292925. Their transaction roles, security classes, and evidentiary states differ. This is a counterexample to treating a registration number as a unique government-disposition identifier, not a finding that an existing production classifier used that shortcut.
+
+## Source-backed comparison
+
+The January supplement identifies the United States Department of Commerce as selling securityholder for Intel common stock and a conditional warrant. It registers a potential resale and states that registration does not necessarily mean that the holder will sell. Its ordinary eligibility date is August 27, 2026, subject to the instrument's conditions and any different Intel-Commerce agreement. Neither that date nor the registration establishes a completed transaction. The supplement's issuer-nonreceipt clause concerns proceeds from a Commerce sale; it is not a claim about every security offered under the shared shelf. [SEC-RESALE-424B7, cover; Selling Securityholder; Plan of Distribution]
+
+The April 30 Form 8-K reports Intel's issuance of five senior-note tranches under the same registration. Their principal amounts are $1 billion, $1 billion, $2.25 billion, $1.75 billion, and $0.5 billion, totaling $6.5 billion. The filing reports approximately $6.47 billion of proceeds after underwriting discounts and before expenses. It names Intel as issuer and Citigroup, J.P. Morgan, Barclays, BofA Securities, and Deutsche Bank as representatives of the underwriters. This supplies an issuer-debt issuance record. It does not supply a Commerce share disposition or a federal collection record. [SEC-APRIL-DEBT-8K, Item 8.01]
+
+The previous working review distinguished the government's January shelf from Intel's August equity offering. That distinction remains useful, but a registration number cannot carry the actor or transaction inference by itself: Intel's April issuer financing shares the January number. The records must be joined through the accession and operative document, seller or issuer, security, event type and date, execution state, and proceeds recipient. Underwriter overlap, issuer identity, and a shared registration remain discovery clues rather than independently sufficient event joins. No general inference that debt is irrelevant to every government asset transaction is made.
+
+## Reproduction and limits
+
+The source archive contains both complete response bodies, two publication copies of the client acquisition receipts, two TLS leaf certificates, the two acquisition programs, and one publication-redaction report. The source bodies total 289,661 bytes. The January response used chunked transfer coding; the April response supplied Content-Length. Both lacked Content-Encoding and were acquired with identity requested. The hashed bodies are HTTP payload octets after the Python client's transfer handling and before content decoding. Neither source body was normalized or edited. The review's HTML text projection is derived separately.
+
+The original client receipts remain on the authorized desktop. Public receipt copies are JSON-reserialized derivatives. Two server-issued Set-Cookie values in the January receipt are replaced with SHA-256 markers; the April receipt required no value redaction. The redaction report binds original and published receipt hashes without disclosing the cookie values. Published receipt hashes must not be substituted for the originals. The client-recorded TLS and header metadata are not publisher signatures or packet-level transcripts, and the packet does not claim frozen realization-stage provenance admission.
+
+Run `python verify.py --self-test` from this directory. The verifier checks all five listed file hashes, archive integrity and exact membership, both pinned body hashes, receipt and certificate bindings, byte-domain declarations, publication-redaction counts, source locators, and the derived comparison. It reproduces the five-tranche arithmetic and rejects sixteen altered inputs, including relabeling Intel debt as government common-stock disposition and treating the shared file number as a unique event key. These are finite corpus-consistency tests, not a general natural-language classifier or automatic admission engine. The verifier is not wired into the repository's ordinary release workflow.
+
+The targeted web-search pass that led to the April filing did not locate a source-addressed government disposition. Its search-engine results are discovery only, not an exhaustive source denominator, and it is not presented as a new census of all holder, agency, or accounting systems. Both retained filings predate the ordinary resale gate. They cannot establish whether a later sale occurred.
+
+No realization-stage registry entry, source-health threshold, production watcher, workflow, or issue-completion condition is changed by this packet. Its evidence tier is retained issuer-filed primary records with reproducible source and classification checks; the venue is SEC EDGAR and the repository receipt directory; the target is shared-registration ambiguity. Its benefit is a concrete, testable false-positive exclusion. Its limitation is the absence of a retained post-gate government disposition and collection join. Its failure mode would be promoting a matching file number or an issuer cash inflow into government realization.
+
+A government sale candidate must still identify Commerce as holder, the disposed security and quantity, transaction and settlement dates, consideration and intermediaries, and the operative source record. Federal collection, proceeds-account booking, and distribution require their own subsequent evidence. Which retained record connects an actual government disposition to those cash and account identifiers?
+
+## Source locators
+
+SEC-RESALE-424B7: https://www.sec.gov/Archives/edgar/data/50863/000005086326000027/a01232026424b7.htm
+
+SEC-APRIL-DEBT-8K: https://www.sec.gov/Archives/edgar/data/50863/000119312526197845/d143782d8k.htm
