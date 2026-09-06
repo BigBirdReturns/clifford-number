@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -25,6 +25,45 @@ function flattenPages(value, key) {
 function requireSha(value, label) {
   assert.match(value, SHA, `${label} is not a commit SHA`);
   return value;
+}
+
+export function assertWatchdogInvocation(eventName, event, repository) {
+  assert.match(repository, /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/);
+  if (eventName === 'schedule' || eventName === 'workflow_dispatch') {
+    return { event_name: eventName };
+  }
+
+  assert.equal(eventName, 'workflow_run',
+    'watchdog requires schedule, workflow_dispatch, or an exact protected-main workflow completion');
+  assert.equal(event?.action, 'completed', 'workflow_run watchdog action is not completed');
+  const run = event?.workflow_run;
+  assert.ok(run, 'workflow_run watchdog payload is missing');
+  assert.equal(run.event, 'push', 'workflow_run watchdog trigger is not a push');
+  assert.equal(run.status, 'completed', 'workflow_run watchdog trigger is not completed');
+  assert.equal(run.conclusion, 'success', 'workflow_run watchdog trigger did not succeed');
+  assert.equal(run.head_branch, 'main', 'workflow_run watchdog trigger is not on main');
+  assert.ok(REQUIRED.has(run.path), 'workflow_run watchdog trigger is not a required workflow');
+  assert.equal(run.name, REQUIRED.get(run.path), 'workflow_run watchdog name/path mismatch');
+  assert.equal(run.repository?.full_name, repository,
+    'workflow_run watchdog trigger has a foreign repository');
+  assert.equal(run.head_repository?.full_name, repository,
+    'workflow_run watchdog trigger has a foreign head repository');
+  assert.ok(positiveInteger(run.repository?.id), 'workflow_run watchdog repository id is invalid');
+  assert.equal(run.repository.id, run.head_repository?.id,
+    'workflow_run watchdog repository ids disagree');
+  assert.ok(positiveInteger(run.id), 'workflow_run watchdog run id is invalid');
+  assert.ok(positiveInteger(run.run_attempt), 'workflow_run watchdog attempt is invalid');
+  requireSha(run.head_sha, 'workflow_run watchdog head');
+
+  return {
+    event_name: eventName,
+    action: event.action,
+    trigger_run_id: run.id,
+    trigger_run_attempt: run.run_attempt,
+    trigger_workflow_name: run.name,
+    trigger_workflow_path: run.path,
+    trigger_head_sha: run.head_sha
+  };
 }
 
 export function crawlerNamespacePulls(pulls) {
@@ -137,10 +176,15 @@ function runWatchdog() {
     : join(process.cwd(), 'scheduled-crawl-resumption-receipt');
   mkdirSync(receiptDir, { recursive: true });
   try {
-    assert.ok(['schedule', 'workflow_dispatch'].includes(process.env.GITHUB_EVENT_NAME),
-      'watchdog requires schedule or workflow_dispatch');
     const repository = process.env.GITHUB_REPOSITORY;
-    assert.match(repository || '', /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/);
+    const eventName = process.env.GITHUB_EVENT_NAME;
+    let event = null;
+    if (eventName === 'workflow_run') {
+      assert.ok(process.env.GITHUB_EVENT_PATH, 'workflow_run watchdog event path is missing');
+      event = JSON.parse(readFileSync(process.env.GITHUB_EVENT_PATH, 'utf8'));
+    }
+    const invocation = assertWatchdogInvocation(eventName, event, repository);
+    writeJson(receiptDir, 'watchdog-invocation.json', invocation);
     const pulls = ghRead(`repos/${repository}/pulls?state=open&base=main&per_page=100`,
       'pull_requests');
     const namespaced = crawlerNamespacePulls(pulls);
