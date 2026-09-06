@@ -1,18 +1,32 @@
-// Runs the Capital Factory × NatSec100 overlap validator as part of the suite.
+// Runs the complete 2025 roster recovery and Capital Factory overlap validators
+// as the standing NatSec100 intake regressions.
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const validator = path.join(HERE, '..', 'data', 'intake', 'natsec100-pathways', 'chunk2-capital-factory', 'validate-chunk2.mjs');
+const root = path.join(HERE, '..');
+const checks = [
+  {
+    label: 'natsec100-2025-roster-recovery',
+    path: path.join(HERE, 'natsec100-2025-roster-recovery.test.js'),
+  },
+  {
+    label: 'chunk2-capital-factory',
+    path: path.join(root, 'data', 'intake', 'natsec100-pathways', 'chunk2-capital-factory', 'validate-chunk2.mjs'),
+  },
+];
 
 try {
-  const out = execFileSync('node', [validator], { encoding: 'utf8' });
-  process.stdout.write(out);
+  for (const check of checks) {
+    const out = execFileSync('node', [check.path], { encoding: 'utf8' });
+    process.stdout.write(out);
+    console.log(`${check.label}: PASS`);
+  }
   console.log('chunk2-capital-factory.test: PASS');
-} catch (e) {
+} catch (error) {
   console.error('chunk2-capital-factory.test: FAIL');
-  if (e.stdout) process.stdout.write(e.stdout);
-  if (e.stderr) process.stderr.write(e.stderr);
+  if (error.stdout) process.stdout.write(error.stdout);
+  if (error.stderr) process.stderr.write(error.stderr);
   process.exit(1);
 }
