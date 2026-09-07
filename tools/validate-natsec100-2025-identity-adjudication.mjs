@@ -6,6 +6,10 @@ import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_ROOT = path.join(HERE, '..');
+const DATA_REL = path.posix.join('data', 'intake', 'natsec100-pathways', 'chunk1');
+const ROSTER_REL = path.posix.join(DATA_REL, 'roster-2025-official-visual-recovery.jsonl');
+const REGISTRY_REL = path.posix.join(DATA_REL, 'companies.jsonl');
+const APPROVED_ISSUER_PRESS_RELEASE_HOSTS = new Set(['prnewswire.com']);
 
 function fail(message) { throw new Error(message); }
 function assert(condition, message) { if (!condition) fail(message); }
@@ -21,6 +25,7 @@ function normalizeWebsite(value) {
 function gitBlobSha(buffer) {
   return crypto.createHash('sha1').update(Buffer.from(`blob ${buffer.length}\0`)).update(buffer).digest('hex');
 }
+function sha256Bytes(buffer) { return crypto.createHash('sha256').update(buffer).digest('hex'); }
 function sha256Json(value) { return crypto.createHash('sha256').update(JSON.stringify(value)).digest('hex'); }
 function parseArgs(argv) {
   const out = { root: DEFAULT_ROOT, json: false, fixture: false };
@@ -58,11 +63,10 @@ function resolveSource(source, indexes) {
 function host(url) { return new URL(url).hostname.toLowerCase().replace(/^www\./, ''); }
 function validate(options = {}) {
   const root = options.root ?? DEFAULT_ROOT;
-  const base = path.join(root, 'data', 'intake', 'natsec100-pathways', 'chunk1');
-  const rosterPath = path.join(base, 'roster-2025-official-visual-recovery.jsonl');
-  const registryPath = path.join(base, 'companies.jsonl');
-  const summaryPath = path.join(base, 'roster-2025-identity-adjudication.json');
-  const rowsPath = path.join(base, 'roster-2025-identity-adjudication.jsonl');
+  const rosterPath = path.join(root, ROSTER_REL);
+  const registryPath = path.join(root, REGISTRY_REL);
+  const summaryPath = path.join(root, DATA_REL, 'roster-2025-identity-adjudication.json');
+  const rowsPath = path.join(root, DATA_REL, 'roster-2025-identity-adjudication.jsonl');
   const summary = readJson(summaryPath);
   const rows = readJsonl(rowsPath);
   const rosterBytes = fs.readFileSync(rosterPath);
@@ -73,6 +77,9 @@ function validate(options = {}) {
   assert(summary.schema_version === 'natsec100-2025-identity-adjudication@1', 'wrong adjudication schema');
   assert(summary.status === 'complete_bounded_identity_adjudication_candidate_not_promoted', 'wrong adjudication status');
   assert(summary.source.main_commit === '0b93ed2ab9741813b71e34b765bd17cd91533685', 'wrong source main lease');
+  assert(summary.source.roster_path === ROSTER_REL, 'wrong roster source path');
+  assert(summary.source.registry_path === REGISTRY_REL, 'wrong registry source path');
+  assert(`sha256:${sha256Bytes(rosterBytes)}` === summary.source.roster_transcription_sha256, 'roster transcription SHA-256 drift');
   assert(summary.source.source_receipt_id === 'R003', 'wrong source receipt');
   if (!options.fixture) {
     assert(gitBlobSha(rosterBytes) === summary.source.roster_git_blob, 'roster Git blob drift');
@@ -109,19 +116,53 @@ function validate(options = {}) {
     for (const key of ['company_registry_effect','company_year_effect','graph_effect','actor_hop_effect']) assert(row.state[key] === 'none', `${key} broadened at rank ${rank}`);
     for (const key of ['ranking_membership_only']) assert(row.boundaries[key] === true, `ranking boundary missing at rank ${rank}`);
     for (const key of ['procurement_established','investment_established','operational_impact_established','ownership_established','control_established','coordination_established','actor_contact_established']) assert(row.boundaries[key] === false, `${key} improperly asserted at rank ${rank}`);
+
+    const target = row.target;
+    assert(target && typeof target === 'object', `missing identity target at rank ${rank}`);
+    assert(target.identity_scope === 'brand_domain_record', `identity scope drift at rank ${rank}`);
+    assert(target.legal_entity_resolution === 'outside_this_bounded_adjudication', `legal-entity overclaim at rank ${rank}`);
+    const sourceDomain = normalizeWebsite(source.website);
+    const targetSourceDomain = normalizeWebsite(target.source_domain);
+    const currentDomain = normalizeWebsite(target.current_domain);
+    assert(targetSourceDomain === sourceDomain, `source-domain drift at rank ${rank}`);
+    assert(currentDomain, `missing current domain at rank ${rank}`);
+
     assert(Array.isArray(row.evidence) && row.evidence.length >= 1, `missing identity evidence at rank ${rank}`);
-    const hostSet = new Set(row.expected_evidence_hosts ?? []);
-    assert(hostSet.size >= 1, `missing evidence-host boundary at rank ${rank}`);
+    assert(Array.isArray(row.expected_evidence_hosts) && row.expected_evidence_hosts.length >= 1, `missing evidence-host boundary at rank ${rank}`);
+    const declaredHosts = row.expected_evidence_hosts.map(normalizeWebsite);
+    assert(declaredHosts.every(Boolean), `malformed evidence-host boundary at rank ${rank}`);
+    assert(new Set(declaredHosts).size === declaredHosts.length, `duplicate evidence-host boundary at rank ${rank}`);
+    const hostSet = new Set(declaredHosts);
+    const observedHosts = [];
     for (const item of row.evidence) {
       assert(['first_party_company_identity','issuer_press_release','current_official_site','current_official_redirect','first_party_legal_notice'].includes(item.source_class), `unsupported evidence class at rank ${rank}`);
       assert(item.retrieved_at === '2026-09-06', `unleased retrieval date at rank ${rank}`);
-      assert(hostSet.has(host(item.url)), `evidence host outside row boundary at rank ${rank}`);
+      const evidenceHost = host(item.url);
+      observedHosts.push(evidenceHost);
+      assert(normalizeWebsite(item.publisher_domain) === evidenceHost, `publisher domain does not match evidence URL at rank ${rank}`);
+      assert(hostSet.has(evidenceHost), `evidence host outside row boundary at rank ${rank}`);
+
+      if (item.source_class === 'first_party_company_identity') {
+        assert(evidenceHost === sourceDomain || evidenceHost === currentDomain, `first-party evidence host is not bound to the claimed company at rank ${rank}`);
+      } else if (item.source_class === 'current_official_redirect') {
+        assert(row.disposition === 'new_registry_candidate_successor_brand', `redirect evidence is only valid for a successor candidate at rank ${rank}`);
+        assert(evidenceHost === sourceDomain, `official redirect must originate on the source domain at rank ${rank}`);
+      } else if (item.source_class === 'current_official_site' || item.source_class === 'first_party_legal_notice') {
+        assert(evidenceHost === currentDomain, `current first-party evidence must use the target domain at rank ${rank}`);
+      } else if (item.source_class === 'issuer_press_release') {
+        assert(
+          evidenceHost === sourceDomain
+            || evidenceHost === currentDomain
+            || APPROVED_ISSUER_PRESS_RELEASE_HOSTS.has(evidenceHost),
+          `issuer press release host is not independently approved at rank ${rank}`,
+        );
+      }
       assert(typeof item.supports === 'string' && item.supports.length > 20, `missing bounded support statement at rank ${rank}`);
     }
-    const target = row.target;
-    assert(target.identity_scope === 'brand_domain_record', `identity scope drift at rank ${rank}`);
-    assert(target.legal_entity_resolution === 'outside_this_bounded_adjudication', `legal-entity overclaim at rank ${rank}`);
-    assert(normalizeWebsite(target.source_domain) === normalizeWebsite(source.website), `source-domain drift at rank ${rank}`);
+    const actualHosts = [...new Set(observedHosts)].sort();
+    const expectedHosts = [...hostSet].sort();
+    assert(JSON.stringify(actualHosts) === JSON.stringify(expectedHosts), `declared evidence hosts do not match evidence URLs at rank ${rank}`);
+
     if (row.disposition === 'existing_registry_alias_website_update') {
       assert(target.proposed_company_id === null, `existing amendment creates new ID at rank ${rank}`);
       const existing = registry.find((c) => c.company_id === target.existing_company_id);
@@ -138,10 +179,10 @@ function validate(options = {}) {
       proposedIds.add(target.proposed_company_id);
       if (row.disposition === 'new_registry_candidate_exact_brand_domain') {
         assert(normalizeName(target.canonical_name) === normalizeName(source.company_name_as_reported), `exact candidate name drift at rank ${rank}`);
-        assert(normalizeWebsite(target.current_domain) === normalizeWebsite(source.website), `exact candidate domain drift at rank ${rank}`);
+        assert(currentDomain === sourceDomain, `exact candidate domain drift at rank ${rank}`);
       } else {
         assert(normalizeName(target.canonical_name) !== normalizeName(source.company_name_as_reported), `successor candidate did not change brand at rank ${rank}`);
-        assert(normalizeWebsite(target.current_domain) !== normalizeWebsite(source.website), `successor candidate did not change domain at rank ${rank}`);
+        assert(currentDomain !== sourceDomain, `successor candidate did not change domain at rank ${rank}`);
         assert(target.aliases.map(normalizeName).includes(normalizeName(source.company_name_as_reported)), `successor candidate does not retain source brand at rank ${rank}`);
         assert(row.evidence.length >= 2, `successor continuity lacks two-source custody at rank ${rank}`);
       }
