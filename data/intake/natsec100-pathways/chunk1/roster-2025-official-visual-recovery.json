@@ -1,0 +1,59 @@
+{
+  "schema_version": "natsec100-2025-roster-recovery@1",
+  "status": "source_transcription_complete_identity_reconciliation_pending_case_promotion",
+  "source": {
+    "receipt_id": "R003",
+    "title": "SVDG 2025 NatSec100 Report",
+    "url": "https://www.natsec100.org/s/SVDG_2025_NatSec100_20250706.pdf",
+    "archive_ref": "http://web.archive.org/web/20250709131046/https://www.natsec100.org/s/SVDG_2025_NatSec100_20250706.pdf",
+    "table_pages": [
+      12,
+      13,
+      14,
+      15
+    ],
+    "visual_reviewed_at": "2026-09-06",
+    "transcription_sha256": "sha256:d6e5680a7539601098b6ed8fc0a2faee82ef08013d01cab24ac74eba736ddfe5"
+  },
+  "denominator": {
+    "year": 2025,
+    "expected_rows": 100,
+    "expected_ranks": {
+      "min": 1,
+      "max": 100,
+      "complete": true
+    },
+    "prior_partial_rows": 42,
+    "prior_rows_with_exact_rank": 27,
+    "prior_presence_only_rows": 15,
+    "new_source_rows_recovered": 58,
+    "previously_present_rows_given_exact_rank": 15
+  },
+  "scope": {
+    "promotes_to": "candidate_only",
+    "graph_effect": "none",
+    "identity_effect": "none",
+    "ranking_surface_only": true,
+    "operational_impact_established": false,
+    "government_contract_established": false,
+    "portfolio_relationship_established": false,
+    "actor_hop_established": false
+  },
+  "method": {
+    "recovery": "manual_visual_transcription_from_official_pdf_table",
+    "row_fields": [
+      "year",
+      "rank",
+      "company_name_as_reported",
+      "website",
+      "source_page"
+    ],
+    "identity_reconciliation": "The validator records unique existing-registry matches by source website, then canonical name or declared alias. Unmatched source rows remain source-scoped identity candidates; ambiguous and conflicting matches fail.",
+    "prior_partial_comparison": "All 42 existing 2025 company_year rows must reconcile to the source transcription, and every existing exact rank must match the recovered official rank."
+  },
+  "limitations": [
+    "The PDF table is image-rendered, so the earlier text extraction failure was real; visual inspection recovers the table without converting the PDF into machine-native source data.",
+    "A ranking row is evidence of inclusion and rank on the 2025 SVDG surface. It is not evidence of operational impact, a government award, investment, control, coordination, or actor-level contact.",
+    "The current company_years file and company registry remain unchanged in this bounded recovery. Unresolved source identities and new company rows require explicit case-promotion review rather than silent canonical insertion."
+  ]
+}
