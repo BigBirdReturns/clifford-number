@@ -141,6 +141,61 @@ jobs:
           stage=release-check
           npm run release:check > receipt/release-check.log 2>&1
 
+          stage=cleanup-release-residue
+          rm -rf node_modules
+          python3 - <<'PY'
+          import pathlib
+          import shutil
+          import subprocess
+
+          allowed_exact = {
+              'data/intake/natsec100-pathways/chunk1/conversion_events.jsonl',
+              'data/intake/natsec100-pathways/chunk1/receipts.jsonl',
+              'data/research/natsec100-x-bow-award-adjudication.json',
+              'data/research/clifford-cross-corpus-public-interest-map.json',
+              'build/cross-corpus-map/current.json',
+              'test/natsec100-award-control.test.js',
+          }
+          allowed_prefixes = (
+              'receipts/natsec100/ce0364-xbow-20260908/',
+              'receipt/',
+          )
+
+          def allowed(path):
+              return path in allowed_exact or path.startswith(allowed_prefixes)
+
+          tracked = subprocess.check_output(
+              ['git', 'diff', '--name-only', '-z'],
+          ).split(b'\0')
+          for raw in tracked:
+              if not raw:
+                  continue
+              path = raw.decode('utf-8')
+              if not allowed(path):
+                  subprocess.run(
+                      ['git', 'restore', '--source=HEAD', '--worktree', '--', path],
+                      check=True,
+                  )
+
+          untracked = subprocess.check_output(
+              ['git', 'ls-files', '--others', '--exclude-standard', '-z'],
+          ).split(b'\0')
+          for raw in untracked:
+              if not raw:
+                  continue
+              path = raw.decode('utf-8')
+              if allowed(path):
+                  continue
+              target = pathlib.Path(path)
+              if target.is_dir() and not target.is_symlink():
+                  shutil.rmtree(target)
+              else:
+                  target.unlink(missing_ok=True)
+          PY
+
+          stage=post-cleanup-focused-test
+          node test/natsec100-award-control.test.js | tee receipt/post-cleanup-focused-test.log
+
           stage=path-census
           git diff --check
           mapfile -t changed < <(git status --short --untracked-files=all | sed 's/^...//' | grep -v '^receipt/' | sort)
