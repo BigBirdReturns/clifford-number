@@ -142,7 +142,8 @@ jobs:
           stage=path-census
           git diff --check
           mapfile -t changed < <(git status --short --untracked-files=all | sed 's/^...//' | grep -v '^receipt/' | sort)
-          test "${#changed[@]}" -eq 18
+          printf '%s\n' "${changed[@]}" > receipt/changed-paths-before-commit.txt
+          printf '%s\n' "${#changed[@]}" > receipt/changed-path-count.txt
           for candidate in "${changed[@]}"; do
             case "$candidate" in
               data/intake/natsec100-pathways/chunk1/conversion_events.jsonl|\
@@ -159,7 +160,7 @@ jobs:
                 ;;
             esac
           done
-          printf '%s\n' "${changed[@]}" > receipt/changed-paths-before-commit.txt
+          test "${#changed[@]}" -eq 18
 
           stage=commit
           git config user.name BigBirdReturns
