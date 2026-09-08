@@ -42,6 +42,8 @@ jobs:
         run: node test/topology-admission-frontier.test.js
       - name: Run scheduled crawler promotion contract tests
         run: node test/scheduled-crawl-promotion.test.js
+      - name: Run scheduled crawler PR identity contract tests
+        run: node test/scheduled-crawl-pr-identity.test.js
       - name: Run scheduled crawler admission observation tests
         run: node test/scheduled-crawl-admission.test.js
       - name: Run scheduled crawler resumption tests

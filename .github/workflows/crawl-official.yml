@@ -56,11 +56,25 @@ jobs:
       - name: Stage crawler-owned intake roots
         run: git add data/crawl receipts/crawl
 
+      - name: Mint PR-only scheduled-crawl publisher token
+        id: pr-publisher
+        continue-on-error: true
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ vars.SCHEDULED_CRAWL_PR_APP_CLIENT_ID }}
+          private-key: ${{ secrets.SCHEDULED_CRAWL_PR_APP_PRIVATE_KEY }}
+          permission-pull-requests: write
+
       - name: Promote intake through qualified pull request
         id: promote
         continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BASH_ENV: ${{ github.workspace }}/.github/scripts/scheduled-crawl-pr-identity.sh
+          SCHEDULED_CRAWL_PR_TOKEN: ${{ steps.pr-publisher.outputs.token }}
+          SCHEDULED_CRAWL_PR_TOKEN_MINT_OUTCOME: ${{ steps.pr-publisher.outcome }}
+          SCHEDULED_CRAWL_PR_APP_SLUG: ${{ steps.pr-publisher.outputs.app-slug }}
+          SCHEDULED_CRAWL_PR_INSTALLATION_ID: ${{ steps.pr-publisher.outputs.installation-id }}
           PROMOTION_KIND: official-record
         run: bash .github/scripts/promote-scheduled-crawl.sh
       - name: Retain exact candidate recovery bundle
