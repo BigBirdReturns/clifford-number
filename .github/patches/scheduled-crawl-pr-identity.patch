@@ -1,0 +1,293 @@
+diff --git a/.github/scripts/promote-scheduled-crawl.sh b/.github/scripts/promote-scheduled-crawl.sh
+--- a/.github/scripts/promote-scheduled-crawl.sh
++++ b/.github/scripts/promote-scheduled-crawl.sh
+@@ -1,6 +1,9 @@
+ #!/usr/bin/env bash
+ set -Eeuo pipefail
+ 
++PR_TOKEN="${SCHEDULED_CRAWL_PR_TOKEN:-}"
++unset SCHEDULED_CRAWL_PR_TOKEN
++
+ REPO="${GITHUB_REPOSITORY:?GITHUB_REPOSITORY is required}"
+ RUN_ID="${GITHUB_RUN_ID:?GITHUB_RUN_ID is required}"
+ RUN_ATTEMPT="${GITHUB_RUN_ATTEMPT:?GITHUB_RUN_ATTEMPT is required}"
+@@ -18,6 +21,7 @@ BASE_SHA=''
+ CANDIDATE_SHA=''
+ CANDIDATE_BRANCH=''
+ PR_NUMBER=''
++PR_AUTHOR=''
+ RELEASE_RUN_ID=''
+ NO_MAGIC_RUN_ID=''
+ MERGE_SHA=''
+@@ -96,6 +100,7 @@ write_checkpoint() {
+     printf 'candidate_branch=%s\n' "$CANDIDATE_BRANCH"
+     printf 'candidate_sha=%s\n' "$CANDIDATE_SHA"
+     printf 'pull_request=%s\n' "$PR_NUMBER"
++    printf 'pull_request_author=%s\n' "$PR_AUTHOR"
+     printf 'release_run_id=%s\n' "$RELEASE_RUN_ID"
+     printf 'no_magic_run_id=%s\n' "$NO_MAGIC_RUN_ID"
+     printf 'merged=%s\n' "$MERGED"
+@@ -314,6 +319,18 @@ if [[ "$OPEN_CRAWLER_COUNT" -gt 0 ]]; then
+   exit 1
+ fi
+ 
++STAGE='require-pull-request-publication-identity'
++if [[ -z "$PR_TOKEN" ]]; then
++  OUTCOME='publication_identity_missing'
++  echo 'Dedicated scheduled-crawl pull-request identity is unavailable; retaining the local candidate without remote publication.' >&2
++  exit 1
++fi
++if [[ "$PR_TOKEN" == "${GH_TOKEN:-}" ]]; then
++  OUTCOME='publication_identity_not_distinct'
++  echo 'Dedicated scheduled-crawl pull-request identity must differ from GITHUB_TOKEN.' >&2
++  exit 1
++fi
++
+ STAGE='publish-run-scoped-candidate'
+ git fetch --no-tags origin main
+ test "$(git rev-parse origin/main)" = "$BASE_SHA"
+@@ -333,12 +350,20 @@ PR_PAYLOAD="$(jq -n \
+   --arg body "$PR_BODY" \
+   --arg head "$CANDIDATE_BRANCH" \
+   '{title: $title, body: $body, head: $head, base: "main", draft: false}')"
+-gh api --method POST "repos/$REPO/pulls" --input - <<< "$PR_PAYLOAD" \
++GH_TOKEN="$PR_TOKEN" \
++  gh api --method POST "repos/$REPO/pulls" --input - <<< "$PR_PAYLOAD" \
+   > "$RECEIPT_DIR/pull-request-created.json"
++unset PR_TOKEN
+ PR_NUMBER="$(jq -r .number "$RECEIPT_DIR/pull-request-created.json")"
+ test "$PR_NUMBER" != 'null'
+ test "$(jq -r .head.sha "$RECEIPT_DIR/pull-request-created.json")" = "$CANDIDATE_SHA"
+ test "$(jq -r .base.sha "$RECEIPT_DIR/pull-request-created.json")" = "$BASE_SHA"
++PR_AUTHOR="$(jq -er .user.login "$RECEIPT_DIR/pull-request-created.json")"
++jq -e '.user.type == "Bot" and (.user.login | endswith("[bot]")) and .user.login != "github-actions[bot]"' \
++  "$RECEIPT_DIR/pull-request-created.json" >/dev/null
++jq '{login: .user.login, type: .user.type, id: .user.id}' \
++  "$RECEIPT_DIR/pull-request-created.json" \
++  > "$RECEIPT_DIR/pull-request-author.json"
+ 
+ STAGE='dispatch-required-checks'
+ gh api --method POST "repos/$REPO/actions/workflows/ci.yml/dispatches" \
+diff --git a/.github/workflows/crawl-industrial-exhaust.yml b/.github/workflows/crawl-industrial-exhaust.yml
+--- a/.github/workflows/crawl-industrial-exhaust.yml
++++ b/.github/workflows/crawl-industrial-exhaust.yml
+@@ -15,6 +15,7 @@ on:
+       - 'test/industrial-exhaust.test.js'
+       - 'test/industrial-exhaust-artifacts.test.js'
+       - 'test/scheduled-crawl-promotion.test.js'
++      - 'test/scheduled-crawl-pr-identity.test.js'
+   push:
+     branches: [main]
+     paths:
+@@ -33,6 +34,7 @@ on:
+       - 'test/industrial-exhaust.test.js'
+       - 'test/industrial-exhaust-artifacts.test.js'
+       - 'test/scheduled-crawl-promotion.test.js'
++      - 'test/scheduled-crawl-pr-identity.test.js'
+   schedule:
+     - cron: '41 8 * * *'
+   workflow_dispatch:
+@@ -110,11 +112,28 @@ jobs:
+         run: |
+           node test/industrial-exhaust.test.js
+           node test/industrial-exhaust-artifacts.test.js
++      - name: Detect dedicated PR publication identity
++        id: pr-identity
++        env:
++          CONFIGURED: ${{ secrets.SCHEDULED_CRAWL_PR_APP_CLIENT_ID != '' && secrets.SCHEDULED_CRAWL_PR_APP_PRIVATE_KEY != '' }}
++        run: echo "configured=$CONFIGURED" >> "$GITHUB_OUTPUT"
++      - name: Mint repository-scoped PR publication token
++        id: pr-token
++        if: steps.pr-identity.outputs.configured == 'true'
++        continue-on-error: true
++        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
++        with:
++          client-id: ${{ secrets.SCHEDULED_CRAWL_PR_APP_CLIENT_ID }}
++          private-key: ${{ secrets.SCHEDULED_CRAWL_PR_APP_PRIVATE_KEY }}
++          owner: ${{ github.repository_owner }}
++          repositories: ${{ github.event.repository.name }}
++          permission-pull-requests: write
+       - name: Promote intake through qualified pull request
+         id: promote
+         continue-on-error: true
+         env:
+           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
++          SCHEDULED_CRAWL_PR_TOKEN: ${{ steps.pr-token.outputs.token }}
+           PROMOTION_KIND: industrial-exhaust
+         run: bash .github/scripts/promote-scheduled-crawl.sh
+       - name: Retain exact candidate recovery bundle
+diff --git a/.github/workflows/crawl-official.yml b/.github/workflows/crawl-official.yml
+--- a/.github/workflows/crawl-official.yml
++++ b/.github/workflows/crawl-official.yml
+@@ -52,12 +52,30 @@ jobs:
+ 
+       - name: Stage crawler-owned intake roots
+         run: git add data/crawl receipts/crawl
++
++      - name: Detect dedicated PR publication identity
++        id: pr-identity
++        env:
++          CONFIGURED: ${{ secrets.SCHEDULED_CRAWL_PR_APP_CLIENT_ID != '' && secrets.SCHEDULED_CRAWL_PR_APP_PRIVATE_KEY != '' }}
++        run: echo "configured=$CONFIGURED" >> "$GITHUB_OUTPUT"
++      - name: Mint repository-scoped PR publication token
++        id: pr-token
++        if: steps.pr-identity.outputs.configured == 'true'
++        continue-on-error: true
++        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
++        with:
++          client-id: ${{ secrets.SCHEDULED_CRAWL_PR_APP_CLIENT_ID }}
++          private-key: ${{ secrets.SCHEDULED_CRAWL_PR_APP_PRIVATE_KEY }}
++          owner: ${{ github.repository_owner }}
++          repositories: ${{ github.event.repository.name }}
++          permission-pull-requests: write
+ 
+       - name: Promote intake through qualified pull request
+         id: promote
+         continue-on-error: true
+         env:
+           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
++          SCHEDULED_CRAWL_PR_TOKEN: ${{ steps.pr-token.outputs.token }}
+           PROMOTION_KIND: official-record
+         run: bash .github/scripts/promote-scheduled-crawl.sh
+       - name: Retain exact candidate recovery bundle
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -37,6 +37,8 @@ jobs:
+         run: node test/topology-admission-frontier.test.js
+       - name: Run scheduled crawler promotion contract tests
+         run: node test/scheduled-crawl-promotion.test.js
++      - name: Run scheduled crawler PR identity tests
++        run: node test/scheduled-crawl-pr-identity.test.js
+       - name: Run scheduled crawler admission observation tests
+         run: node test/scheduled-crawl-admission.test.js
+       - name: Run scheduled crawler resumption tests
+diff --git a/test/scheduled-crawl-promotion.test.js b/test/scheduled-crawl-promotion.test.js
+--- a/test/scheduled-crawl-promotion.test.js
++++ b/test/scheduled-crawl-promotion.test.js
+@@ -84,4 +84,6 @@ export function validateScheduledCrawlPromotion(files) {
+   requireAbsent(errors, files.noMagic, /jobs:\n  validate:\n/, 'No magic human gate must not reuse the generic validate check name');
+   requireMatch(errors, files.release, /Run scheduled crawler promotion contract tests\n        run: node test\/scheduled-crawl-promotion\.test\.js/, 'Release checks must execute the scheduled promotion contract test');
++  requireMatch(errors, files.release, /Run scheduled crawler PR identity tests\n        run: node test\/scheduled-crawl-pr-identity\.test\.js/,
++    'Release checks must execute the dedicated PR identity contract test');
+   requireMatch(errors, files.release, /Run scheduled crawler admission observation tests\n        run: node test\/scheduled-crawl-admission\.test\.js/, 'Release checks must execute native-admission observation tests');
+@@ -153,4 +155,5 @@ const mutations = [
+   ['restore generic no-magic check name', (c) => { c.noMagic = c.noMagic.replace('  no-magic-human-gate:', '  validate:'); }],
+   ['remove the release-gate contract test', (c) => { c.release = c.release.replace('      - name: Run scheduled crawler promotion contract tests\n        run: node test/scheduled-crawl-promotion.test.js\n', ''); }],
++  ['remove the PR identity contract test', (c) => { c.release = c.release.replace('      - name: Run scheduled crawler PR identity tests\n        run: node test/scheduled-crawl-pr-identity.test.js\n', ''); }],
+   ['remove native-admission tests from release', (c) => { c.release = c.release.replace('      - name: Run scheduled crawler admission observation tests\n        run: node test/scheduled-crawl-admission.test.js\n', ''); }],
+diff --git a/test/scheduled-crawl-pr-identity.test.js b/test/scheduled-crawl-pr-identity.test.js
+new file mode 100755
+--- /dev/null
++++ b/test/scheduled-crawl-pr-identity.test.js
+@@ -0,0 +1,110 @@
++#!/usr/bin/env node
++import assert from 'node:assert/strict';
++import { readFileSync } from 'node:fs';
++
++const ACTION = 'actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1';
++const canonical = {
++  industrial: readFileSync('.github/workflows/crawl-industrial-exhaust.yml', 'utf8'),
++  official: readFileSync('.github/workflows/crawl-official.yml', 'utf8'),
++  helper: readFileSync('.github/scripts/promote-scheduled-crawl.sh', 'utf8')
++};
++
++function requireMatch(errors, text, pattern, message) {
++  if (!pattern.test(text)) errors.push(message);
++}
++
++function requireAbsent(errors, text, pattern, message) {
++  if (pattern.test(text)) errors.push(message);
++}
++
++export function validateScheduledCrawlPrIdentity(files) {
++  const errors = [];
++  for (const [label, workflow] of [
++    ['industrial-exhaust workflow', files.industrial],
++    ['official-record workflow', files.official]
++  ]) {
++    requireMatch(errors, workflow,
++      /CONFIGURED: \$\{\{ secrets\.SCHEDULED_CRAWL_PR_APP_CLIENT_ID != '' && secrets\.SCHEDULED_CRAWL_PR_APP_PRIVATE_KEY != '' \}\}/,
++      `${label} must detect the complete App credential pair without exposing either secret`);
++    requireMatch(errors, workflow, new RegExp(`uses: ${ACTION.replaceAll('/', '\\/')}`),
++      `${label} must pin the App-token action to the reviewed v3.2.0 commit`);
++    requireMatch(errors, workflow, /if: steps\.pr-identity\.outputs\.configured == 'true'/,
++      `${label} must mint only when both App credentials are configured`);
++    requireMatch(errors, workflow, /continue-on-error: true\n        uses: actions\/create-github-app-token@/,
++      `${label} must preserve candidate recovery when token minting fails`);
++    requireMatch(errors, workflow,
++      /owner: \$\{\{ github\.repository_owner \}\}\n          repositories: \$\{\{ github\.event\.repository\.name \}\}\n          permission-pull-requests: write/,
++      `${label} must scope the installation token to this repository and PR write`);
++    requireMatch(errors, workflow,
++      /SCHEDULED_CRAWL_PR_TOKEN: \$\{\{ steps\.pr-token\.outputs\.token \}\}/,
++      `${label} must pass the App token separately from GITHUB_TOKEN`);
++    requireAbsent(errors, workflow,
++      /GH_TOKEN: \$\{\{ steps\.pr-token\.outputs\.token \}\}/,
++      `${label} must not replace the job's GITHUB_TOKEN globally`);
++  }
++
++  const helper = files.helper;
++  requireMatch(errors, helper,
++    /^#!\/usr\/bin\/env bash\nset -Eeuo pipefail\n\nPR_TOKEN="\$\{SCHEDULED_CRAWL_PR_TOKEN:-\}"\nunset SCHEDULED_CRAWL_PR_TOKEN\n/,
++    'helper must capture and de-export the App token before any child process runs');
++  requireMatch(errors, helper, /PR_AUTHOR=''/,
++    'helper must retain PR-author attribution');
++  requireMatch(errors, helper, /pull_request_author=%s/,
++    'checkpoint must retain PR-author attribution');
++  requireMatch(errors, helper, /STAGE='require-pull-request-publication-identity'/,
++    'helper must declare the publication-identity gate');
++  requireMatch(errors, helper, /publication_identity_missing/,
++    'missing App identity must have a distinct terminal outcome');
++  requireMatch(errors, helper, /publication_identity_not_distinct/,
++    'GITHUB_TOKEN reuse must have a distinct terminal outcome');
++
++  const identity = helper.indexOf("STAGE='require-pull-request-publication-identity'");
++  const publish = helper.indexOf("STAGE='publish-run-scoped-candidate'");
++  const open = helper.indexOf("STAGE='open-ordinary-pull-request'");
++  const dispatch = helper.indexOf("STAGE='dispatch-required-checks'");
++  if (!(identity >= 0 && publish > identity && open > publish && dispatch > open)) {
++    errors.push('identity, branch publication, PR creation and dispatch must remain ordered');
++  }
++
++  const prSection = helper.slice(open, dispatch);
++  requireMatch(errors, prSection,
++    /GH_TOKEN="\$PR_TOKEN" \\\n  gh api --method POST "repos\/\$REPO\/pulls"/,
++    'App token must wrap only the PR creation API call');
++  requireMatch(errors, prSection, /unset PR_TOKEN/,
++    'helper must erase the unexported App token immediately after PR creation');
++  requireMatch(errors, prSection,
++    /\.user\.type == "Bot"[\s\S]*\.user\.login != "github-actions\[bot\]"/,
++    'created PR must bind a distinct GitHub App bot author');
++  requireMatch(errors, prSection, /pull-request-author\.json/,
++    'PR publication must retain a non-secret author receipt');
++  requireAbsent(errors, helper.slice(dispatch), /PR_TOKEN|SCHEDULED_CRAWL_PR_TOKEN/,
++    'App token must not reach dispatch, qualification, merge or cleanup');
++
++  return errors;
++}
++
++assert.deepEqual(validateScheduledCrawlPrIdentity(canonical), [],
++  'canonical scheduled-crawl PR identity contract must validate');
++
++const mutations = [
++  ['remove industrial App mint', (c) => { c.industrial = c.industrial.replace(ACTION, 'actions/checkout@v4'); }],
++  ['remove official App mint', (c) => { c.official = c.official.replace(ACTION, 'actions/checkout@v4'); }],
++  ['broaden token permission', (c) => { c.industrial = c.industrial.replace('permission-pull-requests: write', 'permission-contents: write'); }],
++  ['remove repository scope', (c) => { c.official = c.official.replace('          repositories: ${{ github.event.repository.name }}\n', ''); }],
++  ['replace global GH token', (c) => { c.industrial = c.industrial.replace('GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}', 'GH_TOKEN: ${{ steps.pr-token.outputs.token }}'); }],
++  ['drop missing-identity outcome', (c) => { c.helper = c.helper.replace('publication_identity_missing', 'failed_closed'); }],
++  ['reuse GITHUB_TOKEN identity', (c) => { c.helper = c.helper.replace('publication_identity_not_distinct', 'failed_closed'); }],
++  ['open PR with global token', (c) => { c.helper = c.helper.replace('GH_TOKEN="$PR_TOKEN" \\\n  gh api --method POST', 'gh api --method POST'); }],
++  ['retain App token after PR creation', (c) => { c.helper = c.helper.replace('unset PR_TOKEN\nPR_NUMBER=', 'PR_NUMBER='); }],
++  ['drop App author binding', (c) => { c.helper = c.helper.replace('.user.type == "Bot"', 'true'); }],
++  ['leak App token into dispatch', (c) => { c.helper = c.helper.replace("STAGE='dispatch-required-checks'", "STAGE='dispatch-required-checks'\nGH_TOKEN=\"$PR_TOKEN\""); }]
++];
++
++for (const [label, mutate] of mutations) {
++  const candidate = structuredClone(canonical);
++  mutate(candidate);
++  assert.ok(validateScheduledCrawlPrIdentity(candidate).length > 0,
++    `mutation should fail closed: ${label}`);
++}
++
++console.log(`scheduled-crawl-pr-identity.test: ${mutations.length} adversarial mutations PASS`);
