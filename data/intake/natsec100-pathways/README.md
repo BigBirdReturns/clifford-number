@@ -50,7 +50,7 @@ through that hygiene pass.
 |---|---:|---|
 | `companies.jsonl` | 196 | alias-reconciled intake company registry |
 | `company_years.jsonl` | 342 | historical edition rows: 2023: 100, 2024: 100, 2025: 42 partial, 2026: 100 |
-| `receipts.jsonl` | 16 | official reports, edition pages, and bounded corroboration |
+| `receipts.jsonl` | 19 | official reports, edition pages, and bounded corroboration |
 | `conversion_events.jsonl` | 367 | edition-inclusion events plus documented exits, filings, methodology change, and held award leads |
 | `surfaces.jsonl` | 4 | the 2023 through 2026 ranking editions; roster membership remains non-hop |
 | `actors.jsonl` | 12 | receipt-backed operators, sponsors, and methodology partners |

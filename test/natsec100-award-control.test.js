@@ -126,3 +126,38 @@ test('CE0364 preserves source-specific award fields and refuses a fabricated mod
     assert.ok(receipt.path.startsWith('receipts/natsec100/ce0364-xbow-20260908/'));
   }
 });
+
+const ce0364Materialization = JSON.parse(
+  fs.readFileSync(
+    'receipts/natsec100/ce0364-xbow-20260908/materialization-record.json',
+    'utf8',
+  ),
+);
+const ce0364IntakeReadme = fs.readFileSync(
+  'data/intake/natsec100-pathways/README.md',
+  'utf8',
+);
+
+test('CE0364 materialization and receipt documentation match their live denominators', () => {
+  assert.equal(ce0364Materialization.intended_path_count, 17);
+  assert.equal(
+    ce0364Materialization.intended_paths.length,
+    ce0364Materialization.intended_path_count,
+  );
+  assert.equal(
+    new Set(ce0364Materialization.intended_paths).size,
+    ce0364Materialization.intended_path_count,
+  );
+  assert.ok(
+    ce0364Materialization.intended_paths.includes(
+      'receipts/natsec100/ce0364-xbow-20260908/materialization-record.json',
+    ),
+  );
+
+  assert.equal(ce0364Receipts.length, 19);
+  const documentedReceiptCount = ce0364IntakeReadme.match(
+    /\| `receipts\.jsonl` \| (\d+) \|/,
+  );
+  assert.ok(documentedReceiptCount);
+  assert.equal(Number(documentedReceiptCount[1]), ce0364Receipts.length);
+});
