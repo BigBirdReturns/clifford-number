@@ -22,8 +22,9 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
-      EXPECTED_MAIN: e499eaeeb6bcdf64b76f0440c10e79ea1c064c4a
-      EXPECTED_MAIN_TREE: 60cc78433ce669d8d16b5d286378f49fa1918762
+      EXPECTED_MAIN: e55db885c97ce43db7ecc7f0120dfafe4cba90a9
+      EXPECTED_MAIN_TREE: 5ca236397615241c6a79059f3fe74420629e6fc7
+      PRIOR_MAIN: e499eaeeb6bcdf64b76f0440c10e79ea1c064c4a
       EVENT_BLOB: 8c3a8dc17b9d28ba4ed330a82b50d3f7a5e5846c
       RECEIPT_BLOB: 54cee87a6615cbde7d26b92e00970f4835836bc8
       TEST_BLOB: 142517f0db5dc64ce9afbe3fd0daa1d32b1c0852
@@ -66,6 +67,17 @@ jobs:
           test "$(git rev-parse HEAD)" = "$EXACT_CONTROLLER_HEAD"
           test "$(git hash-object .github/scripts/temp-ce0364-materialize.py)" = "$SCRIPT_BLOB"
           cp .github/scripts/temp-ce0364-materialize.py "$RUNNER_TEMP/ce0364-materialize.py"
+          python3 - "$RUNNER_TEMP/ce0364-materialize.py" "$PRIOR_MAIN" "$EXPECTED_MAIN" <<'PY'
+          import pathlib, sys
+          target = pathlib.Path(sys.argv[1])
+          old = f'EXPECTED_MAIN = "{sys.argv[2]}"'
+          new = f'EXPECTED_MAIN = "{sys.argv[3]}"'
+          text = target.read_text(encoding='utf-8')
+          if text.count(old) != 1 or new in text:
+              raise SystemExit('runtime main-lease patch denominator mismatch')
+          target.write_text(text.replace(old, new), encoding='utf-8')
+          PY
+          sha256sum "$RUNNER_TEMP/ce0364-materialize.py" > receipt/runtime-materializer-sha256.txt
 
           stage=lease-main
           current_main="$(git ls-remote origin refs/heads/main | awk '{print $1}')"
