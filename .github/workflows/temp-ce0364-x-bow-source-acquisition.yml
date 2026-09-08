@@ -1,0 +1,133 @@
+name: TEMP CE0364 X-Bow source acquisition
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/temp-ce0364-x-bow-source-acquisition.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: temp-ce0364-x-bow-source-acquisition-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  acquire:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'agent/ce0364-x-bow-source-acquisition-20260908'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      AWARD_ID: CONT_AWD_FA930025C6015_9700_-NONE-_-NONE-
+      AWARD_URL: https://api.usaspending.gov/api/v2/awards/CONT_AWD_FA930025C6015_9700_-NONE-_-NONE-/
+      COUNT_URL: https://api.usaspending.gov/api/v2/awards/count/transaction/CONT_AWD_FA930025C6015_9700_-NONE-_-NONE-/
+      TRANSACTIONS_URL: https://api.usaspending.gov/api/v2/transactions/
+      ANNOUNCEMENT_URL: https://www.war.gov/News/Contracts/Contract/Article/4316486/contracts-for-sep-26-2025/
+      COMPANY_URL: https://www.xbowsystems.com/
+      CONTACT_URL: https://www.xbowsystems.com/contact-us/
+    steps:
+      - name: Check out exact acquisition head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Acquire official and first-party source bytes
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf receipt
+          mkdir -p receipt
+          printf '%s\n' "${GITHUB_SHA}" > receipt/acquisition-head.txt
+          date -u +%FT%TZ > receipt/retrieved-at.txt
+          curl --fail --location --retry 3 --retry-all-errors --connect-timeout 20 --max-time 120 \
+            --dump-header receipt/usaspending-award-detail.headers \
+            --output receipt/usaspending-award-detail.json \
+            "$AWARD_URL"
+          curl --fail --location --retry 3 --retry-all-errors --connect-timeout 20 --max-time 120 \
+            --dump-header receipt/usaspending-transaction-count.headers \
+            --output receipt/usaspending-transaction-count.json \
+            "$COUNT_URL"
+          python3 - <<'PY'
+          import json, os, pathlib
+          request = {
+              "award_id": os.environ["AWARD_ID"],
+              "limit": 5000,
+              "page": 1,
+              "sort": "action_date",
+              "order": "asc",
+          }
+          pathlib.Path("receipt/usaspending-transactions.request.json").write_text(
+              json.dumps(request, separators=(",", ":")) + "\n",
+              encoding="utf-8",
+          )
+          PY
+          curl --fail --location --retry 3 --retry-all-errors --connect-timeout 20 --max-time 120 \
+            --header 'Content-Type: application/json' \
+            --data-binary @receipt/usaspending-transactions.request.json \
+            --dump-header receipt/usaspending-transactions.headers \
+            --output receipt/usaspending-transactions.json \
+            "$TRANSACTIONS_URL"
+          curl --fail --location --retry 3 --retry-all-errors --connect-timeout 20 --max-time 120 \
+            --dump-header receipt/war-award-announcement.headers \
+            --output receipt/war-award-announcement.html \
+            "$ANNOUNCEMENT_URL"
+          curl --fail --location --retry 3 --retry-all-errors --connect-timeout 20 --max-time 120 \
+            --dump-header receipt/x-bow-home.headers \
+            --output receipt/x-bow-home.html \
+            "$COMPANY_URL"
+          curl --fail --location --retry 3 --retry-all-errors --connect-timeout 20 --max-time 120 \
+            --dump-header receipt/x-bow-contact.headers \
+            --output receipt/x-bow-contact.html \
+            "$CONTACT_URL"
+
+      - name: Validate and summarize the acquired population
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          import hashlib, json, pathlib
+          root = pathlib.Path("receipt")
+          award = json.loads((root / "usaspending-award-detail.json").read_text())
+          count = json.loads((root / "usaspending-transaction-count.json").read_text())
+          transactions = json.loads((root / "usaspending-transactions.json").read_text())
+          results = transactions.get("results")
+          if not isinstance(results, list):
+              raise SystemExit("transactions results is not a list")
+          declared = count.get("count")
+          if declared is None:
+              declared = count.get("transaction_count")
+          summary = {
+              "award_id_requested": "CONT_AWD_FA930025C6015_9700_-NONE-_-NONE-",
+              "award_id_returned": award.get("generated_unique_award_id"),
+              "piid": award.get("piid"),
+              "recipient": award.get("recipient"),
+              "total_obligation": award.get("total_obligation"),
+              "potential_total_value_of_award": award.get("potential_total_value_of_award"),
+              "date_signed": award.get("date_signed"),
+              "transaction_count_endpoint": declared,
+              "transaction_rows_returned": len(results),
+              "transactions": results,
+          }
+          if summary["award_id_returned"] != summary["award_id_requested"]:
+              raise SystemExit("award identifier mismatch")
+          if isinstance(declared, int) and declared != len(results):
+              raise SystemExit(f"transaction count mismatch: {declared} != {len(results)}")
+          (root / "summary.json").write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n")
+          lines = []
+          for path in sorted(root.iterdir()):
+              if path.is_file() and path.name != "SHA256SUMS":
+                  lines.append(f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.name}")
+          (root / "SHA256SUMS").write_text("\n".join(lines) + "\n")
+          PY
+
+      - name: Upload checksum-bound acquisition receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ce0364-x-bow-source-acquisition-${{ github.run_id }}-${{ github.run_attempt }}
+          path: receipt/
+          if-no-files-found: error
+          retention-days: 30
