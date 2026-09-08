@@ -94,6 +94,10 @@ pending lane represented as cleared.
 
 ## 2. Phase 0: Foundation Lock (now through end of 2026)
 
+**Status:** completed at the current release boundary. The exact closure ledger is
+[`docs/milestones/phase0-foundation-lock.md`](docs/milestones/phase0-foundation-lock.md).
+Later phases may extend the corpus, but they must preserve these controls.
+
 Goal: everything that later phases join against is made exact.
 
 2.1 **AXM identity reconciliation.** Reconcile the provisional identity
@@ -110,9 +114,11 @@ proving a 100-member roster does not reduce median pairwise Clifford Numbers
 below the value computed without it.
 
 2.3 **Narration layer hardening.** `narrate-hops` exists; extend `plain` blocks
-until every anchor-adjacent actor (Clifford Number 1 to 2 from the anchor) has
-an editorial `who`/`why_here`, each receipt-supported. Acceptance: narration of
-the top 20 most-queried pairs contains zero `[machine-derived]` fallbacks.
+until every anchor-adjacent actor (Clifford Number 1 to 2 from each declared
+anchor) has an editorial `who`/`why_here`, each receipt-supported. Acceptance:
+every route from each declared anchor to every actor at Clifford Number 1 or 2
+renders with zero `[machine-derived]` fallbacks. Durable query telemetry may add
+a usage-weighted check later, but it cannot narrow this exhaustive denominator.
 
 2.4 **Evidence upgrade pass.** Every hop on a path between anchor actors that
 carries `evidence: reported` gets one upgrade attempt to `primary_public`,

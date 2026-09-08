@@ -88,7 +88,14 @@ for (const actor of actorRegistry.filter(row => row.plain)) {
   }
 }
 
-const anchorId = currentHopGraph.anchor_actor_id;
+const declaredAnchorIds = actorRegistry
+  .filter(actor => actor.anchor === true)
+  .map(actor => actor.id)
+  .sort();
+assert.ok(declaredAnchorIds.length > 0, 'at least one canonical anchor is required');
+assert.ok(declaredAnchorIds.includes(currentHopGraph.anchor_actor_id),
+  'the hop graph primary anchor must remain a declared canonical anchor');
+
 const adjacency = new Map();
 for (const hop of currentHopGraph.edges) {
   if (!adjacency.has(hop.actor_a)) adjacency.set(hop.actor_a, new Set());
@@ -96,32 +103,36 @@ for (const hop of currentHopGraph.edges) {
   adjacency.get(hop.actor_a).add(hop.actor_b);
   adjacency.get(hop.actor_b).add(hop.actor_a);
 }
-const distance = new Map([[anchorId, 0]]);
-const queue = [anchorId];
-for (let index = 0; index < queue.length; index += 1) {
-  const current = queue[index];
-  if (distance.get(current) >= 2) continue;
-  for (const next of adjacency.get(current) ?? []) {
-    if (distance.has(next)) continue;
-    distance.set(next, distance.get(current) + 1);
-    queue.push(next);
-  }
-}
-const narrationCoverageIds = [...distance]
-  .filter(([, value]) => value <= 2)
-  .map(([id]) => id)
-  .sort();
-const missingProfiles = narrationCoverageIds.filter(id => !actorById.get(id)?.plain?.who || !actorById.get(id)?.plain?.why_here);
-assert.deepEqual(missingProfiles, [],
-  `anchor and Clifford Number 1-2 actors require receipt-backed editorial profiles: ${missingProfiles.join(', ')}`);
 
-for (const actorId of narrationCoverageIds) {
-  const narration = spawnSync(process.execPath, [
-    'tools/narrate-hops.mjs', '--from', actorId, '--to', anchorId, '--legible', '--md'
-  ], { encoding: 'utf8' });
-  assert.equal(narration.status, 0, `${actorId}: ${narration.stderr}`);
-  assert.doesNotMatch(narration.stdout, /machine-derived from ledger/,
-    `${actorId} to ${anchorId} must not fall back to a mechanical actor introduction`);
+for (const anchorId of declaredAnchorIds) {
+  const distance = new Map([[anchorId, 0]]);
+  const queue = [anchorId];
+  for (let index = 0; index < queue.length; index += 1) {
+    const current = queue[index];
+    if (distance.get(current) >= 2) continue;
+    for (const next of adjacency.get(current) ?? []) {
+      if (distance.has(next)) continue;
+      distance.set(next, distance.get(current) + 1);
+      queue.push(next);
+    }
+  }
+  const narrationCoverageIds = [...distance]
+    .filter(([, value]) => value <= 2)
+    .map(([id]) => id)
+    .sort();
+  const missingProfiles = narrationCoverageIds
+    .filter(id => !actorById.get(id)?.plain?.who || !actorById.get(id)?.plain?.why_here);
+  assert.deepEqual(missingProfiles, [],
+    `${anchorId}: anchor and Clifford Number 1-2 actors require receipt-backed editorial profiles: ${missingProfiles.join(', ')}`);
+
+  for (const actorId of narrationCoverageIds) {
+    const narration = spawnSync(process.execPath, [
+      'tools/narrate-hops.mjs', '--from', actorId, '--to', anchorId, '--legible', '--md'
+    ], { encoding: 'utf8' });
+    assert.equal(narration.status, 0, `${actorId} to ${anchorId}: ${narration.stderr}`);
+    assert.doesNotMatch(narration.stdout, /machine-derived from ledger/,
+      `${actorId} to ${anchorId} must not fall back to a mechanical actor introduction`);
+  }
 }
 
 const workedNarration = spawnSync(process.execPath, [

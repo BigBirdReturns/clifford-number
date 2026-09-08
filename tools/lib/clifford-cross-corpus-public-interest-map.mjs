@@ -35,6 +35,10 @@ export function loadCliffordCrossCorpusPublicInterestMap() {
       receipts: readJsonl('data/intake/natsec100-pathways/chunk1/receipts.jsonl'),
       surfaces: readJsonl('data/intake/natsec100-pathways/chunk1/surfaces.jsonl'),
       actors: readJsonl('data/intake/natsec100-pathways/chunk1/actors.jsonl'),
+      recovery: readJson('data/intake/natsec100-pathways/chunk1/roster-2025-official-visual-recovery.json'),
+      recoveryRows: readJsonl('data/intake/natsec100-pathways/chunk1/roster-2025-official-visual-recovery.jsonl'),
+      adjudication: readJson('data/intake/natsec100-pathways/chunk1/roster-2025-identity-adjudication.json'),
+      adjudicationRows: readJsonl('data/intake/natsec100-pathways/chunk1/roster-2025-identity-adjudication.jsonl'),
     },
     corridor: {
       manifest: readJson('data/intake/austin-israel-defense-corridor/manifest.json'),
@@ -124,7 +128,34 @@ export function validateCliffordCrossCorpusPublicInterestMap(bundle) {
   expect(count('natsec100-defense-companies', 'receipts'), natsec.receipts.length, 'NatSec100 receipts');
   expect(count('natsec100-defense-companies', 'ranking_surfaces'), natsec.surfaces.length, 'NatSec100 surfaces');
   expect(count('natsec100-defense-companies', 'actors'), natsec.actors.length, 'NatSec100 actors');
-  expect(count('natsec100-defense-companies', 'known_missing_2025_roster_rows'), 400 - natsec.companyYears.length, 'NatSec100 known missing rows');
+  const natsecLane = lanes.get('natsec100-defense-companies');
+  const historical2025 = natsec.companyYears.filter(row => row.year === 2025);
+  const historicalRanked2025 = historical2025.filter(row => Number.isInteger(row.rank));
+  const historicalPresenceOnly2025 = historical2025.filter(row => row.rank == null);
+  expect(count('natsec100-defense-companies', 'historical_2025_company_year_rows'), historical2025.length,
+    'NatSec100 historical 2025 company-year rows');
+  expect(count('natsec100-defense-companies', 'historical_2025_ranked_rows'), historicalRanked2025.length,
+    'NatSec100 historical 2025 ranked rows');
+  expect(count('natsec100-defense-companies', 'historical_2025_presence_only_rows'), historicalPresenceOnly2025.length,
+    'NatSec100 historical 2025 presence-only rows');
+  expect(count('natsec100-defense-companies', 'official_2025_source_rows_recovered'), natsec.recoveryRows.length,
+    'NatSec100 official 2025 recovered rows');
+  expect(count('natsec100-defense-companies', 'new_2025_source_rows_recovered'),
+    natsec.recovery.denominator?.new_source_rows_recovered, 'NatSec100 newly recovered 2025 rows');
+  expect(count('natsec100-defense-companies', 'deterministic_2025_registry_matches'),
+    natsec.adjudication.denominator?.deterministic_existing_matches, 'NatSec100 deterministic 2025 registry matches');
+  expect(count('natsec100-defense-companies', 'adjudicated_2025_identity_candidates'), natsec.adjudicationRows.length,
+    'NatSec100 adjudicated 2025 identity candidates');
+  expect(count('natsec100-defense-companies', 'canonical_2025_promotions'),
+    natsec.adjudication.denominator?.canonical_promotions, 'NatSec100 canonical 2025 promotions');
+  if (!/historical company-year ledger retains 42 rows/i.test(natsecLane?.what_the_data_shows ?? '')
+      || !/official visual recovery now preserves all 100 source rows/i.test(natsecLane?.what_the_data_shows ?? '')) {
+    errors.push('NatSec100 public map must distinguish historical company-year coverage from recovered source coverage');
+  }
+  if (!/remaining gap is promotion rather than source recovery/i.test(natsecLane?.open_join ?? '')
+      || /unrecovered 2025 roster rows/i.test(natsecLane?.open_join ?? '')) {
+    errors.push('NatSec100 public map must describe the promotion gap without reviving missing-source coverage');
+  }
 
   const cm = corridor.manifest.counts;
   for (const [mapField, manifestField] of Object.entries({
