@@ -94,6 +94,42 @@ jobs:
           stage=materialize
           python3 "$RUNNER_TEMP/ce0364-materialize.py" | tee receipt/materialize.log
 
+          stage=integrate-cross-corpus-denominator
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          map_path = Path('data/research/clifford-cross-corpus-public-interest-map.json')
+          source_map = json.loads(map_path.read_text(encoding='utf-8'))
+          lanes = [lane for lane in source_map['lanes'] if lane.get('lane_id') == 'natsec100-defense-companies']
+          if len(lanes) != 1:
+              raise SystemExit('expected exactly one NatSec100 map lane')
+          lane = lanes[0]
+          if lane['counts'].get('receipts') != 16:
+              raise SystemExit(f"NatSec100 map receipt denominator drifted: {lane['counts'].get('receipts')}")
+          lane['counts']['receipts'] = 19
+          for path in [
+              'data/intake/natsec100-pathways/chunk1/receipts.jsonl',
+              'data/research/natsec100-x-bow-award-adjudication.json',
+          ]:
+              if path not in lane['source_paths']:
+                  lane['source_paths'].append(path)
+          source_map['generated_at'] = '2026-09-08'
+          map_path.write_text(json.dumps(source_map, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
+
+          record_path = Path('receipts/natsec100/ce0364-xbow-20260908/materialization-record.json')
+          record = json.loads(record_path.read_text(encoding='utf-8'))
+          for path in [
+              'data/research/clifford-cross-corpus-public-interest-map.json',
+              'build/cross-corpus-map/current.json',
+          ]:
+              if path not in record['intended_paths']:
+                  record['intended_paths'].append(path)
+          record['intended_paths'].sort()
+          record['cross_corpus_receipt_denominator'] = {'before': 16, 'after': 19}
+          record_path.write_text(json.dumps(record, sort_keys=True, indent=2) + '\n', encoding='utf-8')
+          PY
+
           stage=focused-test
           node test/natsec100-award-control.test.js | tee receipt/focused-test.log
 
@@ -105,13 +141,15 @@ jobs:
 
           stage=path-census
           git diff --check
-          mapfile -t changed < <(git status --short | sed 's/^...//' | sort)
-          test "${#changed[@]}" -ge 8
+          mapfile -t changed < <(git status --short --untracked-files=all | sed 's/^...//' | grep -v '^receipt/' | sort)
+          test "${#changed[@]}" -eq 18
           for candidate in "${changed[@]}"; do
             case "$candidate" in
               data/intake/natsec100-pathways/chunk1/conversion_events.jsonl|\
               data/intake/natsec100-pathways/chunk1/receipts.jsonl|\
               data/research/natsec100-x-bow-award-adjudication.json|\
+              data/research/clifford-cross-corpus-public-interest-map.json|\
+              build/cross-corpus-map/current.json|\
               test/natsec100-award-control.test.js|\
               receipts/natsec100/ce0364-xbow-20260908/*)
                 ;;
@@ -131,6 +169,8 @@ jobs:
             data/intake/natsec100-pathways/chunk1/conversion_events.jsonl \
             data/intake/natsec100-pathways/chunk1/receipts.jsonl \
             data/research/natsec100-x-bow-award-adjudication.json \
+            data/research/clifford-cross-corpus-public-interest-map.json \
+            build/cross-corpus-map/current.json \
             test/natsec100-award-control.test.js \
             receipts/natsec100/ce0364-xbow-20260908
           git diff --cached --check
@@ -140,7 +180,7 @@ jobs:
           product_parent="$(git rev-parse HEAD^)"
           test "$product_parent" = "$EXPECTED_MAIN"
           git diff --name-only "$EXPECTED_MAIN" HEAD | sort > receipt/changed-paths.txt
-          test -s receipt/changed-paths.txt
+          test "$(wc -l < receipt/changed-paths.txt)" -eq 18
           printf '%s\n' "$product_head" > receipt/product-head.txt
           printf '%s\n' "$product_tree" > receipt/product-tree.txt
           printf '%s\n' "$product_parent" > receipt/product-parent.txt
