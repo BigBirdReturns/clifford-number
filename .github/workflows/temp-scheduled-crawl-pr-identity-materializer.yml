@@ -1,0 +1,76 @@
+name: Materialize scheduled-crawl PR identity seam
+
+on:
+  push:
+    branches:
+      - agent/scheduled-crawl-pr-identity-seam-v1
+    paths:
+      - '.github/patches/scheduled-crawl-pr-identity.patch'
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: github.repository == 'BigBirdReturns/clifford-number'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: agent/scheduled-crawl-pr-identity-seam-v1
+          fetch-depth: 0
+      - name: Apply exact product patch to leased main
+        env:
+          EXPECTED_MAIN: e499eaeeb6bcdf64b76f0440c10e79ea1c064c4a
+          TARGET_BRANCH: agent/scheduled-crawl-pr-identity-seam-v1
+          TRIGGER_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$TRIGGER_SHA"
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$EXPECTED_MAIN"
+          test "$(git merge-base "$EXPECTED_MAIN" "$TRIGGER_SHA")" = "$EXPECTED_MAIN"
+          test "$(git rev-list --count "$EXPECTED_MAIN..$TRIGGER_SHA")" = 2
+
+          cp .github/patches/scheduled-crawl-pr-identity.patch /tmp/scheduled-crawl-pr-identity.patch
+          git reset --hard "$EXPECTED_MAIN"
+          git apply --check /tmp/scheduled-crawl-pr-identity.patch
+          git apply /tmp/scheduled-crawl-pr-identity.patch
+          git diff --check
+          bash -n .github/scripts/promote-scheduled-crawl.sh
+          node --check test/scheduled-crawl-pr-identity.test.js
+          node test/scheduled-crawl-promotion.test.js
+          node test/scheduled-crawl-pr-identity.test.js
+          node test/scheduled-crawl-admission.test.js
+          node test/scheduled-crawl-resumption.test.js
+
+          git add .github/scripts/promote-scheduled-crawl.sh \
+            .github/workflows/ci.yml \
+            .github/workflows/crawl-industrial-exhaust.yml \
+            .github/workflows/crawl-official.yml \
+            test/scheduled-crawl-promotion.test.js \
+            test/scheduled-crawl-pr-identity.test.js
+          git diff --cached --check
+          git diff --cached --name-only | sort > /tmp/actual-paths
+          cat > /tmp/expected-paths <<'PATHS'
+          .github/scripts/promote-scheduled-crawl.sh
+          .github/workflows/ci.yml
+          .github/workflows/crawl-industrial-exhaust.yml
+          .github/workflows/crawl-official.yml
+          test/scheduled-crawl-pr-identity.test.js
+          test/scheduled-crawl-promotion.test.js
+          PATHS
+          diff -u /tmp/expected-paths /tmp/actual-paths
+
+          git config user.name 'clifford-identity-materializer'
+          git config user.email 'clifford-identity-materializer@users.noreply.github.com'
+          git commit -m 'ci: separate scheduled crawler PR identity'
+          product_sha="$(git rev-parse HEAD)"
+          test "$(git rev-parse "$product_sha^")" = "$EXPECTED_MAIN"
+
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$EXPECTED_MAIN"
+          git push --force-with-lease="refs/heads/$TARGET_BRANCH:$TRIGGER_SHA" \
+            origin "$product_sha:refs/heads/$TARGET_BRANCH"
+          test "$(git ls-remote origin "refs/heads/$TARGET_BRANCH" | awk '{print $1}')" = "$product_sha"
+          printf 'product_sha=%s\nbase_sha=%s\n' "$product_sha" "$EXPECTED_MAIN" >> "$GITHUB_STEP_SUMMARY"
