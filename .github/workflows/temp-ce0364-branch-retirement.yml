@@ -1,0 +1,231 @@
+name: TEMP CE0364 exact-ref retirement
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/temp-ce0364-branch-retirement.yml'
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: temp-ce0364-exact-ref-retirement-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  retire:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.head_ref == 'agent/ce0364-retirement-controller-20260908'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EXACT_HEAD: ${{ github.event.pull_request.head.sha }}
+      MAIN_SHA: 56596519121c689074d29205205fc46c96a0ccec
+      MAIN_TREE: e9ee23e9d99ad5d1dcd4e02c163ce4f213a872ab
+      CONTROLLER_BRANCH: agent/ce0364-retirement-controller-20260908
+    steps:
+      - name: Check out exact controller head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 2
+          persist-credentials: false
+
+      - name: Preflight exact leases and retire completed CE0364 refs
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf retirement-receipt
+          mkdir -p retirement-receipt
+          python3 - <<'PY'
+          import datetime
+          import hashlib
+          import json
+          import os
+          import pathlib
+          import subprocess
+
+          repo = os.environ['GITHUB_REPOSITORY']
+          exact_head = os.environ['EXACT_HEAD']
+          main_sha = os.environ['MAIN_SHA']
+          main_tree = os.environ['MAIN_TREE']
+          workflow_path = '.github/workflows/temp-ce0364-branch-retirement.yml'
+          targets = [
+              {
+                  'branch': 'agent/ce0364-postmerge-denominator-repair-20260908',
+                  'sha': '9de9a02c0644d12e27063b591e3178eaa1a8f7d1',
+                  'pull_request': 2633,
+                  'terminal_state': 'merged',
+                  'merge_sha': '56596519121c689074d29205205fc46c96a0ccec',
+              },
+              {
+                  'branch': 'agent/ce0364-xbow-source-conflict-adjudication-20260908',
+                  'sha': '513aa9c1927fe42abbf8bff2fa86a38a95369756',
+                  'pull_request': 2632,
+                  'terminal_state': 'merged',
+                  'merge_sha': '29b3cdeaa1fdc14f0aaf370ca232644d4c3c492c',
+              },
+              {
+                  'branch': 'agent/ce0364-x-bow-source-acquisition-20260908',
+                  'sha': '11f0dccde0ddab250e9271481e0382c33f3d2010',
+                  'pull_request': 2627,
+                  'terminal_state': 'closed_unmerged',
+              },
+              {
+                  'branch': 'agent/temp-ce0364-xbow-source-acquisition-20260908',
+                  'sha': '85aa128cc39fe366623e2136a9b0cc8fe4c4a746',
+                  'pull_request': 2630,
+                  'terminal_state': 'closed_unmerged',
+              },
+          ]
+
+          def run(args, check=True):
+              return subprocess.run(args, text=True, capture_output=True, check=check)
+
+          def git(*args):
+              return run(['git', *args]).stdout.strip()
+
+          def gh_json(endpoint):
+              return json.loads(run(['gh', 'api', endpoint]).stdout)
+
+          def ref_sha(branch):
+              data = gh_json(f'repos/{repo}/git/ref/heads/{branch}')
+              return data['object']['sha']
+
+          observed_head = git('rev-parse', 'HEAD')
+          observed_parent = git('rev-parse', 'HEAD^')
+          observed_parent_tree = git('show', '-s', '--format=%T', 'HEAD^')
+          changed_paths = [line for line in git('diff', '--name-only', main_sha, exact_head).splitlines() if line]
+          if observed_head != exact_head:
+              raise SystemExit(f'controller checkout drift: {observed_head} != {exact_head}')
+          if observed_parent != main_sha:
+              raise SystemExit(f'controller parent drift: {observed_parent} != {main_sha}')
+          if observed_parent_tree != main_tree:
+              raise SystemExit(f'controller parent tree drift: {observed_parent_tree} != {main_tree}')
+          if changed_paths != [workflow_path]:
+              raise SystemExit(f'controller path denominator drift: {changed_paths}')
+          if ref_sha('main') != main_sha:
+              raise SystemExit('protected main moved before retirement')
+          if ref_sha(os.environ['CONTROLLER_BRANCH']) != exact_head:
+              raise SystemExit('controller ref moved before retirement')
+
+          main_commit = gh_json(f'repos/{repo}/commits/{main_sha}')
+          if main_commit['commit']['tree']['sha'] != main_tree:
+              raise SystemExit('protected main tree mismatch')
+
+          observed_prs = []
+          for target in targets:
+              actual_ref = ref_sha(target['branch'])
+              if actual_ref != target['sha']:
+                  raise SystemExit(f"target ref drift: {target['branch']} {actual_ref} != {target['sha']}")
+              pr = gh_json(f"repos/{repo}/pulls/{target['pull_request']}")
+              if pr['state'] != 'closed' or pr['head']['sha'] != target['sha']:
+                  raise SystemExit(f"target PR drift: #{target['pull_request']}")
+              if target['terminal_state'] == 'merged':
+                  if not pr.get('merged_at') or pr.get('merge_commit_sha') != target['merge_sha']:
+                      raise SystemExit(f"merged PR terminal state drift: #{target['pull_request']}")
+              elif pr.get('merged_at') is not None:
+                  raise SystemExit(f"closed-unmerged PR became merged: #{target['pull_request']}")
+              observed_prs.append({
+                  'number': target['pull_request'],
+                  'state': pr['state'],
+                  'merged_at': pr.get('merged_at'),
+                  'merge_commit_sha': pr.get('merge_commit_sha'),
+                  'head_sha': pr['head']['sha'],
+              })
+
+          receipt = {
+              'schema_version': 'ce0364-exact-ref-retirement@1',
+              'repository': repo,
+              'controller': {
+                  'branch': os.environ['CONTROLLER_BRANCH'],
+                  'head': exact_head,
+                  'parent': observed_parent,
+                  'changed_paths': changed_paths,
+                  'never_merge': True,
+              },
+              'protected_main': {
+                  'sha': main_sha,
+                  'tree': main_tree,
+              },
+              'preflight_at': datetime.datetime.now(datetime.timezone.utc).isoformat(),
+              'pull_requests': observed_prs,
+              'targets': targets,
+              'deletions': [],
+          }
+          receipt_path = pathlib.Path('retirement-receipt/RETIREMENT.json')
+          receipt_path.write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n')
+
+          for target in targets:
+              endpoint = f"repos/{repo}/git/refs/heads/{target['branch']}"
+              run(['gh', 'api', '--method', 'DELETE', endpoint])
+              probe = run(['gh', 'api', f"repos/{repo}/git/ref/heads/{target['branch']}"], check=False)
+              if probe.returncode == 0:
+                  raise SystemExit(f"target ref survived deletion: {target['branch']}")
+              receipt['deletions'].append({
+                  'branch': target['branch'],
+                  'leased_sha': target['sha'],
+                  'deleted_at': datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                  'absence_verified': True,
+              })
+              receipt_path.write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n')
+
+          receipt['completed_at'] = datetime.datetime.now(datetime.timezone.utc).isoformat()
+          receipt['target_count'] = len(targets)
+          receipt['deleted_count'] = len(receipt['deletions'])
+          receipt['self_retirement_pending'] = True
+          receipt_path.write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n')
+          raw = receipt_path.read_bytes()
+          pathlib.Path('retirement-receipt/SHA256SUMS').write_text(
+              f"{hashlib.sha256(raw).hexdigest()}  RETIREMENT.json\n"
+          )
+          print(json.dumps({
+              'status': 'targets_retired',
+              'main': main_sha,
+              'controller': exact_head,
+              'deleted': [item['branch'] for item in receipt['deletions']],
+          }, indent=2))
+          PY
+
+      - name: Upload exact retirement receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: ce0364-exact-ref-retirement-${{ github.run_id }}-${{ github.run_attempt }}
+          path: retirement-receipt/
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Retire the never-merge controller ref
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          import json
+          import os
+          import subprocess
+
+          repo = os.environ['GITHUB_REPOSITORY']
+          branch = os.environ['CONTROLLER_BRANCH']
+          exact_head = os.environ['EXACT_HEAD']
+
+          def run(args, check=True):
+              return subprocess.run(args, text=True, capture_output=True, check=check)
+
+          current = json.loads(run(['gh', 'api', f'repos/{repo}/git/ref/heads/{branch}']).stdout)
+          if current['object']['sha'] != exact_head:
+              raise SystemExit('controller ref moved before self-retirement')
+          run(['gh', 'api', '--method', 'DELETE', f'repos/{repo}/git/refs/heads/{branch}'])
+          probe = run(['gh', 'api', f'repos/{repo}/git/ref/heads/{branch}'], check=False)
+          if probe.returncode == 0:
+              raise SystemExit('controller ref survived self-retirement')
+          print(json.dumps({
+              'status': 'controller_retired',
+              'branch': branch,
+              'leased_sha': exact_head,
+              'absence_verified': True,
+          }, indent=2))
+          PY
