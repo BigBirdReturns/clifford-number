@@ -1,4 +1,4 @@
-name: TEMP CE0364 X-Bow source acquisition
+name: TEMP CE0364 X-Bow product qualification
 
 on:
   pull_request:
@@ -7,270 +7,654 @@ on:
       - '.github/workflows/temp-ce0364-x-bow-source-acquisition.yml'
 
 permissions:
+  actions: read
   contents: read
 
 concurrency:
-  group: temp-ce0364-x-bow-source-acquisition-${{ github.event.pull_request.number }}
+  group: temp-ce0364-x-bow-product-qualification-${{ github.event.pull_request.number }}
   cancel-in-progress: false
 
 jobs:
-  acquire:
+  qualify:
     if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'agent/ce0364-x-bow-source-acquisition-20260908'
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 30
     env:
-      AWARD_ID: CONT_AWD_FA930025C6015_9700_-NONE-_-NONE-
-      AWARD_URL: https://api.usaspending.gov/api/v2/awards/CONT_AWD_FA930025C6015_9700_-NONE-_-NONE-/
-      COUNT_URL: https://api.usaspending.gov/api/v2/awards/count/transaction/CONT_AWD_FA930025C6015_9700_-NONE-_-NONE-/
-      TRANSACTIONS_URL: https://api.usaspending.gov/api/v2/transactions/
-      WAR_URL: https://www.war.gov/News/Contracts/Contract/Article/4316486/contracts-for-sep-26-2025/
-      DEFENSE_URL: https://www.defense.gov/News/Contracts/Contract/Article/4316486/contracts-for-sep-26-2025/
-      COMPANY_URL: https://www.xbowsystems.com/
-      CONTACT_URL: https://www.xbowsystems.com/contact-us/
+      GH_TOKEN: ${{ github.token }}
+      BASE_MAIN: e499eaeeb6bcdf64b76f0440c10e79ea1c064c4a
+      BASE_TREE: 60cc78433ce669d8d16b5d286378f49fa1918762
+      SOURCE_RUN_ID: '34254534698'
+      SOURCE_JOB_ID: '102156873642'
+      SOURCE_ARTIFACT_ID: '10067311571'
+      SOURCE_ARTIFACT_SHA256: 66f57de321709f4b7547fffb6135ded0e80865680e541e9d05abfeb37a1e1cef
+      SOURCE_HEAD: f0b0edea77c0e6da5367a329d62c42f35762f1c4
+      CUSTODY_DIR: receipts/natsec100-x-bow-award-adjudication-20260908
     steps:
-      - name: Check out exact acquisition head
+      - name: Check out exact qualification controller head
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
-          fetch-depth: 1
+          fetch-depth: 0
           persist-credentials: false
 
-      - name: Acquire official and first-party source bytes
+      - name: Lease current main and authenticate acquisition artifact
         shell: bash
         run: |
           set -Eeuo pipefail
-          rm -rf receipt
-          mkdir -p receipt
-          printf '%s\n' "$GITHUB_SHA" > receipt/acquisition-head.txt
-          date -u +%FT%TZ > receipt/retrieved-at.txt
+          actual_main="$(git ls-remote origin refs/heads/main | cut -f1)"
+          [[ "$actual_main" == "$BASE_MAIN" ]]
+          git fetch --no-tags origin "$BASE_MAIN"
+          [[ "$(git show -s --format=%T "$BASE_MAIN")" == "$BASE_TREE" ]]
 
-          fetch_get() {
-            key="$1"
-            url="$2"
-            code="$(curl --silent --show-error --location --retry 2 --retry-all-errors \
-              --connect-timeout 20 --max-time 120 \
-              --user-agent 'Mozilla/5.0 (compatible; CliffordNumberResearch/1.0; +https://github.com/BigBirdReturns/clifford-number)' \
-              --header 'Accept: text/html,application/json;q=0.9,*/*;q=0.8' \
-              --header 'Accept-Language: en-US,en;q=0.8' \
-              --dump-header "receipt/${key}.headers" \
-              --output "receipt/${key}.body" \
-              --write-out '%{http_code}' \
-              "$url" || true)"
-            printf '%s\n' "$code" > "receipt/${key}.status"
-          }
+          rm -rf source-receipt product-package "$RUNNER_TEMP/ce0364-product"
+          mkdir -p source-receipt product-package "$RUNNER_TEMP/ce0364-product"
+          curl --fail --silent --show-error --location \
+            --header "Authorization: Bearer $GH_TOKEN" \
+            --header 'Accept: application/vnd.github+json' \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/artifacts/$SOURCE_ARTIFACT_ID/zip" \
+            --output "$RUNNER_TEMP/ce0364-source.zip"
+          [[ "$(sha256sum "$RUNNER_TEMP/ce0364-source.zip" | cut -d' ' -f1)" == "$SOURCE_ARTIFACT_SHA256" ]]
+          unzip -q "$RUNNER_TEMP/ce0364-source.zip" -d source-receipt
+          (cd source-receipt && sha256sum -c SHA256SUMS)
+          [[ "$(cat source-receipt/acquisition-head.txt)" == "$SOURCE_HEAD" ]]
 
-          fetch_get usaspending-award-detail "$AWARD_URL"
-          [[ "$(cat receipt/usaspending-award-detail.status)" == '200' ]]
-          mv receipt/usaspending-award-detail.body receipt/usaspending-award-detail.json
+          git worktree add --detach "$RUNNER_TEMP/ce0364-product/repo" "$BASE_MAIN"
+          printf '%s\n' "$RUNNER_TEMP/ce0364-product/repo" > product-package/candidate-root.txt
 
-          fetch_get usaspending-transaction-count "$COUNT_URL"
-          [[ "$(cat receipt/usaspending-transaction-count.status)" == '200' ]]
-          mv receipt/usaspending-transaction-count.body receipt/usaspending-transaction-count.json
-
-          python3 - <<'PY'
-          import json, os, pathlib
-          request = {
-              "award_id": os.environ["AWARD_ID"],
-              "limit": 5000,
-              "page": 1,
-              "sort": "action_date",
-              "order": "asc",
-          }
-          pathlib.Path("receipt/usaspending-transactions.request.json").write_text(
-              json.dumps(request, separators=(",", ":")) + "\n",
-              encoding="utf-8",
-          )
-          PY
-          code="$(curl --silent --show-error --location --retry 2 --retry-all-errors \
-            --connect-timeout 20 --max-time 120 \
-            --user-agent 'Mozilla/5.0 (compatible; CliffordNumberResearch/1.0; +https://github.com/BigBirdReturns/clifford-number)' \
-            --header 'Accept: application/json' \
-            --header 'Content-Type: application/json' \
-            --data-binary @receipt/usaspending-transactions.request.json \
-            --dump-header receipt/usaspending-transactions.headers \
-            --output receipt/usaspending-transactions.json \
-            --write-out '%{http_code}' \
-            "$TRANSACTIONS_URL" || true)"
-          printf '%s\n' "$code" > receipt/usaspending-transactions.status
-          [[ "$code" == '200' ]]
-
-          fetch_get war-award-announcement-direct "$WAR_URL"
-          fetch_get defense-award-announcement-alias "$DEFENSE_URL"
-
-          curl --silent --show-error --location --get \
-            --connect-timeout 20 --max-time 120 \
-            --data-urlencode "url=$WAR_URL" \
-            --data-urlencode 'output=json' \
-            --data-urlencode 'fl=timestamp,original,statuscode,mimetype,digest' \
-            --data-urlencode 'filter=statuscode:200' \
-            --data-urlencode 'filter=mimetype:text/html' \
-            --data-urlencode 'collapse=digest' \
-            --data-urlencode 'from=2025' \
-            --data-urlencode 'to=2026' \
-            --data-urlencode 'limit=-1' \
-            --dump-header receipt/war-wayback-cdx.headers \
-            --output receipt/war-wayback-cdx.json \
-            --write-out '%{http_code}\n' \
-            https://web.archive.org/cdx/search/cdx > receipt/war-wayback-cdx.status || true
-
-          python3 - <<'PY'
-          import json, pathlib, subprocess
-          root = pathlib.Path('receipt')
-          cdx = root / 'war-wayback-cdx.json'
-          selected = None
-          if cdx.exists():
-              try:
-                  rows = json.loads(cdx.read_text(encoding='utf-8'))
-                  if isinstance(rows, list) and len(rows) > 1:
-                      header = rows[0]
-                      records = [dict(zip(header, row)) for row in rows[1:]]
-                      records.sort(key=lambda row: row.get('timestamp', ''))
-                      selected = records[-1]
-              except Exception as exc:
-                  (root / 'war-wayback-parse-error.txt').write_text(f'{type(exc).__name__}: {exc}\n')
-          if selected:
-              (root / 'war-wayback-selected.json').write_text(json.dumps(selected, indent=2) + '\n')
-              url = f"https://web.archive.org/web/{selected['timestamp']}id_/{selected['original']}"
-              result = subprocess.run([
-                  'curl', '--silent', '--show-error', '--location', '--retry', '2', '--retry-all-errors',
-                  '--connect-timeout', '20', '--max-time', '120',
-                  '--user-agent', 'Mozilla/5.0 (compatible; CliffordNumberResearch/1.0)',
-                  '--dump-header', str(root / 'war-wayback-snapshot.headers'),
-                  '--output', str(root / 'war-wayback-snapshot.html'),
-                  '--write-out', '%{http_code}', url,
-              ], text=True, capture_output=True)
-              (root / 'war-wayback-snapshot.status').write_text(result.stdout + '\n')
-              if result.stderr:
-                  (root / 'war-wayback-snapshot.stderr').write_text(result.stderr)
-          PY
-
-          cat > receipt/war-award-announcement-projection.txt <<'EOF'
-          source_url: https://www.war.gov/News/Contracts/Contract/Article/4316486/contracts-for-sep-26-2025/
-          source_title: Contracts for Sept. 26, 2025
-          source_date: 2025-09-26
-          projection_created: 2026-09-08
-          projection_class: exact_official_page_text_projection_not_raw_http_response
-
-          Air Force
-
-          X-Bow Launch Systems Inc., Albuquerque, New Mexico, has been awarded a $191,303,197 firm-fixed-price contract for Advanced Integrated Motor Manufacturing. Work will be performed in Albuquerque, New Mexico; Huntsville, Alabama; Logan, Utah; Luling, Louisiana; and Edwards Air Force Base, California, and is expected to be completed April 30, 2029. This contract involves Foreign Military Sales. This award is the result of a sole source acquisition. Fiscal 2025 Foreign Military Sales funds in the amount of $121,494,248 are being obligated at the time of award. The Air Force Test Center, Edwards Air Force Base, California, is the contracting activity (FA9300-25-C-6015).
-          EOF
-          sed -i 's/^          //' receipt/war-award-announcement-projection.txt
-
-          fetch_get x-bow-home "$COMPANY_URL"
-          if [[ "$(cat receipt/x-bow-home.status)" == '200' ]]; then
-            mv receipt/x-bow-home.body receipt/x-bow-home.html
-          fi
-          fetch_get x-bow-contact "$CONTACT_URL"
-          if [[ "$(cat receipt/x-bow-contact.status)" == '200' ]]; then
-            mv receipt/x-bow-contact.body receipt/x-bow-contact.html
-          fi
-
-          cat > receipt/x-bow-identity-projection.txt <<'EOF'
-          homepage_url: https://www.xbowsystems.com/
-          homepage_observation: The site brands the company as X-Bow Systems and its footer identifies X-Bow Systems, Inc.
-          contact_url: https://www.xbowsystems.com/contact-us/
-          headquarters_observation: 6200 Uptown Blvd NE, Suite 200, Albuquerque, NM 87110
-          projection_created: 2026-09-08
-          projection_class: official_first_party_page_text_projection_not_raw_http_response
-          EOF
-          sed -i 's/^          //' receipt/x-bow-identity-projection.txt
-
-      - name: Validate and summarize the acquired population
+      - name: Assemble the bounded transport-free candidate
         shell: bash
+        env:
+          CANDIDATE_ROOT: ${{ runner.temp }}/ce0364-product/repo
+          SOURCE_ROOT: ${{ github.workspace }}/source-receipt
         run: |
           set -Eeuo pipefail
           python3 - <<'PY'
-          import hashlib, json, pathlib
-          root = pathlib.Path('receipt')
-          award = json.loads((root / 'usaspending-award-detail.json').read_text())
-          count = json.loads((root / 'usaspending-transaction-count.json').read_text())
-          transactions = json.loads((root / 'usaspending-transactions.json').read_text())
-          results = transactions.get('results')
-          if not isinstance(results, list):
-              raise SystemExit('transactions results is not a list')
-          declared = count.get('transactions', count.get('count', count.get('transaction_count')))
-          if not isinstance(declared, int):
-              raise SystemExit(f'unrecognized transaction count response: {count!r}')
-          if declared != len(results):
-              raise SystemExit(f'transaction count mismatch: {declared} != {len(results)}')
-          if declared != 1:
-              raise SystemExit(f'expected exactly one transaction, found {declared}')
-          tx = results[0]
-          expected_award = 'CONT_AWD_FA930025C6015_9700_-NONE-_-NONE-'
-          if award.get('generated_unique_award_id') != expected_award:
-              raise SystemExit('award identifier mismatch')
-          if award.get('piid') != 'FA930025C6015':
-              raise SystemExit('PIID mismatch')
-          if float(award.get('total_obligation')) != 129494248:
-              raise SystemExit('award obligation mismatch')
-          if float(award.get('base_and_all_options')) != 199303198:
-              raise SystemExit('award potential value mismatch')
-          if tx.get('modification_number') != '0':
-              raise SystemExit('unexpected modification population')
-          if float(tx.get('federal_action_obligation')) != 129494248:
-              raise SystemExit('transaction obligation mismatch')
-          recipient = award.get('recipient') or {}
-          summary = {
-              'schema_version': 'ce0364-x-bow-source-acquisition@1',
-              'award_id_requested': expected_award,
-              'award_id_returned': award.get('generated_unique_award_id'),
-              'piid': award.get('piid'),
-              'recipient_name': recipient.get('recipient_name'),
-              'recipient_uei': recipient.get('recipient_uei'),
-              'recipient_address': recipient.get('location'),
-              'description': award.get('description'),
-              'date_signed': award.get('date_signed'),
-              'period_of_performance': award.get('period_of_performance'),
-              'awarding_agency': award.get('awarding_agency'),
-              'funding_agency': award.get('funding_agency'),
-              'total_obligation': award.get('total_obligation'),
-              'base_exercised_options': award.get('base_exercised_options'),
-              'base_and_all_options': award.get('base_and_all_options'),
-              'total_account_outlay': award.get('total_account_outlay'),
-              'transaction_count': declared,
-              'transaction': {
-                  'id': tx.get('id'),
-                  'action_date': tx.get('action_date'),
-                  'modification_number': tx.get('modification_number'),
-                  'federal_action_obligation': tx.get('federal_action_obligation'),
-                  'description': tx.get('description'),
-                  'type': tx.get('type'),
+          import hashlib
+          import json
+          import os
+          import pathlib
+          import shutil
+
+          repo = pathlib.Path(os.environ['CANDIDATE_ROOT'])
+          source = pathlib.Path(os.environ['SOURCE_ROOT'])
+          custody_rel = pathlib.Path(os.environ['CUSTODY_DIR'])
+          custody = repo / custody_rel
+          custody.mkdir(parents=True, exist_ok=False)
+
+          text_extensions = {
+              '.css', '.csv', '.htm', '.html', '.js', '.json', '.jsonl', '.md',
+              '.mjs', '.txt', '.tsv', '.xml', '.yaml', '.yml',
+          }
+
+          def sha256_bytes(data: bytes) -> str:
+              return hashlib.sha256(data).hexdigest()
+
+          def sha256_file(path: pathlib.Path) -> str:
+              return sha256_bytes(path.read_bytes())
+
+          def canonical_bytes(path: pathlib.Path) -> bytes:
+              data = path.read_bytes()
+              if path.suffix.lower() not in text_extensions:
+                  return data
+              text = data.decode('utf-8', errors='replace').replace('\r\n', '\n').replace('\r', '\n')
+              return text.encode('utf-8')
+
+          def canonical_hash(path: pathlib.Path) -> str:
+              return sha256_bytes(canonical_bytes(path))
+
+          copied = [
+              'acquisition-head.txt',
+              'retrieved-at.txt',
+              'summary.json',
+              'usaspending-award-detail.json',
+              'usaspending-award-detail.status',
+              'usaspending-transaction-count.json',
+              'usaspending-transaction-count.status',
+              'usaspending-transactions.request.json',
+              'usaspending-transactions.json',
+              'usaspending-transactions.status',
+              'war-award-announcement-direct.body',
+              'war-award-announcement-direct.status',
+              'defense-award-announcement-alias.body',
+              'defense-award-announcement-alias.status',
+              'war-wayback-cdx.json',
+              'war-wayback-cdx.status',
+              'war-wayback-parse-error.txt',
+              'war-award-announcement-projection.txt',
+              'x-bow-contact.html',
+              'x-bow-contact.status',
+              'x-bow-identity-projection.txt',
+          ]
+          for name in copied:
+              src = source / name
+              if not src.is_file():
+                  raise SystemExit(f'missing acquisition member: {name}')
+              shutil.copyfile(src, custody / name)
+
+          redactions = []
+          header_names = [
+              'usaspending-award-detail.headers',
+              'usaspending-transaction-count.headers',
+              'usaspending-transactions.headers',
+              'war-award-announcement-direct.headers',
+              'defense-award-announcement-alias.headers',
+              'war-wayback-cdx.headers',
+              'x-bow-contact.headers',
+          ]
+          for name in header_names:
+              src = source / name
+              if not src.is_file():
+                  raise SystemExit(f'missing header member: {name}')
+              raw = src.read_bytes()
+              output = []
+              for line in raw.decode('iso-8859-1').splitlines():
+                  if line.lower().startswith('set-cookie:'):
+                      value = line.split(':', 1)[1].strip()
+                      digest = sha256_bytes(value.encode('iso-8859-1'))
+                      output.append(f'Set-Cookie: sha256:{digest} [value redacted]')
+                      redactions.append({
+                          'source_file': name,
+                          'header': 'Set-Cookie',
+                          'value_sha256': digest,
+                      })
+                  else:
+                      output.append(line)
+              published = custody / name.replace('.headers', '.headers.redacted')
+              published.write_text('\n'.join(output) + '\n', encoding='utf-8')
+              redactions.append({
+                  'source_file': name,
+                  'original_file_sha256': sha256_bytes(raw),
+                  'published_file': published.name,
+                  'published_file_sha256': sha256_file(published),
+              })
+
+          summary = json.loads((custody / 'summary.json').read_text(encoding='utf-8'))
+          if summary['transaction_count'] != 1:
+              raise SystemExit('source transaction denominator drifted')
+          if summary['transaction']['modification_number'] != '0':
+              raise SystemExit('source modification denominator drifted')
+          if summary['reconciliation'] != {
+              'cause': 'unresolved',
+              'obligation_delta': 8000000,
+              'post_award_modification_observed': False,
+              'potential_value_delta': 8000001,
+          }:
+              raise SystemExit('source reconciliation drifted')
+
+          contact_text = (custody / 'x-bow-contact.html').read_text(encoding='utf-8', errors='replace')
+          for required in ['X-Bow Systems, Inc.', '6200 Uptown Blvd NE', 'Suite 200', 'Albuquerque']:
+              if required.lower() not in contact_text.lower():
+                  raise SystemExit(f'first-party identity page lacks {required!r}')
+
+          source_files = []
+          for path in sorted(custody.iterdir()):
+              if not path.is_file() or path.name in {'manifest.json', 'SHA256SUMS'}:
+                  continue
+              source_files.append({
+                  'path': str(path.relative_to(repo)),
+                  'bytes': path.stat().st_size,
+                  'sha256': sha256_file(path),
+                  'canonical_text_sha256': canonical_hash(path) if path.suffix.lower() in text_extensions else None,
+              })
+
+          source_manifest = {
+              'schema_version': 'natsec100-x-bow-source-custody@1',
+              'repository': 'BigBirdReturns/clifford-number',
+              'base_commit': os.environ['BASE_MAIN'],
+              'base_tree': os.environ['BASE_TREE'],
+              'acquisition': {
+                  'pull_request': 2627,
+                  'run_id': int(os.environ['SOURCE_RUN_ID']),
+                  'job_id': int(os.environ['SOURCE_JOB_ID']),
+                  'head': os.environ['SOURCE_HEAD'],
+                  'artifact_id': int(os.environ['SOURCE_ARTIFACT_ID']),
+                  'artifact_zip_sha256': os.environ['SOURCE_ARTIFACT_SHA256'],
+                  'retrieved_at': (custody / 'retrieved-at.txt').read_text().strip(),
+                  'internal_checksum_ledger_verified': True,
               },
-              'announcement': {
-                  'announced_contract_value': 191303197,
-                  'obligated_at_award': 121494248,
-                  'source_url': 'https://www.war.gov/News/Contracts/Contract/Article/4316486/contracts-for-sep-26-2025/',
-                  'direct_status': (root / 'war-award-announcement-direct.status').read_text().strip(),
-                  'defense_alias_status': (root / 'defense-award-announcement-alias.status').read_text().strip(),
-                  'wayback_snapshot_status': (root / 'war-wayback-snapshot.status').read_text().strip() if (root / 'war-wayback-snapshot.status').exists() else None,
-                  'projection_path': 'war-award-announcement-projection.txt',
+              'http_states': {
+                  'usaspending_award_detail': 200,
+                  'usaspending_transaction_count': 200,
+                  'usaspending_transactions': 200,
+                  'war_announcement_direct': 403,
+                  'defense_announcement_alias': 403,
+                  'wayback_cdx': 503,
+                  'x_bow_contact': 200,
+              },
+              'publication_custody': {
+                  'source_bodies_copied_byte_exact': True,
+                  'raw_response_headers_published': False,
+                  'redacted_header_derivatives_published': True,
+                  'set_cookie_values_replaced_by_sha256': True,
+                  'announcement_projection_is_raw_publisher_body': False,
+                  'announcement_projection_class': 'exact_relevant_official_text_projection',
+              },
+              'redactions': redactions,
+              'source_files': source_files,
+              'authority': {
+                  'graph_effect': 'none',
+                  'canonical_company_promotion': False,
+                  'cause_established': False,
+                  'wrongdoing_established': False,
+                  'coordination_established': False,
+              },
+          }
+          (custody / 'manifest.json').write_text(
+              json.dumps(source_manifest, indent=2, sort_keys=True) + '\n',
+              encoding='utf-8',
+          )
+
+          checksum_lines = []
+          for path in sorted(custody.iterdir()):
+              if path.is_file() and path.name != 'SHA256SUMS':
+                  checksum_lines.append(f'{sha256_file(path)}  {path.name}')
+          (custody / 'SHA256SUMS').write_text('\n'.join(checksum_lines) + '\n', encoding='utf-8')
+
+          announcement_path = custody / 'war-award-announcement-projection.txt'
+          award_path = custody / 'usaspending-award-detail.json'
+          transaction_path = custody / 'usaspending-transactions.json'
+          identity_path = custody / 'x-bow-contact.html'
+
+          receipts_path = repo / 'data/intake/natsec100-pathways/chunk1/receipts.jsonl'
+          receipt_rows = [json.loads(line) for line in receipts_path.read_text(encoding='utf-8').splitlines() if line.strip()]
+          existing_ids = {row['receipt_id'] for row in receipt_rows}
+          new_ids = {'R017', 'R018', 'R019', 'R020'}
+          if existing_ids & new_ids:
+              raise SystemExit(f'receipt ID collision: {sorted(existing_ids & new_ids)}')
+
+          new_receipts = [
+              {
+                  'receipt_id': 'R017',
+                  'source_type': 'official_webpage',
+                  'title': 'Contracts for Sept. 26, 2025 — X-Bow award entry',
+                  'url': 'https://www.war.gov/News/Contracts/Contract/Article/4316486/contracts-for-sep-26-2025/',
+                  'path': str(announcement_path.relative_to(repo)),
+                  'accessed_date': '2026-09-08',
+                  'quoted_or_line_reference': 'X-Bow Launch Systems Inc.; $191,303,197 firm-fixed-price Advanced Integrated Motor Manufacturing contract; $121,494,248 Foreign Military Sales funds obligated at award; FA9300-25-C-6015.',
+                  'evidence_class': 'official',
+                  'notes': 'Exact relevant-text projection of the official award announcement. Direct War.gov and Defense.gov alias acquisition returned HTTP 403; the Wayback CDX route returned HTTP 503. Those access states are retained with this projection.',
+                  'limitations': 'The retained file is a bounded text projection, not the raw publisher response or a publisher signature. It establishes the announcement fields it reproduces, not the later USAspending values or the cause of their difference.',
+                  'archive': {
+                      'method': 'in_repo_content_hash',
+                      'ref': f'sha256:{canonical_hash(announcement_path)}',
+                      'captured': '2026-09-08',
+                      'checked': '2026-09-08',
+                  },
+              },
+              {
+                  'receipt_id': 'R018',
+                  'source_type': 'government_record',
+                  'title': 'USAspending award detail — FA9300-25-C-6015',
+                  'url': 'https://api.usaspending.gov/api/v2/awards/CONT_AWD_FA930025C6015_9700_-NONE-_-NONE-/',
+                  'path': str(award_path.relative_to(repo)),
+                  'accessed_date': '2026-09-08',
+                  'quoted_or_line_reference': 'Generated award ID CONT_AWD_FA930025C6015_9700_-NONE-_-NONE-; X-BOW LAUNCH SYSTEMS INC; UEI MD76AJXHCMQ5; total obligation $129,494,248; base and all options $199,303,198; signed 2025-09-25.',
+                  'evidence_class': 'official',
+                  'notes': 'Direct source-native award-detail response. The recipient address is 6200 UPTOWN BLVD NE SUITE 200, Albuquerque, New Mexico 87110. Award last-modified date is 2025-09-26.',
+                  'limitations': 'This is the award state observed on 2026-09-08. Its field labels are preserved and are not silently equated with the announcement fields.',
+                  'archive': {
+                      'method': 'in_repo_content_hash',
+                      'ref': f'sha256:{canonical_hash(award_path)}',
+                      'captured': '2026-09-08',
+                      'checked': '2026-09-08',
+                  },
+              },
+              {
+                  'receipt_id': 'R019',
+                  'source_type': 'government_record',
+                  'title': 'USAspending transaction population — FA9300-25-C-6015',
+                  'url': 'https://api.usaspending.gov/api/v2/transactions/',
+                  'path': str(transaction_path.relative_to(repo)),
+                  'accessed_date': '2026-09-08',
+                  'quoted_or_line_reference': 'Complete returned population: one transaction, modification 0, action date 2025-09-25, federal action obligation $129,494,248, Advanced Integrated Motor Manufacturing.',
+                  'evidence_class': 'official',
+                  'notes': 'The separately retained count endpoint returned one transaction. The exact POST request, count response, and response body are bound in the custody manifest.',
+                  'limitations': 'The observed action history contains no post-award modification. That absence does not identify why the award announcement and current USAspending fields differ.',
+                  'archive': {
+                      'method': 'in_repo_content_hash',
+                      'ref': f'sha256:{canonical_hash(transaction_path)}',
+                      'captured': '2026-09-08',
+                      'checked': '2026-09-08',
+                  },
+              },
+              {
+                  'receipt_id': 'R020',
+                  'source_type': 'company_webpage',
+                  'title': 'X-Bow Systems contact and headquarters page',
+                  'url': 'https://www.xbowsystems.com/contact-us/',
+                  'path': str(identity_path.relative_to(repo)),
+                  'accessed_date': '2026-09-08',
+                  'quoted_or_line_reference': 'X-Bow Systems, Inc.; Corporate Headquarters — New Mexico; 6200 Uptown Blvd NE Suite 200, Albuquerque, New Mexico 87110.',
+                  'evidence_class': 'company_reported',
+                  'notes': 'Direct first-party page. Its domain matches the NatSec100 company record and its headquarters address matches the source-native USAspending recipient address.',
+                  'limitations': 'This supports a company-record-to-award-recipient identity bridge. It does not erase or legally normalize the variants X-Bow Systems, Inc. and X-Bow Launch Systems Inc.',
+                  'archive': {
+                      'method': 'in_repo_content_hash',
+                      'ref': f'sha256:{canonical_hash(identity_path)}',
+                      'captured': '2026-09-08',
+                      'checked': '2026-09-08',
+                  },
+              },
+          ]
+          receipt_rows.extend(new_receipts)
+          receipts_path.write_text(
+              '\n'.join(json.dumps(row, separators=(',', ':')) for row in receipt_rows) + '\n',
+              encoding='utf-8',
+          )
+
+          events_path = repo / 'data/intake/natsec100-pathways/chunk1/conversion_events.jsonl'
+          event_rows = [json.loads(line) for line in events_path.read_text(encoding='utf-8').splitlines() if line.strip()]
+          matches = [index for index, row in enumerate(event_rows) if row.get('event_id') == 'CE0364']
+          if matches != [363]:
+              raise SystemExit(f'CE0364 denominator drifted: {matches}')
+          event_rows[matches[0]] = {
+              'event_id': 'CE0364',
+              'company_id': 'x_bow_systems',
+              'target_surface': 'us_air_force_contracting',
+              'date': 'FY2025',
+              'conversion_function': 'government_award',
+              'receipt_ids': ['R010', 'R017', 'R018', 'R019', 'R020'],
+              'confidence': 'medium',
+              'competing_explanations': 'The official award announcement and the direct USAspending award and transaction records identify the same contract and programme but preserve different value fields. The complete observed USAspending action history contains one transaction at modification 0, so it does not establish a post-award modification. No primary record in this packet identifies the cause of the differences.',
+              'forbidden_inferences': 'Multi-surface presence and ranking inclusion are graph facts only; no inference of coordination, favoritism, motive, or wrongdoing.',
+              'notes': 'Contract FA9300-25-C-6015. Announcement: $191,303,197 firm-fixed price and $121,494,248 obligated at award. USAspending observed 2026-09-08: $129,494,248 total obligation and $199,303,198 base-and-all-options, with one transaction at modification 0 on 2025-09-25. Preserve source-specific fields; no single rounded obligation total is admitted.',
+          }
+          events_path.write_text(
+              '\n'.join(json.dumps(row, separators=(',', ':')) for row in event_rows) + '\n',
+              encoding='utf-8',
+          )
+
+          companies_path = repo / 'data/intake/natsec100-pathways/chunk1/companies.jsonl'
+          companies = [json.loads(line) for line in companies_path.read_text(encoding='utf-8').splitlines() if line.strip()]
+          company = next(row for row in companies if row.get('company_id') == 'x_bow_systems')
+          if company.get('canonical_name') != 'X-Bow Systems' or company.get('website') != 'www.xbowsystems.com':
+              raise SystemExit('canonical X-Bow company record drifted')
+
+          adjudication = {
+              'schema_version': 'natsec100-x-bow-award-adjudication@1',
+              'status': 'source_specific_values_preserved_cause_unresolved',
+              'as_of': '2026-09-08',
+              'repository': {
+                  'base_commit': os.environ['BASE_MAIN'],
+                  'base_tree': os.environ['BASE_TREE'],
+                  'event_id': 'CE0364',
+                  'company_id': 'x_bow_systems',
+              },
+              'award_identity': {
+                  'contract_id_display': 'FA9300-25-C-6015',
+                  'piid': 'FA930025C6015',
+                  'generated_unique_award_id': 'CONT_AWD_FA930025C6015_9700_-NONE-_-NONE-',
+                  'programme': 'Advanced Integrated Motor Manufacturing',
+                  'awarding_subtier': 'Department of the Air Force',
+                  'award_description_exact': 'ADVANCED INTEGRATED MOTOR MANUFACTURING',
+              },
+              'company_to_recipient_identity_bridge': {
+                  'status': 'supported_operating_identity_bridge_legal_name_variant_preserved',
+                  'canonical_company_record': {
+                      'company_id': company['company_id'],
+                      'canonical_name': company['canonical_name'],
+                      'aliases': company['aliases'],
+                      'website': company['website'],
+                      'hq_city': company['hq_city'],
+                      'hq_state_or_country': company['hq_state_or_country'],
+                  },
+                  'first_party_record': {
+                      'displayed_corporate_name': 'X-Bow Systems, Inc.',
+                      'domain': 'www.xbowsystems.com',
+                      'headquarters_address': '6200 Uptown Blvd NE Suite 200, Albuquerque, New Mexico 87110',
+                      'receipt_id': 'R020',
+                  },
+                  'government_recipient_record': {
+                      'recipient_name': 'X-BOW LAUNCH SYSTEMS INC',
+                      'recipient_uei': 'MD76AJXHCMQ5',
+                      'address_line1': '6200 UPTOWN BLVD NE SUITE 200',
+                      'city': 'ALBUQUERQUE',
+                      'state': 'NM',
+                      'zip5': '87110',
+                      'receipt_id': 'R018',
+                  },
+                  'bridge_predicates': [
+                      'NatSec100 company website and first-party evidence share xbowsystems.com',
+                      'first-party headquarters address exactly matches the source-native USAspending recipient street, city, state, and ZIP',
+                      'canonical alias X-Bow and first-party X-Bow Systems branding remain attached to the legal-name variant reported by USAspending',
+                  ],
+                  'legal_name_equivalence_separately_adjudicated': False,
+                  'legal_name_variants_preserved': [
+                      'X-Bow Systems',
+                      'X-Bow Systems, Inc.',
+                      'X-BOW LAUNCH SYSTEMS INC',
+                  ],
+              },
+              'source_specific_records': {
+                  'official_announcement': {
+                      'source_date': '2025-09-26',
+                      'announced_firm_fixed_price': 191303197,
+                      'obligated_at_award': 121494248,
+                      'fund_context': 'Foreign Military Sales funds',
+                      'completion_date': '2029-04-30',
+                      'contracting_activity': 'Air Force Test Center',
+                      'receipt_id': 'R017',
+                      'raw_publisher_response_retained': False,
+                      'projection_retained': True,
+                  },
+                  'usaspending_award_detail': {
+                      'date_signed': '2025-09-25',
+                      'total_obligation': 129494248,
+                      'base_exercised_options': 129494248,
+                      'base_and_all_options': 199303198,
+                      'total_account_outlay': 0,
+                      'last_modified_date': '2025-09-26',
+                      'recipient_uei': 'MD76AJXHCMQ5',
+                      'receipt_id': 'R018',
+                  },
+                  'usaspending_transaction_population': {
+                      'count_endpoint_value': 1,
+                      'returned_rows': 1,
+                      'population_complete': True,
+                      'transactions': [
+                          {
+                              'transaction_id': 'CONT_TX_9700_-NONE-_FA930025C6015_0_-NONE-_0',
+                              'action_date': '2025-09-25',
+                              'modification_number': '0',
+                              'federal_action_obligation': 129494248,
+                              'description': 'ADVANCED INTEGRATED MOTOR MANUFACTURING',
+                          },
+                      ],
+                      'receipt_id': 'R019',
+                  },
               },
               'reconciliation': {
-                  'obligation_delta': 8000000,
-                  'potential_value_delta': 8000001,
+                  'field_comparability_status': 'not_established',
+                  'obligation_arithmetic_delta': 8000000,
+                  'potential_value_arithmetic_delta': 8000001,
                   'post_award_modification_observed': False,
+                  'post_award_modification_explains_difference': False,
                   'cause': 'unresolved',
+                  'finding': 'The packet preserves announcement fields and later USAspending fields separately. The one-row modification-0 action history does not explain their differences.',
               },
-              'disposition': 'source_specific_values_preserved_cause_unresolved',
-              'graph_effect': 'none',
+              'disposition': {
+                  'event_confidence': 'medium',
+                  'confidence_not_raised_reason': 'The identity, agency, programme, contract, and action population converge, but the value fields conflict and their comparability and cause remain unresolved.',
+                  'graph_effect': 'none',
+                  'causal_status': 'not_established',
+                  'wrongdoing': 'not_established',
+                  'coordination': 'not_established',
+                  'single_rounded_obligation_claim_admitted': False,
+              },
+              'custody': {
+                  'source_manifest': str((custody / 'manifest.json').relative_to(repo)),
+                  'checksum_ledger': str((custody / 'SHA256SUMS').relative_to(repo)),
+                  'receipt_ids': ['R017', 'R018', 'R019', 'R020'],
+                  'acquisition_run_id': int(os.environ['SOURCE_RUN_ID']),
+                  'acquisition_artifact_id': int(os.environ['SOURCE_ARTIFACT_ID']),
+                  'acquisition_artifact_zip_sha256': os.environ['SOURCE_ARTIFACT_SHA256'],
+              },
           }
-          # Recompute rather than trust declared arithmetic.
-          summary['reconciliation']['obligation_delta'] = int(summary['total_obligation']) - summary['announcement']['obligated_at_award']
-          summary['reconciliation']['potential_value_delta'] = int(summary['base_and_all_options']) - summary['announcement']['announced_contract_value']
-          (root / 'summary.json').write_text(json.dumps(summary, indent=2, sort_keys=True) + '\n')
-          lines = []
-          for path in sorted(root.iterdir()):
-              if path.is_file() and path.name != 'SHA256SUMS':
-                  lines.append(f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.name}")
-          (root / 'SHA256SUMS').write_text('\n'.join(lines) + '\n')
+          adjudication_path = repo / 'data/research/natsec100-x-bow-award-adjudication.json'
+          adjudication_path.write_text(json.dumps(adjudication, indent=2, sort_keys=True) + '\n', encoding='utf-8')
+
+          test_path = repo / 'test/natsec100-award-control.test.js'
+          test_text = test_path.read_text(encoding='utf-8')
+          marker = "test('CE0364 preserves source-specific award fields and the complete action denominator'"
+          if marker in test_text:
+              raise SystemExit('CE0364 regression already exists')
+          test_append = r'''
+
+const ce0364Adjudication = JSON.parse(fs.readFileSync('data/research/natsec100-x-bow-award-adjudication.json', 'utf8'));
+const ce0364Events = fs.readFileSync('data/intake/natsec100-pathways/chunk1/conversion_events.jsonl', 'utf8')
+  .trim().split('\n').map(line => JSON.parse(line));
+const ce0364Receipts = fs.readFileSync('data/intake/natsec100-pathways/chunk1/receipts.jsonl', 'utf8')
+  .trim().split('\n').map(line => JSON.parse(line));
+const ce0364Companies = fs.readFileSync('data/intake/natsec100-pathways/chunk1/companies.jsonl', 'utf8')
+  .trim().split('\n').map(line => JSON.parse(line));
+
+test('CE0364 preserves source-specific award fields and the complete action denominator', () => {
+  const event = ce0364Events.find(row => row.event_id === 'CE0364');
+  const company = ce0364Companies.find(row => row.company_id === 'x_bow_systems');
+  const receiptIds = new Set(ce0364Receipts.map(row => row.receipt_id));
+  const records = ce0364Adjudication.source_specific_records;
+  const reconciliation = ce0364Adjudication.reconciliation;
+  const bridge = ce0364Adjudication.company_to_recipient_identity_bridge;
+
+  assert.deepEqual(event.receipt_ids, ['R010', 'R017', 'R018', 'R019', 'R020']);
+  assert.equal(event.confidence, 'medium');
+  assert.equal(event.notes.includes('$129M'), false);
+  assert.match(event.competing_explanations, /one transaction at modification 0/i);
+  for (const receiptId of ['R017', 'R018', 'R019', 'R020']) assert.equal(receiptIds.has(receiptId), true);
+
+  assert.equal(records.official_announcement.announced_firm_fixed_price, 191303197);
+  assert.equal(records.official_announcement.obligated_at_award, 121494248);
+  assert.equal(records.usaspending_award_detail.total_obligation, 129494248);
+  assert.equal(records.usaspending_award_detail.base_and_all_options, 199303198);
+  assert.equal(records.usaspending_transaction_population.count_endpoint_value, 1);
+  assert.equal(records.usaspending_transaction_population.returned_rows, 1);
+  assert.equal(records.usaspending_transaction_population.population_complete, true);
+  assert.deepEqual(records.usaspending_transaction_population.transactions.map(row => row.modification_number), ['0']);
+  assert.deepEqual(records.usaspending_transaction_population.transactions.map(row => row.federal_action_obligation), [129494248]);
+
+  assert.equal(reconciliation.obligation_arithmetic_delta, 8000000);
+  assert.equal(reconciliation.potential_value_arithmetic_delta, 8000001);
+  assert.equal(reconciliation.field_comparability_status, 'not_established');
+  assert.equal(reconciliation.post_award_modification_observed, false);
+  assert.equal(reconciliation.post_award_modification_explains_difference, false);
+  assert.equal(reconciliation.cause, 'unresolved');
+
+  assert.equal(company.website, 'www.xbowsystems.com');
+  assert.equal(bridge.first_party_record.domain, 'www.xbowsystems.com');
+  assert.equal(bridge.first_party_record.headquarters_address, '6200 Uptown Blvd NE Suite 200, Albuquerque, New Mexico 87110');
+  assert.equal(bridge.government_recipient_record.address_line1, '6200 UPTOWN BLVD NE SUITE 200');
+  assert.equal(bridge.government_recipient_record.recipient_uei, 'MD76AJXHCMQ5');
+  assert.equal(bridge.legal_name_equivalence_separately_adjudicated, false);
+  assert.deepEqual(bridge.legal_name_variants_preserved, ['X-Bow Systems', 'X-Bow Systems, Inc.', 'X-BOW LAUNCH SYSTEMS INC']);
+
+  assert.equal(ce0364Adjudication.status, 'source_specific_values_preserved_cause_unresolved');
+  assert.equal(ce0364Adjudication.disposition.event_confidence, 'medium');
+  assert.equal(ce0364Adjudication.disposition.single_rounded_obligation_claim_admitted, false);
+  assert.equal(ce0364Adjudication.disposition.graph_effect, 'none');
+});
+'''
+          test_path.write_text(test_text.rstrip() + test_append + '\n', encoding='utf-8')
           PY
 
-      - name: Upload checksum-bound acquisition receipt
+      - name: Run focused and complete qualification
+        shell: bash
+        env:
+          CANDIDATE_ROOT: ${{ runner.temp }}/ce0364-product/repo
+        run: |
+          set -Eeuo pipefail
+          cd "$CANDIDATE_ROOT"
+          npm ci --no-audit --no-fund > "$GITHUB_WORKSPACE/product-package/npm-ci.stdout" 2> "$GITHUB_WORKSPACE/product-package/npm-ci.stderr"
+          node test/natsec100-award-control.test.js > "$GITHUB_WORKSPACE/product-package/focused.stdout" 2> "$GITHUB_WORKSPACE/product-package/focused.stderr"
+          npm run release:check > "$GITHUB_WORKSPACE/product-package/release.stdout" 2> "$GITHUB_WORKSPACE/product-package/release.stderr"
+          git diff --check
+          git status --short > "$GITHUB_WORKSPACE/product-package/status.txt"
+          git diff --stat "$BASE_MAIN" > "$GITHUB_WORKSPACE/product-package/diff-stat.txt"
+          git diff --name-only "$BASE_MAIN" | sort > "$GITHUB_WORKSPACE/product-package/changed-paths.txt"
+          git diff --binary "$BASE_MAIN" > "$GITHUB_WORKSPACE/product-package/candidate.patch"
+
+      - name: Enforce the exact changed-path denominator and package full files
+        shell: bash
+        env:
+          CANDIDATE_ROOT: ${{ runner.temp }}/ce0364-product/repo
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import os
+          import pathlib
+          import shutil
+
+          repo = pathlib.Path(os.environ['CANDIDATE_ROOT'])
+          package = pathlib.Path(os.environ['GITHUB_WORKSPACE']) / 'product-package'
+          changed = [line.strip() for line in (package / 'changed-paths.txt').read_text().splitlines() if line.strip()]
+          custody_prefix = os.environ['CUSTODY_DIR'].rstrip('/') + '/'
+          fixed = {
+              'data/intake/natsec100-pathways/chunk1/conversion_events.jsonl',
+              'data/intake/natsec100-pathways/chunk1/receipts.jsonl',
+              'data/research/natsec100-x-bow-award-adjudication.json',
+              'test/natsec100-award-control.test.js',
+          }
+          unexpected = [path for path in changed if path not in fixed and not path.startswith(custody_prefix)]
+          if unexpected:
+              raise SystemExit(f'unexpected changed paths: {unexpected}')
+          missing = sorted(path for path in fixed if path not in changed)
+          if missing:
+              raise SystemExit(f'missing required changed paths: {missing}')
+          custody_paths = [path for path in changed if path.startswith(custody_prefix)]
+          if len(custody_paths) < 20:
+              raise SystemExit(f'incomplete source custody denominator: {len(custody_paths)}')
+
+          files_root = package / 'files'
+          for relative in changed:
+              src = repo / relative
+              if not src.is_file():
+                  raise SystemExit(f'changed path is not a file: {relative}')
+              dst = files_root / relative
+              dst.parent.mkdir(parents=True, exist_ok=True)
+              shutil.copyfile(src, dst)
+
+          hashes = []
+          for path in sorted(files_root.rglob('*')):
+              if path.is_file():
+                  hashes.append({
+                      'path': str(path.relative_to(files_root)),
+                      'bytes': path.stat().st_size,
+                      'sha256': hashlib.sha256(path.read_bytes()).hexdigest(),
+                  })
+          qualification = {
+              'schema_version': 'ce0364-x-bow-product-qualification@1',
+              'repository': 'BigBirdReturns/clifford-number',
+              'base_commit': os.environ['BASE_MAIN'],
+              'base_tree': os.environ['BASE_TREE'],
+              'controller_head': os.environ['GITHUB_SHA'],
+              'source_run_id': int(os.environ['SOURCE_RUN_ID']),
+              'source_job_id': int(os.environ['SOURCE_JOB_ID']),
+              'source_artifact_id': int(os.environ['SOURCE_ARTIFACT_ID']),
+              'source_artifact_zip_sha256': os.environ['SOURCE_ARTIFACT_SHA256'],
+              'changed_paths': changed,
+              'changed_path_count': len(changed),
+              'source_custody_path_count': len(custody_paths),
+              'focused_test': 'success',
+              'release_check': 'success',
+              'diff_check': 'success',
+              'graph_effect': 'none',
+              'files': hashes,
+          }
+          (package / 'QUALIFICATION.json').write_text(json.dumps(qualification, indent=2) + '\n')
+          ledger = []
+          for path in sorted(package.rglob('*')):
+              if path.is_file() and path.name != 'PACKAGE-SHA256SUMS':
+                  ledger.append(f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.relative_to(package)}")
+          (package / 'PACKAGE-SHA256SUMS').write_text('\n'.join(ledger) + '\n')
+          PY
+
+      - name: Upload exact candidate and qualification record
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ce0364-x-bow-source-acquisition-${{ github.run_id }}-${{ github.run_attempt }}
-          path: receipt/
+          name: ce0364-x-bow-product-${{ github.run_id }}-${{ github.run_attempt }}
+          path: product-package/
           if-no-files-found: error
           retention-days: 30
