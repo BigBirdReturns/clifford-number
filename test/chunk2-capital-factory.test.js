@@ -37,8 +37,17 @@ try {
   const recovery = readJson(path.join(chunk1, 'roster-2025-official-visual-recovery.json'));
   const adjudication = readJson(path.join(chunk1, 'roster-2025-identity-adjudication.json'));
   const sourceManifest = readJson(path.join(intakeRoot, 'chunk2-capital-factory', 'source_manifest.json'));
-  const companyCount = countJsonl(path.join(chunk1, 'companies.jsonl'));
-  const companyYearCount = countJsonl(path.join(chunk1, 'company_years.jsonl'));
+  const publicMap = readJson(path.join(root, 'data', 'research', 'clifford-cross-corpus-public-interest-map.json'));
+  const publicNatsec = publicMap.lanes.find(row => row.lane_id === 'natsec100-defense-companies');
+  const companyRows = readFileSync(path.join(chunk1, 'companies.jsonl'), 'utf8')
+    .split(/\r?\n/).filter(Boolean).map(JSON.parse);
+  const companyYearRows = readFileSync(path.join(chunk1, 'company_years.jsonl'), 'utf8')
+    .split(/\r?\n/).filter(Boolean).map(JSON.parse);
+  const companyCount = companyRows.length;
+  const companyYearCount = companyYearRows.length;
+  const historical2025 = companyYearRows.filter(row => row.year === 2025);
+  const historicalRanked2025 = historical2025.filter(row => Number.isInteger(row.rank));
+  const historicalPresenceOnly2025 = historical2025.filter(row => row.rank == null);
   const overlapCount = countJsonl(path.join(intakeRoot, 'chunk2-capital-factory', 'overlap_cf_natsec100.jsonl'));
   const overlapRows = readFileSync(
     path.join(intakeRoot, 'chunk2-capital-factory', 'overlap_cf_natsec100.jsonl'),
@@ -63,6 +72,32 @@ try {
   ];
   assert.equal(sourceManifest.natsec100_source.company_count, companyCount,
     'Capital Factory source manifest must bind the current company denominator');
+  assert.ok(publicNatsec, 'public cross-corpus map must retain the NatSec100 lane');
+  assert.deepEqual(publicNatsec.counts, {
+    companies: companyCount,
+    company_year_rows: companyYearCount,
+    conversion_events: countJsonl(path.join(chunk1, 'conversion_events.jsonl')),
+    receipts: countJsonl(path.join(chunk1, 'receipts.jsonl')),
+    ranking_surfaces: countJsonl(path.join(chunk1, 'surfaces.jsonl')),
+    actors: countJsonl(path.join(chunk1, 'actors.jsonl')),
+    historical_2025_company_year_rows: historical2025.length,
+    historical_2025_ranked_rows: historicalRanked2025.length,
+    historical_2025_presence_only_rows: historicalPresenceOnly2025.length,
+    official_2025_source_rows_recovered: recovery.denominator.expected_rows,
+    new_2025_source_rows_recovered: recovery.denominator.new_source_rows_recovered,
+    deterministic_2025_registry_matches: adjudication.denominator.deterministic_existing_matches,
+    adjudicated_2025_identity_candidates: adjudication.denominator.unresolved_source_rows,
+    canonical_2025_promotions: adjudication.denominator.canonical_promotions,
+  }, 'public NatSec100 lane must derive every source, historical, and promotion denominator');
+  assert.match(publicNatsec.what_the_data_shows,
+    /historical company-year ledger retains 42 rows.*official visual recovery now preserves all 100 source rows/is,
+    'public map must distinguish the partial historical table from complete source recovery');
+  assert.match(publicNatsec.open_join, /remaining gap is promotion rather than source recovery/i,
+    'public map must name the remaining transition as promotion');
+  assert.doesNotMatch(
+    [publicNatsec.what_the_data_shows, publicNatsec.open_join].join(' '),
+    /58 unrecovered 2025 roster rows|known_missing_2025_roster_rows/i,
+    'public map must not revive the superseded missing-source claim');
   for (const line of expectedStatusLines) {
     assert.ok(readme.includes(line), `NatSec100 README status drift: missing ${line}`);
   }

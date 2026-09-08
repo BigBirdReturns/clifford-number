@@ -1,6 +1,6 @@
 {
   "schema_version": "clifford-cross-corpus-public-interest-map@1",
-  "generated_at": "2026-09-03",
+  "generated_at": "2026-09-08",
   "scope": "Repository evidence only; no new external acquisition.",
   "infrastructure_contract": {
     "mode": "discovery_not_adjudication",
@@ -63,15 +63,26 @@
         "receipts": 16,
         "ranking_surfaces": 4,
         "actors": 12,
-        "known_missing_2025_roster_rows": 58
+        "historical_2025_company_year_rows": 42,
+        "historical_2025_ranked_rows": 27,
+        "historical_2025_presence_only_rows": 15,
+        "official_2025_source_rows_recovered": 100,
+        "new_2025_source_rows_recovered": 58,
+        "deterministic_2025_registry_matches": 77,
+        "adjudicated_2025_identity_candidates": 23,
+        "canonical_2025_promotions": 0
       },
-      "what_the_data_shows": "A multi-year defense-company universe and conversion-event ledger exists even though it has not been promoted into the canonical Clifford hop graph. Three editions are complete at 100 rows; the 2025 edition is explicitly partial at 42 rows.",
-      "open_join": "The 58 unrecovered 2025 roster rows remain a declared coverage gap, not evidence that those companies did not exist.",
+      "what_the_data_shows": "A multi-year defense-company universe and conversion-event ledger exists outside the canonical Clifford hop graph. The historical company-year ledger retains 42 rows for 2025, including 27 exact ranks and 15 presence-only rows. A separate official visual recovery now preserves all 100 source rows; 77 resolve deterministically to the existing registry and 23 carry bounded identity adjudications. None of those recovery or adjudication rows has been canonically promoted.",
+      "open_join": "The remaining gap is promotion rather than source recovery: 58 recovered source rows are absent from the historical 2025 company-year ledger, 15 retained rows still need exact-rank promotion, and the external identity material behind 23 adjudicated candidates requires separate receipt admission before registry changes. These states are not evidence that a company, award, investment, or relationship is absent.",
       "source_paths": [
         "data/intake/natsec100-pathways/README.md",
         "data/intake/natsec100-pathways/chunk1/companies.jsonl",
         "data/intake/natsec100-pathways/chunk1/company_years.jsonl",
-        "data/intake/natsec100-pathways/chunk1/conversion_events.jsonl"
+        "data/intake/natsec100-pathways/chunk1/conversion_events.jsonl",
+        "data/intake/natsec100-pathways/chunk1/roster-2025-official-visual-recovery.json",
+        "data/intake/natsec100-pathways/chunk1/roster-2025-official-visual-recovery.jsonl",
+        "data/intake/natsec100-pathways/chunk1/roster-2025-identity-adjudication.json",
+        "data/intake/natsec100-pathways/chunk1/roster-2025-identity-adjudication.jsonl"
       ]
     },
     {

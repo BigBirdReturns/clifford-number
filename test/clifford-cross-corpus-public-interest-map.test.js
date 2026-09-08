@@ -43,6 +43,16 @@ expectFailure('staged NatSec100 data cannot be hidden', bundle => {
   bundle.map.lanes.find(lane => lane.lane_id === 'natsec100-defense-companies').visibility = 'hidden_until_promoted';
 }, /must remain visible/);
 
+expectFailure('complete 2025 source recovery cannot be collapsed into the historical 42-row table', bundle => {
+  bundle.map.lanes.find(lane => lane.lane_id === 'natsec100-defense-companies')
+    .counts.official_2025_source_rows_recovered = 42;
+}, /NatSec100 official 2025 recovered rows/);
+
+expectFailure('the public map cannot revive the superseded missing-source narrative', bundle => {
+  bundle.map.lanes.find(lane => lane.lane_id === 'natsec100-defense-companies').open_join =
+    'The 58 unrecovered 2025 roster rows remain a declared coverage gap.';
+}, /promotion gap without reviving missing-source coverage/);
+
 expectFailure('the 837-company Capital Factory universe cannot be reduced to the 12 overlaps', bundle => {
   bundle.map.lanes.find(lane => lane.lane_id === 'austin-israel-defense-vc-corridor').counts.capital_factory_portfolio_universe = 12;
 }, /Austin-Israel capital_factory_portfolio_universe/);
