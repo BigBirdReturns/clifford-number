@@ -1,0 +1,249 @@
+name: TEMP CE0364 USAspending transaction acquisition
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/temp-ce0364-usaspending-acquisition.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: temp-ce0364-usaspending-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  acquire:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.head_ref == 'agent/temp-ce0364-xbow-source-acquisition-20260908'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      EXACT_HEAD: ${{ github.event.pull_request.head.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Acquire complete source-native award and transaction records
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD)" = "$EXACT_HEAD"
+          rm -rf receipt && mkdir -p receipt/sources receipt/request-receipts
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib, re, time, urllib.request
+
+          root = pathlib.Path("receipt")
+          src = root / "sources"
+          rec = root / "request-receipts"
+          award_id = "CONT_AWD_FA930025C6015_9700_-NONE-_-NONE-"
+          endpoints = {
+              "award": f"https://api.usaspending.gov/api/v2/awards/{award_id}/",
+              "count": f"https://api.usaspending.gov/api/v2/awards/count/transaction/{award_id}/",
+              "updated": "https://api.usaspending.gov/api/v2/awards/last_updated/",
+              "transactions": "https://api.usaspending.gov/api/v2/transactions/",
+          }
+          headers = {
+              "Accept": "application/json",
+              "User-Agent": "CliffordNumber-CE0364-USAspending/2.3 (+https://github.com/BigBirdReturns/clifford-number/issues/2625)",
+          }
+          expected = {
+              "piid": "FA930025C6015",
+              "recipient_name": "XBOWLAUNCHSYSTEMSINC",
+              "recipient_uei": "MD76AJXHCMQ5",
+              "description": "ADVANCED INTEGRATED MOTOR MANUFACTURING",
+              "total_obligation": 129494248,
+              "base_and_all_options": 199303198,
+              "date_signed": "2025-09-25",
+          }
+
+          def sha(data): return hashlib.sha256(data).hexdigest()
+          def stable(value): return (json.dumps(value, sort_keys=True, indent=2) + "\n").encode()
+          def norm(value): return re.sub(r"[^A-Z0-9]", "", str(value or "").upper())
+
+          def fetch(name, url, method="GET", body=None):
+              data = None if body is None else body.encode()
+              h = dict(headers)
+              if data is not None: h["Content-Type"] = "application/json"
+              last = None
+              for attempt in range(1, 5):
+                  started = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+                  try:
+                      request = urllib.request.Request(url, data=data, headers=h, method=method)
+                      with urllib.request.urlopen(request, timeout=60) as response:
+                          raw = response.read()
+                          status = response.status
+                          final_url = response.geturl()
+                          response_headers = dict(response.headers.items())
+                      completed = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+                      clean_headers = {}
+                      for key, value in response_headers.items():
+                          clean_headers[key.lower()] = (
+                              {"redacted": True, "sha256": sha(value.encode())}
+                              if key.lower() == "set-cookie" else value
+                          )
+                      receipt = {
+                          "name": name, "method": method, "url": url,
+                          "request_headers": h, "request_body": body,
+                          "request_body_bytes": len(data or b""),
+                          "request_body_sha256": None if data is None else sha(data),
+                          "started_at": started, "completed_at": completed,
+                          "attempt": attempt, "status": status, "final_url": final_url,
+                          "response_headers": clean_headers,
+                          "response_bytes": len(raw), "response_sha256": sha(raw),
+                      }
+                      (src / name).write_bytes(raw)
+                      (rec / f"{name}.receipt.json").write_bytes(stable(receipt))
+                      return json.loads(raw)
+                  except Exception as exc:
+                      last = exc
+                      if attempt < 4: time.sleep(0.75 * 2 ** (attempt - 1))
+              raise last
+
+          award = fetch("usaspending-award-detail.json", endpoints["award"])
+          count = fetch("usaspending-transaction-count.json", endpoints["count"])
+          updated = fetch("usaspending-last-updated.json", endpoints["updated"])
+
+          assert award["generated_unique_award_id"] == award_id
+          assert norm(award["piid"]) == expected["piid"]
+          assert norm(award["recipient"]["recipient_name"]) == expected["recipient_name"]
+          assert award["recipient"]["recipient_uei"] == expected["recipient_uei"]
+          assert award["description"].upper() == expected["description"]
+          assert award["date_signed"] == expected["date_signed"]
+          assert abs(award["total_obligation"] - expected["total_obligation"]) < .005
+          assert abs(award["base_and_all_options"] - expected["base_and_all_options"]) < .005
+          assert isinstance(count["transactions"], int) and count["transactions"] > 0
+          assert isinstance(updated["last_updated"], str) and updated["last_updated"]
+
+          pages, page = [], 1
+          while True:
+              body = json.dumps({
+                  "award_id": award_id,
+                  "page": page,
+                  "sort": "action_date",
+                  "order": "asc",
+                  "limit": 5000,
+              }, separators=(",", ":"))
+              result = fetch(
+                  f"usaspending-transactions-page-{page:04d}.json",
+                  endpoints["transactions"], "POST", body,
+              )
+              assert result["page_metadata"]["page"] == page
+              assert isinstance(result["results"], list)
+              pages.append(result)
+              if not result["page_metadata"]["hasNext"]:
+                  assert result["page_metadata"]["next"] is None
+                  break
+              assert result["page_metadata"]["next"] == page + 1
+              page += 1
+              assert page <= 1000
+
+          rows = [row for p in pages for row in p["results"]]
+          assert len(rows) == count["transactions"]
+          seen, total = set(), 0
+          actions = []
+          for row in rows:
+              assert row["id"] not in seen
+              seen.add(row["id"])
+              assert re.fullmatch(r"\d{4}-\d{2}-\d{2}", row["action_date"])
+              amount = row.get("federal_action_obligation")
+              assert amount is None or isinstance(amount, (int, float))
+              total += amount or 0
+              actions.append({
+                  "id": row["id"],
+                  "modification_number": row.get("modification_number"),
+                  "action_date": row["action_date"],
+                  "action_type": row.get("action_type"),
+                  "action_type_description": row.get("action_type_description"),
+                  "federal_action_obligation": amount,
+                  "description": row.get("description"),
+              })
+          assert abs(total - award["total_obligation"]) < .005
+
+          analysis = {
+              "schema_version": "ce0364-usaspending-live-acquisition@1",
+              "acquired_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+              "source_last_updated": updated["last_updated"],
+              "award": {
+                  key: award.get(key) for key in [
+                      "generated_unique_award_id", "piid", "type", "type_description",
+                      "description", "total_obligation", "date_signed",
+                      "base_exercised_options", "base_and_all_options",
+                      "recipient", "awarding_agency", "funding_agency",
+                      "period_of_performance", "latest_transaction_contract_data",
+                  ]
+              },
+              "transaction_population": {
+                  "count_endpoint": count["transactions"],
+                  "retained_count": len(rows),
+                  "page_count": len(pages),
+                  "obligation_sum": total,
+                  "actions": actions,
+              },
+              "source_comparison": {
+                  "announcement_contract_value": 191303197,
+                  "announcement_obligated_at_award": 121494248,
+                  "usa_spending_base_and_all_options": award["base_and_all_options"],
+                  "usa_spending_total_obligation": award["total_obligation"],
+                  "potential_value_delta": award["base_and_all_options"] - 191303197,
+                  "obligation_delta": award["total_obligation"] - 121494248,
+                  "deltas_are_equal": False,
+                  "cause": "unresolved",
+              },
+              "disposition": {
+                  "event_confidence": "medium",
+                  "graph_effect": "none",
+                  "causal_status": "not_established",
+                  "canonical_amount_collapse_permitted": False,
+              },
+          }
+          assert analysis["source_comparison"]["potential_value_delta"] == 8000001
+          assert analysis["source_comparison"]["obligation_delta"] == 8000000
+          (root / "analysis.json").write_bytes(stable(analysis))
+
+          entries = []
+          for folder in (src, rec):
+              for item in sorted(folder.iterdir()):
+                  raw = item.read_bytes()
+                  entries.append({
+                      "path": str(item.relative_to(root)),
+                      "bytes": len(raw),
+                      "sha256": sha(raw),
+                  })
+          (root / "MANIFEST.json").write_bytes(stable({
+              "schema_version": "ce0364-usaspending-acquisition-manifest@1",
+              "head_sha": os.environ["EXACT_HEAD"],
+              "run_id": os.environ.get("GITHUB_RUN_ID"),
+              "run_attempt": os.environ.get("GITHUB_RUN_ATTEMPT"),
+              "source_last_updated": updated["last_updated"],
+              "entries": entries,
+          }))
+          (root / "SHA256SUMS").write_text(
+              "".join(f"{x['sha256']}  {x['path']}\n" for x in entries)
+          )
+          print(json.dumps({
+              "status": "success",
+              "transaction_count": len(rows),
+              "transaction_obligation_sum": total,
+              "source_last_updated": updated["last_updated"],
+          }, indent=2))
+          PY
+          printf '%s\n' "$EXACT_HEAD" > receipt/acquisition-head-sha.txt
+          git rev-parse HEAD^{tree} > receipt/acquisition-head-tree.txt
+          find receipt -type f ! -name COMPLETE_SHA256SUMS -print0 |
+            sort -z |
+            xargs -0 sha256sum > receipt/COMPLETE_SHA256SUMS
+
+      - name: Upload checksum-bound USAspending receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ce0364-usaspending-acquisition-${{ github.run_id }}-${{ github.run_attempt }}
+          path: receipt/
+          if-no-files-found: error
+          retention-days: 90
