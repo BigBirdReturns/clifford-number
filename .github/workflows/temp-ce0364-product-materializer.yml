@@ -27,7 +27,7 @@ jobs:
       EVENT_BLOB: 8c3a8dc17b9d28ba4ed330a82b50d3f7a5e5846c
       RECEIPT_BLOB: 54cee87a6615cbde7d26b92e00970f4835836bc8
       TEST_BLOB: 142517f0db5dc64ce9afbe3fd0daa1d32b1c0852
-      SCRIPT_SHA256: 403716789657e27fe2b8a70ff8bb0cb6d5fdfca1974d7c5d0c0daec4ec8fb4aa
+      SCRIPT_BLOB: 41d8a810f8bf13cd3d36a738b7db967e99247937
       PRODUCT_BRANCH: agent/ce0364-xbow-source-conflict-adjudication-20260908
       EXACT_CONTROLLER_HEAD: ${{ github.event.pull_request.head.sha }}
     steps:
@@ -64,8 +64,8 @@ jobs:
 
           stage=lease-controller
           test "$(git rev-parse HEAD)" = "$EXACT_CONTROLLER_HEAD"
+          test "$(git hash-object .github/scripts/temp-ce0364-materialize.py)" = "$SCRIPT_BLOB"
           cp .github/scripts/temp-ce0364-materialize.py "$RUNNER_TEMP/ce0364-materialize.py"
-          test "$(sha256sum "$RUNNER_TEMP/ce0364-materialize.py" | cut -d' ' -f1)" = "$SCRIPT_SHA256"
 
           stage=lease-main
           current_main="$(git ls-remote origin refs/heads/main | awk '{print $1}')"
