@@ -77,3 +77,52 @@ test('preserved five-lead record is unchanged and does not contain an admitted f
   assert.equal(manifest.coverage.trade_summaries_exactly_verified, 0);
   assert.equal(manifest.graph_effect, 'none');
 });
+
+// CE0364-XBOW-SOURCE-CONFLICT-V2
+const ce0364Events = fs.readFileSync(
+  'data/intake/natsec100-pathways/chunk1/conversion_events.jsonl',
+  'utf8',
+).trim().split('\n').map((line) => JSON.parse(line));
+const ce0364Receipts = fs.readFileSync(
+  'data/intake/natsec100-pathways/chunk1/receipts.jsonl',
+  'utf8',
+).trim().split('\n').map((line) => JSON.parse(line));
+const ce0364Adjudication = JSON.parse(
+  fs.readFileSync('data/research/natsec100-x-bow-award-adjudication.json', 'utf8'),
+);
+
+test('CE0364 preserves source-specific award fields and refuses a fabricated modification', () => {
+  const event = ce0364Events.find((row) => row.event_id === 'CE0364');
+  assert.ok(event);
+  assert.equal(event.company_id, 'x_bow_systems');
+  assert.equal(event.confidence, 'medium');
+  assert.deepEqual(event.receipt_ids, ['R010', 'R017', 'R018', 'R019']);
+  assert.ok(!event.notes.includes('FY25 Air Force obligation: $129M'));
+
+  assert.equal(ce0364Adjudication.contract.piid, 'FA9300-25-C-6015');
+  assert.equal(ce0364Adjudication.identity_bridge.federal_recipient_uei, 'MD76AJXHCMQ5');
+  assert.equal(ce0364Adjudication.announcement_record.announced_contract_value, 191303197);
+  assert.equal(ce0364Adjudication.announcement_record.obligated_at_award, 121494248);
+  assert.equal(ce0364Adjudication.usa_spending_record.base_and_all_options, 199303198);
+  assert.equal(ce0364Adjudication.usa_spending_record.total_obligation, 129494248);
+  assert.equal(ce0364Adjudication.reconciliation.potential_value_delta, 8000001);
+  assert.equal(ce0364Adjudication.reconciliation.obligation_delta, 8000000);
+  assert.equal(ce0364Adjudication.reconciliation.deltas_are_equal, false);
+  assert.equal(ce0364Adjudication.reconciliation.cause, 'unresolved');
+  assert.equal(ce0364Adjudication.transaction_population.count, 1);
+  assert.equal(ce0364Adjudication.transaction_population.actions[0].modification_number, '0');
+  assert.equal(ce0364Adjudication.transaction_population.actions[0].action_date, '2025-09-25');
+  assert.equal(ce0364Adjudication.transaction_population.actions[0].federal_action_obligation, 129494248);
+  assert.equal(ce0364Adjudication.transaction_population.later_action_observed, false);
+  assert.equal(ce0364Adjudication.transaction_population.later_modification_observed, false);
+  assert.equal(ce0364Adjudication.disposition.canonical_amount_collapse_permitted, false);
+  assert.equal(ce0364Adjudication.disposition.graph_effect, 'none');
+
+  for (const receiptId of ['R017', 'R018', 'R019']) {
+    const receipt = ce0364Receipts.find((row) => row.receipt_id === receiptId);
+    assert.ok(receipt, `missing receipt ${receiptId}`);
+    assert.equal(receipt.archive.method, 'in_repo_content_hash');
+    assert.match(receipt.archive.ref, /^sha256:[0-9a-f]{64}$/);
+    assert.ok(receipt.path.startsWith('receipts/natsec100/ce0364-xbow-20260908/'));
+  }
+});
