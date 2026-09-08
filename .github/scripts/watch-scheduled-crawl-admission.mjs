@@ -11,6 +11,7 @@ const REQUIRED = new Map([
 ]);
 const BRANCH = /^automation-crawl-(industrial-exhaust|official-record)-run-[0-9]+-[0-9]+$/;
 const SHA = /^[a-f0-9]{40}$/;
+const APP_BOT = /^[A-Za-z0-9][A-Za-z0-9-]*\[bot\]$/;
 const positiveInteger = (value) => Number.isSafeInteger(value) && value > 0;
 
 function flattenPages(value, key) {
@@ -24,6 +25,11 @@ function flattenPages(value, key) {
 
 function requireSha(value, label) {
   assert.match(value, SHA, `${label} is not a commit SHA`);
+  return value;
+}
+
+function requireExpectedAuthor(value) {
+  assert.match(value || '', APP_BOT, 'EXPECTED_CRAWLER_PR_AUTHOR must name one GitHub App bot');
   return value;
 }
 
@@ -71,8 +77,10 @@ export function crawlerNamespacePulls(pulls) {
   return pulls.filter((pr) => typeof pr?.head?.ref === 'string' && BRANCH.test(pr.head.ref));
 }
 
-export function selectWatchdogCandidate(pulls, repository) {
+export function selectWatchdogCandidate(pulls, repository,
+  expectedAuthor = 'github-actions[bot]') {
   assert.match(repository, /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/);
+  assert.match(expectedAuthor, APP_BOT, 'expected crawler PR author is not an app bot login');
   const matches = crawlerNamespacePulls(pulls);
   assert.ok(matches.length <= 1, 'multiple open crawler pull requests require disposition');
   if (matches.length === 0) return null;
@@ -80,7 +88,7 @@ export function selectWatchdogCandidate(pulls, repository) {
   const pr = matches[0];
   assert.equal(pr.state, 'open', 'crawler pull request is not open');
   assert.equal(pr.draft, false, 'crawler pull request is a draft');
-  assert.equal(pr.user?.login, 'github-actions[bot]', 'crawler pull request has a foreign author');
+  assert.equal(pr.user?.login, expectedAuthor, 'crawler pull request has a foreign author');
   assert.equal(pr.base?.ref, 'main', 'crawler pull request does not target main');
   assert.equal(pr.head?.repo?.full_name, repository, 'crawler pull request has a foreign head repository');
   assert.equal(pr.base?.repo?.full_name, repository, 'crawler pull request has a foreign base repository');
@@ -90,7 +98,8 @@ export function selectWatchdogCandidate(pulls, repository) {
   const branch = pr.head.ref;
   const match = branch.match(BRANCH);
   const candidateSha = requireSha(pr.head?.sha, 'crawler candidate head');
-  return { number: pr.number, branch, candidateSha, kind: match[1] };
+  return { number: pr.number, branch, candidateSha, kind: match[1],
+    expectedAuthor };
 }
 
 export function selectWatchdogTriggerRun(runs, repository, candidate) {
@@ -177,6 +186,7 @@ function runWatchdog() {
   mkdirSync(receiptDir, { recursive: true });
   try {
     const repository = process.env.GITHUB_REPOSITORY;
+    const expectedAuthor = requireExpectedAuthor(process.env.EXPECTED_CRAWLER_PR_AUTHOR);
     const eventName = process.env.GITHUB_EVENT_NAME;
     let event = null;
     if (eventName === 'workflow_run') {
@@ -184,19 +194,24 @@ function runWatchdog() {
       event = JSON.parse(readFileSync(process.env.GITHUB_EVENT_PATH, 'utf8'));
     }
     const invocation = assertWatchdogInvocation(eventName, event, repository);
-    writeJson(receiptDir, 'watchdog-invocation.json', invocation);
+    writeJson(receiptDir, 'watchdog-invocation.json', {
+      ...invocation,
+      expected_author: expectedAuthor
+    });
     const pulls = ghRead(`repos/${repository}/pulls?state=open&base=main&per_page=100`,
       'pull_requests');
     const namespaced = crawlerNamespacePulls(pulls);
     writeJson(receiptDir, 'watchdog-pull-census.json', {
+      expected_author: expectedAuthor,
       open_pull_request_count: pulls.length,
       crawler_namespace_count: namespaced.length,
       crawler_namespace: namespaced.map(summarizePull)
     });
-    const candidate = selectWatchdogCandidate(pulls, repository);
+    const candidate = selectWatchdogCandidate(pulls, repository, expectedAuthor);
     if (!candidate) {
       terminal(receiptDir, { schema_version: 1, outcome: 'ignored',
-        reason: 'no open crawler candidate', repository, exit_code: 0 });
+        reason: 'no open crawler candidate', repository,
+        expected_author: expectedAuthor, exit_code: 0 });
       return;
     }
 
@@ -214,9 +229,9 @@ function runWatchdog() {
     if (!trigger) {
       terminal(receiptDir, { schema_version: 1, outcome: 'pending',
         reason: 'no completed required native workflow run', repository,
-        promotion_kind: candidate.kind, pull_request: candidate.number,
-        candidate_sha: candidate.candidateSha, candidate_branch: candidate.branch,
-        exit_code: 0 });
+        expected_author: expectedAuthor, promotion_kind: candidate.kind,
+        pull_request: candidate.number, candidate_sha: candidate.candidateSha,
+        candidate_branch: candidate.branch, exit_code: 0 });
       return;
     }
 
