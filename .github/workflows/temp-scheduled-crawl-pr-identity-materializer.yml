@@ -6,6 +6,7 @@ on:
       - agent/scheduled-crawl-pr-identity-seam-v1
     paths:
       - '.github/patches/scheduled-crawl-pr-identity.patch'
+      - '.github/workflows/temp-scheduled-crawl-pr-identity-materializer.yml'
 
 permissions:
   contents: write
@@ -41,6 +42,32 @@ jobs:
           git reset --hard "$EXPECTED_MAIN"
           git apply --check /tmp/scheduled-crawl-pr-identity.patch
           git apply /tmp/scheduled-crawl-pr-identity.patch
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('test/scheduled-crawl-pr-identity.test.js')
+          lines = path.read_text().splitlines()
+          output = []
+          replacements = 0
+          index = 0
+          while index < len(lines):
+              line = lines[index]
+              if "new RegExp(`uses: ${ACTION.replaceAll" in line:
+                  assert index + 1 < len(lines)
+                  assert 'must pin the App-token action to the reviewed v3.2.0 commit' in lines[index + 1]
+                  output.extend([
+                      '    if (!workflow.includes(`uses: ${ACTION}`)) {',
+                      '      errors.push(`${label} must pin the App-token action to the reviewed v3.2.0 commit`);',
+                      '    }'
+                  ])
+                  index += 2
+                  replacements += 1
+                  continue
+              output.append(line)
+              index += 1
+          assert replacements == 1, replacements
+          path.write_text('\n'.join(output) + '\n')
+          PY
           git diff --check
           bash -n .github/scripts/promote-scheduled-crawl.sh
           node --check test/scheduled-crawl-pr-identity.test.js
