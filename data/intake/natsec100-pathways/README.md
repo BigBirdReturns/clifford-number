@@ -1,77 +1,127 @@
-# NatSec100 Pathways Database (intake stage)
+# NatSec100 Pathways Database — Phase 1 intake frontier
 
-US defense-tech ecosystem dataset centered on the SVDG NatSec100 ranking
-surface and the Capital Factory / Silent Ventures / Jackson Moses routing
-layer. Intake stage: receipt-backed base tables only. No overlap analysis has
-been run, no rows have been promoted to the canonical hop-surface ledger, and
-no company ledgers or scores beyond the three explicitly-insufficient seed
-scores exist yet.
+This directory is the US defense-tech second-case intake. It combines the SVDG
+NatSec100 ranking surfaces with the Capital Factory, Silent Ventures, and Jackson
+Moses routing layer while preserving the distinction among ranking membership,
+portfolio listing, investment, procurement, operational effect, and actor
+contact.
 
-Same discipline as the rest of the repo: topology, not accusation. Every
-conversion event carries `competing_explanations` and `forbidden_inferences`;
-multi-surface presence is a graph fact, never a coordination claim.
+The current source state is:
+
+```text
+company registry rows:                         196
+historical company-year rows:                  342
+2025 official source rows recovered:           100
+2025 deterministic existing-registry matches:   77
+2025 identity candidates adjudicated:            23
+2025 canonical promotions:                       0
+Capital Factory public-portfolio denominator:   837
+Capital Factory × NatSec100 co-listings:          12
+independently corroborated co-listings:            4
+CF-listing-only co-listings:                       8
+canonical hop-surface promotions:                 0
+```
+
+The 342-row historical company-year file still preserves the original partial
+2025 intake. The complete official 100-row transcription, its identity mapping,
+and the 23-row adjudication live in separate source-scoped files. This prevents a
+recovered source table from silently rewriting the company registry or the
+historical intake before explicit promotion.
 
 ## Layout
 
 ### `seed/` — Capital Factory / Silent Ventures / SVDG seed pass
 
 | file | rows | contents |
-|---|---|---|
-| `actors.jsonl` | 80 | seed actor registry (`person:` / `org:` / `company:` / `surface:` ids) |
-| `claims.jsonl` | 66 | reviewed subject-predicate-object claims with evidence class, receipt id, `ui_weight`, and `failure_mode` where a claim needs a caveat |
-| `conversion_events.jsonl` | 14 | `conv-*` myth-to-market conversion events |
-| `myth_to_market_scores.jsonl` | 3 | scoring pass; most dimensions deliberately `insufficient_evidence` |
+|---|---:|---|
+| `actors.jsonl` | 80 | seed actor registry using the delivered person, organization, company, and surface IDs |
+| `claims.jsonl` | 66 | reviewed subject-predicate-object claims with evidence class, receipt ID, UI weight, and failure modes |
+| `conversion_events.jsonl` | 14 | hand-curated myth-to-market conversion candidates |
+| `myth_to_market_scores.jsonl` | 3 | scoring pass whose unresolved dimensions remain `insufficient_evidence` |
 
-Hygiene applied on ingest (2026-07-06): the delivered file carried three
-duplicate `actor_id` lines. Byte-identical duplicates of `company:hadrian` and
-`company:firefly-aerospace` were dropped. Two differing `org:svdg` rows
-(`nonprofit_ecosystem_node` vs `nonprofit` + alias) were merged into one row,
-`type: nonprofit`, `aliases: ["SVDG"]`, matching how chunk 1 records SVDG.
-Nothing else was edited.
+The seed delivery contained three duplicate actor rows. Byte-identical duplicates
+of Hadrian and Firefly Aerospace were removed; the two SVDG rows were merged into
+one nonprofit record with the retained alias. No substantive claim was promoted
+through that hygiene pass.
 
-### `chunk1/` — NatSec100 roster ingestion (strict-sequencing steps 1-2)
+### `chunk1/` — roster, receipts, and 2025 source recovery
 
 | file | rows | contents |
-|---|---|---|
-| `companies.jsonl` | 196 | unique companies across all ingested rosters, alias-reconciled |
-| `company_years.jsonl` | 342 | company-year roster rows (2023: 100, 2024: 100, 2025: 42 partial, 2026: 100) |
-| `receipts.jsonl` | 16 | `R###` receipts (official PDFs, edition pages, press corroboration) |
-| `conversion_events.jsonl` | 367 | `CE####` events: 342 programmatic inclusion events + documented exits, IPO filings, one methodology exit, 5 medium-confidence FY25 Air Force line items |
-| `surfaces.jsonl` | 4 | the four NatSec100 editions (`S_NS23`-`S_NS26`); only 2026 is procurement-gated |
-| `actors.jsonl` | 12 | `A###` receipt-backed operators/sponsors/methodology partners |
-| `delta_report_chunk1.md` | — | coverage, failed retrievals, OCR resolutions, rejected hypotheses, QC confirmations |
+|---|---:|---|
+| `companies.jsonl` | 196 | alias-reconciled intake company registry |
+| `company_years.jsonl` | 342 | historical edition rows: 2023: 100, 2024: 100, 2025: 42 partial, 2026: 100 |
+| `receipts.jsonl` | 16 | official reports, edition pages, and bounded corroboration |
+| `conversion_events.jsonl` | 367 | edition-inclusion events plus documented exits, filings, methodology change, and held award leads |
+| `surfaces.jsonl` | 4 | the 2023 through 2026 ranking editions; roster membership remains non-hop |
+| `actors.jsonl` | 12 | receipt-backed operators, sponsors, and methodology partners |
+| `roster-2025-official-visual-recovery.jsonl` | 100 | complete rank, reported name, website, and source-page transcription from the official image-rendered table |
+| `roster-2025-official-visual-recovery.json` | 1 | recovery denominator, method, hashes, and non-promotion boundary |
+| `roster-2025-identity-adjudication.jsonl` | 23 | every source row not resolved by the deterministic registry precheck |
+| `roster-2025-identity-adjudication.json` | 1 | exact 77/23 denominator and candidate disposition counts |
 
-Verified on ingest: every JSONL line parses; 2023/2024/2026 each have exactly
-100 rows with rank continuity 1-100; 2025 is explicitly partial (42 rows, 27
-ranked) and must never be used as a denominator; all `receipt_ids`,
-`company_id`s, and `operator_actor_id`s resolve within the chunk; no duplicate
-`company_id` or `event_id`.
+The official 2025 table is now complete at ranks 1 through 100. All 42 prior
+partial rows reconcile to it; 15 prior presence-only rows now have official
+ranks; 58 source rows were newly recovered. The subsequent adjudication records
+19 exact brand-and-domain new-record candidates, two successor-brand candidates,
+and two proposed updates to existing registry rows. Those records remain
+candidate-only because their external identity evidence has not yet been
+separately admitted to the case receipt ledger.
 
-## Known open items (from the chunk 1 delta report)
+### `chunk2-capital-factory/` — deterministic co-listing pass
 
-- 2025 roster incomplete: 58 companies unidentified. Recovery paths: Wayback
-  snapshots of the 2025 companies widget, 2025 inclusion press releases.
-- RRAI -> Forterra identity link held at medium confidence pending a rebrand
-  receipt.
-- Armis and GoTenna appear only in the 2026 exits table; membership year
-  unconfirmed.
-- Validation / credential / narrative event tables: candidates flagged, none
-  created.
-- All overlap tables (Silent Ventures, Capital Factory, Jackson Moses, DIU,
-  AFWERX, SBIR/STTR, USAspending): not yet run, by design.
+The implemented overlap compares 837 public Capital Factory portfolio slugs with
+all 196 intake companies and returns 12 co-listings. Four are independently
+corroborated; eight retain `cf_listing_only`. Every edge keeps discovery admission
+separate from independent corroboration and states that a portfolio-index listing
+does not establish equity, routing, coordination, or actor contact.
 
-## Relationship between the two batches
+Run the standing intake regressions with:
 
-The seed pass and chunk 1 use different id schemes (`org:svdg` vs `A001`;
-`conv-*` vs `CE####`) and overlap in subject matter (e.g. the 14 seed
-conversion events are the hand-curated ancestors of chunk 1's programmatic
-pass). They are kept as delivered; reconciliation into a single id space is
-part of the promotion step, not intake.
+```bash
+node test/chunk2-capital-factory.test.js
+```
 
-## Next chunk (per the delta report)
+That wrapper validates the complete 2025 source recovery, the 23-row identity
+adjudication, and the Capital Factory overlap.
 
-Chunk 2: (a) close the 2025 roster; (b) deterministic overlap pass against
-Silent Ventures, then Capital Factory, then Jackson Moses / Silent Capital,
-one receipt per portfolio edge. The five FY25 Air Force line items (Sierra
-Space, X-Bow, JetZero, Dataminr, Castelion) are the cheapest confidence
-upgrades: each should resolve against USAspending in one query.
+## Current promotion frontier
+
+1. Admit the identity sources used by the 23 adjudications into the case receipt
+   ledger with durable source custody.
+2. Apply the supported new company records and two proposed registry amendments
+   through a separate explicit promotion.
+3. Emit a complete 100-row 2025 company-year edition without deleting or
+   rewriting the historical partial intake.
+4. Compile the NatSec100 corpus under the common case contract and preserve the
+   four ranking editions as dense, non-hop surfaces.
+5. Run one explicitly resolved cross-case identity join and one narrated edition
+   delta after the second case compiles.
+
+Silent Ventures, Jackson Moses / Silent Capital, DIU, AFWERX, SBIR/STTR, and
+USAspending overlap denominators remain outside the Capital Factory pass. Some
+related router and award material exists elsewhere in the repository, but it
+cannot enter this case by name reuse or subject proximity; it requires its own
+identity, receipt, and promotion transition.
+
+## Superseded intake statements
+
+The earlier statements that the 2025 roster was missing 58 companies and that no
+overlap had been run describe the July 2026 intake snapshot. The official visual
+recovery and Capital Factory overlap supersede those two operational claims. The
+historical source files and delta report remain preserved because they record the
+actual earlier state and failed retrieval boundary.
+
+## Interpretation boundary
+
+```text
+ranking membership proves procurement: false
+ranking membership proves operational impact: false
+portfolio listing proves equity: false
+co-listing proves coordination: false
+identity candidate proves legal succession: false
+source recovery mutates the registry automatically: false
+promotes_to: candidate_only
+graph_effect: none
+actor_hop_effect: none
+project_completion_claimed: false
+```

@@ -24,6 +24,7 @@ Read these first:
 - [`reporter-briefings.md`](reporter-briefings.md) — structured, non-narrative case reports whose factual text is compiled from canonical claims and events and whose workplans may expose candidate-only case trails.
 - [`report-waterline.md`](report-waterline.md) — the current transition law from intake or projection through case ledger, structured report, independent review, and approved publication.
 - [`estates.md`](estates.md) — durable domain corpora, estate slices, fog classes, and the bounded acquisition law.
+- [`milestones/phase0-foundation-lock.md`](milestones/phase0-foundation-lock.md) — the completed identity, density, narration, evidence-upgrade, and receipt-archival foundation controls.
 - [`milestones/estate-aperture-v1.md`](milestones/estate-aperture-v1.md) — the completed fourteen-estate pass and the four-level Estate Aperture waterline.
 - [`milestones/estate-frontier-game-trails-v1.md`](milestones/estate-frontier-game-trails-v1.md) — ten prepared frontier estates and the complete twenty-four-estate Game-Trail Aperture pass.
 - [`definitions.md`](definitions.md) — the current vocabulary in one place.
@@ -47,6 +48,7 @@ For reports, a trail is not a claim, a canonical claim is not necessarily a date
 - [`axm-instrument-architecture.md`](axm-instrument-architecture.md) — how Clifford sits as a layer-2 instrument in the AXM sovereign-evidence stack, the custody/intake seams, the "conform late" principle, and the ten parallel research-track harnesses.
 - [`poof-clifford-ecology.md`](poof-clifford-ecology.md) — constitutional one-way evidence and challenge flow joining POOF, K0, REAL STEEL, Steel Mirror, newsroom onboarding, publication audits, and machine interfaces without creating a second factual ledger.
 - [`tiered-research-methodology.md`](tiered-research-methodology.md) — the validated operating procedure for running a research-track harness: the Haiku→Sonnet→Fable+human pipeline, the nine measured routing rules (crate+framing dominate model choice; try a UA fetcher before ScreenGhost; web-only is the costly last resort), and the rederivable-telemetry standard.
+- [`../data/intake/natsec100-pathways/README.md`](../data/intake/natsec100-pathways/README.md) — the Phase 1 second-case intake state, completed 2025 source recovery, identity-promotion frontier, and implemented Capital Factory overlap.
 - [`../CONTRIBUTING.md`](../CONTRIBUTING.md) — contribution expectations and examples.
 - [`../contributions/templates/candidate-surface.md`](../contributions/templates/candidate-surface.md) — submission template.
 - [`redaction-policy.md`](redaction-policy.md) — required exclusions and listing caveats.

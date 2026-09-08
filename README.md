@@ -36,6 +36,8 @@ Start with the audience-based [documentation index](docs/README.md), then read t
 
 ## Operational waterlines
 
+- **Phase 0 foundation lock:** [`docs/milestones/phase0-foundation-lock.md`](docs/milestones/phase0-foundation-lock.md) records the closed identity, density, narration, evidence-upgrade, and receipt-archival controls that Phase 1 must preserve.
+- **Phase 1 NatSec100 frontier:** [`data/intake/natsec100-pathways/README.md`](data/intake/natsec100-pathways/README.md) records the complete 2025 source recovery, candidate identity adjudication, Capital Factory overlap, and remaining canonical-promotion boundary.
 - **Report waterline:** [`reports/index.html`](reports/index.html) shows cases moving from intake through structured report and independent review.
 - **Estate waterline:** [`estates/index.html`](estates/index.html) preserves the closed M-01 fourteen-estate, 143-task pass through the four-level Estate Aperture.
 - **Game-trail waterline:** [`gametrails/index.html`](gametrails/index.html) exposes 24 durable estates, 10 prepared frontier surveys, and 308 current trails through typed overlap, custody, shared-source, bounded non-overlap, and unresolved terminal classes.
