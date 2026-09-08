@@ -36,6 +36,7 @@ try {
   const countJsonl = file => readFileSync(file, 'utf8').split(/\r?\n/).filter(Boolean).length;
   const recovery = readJson(path.join(chunk1, 'roster-2025-official-visual-recovery.json'));
   const adjudication = readJson(path.join(chunk1, 'roster-2025-identity-adjudication.json'));
+  const sourceManifest = readJson(path.join(intakeRoot, 'chunk2-capital-factory', 'source_manifest.json'));
   const companyCount = countJsonl(path.join(chunk1, 'companies.jsonl'));
   const companyYearCount = countJsonl(path.join(chunk1, 'company_years.jsonl'));
   const overlapCount = countJsonl(path.join(intakeRoot, 'chunk2-capital-factory', 'overlap_cf_natsec100.jsonl'));
@@ -54,10 +55,14 @@ try {
     `2025 deterministic existing-registry matches:   ${adjudication.denominator.deterministic_existing_matches}`,
     `2025 identity candidates adjudicated:            ${adjudication.denominator.unresolved_source_rows}`,
     `2025 canonical promotions:                       ${adjudication.denominator.canonical_promotions}`,
+    `Capital Factory public-portfolio denominator:   ${sourceManifest.cf_portfolio_source.slug_count}`,
     `Capital Factory × NatSec100 co-listings:          ${overlapCount}`,
     `independently corroborated co-listings:            ${corroborated}`,
     `CF-listing-only co-listings:                       ${listingOnly}`,
+    'canonical hop-surface promotions:                 0',
   ];
+  assert.equal(sourceManifest.natsec100_source.company_count, companyCount,
+    'Capital Factory source manifest must bind the current company denominator');
   for (const line of expectedStatusLines) {
     assert.ok(readme.includes(line), `NatSec100 README status drift: missing ${line}`);
   }
