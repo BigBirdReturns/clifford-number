@@ -23,7 +23,8 @@ jobs:
       AWARD_URL: https://api.usaspending.gov/api/v2/awards/CONT_AWD_FA930025C6015_9700_-NONE-_-NONE-/
       COUNT_URL: https://api.usaspending.gov/api/v2/awards/count/transaction/CONT_AWD_FA930025C6015_9700_-NONE-_-NONE-/
       TRANSACTIONS_URL: https://api.usaspending.gov/api/v2/transactions/
-      ANNOUNCEMENT_URL: https://www.war.gov/News/Contracts/Contract/Article/4316486/contracts-for-sep-26-2025/
+      WAR_URL: https://www.war.gov/News/Contracts/Contract/Article/4316486/contracts-for-sep-26-2025/
+      DEFENSE_URL: https://www.defense.gov/News/Contracts/Contract/Article/4316486/contracts-for-sep-26-2025/
       COMPANY_URL: https://www.xbowsystems.com/
       CONTACT_URL: https://www.xbowsystems.com/contact-us/
     steps:
@@ -40,16 +41,32 @@ jobs:
           set -Eeuo pipefail
           rm -rf receipt
           mkdir -p receipt
-          printf '%s\n' "${GITHUB_SHA}" > receipt/acquisition-head.txt
+          printf '%s\n' "$GITHUB_SHA" > receipt/acquisition-head.txt
           date -u +%FT%TZ > receipt/retrieved-at.txt
-          curl --fail --location --retry 3 --retry-all-errors --connect-timeout 20 --max-time 120 \
-            --dump-header receipt/usaspending-award-detail.headers \
-            --output receipt/usaspending-award-detail.json \
-            "$AWARD_URL"
-          curl --fail --location --retry 3 --retry-all-errors --connect-timeout 20 --max-time 120 \
-            --dump-header receipt/usaspending-transaction-count.headers \
-            --output receipt/usaspending-transaction-count.json \
-            "$COUNT_URL"
+
+          fetch_get() {
+            key="$1"
+            url="$2"
+            code="$(curl --silent --show-error --location --retry 2 --retry-all-errors \
+              --connect-timeout 20 --max-time 120 \
+              --user-agent 'Mozilla/5.0 (compatible; CliffordNumberResearch/1.0; +https://github.com/BigBirdReturns/clifford-number)' \
+              --header 'Accept: text/html,application/json;q=0.9,*/*;q=0.8' \
+              --header 'Accept-Language: en-US,en;q=0.8' \
+              --dump-header "receipt/${key}.headers" \
+              --output "receipt/${key}.body" \
+              --write-out '%{http_code}' \
+              "$url" || true)"
+            printf '%s\n' "$code" > "receipt/${key}.status"
+          }
+
+          fetch_get usaspending-award-detail "$AWARD_URL"
+          [[ "$(cat receipt/usaspending-award-detail.status)" == '200' ]]
+          mv receipt/usaspending-award-detail.body receipt/usaspending-award-detail.json
+
+          fetch_get usaspending-transaction-count "$COUNT_URL"
+          [[ "$(cat receipt/usaspending-transaction-count.status)" == '200' ]]
+          mv receipt/usaspending-transaction-count.body receipt/usaspending-transaction-count.json
+
           python3 - <<'PY'
           import json, os, pathlib
           request = {
@@ -64,24 +81,100 @@ jobs:
               encoding="utf-8",
           )
           PY
-          curl --fail --location --retry 3 --retry-all-errors --connect-timeout 20 --max-time 120 \
+          code="$(curl --silent --show-error --location --retry 2 --retry-all-errors \
+            --connect-timeout 20 --max-time 120 \
+            --user-agent 'Mozilla/5.0 (compatible; CliffordNumberResearch/1.0; +https://github.com/BigBirdReturns/clifford-number)' \
+            --header 'Accept: application/json' \
             --header 'Content-Type: application/json' \
             --data-binary @receipt/usaspending-transactions.request.json \
             --dump-header receipt/usaspending-transactions.headers \
             --output receipt/usaspending-transactions.json \
-            "$TRANSACTIONS_URL"
-          curl --fail --location --retry 3 --retry-all-errors --connect-timeout 20 --max-time 120 \
-            --dump-header receipt/war-award-announcement.headers \
-            --output receipt/war-award-announcement.html \
-            "$ANNOUNCEMENT_URL"
-          curl --fail --location --retry 3 --retry-all-errors --connect-timeout 20 --max-time 120 \
-            --dump-header receipt/x-bow-home.headers \
-            --output receipt/x-bow-home.html \
-            "$COMPANY_URL"
-          curl --fail --location --retry 3 --retry-all-errors --connect-timeout 20 --max-time 120 \
-            --dump-header receipt/x-bow-contact.headers \
-            --output receipt/x-bow-contact.html \
-            "$CONTACT_URL"
+            --write-out '%{http_code}' \
+            "$TRANSACTIONS_URL" || true)"
+          printf '%s\n' "$code" > receipt/usaspending-transactions.status
+          [[ "$code" == '200' ]]
+
+          fetch_get war-award-announcement-direct "$WAR_URL"
+          fetch_get defense-award-announcement-alias "$DEFENSE_URL"
+
+          curl --silent --show-error --location --get \
+            --connect-timeout 20 --max-time 120 \
+            --data-urlencode "url=$WAR_URL" \
+            --data-urlencode 'output=json' \
+            --data-urlencode 'fl=timestamp,original,statuscode,mimetype,digest' \
+            --data-urlencode 'filter=statuscode:200' \
+            --data-urlencode 'filter=mimetype:text/html' \
+            --data-urlencode 'collapse=digest' \
+            --data-urlencode 'from=2025' \
+            --data-urlencode 'to=2026' \
+            --data-urlencode 'limit=-1' \
+            --dump-header receipt/war-wayback-cdx.headers \
+            --output receipt/war-wayback-cdx.json \
+            --write-out '%{http_code}\n' \
+            https://web.archive.org/cdx/search/cdx > receipt/war-wayback-cdx.status || true
+
+          python3 - <<'PY'
+          import json, pathlib, subprocess
+          root = pathlib.Path('receipt')
+          cdx = root / 'war-wayback-cdx.json'
+          selected = None
+          if cdx.exists():
+              try:
+                  rows = json.loads(cdx.read_text(encoding='utf-8'))
+                  if isinstance(rows, list) and len(rows) > 1:
+                      header = rows[0]
+                      records = [dict(zip(header, row)) for row in rows[1:]]
+                      records.sort(key=lambda row: row.get('timestamp', ''))
+                      selected = records[-1]
+              except Exception as exc:
+                  (root / 'war-wayback-parse-error.txt').write_text(f'{type(exc).__name__}: {exc}\n')
+          if selected:
+              (root / 'war-wayback-selected.json').write_text(json.dumps(selected, indent=2) + '\n')
+              url = f"https://web.archive.org/web/{selected['timestamp']}id_/{selected['original']}"
+              result = subprocess.run([
+                  'curl', '--silent', '--show-error', '--location', '--retry', '2', '--retry-all-errors',
+                  '--connect-timeout', '20', '--max-time', '120',
+                  '--user-agent', 'Mozilla/5.0 (compatible; CliffordNumberResearch/1.0)',
+                  '--dump-header', str(root / 'war-wayback-snapshot.headers'),
+                  '--output', str(root / 'war-wayback-snapshot.html'),
+                  '--write-out', '%{http_code}', url,
+              ], text=True, capture_output=True)
+              (root / 'war-wayback-snapshot.status').write_text(result.stdout + '\n')
+              if result.stderr:
+                  (root / 'war-wayback-snapshot.stderr').write_text(result.stderr)
+          PY
+
+          cat > receipt/war-award-announcement-projection.txt <<'EOF'
+          source_url: https://www.war.gov/News/Contracts/Contract/Article/4316486/contracts-for-sep-26-2025/
+          source_title: Contracts for Sept. 26, 2025
+          source_date: 2025-09-26
+          projection_created: 2026-09-08
+          projection_class: exact_official_page_text_projection_not_raw_http_response
+
+          Air Force
+
+          X-Bow Launch Systems Inc., Albuquerque, New Mexico, has been awarded a $191,303,197 firm-fixed-price contract for Advanced Integrated Motor Manufacturing. Work will be performed in Albuquerque, New Mexico; Huntsville, Alabama; Logan, Utah; Luling, Louisiana; and Edwards Air Force Base, California, and is expected to be completed April 30, 2029. This contract involves Foreign Military Sales. This award is the result of a sole source acquisition. Fiscal 2025 Foreign Military Sales funds in the amount of $121,494,248 are being obligated at the time of award. The Air Force Test Center, Edwards Air Force Base, California, is the contracting activity (FA9300-25-C-6015).
+          EOF
+          sed -i 's/^          //' receipt/war-award-announcement-projection.txt
+
+          fetch_get x-bow-home "$COMPANY_URL"
+          if [[ "$(cat receipt/x-bow-home.status)" == '200' ]]; then
+            mv receipt/x-bow-home.body receipt/x-bow-home.html
+          fi
+          fetch_get x-bow-contact "$CONTACT_URL"
+          if [[ "$(cat receipt/x-bow-contact.status)" == '200' ]]; then
+            mv receipt/x-bow-contact.body receipt/x-bow-contact.html
+          fi
+
+          cat > receipt/x-bow-identity-projection.txt <<'EOF'
+          homepage_url: https://www.xbowsystems.com/
+          homepage_observation: The site brands the company as X-Bow Systems and its footer identifies X-Bow Systems, Inc.
+          contact_url: https://www.xbowsystems.com/contact-us/
+          headquarters_observation: 6200 Uptown Blvd NE, Suite 200, Albuquerque, NM 87110
+          projection_created: 2026-09-08
+          projection_class: official_first_party_page_text_projection_not_raw_http_response
+          EOF
+          sed -i 's/^          //' receipt/x-bow-identity-projection.txt
 
       - name: Validate and summarize the acquired population
         shell: bash
@@ -89,38 +182,88 @@ jobs:
           set -Eeuo pipefail
           python3 - <<'PY'
           import hashlib, json, pathlib
-          root = pathlib.Path("receipt")
-          award = json.loads((root / "usaspending-award-detail.json").read_text())
-          count = json.loads((root / "usaspending-transaction-count.json").read_text())
-          transactions = json.loads((root / "usaspending-transactions.json").read_text())
-          results = transactions.get("results")
+          root = pathlib.Path('receipt')
+          award = json.loads((root / 'usaspending-award-detail.json').read_text())
+          count = json.loads((root / 'usaspending-transaction-count.json').read_text())
+          transactions = json.loads((root / 'usaspending-transactions.json').read_text())
+          results = transactions.get('results')
           if not isinstance(results, list):
-              raise SystemExit("transactions results is not a list")
-          declared = count.get("count")
-          if declared is None:
-              declared = count.get("transaction_count")
+              raise SystemExit('transactions results is not a list')
+          declared = count.get('transactions', count.get('count', count.get('transaction_count')))
+          if not isinstance(declared, int):
+              raise SystemExit(f'unrecognized transaction count response: {count!r}')
+          if declared != len(results):
+              raise SystemExit(f'transaction count mismatch: {declared} != {len(results)}')
+          if declared != 1:
+              raise SystemExit(f'expected exactly one transaction, found {declared}')
+          tx = results[0]
+          expected_award = 'CONT_AWD_FA930025C6015_9700_-NONE-_-NONE-'
+          if award.get('generated_unique_award_id') != expected_award:
+              raise SystemExit('award identifier mismatch')
+          if award.get('piid') != 'FA930025C6015':
+              raise SystemExit('PIID mismatch')
+          if float(award.get('total_obligation')) != 129494248:
+              raise SystemExit('award obligation mismatch')
+          if float(award.get('base_and_all_options')) != 199303198:
+              raise SystemExit('award potential value mismatch')
+          if tx.get('modification_number') != '0':
+              raise SystemExit('unexpected modification population')
+          if float(tx.get('federal_action_obligation')) != 129494248:
+              raise SystemExit('transaction obligation mismatch')
+          recipient = award.get('recipient') or {}
           summary = {
-              "award_id_requested": "CONT_AWD_FA930025C6015_9700_-NONE-_-NONE-",
-              "award_id_returned": award.get("generated_unique_award_id"),
-              "piid": award.get("piid"),
-              "recipient": award.get("recipient"),
-              "total_obligation": award.get("total_obligation"),
-              "potential_total_value_of_award": award.get("potential_total_value_of_award"),
-              "date_signed": award.get("date_signed"),
-              "transaction_count_endpoint": declared,
-              "transaction_rows_returned": len(results),
-              "transactions": results,
+              'schema_version': 'ce0364-x-bow-source-acquisition@1',
+              'award_id_requested': expected_award,
+              'award_id_returned': award.get('generated_unique_award_id'),
+              'piid': award.get('piid'),
+              'recipient_name': recipient.get('recipient_name'),
+              'recipient_uei': recipient.get('recipient_uei'),
+              'recipient_address': recipient.get('location'),
+              'description': award.get('description'),
+              'date_signed': award.get('date_signed'),
+              'period_of_performance': award.get('period_of_performance'),
+              'awarding_agency': award.get('awarding_agency'),
+              'funding_agency': award.get('funding_agency'),
+              'total_obligation': award.get('total_obligation'),
+              'base_exercised_options': award.get('base_exercised_options'),
+              'base_and_all_options': award.get('base_and_all_options'),
+              'total_account_outlay': award.get('total_account_outlay'),
+              'transaction_count': declared,
+              'transaction': {
+                  'id': tx.get('id'),
+                  'action_date': tx.get('action_date'),
+                  'modification_number': tx.get('modification_number'),
+                  'federal_action_obligation': tx.get('federal_action_obligation'),
+                  'description': tx.get('description'),
+                  'type': tx.get('type'),
+              },
+              'announcement': {
+                  'announced_contract_value': 191303197,
+                  'obligated_at_award': 121494248,
+                  'source_url': 'https://www.war.gov/News/Contracts/Contract/Article/4316486/contracts-for-sep-26-2025/',
+                  'direct_status': (root / 'war-award-announcement-direct.status').read_text().strip(),
+                  'defense_alias_status': (root / 'defense-award-announcement-alias.status').read_text().strip(),
+                  'wayback_snapshot_status': (root / 'war-wayback-snapshot.status').read_text().strip() if (root / 'war-wayback-snapshot.status').exists() else None,
+                  'projection_path': 'war-award-announcement-projection.txt',
+              },
+              'reconciliation': {
+                  'obligation_delta': 8000000,
+                  'potential_value_delta': 8000001,
+                  'post_award_modification_observed': False,
+                  'cause': 'unresolved',
+              },
+              'disposition': 'source_specific_values_preserved_cause_unresolved',
+              'graph_effect': 'none',
           }
-          if summary["award_id_returned"] != summary["award_id_requested"]:
-              raise SystemExit("award identifier mismatch")
-          if isinstance(declared, int) and declared != len(results):
-              raise SystemExit(f"transaction count mismatch: {declared} != {len(results)}")
-          (root / "summary.json").write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n")
+          # Recompute rather than trust declared arithmetic.
+          summary['reconciliation']['obligation_delta'] = int(summary['total_obligation']) - summary['announcement']['obligated_at_award']
+          summary['reconciliation']['potential_value_delta'] = int(summary['base_and_all_options']) - summary['announcement']['announced_contract_value']
+          (root / 'summary.json').write_text(json.dumps(summary, indent=2, sort_keys=True) + '\n')
           lines = []
           for path in sorted(root.iterdir()):
-              if path.is_file() and path.name != "SHA256SUMS":
+              if path.is_file() and path.name != 'SHA256SUMS':
                   lines.append(f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.name}")
-          (root / "SHA256SUMS").write_text("\n".join(lines) + "\n")
+          (root / 'SHA256SUMS').write_text('\n'.join(lines) + '\n')
           PY
 
       - name: Upload checksum-bound acquisition receipt
