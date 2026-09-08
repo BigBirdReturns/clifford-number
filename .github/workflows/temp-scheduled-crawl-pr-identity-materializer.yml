@@ -30,7 +30,12 @@ jobs:
           git fetch --no-tags origin main
           test "$(git rev-parse origin/main)" = "$EXPECTED_MAIN"
           test "$(git merge-base "$EXPECTED_MAIN" "$TRIGGER_SHA")" = "$EXPECTED_MAIN"
-          test "$(git rev-list --count "$EXPECTED_MAIN..$TRIGGER_SHA")" = 2
+          git diff --name-only "$EXPECTED_MAIN..$TRIGGER_SHA" | sort > /tmp/staging-paths
+          cat > /tmp/expected-staging-paths <<'PATHS'
+          .github/patches/scheduled-crawl-pr-identity.patch
+          .github/workflows/temp-scheduled-crawl-pr-identity-materializer.yml
+          PATHS
+          diff -u /tmp/expected-staging-paths /tmp/staging-paths
 
           cp .github/patches/scheduled-crawl-pr-identity.patch /tmp/scheduled-crawl-pr-identity.patch
           git reset --hard "$EXPECTED_MAIN"
