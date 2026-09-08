@@ -11,6 +11,8 @@ const ACTIVE = new Set(['queued', 'requested', 'waiting', 'pending', 'in_progres
 const FAILED = new Set(['failure', 'cancelled', 'timed_out', 'startup_failure', 'stale']);
 const sha = (value) => typeof value === 'string' && /^[a-f0-9]{40}$/.test(value);
 const id = (value) => Number.isSafeInteger(value) && value > 0;
+const botLogin = (value) => typeof value === 'string'
+  && /^[A-Za-z0-9][A-Za-z0-9-]*\[bot\]$/.test(value);
 
 export function selectNativeRuns(runs, candidateSha, branch) {
   assert.ok(Array.isArray(runs), 'workflow run collection is missing');
@@ -23,12 +25,17 @@ export function selectNativeRuns(runs, candidateSha, branch) {
 // This is an admission observation, not authority to approve, mutate or merge.
 export function inspectNativeAdmission(input) {
   const { repository, number, baseSha, candidateSha, branch, pr, runs,
-    jobsByRun = {}, checksByJob = {} } = input;
+    jobsByRun = {}, checksByJob = {}, expectedAuthor = null } = input;
   const observed = [];
   try {
     assert.match(repository, /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/);
     assert.ok(id(number) && sha(baseSha) && sha(candidateSha), 'invalid PR or SHA lease');
     assert.match(branch, /^automation-crawl-(industrial-exhaust|official-record)-run-[0-9]+-[0-9]+$/);
+    if (expectedAuthor !== null) {
+      assert.ok(botLogin(expectedAuthor), 'expected crawler PR author is not an app bot login');
+      assert.equal(pr.user?.login, expectedAuthor, 'crawler pull request has a foreign author');
+      assert.equal(pr.user?.type, 'Bot', 'crawler pull-request author is not a bot account');
+    }
     assert.equal(pr.number, number);
     assert.equal(pr.state, 'open');
     assert.equal(pr.draft, false);
@@ -111,11 +118,12 @@ export function inspectNativeAdmission(input) {
       : states.every((s) => s === 'success') ? 'ready'
         : states.includes('approval_required') ? 'awaiting_approval' : 'pending';
     return { schema_version: 1, decision, repository, pull_request: number,
-      base_sha: baseSha, candidate_sha: candidateSha, candidate_branch: branch, native_runs: observed };
+      base_sha: baseSha, candidate_sha: candidateSha, candidate_branch: branch,
+      expected_author: expectedAuthor, native_runs: observed };
   } catch (error) {
     return { schema_version: 1, decision: 'indeterminate', repository, pull_request: number,
       base_sha: baseSha, candidate_sha: candidateSha, candidate_branch: branch,
-      reason: error.message, native_runs: observed };
+      expected_author: expectedAuthor, reason: error.message, native_runs: observed };
   }
 }
 
@@ -125,9 +133,13 @@ function api(endpoint, paginate = false) {
     timeout: 60000, stdio: ['ignore', 'pipe', 'pipe'] }));
 }
 
-export function readNativeAdmission(repository, number, baseSha, candidateSha, branch, read = api) {
+export function readNativeAdmission(repository, number, baseSha, candidateSha, branch, read = api,
+  expectedAuthor = process.env.EXPECTED_CRAWLER_PR_AUTHOR || null) {
   assert.match(repository, /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/);
   assert.ok(id(number) && sha(baseSha) && sha(candidateSha));
+  if (expectedAuthor !== null) {
+    assert.ok(botLogin(expectedAuthor), 'expected crawler PR author is not an app bot login');
+  }
   const root = `repos/${repository}`;
   const pr = read(`${root}/pulls/${number}`);
   const pages = read(`${root}/actions/runs?head_sha=${candidateSha}&event=pull_request&per_page=100`, true);
@@ -150,7 +162,8 @@ export function readNativeAdmission(repository, number, baseSha, candidateSha, b
       checksByJob[job.id] = read(`${root}/check-runs/${checkId}`);
     }
   }
-  return inspectNativeAdmission({ repository, number, baseSha, candidateSha, branch, pr: read(`${root}/pulls/${number}`), runs, jobsByRun, checksByJob });
+  return inspectNativeAdmission({ repository, number, baseSha, candidateSha, branch,
+    expectedAuthor, pr: read(`${root}/pulls/${number}`), runs, jobsByRun, checksByJob });
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

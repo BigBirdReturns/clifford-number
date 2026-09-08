@@ -27,10 +27,21 @@ jobs:
       contents: write
       pull-requests: write
     steps:
+      - name: Mint repository-scoped crawler publisher token
+        id: publisher-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars['CLIFFORD_CRAWL_PUBLISHER_CLIENT_ID'] }}
+          private-key: ${{ secrets['CLIFFORD_CRAWL_PUBLISHER_PRIVATE_KEY'] }}
+          permission-actions: write
+          permission-checks: read
+          permission-contents: write
+          permission-pull-requests: write
       - uses: actions/checkout@v4
         with:
           ref: main
           fetch-depth: 0
+          token: ${{ steps.publisher-token.outputs.token }}
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -60,7 +71,8 @@ jobs:
         id: promote
         continue-on-error: true
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.publisher-token.outputs.token }}
+          EXPECTED_CRAWLER_PR_AUTHOR: ${{ format('{0}[bot]', steps.publisher-token.outputs.app-slug) }}
           PROMOTION_KIND: official-record
         run: bash .github/scripts/promote-scheduled-crawl.sh
       - name: Retain exact candidate recovery bundle

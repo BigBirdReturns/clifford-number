@@ -42,10 +42,21 @@ jobs:
       contents: write
       pull-requests: write
     steps:
+      - name: Mint repository-scoped crawler publisher token
+        id: publisher-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars['CLIFFORD_CRAWL_PUBLISHER_CLIENT_ID'] }}
+          private-key: ${{ secrets['CLIFFORD_CRAWL_PUBLISHER_PRIVATE_KEY'] }}
+          permission-actions: read
+          permission-checks: read
+          permission-contents: write
+          permission-pull-requests: write
       - uses: actions/checkout@v4
         with:
           ref: main
           fetch-depth: 0
+          token: ${{ steps.publisher-token.outputs.token }}
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -58,7 +69,8 @@ jobs:
            startsWith(github.event.workflow_run.head_branch, 'automation-crawl-industrial-exhaust-run-'))
         continue-on-error: true
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ steps.publisher-token.outputs.token }}
+          EXPECTED_CRAWLER_PR_AUTHOR: ${{ format('{0}[bot]', steps.publisher-token.outputs.app-slug) }}
         run: node .github/scripts/resume-scheduled-crawl-admission.mjs
       - name: Discover and resume one retained crawler candidate
         id: watchdog
@@ -71,7 +83,8 @@ jobs:
            github.event.workflow_run.head_repository.full_name == github.repository)
         continue-on-error: true
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ steps.publisher-token.outputs.token }}
+          EXPECTED_CRAWLER_PR_AUTHOR: ${{ format('{0}[bot]', steps.publisher-token.outputs.app-slug) }}
         run: node .github/scripts/watch-scheduled-crawl-admission.mjs
       - name: Classify resumption receipt
         id: receipt
