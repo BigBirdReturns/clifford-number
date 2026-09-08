@@ -16,6 +16,7 @@ const ROOTS = {
 };
 const BRANCH = /^automation-crawl-(industrial-exhaust|official-record)-run-[0-9]+-[0-9]+$/;
 const SHA = /^[a-f0-9]{40}$/;
+const APP_BOT = /^[A-Za-z0-9][A-Za-z0-9-]*\[bot\]$/;
 const positiveInteger = (value) => Number.isSafeInteger(value) && value > 0;
 
 function flattenPages(value, key) {
@@ -31,6 +32,12 @@ function requireSha(value, label) {
   assert.match(value, SHA, `${label} is not a commit SHA`);
   return value;
 }
+
+function requireExpectedAuthor(value) {
+  assert.match(value || '', APP_BOT, 'EXPECTED_CRAWLER_PR_AUTHOR must name one GitHub App bot');
+  return value;
+}
+
 export function inspectResumptionTrigger(event) {
   const run = event?.workflow_run;
   if (!run || run.event !== 'pull_request') return { decision: 'ignored', reason: 'not a pull_request workflow run' };
@@ -44,23 +51,27 @@ export function inspectResumptionTrigger(event) {
     kind: run.head_branch.match(BRANCH)[1], triggerRunId: run.id };
 }
 
-export function selectOpenCrawlerPullRequest(pulls, repository, branch, candidateSha) {
+export function selectOpenCrawlerPullRequest(pulls, repository, branch, candidateSha,
+  expectedAuthor = 'github-actions[bot]') {
   assert.ok(Array.isArray(pulls), 'pull-request collection is missing');
+  assert.match(expectedAuthor, APP_BOT, 'expected crawler PR author is not an app bot login');
   const matches = pulls.filter((pr) => pr.state === 'open' && pr.draft === false
     && pr.head?.ref === branch && pr.head?.sha === candidateSha
     && pr.head?.repo?.full_name === repository && pr.base?.ref === 'main'
     && pr.base?.repo?.full_name === repository && pr.head?.repo?.id === pr.base?.repo?.id
-    && pr.user?.login === 'github-actions[bot]');
+    && pr.user?.login === expectedAuthor);
   assert.ok(matches.length <= 1, 'crawler candidate maps to multiple open pull requests');
   return matches[0] || null;
 }
 
-function assertPullRequestIdentity(pr, repository, number, branch, candidateSha) {
+function assertPullRequestIdentity(pr, repository, number, branch, candidateSha,
+  expectedAuthor = 'github-actions[bot]') {
+  assert.match(expectedAuthor, APP_BOT, 'expected crawler PR author is not an app bot login');
   assert.equal(pr.number, number);
   assert.equal(pr.state, 'open');
   assert.equal(pr.draft, false);
   assert.equal(pr.merged, false);
-  assert.equal(pr.user.login, 'github-actions[bot]');
+  assert.equal(pr.user.login, expectedAuthor);
   assert.equal(pr.head.ref, branch);
   assert.equal(pr.head.sha, candidateSha);
   assert.equal(pr.base.ref, 'main');
@@ -70,10 +81,13 @@ function assertPullRequestIdentity(pr, repository, number, branch, candidateSha)
   assert.equal(pr.head.repo.id, pr.base.repo.id);
   assert.equal(pr.commits, 1);
 }
-function assertPullRequest(pr, repository, number, branch, baseSha, candidateSha) {
-  assertPullRequestIdentity(pr, repository, number, branch, candidateSha);
+
+function assertPullRequest(pr, repository, number, branch, baseSha, candidateSha,
+  expectedAuthor = 'github-actions[bot]') {
+  assertPullRequestIdentity(pr, repository, number, branch, candidateSha, expectedAuthor);
   assert.equal(pr.base.sha, baseSha, 'pull-request base moved from the candidate parent');
 }
+
 function assertCandidateTopology(kind, baseSha, candidateSha, mainRef, candidateRef, commit, compare, exactPaths) {
   assert.equal(mainRef.object?.sha, baseSha, 'main moved from the pull-request base');
   assert.equal(candidateRef.object?.sha, candidateSha, 'candidate ref moved');
@@ -123,11 +137,16 @@ function snapshot(io, name, value) {
   if (io.record) io.record(name, value);
   return value;
 }
+
 function cleanupExactCandidate(io, context) {
-  const { repository, number, branch, baseSha, candidateSha, allowBaseDrift = false } = context;
+  const { repository, number, branch, baseSha, candidateSha, expectedAuthor,
+    allowBaseDrift = false } = context;
   const pr = snapshot(io, 'cleanup-pr-preflight.json', io.read(`repos/${repository}/pulls/${number}`));
-  if (allowBaseDrift) assertPullRequestIdentity(pr, repository, number, branch, candidateSha);
-  else assertPullRequest(pr, repository, number, branch, baseSha, candidateSha);
+  if (allowBaseDrift) {
+    assertPullRequestIdentity(pr, repository, number, branch, candidateSha, expectedAuthor);
+  } else {
+    assertPullRequest(pr, repository, number, branch, baseSha, candidateSha, expectedAuthor);
+  }
   const ref = snapshot(io, 'cleanup-ref-preflight.json', io.read(refEndpoint(repository, branch)));
   assert.equal(ref.object?.sha, candidateSha, 'candidate ref moved before cleanup');
   let pullRequestClosed = false;
@@ -155,48 +174,52 @@ export function runScheduledCrawlResumption(event, io) {
   }
   const { candidateSha, branch, kind, triggerRunId } = trigger;
   const repository = io.repository;
+  const expectedAuthor = io.expectedAuthor || 'github-actions[bot]';
   assert.match(repository, /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/);
+  assert.match(expectedAuthor, APP_BOT, 'expected crawler PR author is not an app bot login');
   const listed = snapshot(io, 'open-pull-requests.json', pullPages(io, repository));
-  const selected = selectOpenCrawlerPullRequest(listed, repository, branch, candidateSha);
+  const selected = selectOpenCrawlerPullRequest(listed, repository, branch, candidateSha, expectedAuthor);
   if (!selected) {
     return { schema_version: 1, outcome: 'ignored', reason: 'no exact open crawler pull request',
-      repository, promotion_kind: kind, candidate_sha: candidateSha, candidate_branch: branch, trigger_run_id: triggerRunId, exit_code: 0 };
+      repository, promotion_kind: kind, expected_author: expectedAuthor,
+      candidate_sha: candidateSha, candidate_branch: branch, trigger_run_id: triggerRunId, exit_code: 0 };
   }
 
   const number = selected.number;
   assert.ok(positiveInteger(number), 'invalid pull-request number');
   const pr = snapshot(io, 'pull-request.json', io.read(`repos/${repository}/pulls/${number}`));
-  assertPullRequestIdentity(pr, repository, number, branch, candidateSha);
+  assertPullRequestIdentity(pr, repository, number, branch, candidateSha, expectedAuthor);
   const mainRef = snapshot(io, 'main-ref.json', io.read(refEndpoint(repository, 'main')));
   const candidateRef = snapshot(io, 'candidate-ref.json', io.read(refEndpoint(repository, branch)));
   const commit = snapshot(io, 'candidate-commit.json', io.read(`repos/${repository}/git/commits/${candidateSha}`));
   assert.equal(commit.sha, candidateSha);
   assert.equal(commit.parents?.length, 1, 'candidate must have exactly one parent');
   const baseSha = requireSha(commit.parents[0].sha, 'candidate parent');
-  const context = { repository, number, branch, baseSha, candidateSha };
+  const context = { repository, number, branch, baseSha, candidateSha, expectedAuthor };
   if (mainRef.object?.sha !== baseSha || pr.base.sha !== baseSha) {
     const cleanup = cleanupExactCandidate(io, { ...context, allowBaseDrift: true });
     const result = { schema_version: 1,
       outcome: cleanup.cleanup === 'complete' ? 'stale_base_cleaned' : 'stale_base_cleanup_incomplete',
-      repository, promotion_kind: kind,
+      repository, promotion_kind: kind, expected_author: expectedAuthor,
       pull_request: number, base_sha: baseSha, observed_pull_request_base_sha: pr.base.sha,
       candidate_sha: candidateSha, trigger_run_id: triggerRunId, ...cleanup, exit_code: 1 };
     snapshot(io, 'result.json', result);
     return result;
   }
-  assertPullRequest(pr, repository, number, branch, baseSha, candidateSha);
+  assertPullRequest(pr, repository, number, branch, baseSha, candidateSha, expectedAuthor);
   const compare = snapshot(io, 'compare.json', io.read(`repos/${repository}/compare/${baseSha}...${candidateSha}`));
   const exactPaths = snapshot(io, 'exact-paths.json', io.changedPaths(baseSha, candidateSha, branch));
   const candidateTree = assertCandidateTopology(kind, baseSha, candidateSha,
     mainRef, candidateRef, commit, compare, exactPaths);
   const admission = snapshot(io, 'native-admission.json', readNativeAdmission(
     repository, number, baseSha, candidateSha, branch,
-    (endpoint, paginate = false) => io.read(endpoint, paginate)));
+    (endpoint, paginate = false) => io.read(endpoint, paginate), expectedAuthor));
   const action = classifyAdmission(admission);
   if (action === 'waiting' || action === 'preserve_indeterminate') {
     const result = { schema_version: 1,
       outcome: action === 'waiting' ? admission.decision : 'indeterminate_preserved',
-      repository, promotion_kind: kind, pull_request: number, base_sha: baseSha, candidate_sha: candidateSha,
+      repository, promotion_kind: kind, expected_author: expectedAuthor,
+      pull_request: number, base_sha: baseSha, candidate_sha: candidateSha,
       candidate_tree: candidateTree, candidate_branch: branch, trigger_run_id: triggerRunId,
       native_admission: admission, exit_code: action === 'waiting' ? 0 : 1 };
     snapshot(io, 'result.json', result);
@@ -206,7 +229,7 @@ export function runScheduledCrawlResumption(event, io) {
     const cleanup = cleanupExactCandidate(io, context);
     const result = { schema_version: 1,
       outcome: cleanup.cleanup === 'complete' ? 'native_checks_failed_cleaned' : 'native_checks_failed_cleanup_incomplete',
-      repository, promotion_kind: kind,
+      repository, promotion_kind: kind, expected_author: expectedAuthor,
       pull_request: number, base_sha: baseSha, candidate_sha: candidateSha,
       candidate_tree: candidateTree, candidate_branch: branch, trigger_run_id: triggerRunId,
       native_admission: admission, ...cleanup, exit_code: 1 };
@@ -218,7 +241,7 @@ export function runScheduledCrawlResumption(event, io) {
   const candidateFinal = snapshot(io, 'candidate-ref-final.json', io.read(refEndpoint(repository, branch)));
   const prFinal = snapshot(io, 'pull-request-final.json', io.read(`repos/${repository}/pulls/${number}`));
   const compareFinal = snapshot(io, 'compare-final.json', io.read(`repos/${repository}/compare/${baseSha}...${candidateSha}`));
-  assertPullRequest(prFinal, repository, number, branch, baseSha, candidateSha);
+  assertPullRequest(prFinal, repository, number, branch, baseSha, candidateSha, expectedAuthor);
   assertCandidateTopology(kind, baseSha, candidateSha, mainFinal, candidateFinal, commit, compareFinal, exactPaths);
   const title = kind === 'official-record'
     ? 'crawl: official-record intake'
@@ -231,7 +254,8 @@ export function runScheduledCrawlResumption(event, io) {
   }));
   if (merge.merged !== true) {
     const result = { schema_version: 1, outcome: 'merge_refused', repository,
-      promotion_kind: kind, pull_request: number, base_sha: baseSha,
+      promotion_kind: kind, expected_author: expectedAuthor,
+      pull_request: number, base_sha: baseSha,
       candidate_sha: candidateSha, candidate_tree: candidateTree,
       candidate_branch: branch, trigger_run_id: triggerRunId,
       native_admission: admission, reason: merge.message || 'unknown response', exit_code: 1 };
@@ -251,7 +275,8 @@ export function runScheduledCrawlResumption(event, io) {
     assert.equal(refAfter.object?.sha, candidateSha, 'candidate ref moved before retirement');
   } catch (error) {
     const result = { schema_version: 1, outcome: 'merge_verification_failed', repository,
-      promotion_kind: kind, pull_request: number, base_sha: baseSha,
+      promotion_kind: kind, expected_author: expectedAuthor,
+      pull_request: number, base_sha: baseSha,
       candidate_sha: candidateSha, candidate_tree: candidateTree,
       candidate_branch: branch, merge_sha: mergeSha, trigger_run_id: triggerRunId,
       native_admission: admission, reason: error.message, cleanup: 'not_attempted', exit_code: 1 };
@@ -264,7 +289,8 @@ export function runScheduledCrawlResumption(event, io) {
     snapshot(io, 'candidate-retirement.json', retirement || { branch, expected_sha: candidateSha });
   } catch (error) {
     const result = { schema_version: 1, outcome: 'merged_cleanup_incomplete', repository,
-      promotion_kind: kind, pull_request: number, base_sha: baseSha,
+      promotion_kind: kind, expected_author: expectedAuthor,
+      pull_request: number, base_sha: baseSha,
       candidate_sha: candidateSha, candidate_tree: candidateTree,
       candidate_branch: branch, merge_sha: mergeSha, trigger_run_id: triggerRunId,
       native_admission: admission, reason: error.message, cleanup: 'incomplete', exit_code: 1 };
@@ -272,7 +298,8 @@ export function runScheduledCrawlResumption(event, io) {
     return result;
   }
   const result = { schema_version: 1, outcome: 'merged', repository,
-    promotion_kind: kind, pull_request: number, base_sha: baseSha,
+    promotion_kind: kind, expected_author: expectedAuthor,
+    pull_request: number, base_sha: baseSha,
     candidate_sha: candidateSha, candidate_tree: candidateTree,
     candidate_branch: branch, merge_sha: mergeSha, trigger_run_id: triggerRunId,
     native_admission: admission, cleanup: 'complete', retirement, exit_code: 0 };
@@ -280,7 +307,7 @@ export function runScheduledCrawlResumption(event, io) {
   return result;
 }
 
-function createCliIo(repository, receiptDir) {
+function createCliIo(repository, receiptDir, expectedAuthor) {
   mkdirSync(receiptDir, { recursive: true });
   const gh = (args, input) => JSON.parse(execFileSync('gh', args, {
     encoding: 'utf8', maxBuffer: 32 * 1024 * 1024, timeout: 120000,
@@ -289,6 +316,7 @@ function createCliIo(repository, receiptDir) {
   }));
   return {
     repository,
+    expectedAuthor,
     read(endpoint, paginate = false) {
       const args = ['api', '--method', 'GET', endpoint, ...(paginate ? ['--paginate', '--slurp'] : [])];
       return gh(args);
@@ -333,10 +361,11 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   try {
     const repository = process.env.GITHUB_REPOSITORY;
     assert.match(repository || '', /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/);
+    const expectedAuthor = requireExpectedAuthor(process.env.EXPECTED_CRAWLER_PR_AUTHOR);
     const eventPath = process.env.GITHUB_EVENT_PATH;
     assert.ok(eventPath, 'GITHUB_EVENT_PATH is required');
     const event = JSON.parse(readFileSync(eventPath, 'utf8'));
-    result = runScheduledCrawlResumption(event, createCliIo(repository, receiptDir));
+    result = runScheduledCrawlResumption(event, createCliIo(repository, receiptDir, expectedAuthor));
     writeFileSync(join(receiptDir, 'result.json'), `${JSON.stringify(result, null, 2)}\n`);
   } catch (error) {
     mkdirSync(receiptDir, { recursive: true });
