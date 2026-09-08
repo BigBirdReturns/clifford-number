@@ -1,0 +1,325 @@
+name: TEMP CE0364 X-Bow source acquisition
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/temp-ce0364-xbow-source-acquisition.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: temp-ce0364-xbow-source-acquisition-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  acquire:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.head_ref == 'agent/temp-ce0364-xbow-source-acquisition-20260908'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      EXACT_HEAD: ${{ github.event.pull_request.head.sha }}
+    steps:
+      - name: Check out exact acquisition head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Acquire and validate exact official source population
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD)" = "$EXACT_HEAD"
+          rm -rf receipt
+          mkdir -p receipt
+          python3 - <<'PY'
+          import hashlib, html, json, os, pathlib, re, time, urllib.request
+
+          out = pathlib.Path("receipt")
+          sources = out / "sources"
+          meta = out / "request-receipts"
+          sources.mkdir(parents=True)
+          meta.mkdir(parents=True)
+
+          award_id = "CONT_AWD_FA930025C6015_9700_-NONE-_-NONE-"
+          expected = {
+              "piid": "FA930025C6015",
+              "uei": "MD76AJXHCMQ5",
+              "recipient": "XBOWLAUNCHSYSTEMSINC",
+              "domain": "xbowsystems.com",
+              "programme": "ADVANCED INTEGRATED MOTOR MANUFACTURING",
+              "announced_value": 191303197,
+              "announced_obligation": 121494248,
+              "current_value": 199303198,
+              "current_obligation": 129494248,
+          }
+          urls = {
+              "award": f"https://api.usaspending.gov/api/v2/awards/{award_id}/",
+              "count": f"https://api.usaspending.gov/api/v2/awards/count/transaction/{award_id}/",
+              "updated": "https://api.usaspending.gov/api/v2/awards/last_updated/",
+              "transactions": "https://api.usaspending.gov/api/v2/transactions/",
+              "announcement": "https://www.war.gov/News/Contracts/Contract/Article/4316486/contracts-for-sep-26-2025/",
+              "identity": "https://www.sbir.gov/portfolio/1220395",
+          }
+          headers = {
+              "Accept": "application/json, text/html;q=0.9, */*;q=0.8",
+              "User-Agent": "CliffordNumber-CE0364-Acquisition/2.2 (+https://github.com/BigBirdReturns/clifford-number/issues/2625)",
+          }
+
+          def sha(data):
+              return hashlib.sha256(data).hexdigest()
+
+          def stable(obj):
+              return (json.dumps(obj, sort_keys=True, indent=2) + "\n").encode()
+
+          def norm(value):
+              return re.sub(r"[^A-Z0-9]", "", str(value or "").upper())
+
+          def text_projection(data):
+              value = data.decode("utf-8", "replace")
+              value = re.sub(r"<script\b[^>]*>[\s\S]*?</script>", " ", value, flags=re.I)
+              value = re.sub(r"<style\b[^>]*>[\s\S]*?</style>", " ", value, flags=re.I)
+              value = re.sub(r"<[^>]+>", " ", value)
+              value = html.unescape(value)
+              return re.sub(r"\s+", " ", value).strip()
+
+          def fetch(name, url, method="GET", body=None):
+              data = None if body is None else body.encode()
+              request_headers = dict(headers)
+              if data is not None:
+                  request_headers["Content-Type"] = "application/json"
+              last = None
+              for attempt in range(1, 5):
+                  started = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+                  try:
+                      req = urllib.request.Request(url, data=data, headers=request_headers, method=method)
+                      with urllib.request.urlopen(req, timeout=60) as response:
+                          raw = response.read()
+                          status = response.status
+                          final_url = response.geturl()
+                          response_headers = dict(response.headers.items())
+                      completed = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+                      safe_headers = {}
+                      for key, value in response_headers.items():
+                          if key.lower() == "set-cookie":
+                              safe_headers[key.lower()] = {
+                                  "redacted": True,
+                                  "sha256": sha(value.encode()),
+                              }
+                          else:
+                              safe_headers[key.lower()] = value
+                      receipt = {
+                          "name": name,
+                          "method": method,
+                          "url": url,
+                          "request_headers": request_headers,
+                          "request_body": body,
+                          "request_body_bytes": len(data or b""),
+                          "request_body_sha256": None if data is None else sha(data),
+                          "started_at": started,
+                          "completed_at": completed,
+                          "attempt": attempt,
+                          "status": status,
+                          "final_url": final_url,
+                          "response_headers": safe_headers,
+                          "response_bytes": len(raw),
+                          "response_sha256": sha(raw),
+                      }
+                      (sources / name).write_bytes(raw)
+                      (meta / f"{name}.receipt.json").write_bytes(stable(receipt))
+                      return raw, receipt
+                  except Exception as exc:
+                      last = exc
+                      if attempt < 4:
+                          time.sleep(0.75 * (2 ** (attempt - 1)))
+              raise last
+
+          award_raw, _ = fetch("usaspending-award-detail.json", urls["award"])
+          count_raw, _ = fetch("usaspending-transaction-count.json", urls["count"])
+          updated_raw, _ = fetch("usaspending-last-updated.json", urls["updated"])
+          announcement_raw, _ = fetch("war-contracts-2025-09-26.html", urls["announcement"])
+          identity_raw, _ = fetch("sbir-x-bow-company-profile.html", urls["identity"])
+
+          award = json.loads(award_raw)
+          count = json.loads(count_raw)
+          updated = json.loads(updated_raw)
+
+          assert award["generated_unique_award_id"] == award_id
+          assert norm(award["piid"]) == expected["piid"]
+          assert award["recipient"]["recipient_uei"] == expected["uei"]
+          assert norm(award["recipient"]["recipient_name"]) == expected["recipient"]
+          assert abs(award["total_obligation"] - expected["current_obligation"]) < .005
+          assert abs(award["base_and_all_options"] - expected["current_value"]) < .005
+          assert expected["programme"] in award["description"].upper()
+          assert isinstance(count["transactions"], int) and count["transactions"] > 0
+          assert isinstance(updated["last_updated"], str) and updated["last_updated"].strip()
+
+          pages, page = [], 1
+          while True:
+              request = {
+                  "award_id": award_id,
+                  "page": page,
+                  "sort": "action_date",
+                  "order": "asc",
+                  "limit": 5000,
+              }
+              body = json.dumps(request, separators=(",", ":"))
+              raw, _ = fetch(
+                  f"usaspending-transactions-page-{page:04d}.json",
+                  urls["transactions"],
+                  "POST",
+                  body,
+              )
+              parsed = json.loads(raw)
+              assert parsed["page_metadata"]["page"] == page
+              assert isinstance(parsed["results"], list)
+              pages.append(parsed)
+              if not parsed["page_metadata"]["hasNext"]:
+                  assert parsed["page_metadata"]["next"] is None
+                  break
+              assert parsed["page_metadata"]["next"] == page + 1
+              page += 1
+              assert page <= 1000
+
+          rows = [row for page_data in pages for row in page_data["results"]]
+          assert len(rows) == count["transactions"]
+          seen, obligation_sum = set(), 0
+          modifications = []
+          for row in rows:
+              assert isinstance(row["id"], str) and row["id"] and row["id"] not in seen
+              seen.add(row["id"])
+              assert re.fullmatch(r"\d{4}-\d{2}-\d{2}", row["action_date"])
+              value = row.get("federal_action_obligation")
+              assert value is None or isinstance(value, (int, float))
+              obligation_sum += value or 0
+              modifications.append({
+                  "id": row["id"],
+                  "modification_number": row.get("modification_number"),
+                  "action_date": row["action_date"],
+                  "action_type": row.get("action_type"),
+                  "action_type_description": row.get("action_type_description"),
+                  "federal_action_obligation": value,
+                  "description": row.get("description"),
+              })
+          assert abs(obligation_sum - award["total_obligation"]) < .005
+
+          announcement = text_projection(announcement_raw)
+          identity = text_projection(identity_raw)
+          announcement_checks = {
+              "recipient": expected["recipient"] in norm(announcement),
+              "piid": expected["piid"] in norm(announcement),
+              "programme": expected["programme"] in announcement.upper(),
+              "announced_value": "$191,303,197" in announcement or "191303197" in announcement,
+              "obligation_at_award": "$121,494,248" in announcement or "121494248" in announcement,
+              "fms": "FOREIGN MILITARY SALES" in announcement.upper(),
+              "air_force_test_center": "AIR FORCE TEST CENTER" in announcement.upper(),
+          }
+          identity_checks = {
+              "recipient": expected["recipient"] in norm(identity),
+              "uei": expected["uei"] in identity.upper(),
+              "domain": expected["domain"] in identity_raw.decode("utf-8", "replace").lower(),
+          }
+          assert all(announcement_checks.values()), announcement_checks
+          assert all(identity_checks.values()), identity_checks
+
+          potential_delta = award["base_and_all_options"] - expected["announced_value"]
+          obligation_delta = award["total_obligation"] - expected["announced_obligation"]
+          assert abs(potential_delta - 8000001) < .005
+          assert abs(obligation_delta - 8000000) < .005
+          assert potential_delta != obligation_delta
+
+          analysis = {
+              "schema_version": "ce0364-xbow-live-acquisition@1",
+              "acquired_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+              "source_last_updated": updated["last_updated"],
+              "award": {
+                  key: award.get(key) for key in [
+                      "generated_unique_award_id", "piid", "description", "date_signed",
+                      "total_obligation", "base_exercised_options", "base_and_all_options",
+                      "recipient", "awarding_agency", "funding_agency",
+                      "period_of_performance", "latest_transaction_contract_data",
+                  ]
+              },
+              "transaction_population": {
+                  "count_endpoint": count["transactions"],
+                  "retained_count": len(rows),
+                  "page_count": len(pages),
+                  "obligation_sum": obligation_sum,
+                  "modifications": modifications,
+              },
+              "announcement": {
+                  "announced_contract_value": expected["announced_value"],
+                  "obligated_at_award": expected["announced_obligation"],
+                  "checks": announcement_checks,
+              },
+              "identity_bridge": {
+                  "natsec100_domain": expected["domain"],
+                  "federal_recipient_name": "X-BOW LAUNCH SYSTEMS INC",
+                  "recipient_uei": expected["uei"],
+                  "checks": identity_checks,
+                  "resolved": True,
+              },
+              "reconciliation": {
+                  "potential_value_delta": potential_delta,
+                  "obligation_delta": obligation_delta,
+                  "deltas_are_equal": False,
+                  "cause": "unresolved",
+              },
+              "disposition": {
+                  "event_confidence": "medium",
+                  "graph_effect": "none",
+                  "causal_status": "not_established",
+                  "canonical_amount_collapse_permitted": False,
+              },
+          }
+          (out / "analysis.json").write_bytes(stable(analysis))
+
+          entries = []
+          for folder in (sources, meta):
+              for item in sorted(folder.iterdir()):
+                  raw = item.read_bytes()
+                  entries.append({
+                      "path": str(item.relative_to(out)),
+                      "bytes": len(raw),
+                      "sha256": sha(raw),
+                  })
+          manifest = {
+              "schema_version": "ce0364-xbow-acquisition-manifest@1",
+              "head_sha": os.environ["EXACT_HEAD"],
+              "run_id": os.environ.get("GITHUB_RUN_ID"),
+              "run_attempt": os.environ.get("GITHUB_RUN_ATTEMPT"),
+              "source_last_updated": updated["last_updated"],
+              "entries": entries,
+          }
+          (out / "MANIFEST.json").write_bytes(stable(manifest))
+          (out / "SHA256SUMS").write_text(
+              "".join(f"{entry['sha256']}  {entry['path']}\n" for entry in entries)
+          )
+          print(json.dumps({
+              "status": "success",
+              "transaction_count": len(rows),
+              "transaction_obligation_sum": obligation_sum,
+              "potential_value_delta": potential_delta,
+              "obligation_delta": obligation_delta,
+              "source_last_updated": updated["last_updated"],
+          }, indent=2))
+          PY
+          printf '%s\n' "$EXACT_HEAD" > receipt/acquisition-head-sha.txt
+          git rev-parse HEAD^{tree} > receipt/acquisition-head-tree.txt
+          find receipt -type f ! -name COMPLETE_SHA256SUMS -print0 |
+            sort -z |
+            xargs -0 sha256sum > receipt/COMPLETE_SHA256SUMS
+
+      - name: Upload checksum-bound acquisition receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ce0364-xbow-source-acquisition-${{ github.run_id }}-${{ github.run_attempt }}
+          path: receipt/
+          if-no-files-found: error
+          retention-days: 90
