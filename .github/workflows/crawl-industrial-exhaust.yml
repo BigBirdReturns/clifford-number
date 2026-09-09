@@ -8,6 +8,7 @@ on:
       - '.github/scripts/promote-scheduled-crawl.sh'
       - '.github/scripts/retain-scheduled-crawl-candidate.sh'
       - '.github/scripts/scheduled-crawl-pr-identity.sh'
+      - '.github/scripts/industrial-artifact-failure-policy.mjs'
       - '.github/workflows/crawl-industrial-exhaust.yml'
       - 'data/exhaust/**'
       - 'tools/crawl-industrial-exhaust.mjs'
@@ -24,6 +25,7 @@ on:
       - '.github/scripts/promote-scheduled-crawl.sh'
       - '.github/scripts/retain-scheduled-crawl-candidate.sh'
       - '.github/scripts/scheduled-crawl-pr-identity.sh'
+      - '.github/scripts/industrial-artifact-failure-policy.mjs'
       - '.github/workflows/crawl-industrial-exhaust.yml'
       - 'data/exhaust/README.md'
       - 'data/exhaust/sources.json'
@@ -67,8 +69,10 @@ jobs:
           node --check tools/lib/industrial-exhaust-artifacts.mjs
           node --check tools/crawl-industrial-exhaust.mjs
           node --check tools/hydrate-industrial-exhaust.mjs
+          node --check .github/scripts/industrial-artifact-failure-policy.mjs
           node test/industrial-exhaust.test.js
           node test/industrial-exhaust-artifacts.test.js
+          node .github/scripts/industrial-artifact-failure-policy.mjs --self-test
       - name: Audit configured first-party surfaces
         run: |
           node tools/crawl-industrial-exhaust.mjs --audit
@@ -80,8 +84,11 @@ jobs:
           EXHAUST_ARTIFACT_MAX_BYTES: '6000000'
           EXHAUST_ARTIFACT_DELAY_MS: '250'
         run: |
+          set -Eeuo pipefail
           node tools/crawl-industrial-exhaust.mjs --dry-run --strict
-          node tools/hydrate-industrial-exhaust.mjs --dry-run --strict --limit=20
+          artifact_result="$RUNNER_TEMP/industrial-artifact-dry-run.json"
+          node tools/hydrate-industrial-exhaust.mjs --dry-run --limit=20 | tee "$artifact_result"
+          node .github/scripts/industrial-artifact-failure-policy.mjs "$artifact_result"
 
   crawl:
     if: github.event_name != 'pull_request'
@@ -116,7 +123,11 @@ jobs:
           EXHAUST_TIMEOUT_MS: '30000'
           EXHAUST_ARTIFACT_MAX_BYTES: '6000000'
           EXHAUST_ARTIFACT_DELAY_MS: '350'
-        run: node tools/hydrate-industrial-exhaust.mjs --strict --limit=50
+        run: |
+          set -Eeuo pipefail
+          artifact_result="$RUNNER_TEMP/industrial-artifact-run.json"
+          node tools/hydrate-industrial-exhaust.mjs --limit=50 | tee "$artifact_result"
+          node .github/scripts/industrial-artifact-failure-policy.mjs "$artifact_result"
       - name: Re-run intake firewall
         run: |
           node test/industrial-exhaust.test.js
