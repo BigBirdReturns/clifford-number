@@ -14,6 +14,10 @@ historical company-year rows:                  342
 2025 official source rows recovered:           100
 2025 deterministic existing-registry matches:   77
 2025 identity candidates adjudicated:            23
+2025 identity-source routes custodied:             26
+2025 identity-source body bytes:            8,754,182
+2025 case receipt admissions:                       0
+2025 identity promotions:                            0
 2025 canonical promotions:                       0
 Capital Factory public-portfolio denominator:   837
 Capital Factory × NatSec100 co-listings:          12
@@ -58,14 +62,32 @@ through that hygiene pass.
 | `roster-2025-official-visual-recovery.json` | 1 | recovery denominator, method, hashes, and non-promotion boundary |
 | `roster-2025-identity-adjudication.jsonl` | 23 | every source row not resolved by the deterministic registry precheck |
 | `roster-2025-identity-adjudication.json` | 1 | exact 77/23 denominator and candidate disposition counts |
+| `roster-2025-identity-source-custody.json` | 1 | exact 26-route custody result and zero-admission boundary |
 
 The official 2025 table is now complete at ranks 1 through 100. All 42 prior
 partial rows reconcile to it; 15 prior presence-only rows now have official
 ranks; 58 source rows were newly recovered. The subsequent adjudication records
 19 exact brand-and-domain new-record candidates, two successor-brand candidates,
-and two proposed updates to existing registry rows. Those records remain
-candidate-only because their external identity evidence has not yet been
-separately admitted to the case receipt ledger.
+and two proposed updates to existing registry rows. A separate packet now
+retains all 26 cited identity-source routes, comprising 8,754,182 response-body
+bytes across 24 terminal hosts. Those records remain candidate-only: source
+custody admits no case receipt, company identity, company-year row, or graph
+effect by itself.
+
+### `receipts/natsec100-2025-identity-source-custody-20260908/` — exact source custody
+
+The source-custody packet retains all 26 external identity pages cited by the
+23-row adjudication. Every route returned HTTP 200 on an allowed final host,
+passed TLS verification, used identity or absent content coding, and retained a
+content body, sanitized headers, transport record, and TLS leaf certificate. The
+packet preserves fourteen server cookie values only as one-way hashes. Its
+offline verifier binds the four current recovery and adjudication inputs, the
+capture plan, the 256-entry raw-capture manifest, all retained source bodies,
+and fourteen adversarial mutations.
+
+This is custody, not admission. The packet assigns no case receipt ID and makes
+no registry, company-year, graph, actor-hop, legal-succession, procurement, or
+investment finding.
 
 ### `chunk2-capital-factory/` — deterministic co-listing pass
 
@@ -82,12 +104,14 @@ node test/chunk2-capital-factory.test.js
 ```
 
 That wrapper validates the complete 2025 source recovery, the 23-row identity
-adjudication, and the Capital Factory overlap.
+adjudication, the 26-route source-custody packet, and the Capital Factory
+overlap.
 
 ## Current promotion frontier
 
-1. Admit the identity sources used by the 23 adjudications into the case receipt
-   ledger with durable source custody.
+1. Admit the 26 already-custodied identity source objects into the case receipt
+   ledger with stable receipt identifiers and no change to their acquisition
+   facts.
 2. Apply the supported new company records and two proposed registry amendments
    through a separate explicit promotion.
 3. Emit a complete 100-row 2025 company-year edition without deleting or
@@ -120,6 +144,7 @@ portfolio listing proves equity: false
 co-listing proves coordination: false
 identity candidate proves legal succession: false
 source recovery mutates the registry automatically: false
+source custody admits a case receipt automatically: false
 promotes_to: candidate_only
 graph_effect: none
 actor_hop_effect: none
