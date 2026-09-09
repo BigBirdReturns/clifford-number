@@ -1,0 +1,139 @@
+name: TEMP scheduled-crawl App identity branch retirement
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/temp-scheduled-crawl-app-identity-branch-retirement.yml'
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: temp-scheduled-crawl-app-identity-retirement-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  retire:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.head_ref == 'agent/scheduled-crawl-app-identity-retirement-20260908'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EXACT_HEAD: ${{ github.event.pull_request.head.sha }}
+      MAIN_SHA: 56596519121c689074d29205205fc46c96a0ccec
+      MAIN_TREE: e9ee23e9d99ad5d1dcd4e02c163ce4f213a872ab
+      CONTROLLER_BRANCH: agent/scheduled-crawl-app-identity-retirement-20260908
+      TARGET_BRANCH: agent/scheduled-crawl-pr-app-identity-20260908
+      TARGET_SHA: daec7f10d0a660227e1cb2bd204ef35e25b2ef28
+      TARGET_TREE: 5ca236397615241c6a79059f3fe74420629e6fc7
+      PRODUCT_BASE: e499eaeeb6bcdf64b76f0440c10e79ea1c064c4a
+      PRODUCT_MERGE: e55db885c97ce43db7ecc7f0120dfafe4cba90a9
+    steps:
+      - name: Check out exact controller head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 2
+          persist-credentials: false
+
+      - name: Retire exact merged product ref
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          workflow='.github/workflows/temp-scheduled-crawl-app-identity-branch-retirement.yml'
+          receipt='retirement-receipt/RETIREMENT.json'
+          mkdir -p retirement-receipt
+
+          test "$(git rev-parse HEAD)" = "$EXACT_HEAD"
+          test "$(git rev-parse HEAD^)" = "$MAIN_SHA"
+          test "$(git show -s --format=%T HEAD^)" = "$MAIN_TREE"
+          mapfile -t paths < <(git diff --name-only "$MAIN_SHA" "$EXACT_HEAD")
+          test "${#paths[@]}" -eq 1
+          test "${paths[0]}" = "$workflow"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq .object.sha)" = "$MAIN_SHA"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/git/commits/$MAIN_SHA" --jq .tree.sha)" = "$MAIN_TREE"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/$CONTROLLER_BRANCH" --jq .object.sha)" = "$EXACT_HEAD"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/$TARGET_BRANCH" --jq .object.sha)" = "$TARGET_SHA"
+
+          gh api "repos/$GITHUB_REPOSITORY/pulls/2631" > retirement-receipt/product-pr.json
+          jq -e --arg branch "$TARGET_BRANCH" --arg head "$TARGET_SHA" --arg base "$PRODUCT_BASE" --arg merge "$PRODUCT_MERGE" '
+            .state == "closed" and .merged_at != null and
+            .head.ref == $branch and .head.sha == $head and
+            .base.ref == "main" and .base.sha == $base and
+            .merge_commit_sha == $merge
+          ' retirement-receipt/product-pr.json >/dev/null
+
+          gh api "repos/$GITHUB_REPOSITORY/git/commits/$TARGET_SHA" > retirement-receipt/product-head.json
+          jq -e --arg tree "$TARGET_TREE" --arg base "$PRODUCT_BASE" '
+            .tree.sha == $tree and [.parents[].sha] == [$base]
+          ' retirement-receipt/product-head.json >/dev/null
+
+          gh api "repos/$GITHUB_REPOSITORY/git/commits/$PRODUCT_MERGE" > retirement-receipt/product-merge.json
+          jq -e --arg tree "$TARGET_TREE" --arg base "$PRODUCT_BASE" --arg head "$TARGET_SHA" '
+            .tree.sha == $tree and [.parents[].sha] == [$base, $head]
+          ' retirement-receipt/product-merge.json >/dev/null
+
+          gh api "repos/$GITHUB_REPOSITORY/compare/$PRODUCT_MERGE...$MAIN_SHA" > retirement-receipt/ancestry.json
+          jq -e '.status == "ahead" or .status == "identical"' retirement-receipt/ancestry.json >/dev/null
+          jq -e '.behind_by == 0' retirement-receipt/ancestry.json >/dev/null
+
+          jq -n \
+            --arg repository "$GITHUB_REPOSITORY" \
+            --arg main "$MAIN_SHA" \
+            --arg main_tree "$MAIN_TREE" \
+            --arg controller_branch "$CONTROLLER_BRANCH" \
+            --arg controller_head "$EXACT_HEAD" \
+            --arg target_branch "$TARGET_BRANCH" \
+            --arg target_sha "$TARGET_SHA" \
+            --arg target_tree "$TARGET_TREE" \
+            --arg product_base "$PRODUCT_BASE" \
+            --arg product_merge "$PRODUCT_MERGE" \
+            --arg time "$(date -u +%Y-%m-%dT%H:%M:%SZ)" '
+            {
+              schema_version: "scheduled-crawl-app-identity-ref-retirement@1",
+              repository: $repository,
+              protected_main: {sha: $main, tree: $main_tree},
+              controller: {branch: $controller_branch, head: $controller_head, never_merge: true},
+              product: {pull_request: 2631, base: $product_base, head: $target_sha, tree: $target_tree, merge: $product_merge},
+              target: {branch: $target_branch, leased_sha: $target_sha},
+              preflight_at: $time,
+              deletion: null,
+              self_retirement_pending: true
+            }
+          ' > "$receipt"
+
+          gh api --method DELETE "repos/$GITHUB_REPOSITORY/git/refs/heads/$TARGET_BRANCH"
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/$TARGET_BRANCH" >/dev/null 2>&1; then
+            echo 'target ref survived deletion' >&2
+            exit 1
+          fi
+          test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq .object.sha)" = "$MAIN_SHA"
+          jq --arg time "$(date -u +%Y-%m-%dT%H:%M:%SZ)" '
+            .deletion = {branch: .target.branch, leased_sha: .target.leased_sha, deleted_at: $time, absence_verified: true} |
+            .completed_at = $time
+          ' "$receipt" > "$receipt.tmp"
+          mv "$receipt.tmp" "$receipt"
+          sha256sum "$receipt" > retirement-receipt/SHA256SUMS
+
+      - name: Upload exact retirement receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: scheduled-crawl-app-identity-ref-retirement-${{ github.run_id }}-${{ github.run_attempt }}
+          path: retirement-receipt/
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Retire the never-merge controller ref
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/$CONTROLLER_BRANCH" --jq .object.sha)" = "$EXACT_HEAD"
+          gh api --method DELETE "repos/$GITHUB_REPOSITORY/git/refs/heads/$CONTROLLER_BRANCH"
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/$CONTROLLER_BRANCH" >/dev/null 2>&1; then
+            echo 'controller ref survived self-retirement' >&2
+            exit 1
+          fi
