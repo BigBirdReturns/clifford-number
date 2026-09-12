@@ -16,6 +16,11 @@ assert.equal(parseArgs(['--base-url', 'http://127.0.0.1:8080', '--timeout-ms', '
 assert.throws(() => parseArgs([]), /--base-url is required/);
 assert.throws(() => parseArgs(['--base-url', 'file:///tmp/site']), /http or https/);
 assert.throws(() => parseArgs(['--base-url', 'https://example.test', '--timeout-ms', '0']), /1000 through 120000/);
-assert.match((await import('node:fs')).readFileSync('tools/smoke-public-routes.mjs', 'utf8'), /body\?\.textContent\.includes/);
+const fs = await import('node:fs');
+const smokeSource = fs.readFileSync('tools/smoke-public-routes.mjs', 'utf8');
+const indexSource = fs.readFileSync('index.html', 'utf8');
+assert.match(smokeSource, /body\?\.textContent\.includes/);
+assert.match(indexSource, /<h1 id="desk-title"/);
+assert.doesNotMatch(indexSource, /<h3 id="desk-title"/);
 
 console.log('public-route-smoke.test: OK');
