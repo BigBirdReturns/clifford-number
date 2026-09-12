@@ -19,8 +19,13 @@ assert.throws(() => parseArgs(['--base-url', 'https://example.test', '--timeout-
 const fs = await import('node:fs');
 const smokeSource = fs.readFileSync('tools/smoke-public-routes.mjs', 'utf8');
 const indexSource = fs.readFileSync('index.html', 'utf8');
+const appSource = fs.readFileSync('app.js', 'utf8');
 assert.match(smokeSource, /body\?\.textContent\.includes/);
 assert.match(indexSource, /<h1 id="desk-title"/);
 assert.doesNotMatch(indexSource, /<h3 id="desk-title"/);
+assert.match(appSource, /function entityHeading[\s\S]*?<h1>\$\{esc\(label\)\}<\/h1>/);
+assert.match(appSource, /<h1>Actor → named surface → actor\.<\/h1>/);
+assert.match(appSource, /<h1>The receipts, inside the instrument\.<\/h1>/);
+assert.match(appSource, /<h1>\$\{esc\(track\.label\)\}<\/h1>/);
 
 console.log('public-route-smoke.test: OK');
