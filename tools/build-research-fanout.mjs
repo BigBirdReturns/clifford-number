@@ -3,6 +3,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { root } from './lib/ledger.mjs';
+import { buildTimestamp } from './lib/build-clock.mjs';
 import { generateTrailSearches, loadSignatures, validateSignatureRegistry } from './lib/formation-signature.mjs';
 
 const args = process.argv.slice(2);
@@ -532,7 +533,7 @@ const countBy = (rows, key) => Object.fromEntries(
 );
 const manifest = {
   schema_version: 'research-fanout-manifest@1',
-  generated: new Date().toISOString(),
+  generated: buildTimestamp(),
   graph_effect: 'none',
   verification_status: 'machine_proposed_unverified',
   source_counts: {
