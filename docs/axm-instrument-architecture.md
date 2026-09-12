@@ -125,7 +125,7 @@ only marginal cost is one photonic adapter per new jurisdiction.
 ## 6. Retrieval tiering — the Tier-Bench lesson
 
 The heavy lifting in every harness is retrieval, and retrieval is cheap. This is not a hope;
-it is measured in the sibling project **Tier-Bench** (`D:\Projects\Tier-Bench`):
+it is measured in the sibling project **Tier-Bench** (sibling project; repository path intentionally omitted):
 
 - **H1 (commodity-markup): SUPPORTED.** Haiku (~$0.037/trial) and Fable@low (~$0.48/trial)
   produced *identical outcomes on every shared cell* — a ~13× price gap for equal results.

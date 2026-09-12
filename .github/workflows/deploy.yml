@@ -135,8 +135,12 @@ jobs:
             exit 1
           fi
 
-      - name: Bind deployment artifact to exact commit
-        run: printf '%s\n' "$GITHUB_SHA" > dist/deployment-sha.txt
+      - name: Verify deployment artifact identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$(tr -d '\r\n' < dist/deployment-sha.txt)" == "$GITHUB_SHA" ]]
+          node tools/validate-publication-artifact.mjs
 
       - name: Upload pages artifact
         uses: actions/upload-pages-artifact@v3
@@ -179,6 +183,24 @@ jobs:
             echo "::error::Deployed Pages artifact did not expose exact commit ${GITHUB_SHA}; observed '${observed_sha}'."
             exit 1
           fi
+
+          expected_manifest_sha="$(sha256sum dist/release-artifact-manifest.json | awk '{print $1}')"
+          exact_manifest=false
+          for _ in {1..60}; do
+            if curl -fsS -H 'Cache-Control: no-cache' "${base_url}release-artifact-manifest.json?expected=${GITHUB_SHA}" -o /tmp/deployed-release-artifact-manifest.json; then
+              observed_manifest_sha="$(sha256sum /tmp/deployed-release-artifact-manifest.json | awk '{print $1}')"
+              if [[ "$observed_manifest_sha" == "$expected_manifest_sha" ]]; then
+                exact_manifest=true
+                break
+              fi
+            fi
+            sleep 2
+          done
+          if [[ "$exact_manifest" != true ]]; then
+            echo "::error::Deployed artifact manifest did not match tested manifest ${expected_manifest_sha}."
+            exit 1
+          fi
+          node -e "const fs=require('fs'); const m=JSON.parse(fs.readFileSync('/tmp/deployed-release-artifact-manifest.json','utf8')); if(m.source?.commit!==process.env.GITHUB_SHA) process.exit(1)"
 
           chrome="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser || true)"
           if [[ -z "$chrome" ]]; then

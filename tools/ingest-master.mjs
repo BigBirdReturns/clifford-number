@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { buildTimestamp } from './lib/build-clock.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import { root, slug, writeJson, writeJsonl } from './lib/ledger.mjs';
@@ -135,7 +136,7 @@ for (let i = 0; i < lines.length; i++) {
 
 writeJsonl('build/migrated-claims.jsonl', claims);
 writeJson('build/migration-summary.json', {
-  generated: new Date().toISOString(),
+  generated: buildTimestamp(),
   master: 'docs/clifford-number-master.md',
   total_rows: claims.length,
   bucket_counts: bucketCounts,
@@ -151,7 +152,7 @@ for (const claim of claims) {
 const md = [
   '# Migration Review',
   '',
-  `Generated: ${new Date().toISOString()}`,
+  `Generated: ${buildTimestamp()}`,
   '',
   'This file is generated from `docs/clifford-number-master.md`. It is not graph data. It is the review queue for moving existing claims into the surface-hop ledgers.',
   '',

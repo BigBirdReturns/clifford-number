@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { buildTimestamp } from './lib/build-clock.mjs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadAll, readJson, writeJson } from './lib/ledger.mjs';
@@ -105,7 +106,7 @@ export function analyzeTopologyAdmissionFrontier({
   surfaces = [],
   participation = [],
   hopGraph = {},
-  generated = new Date().toISOString(),
+  generated = buildTimestamp(),
 } = {}) {
   const errors = [];
   const actorIds = new Set(actors.map(row => row.id));

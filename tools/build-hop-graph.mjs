@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { buildTimestamp } from './lib/build-clock.mjs';
 import { loadAll, readJson, writeJson, indexBy } from './lib/ledger.mjs';
 import { deriveHopEdges, buildAdjacency, shortestPath } from './lib/hops.mjs';
 import { buildIdentityLayer } from './lib/axm-identity.mjs';
@@ -109,7 +110,7 @@ for (const node of legacyGraph.nodes ?? []) {
 }
 
 const surfaceGraph = {
-  generated: new Date().toISOString(),
+  generated: buildTimestamp(),
   surfaces: data.surfaces.map(surface => ({
     ...surface,
     participants: participationBySurface.get(surface.surface_id) ?? [],
@@ -121,7 +122,7 @@ const surfaceGraph = {
 };
 
 const hopGraph = {
-  generated: new Date().toISOString(),
+  generated: buildTimestamp(),
   anchor_actor_id: ANCHOR_ACTOR_ID,
   rule: 'Actor-to-actor hops are generated only from shared valid bounded surfaces with explicit participation rows.',
   temporal_rule: 'A hop basis exists only for the window where both participations and the surface overlap. Disjoint dated participations create no hop (rejected_hop_pairs). Bases with an undated participation never support time-sliced claims.',
@@ -144,7 +145,7 @@ const identityLayer = buildIdentityLayer({
 });
 
 const receiptGraph = {
-  generated: new Date().toISOString(),
+  generated: buildTimestamp(),
   receipts: data.receipts,
   claims: data.claims,
   surface_receipt_links: data.surfaces.map(s => ({ surface_id: s.surface_id, receipt_ids: s.receipt_ids ?? [] })),
@@ -154,8 +155,8 @@ const receiptGraph = {
 writeJson('build/surface-graph.json', surfaceGraph);
 writeJson('build/hop-graph.json', hopGraph);
 writeJson('build/receipt-graph.json', receiptGraph);
-writeJson('build/axm-identity.json', { generated: new Date().toISOString(), ...identityLayer });
-writeJson('build/build-hop-report.json', { generated: new Date().toISOString(), errors, warnings, hop_edges: hopEdges.length, rejected_hop_surfaces: rejectedHopSurfaces, rejected_hop_pairs: rejectedHopPairs });
+writeJson('build/axm-identity.json', { generated: buildTimestamp(), ...identityLayer });
+writeJson('build/build-hop-report.json', { generated: buildTimestamp(), errors, warnings, hop_edges: hopEdges.length, rejected_hop_surfaces: rejectedHopSurfaces, rejected_hop_pairs: rejectedHopPairs });
 
 if (errors.length) {
   console.error(errors.join('\n'));

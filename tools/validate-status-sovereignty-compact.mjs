@@ -300,6 +300,14 @@ export function validateStatusSovereignty(context = loadStatusSovereigntyContext
   check(html.includes('SSC-H01 · TWO WAVES MAINTAINER REVIEWED 22/22 · SECOND-PARTY 0 · COMPLETE-COMPACT FINDINGS 0 · NO RACIAL-ORDER FINDING · GRAPH EFFECT NONE · PUBLICATION BLOCKED'), 'SSC report boundary banner missing');
   check(html.includes('Wave 01 and Wave 02 reviewed source records') && html.includes('Targeted acquisition') && html.includes('Four-gate discriminator') && html.includes('Sixteen-lane fanout') && html.includes(manifest.combined_sha256), 'SSC report content drift');
 
+  const publicationPolicy = JSON.parse(fs.readFileSync(path.join(root, 'data/project/publication-allowlist.json'), 'utf8'));
+  const publicationPaths = new Set(publicationPolicy.paths ?? []);
+  const publicationHeld = (heldPath) => (publicationPolicy.held_exact_paths ?? []).includes(heldPath)
+    || (publicationPolicy.held_rules ?? []).some((rule) =>
+      (rule.kind === 'exact' && heldPath === rule.value)
+      || (rule.kind === 'prefix' && heldPath.startsWith(rule.value))
+      || (rule.kind === 'substring' && heldPath.toLowerCase().includes(String(rule.value).toLowerCase())));
+
   for (const heldPath of [
     'build/core-thesis/status-sovereignty',
     'reports/core-thesis/status-sovereignty',
@@ -325,10 +333,8 @@ export function validateStatusSovereignty(context = loadStatusSovereigntyContext
     ,'data/project/status-sovereignty-wave-02-maintainer-review-release-manifest.json'
     ,'docs/milestones/m05-status-sovereignty-wave-02-review.md'
   ]) {
-    const builder = fs.readFileSync(path.join(root, 'tools/build-pages.mjs'), 'utf8');
-    const validator = fs.readFileSync(path.join(root, 'tools/validate-pages.mjs'), 'utf8');
-    check(builder.includes(heldPath.split('/').map((part) => `'${part}'`).join(', ')), `Pages builder does not hold ${heldPath}`);
-    check(validator.includes(`'${heldPath}'`), `Pages validator does not refuse ${heldPath}`);
+    check(publicationHeld(heldPath), `Publication policy does not retain ${heldPath}`);
+    check(!publicationPaths.has(heldPath), `Publication allowlist must refuse ${heldPath}`);
   }
 
   return errors;
