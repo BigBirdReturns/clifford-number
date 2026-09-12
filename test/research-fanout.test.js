@@ -181,6 +181,8 @@ execFileSync(process.execPath, ['tools/build-research-fanout.mjs', '--batch-size
 execFileSync(process.execPath, ['tools/validate-research-fanout.mjs'], { cwd: root, stdio: 'pipe', env });
 
 const manifest = JSON.parse(fs.readFileSync(path.join(root, 'build/research-fanout/manifest.json'), 'utf8'));
+const buildClock = JSON.parse(fs.readFileSync(path.join(root, 'data/project/build-clock.json'), 'utf8'));
+assert.equal(manifest.generated, buildClock.timestamp);
 assert.equal(manifest.graph_effect, 'none');
 assert.equal(
   manifest.source_counts.total,

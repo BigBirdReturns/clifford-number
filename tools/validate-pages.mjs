@@ -5,6 +5,7 @@ import { root } from './lib/ledger.mjs';
 import { isDeepStrictEqual } from 'node:util';
 import { loadCliffordCrossCorpusPublicInterestMap, validateCliffordCrossCorpusPublicInterestMap } from './lib/clifford-cross-corpus-public-interest-map.mjs';
 import { MAP_SOURCE_PATH, MAP_VIEW_PATH } from './lib/crawl-health-map-projection.mjs';
+import { validatePublicationArtifact } from './lib/publication-allowlist.mjs';
 
 const destination = path.join(root, 'dist');
 const mapBundle = loadCliffordCrossCorpusPublicInterestMap();
@@ -15,7 +16,7 @@ for (const file of [MAP_SOURCE_PATH, MAP_VIEW_PATH]) {
   if (!isDeepStrictEqual(published, mapBundle.map)) throw new Error(`published current map drift: ${file}`);
 }
 const required = [
-  'index.html', 'Clifford-Number-standalone.html', 'Clifford-Estate-Aperture-standalone.html', 'Clifford-Game-Trail-Aperture-standalone.html', 'app.js', 'styles.css', '.nojekyll',
+  'index.html', 'deployment-sha.txt', 'release-artifact-manifest.json', 'data/project/publication-allowlist.json', 'data/project/build-clock.json', 'docs/releases/1.0.0.md', 'Clifford-Number-standalone.html', 'Clifford-Estate-Aperture-standalone.html', 'Clifford-Game-Trail-Aperture-standalone.html', 'app.js', 'styles.css', '.nojekyll',
   'build/surface-graph.json', 'build/hop-graph.json', 'build/receipt-graph.json',
   'build/public-catalog.json', 'build/cases/index.json', 'build/cases/field-autopsy-03.json',
   'build/cases/uk-ai-policy.json',
@@ -383,4 +384,5 @@ if (obsoleteNo10PairRefusal !== undefined
   console.error('validate-pages failed: No. 10 broad-office context is missing, misclassified, or still creating actor adjacency');
   process.exit(1);
 }
+validatePublicationArtifact({ root, destination });
 console.log(`validate-pages: OK (${required.length} required artifacts)`);

@@ -18,6 +18,7 @@ jobs:
   deploy:
     name: Compile, validate, deploy
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -70,73 +71,14 @@ jobs:
             exit 1
           fi
 
-          failures=0
+          CLIFFORD_CHROME="$chrome" node tools/smoke-public-routes.mjs             --base-url http://127.0.0.1:8080/
 
-          smoke() {
-            local viewport="$1"
-            local route="$2"
-            shift 2
-            local profile dom expected route_failed
-            route_failed=0
-            profile="$(mktemp -d)"
-            dom="$(mktemp)"
-            "$chrome" \
-              --headless=new \
-              --no-sandbox \
-              --disable-dev-shm-usage \
-              --disable-gpu \
-              --hide-scrollbars \
-              --run-all-compositor-stages-before-draw \
-              --window-size="$viewport" \
-              --user-data-dir="$profile" \
-              --virtual-time-budget=10000 \
-              --dump-dom \
-              "http://127.0.0.1:8080/${route}" > "$dom" 2>/dev/null
-            rm -rf "$profile"
-
-            for expected in "$@"; do
-              if ! grep -Fq "$expected" "$dom"; then
-                echo "::error::Route ${route} at ${viewport} did not render expected text: ${expected}"
-                route_failed=1
-              fi
-            done
-            if [[ "$route_failed" -ne 0 ]]; then
-              tail -c 5000 "$dom"
-            fi
-            rm -f "$dom"
-            return "$route_failed"
-          }
-
-          for viewport in "1440,1000" "390,844"; do
-            smoke "$viewport" \
-              "#desk/keir-starmer/matt-clifford/2025" \
-              "Documented: 1 step as of 2025" \
-              "AI Opportunities Action Plan publication and government response, 13 January 2025" \
-              || failures=$((failures + 1))
-            smoke "$viewport" \
-              "#desk/demet-mutlu/matt-clifford" \
-              "No documented connection" \
-              "That is a statement about the documentation gathered here, not proof of absence." \
-              || failures=$((failures + 1))
-            smoke "$viewport" \
-              "#desk/keir-starmer/matt-clifford/2020" \
-              "Not documented for 2020" \
-              "documented all-time connection exists" \
-              || failures=$((failures + 1))
-            smoke "$viewport" \
-              "#surface/dialog-public-directory-exposure-2026-06-16" \
-              "Dialog public-directory exposure, 16 June 2026" \
-              "The 112-name roster is dense and semantically insufficient for pairwise topology." \
-              || failures=$((failures + 1))
-          done
-
-          if [[ "$failures" -ne 0 ]]; then
-            echo "::error::${failures} public inspection route smoke case(s) failed."
-            exit 1
-          fi
-
-      - name: Bind deployment artifact to exact commit
-        run: printf '%s\n' "$GITHUB_SHA" > dist/deployment-sha.txt
+      - name: Verify deployment artifact identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$(tr -d '\r\n' < dist/deployment-sha.txt)" == "$GITHUB_SHA" ]]
+          node tools/validate-publication-artifact.mjs
 
       - name: Upload pages artifact
         uses: actions/upload-pages-artifact@v3
@@ -180,73 +122,28 @@ jobs:
             exit 1
           fi
 
+          expected_manifest_sha="$(sha256sum dist/release-artifact-manifest.json | awk '{print $1}')"
+          exact_manifest=false
+          for _ in {1..60}; do
+            if curl -fsS -H 'Cache-Control: no-cache' "${base_url}release-artifact-manifest.json?expected=${GITHUB_SHA}" -o /tmp/deployed-release-artifact-manifest.json; then
+              observed_manifest_sha="$(sha256sum /tmp/deployed-release-artifact-manifest.json | awk '{print $1}')"
+              if [[ "$observed_manifest_sha" == "$expected_manifest_sha" ]]; then
+                exact_manifest=true
+                break
+              fi
+            fi
+            sleep 2
+          done
+          if [[ "$exact_manifest" != true ]]; then
+            echo "::error::Deployed artifact manifest did not match tested manifest ${expected_manifest_sha}."
+            exit 1
+          fi
+          node -e "const fs=require('fs'); const m=JSON.parse(fs.readFileSync('/tmp/deployed-release-artifact-manifest.json','utf8')); if(m.source?.commit!==process.env.GITHUB_SHA) process.exit(1)"
+
           chrome="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser || true)"
           if [[ -z "$chrome" ]]; then
             echo "::error::No supported Chromium browser is installed on the runner."
             exit 1
           fi
 
-          failures=0
-
-          smoke() {
-            local viewport="$1"
-            local route="$2"
-            shift 2
-            local profile dom expected route_failed
-            route_failed=0
-            profile="$(mktemp -d)"
-            dom="$(mktemp)"
-            "$chrome" \
-              --headless=new \
-              --no-sandbox \
-              --disable-dev-shm-usage \
-              --disable-gpu \
-              --hide-scrollbars \
-              --run-all-compositor-stages-before-draw \
-              --window-size="$viewport" \
-              --user-data-dir="$profile" \
-              --virtual-time-budget=10000 \
-              --dump-dom \
-              "${base_url}${route}" > "$dom" 2>/dev/null
-            rm -rf "$profile"
-
-            for expected in "$@"; do
-              if ! grep -Fq "$expected" "$dom"; then
-                echo "::error::Deployed route ${route} at ${viewport} did not render expected text: ${expected}"
-                route_failed=1
-              fi
-            done
-            if [[ "$route_failed" -ne 0 ]]; then
-              tail -c 5000 "$dom"
-            fi
-            rm -f "$dom"
-            return "$route_failed"
-          }
-
-          for viewport in "1440,1000" "390,844"; do
-            smoke "$viewport" \
-              "#desk/keir-starmer/matt-clifford/2025" \
-              "Documented: 1 step as of 2025" \
-              "AI Opportunities Action Plan publication and government response, 13 January 2025" \
-              || failures=$((failures + 1))
-            smoke "$viewport" \
-              "#desk/demet-mutlu/matt-clifford" \
-              "No documented connection" \
-              "That is a statement about the documentation gathered here, not proof of absence." \
-              || failures=$((failures + 1))
-            smoke "$viewport" \
-              "#desk/keir-starmer/matt-clifford/2020" \
-              "Not documented for 2020" \
-              "documented all-time connection exists" \
-              || failures=$((failures + 1))
-            smoke "$viewport" \
-              "#surface/dialog-public-directory-exposure-2026-06-16" \
-              "Dialog public-directory exposure, 16 June 2026" \
-              "The 112-name roster is dense and semantically insufficient for pairwise topology." \
-              || failures=$((failures + 1))
-          done
-
-          if [[ "$failures" -ne 0 ]]; then
-            echo "::error::${failures} deployed public inspection route smoke case(s) failed."
-            exit 1
-          fi
+          CLIFFORD_CHROME="$chrome" node tools/smoke-public-routes.mjs             --base-url "$base_url"

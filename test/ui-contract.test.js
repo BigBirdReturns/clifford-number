@@ -32,6 +32,7 @@ const socialCard = readFileSync('assets/social-card.svg', 'utf8');
 const deployWorkflow = readFileSync('.github/workflows/deploy.yml', 'utf8');
 const ciWorkflow = readFileSync('.github/workflows/ci.yml', 'utf8');
 const pagesBuilder = readFileSync('tools/build-pages.mjs', 'utf8');
+const publicationPolicy = JSON.parse(readFileSync('data/project/publication-allowlist.json', 'utf8'));
 const standaloneBuilder = readFileSync('tools/build-standalone.mjs', 'utf8');
 const staticServer = readFileSync('tools/serve-static.mjs', 'utf8');
 
@@ -238,8 +239,9 @@ assert.match(socialCard, /EVERY HOP IS A SHARED BOUNDED SURFACE/);
 assert.ok(statSync('assets/social-card.png').size > 10_000, 'raster social card must be present and non-empty');
 
 // Every runtime dependency and local receipt link must ship in the Pages artifact.
+assert.match(pagesBuilder, /readPublicationPolicy/, 'Pages builder must be driven by the owning positive publication policy');
 for (const directory of ['assets', 'docs', 'data', 'build', 'src', 'receipts']) {
-  assert.match(pagesBuilder, new RegExp(`['"]${directory}['"]`), `Pages artifact must include ${directory}/`);
+  assert.ok(publicationPolicy.paths.some(relativePath => relativePath.startsWith(`${directory}/`)), `Pages artifact must include approved ${directory}/ paths`);
 }
 assert.match(deployWorkflow, /npm run release:check/);
 assert.match(ciWorkflow, /pull_request:/);

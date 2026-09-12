@@ -37,3 +37,11 @@ A non-hop surface can still be scorable. The Electric Twin / News UK synthetic a
 ## Migration rule
 
 The current master document is parsed into `build/migrated-claims.jsonl` and `build/migration-review.md`. That does not automatically create hop graph data. Rows must be promoted into source ledgers only when they define bounded surfaces and explicit participation.
+
+## Reproducible projection clock
+
+Projection `generated` fields use `clifford-build-clock@1`, loaded from the checked-in admitted input `data/project/build-clock.json`. A supplied `SOURCE_DATE_EPOCH` must match that input exactly. The clock performs no fetch and does not depend on wall time or mutable repository metadata. It is a reproducible projection timestamp, not an acquisition date, event date, verification date, or source-freshness claim; those dates remain in their owning receipts and interval records.
+
+## Positive publication boundary
+
+The Pages artifact is assembled only from the exact paths in `data/project/publication-allowlist.json`. New repository files remain outside the artifact until that policy changes and the full native gate reruns. `tools/finalize-release-artifact.mjs` binds the artifact to the checked-out commit and tree, emits `deployment-sha.txt`, records every payload byte in `release-artifact-manifest.json`, enforces size budgets, and rejects held custody paths, symlinks, machine-local paths, or credential signatures. The deployment workflow verifies that immutable manifest before upload and again after deployment.

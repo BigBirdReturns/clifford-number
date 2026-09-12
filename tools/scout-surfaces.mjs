@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { buildTimestamp } from './lib/build-clock.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import { root, readJson, loadAll, uniq } from './lib/ledger.mjs';
@@ -226,7 +227,7 @@ if (migration) {
   );
 }
 
-const generated = new Date().toISOString();
+const generated = buildTimestamp();
 const broadInstitutionReviewSummary = {
   schema_version: broadInstitutionReviews.schema_version,
   registry_created_at: broadInstitutionReviews.registry_created_at,
