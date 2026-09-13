@@ -23,7 +23,7 @@ const windowing = fs.readFileSync(path.join(destination, 'src', 'visual-aperture
 const runtime = fs.readFileSync(path.join(destination, 'src', 'visual-aperture-bounded-runtime.js'), 'utf8');
 const exportModel = fs.readFileSync(path.join(destination, 'src', 'visual-aperture-export.mjs'), 'utf8');
 const preview = fs.readFileSync(path.join(destination, 'src', 'visual-aperture-export-preview-runtime.js'), 'utf8');
-const standalone = fs.readFileSync(path.join(destination, 'Clifford-Number-standalone.html'), 'utf8');
+const explorerStandalone = fs.readFileSync(path.join(destination, 'Clifford-Number-explorer-standalone.html'), 'utf8');
 
 const boundedIndex = loader.indexOf('visual-aperture-bounded-runtime.js');
 const mountIndex = loader.indexOf('visual-aperture-part-11.js');
@@ -60,14 +60,14 @@ for (const marker of [
   'APERTURE_EXPORT_PREVIEW_ROW_LIMIT = 100',
   'paginated_complete_rows_reachable'
 ]) {
-  if (!standalone.includes(marker)) {
-    console.error(`validate-aperture-bounded-pages failed: standalone omits ${marker}`);
+  if (!explorerStandalone.includes(marker)) {
+    console.error(`validate-aperture-bounded-pages failed: explorer standalone omits ${marker}`);
     process.exit(1);
   }
 }
 
-if (/<(?:script|link)[^>]+(?:src|href)="[^"]*visual-aperture-(?:bounded|windowing)/.test(standalone)) {
-  console.error('validate-aperture-bounded-pages failed: standalone references bounded-rendering assets externally');
+if (/<(?:script|link)[^>]+(?:src|href)="[^"]*visual-aperture-(?:bounded|windowing)/.test(explorerStandalone)) {
+  console.error('validate-aperture-bounded-pages failed: explorer standalone references bounded-rendering assets externally');
   process.exit(1);
 }
 

@@ -13,6 +13,7 @@ const exportModel = read('src/visual-aperture-export.mjs');
 const exportPreview = read('src/visual-aperture-export-preview-runtime.js');
 const boundedCss = read('src/visual-aperture-bounded.css');
 const standalone = read('tools/build-standalone.mjs');
+const pagesValidator = read('tools/validate-aperture-bounded-pages.mjs');
 
 assert.match(windowing, /APERTURE_OVERVIEW_PAGE_SIZES = Object\.freeze\(\[25, 50, 100\]\)/);
 assert.match(windowing, /APERTURE_DEFAULT_OVERVIEW_PAGE_SIZE = 50/);
@@ -56,6 +57,8 @@ assert.match(exportPreview, /complete:\s*true/);
 
 assert.match(boundedCss, /\.aperture-overview-pagination/);
 assert.match(boundedCss, /\.aperture-route-window-controls/);
+assert.match(pagesValidator, /Clifford-Number-explorer-standalone\.html/);
+assert.doesNotMatch(pagesValidator, /path\.join\(destination, 'Clifford-Number-standalone\.html'\)/);
 
 for (const file of [
   'visual-aperture-windowing.mjs',
