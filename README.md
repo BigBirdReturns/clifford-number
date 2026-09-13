@@ -1,6 +1,6 @@
 # The Clifford Number
 
-Current release: **1.0.0**. See [the release boundary](docs/releases/1.0.0.md).
+Current release: **1.1.0**. See [the release boundary](docs/releases/1.1.0.md).
 
 The Clifford Number is a surface-hop topology compiler. It maps how bounded legitimate surfaces carry actors, companies, policy machinery, advisory roles, capital, and outcomes through plausible-deniability corridors.
 
@@ -13,7 +13,7 @@ A reviewer can inspect the current public release in about a minute:
 1. Open the [live application](https://bigbirdreturns.github.io/clifford-number/).
 2. Read the in-app [method overview](https://bigbirdreturns.github.io/clifford-number/#method/overview) and the fuller [methodology](docs/methodology.md).
 3. Inspect the canonical source-of-truth ledgers: [`claims`](data/ledger/claims.jsonl), [`surfaces`](data/ledger/surfaces.jsonl), [`participation`](data/ledger/participation.jsonl), [`receipts`](data/ledger/receipts.jsonl), and [`chains`](data/ledger/chains.jsonl). Generated files under `build/` and the Pages artifact are disposable views, not authority.
-4. Open the existing [Starmer → Clifford result, as of 2025](https://bigbirdreturns.github.io/clifford-number/#desk/keir-starmer/matt-clifford/2025). The one-day 13 January 2025 surface exposes both participation roles, the overlap window, the evidence class, and its receipt links. It supports documented shared context on that bounded policy surface only.
+4. Open the existing [Starmer → Clifford result, as of 2025](https://bigbirdreturns.github.io/clifford-number/explorer.html#desk/keir-starmer/matt-clifford/2025). The one-day 13 January 2025 surface exposes both participation roles, the overlap window, the evidence class, and its receipt links. It supports documented shared context on that bounded policy surface only.
 5. Reproduce the release gate from a clean checkout with `npm ci` followed by `npm run release:check`.
 
 The standing forbidden-inference boundary is unchanged: co-presence is never coordination, and no undocumented relationship, intent, influence, benefit, wrongdoing, common purpose, or causation may be inferred from a shared surface or from absence in this corpus.
@@ -22,7 +22,7 @@ This release abandons the generic shortest-path edge graph. The old graph is pre
 
 ## Public app
 
-The static app has two complementary views:
+The public site is two static pages: `index.html`, a four-lane causal homepage projecting the research graph across model production, workflow admission, activation spend, and measurement feedback; and `explorer.html`, the topology explorer, linked from the homepage header. The explorer itself has two complementary views:
 
 - **Topology explorer:** search public actors, organizations, and bounded surfaces; inspect an actor → surface → actor route; open every receipt and archival reference behind it.
 - **Connection checker:** enter two public actors and an optional year, month, or day; get the shortest defensible route, its evidence floor, copy-ready caveat language, and the connections the compiler refused to make.

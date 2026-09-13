@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import { assertNoGroupOrWorldMode } from './private-path-permissions.mjs';
 
 export const ACQUISITION_ID = 'ET-ROM-2025-09-01';
 export const PRIVATE_INPUT_SCHEMA = 'electric-twin-register-request-private-input@1';
@@ -69,7 +70,7 @@ function assertSafePrivateInputPath(filePath) {
   assert.ok(fs.existsSync(filePath), `private input does not exist: ${relative}`);
   const stat = fs.statSync(filePath);
   assert.ok(stat.isFile(), `private input must be a regular file: ${relative}`);
-  assert.equal(stat.mode & 0o077, 0, `private input must not be group- or world-readable: ${relative}`);
+  assertNoGroupOrWorldMode(stat, `private input must not be group- or world-readable: ${relative}`);
 }
 
 function assertSafeOutputPath(outputDir) {

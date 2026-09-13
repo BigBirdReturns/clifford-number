@@ -26,7 +26,7 @@ const rel = file => path.relative(root, file).replaceAll('\\', '/');
 
 const graphLeak = structuredClone(seeds);
 graphLeak.events[0].graph_effect = 'create_hop';
-let result = validateK0({ root, seedPath: rel(write('graph-leak.json', graphLeak)) });
+let result = validateK0({ root, seedPath: write('graph-leak.json', graphLeak) });
 assert.equal(result.ok, false); assert.ok(result.failures.some(row => row.includes('graph boundary')));
 
 const truthLaunder = structuredClone(seeds);

@@ -32,7 +32,8 @@ export function validateK0({
   fieldAuditPath = 'data/research/k0-field-audit.json'
 } = {}) {
   const failures = [];
-  const read = rel => JSON.parse(fs.readFileSync(path.join(root, rel), 'utf8'));
+  const resolveInputPath = input => path.isAbsolute(input) ? input : path.resolve(root, input);
+  const read = input => JSON.parse(fs.readFileSync(resolveInputPath(input), 'utf8'));
   const fail = message => failures.push(message);
   const method = read('data/project/k0-epistemic-admissibility-methodology.json');
   const seeds = read(seedPath);

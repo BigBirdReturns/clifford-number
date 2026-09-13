@@ -93,8 +93,8 @@ jobs:
 
       - name: Install declared browser verification dependency
         run: |
-          npm install --no-package-lock
-          node -e "const version = require('./node_modules/playwright/package.json').version; if (version !== '1.55.0') throw new Error('expected playwright 1.55.0, got ' + version);"
+          npm ci
+          node -e "const expected = require('./package.json').devDependencies.playwright; const version = require('./node_modules/playwright/package.json').version; if (version !== expected) throw new Error('expected playwright ' + expected + ', got ' + version);"
           npx playwright install --with-deps chromium
 
       - name: Start the static public application

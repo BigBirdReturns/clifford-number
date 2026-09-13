@@ -17,7 +17,7 @@ async function settle(page) {
 }
 
 async function waitForCase(page, title) {
-  await page.waitForFunction(expected => document.querySelector('#detail .case-hero h2')?.textContent?.includes(expected), title, { timeout: 60000 });
+  await page.waitForFunction(expected => document.querySelector('#detail .case-hero h1')?.textContent?.includes(expected), title, { timeout: 60000 });
   await settle(page);
 }
 
@@ -91,7 +91,7 @@ async function main() {
       assert.equal(mobileOverflow, false);
 
       await page.setViewportSize({ width: 1440, height: 1100 });
-      await page.goto(`http://127.0.0.1:8080/#case/${entry.case_id}`, { waitUntil: 'domcontentloaded', timeout: 60000 });
+      await page.goto(`http://127.0.0.1:8080/explorer.html#case/${entry.case_id}`, { waitUntil: 'domcontentloaded', timeout: 60000 });
       await waitForCase(page, caseItem.title);
       const caseBriefLink = page.locator('#detail .case-brief-link');
       assert.equal(await caseBriefLink.count(), 1);
@@ -112,9 +112,9 @@ async function main() {
         await page.locator('#evidence-dialog-close').click();
       }
 
-      await page.goto(`http://127.0.0.1:8080/dist/Clifford-Number-standalone.html#case/${entry.case_id}`, { waitUntil: 'domcontentloaded', timeout: 60000 });
+      await page.goto(`http://127.0.0.1:8080/dist/Clifford-Number-explorer-standalone.html#case/${entry.case_id}`, { waitUntil: 'domcontentloaded', timeout: 60000 });
       await waitForCase(page, caseItem.title);
-      assert.equal(await page.locator('#detail .case-brief-link').count(), 0, 'portable release must suppress external briefing links');
+      assert.equal(await page.locator('#detail .case-brief-link').count(), 0, 'portable explorer release must suppress external briefing links');
 
       result.briefings.push({
         briefing_id: entry.briefing_id,

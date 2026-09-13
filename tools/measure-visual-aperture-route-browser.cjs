@@ -103,7 +103,7 @@ async function main() {
   });
 
   try {
-    await page.goto('http://127.0.0.1:8080/', { waitUntil: 'domcontentloaded', timeout: 60000 });
+    await page.goto('http://127.0.0.1:8080/explorer.html', { waitUntil: 'domcontentloaded', timeout: 60000 });
     await page.waitForFunction(() => document.querySelector('#network-atlas')?.dataset.apertureMounted === 'true', null, { timeout: 60000 });
     await page.click('[data-ap-mode="route"]');
     await page.waitForSelector('#ap-route-from');

@@ -14,6 +14,11 @@ import {
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 process.chdir(repoRoot);
 
+function assertPosixPrivateMode(filePath) {
+  if (process.platform === 'win32') return;
+  assert.equal(fs.statSync(filePath).mode & 0o077, 0);
+}
+
 const privateInput = {
   schema_version: 'electric-twin-register-request-private-input@1',
   acquisition_id: 'ET-ROM-2025-09-01',
@@ -135,9 +140,9 @@ try {
 
   const copiedProofPath = path.join(result.dispatch_dir, result.evidence_files[0].path);
   assert.deepEqual(fs.readFileSync(copiedProofPath), fs.readFileSync(proofPath));
-  assert.equal(fs.statSync(result.dispatch_dir).mode & 0o077, 0);
-  assert.equal(fs.statSync(copiedProofPath).mode & 0o077, 0);
-  assert.equal(fs.statSync(manifestPath).mode & 0o077, 0);
+  assertPosixPrivateMode(result.dispatch_dir);
+  assertPosixPrivateMode(copiedProofPath);
+  assertPosixPrivateMode(manifestPath);
 
   assert.throws(
     () => recordDispatchCustody({ sourceDir: outputA, inputPath: dispatchInputPath }),
@@ -183,18 +188,20 @@ try {
     /must remain under ignored data\/local/u,
   );
 
-  fs.chmodSync(proofPath, 0o644);
-  const worldReadableProof = {
-    ...baseDispatchInput,
-    dispatch_event_record: 'test-postal-dispatch-event-004',
-  };
-  fs.writeFileSync(dispatchInputPath, `${JSON.stringify(worldReadableProof, null, 2)}\n`, { mode: 0o600 });
-  fs.chmodSync(dispatchInputPath, 0o600);
-  assert.throws(
-    () => recordDispatchCustody({ sourceDir: outputA, inputPath: dispatchInputPath }),
-    /must not be group- or world-readable/u,
-  );
-  fs.chmodSync(proofPath, 0o600);
+  if (process.platform !== 'win32') {
+    fs.chmodSync(proofPath, 0o644);
+    const worldReadableProof = {
+      ...baseDispatchInput,
+      dispatch_event_record: 'test-postal-dispatch-event-004',
+    };
+    fs.writeFileSync(dispatchInputPath, `${JSON.stringify(worldReadableProof, null, 2)}\n`, { mode: 0o600 });
+    fs.chmodSync(dispatchInputPath, 0o600);
+    assert.throws(
+      () => recordDispatchCustody({ sourceDir: outputA, inputPath: dispatchInputPath }),
+      /must not be group- or world-readable/u,
+    );
+    fs.chmodSync(proofPath, 0o600);
+  }
 
   fs.symlinkSync(path.basename(proofPath), symlinkProofPath);
   const symlinkProof = {

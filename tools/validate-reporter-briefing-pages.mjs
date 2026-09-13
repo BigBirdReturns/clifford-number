@@ -25,14 +25,14 @@ for (const file of [
   'build/review/reporter-briefing-queue.json',
   'build/public-catalog.json',
   'build/report-frontier.json',
-  'Clifford-Number-standalone.html'
+  'Clifford-Number-explorer-standalone.html'
 ]) if (!exists(file)) fail(`missing ${file}`);
 
 const index = readJson('build/briefings/index.json');
 const queue = readJson('build/review/reporter-briefing-queue.json');
 const catalog = readJson('build/public-catalog.json');
 const frontier = readJson('build/report-frontier.json');
-const standalone = read('Clifford-Number-standalone.html');
+const portableEvidence = read('Clifford-Number-explorer-standalone.html');
 
 if (index.schema_version !== 'reporter-briefing-index@1'
   || index.graph_effect !== 'none'
@@ -173,8 +173,8 @@ for (const entry of index.briefings) {
     if (html.includes(privateId)) fail(`${entry.briefing_id} exposes private provenance receipt ${privateId}`);
   }
 
-  if (!standalone.includes(`"case_id":"${entry.case_id}"`)
-    || !standalone.includes(escapeHtml(caseItem.title))) fail(`${entry.briefing_id} evidence case is absent from the portable release`);
+  if (!portableEvidence.includes(`"case_id":"${entry.case_id}"`)
+    || !portableEvidence.includes(escapeHtml(caseItem.title))) fail(`${entry.briefing_id} evidence case is absent from the portable explorer release`);
 
   totalClaims += manifest.counts?.claims ?? 0;
   totalVerified += manifest.counts?.verified_claims ?? 0;

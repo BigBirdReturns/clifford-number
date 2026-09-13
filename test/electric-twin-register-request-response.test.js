@@ -16,6 +16,11 @@ import {
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 process.chdir(repoRoot);
 
+function assertPosixPrivateMode(filePath) {
+  if (process.platform === 'win32') return;
+  assert.equal(fs.statSync(filePath).mode & 0o077, 0);
+}
+
 const privateDir = 'data/local';
 const outputRoot = 'build/source-acquisition/electric-twin-register-of-members';
 const requesterPath = `${privateDir}/electric-twin-register-response-requester-${process.pid}.json`;
@@ -236,9 +241,9 @@ try {
 
   const copiedResponsePath = path.join(result.response_dir, result.evidence_files[0].path);
   assert.deepEqual(fs.readFileSync(copiedResponsePath), emailBytes);
-  assert.equal(fs.statSync(result.response_dir).mode & 0o077, 0);
-  assert.equal(fs.statSync(copiedResponsePath).mode & 0o077, 0);
-  assert.equal(fs.statSync(manifestPath).mode & 0o077, 0);
+  assertPosixPrivateMode(result.response_dir);
+  assertPosixPrivateMode(copiedResponsePath);
+  assertPosixPrivateMode(manifestPath);
 
   assert.throws(
     () => recordResponseCustody({ deliveryDir: deliveryA.delivery_dir, inputPath: responseInputPath }),
@@ -333,16 +338,18 @@ try {
     /must remain under ignored data\/local/u,
   );
 
-  fs.chmodSync(responseEmailPath, 0o644);
-  writePrivateJson(responseInputPath, {
-    ...responseInput,
-    response_event_record: 'test-response-world-readable',
-  });
-  assert.throws(
-    () => recordResponseCustody({ deliveryDir: deliveryA.delivery_dir, inputPath: responseInputPath }),
-    /must not be group- or world-readable/u,
-  );
-  fs.chmodSync(responseEmailPath, 0o600);
+  if (process.platform !== 'win32') {
+    fs.chmodSync(responseEmailPath, 0o644);
+    writePrivateJson(responseInputPath, {
+      ...responseInput,
+      response_event_record: 'test-response-world-readable',
+    });
+    assert.throws(
+      () => recordResponseCustody({ deliveryDir: deliveryA.delivery_dir, inputPath: responseInputPath }),
+      /must not be group- or world-readable/u,
+    );
+    fs.chmodSync(responseEmailPath, 0o600);
+  }
 
   fs.rmSync(symlinkEvidencePath, { force: true });
   fs.symlinkSync(path.basename(responseEmailPath), symlinkEvidencePath);

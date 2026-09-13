@@ -21,6 +21,11 @@ import {
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 process.chdir(repoRoot);
 
+function assertPosixPrivateMode(filePath) {
+  if (process.platform === 'win32') return;
+  assert.equal(fs.statSync(filePath).mode & 0o077, 0);
+}
+
 const privateDir = 'data/local';
 const outputRoot = 'build/source-acquisition/electric-twin-register-of-members';
 const requesterPath = `${privateDir}/electric-twin-adjudication-requester-${process.pid}.json`;
@@ -298,8 +303,8 @@ try {
   assert.equal(manifestText.includes('Test Corporate Services Provider'), false);
   assert.equal(manifestText.includes('Test Adjudication Researcher'), false);
   assert.equal(manifestText.includes('adjudication-researcher@example.test'), false);
-  assert.equal(fs.statSync(partialResult.adjudication_dir).mode & 0o077, 0);
-  assert.equal(fs.statSync(partialManifestPath).mode & 0o077, 0);
+  assertPosixPrivateMode(partialResult.adjudication_dir);
+  assertPosixPrivateMode(partialManifestPath);
 
   assert.throws(
     () => recordResponseAdjudication({ responseDir: responseA.response_dir, inputPath: reviewInputPath }),

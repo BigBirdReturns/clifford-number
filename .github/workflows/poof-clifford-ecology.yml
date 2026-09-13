@@ -72,7 +72,7 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
-          node-version: '24'
+          node-version: '20'
       - name: Validate constitutional change custody
         run: |
           node tools/validate-poof-constitutional-change.mjs
@@ -95,7 +95,8 @@ jobs:
         run: npm run release:check
       - name: Install browser harness
         run: |
-          npm install --no-save --no-package-lock playwright@1.55.0
+          npm ci
+          node -e "const expected = require('./package.json').devDependencies.playwright; const version = require('./node_modules/playwright/package.json').version; if (version !== expected) throw new Error('expected playwright ' + expected + ', got ' + version);"
           npx playwright install --with-deps chromium
       - name: Play-test desktop, mobile, Reader File, and Proving Ground
         run: node test/poof-clifford-ecology-browser.test.js

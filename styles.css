@@ -1006,6 +1006,31 @@ input::placeholder { color: color-mix(in srgb, var(--muted) 76%, transparent); }
   cursor: pointer;
 }
 #desk-check:hover { background: var(--ink-2); }
+
+/* Route projections (ladder step 5) */
+.desk-projection-select { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 16px 0 4px; padding: 0; border: 0; }
+.desk-projection-select legend { padding: 0; margin-bottom: 6px; width: 100%; color: var(--muted); font-family: var(--font-mono); font-size: 11px; font-weight: 700; text-transform: uppercase; }
+.desk-projection-select label { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted-strong); cursor: pointer; }
+.desk-projection-select input { margin: 0; }
+.route-projections { display: grid; gap: 18px; margin-top: 18px; }
+.route-projection-entry--canonical { border-left: 5px solid var(--gold); }
+.route-projection-entry--secondary { border-left: 5px solid var(--line-strong); }
+.route-projection-entry--absent { border-left: 5px solid var(--danger); }
+.secondary-projection-notice { margin: 2px 0 14px; color: var(--muted); font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: .02em; }
+.route-projection-steps { display: grid; gap: 10px; margin-top: 14px; }
+.blocked-segments { border-left: 5px solid var(--danger); }
+.blocked-segment { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
+.blocked-segment:first-of-type { margin-top: 8px; padding-top: 0; border-top: 0; }
+.blocked-segment-track { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: stretch; }
+.blocked-segment-window { display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; border: 1px dashed var(--danger); border-radius: var(--radius-sm); background: var(--wash); font-size: 12px; }
+.blocked-segment-window--a { text-align: right; align-items: flex-end; }
+.blocked-segment-window--b { text-align: left; align-items: flex-start; }
+.blocked-segment-window span { color: var(--muted); font-family: var(--font-mono); font-size: 11px; }
+.blocked-segment-gap { display: flex; align-items: center; justify-content: center; min-width: 90px; padding: 0 6px; color: var(--danger); font-family: var(--font-mono); font-size: 10px; text-align: center; text-transform: uppercase; position: relative; }
+.blocked-segment-gap::before, .blocked-segment-gap::after { content: ""; position: absolute; top: 50%; width: 30%; border-top: 2px dashed var(--danger); opacity: .6; }
+.blocked-segment-gap::before { left: 0; }
+.blocked-segment-gap::after { right: 0; }
+.blocked-segment-surface { position: relative; z-index: 1; padding: 2px 6px; background: var(--panel); }
 .verdict { border-left: 5px solid var(--line); }
 .verdict h2 { margin: 0 0 10px; font-family: var(--font-condensed); font-size: 25px; letter-spacing: .04em; text-transform: uppercase; }
 .verdict-ok { border-left-color: var(--ok); }
@@ -1301,6 +1326,22 @@ h1, h2, h3, h4, .brand-name, .metric { font-family: var(--font-serif); }
 .hotspot-boundary { margin: 22px 0 0; color: var(--muted); font-size: 13px; }
 .hotspot-boundary strong { color: var(--ink); }
 
+/* Interaction contract Section 6, "First three minutes": lives in normal
+   document flow ABOVE the atlas, never overlaying it, so it costs no map
+   real estate and cannot cover any encoded content. */
+.atlas-orientation-strip {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;
+  margin: 18px 0; padding: 12px 18px; border: 1px solid var(--line-strong);
+  border-radius: 8px; background: var(--wash); color: var(--ink-2);
+  font-size: 13px; line-height: 1.5;
+}
+.atlas-orientation-strip p { margin: 0; max-width: 68ch; }
+.atlas-orientation-dismiss {
+  flex: 0 0 auto; padding: 7px 14px; border: 1px solid var(--line-strong); border-radius: 6px;
+  background: transparent; color: var(--ink); font: 700 11px/1 var(--font-mono); text-transform: uppercase; cursor: pointer;
+}
+.atlas-orientation-dismiss:hover { border-color: var(--gold); color: var(--gold-bright); }
+
 .network-atlas {
   margin: clamp(28px, 5vw, 72px) 0;
   padding: clamp(22px, 3vw, 42px);
@@ -1325,12 +1366,30 @@ h1, h2, h3, h4, .brand-name, .metric { font-family: var(--font-serif); }
 .atlas-toolbar { position: absolute; z-index: 4; top: 14px; left: 14px; display: flex; gap: 5px; }
 .atlas-toolbar button { min-width: 40px; height: 40px; padding: 0 12px; border: 1px solid #4a4d57; background: rgba(12, 15, 22, .9); color: #f8edd9; font: 700 13px/1 var(--font-mono); cursor: pointer; }
 .atlas-toolbar button:hover { border-color: #ffb14e; color: #ffb14e; }
-.atlas-legend { position: absolute; z-index: 4; right: 12px; bottom: 12px; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px 14px; max-width: calc(100% - 24px); padding: 9px 11px; background: rgba(7, 9, 14, .88); color: #bbb9b4; font: 10px/1.3 var(--font-mono); }
+/* Section 2 Rebuild, "Hover = meaning": one shared screen-space chip, HTML
+   absolutely positioned over the canvas so it never affects page layout
+   (position:absolute inside the already-relative .atlas-canvas-wrap). */
+.atlas-hover-chip {
+  position: absolute; z-index: 6; max-width: min(320px, calc(100% - 32px));
+  padding: 7px 11px; border: 1px solid #ffb14e; border-radius: 6px;
+  background: rgba(9, 11, 17, .94); color: #fff4df;
+  font: 600 11px/1.4 var(--font-mono); pointer-events: none;
+}
+.atlas-legend-stack { position: absolute; z-index: 4; right: 12px; bottom: 12px; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; max-width: calc(100% - 24px); }
+.atlas-legend { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px 14px; padding: 9px 11px; background: rgba(7, 9, 14, .88); color: #bbb9b4; font: 10px/1.3 var(--font-mono); }
 .atlas-legend span { display: inline-flex; align-items: center; gap: 6px; }
 .legend-line { width: 20px; height: 2px; background: #ffd061; }
 .legend-line--primary { background: #69b7ff; }
 .legend-line--reported { background: #b48eff; }
 .legend-line--derived { background: #777c88; }
+.legend-line--corridor { background: transparent; border-top: 2px dashed #8b7bd8; }
+/* Legibility addendum rule 2: the shape legend mirrors glyphShapeFor exactly
+   -- circle/actor, square/organization, diamond/surface, ring/aggregate. */
+.legend-shape { width: 11px; height: 11px; display: inline-block; background: #d8d9dd; flex: 0 0 auto; }
+.legend-shape--circle { border-radius: 50%; }
+.legend-shape--square { border-radius: 2px; }
+.legend-shape--diamond { border-radius: 2px; transform: rotate(45deg); }
+.legend-shape--ring { border-radius: 50%; background: transparent; border: 2px solid #ffb14e; }
 .network-edge { stroke-width: 1.15; vector-effect: non-scaling-stroke; opacity: .44; }
 .network-edge--confirmed { stroke: #ffd061; opacity: .72; }
 .network-edge--primary { stroke: #69b7ff; opacity: .58; }
@@ -1352,12 +1411,148 @@ h1, h2, h3, h4, .brand-name, .metric { font-family: var(--font-serif); }
 .atlas-node-halo { fill: rgba(255, 91, 31, .12); stroke: rgba(255, 121, 48, .5); stroke-width: 1; transform-origin: center; animation: hotspot-burn 2.8s ease-in-out infinite; }
 .atlas-node--policy .atlas-node-halo { fill: rgba(244, 189, 72, .1); stroke: rgba(244, 189, 72, .4); }
 .atlas-node--defense .atlas-node-halo { fill: rgba(97, 184, 255, .1); stroke: rgba(97, 184, 255, .4); }
-.atlas-node-label { fill: #fff4df; paint-order: stroke; stroke: #080a0f; stroke-width: 4px; font: 700 16px/1 var(--font-condensed); pointer-events: none; }
-.atlas-node-degree { fill: #080a0f; font: 800 10px/1 var(--font-mono); pointer-events: none; }
+.atlas-node-label { fill: #fff4df; paint-order: stroke; stroke: #080a0f; stroke-width: 4px; font: 700 16px/1 var(--font-condensed); text-anchor: middle; pointer-events: none; }
 @keyframes hotspot-burn { 0%, 100% { opacity: .45; transform: scale(.92); } 50% { opacity: 1; transform: scale(1.18); } }
 @media (prefers-reduced-motion: reduce) { .atlas-node-halo { animation: none; } }
 
-.network-inspector { min-width: 0; max-height: 650px; overflow: auto; padding: 24px; border-left: 1px solid #34363d; background: #11141b; color: #ddd8cf; }
+/* Representation ladder: aggregate layer, bipartite hop expansion, layer mounting */
+.atlas-layer[hidden] { display: none; }
+.atlas-node--bypass .atlas-node-core { stroke: #ffb14e; stroke-width: 3; }
+.atlas-agg { cursor: pointer; outline: none; }
+.atlas-agg-core { fill: #23262f; stroke: #ffb14e; stroke-width: 2; stroke-dasharray: 5 3; vector-effect: non-scaling-stroke; transition: filter .15s ease, stroke .15s ease; }
+.atlas-agg:hover .atlas-agg-core, .atlas-agg:focus-visible .atlas-agg-core, .atlas-agg.is-selected .atlas-agg-core { stroke: #fff; filter: brightness(1.25); }
+.atlas-agg-label { fill: #fff4df; paint-order: stroke; stroke: #080a0f; stroke-width: 4px; font: 700 15px/1 var(--font-condensed); text-anchor: middle; pointer-events: none; }
+.atlas-agg-metric { fill: #ffb14e; text-anchor: middle; paint-order: stroke; stroke: #080a0f; stroke-width: 3px; font: 800 15px/1 var(--font-mono); pointer-events: none; }
+/* Section 2 Rebuild, "every aggregate is a sentence": a quiet worded second
+   line naming the dominant evidence class, never a bare palette. */
+.atlas-agg-mix { fill: rgba(255, 244, 223, .62); text-anchor: middle; paint-order: stroke; stroke: #080a0f; stroke-width: 3px; font: 600 10px/1 var(--font-mono); pointer-events: none; }
+.atlas-hop-link { stroke: #f4bd48; stroke-width: 1.4; opacity: .75; vector-effect: non-scaling-stroke; }
+.atlas-hop-surface { fill: #f4bd48; stroke: #0a0d13; stroke-width: 2; vector-effect: non-scaling-stroke; }
+.atlas-hop-surface-label { fill: #fff4df; text-anchor: middle; paint-order: stroke; stroke: #080a0f; stroke-width: 3px; font: 700 10px/1 var(--font-mono); pointer-events: none; }
+.atlas-hop-roster { fill: #2a2d36; stroke: #ffb14e; stroke-width: 2; stroke-dasharray: 4 3; vector-effect: non-scaling-stroke; }
+.atlas-hop-roster-label { fill: #fff4df; text-anchor: middle; paint-order: stroke; stroke: #080a0f; stroke-width: 3px; font: 700 9px/1 var(--font-mono); pointer-events: none; }
+
+/* Legibility addendum rule 2: shape carries the ontology. A "ring" aggregate
+   is a hollow circle (fill nearly transparent, a visibly thicker border) so
+   it never reads as just another filled actor circle. Square/diamond
+   organization and surface glyphs share .atlas-node-core with the actor
+   circle for color-by-cluster, which already works regardless of the
+   underlying SVG tag (rect vs circle). */
+.atlas-agg-core { fill: rgba(35, 38, 47, .4); stroke: #ffb14e; stroke-width: 4; vector-effect: non-scaling-stroke; transition: filter .15s ease, stroke .15s ease; }
+.atlas-agg-arc { fill: none; stroke-width: 5; vector-effect: non-scaling-stroke; }
+.atlas-agg-arc--confirmed { stroke: #ffd061; }
+.atlas-agg-arc--primary { stroke: #69b7ff; }
+.atlas-agg-arc--reported { stroke: #b48eff; }
+.atlas-agg-arc--derived { stroke: #777c88; }
+
+/* Legibility addendum rule 4: machine-level containers. One labeled box per
+   top surface-factory organization; its docked bounded surfaces render as
+   small diamonds inside, grouped by surface type; an honest "+N more"
+   overflow line replaces silently truncating the list. */
+.atlas-container { cursor: default; }
+.atlas-container-box { fill: rgba(18, 21, 28, .92); stroke: #4a4d57; stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.atlas-container--factory .atlas-container-box { stroke: #ffb14e; }
+.atlas-container-title { fill: #fff4df; font: 700 13px/1 var(--font-condensed); pointer-events: none; }
+.atlas-container-metric { fill: #aaa9a6; font: 700 9px/1 var(--font-mono); text-transform: uppercase; pointer-events: none; }
+.atlas-container-surface { fill: #f4bd48; stroke: #0a0d13; stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.atlas-container-overflow { fill: #ffb14e; font: 700 9px/1 var(--font-mono); pointer-events: none; }
+
+/* Corridor overlay (ladder step 6): visually distinct from hop lines — dashed,
+   a different color family, and always labelled as having no Clifford Number
+   effect. Never mounted outside corpus/machine levels. Interaction contract
+   Section 2: the corridor is a clickable, hoverable object like any other —
+   the label now only renders when it wins the collision budget
+   (renderCorridorGlyph's corridor.showLabel), replacing the old
+   always-on "fly-speck" text with a legible chip. */
+.atlas-corridor { cursor: pointer; outline: none; }
+.atlas-corridor-path { fill: none; stroke: #8b7bd8; stroke-width: 2; stroke-dasharray: 11 7; opacity: .55; vector-effect: non-scaling-stroke; pointer-events: stroke; }
+.atlas-corridor:hover .atlas-corridor-path, .atlas-corridor:focus-visible .atlas-corridor-path, .atlas-corridor.is-selected .atlas-corridor-path { opacity: .9; stroke: #cabaff; }
+.atlas-corridor-chip { fill: rgba(11, 13, 20, .88); stroke: #8b7bd8; stroke-width: 1; vector-effect: non-scaling-stroke; }
+.atlas-corridor-label { fill: #e4defc; text-anchor: middle; font: 700 10px/1 var(--font-mono); pointer-events: none; }
+
+/* Region washes (ladder step 2/3, "spacing means territory"): very low
+   opacity fills behind everything else, so the corpus canvas reads as
+   labelled territory rather than a black void with rings floating in it.
+   Persist (fainter) at machine level per the contract's own instruction. */
+.atlas-layer--wash { pointer-events: none; }
+.atlas-wash-fill { fill: rgba(255, 177, 78, .05); stroke: rgba(255, 177, 78, .1); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.atlas-wash-label { fill: rgba(255, 244, 223, .38); text-anchor: middle; font: 700 11px/1 var(--font-mono); text-transform: uppercase; letter-spacing: .06em; pointer-events: none; }
+.atlas-scene[data-atlas-scene-level="machine"] .atlas-wash-fill { fill: rgba(255, 177, 78, .028); stroke: rgba(255, 177, 78, .06); }
+.atlas-scene[data-atlas-scene-level="machine"] .atlas-wash-label { fill: rgba(255, 244, 223, .22); }
+
+/* Interaction contract Section 2, the "stray glyph" fix: a thin tether from
+   a bypassed individual glyph (e.g. the default Dialog selection) back to
+   its own aggregate ring, so the dot reads as "part of that ring" instead of
+   an unexplained orphan next to it. */
+.atlas-bypass-tether { stroke: rgba(255, 177, 78, .45); stroke-width: 1; stroke-dasharray: 3 4; vector-effect: non-scaling-stroke; pointer-events: none; }
+
+/* Machine-level edge bands (Section 3, "edges arrive banded, not raw"). */
+.atlas-edge-band-path { stroke: rgba(105, 183, 255, .45); fill: none; vector-effect: non-scaling-stroke; }
+.atlas-edge-band:hover .atlas-edge-band-path, .atlas-edge-band:focus-visible .atlas-edge-band-path { stroke: rgba(105, 183, 255, .85); }
+.atlas-edge-band--self .atlas-edge-band-path { fill: none; }
+.atlas-edge-band-chip { fill: rgba(11, 13, 20, .85); stroke: #4a4d57; stroke-width: 1; vector-effect: non-scaling-stroke; }
+.atlas-edge-band-count { fill: #cfe4ff; font: 700 10px/1 var(--font-mono); pointer-events: none; }
+
+/* Edge locality (Section 4): a stub is a short directional hint toward an
+   off-screen partner, never the full through-traffic line the contract
+   deletes. The "+N offscreen" chip replaces N unreadable per-edge labels. */
+.atlas-edge-stub { stroke-dasharray: 2 4; opacity: .55; }
+.atlas-offscreen-chip-bg { fill: rgba(11, 13, 20, .88); stroke: #ffb14e; stroke-width: 1; vector-effect: non-scaling-stroke; }
+.atlas-offscreen-chip-text { fill: #ffcf85; font: 700 9px/1 var(--font-mono); pointer-events: none; }
+
+/* Unmistakable selection (Section 4 Rebuild): a dedicated, high-contrast
+   treatment distinct from the ordinary bypass halo -- gold core ring plus a
+   white outer stroke -- and a filled name chip instead of the plain
+   stroke-outlined label every other glyph uses, so it survives a screenshot
+   at arm's length. */
+.atlas-node.atlas-selected .atlas-node-core, .atlas-agg.is-selected .atlas-agg-core { stroke: #ffffff; stroke-width: 3; filter: drop-shadow(0 0 6px rgba(255, 177, 78, .85)); }
+.atlas-node-halo.atlas-selected { fill: rgba(255, 177, 78, .16); stroke: #ffb14e; stroke-width: 2; animation: none; }
+.atlas-name-chip-bg { fill: rgba(11, 13, 20, .92); stroke: #ffb14e; stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.atlas-node-label--selected { fill: #fff4df; stroke: none; font-weight: 800; }
+.atlas-edge--selected { opacity: 1 !important; stroke-width: 2; }
+.atlas-layer--topology .is-selection-dim { opacity: .14; transition: opacity .2s ease; }
+.atlas-layer--topology .is-selection-adjacent { opacity: 1; transition: opacity .2s ease; }
+@media (prefers-reduced-motion: reduce) {
+  .atlas-layer--topology .is-selection-dim, .atlas-layer--topology .is-selection-adjacent { transition: none; }
+}
+
+/* Section 3 Rebuild, "the opened cluster is primary": at machine level with
+   no selection active, objects in the cluster nearest the view center stay
+   full-strength; the rest dim until the camera crosses into their
+   territory. */
+.atlas-layer--topology .is-cluster-dimmed { opacity: .3; transition: opacity .2s ease; }
+.atlas-layer--topology .is-cluster-primary { opacity: 1; transition: opacity .2s ease; }
+@media (prefers-reduced-motion: reduce) {
+  .atlas-layer--topology .is-cluster-dimmed, .atlas-layer--topology .is-cluster-primary { transition: none; }
+}
+
+/* Route subordination (ladder step 5): at the 'route' semantic level, route
+   members stay bright and everything else is strongly dimmed. Opacity only —
+   no motion — so this needs no prefers-reduced-motion exception, but any
+   transition added to it must still be disabled under reduced motion. */
+.atlas-layer--topology.is-route-active .is-route-dimmed { opacity: .16; transition: opacity .2s ease; }
+.atlas-layer--topology.is-route-active .is-route-member { opacity: 1; transition: opacity .2s ease; }
+@media (prefers-reduced-motion: reduce) {
+  .atlas-layer--topology.is-route-active .is-route-dimmed, .atlas-layer--topology.is-route-active .is-route-member { transition: none; }
+}
+
+/* Interaction contract Section 1 Rebuild, "Level cross-fade": the outgoing
+   and incoming scene both stay mounted for the fade duration, opacity only,
+   <=250ms. mountAtlasSceneWithCrossFade skips this entirely (instant swap)
+   under prefers-reduced-motion, so the transition rule only needs to exist
+   at all inside the non-reduced-motion media query. */
+.atlas-scene { opacity: 0; }
+.atlas-scene.is-visible { opacity: 1; }
+@media (prefers-reduced-motion: no-preference) {
+  .atlas-scene { transition: opacity .2s linear; }
+}
+
+/* Legibility addendum rule 7: a level/zoom change must never change page
+   height. The inspector already sits in a min-height:650px grid row
+   (.atlas-layout); pinning its own min-height here too means its content
+   swap (selection change, level change) can never shrink the row and pull
+   the rest of the page up underneath the pointer. */
+.network-inspector { min-width: 0; min-height: 650px; max-height: 650px; overflow: auto; padding: 24px; border-left: 1px solid #34363d; background: #11141b; color: #ddd8cf; }
 .network-inspector h3 { margin: 4px 0 14px; color: #fff4df; font-size: 30px; line-height: 1; }
 .network-inspector h4 { margin: 28px 0 10px; color: #ffb14e; font: 700 12px/1 var(--font-mono); text-transform: uppercase; }
 .network-node-metric { display: flex; align-items: end; gap: 9px; margin: 12px 0; }
@@ -1381,6 +1576,44 @@ h1, h2, h3, h4, .brand-name, .metric { font-family: var(--font-serif); }
 .hop-route span { display: grid; gap: 4px; }
 .hop-route strong { color: #f4bd48; font: 700 11px/1 var(--font-mono); text-transform: uppercase; }
 .hop-route small { color: #a9a7a2; font: 10px/1.45 var(--font-mono); }
+
+.evidence-overview { margin: 36px 0; }
+.evidence-overview-shell { border-top: 1px solid var(--line-strong); border-bottom: 1px solid var(--line-strong); }
+.evidence-overview-shell > summary { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px; padding: 22px 0; cursor: pointer; list-style: none; }
+.evidence-overview-shell > summary::-webkit-details-marker { display: none; }
+.evidence-overview-shell > summary h2 { margin: 4px 0 0; font-size: clamp(24px, 3vw, 34px); }
+.evidence-overview-summary { color: var(--muted); font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; white-space: nowrap; }
+.evidence-overview-shell[open] > summary { border-bottom: 1px solid var(--line); }
+.evidence-overview-body { padding: 18px 0 6px; }
+/* Legibility addendum rule 7: tab/filter/level changes swap row counts, not
+   just at the map -- pin a floor so the table body cannot collapse thinner
+   than a handful of rows and drag the rest of the page up with it. */
+.evidence-overview-table-wrap { min-height: 220px; }
+.evidence-overview-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 14px 0; }
+.evidence-overview-tabs button {
+  padding: 9px 13px; border: 1px solid var(--line); border-radius: var(--radius-sm);
+  background: var(--panel); color: var(--muted); font: 700 11px/1 var(--font-mono);
+  text-transform: uppercase; cursor: pointer;
+}
+.evidence-overview-tabs button[aria-selected="true"] { border-color: var(--gold); background: var(--gold); color: #111; }
+.eo-tab-count { color: inherit; opacity: .72; font-weight: 700; }
+.evidence-overview-table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel); }
+.evidence-overview-table { width: 100%; min-width: 760px; border-collapse: collapse; font-size: 13px; }
+.evidence-overview-table th, .evidence-overview-table td { padding: 10px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+.evidence-overview-table thead th { background: var(--wash); font: 700 10px/1.2 var(--font-mono); text-transform: uppercase; color: var(--muted-strong); white-space: nowrap; }
+.evidence-overview-table th button { display: inline-flex; align-items: center; gap: 4px; border: 0; background: transparent; padding: 0; color: inherit; font: inherit; text-transform: inherit; cursor: pointer; }
+.evidence-overview-table th[aria-sort="ascending"], .evidence-overview-table th[aria-sort="descending"] { color: var(--gold-ink, var(--ink)); }
+.evidence-overview-row { cursor: pointer; }
+.evidence-overview-row:hover, .evidence-overview-row:focus-visible { background: var(--wash); outline: none; }
+.evidence-overview-row.is-selected { background: var(--wash-strong); box-shadow: inset 3px 0 0 var(--gold); }
+.evidence-overview-row td:first-child { font-weight: 700; white-space: nowrap; }
+.eo-boundary { color: var(--muted-strong); font-size: 12px; }
+.evidence-overview-empty { padding: 16px; }
+.atlas-hop-expansion.is-overview-highlight .atlas-hop-surface { stroke: #fff; filter: brightness(1.35); }
+.atlas-hop-expansion.is-overview-highlight .atlas-hop-roster { stroke: #fff; }
+@media (max-width: 680px) {
+  .evidence-overview-tabs button { flex: 1; min-width: 44%; }
+}
 
 .research-queue { margin: 36px 0; border-top: 1px solid var(--line-strong); border-bottom: 1px solid var(--line-strong); }
 .research-queue > summary { display: flex; justify-content: space-between; gap: 24px; padding: 22px 0; cursor: pointer; list-style: none; font-family: var(--font-mono); font-size: 12px; text-transform: uppercase; }
@@ -1421,7 +1654,7 @@ h1, h2, h3, h4, .brand-name, .metric { font-family: var(--font-serif); }
 @media (max-width: 980px) {
   .atlas-heading, .atlas-layout, .hop-spine { grid-template-columns: 1fr; }
   .atlas-mode { width: fit-content; }
-  .network-inspector { max-height: none; border-top: 1px solid #34363d; border-left: 0; }
+  .network-inspector { min-height: 0; max-height: none; border-top: 1px solid #34363d; border-left: 0; }
   .network-svg { height: 560px; }
   .hop-route { grid-template-columns: 160px 1fr; }
   .receipt-archive-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -1529,6 +1762,7 @@ h1, h2, h3, h4, .brand-name, .metric { font-family: var(--font-serif); }
 .civic-boundary p { color: inherit; }
 .civic-boundary-rule { display: grid; gap: 5px; margin-top: 22px; padding-top: 18px; border-top: 1px solid rgba(255,255,255,.26); }
 .release-strip { margin-top: 24px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,.26); color: var(--gold-bright); font-family: var(--font-mono); font-size: 10px; line-height: 1.7; text-transform: uppercase; }
+.release-delta-line { margin-top: 4px; color: #cfcac0; opacity: .85; }
 
 .track-directory { scroll-margin-top: 12px; padding-block: clamp(48px, 7vw, 92px) 36px; }
 [data-page="detail"] .site-header .hero,
@@ -1603,7 +1837,28 @@ h1, h2, h3, h4, .brand-name, .metric { font-family: var(--font-serif); }
 .case-value, .case-claim, .case-event-body { min-width: 0; max-width: 100%; overflow-wrap: anywhere; word-break: break-word; }
 .case-claim .claim-open { margin-top: 12px; }
 
+/* Interaction contract Section 5, "Record inspector provenance": the old
+   full-bleed white sheet had no visual relationship to the dark map ("BAM in
+   your face"). Redefining the SAME custom property names every rule below
+   already reads (--panel-raised, --ink, --line, --wash, --gold, ...) scoped
+   to .evidence-dialog re-themes the whole inspector to the atlas's own dark
+   palette without touching a single nested selector -- and without changing
+   those tokens anywhere outside the dialog. At desktop widths (>=900px, see
+   the side-sheet media query below) the map stays visible beside it instead
+   of a full-viewport takeover. */
 .evidence-dialog {
+  --paper-deep: #0b0e14;
+  --panel: #171a22;
+  --panel-raised: #12151c;
+  --ink: #f7f0e4;
+  --ink-2: #cbd6e6;
+  --muted: #aaa9a6;
+  --muted-strong: #d8d5cd;
+  --line: #34363d;
+  --line-strong: #4a4d57;
+  --gold: #ffb14e;
+  --gold-bright: #ffcf85;
+  --wash: #1a1d26;
   width: min(960px, calc(100% - 32px));
   max-height: calc(100dvh - 32px);
   padding: 0;
@@ -1611,11 +1866,25 @@ h1, h2, h3, h4, .brand-name, .metric { font-family: var(--font-serif); }
   border-radius: 14px;
   background: var(--panel-raised);
   color: var(--ink);
-  box-shadow: 0 30px 90px rgba(0,0,0,.35);
+  box-shadow: 0 30px 90px rgba(0,0,0,.5);
 }
-.evidence-dialog::backdrop { background: rgba(4, 12, 25, .7); backdrop-filter: blur(4px); }
-.evidence-dialog-frame { min-width: 0; }
-.evidence-dialog-toolbar { position: sticky; z-index: 2; top: 0; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 20px; border-bottom: 1px solid var(--line); background: var(--panel-raised); }
+.evidence-dialog::backdrop { background: rgba(4, 8, 14, .74); backdrop-filter: blur(4px); }
+.evidence-dialog-frame { min-width: 0; transform: scale(1); opacity: 1; }
+/* Section 5 Rebuild, "Origin anchoring": scale/fade from the click origin,
+   <=200ms, transform-origin set inline by openEvidenceDialog(). */
+.evidence-dialog-frame.evidence-dialog-frame--opening { transform: scale(.32); opacity: 0; }
+.evidence-dialog-frame.evidence-dialog-frame--open { transform: scale(1); opacity: 1; transition: transform .2s ease, opacity .18s ease; }
+@media (prefers-reduced-motion: reduce) {
+  .evidence-dialog-frame.evidence-dialog-frame--opening, .evidence-dialog-frame.evidence-dialog-frame--open { transform: none; opacity: 1; transition: none; }
+}
+.evidence-dialog-toolbar { position: sticky; z-index: 2; top: 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; padding: 14px 20px; border-bottom: 1px solid var(--line); background: var(--panel-raised); }
+/* Section 5 Rebuild, "Breadcrumb provenance": mode -> object -> claim, each
+   crumb clickable. Hidden (and the plain toolbar label shown instead)
+   whenever the dialog was opened without atlas origin context. */
+.evidence-dialog-breadcrumb { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font: 700 11px/1.3 var(--font-mono); text-transform: uppercase; letter-spacing: .02em; color: var(--muted); }
+.evidence-breadcrumb-crumb { padding: 0; border: 0; background: transparent; color: var(--ink-2); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+.evidence-breadcrumb-crumb:hover, .evidence-breadcrumb-crumb:focus-visible { color: var(--gold-bright); }
+.evidence-breadcrumb-sep { color: var(--muted); }
 .dialog-close { min-height: 40px; padding: 8px 14px; border: 1px solid var(--line-strong); border-radius: 7px; background: transparent; color: var(--ink); cursor: pointer; }
 #evidence-dialog-content { padding: clamp(22px, 4vw, 46px); }
 .claim-inspector > h2 { max-width: 34ch; font-size: clamp(26px, 4vw, 44px); line-height: 1.18; }
@@ -1630,6 +1899,25 @@ h1, h2, h3, h4, .brand-name, .metric { font-family: var(--font-serif); }
 .receipt-locator { margin-top: 14px; padding: 16px; border-left: 3px solid var(--gold); background: var(--paper-deep); }
 .receipt-locator p { margin-bottom: 0; white-space: pre-wrap; }
 .related-claims { display: grid; gap: 9px; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--line); }
+
+/* Section 5 Rebuild, "map must stay partially visible ... side sheet or
+   anchored panel, not a full viewport takeover at desktop widths." Mobile
+   (below 900px) keeps the centered full-width sheet above. */
+@media (min-width: 900px) {
+  .evidence-dialog {
+    position: fixed;
+    inset: 0 0 0 auto;
+    margin: 0;
+    width: min(560px, 55vw);
+    max-width: min(560px, 55vw);
+    height: 100dvh;
+    max-height: 100dvh;
+    border-radius: 0;
+    border-width: 0 0 0 1px;
+  }
+  .evidence-dialog-frame { height: 100%; display: flex; flex-direction: column; }
+  #evidence-dialog-content { flex: 1 1 auto; overflow: auto; }
+}
 
 @media (max-width: 1040px) {
   .hero--civic { grid-template-columns: 1fr; }
@@ -1696,11 +1984,13 @@ h1, h2, h3, h4, .brand-name, .metric { font-family: var(--font-serif); }
 }
 .hero--civic h1 em { color: inherit; font-style: normal; font-weight: 700; }
 .hero--civic .hero-dek { max-width: 61ch; font-size: 16px; line-height: 1.65; }
-.civic-search, .civic-boundary, .track-card, .panel, .receipt-inspector, .evidence-dialog { border-radius: 8px; box-shadow: none; }
+.civic-search, .civic-boundary, .track-card, .panel, .receipt-inspector { border-radius: 8px; box-shadow: none; }
 .track-card { border-color: var(--line-strong); }
 .track-card h3 { font-family: var(--font-serif); font-size: 18px; }
 .track-card p { font-size: 13px; line-height: 1.58; }
-.evidence-dialog::backdrop { background: rgba(32, 29, 23, .68); }
+/* .evidence-dialog border-radius/box-shadow/::backdrop are fully owned by
+   the Section 5 dark-inspector rewrite above -- deliberately not repeated
+   or overridden here. */
 
 @media (max-width: 820px) {
   .hero--civic h1 { font-size: clamp(36px, 8.5vw, 52px); }
@@ -1718,3 +2008,19 @@ h1, h2, h3, h4, .brand-name, .metric { font-family: var(--font-serif); }
   body { background: #fff; color: #000; }
   .site-header, .view-nav, .search-card, .site-footer, .copy-link { display: none !important; }
 }
+
+
+.public-data-boundary {
+  display: grid; grid-template-columns: minmax(190px,.75fr) minmax(260px,1fr) minmax(320px,1.5fr);
+  gap: 18px; align-items: center; margin: 24px 0 16px; padding: 14px 18px;
+  border: 1px solid color-mix(in srgb, var(--blue, #3c8bff) 34%, transparent);
+  border-left: 4px solid var(--blue, #3c8bff); background: color-mix(in srgb, var(--blue, #3c8bff) 5%, transparent);
+}
+.public-data-boundary p { margin: 0; }
+.public-data-boundary > div p + p { margin-top: 5px; }
+.public-data-boundary strong { color: var(--ink-strong, currentColor); }
+.public-data-boundary span { font-family: var(--mono); font-size: .86em; }
+.public-data-boundary-contract { color: var(--muted); font: .78rem/1.55 var(--mono); }
+.public-data-boundary[data-mixed="false"] { border-left-color: var(--mint, #62d3bd); }
+@media (max-width: 900px) { .public-data-boundary { grid-template-columns: 1fr 1fr; } .public-data-boundary-contract { grid-column: 1 / -1; } }
+@media (max-width: 620px) { .public-data-boundary { grid-template-columns: 1fr; } .public-data-boundary-contract { grid-column: auto; } }
