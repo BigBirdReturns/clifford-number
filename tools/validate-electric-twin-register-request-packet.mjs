@@ -231,8 +231,12 @@ export function validateTrackedElectricTwinRequestPacket() {
     /placeholder/u,
   );
 
+  assertNoNetworkSurface('tools/lib/private-path-permissions.mjs', new Set([
+    'node:assert/strict',
+  ]));
   assertNoNetworkSurface('tools/lib/electric-twin-register-request-core.mjs', new Set([
     'node:assert/strict', 'node:crypto', 'node:fs', 'node:path',
+    './private-path-permissions.mjs',
   ]));
   assertNoNetworkSurface('tools/finalize-electric-twin-register-request.mjs', new Set([
     'node:assert/strict', 'node:path', 'node:url',
@@ -244,6 +248,7 @@ export function validateTrackedElectricTwinRequestPacket() {
   ]));
   assertNoNetworkSurface('tools/lib/electric-twin-register-request-pdf-core.mjs', new Set([
     'node:assert/strict', 'node:crypto', 'node:fs', 'node:path',
+    './private-path-permissions.mjs',
     './electric-twin-register-request-core.mjs',
     './deterministic-text-pdf.mjs',
   ]));
@@ -253,6 +258,7 @@ export function validateTrackedElectricTwinRequestPacket() {
   ]));
   assertNoNetworkSurface('tools/lib/electric-twin-register-request-dispatch-core.mjs', new Set([
     'node:assert/strict', 'node:crypto', 'node:fs', 'node:path',
+    './private-path-permissions.mjs',
     './electric-twin-register-request-core.mjs',
     './electric-twin-register-request-pdf-core.mjs',
   ]));
@@ -262,6 +268,7 @@ export function validateTrackedElectricTwinRequestPacket() {
   ]));
   assertNoNetworkSurface('tools/lib/electric-twin-register-request-delivery-core.mjs', new Set([
     'node:assert/strict', 'node:crypto', 'node:fs', 'node:path',
+    './private-path-permissions.mjs',
     './electric-twin-register-request-core.mjs',
     './electric-twin-register-request-pdf-core.mjs',
     './electric-twin-register-request-dispatch-core.mjs',
@@ -272,6 +279,7 @@ export function validateTrackedElectricTwinRequestPacket() {
   ]));
   assertNoNetworkSurface('tools/lib/electric-twin-register-request-response-core.mjs', new Set([
     'node:assert/strict', 'node:crypto', 'node:fs', 'node:path',
+    './private-path-permissions.mjs',
     './electric-twin-register-request-core.mjs',
     './electric-twin-register-request-pdf-core.mjs',
     './electric-twin-register-request-dispatch-core.mjs',
@@ -283,6 +291,7 @@ export function validateTrackedElectricTwinRequestPacket() {
   ]));
   assertNoNetworkSurface('tools/lib/electric-twin-register-request-response-adjudication-core.mjs', new Set([
     'node:assert/strict', 'node:crypto', 'node:fs', 'node:path',
+    './private-path-permissions.mjs',
     './electric-twin-register-request-core.mjs',
     './electric-twin-register-request-response-core.mjs',
   ]));
@@ -292,6 +301,7 @@ export function validateTrackedElectricTwinRequestPacket() {
   ]));
   assertNoNetworkSurface('tools/lib/electric-twin-register-request-response-second-party-review-core.mjs', new Set([
     'node:assert/strict', 'node:crypto', 'node:fs', 'node:path',
+    './private-path-permissions.mjs',
     './electric-twin-register-request-core.mjs',
     './electric-twin-register-request-response-core.mjs',
     './electric-twin-register-request-response-adjudication-core.mjs',
@@ -300,6 +310,7 @@ export function validateTrackedElectricTwinRequestPacket() {
     'node:assert/strict', 'node:path', 'node:url',
     './lib/electric-twin-register-request-response-second-party-review-core.mjs',
   ]));
+  assertNoWallClock('tools/lib/private-path-permissions.mjs');
   assertNoWallClock('tools/lib/deterministic-text-pdf.mjs');
   assertNoWallClock('tools/lib/electric-twin-register-request-pdf-core.mjs');
   assertNoWallClock('tools/render-electric-twin-register-request-pdfs.mjs');
