@@ -15,8 +15,20 @@ for (const file of [MAP_SOURCE_PATH, MAP_VIEW_PATH]) {
   const published = JSON.parse(fs.readFileSync(path.join(destination, file), 'utf8'));
   if (!isDeepStrictEqual(published, mapBundle.map)) throw new Error(`published current map drift: ${file}`);
 }
+const finalizationFiles = Object.freeze([
+  'Clifford-Number-endpoint.html',
+  'deployment-sha.txt',
+  'release-artifact-manifest.json'
+]);
+const finalizationPresent = finalizationFiles.filter(file => fs.existsSync(path.join(destination, file)));
+if (finalizationPresent.length > 0 && finalizationPresent.length < finalizationFiles.length) {
+  const absent = finalizationFiles.filter(file => !finalizationPresent.includes(file));
+  console.error(`validate-pages failed: incomplete release finalization; present ${finalizationPresent.join(', ')}; missing ${absent.join(', ')}`);
+  process.exit(1);
+}
+const releaseFinalized = finalizationPresent.length === finalizationFiles.length;
 const required = [
-  'index.html', 'explorer.html', 'home.js', 'home.css', 'deployment-sha.txt', 'release-artifact-manifest.json', 'data/project/publication-allowlist.json', 'data/project/build-clock.json', 'docs/releases/1.0.0.md', 'docs/releases/1.1.0.md', 'Clifford-Number-standalone.html', 'Clifford-Number-explorer-standalone.html', 'Clifford-Number-endpoint.html', 'Clifford-Estate-Aperture-standalone.html', 'Clifford-Game-Trail-Aperture-standalone.html', 'app.js', 'styles.css', '.nojekyll',
+  'index.html', 'explorer.html', 'home.js', 'home.css', 'data/project/publication-allowlist.json', 'data/project/build-clock.json', 'docs/releases/1.0.0.md', 'docs/releases/1.1.0.md', 'Clifford-Number-standalone.html', 'Clifford-Number-explorer-standalone.html', 'Clifford-Estate-Aperture-standalone.html', 'Clifford-Game-Trail-Aperture-standalone.html', 'app.js', 'styles.css', '.nojekyll',
   'build/surface-graph.json', 'build/hop-graph.json', 'build/receipt-graph.json', 'build/atlas-projection.json', 'build/public-data-boundary.json',
   'build/public-catalog.json', 'build/cases/index.json', 'build/cases/field-autopsy-03.json',
   'build/cases/uk-ai-policy.json',
@@ -176,7 +188,9 @@ const aperture = [
 ].join('\n');
 const standalone = fs.readFileSync(path.join(destination, 'Clifford-Number-standalone.html'), 'utf8');
 const explorerStandalone = fs.readFileSync(path.join(destination, 'Clifford-Number-explorer-standalone.html'), 'utf8');
-const endpointStandalone = fs.readFileSync(path.join(destination, 'Clifford-Number-endpoint.html'), 'utf8');
+const endpointStandalone = releaseFinalized
+  ? fs.readFileSync(path.join(destination, 'Clifford-Number-endpoint.html'), 'utf8')
+  : null;
 const atlasProjection = JSON.parse(fs.readFileSync(path.join(destination, 'build', 'atlas-projection.json'), 'utf8'));
 const publicDataBoundary = JSON.parse(fs.readFileSync(path.join(destination, 'build', 'public-data-boundary.json'), 'utf8'));
 
@@ -313,12 +327,12 @@ if (atlasProjection.scheme?.schema_version !== 'atlas-projection@1'
   console.error('validate-pages failed: atlas projection is missing or misrepresented as canonical truth');
   process.exit(1);
 }
-if (!endpointStandalone.includes('data-portable-release="endpoint"')
+if (releaseFinalized && (!endpointStandalone.includes('data-portable-release="endpoint"')
   || !endpointStandalone.includes('CLIFFORD_GRAPH_CONFIG')
   || !endpointStandalone.includes('CLIFFORD_DEMO_DATA')
   || !endpointStandalone.includes('clifford-datasets@1')
   || !endpointStandalone.includes('clifford-public-data-boundary@1')
-  || /src="home\.js/.test(endpointStandalone)) {
+  || /src="home\.js/.test(endpointStandalone))) {
   console.error('validate-pages failed: endpoint standalone is not self-contained or lacks its endpoint contract');
   process.exit(1);
 }
@@ -454,5 +468,6 @@ if (obsoleteNo10PairRefusal !== undefined
   console.error('validate-pages failed: No. 10 broad-office context is missing, misclassified, or still creating actor adjacency');
   process.exit(1);
 }
-validatePublicationArtifact({ root, destination });
-console.log(`validate-pages: OK (${required.length} required artifacts)`);
+if (releaseFinalized) validatePublicationArtifact({ root, destination });
+const phaseLabel = releaseFinalized ? 'finalized release' : 'pre-finalization pages';
+console.log(`validate-pages: OK (${required.length} core artifacts; ${phaseLabel})`);

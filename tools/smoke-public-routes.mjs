@@ -1,7 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { chromium } from 'playwright';
 
 export const VIEWPORTS = Object.freeze([
   Object.freeze({ name: 'desktop', width: 1440, height: 1000 }),
@@ -127,6 +126,7 @@ async function configureContext(browser, baseOrigin, viewport, timeoutMs, extern
 }
 
 export async function runSmoke(options) {
+  const { chromium } = await import('playwright');
   const launchOptions = {
     headless: true,
     args: ['--no-sandbox', '--disable-dev-shm-usage', '--disable-gpu']

@@ -20,6 +20,8 @@ const fs = await import('node:fs');
 const smokeSource = fs.readFileSync('tools/smoke-public-routes.mjs', 'utf8');
 const explorerSource = fs.readFileSync('explorer.html', 'utf8');
 const appSource = fs.readFileSync('app.js', 'utf8');
+assert.doesNotMatch(smokeSource, /^import\s+.*from ['"]playwright['"];?$/m);
+assert.match(smokeSource, /await import\(['"]playwright['"]\)/);
 assert.match(smokeSource, /body\?\.textContent\.includes/);
 assert.match(explorerSource, /<h1 id="desk-title"/);
 assert.doesNotMatch(explorerSource, /<h3 id="desk-title"/);
