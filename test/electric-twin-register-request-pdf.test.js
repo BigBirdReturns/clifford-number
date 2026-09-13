@@ -13,6 +13,11 @@ import { renderTextPdf } from '../tools/lib/deterministic-text-pdf.mjs';
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 process.chdir(repoRoot);
 
+function assertPosixPrivateMode(filePath) {
+  if (process.platform === 'win32') return;
+  assert.equal(fs.statSync(filePath).mode & 0o077, 0);
+}
+
 const privateInput = {
   schema_version: 'electric-twin-register-request-private-input@1',
   acquisition_id: 'ET-ROM-2025-09-01',
@@ -81,7 +86,7 @@ try {
     assert.match(bytesA.subarray(-16).toString('ascii'), /%%EOF/u);
     assert.equal(bytesA.includes(Buffer.from('Test Researcher', 'ascii')), true);
     assert.equal(bytesA.includes(Buffer.from('/CreationDate', 'ascii')), false);
-    assert.equal(fs.statSync(path.join(outputA, fileName)).mode & 0o077, 0);
+    assertPosixPrivateMode(path.join(outputA, fileName));
   }
 
   const pdfManifestPath = path.join(outputA, PDF_MANIFEST_NAME);
@@ -96,7 +101,7 @@ try {
   assert.equal(pdfManifest.controls.pdfs_contain_requester_particulars, true);
   assert.equal(JSON.stringify(pdfManifest).includes('Test Researcher'), false);
   assert.equal(JSON.stringify(pdfManifest).includes('researcher@example.test'), false);
-  assert.equal(fs.statSync(pdfManifestPath).mode & 0o077, 0);
+  assertPosixPrivateMode(pdfManifestPath);
 
   assert.throws(
     () => renderRequestPdfs({ sourceDir: outputA }),

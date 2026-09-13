@@ -13,6 +13,11 @@ import { validateTrackedElectricTwinRequestPacket } from '../tools/validate-elec
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 process.chdir(repoRoot);
 
+function assertPosixPrivateMode(filePath) {
+  if (process.platform === 'win32') return;
+  assert.equal(fs.statSync(filePath).mode & 0o077, 0);
+}
+
 const examplePath = 'data/research/electric-twin-register-of-members-acquisition/requester-input.example.json';
 const example = JSON.parse(fs.readFileSync(examplePath, 'utf8'));
 assert.throws(() => validatePrivateInput(example), /placeholder|finalization_authorized/u);
@@ -94,10 +99,10 @@ try {
   assert.equal(manifest.controls.requester_particulars_in_manifest, false);
   assert.equal(JSON.stringify(manifest).includes('Test Researcher'), false);
   assert.equal(JSON.stringify(manifest).includes('researcher@example.test'), false);
-  assert.equal(fs.statSync(outputDir).mode & 0o077, 0);
-  assert.equal(fs.statSync(path.join(outputDir, 'statutory-register-of-members-request.txt')).mode & 0o077, 0);
-  assert.equal(fs.statSync(path.join(outputDir, 'voluntary-transaction-instrument-request.txt')).mode & 0o077, 0);
-  assert.equal(fs.statSync(manifestPath).mode & 0o077, 0);
+  assertPosixPrivateMode(outputDir);
+  assertPosixPrivateMode(path.join(outputDir, 'statutory-register-of-members-request.txt'));
+  assertPosixPrivateMode(path.join(outputDir, 'voluntary-transaction-instrument-request.txt'));
+  assertPosixPrivateMode(manifestPath);
 
   assert.throws(
     () => finalizeRequestFiles({ inputPath: privatePath, outputDir }),

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import { assertNoGroupOrWorldMode } from './private-path-permissions.mjs';
 import {
   ACQUISITION_ID,
   DEFAULT_OUTPUT_ROOT,
@@ -102,7 +103,7 @@ function assertPrivateRegularFile(filePath, label, { requireLocal = false } = {}
   assert.ok(fs.existsSync(filePath), `${label} does not exist: ${relative}`);
   const stat = fs.statSync(filePath);
   assert.ok(stat.isFile(), `${label} must be a regular file: ${relative}`);
-  assert.equal(stat.mode & 0o077, 0, `${label} must not be group- or world-readable: ${relative}`);
+  assertNoGroupOrWorldMode(stat, `${label} must not be group- or world-readable: ${relative}`);
   assert.ok(stat.size > 0, `${label} must not be empty: ${relative}`);
   return relative;
 }
@@ -115,7 +116,7 @@ function assertPrivateSourceDirectory(directory) {
   assert.ok(fs.existsSync(directory), `source directory does not exist: ${relative}`);
   const stat = fs.statSync(directory);
   assert.ok(stat.isDirectory(), `source directory must be a directory: ${relative}`);
-  assert.equal(stat.mode & 0o077, 0, `source directory must not be group- or world-accessible: ${relative}`);
+  assertNoGroupOrWorldMode(stat, `source directory must not be group- or world-accessible: ${relative}`);
   return relative;
 }
 

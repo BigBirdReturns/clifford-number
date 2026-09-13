@@ -15,6 +15,11 @@ import {
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 process.chdir(repoRoot);
 
+function assertPosixPrivateMode(filePath) {
+  if (process.platform === 'win32') return;
+  assert.equal(fs.statSync(filePath).mode & 0o077, 0);
+}
+
 const privateDir = 'data/local';
 const outputRoot = 'build/source-acquisition/electric-twin-register-of-members';
 const requesterPath = `${privateDir}/electric-twin-register-delivery-requester-${process.pid}.json`;
@@ -180,8 +185,8 @@ try {
   assert.equal(JSON.stringify(manifest).includes('TEST-DELIVERY-TRACKING-REFERENCE-001'), false);
   assert.equal(JSON.stringify(manifest).includes('Test Researcher'), false);
   assert.equal(JSON.stringify(manifest).includes('researcher@example.test'), false);
-  assert.equal(fs.statSync(result.delivery_dir).mode & 0o077, 0);
-  assert.equal(fs.statSync(manifestPath).mode & 0o077, 0);
+  assertPosixPrivateMode(result.delivery_dir);
+  assertPosixPrivateMode(manifestPath);
   assert.deepEqual(
     fs.readFileSync(path.join(result.delivery_dir, result.evidence_files[0].path)),
     fs.readFileSync(deliveryProofPath),

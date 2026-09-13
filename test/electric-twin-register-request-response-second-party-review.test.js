@@ -25,6 +25,11 @@ import {
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 process.chdir(repoRoot);
 
+function assertPosixPrivateMode(filePath) {
+  if (process.platform === 'win32') return;
+  assert.equal(fs.statSync(filePath).mode & 0o077, 0);
+}
+
 const privateDir = 'data/local';
 const outputRoot = 'build/source-acquisition/electric-twin-register-of-members';
 const requesterPath = `${privateDir}/electric-twin-second-party-requester-${process.pid}.json`;
@@ -372,8 +377,8 @@ try {
   assert.equal(secondManifestText.includes('Test Corporate Services Provider'), false);
   assert.equal(secondManifestText.includes('Test Independent Review Researcher'), false);
   assert.equal(secondManifestText.includes('independent-reviewer@example.test'), false);
-  assert.equal(fs.statSync(secondResult.second_party_review_dir).mode & 0o077, 0);
-  assert.equal(fs.statSync(secondManifestPath).mode & 0o077, 0);
+  assertPosixPrivateMode(secondResult.second_party_review_dir);
+  assertPosixPrivateMode(secondManifestPath);
 
   assert.throws(
     () => recordResponseSecondPartyReview({
