@@ -8,7 +8,7 @@ This release abandons the generic shortest-path edge graph. The old graph is pre
 
 ## Public app
 
-The static app has two complementary views:
+The public site is two static pages: `index.html`, a four-lane causal homepage projecting the research graph across model production, workflow admission, activation spend, and measurement feedback; and `explorer.html`, the topology explorer, linked from the homepage header. The explorer itself has two complementary views:
 
 - **Topology explorer:** search public actors, organizations, and bounded surfaces; inspect an actor → surface → actor route; open every receipt and archival reference behind it.
 - **Connection checker:** enter two public actors and an optional year, month, or day; get the shortest defensible route, its evidence floor, copy-ready caveat language, and the connections the compiler refused to make.
