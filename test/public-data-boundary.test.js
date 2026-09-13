@@ -16,6 +16,7 @@ test('public data boundary names every public graph projection and its authority
   assert.equal(boundary.views.research_network.projection_generated, graph.generated);
   assert.equal(boundary.views.research_network.canonical_for_clifford_number, false);
   assert.equal(boundary.views.research_network.corpus_as_of, graph.corpus_as_of);
+  assert.deepEqual(boundary.views.research_network.projection_inputs, ['data/research/research-context-base.json']);
   assert.equal(boundary.views.bounded_surfaces.projection_generated, surfaces.generated);
   assert.equal(boundary.views.verified_hops.projection_generated, hops.generated);
   assert.equal(boundary.views.receipt_graph.projection_generated, receipts.generated);

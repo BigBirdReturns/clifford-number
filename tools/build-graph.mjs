@@ -18,7 +18,8 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(here, '..');
 const graphPath = path.join(root, 'graph.json');
 const casePath = path.join(root, 'cases', 'uk-ai-policy.json');
-const graph = JSON.parse(fs.readFileSync(graphPath, 'utf8'));
+const basePath = path.join(root, 'data', 'research', 'research-context-base.json');
+const graph = JSON.parse(fs.readFileSync(basePath, 'utf8'));
 
 const nodeIds = new Set(graph.nodes.map((n) => n.id));
 const sourceIds = new Set(graph.sources.map((s) => s.id));
@@ -162,15 +163,13 @@ for (const [entity, u] of memberships) {
 }
 
 // --- Write both the root graph and the registered UK case (kept identical) ---
-// `generated` is projection time; `corpus_as_of` preserves the admitted research cutoff.
-// The migration fallback is intentionally narrow: pre-1.2 graphs used a date-only
-// `generated` field for both concepts. Once written, corpus_as_of is stable.
-const legacyGeneratedDate = typeof graph.generated === 'string' && /^\d{4}-\d{2}-\d{2}$/u.test(graph.generated)
-  ? graph.generated
-  : null;
-graph.corpus_as_of ??= legacyGeneratedDate;
+// `generated` is projection time; `corpus_as_of` is a declared input boundary.
+if (graph.projection_role !== 'research_context_base' || graph.graph_effect !== 'context_only'
+  || graph.canonical_for_clifford_number !== false) {
+  throw new Error('research context base exceeds its context-only projection boundary');
+}
 if (typeof graph.corpus_as_of !== 'string' || !/^\d{4}-\d{2}-\d{2}$/u.test(graph.corpus_as_of)) {
-  throw new Error('graph.corpus_as_of must preserve an admitted YYYY-MM-DD research cutoff');
+  throw new Error('research context base must declare corpus_as_of as YYYY-MM-DD');
 }
 graph.generated = buildTimestamp();
 const out = JSON.stringify(graph, null, 2) + '\n';

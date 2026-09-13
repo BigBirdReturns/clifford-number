@@ -41,6 +41,7 @@ const boundary = {
     research_network: {
       label: 'Research network',
       source_artifact: 'graph.json',
+      projection_inputs: ['data/research/research-context-base.json'],
       projection_generated: researchGenerated,
       projection_kind: 'legacy_context_graph',
       corpus_as_of: researchCorpusAsOf,
