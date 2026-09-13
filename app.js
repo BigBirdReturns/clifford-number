@@ -3269,7 +3269,7 @@ function renderCaseClaim(claim, caseId) {
 function caseBriefingHref(item) {
   const href = String(item?.briefing?.href || '');
   if (!/^briefs\/[a-z0-9][a-z0-9._\/-]*\.html$/i.test(href)) return null;
-  if (document.body.dataset.portableRelease === 'true') return null;
+  if (document.body.dataset.portableRelease) return null;
   return href;
 }
 
