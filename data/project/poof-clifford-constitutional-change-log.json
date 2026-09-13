@@ -1,7 +1,7 @@
 {
   "schema_version": "poof-clifford-constitutional-change-log@1",
   "ecology_id": "poof-clifford-constitutional-publication-ecology",
-  "as_of": "2026-07-29",
+  "as_of": "2026-09-13",
   "protected_paths": [
     ".github/workflows/poof-clifford-ecology.yml",
     "data/project/poof-clifford-ecology-contract.json",
@@ -220,6 +220,43 @@
         "minimum-length-valid referral export",
         "object-only search filter",
         "named newsroom entry-route navigation"
+      ],
+      "emergency_override": false,
+      "expires_at": null,
+      "authority": "repository_change_receipt_below_canonical_evidence",
+      "graph_effect": "none"
+    },
+    {
+      "change_id": "POOF-CONST-2026-09-13-006",
+      "effective_at": "2026-09-13T11:45:00-07:00",
+      "protected_paths_touched": [
+        ".github/workflows/poof-clifford-ecology.yml"
+      ],
+      "affected_invariants": [
+        "the protected ecology workflow executes under the repository-supported Node major range",
+        "browser verification installs the exact dependency graph admitted by the lockfile",
+        "the Playwright runtime check derives from the package declaration rather than a stale workflow literal",
+        "workflow repair cannot create evidence, graph, publication, or canonical authority"
+      ],
+      "reason": "The semantic Atlas release updated the declared Playwright runtime to 1.63.0 while the protected ecology workflow still installed and asserted 1.55.0 under Node 24, outside the repository engine range, causing a valid release tree to fail after its complete repository gate had passed.",
+      "previous_behavior": [
+        "the workflow selected Node 24 even though package.json admits Node 20 through 22",
+        "the browser harness bypassed package-lock.json with an ad hoc Playwright 1.55.0 install",
+        "the post-install assertion duplicated the obsolete 1.55.0 version literal"
+      ],
+      "proposed_behavior": [
+        "run the protected workflow under Node 20 within the declared engine range",
+        "install dependencies with npm ci from the committed lockfile",
+        "verify the installed Playwright version against package.json before installing Chromium",
+        "retain the same constitutional, release, and browser validation sequence"
+      ],
+      "migration": "Append this exact-path constitutional receipt, install from the existing lockfile, and regenerate the POOF ecology and higher-order SG-12 release manifests before merge.",
+      "backward_compatibility": "The change affects CI execution only. POOF schemas, constitutional rules, evidence objects, graph edges, publication states, browser assertions, and prior release interpretations remain unchanged.",
+      "adversarial_fixtures_added": [
+        "repository-wide rejection of stale Playwright 1.55.0 workflow pins",
+        "browser-workflow requirement to install with npm ci",
+        "browser-workflow requirement to verify the package-declared Playwright version",
+        "portable reporter case routing and external-link suppression regression assertions"
       ],
       "emergency_override": false,
       "expires_at": null,
