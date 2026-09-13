@@ -25,7 +25,7 @@ function claimStatusForEvidence(evidenceClass) {
 }
 
 function compileUkAiPolicyCase() {
-  const legacy = readJson('cases/uk-ai-policy.json');
+  const legacy = readJson('data/research/research-context-base.json');
   const wrapUp = readJson('data/research/clifford-thiel-trump-wrap-up.json');
   const receiptGraph = readJson('build/receipt-graph.json');
   const nodeById = new Map((legacy.nodes ?? []).map(node => [node.id, node]));
@@ -149,11 +149,11 @@ function compileUkAiPolicyCase() {
     title: legacy.title,
     subtitle: legacy.subtitle,
     tagline: legacy.tagline,
-    as_of: legacy.generated,
+    as_of: legacy.corpus_as_of ?? legacy.generated,
     status: 'review_required',
     featured_priority: 100,
     presentation: 'research_graph_projection',
-    source_artifact: 'cases/uk-ai-policy.json',
+    source_artifact: 'data/research/research-context-base.json',
     source_status: legacy.status,
     source_counts: {
       nodes: legacy.nodes?.length ?? 0,

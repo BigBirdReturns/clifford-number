@@ -28,7 +28,7 @@ if (finalizationPresent.length > 0 && finalizationPresent.length < finalizationF
 }
 const releaseFinalized = finalizationPresent.length === finalizationFiles.length;
 const required = [
-  'index.html', 'explorer.html', 'home.js', 'home.css', 'data/project/publication-allowlist.json', 'data/project/build-clock.json', 'docs/releases/1.0.0.md', 'docs/releases/1.1.0.md', 'Clifford-Number-standalone.html', 'Clifford-Number-explorer-standalone.html', 'Clifford-Estate-Aperture-standalone.html', 'Clifford-Game-Trail-Aperture-standalone.html', 'app.js', 'styles.css', '.nojekyll',
+  'index.html', 'explorer.html', 'home.js', 'home.css', 'data/project/publication-allowlist.json', 'data/project/build-clock.json', 'docs/releases/1.0.0.md', 'docs/releases/1.1.0.md', 'docs/releases/1.2.0.md', 'Clifford-Number-standalone.html', 'Clifford-Number-explorer-standalone.html', 'Clifford-Estate-Aperture-standalone.html', 'Clifford-Game-Trail-Aperture-standalone.html', 'app.js', 'styles.css', '.nojekyll',
   'build/surface-graph.json', 'build/hop-graph.json', 'build/receipt-graph.json', 'build/atlas-projection.json', 'build/public-data-boundary.json',
   'build/public-catalog.json', 'build/cases/index.json', 'build/cases/field-autopsy-03.json',
   'build/cases/uk-ai-policy.json',

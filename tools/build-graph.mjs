@@ -12,12 +12,16 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { buildTimestamp } from './lib/build-clock.mjs';
+import { loadAll } from './lib/ledger.mjs';
+import { BANNED_PRIVATE_FIELDS } from '../src/evidence.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(here, '..');
 const graphPath = path.join(root, 'graph.json');
 const casePath = path.join(root, 'cases', 'uk-ai-policy.json');
-const graph = JSON.parse(fs.readFileSync(graphPath, 'utf8'));
+const basePath = path.join(root, 'data', 'research', 'research-context-base.json');
+const graph = JSON.parse(fs.readFileSync(basePath, 'utf8'));
 
 const nodeIds = new Set(graph.nodes.map((n) => n.id));
 const sourceIds = new Set(graph.sources.map((s) => s.id));
@@ -160,8 +164,136 @@ for (const [entity, u] of memberships) {
   addEdge({ from: entity, to: `umbrella-${u}`, type: 'umbrella-membership', topology: true, claim: `${entity.replace(/-/g, ' ')} is grouped under ${u.toUpperCase()} as a topology context. Co-presence grouping, NOT a direct relationship claim.`, source_ids: [S.pub], evidence_class: 'derived', status: 'topology-membership', ui_weight: 2 });
 }
 
+// --- Canonical bounded-surface overlay ---
+// Add current canonical actors, organizations, and bounded surfaces to Research
+// without manufacturing actor-to-actor adjacency. Participation is represented
+// only as actor/org -> surface topology membership. Dense rosters are contained
+// as a counted surface node instead of hundreds of visible spokes.
+const canonical = loadAll();
+const receiptById = new Map(canonical.receipts.map(receipt => [receipt.receipt_id, receipt]));
+const participationBySurface = new Map();
+for (const row of canonical.participation) {
+  if (!participationBySurface.has(row.surface_id)) participationBySurface.set(row.surface_id, []);
+  participationBySurface.get(row.surface_id).push(row);
+}
+const containsPrivateGuardToken = value => {
+  const text = String(value ?? '').toLowerCase();
+  return BANNED_PRIVATE_FIELDS.some(token => text.includes(token));
+};
+for (const actor of canonical.actors) {
+  addNode({ id: actor.id, label: actor.label, type: 'person', description: 'Canonical public actor admitted through the bounded-surface ledger.', projection_layer: 'canonical_surface_overlay' });
+}
+for (const organization of canonical.organizations) {
+  addNode({ id: organization.id, label: organization.label, type: organization.kind || 'organization', description: 'Canonical public organization admitted through the bounded-surface ledger.', projection_layer: 'canonical_surface_overlay' });
+}
+let overlayEdges = 0;
+let denseParticipationRowsContained = 0;
+let privacyGuardSuppressedSurfaces = 0;
+const denseSurfaces = [];
+for (const surface of canonical.surfaces) {
+  const participants = participationBySurface.get(surface.surface_id) ?? [];
+  const actorCount = participants.filter(row => row.participant_type === 'actor').length;
+  const orgCount = participants.filter(row => row.participant_type === 'organization').length;
+  const dense = actorCount > canonical.densityPolicy.max_hop_actor_count;
+  const unsafe = containsPrivateGuardToken(surface.surface_id)
+    || containsPrivateGuardToken(surface.surface_label)
+    || participants.some(row => containsPrivateGuardToken(row.participation_type)
+      || (row.receipt_ids ?? []).some(containsPrivateGuardToken));
+  if (unsafe) {
+    privacyGuardSuppressedSurfaces += 1;
+    continue;
+  }
+  const surfaceNodeId = `surface-${slug(surface.surface_id)}`;
+  addNode({
+    id: surfaceNodeId,
+    label: surface.surface_label,
+    type: 'surface',
+    description: dense
+      ? `Dense bounded roster retained as one surface container (${actorCount} actors); individual Research spokes are suppressed.`
+      : 'Bounded surface from the canonical participation ledger; exact roles, dates, and receipts remain in the source ledger.',
+    projection_layer: 'canonical_surface_overlay',
+    canonical_surface_id: surface.surface_id,
+    actor_count: actorCount,
+    organization_count: orgCount,
+    dense_roster_contained: dense,
+    hop_eligible: surface.hop_eligible === true,
+    time_start: surface.time_start ?? null,
+    time_end: surface.time_end ?? null,
+  });
+  if (dense) {
+    denseSurfaces.push({ surface_id: surface.surface_id, actor_count: actorCount, organization_count: orgCount });
+    denseParticipationRowsContained += participants.length;
+    continue;
+  }
+  for (const row of participants) {
+    const participantId = row.participant_type === 'actor' ? row.actor_id : row.organization_id;
+    if (!participantId || !nodeIds.has(participantId)) continue;
+    const sourceIdsForRow = [];
+    for (const receiptId of row.receipt_ids ?? []) {
+      const receipt = receiptById.get(receiptId);
+      if (!receipt) throw new Error(`canonical overlay references missing receipt ${receiptId}`);
+      sourceIdsForRow.push(addSource({
+        id: receiptId,
+        label: receipt.label,
+        url: receipt.source_url ?? receipt.path,
+        publisher: receipt.publisher,
+        source_type: receipt.source_type,
+      }));
+    }
+    addEdge({
+      from: participantId,
+      to: surfaceNodeId,
+      type: 'topology',
+      topology: true,
+      projection_layer: 'canonical_surface_overlay',
+      canonical_surface_id: surface.surface_id,
+      claim: `${graph.nodes.find(node => node.id === participantId)?.label ?? participantId} has an explicit bounded participation row on ${surface.surface_label}.`,
+      source_ids: sourceIdsForRow,
+      evidence_class: row.evidence_class ?? 'open',
+      status: 'topology-membership',
+      ui_weight: 2,
+      notes: 'Topology-only Research overlay. This actor-to-surface row creates no actor-to-actor edge and does not redefine the Clifford Number.',
+    });
+    overlayEdges += 1;
+  }
+}
+const contextBaseAsOf = graph.corpus_as_of;
+delete graph.corpus_as_of;
+graph.context_base_as_of = contextBaseAsOf;
+const observedSurfaceDates = canonical.surfaces.flatMap(surface => [surface.time_start, surface.time_end]).filter(Boolean).sort();
+const receiptRetrievalDates = canonical.receipts.map(receipt => receipt.retrieved_at).filter(Boolean).sort();
+const receiptEventDates = canonical.receipts.map(receipt => receipt.source_published_at ?? receipt.event_date).filter(Boolean).sort();
+graph.canonical_surface_overlay = {
+  schema_version: 'research-canonical-surface-overlay@1',
+  source_artifacts: ['data/canonical/actors.json', 'data/canonical/organizations.json', 'data/ledger/surfaces.jsonl', 'data/ledger/participation.jsonl', 'data/ledger/receipts.jsonl'],
+  graph_effect: 'topology_only',
+  pairwise_actor_edges_added: 0,
+  canonical_actor_count: canonical.actors.length,
+  canonical_organization_count: canonical.organizations.length,
+  canonical_surface_count: canonical.surfaces.length,
+  canonical_participation_rows: canonical.participation.length,
+  rendered_participation_edges: overlayEdges,
+  dense_surface_count: denseSurfaces.length,
+  dense_participation_rows_contained: denseParticipationRowsContained,
+  privacy_guard_suppressed_surface_count: privacyGuardSuppressedSurfaces,
+  latest_observed_surface_date: observedSurfaceDates.at(-1) ?? null,
+  latest_receipt_retrieved_at: receiptRetrievalDates.at(-1) ?? null,
+  latest_receipt_published_or_event_date: receiptEventDates.at(-1) ?? null,
+  recency_observations_do_not_prove_complete_coverage: true,
+  density_limit_max_actors: canonical.densityPolicy.max_hop_actor_count,
+  dense_surfaces: denseSurfaces,
+};
+
 // --- Write both the root graph and the registered UK case (kept identical) ---
-graph.generated = new Date().toISOString().slice(0, 10);
+// `generated` is projection time; `context_base_as_of` preserves the frozen legacy-context cutoff.
+if (graph.projection_role !== 'research_context_base' || graph.graph_effect !== 'context_only'
+  || graph.canonical_for_clifford_number !== false) {
+  throw new Error('research context base exceeds its context-only projection boundary');
+}
+if (typeof graph.context_base_as_of !== 'string' || !/^\d{4}-\d{2}-\d{2}$/u.test(graph.context_base_as_of)) {
+  throw new Error('research context base must declare corpus_as_of as YYYY-MM-DD');
+}
+graph.generated = buildTimestamp();
 const out = JSON.stringify(graph, null, 2) + '\n';
 fs.writeFileSync(graphPath, out);
 fs.writeFileSync(casePath, out);
