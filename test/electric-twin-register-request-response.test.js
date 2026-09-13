@@ -338,16 +338,18 @@ try {
     /must remain under ignored data\/local/u,
   );
 
-  fs.chmodSync(responseEmailPath, 0o644);
-  writePrivateJson(responseInputPath, {
-    ...responseInput,
-    response_event_record: 'test-response-world-readable',
-  });
-  assert.throws(
-    () => recordResponseCustody({ deliveryDir: deliveryA.delivery_dir, inputPath: responseInputPath }),
-    /must not be group- or world-readable/u,
-  );
-  fs.chmodSync(responseEmailPath, 0o600);
+  if (process.platform !== 'win32') {
+    fs.chmodSync(responseEmailPath, 0o644);
+    writePrivateJson(responseInputPath, {
+      ...responseInput,
+      response_event_record: 'test-response-world-readable',
+    });
+    assert.throws(
+      () => recordResponseCustody({ deliveryDir: deliveryA.delivery_dir, inputPath: responseInputPath }),
+      /must not be group- or world-readable/u,
+    );
+    fs.chmodSync(responseEmailPath, 0o600);
+  }
 
   fs.rmSync(symlinkEvidencePath, { force: true });
   fs.symlinkSync(path.basename(responseEmailPath), symlinkEvidencePath);

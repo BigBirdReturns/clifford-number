@@ -188,18 +188,20 @@ try {
     /must remain under ignored data\/local/u,
   );
 
-  fs.chmodSync(proofPath, 0o644);
-  const worldReadableProof = {
-    ...baseDispatchInput,
-    dispatch_event_record: 'test-postal-dispatch-event-004',
-  };
-  fs.writeFileSync(dispatchInputPath, `${JSON.stringify(worldReadableProof, null, 2)}\n`, { mode: 0o600 });
-  fs.chmodSync(dispatchInputPath, 0o600);
-  assert.throws(
-    () => recordDispatchCustody({ sourceDir: outputA, inputPath: dispatchInputPath }),
-    /must not be group- or world-readable/u,
-  );
-  fs.chmodSync(proofPath, 0o600);
+  if (process.platform !== 'win32') {
+    fs.chmodSync(proofPath, 0o644);
+    const worldReadableProof = {
+      ...baseDispatchInput,
+      dispatch_event_record: 'test-postal-dispatch-event-004',
+    };
+    fs.writeFileSync(dispatchInputPath, `${JSON.stringify(worldReadableProof, null, 2)}\n`, { mode: 0o600 });
+    fs.chmodSync(dispatchInputPath, 0o600);
+    assert.throws(
+      () => recordDispatchCustody({ sourceDir: outputA, inputPath: dispatchInputPath }),
+      /must not be group- or world-readable/u,
+    );
+    fs.chmodSync(proofPath, 0o600);
+  }
 
   fs.symlinkSync(path.basename(proofPath), symlinkProofPath);
   const symlinkProof = {

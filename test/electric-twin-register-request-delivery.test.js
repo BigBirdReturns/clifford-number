@@ -232,16 +232,18 @@ try {
     /must remain under ignored data\/local/u,
   );
 
-  fs.chmodSync(deliveryProofPath, 0o644);
-  writePrivateJson(deliveryInputPath, {
-    ...deliveryInput,
-    delivery_event_record: 'test-delivery-event-public-proof',
-  });
-  assert.throws(
-    () => recordDeliveryCustody({ dispatchDir: dispatchResult.dispatch_dir, inputPath: deliveryInputPath }),
-    /must not be group- or world-readable/u,
-  );
-  fs.chmodSync(deliveryProofPath, 0o600);
+  if (process.platform !== 'win32') {
+    fs.chmodSync(deliveryProofPath, 0o644);
+    writePrivateJson(deliveryInputPath, {
+      ...deliveryInput,
+      delivery_event_record: 'test-delivery-event-public-proof',
+    });
+    assert.throws(
+      () => recordDeliveryCustody({ dispatchDir: dispatchResult.dispatch_dir, inputPath: deliveryInputPath }),
+      /must not be group- or world-readable/u,
+    );
+    fs.chmodSync(deliveryProofPath, 0o600);
+  }
 
   fs.symlinkSync(path.resolve(deliveryProofPath), symlinkProofPath);
   writePrivateJson(deliveryInputPath, {
