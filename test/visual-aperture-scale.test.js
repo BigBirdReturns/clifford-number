@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import {
   computeCorridors,
   selectBudgetedParticipants,
@@ -80,5 +81,16 @@ assert.equal(
   0,
   'the 5,000-actor context roster must never generate a hop basis'
 );
+
+for (const browserDriver of [
+  'tools/measure-visual-aperture-browser.cjs',
+  'tools/measure-visual-aperture-route-browser.cjs'
+]) {
+  const source = fs.readFileSync(browserDriver, 'utf8');
+  assert.match(source, /127\.0\.0\.1:8080\/explorer\.html/u,
+    `${browserDriver} must measure the explorer`);
+  assert.doesNotMatch(source, /page\.goto\('http:\/\/127\.0\.0\.1:8080\/'/u,
+    `${browserDriver} must not wait for the aperture on the homepage`);
+}
 
 console.log('visual-aperture-scale.test.js: OK');
