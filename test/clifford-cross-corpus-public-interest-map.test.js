@@ -199,5 +199,5 @@ try {
 console.log('cross-corpus published-view freshness controls: OK');
 
 const scripts = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8')).scripts;
-assert.equal(scripts['build:pages'], 'npm run fanout && npm run build:cross-corpus-map && node tools/build-pages.mjs',
+assert.equal(scripts['build:pages'], 'npm run fanout && npm run build:cross-corpus-map && npm run build:public-boundary && npm run build:atlas-projection && node tools/build-pages.mjs',
   'standalone Pages orchestration must build the fanout and current map before checked publication');
