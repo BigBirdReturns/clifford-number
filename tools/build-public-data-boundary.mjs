@@ -16,6 +16,7 @@ function requireTimestamp(label, value) {
 }
 
 const researchGenerated = requireTimestamp('graph.json', graph.generated);
+const researchCorpusAsOf = requireTimestamp('graph.json corpus_as_of', graph.corpus_as_of);
 const surfaceGenerated = requireTimestamp('build/surface-graph.json', surfaces.generated);
 const hopGenerated = requireTimestamp('build/hop-graph.json', hops.generated);
 const receiptGenerated = requireTimestamp('build/receipt-graph.json', receipts.generated);
@@ -42,6 +43,7 @@ const boundary = {
       source_artifact: 'graph.json',
       projection_generated: researchGenerated,
       projection_kind: 'legacy_context_graph',
+      corpus_as_of: researchCorpusAsOf,
       canonical_for_clifford_number: false,
       node_count: graph.nodes?.length ?? 0,
       edge_count: graph.edges?.length ?? 0
@@ -75,16 +77,19 @@ const boundary = {
   },
   alignment: {
     bounded_projections_share_clock: true,
+    projection_clocks_aligned: researchGenerated === surfaceGenerated,
     mixed_projection_boundaries: researchGenerated !== surfaceGenerated,
     research_projection_generated: researchGenerated,
-    bounded_projection_generated: surfaceGenerated
+    bounded_projection_generated: surfaceGenerated,
+    research_corpus_as_of: researchCorpusAsOf
   },
   interpretation_contract: {
     projection_generated_is_not_source_freshness: true,
     source_dates_live_in_receipts: true,
+    research_corpus_as_of_is_distinct_from_projection_clock: true,
     research_network_is_context_projection: true,
     bounded_surfaces_and_hops_govern_clifford_number: true,
-    statement: 'Projection timestamps identify deterministic artifacts. They do not assert that every underlying source was current on that date; source publication, retrieval, verification, and event dates remain in their owning receipts.'
+    statement: 'Projection timestamps identify deterministic artifacts. The Research network separately declares its admitted corpus cutoff; neither value asserts that every underlying source was current on the projection date. Source publication, retrieval, verification, and event dates remain in their owning receipts.'
   }
 };
 

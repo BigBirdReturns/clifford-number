@@ -149,7 +149,7 @@ function compileUkAiPolicyCase() {
     title: legacy.title,
     subtitle: legacy.subtitle,
     tagline: legacy.tagline,
-    as_of: legacy.generated,
+    as_of: legacy.corpus_as_of ?? legacy.generated,
     status: 'review_required',
     featured_priority: 100,
     presentation: 'research_graph_projection',

@@ -12,6 +12,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { buildTimestamp } from './lib/build-clock.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(here, '..');
@@ -161,7 +162,17 @@ for (const [entity, u] of memberships) {
 }
 
 // --- Write both the root graph and the registered UK case (kept identical) ---
-graph.generated = new Date().toISOString().slice(0, 10);
+// `generated` is projection time; `corpus_as_of` preserves the admitted research cutoff.
+// The migration fallback is intentionally narrow: pre-1.2 graphs used a date-only
+// `generated` field for both concepts. Once written, corpus_as_of is stable.
+const legacyGeneratedDate = typeof graph.generated === 'string' && /^\d{4}-\d{2}-\d{2}$/u.test(graph.generated)
+  ? graph.generated
+  : null;
+graph.corpus_as_of ??= legacyGeneratedDate;
+if (typeof graph.corpus_as_of !== 'string' || !/^\d{4}-\d{2}-\d{2}$/u.test(graph.corpus_as_of)) {
+  throw new Error('graph.corpus_as_of must preserve an admitted YYYY-MM-DD research cutoff');
+}
+graph.generated = buildTimestamp();
 const out = JSON.stringify(graph, null, 2) + '\n';
 fs.writeFileSync(graphPath, out);
 fs.writeFileSync(casePath, out);

@@ -11,8 +11,9 @@
     "research_network": {
       "label": "Research network",
       "source_artifact": "graph.json",
-      "projection_generated": "2026-06-29",
+      "projection_generated": "2026-09-12T03:00:00.000Z",
       "projection_kind": "legacy_context_graph",
+      "corpus_as_of": "2026-06-29",
       "canonical_for_clifford_number": false,
       "node_count": 194,
       "edge_count": 223
@@ -46,15 +47,18 @@
   },
   "alignment": {
     "bounded_projections_share_clock": true,
-    "mixed_projection_boundaries": true,
-    "research_projection_generated": "2026-06-29",
-    "bounded_projection_generated": "2026-09-12T03:00:00.000Z"
+    "projection_clocks_aligned": true,
+    "mixed_projection_boundaries": false,
+    "research_projection_generated": "2026-09-12T03:00:00.000Z",
+    "bounded_projection_generated": "2026-09-12T03:00:00.000Z",
+    "research_corpus_as_of": "2026-06-29"
   },
   "interpretation_contract": {
     "projection_generated_is_not_source_freshness": true,
     "source_dates_live_in_receipts": true,
+    "research_corpus_as_of_is_distinct_from_projection_clock": true,
     "research_network_is_context_projection": true,
     "bounded_surfaces_and_hops_govern_clifford_number": true,
-    "statement": "Projection timestamps identify deterministic artifacts. They do not assert that every underlying source was current on that date; source publication, retrieval, verification, and event dates remain in their owning receipts."
+    "statement": "Projection timestamps identify deterministic artifacts. The Research network separately declares its admitted corpus cutoff; neither value asserts that every underlying source was current on the projection date. Source publication, retrieval, verification, and event dates remain in their owning receipts."
   }
 }
