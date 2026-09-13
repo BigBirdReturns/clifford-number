@@ -16,8 +16,8 @@ for (const file of [MAP_SOURCE_PATH, MAP_VIEW_PATH]) {
   if (!isDeepStrictEqual(published, mapBundle.map)) throw new Error(`published current map drift: ${file}`);
 }
 const required = [
-  'index.html', 'deployment-sha.txt', 'release-artifact-manifest.json', 'data/project/publication-allowlist.json', 'data/project/build-clock.json', 'docs/releases/1.0.0.md', 'Clifford-Number-standalone.html', 'Clifford-Estate-Aperture-standalone.html', 'Clifford-Game-Trail-Aperture-standalone.html', 'app.js', 'styles.css', '.nojekyll',
-  'build/surface-graph.json', 'build/hop-graph.json', 'build/receipt-graph.json',
+  'index.html', 'explorer.html', 'home.js', 'home.css', 'deployment-sha.txt', 'release-artifact-manifest.json', 'data/project/publication-allowlist.json', 'data/project/build-clock.json', 'docs/releases/1.0.0.md', 'docs/releases/1.1.0.md', 'Clifford-Number-standalone.html', 'Clifford-Number-explorer-standalone.html', 'Clifford-Number-endpoint.html', 'Clifford-Estate-Aperture-standalone.html', 'Clifford-Game-Trail-Aperture-standalone.html', 'app.js', 'styles.css', '.nojekyll',
+  'build/surface-graph.json', 'build/hop-graph.json', 'build/receipt-graph.json', 'build/atlas-projection.json', 'build/public-data-boundary.json',
   'build/public-catalog.json', 'build/cases/index.json', 'build/cases/field-autopsy-03.json',
   'build/cases/uk-ai-policy.json',
   'build/cases/anduril-access-ownership.json',
@@ -53,7 +53,7 @@ const required = [
   'data/research/thesis-evidence/synthetic-population-infrastructure.json',
   'data/research/thesis-reviews/synthetic-population-infrastructure.json',
   'legacy/graph.edge-model.json', 'legacy/uk-ai-policy.edge-model.json',
-  'src/ui-utils.js', 'src/i18n.js', 'src/aperture-bootstrap.js', 'src/visual-aperture-core.mjs',
+  'src/ui-utils.js', 'src/i18n.js', 'src/evidence-rank.js', 'src/route-projections.js', 'src/release-delta.js', 'src/aperture-bootstrap.js', 'src/visual-aperture-core.mjs',
   'src/visual-aperture-state.mjs', 'src/visual-aperture-workspace.mjs',
   'src/visual-aperture-export.mjs',
   'src/visual-aperture-workspace-runtime.js', 'src/visual-aperture-export-runtime.js', 'src/visual-aperture.js',
@@ -157,6 +157,9 @@ for (const held of [
   }
 }
 const html = fs.readFileSync(path.join(destination, 'index.html'), 'utf8');
+const homeApp = fs.readFileSync(path.join(destination, 'home.js'), 'utf8');
+const homeCss = fs.readFileSync(path.join(destination, 'home.css'), 'utf8');
+const explorerHtml = fs.readFileSync(path.join(destination, 'explorer.html'), 'utf8');
 const app = fs.readFileSync(path.join(destination, 'app.js'), 'utf8');
 const i18n = fs.readFileSync(path.join(destination, 'src', 'i18n.js'), 'utf8');
 const apertureBootstrap = fs.readFileSync(path.join(destination, 'src', 'aperture-bootstrap.js'), 'utf8');
@@ -172,6 +175,10 @@ const aperture = [
   ...Array.from({ length: 11 }, (_, index) => fs.readFileSync(path.join(destination, 'src', `visual-aperture-part-${index + 1}.js`), 'utf8'))
 ].join('\n');
 const standalone = fs.readFileSync(path.join(destination, 'Clifford-Number-standalone.html'), 'utf8');
+const explorerStandalone = fs.readFileSync(path.join(destination, 'Clifford-Number-explorer-standalone.html'), 'utf8');
+const endpointStandalone = fs.readFileSync(path.join(destination, 'Clifford-Number-endpoint.html'), 'utf8');
+const atlasProjection = JSON.parse(fs.readFileSync(path.join(destination, 'build', 'atlas-projection.json'), 'utf8'));
+const publicDataBoundary = JSON.parse(fs.readFileSync(path.join(destination, 'build', 'public-data-boundary.json'), 'utf8'));
 
 const gameTrailData = JSON.parse(fs.readFileSync(path.join(destination, 'gametrails', 'data.json'), 'utf8'));
 const gameTrailPage = fs.readFileSync(path.join(destination, 'gametrails', 'index.html'), 'utf8');
@@ -216,12 +223,14 @@ if (gameTrailData.schema_version !== 'estate-game-trail-public-data@2'
   process.exit(1);
 }
 
-if (!html.includes('id="main-content"') || !html.includes('href="estates/"') || !html.includes('href="gametrails/"') || !app.includes('build/public-catalog.json')) {
-  console.error('validate-pages failed: public entrypoint does not expose the explorer and compiled cases');
+if (!html.includes('id="causal-map"') || !html.includes('href="explorer.html"')
+  || !explorerHtml.includes('id="main-content"') || !explorerHtml.includes('href="estates/"')
+  || !explorerHtml.includes('href="gametrails/"') || !app.includes('build/public-catalog.json')) {
+  console.error('validate-pages failed: causal homepage or topology explorer entrypoint is incomplete');
   process.exit(1);
 }
 if (!apertureBootstrap.includes("import('./visual-aperture.js")
-  || !html.includes('src="src/aperture-bootstrap.js')
+  || !explorerHtml.includes('src="src/aperture-bootstrap.js')
   || !apertureEntry.includes("import * as addressState from './visual-aperture-state.mjs'")
   || !apertureEntry.includes("import * as workspaceModel from './visual-aperture-workspace.mjs'")
   || !apertureEntry.includes("import * as exportModel from './visual-aperture-export.mjs'")
@@ -261,19 +270,79 @@ if (i18n.includes('visual-aperture')) {
   console.error('validate-pages failed: localization module must stay free of aperture bootstrap side effects');
   process.exit(1);
 }
-if (!standalone.includes('data-portable-release="true"') || !standalone.includes('const EMBEDDED_DATA =') || /src="app\.js(?:\?[^\"]*)?"/.test(standalone)) {
+if (!html.includes('id="causal-map"') || !html.includes('id="causal-map-legend"') || !html.includes('id="causal-route-summary"')
+  || (html.match(/data-lane="/g) ?? []).length !== 4
+  || !html.includes('id="causal-receipt-aperture"') || !html.includes('data-state="open"')
+  || !html.includes('id="evidence-inspection-toggle"') || !html.includes('data-provenance-plate="A"')) {
+  console.error('validate-pages failed: four-lane causal homepage contract is incomplete');
+  process.exit(1);
+}
+if (!homeApp.includes('function homepageModel') || !homeApp.includes('function evidenceInspectionModel')
+  || !homeApp.includes('DEFAULT_ENDPOINTS') || !homeApp.includes('CLIFFORD_GRAPH_CONFIG')
+  || homeApp.includes('requestAnimationFrame') || homeApp.includes('getContext(')) {
+  console.error('validate-pages failed: homepage model or configurable endpoint boundary regressed');
+  process.exit(1);
+}
+if (!html.includes('id="data-boundary"') || !html.includes('id="boundary-research-value"')
+  || !homeApp.includes("boundary: 'build/public-data-boundary.json'") || !homeApp.includes('function renderDataBoundary')
+  || !explorerHtml.includes('id="public-data-boundary"') || !app.includes("loadJson('build/public-data-boundary.json')")
+  || publicDataBoundary.schema_version !== 'clifford-public-data-boundary@1'
+  || publicDataBoundary.views?.research_network?.projection_generated !== legacyGraph.generated
+  || publicDataBoundary.views?.bounded_surfaces?.projection_generated !== hopGraph.generated
+  || publicDataBoundary.views?.research_network?.canonical_for_clifford_number !== false
+  || publicDataBoundary.views?.verified_hops?.canonical_for_clifford_number !== true
+  || publicDataBoundary.interpretation_contract?.projection_generated_is_not_source_freshness !== true) {
+  console.error('validate-pages failed: explicit public projection-boundary contract is missing or dishonest');
+  process.exit(1);
+}
+if (homeCss.includes('world-dive') || !homeCss.includes('prefers-reduced-motion')
+  || !homeCss.includes('.causal-lane') || !homeCss.includes('.causal-receipt-aperture')) {
+  console.error('validate-pages failed: causal homepage styling or reduced-motion contract regressed');
+  process.exit(1);
+}
+if (!explorerHtml.includes('id="network-svg"') || !explorerHtml.includes('id="view-desk"')
+  || !explorerHtml.includes('id="view-map"') || !app.includes('function semanticLevel')
+  || !app.includes('function atlasScale') || !app.includes('routeProjections')
+  || !app.includes('does not redefine the Clifford Number')) {
+  console.error('validate-pages failed: semantic topology explorer or route-projection contract is incomplete');
+  process.exit(1);
+}
+if (atlasProjection.scheme?.schema_version !== 'atlas-projection@1'
+  || !String(atlasProjection.scheme?.disposability_notice ?? '').includes('never canonical truth')
+  || !Array.isArray(atlasProjection.regions) || !Array.isArray(atlasProjection.machines)) {
+  console.error('validate-pages failed: atlas projection is missing or misrepresented as canonical truth');
+  process.exit(1);
+}
+if (!endpointStandalone.includes('data-portable-release="endpoint"')
+  || !endpointStandalone.includes('CLIFFORD_GRAPH_CONFIG')
+  || !endpointStandalone.includes('CLIFFORD_DEMO_DATA')
+  || !endpointStandalone.includes('clifford-datasets@1')
+  || !endpointStandalone.includes('clifford-public-data-boundary@1')
+  || /src="home\.js/.test(endpointStandalone)) {
+  console.error('validate-pages failed: endpoint standalone is not self-contained or lacks its endpoint contract');
+  process.exit(1);
+}
+if (!explorerStandalone.includes('data-portable-release="explorer"')
+  || !explorerStandalone.includes('const EMBEDDED_DATA =')
+  || /src="app\.js/.test(explorerStandalone) || /href="styles\.css/.test(explorerStandalone)) {
+  console.error('validate-pages failed: topology explorer standalone is not self-contained');
+  process.exit(1);
+}
+
+if (!standalone.includes('data-portable-release="true"') || !standalone.includes('const EMBEDDED_DATA =') || !standalone.includes('clifford-public-data-boundary@1') || /src="app\.js(?:\?[^\"]*)?"/.test(standalone)) {
   console.error('validate-pages failed: standalone release is not self-contained');
   process.exit(1);
 }
-if (!standalone.includes('globalThis.__CLIFFORD_APERTURE_BUNDLED__ = true')
-  || !standalone.includes('Map the system. Keep the receipt attached.')
-  || !standalone.includes("APERTURE_STATE_VERSION = '1'")
-  || !standalone.includes("APERTURE_WORKSPACE_VERSION = '1'")
-  || !standalone.includes("APERTURE_EXPORT_SCHEMA_VERSION = 'clifford-aperture-export@1'")
-  || !standalone.includes('Local operator workspace')
-  || !standalone.includes('Export the view with its limits attached.')
-  || !standalone.includes('Copy exact view')
-  || /<(?:script|link)[^>]+(?:src|href)="[^"]*visual-aperture/.test(standalone)) {
+if (!explorerStandalone.includes('globalThis.__CLIFFORD_APERTURE_BUNDLED__ = true')
+  || !explorerStandalone.includes('clifford-public-data-boundary@1')
+  || !explorerStandalone.includes('Map the system. Keep the receipt attached.')
+  || !explorerStandalone.includes("APERTURE_STATE_VERSION = '1'")
+  || !explorerStandalone.includes("APERTURE_WORKSPACE_VERSION = '1'")
+  || !explorerStandalone.includes("APERTURE_EXPORT_SCHEMA_VERSION = 'clifford-aperture-export@1'")
+  || !explorerStandalone.includes('Local operator workspace')
+  || !explorerStandalone.includes('Export the view with its limits attached.')
+  || !explorerStandalone.includes('Copy exact view')
+  || /<(?:script|link)[^>]+(?:src|href)="[^"]*visual-aperture/.test(explorerStandalone)) {
   console.error('validate-pages failed: standalone release omits or externally references the operator aperture');
   process.exit(1);
 }
@@ -340,7 +409,7 @@ if (!standalone.includes('href="data:image/svg+xml;base64,') || standalone.inclu
   console.error('validate-pages failed: standalone favicon is not embedded');
   process.exit(1);
 }
-if (!standalone.includes('legacy-uk-ai-policy@1') || !standalone.includes('all 50 recommendations')) {
+if (!explorerStandalone.includes('legacy-uk-ai-policy@1') || !explorerStandalone.includes('all 50 recommendations')) {
   console.error('validate-pages failed: standalone release omits the public UK AI policy case');
   process.exit(1);
 }
@@ -365,7 +434,8 @@ if (ukAiCase.subtitle !== 'Seven degrees of UK AI policy topology, with receipts
 }
 if (legacyGraph.subtitle !== 'Seven degrees of UK AI policy topology, with receipts.'
   || legacyEdgeModels.some(item => item.subtitle !== 'Seven degrees of UK AI policy topology, with receipts.')
-  || standalone.includes('Seven degrees of UK AI state capture, with receipts.')) {
+  || standalone.includes('Seven degrees of UK AI state capture, with receipts.')
+  || explorerStandalone.includes('Seven degrees of UK AI state capture, with receipts.')) {
   console.error('validate-pages failed: stale state-capture framing remains in the public payload');
   process.exit(1);
 }

@@ -11,7 +11,7 @@ export const VIEWPORTS = Object.freeze([
 export const ROUTE_CASES = Object.freeze([
   Object.freeze({
     id: 'dated-connection',
-    route: '#desk/keir-starmer/matt-clifford/2025',
+    route: 'explorer.html#desk/keir-starmer/matt-clifford/2025',
     expected: Object.freeze([
       'Documented: 1 step as of 2025',
       'AI Opportunities Action Plan publication and government response, 13 January 2025'
@@ -19,7 +19,7 @@ export const ROUTE_CASES = Object.freeze([
   }),
   Object.freeze({
     id: 'documented-absence-boundary',
-    route: '#desk/demet-mutlu/matt-clifford',
+    route: 'explorer.html#desk/demet-mutlu/matt-clifford',
     expected: Object.freeze([
       'No documented connection',
       'That is a statement about the documentation gathered here, not proof of absence.'
@@ -27,7 +27,7 @@ export const ROUTE_CASES = Object.freeze([
   }),
   Object.freeze({
     id: 'dated-negative-with-all-time-route',
-    route: '#desk/keir-starmer/matt-clifford/2020',
+    route: 'explorer.html#desk/keir-starmer/matt-clifford/2020',
     expected: Object.freeze([
       'Not documented for 2020',
       'documented all-time connection exists'
@@ -35,7 +35,7 @@ export const ROUTE_CASES = Object.freeze([
   }),
   Object.freeze({
     id: 'dense-surface-boundary',
-    route: '#surface/dialog-public-directory-exposure-2026-06-16',
+    route: 'explorer.html#surface/dialog-public-directory-exposure-2026-06-16',
     expected: Object.freeze([
       'Dialog public-directory exposure, 16 June 2026',
       'The 112-name roster is dense and semantically insufficient for pairwise topology.'
@@ -155,7 +155,7 @@ export async function runSmoke(options) {
           if (message.type() === 'error') consoleErrors.push(message.text());
         });
         page.on('pageerror', (error) => pageErrors.push(String(error)));
-        const target = `${options.baseUrl}${routeCase.route}`;
+        const target = new URL(routeCase.route, options.baseUrl).href;
         const response = await page.goto(target, { waitUntil: 'domcontentloaded', timeout: options.timeoutMs });
         if (response && response.status() >= 400) throw new Error(`${routeCase.id}/${viewport.name}: HTTP ${response.status()}`);
         await page.waitForFunction(
@@ -227,20 +227,22 @@ export async function runSmoke(options) {
     const navigationExternalRequests = [];
     const context = await configureContext(browser, baseOrigin, VIEWPORTS[0], options.timeoutMs, navigationExternalRequests);
     const page = await context.newPage();
-    await page.goto(options.baseUrl, { waitUntil: 'domcontentloaded', timeout: options.timeoutMs });
+    const explorerUrl = new URL('explorer.html', options.baseUrl).href;
+    await page.goto(explorerUrl, { waitUntil: 'domcontentloaded', timeout: options.timeoutMs });
     await page.waitForFunction(
       () => document.querySelector('#app-status')?.classList.contains('is-ready') === true,
       null,
       { timeout: options.timeoutMs }
     );
     await waitForText(page, 'The machine is already in the records.', options.timeoutMs);
-    await page.evaluate((route) => { location.hash = route; }, ROUTE_CASES[0].route);
+    const navigationHash = new URL(ROUTE_CASES[0].route, options.baseUrl).hash;
+    await page.evaluate((route) => { location.hash = route; }, navigationHash);
     await waitForText(page, ROUTE_CASES[0].expected[0], options.timeoutMs);
     await page.goBack();
     await page.waitForFunction(() => location.hash === '', null, { timeout: options.timeoutMs });
     await waitForText(page, 'The machine is already in the records.', options.timeoutMs);
     await page.goForward();
-    await page.waitForFunction((route) => location.hash === route, ROUTE_CASES[0].route, { timeout: options.timeoutMs });
+    await page.waitForFunction((route) => location.hash === route, navigationHash, { timeout: options.timeoutMs });
     await waitForText(page, ROUTE_CASES[0].expected[0], options.timeoutMs);
     if (navigationExternalRequests.length) {
       throw new Error(`navigation: undeclared external requests ${JSON.stringify(navigationExternalRequests)}`);

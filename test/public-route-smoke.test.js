@@ -3,10 +3,10 @@ import { ROUTE_CASES, VIEWPORTS, normalizeBaseUrl, parseArgs } from '../tools/sm
 
 assert.deepEqual(VIEWPORTS.map(({ width, height }) => `${width},${height}`), ['1440,1000', '390,844']);
 assert.deepEqual(ROUTE_CASES.map(({ route }) => route), [
-  '#desk/keir-starmer/matt-clifford/2025',
-  '#desk/demet-mutlu/matt-clifford',
-  '#desk/keir-starmer/matt-clifford/2020',
-  '#surface/dialog-public-directory-exposure-2026-06-16'
+  'explorer.html#desk/keir-starmer/matt-clifford/2025',
+  'explorer.html#desk/demet-mutlu/matt-clifford',
+  'explorer.html#desk/keir-starmer/matt-clifford/2020',
+  'explorer.html#surface/dialog-public-directory-exposure-2026-06-16'
 ]);
 for (const routeCase of ROUTE_CASES) {
   assert.equal(routeCase.expected.length, 2, `${routeCase.id} must retain both semantic assertions`);
@@ -18,11 +18,11 @@ assert.throws(() => parseArgs(['--base-url', 'file:///tmp/site']), /http or http
 assert.throws(() => parseArgs(['--base-url', 'https://example.test', '--timeout-ms', '0']), /1000 through 120000/);
 const fs = await import('node:fs');
 const smokeSource = fs.readFileSync('tools/smoke-public-routes.mjs', 'utf8');
-const indexSource = fs.readFileSync('index.html', 'utf8');
+const explorerSource = fs.readFileSync('explorer.html', 'utf8');
 const appSource = fs.readFileSync('app.js', 'utf8');
 assert.match(smokeSource, /body\?\.textContent\.includes/);
-assert.match(indexSource, /<h1 id="desk-title"/);
-assert.doesNotMatch(indexSource, /<h3 id="desk-title"/);
+assert.match(explorerSource, /<h1 id="desk-title"/);
+assert.doesNotMatch(explorerSource, /<h3 id="desk-title"/);
 assert.match(appSource, /function entityHeading[\s\S]*?<h1>\$\{esc\(label\)\}<\/h1>/);
 assert.match(appSource, /<h1>Actor → named surface → actor\.<\/h1>/);
 assert.match(appSource, /<h1>The receipts, inside the instrument\.<\/h1>/);

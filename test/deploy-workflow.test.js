@@ -16,10 +16,10 @@ assert.match(workflow, /dist\/deployment-sha\.txt/);
 assert.match(workflow, /release-artifact-manifest\.json/);
 assert.match(workflow, /m\.source\?\.commit!==process\.env\.GITHUB_SHA/);
 for (const route of [
-  '#desk/keir-starmer/matt-clifford/2025',
-  '#desk/demet-mutlu/matt-clifford',
-  '#desk/keir-starmer/matt-clifford/2020',
-  '#surface/dialog-public-directory-exposure-2026-06-16'
+  'explorer.html#desk/keir-starmer/matt-clifford/2025',
+  'explorer.html#desk/demet-mutlu/matt-clifford',
+  'explorer.html#desk/keir-starmer/matt-clifford/2020',
+  'explorer.html#surface/dialog-public-directory-exposure-2026-06-16'
 ]) assert.ok(smoke.includes(route), `browser driver missing ${route}`);
 for (const phrase of [
   'Documented: 1 step as of 2025',
