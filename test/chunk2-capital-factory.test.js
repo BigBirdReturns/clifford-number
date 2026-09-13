@@ -18,6 +18,10 @@ const checks = [
     path: path.join(HERE, 'natsec100-2025-identity-adjudication.test.js'),
   },
   {
+    label: 'natsec100-2025-identity-source-custody',
+    path: path.join(HERE, 'natsec100-2025-identity-source-custody.test.js'),
+  },
+  {
     label: 'chunk2-capital-factory',
     path: path.join(root, 'data', 'intake', 'natsec100-pathways', 'chunk2-capital-factory', 'validate-chunk2.mjs'),
   },
