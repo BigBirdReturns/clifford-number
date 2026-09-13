@@ -75,6 +75,7 @@ const legacyActors = [];
 const legacyOrganizations = [];
 
 for (const node of legacyGraph.nodes ?? []) {
+  if (node.projection_layer === 'canonical_surface_overlay') continue;
   if (node.type === 'person' && !actorIds.has(node.id)) {
     legacyActors.push({
       id: node.id,

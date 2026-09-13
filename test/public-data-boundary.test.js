@@ -15,8 +15,10 @@ test('public data boundary names every public graph projection and its authority
   assert.equal(boundary.schema_version, 'clifford-public-data-boundary@1');
   assert.equal(boundary.views.research_network.projection_generated, graph.generated);
   assert.equal(boundary.views.research_network.canonical_for_clifford_number, false);
-  assert.equal(boundary.views.research_network.corpus_as_of, graph.corpus_as_of);
-  assert.deepEqual(boundary.views.research_network.projection_inputs, ['data/research/research-context-base.json']);
+  assert.equal(boundary.views.research_network.context_base_as_of, graph.context_base_as_of);
+  assert.ok(boundary.views.research_network.projection_inputs.includes('data/research/research-context-base.json'));
+  assert.equal(boundary.views.research_network.canonical_surface_overlay.graph_effect, 'topology_only');
+  assert.equal(boundary.views.research_network.canonical_surface_overlay.pairwise_actor_edges_added, 0);
   assert.equal(boundary.views.bounded_surfaces.projection_generated, surfaces.generated);
   assert.equal(boundary.views.verified_hops.projection_generated, hops.generated);
   assert.equal(boundary.views.receipt_graph.projection_generated, receipts.generated);
@@ -34,13 +36,15 @@ test('bounded projections share the admitted deterministic clock', () => {
   assert.equal(boundary.interpretation_contract.source_dates_live_in_receipts, true);
 });
 
-test('research corpus cutoff stays explicit even when projection clocks align', () => {
+test('research source boundaries stay explicit even when projection clocks align', () => {
   assert.equal(boundary.alignment.mixed_projection_boundaries, false);
   assert.equal(boundary.alignment.research_projection_generated, graph.generated);
   assert.equal(boundary.alignment.bounded_projection_generated, surfaces.generated);
-  assert.equal(boundary.alignment.research_corpus_as_of, graph.corpus_as_of);
-  assert.notEqual(graph.corpus_as_of, graph.generated);
-  assert.equal(boundary.interpretation_contract.research_corpus_as_of_is_distinct_from_projection_clock, true);
+  assert.equal(boundary.alignment.research_context_base_as_of, graph.context_base_as_of);
+  assert.equal(boundary.alignment.mixed_source_boundaries, true);
+  assert.notEqual(graph.context_base_as_of, graph.generated);
+  assert.equal(boundary.interpretation_contract.research_context_base_as_of_is_distinct_from_projection_clock, true);
+  assert.equal(boundary.interpretation_contract.canonical_surface_overlay_is_receipt_bounded, true);
 });
 
 test('boundary builder is byte deterministic', () => {

@@ -16,7 +16,12 @@ function requireTimestamp(label, value) {
 }
 
 const researchGenerated = requireTimestamp('graph.json', graph.generated);
-const researchCorpusAsOf = requireTimestamp('graph.json corpus_as_of', graph.corpus_as_of);
+const researchContextBaseAsOf = requireTimestamp('graph.json context_base_as_of', graph.context_base_as_of);
+const researchOverlay = graph.canonical_surface_overlay;
+if (!researchOverlay || researchOverlay.schema_version !== 'research-canonical-surface-overlay@1'
+  || researchOverlay.graph_effect !== 'topology_only' || researchOverlay.pairwise_actor_edges_added !== 0) {
+  throw new Error('graph.json must declare a topology-only canonical surface overlay');
+}
 const surfaceGenerated = requireTimestamp('build/surface-graph.json', surfaces.generated);
 const hopGenerated = requireTimestamp('build/hop-graph.json', hops.generated);
 const receiptGenerated = requireTimestamp('build/receipt-graph.json', receipts.generated);
@@ -41,10 +46,11 @@ const boundary = {
     research_network: {
       label: 'Research network',
       source_artifact: 'graph.json',
-      projection_inputs: ['data/research/research-context-base.json'],
+      projection_inputs: ['data/research/research-context-base.json', ...(researchOverlay.source_artifacts ?? [])],
       projection_generated: researchGenerated,
       projection_kind: 'legacy_context_graph',
-      corpus_as_of: researchCorpusAsOf,
+      context_base_as_of: researchContextBaseAsOf,
+      canonical_surface_overlay: researchOverlay,
       canonical_for_clifford_number: false,
       node_count: graph.nodes?.length ?? 0,
       edge_count: graph.edges?.length ?? 0
@@ -82,15 +88,17 @@ const boundary = {
     mixed_projection_boundaries: researchGenerated !== surfaceGenerated,
     research_projection_generated: researchGenerated,
     bounded_projection_generated: surfaceGenerated,
-    research_corpus_as_of: researchCorpusAsOf
+    mixed_source_boundaries: true,
+    research_context_base_as_of: researchContextBaseAsOf
   },
   interpretation_contract: {
     projection_generated_is_not_source_freshness: true,
     source_dates_live_in_receipts: true,
-    research_corpus_as_of_is_distinct_from_projection_clock: true,
+    research_context_base_as_of_is_distinct_from_projection_clock: true,
+    canonical_surface_overlay_is_receipt_bounded: true,
     research_network_is_context_projection: true,
     bounded_surfaces_and_hops_govern_clifford_number: true,
-    statement: 'Projection timestamps identify deterministic artifacts. The Research network separately declares its admitted corpus cutoff; neither value asserts that every underlying source was current on the projection date. Source publication, retrieval, verification, and event dates remain in their owning receipts.'
+    statement: 'Projection timestamps identify deterministic artifacts. The Research network separates its frozen context-base cutoff from a canonical receipt-bounded surface overlay; aligned projection timestamps do not assert uniform source freshness. Source publication, retrieval, verification, and event dates remain in their owning receipts.'
   }
 };
 

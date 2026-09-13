@@ -713,6 +713,7 @@ function renderPublicDataBoundary(boundary) {
   root.dataset.mixed = String(Boolean(boundary?.alignment?.mixed_projection_boundaries));
   const set = (selector, value) => { const node = $(selector); if (node) node.textContent = value; };
   set('#public-boundary-research', formatPublicProjectionBoundary(research?.projection_generated));
+  set('#public-boundary-research-base', formatPublicProjectionBoundary(research?.context_base_as_of));
   set('#public-boundary-surfaces', formatPublicProjectionBoundary(surfaces?.projection_generated));
   set('#public-boundary-hops', formatPublicProjectionBoundary(hops?.projection_generated));
   set('#public-boundary-contract', boundary?.interpretation_contract?.statement
