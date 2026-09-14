@@ -33,7 +33,10 @@ function renderMapMode() {
       ? [{ value: groups.length, label: 'types' }, { value: cluster.surfaceCount, label: 'surfaces' }, { value: cluster.actorCount, label: 'actors' }]
       : [{ value: actorParticipants(surface).length, label: 'actors' }, { value: surface.hop_eligible ? 'yes' : 'no', label: 'hop effect' }, { value: unique(surface.receipt_ids).length, label: 'surface receipts' }]);
   queueMicrotask(renderApertureSocialField);
-  setInspector(state.map.level === 'corpus' ? cluster.label : state.map.level === 'machine' ? group?.label || cluster.label : state.map.selectedActorId ? actorLabel(state.map.selectedActorId) : surface.surface_label, mapInspector(cluster, group, surface));
+  const fieldInspectorShown = state.map.level === 'machine' && state.map.selectedFieldNodeId
+    ? inspectApertureFieldNode(state.map.selectedFieldNodeId, { select: false })
+    : false;
+  if (!fieldInspectorShown) setInspector(state.map.level === 'corpus' ? cluster.label : state.map.level === 'machine' ? group?.label || cluster.label : state.map.selectedActorId ? actorLabel(state.map.selectedActorId) : surface.surface_label, mapInspector(cluster, group, surface));
   renderMapOverview(cluster, group, surface);
 }
 

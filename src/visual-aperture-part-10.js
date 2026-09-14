@@ -11,6 +11,7 @@ function handleAction(button) {
     copyApertureViewLink(button);
     return;
   }
+  if (action === 'ecology-toggle') { setEcologyPlaying(!state.ecology.playing); return; }
   if (action === 'zoom-in') { setMapScale(state.map.scale + .85, { history: 'push' }); return; }
   if (action === 'zoom-out') { setMapScale(state.map.scale - .85, { history: 'push' }); return; }
   if (action === 'reset-map') {
@@ -118,6 +119,7 @@ function handleClick(event) {
 
 function handleInput(event) {
   const target = event.target;
+  if (target.id === 'ap-ecology-time') { setEcologyClockPosition(Number(target.value) / 1000, { pause: true }); return; }
   if (target.id === 'ap-map-scale') { setMapScale(target.value, { history: 'replace' }); return; }
   if (target.id === 'ap-surface-query') {
     state.surface.query = target.value;
@@ -141,6 +143,7 @@ function openMapSearch(value) {
   state.map.hasExplicitFocus = true;
   if (state.actors.has(node.id)) {
     selectApertureFieldActor(node.id);
+    inspectApertureFieldNode(node.id, { select: false });
     return true;
   }
   state.map.scale = Math.max(state.map.scale, 1.9);

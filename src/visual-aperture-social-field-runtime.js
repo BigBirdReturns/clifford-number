@@ -2,7 +2,7 @@ const APERTURE_FIELD_LEGEND = `
   <span><i class="aperture-key aperture-key--heat"></i> reinforcement heat</span>
   <span><i class="aperture-key aperture-key--actor"></i> actor</span>
   <span><i class="aperture-key aperture-key--surface"></i> bounded surface</span>
-  <span><i class="aperture-key aperture-key--activity"></i> sourced activity</span>`;
+  <span><i class="aperture-key aperture-key--activity"></i> dated activity pulse</span>`;
 
 function setApertureFieldActive(active) {
   const host = $('#aperture-webgl', state.root);
@@ -21,12 +21,65 @@ function setApertureFieldActive(active) {
     badge.textContent = active ? 'Live evidence field' : 'SVG evidence map';
     badge.dataset.engine = active ? 'webgl' : 'svg';
   }
-  if (active) state.webgl?.renderer?.resume?.();
-  else state.webgl?.renderer?.pause?.();
+  if (active) {
+    state.webgl?.renderer?.resume?.();
+    startEcologyClock();
+  } else {
+    state.webgl?.renderer?.pause?.();
+    stopEcologyClock();
+  }
 }
 
 function deactivateApertureSocialField() {
   setApertureFieldActive(false);
+}
+function ecologyClockLabel() {
+  return state.webgl?.eventApi?.ecologyPlayheadLabel?.(state.webgl.events, state.ecology.position) || 'Evidence timeline';
+}
+function syncEcologyClockControls() {
+  const input = $('#ap-ecology-time', state.root);
+  const output = $('#ap-ecology-date', state.root);
+  const button = $('[data-ap-action="ecology-toggle"]', state.root);
+  if (input) input.value = String(Math.round(state.ecology.position * 1000));
+  if (output) output.textContent = ecologyClockLabel();
+  if (button) {
+    button.textContent = state.ecology.playing ? 'Pause time' : 'Play time';
+    button.setAttribute('aria-pressed', String(state.ecology.playing));
+  }
+}
+function stopEcologyClock() {
+  if (state.ecology.frame) cancelAnimationFrame(state.ecology.frame);
+  state.ecology.frame = 0;
+  state.ecology.lastTimestamp = 0;
+}
+function ecologyClockFrame(timestamp) {
+  state.ecology.frame = 0;
+  if (!state.ecology.playing || state.mode !== 'map') return;
+  if (state.ecology.lastTimestamp) {
+    const delta = Math.min(250, timestamp - state.ecology.lastTimestamp);
+    state.ecology.position = (state.ecology.position + delta / state.ecology.cycleMs) % 1;
+    state.webgl?.renderer?.setEcologyPosition?.(state.ecology.position);
+    syncEcologyClockControls();
+  }
+  state.ecology.lastTimestamp = timestamp;
+  state.ecology.frame = requestAnimationFrame(ecologyClockFrame);
+}
+function startEcologyClock() {
+  if (!state.ecology.playing || state.ecology.frame || state.mode !== 'map') return;
+  state.ecology.lastTimestamp = 0;
+  state.ecology.frame = requestAnimationFrame(ecologyClockFrame);
+}
+function setEcologyClockPosition(position, { pause = false } = {}) {
+  state.ecology.position = Math.max(0, Math.min(1, Number(position) || 0));
+  if (pause) state.ecology.playing = false;
+  state.webgl?.renderer?.setEcologyPosition?.(state.ecology.position);
+  if (pause) stopEcologyClock(); else startEcologyClock();
+  syncEcologyClockControls();
+}
+function setEcologyPlaying(playing) {
+  state.ecology.playing = Boolean(playing);
+  if (state.ecology.playing) startEcologyClock(); else stopEcologyClock();
+  syncEcologyClockControls();
 }
 function apertureFieldSurfaceNodeId(surfaceId) {
   return surfaceId ? `surface-${surfaceId}` : null;
@@ -105,21 +158,37 @@ function selectApertureFieldActor(id) {
   renderMapMode();
   commitApertureAddress('push');
 }
-function inspectApertureFieldNode(id) {
+function ecologyActivityMarkup(id) {
+  const api = state.webgl?.eventApi;
+  const model = state.webgl?.events;
+  if (!api || !model) return '';
+  const events = api.ecologyEventsForNode(model, id)
+    .filter(event => event.participant_node_id === id || event.event_kind === 'surface_activity')
+    .sort((a, b) => b.end_day - a.end_day || b.start_day - a.start_day || a.id.localeCompare(b.id));
+  if (!events.length) return '<h4>Documented activity</h4><p class="aperture-muted">No dated participation event in this release resolves onto the public field for this object.</p>';
+  const activeIds = new Set(api.activeEcologyEvents?.(model, state.ecology.position).map(event => event.id) ?? []);
+  const visible = events.slice(0, 7);
+  return `<h4>Documented activity</h4><p class="aperture-muted">Playhead ${esc(ecologyClockLabel())}. Pulses replay these dated records on existing topology; they create no new edge or direction.</p><ul class="aperture-activity-list">${visible.map(event => `<li${activeIds.has(event.id) ? ' class="is-active"' : ''}><strong>${esc(humanLabel(event.channel))}</strong><span>${esc(event.time_label)} · ${esc(event.surface_label)}</span><small>${esc(event.role)} · ${(event.receipt_ids ?? []).length} receipt${event.receipt_ids?.length === 1 ? '' : 's'}</small></li>`).join('')}</ul>${events.length > visible.length ? `<p class="aperture-muted">+${events.length - visible.length} additional dated records</p>` : ''}`;
+}
+function inspectApertureFieldNode(id, { select = true } = {}) {
   const renderer = state.webgl?.renderer;
   const node = renderer?.field?.()?.nodes?.find(item => item.id === id);
-  if (!node) return;
+  if (!node) return false;
   const heat = Math.round((node.heat ?? 0) * 100);
   const actor = state.actors.get(id);
   const canonicalSurfaceId = String(id).startsWith('surface-') ? String(id).slice(8) : null;
   if (canonicalSurfaceId && state.surfaces.has(canonicalSurfaceId)) {
-    state.map.hasExplicitFocus = true;
-    selectMapSurface(canonicalSurfaceId);
-    return;
+    if (select) {
+      state.map.hasExplicitFocus = true;
+      selectMapSurface(canonicalSurfaceId);
+    }
+    return false;
   }
-  state.map.selectedFieldNodeId = id;
-  state.map.hasExplicitFocus = true;
-  if (actor) selectApertureFieldActor(id);
+  if (select) {
+    state.map.selectedFieldNodeId = id;
+    state.map.hasExplicitFocus = true;
+    if (actor) selectApertureFieldActor(id);
+  }
   const description = actor?.description || node.description || 'Public topology object in the Research projection.';
   const actions = actor ? `<div class="aperture-actions">
     <button type="button" data-ap-action="open-record" data-actor-id="${esc(id)}">Open public record</button>
@@ -128,7 +197,8 @@ function inspectApertureFieldNode(id) {
   setInspector(node.label, `<p class="aperture-kicker">Selected public object</p><h3>${esc(node.label)}</h3>
     <p>${esc(description)}</p>
     <div class="aperture-metric-grid"><div><strong>${heat}%</strong><span>reinforcement heat</span></div><div><strong>${node.documented_degree ?? 0}</strong><span>documented neighbors</span></div><div><strong>${node.surface_count ?? 0}</strong><span>bounded surfaces</span></div><div><strong>${node.strongest_repeat ?? 0}x</strong><span>strongest repeated co-surface</span></div></div>
-    <p class="aperture-muted">Heat changes visual prominence only. It does not create an actor-to-actor edge, a hop, or a causal claim.</p>${actions}`, { openOnMobile: true });
+    <p class="aperture-muted">Heat changes visual prominence only. It does not create an actor-to-actor edge, a hop, or a causal claim.</p>${ecologyActivityMarkup(id)}${actions}`, { openOnMobile: true });
+  return true;
 }
 async function renderApertureSocialField() {
   if (!state.root || state.mode !== 'map' || state.webgl?.failed) return;
@@ -141,6 +211,8 @@ async function renderApertureSocialField() {
       const api = await globalThis.loadCliffordSocialField();
       if (!api.supportsWebGlAtlas()) return;
       state.webgl.model = api.buildResearchNetworkModel(state.data.legacyGraph);
+      state.webgl.events = api.buildEcologyEventModel(state.data.surfaceGraph, state.webgl.model);
+      state.webgl.eventApi = api;
       state.webgl.renderer = await api.createWebGlAtlasRenderer({
         host,
         reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches,
@@ -157,7 +229,12 @@ async function renderApertureSocialField() {
       state.webgl.renderer.render(state.webgl.model);
       state.webgl.rendered = true;
     }
+    if (!state.webgl.ecologyBound && state.webgl.events) {
+      state.webgl.renderer.setEcology(state.webgl.events, state.ecology.position);
+      state.webgl.ecologyBound = true;
+    }
     setApertureFieldActive(true);
+    syncEcologyClockControls();
     const view = apertureFieldView();
     state.webgl.renderer.setView(view);
     state.webgl.renderer.select(state.map.selectedFieldNodeId || state.map.selectedActorId || null);

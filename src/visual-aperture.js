@@ -8,10 +8,10 @@ Object.assign(globalThis, core, addressState, workspaceModel, exportModel, windo
 
 globalThis.loadCliffordSocialField = async () => {
   const [renderer, social] = await Promise.all([import('./atlas-webgl.js'), import('./social-field.js')]);
-  return { ...renderer, buildResearchNetworkModel: social.buildResearchNetworkModel };
+  return { ...renderer, buildResearchNetworkModel: social.buildResearchNetworkModel, buildEcologyEventModel: social.buildEcologyEventModel, ecologyEventsForNode: social.ecologyEventsForNode, activeEcologyEvents: social.activeEcologyEvents, ecologyPlayheadLabel: social.ecologyPlayheadLabel };
 };
 
-const RUNTIME_VERSION = '20260914-continuous1';
+const RUNTIME_VERSION = '20260914-ecology1';
 const runtimeUrls = [
   `./visual-aperture-workspace-runtime.js?v=${RUNTIME_VERSION}`,
   `./visual-aperture-export-runtime.js?v=${RUNTIME_VERSION}`,

@@ -10,7 +10,16 @@ function mapSearchOptions() {
 function findMapSearchNode(value) {
   const needle = String(value || '').trim().toLowerCase();
   if (!needle) return null;
-  return [...state.legacyNodes.values()].find(node => String(node.id).toLowerCase() === needle || String(node.label || '').toLowerCase() === needle) || null;
+  const nodes = [...state.legacyNodes.values()].filter(node => node?.id && node?.label && !String(node.id).startsWith('surface-'));
+  const exact = nodes.find(node => String(node.id).toLowerCase() === needle || String(node.label).toLowerCase() === needle);
+  if (exact) return exact;
+  const normalizedNeedle = needle.replace(/^(dr|sir|dame|lord|prof|professor)\.\s+/, '');
+  const matches = nodes.filter(node => {
+    const label = String(node.label).toLowerCase();
+    const normalizedLabel = label.replace(/^(dr|sir|dame|lord|prof|professor)\.\s+/, '');
+    return normalizedLabel.includes(normalizedNeedle) || label.includes(needle);
+  });
+  return matches.length === 1 ? matches[0] : null;
 }
 
 function renderModeControls() {
@@ -24,7 +33,8 @@ function renderModeControls() {
     controls.innerHTML = `
       <label class="aperture-control aperture-control--wide aperture-control--start"><span>Start with a person or organization</span><input id="ap-map-search" type="search" list="ap-map-search-options" placeholder="Type a name" value="${esc(selectedSearchNode?.label || '')}"><datalist id="ap-map-search-options">${mapSearchOptions()}</datalist></label>
       <label class="aperture-control aperture-control--scale"><span>Depth &middot; <strong id="ap-map-level">${esc(mapLevelLabel(state.map.level))}</strong></span><input id="ap-map-scale" type="range" min="1" max="5.4" step="0.05" value="${state.map.scale}"></label>
-      <div class="aperture-control-buttons" aria-label="Map depth controls"><button type="button" data-ap-action="zoom-out" aria-label="Zoom out">-</button><button type="button" data-ap-action="zoom-in" aria-label="Zoom in">+</button><button type="button" data-ap-action="reset-map">Reset</button></div>
+      <div class="aperture-control-buttons" aria-label="Map depth controls"><button type="button" data-ap-action="zoom-out" aria-label="Zoom out">-</button><button type="button" data-ap-action="zoom-in" aria-label="Zoom in">+</button><button type="button" data-ap-action="reset-map">Reset</button></div>      <label class="aperture-control aperture-control--timeline"><span>Evidence time &middot; <strong id="ap-ecology-date">${esc(ecologyClockLabel())}</strong></span><input id="ap-ecology-time" type="range" min="0" max="1000" step="1" value="${Math.round(state.ecology.position * 1000)}"></label>
+      <button type="button" class="aperture-secondary-button aperture-ecology-toggle" data-ap-action="ecology-toggle" aria-pressed="${String(state.ecology.playing)}">${state.ecology.playing ? 'Pause time' : 'Play time'}</button>
       <details class="aperture-jump"><summary>Jump to a bounded surface</summary><div class="aperture-jump-controls"><label class="aperture-control"><span>Family</span><select id="ap-map-cluster">${clusters.map(item => `<option value="${esc(item.id)}"${item.id === state.map.selectedClusterId ? ' selected' : ''}>${esc(item.label)} &middot; ${item.surfaceCount}</option>`).join('')}</select></label><label class="aperture-control aperture-control--wide"><span>Surface</span><select id="ap-map-surface">${surfaces.map(surface => `<option value="${esc(surface.surface_id)}"${surface.surface_id === state.map.selectedSurfaceId ? ' selected' : ''}>${esc(shortLabel(surface.surface_label, 68))} &middot; ${actorParticipants(surface).length}</option>`).join('')}</select></label></div></details>
       ${addressActionMarkup()}`;
     return;

@@ -13,7 +13,8 @@ const state = {
   mode: 'map',
   sheetOpen: false,
   visibilityObserver: null,
-  webgl: { renderer: null, model: null, failed: false, rendered: false, cameraOwnsScale: false, lastFocusKey: null },
+  webgl: { renderer: null, model: null, events: null, eventApi: null, failed: false, rendered: false, cameraOwnsScale: false, lastFocusKey: null },
+  ecology: { position: 0, playing: true, frame: 0, lastTimestamp: 0, cycleMs: 52000 },
   address: {
     ready: false,
     active: false,

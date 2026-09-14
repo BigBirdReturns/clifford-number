@@ -150,6 +150,8 @@
 .aperture-control--wide { min-width: min(310px, 34vw); }
 .aperture-control--start { min-width: min(340px, 40vw); }
 .aperture-control--scale { min-width: 210px; }
+.aperture-control--timeline { min-width: 250px; }
+.aperture-ecology-toggle { align-self: end; min-width: 96px; }
 .aperture-control > span {
   color: var(--ap-muted);
   font: 10px/1.2 var(--font-mono);
@@ -346,3 +348,10 @@
 .aperture-pin-button[aria-pressed="true"] { border-color: var(--ap-teal); color: var(--ap-teal); }
 .aperture-boundary { margin: 0; padding: 15px 20px; border-top: 1px solid var(--ap-line); background: #090c11; color: var(--ap-muted); font: 10px/1.55 var(--font-mono); }
 .aperture-boundary strong { color: var(--ap-text); }
+
+.aperture-activity-list { list-style: none; display: grid; gap: 6px; margin: 10px 0 0 !important; padding: 0 !important; }
+.aperture-activity-list li { display: grid; gap: 3px; padding: 9px 10px; border: 1px solid var(--ap-line); background: #0a0d13; }
+.aperture-activity-list li.is-active { border-color: var(--ap-amber); box-shadow: inset 2px 0 var(--ap-amber); }
+.aperture-activity-list strong { color: var(--ap-amber); font: 700 9px/1.2 var(--font-mono); text-transform: uppercase; }
+.aperture-activity-list span { color: var(--ap-text); font-size: 11px; line-height: 1.35; }
+.aperture-activity-list small { color: var(--ap-muted); font: 9px/1.4 var(--font-mono); }

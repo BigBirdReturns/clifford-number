@@ -283,3 +283,176 @@ export function buildResearchNetworkModel(graph) {
     defaultNode: nodes.some(node => node.id === 'dialog') ? 'dialog' : nodes[0]?.id ?? null
   };
 }
+
+
+export const ECOLOGY_EVENT_SCHEMA = 'clifford-ecology-events@1';
+const DENSE_EVENT_THRESHOLD = 36;
+const DAY_MS = 86_400_000;
+const ECOLOGY_EVIDENCE_WEIGHT = Object.freeze({
+  official: 1,
+  confirmed: .96,
+  government_record: .94,
+  primary_public: .9,
+  reported: .64,
+  judgment: .46,
+  derived: .4,
+  open: .32
+});
+
+function ecologyLinkKey(a, b) {
+  return [String(a || ''), String(b || '')].sort().join('||');
+}
+
+function ecologyDay(value, end = false) {
+  const text = String(value || '').trim();
+  if (!text) return null;
+  const match = /^(\d{4})(?:-(\d{2})(?:-(\d{2}))?)?$/.exec(text);
+  if (!match) return null;
+  const year = Number(match[1]), month = match[2] ? Number(match[2]) : null, day = match[3] ? Number(match[3]) : null;
+  if (day) return Math.floor(Date.UTC(year, month - 1, day) / DAY_MS);
+  if (month) return Math.floor(Date.UTC(year, end ? month : month - 1, end ? 0 : 1) / DAY_MS);
+  return Math.floor(Date.UTC(year, end ? 11 : 0, end ? 31 : 1) / DAY_MS);
+}
+function ecologyChannel(participant, surface) {
+  const participation = `${participant?.participation_type || ''} ${participant?.role || ''}`.toLowerCase();
+  if (/invest|shareholder|capital|fund|instrument/.test(participation)) return 'capital';
+  if (/procurement|buyer|supplier|contractor|framework|shortlist|downselect/.test(participation)) return 'procurement';
+  if (/policy|government|civil service|adviser|official|public institution/.test(participation)) return 'policy';
+  if (/director|board|officer|appointment|chair|governance/.test(participation)) return 'governance';
+  if (/speaker|publication|forum|cohort|event|roster|directory|venue/.test(participation)) return 'forum';
+  if (/customer|vendor|client|company|partner|employee|employment/.test(participation)) return 'commercial';
+  const surfaceType = String(surface?.surface_type || '').toLowerCase();
+  if (/procurement/.test(surfaceType)) return 'procurement';
+  if (/policy|government/.test(surfaceType)) return 'policy';
+  if (/board|founder|officer|governance/.test(surfaceType)) return 'governance';
+  if (/employment|investment/.test(surfaceType)) return 'commercial';
+  if (/roster|directory|campaign|category/.test(surfaceType)) return 'forum';
+  return 'context';
+}
+
+function ecologyDateLabel(start, end) {
+  if (!start && !end) return 'undated';
+  if (!end || end === start) return start || end;
+  return `${start || 'unknown'} to ${end}`;
+}
+
+function participantNodeId(participant) {
+  return participant?.actor_id || participant?.organization_id || null;
+}
+
+function ecologyEvidenceWeight(value) {
+  return ECOLOGY_EVIDENCE_WEIGHT[value] ?? ECOLOGY_EVIDENCE_WEIGHT.open;
+}
+export function buildEcologyEventModel(surfaceGraph, networkModel, { denseThreshold = DENSE_EVENT_THRESHOLD } = {}) {
+  if (!surfaceGraph?.surfaces || !networkModel?.nodeById) throw new TypeError('ecology events require surface graph and network model');
+  const events = [];
+  const networkLinkKeys = new Set((networkModel.edges ?? []).map(edge => ecologyLinkKey(endpointId(edge.from ?? edge.source), endpointId(edge.to ?? edge.target))));
+  let suppressedDenseParticipations = 0;
+  let unresolvedLinks = 0;
+  let eventSequence = 0;
+
+  for (const surface of surfaceGraph.surfaces) {
+    const surfaceNodeId = `surface-${surface.surface_id}`;
+    const participants = surface.participants ?? [];
+    const dense = surface.surface_type === 'directory_roster_surface' || participants.length > denseThreshold;
+    if (dense) {
+      suppressedDenseParticipations += participants.length;
+      if (!networkModel.nodeById.has(surfaceNodeId)) { unresolvedLinks += 1; continue; }
+      const start = surface.time_start || null, end = surface.time_end || start;
+      const startDay = ecologyDay(start), endDay = ecologyDay(end, true) ?? startDay;
+      if (startDay == null) continue;
+      events.push({
+        id: `surface-activity:${surface.surface_id}:${eventSequence++}`,
+        event_kind: 'surface_activity', channel: 'forum', direction: 'undirected_activity',
+        target_node_id: surfaceNodeId, participant_node_id: null, surface_node_id: surfaceNodeId,
+        link_key: null, aggregate_count: participants.length,
+        surface_id: surface.surface_id, surface_label: surface.surface_label, surface_type: surface.surface_type,
+        participation_type: 'dense_roster_contained', role: 'Bounded roster activation',
+        time_start: start, time_end: end, time_label: ecologyDateLabel(start, end), start_day: startDay, end_day: endDay,
+        evidence_class: surface.evidence_class || 'open', evidence_weight: ecologyEvidenceWeight(surface.evidence_class),
+        receipt_ids: [...new Set(surface.receipt_ids ?? [])], weight: .14,
+        dense_roster_contained: true
+      });
+      continue;
+    }
+    for (const participant of participants) {
+      const nodeId = participantNodeId(participant);
+      const linkKey = ecologyLinkKey(nodeId, surfaceNodeId);
+      if (!nodeId || !networkModel.nodeById.has(nodeId) || !networkModel.nodeById.has(surfaceNodeId) || !networkLinkKeys.has(linkKey)) {
+        unresolvedLinks += 1;
+        continue;
+      }
+      const start = participant.time_start || surface.time_start || null;
+      const end = participant.time_end || surface.time_end || start;
+      const startDay = ecologyDay(start), endDay = ecologyDay(end, true) ?? startDay;
+      if (startDay == null) continue;
+      const channel = ecologyChannel(participant, surface);
+      const evidenceClass = participant.evidence_class || surface.evidence_class || 'open';
+      events.push({
+        id: `participation:${surface.surface_id}:${nodeId}:${participant.participation_type || 'participant'}:${eventSequence++}`,
+        event_kind: 'participation', channel, direction: 'undirected_activity',
+        target_node_id: surfaceNodeId, participant_node_id: nodeId, surface_node_id: surfaceNodeId,
+        link_key: linkKey, aggregate_count: 1,
+        surface_id: surface.surface_id, surface_label: surface.surface_label, surface_type: surface.surface_type,
+        participation_type: participant.participation_type || 'participant', role: participant.role || 'Recorded participant',
+        time_start: start, time_end: end, time_label: ecologyDateLabel(start, end), start_day: startDay, end_day: endDay,
+        evidence_class: evidenceClass, evidence_weight: ecologyEvidenceWeight(evidenceClass),
+        receipt_ids: [...new Set([...(surface.receipt_ids ?? []), ...(participant.receipt_ids ?? [])])],
+        weight: channel === 'context' ? .3 : .7 + ecologyEvidenceWeight(evidenceClass) * .3,
+        dense_roster_contained: false
+      });
+    }
+  }
+
+  events.sort((a, b) => a.start_day - b.start_day || a.end_day - b.end_day || a.id.localeCompare(b.id));
+  const firstDay = events.length ? Math.min(...events.map(event => event.start_day)) : null;
+  const lastDay = events.length ? Math.max(...events.map(event => event.end_day)) : null;
+  const channelCounts = Object.fromEntries([...new Set(events.map(event => event.channel))]
+    .sort().map(channel => [channel, events.filter(event => event.channel === channel).length]));
+  return {
+    schema_version: ECOLOGY_EVENT_SCHEMA,
+    derived: true,
+    visualization_only: true,
+    canonical_for_clifford_number: false,
+    graph_effect: 'none',
+    interpretation: 'Events animate documented participation on existing actor-to-surface topology only. They create no actor-to-actor edge, hop, direction, causality, or finding.',
+    events,
+    range: {
+      first_day: firstDay,
+      last_day: lastDay,
+      first_date: firstDay == null ? null : new Date(firstDay * DAY_MS).toISOString().slice(0, 10),
+      last_date: lastDay == null ? null : new Date(lastDay * DAY_MS).toISOString().slice(0, 10)
+    },
+    counts: {
+      events: events.length,
+      dense_surface_events: events.filter(event => event.dense_roster_contained).length,
+      suppressed_dense_participations: suppressedDenseParticipations,
+      unresolved_links: unresolvedLinks,
+      channels: channelCounts
+    }
+  };
+}
+
+export function ecologyEventsForNode(eventModel, nodeId) {
+  return (eventModel?.events ?? []).filter(event => event.participant_node_id === nodeId || event.surface_node_id === nodeId || event.target_node_id === nodeId);
+}
+export function ecologyPlayheadDay(eventModel, position = 0) {
+  const first = eventModel?.range?.first_day, last = eventModel?.range?.last_day;
+  if (!Number.isFinite(first) || !Number.isFinite(last)) return null;
+  const t = Math.max(0, Math.min(1, Number(position) || 0));
+  return first + (last - first) * t;
+}
+
+export function ecologyPlayheadLabel(eventModel, position = 0) {
+  const day = ecologyPlayheadDay(eventModel, position);
+  return day == null ? 'No dated activity' : new Date(day * DAY_MS).toISOString().slice(0, 10);
+}
+
+export function activeEcologyEvents(eventModel, position = 0, { pulseDays = 45 } = {}) {
+  const day = ecologyPlayheadDay(eventModel, position);
+  if (day == null) return [];
+  return (eventModel.events ?? []).filter(event => {
+    if (event.start_day <= day && event.end_day >= day) return true;
+    return Math.abs(event.start_day - day) <= pulseDays || Math.abs(event.end_day - day) <= pulseDays;
+  });
+}
