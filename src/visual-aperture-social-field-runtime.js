@@ -21,6 +21,8 @@ function setApertureFieldActive(active) {
     badge.textContent = active ? 'GPU social field' : 'SVG semantic map';
     badge.dataset.engine = active ? 'webgl' : 'svg';
   }
+  if (active) state.webgl?.renderer?.resume?.();
+  else state.webgl?.renderer?.pause?.();
 }
 
 function deactivateApertureSocialField() {
@@ -54,7 +56,7 @@ async function renderApertureSocialField() {
   const host = $('#aperture-webgl', state.root);
   if (!host) return;
   try {
-    if (!state.webgl) state.webgl = { renderer: null, model: null, failed: false };
+    if (!state.webgl) state.webgl = { renderer: null, model: null, failed: false, rendered: false };
     if (!state.webgl.renderer) {
       const api = await globalThis.loadCliffordSocialField();
       if (!api.supportsWebGlAtlas()) return;
@@ -67,7 +69,10 @@ async function renderApertureSocialField() {
         onInteraction: () => {}
       });
     }
-    state.webgl.renderer.render(state.webgl.model);
+    if (!state.webgl.rendered) {
+      state.webgl.renderer.render(state.webgl.model);
+      state.webgl.rendered = true;
+    }
     setApertureFieldActive(true);
   } catch (error) {
     state.webgl.failed = true;

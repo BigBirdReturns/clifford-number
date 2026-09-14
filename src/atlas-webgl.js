@@ -365,6 +365,8 @@ export async function createWebGlAtlasRenderer({ host, onNodeSelect, onLinkSelec
     const factor = action === 'in' ? .78 : 1.28;
     graph.cameraPosition({ x: camera.x * factor, y: camera.y * factor, z: camera.z * factor }, undefined, reducedMotion ? 0 : 240);
   }
+  function pause() { graph.pauseAnimation(); }
+  function resume() { graph.resumeAnimation(); }
   function destroy() {
     resizeObserver.disconnect();
     graph.pauseAnimation();
@@ -380,6 +382,8 @@ export async function createWebGlAtlasRenderer({ host, onNodeSelect, onLinkSelec
     focus,
     zoom,
     resize,
+    pause,
+    resume,
     destroy,
     field: () => field,
     graph: () => graph
