@@ -49,6 +49,15 @@ async function createMeasuredPage(browser, fixture, options) {
     }));
   }
   const page = await context.newPage();
+  if (options.disableWebgl) {
+    await page.addInitScript(() => {
+      const originalGetContext = HTMLCanvasElement.prototype.getContext;
+      HTMLCanvasElement.prototype.getContext = function patchedGetContext(kind, ...args) {
+        if (['webgl', 'webgl2', 'experimental-webgl'].includes(String(kind).toLowerCase())) return null;
+        return originalGetContext.call(this, kind, ...args);
+      };
+    });
+  }
   const consoleErrors = [];
   const pageErrors = [];
   page.on('console', message => {
@@ -105,7 +114,8 @@ async function waitForCorpusRenderer(page) {
 async function desktopMeasurements(browser, fixture) {
   const measured = await createMeasuredPage(browser, fixture, {
     viewport: { width: 1440, height: 1100 },
-    reducedMotion: false
+    reducedMotion: false,
+    disableWebgl: true
   });
   const { context, page } = measured;
   const result = {
@@ -286,7 +296,8 @@ async function desktopMeasurements(browser, fixture) {
 async function mobileMeasurements(browser, fixture) {
   const measured = await createMeasuredPage(browser, fixture, {
     viewport: { width: 375, height: 812 },
-    reducedMotion: true
+    reducedMotion: true,
+    disableWebgl: true
   });
   const { context, page } = measured;
   const result = {
@@ -326,6 +337,37 @@ async function mobileMeasurements(browser, fixture) {
   }
 }
 
+async function gpuSocialFieldSmoke(browser) {
+  const context = await browser.newContext({ viewport: { width: 1200, height: 900 }, reducedMotion: 'no-preference' });
+  const page = await context.newPage();
+  const consoleErrors = [];
+  const pageErrors = [];
+  page.on('console', message => { if (message.type() === 'error') consoleErrors.push(message.text()); });
+  page.on('pageerror', error => pageErrors.push(error.message));
+  try {
+    await page.goto(EXPLORER_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
+    await page.waitForFunction(() => document.querySelector('#network-atlas')?.dataset.apertureMounted === 'true', null, { timeout: 60000 });
+    await page.waitForFunction(() => document.querySelector('#aperture-renderer-badge')?.dataset.engine === 'webgl' && document.querySelector('#aperture-webgl canvas'), null, { timeout: 60000 });
+    const canvas = page.locator('#aperture-webgl canvas');
+    const box = await canvas.boundingBox();
+    assert.ok(box?.width > 300 && box?.height > 300, 'GPU corpus canvas must occupy the stage');
+    const first = await canvas.screenshot();
+    await page.waitForTimeout(700);
+    const second = await canvas.screenshot();
+    assert.equal(first.equals(second), false, 'GPU social field must visibly animate when reduced motion is not requested');
+    await setMapScale(page, 2);
+    await page.waitForFunction(() => document.querySelector('#aperture-renderer-badge')?.dataset.engine === 'svg');
+    await page.click('[data-ap-action="reset-map"]');
+    await page.waitForFunction(() => document.querySelector('#aperture-renderer-badge')?.dataset.engine === 'webgl');
+    await page.waitForTimeout(350);
+    assert.deepEqual(consoleErrors, []);
+    assert.deepEqual(pageErrors, []);
+    return { canvas_width: round(box.width), canvas_height: round(box.height), animated: true, svg_handoff: true, resumed: true };
+  } finally {
+    await context.close();
+  }
+}
+
 async function main() {
   fs.mkdirSync(outputDirectory, { recursive: true });
   const { buildVisualApertureScaleFixture, summarizeVisualApertureScaleFixture } = await import('./visual-aperture-scale-fixture.mjs');
@@ -345,6 +387,7 @@ async function main() {
     fixture: summarizeVisualApertureScaleFixture(fixture),
     desktop: null,
     mobile_reduced_motion: null,
+    gpu_social_field: null,
     passed: false,
     error: null,
     interpretation_contract: {
@@ -354,6 +397,7 @@ async function main() {
   };
   const browser = await chromium.launch({ headless: true });
   try {
+    output.gpu_social_field = await gpuSocialFieldSmoke(browser);
     output.desktop = await desktopMeasurements(browser, fixture);
     output.mobile_reduced_motion = await mobileMeasurements(browser, fixture);
     output.passed = true;
