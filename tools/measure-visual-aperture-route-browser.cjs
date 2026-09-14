@@ -16,6 +16,8 @@ const MAX_STAGE_WIDTH = 8000;
 const MAX_RENDER_MS = 300;
 const MAX_LONG_TASK_MS = 250;
 const MAX_DOM_NODES = 25_000;
+const DEFAULT_EXPLORER_URL = 'http://127.0.0.1:8080/explorer.html';
+const EXPLORER_URL = process.env.CLIFFORD_APERTURE_BASE_URL ? `${process.env.CLIFFORD_APERTURE_BASE_URL}/explorer.html` : DEFAULT_EXPLORER_URL;
 
 function round(value) {
   return Number(Number(value).toFixed(3));
@@ -85,6 +87,14 @@ async function main() {
   });
   page.on('pageerror', error => output.page_errors.push(error.message));
   await page.addInitScript(() => {
+    // This stress fixture exercises the bounded SVG route renderer. The GPU corpus
+    // consumes graph.json, not this synthetic hop fixture, so keep it out of the
+    // route timing contract while the separate GPU smoke covers the GPU adapter.
+    const originalGetContext = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = function patchedGetContext(kind, ...args) {
+      if (['webgl', 'webgl2', 'experimental-webgl'].includes(String(kind).toLowerCase())) return null;
+      return originalGetContext.call(this, kind, ...args);
+    };
     globalThis.__apertureRouteLongTasks = [];
     if ('PerformanceObserver' in globalThis) {
       try {
@@ -103,7 +113,7 @@ async function main() {
   });
 
   try {
-    await page.goto('http://127.0.0.1:8080/explorer.html', { waitUntil: 'domcontentloaded', timeout: 60000 });
+    await page.goto(EXPLORER_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
     await page.waitForFunction(() => document.querySelector('#network-atlas')?.dataset.apertureMounted === 'true', null, { timeout: 60000 });
     await page.click('[data-ap-mode="route"]');
     await page.waitForSelector('#ap-route-from');
