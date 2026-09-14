@@ -344,8 +344,13 @@ export async function createWebGlAtlasRenderer({ host, onNodeSelect, onLinkSelec
     selectedId = selectedNodeId && model.nodeById.has(selectedNodeId) ? selectedNodeId : null;
     requestAnimationFrame(() => applyHighlight(selectedId));
     if (lastMode !== model.mode) {
+      const initialPlacement = lastMode === null;
       lastMode = model.mode;
-      graph.cameraPosition({ x: 0, y: 0, z: field.radius * 3.55 }, { x: 0, y: 0, z: 0 }, reducedMotion ? 0 : 520);
+      graph.cameraPosition(
+        { x: 0, y: 0, z: field.radius * 3.55 },
+        { x: 0, y: 0, z: 0 },
+        initialPlacement || reducedMotion ? 0 : 520
+      );
     }
     host.dataset.atlasEngine = 'force3d';
     return field;
