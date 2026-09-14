@@ -17,7 +17,10 @@ function handleAction(button) {
     state.map.scale = 1;
     state.map.level = 'corpus';
     state.map.selectedActorId = null;
+    state.map.selectedFieldNodeId = null;
+    state.map.hasExplicitFocus = false;
     state.map.selectedTypeId = null;
+    state.selectedActorId = null;
     renderModeControls();
     renderMapMode();
     commitApertureAddress('push');
@@ -131,8 +134,27 @@ function handleInput(event) {
   }
 }
 
+function openMapSearch(value) {
+  const node = findMapSearchNode(value);
+  if (!node) return false;
+  state.map.selectedFieldNodeId = node.id;
+  state.map.hasExplicitFocus = true;
+  if (state.actors.has(node.id)) {
+    selectApertureFieldActor(node.id);
+    return true;
+  }
+  state.map.scale = Math.max(state.map.scale, 1.9);
+  state.map.level = semanticLevelForScale(state.map.scale, state.map.level);
+  renderModeControls();
+  renderMapMode();
+  commitApertureAddress('push');
+  setInspector(node.label, `<p class="aperture-kicker">Selected public object</p><h3>${esc(node.label)}</h3><p>${esc(node.description || 'Public organization or topology object in the Research projection.')}</p><p>Scroll or use Depth to move from the whole field into this object's documented neighborhood. Select a bounded surface to inspect exact participation and receipts.</p>`, { openOnMobile: true });
+  return true;
+}
+
 function handleChange(event) {
   const target = event.target;
+  if (target.id === 'ap-map-search') { openMapSearch(target.value); return; }
   if (target.id === 'ap-map-cluster') { selectCluster(target.value, { advance: false }); return; }
   if (target.id === 'ap-map-surface') { selectMapSurface(target.value, { advance: state.map.level === 'corpus' || state.map.level === 'machine' }); return; }
   if (target.id === 'ap-route-from') { state.route.fromId = target.value; state.route.selectedActorId = null; state.route.selectedStep = null; renderRouteMode(); commitApertureAddress('push'); return; }
@@ -155,6 +177,11 @@ function handleChange(event) {
 function handleKeydown(event) {
   const target = event.target instanceof Element ? event.target : event.target?.parentElement;
   if (!target) return;
+  if (target.id === 'ap-map-search' && event.key === 'Enter') {
+    event.preventDefault();
+    openMapSearch(target.value);
+    return;
+  }
   if (target.id === 'ap-workspace-name' && event.key === 'Enter') {
     event.preventDefault();
     saveCurrentWorkspaceView();

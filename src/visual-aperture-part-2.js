@@ -2,9 +2,9 @@ function shellMarkup() {
   return `
     <div class="aperture-header">
       <div>
-        <p class="section-kicker">Operational public topology</p>
-        <h2 id="network-title">Map the system. Keep the receipt attached.</h2>
-        <p>Semantic zoom changes the object under inspection. Route mode preserves every actor → bounded surface → actor step. Surface mode keeps dense rosters inside their container instead of manufacturing pairwise adjacency.</p>
+        <p class="section-kicker">Evidence-backed relationship map</p>
+        <h2 id="network-title">Pick a person. Follow the public record.</h2>
+        <p>Clifford Number shows where people and organizations appear together on documented public surfaces: companies, boards, programs, cohorts, events, and roles. Start with a name, follow the named surface, then open the receipts. A route is actor → bounded surface → actor; co-presence never becomes coordination, and the visualizer creates no pairwise lines from shared context.</p>
       </div>
       <div class="aperture-live" aria-live="polite">
         <span class="aperture-live-dot" aria-hidden="true"></span>
@@ -13,11 +13,16 @@ function shellMarkup() {
       </div>
     </div>
 
+    <div class="aperture-how" aria-label="How Clifford Number works">
+      <span><b>1</b> Find a person or organization</span><i aria-hidden="true">&rarr;</i><span><b>2</b> Follow the named surface</span><i aria-hidden="true">&rarr;</i><span><b>3</b> Open the receipts</span>
+      <small>Drag empty space to rotate &middot; scroll to drill &middot; click a node to focus. Nodes stay fixed because their position is part of the view.</small>
+    </div>
+
     <div class="aperture-commandbar">
       <div class="aperture-mode-switch" role="tablist" aria-label="Choose operating mode">
-        <button type="button" role="tab" class="aperture-mode-button is-active" data-ap-mode="map" aria-selected="true"><span>01</span> Map</button>
+        <button type="button" role="tab" class="aperture-mode-button is-active" data-ap-mode="map" aria-selected="true"><span>01</span> Explore</button>
         <button type="button" role="tab" class="aperture-mode-button" data-ap-mode="route" aria-selected="false" tabindex="-1"><span>02</span> Route</button>
-        <button type="button" role="tab" class="aperture-mode-button" data-ap-mode="surface" aria-selected="false" tabindex="-1"><span>03</span> Surface</button>
+        <button type="button" role="tab" class="aperture-mode-button" data-ap-mode="surface" aria-selected="false" tabindex="-1"><span>03</span> Roster</button>
       </div>
       <div id="aperture-mode-controls" class="aperture-mode-controls"></div>
     </div>
@@ -32,6 +37,7 @@ function shellMarkup() {
 
     <div class="aperture-layout">
       <div class="aperture-stage-wrap">
+        <div class="aperture-stage-guide" aria-hidden="true"><strong>Explore</strong><span>rotate background &middot; wheel = depth &middot; click = focus</span></div>
         <div id="aperture-webgl" class="aperture-webgl" role="img" aria-label="Spherical social field. Heat represents repeated documented reinforcement; arcs remain sourced graph edges." hidden></div>
         <svg id="aperture-stage" class="aperture-stage" viewBox="0 0 1200 720" role="img" aria-labelledby="aperture-stage-title aperture-stage-desc">
           <title id="aperture-stage-title">Clifford Number operating map</title>

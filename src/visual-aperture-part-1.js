@@ -13,7 +13,7 @@ const state = {
   mode: 'map',
   sheetOpen: false,
   visibilityObserver: null,
-  webgl: { renderer: null, model: null, failed: false, rendered: false },
+  webgl: { renderer: null, model: null, failed: false, rendered: false, cameraOwnsScale: false, lastFocusKey: null },
   address: {
     ready: false,
     active: false,
@@ -33,7 +33,9 @@ const state = {
     selectedClusterId: null,
     selectedTypeId: null,
     selectedSurfaceId: null,
-    selectedActorId: null
+    selectedActorId: null,
+    selectedFieldNodeId: null,
+    hasExplicitFocus: false
   },
   route: {
     fromId: null,

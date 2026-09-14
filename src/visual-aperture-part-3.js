@@ -1,3 +1,18 @@
+const MAP_LEVEL_LABELS = Object.freeze({ corpus: 'Whole network', machine: 'Neighborhood', surface: 'Bounded surface', evidence: 'Evidence' });
+function mapLevelLabel(level) { return MAP_LEVEL_LABELS[level] || humanLabel(level); }
+function mapSearchOptions() {
+  return [...state.legacyNodes.values()]
+    .filter(node => node?.id && node?.label && !String(node.id).startsWith('surface-'))
+    .sort((a, b) => String(a.label).localeCompare(String(b.label)))
+    .map(node => `<option value="${esc(node.label)}" data-node-id="${esc(node.id)}">${esc(humanLabel(node.type || 'public object'))}</option>`)
+    .join('');
+}
+function findMapSearchNode(value) {
+  const needle = String(value || '').trim().toLowerCase();
+  if (!needle) return null;
+  return [...state.legacyNodes.values()].find(node => String(node.id).toLowerCase() === needle || String(node.label || '').toLowerCase() === needle) || null;
+}
+
 function renderModeControls() {
   const controls = $('#aperture-mode-controls', state.root);
   if (state.mode === 'map') {
@@ -5,11 +20,12 @@ function renderModeControls() {
     ensureMapSelection();
     const cluster = clusters.find(item => item.id === state.map.selectedClusterId);
     const surfaces = [...(cluster?.surfaces ?? [])].sort((a, b) => actorParticipants(b).length - actorParticipants(a).length || a.surface_label.localeCompare(b.surface_label));
+    const selectedSearchNode = state.map.selectedFieldNodeId ? state.legacyNodes.get(state.map.selectedFieldNodeId) : null;
     controls.innerHTML = `
-      <label class="aperture-control aperture-control--scale"><span>Semantic scale · <strong id="ap-map-level">${esc(humanLabel(state.map.level))}</strong></span><input id="ap-map-scale" type="range" min="1" max="5.4" step="0.05" value="${state.map.scale}"></label>
-      <div class="aperture-control-buttons" aria-label="Semantic zoom controls"><button type="button" data-ap-action="zoom-out" aria-label="Zoom out">−</button><button type="button" data-ap-action="zoom-in" aria-label="Zoom in">+</button><button type="button" data-ap-action="reset-map">Whole field</button></div>
-      <label class="aperture-control"><span>Surface family</span><select id="ap-map-cluster">${clusters.map(item => `<option value="${esc(item.id)}"${item.id === state.map.selectedClusterId ? ' selected' : ''}>${esc(item.label)} · ${item.surfaceCount}</option>`).join('')}</select></label>
-      <label class="aperture-control aperture-control--wide"><span>Bounded surface</span><select id="ap-map-surface">${surfaces.map(surface => `<option value="${esc(surface.surface_id)}"${surface.surface_id === state.map.selectedSurfaceId ? ' selected' : ''}>${esc(shortLabel(surface.surface_label, 68))} · ${actorParticipants(surface).length}</option>`).join('')}</select></label>
+      <label class="aperture-control aperture-control--wide aperture-control--start"><span>Start with a person or organization</span><input id="ap-map-search" type="search" list="ap-map-search-options" placeholder="Type a name" value="${esc(selectedSearchNode?.label || '')}"><datalist id="ap-map-search-options">${mapSearchOptions()}</datalist></label>
+      <label class="aperture-control aperture-control--scale"><span>Depth &middot; <strong id="ap-map-level">${esc(mapLevelLabel(state.map.level))}</strong></span><input id="ap-map-scale" type="range" min="1" max="5.4" step="0.05" value="${state.map.scale}"></label>
+      <div class="aperture-control-buttons" aria-label="Map depth controls"><button type="button" data-ap-action="zoom-out" aria-label="Zoom out">-</button><button type="button" data-ap-action="zoom-in" aria-label="Zoom in">+</button><button type="button" data-ap-action="reset-map">Reset</button></div>
+      <details class="aperture-jump"><summary>Jump to a bounded surface</summary><div class="aperture-jump-controls"><label class="aperture-control"><span>Family</span><select id="ap-map-cluster">${clusters.map(item => `<option value="${esc(item.id)}"${item.id === state.map.selectedClusterId ? ' selected' : ''}>${esc(item.label)} &middot; ${item.surfaceCount}</option>`).join('')}</select></label><label class="aperture-control aperture-control--wide"><span>Surface</span><select id="ap-map-surface">${surfaces.map(surface => `<option value="${esc(surface.surface_id)}"${surface.surface_id === state.map.selectedSurfaceId ? ' selected' : ''}>${esc(shortLabel(surface.surface_label, 68))} &middot; ${actorParticipants(surface).length}</option>`).join('')}</select></label></div></details>
       ${addressActionMarkup()}`;
     return;
   }
@@ -130,7 +146,7 @@ function setMapScale(value, { history = 'replace' } = {}) {
   const input = $('#ap-map-scale', state.root);
   if (input) input.value = String(state.map.scale);
   const label = $('#ap-map-level', state.root);
-  if (label) label.textContent = humanLabel(state.map.level);
+  if (label) label.textContent = mapLevelLabel(state.map.level);
   if (unchanged) return;
   renderMapMode();
   commitApertureAddress(history);

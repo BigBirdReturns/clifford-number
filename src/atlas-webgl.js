@@ -254,6 +254,9 @@ export async function createWebGlAtlasRenderer({ host, onNodeSelect, onLinkSelec
   if (!host || !supportsWebGlAtlas()) throw new Error('WebGL atlas is unavailable');
   const ForceGraph3D = await loadForceGraphVendor();
   let field = null, selectedId = null;
+  let semanticView = { level: 'corpus', focusIds: new Set(), primaryIds: new Set(), fade: .08 };
+  let programmaticCameraUntil = 0;
+  let lastCameraDistance = null;
   const graph = new ForceGraph3D(host, {
     controlType: 'orbit',
     rendererConfig: { antialias: true, alpha: true, powerPreference: 'high-performance' }
@@ -274,6 +277,7 @@ export async function createWebGlAtlasRenderer({ host, onNodeSelect, onLinkSelec
     })
     .warmupTicks(0)
     .cooldownTicks(0);
+  if (typeof graph.enableNodeDrag === 'function') graph.enableNodeDrag(false);
 
   graph.renderer().setPixelRatio(Math.min(1.7, window.devicePixelRatio || 1));
   const controls = graph.controls();
@@ -288,26 +292,67 @@ export async function createWebGlAtlasRenderer({ host, onNodeSelect, onLinkSelec
   const shell = makeShell(SOCIAL_FIELD_RADIUS);
   graph.scene().add(shell);
 
+  function semanticNodeFactor(id) {
+    const focus = semanticView.focusIds;
+    if (!focus?.size) return 1;
+    return focus.has(id) ? 1 : semanticView.fade;
+  }
+  function semanticLinkFactor(link) {
+    const focus = semanticView.focusIds;
+    if (!focus?.size) return semanticView.level === 'corpus' ? .78 : 1;
+    const source = endpointId(link.source), target = endpointId(link.target);
+    return focus.has(source) && focus.has(target) ? 1 : Math.max(.012, semanticView.fade * .45);
+  }
   function applyHighlight(id) {
     if (!field) return;
     const activeNodes = id ? socialFieldNeighbors(field, id) : null;
     for (const node of field.nodes) {
-      const active = !activeNodes || activeNodes.has(node.id);
-      setObjectStrength(node.__threeObj, active ? 1 : .09, node.id === id);
+      const hoverFactor = !activeNodes || activeNodes.has(node.id) ? 1 : .08;
+      const selected = node.id === id || semanticView.primaryIds?.has(node.id);
+      setObjectStrength(node.__threeObj, semanticNodeFactor(node.id) * hoverFactor, selected);
     }
     for (const link of field.links) {
       const source = endpointId(link.source), target = endpointId(link.target);
-      const active = !id || source === id || target === id;
-      setObjectStrength(link.__threeObj, active ? (id ? 1 : .78) : .05, false);
+      const hoverFactor = !id || source === id || target === id ? 1 : .06;
+      setObjectStrength(link.__threeObj, semanticLinkFactor(link) * hoverFactor, false);
     }
   }
-  function focus(nodeId, duration = reducedMotion ? 0 : 650) {
+  function cameraDistance() {
+    const camera = graph.camera(), target = controls.target;
+    return Math.hypot(camera.position.x - target.x, camera.position.y - target.y, camera.position.z - target.z);
+  }
+  function distanceForScale(value) {
+    const scale = Math.max(1, Math.min(5.4, Number(value) || 1));
+    const far = SOCIAL_FIELD_RADIUS * 3.55, near = SOCIAL_FIELD_RADIUS * 1.24;
+    const t = (scale - 1) / 4.4;
+    return far + (near - far) * t;
+  }
+  function scaleForDistance(distance) {
+    const far = SOCIAL_FIELD_RADIUS * 3.55, near = SOCIAL_FIELD_RADIUS * 1.24;
+    const t = Math.max(0, Math.min(1, (far - distance) / Math.max(1, far - near)));
+    return 1 + t * 4.4;
+  }
+  function setScale(value, { duration = reducedMotion ? 0 : 180 } = {}) {
+    const target = controls.target, camera = graph.camera();
+    const dx = camera.position.x - target.x, dy = camera.position.y - target.y, dz = camera.position.z - target.z;
+    const length = Math.hypot(dx, dy, dz) || 1;
+    const distance = distanceForScale(value);
+    const next = { x: target.x + dx / length * distance, y: target.y + dy / length * distance, z: target.z + dz / length * distance };
+    programmaticCameraUntil = performance.now() + duration + 80;
+    lastCameraDistance = distance;
+    graph.cameraPosition(next, { x: target.x, y: target.y, z: target.z }, duration);
+  }
+  function focus(nodeId, duration = reducedMotion ? 0 : 520, scale = null) {
     const node = field?.nodes.find(item => item.id === nodeId);
     if (!node || !Number.isFinite(node.x) || !Number.isFinite(node.y) || !Number.isFinite(node.z)) return;
-    const distance = 92;
+    const currentScale = scaleForDistance(cameraDistance());
+    const targetScale = scale == null ? Math.max(currentScale, 1.9) : scale;
+    const distance = distanceForScale(targetScale);
     const length = Math.hypot(node.x, node.y, node.z) || 1;
-    const ratio = 1 + distance / length;
-    graph.cameraPosition({ x: node.x * ratio, y: node.y * ratio, z: node.z * ratio }, { x: node.x, y: node.y, z: node.z }, duration);
+    const position = { x: node.x + node.x / length * distance, y: node.y + node.y / length * distance, z: node.z + node.z / length * distance };
+    programmaticCameraUntil = performance.now() + duration + 80;
+    lastCameraDistance = distance;
+    graph.cameraPosition(position, { x: node.x, y: node.y, z: node.z }, duration);
   }
 
   graph.onNodeHover(node => {
@@ -326,8 +371,13 @@ export async function createWebGlAtlasRenderer({ host, onNodeSelect, onLinkSelec
     onLinkSelect?.(link.id);
   });
   graph.onBackgroundClick(() => applyHighlight(selectedId));
-  controls.addEventListener('change', () => onInteraction?.('zoom'));
-  graph.onNodeDragEnd(() => onInteraction?.('drag'));
+  controls.addEventListener('change', () => {
+    const distance = cameraDistance();
+    const distanceChanged = lastCameraDistance == null || Math.abs(distance - lastCameraDistance) > .35;
+    lastCameraDistance = distance;
+    if (distanceChanged && performance.now() > programmaticCameraUntil) onInteraction?.({ type: 'scale', scale: scaleForDistance(distance) });
+    else onInteraction?.({ type: 'orbit' });
+  });
 
   function resize() {
     const width = Math.max(320, Math.floor(host.clientWidth || 900));
@@ -346,14 +396,34 @@ export async function createWebGlAtlasRenderer({ host, onNodeSelect, onLinkSelec
     if (lastMode !== model.mode) {
       const initialPlacement = lastMode === null;
       lastMode = model.mode;
+      const duration = initialPlacement || reducedMotion ? 0 : 520;
+      programmaticCameraUntil = performance.now() + duration + 80;
+      lastCameraDistance = field.radius * 3.55;
       graph.cameraPosition(
         { x: 0, y: 0, z: field.radius * 3.55 },
         { x: 0, y: 0, z: 0 },
-        initialPlacement || reducedMotion ? 0 : 520
+        duration
       );
     }
     host.dataset.atlasEngine = 'force3d';
     return field;
+  }
+
+
+  function setView(view = {}) {
+    semanticView = {
+      level: view.level || 'corpus',
+      focusIds: new Set(view.focusIds || []),
+      primaryIds: new Set(view.primaryIds || []),
+      fade: Number.isFinite(view.fade) ? Math.max(.012, Math.min(1, view.fade)) : (view.level === 'corpus' ? .2 : view.level === 'machine' ? .065 : .025)
+    };
+    applyHighlight(selectedId);
+  }
+  function home(scale = 1, duration = reducedMotion ? 0 : 420) {
+    const distance = distanceForScale(scale);
+    programmaticCameraUntil = performance.now() + duration + 80;
+    lastCameraDistance = distance;
+    graph.cameraPosition({ x: 0, y: 0, z: distance }, { x: 0, y: 0, z: 0 }, duration);
   }
 
   function select(nodeId) {
@@ -385,6 +455,9 @@ export async function createWebGlAtlasRenderer({ host, onNodeSelect, onLinkSelec
     render,
     select,
     focus,
+    setView,
+    setScale,
+    home,
     zoom,
     resize,
     pause,

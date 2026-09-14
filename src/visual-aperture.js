@@ -11,7 +11,7 @@ globalThis.loadCliffordSocialField = async () => {
   return { ...renderer, buildResearchNetworkModel: social.buildResearchNetworkModel };
 };
 
-const RUNTIME_VERSION = '20260913-socialfield1';
+const RUNTIME_VERSION = '20260914-continuous1';
 const runtimeUrls = [
   `./visual-aperture-workspace-runtime.js?v=${RUNTIME_VERSION}`,
   `./visual-aperture-export-runtime.js?v=${RUNTIME_VERSION}`,

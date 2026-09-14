@@ -22,9 +22,8 @@ function renderMapMode() {
     markup = renderEvidenceScene(surface);
     description = 'Exact participation rows with roles, dates, evidence classes, and receipt access.';
   }
-  if (state.map.level !== 'corpus') deactivateApertureSocialField();
-  setStage(markup, { title: `${humanLabel(state.map.level)} view · ${state.map.level === 'corpus' ? 'whole corpus' : state.map.level === 'machine' ? cluster.label : surface.surface_label}`, description });
-  const crumbs = ['Map', humanLabel(state.map.level)];
+  setStage(markup, { title: `${mapLevelLabel(state.map.level)} - ${state.map.level === 'corpus' ? 'whole network' : state.map.level === 'machine' ? cluster.label : surface.surface_label}`, description });
+  const crumbs = ['Map', mapLevelLabel(state.map.level)];
   if (state.map.level !== 'corpus') crumbs.push(cluster.label);
   if (state.map.level === 'machine' && group) crumbs.push(group.label);
   if (['surface', 'evidence'].includes(state.map.level)) crumbs.push(surface.surface_label);
@@ -33,7 +32,7 @@ function renderMapMode() {
     : state.map.level === 'machine'
       ? [{ value: groups.length, label: 'types' }, { value: cluster.surfaceCount, label: 'surfaces' }, { value: cluster.actorCount, label: 'actors' }]
       : [{ value: actorParticipants(surface).length, label: 'actors' }, { value: surface.hop_eligible ? 'yes' : 'no', label: 'hop effect' }, { value: unique(surface.receipt_ids).length, label: 'surface receipts' }]);
-  if (state.map.level === 'corpus') queueMicrotask(renderApertureSocialField);
+  queueMicrotask(renderApertureSocialField);
   setInspector(state.map.level === 'corpus' ? cluster.label : state.map.level === 'machine' ? group?.label || cluster.label : state.map.selectedActorId ? actorLabel(state.map.selectedActorId) : surface.surface_label, mapInspector(cluster, group, surface));
   renderMapOverview(cluster, group, surface);
 }

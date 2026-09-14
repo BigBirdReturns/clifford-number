@@ -29,6 +29,9 @@
   .aperture-header { padding: 22px 18px; }
   .aperture-header h2 { font-size: clamp(38px, 12vw, 58px); }
   .aperture-header p:not(.section-kicker) { font-size: 14px; }
+  .aperture-how { padding: 10px 14px; gap: 8px 10px; }
+  .aperture-how i { display: none; }
+  .aperture-how small { width: 100%; margin-left: 0; }
   .aperture-commandbar { position: sticky; top: 0; padding: 8px; gap: 8px; }
   .aperture-mode-switch { width: 100%; display: grid; grid-template-columns: repeat(3, 1fr); }
   .aperture-mode-button { min-width: 0; justify-content: center; padding-inline: 8px; }
@@ -36,6 +39,9 @@
   .aperture-mode-controls { align-items: end; gap: 6px; scroll-snap-type: x proximity; }
   .aperture-control { min-width: 154px; scroll-snap-align: start; }
   .aperture-control--wide { min-width: 245px; }
+  .aperture-control--start { min-width: 285px; }
+  .aperture-jump-controls { min-width: 520px; }
+  .aperture-stage-guide { top: 46px; right: 8px; }
   .aperture-control--scale { min-width: 205px; }
   .aperture-telemetry { align-items: flex-start; flex-direction: column; gap: 7px; padding: 9px 12px; }
   .aperture-stats { justify-content: flex-start; gap: 10px; }
@@ -99,7 +105,7 @@
 }
 
 @media print {
-  .aperture-commandbar, .aperture-stage-legend, .aperture-renderer-badge, .aperture-sheet-toggle, .aperture-webgl { display: none !important; }
+  .aperture-commandbar, .aperture-how, .aperture-stage-guide, .aperture-stage-legend, .aperture-renderer-badge, .aperture-sheet-toggle, .aperture-webgl { display: none !important; }
   .aperture-stage[hidden] { display: block !important; }
   .network-atlas.aperture-deck { color: #000; background: #fff; box-shadow: none; }
   .aperture-header, .aperture-telemetry, .aperture-overview, .aperture-inspector { color: #000; background: #fff; }
