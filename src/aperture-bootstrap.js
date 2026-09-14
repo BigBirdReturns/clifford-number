@@ -12,10 +12,10 @@ if (typeof document !== 'undefined'
     const link = document.createElement('link');
     link.id = 'clifford-visual-aperture-css';
     link.rel = 'stylesheet';
-    link.href = 'src/visual-aperture.css?v=20260721-workspace';
+    link.href = 'src/visual-aperture.css?v=20260913-socialfield1';
     document.head.append(link);
   }
-  import('./visual-aperture.js?v=20260721-workspace').catch(error => {
+  import('./visual-aperture.js?v=20260913-socialfield1').catch(error => {
     console.error('Could not load the visual aperture.', error);
   });
 }

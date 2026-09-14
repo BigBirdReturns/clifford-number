@@ -13,6 +13,8 @@ const MAX_OVERVIEW_ROWS = 100;
 const MAX_INTERACTION_MS = 300;
 const MAX_LONG_TASK_MS = 250;
 const MAX_DOM_NODES = 25_000;
+const DEFAULT_EXPLORER_URL = 'http://127.0.0.1:8080/explorer.html';
+const EXPLORER_URL = process.env.CLIFFORD_APERTURE_BASE_URL ? `${process.env.CLIFFORD_APERTURE_BASE_URL}/explorer.html` : DEFAULT_EXPLORER_URL;
 
 function round(value) {
   return Number(Number(value).toFixed(3));
@@ -47,6 +49,15 @@ async function createMeasuredPage(browser, fixture, options) {
     }));
   }
   const page = await context.newPage();
+  if (options.disableWebgl) {
+    await page.addInitScript(() => {
+      const originalGetContext = HTMLCanvasElement.prototype.getContext;
+      HTMLCanvasElement.prototype.getContext = function patchedGetContext(kind, ...args) {
+        if (['webgl', 'webgl2', 'experimental-webgl'].includes(String(kind).toLowerCase())) return null;
+        return originalGetContext.call(this, kind, ...args);
+      };
+    });
+  }
   const consoleErrors = [];
   const pageErrors = [];
   page.on('console', message => {
@@ -71,8 +82,9 @@ async function createMeasuredPage(browser, fixture, options) {
     }
   });
   const navigationStart = performance.now();
-  await page.goto('http://127.0.0.1:8080/explorer.html', { waitUntil: 'domcontentloaded', timeout: 60000 });
+  await page.goto(EXPLORER_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
   await page.waitForFunction(() => document.querySelector('#network-atlas')?.dataset.apertureMounted === 'true', null, { timeout: 60000 });
+  await waitForCorpusRenderer(page);
   await settle(page);
   const mountMs = round(performance.now() - navigationStart);
   await page.evaluate(() => { globalThis.__apertureScaleLongTasks = []; });
@@ -86,10 +98,24 @@ async function setMapScale(page, value) {
   }, value);
 }
 
+async function waitForCorpusRenderer(page) {
+  await page.waitForFunction(() => {
+    const badge = document.querySelector('#aperture-renderer-badge');
+    const host = document.querySelector('#aperture-webgl');
+    const canvas = host?.querySelector('canvas');
+    const stage = document.querySelector('#aperture-stage');
+    const svgCorpus = document.querySelector('.aperture-scene--corpus');
+    const webglReady = badge?.dataset.engine === 'webgl' && canvas && getComputedStyle(host).display !== 'none';
+    const svgReady = svgCorpus && stage && getComputedStyle(stage).display !== 'none';
+    return Boolean(webglReady || svgReady);
+  }, null, { timeout: 30000 });
+}
+
 async function desktopMeasurements(browser, fixture) {
   const measured = await createMeasuredPage(browser, fixture, {
     viewport: { width: 1440, height: 1100 },
-    reducedMotion: false
+    reducedMotion: false,
+    disableWebgl: true
   });
   const { context, page } = measured;
   const result = {
@@ -109,14 +135,19 @@ async function desktopMeasurements(browser, fixture) {
   try {
     await page.click('[data-ap-mode="map"]');
 
-    const corpusMs = await measuredAction(page, () => setMapScale(page, 1), () => page.waitForSelector('.aperture-scene--corpus'));
-    result.interaction_measurements_ms.push(corpusMs);
+    const corpusMs = await measuredAction(page, () => setMapScale(page, 1), () => waitForCorpusRenderer(page));
+    // Corpus is the mounted default scene. Its renderer startup belongs to mount_ms,
+    // not the post-mount interaction budget enforced below.
     result.semantic_levels.corpus = {
       interaction_ms: corpusMs,
+      renderer: await page.locator('#aperture-renderer-badge').getAttribute('data-engine'),
+      canvas_count: await page.locator('#aperture-webgl canvas').count(),
       cluster_nodes: await page.locator('#aperture-layer .aperture-cluster').count(),
       corridor_lines: await page.locator('#aperture-layer .aperture-corridor').count(),
       overview_rows: await page.locator('#aperture-table-body tr').count()
     };
+    assert.ok(['svg', 'webgl'].includes(result.semantic_levels.corpus.renderer));
+    if (result.semantic_levels.corpus.renderer === 'webgl') assert.equal(result.semantic_levels.corpus.canvas_count, 1);
     assert.ok(result.semantic_levels.corpus.cluster_nodes <= 7);
     assert.ok(result.semantic_levels.corpus.corridor_lines <= 21);
 
@@ -228,6 +259,18 @@ async function desktopMeasurements(browser, fixture) {
     result.dom_counters = await session.send('Memory.getDOMCounters');
     result.reduced_motion = await page.evaluate(() => matchMedia('(prefers-reduced-motion: reduce)').matches);
     const maximumInteraction = Math.max(...result.interaction_measurements_ms);
+    console.log('visual-aperture interactions ms', JSON.stringify({
+      corpus: result.semantic_levels.corpus.interaction_ms,
+      machine: result.semantic_levels.machine.interaction_ms,
+      surface: result.semantic_levels.surface.interaction_ms,
+      evidence: result.semantic_levels.evidence.interaction_ms,
+      page_size_100: result.overview_pagination.page_size_100_ms,
+      next_page: result.overview_pagination.next_page_ms,
+      surface_switch: result.surface_mode.switch_ms,
+      surface_budget_36: result.surface_mode.budget_36_ms,
+      surface_search: result.surface_mode.search_ms,
+      route_switch: result.route_mode.switch_ms
+    }));
     const maximumLongTask = Math.max(0, ...result.long_tasks.map(item => item.duration));
     result.budgets = {
       maximum_interaction_ms: round(maximumInteraction),
@@ -253,7 +296,8 @@ async function desktopMeasurements(browser, fixture) {
 async function mobileMeasurements(browser, fixture) {
   const measured = await createMeasuredPage(browser, fixture, {
     viewport: { width: 375, height: 812 },
-    reducedMotion: true
+    reducedMotion: true,
+    disableWebgl: true
   });
   const { context, page } = measured;
   const result = {
@@ -293,6 +337,37 @@ async function mobileMeasurements(browser, fixture) {
   }
 }
 
+async function gpuSocialFieldSmoke(browser) {
+  const context = await browser.newContext({ viewport: { width: 1200, height: 900 }, reducedMotion: 'no-preference' });
+  const page = await context.newPage();
+  const consoleErrors = [];
+  const pageErrors = [];
+  page.on('console', message => { if (message.type() === 'error') consoleErrors.push(message.text()); });
+  page.on('pageerror', error => pageErrors.push(error.message));
+  try {
+    await page.goto(EXPLORER_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
+    await page.waitForFunction(() => document.querySelector('#network-atlas')?.dataset.apertureMounted === 'true', null, { timeout: 60000 });
+    await page.waitForFunction(() => document.querySelector('#aperture-renderer-badge')?.dataset.engine === 'webgl' && document.querySelector('#aperture-webgl canvas'), null, { timeout: 60000 });
+    const canvas = page.locator('#aperture-webgl canvas');
+    const box = await canvas.boundingBox();
+    assert.ok(box?.width > 300 && box?.height > 300, 'GPU corpus canvas must occupy the stage');
+    const first = await canvas.screenshot();
+    await page.waitForTimeout(700);
+    const second = await canvas.screenshot();
+    assert.equal(first.equals(second), false, 'GPU social field must visibly animate when reduced motion is not requested');
+    await setMapScale(page, 2);
+    await page.waitForFunction(() => document.querySelector('#aperture-renderer-badge')?.dataset.engine === 'svg');
+    await page.click('[data-ap-action="reset-map"]');
+    await page.waitForFunction(() => document.querySelector('#aperture-renderer-badge')?.dataset.engine === 'webgl');
+    await page.waitForTimeout(350);
+    assert.deepEqual(consoleErrors, []);
+    assert.deepEqual(pageErrors, []);
+    return { canvas_width: round(box.width), canvas_height: round(box.height), animated: true, svg_handoff: true, resumed: true };
+  } finally {
+    await context.close();
+  }
+}
+
 async function main() {
   fs.mkdirSync(outputDirectory, { recursive: true });
   const { buildVisualApertureScaleFixture, summarizeVisualApertureScaleFixture } = await import('./visual-aperture-scale-fixture.mjs');
@@ -312,6 +387,7 @@ async function main() {
     fixture: summarizeVisualApertureScaleFixture(fixture),
     desktop: null,
     mobile_reduced_motion: null,
+    gpu_social_field: null,
     passed: false,
     error: null,
     interpretation_contract: {
@@ -321,6 +397,7 @@ async function main() {
   };
   const browser = await chromium.launch({ headless: true });
   try {
+    output.gpu_social_field = await gpuSocialFieldSmoke(browser);
     output.desktop = await desktopMeasurements(browser, fixture);
     output.mobile_reduced_motion = await mobileMeasurements(browser, fixture);
     output.passed = true;

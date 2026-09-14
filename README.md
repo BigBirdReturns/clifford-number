@@ -1,6 +1,6 @@
 # The Clifford Number
 
-Current release: **1.1.0**. See [the release boundary](docs/releases/1.1.0.md).
+Current release: **1.3.0**. See [the release boundary](docs/releases/1.3.0.md).
 
 The Clifford Number is a surface-hop topology compiler. It maps how bounded legitimate surfaces carry actors, companies, policy machinery, advisory roles, capital, and outcomes through plausible-deniability corridors.
 

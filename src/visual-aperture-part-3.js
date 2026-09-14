@@ -122,12 +122,16 @@ function ensureMapSelection() {
 }
 
 function setMapScale(value, { history = 'replace' } = {}) {
-  state.map.scale = Math.max(1, Math.min(5.4, Number(value) || 1));
-  state.map.level = semanticLevelForScale(state.map.scale, state.map.level);
+  const nextScale = Math.max(1, Math.min(5.4, Number(value) || 1));
+  const nextLevel = semanticLevelForScale(nextScale, state.map.level);
+  const unchanged = nextScale === state.map.scale && nextLevel === state.map.level;
+  state.map.scale = nextScale;
+  state.map.level = nextLevel;
   const input = $('#ap-map-scale', state.root);
   if (input) input.value = String(state.map.scale);
   const label = $('#ap-map-level', state.root);
   if (label) label.textContent = humanLabel(state.map.level);
+  if (unchanged) return;
   renderMapMode();
   commitApertureAddress(history);
 }

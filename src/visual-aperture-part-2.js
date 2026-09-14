@@ -32,12 +32,14 @@ function shellMarkup() {
 
     <div class="aperture-layout">
       <div class="aperture-stage-wrap">
+        <div id="aperture-webgl" class="aperture-webgl" role="img" aria-label="Spherical social field. Heat represents repeated documented reinforcement; arcs remain sourced graph edges." hidden></div>
         <svg id="aperture-stage" class="aperture-stage" viewBox="0 0 1200 720" role="img" aria-labelledby="aperture-stage-title aperture-stage-desc">
           <title id="aperture-stage-title">Clifford Number operating map</title>
           <desc id="aperture-stage-desc">An interactive semantic map of bounded public surfaces, actors, routes, and evidence states.</desc>
           <g id="aperture-layer"></g>
         </svg>
-        <div class="aperture-stage-legend" aria-label="Visual legend">
+        <span id="aperture-renderer-badge" class="aperture-renderer-badge" data-engine="svg">SVG semantic map</span>
+        <div id="aperture-stage-legend" class="aperture-stage-legend" aria-label="Visual legend" data-default-markup="">
           <span><i class="aperture-key aperture-key--surface"></i> bounded surface</span>
           <span><i class="aperture-key aperture-key--actor"></i> actor</span>
           <span><i class="aperture-key aperture-key--corridor"></i> aggregate corridor</span>
