@@ -216,6 +216,15 @@
   background-size: auto, auto, 32px 32px, 32px 32px, auto;
 }
 .aperture-stage { width: 100%; height: 650px; display: block; touch-action: pan-x pan-y; user-select: none; }
+.aperture-stage[hidden] { display: none; }
+.aperture-webgl { width: 100%; height: 650px; display: none; touch-action: none; cursor: grab; user-select: none; }
+.aperture-webgl.is-active { display: block; }
+.aperture-webgl:active { cursor: grabbing; }
+.aperture-webgl canvas { width: 100% !important; height: 100% !important; display: block; outline: none; }
+.aperture-renderer-badge { position: absolute; z-index: 6; top: 10px; left: 10px; padding: 7px 9px; border: 1px solid var(--ap-line-strong); background: rgba(7,9,14,.88); color: var(--ap-muted); font: 700 9px/1 var(--font-mono); text-transform: uppercase; pointer-events: none; }
+.aperture-renderer-badge[data-engine="webgl"] { border-color: rgba(255,177,78,.6); color: #ffd7a1; }
+.aperture-key--heat { border-radius: 50%; border: 0; background: radial-gradient(circle, #ff4c1f 0 20%, #de843f 35%, rgba(122,104,132,.35) 68%, transparent 72%); box-shadow: 0 0 10px rgba(255,76,31,.65); }
+.aperture-key--activity { width: 22px; height: 2px; border: 0; background: linear-gradient(90deg, transparent, var(--ap-amber), transparent); }
 .aperture-stage-legend {
   position: absolute;
   z-index: 5;

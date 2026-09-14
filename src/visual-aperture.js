@@ -6,11 +6,17 @@ import * as windowingModel from './visual-aperture-windowing.mjs';
 
 Object.assign(globalThis, core, addressState, workspaceModel, exportModel, windowingModel);
 
-const RUNTIME_VERSION = '20260721-bounded-rendering';
+globalThis.loadCliffordSocialField = async () => {
+  const [renderer, social] = await Promise.all([import('./atlas-webgl.js'), import('./social-field.js')]);
+  return { ...renderer, buildResearchNetworkModel: social.buildResearchNetworkModel };
+};
+
+const RUNTIME_VERSION = '20260913-socialfield1';
 const runtimeUrls = [
   `./visual-aperture-workspace-runtime.js?v=${RUNTIME_VERSION}`,
   `./visual-aperture-export-runtime.js?v=${RUNTIME_VERSION}`,
   ...Array.from({ length: 10 }, (_, index) => `./visual-aperture-part-${index + 1}.js?v=${RUNTIME_VERSION}`),
+  `./visual-aperture-social-field-runtime.js?v=${RUNTIME_VERSION}`,
   `./visual-aperture-bounded-runtime.js?v=${RUNTIME_VERSION}`,
   `./visual-aperture-export-preview-runtime.js?v=${RUNTIME_VERSION}`,
   `./visual-aperture-part-11.js?v=${RUNTIME_VERSION}`,

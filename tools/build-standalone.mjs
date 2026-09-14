@@ -106,6 +106,7 @@ const apertureRuntime = [
   read('src/visual-aperture-workspace-runtime.js'),
   read('src/visual-aperture-export-runtime.js'),
   ...Array.from({ length: 10 }, (_, index) => read(`src/visual-aperture-part-${index + 1}.js`)),
+  read('src/visual-aperture-social-field-runtime.js'),
   read('src/visual-aperture-bounded-runtime.js'),
   read('src/visual-aperture-export-preview-runtime.js'),
   read('src/visual-aperture-part-11.js'),

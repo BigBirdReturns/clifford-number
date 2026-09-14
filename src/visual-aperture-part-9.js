@@ -1,5 +1,6 @@
 function renderCurrent() {
   if (!state.root) return;
+  if (state.mode !== 'map' || state.map.level !== 'corpus') deactivateApertureSocialField();
   if (state.mode === 'map') renderMapMode();
   else if (state.mode === 'route') renderRouteMode();
   else renderSurfaceMode();

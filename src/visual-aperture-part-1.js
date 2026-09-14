@@ -13,6 +13,7 @@ const state = {
   mode: 'map',
   sheetOpen: false,
   visibilityObserver: null,
+  webgl: { renderer: null, model: null, failed: false },
   address: {
     ready: false,
     active: false,

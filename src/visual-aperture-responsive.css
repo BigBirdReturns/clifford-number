@@ -19,7 +19,7 @@
   .aperture-live { width: min(100%, 420px); }
   .aperture-layout { grid-template-columns: 1fr; }
   .aperture-inspector { max-height: none; border-top: 1px solid var(--ap-line); border-left: 0; }
-  .aperture-stage { height: 600px; }
+  .aperture-stage, .aperture-webgl { height: 600px; }
   .aperture-overview-heading { align-items: flex-start; flex-direction: column; gap: 8px; }
   .aperture-overview-heading > p { text-align: left; }
 }
@@ -40,7 +40,7 @@
   .aperture-telemetry { align-items: flex-start; flex-direction: column; gap: 7px; padding: 9px 12px; }
   .aperture-stats { justify-content: flex-start; gap: 10px; }
   .aperture-layout { min-height: 62vh; border-bottom: 0; }
-  .aperture-stage { height: 62vh; min-height: 510px; }
+  .aperture-stage, .aperture-webgl { height: 62vh; min-height: 510px; }
   .aperture-stage-legend { right: 8px; bottom: 8px; justify-content: flex-start; font-size: 8px; }
   .aperture-deck:not(.aperture-is-visible) .aperture-inspector { display: none; }
   .aperture-inspector {
@@ -90,7 +90,7 @@
   .aperture-mode-button { font-size: 13px; }
   .aperture-breadcrumbs span { max-width: 19ch; }
   .aperture-stats strong { font-size: 13px; }
-  .aperture-stage { min-height: 480px; }
+  .aperture-stage, .aperture-webgl { min-height: 480px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -99,7 +99,8 @@
 }
 
 @media print {
-  .aperture-commandbar, .aperture-stage-legend, .aperture-sheet-toggle { display: none !important; }
+  .aperture-commandbar, .aperture-stage-legend, .aperture-renderer-badge, .aperture-sheet-toggle, .aperture-webgl { display: none !important; }
+  .aperture-stage[hidden] { display: block !important; }
   .network-atlas.aperture-deck { color: #000; background: #fff; box-shadow: none; }
   .aperture-header, .aperture-telemetry, .aperture-overview, .aperture-inspector { color: #000; background: #fff; }
   .aperture-layout { grid-template-columns: 1fr; }
