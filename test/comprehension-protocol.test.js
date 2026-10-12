@@ -30,9 +30,15 @@ assert.equal(claim.threshold.validator_may_award_pass, false);
 
 const surfaces = readJsonl('data/ledger/surfaces.jsonl');
 const directoryRosters = surfaces.filter(surface => surface.surface_type === 'directory_roster_surface' && surface.hop_eligible === false);
-assert.equal(directoryRosters.length, 1, 'Route selection universe changed; review the declared selection rule.');
-assert.equal(directoryRosters[0].surface_id, route.surface_id);
-assert.equal(directoryRosters[0].hop_eligible, false);
+assert.deepEqual(
+  directoryRosters.map(surface => surface.surface_id).sort(),
+  route.selection_declaration.universe_surface_ids,
+  'Route selection universe changed; review the declared selection rule.'
+);
+const selectedRosters = directoryRosters.filter(surface => surface.hop_refusal_reason === 'dense_directory_listing_not_shared_participation');
+assert.equal(selectedRosters.length, 1, 'Declared selection rule must select exactly one surface.');
+assert.equal(selectedRosters[0].surface_id, route.surface_id);
+assert.equal(selectedRosters[0].hop_eligible, false);
 
 const receipts = new Map(readJsonl('data/ledger/receipts.jsonl').map(receipt => [receipt.receipt_id, receipt]));
 for (const source of route.evidence) {

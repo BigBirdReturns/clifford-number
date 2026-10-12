@@ -7,12 +7,21 @@
     "public_interest_question": "Can a reader distinguish a dense, receipted roster as structural context from a hop-eligible bounded shared surface?",
     "selection_unit": "A checked-in ledger surface whose surface_type is directory_roster_surface and whose hop_eligible value is false.",
     "universe": "All current data/ledger/surfaces.jsonl rows matching that selection unit at the route snapshot.",
-    "selection_rule": "Use the lexicographically first matching surface ID. At this snapshot, the universe contains dialog-society-membership.",
-    "review_date": "2026-07-15",
+    "universe_surface_ids": [
+      "anduril-project-nyx-four-supplier-downselect-2026-05-15",
+      "anduril-project-nyx-seven-supplier-shortlist-2026-01-24",
+      "atlantic-bastion-industry-program-context-2025-12-08",
+      "dialog-matt-clifford-invitation-nonattendance-2026-06-16",
+      "dialog-public-directory-exposure-2026-06-16",
+      "dsit-matt-clifford-ai-investor-roundtable-2023-10-25",
+      "dsit-techuk-anduril-ai-safety-roundtable-2023-10-17"
+    ],
+    "selection_rule": "Use the single universe row whose hop_refusal_reason is dense_directory_listing_not_shared_participation. At this snapshot, the universe contains seven rows and that rule selects dialog-public-directory-exposure-2026-06-16, the dated successor to the retired dialog-society-membership composite.",
+    "review_date": "2026-10-12",
     "sunset_condition": "Replace this route when the declared universe changes or when a public-facing route is separately authorized."
   },
   "question": "What does this membership roster establish under the Clifford Number rules?",
-  "surface_id": "dialog-society-membership",
+  "surface_id": "dialog-public-directory-exposure-2026-06-16",
   "expected_result": {
     "state": "bounded_structural_context",
     "summary": "Bounded structural context; no pairwise hop.",
