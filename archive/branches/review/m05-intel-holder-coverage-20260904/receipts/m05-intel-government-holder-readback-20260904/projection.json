@@ -1,0 +1,788 @@
+{
+  "schema": "m05-intel-holder-query-projection@1",
+  "review_scope": "all exact Intel and Department of Commerce matching contexts; not a line-by-line opinion on every filing",
+  "query_total": {
+    "value": 12,
+    "relation": "eq"
+  },
+  "query_returned": 12,
+  "query_timed_out": false,
+  "query_shards": {
+    "total": 50,
+    "successful": 50,
+    "skipped": 0,
+    "failed": 0
+  },
+  "query_executed": {
+    "_source": {
+      "exclude": [
+        "doc_text"
+      ]
+    },
+    "query": {
+      "bool": {
+        "must": [
+          {
+            "match_phrase": {
+              "doc_text": "Intel"
+            }
+          },
+          {
+            "match_phrase": {
+              "doc_text": "Department of Commerce"
+            }
+          }
+        ],
+        "must_not": [],
+        "should": [],
+        "filter": [
+          {
+            "range": {
+              "file_date": {
+                "gte": "2026-08-17",
+                "lte": "2026-09-04"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "from": 0,
+    "size": 100,
+    "aggregations": {
+      "form_filter": {
+        "terms": {
+          "field": "root_forms",
+          "size": 30
+        }
+      },
+      "entity_filter": {
+        "terms": {
+          "field": "display_names.raw",
+          "size": 30
+        }
+      },
+      "sic_filter": {
+        "terms": {
+          "field": "sics",
+          "size": 30
+        }
+      },
+      "biz_states_filter": {
+        "terms": {
+          "field": "biz_states",
+          "size": 30
+        }
+      }
+    }
+  },
+  "positive_control_total": {
+    "value": 6,
+    "relation": "eq"
+  },
+  "positive_control_ids": [
+    "0000050863-26-000031:intc-20260123.htm",
+    "0000050863-26-000031:a01232026formex51skaddenop.htm",
+    "0000050863-26-000027:a01232026424b7.htm",
+    "0000050863-26-000011:intc-20251227.htm",
+    "0001213900-26-007236:ea0273958-424b3_sunpower.htm",
+    "0001193125-26-021087:d22517d424b3.htm"
+  ],
+  "matching_contexts": 85,
+  "documents": [
+    {
+      "source_id": "hit-01",
+      "result_id": "0001193125-26-354777:d147827d6k.htm",
+      "date": "2026-08-18",
+      "form": "6-K",
+      "filers": [
+        "SK hynix Inc.  (SKHY, HXSCL)  (CIK 0002120882)"
+      ],
+      "match_count": 14,
+      "normalized_text_characters": 465123,
+      "contexts": [
+        {
+          "term": "Intel",
+          "start": 9790,
+          "end": 10335,
+          "text": "turing Date Description October 2021 Resolved to acquire 100% equity interest in Key Foundry Co., Ltd. from Magnus Semiconductor LLC December 2021 Completed Phase 1 acquisition of Intel Corporation\u2019s non-volatile memory solutions group (\u201cNSG\u201d) NAND business division, excluding the Optane business unit August 2022 Completed acquisition of 100% equity interest in Key Foundry Co., Ltd. from Magnus Semiconductor LLC March 2025 Completed final acquisition of Intel Corporation\u2019s NSG NAND business division, excluding the Optane business unit E. C"
+        },
+        {
+          "term": "Intel",
+          "start": 10068,
+          "end": 10613,
+          "text": "the Optane business unit August 2022 Completed acquisition of 100% equity interest in Key Foundry Co., Ltd. from Magnus Semiconductor LLC March 2025 Completed final acquisition of Intel Corporation\u2019s NSG NAND business division, excluding the Optane business unit E. Changes in Business Type or Principal Business Currently, the Company mainly manufactures memory semiconductor products such as DRAM, NAND flash and MCP products. Since 2007, the Company has re-entered the complementary metal oxide semiconductor (\u201cCMOS\u201d) image sensor (\u201cCIS\u201d) bus"
+        },
+        {
+          "term": "Intel",
+          "start": 68239,
+          "end": 68784,
+          "text": "secured usage rights to patents held by Rambus Inc. related to all semiconductor product technologies, thereby resolving the possibility of future disputes \u2014 Other key matters \u2014 \u2014 Intel Corporation Contract type Business acquisition and transfer \u2014 Contract execution date October 20, 2020 \u2014 Purpose and description Acquisition of Intel Corporation\u2019s NAND business \u2014 Other key matters Following the final payment of the contract amount over two phases, the business acquisition and transfer concluded on March 28, 2025 \u2014 * Includes major contract"
+        },
+        {
+          "term": "Intel",
+          "start": 68389,
+          "end": 68934,
+          "text": "putes \u2014 Other key matters \u2014 \u2014 Intel Corporation Contract type Business acquisition and transfer \u2014 Contract execution date October 20, 2020 \u2014 Purpose and description Acquisition of Intel Corporation\u2019s NAND business \u2014 Other key matters Following the final payment of the contract amount over two phases, the business acquisition and transfer concluded on March 28, 2025 \u2014 * Includes major contracts during the past five years. 8. R&D Investments Set forth below are the Company\u2019s R&D expenditures on a consolidated basis. (Unit: in millions of Won"
+        },
+        {
+          "term": "Department of Commerce",
+          "start": 202889,
+          "end": 203451,
+          "text": "for lease deposit guarantees, and has provided payment guarantees of US$1,028 million to its subsidiary, SK hynix Semiconductor West Lafayette LLC, for the fulfillment of the U.S. Department of Commerce DFA obligations and loan repayment obligations. 3. Status of Sanctions, etc. A. Sanctions by Investigative or Juridical Agencies None. B. Sanctions by Administrative Agencies (Sanctions by Other Administrative or Public Institutions) In 2024, administrative fines in an aggregate amount of Won 9.6 million were imposed on the Company in connection with a tota"
+        },
+        {
+          "term": "Intel",
+          "start": 231087,
+          "end": 231632,
+          "text": "6 97.48 SK Hynix NAND Product Solutions (Shanghai) Co., Ltd. 1,3 SK hynix NAND Product Solutions Corp. and Solidigm Inc. 6 China Semiconductor research and development 96.86 97.48 Intel NDTM US LLC 1,3 SK hynix NAND Product Solutions Corp. and Solidigm Inc. 6 U.S.A Semiconductor research and development 96.86 97.48 SHIFTIX HOLDINGS LLC 3,5 SK hynix NAND Product Solutions Corp. U.S.A Overseas investment 98.16 \u2014 SHIFTIX1 LLC 3,7 SHIFTIX HOLDINGS LLC U.S.A Overseas investment 98.16 \u2014 SK Keyfoundry America Inc. SK Keyfoundry Inc. U.S.A Semicon"
+        },
+        {
+          "term": "Intel",
+          "start": 331291,
+          "end": 331836,
+          "text": "he Condensed Consolidated Interim Financial Statements June 30, 2026 and 2025 and December 31, 2025 (Unaudited) 29. Commitments and Contingencies, Continued (7) Acquisition of the Intel NAND business In the process of obtaining a conditional business combination approval for the Intel NAND business acquisition from the Chinese competition authority (Chinese State Administration for Market Regulation) in connection with the first closing of the Intel NAND business completed during the year ended December 31, 2021, the Group was imposed with"
+        },
+        {
+          "term": "Intel",
+          "start": 331391,
+          "end": 331936,
+          "text": "(Unaudited) 29. Commitments and Contingencies, Continued (7) Acquisition of the Intel NAND business In the process of obtaining a conditional business combination approval for the Intel NAND business acquisition from the Chinese competition authority (Chinese State Administration for Market Regulation) in connection with the first closing of the Intel NAND business completed during the year ended December 31, 2021, the Group was imposed with certain conditions, mainly including the obligation to maintain a reasonable pricing policy, increa"
+        },
+        {
+          "term": "Intel",
+          "start": 331559,
+          "end": 332104,
+          "text": "val for the Intel NAND business acquisition from the Chinese competition authority (Chinese State Administration for Market Regulation) in connection with the first closing of the Intel NAND business completed during the year ended December 31, 2021, the Group was imposed with certain conditions, mainly including the obligation to maintain a reasonable pricing policy, increase production and to support the entry of third-party competitors into the Chinese eSSD market. These obligations apply for a five-year period from December 2021. After"
+        },
+        {
+          "term": "Intel",
+          "start": 431979,
+          "end": 432524,
+          "text": "ica Inc. SK Keyfoundry Inc. Semiconductor sales SK Keyfoundry Shanghai Co., Ltd. SK Keyfoundry Inc. Semiconductor sales SK Powertech SK Keyfoundry Inc. Semiconductor manufacturing Intel NDTM US LLC 1 SK hynix NAND Product Solutions Corp. and Solidigm Inc. 5 Semiconductor research and development SK hynix semiconductor storage technology (Dalian) Co., Ltd. SK hynix Semiconductor (Dalian) Co., Ltd. Semiconductor manufacturing support SK hynix Semiconductor West Lafayette LLC SK hynix America Inc. Semiconductor manufacturing SK hynix memory s"
+        },
+        {
+          "term": "Department of Commerce",
+          "start": 448503,
+          "end": 449065,
+          "text": " Company provides a financial guarantee of USD 1,028 million on behalf of SK hynix Semiconductor West Lafayette LLC for its loan repayment obligations and compliance with the U.S. Department of Commerce\u2019s DFA requirements. 56 SK hynix Inc. Notes to the Condensed Separate Interim Financial Statements June 30, 2026 and 2025 and December 31, 2025 (Unaudited) 27. Transactions with Related Parties and Others, Continued (10) Financial transactions with related parties for the six-month periods ended June 30, 2026 and 2025 are as follows. (In millions of Korean w"
+        },
+        {
+          "term": "Intel",
+          "start": 453362,
+          "end": 453907,
+          "text": "does not have the right to appoint directors of KIOXIA and, as a result, is unable to exercise significant influence over KIOXIA\u2019s operating and management. (7) Acquisition of the Intel NAND business In the process of obtaining a conditional business combination approval for the Intel NAND business acquisition from the Chinese competition authority (Chinese State Administration for Market Regulation) in connection with the first closing of the Intel NAND business completed during the year ended December 31, 2021, the Company was imposed wi"
+        },
+        {
+          "term": "Intel",
+          "start": 453462,
+          "end": 454007,
+          "text": "ficant influence over KIOXIA\u2019s operating and management. (7) Acquisition of the Intel NAND business In the process of obtaining a conditional business combination approval for the Intel NAND business acquisition from the Chinese competition authority (Chinese State Administration for Market Regulation) in connection with the first closing of the Intel NAND business completed during the year ended December 31, 2021, the Company was imposed with certain conditions, mainly including the obligation to maintain a reasonable pricing policy, incr"
+        },
+        {
+          "term": "Intel",
+          "start": 453630,
+          "end": 454175,
+          "text": "val for the Intel NAND business acquisition from the Chinese competition authority (Chinese State Administration for Market Regulation) in connection with the first closing of the Intel NAND business completed during the year ended December 31, 2021, the Company was imposed with certain conditions, mainly including the obligation to maintain a reasonable pricing policy, increase production and to support the entry of third-party competitors into the Chinese eSSD market. These obligations apply for a five-year period from December 2021. Aft"
+        }
+      ],
+      "assessment": "no_government_disposition_candidate_in_reviewed_matching_passages",
+      "reason": "Intel NAND asset acquisition completed in March 2025; separate Commerce DFA guarantee. No government sale of Intel securities in these matches."
+    },
+    {
+      "source_id": "hit-02",
+      "result_id": "0001375365-26-000022:smci-20260630.htm",
+      "date": "2026-08-31",
+      "form": "10-K",
+      "filers": [
+        "Super Micro Computer, Inc.  (SMCI, SMCIP)  (CIK 0001375365)"
+      ],
+      "match_count": 12,
+      "normalized_text_characters": 752450,
+      "contexts": [
+        {
+          "term": "Intel",
+          "start": 81342,
+          "end": 81887,
+          "text": "uced DCBBS Blueprints for these platforms designed to scale AI data centers from a 5 megawatt (\u201cMW\u201d) to a 1 gigawatt (\"GW\") power envelope; \u2022 We introduced new products supporting Intel Xeon 6 and Intel Xeon 6+ processors, AMD EPYC processors, and AMD Instinct\u2122 MI350 series GPUs (MI350X and MI355X), and expanded our portfolio with Arm\u00ae-based platforms and additional Open Compute Project (\u201cOCP\u201d) ORv3-compliant systems; \u2022 We announced support for AMD\u2019s next\u2013generation Helios platform. Helios is a 72-GPU double-width rack-scale system powered"
+        },
+        {
+          "term": "Intel",
+          "start": 81359,
+          "end": 81904,
+          "text": "ints for these platforms designed to scale AI data centers from a 5 megawatt (\u201cMW\u201d) to a 1 gigawatt (\"GW\") power envelope; \u2022 We introduced new products supporting Intel Xeon 6 and Intel Xeon 6+ processors, AMD EPYC processors, and AMD Instinct\u2122 MI350 series GPUs (MI350X and MI355X), and expanded our portfolio with Arm\u00ae-based platforms and additional Open Compute Project (\u201cOCP\u201d) ORv3-compliant systems; \u2022 We announced support for AMD\u2019s next\u2013generation Helios platform. Helios is a 72-GPU double-width rack-scale system powered by AMD Instinct "
+        },
+        {
+          "term": "Intel",
+          "start": 92482,
+          "end": 93027,
+          "text": "hieving high overall system performance. Much of our research and development activity relates to the new product cycles of leading processor vendors. We work closely with NVIDIA, Intel and AMD, among others, to develop products that are compatible with the latest generation of industry-standard technologies under development. Our collaborative approach with these vendors allows us to align the design of our new products with their product release schedules, thereby enhancing our ability to rapidly introduce new products incorporating the "
+        },
+        {
+          "term": "Department of Commerce",
+          "start": 105099,
+          "end": 105661,
+          "text": "he Treasury, Office of Foreign Assets Control (\u201cOFAC\u201d) and the export and import control regulations, including the Export Administration Regulations (\u201cEAR\u201d), enforced by the U.S. Department of Commerce Bureau of Industry and Security (\u201cBIS\u201d), among other U.S. and non-U.S. government agencies. We may also be subject to sanctions and trade control regulations administered by other jurisdictions in which we operate, including the European Union, the United Kingdom, and the United Nations Security Council. If we fail to comply with applicable sanctions, expor"
+        },
+        {
+          "term": "Intel",
+          "start": 258331,
+          "end": 258876,
+          "text": "he launch of new GPUs, microprocessors and storage technologies. Accordingly, we closely monitor the product introduction cycles of industry leaders, including NVIDIA Corporation, Intel Corporation, Advanced Micro Devices, Inc., Broadcom Inc., Samsung Electronics Company Limited, Micron Technology, Inc. and others. This strategic focus directly informs our research and development investments, as we continue to allocate resources toward both our current initiatives and future product innovation. AI and Data Centers The growing use of AI, w"
+        },
+        {
+          "term": "Intel",
+          "start": 579629,
+          "end": 580174,
+          "text": " cybersecurity, human capital management, investor relations, mergers and acquisitions (\"M&A\"), securities, shareholder engagement, and treasury matters. Previously, she worked at Intel, a semiconductor and technology company, for approximately 11 years where she served most recently as general counsel (interim). At Intel, Ms. Giordano also held roles as corporate secretary and vice president and managing director of Intel Capital where she provided primary legal support to the president of Intel Capital, Intel\u2019s global investment organiza"
+        },
+        {
+          "term": "Intel",
+          "start": 579767,
+          "end": 580312,
+          "text": "easury matters. Previously, she worked at Intel, a semiconductor and technology company, for approximately 11 years where she served most recently as general counsel (interim). At Intel, Ms. Giordano also held roles as corporate secretary and vice president and managing director of Intel Capital where she provided primary legal support to the president of Intel Capital, Intel\u2019s global investment organization that makes equity investments and handles acquisitions, divestitures and other strategic transactions. She had joined Intel Capital i"
+        },
+        {
+          "term": "Intel",
+          "start": 579870,
+          "end": 580415,
+          "text": "ely 11 years where she served most recently as general counsel (interim). At Intel, Ms. Giordano also held roles as corporate secretary and vice president and managing director of Intel Capital where she provided primary legal support to the president of Intel Capital, Intel\u2019s global investment organization that makes equity investments and handles acquisitions, divestitures and other strategic transactions. She had joined Intel Capital in 2011 as M&A counsel. Before joining Intel, Ms. Giordano spent three years as president and Chief Exec"
+        },
+        {
+          "term": "Intel",
+          "start": 579945,
+          "end": 580490,
+          "text": "t Intel, Ms. Giordano also held roles as corporate secretary and vice president and managing director of Intel Capital where she provided primary legal support to the president of Intel Capital, Intel\u2019s global investment organization that makes equity investments and handles acquisitions, divestitures and other strategic transactions. She had joined Intel Capital in 2011 as M&A counsel. Before joining Intel, Ms. Giordano spent three years as president and Chief Executive Officer at Deal Fusion, an M&A legal consulting firm, and five years "
+        },
+        {
+          "term": "Intel",
+          "start": 579960,
+          "end": 580505,
+          "text": "ordano also held roles as corporate secretary and vice president and managing director of Intel Capital where she provided primary legal support to the president of Intel Capital, Intel\u2019s global investment organization that makes equity investments and handles acquisitions, divestitures and other strategic transactions. She had joined Intel Capital in 2011 as M&A counsel. Before joining Intel, Ms. Giordano spent three years as president and Chief Executive Officer at Deal Fusion, an M&A legal consulting firm, and five years at Sun Microsys"
+        },
+        {
+          "term": "Intel",
+          "start": 580117,
+          "end": 580662,
+          "text": "dent of Intel Capital, Intel\u2019s global investment organization that makes equity investments and handles acquisitions, divestitures and other strategic transactions. She had joined Intel Capital in 2011 as M&A counsel. Before joining Intel, Ms. Giordano spent three years as president and Chief Executive Officer at Deal Fusion, an M&A legal consulting firm, and five years at Sun Microsystems, a computer hardware and software company, including as director of M&A and strategic investments. Earlier in her career she was an attorney with law fi"
+        },
+        {
+          "term": "Intel",
+          "start": 580170,
+          "end": 580715,
+          "text": "nization that makes equity investments and handles acquisitions, divestitures and other strategic transactions. She had joined Intel Capital in 2011 as M&A counsel. Before joining Intel, Ms. Giordano spent three years as president and Chief Executive Officer at Deal Fusion, an M&A legal consulting firm, and five years at Sun Microsystems, a computer hardware and software company, including as director of M&A and strategic investments. Earlier in her career she was an attorney with law firms Gunderson Dettmer, a technology-focused law firm,"
+        }
+      ],
+      "assessment": "no_government_disposition_candidate_in_reviewed_matching_passages",
+      "reason": "Intel product collaboration and executive employment history; Commerce export regulation."
+    },
+    {
+      "source_id": "hit-03",
+      "result_id": "0001193125-26-383365:amba-20260731.htm",
+      "date": "2026-09-04",
+      "form": "10-Q",
+      "filers": [
+        "AMBARELLA INC  (AMBA)  (CIK 0001280263)"
+      ],
+      "match_count": 2,
+      "normalized_text_characters": 246290,
+      "contexts": [
+        {
+          "term": "Department of Commerce",
+          "start": 129099,
+          "end": 129661,
+          "text": "mers or our logistic partners. Hong Kong has experienced, and continues to experience, political unrest and social strife. The Bureau of Industry and Security, or BIS, of the U.S. Department of Commerce, or Commerce, imposes on Hong Kong the same stringent export and reexport controls applicable to China, including licensing requirements such as those applicable to certain SoCs and semiconductor end-uses. It is possible that the U.S. government may take future measures to impose stricter export controls or duties on shipments made to Hong Kong, which could"
+        },
+        {
+          "term": "Intel",
+          "start": 141484,
+          "end": 142029,
+          "text": ", Qualcomm Incorporated, or Qualcomm, and SigmaStar Technology Corp. In the automotive camera market, we primarily compete against Horizon Robotics Inc., Mobileye, a subsidiary of Intel Corporation, Novatek, NVIDIA, Qualcomm, Renesas Electronics Corporation, and Texas Instruments. Certain of our customers and suppliers also have divisions that produce products competitive with ours and other customers may seek to vertically integrate competitive solutions in the future. In addition, certain third-party developers of technology competitive "
+        }
+      ],
+      "assessment": "no_government_disposition_candidate_in_reviewed_matching_passages",
+      "reason": "Intel-linked competitor description; Commerce export regulation."
+    },
+    {
+      "source_id": "hit-04-expanded32",
+      "result_id": "0001193125-26-376166:ck0001718728-20260831.htm",
+      "date": "2026-08-31",
+      "form": "S-1/A",
+      "filers": [
+        "Syntiant Corp.  (SYTN)  (CIK 0001718728)"
+      ],
+      "match_count": 12,
+      "normalized_text_characters": 1073631,
+      "contexts": [
+        {
+          "term": "Department of Commerce",
+          "start": 223854,
+          "end": 224416,
+          "text": "ts and technology are subject to U.S. export control and economic sanctions laws and regulations, including the Export Administration Regulations (\u201cEAR\u201d), administered by the U.S. Department of Commerce\u2019s Bureau of Industry and Security (\u201cBIS\u201d), and sanctions administered by the U.S. Department of the Treasury\u2019s Office of Foreign Assets Control (\u201cOFAC\u201d). These laws and regulations may restrict or prohibit the export, re-export or transfer of our products and technology to certain countries, regions, governments, entities, and individuals without prior gove"
+        },
+        {
+          "term": "Intel",
+          "start": 599421,
+          "end": 599966,
+          "text": "tors of our company from July 2020 to April 2025 and as an Advisor to our company since May 2025. He has also previously served on the boards of directors of Movidius (acquired by Intel) and Semsysco (acquired by Lam Research), and as an observer on the board of directors of Decawave (acquired by Qorvo), Caption Health (acquired by GE Healthcare), Twitch Interactive (acquired by Amazon), and Navitas Semiconductor Corporation. Mr. Lam holds a Bachelor of Science degree and a Master of Arts degree from Stanford University, and a Master of Bu"
+        },
+        {
+          "term": "Intel",
+          "start": 600209,
+          "end": 600754,
+          "text": "vice on the boards of directors of multiple semiconductor and technology companies. Anthony Lin has served as a member of our board of directors since January 2025. Mr. Lin joined Intel Corporation in 2008 and has served as Managing Partner and Head of Intel Capital since 2020. Prior to that, Mr. Lin worked in corporate finance, M&A and private equity roles at Banc of America Securities, ASAT, Merrill Lynch and PaineWebber. Mr. Lin holds a Bachelor\u2019s Degree in Economics from the University of California at Berkeley. We believe Mr. Lin is q"
+        },
+        {
+          "term": "Intel",
+          "start": 600282,
+          "end": 600827,
+          "text": "companies. Anthony Lin has served as a member of our board of directors since January 2025. Mr. Lin joined Intel Corporation in 2008 and has served as Managing Partner and Head of Intel Capital since 2020. Prior to that, Mr. Lin worked in corporate finance, M&A and private equity roles at Banc of America Securities, ASAT, Merrill Lynch and PaineWebber. Mr. Lin holds a Bachelor\u2019s Degree in Economics from the University of California at Berkeley. We believe Mr. Lin is qualified to serve as a member of our board of directors because of his ex"
+        },
+        {
+          "term": "Intel",
+          "start": 603127,
+          "end": 603672,
+          "text": "oles at Broadcom Corporation, a provider of semiconductor solutions for wired and wireless communications. From June 1996 until July 2000, Mr. Spice served as a finance manager at Intel Corporation, a semiconductor manufacturer. Mr. Spice 132 Table of Contents holds a Bachelor of Science in Finance from Brigham Young University and a Master of Business Administration from The University of Texas at Austin. We believe Mr. Spice is qualified to serve as a member of our board of directors because of his extensive financial and operational exp"
+        },
+        {
+          "term": "Intel",
+          "start": 695491,
+          "end": 696036,
+          "text": "mmarizes the shares of Series D-1 Preferred Stock purchased by holders of more than 5% of our capital stock. Name (1) Shares of Series D-1 Preferred Stock Aggregate Purchase Price Intel Capital Corporation 260,457 $ 2,499,991.31 Microsoft Global Finance 308,382 $ 2,959,998.46 (1) Additional details regarding these stockholders and their equity holdings are included in this prospectus under the section titled \u201c Principal Stockholders \u201d. Transactions with Knowles Corporation Knowles Corporation holds all of the outstanding shares of our Seri"
+        },
+        {
+          "term": "Intel",
+          "start": 711137,
+          "end": 711682,
+          "text": "Lin (6) David J. Lam (7) Jeffrey S. Niew (8) Adam Spice (9) All executive officers and directors as a group (10 persons) Other 5% or Greater Stockholders: Knowles Corporation (10) Intel Capital Corporation (11) Microsoft Global Finance (12) *Represents beneficial ownership of less than 1%. 156 Table of Contents (1) Represents (i) shares of Class B common stock held by a family trust for which Mr. Busch is a trustee, (ii) shares of Class A common stock held by an irrevocable trust held for the benefit of Mr. Busch\u2019s family members, (iii) sh"
+        },
+        {
+          "term": "Intel",
+          "start": 713811,
+          "end": 714356,
+          "text": "tlement of RSUs beyond October 30, 2026. (6) Excludes shares of Class A common stock issuable upon settlement of RSUs beyond October 30, 2026. See footnote (11) for shares held by Intel Capital Corporation. Mr. Lin, the Managing Partner and Head of Intel Capital Corporation, is a member of our board of directors. (7) Represents (i) shares of Class A common stock and (ii) shares of Class A common stock that may be acquired upon settlement of outstanding RSUs within 60 days of August 31, 2026. Excludes shares of Class A common stock issuable"
+        },
+        {
+          "term": "Intel",
+          "start": 713880,
+          "end": 714425,
+          "text": " A common stock issuable upon settlement of RSUs beyond October 30, 2026. See footnote (11) for shares held by Intel Capital Corporation. Mr. Lin, the Managing Partner and Head of Intel Capital Corporation, is a member of our board of directors. (7) Represents (i) shares of Class A common stock and (ii) shares of Class A common stock that may be acquired upon settlement of outstanding RSUs within 60 days of August 31, 2026. Excludes shares of Class A common stock issuable upon settlement of RSUs beyond October 30, 2026. (8) See footnote (1"
+        },
+        {
+          "term": "Intel",
+          "start": 715138,
+          "end": 715683,
+          "text": ". (11) Includes shares of Class A common stock to be received in connection with the payment of cumulative dividends at the time of the Preferred Stock Conversion. The address for Intel Capital Corporation is c/o Intel Corporation, Attention: Intel Capital Portfolio Manager, 2200 Mission College Blvd., M/S RN6-59, Santa Clara, California 95054. (12) Includes shares of Class A common stock to be received in connection with the payment of cumulative dividends at the time of the Preferred Stock Conversion. The address for Microsoft Global Fin"
+        },
+        {
+          "term": "Intel",
+          "start": 715171,
+          "end": 715716,
+          "text": " common stock to be received in connection with the payment of cumulative dividends at the time of the Preferred Stock Conversion. The address for Intel Capital Corporation is c/o Intel Corporation, Attention: Intel Capital Portfolio Manager, 2200 Mission College Blvd., M/S RN6-59, Santa Clara, California 95054. (12) Includes shares of Class A common stock to be received in connection with the payment of cumulative dividends at the time of the Preferred Stock Conversion. The address for Microsoft Global Finance is Clarendon House 2 Church "
+        },
+        {
+          "term": "Intel",
+          "start": 715201,
+          "end": 715746,
+          "text": "n connection with the payment of cumulative dividends at the time of the Preferred Stock Conversion. The address for Intel Capital Corporation is c/o Intel Corporation, Attention: Intel Capital Portfolio Manager, 2200 Mission College Blvd., M/S RN6-59, Santa Clara, California 95054. (12) Includes shares of Class A common stock to be received in connection with the payment of cumulative dividends at the time of the Preferred Stock Conversion. The address for Microsoft Global Finance is Clarendon House 2 Church Street, Hamilton HM 11, Bermud"
+        }
+      ],
+      "assessment": "no_government_disposition_candidate_in_reviewed_matching_passages",
+      "reason": "Intel Capital investment in Syntiant and director history; Commerce export regulation. The security is Syntiant equity, not Commerce-held Intel stock."
+    },
+    {
+      "source_id": "hit-05-expanded32",
+      "result_id": "0001628280-26-059639:sbenergy-sx1.htm",
+      "date": "2026-09-01",
+      "form": "S-1",
+      "filers": [
+        "SB Energy, Inc.  (CIK 0002133037)"
+      ],
+      "match_count": 8,
+      "normalized_text_characters": 1553572,
+      "contexts": [
+        {
+          "term": "Department of Commerce",
+          "start": 361057,
+          "end": 361619,
+          "text": "ain reviews and approvals pursuant to the 79 federal Fixing America\u2019s Surface Transportation Act, in connection with that designation. SoftBank has engaged in discussions with the Department of Commerce regarding the U.S.\u2013Japan Partnership framework and has engaged with U.S. and Japanese government officials regarding the scope and implementation of the U.S.\u2013Japan Partnership. The permits, reviews and approvals required for the gas- fired generation facilities or the PORTS-Pike Technology Campus may be subject to delays or may not be successfully completed"
+        },
+        {
+          "term": "Department of Commerce",
+          "start": 361582,
+          "end": 362144,
+          "text": " or may not be successfully completed. The generation facilities are expected to be funded under the U.S.\u2013Japan Partnership through an investment vehicle jointly owned by the U.S. Department of Commerce and an entity established by the Japan Bank for International Cooperation. No specific operator or power seller has been finally designated, and any revenue-sharing or power-allocation arrangements remain subject to negotiation and definitive documentation. There can be no assurance that any agreements will ever be entered into, any financings (if needed) w"
+        },
+        {
+          "term": "Department of Commerce",
+          "start": 813786,
+          "end": 814348,
+          "text": "ith relevant authorities on federal permitting required for the PORTS-Pike Technology Campus and the gas-fired generation plants, have had limited preliminary discussions with the Department of Commerce regarding the broader Partnership framework, and SoftBank has engaged with U.S. and Japanese government officials regarding the scope and implementation of the Partnership with respect to the generation facilities. Air and wastewater permits will also be required for the neighboring 9.2 GW gas-fired generation facilities, which are the responsibility of the"
+        },
+        {
+          "term": "Department of Commerce",
+          "start": 816088,
+          "end": 816650,
+          "text": "ip-related funding or approvals, while the generation facilities are expected to be funded under the U.S.\u2013Japan Partnership through an investment vehicle jointly owned by the U.S. Department of Commerce and an entity established by the Japan Bank for International Cooperation, with potential participation by various Japanese institutional investors. The identities of any such participants, the amount and form of their participation and their commitments remain subject to definitive documentation, bilateral governmental approvals and other conditions, and n"
+        },
+        {
+          "term": "Intel",
+          "start": 925662,
+          "end": 926207,
+          "text": " Compute Strategy & GPT Infrastructure at OpenAI, where he is responsible for OpenAI\u2019s compute and AI infrastructure. Prior to joining OpenAI in November 2025, Dr. Katti served at Intel Corporation from November 2021 to November 2025, most recently as Chief Technology & AI Officer, where he was responsible for Intel\u2019s AI strategy, product roadmap, and Intel Labs, and previously as Senior Vice President and General Manager of Intel\u2019s Network and Edge Group. From 2019 to 2021, Dr. Katti served as Vice President of Telco & Edge Strategy at VM"
+        },
+        {
+          "term": "Intel",
+          "start": 925794,
+          "end": 926339,
+          "text": "ng OpenAI in November 2025, Dr. Katti served at Intel Corporation from November 2021 to November 2025, most recently as Chief Technology & AI Officer, where he was responsible for Intel\u2019s AI strategy, product roadmap, and Intel Labs, and previously as Senior Vice President and General Manager of Intel\u2019s Network and Edge Group. From 2019 to 2021, Dr. Katti served as Vice President of Telco & Edge Strategy at VMware, Inc. Dr. Katti co-founded Uhana, an AI software company for mobile networks, which was acquired by VMware in 2019, and Kumu Ne"
+        },
+        {
+          "term": "Intel",
+          "start": 925836,
+          "end": 926381,
+          "text": "ed at Intel Corporation from November 2021 to November 2025, most recently as Chief Technology & AI Officer, where he was responsible for Intel\u2019s AI strategy, product roadmap, and Intel Labs, and previously as Senior Vice President and General Manager of Intel\u2019s Network and Edge Group. From 2019 to 2021, Dr. Katti served as Vice President of Telco & Edge Strategy at VMware, Inc. Dr. Katti co-founded Uhana, an AI software company for mobile networks, which was acquired by VMware in 2019, and Kumu Networks, a wireless technology company, whe"
+        },
+        {
+          "term": "Intel",
+          "start": 925911,
+          "end": 926456,
+          "text": "as Chief Technology & AI Officer, where he was responsible for Intel\u2019s AI strategy, product roadmap, and Intel Labs, and previously as Senior Vice President and General Manager of Intel\u2019s Network and Edge Group. From 2019 to 2021, Dr. Katti served as Vice President of Telco & Edge Strategy at VMware, Inc. Dr. Katti co-founded Uhana, an AI software company for mobile networks, which was acquired by VMware in 2019, and Kumu Networks, a wireless technology company, where he served as Chief Executive Officer from 2011 to 2016. Dr. Katti has se"
+        }
+      ],
+      "assessment": "no_government_disposition_candidate_in_reviewed_matching_passages",
+      "reason": "Intel appears in an executive biography. Commerce appears in a prospective US-Japan investment vehicle for energy projects, with definitive documentation still outstanding. No linkage to Intel disposal proceeds is supplied."
+    },
+    {
+      "source_id": "hit-06",
+      "result_id": "0001213900-26-092647:ea0302975-424b3_xanadu.htm",
+      "date": "2026-08-21",
+      "form": "424B3",
+      "filers": [
+        "Xanadu Quantum Technologies Ltd  (XNDU)  (CIK 0002097163)"
+      ],
+      "match_count": 5,
+      "normalized_text_characters": 1128894,
+      "contexts": [
+        {
+          "term": "Intel",
+          "start": 309704,
+          "end": 310249,
+          "text": "ify. Our current competitors include, but are not limited to: \u25cf large, well-established tech companies that generally compete in all of our markets, including Amazon, Google, IBM, Intel and Microsoft; \u25cf quantum computing companies, such as IonQ, PsiQuantum, Infleqtion, D-Wave Computing and Rigetti Computing; \u25cf countries such as the United States, Canada, Japan, China, Russia, Australia, the United Kingdom (\u201cUK\u201d) and certain countries in the European Union (\u201cEU\u201d), which sponsor material government-funded research in quantum computing; \u25cf les"
+        },
+        {
+          "term": "Department of Commerce",
+          "start": 396629,
+          "end": 397191,
+          "text": "Export and Import Permits Act, Special Economic Measures Act, Justice for Victims of Corrupt Foreign Officials Act, U.S. Export Administration Regulations administered by the U.S. Department of Commerce, the International Traffic in Arms Regulations administered by the U.S. Department of State\u2019s Directorate of Defense Trade Controls, U.S. Customs regulations and trade and economic sanctions laws administered by the U.S. Department of Treasury\u2019s Office of Foreign Assets Control. Export controls and trade and economic sanctions laws include restrictions or p"
+        },
+        {
+          "term": "Intel",
+          "start": 706111,
+          "end": 706656,
+          "text": "nd General Manager of Venture Integration, focusing on business planning for the company\u2019s hardware products, including Xbox and Surface. Mr. Trzupek began his financial career at Intel Corporation (Nasdaq: INTC), where he served in various financial positions from June 1997 to March 2007, including as Senior Controller of Systems Materials and Manufacturing. Mr. Trzupek has also served as a board member for CaliberCos Inc. (Nasdaq: CWD), a private equity real estate investment firm, since May 2023, and has been a member of its advisory bo"
+        },
+        {
+          "term": "Intel",
+          "start": 715587,
+          "end": 716132,
+          "text": " member to public and private technology companies. Her corporate executive experience includes IBM Corporation, where she held several general management positions over 22 years, Intel Corporation for five years as Vice President with positions including Chief Operating Officer Intel Communications Group and Group General Manager Broadband and Consumer Electronics Groups; and Spansion Inc., for three years as Executive Vice President and Global General Manager. She also served as Chief Executive Officer at Value America and Intrinsyc Soft"
+        },
+        {
+          "term": "Intel",
+          "start": 715687,
+          "end": 716232,
+          "text": "Corporation, where she held several general management positions over 22 years, Intel Corporation for five years as Vice President with positions including Chief Operating Officer Intel Communications Group and Group General Manager Broadband and Consumer Electronics Groups; and Spansion Inc., for three years as Executive Vice President and Global General Manager. She also served as Chief Executive Officer at Value America and Intrinsyc Software. 104 Ms. Dorchak currently serves as an independent director on the boards of: Global Foundries"
+        }
+      ],
+      "assessment": "no_government_disposition_candidate_in_reviewed_matching_passages",
+      "reason": "Intel competitor and employment references; Commerce export regulation."
+    },
+    {
+      "source_id": "hit-07",
+      "result_id": "0001493152-26-040758:forms-4a.htm",
+      "date": "2026-08-31",
+      "form": "S-4/A",
+      "filers": [
+        "Calisa Acquisition Corp  (ALIS, ALISR, ALISU)  (CIK 0002026767)",
+        "Goodvision AI Inc.  (CIK 0002129752)"
+      ],
+      "match_count": 5,
+      "normalized_text_characters": 2020013,
+      "contexts": [
+        {
+          "term": "Intel",
+          "start": 575630,
+          "end": 576175,
+          "text": "te Transaction Type Target/Issuer Transaction Value (USD Millions) Buyers/Investors Implied Enterprise Value/Revenue (x) Geographic Region 02/28/2023 Later Stage VC Sunlune $ 30.0 Intel Capital 6.8x USA 08/17/2023 Later Stage VC Megh Computing, Inc. $ 5.0 NA 10.0x USA 08/27/2023 Later Stage VC Crusoe $ 685.7 Dubin & Co., Mistral Equity Partners 10.1x USA 09/13/2023 Later Stage VC Exostellar, Inc. $ 15.0 Cambium Capital Management 9.5x USA 01/16/2024 Seed Round Certus Core, Inc. $ 1.6 NA 6.7x USA 03/15/2024 Seed Round PeakSyncer $ 3.1 World"
+        },
+        {
+          "term": "Intel",
+          "start": 1102027,
+          "end": 1102572,
+          "text": "g deployment initiatives and worked with customers and partners on cloud adoption, solution architecture and business expansion. In addition, Mr. Wang served as a Senior Expert at Intel, where he contributed to computing and infrastructure-related initiatives supporting hyperscaler business. Across these roles, Mr. Wang developed extensive experience in scaling technology platforms, leading cross-functional teams, supporting enterprise digital transformation and executing complex infrastructure programs in high-growth markets. Mr. Wang is "
+        },
+        {
+          "term": "Department of Commerce",
+          "start": 1467191,
+          "end": 1467753,
+          "text": "Sanctions and Export Control Laws \u201d means any Law or Order related to (a) import and export controls, including the U.S. Export Administration Regulations administered by the U.S. Department of Commerce\u2019s Bureau of Industry and Security, the International Traffic in Arms Regulations administered by the U.S. Department of State\u2019s Directorate of Defense Trade Controls and such other controls administered by the U.S. Customs and Border Protection, the United Kingdom, European Union, any European Member State and any other relevant import and export control au"
+        },
+        {
+          "term": "Department of Commerce",
+          "start": 1605288,
+          "end": 1605850,
+          "text": "f Ukraine), or (B) to anyone on OFAC\u2019s Specially Designated Nationals and Blocked Persons List, Sectoral Sanctions Identifications List or Foreign Sanctions Evaders List, the U.S. Department of Commerce\u2019s Bureau of Industry and Security Denied Persons List, Unverified List, Entity List, or Military End User List or otherwise subject to U.S. economic sanctions or export restrictions; or (ii) for any purpose prohibited by Sanctions and Export Control Laws, including nuclear, chemical or biological weapons proliferation or development of missile technology. ("
+        },
+        {
+          "term": "Department of Commerce",
+          "start": 1652386,
+          "end": 1652948,
+          "text": "f Ukraine), or (B) to anyone on OFAC\u2019s Specially Designated Nationals and Blocked Persons List, Sectoral Sanctions Identifications List or Foreign Sanctions Evaders List, the U.S. Department of Commerce\u2019s Bureau of Industry and Security Denied Persons List, Unverified List, Entity List, or Military End User List or otherwise subject to U.S. economic sanctions or export restrictions; or (ii) for any purpose prohibited by Sanctions and Export Control Laws, including nuclear, chemical or biological weapons proliferation or development of missile technology. ("
+        }
+      ],
+      "assessment": "no_government_disposition_candidate_in_reviewed_matching_passages",
+      "reason": "Historical Intel Capital venture-investment comparable and employment history; Commerce sanctions clauses."
+    },
+    {
+      "source_id": "hit-08",
+      "result_id": "0001493152-26-041476:forms-4a.htm",
+      "date": "2026-09-04",
+      "form": "S-4/A",
+      "filers": [
+        "Calisa Acquisition Corp  (ALIS, ALISR, ALISU)  (CIK 0002026767)",
+        "Goodvision AI Inc.  (CIK 0002129752)"
+      ],
+      "match_count": 5,
+      "normalized_text_characters": 2020965,
+      "contexts": [
+        {
+          "term": "Intel",
+          "start": 576401,
+          "end": 576946,
+          "text": "te Transaction Type Target/Issuer Transaction Value (USD Millions) Buyers/Investors Implied Enterprise Value/Revenue (x) Geographic Region 02/28/2023 Later Stage VC Sunlune $ 30.0 Intel Capital 6.8x USA 08/17/2023 Later Stage VC Megh Computing, Inc. $ 5.0 NA 10.0x USA 08/27/2023 Later Stage VC Crusoe $ 685.7 Dubin & Co., Mistral Equity Partners 10.1x USA 09/13/2023 Later Stage VC Exostellar, Inc. $ 15.0 Cambium Capital Management 9.5x USA 01/16/2024 Seed Round Certus Core, Inc. $ 1.6 NA 6.7x USA 03/15/2024 Seed Round PeakSyncer $ 3.1 World"
+        },
+        {
+          "term": "Intel",
+          "start": 1102832,
+          "end": 1103377,
+          "text": "g deployment initiatives and worked with customers and partners on cloud adoption, solution architecture and business expansion. In addition, Mr. Wang served as a Senior Expert at Intel, where he contributed to computing and infrastructure-related initiatives supporting hyperscaler business. Across these roles, Mr. Wang developed extensive experience in scaling technology platforms, leading cross-functional teams, supporting enterprise digital transformation and executing complex infrastructure programs in high-growth markets. Mr. Wang is "
+        },
+        {
+          "term": "Department of Commerce",
+          "start": 1468056,
+          "end": 1468618,
+          "text": "Sanctions and Export Control Laws \u201d means any Law or Order related to (a) import and export controls, including the U.S. Export Administration Regulations administered by the U.S. Department of Commerce\u2019s Bureau of Industry and Security, the International Traffic in Arms Regulations administered by the U.S. Department of State\u2019s Directorate of Defense Trade Controls and such other controls administered by the U.S. Customs and Border Protection, the United Kingdom, European Union, any European Member State and any other relevant import and export control au"
+        },
+        {
+          "term": "Department of Commerce",
+          "start": 1606153,
+          "end": 1606715,
+          "text": "f Ukraine), or (B) to anyone on OFAC\u2019s Specially Designated Nationals and Blocked Persons List, Sectoral Sanctions Identifications List or Foreign Sanctions Evaders List, the U.S. Department of Commerce\u2019s Bureau of Industry and Security Denied Persons List, Unverified List, Entity List, or Military End User List or otherwise subject to U.S. economic sanctions or export restrictions; or (ii) for any purpose prohibited by Sanctions and Export Control Laws, including nuclear, chemical or biological weapons proliferation or development of missile technology. ("
+        },
+        {
+          "term": "Department of Commerce",
+          "start": 1653251,
+          "end": 1653813,
+          "text": "f Ukraine), or (B) to anyone on OFAC\u2019s Specially Designated Nationals and Blocked Persons List, Sectoral Sanctions Identifications List or Foreign Sanctions Evaders List, the U.S. Department of Commerce\u2019s Bureau of Industry and Security Denied Persons List, Unverified List, Entity List, or Military End User List or otherwise subject to U.S. economic sanctions or export restrictions; or (ii) for any purpose prohibited by Sanctions and Export Control Laws, including nuclear, chemical or biological weapons proliferation or development of missile technology. ("
+        }
+      ],
+      "assessment": "no_government_disposition_candidate_in_reviewed_matching_passages",
+      "reason": "Another Calisa/Goodvision amendment with the same kinds of venture-comparable, employment and sanctions references."
+    },
+    {
+      "source_id": "hit-09",
+      "result_id": "0001493152-26-038568:forms-4a.htm",
+      "date": "2026-08-17",
+      "form": "S-4/A",
+      "filers": [
+        "Calisa Acquisition Corp  (ALIS, ALISR, ALISU)  (CIK 0002026767)",
+        "Goodvision AI Inc.  (CIK 0002129752)"
+      ],
+      "match_count": 5,
+      "normalized_text_characters": 2015806,
+      "contexts": [
+        {
+          "term": "Intel",
+          "start": 575630,
+          "end": 576175,
+          "text": "te Transaction Type Target/Issuer Transaction Value (USD Millions) Buyers/Investors Implied Enterprise Value/Revenue (x) Geographic Region 02/28/2023 Later Stage VC Sunlune $ 30.0 Intel Capital 6.8x USA 08/17/2023 Later Stage VC Megh Computing, Inc. $ 5.0 NA 10.0x USA 08/27/2023 Later Stage VC Crusoe $ 685.7 Dubin & Co., Mistral Equity Partners 10.1x USA 09/13/2023 Later Stage VC Exostellar, Inc. $ 15.0 Cambium Capital Management 9.5x USA 01/16/2024 Seed Round Certus Core, Inc. $ 1.6 NA 6.7x USA 03/15/2024 Seed Round PeakSyncer $ 3.1 World"
+        },
+        {
+          "term": "Intel",
+          "start": 1098051,
+          "end": 1098596,
+          "text": "g deployment initiatives and worked with customers and partners on cloud adoption, solution architecture and business expansion. In addition, Mr. Wang served as a Senior Expert at Intel, where he contributed to computing and infrastructure-related initiatives supporting hyperscaler business. Across these roles, Mr. Wang developed extensive experience in scaling technology platforms, leading cross-functional teams, supporting enterprise digital transformation and executing complex infrastructure programs in high-growth markets. Mr. Wang is "
+        },
+        {
+          "term": "Department of Commerce",
+          "start": 1463215,
+          "end": 1463777,
+          "text": "Sanctions and Export Control Laws \u201d means any Law or Order related to (a) import and export controls, including the U.S. Export Administration Regulations administered by the U.S. Department of Commerce\u2019s Bureau of Industry and Security, the International Traffic in Arms Regulations administered by the U.S. Department of State\u2019s Directorate of Defense Trade Controls and such other controls administered by the U.S. Customs and Border Protection, the United Kingdom, European Union, any European Member State and any other relevant import and export control au"
+        },
+        {
+          "term": "Department of Commerce",
+          "start": 1601312,
+          "end": 1601874,
+          "text": "f Ukraine), or (B) to anyone on OFAC\u2019s Specially Designated Nationals and Blocked Persons List, Sectoral Sanctions Identifications List or Foreign Sanctions Evaders List, the U.S. Department of Commerce\u2019s Bureau of Industry and Security Denied Persons List, Unverified List, Entity List, or Military End User List or otherwise subject to U.S. economic sanctions or export restrictions; or (ii) for any purpose prohibited by Sanctions and Export Control Laws, including nuclear, chemical or biological weapons proliferation or development of missile technology. ("
+        },
+        {
+          "term": "Department of Commerce",
+          "start": 1648410,
+          "end": 1648972,
+          "text": "f Ukraine), or (B) to anyone on OFAC\u2019s Specially Designated Nationals and Blocked Persons List, Sectoral Sanctions Identifications List or Foreign Sanctions Evaders List, the U.S. Department of Commerce\u2019s Bureau of Industry and Security Denied Persons List, Unverified List, Entity List, or Military End User List or otherwise subject to U.S. economic sanctions or export restrictions; or (ii) for any purpose prohibited by Sanctions and Export Control Laws, including nuclear, chemical or biological weapons proliferation or development of missile technology. ("
+        }
+      ],
+      "assessment": "no_government_disposition_candidate_in_reviewed_matching_passages",
+      "reason": "Earlier Calisa/Goodvision amendment with the same kinds of venture-comparable, employment and sanctions references."
+    },
+    {
+      "source_id": "hit-10-expanded32",
+      "result_id": "0001193125-26-371512:d944435d424b3.htm",
+      "date": "2026-08-27",
+      "form": "424B3",
+      "filers": [
+        "Evernorth Holdings Inc.  (CIK 0002092592)"
+      ],
+      "match_count": 7,
+      "normalized_text_characters": 4532344,
+      "contexts": [
+        {
+          "term": "Intel",
+          "start": 1577181,
+          "end": 1577726,
+          "text": "ge investor through Angel Track and has participated in or advised a number of fintech and blockchain ventures, including Nium, Azimo, MoneyGram, Thomson Reuters, Kno (acquired by Intel), and Bitso, a leading Latin American digital asset trading platform and Ripple partner. Mr. Birla holds a Master of Business Administration from the Wharton School of the University of Pennsylvania, where he also lectures on topics related to digital finance and venture innovation. Stuart Alderoty is expected to serve as a Director of Pubco following the C"
+        },
+        {
+          "term": "Department of Commerce",
+          "start": 3076077,
+          "end": 3076639,
+          "text": "in any Executive Order issued by the President of the United States and administered by OFAC, or any other any Sanctions-related list of sanctioned persons maintained by OFAC, the Department of Commerce or the U.S. Department of State, the United Nations Security Council, the European Union, any EU member state, or the United Kingdom; (iii) a \u201cdesignated national,\u201d as defined in the Cuban Assets Control Regulations, 31 C.F.R. Part 515, (iv) organized, incorporated, established, located, resident or the government, including any political subdivision, agenc"
+        },
+        {
+          "term": "Department of Commerce",
+          "start": 3228395,
+          "end": 3228957,
+          "text": "in any Executive Order issued by the President of the United States and administered by OFAC, or any other any Sanctions-related list of sanctioned persons maintained by OFAC, the Department of Commerce or the U.S. Department of State, the United Nations Security Council, the European Union, any EU member state, or the United Kingdom; (iii) a \u201cdesignated national,\u201d as defined in the Cuban Assets Control Regulations, 31 C.F.R. Part 515, (iv) organized, incorporated, established, located, resident or the government, including any political subdivision, agenc"
+        },
+        {
+          "term": "Department of Commerce",
+          "start": 3372688,
+          "end": 3373250,
+          "text": "in any Executive Order issued by the President of the United States and administered by OFAC, or any other any Sanctions-related list of sanctioned persons maintained by OFAC, the Department of Commerce or the U.S. Department of State, the United Nations Security Council, the European Union, any EU member state, or the United Kingdom; (iii) a \u201cdesignated national,\u201d as defined in the Cuban Assets Control Regulations, 31 C.F.R. Part 515, (iv) organized, incorporated, established, located, resident or the government, including any political subdivision, agenc"
+        },
+        {
+          "term": "Department of Commerce",
+          "start": 3518457,
+          "end": 3519019,
+          "text": "in any Executive Order issued by the President of the United States and administered by OFAC, or any other any Sanctions-related list of sanctioned persons maintained by OFAC, the Department of Commerce or the U.S. Department of State, the United Nations Security Council, the European Union, any EU member state, or the United Kingdom; (iii) a \u201cdesignated national,\u201d as defined in the Cuban Assets Control Regulations, 31 C.F.R. Part 515, (iv) organized, incorporated, established, located, resident or the government, including any political subdivision, agenc"
+        },
+        {
+          "term": "Department of Commerce",
+          "start": 3664031,
+          "end": 3664593,
+          "text": "in any Executive Order issued by the President of the United States and administered by OFAC, or any other any Sanctions-related list of sanctioned persons maintained by OFAC, the Department of Commerce or the U.S. Department of State, the United Nations Security Council, the European Union, any EU member state, or the United Kingdom; (iii) a \u201cdesignated national,\u201d as defined in the Cuban Assets Control Regulations, 31 C.F.R. Part 515, (iv) organized, incorporated, established, located, resident or the government, including any political subdivision, agenc"
+        },
+        {
+          "term": "Department of Commerce",
+          "start": 3821719,
+          "end": 3822281,
+          "text": "in any Executive Order issued by the President of the United States and administered by OFAC, or any other any Sanctions-related list of sanctioned persons maintained by OFAC, the Department of Commerce or the U.S. Department of State, the United Nations Security Council, the European Union, any EU member state, or the United Kingdom; (iii) a \u201cdesignated national,\u201d as defined in the Cuban Assets Control Regulations, 31 C.F.R. Part 515, (iv) organized, incorporated, established, located, resident or the government, including any political subdivision, agenc"
+        }
+      ],
+      "assessment": "no_government_disposition_candidate_in_reviewed_matching_passages",
+      "reason": "Intel appears in a biography concerning Kno; Commerce appears in sanctions definitions."
+    },
+    {
+      "source_id": "hit-11-expanded32",
+      "result_id": "0001193125-26-371516:d944435ddefm14a.htm",
+      "date": "2026-08-27",
+      "form": "DEFM14A",
+      "filers": [
+        "Armada Acquisition Corp. II  (XRPN, XRPNU, XRPNW)  (CIK 0002044009)"
+      ],
+      "match_count": 7,
+      "normalized_text_characters": 4540262,
+      "contexts": [
+        {
+          "term": "Intel",
+          "start": 1577987,
+          "end": 1578532,
+          "text": "ge investor through Angel Track and has participated in or advised a number of fintech and blockchain ventures, including Nium, Azimo, MoneyGram, Thomson Reuters, Kno (acquired by Intel), and Bitso, a leading Latin American digital asset trading platform and Ripple partner. Mr. Birla holds a Master of Business Administration from the Wharton School of the University of Pennsylvania, where he also lectures on topics related to digital finance and venture innovation. Stuart Alderoty is expected to serve as a Director of Pubco following the C"
+        },
+        {
+          "term": "Department of Commerce",
+          "start": 3076883,
+          "end": 3077445,
+          "text": "in any Executive Order issued by the President of the United States and administered by OFAC, or any other any Sanctions-related list of sanctioned persons maintained by OFAC, the Department of Commerce or the U.S. Department of State, the United Nations Security Council, the European Union, any EU member state, or the United Kingdom; (iii) a \u201cdesignated national,\u201d as defined in the Cuban Assets Control Regulations, 31 C.F.R. Part 515, (iv) organized, incorporated, established, located, resident or the government, including any political subdivision, agenc"
+        },
+        {
+          "term": "Department of Commerce",
+          "start": 3229201,
+          "end": 3229763,
+          "text": "in any Executive Order issued by the President of the United States and administered by OFAC, or any other any Sanctions-related list of sanctioned persons maintained by OFAC, the Department of Commerce or the U.S. Department of State, the United Nations Security Council, the European Union, any EU member state, or the United Kingdom; (iii) a \u201cdesignated national,\u201d as defined in the Cuban Assets Control Regulations, 31 C.F.R. Part 515, (iv) organized, incorporated, established, located, resident or the government, including any political subdivision, agenc"
+        },
+        {
+          "term": "Department of Commerce",
+          "start": 3373494,
+          "end": 3374056,
+          "text": "in any Executive Order issued by the President of the United States and administered by OFAC, or any other any Sanctions-related list of sanctioned persons maintained by OFAC, the Department of Commerce or the U.S. Department of State, the United Nations Security Council, the European Union, any EU member state, or the United Kingdom; (iii) a \u201cdesignated national,\u201d as defined in the Cuban Assets Control Regulations, 31 C.F.R. Part 515, (iv) organized, incorporated, established, located, resident or the government, including any political subdivision, agenc"
+        },
+        {
+          "term": "Department of Commerce",
+          "start": 3519263,
+          "end": 3519825,
+          "text": "in any Executive Order issued by the President of the United States and administered by OFAC, or any other any Sanctions-related list of sanctioned persons maintained by OFAC, the Department of Commerce or the U.S. Department of State, the United Nations Security Council, the European Union, any EU member state, or the United Kingdom; (iii) a \u201cdesignated national,\u201d as defined in the Cuban Assets Control Regulations, 31 C.F.R. Part 515, (iv) organized, incorporated, established, located, resident or the government, including any political subdivision, agenc"
+        },
+        {
+          "term": "Department of Commerce",
+          "start": 3664837,
+          "end": 3665399,
+          "text": "in any Executive Order issued by the President of the United States and administered by OFAC, or any other any Sanctions-related list of sanctioned persons maintained by OFAC, the Department of Commerce or the U.S. Department of State, the United Nations Security Council, the European Union, any EU member state, or the United Kingdom; (iii) a \u201cdesignated national,\u201d as defined in the Cuban Assets Control Regulations, 31 C.F.R. Part 515, (iv) organized, incorporated, established, located, resident or the government, including any political subdivision, agenc"
+        },
+        {
+          "term": "Department of Commerce",
+          "start": 3822525,
+          "end": 3823087,
+          "text": "in any Executive Order issued by the President of the United States and administered by OFAC, or any other any Sanctions-related list of sanctioned persons maintained by OFAC, the Department of Commerce or the U.S. Department of State, the United Nations Security Council, the European Union, any EU member state, or the United Kingdom; (iii) a \u201cdesignated national,\u201d as defined in the Cuban Assets Control Regulations, 31 C.F.R. Part 515, (iv) organized, incorporated, established, located, resident or the government, including any political subdivision, agenc"
+        }
+      ],
+      "assessment": "no_government_disposition_candidate_in_reviewed_matching_passages",
+      "reason": "Related Armada/Evernorth transaction document repeats the biography and sanctions references."
+    },
+    {
+      "source_id": "hit-12",
+      "result_id": "0001829126-26-009732:blackhawk_s4a8.htm",
+      "date": "2026-09-04",
+      "form": "S-4/A",
+      "filers": [
+        "Black Hawk Acquisition Corp  (BKHA, BKHAR, BKHAU)  (CIK 0002000775)",
+        "Vesicor Therapeutics, Inc.  (CIK 0001993074)"
+      ],
+      "match_count": 3,
+      "normalized_text_characters": 2379681,
+      "contexts": [
+        {
+          "term": "Intel",
+          "start": 1102938,
+          "end": 1103483,
+          "text": "cutives at all levels, including CEOs, Boards of Directors, vice presidents, and directors. Throughout his career, he has consulted for companies including NVIDIA, Amazon, Google, Intel, Hewlett Packard, Chevron, Abbot Labs, Medtronic, Network Appliance, Barclays, Black Rock, Bank of New York Mellon, Cisco, Northrop Grumman, and Apple. From 1991 until 1996, Mr. Kaufman was one of the key leaders who took start-up StorMedia public in an IPO, where he served as the Director of Product Development. From 1979 until 1991, Mr. Kaufman began his "
+        },
+        {
+          "term": "Department of Commerce",
+          "start": 1943989,
+          "end": 1944551,
+          "text": "956, 1957, and any other equivalent or comparable Laws of other countries (collectively, \u201c Anti-Money Laundering Laws \u201d), (C) anti-boycott regulations, as administered by the U.S. Department of Commerce, and (D) importation of goods, including Laws administered by the U.S. Customs and Border Protection, Title 19 of the U.S.C. and C.F.R., and any other equivalent or comparable Laws of other countries (collectively, \u201c International Trade Control Laws \u201d). (b) Neither the Company nor any of its directors, officers or employees, nor any other Representative of "
+        },
+        {
+          "term": "Department of Commerce",
+          "start": 1944712,
+          "end": 1945274,
+          "text": "designated on any applicable Sanctions or similar lists administered by an Authority, including the U.S. Department of the Treasury\u2019s Specially Designated Nationals List, the U.S. Department of Commerce\u2019s Denied Persons List and Entity List, the U.S. Department of State\u2019s Debarred List, HM Treasury\u2019s Consolidated List of Financial Sanctions Targets and the Investment Bank List, or any similar list enforced by any other relevant Authority, as amended from time to time, or any Person 50% or greater owned or, as applicable, controlled by any of the foregoing "
+        }
+      ],
+      "assessment": "no_government_disposition_candidate_in_reviewed_matching_passages",
+      "reason": "Intel appears among a consultant\u2019s past clients; Commerce appears in sanctions and trade-compliance clauses."
+    }
+  ]
+}

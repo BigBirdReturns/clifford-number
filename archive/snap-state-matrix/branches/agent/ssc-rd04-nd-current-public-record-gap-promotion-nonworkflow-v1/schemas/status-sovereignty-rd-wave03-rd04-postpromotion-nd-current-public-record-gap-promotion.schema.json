@@ -1,0 +1,128 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion.schema.json",
+  "title": "RD-04 North Dakota current public-record-gap one-cell promotion product",
+  "description": "Shared closed primitives for the one-field promotion product. Exact cross-file invariants are enforced by the permanent validator and adversarial test.",
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "gitSha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "authorityBoundary": {
+      "type": "object",
+      "required": [
+        "source_requests",
+        "route_executions",
+        "source_admissions",
+        "field_terminalizations",
+        "matrix_updates",
+        "row_state_mutations",
+        "row_terminalizations",
+        "class_closed",
+        "cumulative_ledger_effect",
+        "publication_effect",
+        "adoption_effect",
+        "graph_effect",
+        "outside_human_dependency"
+      ],
+      "properties": {
+        "source_requests": {
+          "const": 0
+        },
+        "route_executions": {
+          "const": 0
+        },
+        "source_admissions": {
+          "const": 0
+        },
+        "field_terminalizations": {
+          "const": 1
+        },
+        "matrix_updates": {
+          "const": 1
+        },
+        "row_state_mutations": {
+          "const": 0
+        },
+        "row_terminalizations": {
+          "const": 0
+        },
+        "class_closed": {
+          "const": false
+        },
+        "cumulative_ledger_effect": {
+          "const": "none"
+        },
+        "publication_effect": {
+          "const": "none"
+        },
+        "adoption_effect": {
+          "const": "none"
+        },
+        "graph_effect": {
+          "const": "none"
+        },
+        "outside_human_dependency": {
+          "const": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "cell": {
+      "type": "object",
+      "required": [
+        "field_id",
+        "field_ordinal",
+        "state",
+        "terminal",
+        "typed_gap",
+        "authority_effect",
+        "evidence_source_ids",
+        "value"
+      ],
+      "properties": {
+        "field_id": {
+          "type": "string"
+        },
+        "field_ordinal": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9
+        },
+        "state": {
+          "enum": [
+            "evidence_complete",
+            "observed",
+            "not_publicly_recovered",
+            "still_open"
+          ]
+        },
+        "terminal": {
+          "type": "boolean"
+        },
+        "typed_gap": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "authority_effect": {
+          "type": "string"
+        },
+        "evidence_source_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "type": "object"
+}

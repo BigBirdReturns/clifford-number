@@ -1,0 +1,811 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bigbirdreturns.github.io/clifford-number/schemas/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.schema.json",
+  "title": "RD-04 Montana exact-current derivative row-state reconciliation product",
+  "description": "Closed product contract for one request-free Montana derivative row-state cell over canonical parent 0840358962621b0be3db6864ecec763327f35903.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "product_contract",
+    "document_schemas"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "ssc-rd04-mt-row-state-reconciliation-schema@1"
+    },
+    "product_contract": {
+      "$ref": "#/$defs/productContract"
+    },
+    "document_schemas": {
+      "$ref": "#/$defs/documentSchemas"
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "gitBlob": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "authorityBoundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_requests",
+        "route_executions",
+        "source_admissions",
+        "field_terminalizations",
+        "matrix_updates",
+        "row_state_mutations",
+        "row_terminalizations",
+        "class_closed",
+        "cumulative_ledger_effect",
+        "publication_effect",
+        "adoption_effect",
+        "graph_effect",
+        "outside_human_dependency"
+      ],
+      "properties": {
+        "source_requests": {
+          "const": 0
+        },
+        "route_executions": {
+          "const": 0
+        },
+        "source_admissions": {
+          "const": 0
+        },
+        "field_terminalizations": {
+          "const": 0
+        },
+        "matrix_updates": {
+          "const": 1
+        },
+        "row_state_mutations": {
+          "const": 1
+        },
+        "row_terminalizations": {
+          "const": 1
+        },
+        "class_closed": {
+          "const": false
+        },
+        "cumulative_ledger_effect": {
+          "const": "none"
+        },
+        "publication_effect": {
+          "const": "none"
+        },
+        "adoption_effect": {
+          "const": "none"
+        },
+        "graph_effect": {
+          "const": "none"
+        },
+        "outside_human_dependency": {
+          "const": false
+        }
+      }
+    },
+    "productContract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "canonical_parent",
+        "canonical_parent_tree",
+        "permanent_path_count",
+        "hashed_file_count",
+        "matrix_transition",
+        "authority_boundary"
+      ],
+      "properties": {
+        "canonical_parent": {
+          "const": "0840358962621b0be3db6864ecec763327f35903"
+        },
+        "canonical_parent_tree": {
+          "const": "38023f86bcc27527f9db8da9622bada00b3de542"
+        },
+        "permanent_path_count": {
+          "const": 14
+        },
+        "hashed_file_count": {
+          "const": 13
+        },
+        "matrix_transition": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "predecessor_sha256",
+            "promoted_sha256",
+            "changed_rows",
+            "changed_cells",
+            "substantive_cells_changed",
+            "terminal_units_before",
+            "terminal_units_after",
+            "class_closed"
+          ],
+          "properties": {
+            "predecessor_sha256": {
+              "const": "9f9dc05a057396056771bb566c44e9c3779d8ef6b0d2c078f7ffff11d9c7e6cb"
+            },
+            "promoted_sha256": {
+              "const": "12e52344af0c8ec3d845b6f05f8a20014fa84504d10dbc9ee0674d37715abe1d"
+            },
+            "changed_rows": {
+              "const": 1
+            },
+            "changed_cells": {
+              "const": 1
+            },
+            "substantive_cells_changed": {
+              "const": 0
+            },
+            "terminal_units_before": {
+              "const": 11
+            },
+            "terminal_units_after": {
+              "const": 12
+            },
+            "class_closed": {
+              "const": false
+            }
+          }
+        },
+        "authority_boundary": {
+          "$ref": "#/$defs/authorityBoundary"
+        }
+      }
+    },
+    "documentSchemas": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "input_custody",
+        "row_state_decision",
+        "row_state_ledger",
+        "promoted_matrix",
+        "remaining_open_census",
+        "row_state_summary",
+        "index",
+        "product_manifest"
+      ],
+      "properties": {
+        "input_custody": {
+          "$ref": "#/$defs/inputCustody"
+        },
+        "row_state_decision": {
+          "$ref": "#/$defs/rowStateDecision"
+        },
+        "row_state_ledger": {
+          "$ref": "#/$defs/rowStateLedger"
+        },
+        "promoted_matrix": {
+          "$ref": "#/$defs/promotedMatrix"
+        },
+        "remaining_open_census": {
+          "$ref": "#/$defs/remainingOpenCensus"
+        },
+        "row_state_summary": {
+          "$ref": "#/$defs/rowStateSummary"
+        },
+        "index": {
+          "$ref": "#/$defs/productIndex"
+        },
+        "product_manifest": {
+          "$ref": "#/$defs/productManifest"
+        }
+      }
+    },
+    "inputCustody": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "wave_id",
+        "lane_id",
+        "class_id",
+        "issue",
+        "canonical_parent",
+        "canonical_parent_tree",
+        "predecessor_matrix",
+        "admitted_validation",
+        "standing_control_repairs",
+        "current_montana",
+        "terminal_evidence_cells",
+        "projection",
+        "authority_boundary"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "ssc-rd04-mt-row-state-reconciliation-input-custody@1"
+        },
+        "wave_id": {
+          "const": "SSC-RD-W03"
+        },
+        "lane_id": {
+          "const": "RD-04"
+        },
+        "class_id": {
+          "const": "RD-04-C02"
+        },
+        "issue": {
+          "const": 1017
+        },
+        "canonical_parent": {
+          "const": "0840358962621b0be3db6864ecec763327f35903"
+        },
+        "canonical_parent_tree": {
+          "const": "38023f86bcc27527f9db8da9622bada00b3de542"
+        },
+        "predecessor_matrix": {},
+        "admitted_validation": {},
+        "standing_control_repairs": {},
+        "current_montana": {},
+        "terminal_evidence_cells": {
+          "type": "array",
+          "minItems": 8,
+          "maxItems": 8
+        },
+        "projection": {
+          "const": {
+            "proposed_row_state_cell_sha256": "ba173d03c2f82316ca79eb8b6627057db6fdb54113340ff0f9539a85e89a1f2d",
+            "reconciled_row_sha256": "b6474320f690a653eae081cf655a090bb5d5da0f444e9a1c42077fd0b951bcbc",
+            "promoted_matrix_bytes": 502424,
+            "promoted_matrix_sha256": "12e52344af0c8ec3d845b6f05f8a20014fa84504d10dbc9ee0674d37715abe1d",
+            "promoted_matrix_git_blob": "741bda42b609f386d71090e6368af537fd334914",
+            "terminal_cells": [
+              229,
+              230
+            ],
+            "still_open_cells": [
+              221,
+              220
+            ],
+            "terminal_substantive_cells": [
+              118,
+              118
+            ],
+            "still_open_substantive_cells": [
+              182,
+              182
+            ],
+            "row_terminal_state_cells_terminal": [
+              11,
+              12
+            ],
+            "row_terminal_state_cells_open": [
+              39,
+              38
+            ],
+            "terminal_units": [
+              11,
+              12
+            ],
+            "montana_terminal_fields": [
+              8,
+              9
+            ],
+            "montana_open_fields": [
+              1,
+              0
+            ],
+            "montana_row_state": [
+              "still_open",
+              "terminal_fixed_public_record_obligation_complete"
+            ]
+          }
+        },
+        "authority_boundary": {
+          "$ref": "#/$defs/authorityBoundary"
+        }
+      }
+    },
+    "rowStateDecision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "wave_id",
+        "lane_id",
+        "class_id",
+        "issue",
+        "decision_id",
+        "candidate_id",
+        "decision",
+        "unit_id",
+        "postal_code",
+        "state_name",
+        "field_id",
+        "field_ordinal",
+        "current_row_state",
+        "target_row_state",
+        "current_row_sha256",
+        "reconciled_row_sha256",
+        "current_cell_sha256",
+        "proposed_cell_sha256",
+        "prerequisite_satisfaction",
+        "proposed_row_state_cell",
+        "prohibited_inferences",
+        "transition_effects",
+        "authority_boundary"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "ssc-rd04-mt-row-state-reconciliation-decision@1"
+        },
+        "wave_id": {
+          "const": "SSC-RD-W03"
+        },
+        "lane_id": {
+          "const": "RD-04"
+        },
+        "class_id": {
+          "const": "RD-04-C02"
+        },
+        "issue": {
+          "const": 1017
+        },
+        "decision_id": {
+          "const": "RD04-MT-EXACT-CURRENT-ROW-STATE-RECONCILIATION-DECISION-V1"
+        },
+        "candidate_id": {
+          "const": "RD04-MT-EXACT-CURRENT-ROW-STATE-RECONCILIATION-CANDIDATE-V1"
+        },
+        "decision": {
+          "const": "terminalize_exact_derivative_row_state_cell_after_all_eight_evidence_fields_are_terminal"
+        },
+        "unit_id": {
+          "const": "US-STATE-MT"
+        },
+        "postal_code": {
+          "const": "MT"
+        },
+        "state_name": {
+          "const": "Montana"
+        },
+        "field_id": {
+          "const": "field_and_row_terminal_state"
+        },
+        "field_ordinal": {
+          "const": 9
+        },
+        "current_row_state": {
+          "const": "still_open"
+        },
+        "target_row_state": {
+          "const": "terminal_fixed_public_record_obligation_complete"
+        },
+        "current_row_sha256": {
+          "const": "06ab54ffbb8deaed317cfef33c44e685c43e17f2b3f6bb7f2c715f9a38ed86cc"
+        },
+        "reconciled_row_sha256": {
+          "const": "b6474320f690a653eae081cf655a090bb5d5da0f444e9a1c42077fd0b951bcbc"
+        },
+        "current_cell_sha256": {
+          "const": "221d9a1a9ecf55d786ab6f92faf77dd0795b3f4ef344cbccf64b4b72356ec2de"
+        },
+        "proposed_cell_sha256": {
+          "const": "ba173d03c2f82316ca79eb8b6627057db6fdb54113340ff0f9539a85e89a1f2d"
+        },
+        "prerequisite_satisfaction": {},
+        "proposed_row_state_cell": {
+          "$ref": "#/$defs/rowStateCell"
+        },
+        "prohibited_inferences": {
+          "const": [
+            "do_not_infer_complete_state_implementation_truth_beyond_terminal_field_custody",
+            "do_not_convert_not_publicly_recovered_fields_into_event_or_policy_absence",
+            "do_not_infer_uniform_frontline_practice",
+            "do_not_infer_person_level_outcome",
+            "do_not_infer_national_prevalence",
+            "do_not_infer_discrimination_or_racial_order",
+            "do_not_infer_coordination_or_common_purpose",
+            "do_not_infer_complete_compact",
+            "do_not_close_rd04_c02_or_wave03_from_twelve_terminal_rows"
+          ]
+        },
+        "transition_effects": {},
+        "authority_boundary": {
+          "$ref": "#/$defs/authorityBoundary"
+        }
+      }
+    },
+    "rowStateCell": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "field_ordinal",
+        "field_id",
+        "state",
+        "terminal",
+        "value",
+        "evidence_source_ids",
+        "typed_gap",
+        "authority_effect"
+      ],
+      "properties": {
+        "field_ordinal": {
+          "const": 9
+        },
+        "field_id": {
+          "const": "field_and_row_terminal_state"
+        },
+        "state": {
+          "const": "evidence_complete"
+        },
+        "terminal": {
+          "const": true
+        },
+        "value": {
+          "$ref": "#/$defs/rowStateValue"
+        },
+        "evidence_source_ids": {
+          "const": [
+            "RD04-MT-ROW-STATE-RECONCILIATION-V1"
+          ]
+        },
+        "typed_gap": {
+          "type": "null"
+        },
+        "authority_effect": {
+          "const": "row_level_fixed_public_record_obligation_terminal_only"
+        }
+      }
+    },
+    "rowStateValue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "terminal_classification",
+        "row_scope",
+        "completed_evidence_fields",
+        "terminal_evidence_field_ids",
+        "terminal_evidence_state_counts",
+        "predecessor_row_canonical_sha256",
+        "completion_rule",
+        "class_effect",
+        "cumulative_ledger_effect",
+        "limitations",
+        "prohibited_inferences"
+      ],
+      "properties": {
+        "terminal_classification": {
+          "const": "terminal_fixed_public_record_obligation_complete"
+        },
+        "row_scope": {
+          "const": "fixed_public_record_obligation_for_one_state"
+        },
+        "completed_evidence_fields": {
+          "const": 8
+        },
+        "terminal_evidence_field_ids": {
+          "const": [
+            "canonical_state_identity",
+            "operative_state_implementation_authority_and_version",
+            "implementation_effective_date_or_typed_gap",
+            "abawd_or_work_requirement_waiver_state_and_governing_period",
+            "discretionary_exemption_authority_and_reported_state_practice",
+            "fitness_for_work_or_eligibility_screening_rule",
+            "verification_evidence_and_staff_discretion_surface",
+            "source_identities_and_exact_custody"
+          ]
+        },
+        "terminal_evidence_state_counts": {
+          "const": {
+            "evidence_complete": 8,
+            "observed": 0,
+            "not_publicly_recovered": 0
+          }
+        },
+        "predecessor_row_canonical_sha256": {
+          "const": "06ab54ffbb8deaed317cfef33c44e685c43e17f2b3f6bb7f2c715f9a38ed86cc"
+        },
+        "completion_rule": {
+          "const": "all_eight_declared_state_evidence_fields_are_terminal_under_exact_source_or_typed_gap_custody"
+        },
+        "class_effect": {
+          "const": "none"
+        },
+        "cumulative_ledger_effect": {
+          "const": "none"
+        },
+        "limitations": {
+          "const": [
+            "row completion closes only the declared fixed public-record obligation for this state",
+            "typed source gaps remain distinct from event, policy, practice, or implementation absence",
+            "row completion does not establish uniform frontline practice or person-level outcome",
+            "twelve terminal rows do not establish national prevalence or close RD-04-C02"
+          ]
+        },
+        "prohibited_inferences": {
+          "const": [
+            "do_not_infer_complete_state_implementation_truth_beyond_terminal_field_custody",
+            "do_not_convert_not_publicly_recovered_fields_into_event_or_policy_absence",
+            "do_not_infer_uniform_frontline_practice",
+            "do_not_infer_person_level_outcome",
+            "do_not_infer_national_prevalence",
+            "do_not_infer_discrimination_or_racial_order",
+            "do_not_infer_coordination_or_common_purpose",
+            "do_not_infer_complete_compact",
+            "do_not_close_rd04_c02_or_wave03_from_twelve_terminal_rows"
+          ]
+        }
+      }
+    },
+    "rowStateLedger": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "wave_id",
+        "lane_id",
+        "class_id",
+        "issue",
+        "row_state_mutation_count",
+        "row_terminalization_count",
+        "substantive_field_terminalization_count",
+        "matrix_update_count",
+        "transition",
+        "matrix_transition",
+        "authority_boundary"
+      ],
+      "properties": {
+        "schema_version": {},
+        "wave_id": {},
+        "lane_id": {},
+        "class_id": {},
+        "issue": {},
+        "row_state_mutation_count": {},
+        "row_terminalization_count": {},
+        "substantive_field_terminalization_count": {},
+        "matrix_update_count": {},
+        "transition": {},
+        "matrix_transition": {},
+        "authority_boundary": {}
+      }
+    },
+    "promotedMatrix": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "wave_id",
+        "lane_id",
+        "class_id",
+        "issue",
+        "field_order",
+        "counts",
+        "rows",
+        "current_result",
+        "source_product",
+        "composition_product",
+        "row_state_product",
+        "minimum_frontier_capture_adjudication_product",
+        "minimum_frontier_row_state_product",
+        "five_state_promotion_product",
+        "postpromotion_four_cell_promotion_product",
+        "postpromotion_nd_followup_one_cell_promotion_product",
+        "postpromotion_nd_current_public_record_gap_promotion_product",
+        "postpromotion_nd_current_public_record_gap_row_state_reconciliation_product"
+      ],
+      "properties": {
+        "schema_version": {},
+        "wave_id": {},
+        "lane_id": {},
+        "class_id": {},
+        "issue": {},
+        "field_order": {},
+        "counts": {},
+        "rows": {},
+        "current_result": {},
+        "source_product": {},
+        "composition_product": {},
+        "row_state_product": {},
+        "minimum_frontier_capture_adjudication_product": {},
+        "minimum_frontier_row_state_product": {},
+        "five_state_promotion_product": {},
+        "postpromotion_four_cell_promotion_product": {},
+        "postpromotion_nd_followup_one_cell_promotion_product": {},
+        "postpromotion_nd_current_public_record_gap_promotion_product": {},
+        "postpromotion_nd_current_public_record_gap_row_state_reconciliation_product": {}
+      }
+    },
+    "remainingOpenCensus": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "wave_id",
+        "lane_id",
+        "class_id",
+        "issue",
+        "matrix_sha256",
+        "open_cell_count",
+        "open_substantive_cell_count",
+        "open_row_state_cell_count",
+        "terminal_cell_count",
+        "terminal_substantive_cell_count",
+        "terminal_unit_count",
+        "terminal_unit_ids",
+        "montana",
+        "open_cells",
+        "class_closed",
+        "next_bounded_operation",
+        "authority_boundary"
+      ],
+      "properties": {
+        "schema_version": {},
+        "wave_id": {},
+        "lane_id": {},
+        "class_id": {},
+        "issue": {},
+        "matrix_sha256": {},
+        "open_cell_count": {},
+        "open_substantive_cell_count": {},
+        "open_row_state_cell_count": {},
+        "terminal_cell_count": {},
+        "terminal_substantive_cell_count": {},
+        "terminal_unit_count": {},
+        "terminal_unit_ids": {},
+        "montana": {},
+        "open_cells": {},
+        "class_closed": {},
+        "next_bounded_operation": {},
+        "authority_boundary": {}
+      }
+    },
+    "rowStateSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "wave_id",
+        "lane_id",
+        "class_id",
+        "issue",
+        "state",
+        "decision_id",
+        "candidate_id",
+        "row_state_mutations",
+        "row_terminalizations",
+        "substantive_field_terminalizations",
+        "matrix_updates",
+        "counts",
+        "montana",
+        "class_closed",
+        "next_bounded_operation",
+        "authority_boundary"
+      ],
+      "properties": {
+        "schema_version": {},
+        "wave_id": {},
+        "lane_id": {},
+        "class_id": {},
+        "issue": {},
+        "state": {},
+        "decision_id": {},
+        "candidate_id": {},
+        "row_state_mutations": {},
+        "row_terminalizations": {},
+        "substantive_field_terminalizations": {},
+        "matrix_updates": {},
+        "counts": {},
+        "montana": {},
+        "class_closed": {},
+        "next_bounded_operation": {},
+        "authority_boundary": {}
+      }
+    },
+    "productIndex": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "wave_id",
+        "lane_id",
+        "class_id",
+        "issue",
+        "input_custody_path",
+        "row_state_decision_path",
+        "row_state_ledger_path",
+        "promoted_partial_field_matrix_path",
+        "remaining_open_field_census_path",
+        "row_state_summary_path",
+        "counts",
+        "current_result",
+        "next_bounded_operation"
+      ],
+      "properties": {
+        "schema_version": {},
+        "wave_id": {},
+        "lane_id": {},
+        "class_id": {},
+        "issue": {},
+        "input_custody_path": {},
+        "row_state_decision_path": {},
+        "row_state_ledger_path": {},
+        "promoted_partial_field_matrix_path": {},
+        "remaining_open_field_census_path": {},
+        "row_state_summary_path": {},
+        "counts": {},
+        "current_result": {},
+        "next_bounded_operation": {}
+      }
+    },
+    "hashedFile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "bytes",
+        "sha256",
+        "git_blob"
+      ],
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "git_blob": {
+          "$ref": "#/$defs/gitBlob"
+        }
+      }
+    },
+    "productManifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "permanent_path_count",
+        "hashed_file_count",
+        "permanent_paths",
+        "hashed_files",
+        "combined_sha256",
+        "authority_boundary"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "ssc-rd04-mt-row-state-reconciliation-manifest@1"
+        },
+        "permanent_path_count": {
+          "const": 14
+        },
+        "hashed_file_count": {
+          "const": 13
+        },
+        "permanent_paths": {
+          "type": "array",
+          "minItems": 14,
+          "maxItems": 14,
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "hashed_files": {
+          "type": "array",
+          "minItems": 13,
+          "maxItems": 13,
+          "items": {
+            "$ref": "#/$defs/hashedFile"
+          }
+        },
+        "combined_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "authority_boundary": {
+          "$ref": "#/$defs/authorityBoundary"
+        }
+      }
+    }
+  }
+}

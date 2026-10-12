@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bigbirdreturns.github.io/clifford-number/schemas/status-sovereignty-rd06-dcgsa-support-exit.schema.json",
+  "title": "SSC RD-06 DCGS-A support, evaluation, performance, substitution, and exit",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "execution_id", "hypothesis_id", "issue", "parent_issue", "lane_id", "authority", "source_ledger_path", "counts", "identification_floor", "current_result", "boundaries"],
+  "properties": {
+    "schema_version": { "const": "status-sovereignty-rd06-dcgsa-support-exit@1" },
+    "execution_id": { "const": "SSC-RD06-DCGSA-SUPPORT-EXIT-01" },
+    "hypothesis_id": { "const": "SSC-H01" },
+    "issue": { "const": 622 },
+    "parent_issue": { "const": 615 },
+    "lane_id": { "const": "SSC-F13" },
+    "authority": { "const": "source_acquisition_only_not_review_or_adjudication" },
+    "source_ledger_path": { "type": "string", "minLength": 1 },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_records", "later_proposals_received", "publicly_named_offerors", "unresolved_offeror_identities", "awardees", "named_rejected_offerors", "live_demonstration_tasks", "approximate_performance_requirements", "external_judicial_corrections", "fielded_systems_fy2021", "fielded_maneuver_battalions", "published_operational_test_result_sets", "complete_support_differentials", "complete_data_rights_records", "complete_substitution_or_exit_records", "reviewed_disposition_changes", "complete_compact_findings", "graph_effects", "publication_effects"],
+      "properties": {
+        "source_records": { "type": "integer", "minimum": 1 },
+        "later_proposals_received": { "const": 8 },
+        "publicly_named_offerors": { "const": 3 },
+        "unresolved_offeror_identities": { "const": 5 },
+        "awardees": { "const": 2 },
+        "named_rejected_offerors": { "const": 1 },
+        "live_demonstration_tasks": { "const": 32 },
+        "approximate_performance_requirements": { "const": 70 },
+        "external_judicial_corrections": { "const": 1 },
+        "fielded_systems_fy2021": { "const": 879 },
+        "fielded_maneuver_battalions": { "const": 402 },
+        "published_operational_test_result_sets": { "const": 0 },
+        "complete_support_differentials": { "const": 0 },
+        "complete_data_rights_records": { "const": 0 },
+        "complete_substitution_or_exit_records": { "const": 0 },
+        "reviewed_disposition_changes": { "const": 0 },
+        "complete_compact_findings": { "const": 0 },
+        "graph_effects": { "const": 0 },
+        "publication_effects": { "const": 0 }
+      }
+    },
+    "identification_floor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["observed_winner_is_latent_preferred_option", "unoffered_or_undersupported_alternative_is_rejected", "operational_fit_identifies_mechanism", "public_support_proves_improper_favoritism", "later_success_proves_intrinsic_superiority"],
+      "properties": {
+        "observed_winner_is_latent_preferred_option": { "const": false },
+        "unoffered_or_undersupported_alternative_is_rejected": { "const": false },
+        "operational_fit_identifies_mechanism": { "const": false },
+        "public_support_proves_improper_favoritism": { "const": false },
+        "later_success_proves_intrinsic_superiority": { "const": false }
+      }
+    },
+    "current_result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["terminal_state", "external_correction_control_retained", "later_competition_control_retained", "support_asymmetry_finding", "counterfactual_foreclosure_finding", "technical_superiority_finding", "favoritism_finding", "unavoidable_dependency_finding", "coordination_finding", "common_purpose_finding", "complete_compact_finding", "graph_effect", "publication_effect"],
+      "properties": {
+        "terminal_state": { "const": "partial_option_universe_and_continuity_recovered_foreclosure_unresolved" },
+        "external_correction_control_retained": { "const": true },
+        "later_competition_control_retained": { "const": true },
+        "support_asymmetry_finding": { "const": false },
+        "counterfactual_foreclosure_finding": { "const": false },
+        "technical_superiority_finding": { "const": false },
+        "favoritism_finding": { "const": false },
+        "unavoidable_dependency_finding": { "const": false },
+        "coordination_finding": { "const": false },
+        "common_purpose_finding": { "const": false },
+        "complete_compact_finding": { "const": false },
+        "graph_effect": { "const": "none" },
+        "publication_effect": { "const": "none" }
+      }
+    },
+    "boundaries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["protest_denial_proves_complete_or_fair_option_set", "award_proves_technical_superiority", "fielding_scale_proves_comparative_effectiveness", "continued_support_proves_exclusivity", "integration_cost_proves_unavoidable_dependency", "judicial_correction_proves_later_option_set_fairness", "palantir_involvement_proves_common_purpose", "graph_effect"],
+      "properties": {
+        "protest_denial_proves_complete_or_fair_option_set": { "const": false },
+        "award_proves_technical_superiority": { "const": false },
+        "fielding_scale_proves_comparative_effectiveness": { "const": false },
+        "continued_support_proves_exclusivity": { "const": false },
+        "integration_cost_proves_unavoidable_dependency": { "const": false },
+        "judicial_correction_proves_later_option_set_fairness": { "const": false },
+        "palantir_involvement_proves_common_purpose": { "const": false },
+        "graph_effect": { "const": "none" }
+      }
+    }
+  }
+}

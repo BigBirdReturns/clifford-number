@@ -1,0 +1,127 @@
+{
+  "schema_version": "lake-judgment-shadow-snapshot@1",
+  "snapshot_id": "CN-LAKE-JUDGMENT-SHADOW-2026-07-29",
+  "source_branch": "agent/lake-index-census",
+  "source_pull_request": 384,
+  "source_fingerprint_sha256": "fd6de200bad29e0d53f44b747cc4ef59acaf1ebde0429352a2d3fbfb9da95fd7",
+  "source_reports": [
+    {
+      "path": "reports/lake-index-census.md",
+      "blob_sha": "9dec98d06b43c0109d62a5179ab6c0e54ffbc8fc"
+    },
+    {
+      "path": "reports/lake-index-gap-summary.md",
+      "blob_sha": "2f5723aad566d9b85fe95d5d8cdefc6cc2ad1c92"
+    }
+  ],
+  "counts": {
+    "evidence_bearing_files": 1266,
+    "index_reachable_evidence_files": 496,
+    "not_index_reachable": 770,
+    "authoritative_reachable_evidence_files": 340,
+    "not_authoritative_reachable": 926,
+    "public_reachable_evidence_files": 235,
+    "not_public_reachable": 1031,
+    "exact_orphan_evidence_files": 372,
+    "no_detected_program_owner": 1096,
+    "distinct_machine_ids": 11972,
+    "unindexed_machine_ids": 10031,
+    "divergent_identifier_projections": 3366,
+    "source_ids_without_projection": 4854,
+    "projection_ids_without_source": 3686,
+    "unused_receipt_definitions": 49,
+    "missing_repository_path_tokens": 74,
+    "case_ids_absent_from_public_catalog": 23,
+    "open_pull_requests_observed": 13,
+    "branch_only_paths_observed": 102
+  },
+  "priority_clusters": [
+    {
+      "cluster": "build/core-thesis",
+      "files": 184,
+      "index_reachable": 9,
+      "exact_orphans": 169,
+      "no_program_owner": 178
+    },
+    {
+      "cluster": "data/intake",
+      "files": 141,
+      "index_reachable": 78,
+      "exact_orphans": 53,
+      "no_program_owner": 127
+    },
+    {
+      "cluster": "data/research-tracks",
+      "files": 52,
+      "index_reachable": 12,
+      "exact_orphans": 39,
+      "no_program_owner": 52
+    },
+    {
+      "cluster": "reports/core-thesis",
+      "files": 96,
+      "index_reachable": 40,
+      "exact_orphans": 24,
+      "no_program_owner": 62
+    },
+    {
+      "cluster": "cases/arcadia-field-autopsy",
+      "files": 21,
+      "index_reachable": 6,
+      "exact_orphans": 15,
+      "no_program_owner": 21
+    }
+  ],
+  "decisions_supported_by_snapshot": [
+    {
+      "subject_id": "lake-program-ownership",
+      "priority": 1,
+      "judgment": "program ownership is the dominant current-tree semantic gap",
+      "action": "assign explicit program ownership and authoritative entrypoints before broadening acquisition",
+      "evidence_count": 1096
+    },
+    {
+      "subject_id": "lake-identifier-projection-integrity",
+      "priority": 2,
+      "judgment": "identifier projection integrity is a material machine-addressability defect",
+      "action": "resolve projection-without-source and source-without-projection classes by identifier family",
+      "evidence_count": 8540
+    },
+    {
+      "subject_id": "lake-core-thesis-orphans",
+      "priority": 3,
+      "judgment": "core-thesis generated and report products contain the largest concentrated orphan burden",
+      "action": "build authoritative core-thesis manifests and source-to-projection lineage before another narrative expansion",
+      "evidence_count": 193
+    },
+    {
+      "subject_id": "lake-index-reachability",
+      "priority": 4,
+      "judgment": "most evidence-bearing files are outside detected indexes",
+      "action": "attach every retained evidence file to an index, manifest, explicit isolation record, or deletion disposition",
+      "evidence_count": 770
+    },
+    {
+      "subject_id": "lake-case-catalog",
+      "priority": 5,
+      "judgment": "the public case catalog materially understates the internal case universe",
+      "action": "classify the 23 absent case IDs as publishable, internal, candidate, superseded, or malformed",
+      "evidence_count": 23
+    },
+    {
+      "subject_id": "lake-branch-shadow",
+      "priority": 6,
+      "judgment": "open branches contain a material unmerged shadow corpus",
+      "action": "assign each branch-only path an active, salvage, superseded, abandon, or merge disposition",
+      "evidence_count": 102
+    }
+  ],
+  "boundaries": {
+    "snapshot_is_merged_lake_index": false,
+    "snapshot_proves_semantic_completeness": false,
+    "priority_is_claim_ranking": false,
+    "public_reachability_requires_publication": false,
+    "source_truth_determined": false,
+    "graph_effect": "none"
+  }
+}

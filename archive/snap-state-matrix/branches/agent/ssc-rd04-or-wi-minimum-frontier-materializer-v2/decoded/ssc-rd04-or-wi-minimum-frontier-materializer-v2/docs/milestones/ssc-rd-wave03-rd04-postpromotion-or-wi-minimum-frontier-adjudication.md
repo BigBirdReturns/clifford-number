@@ -1,0 +1,11 @@
+# RD-04 Oregon and Wisconsin minimum-frontier adjudication
+
+This product classifies the current minimum substantive frontier for Oregon and Wisconsin. The actors are the already completed eleven-route follow-up capture in artifact `9009440088`, the already captured FY2026 FNS request archive in artifact `9033042970`, the existing source and field adjudication products, and the six current open cells in matrix blob `741bda42b609f386d71090e6368af537fd334914`. No new source request or route execution occurred.
+
+The mechanism admits twelve exact sources for narrow target fields, preserves render-first receipts for the PDF, image, and spreadsheet members, enforces the frozen route-target denominator, and separates state request facts from federal approval. Oregon and Wisconsin each produce three bounded candidates. Oregon verification and Wisconsin authority and verification are observed. Oregon authority and both waiver fields are terminal public-record gaps. The waiver gaps preserve the signed request dates, requested geography, and Oregon's pending WIMS modification without representing any request as an FNS approval.
+
+The product creates six candidates and performs zero field terminalizations, zero matrix updates, and zero row-state mutations. If a separate exact-current-cell validation admits all six, the substantive matrix projection moves from `118/182` terminal/open substantive cells to `124/176`. A later two-row derivative reconciliation would move total terminal/open cells from `236/214` to `238/212` and terminal units from 12 to 14. RD-04-C02 remains open throughout.
+
+The fixed authority boundary prohibits using Wisconsin's FFY2025 plan or addendum for verification, using Oregon interview or change pages for authority, treating a state request or pending regional review as approval, inferring uniform frontline practice or person-level outcomes, closing the class, or creating publication, adoption, graph, prevalence, discrimination, racial-order, coordination, common-purpose, or complete-compact effects.
+
+The control question is whether a separate validator can bind all six proposed cells to the exact current matrix blob and refuse every stale, target-incompatible, approval-inflating, or authority-expanding mutation before any matrix write occurs.

@@ -1,0 +1,569 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bigbirdreturns.github.io/clifford-number/schemas/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.schema.json",
+  "title": "RD-04 North Dakota exact-current derivative row-state reconciliation product",
+  "description": "Closed schemas for the request-free one-cell row-state reconciliation product over canonical merge 4eaa66d7.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "product_contract",
+    "document_schemas"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "ssc-rd04-nd-row-state-reconciliation-schema@1"
+    },
+    "product_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "canonical_parent",
+        "permanent_path_count",
+        "hashed_file_count",
+        "matrix_transition",
+        "authority_boundary"
+      ],
+      "properties": {
+        "canonical_parent": {
+          "const": "283c5993cb2ac0bff173c72aba70088c67b2ac3c"
+        },
+        "permanent_path_count": {
+          "const": 14
+        },
+        "hashed_file_count": {
+          "const": 13
+        },
+        "matrix_transition": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "predecessor_sha256",
+            "promoted_sha256",
+            "changed_rows",
+            "changed_cells",
+            "substantive_cells_changed",
+            "terminal_units_before",
+            "terminal_units_after",
+            "class_closed"
+          ],
+          "properties": {
+            "predecessor_sha256": {
+              "const": "1878270c1c34d1a96b28eb0ee26eff5b1b3b6c8d74a56026c293544c7925d824"
+            },
+            "promoted_sha256": {
+              "const": "9f9dc05a057396056771bb566c44e9c3779d8ef6b0d2c078f7ffff11d9c7e6cb"
+            },
+            "changed_rows": {
+              "const": 1
+            },
+            "changed_cells": {
+              "const": 1
+            },
+            "substantive_cells_changed": {
+              "const": 0
+            },
+            "terminal_units_before": {
+              "const": 10
+            },
+            "terminal_units_after": {
+              "const": 11
+            },
+            "class_closed": {
+              "const": false
+            }
+          }
+        },
+        "authority_boundary": {
+          "$ref": "#/$defs/authorityBoundary"
+        }
+      }
+    },
+    "document_schemas": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "input_custody",
+        "row_state_decision",
+        "row_state_ledger",
+        "promoted_matrix",
+        "remaining_open_census",
+        "row_state_summary",
+        "index",
+        "product_manifest"
+      ],
+      "properties": {
+        "input_custody": {
+          "$ref": "#/$defs/inputCustody"
+        },
+        "row_state_decision": {
+          "$ref": "#/$defs/rowStateDecision"
+        },
+        "row_state_ledger": {
+          "type": "object"
+        },
+        "promoted_matrix": {
+          "type": "object"
+        },
+        "remaining_open_census": {
+          "type": "object"
+        },
+        "row_state_summary": {
+          "type": "object"
+        },
+        "index": {
+          "type": "object"
+        },
+        "product_manifest": {
+          "$ref": "#/$defs/productManifest"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "gitBlob": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "authorityBoundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_requests",
+        "route_executions",
+        "source_admissions",
+        "field_terminalizations",
+        "matrix_updates",
+        "row_state_mutations",
+        "row_terminalizations",
+        "class_closed",
+        "cumulative_ledger_effect",
+        "publication_effect",
+        "adoption_effect",
+        "graph_effect",
+        "outside_human_dependency"
+      ],
+      "properties": {
+        "source_requests": {
+          "const": 0
+        },
+        "route_executions": {
+          "const": 0
+        },
+        "source_admissions": {
+          "const": 0
+        },
+        "field_terminalizations": {
+          "const": 0
+        },
+        "matrix_updates": {
+          "const": 1
+        },
+        "row_state_mutations": {
+          "const": 1
+        },
+        "row_terminalizations": {
+          "const": 1
+        },
+        "class_closed": {
+          "const": false
+        },
+        "cumulative_ledger_effect": {
+          "const": "none"
+        },
+        "publication_effect": {
+          "const": "none"
+        },
+        "adoption_effect": {
+          "const": "none"
+        },
+        "graph_effect": {
+          "const": "none"
+        },
+        "outside_human_dependency": {
+          "const": false
+        }
+      }
+    },
+    "rowStateValue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "terminal_classification",
+        "row_scope",
+        "completed_evidence_fields",
+        "terminal_evidence_field_ids",
+        "terminal_evidence_state_counts",
+        "predecessor_row_canonical_sha256",
+        "completion_rule",
+        "class_effect",
+        "cumulative_ledger_effect",
+        "limitations",
+        "prohibited_inferences"
+      ],
+      "properties": {
+        "terminal_classification": {
+          "const": "terminal_fixed_public_record_obligation_complete"
+        },
+        "row_scope": {
+          "const": "fixed_public_record_obligation_for_one_state"
+        },
+        "completed_evidence_fields": {
+          "const": 8
+        },
+        "terminal_evidence_field_ids": {
+          "type": "array",
+          "minItems": 8,
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "terminal_evidence_state_counts": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "evidence_complete",
+            "not_publicly_recovered"
+          ],
+          "properties": {
+            "evidence_complete": {
+              "const": 7
+            },
+            "not_publicly_recovered": {
+              "const": 1
+            }
+          }
+        },
+        "predecessor_row_canonical_sha256": {
+          "const": "0f3ba29ee5c7354249f89c96fc38c21b55341fc9fdad9b5919ecdb9243c4929e"
+        },
+        "completion_rule": {
+          "const": "all_eight_declared_state_evidence_fields_are_terminal_under_exact_source_or_typed_gap_custody"
+        },
+        "class_effect": {
+          "const": "none"
+        },
+        "cumulative_ledger_effect": {
+          "const": "none"
+        },
+        "limitations": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 4,
+          "items": {
+            "type": "string"
+          }
+        },
+        "prohibited_inferences": {
+          "type": "array",
+          "minItems": 9,
+          "maxItems": 9,
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "rowStateCell": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "field_ordinal",
+        "field_id",
+        "state",
+        "terminal",
+        "value",
+        "evidence_source_ids",
+        "typed_gap",
+        "authority_effect"
+      ],
+      "properties": {
+        "field_ordinal": {
+          "const": 9
+        },
+        "field_id": {
+          "const": "field_and_row_terminal_state"
+        },
+        "state": {
+          "const": "evidence_complete"
+        },
+        "terminal": {
+          "const": true
+        },
+        "value": {
+          "$ref": "#/$defs/rowStateValue"
+        },
+        "evidence_source_ids": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "RD04-ND-ROW-STATE-RECONCILIATION-V1"
+            }
+          ],
+          "items": false
+        },
+        "typed_gap": {
+          "type": "null"
+        },
+        "authority_effect": {
+          "const": "row_level_fixed_public_record_obligation_terminal_only"
+        }
+      }
+    },
+    "hashedFile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "bytes",
+        "sha256",
+        "git_blob"
+      ],
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "git_blob": {
+          "$ref": "#/$defs/gitBlob"
+        }
+      }
+    },
+    "inputCustody": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "wave_id",
+        "lane_id",
+        "class_id",
+        "issue",
+        "canonical_parent",
+        "canonical_parent_tree",
+        "predecessor_matrix",
+        "prior_candidate_validation",
+        "current_north_dakota",
+        "terminal_evidence_cells",
+        "projection",
+        "authority_boundary"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "ssc-rd04-nd-row-state-reconciliation-input-custody@2"
+        },
+        "wave_id": {
+          "const": "SSC-RD-W03"
+        },
+        "lane_id": {
+          "const": "RD-04"
+        },
+        "class_id": {
+          "const": "RD-04-C02"
+        },
+        "issue": {
+          "const": 1017
+        },
+        "canonical_parent": {
+          "const": "283c5993cb2ac0bff173c72aba70088c67b2ac3c"
+        },
+        "canonical_parent_tree": {
+          "const": "80a04c3d6a59816e9f7c99e585e077c92df42dbd"
+        },
+        "predecessor_matrix": {
+          "type": "object"
+        },
+        "prior_candidate_validation": {
+          "type": "object"
+        },
+        "current_north_dakota": {
+          "type": "object"
+        },
+        "terminal_evidence_cells": {
+          "type": "array",
+          "minItems": 8,
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": {
+            "type": "object"
+          }
+        },
+        "projection": {
+          "type": "object"
+        },
+        "authority_boundary": {
+          "$ref": "#/$defs/authorityBoundary"
+        }
+      }
+    },
+    "rowStateDecision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "wave_id",
+        "lane_id",
+        "class_id",
+        "issue",
+        "decision_id",
+        "candidate_id",
+        "decision",
+        "unit_id",
+        "postal_code",
+        "state_name",
+        "field_id",
+        "field_ordinal",
+        "current_row_state",
+        "target_row_state",
+        "current_row_sha256",
+        "reconciled_row_sha256",
+        "current_cell_sha256",
+        "proposed_cell_sha256",
+        "prerequisite_satisfaction",
+        "proposed_row_state_cell",
+        "prohibited_inferences",
+        "transition_effects",
+        "authority_boundary"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "ssc-rd04-nd-row-state-reconciliation-decision@2"
+        },
+        "wave_id": {
+          "const": "SSC-RD-W03"
+        },
+        "lane_id": {
+          "const": "RD-04"
+        },
+        "class_id": {
+          "const": "RD-04-C02"
+        },
+        "issue": {
+          "const": 1017
+        },
+        "decision_id": {
+          "const": "RD04-ND-EXACT-CURRENT-ROW-STATE-RECONCILIATION-DECISION-V1"
+        },
+        "candidate_id": {
+          "const": "RD04-ND-EXACT-CURRENT-ROW-STATE-RECONCILIATION-CANDIDATE-V1"
+        },
+        "decision": {
+          "const": "terminalize_exact_derivative_row_state_cell_after_all_eight_evidence_fields_are_terminal"
+        },
+        "unit_id": {
+          "const": "US-STATE-ND"
+        },
+        "postal_code": {
+          "const": "ND"
+        },
+        "state_name": {
+          "const": "North Dakota"
+        },
+        "field_id": {
+          "const": "field_and_row_terminal_state"
+        },
+        "field_ordinal": {
+          "const": 9
+        },
+        "current_row_state": {
+          "const": "still_open"
+        },
+        "target_row_state": {
+          "const": "terminal_fixed_public_record_obligation_complete"
+        },
+        "current_row_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "reconciled_row_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "current_cell_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "proposed_cell_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "prerequisite_satisfaction": {
+          "type": "object"
+        },
+        "proposed_row_state_cell": {
+          "$ref": "#/$defs/rowStateCell"
+        },
+        "prohibited_inferences": {
+          "type": "array",
+          "minItems": 9,
+          "maxItems": 9,
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "transition_effects": {
+          "type": "object"
+        },
+        "authority_boundary": {
+          "$ref": "#/$defs/authorityBoundary"
+        }
+      }
+    },
+    "productManifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "permanent_path_count",
+        "hashed_file_count",
+        "permanent_paths",
+        "hashed_files",
+        "combined_sha256",
+        "authority_boundary"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "ssc-rd04-nd-row-state-reconciliation-manifest@1"
+        },
+        "permanent_path_count": {
+          "const": 14
+        },
+        "hashed_file_count": {
+          "const": 13
+        },
+        "permanent_paths": {
+          "type": "array",
+          "minItems": 14,
+          "maxItems": 14,
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "hashed_files": {
+          "type": "array",
+          "minItems": 13,
+          "maxItems": 13,
+          "items": {
+            "$ref": "#/$defs/hashedFile"
+          }
+        },
+        "combined_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "authority_boundary": {
+          "$ref": "#/$defs/authorityBoundary"
+        }
+      }
+    }
+  }
+}

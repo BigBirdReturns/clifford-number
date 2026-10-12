@@ -1,0 +1,127 @@
+{
+  "schema_version": "status-sovereignty-rd01-natsec100-outcome-control@1",
+  "execution_id": "SSC-RD01-NATSEC100-OUTCOME-01",
+  "hypothesis_id": "SSC-H01",
+  "issue": 617,
+  "parent_issue": 615,
+  "lane_id": "SSC-F09",
+  "as_of": "2026-08-03",
+  "authority": "source_acquisition_only_not_review_or_adjudication",
+  "parent_receipts": [
+    {
+      "path": "data/intake/status-sovereignty-natsec100-denominator-first-pass.json",
+      "release_manifest": "data/project/status-sovereignty-natsec100-denominator-first-pass-release-manifest.json"
+    },
+    {
+      "path": "data/research/status-sovereignty-wave-01-targeted-acquisition.json",
+      "authority": "targeted_source_acquisition_not_review_or_adjudication"
+    }
+  ],
+  "selection_contract": {
+    "edition": "2026",
+    "selected_sample_rule": "fixed_rank_positions_top_middle_bottom",
+    "selected_rank_positions": [1, 50, 100],
+    "all_explicit_assessed_nonselection_examples_included": true,
+    "selected_because_expected_result": false,
+    "post_publication_window_declared_sufficient_for_causal_inference": false
+  },
+  "sample": [
+    {
+      "sample_id": "NS100-2026-R001",
+      "selection_state": "selected",
+      "rank": 1,
+      "published_name": "Anduril",
+      "legal_entity_state": "partially_resolved_existing_corpus",
+      "prepublication_contracting_or_capital_is_scoring_input": true,
+      "postpublication_capital_join": "not_acquired",
+      "postpublication_award_nonaward_join": "not_acquired",
+      "deployment_failure_exit_join": "not_acquired",
+      "causal_effect_of_rank_identified": false
+    },
+    {
+      "sample_id": "NS100-2026-R050",
+      "selection_state": "selected",
+      "rank": 50,
+      "published_name": "Divergent",
+      "legal_entity_state": "unresolved",
+      "prepublication_contracting_or_capital_is_scoring_input": true,
+      "postpublication_capital_join": "not_acquired",
+      "postpublication_award_nonaward_join": "not_acquired",
+      "deployment_failure_exit_join": "not_acquired",
+      "causal_effect_of_rank_identified": false
+    },
+    {
+      "sample_id": "NS100-2026-R100",
+      "selection_state": "selected",
+      "rank": 100,
+      "published_name": "Harmonic",
+      "legal_entity_state": "unresolved",
+      "prepublication_contracting_or_capital_is_scoring_input": true,
+      "postpublication_capital_join": "not_acquired",
+      "postpublication_award_nonaward_join": "not_acquired",
+      "deployment_failure_exit_join": "not_acquired",
+      "causal_effect_of_rank_identified": false
+    },
+    {
+      "sample_id": "NS100-2026-N001",
+      "selection_state": "explicit_assessed_nonselection_or_ineligibility_example",
+      "rank": null,
+      "published_name": "SpaceX",
+      "legal_entity_state": "requires_exact_edition_entity_resolution",
+      "prepublication_contracting_or_capital_is_scoring_input": null,
+      "postpublication_capital_join": "not_acquired",
+      "postpublication_award_nonaward_join": "not_acquired",
+      "deployment_failure_exit_join": "not_acquired",
+      "causal_effect_of_rank_identified": false
+    },
+    {
+      "sample_id": "NS100-2026-N002",
+      "selection_state": "explicit_assessed_nonselection_or_ineligibility_example",
+      "rank": null,
+      "published_name": "Anthropic",
+      "legal_entity_state": "requires_exact_edition_entity_resolution",
+      "prepublication_contracting_or_capital_is_scoring_input": null,
+      "postpublication_capital_join": "not_acquired",
+      "postpublication_award_nonaward_join": "not_acquired",
+      "deployment_failure_exit_join": "not_acquired",
+      "causal_effect_of_rank_identified": false
+    }
+  ],
+  "identification_limits": [
+    "government contracting and capital are disclosed ranking inputs, so later correlation is endogenous without a design that separates prior trajectory from ranking effect",
+    "the complete candidate, rejected, ineligible, withdrawn, and FOCI-held universe remains unavailable",
+    "the bounded post-publication observation window is not yet declared sufficient for causal assessment",
+    "absence of a joined public record is not evidence that an event did not occur",
+    "rank position is not technical superiority, government endorsement, or procurement causation"
+  ],
+  "open_denominators": [
+    "exact legal-entity resolution for every sampled company",
+    "pre-ranking capital, headcount, and government-contracting snapshots using the same measurement window as the selector",
+    "post-ranking capital and financing events with event dates and security terms",
+    "complete award, nonaward, protest, termination, and deployment rows",
+    "matched controls with comparable sector, maturity, capital, headcount, and prior contracting",
+    "methodology correction, appeal, re-evaluation, and version-change records"
+  ],
+  "current_result": {
+    "terminal_state": "requires_additional_acquisition",
+    "sample_denominator_frozen": true,
+    "matched_outcome_control_complete": false,
+    "selection_causation_supported": false,
+    "technical_superiority_finding": false,
+    "procurement_causation_finding": false,
+    "coordination_finding": false,
+    "common_purpose_finding": false,
+    "reviewed_disposition_changed": false,
+    "complete_compact_finding": false,
+    "graph_effect": "none",
+    "publication_effect": "none"
+  },
+  "boundaries": {
+    "rank_proves_technical_superiority": false,
+    "rank_proves_investment_or_procurement_causation": false,
+    "later_success_proves_selector_accuracy": false,
+    "no_joined_public_record_proves_no_event": false,
+    "co_listing_proves_coordination": false,
+    "graph_effect": "none"
+  }
+}
