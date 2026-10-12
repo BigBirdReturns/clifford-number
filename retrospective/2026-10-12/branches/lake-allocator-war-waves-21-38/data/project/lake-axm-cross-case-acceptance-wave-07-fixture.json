@@ -1,0 +1,368 @@
+{
+  "schema_version": "axm-cross-case-acceptance-fixture@1",
+  "fixture_key": "CN-AXM-CROSS-CASE-FIXTURE-W07",
+  "purpose": "Synthetic positive and negative controls for explicit cross-case identity resolution. No row represents a real person, institution, claim, or relationship.",
+  "shared_identity_namespace": "cn-fixture-shared-v1",
+  "isolated_identity_namespace": "cn-fixture-isolated-v1",
+  "cases": [
+    {
+      "case_id": "fixture-alpha",
+      "identity_namespace": "cn-fixture-shared-v1",
+      "entities": [
+        {
+          "entity_key": "alpha-alias-person",
+          "kind": "actor",
+          "label": "Fixture Person Alpha",
+          "aliases": ["Fixture Alias Alpha"],
+          "source_custody": [{"source_key": "fixture-alpha-person-source", "source_path": "fixture://alpha/person"}]
+        },
+        {
+          "entity_key": "alpha-unasserted",
+          "kind": "actor",
+          "label": "Fixture Unasserted Label",
+          "aliases": [],
+          "source_custody": [{"source_key": "fixture-alpha-unasserted-source", "source_path": "fixture://alpha/unasserted"}]
+        },
+        {
+          "entity_key": "alpha-different",
+          "kind": "actor",
+          "label": "Fixture Different One",
+          "aliases": [],
+          "source_custody": [{"source_key": "fixture-alpha-different-source", "source_path": "fixture://alpha/different"}]
+        },
+        {
+          "entity_key": "alpha-ambiguous",
+          "kind": "actor",
+          "label": "Fixture Ambiguous Alpha",
+          "aliases": ["Fixture Ambiguous Alias"],
+          "source_custody": [{"source_key": "fixture-alpha-ambiguous-source", "source_path": "fixture://alpha/ambiguous"}]
+        },
+        {
+          "entity_key": "alpha-custody",
+          "kind": "actor",
+          "label": "Fixture Custody Person",
+          "aliases": [],
+          "source_custody": [{"source_key": "fixture-alpha-custody-source", "source_path": "fixture://alpha/custody"}]
+        },
+        {
+          "entity_key": "alpha-temporal-person",
+          "kind": "actor",
+          "label": "Fixture Temporal Person",
+          "aliases": [],
+          "source_custody": [{"source_key": "fixture-alpha-temporal-person-source", "source_path": "fixture://alpha/temporal-person"}]
+        },
+        {
+          "entity_key": "alpha-temporal-surface",
+          "kind": "surface",
+          "label": "Fixture Temporal Surface",
+          "aliases": [],
+          "source_custody": [{"source_key": "fixture-alpha-temporal-surface-source", "source_path": "fixture://alpha/temporal-surface"}]
+        },
+        {
+          "entity_key": "alpha-overlap-person",
+          "kind": "actor",
+          "label": "Fixture Overlap Person",
+          "aliases": [],
+          "source_custody": [{"source_key": "fixture-alpha-overlap-person-source", "source_path": "fixture://alpha/overlap-person"}]
+        },
+        {
+          "entity_key": "alpha-overlap-surface",
+          "kind": "surface",
+          "label": "Fixture Overlap Surface",
+          "aliases": [],
+          "source_custody": [{"source_key": "fixture-alpha-overlap-surface-source", "source_path": "fixture://alpha/overlap-surface"}]
+        }
+      ],
+      "claims": [
+        {
+          "claim_key": "alpha-temporal-claim",
+          "subject_entity_key": "alpha-temporal-person",
+          "predicate": "participates_in",
+          "object_entity_key": "alpha-temporal-surface",
+          "object_type": "entity",
+          "windows": [{"valid_from": "2020-01-01", "valid_until": "2020-12-31", "dated": true, "source_custody": ["fixture-alpha-temporal-window-source"]}]
+        },
+        {
+          "claim_key": "alpha-overlap-claim",
+          "subject_entity_key": "alpha-overlap-person",
+          "predicate": "participates_in",
+          "object_entity_key": "alpha-overlap-surface",
+          "object_type": "entity",
+          "windows": [{"valid_from": "2020-01-01", "valid_until": "2020-12-31", "dated": true, "source_custody": ["fixture-alpha-overlap-window-source"]}]
+        }
+      ]
+    },
+    {
+      "case_id": "fixture-beta",
+      "identity_namespace": "cn-fixture-shared-v1",
+      "entities": [
+        {
+          "entity_key": "beta-alias-person",
+          "kind": "actor",
+          "label": "Fixture Alias Alpha",
+          "aliases": ["Fixture Person Alpha"],
+          "source_custody": [{"source_key": "fixture-beta-person-source", "source_path": "fixture://beta/person"}]
+        },
+        {
+          "entity_key": "beta-unasserted",
+          "kind": "actor",
+          "label": "Fixture Unasserted Label",
+          "aliases": [],
+          "source_custody": [{"source_key": "fixture-beta-unasserted-source", "source_path": "fixture://beta/unasserted"}]
+        },
+        {
+          "entity_key": "beta-different",
+          "kind": "actor",
+          "label": "Fixture Different Two",
+          "aliases": [],
+          "source_custody": [{"source_key": "fixture-beta-different-source", "source_path": "fixture://beta/different"}]
+        },
+        {
+          "entity_key": "beta-ambiguous-one",
+          "kind": "actor",
+          "label": "Fixture Ambiguous Beta One",
+          "aliases": ["Fixture Ambiguous Alias"],
+          "source_custody": [{"source_key": "fixture-beta-ambiguous-one-source", "source_path": "fixture://beta/ambiguous-one"}]
+        },
+        {
+          "entity_key": "beta-ambiguous-two",
+          "kind": "actor",
+          "label": "Fixture Ambiguous Beta Two",
+          "aliases": ["Fixture Ambiguous Alias"],
+          "source_custody": [{"source_key": "fixture-beta-ambiguous-two-source", "source_path": "fixture://beta/ambiguous-two"}]
+        },
+        {
+          "entity_key": "beta-custody",
+          "kind": "actor",
+          "label": "Fixture Custody Person",
+          "aliases": [],
+          "source_custody": [{"source_key": "fixture-beta-custody-source", "source_path": "fixture://beta/custody"}]
+        },
+        {
+          "entity_key": "beta-temporal-person",
+          "kind": "actor",
+          "label": "Fixture Temporal Person",
+          "aliases": [],
+          "source_custody": [{"source_key": "fixture-beta-temporal-person-source", "source_path": "fixture://beta/temporal-person"}]
+        },
+        {
+          "entity_key": "beta-temporal-surface",
+          "kind": "surface",
+          "label": "Fixture Temporal Surface",
+          "aliases": [],
+          "source_custody": [{"source_key": "fixture-beta-temporal-surface-source", "source_path": "fixture://beta/temporal-surface"}]
+        },
+        {
+          "entity_key": "beta-overlap-person",
+          "kind": "actor",
+          "label": "Fixture Overlap Person",
+          "aliases": [],
+          "source_custody": [{"source_key": "fixture-beta-overlap-person-source", "source_path": "fixture://beta/overlap-person"}]
+        },
+        {
+          "entity_key": "beta-overlap-surface",
+          "kind": "surface",
+          "label": "Fixture Overlap Surface",
+          "aliases": [],
+          "source_custody": [{"source_key": "fixture-beta-overlap-surface-source", "source_path": "fixture://beta/overlap-surface"}]
+        }
+      ],
+      "claims": [
+        {
+          "claim_key": "beta-temporal-claim",
+          "subject_entity_key": "beta-temporal-person",
+          "predicate": "participates_in",
+          "object_entity_key": "beta-temporal-surface",
+          "object_type": "entity",
+          "windows": [{"valid_from": "2022-01-01", "valid_until": "2022-12-31", "dated": true, "source_custody": ["fixture-beta-temporal-window-source"]}]
+        },
+        {
+          "claim_key": "beta-overlap-claim",
+          "subject_entity_key": "beta-overlap-person",
+          "predicate": "participates_in",
+          "object_entity_key": "beta-overlap-surface",
+          "object_type": "entity",
+          "windows": [{"valid_from": "2020-06-01", "valid_until": "2021-06-30", "dated": true, "source_custody": ["fixture-beta-overlap-window-source"]}]
+        }
+      ]
+    },
+    {
+      "case_id": "fixture-gamma",
+      "identity_namespace": "cn-fixture-isolated-v1",
+      "entities": [
+        {
+          "entity_key": "gamma-alias-person",
+          "kind": "actor",
+          "label": "Fixture Person Alpha",
+          "aliases": ["Fixture Alias Alpha"],
+          "source_custody": [{"source_key": "fixture-gamma-person-source", "source_path": "fixture://gamma/person"}]
+        }
+      ],
+      "claims": []
+    }
+  ],
+  "join_assertions": [
+    {
+      "assertion_id": "fixture-join-accept-reciprocal-alias",
+      "left_case_id": "fixture-alpha",
+      "left_entity_key": "alpha-alias-person",
+      "right_case_id": "fixture-beta",
+      "right_entity_key": "beta-alias-person",
+      "asserted_same_entity": true,
+      "assertion_custody": [{"source_key": "fixture-join-alias-assertion-source", "source_path": "fixture://assertions/alias"}],
+      "expected_status": "accepted",
+      "expected_reason": "explicit_unambiguous_token_overlap"
+    },
+    {
+      "assertion_id": "fixture-join-reject-namespace",
+      "left_case_id": "fixture-alpha",
+      "left_entity_key": "alpha-alias-person",
+      "right_case_id": "fixture-gamma",
+      "right_entity_key": "gamma-alias-person",
+      "asserted_same_entity": true,
+      "assertion_custody": [{"source_key": "fixture-join-namespace-assertion-source", "source_path": "fixture://assertions/namespace"}],
+      "expected_status": "rejected",
+      "expected_reason": "identity_namespace_mismatch"
+    },
+    {
+      "assertion_id": "fixture-join-reject-no-token",
+      "left_case_id": "fixture-alpha",
+      "left_entity_key": "alpha-different",
+      "right_case_id": "fixture-beta",
+      "right_entity_key": "beta-different",
+      "asserted_same_entity": true,
+      "assertion_custody": [{"source_key": "fixture-join-no-token-assertion-source", "source_path": "fixture://assertions/no-token"}],
+      "expected_status": "rejected",
+      "expected_reason": "no_declared_token_overlap"
+    },
+    {
+      "assertion_id": "fixture-join-reject-ambiguous",
+      "left_case_id": "fixture-alpha",
+      "left_entity_key": "alpha-ambiguous",
+      "right_case_id": "fixture-beta",
+      "right_entity_key": "beta-ambiguous-one",
+      "asserted_same_entity": true,
+      "assertion_custody": [{"source_key": "fixture-join-ambiguous-assertion-source", "source_path": "fixture://assertions/ambiguous"}],
+      "expected_status": "rejected",
+      "expected_reason": "ambiguous_token_overlap"
+    },
+    {
+      "assertion_id": "fixture-join-reject-custody",
+      "left_case_id": "fixture-alpha",
+      "left_entity_key": "alpha-custody",
+      "right_case_id": "fixture-beta",
+      "right_entity_key": "beta-custody",
+      "asserted_same_entity": true,
+      "assertion_custody": [],
+      "expected_status": "rejected",
+      "expected_reason": "missing_assertion_custody"
+    }
+  ],
+  "unasserted_overlap_controls": [
+    {
+      "control_id": "fixture-unasserted-same-label",
+      "left_case_id": "fixture-alpha",
+      "left_entity_key": "alpha-unasserted",
+      "right_case_id": "fixture-beta",
+      "right_entity_key": "beta-unasserted",
+      "expected_token_overlap": true,
+      "expected_authorized": false,
+      "expected_reason": "explicit_assertion_missing"
+    }
+  ],
+  "temporal_claim_controls": [
+    {
+      "control_id": "fixture-temporal-disjoint",
+      "left_case_id": "fixture-alpha",
+      "left_claim_key": "alpha-temporal-claim",
+      "right_case_id": "fixture-beta",
+      "right_claim_key": "beta-temporal-claim",
+      "expected_claim_identity_equal": true,
+      "expected_temporal_overlap": false,
+      "expected_hop_basis": false
+    },
+    {
+      "control_id": "fixture-temporal-overlap",
+      "left_case_id": "fixture-alpha",
+      "left_claim_key": "alpha-overlap-claim",
+      "right_case_id": "fixture-beta",
+      "right_claim_key": "beta-overlap-claim",
+      "expected_claim_identity_equal": true,
+      "expected_temporal_overlap": true,
+      "expected_hop_basis": true
+    }
+  ],
+  "hop_controls": {
+    "density_policy": {"max_hop_actor_count": 3},
+    "broad_organization_ids": ["fixture-broad-org"],
+    "surfaces": [
+      {
+        "surface_id": "fixture-bounded-surface",
+        "surface_label": "Fixture bounded surface",
+        "surface_type": "working_group",
+        "hop_eligible": true,
+        "time_start": "2020-01-01",
+        "time_end": "2020-12-31",
+        "evidence_class": "official",
+        "receipt_ids": []
+      },
+      {
+        "surface_id": "fixture-dense-surface",
+        "surface_label": "Fixture dense surface",
+        "surface_type": "roster",
+        "hop_eligible": true,
+        "time_start": "2020-01-01",
+        "time_end": "2020-12-31",
+        "evidence_class": "official",
+        "receipt_ids": []
+      },
+      {
+        "surface_id": "fixture-broad-surface",
+        "surface_label": "Fixture broad institution surface",
+        "surface_type": "institution",
+        "hop_eligible": true,
+        "time_start": "2020-01-01",
+        "time_end": "2020-12-31",
+        "evidence_class": "official",
+        "receipt_ids": []
+      },
+      {
+        "surface_id": "fixture-disjoint-surface",
+        "surface_label": "Fixture disjoint temporal surface",
+        "surface_type": "working_group",
+        "hop_eligible": true,
+        "time_start": "2020-01-01",
+        "time_end": "2022-12-31",
+        "evidence_class": "official",
+        "receipt_ids": []
+      }
+    ],
+    "participation": [
+      {"surface_id": "fixture-bounded-surface", "participant_type": "actor", "actor_id": "fixture-bounded-a", "time_start": "2020-01-01", "time_end": "2020-12-31", "evidence_class": "official", "receipt_ids": []},
+      {"surface_id": "fixture-bounded-surface", "participant_type": "actor", "actor_id": "fixture-bounded-b", "time_start": "2020-06-01", "time_end": "2020-12-31", "evidence_class": "official", "receipt_ids": []},
+      {"surface_id": "fixture-dense-surface", "participant_type": "actor", "actor_id": "fixture-dense-a", "time_start": "2020-01-01", "time_end": "2020-12-31", "evidence_class": "official", "receipt_ids": []},
+      {"surface_id": "fixture-dense-surface", "participant_type": "actor", "actor_id": "fixture-dense-b", "time_start": "2020-01-01", "time_end": "2020-12-31", "evidence_class": "official", "receipt_ids": []},
+      {"surface_id": "fixture-dense-surface", "participant_type": "actor", "actor_id": "fixture-dense-c", "time_start": "2020-01-01", "time_end": "2020-12-31", "evidence_class": "official", "receipt_ids": []},
+      {"surface_id": "fixture-dense-surface", "participant_type": "actor", "actor_id": "fixture-dense-d", "time_start": "2020-01-01", "time_end": "2020-12-31", "evidence_class": "official", "receipt_ids": []},
+      {"surface_id": "fixture-broad-surface", "participant_type": "actor", "actor_id": "fixture-broad-actor", "time_start": "2020-01-01", "time_end": "2020-12-31", "evidence_class": "official", "receipt_ids": []},
+      {"surface_id": "fixture-broad-surface", "participant_type": "organization", "organization_id": "fixture-broad-org", "time_start": "2020-01-01", "time_end": "2020-12-31", "evidence_class": "official", "receipt_ids": []},
+      {"surface_id": "fixture-disjoint-surface", "participant_type": "actor", "actor_id": "fixture-disjoint-a", "time_start": "2020-01-01", "time_end": "2020-12-31", "evidence_class": "official", "receipt_ids": []},
+      {"surface_id": "fixture-disjoint-surface", "participant_type": "actor", "actor_id": "fixture-disjoint-b", "time_start": "2022-01-01", "time_end": "2022-12-31", "evidence_class": "official", "receipt_ids": []}
+    ],
+    "expected": {
+      "edges": 1,
+      "rejected_surfaces": 2,
+      "rejected_pairs": 1,
+      "rejected_surface_reasons": ["broad_institution_context_only", "density_limit_exceeded"],
+      "rejected_pair_reasons": ["no_temporal_overlap"]
+    }
+  },
+  "boundaries": {
+    "synthetic_fixture_is_real_evidence": false,
+    "accepted_identity_resolution_merges_entities": false,
+    "accepted_identity_resolution_creates_relationship": false,
+    "accepted_identity_resolution_creates_hop": false,
+    "automatic_same_label_join_authorized": false,
+    "graph_effect": "none"
+  }
+}

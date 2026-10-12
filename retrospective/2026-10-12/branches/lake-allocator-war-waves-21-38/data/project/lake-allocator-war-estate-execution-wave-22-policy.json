@@ -1,0 +1,143 @@
+{
+  "schema_version": "lake-allocator-war-estate-execution-wave-22-policy@1",
+  "program_ref": "CN-LAKE-ALLOCATOR-WAR-W22",
+  "wave_ref": "LAW-W22",
+  "as_of": "2026-07-31",
+  "title": "Allocator-war estate acquisition execution Wave 22",
+  "purpose": "Convert the eleven Wave 21 estate acquisition routes into deterministic estate-owned acquisition queues while preserving reviewed, split-authority, and unreviewed-intake states; retain controls, refusals, nulls, and zero graph or publication effect.",
+  "base_checkpoint": {
+    "branch": "agent/lake-allocator-war-wave-21",
+    "commit": "ec730441e4779b24226f12f556707f4a89b7fe3f",
+    "required_ancestry": true
+  },
+  "paths": {
+    "source_estate_registry": "data/project/lake-allocator-war-estate-acquisition-registry-wave-21.jsonl",
+    "projection": "build/lake-actions/allocator-war-estate-execution-wave-22.json",
+    "report": "reports/lake-allocator-war-estate-execution-wave-22.md",
+    "method": "docs/methods/lake-allocator-war-estate-execution-wave-22.md",
+    "milestone": "docs/milestones/lake-allocator-war-estate-execution-wave-22.md"
+  },
+  "expected_counts": {
+    "estate_queues": 11,
+    "acquisition_tasks": 52,
+    "reviewed_only_queues": 3,
+    "split_authority_queues": 5,
+    "unreviewed_only_queues": 3,
+    "finding_promotions": 0,
+    "graph_effects": 0,
+    "publication_clearances": 0
+  },
+  "authority_law": {
+    "reviewed_wave_01_routing": {
+      "queue_class": "reviewed_execution_queue",
+      "task_authority": "maintainer_reviewed_routing_below_second_party_review"
+    },
+    "split_reviewed_wave_01_and_unreviewed_wave_02": {
+      "queue_class": "split_authority_execution_queue",
+      "task_authority": "split_reviewed_and_unreviewed_sources"
+    },
+    "unreviewed_wave_02_acquisition_only": {
+      "queue_class": "unreviewed_acquisition_queue",
+      "task_authority": "unreviewed_intake_acquisition_only"
+    }
+  },
+  "priority_law": {
+    "order": [
+      "P0",
+      "P1",
+      "P2"
+    ],
+    "keywords": {
+      "P0": [
+        "denominator",
+        "universe",
+        "inventory",
+        "remand",
+        "correction",
+        "appeal",
+        "litigation",
+        "roster",
+        "affected-person",
+        "affected rows",
+        "outcome records",
+        "practical access"
+      ],
+      "P1": [
+        "terms",
+        "rights",
+        "evaluation",
+        "foci",
+        "committee",
+        "contract",
+        "interface",
+        "ip schedules",
+        "data-rights",
+        "weights",
+        "custody",
+        "rejected rows",
+        "selected",
+        "applicant",
+        "bidder",
+        "candidate",
+        "selection history",
+        "notice",
+        "rationale"
+      ]
+    },
+    "outputs": {
+      "P0": "Complete denominator-and-correction ledger with included, excluded, null, unavailable, appealed, and resolved rows.",
+      "P1": "Operative selector-and-rights ledger with exact criteria, custody, selected and nonselected rows, instruments, exceptions, and review routes.",
+      "P2": "Longitudinal consequence ledger with performance, failure, substitution, recurrence, recovery, and explicit no-observed-effect controls."
+    },
+    "closure_tests": {
+      "P0": "The declared denominator and correction route are complete for the bounded window, every missing row has an explicit availability disposition, and no unresolved exclusion is silently treated as a null.",
+      "P1": "The operative rule or instrument, decision custody, comparator rows, exceptions, and appeal route are source-addressed and reversible.",
+      "P2": "The bounded outcome window includes selected, nonselected, failed, substituted, recovered, and explicit no-observed-effect rows with dated provenance."
+    }
+  },
+  "task_contract": {
+    "allowed_results": [
+      "supported",
+      "contradicted",
+      "mixed",
+      "no_observed_effect",
+      "unavailable_after_search",
+      "outside_bounded_window"
+    ],
+    "blocked_promotions": [
+      "estate_finding",
+      "complete_compact_finding",
+      "racial_order_finding",
+      "prevalence_finding",
+      "coordination_finding",
+      "common_purpose_finding",
+      "identity_edge",
+      "relationship_edge",
+      "participation_row",
+      "active_claim",
+      "hop_edge",
+      "publication_clearance"
+    ],
+    "controls_and_refusals_required": true,
+    "finding_promoted": false,
+    "graph_effect": "none",
+    "publication_status": "blocked"
+  },
+  "boundaries": {
+    "queue_admission_is_estate_adoption": false,
+    "queue_admission_is_evidence_review": false,
+    "reviewed_route_is_second_party_review": false,
+    "split_route_launders_unreviewed_intake": false,
+    "unreviewed_route_may_promote_finding": false,
+    "priority_is_merit_or_truth_score": false,
+    "task_recurrence_is_prevalence": false,
+    "shared_consumer_is_relationship": false,
+    "identity_created": false,
+    "relationship_created": false,
+    "participation_created": false,
+    "active_claim_created": false,
+    "hop_created": false,
+    "publication_cleared": false,
+    "graph_effect": "none"
+  }
+}

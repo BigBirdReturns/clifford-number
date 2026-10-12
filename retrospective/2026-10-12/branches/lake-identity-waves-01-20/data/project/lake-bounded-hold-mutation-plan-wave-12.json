@@ -1,0 +1,738 @@
+{
+  "schema_version": "lake-bounded-hold-mutation-plan-wave-12@1",
+  "program_key": "CN-LAKE-BOUNDED-HOLD-W12",
+  "source_fingerprint_sha256": "fae5664f1543a03b3ec0549d0eca58ebffc26f3d254556a8ad5bb19395fff854",
+  "input_manifest": [
+    {
+      "path": "BUILD-INSTRUCTIONS.md",
+      "bytes": 18252,
+      "sha256": "b036bea3869e507e150dd63c14176b9d0fad2898a996a28cbff15293cfbdeac6"
+    },
+    {
+      "path": "build/axm-identity.json",
+      "bytes": 229598,
+      "sha256": "cf50e5a3ea042253f19cb99db66a2f4e050dcaf2a27b063f58560ed60f793f2b"
+    },
+    {
+      "path": "build/hop-graph.json",
+      "bytes": 61046,
+      "sha256": "aeec58ee64128bbfd4ab9a23781d7a2f5358998c0252ef903fd59e78165a0593"
+    },
+    {
+      "path": "data/canonical/actors.json",
+      "bytes": 24577,
+      "sha256": "262fddda3e0b37bc2cac46c824ecc9ef17fca4461e4a86f1ee4947960b5dda30"
+    },
+    {
+      "path": "data/canonical/aliases.json",
+      "bytes": 2876,
+      "sha256": "cec5a5bd2a2184a0658d8fbd26d970340432609aa6127a1a6922b5bd54d5d503"
+    },
+    {
+      "path": "data/canonical/organizations.json",
+      "bytes": 17657,
+      "sha256": "6bd04ba802dbef7554547459472c8f242a14289bf4bd5a34a4fe4d55ae6a49b3"
+    },
+    {
+      "path": "data/ledger/participation.jsonl",
+      "bytes": 50196,
+      "sha256": "3f4d454a15961e0088a02ab712a66875c073b8263876e98b2f2092fcf8e71097"
+    },
+    {
+      "path": "data/project/lake-bounded-hold-resolution-wave-12-policy.json",
+      "bytes": 7713,
+      "sha256": "7621ca10038fba3e527e6c31cde6a003625a30467fdca3bfedbcfceb65caa27f"
+    },
+    {
+      "path": "data/project/lake-bounded-hold-source-registry-wave-12.jsonl",
+      "bytes": 11480,
+      "sha256": "c89ccb886a7f8b90be886f3b16291e72a68d6c880ec8ee3dc0c45148209bfd24"
+    },
+    {
+      "path": "data/project/lake-canonical-adjudication-registry-wave-11.jsonl",
+      "bytes": 124292,
+      "sha256": "7f2527ff2ec6b92ce248a446c732f4d8f53a6591beb4c273df35ffb08ae62a08"
+    },
+    {
+      "path": "data/project/lake-canonical-identity-extension-registry-wave-11.jsonl",
+      "bytes": 53759,
+      "sha256": "44ad1ea7bdb4e882e237aa21895f1ea04ef07e0ece258ce53b682434a85d5446"
+    },
+    {
+      "path": "data/project/lake-canonical-mutation-plan-wave-11.json",
+      "bytes": 35320,
+      "sha256": "6f4e0149a80dde59bc4bdc8cf7c52beb16f6c5f62cdbc1da6b018322097245a7"
+    },
+    {
+      "path": "data/research/clifford-cross-corpus-public-interest-map.json",
+      "bytes": 17133,
+      "sha256": "db086e4704d901d7c2fc9c8eef4077c9debfc9f5ba0a0b3f40d182b1ee5db746"
+    },
+    {
+      "path": "test/lake-bounded-hold-resolution-wave-12.test.js",
+      "bytes": 8421,
+      "sha256": "e724e7321c6cf82792db7142a6c4fc20ebfade6e9b2ca775184d3128b9b0e106"
+    },
+    {
+      "path": "tools/build-lake-bounded-hold-resolution-wave-12.mjs",
+      "bytes": 19060,
+      "sha256": "6bb6971729cda31bf35a5e15379dd552ae41e39b49f049f8c301dd59a0963e5d"
+    },
+    {
+      "path": "tools/build-lake-canonical-identity-extension-wave-12.mjs",
+      "bytes": 9801,
+      "sha256": "e7642419b6b835e180eb716f83fe84ac7ea21d9fc0c5f8b842d659c11c3f2801"
+    },
+    {
+      "path": "tools/reconcile-lake-bounded-hold-resolution-wave-12.mjs",
+      "bytes": 17586,
+      "sha256": "498edb04f4d70f19fc9984b283d741ab28f1f4d08117ac80e03be4b557737667"
+    },
+    {
+      "path": "tools/validate-lake-bounded-hold-resolution-wave-12.mjs",
+      "bytes": 24545,
+      "sha256": "d502efa5b8fb83d821811e8ed285eea14cef63cb37672e61a131e98f55127976"
+    }
+  ],
+  "before": {
+    "actor_rows": 159,
+    "organization_rows": 54,
+    "alias_rows": 23,
+    "participation_rows": 164,
+    "active_entities": 227,
+    "active_claims": 164,
+    "hop_edges": 31,
+    "participation_digest_sha256": "4d3251dca3760bae9459cd46ac33455663ae7943680fb6184d6c517e026ad83a",
+    "active_claim_digest_sha256": "3ccda11961cc6e1bec1b5675418004a8cb98d62a891f710599f81c36a8e0eaf7",
+    "hop_edge_digest_sha256": "aa080592cb62dee1f7d39ed6d8a0d7c2d3f674c1bb2a0bacbc959c84f8a601cd",
+    "hop_rejected_surface_digest_sha256": "82774168d65b67ba1b3c3071a67142bf454bab75b82fa21bbf193642bc05c7a5",
+    "hop_rejected_pair_digest_sha256": "e8511b978ddfaae049cd4673ef98946932fc354050d6b5259218794ad7bf38ab",
+    "public_interest_actor_count": 159,
+    "public_interest_organization_count": 54
+  },
+  "mutations": {
+    "actor_additions": [
+      {
+        "id": "ben-zhang",
+        "label": "Ben Zhang",
+        "kind": "person",
+        "source": "lake-bounded-hold-resolution-wave-12",
+        "source_local_subject_id": "p-ben-zhang-atc",
+        "source_wave11_adjudication_id": "CANONDEC-52dd3aa0d2d0b852f514ed39",
+        "source_ids": [
+          "W12-SRC-BEN-ZHANG-CASE"
+        ],
+        "canonical_status": "bounded_source_custodied_canonical_record",
+        "graph_effect": "none"
+      },
+      {
+        "id": "erik-wahl",
+        "label": "Erik Wahl",
+        "kind": "person",
+        "source": "lake-bounded-hold-resolution-wave-12",
+        "source_local_subject_id": "p-erik-wahl-arcadia",
+        "source_wave11_adjudication_id": "CANONDEC-8a9acaf415a2a17c3bdc110a",
+        "source_ids": [
+          "W12-SRC-ERIK-WAHL-CASE"
+        ],
+        "canonical_status": "bounded_source_custodied_canonical_record",
+        "graph_effect": "none"
+      }
+    ],
+    "organization_additions": [
+      {
+        "id": "anti-defamation-league",
+        "label": "Anti-Defamation League",
+        "kind": "nonprofit",
+        "source": "lake-bounded-hold-resolution-wave-12",
+        "source_local_subject_id": "adl",
+        "source_wave11_adjudication_id": "CANONDEC-50b6f32c5c4c1856f3529498",
+        "source_ids": [
+          "W12-SRC-ADL-CASE"
+        ],
+        "canonical_status": "bounded_source_custodied_canonical_record",
+        "graph_effect": "none"
+      },
+      {
+        "id": "arcadia-improvement-association",
+        "label": "Arcadia Improvement Association",
+        "kind": "nonprofit",
+        "source": "lake-bounded-hold-resolution-wave-12",
+        "source_local_subject_id": "org-daia",
+        "source_wave11_adjudication_id": "CANONDEC-d1d39d1a4ef09c18ab55066b",
+        "source_ids": [
+          "W12-SRC-DAIA-CASE"
+        ],
+        "canonical_status": "bounded_source_custodied_canonical_record",
+        "graph_effect": "none"
+      },
+      {
+        "id": "city-of-arcadia",
+        "label": "City of Arcadia",
+        "kind": "municipal_government",
+        "broad_institution": true,
+        "source": "lake-bounded-hold-resolution-wave-12",
+        "source_local_subject_id": "org-city-of-arcadia",
+        "source_wave11_adjudication_id": "CANONDEC-cb72681ee1562b29e2886f4b",
+        "source_ids": [
+          "W12-SRC-CITY-CASE",
+          "W12-SRC-CITY-OFFICIAL"
+        ],
+        "canonical_status": "bounded_source_custodied_canonical_record",
+        "graph_effect": "none"
+      },
+      {
+        "id": "data-blanket",
+        "label": "Data Blanket",
+        "kind": "company",
+        "source": "lake-bounded-hold-resolution-wave-12",
+        "source_local_subject_id": "org-data-blanket",
+        "source_wave11_adjudication_id": "CANONDEC-9a4f042b17329b6b3abeb031",
+        "source_ids": [
+          "W12-SRC-CDAO-CRUCIBLE-2",
+          "W12-SRC-DATA-BLANKET-OFFICIAL"
+        ],
+        "canonical_status": "bounded_source_custodied_canonical_record",
+        "graph_effect": "none"
+      },
+      {
+        "id": "liveramp",
+        "label": "LiveRamp",
+        "kind": "company",
+        "source": "lake-bounded-hold-resolution-wave-12",
+        "source_local_subject_id": "liveramp",
+        "source_wave11_adjudication_id": "CANONDEC-104bd0b6697a1ea564e53163",
+        "source_ids": [
+          "W12-SRC-UKAI-COMPANY-CASE",
+          "W12-SRC-LIVERAMP-OFFICIAL"
+        ],
+        "canonical_status": "bounded_source_custodied_canonical_record",
+        "graph_effect": "none"
+      },
+      {
+        "id": "opendefense",
+        "label": "OpenDefense",
+        "kind": "company",
+        "source": "lake-bounded-hold-resolution-wave-12",
+        "source_local_subject_id": "org-opendefense",
+        "source_wave11_adjudication_id": "CANONDEC-bd5e5cbdb9c976ab3dc9f16f",
+        "source_ids": [
+          "W12-SRC-CDAO-CRUCIBLE-2",
+          "W12-SRC-OPENDEFENSE-OFFICIAL"
+        ],
+        "canonical_status": "bounded_source_custodied_canonical_record",
+        "graph_effect": "none"
+      },
+      {
+        "id": "regent-defense",
+        "label": "REGENT Defense",
+        "kind": "company_division",
+        "source": "lake-bounded-hold-resolution-wave-12",
+        "source_local_subject_id": "org-regent-defense",
+        "source_wave11_adjudication_id": "CANONDEC-89a23769558713fb51f33ec0",
+        "source_ids": [
+          "W12-SRC-CDAO-CRUCIBLE-2",
+          "W12-SRC-REGENT-DEFENSE-OFFICIAL"
+        ],
+        "canonical_status": "bounded_source_custodied_canonical_record",
+        "graph_effect": "none"
+      },
+      {
+        "id": "safegraph",
+        "label": "SafeGraph",
+        "kind": "company",
+        "source": "lake-bounded-hold-resolution-wave-12",
+        "source_local_subject_id": "safegraph",
+        "source_wave11_adjudication_id": "CANONDEC-d4ca4847cf5a1bc58bdff982",
+        "source_ids": [
+          "W12-SRC-UKAI-COMPANY-CASE",
+          "W12-SRC-SAFEGRAPH-OFFICIAL"
+        ],
+        "canonical_status": "bounded_source_custodied_canonical_record",
+        "graph_effect": "none"
+      },
+      {
+        "id": "trammell-crow-residential",
+        "label": "Trammell Crow Residential",
+        "kind": "company",
+        "source": "lake-bounded-hold-resolution-wave-12",
+        "source_local_subject_id": "org-tcr",
+        "source_wave11_adjudication_id": "CANONDEC-fa26b095240751f5bc7dc091",
+        "source_ids": [
+          "W12-SRC-TCR-CASE"
+        ],
+        "canonical_status": "bounded_source_custodied_canonical_record",
+        "graph_effect": "none"
+      }
+    ],
+    "alias_additions": [
+      {
+        "alias": "ADL",
+        "canonical_id": "anti-defamation-league",
+        "kind": "organization",
+        "source": "lake-bounded-hold-resolution-wave-12",
+        "source_local_subject_id": "adl",
+        "source_ids": [
+          "W12-SRC-ADL-CASE"
+        ],
+        "graph_effect": "none"
+      },
+      {
+        "alias": "DAIA",
+        "canonical_id": "arcadia-improvement-association",
+        "kind": "organization",
+        "source": "lake-bounded-hold-resolution-wave-12",
+        "source_local_subject_id": "org-daia",
+        "source_ids": [
+          "W12-SRC-DAIA-CASE"
+        ],
+        "graph_effect": "none"
+      },
+      {
+        "alias": "Downtown Arcadia Improvement Association",
+        "canonical_id": "arcadia-improvement-association",
+        "kind": "organization",
+        "source": "lake-bounded-hold-resolution-wave-12",
+        "source_local_subject_id": "org-daia",
+        "source_ids": [
+          "W12-SRC-DAIA-CASE"
+        ],
+        "graph_effect": "none"
+      },
+      {
+        "alias": "Arcadia, CA",
+        "canonical_id": "city-of-arcadia",
+        "kind": "organization",
+        "source": "lake-bounded-hold-resolution-wave-12",
+        "source_local_subject_id": "org-city-of-arcadia",
+        "source_ids": [
+          "W12-SRC-CITY-CASE",
+          "W12-SRC-CITY-OFFICIAL"
+        ],
+        "graph_effect": "none"
+      },
+      {
+        "alias": "Data Blanket Inc.",
+        "canonical_id": "data-blanket",
+        "kind": "organization",
+        "source": "lake-bounded-hold-resolution-wave-12",
+        "source_local_subject_id": "org-data-blanket",
+        "source_ids": [
+          "W12-SRC-CDAO-CRUCIBLE-2",
+          "W12-SRC-DATA-BLANKET-OFFICIAL"
+        ],
+        "graph_effect": "none"
+      },
+      {
+        "alias": "Regent Defense",
+        "canonical_id": "regent-defense",
+        "kind": "organization",
+        "source": "lake-bounded-hold-resolution-wave-12",
+        "source_local_subject_id": "org-regent-defense",
+        "source_ids": [
+          "W12-SRC-CDAO-CRUCIBLE-2",
+          "W12-SRC-REGENT-DEFENSE-OFFICIAL"
+        ],
+        "graph_effect": "none"
+      },
+      {
+        "alias": "TCR",
+        "canonical_id": "trammell-crow-residential",
+        "kind": "organization",
+        "source": "lake-bounded-hold-resolution-wave-12",
+        "source_local_subject_id": "org-tcr",
+        "source_ids": [
+          "W12-SRC-TCR-CASE"
+        ],
+        "graph_effect": "none"
+      }
+    ],
+    "participation_additions": []
+  },
+  "local_resolutions": [
+    {
+      "schema_version": "local-canonical-resolution@1",
+      "resolution_id": "LOCALCANON-1217aa7289ce8c2feb6f8b98",
+      "source_case_id": "arcadia-field-autopsy",
+      "local_subject_id": "org-city-of-arcadia",
+      "canonical_id": "city-of-arcadia",
+      "canonical_kind": "organization",
+      "source_decision_id": "HOLDDEC-28bcaae3b6ebb4d7898fbc6f",
+      "source_ids": [
+        "W12-SRC-CITY-CASE",
+        "W12-SRC-CITY-OFFICIAL"
+      ],
+      "status": "accepted_graph_inert_local_resolution",
+      "explicit_same_entity_assertion": true,
+      "entities_merged": false,
+      "relationship_created": false,
+      "participation_created": false,
+      "accepted_cross_case_identity_bridge": false,
+      "automatic_cross_case_join_authorized": false,
+      "cross_case_graph_join_authorized": false,
+      "cross_case_hop_creation_authorized": false,
+      "review_dependency": {
+        "required_to_decide": false
+      },
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "append_a_superseding_resolution_row_and_update_current_local_resolution_without_deleting_this_row"
+      },
+      "graph_effect": "none"
+    },
+    {
+      "schema_version": "local-canonical-resolution@1",
+      "resolution_id": "LOCALCANON-304076bdcf933a56ce41dc23",
+      "source_case_id": "uk-ai-policy",
+      "local_subject_id": "liveramp",
+      "canonical_id": "liveramp",
+      "canonical_kind": "organization",
+      "source_decision_id": "HOLDDEC-e4f5246fd9bb152825d08947",
+      "source_ids": [
+        "W12-SRC-UKAI-COMPANY-CASE",
+        "W12-SRC-LIVERAMP-OFFICIAL"
+      ],
+      "status": "accepted_graph_inert_local_resolution",
+      "explicit_same_entity_assertion": true,
+      "entities_merged": false,
+      "relationship_created": false,
+      "participation_created": false,
+      "accepted_cross_case_identity_bridge": false,
+      "automatic_cross_case_join_authorized": false,
+      "cross_case_graph_join_authorized": false,
+      "cross_case_hop_creation_authorized": false,
+      "review_dependency": {
+        "required_to_decide": false
+      },
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "append_a_superseding_resolution_row_and_update_current_local_resolution_without_deleting_this_row"
+      },
+      "graph_effect": "none"
+    },
+    {
+      "schema_version": "local-canonical-resolution@1",
+      "resolution_id": "LOCALCANON-356238ee286802cf8f625a25",
+      "source_case_id": "arcadia-field-autopsy",
+      "local_subject_id": "org-city-arcadia",
+      "canonical_id": "city-of-arcadia",
+      "canonical_kind": "organization",
+      "source_decision_id": "HOLDDEC-9812825ffebccc5a45b82cdb",
+      "source_ids": [
+        "W12-SRC-CITY-CASE",
+        "W12-SRC-CITY-OFFICIAL"
+      ],
+      "status": "accepted_graph_inert_local_resolution",
+      "explicit_same_entity_assertion": true,
+      "entities_merged": false,
+      "relationship_created": false,
+      "participation_created": false,
+      "accepted_cross_case_identity_bridge": false,
+      "automatic_cross_case_join_authorized": false,
+      "cross_case_graph_join_authorized": false,
+      "cross_case_hop_creation_authorized": false,
+      "review_dependency": {
+        "required_to_decide": false
+      },
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "append_a_superseding_resolution_row_and_update_current_local_resolution_without_deleting_this_row"
+      },
+      "graph_effect": "none"
+    },
+    {
+      "schema_version": "local-canonical-resolution@1",
+      "resolution_id": "LOCALCANON-3a798d360414d4996af8ef53",
+      "source_case_id": "uk-ai-policy",
+      "local_subject_id": "safegraph",
+      "canonical_id": "safegraph",
+      "canonical_kind": "organization",
+      "source_decision_id": "HOLDDEC-b3dd18bb34f6f5251eadb431",
+      "source_ids": [
+        "W12-SRC-UKAI-COMPANY-CASE",
+        "W12-SRC-SAFEGRAPH-OFFICIAL"
+      ],
+      "status": "accepted_graph_inert_local_resolution",
+      "explicit_same_entity_assertion": true,
+      "entities_merged": false,
+      "relationship_created": false,
+      "participation_created": false,
+      "accepted_cross_case_identity_bridge": false,
+      "automatic_cross_case_join_authorized": false,
+      "cross_case_graph_join_authorized": false,
+      "cross_case_hop_creation_authorized": false,
+      "review_dependency": {
+        "required_to_decide": false
+      },
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "append_a_superseding_resolution_row_and_update_current_local_resolution_without_deleting_this_row"
+      },
+      "graph_effect": "none"
+    },
+    {
+      "schema_version": "local-canonical-resolution@1",
+      "resolution_id": "LOCALCANON-478ccbfdf0416527352225a2",
+      "source_case_id": "field-autopsy-03",
+      "local_subject_id": "org-opendefense",
+      "canonical_id": "opendefense",
+      "canonical_kind": "organization",
+      "source_decision_id": "HOLDDEC-30d39e6641b29b81915e5adb",
+      "source_ids": [
+        "W12-SRC-CDAO-CRUCIBLE-2",
+        "W12-SRC-OPENDEFENSE-OFFICIAL"
+      ],
+      "status": "accepted_graph_inert_local_resolution",
+      "explicit_same_entity_assertion": true,
+      "entities_merged": false,
+      "relationship_created": false,
+      "participation_created": false,
+      "accepted_cross_case_identity_bridge": false,
+      "automatic_cross_case_join_authorized": false,
+      "cross_case_graph_join_authorized": false,
+      "cross_case_hop_creation_authorized": false,
+      "review_dependency": {
+        "required_to_decide": false
+      },
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "append_a_superseding_resolution_row_and_update_current_local_resolution_without_deleting_this_row"
+      },
+      "graph_effect": "none"
+    },
+    {
+      "schema_version": "local-canonical-resolution@1",
+      "resolution_id": "LOCALCANON-5579075eb64fe909df6a115f",
+      "source_case_id": "field-autopsy-03",
+      "local_subject_id": "org-data-blanket",
+      "canonical_id": "data-blanket",
+      "canonical_kind": "organization",
+      "source_decision_id": "HOLDDEC-7a5fa6c1c0652632e903b179",
+      "source_ids": [
+        "W12-SRC-CDAO-CRUCIBLE-2",
+        "W12-SRC-DATA-BLANKET-OFFICIAL"
+      ],
+      "status": "accepted_graph_inert_local_resolution",
+      "explicit_same_entity_assertion": true,
+      "entities_merged": false,
+      "relationship_created": false,
+      "participation_created": false,
+      "accepted_cross_case_identity_bridge": false,
+      "automatic_cross_case_join_authorized": false,
+      "cross_case_graph_join_authorized": false,
+      "cross_case_hop_creation_authorized": false,
+      "review_dependency": {
+        "required_to_decide": false
+      },
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "append_a_superseding_resolution_row_and_update_current_local_resolution_without_deleting_this_row"
+      },
+      "graph_effect": "none"
+    },
+    {
+      "schema_version": "local-canonical-resolution@1",
+      "resolution_id": "LOCALCANON-58eb01ce4cddb03ba1c60879",
+      "source_case_id": "arcadia-field-autopsy",
+      "local_subject_id": "org-tcr",
+      "canonical_id": "trammell-crow-residential",
+      "canonical_kind": "organization",
+      "source_decision_id": "HOLDDEC-d508942ee42b06ec77454ea5",
+      "source_ids": [
+        "W12-SRC-TCR-CASE"
+      ],
+      "status": "accepted_graph_inert_local_resolution",
+      "explicit_same_entity_assertion": true,
+      "entities_merged": false,
+      "relationship_created": false,
+      "participation_created": false,
+      "accepted_cross_case_identity_bridge": false,
+      "automatic_cross_case_join_authorized": false,
+      "cross_case_graph_join_authorized": false,
+      "cross_case_hop_creation_authorized": false,
+      "review_dependency": {
+        "required_to_decide": false
+      },
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "append_a_superseding_resolution_row_and_update_current_local_resolution_without_deleting_this_row"
+      },
+      "graph_effect": "none"
+    },
+    {
+      "schema_version": "local-canonical-resolution@1",
+      "resolution_id": "LOCALCANON-617000236c224d0fa5123a17",
+      "source_case_id": "uk-ai-policy",
+      "local_subject_id": "adl",
+      "canonical_id": "anti-defamation-league",
+      "canonical_kind": "organization",
+      "source_decision_id": "HOLDDEC-8c1ed16b89cef6f66ef1444f",
+      "source_ids": [
+        "W12-SRC-ADL-CASE"
+      ],
+      "status": "accepted_graph_inert_local_resolution",
+      "explicit_same_entity_assertion": true,
+      "entities_merged": false,
+      "relationship_created": false,
+      "participation_created": false,
+      "accepted_cross_case_identity_bridge": false,
+      "automatic_cross_case_join_authorized": false,
+      "cross_case_graph_join_authorized": false,
+      "cross_case_hop_creation_authorized": false,
+      "review_dependency": {
+        "required_to_decide": false
+      },
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "append_a_superseding_resolution_row_and_update_current_local_resolution_without_deleting_this_row"
+      },
+      "graph_effect": "none"
+    },
+    {
+      "schema_version": "local-canonical-resolution@1",
+      "resolution_id": "LOCALCANON-65db4f49e5e7db37053a6f7b",
+      "source_case_id": "field-autopsy-03",
+      "local_subject_id": "org-regent-defense",
+      "canonical_id": "regent-defense",
+      "canonical_kind": "organization",
+      "source_decision_id": "HOLDDEC-d3a71daffaf12c611c2a7d79",
+      "source_ids": [
+        "W12-SRC-CDAO-CRUCIBLE-2",
+        "W12-SRC-REGENT-DEFENSE-OFFICIAL"
+      ],
+      "status": "accepted_graph_inert_local_resolution",
+      "explicit_same_entity_assertion": true,
+      "entities_merged": false,
+      "relationship_created": false,
+      "participation_created": false,
+      "accepted_cross_case_identity_bridge": false,
+      "automatic_cross_case_join_authorized": false,
+      "cross_case_graph_join_authorized": false,
+      "cross_case_hop_creation_authorized": false,
+      "review_dependency": {
+        "required_to_decide": false
+      },
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "append_a_superseding_resolution_row_and_update_current_local_resolution_without_deleting_this_row"
+      },
+      "graph_effect": "none"
+    },
+    {
+      "schema_version": "local-canonical-resolution@1",
+      "resolution_id": "LOCALCANON-6c364ae24750789db8b10451",
+      "source_case_id": "arcadia-field-autopsy",
+      "local_subject_id": "p-erik-wahl-arcadia",
+      "canonical_id": "erik-wahl",
+      "canonical_kind": "actor",
+      "source_decision_id": "HOLDDEC-98ba52eeb987d81ffa5db094",
+      "source_ids": [
+        "W12-SRC-ERIK-WAHL-CASE"
+      ],
+      "status": "accepted_graph_inert_local_resolution",
+      "explicit_same_entity_assertion": true,
+      "entities_merged": false,
+      "relationship_created": false,
+      "participation_created": false,
+      "accepted_cross_case_identity_bridge": false,
+      "automatic_cross_case_join_authorized": false,
+      "cross_case_graph_join_authorized": false,
+      "cross_case_hop_creation_authorized": false,
+      "review_dependency": {
+        "required_to_decide": false
+      },
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "append_a_superseding_resolution_row_and_update_current_local_resolution_without_deleting_this_row"
+      },
+      "graph_effect": "none"
+    },
+    {
+      "schema_version": "local-canonical-resolution@1",
+      "resolution_id": "LOCALCANON-97914756df516005b76c6969",
+      "source_case_id": "arcadia-field-autopsy",
+      "local_subject_id": "p-ben-zhang-atc",
+      "canonical_id": "ben-zhang",
+      "canonical_kind": "actor",
+      "source_decision_id": "HOLDDEC-d88bce4056954abeefc4c75f",
+      "source_ids": [
+        "W12-SRC-BEN-ZHANG-CASE"
+      ],
+      "status": "accepted_graph_inert_local_resolution",
+      "explicit_same_entity_assertion": true,
+      "entities_merged": false,
+      "relationship_created": false,
+      "participation_created": false,
+      "accepted_cross_case_identity_bridge": false,
+      "automatic_cross_case_join_authorized": false,
+      "cross_case_graph_join_authorized": false,
+      "cross_case_hop_creation_authorized": false,
+      "review_dependency": {
+        "required_to_decide": false
+      },
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "append_a_superseding_resolution_row_and_update_current_local_resolution_without_deleting_this_row"
+      },
+      "graph_effect": "none"
+    },
+    {
+      "schema_version": "local-canonical-resolution@1",
+      "resolution_id": "LOCALCANON-b4362733345945a0e87a7c6b",
+      "source_case_id": "arcadia-field-autopsy",
+      "local_subject_id": "org-daia",
+      "canonical_id": "arcadia-improvement-association",
+      "canonical_kind": "organization",
+      "source_decision_id": "HOLDDEC-a0658b2de4e975b4c9fcf5d6",
+      "source_ids": [
+        "W12-SRC-DAIA-CASE"
+      ],
+      "status": "accepted_graph_inert_local_resolution",
+      "explicit_same_entity_assertion": true,
+      "entities_merged": false,
+      "relationship_created": false,
+      "participation_created": false,
+      "accepted_cross_case_identity_bridge": false,
+      "automatic_cross_case_join_authorized": false,
+      "cross_case_graph_join_authorized": false,
+      "cross_case_hop_creation_authorized": false,
+      "review_dependency": {
+        "required_to_decide": false
+      },
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "append_a_superseding_resolution_row_and_update_current_local_resolution_without_deleting_this_row"
+      },
+      "graph_effect": "none"
+    }
+  ],
+  "expected_after": {
+    "actor_rows": 161,
+    "organization_rows": 63,
+    "alias_rows": 30,
+    "participation_rows": 164,
+    "active_entities": 238,
+    "active_claims": 164,
+    "hop_edges": 31,
+    "accepted_local_canonical_resolutions": 12,
+    "accepted_cross_case_identity_bridges": 0,
+    "claim_delta": 0,
+    "graph_edge_delta": 0
+  },
+  "boundaries": {
+    "public_source_proves_every_case_claim": false,
+    "local_canonical_resolution_is_cross_case_bridge": false,
+    "local_canonical_resolution_merges_source_records": false,
+    "local_canonical_resolution_creates_relationship": false,
+    "local_canonical_resolution_creates_participation": false,
+    "local_canonical_resolution_creates_hop": false,
+    "canonical_record_proves_program_selection": false,
+    "cdao_selection_proves_performance_or_acceptance": false,
+    "automatic_cross_case_join_authorized": false,
+    "cross_case_graph_join_authorized": false,
+    "cross_case_hop_creation_authorized": false,
+    "evidence_truth_determined": false,
+    "publication_cleared": false,
+    "graph_effect": "none"
+  }
+}
