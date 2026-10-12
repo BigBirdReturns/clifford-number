@@ -1,0 +1,666 @@
+[
+ {
+  "trail": "Clinical-trial digital twins: what EMA actually qualified (PROCOVA / Unlearn)",
+  "slice": "github-only",
+  "question": "When machine-learned 'digital twins' are used to shrink human clinical trials, which part of the method has real regulatory qualification and which claims stay outside it?",
+  "where": [
+   "BigBirdReturns/clifford-number#52 (issue, 2 receipt comments)",
+   "BigBirdReturns/clifford-number#49 (F-06 promotion receipt)",
+   "BigBirdReturns/clifford-number#30 (parent programme)"
+  ],
+  "on_main": false,
+  "main_status": "no",
+  "main_detail": "PROCOVA, REM127, ISTAND, NCT05478031 absent from main (0 files).",
+  "stage": "findings",
+  "found": "CHMP qualified only linear prognostic-score covariate adjustment (PROCOVA) for randomized trials with continuous outcomes and explicitly did NOT qualify the upstream ML model-development step; the full seven-PDF EMA package was fetched and SHA-256 hashed, and nine stakeholder comments (Roche, Pfizer, MSD, ISCB, EuropaBio, Novartis, EULAR...) narrowed the scope to randomized settings. FDA's ISTAND list shows zero qualified tools (1 Jan 2026) and Unlearn's FDA correspondence is applicant-authored; one named human Phase 2a use (REM127 / REMAD-02 / NCT05478031) was found, with an ordinary placebo arm, terminated for liver signals, twin analysis not shown to be prespecified.",
+  "real_sources": 17,
+  "active": "2026-07-19 (issue closed 2026-08-11)",
+  "recoverable": "issue only - closed issue comments; nothing in any branch or PR",
+  "risk": "machine_proposed_unverified, graph_effect none; evidence is in comments that could be edited/lost; vendor and regulator voices must stay separated",
+  "worth": "keep",
+  "why": "Concrete, hash-pinned regulatory finding with no counterpart on main (PROCOVA/Unlearn appear nowhere in the tree)."
+ },
+ {
+  "trail": "Professional standards vs synthetic respondents (MRS / ESOMAR / AAPOR) and labour substitution",
+  "slice": "github-only",
+  "question": "Which professional bodies already regulate synthetic respondents, with what duties, and is there any evidence that vendor automation claims translate into employment effects?",
+  "where": [
+   "BigBirdReturns/clifford-number#51 (issue, 2 receipts)",
+   "BigBirdReturns/clifford-number#48 (issue, 2 receipts)",
+   "BigBirdReturns/clifford-number#49"
+  ],
+  "on_main": false,
+  "main_status": "no",
+  "main_detail": "ESOMAR/AAPOR/'MRS Code' absent from main.",
+  "stage": "findings",
+  "found": "Three bodies hold materially different instruments: MRS Guidance on Using AI (Apr 2025), ESOMAR '20 Questions' buyer checklist plus ICC/ESOMAR Code 2025, and the AAPOR Code revised June 2026 (requires AI-sample generation, instruments, dates and human-oversight disclosure); none is a certification or audit and no enforcement decisions were joined. A task-level map shows vendor claims are acceleration claims ('60 seconds vs six weeks', 'ten times the output'), not verified employment effects, and Verve itself says VIPS complement real-people research.",
+  "real_sources": 21,
+  "active": "2026-07-19 (closed 2026-08-11)",
+  "recoverable": "issue only (closed issue comments)",
+  "risk": "unverified vendor/standards readings; ESOMAR, AAPOR, MRS Code do not appear on main so any publication needs fresh source custody",
+  "worth": "keep",
+  "why": "Maps the standards denominator that every later vendor-disclosure judgement would need; none of it reached main."
+ },
+ {
+  "trail": "Metric and benchmark governance for synthetic audiences (1-MAE / NDAM reproducibility)",
+  "slice": "github-only",
+  "question": "Can the headline accuracy claims of synthetic-population vendors be reproduced from public material?",
+  "where": [
+   "BigBirdReturns/clifford-number#44 (issue, 4 receipts)"
+  ],
+  "on_main": false,
+  "main_status": "no",
+  "main_detail": "'OneMinusMAE', 'Performative Prediction', 'Prolific', 'MTurk' absent from main.",
+  "stage": "findings",
+  "found": "Electric Twin's 95.5% 1-MAE, 92% NDAM, ~96% vs eight traditional methods and 11,000-persona UK/US claims are not publicly reproducible (held-out benchmark private); the 1-MAE rule was reproduced on a toy case and a candidate NDAM equation derived (NDAM = 1 - L1/2 = distributional overlap) but deliberately kept non-authoritative. AAPOR's June 2026 code defines the disclosure floor the vendor's public material does not meet.",
+  "real_sources": 4,
+  "active": "2026-07-19 (closed 2026-08-11)",
+  "recoverable": "issue only",
+  "risk": "candidate equation is an inference, not a vendor definition; must not be quoted as the vendor's metric",
+  "worth": "maybe",
+  "why": "Useful audit method (frozen claim ledger + derived-metric boundary), narrow in scope."
+ },
+ {
+  "trail": "Cross-cultural / multilingual extrapolation of synthetic audiences",
+  "slice": "github-only",
+  "question": "Does a '155 countries' coverage claim survive comparison with what the vendor actually validated?",
+  "where": [
+   "BigBirdReturns/clifford-number#45 (issue, 3 receipts)"
+  ],
+  "on_main": false,
+  "main_status": "no",
+  "main_detail": "COLM benchmark, 'Greek and Hebrew' result, 155-country ledger absent from main.",
+  "stage": "findings",
+  "found": "Electric Twin's homepage claims '50k evals across 155 countries' while its validation page covers 11,000 personas in the UK and US only; no language list, country table or abstention data exists. A matched academic control was recovered (COLM 2024: 7,286 humans, 15 countries, 12 prompt languages, GPT-3.5, immutable commit 99e06a7): stating country of residence helped, native-language prompting did not and hurt Greek and Hebrew; the code is not replay-ready (blank key, retired model, missing human data, empty requirements).",
+  "real_sources": 12,
+  "active": "2026-07-19 (closed 2026-08-11)",
+  "recoverable": "issue only",
+  "risk": "third-party academic code pinned by commit hash; reproduction not attempted",
+  "worth": "maybe",
+  "why": "Clear claim-vs-scope divergence with a pinned control, but peripheral to the Clifford graph."
+ },
+ {
+  "trail": "Foundation-model, cloud and subprocessor dependence of synthetic-audience vendors",
+  "slice": "github-only",
+  "question": "Which model providers, clouds and subprocessors do synthetic-population vendors actually disclose?",
+  "where": [
+   "BigBirdReturns/clifford-number#46 (issue, 4 receipts)"
+  ],
+  "on_main": false,
+  "main_status": "no",
+  "main_detail": "Yabble/Qloo/CulturePulse/Stravito appear on main only as denominator names (3-4 files).",
+  "stage": "findings",
+  "found": "Electric Twin names no model, cloud or subprocessor; Verve claims API-only private instances with no external training but names no provider; Stravito shows ISO 27001 / SOC 2 marks but no subprocessor list; Yabble discloses OpenAI plus AWS and warns it does not scrub PII; CulturePulse ARES names AWS, Hotjar and Stripe with a 30-day deletion window. Custody claims outrun named dependency disclosure.",
+  "real_sources": 15,
+  "active": "2026-07-19 (closed 2026-08-11)",
+  "recoverable": "issue only",
+  "risk": "vendor self-statements, dated 2023-2025; no contract-level verification",
+  "worth": "maybe",
+  "why": "Compact comparative disclosure table; main only keeps these vendors as names in the denominator."
+ },
+ {
+  "trail": "Synthetic-data lineage, consent and anonymisation",
+  "slice": "github-only",
+  "question": "Can a real dataset-to-synthetic-output path be traced, and who is controller/processor with what anonymisation test?",
+  "where": [
+   "BigBirdReturns/clifford-number#43 (issue, 4 receipts)"
+  ],
+  "on_main": false,
+  "main_status": "no",
+  "main_detail": "Aaru DPA, Qloo policy, 'Synthetic Users' absent from main.",
+  "stage": "findings",
+  "found": "Times ExplorAItion inputs (subscriber behaviour, reader panels, engagement, PAMCo) are said to involve 'no personal data', but controller/processor allocation, lawful basis, retention and any anonymisation test are not public; Aaru's published DPA (processor role, EEA transfer limits, subprocessor consent, deletion at termination) and Qloo's API policy (customers must pre-anonymise, no PII) resolve some role fields at policy level; ICO guidance says synthetic data needs real data and pseudonymised data stays personal.",
+  "real_sources": 13,
+  "active": "2026-07-19 (closed 2026-08-11)",
+  "recoverable": "issue only",
+  "risk": "legal-role readings are summaries of policy pages, not legal advice or audit",
+  "worth": "maybe",
+  "why": "Shows what is and is not disclosed; supports later privacy-fields work."
+ },
+ {
+  "trail": "Electric Twin capital, board control and the unfinished register-of-members bridge",
+  "slice": "github-only",
+  "question": "Who controls Electric Twin and on what terms did investors come in?",
+  "where": [
+   "BigBirdReturns/clifford-number#47 (issue, 3 passes)",
+   "BigBirdReturns/clifford-number#2138 (open, 9 comments)",
+   "branch diagnostic/electric-twin-2026-sh01-form-custody-v2 (36 files incl. page images)"
+  ],
+  "on_main": false,
+  "main_status": "partly",
+  "main_detail": "Topology PRs #1940-#1942, #1955-#1956, #1985, #2126, #2131, #2137 merged; SH01 2026 capture, tranche economics, investor-rights reading not on main.",
+  "stage": "findings",
+  "found": "Filing-first reading of Electric Twin Ltd (15173006, formerly Electric Sheep Intelligence): Cooper and Warner each hold >25-50% as PSCs; Atomico partner Benjamin Blume became a director on 12 Sep 2025 (founder-control / investor-board junction); a $10m Atomico-led round followed a $4m pre-seed; a third pass resolved filed cash tranches and investor rights from SH01/CS01. Several rows reached main as bounded topology admissions and a no-send register-request toolchain, but the 2026 SH01 form-custody capture sits on a branch and #2138 states 'No real acquisition event has occurred'.",
+  "real_sources": 11,
+  "active": "2026-07-19 to 2026-09 (the #2138 request chain ran to 2026-08-16)",
+  "recoverable": "issue comments + one diagnostic branch (branch exists)",
+  "risk": "names natural persons (directors); statutory-record facts only, no motive inference allowed; request chain depends on a real postal request not yet made",
+  "worth": "keep",
+  "why": "Core Clifford-adjacent company; the missing piece is real-world acquisition, not tooling."
+ },
+ {
+  "trail": "Electric Twin 'independent validation' claim, capability lineage and the Gartner roster",
+  "slice": "github-only",
+  "question": "Is Electric Twin's accuracy claim independently validated, and what is its lineage from state service to market category?",
+  "where": [
+   "BigBirdReturns/clifford-number#29 (issue, 6 comments, lanes ET-01..ET-18)",
+   "BigBirdReturns/clifford-number#35",
+   "BigBirdReturns/clifford-number#38"
+  ],
+  "on_main": false,
+  "main_status": "partly",
+  "main_detail": "Admissions #1940, #1960, #1963 merged; SSRN/OSF/Stack Data Strategy/Gartner partial roster not on main.",
+  "stage": "findings",
+  "found": "The '96% / independently validated by LSE' claim traces to a working paper (SSRN 6439338, 7,755 UK respondents, seven human sources) whose disclosures say the evaluator is Electric Twin's science advisor with shares, a co-author is a co-founder, and Electric Twin funded the study; the OSF registration 6yqtu is exploratory and its archive.org BagIt (SHA-256 213e8af9...) verifies but contains no replication package. The Gartner source is identified (Vibha Chitkara, 14 Apr 2026, doc 7718657; 60 reviewed, 33 watched) but only a five-vendor partial roster is recoverable. ET-05, ET-06 and ET-12 later reached main as bounded admissions.",
+  "real_sources": 53,
+  "active": "2026-07-19 to 2026-08-13",
+  "recoverable": "issue only",
+  "risk": "role-overlap is a governance classification, not evidence of bad science; Gartner roster is partial",
+  "worth": "keep",
+  "why": "Best-sourced 'validator is not unaffiliated' finding in the repo; the SSRN/OSF/BagIt custody is not on main."
+ },
+ {
+  "trail": "Former-official AI advisory portfolios and post-office controls (Simon Case ACOBA bundle)",
+  "slice": "github-only",
+  "question": "What controls bind a former Cabinet Secretary's paid AI-sector roles?",
+  "where": [
+   "BigBirdReturns/clifford-number#37 (issue, 1 receipt)"
+  ],
+  "on_main": false,
+  "main_status": "partly",
+  "main_detail": "Case tenure/ethics-board admissions merged (#1949, #1950); commissions not.",
+  "stage": "findings",
+  "found": "ACOBA bundle for Simon Case (left office Dec 2024): paid adviser to Invisible Technologies, consultancy commissions with Workday and Bridgepoint (six-month wait, two-year lobbying/bid-advice bans, no specific unfair-advantage information identified), plus unpaid Patchwork Foundation and RAF Charitable Trust roles; the Workday letter is a materially different control case. Main holds Case's Cabinet tenure and ethics-board role but none of these commissions.",
+  "real_sources": 3,
+  "active": "2026-07-19",
+  "recoverable": "issue only",
+  "risk": "named former official; public ACOBA letters only, strict no-inference rule",
+  "worth": "maybe",
+  "why": "Small, cleanly sourced, one hop from the graph's existing Case admissions."
+ },
+ {
+  "trail": "Pandemic decision infrastructure to NHS Federated Data Platform",
+  "slice": "github-only",
+  "question": "Did a pandemic-era capability succeed into the later procurement and award?",
+  "where": [
+   "BigBirdReturns/clifford-number#34 (issue, 1 receipt)"
+  ],
+  "on_main": false,
+  "main_status": "partly",
+  "main_detail": "FDP/Palantir NHS material is on main via M-04F; C104091/PRN00389 chain is not.",
+  "stage": "findings",
+  "found": "NHS COVID-19 Data Store (Azure, Palantir Foundry; Faculty, McKinsey and Deloitte under contract) -> FDP procurement prospectus (project C104091 / PRN00389, 10 Jan 2023, stating it would replace the Palantir-provided datastore) -> award update 7 Dec 2023, with NHS England as controller.",
+  "real_sources": 4,
+  "active": "2026-07-19",
+  "recoverable": "issue only",
+  "risk": "procurement documents are NHS-hosted PDFs that could move; no independent confirmation of transition outcome",
+  "worth": "maybe",
+  "why": "Bridges the FDP story already on main (M-04F) back to the pandemic data store."
+ },
+ {
+  "trail": "Faculty to Accenture: transaction control and capability transfer",
+  "slice": "github-only",
+  "question": "How did Faculty's control and personnel move to Accenture, and on which dates?",
+  "where": [
+   "BigBirdReturns/clifford-number#33 (issue, 1 receipt)"
+  ],
+  "on_main": false,
+  "main_status": "partly",
+  "main_detail": "Faculty corporate bridge/ASI join merged (#1946, #1947); Accenture transaction not.",
+  "stage": "findings",
+  "found": "Accenture announced the agreement on 6 Jan 2026 and completion on 16 Mar 2026; Companies House records Accenture Plc as PSC of Faculty Science Ltd (08873131) effective 12 Mar 2026 (filed 25 Mar) - both dates kept, not collapsed. More than 400 Faculty staff joined, Marc Warner became Accenture CTO while remaining Faculty CEO, Faculty Frontier joined Accenture's product suite; the legal entity stays an active private company.",
+  "real_sources": 5,
+  "active": "2026-07-19",
+  "recoverable": "issue only",
+  "risk": "names executives; corporate-record facts only",
+  "worth": "keep",
+  "why": "Dated, register-backed transaction that main lacks while holding 24 Faculty Science Ltd files."
+ },
+ {
+  "trail": "Political message-optimisation and defence/government deployment of synthetic audiences",
+  "slice": "github-only",
+  "question": "Are synthetic-audience vendors being used by campaigns, governments or defence customers, and can the client or award be named?",
+  "where": [
+   "BigBirdReturns/clifford-number#41 (issue, 1 receipt)",
+   "BigBirdReturns/clifford-number#42 (issue, 1 receipt)"
+  ],
+  "on_main": false,
+  "main_status": "partly",
+  "main_detail": "NATO DIANA/CulturePulse present on main; Aaru Dynamo and Semafor claims largely absent.",
+  "stage": "findings",
+  "found": "Aaru markets 'Dynamo' for election forecasting and message testing and told Semafor (Sep 2024) it was hired by campaigns, think tanks and super PACs, one unnamed California campaign relying mainly on it; exact-string FEC search found no client or expenditure identity. NATO DIANA's 2026 cohort lists CulturePulse (Slovakia, 'psychologically realistic digital twins') and a Cabinet Office senior-officials disclosure records a 2025-04-02 Electric Twin meeting on 'working together on AI capability' - selection and meeting found, award or deployment not proved.",
+  "real_sources": 6,
+  "active": "2026-07-19",
+  "recoverable": "issue only",
+  "risk": "no named clients: any claim beyond 'capability marketed' is unsupported",
+  "worth": "maybe",
+  "why": "Honest negative/partial results that stop over-claiming; low incremental value."
+ },
+ {
+  "trail": "Publisher synthetic-audience deployments (Times ExplorAItion, Dentsu, PAMCo)",
+  "slice": "github-only",
+  "question": "Which publishers/agencies run synthetic audiences in production and on what data?",
+  "where": [
+   "BigBirdReturns/clifford-number#39 (issue, 4 receipts)"
+  ],
+  "on_main": false,
+  "main_status": "partly",
+  "main_detail": "Times ExplorAItion admission and Dentsu intake merged; PAMCo release, InfoSum, Decentriq absent.",
+  "stage": "findings",
+  "found": "Times ExplorAItion (News UK / Nucleus, public launch 27 Apr 2026) is built with Electric Twin from subscriber behaviour, reader panels, engagement and PAMCo data, confirmed by both publisher and vendor, but controller/processor, lawful basis and retention are unspecified; Dentsu's Generative Audiences (with the Evidenza partnership) and the PAMCo H1/H2 2026 releases were reran as comparators. The Times admission and the Dentsu crawler reached main; PAMCo releases, Times Media rate card and InfoSum/Decentriq context did not.",
+  "real_sources": 9,
+  "active": "2026-07-19",
+  "recoverable": "issue comments",
+  "risk": "named publisher product; commercial rate-card data",
+  "worth": "maybe",
+  "why": "Mostly landed via Preference Custody and the Dentsu crawler; residual is PAMCo/rate-card context."
+ },
+ {
+  "trail": "Second-order frontier seams of the synthetic-population market (F-01..F-20)",
+  "slice": "github-only",
+  "question": "Which downstream control points (data supply, holding-company operating systems, standards, code gatekeepers, capital) already sit beneath synthetic audiences?",
+  "where": [
+   "BigBirdReturns/clifford-number#49 (issue, 5 long receipts, ~42k chars)",
+   "BigBirdReturns/clifford-number#30"
+  ],
+  "on_main": false,
+  "main_status": "no",
+  "main_detail": "Publicis, Omnicom, InfoSum, IAB Tech Lab absent from main.",
+  "stage": "findings",
+  "found": "Screened 20 frontier rows for a positive anchor: seven had one (e.g., CACI Fresco and Verve VIPS, Principality Building Society and Verve, News UK and Electric Twin, MRS/ESOMAR/AAPOR rules, EMA/Unlearn); F-06 was promoted to child case #52. The F-20 control-plane screen found four holding-company operating systems (WPP Open/InfoSum, Dentsu.Connect with Evidenza, Publicis CoreAI/Epsilon/Lotame, Omnicom Omni/Acxiom) that already control workflows able to admit a simulated audience - verdict 'hold', no public joined campaign receipt. Later receipts cover founder/investor control, identity-data acquisitions (Omnicom-IPG closed 26 Nov 2025, $8.89b), standards governance and code gatekeepers.",
+  "real_sources": 77,
+  "active": "2026-07-19 (closed 2026-08-11)",
+  "recoverable": "issue only (largest single comment set not on main: 67 of 77 locators absent)",
+  "risk": "wide, sometimes speculative market-structure claims; strict 'no inference' boundaries stated in the comments but easy to lose in summary",
+  "worth": "keep",
+  "why": "Largest un-merged evidence set, and the only map of who controls the pipeline around the synthetic-audience layer."
+ },
+ {
+  "trail": "Evidence-lake indexing and AXM Genesis identity-resolution waves 1-20",
+  "slice": "github-only",
+  "question": "Can the whole estate be indexed and every identifier resolved without inventing identity - and does any cross-case identity actually recur?",
+  "where": [
+   "BigBirdReturns/clifford-number#384, #389, #391, #392, #393, #395, #396, #397, #398, #399, #400, #401, #403, #404, #407, #408, #409, #420, #435, #458, #477, #482, #489 (23 closed-unmerged PRs)",
+   "BigBirdReturns/clifford-number#860 (allocator-war Wave 38, same bulk close)",
+   "branches agent/lake-index-census ... agent/lake-receipt-custody-wave-20 (stacked) and agent/tmp-wave16/17/18-* monitors",
+   "BigBirdReturns/clifford-number#386 (judgment-authority sibling)"
+  ],
+  "on_main": false,
+  "main_status": "partly",
+  "main_detail": "AXM Genesis reconciliation re-implemented on main (#2604; docs/identity-reconciliation.md; 170 actors, 32 orgs); no lake-index, basin, identity-census or generator-contract layers.",
+  "stage": "findings",
+  "found": "Wave 20 census: 2,102 tracked paths, 1,385 evidence-bearing, 26,046 machine identifiers, 37 semantic basins; Wave 17 drove 601 unowned paths and 106 orphans to zero; 49 unused receipt definitions adjudicated. AXM Genesis v1 was activated (176 entities / 164 claims) and the cross-case census found 4 native cases, 6 case pairs, 336 identity occurrences, 229 distinct values and 0 exact cross-case recurrences, so 0 production identity bridges; Waves 11-16 grew the canonical registry (actors 137->161, organizations 25->65) and typed 40 non-identity subjects.",
+  "real_sources": 0,
+  "active": "2026-07-29 to 2026-07-30 (all closed 2026-08-11 17:17-17:22 UTC)",
+  "recoverable": "branches exist for all 23 PRs (PR heads present); PRs closed, not deleted",
+  "risk": "stack is ~2,000 commits behind main and was built under the 'no human permission gate' rule that the Aug 11 topology pivot retired; identity decisions would need re-review; internal census only",
+  "worth": "maybe",
+  "why": "Only test of whether any cross-case identity recurs (none) plus a 65-org canonical registry (main has 32); high rebase cost, no new external evidence."
+ },
+ {
+  "trail": "Arcadia field autopsy - second research increment (seven trails closed on a side branch)",
+  "slice": "github-only",
+  "question": "How did the Arcadia Gold Line station-area formation actually sequence (deeds, DAIA, station cost share, comparables), and which claims from the original conversation survive public records?",
+  "where": [
+   "branch claude/arcadia-field-autopsy-xqrkkn (4 commits, 2026-07-14/15, never PR'd)",
+   "BigBirdReturns/clifford-number#2044-#2054 (open fan-out issues re-asking the same trails)"
+  ],
+  "on_main": false,
+  "main_status": "partly",
+  "main_detail": "Main has the first Arcadia increment (cases/arcadia-field-autopsy, 142 receipts, trails still open); branch-only results listed above.",
+  "stage": "findings",
+  "found": "The branch executes seven frontier trails (deed chronology, DAIA formation instruments, Erik Wahl's title/tenure from IRS filings, station cost share, Monrovia / Duarte / K Line comparables): the Alexan Azalea block was bought 2018-01-24 for $25.6M (matches the assessor's Prop 13 base year); DAIA is a 2013 501(c)(3) (FY2025 revenue $160,121, ~96% contributions) whose 2012-05-15 council minutes show a $70,000 consultant contract with New City America, not a district-establishing resolution; the First/Huntington/Valencia policy-geometry claim and a '1993 Downtown Revitalization Strategy' are not found; three new trails opened. 154 receipt lines on the branch vs 142 on main, with 43 locators and 58 receipt IDs not on main.",
+  "real_sources": 43,
+  "active": "2026-07-14 to 2026-07-15",
+  "recoverable": "branch exists, no PR (diverged: 4 ahead, 2,423 behind main)",
+  "risk": "diverged parallel lineage (main has a different Arcadia increment with 10 open trails) so a merge needs hand reconciliation; branch also commits regenerated build artifacts; names local officials and private developers and a 'pre-positioning' framing that main later wrapped in public-interest/refusal rules",
+  "worth": "keep",
+  "why": "Closes 7 of 10 open trails with ~43 extra primary-record locators and corrects earlier claims; cheapest high-value recovery."
+ },
+ {
+  "trail": "Biological Omega control surfaces and answerable biosecurity",
+  "slice": "github-only",
+  "question": "Can the Omega / answerable-power model be applied to high-consequence biological threats (natural emergence, lab release, misuse, synthesis screening, AI-enabled capability) without assertions of origin or intent?",
+  "where": [
+   "BigBirdReturns/clifford-number#361 (issue, closed)",
+   "BigBirdReturns/clifford-number#362 (draft PR, closed unmerged)",
+   "branch agent/biological-omega-crosswalk (9 commits)"
+  ],
+  "on_main": false,
+  "main_status": "no",
+  "main_detail": "'biosecurity' and the Omega programme are absent from main (Omega appears only as CSS theme names).",
+  "stage": "scaffold",
+  "found": "Nothing yet - a staged programme only: twelve cases, a constitutional selection declaration with neutral universes and a sunset condition, an explicit zero-evidence coverage ledger, twelve discovery seeds, fourteen bounded-surface types and a crosswalk applying the M-05 R0-R7 ladder, plus validator and test; no sources collected.",
+  "real_sources": 0,
+  "active": "2026-07-27 (closed 2026-08-11)",
+  "recoverable": "branch exists (9 commits ahead, 1,883 behind); PR closed",
+  "risk": "biosecurity-sensitive subject; the programme itself bans pathogen-design, sequence and facility detail, so any resumption must keep that boundary; reputational risk if origin claims are implied",
+  "worth": "maybe",
+  "why": "Self-contained, coherent scaffold with zero evidence; value depends on whether the owner wants a biosecurity track."
+ },
+ {
+  "trail": "M-04D Wave 09: practical exit and substitution in UK health Palantir lanes",
+  "slice": "github-only",
+  "question": "Can an NHS/social-care Palantir deployment actually be exited or substituted - is there an awarded alternate supplier, a funded transition, a retained incumbent?",
+  "where": [
+   "branch agent/m04d-fog-resolution-wave-09 (2 commits 2026-07-24, never PR'd)"
+  ],
+  "on_main": false,
+  "main_status": "partly",
+  "main_detail": "Waves 01-08 on main; Mozaic/ASC Dashboard facts partly present via M-04F NHS matrix, Wave 09 verdict set is not.",
+  "stage": "findings",
+  "found": "Ten verdicts: DHSC awarded Mozaic Services a GBP 100,000 contract to move the Adult Social Care Dashboard from Palantir Foundry to EDGE (16 Aug-30 Sep 2021) - supported_for_human_review, but completed exit needs more acquisition; NHS England later paid Palantir a separate 12-month GBP 24.925m transition-and-exit contract; the FDP successor procurement was competitive (seven tenders, quality 60%/social value 10%/price 30%) yet retained the incumbent (bounded non-link for supplier replacement); public data-control provisions exist; practical enterprise exit and system-wide irreversibility remain open.",
+  "real_sources": 9,
+  "active": "2026-07-24",
+  "recoverable": "branch exists (no PR)",
+  "risk": "Palantir-named findings carry defamation-style risk if upgraded from 'supported for human review'; 3 of 9 Contracts Finder notices not otherwise on main",
+  "worth": "keep",
+  "why": "Finished, validated wave (json + doc) sitting one file away from the Waves 01-08 already on main."
+ },
+ {
+  "trail": "Intel CHIPS equity: did the government holder realize value? (held-evidence packets)",
+  "slice": "github-only",
+  "question": "Has Commerce sold or monetized its Intel stake, and can a shared registration number identify a transaction?",
+  "where": [
+   "BigBirdReturns/clifford-number#2603 (closed 2026-09-08, branch review/m05-intel-holder-coverage-20260904)",
+   "BigBirdReturns/clifford-number#2605 (open, branch agent/m05-intel-shared-shelf-control-20260904)",
+   "branch agent/m05-s03-l7-intel-issuer-offering-disambiguation-v1 (1 commit)",
+   "BigBirdReturns/clifford-number#345 (open parent, 234 comments)"
+  ],
+  "on_main": false,
+  "main_status": "partly",
+  "main_detail": "Intel route-watch, provenance and readback (#2597) are on main; holder-coverage and shared-registration packets are not.",
+  "stage": "sources-gathered",
+  "found": "SEC full-text search for Intel + 'Department of Commerce' (12 exact document hits, all retained; 85 matching contexts individually assessed) found no Commerce disposal; 20 HTTP response bodies preserved with a positive-control query. Registration 333-292925 appears on both Commerce's January resale prospectus and Intel's April 2026 $6.5bn senior-note 8-K (five tranches, ~$6.47bn proceeds), proving a shared registration number cannot identify a common seller, security or cash recipient; a standalone verifier rejected 16 altered inputs. Both packets were labelled 'retained evidence, stale admission vessel; successor required'.",
+  "real_sources": 22,
+  "active": "2026-08-18 to 2026-09-09",
+  "recoverable": "branches exist (two 6-file receipt packets + one issuer-offering branch); #2605 still open",
+  "risk": "financial-transaction inference; packets are explicitly 'no stage admission'; based on stale main so must be re-qualified before merge",
+  "worth": "keep",
+  "why": "Small, additive, already independently read back; the counterexample is a reusable guard against registration-number inference."
+ },
+ {
+  "trail": "NatSec100 follow-ons: 2025 identity-source custody and matched-outcome/non-selection pilot",
+  "slice": "github-only",
+  "question": "Who are the 23 unresolved 2025 NatSec100 entities, and does ranking cause downstream outcomes?",
+  "where": [
+   "BigBirdReturns/clifford-number#2639 (open; branch agent/natsec100-2025-identity-source-custody-20260908)",
+   "BigBirdReturns/clifford-number#953 (closed; branch agent/ssc-rd01-natsec100-outcome-controls)",
+   "BigBirdReturns/clifford-number#617 (issue, closed)"
+  ],
+  "on_main": false,
+  "main_status": "partly",
+  "main_detail": "2025 roster recovery and identity adjudication merged (#2618, #2624, #2629); source custody and matched pilot not.",
+  "stage": "sources-gathered",
+  "found": "#2639 preserves all 26 identity-evidence routes behind the 23 unresolved 2025 adjudications (26/26 HTTP 200 and TLS-verified, 24 final hosts, 8.75 MB, 134 archive members, 19 brand/domain candidates, 2 successor brands, 0 identities promoted). #953 froze a 3-rank sample (1, 50, 100) plus 2 explicit non-selection examples and recorded the identification defect that government contracts and capital are selector inputs, so correlation cannot identify a ranking effect; matched outcome controls: 0.",
+  "real_sources": 26,
+  "active": "2026-08-03 and 2026-09-08 to 2026-09-09",
+  "recoverable": "branches exist; #2639 open, #953 closed",
+  "risk": "company/identity matching can mislabel entities; #2639 is custody only (no admission)",
+  "worth": "keep",
+  "why": "#2639 is complete, verified custody awaiting only merge; #953 is a thin scaffold."
+ },
+ {
+  "trail": "Counter-Selector Wave 40: cross-host registry migration boundary",
+  "slice": "github-only",
+  "question": "Can a Podman checkpoint image round-trip through a registry to a different host, and what refuses to restore?",
+  "where": [
+   "BigBirdReturns/clifford-number#922 (closed 2026-08-11)",
+   "branch agent/counter-selector-wave-40-cross-host-registry"
+  ],
+  "on_main": false,
+  "main_status": "partly",
+  "main_detail": "Waves 00-39 on main; Wave 40 absent.",
+  "stage": "findings",
+  "found": "Three non-combinable controls from 11 public sources: a documented checkpoint-image registry route (not an observed round trip), a separate cross-host archive continuation that did restore application state, and a compatibility/refusal surface (runtime mismatch fails closed); the registry route and archive operation may not lend missing components to one another. Twelve-path product, tests and validator built.",
+  "real_sources": 11,
+  "active": "2026-08-03 (closed 2026-08-11)",
+  "recoverable": "branch exists; PR closed",
+  "risk": "technical/infra subject far from the Clifford thesis; built on a base 40 waves old",
+  "worth": "drop",
+  "why": "Waves 00-39 are on main; Wave 40 is a marginal infrastructure control retired with the programme."
+ },
+ {
+  "trail": "SNAP fifty-state implementation matrix (RD-04) retired at 12 of 50 states",
+  "slice": "github-only",
+  "question": "How do states actually implement SNAP work-requirement waivers, exemptions and screening, state by state?",
+  "where": [
+   "BigBirdReturns/clifford-number#1017 (issue, 150 comments; retirement comment 2026-08-11 11:29)",
+   "BigBirdReturns/clifford-number#1013",
+   "BigBirdReturns/clifford-number#1928, #1930, #1932, #1936-#1938 (Oregon/Wisconsin captures, closed)",
+   "branches agent/ssc-rd04-or-wi-minimum-frontier-materializer-v2-* (20+), agent/ssc-rd04-five-state-field-promotion-ordinary-v1, agent/ssc-rd04-nd-fy2025-waiver-materializer-staging-v1"
+  ],
+  "on_main": false,
+  "main_status": "partly",
+  "main_detail": "230/450 cells terminal on main; OR/WI capture, ND waiver staging and 38 open states not.",
+  "stage": "findings",
+  "found": "Main's promoted matrix reached 230 of 450 cells terminal (12 of 50 rows complete, 38 states open). Unmerged: Oregon and Wisconsin minimum-frontier capture (7 requests, 7 HTTP 200, 113-page Wisconsin plan; finalized Actions artifact 9096596521 with 43 files) left three substantive cells each unresolved, North Dakota FY2025/26 waiver staging products, and a 'postpromotion next adjudication' candidate set. On 2026-08-11 the programme was declared retired ('may not revive this row-state programme').",
+  "real_sources": 7,
+  "active": "2026-08-01 to 2026-08-11",
+  "recoverable": "partly on main; Oregon/Wisconsin bytes live in an Actions artifact (retention may expire) plus 20+ materializer branches",
+  "risk": "retired by owner decision; per-state legal readings unverified; Actions artifacts can expire",
+  "worth": "maybe",
+  "why": "Half-finished 50-state dataset: the finished 12 states are on main, the rest is expensive manual public-record work the owner explicitly stopped."
+ },
+ {
+  "trail": "SSC residual-denominator Wave 03: lanes left open (RD-06-C04 Capability Drop evaluation closure)",
+  "slice": "github-only",
+  "question": "How were eight DCGS-A / Capability Drop proposal slots evaluated, debriefed and source-selected?",
+  "where": [
+   "BigBirdReturns/clifford-number#1027 (closed 2026-08-11)",
+   "BigBirdReturns/clifford-number#1019 (issue)",
+   "BigBirdReturns/clifford-number#1013 (Wave 03 retirement)"
+  ],
+  "on_main": false,
+  "main_status": "partly",
+  "main_detail": "RD-06 Waves 01-02 on main; RD-06-C04 lane absent.",
+  "stage": "scaffold",
+  "found": "Nothing yet - only the lane seed was activated (frozen unit: 8 Capability Drop proposal slots, 3 named / 5 restricted); no closure or finding was produced before Wave 03 was frozen and retired.",
+  "real_sources": 0,
+  "active": "2026-08-04 (closed 2026-08-11)",
+  "recoverable": "branch exists; PR closed",
+  "risk": "retired programme; framing risk (technical-superiority/favoritism) that the PR itself forbids concluding",
+  "worth": "drop",
+  "why": "Empty lane seed of a retired programme."
+ },
+ {
+  "trail": "Preference Custody tail: matched synthetic-human study admission lab and PC-62",
+  "slice": "github-only",
+  "question": "What evidence distinguishes an executed matched synthetic-human study from architecture claims, and what is the last control floor (PC-62)?",
+  "where": [
+   "BigBirdReturns/clifford-number#664 (closed; branch research/matched-study-admission-v1)",
+   "BigBirdReturns/clifford-number#662 (issue)",
+   "BigBirdReturns/clifford-number#1907, #1914, #1919, #1924, #1927 (PC-62, closed 2026-08-11)",
+   "BigBirdReturns/clifford-number#1893 (retirement)"
+  ],
+  "on_main": false,
+  "main_status": "partly",
+  "main_detail": "Preference Custody floors up to v59 on main; matched-study lab and PC-62 not.",
+  "stage": "scaffold",
+  "found": "Eight admission states defined (complete_matched_execution through inadmissible) so that architecture/capability-only claims cannot pass as studies; PC-62 added a normalization / locale-casefold / confusable-collision adjudication floor (floor v60). Both are controls over synthetic fixtures, with no real-world study found.",
+  "real_sources": 0,
+  "active": "2026-08-01 and 2026-08-11",
+  "recoverable": "branches exist; PRs closed",
+  "risk": "synthetic-fixture control programme formally retired 2026-08-11 ('no PC-63 ... authorized')",
+  "worth": "drop",
+  "why": "Floors v9-v59 are on main; these two are the abandoned tail."
+ },
+ {
+  "trail": "WebsiteIQ baseline audit and root 'Evidence Desk' publication estate",
+  "slice": "github-only",
+  "question": "Does the public site work for reporters/machines, and can a root-deployable Evidence Desk replace it?",
+  "where": [
+   "BigBirdReturns/clifford-number#378, #379, #380 (closed; branches agent/websiteiq-baseline-audit-20260728, ...path-audit..., agent/evidence-desk-root-estate-20260728)"
+  ],
+  "on_main": false,
+  "main_status": "partly",
+  "main_detail": "WebsiteIQ mentioned in 11 files on main; runners and Evidence Desk estate absent.",
+  "stage": "findings",
+  "found": "The first WebsiteIQ audit hit the GitHub Pages account origin and saw a 404 rather than /clifford-number/; a corrected landing-path audit was built, and #380 added a root landing page, bounded decision files, reporter/editor/machine routes, trust and audit pages, sitemap, llms.txt, JSON-LD and Open Graph, separated from the canonical ledgers.",
+  "real_sources": 1,
+  "active": "2026-07-28 (closed 2026-08-02 / 2026-08-11)",
+  "recoverable": "branches exist; PRs closed",
+  "risk": "outbound audit used a third-party service with processing consent; site UX scope differs from later 1.x releases",
+  "worth": "drop",
+  "why": "Audit tooling and a site redesign superseded by the 1.0-1.3 releases."
+ },
+ {
+  "trail": "APFIT as a rapid-fielding surface",
+  "slice": "github-only",
+  "question": "Does 'over 100 critical technologies transitioned' count award/delivery/acceptance/follow-on, and how does sponsor-mediated intake shape selection?",
+  "where": [
+   "BigBirdReturns/clifford-number#75 (issue, closed 2026-08-11, no comments)"
+  ],
+  "on_main": false,
+  "main_status": "no",
+  "main_detail": "APFIT appears on main only incidentally (Starfish Space award row, Darkhive thread).",
+  "stage": "idea",
+  "found": "Nothing yet - hypotheses only (transition-count compression, sponsor-mediated intake, narrative-to-budget alignment, proof displacement); the original post and official FY27-1 cycle materials were never located.",
+  "real_sources": 0,
+  "active": "2026-07-21",
+  "recoverable": "issue only",
+  "risk": "none beyond defence-procurement sensitivity; no sources captured",
+  "worth": "maybe",
+  "why": "Sharp, falsifiable question that matches the estate's transition-claims lens; zero work done."
+ },
+ {
+  "trail": "Asymmetric Advantage Hunt (AAH) and DCA waves: never executed",
+  "slice": "github-only",
+  "question": "Which capabilities and alternatives do status-dependent selectors discard, and can four proof objects and one field attempt show they are recoverable?",
+  "where": [
+   "BigBirdReturns/clifford-number#418 (AAH-00), #439 (30-candidate denominator), #441 (four proof objects), #442 (field attempt)",
+   "BigBirdReturns/clifford-number#440, #422-#427 (DCA waves 01-06)",
+   "BigBirdReturns/clifford-number#416"
+  ],
+  "on_main": false,
+  "main_status": "partly",
+  "main_detail": "DCA-H01 graph-inert hypothesis and schemas on main; none of the AAH/DCA execution.",
+  "stage": "scaffold",
+  "found": "Frozen designs only: AAH-W01 requires 30 source-routed candidates (5 in each of 6 classes), AAH-P01 four reviewable proof packs, AAH-F01 one low-risk counterpower field attempt; DCA waves 01-06 recovered seven seed controls (K.W. v. Armstrong, Robodebt, SyRI, ICE ELITE, HFU Share, NHS transitions, NGC2) with 0 of 12 role-neutral queries executed.",
+  "real_sources": 0,
+  "active": "2026-07-30 (closed 2026-08-11)",
+  "recoverable": "issue only (closed); DCA-H01 hypothesis and schemas are on main",
+  "risk": "'asymmetric advantage' framing invites motive/suppression inference that the issues themselves forbid",
+  "worth": "maybe",
+  "why": "Strongest idea-stage programme in the repo, but no candidate or proof exists."
+ },
+ {
+  "trail": "Public-interest discovery fan-outs: Epstein, Panama Papers, Trump (24 open packets)",
+  "slice": "github-only",
+  "question": "Can claim-by-claim audits, blind entity validation and campaign-to-business resolution be run on bounded public corpora?",
+  "where": [
+   "BigBirdReturns/clifford-number#2088-#2095 (Epstein)",
+   "BigBirdReturns/clifford-number#2096-#2102, #2105 (Panama Papers)",
+   "BigBirdReturns/clifford-number#2103-#2104, #2106-#2111 (Trump)"
+  ],
+  "on_main": false,
+  "main_status": "partly",
+  "main_detail": "Seeds and manifests on main (public-interest-discovery-seeds.jsonl, icij/oge/fec manifests); claim-audit and blind-validation lanes unexecuted.",
+  "stage": "idea",
+  "found": "Nothing yet - 24 machine-proposed one-item packets (all open since 2026-08-14), e.g. reify every Epstein allegation/denial/disposition with speaker, target, artifact and authentication; run a blind entity-first Panama Papers reconstruction before consulting famous-name lists; resolve Trump committee disbursements (P80001571; C00580100, C00828541, C00867275) to exact legal entities in OGE disclosures.",
+  "real_sources": 0,
+  "active": "2026-08-14 (still open)",
+  "recoverable": "issue only",
+  "risk": "highly sensitive named-person subject matter; packets are unverified machine proposals (graph_effect none) and must not be turned into allegations",
+  "worth": "maybe",
+  "why": "Well-bounded protocols; the seeds and ICIJ/OGE/FEC manifests are on main but no lane was executed."
+ },
+ {
+  "trail": "Place-formation controls: Azusa, Duarte, Monrovia Gold Line districts",
+  "slice": "github-only",
+  "question": "Do other Gold Line station areas show the same assessment-governance, parcel-assembly and value-uplift signature as Arcadia?",
+  "where": [
+   "BigBirdReturns/clifford-number#2055-#2087 (33 open fan-out issues, 66 items)"
+  ],
+  "on_main": false,
+  "main_status": "partly",
+  "main_detail": "Target universe (place-formation-targets.jsonl) and Arcadia case on main; control-city queries never run.",
+  "stage": "idea",
+  "found": "Nothing yet - 33 generated comparison queries (11 lanes x 3 cities, e.g. 'Azusa CA business improvement district formation assessment') preserved as open issues; no source inspected.",
+  "real_sources": 0,
+  "active": "2026-08-14 (still open)",
+  "recoverable": "issue only",
+  "risk": "pairs with the Arcadia branch; place-formation 'signature' framing is speculative",
+  "worth": "maybe",
+  "why": "Control group for the Arcadia work; useful only if the Arcadia branch is recovered first."
+ },
+ {
+  "trail": "Scout findings: islands with surfaces and laundering chains (12 open packets)",
+  "slice": "github-only",
+  "question": "Which actors have surfaces but no Clifford path, and which scored chains lack a bounded hop?",
+  "where": [
+   "BigBirdReturns/clifford-number#2112-#2123 (12 open issues, 166 findings)"
+  ],
+  "on_main": false,
+  "main_status": "partly",
+  "main_detail": "Scout machinery and reports on main; the open issue list is the unworked residue.",
+  "stage": "scaffold",
+  "found": "166 scout findings listed, e.g. 'Manuel Bronstein has surfaces but no Clifford path' and a policy-creation -> military-advisory -> personnel-continuity -> commercial-deployment chain (machine score 0.26, weakest stage primary_public) that 'does not create a Clifford hop'; no follow-up searches were run.",
+  "real_sources": 0,
+  "active": "2026-08-14 (still open)",
+  "recoverable": "issue only; scout report generator is on main",
+  "risk": "machine-derived, unverified; explicitly must not be converted to hops",
+  "worth": "drop",
+  "why": "Backlog output of an automated scout; regenerable from main."
+ },
+ {
+  "trail": "Held crawler rejections and accepted-intake candidates (93 open packets, ~1,770 items)",
+  "slice": "github-only",
+  "question": "Did the official-record crawler's relevance gate discard real leads, and which accepted USAspending/Federal Register candidates need entity resolution?",
+  "where": [
+   "BigBirdReturns/clifford-number#1987-#2623 (89 crawl-rejection issues, 1,741 held observations from govuk-search, federal-register, sec-form-d)",
+   "BigBirdReturns/clifford-number#1988, #2046, #2147, #2217 (4 accepted-intake packets, 32 items incl. Palantir USAspending awards e.g. 47QACA26F0278)"
+  ],
+  "on_main": false,
+  "main_status": "partly",
+  "main_detail": "Crawler and rejection ledger exist on main; the per-item reviews do not.",
+  "stage": "scaffold",
+  "found": "Nothing adjudicated - every packet is open and unreviewed; the accepted-intake packets list award records (e.g. Palantir Technologies Inc.) needing canonical entity resolution and claim-level receipts.",
+  "real_sources": null,
+  "active": "2026-08-14 to 2026-09-08 (still open)",
+  "recoverable": "issue only",
+  "risk": "bulk machine output; low-signal by design ('relevance_gate' rejections)",
+  "worth": "drop",
+  "why": "Triage backlog; only the accepted-intake packets plausibly matter."
+ },
+ {
+  "trail": "Scheduled crawl candidates that closed unmerged (Dentsu first-party exhaust, official-record intake)",
+  "slice": "github-only",
+  "question": "Were the scheduled crawler's run-scoped intake PRs lost when they closed within a minute?",
+  "where": [
+   "BigBirdReturns/clifford-number#2606, #2612, #2620, #2626 (industrial exhaust)",
+   "BigBirdReturns/clifford-number#2596, #2601, #2607 (official-record intake)"
+  ],
+  "on_main": false,
+  "main_status": "partly",
+  "main_detail": "Dentsu intake and hardening merged (#2165-#2176); these specific crawl snapshots not.",
+  "stage": "sources-gathered",
+  "found": "Each Dentsu candidate PR carries 13 new www.dentsu.com / IR / releases receipts (artifact hashes) that never reached main; the official-record PRs carry observation files. Branches were auto-deleted.",
+  "real_sources": 13,
+  "active": "2026-09-04 to 2026-09-08",
+  "recoverable": "PRs closed, branches deleted (GitHub may still serve refs/pull/N/head)",
+  "risk": "automation output; regenerable by re-crawl; contained only data/exhaust and receipts/exhaust paths by construction",
+  "worth": "drop",
+  "why": "Re-crawlable intake with no analysis attached."
+ },
+ {
+  "trail": "Pre-1.1 Atlas/aperture archive snapshots and the 1.4 placeholder",
+  "slice": "github-only",
+  "question": "What residual product state was preserved before the 1.1 Atlas cleanup?",
+  "where": [
+   "branches archive/canonical-pre-1.1-20260913, archive/atlas-source-pre-reconciliation-20260913, archive/aperture-kit-dirty-snapshot-20260913, archive/acceptance-residue-20260913, archive/map-gap-fix-dirty-snapshot-20260913",
+   "branch agent/clifford-1.4-continuous-aperture-20260914 (3 temporary placeholder commits)"
+  ],
+  "on_main": false,
+  "main_status": "partly",
+  "main_detail": "Releases 1.0-1.3 on main; snapshots and 1.4 placeholder only on branches.",
+  "stage": "scaffold",
+  "found": "Nothing yet for research: UI/test/build snapshots (e.g. 55 files in the pre-1.1 checkout, QUEUE.md) taken before cleanup; the 1.4 'continuous aperture' branch contains only three temporary placeholder files, so release 1.4 never started.",
+  "real_sources": 0,
+  "active": "2026-07-21 to 2026-09-15",
+  "recoverable": "branches exist",
+  "risk": "none; product state, not evidence",
+  "worth": "drop",
+  "why": "Housekeeping snapshots; main carries releases 1.0-1.3."
+ }
+]

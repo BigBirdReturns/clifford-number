@@ -1,0 +1,426 @@
+[
+  {
+    "trail": "The Clifford ledger: who shared a documented room with Matt Clifford (UK AI policy map)",
+    "slice": "uk-ai-money",
+    "question": "Which people in UK AI policy, government, startups and defence tech have a dated, source-backed connection to Matt Clifford (the PM's AI adviser), and which tempting connections must be refused?",
+    "where": [
+      "data/ledger/",
+      "data/canonical/actors.json",
+      "cases/uk-ai-policy.json"
+    ],
+    "on_main": true,
+    "stage": "on-site",
+    "found": "A hand-checked record of 73 source documents (mostly gov.uk, Companies House, contract notices), 54 named events/boards/filings and 286 person-to-event entries, compiled into about 93 person-to-person links among 170 people. Headline results: Starmer-Clifford link rests only on the 13 Jan 2025 Action Plan response (all 50 recommendations accepted); Clifford held Faculty shares (declared 10 Oct 2024) while Marc Warner and Saul Klein were directors; Anduril UK's bosses reach Clifford only through 3-4 step routes via John Healey and Starmer, and no document puts Clifford and any Anduril person on one instrument. One 'story chain' (Action Plan to US Army reserve tech executives to ex-No.10 staff to Electric Twin) was corrected and deliberately left as a non-link. The earlier 323-node, 392-edge prototype graph was abandoned.",
+    "real_sources": 73,
+    "active": "2026-06-27..2026-08-15",
+    "risk": "Names about 170 real people (including investors and angels) in a power-network map; readers may infer guilt by association despite the no-wrongdoing disclaimers. A few rows are press-reported rather than official.",
+    "worth": "keep",
+    "why": "This is the core product and the only trail that is fully source-backed and visible in the public explorer."
+  },
+  {
+    "trail": "Electric Twin: who owns it, and who bought the September 2025 shares",
+    "slice": "uk-ai-money",
+    "question": "Who actually bought the Seed 2 shares in Electric Twin (the synthetic-audience startup co-founded by ex-No.10 adviser Ben Warner), and who holds what?",
+    "where": [
+      "data/research/electric-twin-register-of-members-acquisition/",
+      "docs/requests/electric-twin-section-116-register-of-members-request.md",
+      "receipts/topology/companies-house-electric-twin-*"
+    ],
+    "on_main": true,
+    "stage": "sources-gathered",
+    "found": "From 11 Companies House filings plus company announcements: $14M raised in total ($4M pre-seed, then a $10M round led by Atomico in Feb 2026; LocalGlobe, Mercuri, Samos and Marc Andreessen in the round; angels include Palantir's Louis Mosley); at 27 Sep 2025 Atomico vehicles held 604,294 Seed 2 shares, LocalGlobe 631,578 Seed 1 plus 48,559 Seed 2, Mercuri 70,175 plus 86,327, and Cooper and Warner 1,000,000 ordinary shares each. The numbers match the three September allotments, but public filings cannot prove who bought which tranche. A legal request to see the company's share register was drafted but never sent (it needs a real requester's name and address), yet roughly seven pull requests built tooling to log postage, delivery, a reply and a two-person review of a reply that does not exist.",
+    "real_sources": 22,
+    "active": "2026-08-11..2026-08-16",
+    "risk": "Names private investors and angels; the unsent request is a formal Companies Act letter that only a real, identifiable person should send.",
+    "worth": "maybe",
+    "why": "The filings work is solid; the machinery for processing an unsent letter is over-built and could be dropped."
+  },
+  {
+    "trail": "Dialog leak: does appearing on the member list connect anyone?",
+    "slice": "uk-ai-money",
+    "question": "Does being on the exposed member directory of Dialog (the private society co-founded by Peter Thiel) connect Matt Clifford, Thiel or anyone else to each other?",
+    "where": [
+      "data/ledger/participation.jsonl",
+      "reports/audits/dialog-leak-backward-alignment-2026-07-29.md",
+      "receipts/dialog-human-layer.md"
+    ],
+    "on_main": true,
+    "stage": "on-site",
+    "found": "The first import (late June 2026) treated the roughly 115-person WIRED-exposed directory as a connected group, producing 6,579 pairwise links that the project itself later called indefensible. It was corrected: Dialog is now a listing only (113 people listed, 3 officer roles), with zero links in the graph, and Clifford told WIRED he was invited but did not attend, so the list cannot link him to Thiel. This failure is credited as the origin of most later safeguards in the project.",
+    "real_sources": 3,
+    "active": "2026-06-16..2026-08-13",
+    "risk": "Republishes names from a leaked private directory that was exposed by a website misconfiguration; strong guilt-by-association and privacy concerns even with listing-only wording.",
+    "worth": "keep",
+    "why": "Valuable lesson and a clean negative result, but consider removing the individual names from the public site."
+  },
+  {
+    "trail": "Clifford, Thiel, Palantir and Trump: is there any documented link?",
+    "slice": "uk-ai-money",
+    "question": "Is there any documented path linking Matt Clifford, Peter Thiel or Palantir, and Donald Trump, for example through UK AI policy money or procurement?",
+    "where": [
+      "data/research/clifford-thiel-trump-wrap-up.json",
+      "docs/clifford-thiel-trump-wrap-up.md",
+      "data/intake/thiel-palantir-dialog-candidates.json"
+    ],
+    "on_main": true,
+    "stage": "on-site",
+    "found": "Six candidate paths were tested using only material already in the repo: only Clifford-Faculty-directors (official, concurrent roles) survived; Clifford-Thiel via Dialog is context only; Clifford-Thiel capital or policy link, Thiel-Trump, Clifford-Trump and a three-way path are all 'not established in the existing corpus'. Five starting questions (Palantir/Thiel officer records at SEC, Clifford's Entrepreneur First investors, Thiel capital in UK AI) were queued as 'intake only' and never researched. Listed 'locked doors' include any Action Plan vehicle that reaches Palantir, the Sanabil-Founders Fund money trail, and dated Dialog sub-events.",
+    "real_sources": 0,
+    "active": "2026-07-01..2026-08-12",
+    "risk": "Titling a single document with a UK adviser, Thiel and Trump invites inference even though the finding is negative; relies on absence-of-evidence wording.",
+    "worth": "maybe",
+    "why": "Useful as a recorded negative result, but nothing new was researched and the framing is neutrality-risky."
+  },
+  {
+    "trail": "Dentsu 'industrial exhaust' crawler",
+    "slice": "uk-ai-money",
+    "question": "Do the press and investor feeds of the ad giant Dentsu show when big advertising groups adopt synthetic-audience AI (such as Electric Twin or Evidenza)?",
+    "where": [
+      "data/exhaust/",
+      "receipts/exhaust/",
+      "tools/crawl-industrial-exhaust.mjs"
+    ],
+    "on_main": true,
+    "stage": "sources-gathered",
+    "found": "From 17 Aug to 3 Sep 2026 it captured six Dentsu news and investor feeds plus the global release index: 427 feed items, 344 index entries, 115 full article pages saved (about 111 MB of receipts), and 28 items flagged by watch terms. Flagged items include Dentsu partnering with Evidenza to put synthetic audiences into media planning, launching 'Generative Audiences', and Japanese 'People Model' research tools; there are zero mentions of Electric Twin. Everything is recorded as 'what Dentsu said about itself' and nothing was promoted into the ledger.",
+    "real_sources": 115,
+    "active": "2026-08-17..2026-09-03",
+    "risk": "Low; contact details are stripped, but it archives a company's copyrighted pages in bulk.",
+    "worth": "maybe",
+    "why": "Working, automated crawler, but it found nothing connected to the UK AI story."
+  },
+  {
+    "trail": "Official-record crawler (US awards, SEC, Federal Register, GOV.UK)",
+    "slice": "uk-ai-money",
+    "question": "Can scheduled automatic pulls of government record feeds surface new official evidence about Palantir, Anduril and UK AI policy?",
+    "where": [
+      "data/crawl/",
+      "docs/official-record-crawler.md",
+      "tools/crawl-official.mjs"
+    ],
+    "on_main": true,
+    "stage": "sources-gathered",
+    "found": "Ran from 12 Jul to 5 Sep 2026 across five adapters. It kept 35 records: 31 US federal contract records (27 distinct awards; 21 Palantir, 10 Anduril, roughly $600M obligated counting revisions) and 4 irrelevant Federal Register notices. It rejected 1,741 other hits as irrelevant, including 1,664 from GOV.UK (so it found no useful UK records) and 10 SEC Form D filings; the SAM.gov adapter never ran because no API key was supplied. Nothing was promoted into the ledger.",
+    "real_sources": 35,
+    "active": "2026-07-12..2026-09-05",
+    "risk": "Low; privacy-minimised public records only.",
+    "worth": "maybe",
+    "why": "Keeps a running list of US Palantir/Anduril awards, but the UK side returned nothing and it needed roughly 50 pull requests of plumbing."
+  },
+  {
+    "trail": "Real synthetic-audience deployments (News UK Times ExplorAItion and others)",
+    "slice": "uk-ai-money",
+    "question": "When publishers and pollsters use AI 'synthetic audiences' (Electric Twin inside News UK's Times ExplorAItion, YouGov Parallax, Twin OriginalVoices), do they replace real people's views, and can anyone tell if preferences are being shaped?",
+    "where": [
+      "data/research/preference-custody/real-cases/",
+      "data/research/preference-custody/acquisition/newsuk-matched-method-request.json",
+      "docs/requests/newsuk-times-exploraition-nucleus-panel-protocol-request.md"
+    ],
+    "on_main": true,
+    "stage": "findings",
+    "found": "Four public cases were examined. News UK and Electric Twin both confirm real deployment for campaign planning, message pre-testing and targeting, which supports 'speeds up and supplements' human research; full replacement of human research is not shown (the publisher says human research stays the gold standard), though the vendor claims partial replacement for parenting-channel qualitative work. Not publicly recoverable: the decision protocols, rejected options, who was shown what, outcomes and feedback loops. No evidence of manipulation was found or inferable. A request to News UK for one paired example was drafted and never sent.",
+    "real_sources": 18,
+    "active": "2026-08-01..2026-08-03",
+    "risk": "Makes claims about named commercial firms; the repo explicitly refuses to infer manipulation, but the framing could be read that way.",
+    "worth": "keep",
+    "why": "A concrete, sourced answer to a clear question about a named UK product."
+  },
+  {
+    "trail": "Preference-custody audit lab (52 versions of invented test floors)",
+    "slice": "uk-ai-money",
+    "question": "What records would you need before claiming a synthetic audience or consultation measured real public preferences rather than ones shaped by the options offered and who was shown them?",
+    "where": [
+      "data/research/preference-custody/",
+      "docs/preference-custody-laboratory-floor-v59.md",
+      "tools/compile-preference-custody-manifest-v59.mjs"
+    ],
+    "on_main": true,
+    "stage": "scaffold",
+    "found": "Nothing about the real world: in 10 days (1-10 Aug 2026) it produced 52 successive versions (v8 to v59) of an invented test suite, ending at 61 synthetic test cases and 2,586 'requirements a real case would have to meet', with about 119 docs and roughly 238 compile/validate tools. Later versions drift from public-opinion measurement into rules for GitHub account renames, Unicode look-alike names and reproducible builds. It consumes no real evidence and its own labels say it counts for nothing.",
+    "real_sources": 0,
+    "active": "2026-08-01..2026-08-10",
+    "risk": null,
+    "worth": "drop",
+    "why": "Severe scope drift with no real-world output; keep only the four real-case files (separate trail)."
+  },
+  {
+    "trail": "Performative synthetic constituencies (toy exposure experiment)",
+    "slice": "uk-ai-money",
+    "question": "If an organisation chooses who sees which options, can click shares be mistaken for what the public actually prefers?",
+    "where": [
+      "data/research/performative-synthetic-constituencies/exposure-confounding.fixture.json",
+      "docs/performative-synthetic-constituency.md"
+    ],
+    "on_main": true,
+    "stage": "scaffold",
+    "found": "A pure simulation, no real data: a population that truly prefers option A over B 60/40 shows A at about 93% of clicks when A is shown to 90% of people and B to 10%, and retraining on those clicks pushes apparent preference for A above 95%. Weighting by the recorded exposure odds recovers the true 60/40. It asserts nothing about Electric Twin, News UK, Dentsu or any real vendor.",
+    "real_sources": 0,
+    "active": "2026-08-01..2026-08-01",
+    "risk": null,
+    "worth": "maybe",
+    "why": "A clear, checkable explainer of the core concern, but it is a toy and not evidence."
+  },
+  {
+    "trail": "Gartner's list of 33 synthetic-audience vendors",
+    "slice": "uk-ai-money",
+    "question": "Who are the 33 vendors in the Gartner report that Electric Twin says it was selected for, and how large is that market?",
+    "where": [
+      "data/research/denominators/synthetic-population-vendors.json",
+      "data/ledger/claims.jsonl (Gartner claim)"
+    ],
+    "on_main": true,
+    "stage": "sources-gathered",
+    "found": "Blocked. The Gartner report is paywalled and was never obtained; 14 vendors were recovered from the vendors' own public posts, a 15th was reported but not transcribed, and the recovery is biased toward vendors who publicise it, so it cannot count as the full list. Electric Twin's own claim (Gartner reviewed 60 companies, chose 33, placed it in a 'scale-up' tier) is recorded as the company's account only.",
+    "real_sources": 14,
+    "active": "2026-07-21..2026-08-12",
+    "risk": "Low; names vendors as self-reported.",
+    "worth": "maybe",
+    "why": "Cannot be completed without paid access to the Gartner report; may overlap the thesis slice."
+  },
+  {
+    "trail": "LinkedIn targeted profile review (public-to-private job moves)",
+    "slice": "uk-ai-money",
+    "question": "Among a chosen list of defence, AI and UK-government figures, who moved from public roles into private ones, how quickly, or held both at once, according to their own LinkedIn profiles?",
+    "where": [
+      "data/intake/linkedin-targeted-review/",
+      "docs/linkedin-retrospective-intake.md",
+      "tools/build-linkedin-role-crossings.mjs"
+    ],
+    "on_main": true,
+    "stage": "sources-gathered",
+    "found": "31 profile PDFs of 30 people (including Heidi Shyu, Frank Kendall, Will Roper, Eric Schmidt, Ian Hogarth, Marc and Ben Warner, Laura Gilbert, Palmer Luckey) saved on 14 Jul 2026 yielded 359 role entries and 430 machine-flagged 'crossings' for 16 people: 142 moves within 3 months, 45 simultaneous dual roles, 214 gaps over a year, 23 undated. All are unverified self-descriptions; the requested profiles of Matt Clifford and Shyam Sankar were unavailable and two others were not found. A separate tool to rebuild the owner's own LinkedIn reading history from a data export is built, with no data committed.",
+    "real_sources": 31,
+    "active": "2026-07-12..2026-07-14",
+    "risk": "Profiles of named individuals compiled into a revolving-door analysis; 'immediate transition' labels imply impropriety from self-reported data; the PDFs are private and not in the repo, so a reviewer cannot re-check them.",
+    "worth": "maybe",
+    "why": "Interesting pattern data, but unverified, privacy-sensitive and mostly US defence rather than UK AI."
+  },
+  {
+    "trail": "Presidents' campaign money paid to their own businesses",
+    "slice": "uk-ai-money",
+    "question": "Did any US president's campaign committees pay money to a company the president personally owned or had a disclosed interest in during the same period?",
+    "where": [
+      "data/research/campaign-to-business-v1-result.json",
+      "data/research/fec-bulk-oppexp-cohort-manifest.json",
+      "docs/source-acquisition-run.md"
+    ],
+    "on_main": true,
+    "stage": "findings",
+    "found": "Pulled every FEC spending file for 2004-2024 (11 cycles, 588,535 payment lines for 37 presidential campaign committees), read 26 official disclosure PDFs for Trump and Biden into 5,945 holdings rows, and name-matched them into 1,172 possible pairs. After date checks: 0 overlapping, 177 non-overlapping, 995 impossible to date; 0 confirmed same-company matches. Frozen as a 'source-limited zero' that explicitly does not mean no relationship exists, because the disclosures carry no holding dates and campaign payee names cannot be tied to legal entities.",
+    "real_sources": 37,
+    "active": "2026-07-13..2026-07-14",
+    "risk": "Concerns named real politicians and their businesses; all machine-read and unreviewed; the repo's own rules block publication pending an independent second review that has not happened.",
+    "worth": "keep",
+    "why": "Large real data pull with an honest negative result, and the data can be reused."
+  },
+  {
+    "trail": "Presidents' financial disclosure documents (OGE and National Archives)",
+    "slice": "uk-ai-money",
+    "question": "Where can you actually get each president's financial disclosure forms, and can their holdings be read in bulk?",
+    "where": [
+      "data/research/oge-disclosure-locators.json",
+      "data/research/oge-beneficial-interest-manifest.json",
+      "data/research/nara-disclosure-locators.json"
+    ],
+    "on_main": true,
+    "stage": "sources-gathered",
+    "found": "Only Trump and Biden are in the Office of Government Ethics' online window: 35 locators found, 26 PDFs downloaded and fingerprinted (1,662 pages, 5,945 holdings rows read, 551 rows rejected), and 3 further Trump reports need a formal request that was never sent. The other six presidents were routed to the National Archives: 57 catalogue search hits, none verified as on-topic and none downloaded; an earlier claim of 94 queries and one item was lost and no longer counts.",
+    "real_sources": 26,
+    "active": "2026-07-13..2026-07-14",
+    "risk": "Public officials' disclosures, but machine-read text contains OCR errors and could be misquoted.",
+    "worth": "keep",
+    "why": "Genuinely acquired official documents that other presidential questions depend on."
+  },
+  {
+    "trail": "Trump business entities in the New York registry and the 2016 disclosure",
+    "slice": "uk-ai-money",
+    "question": "Which legal companies match the 'Trump' names in campaign payments, and did the 2016 candidate disclosure list them as Trump's interests?",
+    "where": [
+      "data/research/ny-registry-embedded-entity-manifest.json",
+      "data/research/trump-2016-candidate-disclosure-manifest.json",
+      "data/research/cohort-disclosed-business-entities.json"
+    ],
+    "on_main": true,
+    "stage": "findings",
+    "found": "26 Trump-related names were looked up in New York's company registry: 6 exact active matches (including The Trump Corporation, Trump CPS LLC, Trump Plaza LLC, Trump Tower Commercial LLC) and 130 filing-history records. The 104-page May 2016 disclosure copy lists Trump CPS, Trump Plaza and Trump Tower Commercial as his interests, and May 2016 falls inside the campaign payment years, but it gives no start or end dates and a name match is not an identity match, so no airtight overlap.",
+    "real_sources": 2,
+    "active": "2026-07-14..2026-07-14",
+    "risk": "Names a real person's companies; the disclosure copy is a secondary hosted file (DocumentCloud), not the agency's own copy.",
+    "worth": "maybe",
+    "why": "Small but clean; useful only if the campaign-to-business question is reopened."
+  },
+  {
+    "trail": "Federal contracts paid to president-owned properties",
+    "slice": "uk-ai-money",
+    "question": "Did a federal agency pay contracts to a company the president owns, such as Mar-a-Lago or the Old Post Office hotel?",
+    "where": [
+      "data/research/government-to-property-manifest.json",
+      "tools/acquire-gov-property-awards.mjs",
+      "docs/source-acquisition-run.md"
+    ],
+    "on_main": true,
+    "stage": "findings",
+    "found": "Searching the US federal spending database for the 6 registry-matched Trump companies and 4 property names (Mar-a-Lago, Trump National Golf Club, Old Post Office, Trump International Hotel) found 0 contract awards; a broad 'TRUMP' search returned only unrelated firms (TRUMPF, Trumpler). The other seven presidents were not run for lack of a resolved business list. The method misses most real federal spending at such properties (cards, small purchases, protective-detail lodging), which would need GSA leases or inspector-general reports.",
+    "real_sources": 1,
+    "active": "2026-07-14..2026-07-14",
+    "risk": "Real person's businesses; a zero here is easily misread as an exoneration or as suppression.",
+    "worth": "maybe",
+    "why": "Honest negative but structurally unable to find the likely spending."
+  },
+  {
+    "trail": "Eight presidents, five conflict-of-interest tests",
+    "slice": "uk-ai-money",
+    "question": "For every president since Carter, can the same five tests (campaign pays own firm, government pays own firm, foreign-state payer pays own firm, holds shares in a public company in office, private interest before an official act) be run fairly?",
+    "where": [
+      "data/research/officeholder-predicate-disposition-matrix.json",
+      "docs/officeholder-cohort.md",
+      "data/research/openfec-presidential-identifiers.json"
+    ],
+    "on_main": true,
+    "stage": "scaffold",
+    "found": "The grid has 40 cells and zero positive results. Only Trump's and Biden's first test were run (both 'screened, zero resolved'), plus a provisional Trump property check; the rest are coverage gaps or not executed. The first design aimed at one named person was attacked by internal AI reviews and rebuilt around the office itself (8 presidents, 8 FEC candidate profiles, 37 committees resolved). Six further Trump-specific questions (foreign-state payments, trusts and Truth Social capital, crypto, legal status, Epstein, Panama) were queued as seeds and never run.",
+    "real_sources": 8,
+    "active": "2026-07-13..2026-07-14",
+    "risk": "The lane started by targeting one named person; the rebuilt version is symmetric but still marked 'pending independent review' with publication blocked.",
+    "worth": "keep",
+    "why": "Sets out the neutral design that any future presidential work needs, and shows exactly what has not been done."
+  },
+  {
+    "trail": "ICIJ Panama Papers control test",
+    "slice": "uk-ai-money",
+    "question": "Can the project's matching machinery work on a real public dataset, using the Panama Papers as a control?",
+    "where": [
+      "data/research/icij-panama-import-manifest.json",
+      "tools/import-icij-panama.mjs"
+    ],
+    "on_main": true,
+    "stage": "findings",
+    "found": "Imported ICIJ's 73 MB Panama Papers archive, retaining 559,600 nodes and 674,102 relationships out of 2.0M and 3.3M scanned. The first dated 'officer of' record in the file (Gary Guoming Li as shareholder of Zenith Strategy Consulting Corporation Limited, 5 Jan-10 Feb 2006) passed every check, proving the pipeline works. It says nothing about wrongdoing; seven other Panama questions (service-provider hubs, cross-leak recurrence, enforcement overlap) were queued and not run.",
+    "real_sources": 1,
+    "active": "2026-07-13..2026-07-15",
+    "risk": "Uses a named private individual from leaked data as the example row.",
+    "worth": "maybe",
+    "why": "Proof the tooling works, but not itself a research finding; consider swapping the named example."
+  },
+  {
+    "trail": "SEC name-match check for disclosure and campaign names",
+    "slice": "uk-ai-money",
+    "question": "When a company name in a president's disclosure exactly equals a payee in campaign spending, can it be pinned to a US public company by its SEC registration number?",
+    "where": [
+      "data/research/sec-exact-overlap-intake-manifest.json",
+      "tools/build-sec-exact-overlap-intake.mjs"
+    ],
+    "on_main": true,
+    "stage": "sources-gathered",
+    "found": "Of the 1,172 name-pair candidates, 88 had exact-name matches covering 30 unique company names; 28 matched exactly one SEC registrant, one was ambiguous and one had none. Zero identities were accepted because an equal name is not proof of the same company. The SEC's own files returned HTTP 403, so the 30 records are a hand-curated list with no official fingerprints.",
+    "real_sources": 30,
+    "active": "2026-07-14..2026-07-15",
+    "risk": null,
+    "worth": "drop",
+    "why": "Low yield and rests on an unverified, hand-curated list."
+  },
+  {
+    "trail": "Members of Congress: disclosed holdings versus federal money",
+    "slice": "uk-ai-money",
+    "question": "Which members of Congress disclosed an interest in a company that also receives federal money, and in what order relative to their votes?",
+    "where": [
+      "data/research-tracks/congressional-disclosure-crossings/",
+      "data/research-tracks/index.json"
+    ],
+    "on_main": true,
+    "stage": "scaffold",
+    "found": "Nothing yet - it is a declared plan only. Five data adapters are described (member rosters, House and Senate transaction reports, federal awards, FEC, overlap screen), none is wired, and every coverage item is marked 'not searched'. It is one of ten identical empty research-track shells.",
+    "real_sources": 0,
+    "active": "2026-07-13..2026-07-24",
+    "risk": "Would name sitting legislators; no work has been done.",
+    "worth": "maybe",
+    "why": "A plan only; cheap to keep, no value until someone runs it."
+  },
+  {
+    "trail": "Arcadia, California field autopsy (a chatbot's 'master plan' claim)",
+    "slice": "uk-ai-money",
+    "question": "A relayed AI conversation claimed a hidden formation behind downtown Arcadia's land, water, rail, racetrack and transit development; which of its factual claims survive public records?",
+    "where": [
+      "cases/arcadia-field-autopsy/",
+      "data/research/place-formation-targets.jsonl",
+      "docs/field-autopsy.md"
+    ],
+    "on_main": true,
+    "stage": "on-site",
+    "found": "Of 19 claims checked, 7 confirmed, 4 corrected, 5 unresolved and 3 left as interpretation, using 142 receipt records (141 distinct web pages) and 117 logged searches. Confirmed or corrected: Baldwin's 1875-1909 control of land, water, rail and townsite; the 1944 Raymond Basin water ruling; the 2010 plan putting a station at First and Santa Clara before the 2016 opening; the claimed '1993 Downtown Revitalization Strategy' was not found. The feng-shui and 'ley-line' ideas are preserved as untested hypotheses; all 10 follow-up trails, including comparison towns Monrovia, Duarte and Azusa, are still open and none was closed. It has nothing to do with UK AI policy.",
+    "real_sources": 141,
+    "active": "2026-07-12..2026-08-14",
+    "risk": "Adjacent to ethnicity- and religion-linked speculation (feng shui, EB-5 capital, cultural orientation) and names local developers and officials; the case builds in explicit guards, but it remains sensitive.",
+    "worth": "maybe",
+    "why": "Well-sourced and on the public site, but off-topic for UK AI policy and reputationally sensitive."
+  },
+  {
+    "trail": "Cross-corpus public-interest map (inventory of all lanes)",
+    "slice": "uk-ai-money",
+    "question": "What is the whole project's coverage across all nine research lanes, with nothing hidden because it is only inferred or reported?",
+    "where": [
+      "data/research/clifford-cross-corpus-public-interest-map.json",
+      "tools/build-clifford-cross-corpus-public-interest-map.mjs"
+    ],
+    "on_main": true,
+    "stage": "on-site",
+    "found": "An inventory with no new research: nine lanes (Clifford/Dialog/Thiel/Palantir core, NatSec100, Austin-Israel defence corridor, defence routers, US awards, the never-run SAM.gov route, LinkedIn crossings, presidential disclosures, the research queue), with counts of 170 actors, 32 organisations, 54 events, 286 entries, 73 receipts and about 93 links. Its own open-join note: no official record puts Clifford and any Anduril person on one instrument.",
+    "real_sources": 0,
+    "active": "2026-08-09..2026-09-08",
+    "risk": null,
+    "worth": "keep",
+    "why": "Useful navigation aid and honest dashboard of what exists; it is published and feeds the game-trail page."
+  },
+  {
+    "trail": "Reported-link upgrade check",
+    "slice": "uk-ai-money",
+    "question": "Do any of the connections shown on the site rest only on press reports rather than official records or the parties' own statements?",
+    "where": [
+      "data/research/reported-hop-evidence-upgrades.json",
+      "test/reported-hop-evidence-upgrades.test.js"
+    ],
+    "on_main": true,
+    "stage": "findings",
+    "found": "No. All 95 evidence bases behind the accepted connections are official records (75) or primary public statements (20); none rely on 'reported' evidence, so there was nothing to upgrade. Five 'reported' ledger entries exist, all on the Dialog surfaces (including Clifford's invitation-and-non-attendance statement), and are kept out of the connection graph.",
+    "real_sources": 0,
+    "active": "2026-09-06..2026-09-06",
+    "risk": null,
+    "worth": "keep",
+    "why": "A cheap integrity check that answers a credibility question directly."
+  },
+  {
+    "trail": "Big-institution guard review",
+    "slice": "uk-ai-money",
+    "question": "Are any connections on the site really just 'both worked at No.10 or DSIT' dressed up as person-to-person links?",
+    "where": [
+      "data/research/broad-institution-surface-reviews.json",
+      "tools/lib (broad-institution guard)"
+    ],
+    "on_main": true,
+    "stage": "findings",
+    "found": "Reviewed 9 connection-bearing events that involve a broad institution (for example the Action Plan event involving DSIT); all 9 were kept because each is an exact one-day event with every person named directly in the source and the institution held separate as context.",
+    "real_sources": 0,
+    "active": "2026-08-14..2026-08-14",
+    "risk": null,
+    "worth": "keep",
+    "why": "Small audit that protects the central claim that 'a department is not a hop'."
+  },
+  {
+    "trail": "Epstein public-records corpus (planned)",
+    "slice": "uk-ai-money",
+    "question": "Can the DOJ's Epstein document library, flight logs, contact book and court records be catalogued and cross-checked against the project's actors?",
+    "where": [
+      "data/research/public-interest-discovery-seeds.jsonl",
+      "data/canonical/corpus-selection.json",
+      "data/research/selection-adversarial-reviews.json"
+    ],
+    "on_main": true,
+    "stage": "scaffold",
+    "found": "Nothing yet - eight seeded tasks (catalogue the DOJ library, parse flight logs leg by leg, contact-book entries, court timeline, financial controls, institutional and offshore crossings, claim audit) exist as task briefs, but the lane is marked 'proposed, publication-blocked, seeded not ingested' and no document was downloaded.",
+    "real_sources": 0,
+    "active": "2026-07-13..2026-08-14",
+    "risk": "High: association with Epstein records is defamatory by implication, and victim privacy is at stake; independent review of the lane has not happened.",
+    "worth": "drop",
+    "why": "Off-topic for UK AI policy, high legal and ethical risk, and zero work done."
+  }
+]
