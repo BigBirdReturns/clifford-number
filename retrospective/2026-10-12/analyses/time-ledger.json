@@ -1,0 +1,3370 @@
+{
+ "summary": {
+  "window": "2026-06-27 .. 2026-09-14 (PRs); comments continue to 2026-10-11",
+  "prs": 2069,
+  "merged": 627,
+  "closed_unmerged": 1438,
+  "open": 4,
+  "merge_rate_pct": 30.3,
+  "issues": 599,
+  "comments": 2536,
+  "files_total": 22411,
+  "files_merged": 14092,
+  "method": "Rule-based classifier (classify.py) over title, head branch, first 700 chars of body and changed-file paths (merged: GitHub REST pulls/files; closed: pr-files export), then 72 per-PR overrides after reviewing every non-controller PR title. Controller detection: title prefixes (TEMP/Never merge/Controller/CONSUMED/SUPERSEDED/FAILED...), body markers (execution-only, disposable, never merge, transport-only), >=50% carrier files (.github/temporary, .github/tmp, dot-dirs) or PR #2231 qualifier titles. Spot check: a 50-PR random sample of the controller class contained no non-controller PRs; all ~700 non-controller PRs were read by title. Category boundaries (e.g. PC lab = self-checking, topology admissions = findings, receipt-store hardening = self-checking) are judgement calls; see effort_split.sensitivity.",
+  "provenance_caveat": "Every PR, issue and comment in the export is posted through the BigBirdReturns account (1,528 of 2,536 comments; PR authors are not in the export). Agent sessions and the owner share that identity, so no verbatim human-typed text can be separated. The \"owner_directives\" below are the programme-defining or decision-recording texts (agent-written, relaying owner instructions) plus BUILD-INSTRUCTIONS.md, which is the only document written in an author's own voice. Treat them as instructions of record, not as verbatim prompts.",
+  "artifacts": {
+   "pr_activity_tsv": "/tmp/claude-0/-home-user-clifford-number/3f88faa2-8850-5e8d-b146-eaa7482bc2e8/scratchpad/trails/pr-activity.tsv (number, category, topic, week, state, created, closed, files_changed, lines_changed, rule, title)",
+   "scripts": "/tmp/claude-0/-home-user-clifford-number/3f88faa2-8850-5e8d-b146-eaa7482bc2e8/scratchpad/ledger/{classify.py,build_ledger.py,compose.py,compose2.py}",
+   "merged_pr_file_lists": "/tmp/claude-0/-home-user-clifford-number/3f88faa2-8850-5e8d-b146-eaa7482bc2e8/scratchpad/ledger/merged-files/<n>.json (fetched read-only via GitHub REST pulls/files for the 627 merged PRs; 17 PRs >100 files paginated)"
+  }
+ },
+ "categories": {
+  "research_acquisition": {
+   "description": "Fetching/recording external sources: School.House registry/filing custody, BVVC/SEC Form D, RD-04 state-source captures, Counter-Selector artifact acquisition, official-record crawl intake, estate/lake population, the Electric Twin Companies House request packet.",
+   "bucket": "a_real_world",
+   "prs": 127,
+   "pct_of_prs": 6.1,
+   "merged": 108,
+   "closed_unmerged": 18,
+   "open": 1,
+   "merge_rate_pct": 85.0,
+   "pct_of_merged_prs": 17.2,
+   "files_changed": 3030,
+   "pct_of_files": 13.5,
+   "merged_files": 2799,
+   "pct_of_merged_files": 19.9,
+   "lines_changed": 4343097,
+   "merged_lines": 4291530,
+   "examples": [
+    "#22 Add NatSec100 intake data, narration layer, and receipt archival",
+    "#63 Lock the synthetic-population vendor denominator",
+    "#624 Acquire OSC named-instrument lifecycle and recovery states"
+   ]
+  },
+  "analysis_findings": {
+   "description": "Adjudicating captured sources and writing results: K0 waves, topology admissions (Starmer/Faculty/Electric Twin...), RD-xx adjudications/promotions/closures, Counter-Selector blind reviews, M-04B fog resolutions, M-05 stress tests and five-domain receipts.",
+   "bucket": "a_real_world",
+   "prs": 187,
+   "pct_of_prs": 9.0,
+   "merged": 169,
+   "closed_unmerged": 18,
+   "open": 0,
+   "merge_rate_pct": 90.4,
+   "pct_of_merged_prs": 27.0,
+   "files_changed": 5637,
+   "pct_of_files": 25.2,
+   "merged_files": 4943,
+   "pct_of_merged_files": 35.1,
+   "lines_changed": 1591974,
+   "merged_lines": 1300326,
+   "examples": [
+    "#82 Close the first estate pass and add ten fog controls",
+    "#83 Promote estate packets into durable macro estates",
+    "#352 Stress-test APC-01 in public-platform exit and operating sovereignty"
+   ]
+  },
+  "case_brief": {
+   "description": "Case, decision-file and brief writing: FA-03 beacon case, thesis case intake, reporter reports, M-05 Sprint 02 decision files.",
+   "bucket": "a_real_world",
+   "prs": 13,
+   "pct_of_prs": 0.6,
+   "merged": 13,
+   "closed_unmerged": 0,
+   "open": 0,
+   "merge_rate_pct": 100.0,
+   "pct_of_merged_prs": 2.1,
+   "files_changed": 202,
+   "pct_of_files": 0.9,
+   "merged_files": 202,
+   "pct_of_merged_files": 1.4,
+   "lines_changed": 37267,
+   "merged_lines": 37267,
+   "examples": [
+    "#25 Compile FA-03 into an evidence beacon case",
+    "#64 Add bounded state-market thesis case intake"
+   ]
+  },
+  "public_site_ui": {
+   "description": "Public site / UI: visual aperture, Atlas, explorer, dark mode/accessibility, WebsiteIQ/Evidence Desk.",
+   "bucket": "b_tools_site",
+   "prs": 22,
+   "pct_of_prs": 1.1,
+   "merged": 18,
+   "closed_unmerged": 4,
+   "open": 0,
+   "merge_rate_pct": 81.8,
+   "pct_of_merged_prs": 2.9,
+   "files_changed": 310,
+   "pct_of_files": 1.4,
+   "merged_files": 245,
+   "pct_of_merged_files": 1.7,
+   "lines_changed": 40086,
+   "merged_lines": 33689,
+   "examples": [
+    "#7 Add forensic dashboard, receipt ledger, and UI metrics",
+    "#10 Add Schedule I import-review UI and tooling; research extractors, EIN corrections, and tes",
+    "#53 Add EVE-style semantic zoom visualization demos"
+   ]
+  },
+  "compiler_datamodel": {
+   "description": "Compiler, crawler and data-model: surface-hop topology compiler, temporal/identity layers, AXM identity migration, evidence-lake identity waves, M-04G hydrology pipeline, crawler text-parsing, crawl-gap upkeep.",
+   "bucket": "b_tools_site",
+   "prs": 76,
+   "pct_of_prs": 3.7,
+   "merged": 45,
+   "closed_unmerged": 31,
+   "open": 0,
+   "merge_rate_pct": 59.2,
+   "pct_of_merged_prs": 7.2,
+   "files_changed": 1722,
+   "pct_of_files": 7.7,
+   "merged_files": 539,
+   "pct_of_merged_files": 3.8,
+   "lines_changed": 2139628,
+   "merged_lines": 718415,
+   "examples": [
+    "#3 Introduce primary_public evidence, add MCP stdio server, update graph and Pages workflow",
+    "#8 Consolidate all open PRs: Codex feature set + full master-doc dataset",
+    "#4 Import Dialog public-directory rows; add MCP server, update-sweep, and Pages CI updates"
+   ]
+  },
+  "validators_selftests": {
+   "description": "Checking themselves: Preference Custody lab (PC-01..PC-62 synthetic floors), receipt-store hardening, repair/regression PRs, [M-05 S03-L7] control stack, Counter-Selector handoff/portable-proof controls, standing validators/tests.",
+   "bucket": "c_checking_themselves",
+   "prs": 154,
+   "pct_of_prs": 7.4,
+   "merged": 144,
+   "closed_unmerged": 10,
+   "open": 0,
+   "merge_rate_pct": 93.5,
+   "pct_of_merged_prs": 23.0,
+   "files_changed": 1483,
+   "pct_of_files": 6.6,
+   "merged_files": 1405,
+   "pct_of_merged_files": 10.0,
+   "lines_changed": 321984,
+   "merged_lines": 253364,
+   "examples": [
+    "#135 Repair M-04B integrity and source custody",
+    "#387 Repair K0 Wave 05 field materialization",
+    "#66 QA invalid, blocked, and traversable export states in Chromium"
+   ]
+  },
+  "governance_docs": {
+   "description": "Governance/constitution/docs/milestones: core thesis ADR, SG stable-ground ledger, SSC compact, POOF ecology, M-05 sprint governance, cumulative-closure-ledger bookkeeping, programme installs/fan-out plans.",
+   "bucket": "c_checking_themselves",
+   "prs": 51,
+   "pct_of_prs": 2.5,
+   "merged": 43,
+   "closed_unmerged": 8,
+   "open": 0,
+   "merge_rate_pct": 84.3,
+   "pct_of_merged_prs": 6.9,
+   "files_changed": 1362,
+   "pct_of_files": 6.1,
+   "merged_files": 1199,
+   "pct_of_merged_files": 8.5,
+   "lines_changed": 284507,
+   "merged_lines": 189956,
+   "examples": [
+    "#19 Add durability and self-assembling architecture plans",
+    "#27 Add bounded public-interest discovery and selection governance",
+    "#50 Stage synthetic-population research program"
+   ]
+  },
+  "ci_workflow": {
+   "description": "CI/workflow plumbing: Pages deploy, release-gate history checkouts, standing workflows, scheduled-crawler admission/App identity/main protection.",
+   "bucket": "d_moving_own_work_around",
+   "prs": 35,
+   "pct_of_prs": 1.7,
+   "merged": 28,
+   "closed_unmerged": 6,
+   "open": 1,
+   "merge_rate_pct": 80.0,
+   "pct_of_merged_prs": 4.5,
+   "files_changed": 124,
+   "pct_of_files": 0.6,
+   "merged_files": 99,
+   "pct_of_merged_files": 0.7,
+   "lines_changed": 7954,
+   "merged_lines": 6752,
+   "examples": [
+    "#2 Add GitHub Actions deployment workflow and design system docs",
+    "#1399 Repair RD-04 standing workflow YAML parsing",
+    "#1008 Repair RD-01 terminal workflow current-ledger assertions"
+   ]
+  },
+  "controller_dispatch": {
+   "description": "Controller / TEMP / never-merge dispatch PRs: base64 payload carriers, materializers, exporters, post-merge proof observers, PR #2231 qualifiers, lane syncs, titles renamed FAILED/SUPERSEDED/COMPLETED. Disposable by design (936 of 1,361 were drafts; only 32 merged).",
+   "bucket": "d_moving_own_work_around",
+   "prs": 1361,
+   "pct_of_prs": 65.8,
+   "merged": 32,
+   "closed_unmerged": 1327,
+   "open": 2,
+   "merge_rate_pct": 2.4,
+   "pct_of_merged_prs": 5.1,
+   "files_changed": 8020,
+   "pct_of_files": 35.8,
+   "merged_files": 2168,
+   "pct_of_merged_files": 15.4,
+   "lines_changed": 1635828,
+   "merged_lines": 585915,
+   "examples": [
+    "#430 Sync latest POOF ecology into stable-ground reconciliation",
+    "#431 Sync canonical mainline into stable-ground reconciliation",
+    "#74 Temporary Aperture branch reconciliation"
+   ]
+  },
+  "cleanup_retirement": {
+   "description": "Cleanup/retirement: removing completed transports/diagnostics/refs, ref-retirement controllers, duplicate/obsolete workflow retirement, early repo flatten.",
+   "bucket": "d_moving_own_work_around",
+   "prs": 39,
+   "pct_of_prs": 1.9,
+   "merged": 23,
+   "closed_unmerged": 16,
+   "open": 0,
+   "merge_rate_pct": 59.0,
+   "pct_of_merged_prs": 3.7,
+   "files_changed": 288,
+   "pct_of_files": 1.3,
+   "merged_files": 260,
+   "pct_of_merged_files": 1.8,
+   "lines_changed": 33058,
+   "merged_lines": 27909,
+   "examples": [
+    "#1 Flatten directory structure and remove unused archive",
+    "#455 Retire the completed SG-04 materializer diagnostic",
+    "#526 Seal and retire Counter-Selector Wave 07 working refs"
+   ]
+  },
+  "release": {
+   "description": "Releases 1.0, 1.1, 1.2, 1.3 (Sep 12-14).",
+   "bucket": "b_tools_site",
+   "prs": 4,
+   "pct_of_prs": 0.2,
+   "merged": 4,
+   "closed_unmerged": 0,
+   "open": 0,
+   "merge_rate_pct": 100.0,
+   "pct_of_merged_prs": 0.6,
+   "files_changed": 233,
+   "pct_of_files": 1.0,
+   "merged_files": 233,
+   "pct_of_merged_files": 1.7,
+   "lines_changed": 134024,
+   "merged_lines": 134024,
+   "examples": [
+    "#2640 Release Clifford Number 1.0",
+    "#2641 Release Clifford Number 1.1 semantic Atlas"
+   ]
+  }
+ },
+ "weekly": [
+  {
+   "week": "2026-W26",
+   "start": "2026-06-22",
+   "end": "2026-06-28",
+   "prs": 4,
+   "merged": 3,
+   "not_merged": 1,
+   "merge_rate_pct": 75.0,
+   "controller_share_pct": 0.0,
+   "by_category": {
+    "compiler_datamodel": {
+     "prs": 2,
+     "merged": 1,
+     "not_merged": 1
+    },
+    "ci_workflow": {
+     "prs": 1,
+     "merged": 1,
+     "not_merged": 0
+    },
+    "cleanup_retirement": {
+     "prs": 1,
+     "merged": 1,
+     "not_merged": 0
+    }
+   },
+   "by_bucket": {
+    "a_real_world": {
+     "prs": 0,
+     "merged": 0,
+     "not_merged": 0
+    },
+    "b_tools_site": {
+     "prs": 2,
+     "merged": 1,
+     "not_merged": 1
+    },
+    "c_checking_themselves": {
+     "prs": 0,
+     "merged": 0,
+     "not_merged": 0
+    },
+    "d_moving_own_work_around": {
+     "prs": 2,
+     "merged": 2,
+     "not_merged": 0
+    }
+   },
+   "issues_created": 0,
+   "top_topics": [
+    {
+     "topic": "Foundation (Jun 27-Jul 13): ledger, Dialog import, legacy-graph bridge, UI, MCP, crawler intake",
+     "prs": 3
+    },
+    {
+     "topic": "Alex Karp / legacy graph ingest / Schedule I / master doc",
+     "prs": 1
+    }
+   ]
+  },
+  {
+   "week": "2026-W27",
+   "start": "2026-06-29",
+   "end": "2026-07-05",
+   "prs": 17,
+   "merged": 14,
+   "not_merged": 3,
+   "merge_rate_pct": 82.4,
+   "controller_share_pct": 0.0,
+   "by_category": {
+    "public_site_ui": {
+     "prs": 4,
+     "merged": 4,
+     "not_merged": 0
+    },
+    "compiler_datamodel": {
+     "prs": 12,
+     "merged": 9,
+     "not_merged": 3
+    },
+    "governance_docs": {
+     "prs": 1,
+     "merged": 1,
+     "not_merged": 0
+    }
+   },
+   "by_bucket": {
+    "a_real_world": {
+     "prs": 0,
+     "merged": 0,
+     "not_merged": 0
+    },
+    "b_tools_site": {
+     "prs": 16,
+     "merged": 13,
+     "not_merged": 3
+    },
+    "c_checking_themselves": {
+     "prs": 1,
+     "merged": 1,
+     "not_merged": 0
+    },
+    "d_moving_own_work_around": {
+     "prs": 0,
+     "merged": 0,
+     "not_merged": 0
+    }
+   },
+   "issues_created": 0,
+   "top_topics": [
+    {
+     "topic": "Foundation (Jun 27-Jul 13): ledger, Dialog import, legacy-graph bridge, UI, MCP, crawler intake",
+     "prs": 17
+    }
+   ]
+  },
+  {
+   "week": "2026-W28",
+   "start": "2026-07-06",
+   "end": "2026-07-12",
+   "prs": 5,
+   "merged": 5,
+   "not_merged": 0,
+   "merge_rate_pct": 100.0,
+   "controller_share_pct": 0.0,
+   "by_category": {
+    "research_acquisition": {
+     "prs": 1,
+     "merged": 1,
+     "not_merged": 0
+    },
+    "case_brief": {
+     "prs": 1,
+     "merged": 1,
+     "not_merged": 0
+    },
+    "public_site_ui": {
+     "prs": 1,
+     "merged": 1,
+     "not_merged": 0
+    },
+    "compiler_datamodel": {
+     "prs": 2,
+     "merged": 2,
+     "not_merged": 0
+    }
+   },
+   "by_bucket": {
+    "a_real_world": {
+     "prs": 2,
+     "merged": 2,
+     "not_merged": 0
+    },
+    "b_tools_site": {
+     "prs": 3,
+     "merged": 3,
+     "not_merged": 0
+    },
+    "c_checking_themselves": {
+     "prs": 0,
+     "merged": 0,
+     "not_merged": 0
+    },
+    "d_moving_own_work_around": {
+     "prs": 0,
+     "merged": 0,
+     "not_merged": 0
+    }
+   },
+   "issues_created": 0,
+   "top_topics": [
+    {
+     "topic": "Foundation (Jun 27-Jul 13): ledger, Dialog import, legacy-graph bridge, UI, MCP, crawler intake",
+     "prs": 5
+    }
+   ]
+  },
+  {
+   "week": "2026-W29",
+   "start": "2026-07-13",
+   "end": "2026-07-19",
+   "prs": 3,
+   "merged": 1,
+   "not_merged": 2,
+   "merge_rate_pct": 33.3,
+   "controller_share_pct": 0.0,
+   "by_category": {
+    "compiler_datamodel": {
+     "prs": 1,
+     "merged": 0,
+     "not_merged": 1
+    },
+    "governance_docs": {
+     "prs": 2,
+     "merged": 1,
+     "not_merged": 1
+    }
+   },
+   "by_bucket": {
+    "a_real_world": {
+     "prs": 0,
+     "merged": 0,
+     "not_merged": 0
+    },
+    "b_tools_site": {
+     "prs": 1,
+     "merged": 0,
+     "not_merged": 1
+    },
+    "c_checking_themselves": {
+     "prs": 2,
+     "merged": 1,
+     "not_merged": 1
+    },
+    "d_moving_own_work_around": {
+     "prs": 0,
+     "merged": 0,
+     "not_merged": 0
+    }
+   },
+   "issues_created": 23,
+   "top_topics": [
+    {
+     "topic": "Foundation (Jun 27-Jul 13): ledger, Dialog import, legacy-graph bridge, UI, MCP, crawler intake",
+     "prs": 1
+    },
+    {
+     "topic": "Dialog directory & Phase-0 comprehension harness",
+     "prs": 1
+    },
+    {
+     "topic": "UK-AI thesis seams, Electric Twin & topology admissions (Clifford/Starmer/Faculty/EF)",
+     "prs": 1
+    }
+   ]
+  },
+  {
+   "week": "2026-W30",
+   "start": "2026-07-20",
+   "end": "2026-07-26",
+   "prs": 80,
+   "merged": 71,
+   "not_merged": 9,
+   "merge_rate_pct": 88.8,
+   "controller_share_pct": 8.8,
+   "by_category": {
+    "research_acquisition": {
+     "prs": 9,
+     "merged": 9,
+     "not_merged": 0
+    },
+    "analysis_findings": {
+     "prs": 20,
+     "merged": 20,
+     "not_merged": 0
+    },
+    "case_brief": {
+     "prs": 12,
+     "merged": 12,
+     "not_merged": 0
+    },
+    "public_site_ui": {
+     "prs": 13,
+     "merged": 12,
+     "not_merged": 1
+    },
+    "compiler_datamodel": {
+     "prs": 6,
+     "merged": 6,
+     "not_merged": 0
+    },
+    "validators_selftests": {
+     "prs": 2,
+     "merged": 1,
+     "not_merged": 1
+    },
+    "governance_docs": {
+     "prs": 11,
+     "merged": 11,
+     "not_merged": 0
+    },
+    "controller_dispatch": {
+     "prs": 7,
+     "merged": 0,
+     "not_merged": 7
+    }
+   },
+   "by_bucket": {
+    "a_real_world": {
+     "prs": 41,
+     "merged": 41,
+     "not_merged": 0
+    },
+    "b_tools_site": {
+     "prs": 19,
+     "merged": 18,
+     "not_merged": 1
+    },
+    "c_checking_themselves": {
+     "prs": 13,
+     "merged": 12,
+     "not_merged": 1
+    },
+    "d_moving_own_work_around": {
+     "prs": 7,
+     "merged": 0,
+     "not_merged": 7
+    }
+   },
+   "issues_created": 219,
+   "top_topics": [
+    {
+     "topic": "M-05 answerable power / story ecology (Robodebt, SyRI, Foodinho, HFU)",
+     "prs": 17
+    },
+    {
+     "topic": "Visual aperture / Atlas / UI product (1.0-1.3)",
+     "prs": 12
+    },
+    {
+     "topic": "M-04 security-state organism (Palantir/Anduril/NGC2/ICE)",
+     "prs": 12
+    }
+   ]
+  },
+  {
+   "week": "2026-W31",
+   "start": "2026-07-27",
+   "end": "2026-08-02",
+   "prs": 380,
+   "merged": 194,
+   "not_merged": 186,
+   "merge_rate_pct": 51.1,
+   "controller_share_pct": 40.5,
+   "by_category": {
+    "research_acquisition": {
+     "prs": 45,
+     "merged": 37,
+     "not_merged": 8
+    },
+    "analysis_findings": {
+     "prs": 67,
+     "merged": 58,
+     "not_merged": 9
+    },
+    "public_site_ui": {
+     "prs": 2,
+     "merged": 0,
+     "not_merged": 2
+    },
+    "compiler_datamodel": {
+     "prs": 26,
+     "merged": 3,
+     "not_merged": 23
+    },
+    "validators_selftests": {
+     "prs": 48,
+     "merged": 46,
+     "not_merged": 2
+    },
+    "governance_docs": {
+     "prs": 27,
+     "merged": 20,
+     "not_merged": 7
+    },
+    "controller_dispatch": {
+     "prs": 154,
+     "merged": 22,
+     "not_merged": 132
+    },
+    "cleanup_retirement": {
+     "prs": 11,
+     "merged": 8,
+     "not_merged": 3
+    }
+   },
+   "by_bucket": {
+    "a_real_world": {
+     "prs": 112,
+     "merged": 95,
+     "not_merged": 17
+    },
+    "b_tools_site": {
+     "prs": 28,
+     "merged": 3,
+     "not_merged": 25
+    },
+    "c_checking_themselves": {
+     "prs": 75,
+     "merged": 66,
+     "not_merged": 9
+    },
+    "d_moving_own_work_around": {
+     "prs": 165,
+     "merged": 30,
+     "not_merged": 135
+    }
+   },
+   "issues_created": 107,
+   "top_topics": [
+    {
+     "topic": "SSC status-for-sovereignty compact (H01/W01/W02 core, SG-xx)",
+     "prs": 64
+    },
+    {
+     "topic": "SNAP/CalFresh 50-state implementation matrix (RD-04)",
+     "prs": 53
+    },
+    {
+     "topic": "Machinery: ref/branch retirement, TEMP export & transport carriers",
+     "prs": 52
+    }
+   ]
+  },
+  {
+   "week": "2026-W32",
+   "start": "2026-08-03",
+   "end": "2026-08-09",
+   "prs": 870,
+   "merged": 143,
+   "not_merged": 727,
+   "merge_rate_pct": 16.4,
+   "controller_share_pct": 82.4,
+   "by_category": {
+    "research_acquisition": {
+     "prs": 45,
+     "merged": 42,
+     "not_merged": 3
+    },
+    "analysis_findings": {
+     "prs": 33,
+     "merged": 31,
+     "not_merged": 2
+    },
+    "compiler_datamodel": {
+     "prs": 2,
+     "merged": 1,
+     "not_merged": 1
+    },
+    "validators_selftests": {
+     "prs": 46,
+     "merged": 41,
+     "not_merged": 5
+    },
+    "governance_docs": {
+     "prs": 10,
+     "merged": 10,
+     "not_merged": 0
+    },
+    "ci_workflow": {
+     "prs": 6,
+     "merged": 4,
+     "not_merged": 2
+    },
+    "controller_dispatch": {
+     "prs": 717,
+     "merged": 10,
+     "not_merged": 707
+    },
+    "cleanup_retirement": {
+     "prs": 11,
+     "merged": 4,
+     "not_merged": 7
+    }
+   },
+   "by_bucket": {
+    "a_real_world": {
+     "prs": 78,
+     "merged": 73,
+     "not_merged": 5
+    },
+    "b_tools_site": {
+     "prs": 2,
+     "merged": 1,
+     "not_merged": 1
+    },
+    "c_checking_themselves": {
+     "prs": 56,
+     "merged": 51,
+     "not_merged": 5
+    },
+    "d_moving_own_work_around": {
+     "prs": 734,
+     "merged": 18,
+     "not_merged": 716
+    }
+   },
+   "issues_created": 46,
+   "top_topics": [
+    {
+     "topic": "SNAP/CalFresh 50-state implementation matrix (RD-04)",
+     "prs": 306
+    },
+    {
+     "topic": "School.House legal-identity trail",
+     "prs": 179
+    },
+    {
+     "topic": "Machinery: ref/branch retirement, TEMP export & transport carriers",
+     "prs": 103
+    }
+   ]
+  },
+  {
+   "week": "2026-W33",
+   "start": "2026-08-10",
+   "end": "2026-08-16",
+   "prs": 253,
+   "merged": 82,
+   "not_merged": 171,
+   "merge_rate_pct": 32.4,
+   "controller_share_pct": 64.4,
+   "by_category": {
+    "research_acquisition": {
+     "prs": 9,
+     "merged": 9,
+     "not_merged": 0
+    },
+    "analysis_findings": {
+     "prs": 45,
+     "merged": 41,
+     "not_merged": 4
+    },
+    "compiler_datamodel": {
+     "prs": 4,
+     "merged": 4,
+     "not_merged": 0
+    },
+    "validators_selftests": {
+     "prs": 15,
+     "merged": 13,
+     "not_merged": 2
+    },
+    "ci_workflow": {
+     "prs": 12,
+     "merged": 10,
+     "not_merged": 2
+    },
+    "controller_dispatch": {
+     "prs": 163,
+     "merged": 0,
+     "not_merged": 163
+    },
+    "cleanup_retirement": {
+     "prs": 5,
+     "merged": 5,
+     "not_merged": 0
+    }
+   },
+   "by_bucket": {
+    "a_real_world": {
+     "prs": 54,
+     "merged": 50,
+     "not_merged": 4
+    },
+    "b_tools_site": {
+     "prs": 4,
+     "merged": 4,
+     "not_merged": 0
+    },
+    "c_checking_themselves": {
+     "prs": 15,
+     "merged": 13,
+     "not_merged": 2
+    },
+    "d_moving_own_work_around": {
+     "prs": 180,
+     "merged": 15,
+     "not_merged": 165
+    }
+   },
+   "issues_created": 145,
+   "top_topics": [
+    {
+     "topic": "SNAP/CalFresh 50-state implementation matrix (RD-04)",
+     "prs": 136
+    },
+    {
+     "topic": "UK-AI thesis seams, Electric Twin & topology admissions (Clifford/Starmer/Faculty/EF)",
+     "prs": 49
+    },
+    {
+     "topic": "Preference Custody lab (PC-xx floors, synthetic constituencies)",
+     "prs": 26
+    }
+   ]
+  },
+  {
+   "week": "2026-W34",
+   "start": "2026-08-17",
+   "end": "2026-08-23",
+   "prs": 105,
+   "merged": 59,
+   "not_merged": 46,
+   "merge_rate_pct": 56.2,
+   "controller_share_pct": 40.0,
+   "by_category": {
+    "research_acquisition": {
+     "prs": 2,
+     "merged": 2,
+     "not_merged": 0
+    },
+    "analysis_findings": {
+     "prs": 17,
+     "merged": 15,
+     "not_merged": 2
+    },
+    "compiler_datamodel": {
+     "prs": 14,
+     "merged": 12,
+     "not_merged": 2
+    },
+    "validators_selftests": {
+     "prs": 25,
+     "merged": 25,
+     "not_merged": 0
+    },
+    "ci_workflow": {
+     "prs": 5,
+     "merged": 5,
+     "not_merged": 0
+    },
+    "controller_dispatch": {
+     "prs": 42,
+     "merged": 0,
+     "not_merged": 42
+    }
+   },
+   "by_bucket": {
+    "a_real_world": {
+     "prs": 19,
+     "merged": 17,
+     "not_merged": 2
+    },
+    "b_tools_site": {
+     "prs": 14,
+     "merged": 12,
+     "not_merged": 2
+    },
+    "c_checking_themselves": {
+     "prs": 25,
+     "merged": 25,
+     "not_merged": 0
+    },
+    "d_moving_own_work_around": {
+     "prs": 47,
+     "merged": 5,
+     "not_merged": 42
+    }
+   },
+   "issues_created": 13,
+   "top_topics": [
+    {
+     "topic": "Machinery: industrial-exhaust receipt-store/runtime hardening",
+     "prs": 29
+    },
+    {
+     "topic": "M-05 answerable power / story ecology (Robodebt, SyRI, Foodinho, HFU)",
+     "prs": 24
+    },
+    {
+     "topic": "Intel CHIPS equity realization inquiry (M-05 S03-L7)",
+     "prs": 18
+    }
+   ]
+  },
+  {
+   "week": "2026-W35",
+   "start": "2026-08-24",
+   "end": "2026-08-30",
+   "prs": 128,
+   "merged": 15,
+   "not_merged": 113,
+   "merge_rate_pct": 11.7,
+   "controller_share_pct": 87.5,
+   "by_category": {
+    "research_acquisition": {
+     "prs": 1,
+     "merged": 1,
+     "not_merged": 0
+    },
+    "analysis_findings": {
+     "prs": 1,
+     "merged": 0,
+     "not_merged": 1
+    },
+    "validators_selftests": {
+     "prs": 14,
+     "merged": 14,
+     "not_merged": 0
+    },
+    "controller_dispatch": {
+     "prs": 112,
+     "merged": 0,
+     "not_merged": 112
+    }
+   },
+   "by_bucket": {
+    "a_real_world": {
+     "prs": 2,
+     "merged": 1,
+     "not_merged": 1
+    },
+    "b_tools_site": {
+     "prs": 0,
+     "merged": 0,
+     "not_merged": 0
+    },
+    "c_checking_themselves": {
+     "prs": 14,
+     "merged": 14,
+     "not_merged": 0
+    },
+    "d_moving_own_work_around": {
+     "prs": 112,
+     "merged": 0,
+     "not_merged": 112
+    }
+   },
+   "issues_created": 11,
+   "top_topics": [
+    {
+     "topic": "Machinery: PR #2231 release/inspection qualifier diagnostics",
+     "prs": 95
+    },
+    {
+     "topic": "Machinery: industrial-exhaust receipt-store/runtime hardening",
+     "prs": 31
+    },
+    {
+     "topic": "Intel CHIPS equity realization inquiry (M-05 S03-L7)",
+     "prs": 2
+    }
+   ]
+  },
+  {
+   "week": "2026-W36",
+   "start": "2026-08-31",
+   "end": "2026-09-06",
+   "prs": 204,
+   "merged": 30,
+   "not_merged": 174,
+   "merge_rate_pct": 14.7,
+   "controller_share_pct": 78.4,
+   "by_category": {
+    "research_acquisition": {
+     "prs": 12,
+     "merged": 7,
+     "not_merged": 5
+    },
+    "analysis_findings": {
+     "prs": 1,
+     "merged": 1,
+     "not_merged": 0
+    },
+    "public_site_ui": {
+     "prs": 2,
+     "merged": 1,
+     "not_merged": 1
+    },
+    "compiler_datamodel": {
+     "prs": 6,
+     "merged": 6,
+     "not_merged": 0
+    },
+    "validators_selftests": {
+     "prs": 3,
+     "merged": 3,
+     "not_merged": 0
+    },
+    "ci_workflow": {
+     "prs": 9,
+     "merged": 7,
+     "not_merged": 2
+    },
+    "controller_dispatch": {
+     "prs": 160,
+     "merged": 0,
+     "not_merged": 160
+    },
+    "cleanup_retirement": {
+     "prs": 11,
+     "merged": 5,
+     "not_merged": 6
+    }
+   },
+   "by_bucket": {
+    "a_real_world": {
+     "prs": 13,
+     "merged": 8,
+     "not_merged": 5
+    },
+    "b_tools_site": {
+     "prs": 8,
+     "merged": 7,
+     "not_merged": 1
+    },
+    "c_checking_themselves": {
+     "prs": 3,
+     "merged": 3,
+     "not_merged": 0
+    },
+    "d_moving_own_work_around": {
+     "prs": 180,
+     "merged": 12,
+     "not_merged": 168
+    }
+   },
+   "issues_created": 6,
+   "top_topics": [
+    {
+     "topic": "Machinery: PR #2231 release/inspection qualifier diagnostics",
+     "prs": 148
+    },
+    {
+     "topic": "Machinery: ref/branch retirement, TEMP export & transport carriers",
+     "prs": 12
+    },
+    {
+     "topic": "Machinery: scheduled-crawler admission, App identity, main protection",
+     "prs": 10
+    }
+   ]
+  },
+  {
+   "week": "2026-W37",
+   "start": "2026-09-07",
+   "end": "2026-09-13",
+   "prs": 19,
+   "merged": 9,
+   "not_merged": 10,
+   "merge_rate_pct": 47.4,
+   "controller_share_pct": 31.6,
+   "by_category": {
+    "research_acquisition": {
+     "prs": 3,
+     "merged": 0,
+     "not_merged": 3
+    },
+    "analysis_findings": {
+     "prs": 3,
+     "merged": 3,
+     "not_merged": 0
+    },
+    "compiler_datamodel": {
+     "prs": 1,
+     "merged": 1,
+     "not_merged": 0
+    },
+    "validators_selftests": {
+     "prs": 1,
+     "merged": 1,
+     "not_merged": 0
+    },
+    "ci_workflow": {
+     "prs": 2,
+     "merged": 1,
+     "not_merged": 1
+    },
+    "controller_dispatch": {
+     "prs": 6,
+     "merged": 0,
+     "not_merged": 6
+    },
+    "release": {
+     "prs": 3,
+     "merged": 3,
+     "not_merged": 0
+    }
+   },
+   "by_bucket": {
+    "a_real_world": {
+     "prs": 6,
+     "merged": 3,
+     "not_merged": 3
+    },
+    "b_tools_site": {
+     "prs": 4,
+     "merged": 4,
+     "not_merged": 0
+    },
+    "c_checking_themselves": {
+     "prs": 1,
+     "merged": 1,
+     "not_merged": 0
+    },
+    "d_moving_own_work_around": {
+     "prs": 8,
+     "merged": 1,
+     "not_merged": 7
+    }
+   },
+   "issues_created": 29,
+   "top_topics": [
+    {
+     "topic": "NatSec100 roster & CE0364 X-Bow",
+     "prs": 7
+    },
+    {
+     "topic": "Machinery: scheduled-crawler admission, App identity, main protection",
+     "prs": 5
+    },
+    {
+     "topic": "Visual aperture / Atlas / UI product (1.0-1.3)",
+     "prs": 3
+    }
+   ]
+  },
+  {
+   "week": "2026-W38",
+   "start": "2026-09-14",
+   "end": "2026-09-20",
+   "prs": 1,
+   "merged": 1,
+   "not_merged": 0,
+   "merge_rate_pct": 100.0,
+   "controller_share_pct": 0.0,
+   "by_category": {
+    "release": {
+     "prs": 1,
+     "merged": 1,
+     "not_merged": 0
+    }
+   },
+   "by_bucket": {
+    "a_real_world": {
+     "prs": 0,
+     "merged": 0,
+     "not_merged": 0
+    },
+    "b_tools_site": {
+     "prs": 1,
+     "merged": 1,
+     "not_merged": 0
+    },
+    "c_checking_themselves": {
+     "prs": 0,
+     "merged": 0,
+     "not_merged": 0
+    },
+    "d_moving_own_work_around": {
+     "prs": 0,
+     "merged": 0,
+     "not_merged": 0
+    }
+   },
+   "issues_created": 0,
+   "top_topics": [
+    {
+     "topic": "Visual aperture / Atlas / UI product (1.0-1.3)",
+     "prs": 1
+    }
+   ]
+  }
+ ],
+ "phases": [
+  {
+   "id": "P1",
+   "name": "Foundation: Clifford ledger, Dialog import, evidence-first rebuild, constitution",
+   "start": "2026-06-27T00:00:00Z",
+   "end_exclusive": "2026-07-14T00:00:00Z",
+   "trigger": "Repo start (Codex + Claude parallel PRs consolidated Jun 29, duplicate #16 closed); Jul 2 durability plan; Jul 6 BUILD-INSTRUCTIONS.md installed as governing document (PR #22); Jul 12 PR #23 rebuilt the app after a 115-person directory roster generated 6,555 of 6,589 actor hops.",
+   "what_happened": "Almost all tool-building: surface-hop compiler, temporal/identity layers, legacy-graph bridge, dark mode/keyboard/a11y UI, MCP server, crawler intake, NatSec100 intake; first governance docs. 94% of PRs merged.",
+   "prs": 27,
+   "merged": 23,
+   "merge_rate_pct": 85.2,
+   "active_days": 7,
+   "bucket_share_pct": {
+    "a_real_world": 7.4,
+    "b_tools_site": 77.8,
+    "c_checking_themselves": 7.4,
+    "d_moving_own_work_around": 7.4
+   },
+   "category_counts": {
+    "compiler_datamodel": 16,
+    "public_site_ui": 5,
+    "governance_docs": 2,
+    "cleanup_retirement": 1,
+    "ci_workflow": 1,
+    "research_acquisition": 1,
+    "case_brief": 1
+   },
+   "top_topics": [
+    {
+     "topic": "Foundation (Jun 27-Jul 13): ledger, Dialog import, legacy-graph bridge, UI, MCP, crawler intake",
+     "prs": 26
+    },
+    {
+     "topic": "Alex Karp / legacy graph ingest / Schedule I / master doc",
+     "prs": 1
+    }
+   ],
+   "issues_created": 0
+  },
+  {
+   "id": "P2",
+   "name": "Issue-only research fan-out #1: Electric Twin / synthetic populations (Jul 19)",
+   "start": "2026-07-14T00:00:00Z",
+   "end_exclusive": "2026-07-21T00:00:00Z",
+   "trigger": "Issue #29 (Electric Twin capability lineage) -> programme #30 -> 23 issues (#29-#52) created in a single day (Jul 19); 57 issue comments that day, mostly \"first/second/third bounded findings receipt\" with graph_effect: none.",
+   "what_happened": "Only 3 PRs (all closed: Phase-0 harness, program staging, EVE demos); the work was issue comments, not commits. First appearance of the fan-out pattern (programme issue -> N child issues -> receipts).",
+   "prs": 3,
+   "merged": 0,
+   "merge_rate_pct": 0.0,
+   "active_days": 3,
+   "bucket_share_pct": {
+    "a_real_world": 0.0,
+    "b_tools_site": 66.7,
+    "c_checking_themselves": 33.3,
+    "d_moving_own_work_around": 0.0
+   },
+   "category_counts": {
+    "compiler_datamodel": 1,
+    "governance_docs": 1,
+    "public_site_ui": 1
+   },
+   "top_topics": [
+    {
+     "topic": "Dialog directory & Phase-0 comprehension harness",
+     "prs": 1
+    },
+    {
+     "topic": "UK-AI thesis seams, Electric Twin & topology admissions (Clifford/Starmer/Faculty/EF)",
+     "prs": 1
+    },
+    {
+     "topic": "Visual aperture / Atlas / UI product (1.0-1.3)",
+     "prs": 1
+    }
+   ],
+   "issues_created": 23
+  },
+  {
+   "id": "P3",
+   "name": "Product + thesis-kernel + estates sprint (Jul 21-23)",
+   "start": "2026-07-21T00:00:00Z",
+   "end_exclusive": "2026-07-23T21:00:00Z",
+   "trigger": "Issues #56 (product sequence) and #60 (thesis completion programme) on Jul 21; M-01/M-02/M-03 estate passes Jul 22-23 with 14 estate fan-out + 24 game-trail issues opened Jul 23.",
+   "what_happened": "Visual-aperture suite (#54-#76: addressable views, operator workspace, export packets, scale measurement), thesis assembly kernel, state-market case intake, reporter briefing platform, 24 estates populated/fanned out. ~90% merged: the most product-shaped week.",
+   "prs": 29,
+   "merged": 27,
+   "merge_rate_pct": 93.1,
+   "active_days": 3,
+   "bucket_share_pct": {
+    "a_real_world": 37.9,
+    "b_tools_site": 51.7,
+    "c_checking_themselves": 6.9,
+    "d_moving_own_work_around": 3.4
+   },
+   "category_counts": {
+    "public_site_ui": 12,
+    "research_acquisition": 5,
+    "case_brief": 4,
+    "compiler_datamodel": 3,
+    "analysis_findings": 2,
+    "governance_docs": 1,
+    "validators_selftests": 1,
+    "controller_dispatch": 1
+   },
+   "top_topics": [
+    {
+     "topic": "Visual aperture / Atlas / UI product (1.0-1.3)",
+     "prs": 11
+    },
+    {
+     "topic": "Estate game trails (M-02/M-03) & next-ten estates",
+     "prs": 6
+    },
+    {
+     "topic": "Thesis kernel / core thesis / conversion architecture",
+     "prs": 3
+    },
+    {
+     "topic": "Reporter briefing platform",
+     "prs": 3
+    }
+   ],
+   "issues_created": 44
+  },
+  {
+   "id": "P4",
+   "name": "Core thesis -> security-state organism (M-04) -> answerable power (M-05) (Jul 23-27)",
+   "start": "2026-07-23T21:00:00Z",
+   "end_exclusive": "2026-07-28T00:00:00Z",
+   "trigger": "PR #127/#128 (Jul 23 21:31 UTC) installed the core thesis; PR #131 (Jul 24) \"Correct the project's post-2022 framing\" re-aimed the project at the security-state lineage; 72 issues opened Jul 24 (61 are [M-04B] organ/test/theater/bridge/cluster lanes); M-05 master issue #303 Jul 26.",
+   "what_happened": "Programme-installation PRs (core thesis, M-04C exhaustion programme, M-05 constitution) plus fog-resolution waves (#212-#220), M-04F/G, M-05 Sprints 01-09. High merge rate (~85%); most output is new programme structure and findings ledgers.",
+   "prs": 61,
+   "merged": 52,
+   "merge_rate_pct": 85.2,
+   "active_days": 5,
+   "bucket_share_pct": {
+    "a_real_world": 54.1,
+    "b_tools_site": 6.6,
+    "c_checking_themselves": 27.9,
+    "d_moving_own_work_around": 11.5
+   },
+   "category_counts": {
+    "analysis_findings": 21,
+    "governance_docs": 16,
+    "case_brief": 8,
+    "controller_dispatch": 7,
+    "research_acquisition": 4,
+    "compiler_datamodel": 4,
+    "validators_selftests": 1
+   },
+   "top_topics": [
+    {
+     "topic": "M-05 answerable power / story ecology (Robodebt, SyRI, Foodinho, HFU)",
+     "prs": 26
+    },
+    {
+     "topic": "M-04 security-state organism (Palantir/Anduril/NGC2/ICE)",
+     "prs": 11
+    },
+    {
+     "topic": "M-04D/B fog-resolution waves (incl. unmerged Wave 09)",
+     "prs": 9
+    },
+    {
+     "topic": "M-04G global evidence hydrology",
+     "prs": 5
+    }
+   ],
+   "issues_created": 178
+  },
+  {
+   "id": "P5",
+   "name": "K0 admissibility, stable-ground ledger, first transport churn, SSC encoded (Jul 28-31)",
+   "start": "2026-07-28T00:00:00Z",
+   "end_exclusive": "2026-08-01T00:00:00Z",
+   "trigger": "K0 epistemic admissibility (#366, Jul 28); POOF ecology (#410) and SG-xx stable-ground supersession ledger (Jul 29-30); Jul 29 #386 \"evidence-grounded judgment without a human-permission gate\"; Jul 30 the owner-supplied status-for-sovereignty synthesis was encoded as SSC-H01 (#467/#468).",
+   "what_happened": "K0 Waves 01-08 (field adjudications), lake/AXM identity waves (mostly closed unmerged), and the first TEMP transport/materializer/cleanup PRs (Jul 30: 28 controllers + 8 cleanups of 54 PRs). Merge rate falls from ~85% to ~50%.",
+   "prs": 127,
+   "merged": 62,
+   "merge_rate_pct": 48.8,
+   "active_days": 4,
+   "bucket_share_pct": {
+    "a_real_world": 26.0,
+    "b_tools_site": 20.5,
+    "c_checking_themselves": 14.2,
+    "d_moving_own_work_around": 39.4
+   },
+   "category_counts": {
+    "controller_dispatch": 41,
+    "analysis_findings": 27,
+    "compiler_datamodel": 24,
+    "governance_docs": 17,
+    "cleanup_retirement": 9,
+    "research_acquisition": 6,
+    "public_site_ui": 2,
+    "validators_selftests": 1
+   },
+   "top_topics": [
+    {
+     "topic": "SSC status-for-sovereignty compact (H01/W01/W02 core, SG-xx)",
+     "prs": 36
+    },
+    {
+     "topic": "Evidence lake indexing & AXM Genesis identity waves",
+     "prs": 24
+    },
+    {
+     "topic": "K0 epistemic admissibility / role-neutral denominators",
+     "prs": 23
+    },
+    {
+     "topic": "Machinery: ref/branch retirement, TEMP export & transport carriers",
+     "prs": 21
+    }
+   ],
+   "issues_created": 36
+  },
+  {
+   "id": "P6",
+   "name": "Status-sovereignty fan-out: SSC RD-01..06, Counter-Selector waves, Preference Custody lab, School.House, RD-04 SNAP matrix (Aug 1 - Aug 11 11:27 UTC)",
+   "start": "2026-08-01T00:00:00Z",
+   "end_exclusive": "2026-08-11T11:27:00Z",
+   "trigger": "Aug 1: SSC-W02 + Counter-Selector (waves 0-40 across Jul 31-Aug 3), PC lab parent #594 (performative synthetic constituencies) at 13:56 UTC; Aug 1-2 owner-level rule \"never depend on the user locating, persuading, or waiting for unaffiliated real-world people\" (#571, PR #696) -> synthetic floors PC-01..PC-62 (11 days); RD-01..06 residual-denominator Waves 02-03 (Aug 2-4); School.House legal-identity census Aug 5-8; RD-04 50-state SNAP matrix row-state loops Aug 8-11.",
+   "what_happened": "Peak activity: 1,288 PRs in ~10.5 days (up to 197/day) but 77% were disposable controller/materializer/observer PRs (987), and the daily merge rate collapsed from 59% (Aug 1) to ~8% (Aug 9-10); overall 22% merged. Merged output = Counter-Selector waves, PC floors, School.House custody, RD ledger promotions. Sub-phases: Aug 1-3 launch (PC lab + Counter-Selector + SSC Wave 02), Aug 4-7 RD Wave 03 + School.House, Aug 8-11 RD-04 ND/MT row-state loops.",
+   "prs": 1288,
+   "merged": 280,
+   "merge_rate_pct": 21.7,
+   "active_days": 11,
+   "bucket_share_pct": {
+    "a_real_world": 12.5,
+    "b_tools_site": 0.2,
+    "c_checking_themselves": 9.2,
+    "d_moving_own_work_around": 78.1
+   },
+   "category_counts": {
+    "controller_dispatch": 987,
+    "validators_selftests": 104,
+    "research_acquisition": 84,
+    "analysis_findings": 77,
+    "governance_docs": 14,
+    "cleanup_retirement": 13,
+    "ci_workflow": 6,
+    "compiler_datamodel": 3
+   },
+   "top_topics": [
+    {
+     "topic": "SNAP/CalFresh 50-state implementation matrix (RD-04)",
+     "prs": 491
+    },
+    {
+     "topic": "School.House legal-identity trail",
+     "prs": 179
+    },
+    {
+     "topic": "Preference Custody lab (PC-xx floors, synthetic constituencies)",
+     "prs": 171
+    },
+    {
+     "topic": "Machinery: ref/branch retirement, TEMP export & transport carriers",
+     "prs": 150
+    }
+   ],
+   "issues_created": 118
+  },
+  {
+   "id": "P7",
+   "name": "Aug 11 pivot: retire the control programmes, reconverge on surface-hop topology (Aug 11 11:27 - Aug 17)",
+   "start": "2026-08-11T11:27:00Z",
+   "end_exclusive": "2026-08-17T00:00:00Z",
+   "trigger": "Aug 11 10:43-10:54 UTC first topology PR (#1931) merged; 11:27-11:30 UTC the PC-62 programme (#1893), RD-04 (#1017) and RD-W03 (#1013) were retired \"under the canonical surface-hop topology thesis\" and 6 open controller PRs (#1907,#1914,#1927,#1930,#1932,#1933) closed with \"Retired without merge\"; Aug 13 #1971 closed as a \"thesis-reconvergence decision\".",
+   "what_happened": "Merge rate jumps to ~90% for the next 5.5 days: 34 topology-titled PRs merged Aug 11-14 (Starmer/Action Plan, SDR, Electric Twin funding/filings, Faculty, Simon Case, Detachment 201, Frontier AI Taskforce...) plus Electric Twin SH01/CS01/class-rights adjudications, CI full-history fixes, Electric Twin Companies House register request packet (Aug 15-16). The most real-world-touching week of the project. 137 machine-generated research-fan-out issues (crawl-rejection, Gold Line formations, Arcadia, scout) appeared on Aug 14 once the fan-out workflow was fixed (#1986); 136 are still open.",
+   "prs": 77,
+   "merged": 69,
+   "merge_rate_pct": 89.6,
+   "active_days": 6,
+   "bucket_share_pct": {
+    "a_real_world": 61.0,
+    "b_tools_site": 5.2,
+    "c_checking_themselves": 5.2,
+    "d_moving_own_work_around": 28.6
+   },
+   "category_counts": {
+    "analysis_findings": 38,
+    "ci_workflow": 12,
+    "research_acquisition": 9,
+    "controller_dispatch": 5,
+    "cleanup_retirement": 5,
+    "validators_selftests": 4,
+    "compiler_datamodel": 4
+   },
+   "top_topics": [
+    {
+     "topic": "UK-AI thesis seams, Electric Twin & topology admissions (Clifford/Starmer/Faculty/EF)",
+     "prs": 48
+    },
+    {
+     "topic": "Machinery: CI, release gates, Pages deploy, validators",
+     "prs": 12
+    },
+    {
+     "topic": "M-04G global evidence hydrology",
+     "prs": 5
+    },
+    {
+     "topic": "SNAP/CalFresh 50-state implementation matrix (RD-04)",
+     "prs": 4
+    }
+   ],
+   "issues_created": 141
+  },
+  {
+   "id": "P8",
+   "name": "Five-domain receipts -> receipt-control stack -> Dentsu crawler -> receipt-store hardening (Aug 17 - Aug 25)",
+   "start": "2026-08-17T00:00:00Z",
+   "end_exclusive": "2026-08-26T00:00:00Z",
+   "trigger": "[M-05 S03-L7] five-domain evidence (Robodebt, Intel CHIPS equity, HFU, SyRI, Foodinho) Aug 16-18; Aug 17 first Dentsu industrial-exhaust crawler intake; from Aug 18 the work drifts into provenance/observation-time/stage-registry controls and Aug 22-25 Landlock/openat2/procfs hardening of the receipt store.",
+   "what_happened": "Starts as findings (10 findings PRs on Aug 17) and ends as self-hardening: 39 of 142 PRs (27%) are validators/self-tests and 63 (44%) controllers (Aug 19-25: 62 of 113 PRs were controllers). Merge rate 52%.",
+   "prs": 142,
+   "merged": 74,
+   "merge_rate_pct": 52.1,
+   "active_days": 9,
+   "bucket_share_pct": {
+    "a_real_world": 14.8,
+    "b_tools_site": 9.9,
+    "c_checking_themselves": 27.5,
+    "d_moving_own_work_around": 47.9
+   },
+   "category_counts": {
+    "controller_dispatch": 63,
+    "validators_selftests": 39,
+    "analysis_findings": 18,
+    "compiler_datamodel": 14,
+    "ci_workflow": 5,
+    "research_acquisition": 3
+   },
+   "top_topics": [
+    {
+     "topic": "Machinery: industrial-exhaust receipt-store/runtime hardening",
+     "prs": 60
+    },
+    {
+     "topic": "M-05 answerable power / story ecology (Robodebt, SyRI, Foodinho, HFU)",
+     "prs": 24
+    },
+    {
+     "topic": "Intel CHIPS equity realization inquiry (M-05 S03-L7)",
+     "prs": 20
+    },
+    {
+     "topic": "Machinery: crawler text-parsing fixes (phone/wrapper/sentence)",
+     "prs": 10
+    }
+   ],
+   "issues_created": 16
+  },
+  {
+   "id": "P9",
+   "name": "PR #2231 qualifier loop (Aug 26 - Sep 2)",
+   "start": "2026-08-26T00:00:00Z",
+   "end_exclusive": "2026-09-03T00:00:00Z",
+   "trigger": "PR #2231 (\"ci: harden release and public inspection\", 5 files) was created Aug 21 and could only be merged after repeated \"qualification\" of crawler phone/wrapper/URL-parsing edits requested by automated review; workflow-created commits do not trigger CI so each attempt needed an \"owner-connector\" republish.",
+   "what_happened": "243 [Never merge]/qualify/diagnose PRs for the one product PR (V36..V130; 235 of them created Aug 26 - Sep 2), 0 merged; the whole 8-day window produced 1 merged PR of 235 (#2500); #2231 itself merged Sep 3 04:28 UTC. The single largest zero-yield sink.",
+   "prs": 235,
+   "merged": 1,
+   "merge_rate_pct": 0.4,
+   "active_days": 8,
+   "bucket_share_pct": {
+    "a_real_world": 0.0,
+    "b_tools_site": 0.4,
+    "c_checking_themselves": 0.0,
+    "d_moving_own_work_around": 99.6
+   },
+   "category_counts": {
+    "controller_dispatch": 234,
+    "compiler_datamodel": 1
+   },
+   "top_topics": [
+    {
+     "topic": "Machinery: PR #2231 release/inspection qualifier diagnostics",
+     "prs": 233
+    },
+    {
+     "topic": "Crawl backlog & official-record crawler intake",
+     "prs": 2
+    }
+   ],
+   "issues_created": 11
+  },
+  {
+   "id": "P10",
+   "name": "Close-out: protect main, scheduled-crawler admission, final ref retirement, NatSec100 roster, Phase 0 closed (Sep 3 - Sep 9)",
+   "start": "2026-09-03T00:00:00Z",
+   "end_exclusive": "2026-09-10T00:00:00Z",
+   "trigger": "Sep 3 #2231 merged and issue #2565 \"Protect current main after release closure\"; Sep 3-4 retirement of RD-01 Wave-03 and SSC Wave-02 refs (15 never-merge ref-retirement PRs); Sep 5-8 scheduled-crawl PR-only App identity; Sep 6-8 NatSec100 2025 roster recovery and Phase 0 closure (#2629).",
+   "what_happened": "Mixed: 23 controllers, 22 CI-plumbing/cleanup/retirement PRs, 15 acquisition PRs (scheduled crawls, NatSec100 2025 roster recovery #2618), NatSec100 adjudications (#2624, #2632), Phase 0 closure (#2629). Last non-release PR is #2637 (Sep 9). Then three quiet days.",
+   "prs": 76,
+   "merged": 35,
+   "merge_rate_pct": 46.1,
+   "active_days": 7,
+   "bucket_share_pct": {
+    "a_real_world": 25.0,
+    "b_tools_site": 10.5,
+    "c_checking_themselves": 5.3,
+    "d_moving_own_work_around": 59.2
+   },
+   "category_counts": {
+    "controller_dispatch": 23,
+    "research_acquisition": 15,
+    "ci_workflow": 11,
+    "cleanup_retirement": 11,
+    "compiler_datamodel": 6,
+    "validators_selftests": 4,
+    "analysis_findings": 4,
+    "public_site_ui": 2
+   },
+   "top_topics": [
+    {
+     "topic": "Machinery: scheduled-crawler admission, App identity, main protection",
+     "prs": 15
+    },
+    {
+     "topic": "Machinery: ref/branch retirement, TEMP export & transport carriers",
+     "prs": 13
+    },
+    {
+     "topic": "NatSec100 roster & CE0364 X-Bow",
+     "prs": 12
+    },
+    {
+     "topic": "Crawl backlog & official-record crawler intake",
+     "prs": 9
+    }
+   ],
+   "issues_created": 7
+  },
+  {
+   "id": "P11",
+   "name": "Releases 1.0 -> 1.3 (Sep 12-14)",
+   "start": "2026-09-12T00:00:00Z",
+   "end_exclusive": "2026-09-15T00:00:00Z",
+   "trigger": "After a 3-day gap, a clean \"N01 integration checkout\" (distinct from the \"dirty W01 canonical checkout\") promoted 1.0 on Sep 12 (PR #2640); 1.1 semantic Atlas Sep 13, 1.2 Research projection reconciliation Sep 13, 1.3 GPU social field Sep 14. On Sep 13 24 M-02 game-trail issues were recreated.",
+   "what_happened": "Four merged release PRs in 3 days: the only release-tagged output of the 11 weeks. All earlier mainline merges were unreleased increments.",
+   "prs": 4,
+   "merged": 4,
+   "merge_rate_pct": 100.0,
+   "active_days": 3,
+   "bucket_share_pct": {
+    "a_real_world": 0.0,
+    "b_tools_site": 100.0,
+    "c_checking_themselves": 0.0,
+    "d_moving_own_work_around": 0.0
+   },
+   "category_counts": {
+    "release": 4
+   },
+   "top_topics": [
+    {
+     "topic": "Visual aperture / Atlas / UI product (1.0-1.3)",
+     "prs": 4
+    }
+   ],
+   "issues_created": 25
+  }
+ ],
+ "owner_directives": [
+  {
+   "date": "2026-07-06",
+   "source": "BUILD-INSTRUCTIONS.md, added by PR #22 (the only first-person, human-voiced document in the repo)",
+   "quote": "This file outranks convenience. An agent or maintainer executing work in this repository reads this first and treats Section 1 as non-negotiable.",
+   "effect": "Installed the constitution (no edge without a receipt; selection neutrality; validate:* gates). Every later validator/governance/self-test PR cites it; also sets the 2037 horizon and the \"daughters test\" (an 18-year-old who has never met the author can clone, run one command and verify any claim)."
+  },
+  {
+   "date": "2026-07-12",
+   "source": "PR #23 \"Rebuild Clifford Number as evidence-first topology\" (Why)",
+   "quote": "A 115-person directory roster was marked hop-eligible and generated 6,555 of 6,589 actor hops, despite the repository's density constitution explicitly forbidding large rosters from becoming pairwise hop machines.",
+   "effect": "Throw-away of the generic edge graph: 6,589 -> 34 defensible hops; established \"bounded surface, not co-presence\" as the product and the pattern of fixing by adding permanent regression guards."
+  },
+  {
+   "date": "2026-07-13",
+   "source": "PR #27 \"Add bounded public-interest discovery and selection governance\"",
+   "quote": "treats pending second-party review as a clearance/publication state, not a reason to stop discovery or intake",
+   "effect": "First explicit instruction not to block on human/second-party review; created the selection-neutrality governance layer (BUILD-INSTRUCTIONS 1.10/1.11) and the fan-out generator/workflow later used for 170 \"research fan-out\" issues (89 of them machine-generated crawl-rejection issues)."
+  },
+  {
+   "date": "2026-07-19",
+   "source": "Issue #30 \"Research program: synthetic populations, state transfer, and modeled publics\"",
+   "quote": "Each child issue must remain coherent if Electric Twin is removed from the corpus.",
+   "effect": "Kicked off programme #1: 23 issues (#29-#52) in one day, 57 receipt comments the same day; the pattern (programme -> child lanes -> receipts) was reused for every later programme."
+  },
+  {
+   "date": "2026-07-21",
+   "source": "Issue #60 \"Thesis completion program\"",
+   "quote": "Turn the existing synthetic-population research fan-out into a receipted, falsifiable thesis dossier without allowing case contracts, topology, recurrence, or generated prose to become conclusions by implication.",
+   "effect": "Converted the fan-out into thesis machinery (assembly kernel #62, vendor denominator #63, state-market case intake #64, receipt custody #67) and set the rule that the strongest machine disposition is \"eligible_for_human_synthesis\"."
+  },
+  {
+   "date": "2026-07-23",
+   "source": "PR #127 \"Install the durable core thesis and conversion architecture\"",
+   "quote": "Make the project's accumulated structural premise a first-class, machine-enforced research contract, then realign the twenty-four estates, game trails, data objects, visualizations, reports, and milestone sequence beneath it.",
+   "effect": "Re-lensed all 24 estates under one thesis (5 phases x 7 stages x 6 intentionality levels x 10 archetypes...) and defined M-04..M-08; precondition for the security-state programme."
+  },
+  {
+   "date": "2026-07-24",
+   "source": "PR #131 \"Reframe the project around the security-state lineage\"",
+   "quote": "Correct the project's post-2022 framing. The principal divide is not software versus hardware.",
+   "effect": "Re-aimed the project at the counterterror-to-population-command lineage; 72 issues opened that day (61 are [M-04B] organ/test/theater/bridge/cluster lanes #136-#196)."
+  },
+  {
+   "date": "2026-07-24",
+   "source": "Issue #200 \"[M-04C] Exhaust the existing estate through recursive orbital passes\"",
+   "quote": "No new named actor without an acquired record making the actor material to an existing packet.",
+   "effect": "Declared an \"exhaustion law\" (each pass must improve a denominator/identity/chronology); created the H0-H7 pass issues #201-#208."
+  },
+  {
+   "date": "2026-07-26",
+   "source": "Issue #303 \"[M-05] Story ecology and answerable power\"",
+   "quote": "The project is not complete when every actor is mapped. It is complete only when a repeatable answer to power asymmetry survives observed use across at least three domains and two jurisdictions",
+   "effect": "Moved the completion bar from \"map actors\" to \"observed answer to power asymmetry\"; produced M-05 Sprints 01-09 and, much later (Aug 16-25), the five-domain real-receipt chase."
+  },
+  {
+   "date": "2026-07-29",
+   "source": "PR #386 \"Make evidence-grounded judgments without a human-permission gate\" (closed unmerged; principle reused in POOF/SG PRs)",
+   "quote": "Replace the estate's implicit \"magic human\" dependency with explicit evidence-grounded judgment authority.",
+   "effect": "Start of the \"no magic human\" doctrine: independent review = evidence, not permission. Removes human sign-off as a blocker and later justifies synthetic stand-ins."
+  },
+  {
+   "date": "2026-07-30",
+   "source": "Issue #468 \"[SSC-H01] Status-for-sovereignty compact...\" (PR #467)",
+   "quote": "Turn the user-supplied status-for-sovereignty synthesis into a falsifiable, graph-inert field hypothesis",
+   "effect": "A recorded instance of the owner handing the agents a source document (the attached synthesis); launched the SSC family (compact, RD-01..RD-06 lanes: NatSec100, SBICCT, OSC, SNAP RD-04, ACES, DCGS-A) = 766 PRs, 37% of all PRs."
+  },
+  {
+   "date": "2026-08-01",
+   "source": "Issue #594 \"Research fan-out: Performative synthetic constituencies and exposure-confounded preference\"",
+   "quote": "When a synthetic audience or modelled population influences which message, product, story, policy, price, or option real people encounter",
+   "effect": "Opened the Preference Custody lab: PC-01 (Aug 1) -> PC-62 (Aug 11), 171 PRs; each control states graph_effect: none and counts_toward_thesis_evidence: false."
+  },
+  {
+   "date": "2026-08-02",
+   "source": "PR #696 \"Make external participation optional and nonblocking\" (and Issue #571, Aug 1)",
+   "quote": "Encode a permanent no-magic-human rule: the Clifford Number project must never depend on the user locating, persuading, or waiting for unaffiliated real-world people.",
+   "effect": "Standing rule copied into every later fan-out task (\"do not gate continuation on the user or any stranger\", e.g. #1323, Aug 7); removes outside review as a dependency, so agents substitute internal/synthetic controls."
+  },
+  {
+   "date": "2026-08-11",
+   "source": "Issue comment on #1893 (PC-62), 11:27 UTC",
+   "quote": "This control programme is retired under the canonical surface-hop topology thesis.",
+   "effect": "Ends the Preference Custody lab: \"No PC-63, replacement controller, materializer, observer, terminal census, or further Preference Custody floor is authorized\". Six controller PRs closed within 3 minutes (\"Retired without merge under the canonical surface-hop topology reconvergence\")."
+  },
+  {
+   "date": "2026-08-11",
+   "source": "Issue comment on #1017 (RD-04 SNAP matrix), 11:29 UTC",
+   "quote": "RD-04 is retired under the canonical surface-hop topology thesis.",
+   "effect": "Ends the 495-PR SNAP/CalFresh matrix programme (earlier audit: ~230 of 450 cells terminal, 12 of 50 rows complete); \"may not revive this row-state programme\". Companion comment on #1013 freezes SSC residual-denominator Wave 03 (\"No Wave 04, replacement residual-denominator programme, or successor class-closure controller is authorized\")."
+  },
+  {
+   "date": "2026-08-13",
+   "source": "PR comment closing #1971 \"Topology: compile the actor-hop admission frontier\"",
+   "quote": "rather than authorizing another general governance layer. The current product frontier is the source-native Detachment 201 Cohort 2 event in #1972.",
+   "effect": "Enforces the pivot: no new governance layer without a concrete actor/surface/receipt; subsequent PRs are topology admissions."
+  },
+  {
+   "date": "2026-08-15",
+   "source": "PR #2139 \"Research: prepare Electric Twin register acquisition packet\"",
+   "quote": "Dispatch authority remains false.",
+   "effect": "The one outbound-contact artifact in the export: a statutory register-of-members request to Electric Twin Ltd, drafted as a no-send packet with placeholders for the requester's real name/address; actual posting is left to the human (PRs #2139-#2148 are the custody gates around it)."
+  },
+  {
+   "date": "2026-09-12",
+   "source": "PR #2640 \"Release Clifford Number 1.0\"",
+   "quote": "The original dirty W01 canonical checkout remains preserved and separate. This candidate came from the clean isolated N01 integration checkout",
+   "effect": "After a 3-day silence (Sep 10-11), a separate clean integration checkout re-cut the work into four releases in 3 days (1.0 Sep 12; 1.1 and 1.2 Sep 13; 1.3 Sep 14): the first release PRs in the history."
+  },
+  {
+   "date": "2026-09-13",
+   "source": "PR #2641 \"Release Clifford Number 1.1 semantic Atlas\"",
+   "quote": "All unique pre-release work is remotely reachable under dated `archive/*-20260913` branches",
+   "effect": "Decision to preserve the local worktrees (former dirty canonical checkout, Atlas source worktree) as dated archive branches and reconcile only the Atlas work onto the immutable 1.0 baseline rather than merge the accumulated state."
+  }
+ ],
+ "time_sinks": {
+  "by_pr_count": [
+   {
+    "topic": "SNAP/CalFresh 50-state implementation matrix (RD-04)",
+    "prs": 495,
+    "merged": 58,
+    "merge_rate_pct": 11.7,
+    "pct_of_all_prs": 23.9,
+    "first_pr": "2026-08-01",
+    "last_activity": "2026-08-15",
+    "span_days": 15,
+    "active_days": 12,
+    "controllers": 425,
+    "files_changed": 4651,
+    "bucket_mix": {
+     "a_real_world": 47,
+     "b_tools_site": 0,
+     "c_checking_themselves": 17,
+     "d_moving_own_work_around": 431
+    },
+    "yield": "Matrix of 50 states x 9 fields (450 cells); roughly 230 cells terminal and 12 of 50 rows complete when issue #1017 retired it on Aug 11; Oregon/Wisconsin capture survives only in an Actions artifact. 425 of 495 PRs were controllers."
+   },
+   {
+    "topic": "Machinery: PR #2231 release/inspection qualifier diagnostics",
+    "prs": 243,
+    "merged": 0,
+    "merge_rate_pct": 0.0,
+    "pct_of_all_prs": 11.7,
+    "first_pr": "2026-08-24",
+    "last_activity": "2026-09-03",
+    "span_days": 11,
+    "active_days": 11,
+    "controllers": 243,
+    "files_changed": 380,
+    "bucket_mix": {
+     "a_real_world": 0,
+     "b_tools_site": 0,
+     "c_checking_themselves": 0,
+     "d_moving_own_work_around": 243
+    },
+    "yield": "Nothing of its own: 243 never-merge qualifier/diagnostic PRs (V36..V130) existed to get one 5-file CI/release-inspection PR (#2231) merged, 13 days after it opened (Sep 3)."
+   },
+   {
+    "topic": "Machinery: ref/branch retirement, TEMP export & transport carriers",
+    "prs": 195,
+    "merged": 33,
+    "merge_rate_pct": 16.9,
+    "pct_of_all_prs": 9.4,
+    "first_pr": "2026-07-29",
+    "last_activity": "2026-09-08",
+    "span_days": 42,
+    "active_days": 24,
+    "controllers": 170,
+    "files_changed": 3735,
+    "bucket_mix": {
+     "a_real_world": 0,
+     "b_tools_site": 0,
+     "c_checking_themselves": 1,
+     "d_moving_own_work_around": 194
+    },
+    "yield": "No research output: exports, grafts and ref-retirement controllers cleaning up other programmes' transports (170 controllers, 24 cleanups); the only continuous thread, active on 24 separate days Jul 29-Sep 8."
+   },
+   {
+    "topic": "School.House legal-identity trail",
+    "prs": 179,
+    "merged": 28,
+    "merge_rate_pct": 15.6,
+    "pct_of_all_prs": 8.7,
+    "first_pr": "2026-08-05",
+    "last_activity": "2026-08-08",
+    "span_days": 4,
+    "active_days": 4,
+    "controllers": 150,
+    "files_changed": 792,
+    "bucket_mix": {
+     "a_real_world": 28,
+     "b_tools_site": 0,
+     "c_checking_themselves": 1,
+     "d_moving_own_work_around": 150
+    },
+    "yield": "The densest real-world acquisition: IRS/SAM/USPTO/RDAP/EDGAR/USAspending/state-registry/archived-surface custody on main (26 acquisition + 2 analysis PRs merged) - but 150 of 179 PRs were carriers/controllers, all in 4 days (Aug 5-8)."
+   },
+   {
+    "topic": "Preference Custody lab (PC-xx floors, synthetic constituencies)",
+    "prs": 171,
+    "merged": 70,
+    "merge_rate_pct": 40.9,
+    "pct_of_all_prs": 8.3,
+    "first_pr": "2026-08-01",
+    "last_activity": "2026-08-11",
+    "span_days": 11,
+    "active_days": 11,
+    "controllers": 96,
+    "files_changed": 1401,
+    "bucket_mix": {
+     "a_real_world": 6,
+     "b_tools_site": 0,
+     "c_checking_themselves": 67,
+     "d_moving_own_work_around": 98
+    },
+    "yield": "Synthetic fixtures only: floors v9-v59 (PC-10..PC-61) merged, PC-62 unmerged; every control declares graph_effect: none and counts_toward_thesis_evidence: false; programme retired Aug 11 with no real-world finding."
+   },
+   {
+    "topic": "SSC status-for-sovereignty compact (H01/W01/W02 core, SG-xx)",
+    "prs": 85,
+    "merged": 30,
+    "merge_rate_pct": 35.3,
+    "pct_of_all_prs": 4.1,
+    "first_pr": "2026-07-30",
+    "last_activity": "2026-09-04",
+    "span_days": 37,
+    "active_days": 10,
+    "controllers": 53,
+    "files_changed": 1031,
+    "bucket_mix": {
+     "a_real_world": 11,
+     "b_tools_site": 0,
+     "c_checking_themselves": 17,
+     "d_moving_own_work_around": 57
+    },
+    "yield": "Compact, SG-xx stable-ground ledgers and Wave 01/02 maintainer reviews on main; second-party review count stays 0/8 by design."
+   },
+   {
+    "topic": "Machinery: industrial-exhaust receipt-store/runtime hardening",
+    "prs": 63,
+    "merged": 30,
+    "merge_rate_pct": 47.6,
+    "pct_of_all_prs": 3.0,
+    "first_pr": "2026-08-18",
+    "last_activity": "2026-09-09",
+    "span_days": 23,
+    "active_days": 8,
+    "controllers": 33,
+    "files_changed": 154,
+    "bucket_mix": {
+     "a_real_world": 1,
+     "b_tools_site": 4,
+     "c_checking_themselves": 25,
+     "d_moving_own_work_around": 33
+    },
+    "yield": "30 merged hardening fixes (symlink/hard-link/mount-crossing rejection, dirfd/procfs/Landlock/openat2 confinement) for the crawler's receipt store; adds no new source or finding."
+   },
+   {
+    "topic": "UK-AI thesis seams, Electric Twin & topology admissions (Clifford/Starmer/Faculty/EF)",
+    "prs": 53,
+    "merged": 50,
+    "merge_rate_pct": 94.3,
+    "pct_of_all_prs": 2.6,
+    "first_pr": "2026-07-19",
+    "last_activity": "2026-09-06",
+    "span_days": 50,
+    "active_days": 10,
+    "controllers": 1,
+    "files_changed": 831,
+    "bucket_mix": {
+     "a_real_world": 46,
+     "b_tools_site": 1,
+     "c_checking_themselves": 3,
+     "d_moving_own_work_around": 3
+    },
+    "yield": "Best yield: 50 of 53 merged (94%); the compiler grew from 34 verified hops (Jul 12) to 54 bounded surfaces / 93 verified actor-hop edges by release 1.2 (Sep 13); Electric Twin seed round, filings, Faculty, Detachment 201, Frontier AI Taskforce admissions."
+   },
+   {
+    "topic": "M-05 answerable power / story ecology (Robodebt, SyRI, Foodinho, HFU)",
+    "prs": 53,
+    "merged": 43,
+    "merge_rate_pct": 81.1,
+    "pct_of_all_prs": 2.6,
+    "first_pr": "2026-07-26",
+    "last_activity": "2026-09-03",
+    "span_days": 40,
+    "active_days": 10,
+    "controllers": 8,
+    "files_changed": 418,
+    "bucket_mix": {
+     "a_real_world": 32,
+     "b_tools_site": 2,
+     "c_checking_themselves": 11,
+     "d_moving_own_work_around": 8
+    },
+    "yield": "Sprints 01-09 plus the S03-L7 five-domain real-receipt composition (Robodebt, Foodinho, HFU, SyRI, Intel CHIPS) on main; 43 of 53 merged."
+   },
+   {
+    "topic": "Counter-Selector / allocator-war program",
+    "prs": 49,
+    "merged": 41,
+    "merge_rate_pct": 83.7,
+    "pct_of_all_prs": 2.4,
+    "first_pr": "2026-07-31",
+    "last_activity": "2026-08-11",
+    "span_days": 12,
+    "active_days": 4,
+    "controllers": 3,
+    "files_changed": 672,
+    "bucket_mix": {
+     "a_real_world": 31,
+     "b_tools_site": 0,
+     "c_checking_themselves": 14,
+     "d_moving_own_work_around": 4
+    },
+    "yield": "Waves 00-39 on main (acquire -> blind review -> handoff packages); Wave 40 unmerged; the late waves (handoff truth tables, portable proof closure, repoDigest restore) are self-referential controls."
+   }
+  ],
+  "by_days_active": [
+   {
+    "topic": "Machinery: ref/branch retirement, TEMP export & transport carriers",
+    "prs": 195,
+    "merged": 33,
+    "merge_rate_pct": 16.9,
+    "pct_of_all_prs": 9.4,
+    "first_pr": "2026-07-29",
+    "last_activity": "2026-09-08",
+    "span_days": 42,
+    "active_days": 24,
+    "controllers": 170,
+    "files_changed": 3735,
+    "bucket_mix": {
+     "a_real_world": 0,
+     "b_tools_site": 0,
+     "c_checking_themselves": 1,
+     "d_moving_own_work_around": 194
+    },
+    "yield": "No research output: exports, grafts and ref-retirement controllers cleaning up other programmes' transports (170 controllers, 24 cleanups); the only continuous thread, active on 24 separate days Jul 29-Sep 8."
+   },
+   {
+    "topic": "NatSec100 roster & CE0364 X-Bow",
+    "prs": 39,
+    "merged": 14,
+    "merge_rate_pct": 35.9,
+    "pct_of_all_prs": 1.9,
+    "first_pr": "2026-07-31",
+    "last_activity": "2026-09-09",
+    "span_days": 41,
+    "active_days": 13,
+    "controllers": 21,
+    "files_changed": 200,
+    "bucket_mix": {
+     "a_real_world": 11,
+     "b_tools_site": 1,
+     "c_checking_themselves": 4,
+     "d_moving_own_work_around": 23
+    },
+    "yield": "Roster/identity/X-Bow adjudications on main; Sep 6-8 recovery of the complete 2025 roster from the official report and Phase 0 closure."
+   },
+   {
+    "topic": "Machinery: CI, release gates, Pages deploy, validators",
+    "prs": 23,
+    "merged": 17,
+    "merge_rate_pct": 73.9,
+    "pct_of_all_prs": 1.1,
+    "first_pr": "2026-07-21",
+    "last_activity": "2026-09-06",
+    "span_days": 48,
+    "active_days": 13,
+    "controllers": 4,
+    "files_changed": 114,
+    "bucket_mix": {
+     "a_real_world": 0,
+     "b_tools_site": 1,
+     "c_checking_themselves": 1,
+     "d_moving_own_work_around": 21
+    },
+    "yield": "Release-check and Pages hardening (full-history checkouts) on main; 17 of 23 CI PRs merged."
+   },
+   {
+    "topic": "SNAP/CalFresh 50-state implementation matrix (RD-04)",
+    "prs": 495,
+    "merged": 58,
+    "merge_rate_pct": 11.7,
+    "pct_of_all_prs": 23.9,
+    "first_pr": "2026-08-01",
+    "last_activity": "2026-08-15",
+    "span_days": 15,
+    "active_days": 12,
+    "controllers": 425,
+    "files_changed": 4651,
+    "bucket_mix": {
+     "a_real_world": 47,
+     "b_tools_site": 0,
+     "c_checking_themselves": 17,
+     "d_moving_own_work_around": 431
+    },
+    "yield": "Matrix of 50 states x 9 fields (450 cells); roughly 230 cells terminal and 12 of 50 rows complete when issue #1017 retired it on Aug 11; Oregon/Wisconsin capture survives only in an Actions artifact. 425 of 495 PRs were controllers."
+   },
+   {
+    "topic": "Machinery: PR #2231 release/inspection qualifier diagnostics",
+    "prs": 243,
+    "merged": 0,
+    "merge_rate_pct": 0.0,
+    "pct_of_all_prs": 11.7,
+    "first_pr": "2026-08-24",
+    "last_activity": "2026-09-03",
+    "span_days": 11,
+    "active_days": 11,
+    "controllers": 243,
+    "files_changed": 380,
+    "bucket_mix": {
+     "a_real_world": 0,
+     "b_tools_site": 0,
+     "c_checking_themselves": 0,
+     "d_moving_own_work_around": 243
+    },
+    "yield": "Nothing of its own: 243 never-merge qualifier/diagnostic PRs (V36..V130) existed to get one 5-file CI/release-inspection PR (#2231) merged, 13 days after it opened (Sep 3)."
+   },
+   {
+    "topic": "Preference Custody lab (PC-xx floors, synthetic constituencies)",
+    "prs": 171,
+    "merged": 70,
+    "merge_rate_pct": 40.9,
+    "pct_of_all_prs": 8.3,
+    "first_pr": "2026-08-01",
+    "last_activity": "2026-08-11",
+    "span_days": 11,
+    "active_days": 11,
+    "controllers": 96,
+    "files_changed": 1401,
+    "bucket_mix": {
+     "a_real_world": 6,
+     "b_tools_site": 0,
+     "c_checking_themselves": 67,
+     "d_moving_own_work_around": 98
+    },
+    "yield": "Synthetic fixtures only: floors v9-v59 (PC-10..PC-61) merged, PC-62 unmerged; every control declares graph_effect: none and counts_toward_thesis_evidence: false; programme retired Aug 11 with no real-world finding."
+   },
+   {
+    "topic": "SSC status-for-sovereignty compact (H01/W01/W02 core, SG-xx)",
+    "prs": 85,
+    "merged": 30,
+    "merge_rate_pct": 35.3,
+    "pct_of_all_prs": 4.1,
+    "first_pr": "2026-07-30",
+    "last_activity": "2026-09-04",
+    "span_days": 37,
+    "active_days": 10,
+    "controllers": 53,
+    "files_changed": 1031,
+    "bucket_mix": {
+     "a_real_world": 11,
+     "b_tools_site": 0,
+     "c_checking_themselves": 17,
+     "d_moving_own_work_around": 57
+    },
+    "yield": "Compact, SG-xx stable-ground ledgers and Wave 01/02 maintainer reviews on main; second-party review count stays 0/8 by design."
+   },
+   {
+    "topic": "UK-AI thesis seams, Electric Twin & topology admissions (Clifford/Starmer/Faculty/EF)",
+    "prs": 53,
+    "merged": 50,
+    "merge_rate_pct": 94.3,
+    "pct_of_all_prs": 2.6,
+    "first_pr": "2026-07-19",
+    "last_activity": "2026-09-06",
+    "span_days": 50,
+    "active_days": 10,
+    "controllers": 1,
+    "files_changed": 831,
+    "bucket_mix": {
+     "a_real_world": 46,
+     "b_tools_site": 1,
+     "c_checking_themselves": 3,
+     "d_moving_own_work_around": 3
+    },
+    "yield": "Best yield: 50 of 53 merged (94%); the compiler grew from 34 verified hops (Jul 12) to 54 bounded surfaces / 93 verified actor-hop edges by release 1.2 (Sep 13); Electric Twin seed round, filings, Faculty, Detachment 201, Frontier AI Taskforce admissions."
+   },
+   {
+    "topic": "M-05 answerable power / story ecology (Robodebt, SyRI, Foodinho, HFU)",
+    "prs": 53,
+    "merged": 43,
+    "merge_rate_pct": 81.1,
+    "pct_of_all_prs": 2.6,
+    "first_pr": "2026-07-26",
+    "last_activity": "2026-09-03",
+    "span_days": 40,
+    "active_days": 10,
+    "controllers": 8,
+    "files_changed": 418,
+    "bucket_mix": {
+     "a_real_world": 32,
+     "b_tools_site": 2,
+     "c_checking_themselves": 11,
+     "d_moving_own_work_around": 8
+    },
+    "yield": "Sprints 01-09 plus the S03-L7 five-domain real-receipt composition (Robodebt, Foodinho, HFU, SyRI, Intel CHIPS) on main; 43 of 53 merged."
+   },
+   {
+    "topic": "Crawl backlog & official-record crawler intake",
+    "prs": 27,
+    "merged": 7,
+    "merge_rate_pct": 25.9,
+    "pct_of_all_prs": 1.3,
+    "first_pr": "2026-07-21",
+    "last_activity": "2026-09-08",
+    "span_days": 50,
+    "active_days": 9,
+    "controllers": 11,
+    "files_changed": 122,
+    "bucket_mix": {
+     "a_real_world": 8,
+     "b_tools_site": 7,
+     "c_checking_themselves": 1,
+     "d_moving_own_work_around": 11
+    },
+    "yield": "Crawler on main (official-record intake, crawl-gap upkeep); 89 held-rejection fan-out issues were never worked."
+   }
+  ],
+  "programme_rollups": {
+   "ssc_family_status_for_sovereignty_residual_denominators": {
+    "topics": [
+     "SNAP/CalFresh 50-state implementation matrix (RD-04)",
+     "SSC status-for-sovereignty compact (H01/W01/W02 core, SG-xx)",
+     "SBIC Critical Technologies (SBICCT)",
+     "Office of Strategic Capital (OSC)",
+     "ACES governance denominator (RD-05)",
+     "DCGS-A / Capability Drop foreclosure denominator (RD-06)",
+     "NatSec100 roster & CE0364 X-Bow"
+    ],
+    "prs": 766,
+    "pct_of_all_prs": 37.0,
+    "merged": 137,
+    "merge_rate_pct": 17.9
+   },
+   "crawler_and_industrial_exhaust_family_incl_pr2231_loop": {
+    "topics": [
+     "Machinery: PR #2231 release/inspection qualifier diagnostics",
+     "Machinery: industrial-exhaust receipt-store/runtime hardening",
+     "Crawl backlog & official-record crawler intake",
+     "Machinery: crawler text-parsing fixes (phone/wrapper/sentence)",
+     "Machinery: scheduled-crawler admission, App identity, main protection",
+     "Industrial-exhaust first-party crawl (Dentsu etc.)"
+    ],
+    "prs": 366,
+    "pct_of_all_prs": 17.7,
+    "merged": 55,
+    "merge_rate_pct": 15.0
+   },
+   "preference_custody_lab_plus_counter_selector": {
+    "topics": [
+     "Preference Custody lab (PC-xx floors, synthetic constituencies)",
+     "Counter-Selector / allocator-war program"
+    ],
+    "prs": 220,
+    "pct_of_all_prs": 10.6,
+    "merged": 111,
+    "merge_rate_pct": 50.5
+   }
+  },
+  "all_topics": [
+   {
+    "topic": "Foundation (Jun 27-Jul 13): ledger, Dialog import, legacy-graph bridge, UI, MCP, crawler intake",
+    "prs": 26,
+    "merged": 22,
+    "merge_rate_pct": 84.6,
+    "pct_of_all_prs": 1.3,
+    "first_pr": "2026-06-27",
+    "last_activity": "2026-07-18",
+    "span_days": 22,
+    "active_days": 7,
+    "controllers": 0,
+    "files_changed": 739,
+    "bucket_mix": {
+     "a_real_world": 2,
+     "b_tools_site": 20,
+     "c_checking_themselves": 2,
+     "d_moving_own_work_around": 2
+    },
+    "yield": ""
+   },
+   {
+    "topic": "Alex Karp / legacy graph ingest / Schedule I / master doc",
+    "prs": 1,
+    "merged": 1,
+    "merge_rate_pct": 100.0,
+    "pct_of_all_prs": 0.0,
+    "first_pr": "2026-06-28",
+    "last_activity": "2026-06-28",
+    "span_days": 1,
+    "active_days": 1,
+    "controllers": 0,
+    "files_changed": 18,
+    "bucket_mix": {
+     "a_real_world": 0,
+     "b_tools_site": 1,
+     "c_checking_themselves": 0,
+     "d_moving_own_work_around": 0
+    },
+    "yield": ""
+   },
+   {
+    "topic": "Dialog directory & Phase-0 comprehension harness",
+    "prs": 2,
+    "merged": 1,
+    "merge_rate_pct": 50.0,
+    "pct_of_all_prs": 0.1,
+    "first_pr": "2026-07-15",
+    "last_activity": "2026-07-30",
+    "span_days": 16,
+    "active_days": 2,
+    "controllers": 0,
+    "files_changed": 34,
+    "bucket_mix": {
+     "a_real_world": 0,
+     "b_tools_site": 1,
+     "c_checking_themselves": 0,
+     "d_moving_own_work_around": 1
+    },
+    "yield": ""
+   },
+   {
+    "topic": "UK-AI thesis seams, Electric Twin & topology admissions (Clifford/Starmer/Faculty/EF)",
+    "prs": 53,
+    "merged": 50,
+    "merge_rate_pct": 94.3,
+    "pct_of_all_prs": 2.6,
+    "first_pr": "2026-07-19",
+    "last_activity": "2026-09-06",
+    "span_days": 50,
+    "active_days": 10,
+    "controllers": 1,
+    "files_changed": 831,
+    "bucket_mix": {
+     "a_real_world": 46,
+     "b_tools_site": 1,
+     "c_checking_themselves": 3,
+     "d_moving_own_work_around": 3
+    },
+    "yield": "Best yield: 50 of 53 merged (94%); the compiler grew from 34 verified hops (Jul 12) to 54 bounded surfaces / 93 verified actor-hop edges by release 1.2 (Sep 13); Electric Twin seed round, filings, Faculty, Detachment 201, Frontier AI Taskforce admissions."
+   },
+   {
+    "topic": "Visual aperture / Atlas / UI product (1.0-1.3)",
+    "prs": 19,
+    "merged": 15,
+    "merge_rate_pct": 78.9,
+    "pct_of_all_prs": 0.9,
+    "first_pr": "2026-07-20",
+    "last_activity": "2026-09-14",
+    "span_days": 57,
+    "active_days": 7,
+    "controllers": 1,
+    "files_changed": 413,
+    "bucket_mix": {
+     "a_real_world": 0,
+     "b_tools_site": 16,
+     "c_checking_themselves": 2,
+     "d_moving_own_work_around": 1
+    },
+    "yield": ""
+   },
+   {
+    "topic": "Thesis kernel / core thesis / conversion architecture",
+    "prs": 5,
+    "merged": 5,
+    "merge_rate_pct": 100.0,
+    "pct_of_all_prs": 0.2,
+    "first_pr": "2026-07-21",
+    "last_activity": "2026-07-24",
+    "span_days": 4,
+    "active_days": 2,
+    "controllers": 0,
+    "files_changed": 153,
+    "bucket_mix": {
+     "a_real_world": 2,
+     "b_tools_site": 1,
+     "c_checking_themselves": 2,
+     "d_moving_own_work_around": 0
+    },
+    "yield": ""
+   },
+   {
+    "topic": "Crawl backlog & official-record crawler intake",
+    "prs": 27,
+    "merged": 7,
+    "merge_rate_pct": 25.9,
+    "pct_of_all_prs": 1.3,
+    "first_pr": "2026-07-21",
+    "last_activity": "2026-09-08",
+    "span_days": 50,
+    "active_days": 9,
+    "controllers": 11,
+    "files_changed": 122,
+    "bucket_mix": {
+     "a_real_world": 8,
+     "b_tools_site": 7,
+     "c_checking_themselves": 1,
+     "d_moving_own_work_around": 11
+    },
+    "yield": "Crawler on main (official-record intake, crawl-gap upkeep); 89 held-rejection fan-out issues were never worked."
+   },
+   {
+    "topic": "Machinery: CI, release gates, Pages deploy, validators",
+    "prs": 23,
+    "merged": 17,
+    "merge_rate_pct": 73.9,
+    "pct_of_all_prs": 1.1,
+    "first_pr": "2026-07-21",
+    "last_activity": "2026-09-06",
+    "span_days": 48,
+    "active_days": 13,
+    "controllers": 4,
+    "files_changed": 114,
+    "bucket_mix": {
+     "a_real_world": 0,
+     "b_tools_site": 1,
+     "c_checking_themselves": 1,
+     "d_moving_own_work_around": 21
+    },
+    "yield": "Release-check and Pages hardening (full-history checkouts) on main; 17 of 23 CI PRs merged."
+   },
+   {
+    "topic": "M-04 security-state organism (Palantir/Anduril/NGC2/ICE)",
+    "prs": 13,
+    "merged": 10,
+    "merge_rate_pct": 76.9,
+    "pct_of_all_prs": 0.6,
+    "first_pr": "2026-07-21",
+    "last_activity": "2026-08-14",
+    "span_days": 25,
+    "active_days": 3,
+    "controllers": 3,
+    "files_changed": 376,
+    "bucket_mix": {
+     "a_real_world": 3,
+     "b_tools_site": 1,
+     "c_checking_themselves": 6,
+     "d_moving_own_work_around": 3
+    },
+    "yield": ""
+   },
+   {
+    "topic": "Reporter briefing platform",
+    "prs": 3,
+    "merged": 3,
+    "merge_rate_pct": 100.0,
+    "pct_of_all_prs": 0.1,
+    "first_pr": "2026-07-21",
+    "last_activity": "2026-07-22",
+    "span_days": 2,
+    "active_days": 2,
+    "controllers": 0,
+    "files_changed": 49,
+    "bucket_mix": {
+     "a_real_world": 1,
+     "b_tools_site": 2,
+     "c_checking_themselves": 0,
+     "d_moving_own_work_around": 0
+    },
+    "yield": ""
+   },
+   {
+    "topic": "M-04F epistemic jurisdiction / Flock-like sensing",
+    "prs": 5,
+    "merged": 4,
+    "merge_rate_pct": 80.0,
+    "pct_of_all_prs": 0.2,
+    "first_pr": "2026-07-22",
+    "last_activity": "2026-07-30",
+    "span_days": 9,
+    "active_days": 2,
+    "controllers": 1,
+    "files_changed": 103,
+    "bucket_mix": {
+     "a_real_world": 4,
+     "b_tools_site": 0,
+     "c_checking_themselves": 0,
+     "d_moving_own_work_around": 1
+    },
+    "yield": ""
+   },
+   {
+    "topic": "Estate game trails (M-02/M-03) & next-ten estates",
+    "prs": 7,
+    "merged": 7,
+    "merge_rate_pct": 100.0,
+    "pct_of_all_prs": 0.3,
+    "first_pr": "2026-07-22",
+    "last_activity": "2026-07-24",
+    "span_days": 3,
+    "active_days": 3,
+    "controllers": 0,
+    "files_changed": 665,
+    "bucket_mix": {
+     "a_real_world": 5,
+     "b_tools_site": 1,
+     "c_checking_themselves": 1,
+     "d_moving_own_work_around": 0
+    },
+    "yield": ""
+   },
+   {
+    "topic": "M-04D/B fog-resolution waves (incl. unmerged Wave 09)",
+    "prs": 10,
+    "merged": 10,
+    "merge_rate_pct": 100.0,
+    "pct_of_all_prs": 0.5,
+    "first_pr": "2026-07-22",
+    "last_activity": "2026-07-24",
+    "span_days": 3,
+    "active_days": 2,
+    "controllers": 0,
+    "files_changed": 48,
+    "bucket_mix": {
+     "a_real_world": 10,
+     "b_tools_site": 0,
+     "c_checking_themselves": 0,
+     "d_moving_own_work_around": 0
+    },
+    "yield": ""
+   },
+   {
+    "topic": "Evidence lake indexing & AXM Genesis identity waves",
+    "prs": 45,
+    "merged": 20,
+    "merge_rate_pct": 44.4,
+    "pct_of_all_prs": 2.2,
+    "first_pr": "2026-07-25",
+    "last_activity": "2026-08-11",
+    "span_days": 18,
+    "active_days": 8,
+    "controllers": 2,
+    "files_changed": 2246,
+    "bucket_mix": {
+     "a_real_world": 18,
+     "b_tools_site": 24,
+     "c_checking_themselves": 1,
+     "d_moving_own_work_around": 2
+    },
+    "yield": "Lake index and identity census waves 1-20 never merged (closed Jul 29-30); AXM Genesis reconciliation re-done on main later as #2604; allocator-war waves 26-36 merged."
+   },
+   {
+    "topic": "M-04G global evidence hydrology",
+    "prs": 10,
+    "merged": 8,
+    "merge_rate_pct": 80.0,
+    "pct_of_all_prs": 0.5,
+    "first_pr": "2026-07-26",
+    "last_activity": "2026-08-16",
+    "span_days": 22,
+    "active_days": 4,
+    "controllers": 2,
+    "files_changed": 77,
+    "bucket_mix": {
+     "a_real_world": 0,
+     "b_tools_site": 7,
+     "c_checking_themselves": 1,
+     "d_moving_own_work_around": 2
+    },
+    "yield": ""
+   },
+   {
+    "topic": "M-05 answerable power / story ecology (Robodebt, SyRI, Foodinho, HFU)",
+    "prs": 53,
+    "merged": 43,
+    "merge_rate_pct": 81.1,
+    "pct_of_all_prs": 2.6,
+    "first_pr": "2026-07-26",
+    "last_activity": "2026-09-03",
+    "span_days": 40,
+    "active_days": 10,
+    "controllers": 8,
+    "files_changed": 418,
+    "bucket_mix": {
+     "a_real_world": 32,
+     "b_tools_site": 2,
+     "c_checking_themselves": 11,
+     "d_moving_own_work_around": 8
+    },
+    "yield": "Sprints 01-09 plus the S03-L7 five-domain real-receipt composition (Robodebt, Foodinho, HFU, SyRI, Intel CHIPS) on main; 43 of 53 merged."
+   },
+   {
+    "topic": "Biological Omega control surfaces / biosecurity",
+    "prs": 1,
+    "merged": 0,
+    "merge_rate_pct": 0.0,
+    "pct_of_all_prs": 0.0,
+    "first_pr": "2026-07-27",
+    "last_activity": "2026-08-11",
+    "span_days": 16,
+    "active_days": 1,
+    "controllers": 0,
+    "files_changed": 9,
+    "bucket_mix": {
+     "a_real_world": 0,
+     "b_tools_site": 0,
+     "c_checking_themselves": 1,
+     "d_moving_own_work_around": 0
+    },
+    "yield": ""
+   },
+   {
+    "topic": "A1 / F4 / external-review & field-partner program",
+    "prs": 2,
+    "merged": 2,
+    "merge_rate_pct": 100.0,
+    "pct_of_all_prs": 0.1,
+    "first_pr": "2026-07-27",
+    "last_activity": "2026-07-29",
+    "span_days": 3,
+    "active_days": 2,
+    "controllers": 0,
+    "files_changed": 34,
+    "bucket_mix": {
+     "a_real_world": 0,
+     "b_tools_site": 0,
+     "c_checking_themselves": 2,
+     "d_moving_own_work_around": 0
+    },
+    "yield": ""
+   },
+   {
+    "topic": "K0 epistemic admissibility / role-neutral denominators",
+    "prs": 23,
+    "merged": 19,
+    "merge_rate_pct": 82.6,
+    "pct_of_all_prs": 1.1,
+    "first_pr": "2026-07-28",
+    "last_activity": "2026-07-30",
+    "span_days": 3,
+    "active_days": 3,
+    "controllers": 3,
+    "files_changed": 384,
+    "bucket_mix": {
+     "a_real_world": 18,
+     "b_tools_site": 0,
+     "c_checking_themselves": 2,
+     "d_moving_own_work_around": 3
+    },
+    "yield": ""
+   },
+   {
+    "topic": "WebsiteIQ audit & Evidence Desk publication estate",
+    "prs": 3,
+    "merged": 0,
+    "merge_rate_pct": 0.0,
+    "pct_of_all_prs": 0.1,
+    "first_pr": "2026-07-28",
+    "last_activity": "2026-08-11",
+    "span_days": 15,
+    "active_days": 1,
+    "controllers": 1,
+    "files_changed": 12,
+    "bucket_mix": {
+     "a_real_world": 0,
+     "b_tools_site": 2,
+     "c_checking_themselves": 0,
+     "d_moving_own_work_around": 1
+    },
+    "yield": ""
+   },
+   {
+    "topic": "POOF / publication-allowlist / no-magic-human judgment authority",
+    "prs": 4,
+    "merged": 2,
+    "merge_rate_pct": 50.0,
+    "pct_of_all_prs": 0.2,
+    "first_pr": "2026-07-29",
+    "last_activity": "2026-08-11",
+    "span_days": 14,
+    "active_days": 3,
+    "controllers": 0,
+    "files_changed": 167,
+    "bucket_mix": {
+     "a_real_world": 0,
+     "b_tools_site": 0,
+     "c_checking_themselves": 4,
+     "d_moving_own_work_around": 0
+    },
+    "yield": ""
+   },
+   {
+    "topic": "Machinery: ref/branch retirement, TEMP export & transport carriers",
+    "prs": 195,
+    "merged": 33,
+    "merge_rate_pct": 16.9,
+    "pct_of_all_prs": 9.4,
+    "first_pr": "2026-07-29",
+    "last_activity": "2026-09-08",
+    "span_days": 42,
+    "active_days": 24,
+    "controllers": 170,
+    "files_changed": 3735,
+    "bucket_mix": {
+     "a_real_world": 0,
+     "b_tools_site": 0,
+     "c_checking_themselves": 1,
+     "d_moving_own_work_around": 194
+    },
+    "yield": "No research output: exports, grafts and ref-retirement controllers cleaning up other programmes' transports (170 controllers, 24 cleanups); the only continuous thread, active on 24 separate days Jul 29-Sep 8."
+   },
+   {
+    "topic": "SSC status-for-sovereignty compact (H01/W01/W02 core, SG-xx)",
+    "prs": 85,
+    "merged": 30,
+    "merge_rate_pct": 35.3,
+    "pct_of_all_prs": 4.1,
+    "first_pr": "2026-07-30",
+    "last_activity": "2026-09-04",
+    "span_days": 37,
+    "active_days": 10,
+    "controllers": 53,
+    "files_changed": 1031,
+    "bucket_mix": {
+     "a_real_world": 11,
+     "b_tools_site": 0,
+     "c_checking_themselves": 17,
+     "d_moving_own_work_around": 57
+    },
+    "yield": "Compact, SG-xx stable-ground ledgers and Wave 01/02 maintainer reviews on main; second-party review count stays 0/8 by design."
+   },
+   {
+    "topic": "AAH / DCA hypothesis hunts",
+    "prs": 1,
+    "merged": 1,
+    "merge_rate_pct": 100.0,
+    "pct_of_all_prs": 0.0,
+    "first_pr": "2026-07-30",
+    "last_activity": "2026-07-30",
+    "span_days": 1,
+    "active_days": 1,
+    "controllers": 0,
+    "files_changed": 13,
+    "bucket_mix": {
+     "a_real_world": 0,
+     "b_tools_site": 1,
+     "c_checking_themselves": 0,
+     "d_moving_own_work_around": 0
+    },
+    "yield": ""
+   },
+   {
+    "topic": "NatSec100 roster & CE0364 X-Bow",
+    "prs": 39,
+    "merged": 14,
+    "merge_rate_pct": 35.9,
+    "pct_of_all_prs": 1.9,
+    "first_pr": "2026-07-31",
+    "last_activity": "2026-09-09",
+    "span_days": 41,
+    "active_days": 13,
+    "controllers": 21,
+    "files_changed": 200,
+    "bucket_mix": {
+     "a_real_world": 11,
+     "b_tools_site": 1,
+     "c_checking_themselves": 4,
+     "d_moving_own_work_around": 23
+    },
+    "yield": "Roster/identity/X-Bow adjudications on main; Sep 6-8 recovery of the complete 2025 roster from the official report and Phase 0 closure."
+   },
+   {
+    "topic": "Counter-Selector / allocator-war program",
+    "prs": 49,
+    "merged": 41,
+    "merge_rate_pct": 83.7,
+    "pct_of_all_prs": 2.4,
+    "first_pr": "2026-07-31",
+    "last_activity": "2026-08-11",
+    "span_days": 12,
+    "active_days": 4,
+    "controllers": 3,
+    "files_changed": 672,
+    "bucket_mix": {
+     "a_real_world": 31,
+     "b_tools_site": 0,
+     "c_checking_themselves": 14,
+     "d_moving_own_work_around": 4
+    },
+    "yield": "Waves 00-39 on main (acquire -> blind review -> handoff packages); Wave 40 unmerged; the late waves (handoff truth tables, portable proof closure, repoDigest restore) are self-referential controls."
+   },
+   {
+    "topic": "SBIC Critical Technologies (SBICCT)",
+    "prs": 46,
+    "merged": 14,
+    "merge_rate_pct": 30.4,
+    "pct_of_all_prs": 2.2,
+    "first_pr": "2026-08-01",
+    "last_activity": "2026-08-05",
+    "span_days": 5,
+    "active_days": 5,
+    "controllers": 30,
+    "files_changed": 233,
+    "bucket_mix": {
+     "a_real_world": 12,
+     "b_tools_site": 0,
+     "c_checking_themselves": 4,
+     "d_moving_own_work_around": 30
+    },
+    "yield": "RD-02 Waves 01-03 on main; 30 of 46 PRs controllers."
+   },
+   {
+    "topic": "Office of Strategic Capital (OSC)",
+    "prs": 40,
+    "merged": 7,
+    "merge_rate_pct": 17.5,
+    "pct_of_all_prs": 1.9,
+    "first_pr": "2026-08-01",
+    "last_activity": "2026-08-04",
+    "span_days": 4,
+    "active_days": 3,
+    "controllers": 32,
+    "files_changed": 378,
+    "bucket_mix": {
+     "a_real_world": 5,
+     "b_tools_site": 0,
+     "c_checking_themselves": 3,
+     "d_moving_own_work_around": 32
+    },
+    "yield": "RD-03 waves on main; 32 of 40 PRs controllers."
+   },
+   {
+    "topic": "SNAP/CalFresh 50-state implementation matrix (RD-04)",
+    "prs": 495,
+    "merged": 58,
+    "merge_rate_pct": 11.7,
+    "pct_of_all_prs": 23.9,
+    "first_pr": "2026-08-01",
+    "last_activity": "2026-08-15",
+    "span_days": 15,
+    "active_days": 12,
+    "controllers": 425,
+    "files_changed": 4651,
+    "bucket_mix": {
+     "a_real_world": 47,
+     "b_tools_site": 0,
+     "c_checking_themselves": 17,
+     "d_moving_own_work_around": 431
+    },
+    "yield": "Matrix of 50 states x 9 fields (450 cells); roughly 230 cells terminal and 12 of 50 rows complete when issue #1017 retired it on Aug 11; Oregon/Wisconsin capture survives only in an Actions artifact. 425 of 495 PRs were controllers."
+   },
+   {
+    "topic": "ACES governance denominator (RD-05)",
+    "prs": 36,
+    "merged": 4,
+    "merge_rate_pct": 11.1,
+    "pct_of_all_prs": 1.7,
+    "first_pr": "2026-08-01",
+    "last_activity": "2026-08-11",
+    "span_days": 11,
+    "active_days": 6,
+    "controllers": 29,
+    "files_changed": 955,
+    "bucket_mix": {
+     "a_real_world": 6,
+     "b_tools_site": 0,
+     "c_checking_themselves": 1,
+     "d_moving_own_work_around": 29
+    },
+    "yield": "RD-05 Waves 02-03 on main; 29 of 36 PRs controllers, 4 merged."
+   },
+   {
+    "topic": "DCGS-A / Capability Drop foreclosure denominator (RD-06)",
+    "prs": 25,
+    "merged": 10,
+    "merge_rate_pct": 40.0,
+    "pct_of_all_prs": 1.2,
+    "first_pr": "2026-08-01",
+    "last_activity": "2026-08-11",
+    "span_days": 11,
+    "active_days": 4,
+    "controllers": 19,
+    "files_changed": 493,
+    "bucket_mix": {
+     "a_real_world": 3,
+     "b_tools_site": 0,
+     "c_checking_themselves": 1,
+     "d_moving_own_work_around": 21
+    },
+    "yield": ""
+   },
+   {
+    "topic": "Preference Custody lab (PC-xx floors, synthetic constituencies)",
+    "prs": 171,
+    "merged": 70,
+    "merge_rate_pct": 40.9,
+    "pct_of_all_prs": 8.3,
+    "first_pr": "2026-08-01",
+    "last_activity": "2026-08-11",
+    "span_days": 11,
+    "active_days": 11,
+    "controllers": 96,
+    "files_changed": 1401,
+    "bucket_mix": {
+     "a_real_world": 6,
+     "b_tools_site": 0,
+     "c_checking_themselves": 67,
+     "d_moving_own_work_around": 98
+    },
+    "yield": "Synthetic fixtures only: floors v9-v59 (PC-10..PC-61) merged, PC-62 unmerged; every control declares graph_effect: none and counts_toward_thesis_evidence: false; programme retired Aug 11 with no real-world finding."
+   },
+   {
+    "topic": "BVVC defense-capital lake",
+    "prs": 8,
+    "merged": 4,
+    "merge_rate_pct": 50.0,
+    "pct_of_all_prs": 0.4,
+    "first_pr": "2026-08-04",
+    "last_activity": "2026-08-05",
+    "span_days": 2,
+    "active_days": 2,
+    "controllers": 4,
+    "files_changed": 42,
+    "bucket_mix": {
+     "a_real_world": 4,
+     "b_tools_site": 0,
+     "c_checking_themselves": 0,
+     "d_moving_own_work_around": 4
+    },
+    "yield": ""
+   },
+   {
+    "topic": "School.House legal-identity trail",
+    "prs": 179,
+    "merged": 28,
+    "merge_rate_pct": 15.6,
+    "pct_of_all_prs": 8.7,
+    "first_pr": "2026-08-05",
+    "last_activity": "2026-08-08",
+    "span_days": 4,
+    "active_days": 4,
+    "controllers": 150,
+    "files_changed": 792,
+    "bucket_mix": {
+     "a_real_world": 28,
+     "b_tools_site": 0,
+     "c_checking_themselves": 1,
+     "d_moving_own_work_around": 150
+    },
+    "yield": "The densest real-world acquisition: IRS/SAM/USPTO/RDAP/EDGAR/USAspending/state-registry/archived-surface custody on main (26 acquisition + 2 analysis PRs merged) - but 150 of 179 PRs were carriers/controllers, all in 4 days (Aug 5-8)."
+   },
+   {
+    "topic": "Intel CHIPS equity realization inquiry (M-05 S03-L7)",
+    "prs": 25,
+    "merged": 18,
+    "merge_rate_pct": 72.0,
+    "pct_of_all_prs": 1.2,
+    "first_pr": "2026-08-17",
+    "last_activity": "2026-09-08",
+    "span_days": 23,
+    "active_days": 7,
+    "controllers": 5,
+    "files_changed": 110,
+    "bucket_mix": {
+     "a_real_world": 10,
+     "b_tools_site": 0,
+     "c_checking_themselves": 10,
+     "d_moving_own_work_around": 5
+    },
+    "yield": ""
+   },
+   {
+    "topic": "Industrial-exhaust first-party crawl (Dentsu etc.)",
+    "prs": 7,
+    "merged": 5,
+    "merge_rate_pct": 71.4,
+    "pct_of_all_prs": 0.3,
+    "first_pr": "2026-08-17",
+    "last_activity": "2026-09-03",
+    "span_days": 18,
+    "active_days": 4,
+    "controllers": 2,
+    "files_changed": 40,
+    "bucket_mix": {
+     "a_real_world": 3,
+     "b_tools_site": 1,
+     "c_checking_themselves": 0,
+     "d_moving_own_work_around": 3
+    },
+    "yield": ""
+   },
+   {
+    "topic": "Machinery: industrial-exhaust receipt-store/runtime hardening",
+    "prs": 63,
+    "merged": 30,
+    "merge_rate_pct": 47.6,
+    "pct_of_all_prs": 3.0,
+    "first_pr": "2026-08-18",
+    "last_activity": "2026-09-09",
+    "span_days": 23,
+    "active_days": 8,
+    "controllers": 33,
+    "files_changed": 154,
+    "bucket_mix": {
+     "a_real_world": 1,
+     "b_tools_site": 4,
+     "c_checking_themselves": 25,
+     "d_moving_own_work_around": 33
+    },
+    "yield": "30 merged hardening fixes (symlink/hard-link/mount-crossing rejection, dirfd/procfs/Landlock/openat2 confinement) for the crawler's receipt store; adds no new source or finding."
+   },
+   {
+    "topic": "Machinery: crawler text-parsing fixes (phone/wrapper/sentence)",
+    "prs": 11,
+    "merged": 6,
+    "merge_rate_pct": 54.5,
+    "pct_of_all_prs": 0.5,
+    "first_pr": "2026-08-19",
+    "last_activity": "2026-09-03",
+    "span_days": 16,
+    "active_days": 4,
+    "controllers": 4,
+    "files_changed": 51,
+    "bucket_mix": {
+     "a_real_world": 0,
+     "b_tools_site": 7,
+     "c_checking_themselves": 0,
+     "d_moving_own_work_around": 4
+    },
+    "yield": ""
+   },
+   {
+    "topic": "Machinery: PR #2231 release/inspection qualifier diagnostics",
+    "prs": 243,
+    "merged": 0,
+    "merge_rate_pct": 0.0,
+    "pct_of_all_prs": 11.7,
+    "first_pr": "2026-08-24",
+    "last_activity": "2026-09-03",
+    "span_days": 11,
+    "active_days": 11,
+    "controllers": 243,
+    "files_changed": 380,
+    "bucket_mix": {
+     "a_real_world": 0,
+     "b_tools_site": 0,
+     "c_checking_themselves": 0,
+     "d_moving_own_work_around": 243
+    },
+    "yield": "Nothing of its own: 243 never-merge qualifier/diagnostic PRs (V36..V130) existed to get one 5-file CI/release-inspection PR (#2231) merged, 13 days after it opened (Sep 3)."
+   },
+   {
+    "topic": "Machinery: scheduled-crawler admission, App identity, main protection",
+    "prs": 15,
+    "merged": 7,
+    "merge_rate_pct": 46.7,
+    "pct_of_all_prs": 0.7,
+    "first_pr": "2026-09-03",
+    "last_activity": "2026-09-09",
+    "span_days": 7,
+    "active_days": 5,
+    "controllers": 5,
+    "files_changed": 55,
+    "bucket_mix": {
+     "a_real_world": 0,
+     "b_tools_site": 0,
+     "c_checking_themselves": 0,
+     "d_moving_own_work_around": 15
+    },
+    "yield": ""
+   },
+   {
+    "topic": "AXM identity reconciliation (current main)",
+    "prs": 1,
+    "merged": 1,
+    "merge_rate_pct": 100.0,
+    "pct_of_all_prs": 0.0,
+    "first_pr": "2026-09-05",
+    "last_activity": "2026-09-05",
+    "span_days": 1,
+    "active_days": 1,
+    "controllers": 0,
+    "files_changed": 13,
+    "bucket_mix": {
+     "a_real_world": 0,
+     "b_tools_site": 1,
+     "c_checking_themselves": 0,
+     "d_moving_own_work_around": 0
+    },
+    "yield": ""
+   }
+  ]
+ },
+ "effort_split": {
+  "definition": {
+   "a_real_world": "touching the real world = research_acquisition + analysis_findings + case_brief (sources, findings, briefs)",
+   "b_tools_site": "building tools/site = public_site_ui + compiler_datamodel + release",
+   "c_checking_themselves": "checking themselves = validators_selftests + governance_docs (validators, tests, synthetic-control labs, constitution, ledgers, milestones)",
+   "d_moving_own_work_around": "moving their own work around = controller_dispatch + cleanup_retirement + ci_workflow"
+  },
+  "all_prs": {
+   "a_real_world": {
+    "prs": 327,
+    "pct_prs": 15.8,
+    "files": 8869,
+    "pct_files": 39.6
+   },
+   "b_tools_site": {
+    "prs": 102,
+    "pct_prs": 4.9,
+    "files": 2265,
+    "pct_files": 10.1
+   },
+   "c_checking_themselves": {
+    "prs": 205,
+    "pct_prs": 9.9,
+    "files": 2845,
+    "pct_files": 12.7
+   },
+   "d_moving_own_work_around": {
+    "prs": 1435,
+    "pct_prs": 69.4,
+    "files": 8432,
+    "pct_files": 37.6
+   }
+  },
+  "merged_only": {
+   "a_real_world": {
+    "prs": 290,
+    "pct_prs": 46.3,
+    "files": 7944,
+    "pct_files": 56.4
+   },
+   "b_tools_site": {
+    "prs": 67,
+    "pct_prs": 10.7,
+    "files": 1017,
+    "pct_files": 7.2
+   },
+   "c_checking_themselves": {
+    "prs": 187,
+    "pct_prs": 29.8,
+    "files": 2604,
+    "pct_files": 18.5
+   },
+   "d_moving_own_work_around": {
+    "prs": 83,
+    "pct_prs": 13.2,
+    "files": 2527,
+    "pct_files": 17.9
+   }
+  },
+  "unmerged_only": {
+   "a_real_world": {
+    "prs": 37,
+    "pct_prs": 2.6,
+    "files": 925,
+    "pct_files": 11.1
+   },
+   "b_tools_site": {
+    "prs": 35,
+    "pct_prs": 2.4,
+    "files": 1248,
+    "pct_files": 15.0
+   },
+   "c_checking_themselves": {
+    "prs": 18,
+    "pct_prs": 1.2,
+    "files": 241,
+    "pct_files": 2.9
+   },
+   "d_moving_own_work_around": {
+    "prs": 1352,
+    "pct_prs": 93.8,
+    "files": 5905,
+    "pct_files": 71.0
+   }
+  },
+  "file_basis_note": "Files are counted per PR from GitHub file lists (merged: fetched via REST pulls/files, 14,092 files; closed/open: pr-files export, 8,319 files; 4 PRs capped at 500). Controller files inflate the (d) file share because each payload is chunked into many one-line base64 parts; PR counts are the primary measure.",
+  "plain_answer": "By PR count roughly 16% of the agents' effort touched the real world (sources, findings, briefs), 5% built tools/the site, 10% checked themselves, and 69% moved their own work around (66% controller/TEMP/never-merge PRs alone). Of the 30% of PRs that actually landed on main it is 46% real world, 11% tools/site, 30% self-checking and 13% plumbing/cleanup. Two windows (Aug 1-11 and Aug 26-Sep 2) hold 1,523 PRs (74% of all PRs) and are 80% controller PRs.",
+  "controllers_by_what_they_served": {
+   "count": 1361,
+   "breakdown": {
+    "serves_pure_machinery_or_other": 461,
+    "serves_real_world_research_programme": 804,
+    "serves_synthetic_preference_custody_lab": 96
+   },
+   "pct_breakdown": {
+    "serves_pure_machinery_or_other": 33.9,
+    "serves_real_world_research_programme": 59.1,
+    "serves_synthetic_preference_custody_lab": 7.1
+   },
+   "note": "Controller PRs are scored by form (disposable CI-driven carriers), not by payload; most real-world programmes ran their fetches/adjudications inside them."
+  },
+  "controllers_that_were_themselves_external_fetches": {
+   "strict_title_and_body": 40,
+   "title_verb_only": 161,
+   "body_marker_only_not_used": 104,
+   "note": "Some TEMP PRs ARE the run that fetched official sources (e.g. \"TEMP: capture School.House state-registry candidates\", \"TEMP: execute exact RD-04 postpromotion five-route capture\"). Regex estimate only."
+  },
+  "sensitivity": {
+   "a_real_world_pct_if_fetch_controllers_counted": {
+    "strict_40": 17.7,
+    "title_verb_161": 23.6,
+    "baseline": 15.8
+   },
+   "c_if_PC_lab_validators_were_instead_counted_as_tools": {
+    "shift_prs": 67,
+    "note": "PC lab validators are all synthetic fixtures; no real-world effect declared"
+   },
+   "b_if_receipt_store_hardening_counted_as_tools": {
+    "shift_prs": 25,
+    "b_pct": 6.1,
+    "c_pct": 8.7
+   },
+   "d_range": {
+    "low": 61.6,
+    "high": 69.4,
+    "note": "low end reclassifies every controller whose title says capture/probe/crawl/census/discover/acquire/redirect as real-world work"
+   }
+  },
+  "headline_ranges_pct_of_prs": {
+   "a_real_world": "16-24",
+   "b_tools_site": "5",
+   "c_checking_themselves": "10",
+   "d_moving_own_work_around": "62-69"
+  },
+  "programme_purpose_lens": {
+   "note": "Second lens: group PRs by the purpose of the programme (topic) they belong to rather than by what the PR itself does. Real-world programmes absorb most PRs, but only a minority of their PRs are the acquisition/finding/brief itself.",
+   "classes": {
+    "real_world_research_programmes": {
+     "topics": [
+      "A1 / F4 / external-review & field-partner program",
+      "AAH / DCA hypothesis hunts",
+      "ACES governance denominator (RD-05)",
+      "BVVC defense-capital lake",
+      "Biological Omega control surfaces / biosecurity",
+      "Counter-Selector / allocator-war program",
+      "Crawl backlog & official-record crawler intake",
+      "DCGS-A / Capability Drop foreclosure denominator (RD-06)",
+      "Estate game trails (M-02/M-03) & next-ten estates",
+      "Industrial-exhaust first-party crawl (Dentsu etc.)",
+      "Intel CHIPS equity realization inquiry (M-05 S03-L7)",
+      "K0 epistemic admissibility / role-neutral denominators",
+      "M-04 security-state organism (Palantir/Anduril/NGC2/ICE)",
+      "M-04D/B fog-resolution waves (incl. unmerged Wave 09)",
+      "M-04F epistemic jurisdiction / Flock-like sensing",
+      "M-05 answerable power / story ecology (Robodebt, SyRI, Foodinho, HFU)",
+      "NatSec100 roster & CE0364 X-Bow",
+      "Office of Strategic Capital (OSC)",
+      "SBIC Critical Technologies (SBICCT)",
+      "SNAP/CalFresh 50-state implementation matrix (RD-04)",
+      "SSC status-for-sovereignty compact (H01/W01/W02 core, SG-xx)",
+      "School.House legal-identity trail",
+      "UK-AI thesis seams, Electric Twin & topology admissions (Clifford/Starmer/Faculty/EF)"
+     ],
+     "prs": 1229,
+     "pct_of_all_prs": 59.4,
+     "merged": 386,
+     "merge_rate_pct": 31.4,
+     "controllers": 800,
+     "controller_share_pct": 65.1,
+     "pr_that_are_acquisition_finding_or_brief": 297,
+     "pct_that_are_acquisition_finding_or_brief": 24.2
+    },
+    "self_checking_programmes": {
+     "topics": [
+      "POOF / publication-allowlist / no-magic-human judgment authority",
+      "Preference Custody lab (PC-xx floors, synthetic constituencies)",
+      "Thesis kernel / core thesis / conversion architecture"
+     ],
+     "prs": 180,
+     "pct_of_all_prs": 8.7,
+     "merged": 77,
+     "merge_rate_pct": 42.8,
+     "controllers": 96,
+     "controller_share_pct": 53.3,
+     "pr_that_are_acquisition_finding_or_brief": 8,
+     "pct_that_are_acquisition_finding_or_brief": 4.4
+    },
+    "tool_and_site_programmes": {
+     "topics": [
+      "AXM identity reconciliation (current main)",
+      "Alex Karp / legacy graph ingest / Schedule I / master doc",
+      "Dialog directory & Phase-0 comprehension harness",
+      "Evidence lake indexing & AXM Genesis identity waves",
+      "Foundation (Jun 27-Jul 13): ledger, Dialog import, legacy-graph bridge, UI, MCP, crawler intake",
+      "M-04G global evidence hydrology",
+      "Reporter briefing platform",
+      "Visual aperture / Atlas / UI product (1.0-1.3)",
+      "WebsiteIQ audit & Evidence Desk publication estate"
+     ],
+     "prs": 110,
+     "pct_of_all_prs": 5.3,
+     "merged": 71,
+     "merge_rate_pct": 64.5,
+     "controllers": 6,
+     "controller_share_pct": 5.5,
+     "pr_that_are_acquisition_finding_or_brief": 21,
+     "pct_that_are_acquisition_finding_or_brief": 19.1
+    },
+    "pure_machinery_programmes": {
+     "topics": [
+      "Machinery: CI, release gates, Pages deploy, validators",
+      "Machinery: PR #2231 release/inspection qualifier diagnostics",
+      "Machinery: crawler text-parsing fixes (phone/wrapper/sentence)",
+      "Machinery: industrial-exhaust receipt-store/runtime hardening",
+      "Machinery: ref/branch retirement, TEMP export & transport carriers",
+      "Machinery: scheduled-crawler admission, App identity, main protection"
+     ],
+     "prs": 550,
+     "pct_of_all_prs": 26.6,
+     "merged": 93,
+     "merge_rate_pct": 16.9,
+     "controllers": 459,
+     "controller_share_pct": 83.5,
+     "pr_that_are_acquisition_finding_or_brief": 1,
+     "pct_that_are_acquisition_finding_or_brief": 0.2
+    }
+   }
+  },
+  "drafts_among_controllers": 936
+ },
+ "extra_stats": {
+  "file_type_profile_independent_of_pr_categories": {
+   "merged": {
+    "total": 14092,
+    "pct": {
+     "research_data": 49.0,
+     "compiler_tools": 14.6,
+     "test_validator": 11.9,
+     "findings_reports": 9.4,
+     "docs": 5.5,
+     "workflow": 5.0,
+     "carrier": 1.6,
+     "ui": 1.2,
+     "other": 1.1,
+     "case_brief": 0.6
+    }
+   },
+   "unmerged": {
+    "total": 8319,
+    "pct": {
+     "research_data": 32.5,
+     "carrier": 23.0,
+     "workflow": 18.7,
+     "compiler_tools": 8.7,
+     "test_validator": 6.4,
+     "findings_reports": 6.1,
+     "docs": 3.6,
+     "case_brief": 0.6,
+     "ui": 0.4,
+     "other": 0.2
+    }
+   }
+  },
+  "active_pr_days": 64,
+  "days_where_controllers_over_half_of_prs": 25,
+  "peak_day": [
+   "2026-08-08",
+   197
+  ],
+  "top_5_days_by_prs": [
+   [
+    "2026-08-08",
+    197
+   ],
+   [
+    "2026-08-05",
+    131
+   ],
+   [
+    "2026-08-01",
+    127
+   ],
+   [
+    "2026-08-10",
+    125
+   ],
+   [
+    "2026-08-09",
+    119
+   ]
+  ],
+  "zero_merge_stretch": "2026-08-26..2026-09-02 (8 days, 235 PRs created, 1 merged)",
+  "pr_files_per_closed_pr_median": 1,
+  "one_file_closed_prs": 842,
+  "closed_prs_with_file_lists": 1442,
+  "codex_review_requests_by_agents_account": 304,
+  "codex_bot_review_comments": 223,
+  "issues_total": 599,
+  "issues_open_at_export": 258,
+  "machine_generated_crawl_rejection_issues": 89,
+  "branches_in_repo": 2345
+ }
+}
