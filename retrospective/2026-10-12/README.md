@@ -24,6 +24,7 @@ A full record of what the agents did in this repo between 27 June and 14 Septemb
 | `analyses/incentive-map.json` | 134 actors, 71 dated and sourced edges, 19 documented non-links, 19 ambiguity points |
 | `analyses/conclusion-tests.json` | Search for any recorded prediction or reproduction test, and what a blind test would need |
 | `analyses/preservation.json` | What was at risk of loss, by when, and what was saved |
+| `disposition/` | Where the content of every pull request (2,069) and issue (599) lives now, computed from blob hashes against the all-refs bundle: `pr-disposition.tsv`, `issue-disposition.tsv` and `SUMMARY.md`. The 195 research files that existed only in 29 pull request heads were copied to `archive/pull-requests/` |
 | `branches/lake-identity-waves-01-20/` | Moved to `archive/evidence-lake-identity/` (a one-line pointer file remains here). Research files from the evidence-lake identity branch chain (bulk-closed 11 Aug): canonical registry with 65 organisations, identity census, topology |
 | `branches/lake-allocator-war-waves-21-38/` | Moved to `archive/allocator-war/` (a one-line pointer file remains here). Research files from the allocator-war branch chain: 150 official-source captures and 31 open obligations |
 | `branches/lake-branch-heads.tsv` | Head commit of all 43 lake branches |
