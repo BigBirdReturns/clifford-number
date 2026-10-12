@@ -1,0 +1,2865 @@
+{
+ "meta": {
+  "built": "2026-10-12",
+  "repo": "BigBirdReturns/clifford-number (read-only mining)",
+  "method": "Edges are copied from receipted ledger/case/intake files; 'confidence' is one of: official record | primary statement | press | inferred. Items taken only from docs/clifford-number-master.md (raw research) or Sprint intake files are flagged in confidence_note. Co-participants listed as plain labels are not necessarily actor nodes.",
+  "caveats": [
+   "Every edge in the repo carries graph_effect: none and a non-inference boundary; this file keeps those boundaries in does_not_establish.",
+   "Edges marked sub=counterweight or outsider_* are included deliberately: they are part of the incentive structure, not exceptions to it.",
+   "The repo also contains a separate 'status-sovereignty compact' hypothesis lane (SSC-H01); it is source-supplied hypothesis, not receipted fact, and is excluded here.",
+   "NL-19 and the 'obvious' list are this map's reading of the repo, not repo findings.",
+   "The NatSec100 seed claims label many Silent Ventures investment rows 'official', but their receipts (r-linkedin-silentventures-2026, r-wellfound-jacksonmoses-2026, r-dallasinnovates-moses-2025) are receipt_unresolved (21 of 22 seed receipt IDs were demoted). This map therefore carries Silent Ventures portfolio edges as 'primary statement' via the silentvc.com page, not as official records."
+  ],
+  "counts": {
+   "actors": 134,
+   "edges": 71,
+   "non_links": 19,
+   "ambiguity_points": 19,
+   "obvious": 13
+  }
+ },
+ "actors": [
+  {
+   "id": "matt-clifford",
+   "label": "Matt Clifford",
+   "kind": "person",
+   "jurisdiction": "UK",
+   "note": "Anchor. EF co-founder/chair; ARIA chair; PM's Rep for AI Safety Summit (2023-08-10); Frontier AI Taskforce External Advisory Board vice-chair (2023-09-07); AI Opportunities Action Plan lead (2024-07-26); unpaid AI Opportunities Adviser (2025-01-13). Raw master doc reports a step-down ~mid-2025 that is NOT ledger-receipted (end date of adviser role unknown). No award/source-selection authority in any record."
+  },
+  {
+   "id": "alice-bentinck",
+   "label": "Alice Bentinck",
+   "kind": "person",
+   "jurisdiction": "UK",
+   "note": "EF co-founder (UK gov profile 2018-07-05); current CEO per EF site (raw master)."
+  },
+  {
+   "id": "keir-starmer",
+   "label": "Keir Starmer",
+   "kind": "person",
+   "jurisdiction": "UK",
+   "note": "PM; commissioned SDR (2024-07-17) and took forward all 50 Action Plan recommendations (2025-01-13)."
+  },
+  {
+   "id": "john-healey",
+   "label": "John Healey",
+   "kind": "person",
+   "jurisdiction": "UK",
+   "note": "Defence Secretary; oversaw SDR; quoted with Anduril UK on 2025-03-06 and 2025-12-08; visited Anduril in Washington 2025-03-05."
+  },
+  {
+   "id": "peter-kyle",
+   "label": "Peter Kyle",
+   "kind": "person",
+   "jurisdiction": "UK",
+   "note": "DSIT Secretary of State who commissioned the Action Plan (raw master doc only; not ledger-receipted)."
+  },
+  {
+   "id": "george-robertson",
+   "label": "George Robertson",
+   "kind": "person",
+   "jurisdiction": "UK",
+   "note": "Lead external SDR Reviewer (terms 2024-07-17)."
+  },
+  {
+   "id": "richard-barrons",
+   "label": "Richard Barrons",
+   "kind": "person",
+   "jurisdiction": "UK",
+   "note": "External SDR Reviewer."
+  },
+  {
+   "id": "fiona-hill",
+   "label": "Fiona Hill",
+   "kind": "person",
+   "jurisdiction": "UK/US",
+   "note": "External SDR Reviewer."
+  },
+  {
+   "id": "ian-hogarth",
+   "label": "Ian Hogarth",
+   "kind": "person",
+   "jurisdiction": "UK",
+   "note": "Frontier AI Taskforce Chair (named in same 2023-09-07 announcement but not on the 7-person advisory board). Raw master: later Plural GP; divested Anthropic/Stability AI on appointment."
+  },
+  {
+   "id": "frontier-ai-taskforce-advisory-board",
+   "label": "Frontier AI Taskforce External Advisory Board",
+   "kind": "venue",
+   "jurisdiction": "UK",
+   "note": "7 appointees 2023-09-07: Clifford (vice-chair), Bengio, Anne Keast-Butler (GCHQ Director), Alex Van Someren (CSA National Security), Matt Collins (Deputy NSA), Paul Christiano, Dame Helen Stokes-Lampard."
+  },
+  {
+   "id": "ben-warner",
+   "label": "Ben Warner",
+   "kind": "person",
+   "jurisdiction": "UK",
+   "note": "ASI Data Science Commercial Principal (2018-01-24); Chief Adviser to PM on Digital and Data (official observations 2020-03-13 to 2021-05-13); Electric Twin co-founder/director (inc. 2023-09-28); Centre for Human Progress director (2025-08-05). Vote Leave data work (2016) is org-level only in ledger."
+  },
+  {
+   "id": "alex-cooper",
+   "label": "Alex Cooper",
+   "kind": "person",
+   "jurisdiction": "UK",
+   "note": "Electric Twin CEO/co-founder/director (inc. 2023-09-28); DHSC mass-testing director 2020 (raw master; primary_public)."
+  },
+  {
+   "id": "marc-warner",
+   "label": "Marc Warner",
+   "kind": "person",
+   "jurisdiction": "UK",
+   "note": "Faculty Science director since 2014-02-03; Faculty CEO; Accenture CTO + Global Management Committee after Mar 2026 (issue #33 receipt)."
+  },
+  {
+   "id": "saul-klein",
+   "label": "Saul Klein",
+   "kind": "person",
+   "jurisdiction": "UK",
+   "note": "Faculty Science director since 2016-04-21. Repo REFUSES to place him on the Electric Twin/LocalGlobe round (round receipts name only the organisation)."
+  },
+  {
+   "id": "simon-case",
+   "label": "Simon Case",
+   "kind": "person",
+   "jurisdiction": "UK",
+   "note": "Cabinet Secretary 2020-09-09 to 2024-12-15; last civil-service day 2025-03-31; Team Barrow chair from 2025-02-10; Electric Twin Ethics Board (unpaid, part-time) per Civil Service Commission 2026-06-11."
+  },
+  {
+   "id": "ben-blume",
+   "label": "Ben Blume",
+   "kind": "person",
+   "jurisdiction": "UK",
+   "note": "Electric Twin director appointed 2025-09-12; nominating investor NOT identified in record."
+  },
+  {
+   "id": "michael-muthukrishna",
+   "label": "Michael Muthukrishna",
+   "kind": "person",
+   "jurisdiction": "UK",
+   "note": "LSE; Electric Twin Scientific Advisor (first obs 2024-11-03, later 'Chief Science Advisor'); Centre for Human Progress director with Ben Warner (2025-08-05)."
+  },
+  {
+   "id": "louis-mosley",
+   "label": "Louis Mosley",
+   "kind": "person",
+   "jurisdiction": "UK",
+   "note": "Palantir representative at the 2023-06-02 Technology Secretary roundtable (M05 sprint-01 source); named Electric Twin angel (2026-02-11/12); described as Palantir EVP in wrap-up (reported)."
+  },
+  {
+   "id": "marc-andreessen",
+   "label": "Marc Andreessen",
+   "kind": "person",
+   "jurisdiction": "US",
+   "note": "Named angel in Electric Twin $10M round (company post 2026-02-11). Relationship to a16z is public knowledge but not receipted in ledger."
+  },
+  {
+   "id": "cal-henderson",
+   "label": "Cal Henderson",
+   "kind": "person",
+   "jurisdiction": "US",
+   "note": "Electric Twin angel (2026-02-12 post)."
+  },
+  {
+   "id": "eric-salama",
+   "label": "Eric Salama",
+   "kind": "person",
+   "jurisdiction": "UK",
+   "note": "Electric Twin angel (2026-02-12 post)."
+  },
+  {
+   "id": "tom-shinner",
+   "label": "Tom Shinner",
+   "kind": "person",
+   "jurisdiction": "UK",
+   "note": "Electric Twin angel (2026-02-12 post); 'EF-linked' only in raw master."
+  },
+  {
+   "id": "laura-gilbert",
+   "label": "Laura Gilbert",
+   "kind": "person",
+   "jurisdiction": "UK",
+   "note": "10DS founding director (2020-09 to 2025-01), i.AI director; then EIT Oxford + 1 day/wk DSIT expert adviser + 1 day/wk TBI (RAW MASTER ONLY, reported)."
+  },
+  {
+   "id": "jeremy-fleming",
+   "label": "Jeremy Fleming",
+   "kind": "person",
+   "jurisdiction": "UK",
+   "note": "GCHQ Director 2017-04 to 2023-05; GALLOS Technologies strategic advisory board chair from 2023-09 (RAW MASTER ONLY; ACOBA-approved per master)."
+  },
+  {
+   "id": "rich-drake",
+   "label": "Rich Drake",
+   "kind": "person",
+   "jurisdiction": "UK",
+   "note": "Anduril UK director (2024-07-31); MD Anduril UK & Europe; quoted with Healey 2025-03-06 and in Atlantic Bastion release 2025-12-08."
+  },
+  {
+   "id": "maury-shenk",
+   "label": "Maury Shenk",
+   "kind": "person",
+   "jurisdiction": "UK/US",
+   "note": "Anduril UK director appointed 2024-07-31."
+  },
+  {
+   "id": "greg-kausner",
+   "label": "Greg Kausner",
+   "kind": "person",
+   "jurisdiction": "US",
+   "note": "Anduril Head of Global Defense (joined 2022-03-28 from State/Senate/DIU/Navy roles per company bio); quoted in TALOS Phase 3 announcement 2023-11-02."
+  },
+  {
+   "id": "dan-sawyers",
+   "label": "Dan Sawyers",
+   "kind": "person",
+   "jurisdiction": "UK",
+   "note": "Lt Col, Head of jHub, UK Strategic Command; quoted in TALOS Phase 3 announcement."
+  },
+  {
+   "id": "gwyn-jenkins",
+   "label": "Gwyn Jenkins",
+   "kind": "person",
+   "jurisdiction": "UK",
+   "note": "First Sea Lord; Atlantic Bastion release."
+  },
+  {
+   "id": "scott-jamieson-bae",
+   "label": "Scott Jamieson",
+   "kind": "person",
+   "jurisdiction": "UK",
+   "note": "BAE Systems Defence Solutions MD; Atlantic Bastion release."
+  },
+  {
+   "id": "amelia-gould-helsing",
+   "label": "Amelia Gould",
+   "kind": "person",
+   "jurisdiction": "UK",
+   "note": "Helsing GM Maritime; Atlantic Bastion release."
+  },
+  {
+   "id": "mod",
+   "label": "UK Ministry of Defence",
+   "kind": "org",
+   "jurisdiction": "UK",
+   "note": "Buyer in TALOS, AI Fight Tonight, ENTRELEZAR, DDAD, Project NYX, Atlantic Bastion; publisher of SDR."
+  },
+  {
+   "id": "strategic-command-jhub",
+   "label": "UK Strategic Command / jHub",
+   "kind": "org",
+   "jurisdiction": "UK",
+   "note": "Public route for TALOS (Phases II/3)."
+  },
+  {
+   "id": "des",
+   "label": "Defence Equipment & Support",
+   "kind": "org",
+   "jurisdiction": "UK",
+   "note": "Led 2025-03-06 Ukraine Altius contracts (IFU-backed)."
+  },
+  {
+   "id": "dbt",
+   "label": "Department for Business and Trade",
+   "kind": "org",
+   "jurisdiction": "UK",
+   "note": "Ministerial meeting 2025-05-19 with Anduril."
+  },
+  {
+   "id": "home-office-border-force",
+   "label": "Home Office Border Force",
+   "kind": "org",
+   "jurisdiction": "UK",
+   "note": "Buyer of Anduril UK COPCI managed service."
+  },
+  {
+   "id": "dsit",
+   "label": "Department for Science, Innovation and Technology",
+   "kind": "org",
+   "jurisdiction": "UK",
+   "note": "Commissioned Action Plan; publishes Clifford interests register; roundtable register."
+  },
+  {
+   "id": "uk-government-pm",
+   "label": "UK Government / Prime Minister's Office",
+   "kind": "org",
+   "jurisdiction": "UK",
+   "note": "Appointing authority for Clifford's summit-rep and adviser roles."
+  },
+  {
+   "id": "no-10",
+   "label": "No. 10",
+   "kind": "org",
+   "jurisdiction": "UK",
+   "note": "Broad venue; Warner role observations."
+  },
+  {
+   "id": "aria",
+   "label": "ARIA",
+   "kind": "org",
+   "jurisdiction": "UK",
+   "note": "DSIT-sponsored non-departmental public body; Clifford chair."
+  },
+  {
+   "id": "entrepreneur-first",
+   "label": "Entrepreneur First",
+   "kind": "org",
+   "jurisdiction": "UK",
+   "note": "Co-founded by Clifford/Bentinck; EF site lists Hoffman/Schmidt/Hassabis as investors (raw master)."
+  },
+  {
+   "id": "anduril-industries-inc",
+   "label": "Anduril Industries, Inc. (US)",
+   "kind": "org",
+   "jurisdiction": "US",
+   "note": "Named supplier in AI Fight Tonight and TALOS Phase II notices; ENTRELEZAR label conflicts with UK company number."
+  },
+  {
+   "id": "anduril-industries-uk-ltd",
+   "label": "Anduril Industries UK Ltd (12316056)",
+   "kind": "org",
+   "jurisdiction": "UK",
+   "note": "Incorporated 2019-11-14; PSC statement: no registrable person; directors Grimm (2019), Drake & Shenk (2024-07-31)."
+  },
+  {
+   "id": "bae-systems",
+   "label": "BAE Systems",
+   "kind": "org",
+   "jurisdiction": "UK",
+   "note": "Atlantic Bastion; Project NYX (Operations Ltd); Team Barrow partner (not a funder in ledger)."
+  },
+  {
+   "id": "helsing",
+   "label": "Helsing",
+   "kind": "org",
+   "jurisdiction": "EU",
+   "note": "Atlantic Bastion named contributor."
+  },
+  {
+   "id": "tekever",
+   "label": "Tekever Ltd",
+   "kind": "org",
+   "jurisdiction": "UK",
+   "note": "Project NYX four-supplier downselect."
+  },
+  {
+   "id": "thales-uk",
+   "label": "Thales UK Ltd",
+   "kind": "org",
+   "jurisdiction": "UK",
+   "note": "Project NYX four-supplier downselect."
+  },
+  {
+   "id": "team-barrow",
+   "label": "Team Barrow / Barrow Delivery Board",
+   "kind": "org",
+   "jurisdiction": "UK",
+   "note": "£200M Transformation Fund (govt); BAE Systems and Westmorland & Furness Council are partners."
+  },
+  {
+   "id": "programme-talos",
+   "label": "Programme TALOS",
+   "kind": "decision",
+   "jurisdiction": "UK",
+   "note": "Strategic Command/jHub force-protection programme with Anduril; Phases II (2021) and 3 (2023)."
+  },
+  {
+   "id": "strategic-defence-review",
+   "label": "Strategic Defence Review 2024-2025",
+   "kind": "decision",
+   "jurisdiction": "UK",
+   "note": "Terms 2024-07-17; published 2025-06-02."
+  },
+  {
+   "id": "project-nyx",
+   "label": "Project NYX",
+   "kind": "decision",
+   "jurisdiction": "UK",
+   "note": "Apache-support drone programme; 7 shortlisted 2026-01-24, 4 selected 2026-05-15 (£10M)."
+  },
+  {
+   "id": "atlantic-bastion",
+   "label": "Atlantic Bastion",
+   "kind": "decision",
+   "jurisdiction": "UK",
+   "note": "Undersea warfare programme launch 2025-12-08; 26 proposals, 20 demonstrators."
+  },
+  {
+   "id": "ai-safety-summit-2023",
+   "label": "AI Safety Summit (Nov 2023)",
+   "kind": "venue",
+   "jurisdiction": "UK",
+   "note": "Clifford and Jonathan Black were PM's Reps for preparation."
+  },
+  {
+   "id": "ai-opportunities-action-plan",
+   "label": "AI Opportunities Action Plan",
+   "kind": "decision",
+   "jurisdiction": "UK",
+   "note": "ToR 2024-07-26; 50 recommendations 2025-01-13: sovereign compute, AI Growth Zones, National Data Library, procurement reform, government as strategic AI customer, domestic champions, national-security collaboration."
+  },
+  {
+   "id": "dsit-roundtable-2023-10-17",
+   "label": "DSIT/techUK AI Safety Summit roundtable (16 named orgs incl. Anduril)",
+   "kind": "venue",
+   "jurisdiction": "UK",
+   "note": "Row in DSIT ministerial meeting register; Clifford absent."
+  },
+  {
+   "id": "dsit-investor-roundtable-2023-10-25",
+   "label": "DSIT AI investor roundtable (9 named entries incl. Clifford)",
+   "kind": "venue",
+   "jurisdiction": "UK",
+   "note": "Row in DSIT ministerial meeting register; Anduril absent."
+  },
+  {
+   "id": "roundtable-2023-06-02",
+   "label": "Technology Secretary roundtable with leading AI innovators",
+   "kind": "venue",
+   "jurisdiction": "UK",
+   "note": "Official attendance list names Clifford and Palantir's Louis Mosley."
+  },
+  {
+   "id": "faculty",
+   "label": "Faculty Science Ltd (08873131) / ASI Data Science",
+   "kind": "org",
+   "jurisdiction": "UK",
+   "note": "ASI->Faculty brand 2019-02-08; Accenture PSC effective 2026-03-12; completion announced 2026-03-16; consideration undisclosed."
+  },
+  {
+   "id": "accenture",
+   "label": "Accenture",
+   "kind": "org",
+   "jurisdiction": "global",
+   "note": "Acquired Faculty (agreement 2026-01-06)."
+  },
+  {
+   "id": "electric-twin",
+   "label": "Electric Twin Ltd (15173006)",
+   "kind": "org",
+   "jurisdiction": "UK",
+   "note": "Inc. 2023-09-28; synthetic-audience products; News UK, Lebara, Virgin customers (first-party)."
+  },
+  {
+   "id": "atomico",
+   "label": "Atomico",
+   "kind": "org",
+   "jurisdiction": "UK",
+   "note": "Lead of $10M round (announced 2026-02-11); two Atomico Venture VI vehicles hold 604,294 Seed 2 Preferred at 2025-09-27."
+  },
+  {
+   "id": "localglobe",
+   "label": "LocalGlobe",
+   "kind": "org",
+   "jurisdiction": "UK",
+   "note": "LocalGlobe XII LP: 631,578 Seed 1 + 48,559 Seed 2 Preferred at 2025-09-27."
+  },
+  {
+   "id": "mercuri",
+   "label": "Mercuri GP LLP",
+   "kind": "org",
+   "jurisdiction": "UK",
+   "note": "70,175 Seed 1 + 86,327 Seed 2 Preferred at 2025-09-27."
+  },
+  {
+   "id": "samos",
+   "label": "Samos Investments",
+   "kind": "org",
+   "jurisdiction": "UK",
+   "note": "Named institutional participant 2026-02-12."
+  },
+  {
+   "id": "news-uk",
+   "label": "News UK",
+   "kind": "org",
+   "jurisdiction": "UK",
+   "note": "Times ExplorAItion launched 2026-04-27."
+  },
+  {
+   "id": "lebara",
+   "label": "Lebara",
+   "kind": "org",
+   "jurisdiction": "UK",
+   "note": "Customer-use observation 2026-03-11 (vendor-reported)."
+  },
+  {
+   "id": "virgin",
+   "label": "Virgin (source-name scope)",
+   "kind": "org",
+   "jurisdiction": "UK",
+   "note": "MAD//Fest shared stage 2026-07-08; legal entity unidentified."
+  },
+  {
+   "id": "gartner",
+   "label": "Gartner",
+   "kind": "org",
+   "jurisdiction": "global",
+   "note": "Electric Twin reports inclusion in a synthetic-audience category (33 of 60 reviewed), 2026-06-25."
+  },
+  {
+   "id": "centre-for-human-progress",
+   "label": "Centre for Human Progress (16630851)",
+   "kind": "org",
+   "jurisdiction": "UK",
+   "note": "Five directors appointed 2025-08-05 incl. Muthukrishna and Ben Warner."
+  },
+  {
+   "id": "lse",
+   "label": "LSE",
+   "kind": "org",
+   "jurisdiction": "UK",
+   "note": "Article header attributes 'independent validation' to LSE."
+  },
+  {
+   "id": "peter-thiel",
+   "label": "Peter Thiel",
+   "kind": "person",
+   "jurisdiction": "US",
+   "note": "Palantir co-founder/chair since 2003; Founders Fund managing partner; Dialog co-founder (WIRED)."
+  },
+  {
+   "id": "joe-lonsdale",
+   "label": "Joe Lonsdale",
+   "kind": "person",
+   "jurisdiction": "US",
+   "note": "Palantir co-founder; 8VC founder; Dialog-listed."
+  },
+  {
+   "id": "palantir",
+   "label": "Palantir Technologies",
+   "kind": "org",
+   "jurisdiction": "US",
+   "note": "FY2025: gov revenue $2.402B (54%); founder voting control up to 49.999999%."
+  },
+  {
+   "id": "shyam-sankar",
+   "label": "Shyam Sankar",
+   "kind": "person",
+   "jurisdiction": "US",
+   "note": "Palantir CTO; Army Reserve Lt Col, Detachment 201 (2025-06-13)."
+  },
+  {
+   "id": "andrew-bosworth",
+   "label": "Andrew Bosworth",
+   "kind": "person",
+   "jurisdiction": "US",
+   "note": "Meta CTO; Det. 201 (2025-06-13)."
+  },
+  {
+   "id": "kevin-weil",
+   "label": "Kevin Weil",
+   "kind": "person",
+   "jurisdiction": "US",
+   "note": "OpenAI CPO; Det. 201 (2025-06-13)."
+  },
+  {
+   "id": "bob-mcgrew",
+   "label": "Bob McGrew",
+   "kind": "person",
+   "jurisdiction": "US",
+   "note": "Thinking Machines adviser; Det. 201 (2025-06-13)."
+  },
+  {
+   "id": "dan-driscoll",
+   "label": "Dan Driscoll",
+   "kind": "person",
+   "jurisdiction": "US",
+   "note": "Secretary of the Army; administered Det. 201 Cohort 2 oath 2026-06-10; Dialog-listed."
+  },
+  {
+   "id": "detachment-201",
+   "label": "Detachment 201 / Executive Innovation Corps",
+   "kind": "org",
+   "jurisdiction": "US",
+   "note": "Army Reserve unit commissioning executives as part-time advisers; cohort 1 2025-06-13; cohort 2 (Knecht/Cloudflare, Pullara/Sutter Hill, Piantino) 2026-06-10."
+  },
+  {
+   "id": "us-army",
+   "label": "U.S. Army",
+   "kind": "org",
+   "jurisdiction": "US",
+   "note": "Buyer: Palantir EA (2025), Anduril EA (2026-03-13), NGC2."
+  },
+  {
+   "id": "dialog",
+   "label": "Dialog (society)",
+   "kind": "venue",
+   "jurisdiction": "US/global",
+   "note": "Invitation-only convening; exposed 112-name directory (observed 2026-06-16) + 3 reported leadership roles."
+  },
+  {
+   "id": "ngc2",
+   "label": "Army Next Generation Command and Control",
+   "kind": "decision",
+   "jurisdiction": "US",
+   "note": "Prototype OTA to Team Anduril 2025-07-18; baseline decision 2026-06-22."
+  },
+  {
+   "id": "raft",
+   "label": "Raft",
+   "kind": "org",
+   "jurisdiction": "US",
+   "note": "NGC2 registries/transformation/federation role; Washington Harbour portfolio."
+  },
+  {
+   "id": "lockheed-martin",
+   "label": "Lockheed Martin",
+   "kind": "org",
+   "jurisdiction": "US",
+   "note": "25th ID full-stack lead in NGC2."
+  },
+  {
+   "id": "dcgs-a2",
+   "label": "DCGS-A Increment 2",
+   "kind": "decision",
+   "jurisdiction": "US",
+   "note": "Army solicitation 2015-12-23; Palantir protest/litigation; CD1 awards 2018-03-08."
+  },
+  {
+   "id": "anduril-us",
+   "label": "Anduril Industries (US parent)",
+   "kind": "org",
+   "jurisdiction": "US",
+   "note": "NatSec100 #2 (2023, 2024), #1 (2025, 2026); held by 8 of 11 censused funds; Area-I (2021), Adranos (2023), Numerica (2025)."
+  },
+  {
+   "id": "michael-obadal",
+   "label": "Michael Obadal",
+   "kind": "person",
+   "jurisdiction": "US",
+   "note": "Under Secretary of the Army from 2025-09-22; prior Anduril employment/directorship per case file; ethics/recusal file not public."
+  },
+  {
+   "id": "palmer-luckey",
+   "label": "Palmer Luckey",
+   "kind": "person",
+   "jurisdiction": "US",
+   "note": "Anduril founder; named in OCC letter as proposed Erebor director/principal shareholder."
+  },
+  {
+   "id": "trae-stephens",
+   "label": "Trae Stephens",
+   "kind": "person",
+   "jurisdiction": "US",
+   "note": "Founders Fund partner; Anduril executive chairman (Founders Fund page; counterpart-reported)."
+  },
+  {
+   "id": "cbp",
+   "label": "U.S. Customs and Border Protection",
+   "kind": "org",
+   "jurisdiction": "US",
+   "note": "$362,974,500 tower order 2025-12-25."
+  },
+  {
+   "id": "congress-pl119-21",
+   "label": "Public Law 119-21 s.90004",
+   "kind": "decision",
+   "jurisdiction": "US",
+   "note": "Funds limited to towers CBP had tested and accepted; enacted 2025-07-04; authorship unknown."
+  },
+  {
+   "id": "dod-dpa",
+   "label": "DoD Defense Production Act Title III",
+   "kind": "org",
+   "jurisdiction": "US",
+   "note": "$14.3M solid-rocket-motor award 2025-01-07."
+  },
+  {
+   "id": "space-force",
+   "label": "U.S. Space Force",
+   "kind": "org",
+   "jurisdiction": "US",
+   "note": "SDANet Phase III single-award IDIQ FA882024DB001 (2024-09-24)."
+  },
+  {
+   "id": "army-enterprise-anduril",
+   "label": "Army enterprise contract W9128Z-26-D-A001",
+   "kind": "decision",
+   "jurisdiction": "US",
+   "note": "Single-award 10-year IDIQ, $20B ceiling, awarded 2026-03-13."
+  },
+  {
+   "id": "army-enterprise-palantir",
+   "label": "Army-Palantir enterprise agreement (2025)",
+   "kind": "decision",
+   "jurisdiction": "US",
+   "note": "75 contracts consolidated; up to $10B / 10 yrs; sole-source J&A."
+  },
+  {
+   "id": "jackson-moses",
+   "label": "Jackson Moses",
+   "kind": "person",
+   "jurisdiction": "US",
+   "note": "Silent Ventures founder/managing partner; router score 6/8 (discovery routing, not suspicion); 61-company personal list; self-claimed advisory/sourcing roles."
+  },
+  {
+   "id": "silent-ventures",
+   "label": "Silent Ventures (Management LLC; Fund II LP)",
+   "kind": "org",
+   "jurisdiction": "US",
+   "note": "IAPD Exempt Reporting Adviser CRD 326901; Fund II Form D filed 2025-08-27, first sale not yet occurred. Silent Capital is a distinct 506(b) syndicate ('not a single legal entity')."
+  },
+  {
+   "id": "silent-capital",
+   "label": "Silent Capital",
+   "kind": "org",
+   "jurisdiction": "US",
+   "note": "Private syndicate; 'exclusively partners with Silent Ventures'."
+  },
+  {
+   "id": "svdg-natsec100",
+   "label": "SVDG / NatSec100",
+   "kind": "org",
+   "jurisdiction": "US",
+   "note": "Nonprofit ranking operator; 2026 eligibility requires a US government contract by 2025-12-31 and FOCI vetting; weights proprietary."
+  },
+  {
+   "id": "james-cross",
+   "label": "James Cross",
+   "kind": "person",
+   "jurisdiction": "US",
+   "note": "SVDG co-founder AND Franklin Templeton private-investing co-head (NatSec100 report R001)."
+  },
+  {
+   "id": "franklin-templeton",
+   "label": "Franklin Templeton (Ventures)",
+   "kind": "org",
+   "jurisdiction": "US",
+   "note": "NatSec100 scoring-methodology partner all four editions."
+  },
+  {
+   "id": "jpmorgan",
+   "label": "J.P. Morgan",
+   "kind": "org",
+   "jurisdiction": "US",
+   "note": "NatSec100 title sponsor from 2024."
+  },
+  {
+   "id": "balyasny",
+   "label": "Balyasny Asset Management",
+   "kind": "org",
+   "jurisdiction": "US",
+   "note": "NatSec100 scoring-methodology partner (algorithm/data analytics)."
+  },
+  {
+   "id": "pryzm",
+   "label": "Pryzm",
+   "kind": "org",
+   "jurisdiction": "US",
+   "note": "Federal-award data platform; direct ranking input from 2026."
+  },
+  {
+   "id": "founders-fund",
+   "label": "Founders Fund",
+   "kind": "org",
+   "jurisdiction": "US",
+   "note": "Holds Anduril, Hadrian, Impulse, Palantir (portfolio listings); Sanabil lists it as a fund partner (raw master)."
+  },
+  {
+   "id": "eight-vc",
+   "label": "8VC",
+   "kind": "org",
+   "jurisdiction": "US",
+   "note": "Joe Lonsdale; holds Anduril, Palantir, Saronic, CHAOS, Epirus, Overland (portfolio listings)."
+  },
+  {
+   "id": "a16z-ad",
+   "label": "a16z American Dynamism",
+   "kind": "org",
+   "jurisdiction": "US",
+   "note": "Holds Anduril, Hadrian, APEX, Radiant; Katherine Boyle board seats (Apex, Hadrian), observer (Saronic, Castelion)."
+  },
+  {
+   "id": "katherine-boyle",
+   "label": "Katherine Boyle",
+   "kind": "person",
+   "jurisdiction": "US",
+   "note": "a16z American Dynamism; board/observer seats (counterpart-reported)."
+  },
+  {
+   "id": "lux-capital",
+   "label": "Lux Capital",
+   "kind": "org",
+   "jurisdiction": "US",
+   "note": "Holds Anduril, Hadrian, Impulse; co-invested in Traysar."
+  },
+  {
+   "id": "in-q-tel",
+   "label": "In-Q-Tel",
+   "kind": "org",
+   "jurisdiction": "US",
+   "note": "#1 NatSec100 investor by count (34/100 in 2023; 33 in 2026)."
+  },
+  {
+   "id": "valor-equity",
+   "label": "Valor Equity Partners",
+   "kind": "org",
+   "jurisdiction": "US",
+   "note": "Led CHAOS Series D; holds Anduril, SpaceX, Impulse."
+  },
+  {
+   "id": "washington-harbour",
+   "label": "Washington Harbour Partners",
+   "kind": "org",
+   "jurisdiction": "US",
+   "note": "Holds Anduril, CHAOS, Firestorm, Hadrian, Raft."
+  },
+  {
+   "id": "lockheed-martin-ventures",
+   "label": "Lockheed Martin Ventures",
+   "kind": "org",
+   "jurisdiction": "US",
+   "note": "Firestorm seed co-investor (reported); 2026 report: 60+ portfolio cos became LM suppliers, $750M+ contracts."
+  },
+  {
+   "id": "erebor",
+   "label": "Erebor Bank, N.A.",
+   "kind": "org",
+   "jurisdiction": "US",
+   "note": "OCC charter 25357; FDIC cert 59378; opened 2026-02-06; Silent Ventures lists it as portfolio."
+  },
+  {
+   "id": "fundrise",
+   "label": "Fundrise Innovation Fund",
+   "kind": "org",
+   "jurisdiction": "US",
+   "note": "Bought $5M Erebor Series B on 2026-02-20; also holds Anduril, SpaceX."
+  },
+  {
+   "id": "occ",
+   "label": "OCC",
+   "kind": "org",
+   "jurisdiction": "US",
+   "note": "Conditional charter approval 2025-10-15."
+  },
+  {
+   "id": "fdic",
+   "label": "FDIC",
+   "kind": "org",
+   "jurisdiction": "US",
+   "note": "Deposit-insurance approval 2025-12-16; opening date 2026-02-06."
+  },
+  {
+   "id": "traysar",
+   "label": "Traysar",
+   "kind": "org",
+   "jurisdiction": "US",
+   "note": "$25M seed led by Silent Ventures (announced 2026-06-16); Austin; Israeli-origin founders (self/press)."
+  },
+  {
+   "id": "pallas",
+   "label": "Pallas Advisors / Pallas Ventures / Pallas Foundation",
+   "kind": "org",
+   "jurisdiction": "US",
+   "note": "Advisors 2018, Ventures 2020; 5/5 censused portfolio on NatSec100."
+  },
+  {
+   "id": "sally-donnelly",
+   "label": "Sally Donnelly",
+   "kind": "person",
+   "jurisdiction": "US",
+   "note": "Pallas; ex-OSD/CENTCOM."
+  },
+  {
+   "id": "tony-demartino",
+   "label": "Tony DeMartino",
+   "kind": "person",
+   "jurisdiction": "US",
+   "note": "Pallas; ex-OSD."
+  },
+  {
+   "id": "capital-factory",
+   "label": "Capital Factory",
+   "kind": "org",
+   "jurisdiction": "US",
+   "note": "837-company portfolio index; 12 NatSec100 co-listings (4 corroborated)."
+  },
+  {
+   "id": "joshua-baer",
+   "label": "Joshua Baer",
+   "kind": "person",
+   "jurisdiction": "US",
+   "note": "Capital Factory founder/CEO; router score 5/8."
+  },
+  {
+   "id": "bvvc",
+   "label": "Bravo Victor Venture Capital (BVVC) / School.House",
+   "kind": "org",
+   "jurisdiction": "US",
+   "note": "Self-represented 'first-look access' to special operations; legal identity of School.House unresolved after 23 search lanes."
+  },
+  {
+   "id": "sanabil",
+   "label": "Sanabil Investments (PIF)",
+   "kind": "org",
+   "jurisdiction": "KSA",
+   "note": "Lists Founders Fund as fund partner (primary_public per raw master); LP vehicle, amounts, dates unresolved."
+  },
+  {
+   "id": "osc",
+   "label": "DoD Office of Strategic Capital",
+   "kind": "org",
+   "jurisdiction": "US",
+   "note": "MP Materials $150M executed; four conditional commitments; FY2026 commitments >$5B."
+  },
+  {
+   "id": "vulcan-elements",
+   "label": "Vulcan Elements",
+   "kind": "org",
+   "jurisdiction": "US",
+   "note": "NatSec100 company (Durham NC); $620M OSC conditional commitment (no close observed)."
+  },
+  {
+   "id": "firestorm",
+   "label": "Firestorm",
+   "kind": "org",
+   "jurisdiction": "US",
+   "note": "NatSec100 (2024, 2026); seed $12.5M announced 2024-03-21 led by Lockheed Martin Ventures with BVVC; Silent Ventures and Washington Harbour list it; Air Force FA862926CB001 $17.3M obligated."
+  },
+  {
+   "id": "castelion",
+   "label": "Castelion",
+   "kind": "org",
+   "jurisdiction": "US",
+   "note": "NatSec100 2025-26; Air Force FA861224CB010 $55.8M; Silent Ventures round; Boyle board observer; Moses self-claims senior advisor."
+  },
+  {
+   "id": "us-federal-government",
+   "label": "US federal government (aggregate payer)",
+   "kind": "org",
+   "jurisdiction": "US",
+   "note": "Placeholder for USAspending / SEC-reported federal revenue; not a single buyer."
+  },
+  {
+   "id": "uk-public-sector",
+   "label": "UK public-sector customers (MHCLG, NHS England, local authorities)",
+   "kind": "org",
+   "jurisdiction": "UK",
+   "note": "Palantir Foundry customers in the record; Homes for Ukraine exit to Share; NHS FDP continues."
+  },
+  {
+   "id": "gallos-technologies",
+   "label": "GALLOS Technologies",
+   "kind": "org",
+   "jurisdiction": "UK",
+   "note": "Security-tech venture studio (RAW MASTER ONLY); Fleming chairs strategic advisory board."
+  },
+  {
+   "id": "public-counterweights",
+   "label": "GAO / courts / competitive processes (cluster)",
+   "kind": "cluster",
+   "jurisdiction": "US/UK",
+   "note": "Placeholder for external checks recorded in the case file: GAO decisions, Federal Circuit, competitive awards."
+  },
+  {
+   "id": "lda-fec",
+   "label": "Senate LDA / FEC records",
+   "kind": "record-system",
+   "jurisdiction": "US",
+   "note": "Anduril Q2 2025 LD-2 and PAC overview."
+  }
+ ],
+ "edges": [
+  {
+   "id": "UK-01",
+   "from": "matt-clifford",
+   "to": "entrepreneur-first",
+   "type": "seat",
+   "date": "2011 (founding, source-reported); official observation 2018-07-05",
+   "establishes": "UK government profile names Clifford and Alice Bentinck as the founders of Entrepreneur First in London in 2011. EF's own site (raw master Part 1-2) lists him as current chair and names Reid Hoffman, Eric Schmidt, Demis Hassabis as investors and D'Angelo, Songhurst, Cohler among recent advisers.",
+   "does_not_establish": "Exact founding day, continuous co-management, current ownership, or any EF-Thiel/Founders Fund capital link (wrap-up: 'not established in existing corpus').",
+   "source": [
+    "receipt:gov-uk-france-ai-data-entrepreneur-first-cofounders-2018-07-05",
+    "url:https://www.gov.uk/government/news/uk-and-france-to-strengthen-ties-in-ai-and-data",
+    "path:docs/clifford-number-master.md Part 1-2 (EF-site claims, not ledger-promoted)"
+   ],
+   "confidence": "official record",
+   "lane": "UK",
+   "co_participants": [
+    "alice-bentinck"
+   ],
+   "confidence_note": "Founders/chair: official (2018 profile). Investor/adviser names: primary statement (EF website via raw master)."
+  },
+  {
+   "id": "UK-02",
+   "from": "matt-clifford",
+   "to": "aria",
+   "type": "seat",
+   "date": "2022-07-19 (inaugural chair per raw master / GOV.UK announcement); ARIA profile undated",
+   "establishes": "ARIA's board page lists Clifford as chair; ARIA is a DSIT-sponsored non-departmental public body.",
+   "does_not_establish": "Any ARIA programme-selection decision by Clifford, personal investment benefit, or control over AI procurement (M05 source limits).",
+   "source": [
+    "url:https://aria.org.uk/about-aria/our-team/board-and-advisors",
+    "path:data/intake/m05-answerable-power-sprint-01-sources.json (M05-SP01-SRC-007)",
+    "path:docs/clifford-number-master.md Part 1-2"
+   ],
+   "confidence": "official record",
+   "lane": "UK"
+  },
+  {
+   "id": "UK-03",
+   "from": "uk-government-pm",
+   "to": "matt-clifford",
+   "type": "selection",
+   "date": "2023-08-10",
+   "establishes": "Government names Clifford (with Jonathan Black) Prime Minister's Representative for AI Safety Summit preparation, charged with 'rallying AI nations, companies and experts'; role stated as separate from his ARIA chairmanship. He later described it as a limited tour of duty ending after the Summit (oral evidence 2023-11-08).",
+   "does_not_establish": "Who chose him, from what candidate pool, or on what criteria; any company selection; any procurement/investment authority; any Anduril contact.",
+   "source": [
+    "receipt:gov-matt-clifford-ai-safety-summit-representative-2023-08-10",
+    "url:https://www.gov.uk/government/news/experts-to-lead-ai-safety-summit-preparations-as-new-funding-announced-to-modernise-healthcare",
+    "url:https://committees.parliament.uk/oralevidence/13787/html/"
+   ],
+   "confidence": "official record",
+   "lane": "UK",
+   "co_participants": [
+    "ai-safety-summit-2023"
+   ]
+  },
+  {
+   "id": "UK-04",
+   "from": "matt-clifford",
+   "to": "frontier-ai-taskforce-advisory-board",
+   "type": "seat",
+   "date": "2023-09-07",
+   "establishes": "Vice-chair of the 7-person External Advisory Board of the Frontier AI Taskforce, alongside Bengio, Keast-Butler (GCHQ Director), Van Someren (CSA National Security), Collins (Deputy NSA), Christiano, Stokes-Lampard. Terms: members join as individuals, disclose conflicts and withdraw from conflicted procurement conversations.",
+   "does_not_establish": "First meeting date, attendance, continuous tenure, procurement participation, employer representation, private coordination.",
+   "source": [
+    "receipt:gov-frontier-ai-taskforce-external-advisory-board-2023-09-07",
+    "url:https://www.gov.uk/government/news/industry-and-national-security-heavyweights-to-power-uks-frontier-ai-taskforce"
+   ],
+   "confidence": "official record",
+   "lane": "UK",
+   "co_participants": [
+    "ian-hogarth (Taskforce Chair; named in same announcement, not on the 7-person board)",
+    "anne-keast-butler (not a separate actor node)",
+    "matt-collins",
+    "alex-van-someren",
+    "yoshua-bengio",
+    "paul-christiano",
+    "helen-stokes-lampard"
+   ]
+  },
+  {
+   "id": "UK-05",
+   "from": "matt-clifford",
+   "to": "roundtable-2023-06-02",
+   "type": "venue",
+   "date": "2023-06-02",
+   "establishes": "Official attendance list for the Technology Secretary's roundtable with leading AI innovators names both Clifford and Palantir's Louis Mosley.",
+   "does_not_establish": "A bilateral meeting, coordination, policy authorship on Palantir's behalf, contract/investment/procurement effect, a recurring relationship. Repo disposition: retained_candidate_only, ceiling 'documented co-presence only'.",
+   "source": [
+    "path:data/intake/m05-answerable-power-sprint-01-sources.json (M05-SP01-SRC-005)",
+    "url:https://www.gov.uk/government/news/technology-secretary-holds-roundtable-with-leading-ai-innovators",
+    "path:data/project/m05-answerable-power-sprint-01-triad.json (M05-SP01-T04)"
+   ],
+   "confidence": "official record",
+   "lane": "UK/BRIDGE",
+   "co_participants": [
+    "louis-mosley"
+   ],
+   "confidence_note": "Source is a Sprint-01 intake source, not yet a promoted ledger receipt."
+  },
+  {
+   "id": "UK-06",
+   "from": "anduril-industries-inc",
+   "to": "dsit-roundtable-2023-10-17",
+   "type": "venue",
+   "date": "2023-10-17",
+   "establishes": "DSIT ministerial meeting register lists Anduril Industries in a techUK/DSIT AI Safety Summit roundtable (16 named organisations) and in the Secretary of State's broad frontier-AI-safety roundtable the same day.",
+   "does_not_establish": "Clifford's presence (he is absent from the row); any natural-person endpoint; a Clifford-Anduril contact.",
+   "source": [
+    "receipt:gov-dsit-clifford-anduril-separate-summit-roundtables-2023-10-17-25",
+    "url:https://www.gov.uk/csv-preview/65e7227b2f2b3bd5107cd8a4/dsit-ministerial-meetings-october-december-2023.csv"
+   ],
+   "confidence": "official record",
+   "lane": "UK/UKD",
+   "confidence_note": "Register names 'Anduril Industries' at source-name scope; UK vs US entity not resolved."
+  },
+  {
+   "id": "UK-07",
+   "from": "matt-clifford",
+   "to": "dsit-investor-roundtable-2023-10-25",
+   "type": "venue",
+   "date": "2023-10-25",
+   "establishes": "Same DSIT register places Clifford in a separate 9-entry AI investor roundtable eight days later.",
+   "does_not_establish": "Anduril's presence (absent from the row); any shared event.",
+   "source": [
+    "receipt:gov-dsit-clifford-anduril-separate-summit-roundtables-2023-10-17-25",
+    "url:https://www.gov.uk/csv-preview/65e7227b2f2b3bd5107cd8a4/dsit-ministerial-meetings-october-december-2023.csv"
+   ],
+   "confidence": "official record",
+   "lane": "UK"
+  },
+  {
+   "id": "UK-08",
+   "from": "dsit",
+   "to": "matt-clifford",
+   "type": "selection",
+   "date": "2024-07-26",
+   "establishes": "Terms of reference assign Clifford leadership of the AI Opportunities Action Plan review, with civil-service support, a stakeholder-engagement duty and a commitment to identify potential conflicts.",
+   "does_not_establish": "Who selected him/why; which recommendations he alone authored; any award authority. Appointment memorandum, criteria and candidate denominator are unpublished.",
+   "source": [
+    "receipt:gov-ai-opportunities-action-plan-terms-2024-07-26",
+    "url:https://www.gov.uk/government/publications/artificial-intelligence-ai-opportunities-action-plan-terms-of-reference/artificial-intelligence-ai-opportunities-action-plan-terms-of-reference",
+    "issue:#323"
+   ],
+   "confidence": "official record",
+   "lane": "UK",
+   "co_participants": [
+    "peter-kyle (raw master)",
+    "ai-opportunities-action-plan"
+   ]
+  },
+  {
+   "id": "UK-09",
+   "from": "matt-clifford",
+   "to": "keir-starmer",
+   "type": "selection",
+   "date": "2025-01-13",
+   "establishes": "Same-day sequence: 50-recommendation Action Plan published (sovereign compute, AI Growth Zones, National Data Library, procurement reform, government as strategic AI customer, domestic champions, national-security collaboration); government says it will take forward all 50; Clifford appointed UNPAID AI Opportunities Adviser reporting to the PM and DSIT Secretary of State (remit: implementation, growth, talent, sovereign AI capability). His declared interests, appointment conditions and mitigation were published 2025-02-24.",
+   "does_not_establish": "Self-selection, sole authorship, which recommendation created the adviser role, final procurement/award authority, effective decision-specific recusal, any company-specific benefit (all marked 'requires_additional_acquisition' or 'bounded_non_link' in Sprint-02 Leg-01).",
+   "source": [
+    "receipt:gov-ai-opportunities-action-plan",
+    "receipt:gov-pm-ai-blueprint-2025",
+    "url:https://www.gov.uk/government/news/appointment-of-matt-clifford-cbe-as-the-ai-opportunities-adviser",
+    "issue:#323",
+    "path:docs/milestones/m05-answerable-power-sprint-02-leg-01.md"
+   ],
+   "confidence": "official record",
+   "lane": "UK",
+   "co_participants": [
+    "ai-opportunities-action-plan"
+   ]
+  },
+  {
+   "id": "UK-10",
+   "from": "matt-clifford",
+   "to": "faculty",
+   "type": "money",
+   "date": "2024-10-10 (observation); divested by 2025-02-24",
+   "establishes": "DSIT's register of Clifford's outside interests lists Faculty Science Ltd among his direct investments (first published 2024-10-10); by the 2025-02-24 update he had divested. Mitigation terms required 'reasonable endeavours' to divest. Companies House shows Marc Warner (director since 2014-02-03) and Saul Klein (since 2016-04-21) as Faculty directors on the same date. Accenture's Faculty deal was announced 2026-01-06, at least ~10.5 months after the 2025-02-24 update recording the divestment.",
+   "does_not_establish": "When he acquired or sold, to whom, at what price; contact with any director; influence on Faculty or government decisions; procurement involvement. Accenture consideration is undisclosed.",
+   "source": [
+    "receipt:gov-dsit-matt-clifford-faculty-shareholding-2024-10-10",
+    "receipt:companies-house-faculty-science-officers-08873131",
+    "url:https://www.gov.uk/government/publications/matt-cliffords-declared-outside-interests/matt-cliffords-declared-outside-interests",
+    "issue:#33 comment 2026-07-19"
+   ],
+   "confidence": "official record",
+   "lane": "UK/ET",
+   "co_participants": [
+    "marc-warner",
+    "saul-klein"
+   ]
+  },
+  {
+   "id": "UK-11",
+   "from": "matt-clifford",
+   "to": "dialog",
+   "type": "venue",
+   "date": "2026-06-16",
+   "establishes": "Clifford is one of 112 names in Dialog's exposed public directory (WIRED, 2026-06-16); WIRED separately reports his statement that he had been invited and had not attended. Thiel is separately reported as co-founder.",
+   "does_not_establish": "Membership, attendance, any meeting with Thiel or another listed person, agreement or influence. Listing and non-attendance are separate propositions on non-hop surfaces.",
+   "source": [
+    "receipt:dialog-directory-extract",
+    "receipt:wired-dialog-leak",
+    "url:https://www.wired.com/story/leak-exposes-members-of-peter-thiels-secretive-dialog-society",
+    "path:receipts/topology/dialog-directory-extract-2026-06-16.md"
+   ],
+   "confidence": "press",
+   "lane": "UK/BRIDGE",
+   "confidence_note": "Directory is a leaked/exposed web list (primary_public); non-attendance is a press-reported self-statement."
+  },
+  {
+   "id": "UK-12",
+   "from": "entrepreneur-first",
+   "to": "dialog",
+   "type": "venue",
+   "date": "EF pages undated; Dialog directory observed 2026-06-16",
+   "establishes": "Five names the raw master files as EF investors/advisers (Reid Hoffman, Eric Schmidt, Adam D'Angelo, Charlie Songhurst, Matt Cohler) are also among the 112 Dialog directory names that include Clifford. (Hassabis is an EF investor/adviser but not in the directory.)",
+   "does_not_establish": "That any of them introduced, invited or influenced Clifford or EF; attendance; any capital link to Thiel. Overlap of two lists only.",
+   "source": [
+    "path:docs/clifford-number-master.md Part 2 (EF) and Part 5 (Dialog #18, #47, #53, #71, #92)",
+    "path:receipts/topology/dialog-directory-extract-2026-06-16.md"
+   ],
+   "confidence": "inferred",
+   "lane": "UK/BRIDGE",
+   "confidence_note": "Both lists are primary_public; the join itself is the map's inference, not a repo claim."
+  },
+  {
+   "id": "UK-13",
+   "from": "rich-drake",
+   "to": "matt-clifford",
+   "type": "venue",
+   "date": "2024-07-17 / 2025-01-13 / 2025-03-06 (cross-date)",
+   "establishes": "The canonical graph connects Drake to Clifford in three hops across three separate dated official surfaces: Drake-Healey (2025-03-06 announcement), Healey-Starmer (2024-07-17 SDR terms), Starmer-Clifford (2025-01-13 Action Plan response). Maury Shenk reaches Clifford in four hops.",
+   "does_not_establish": "That any of them met, communicated, coordinated or shared a project; no single-date route spans the surfaces.",
+   "source": [
+    "path:data/ledger/claims.jsonl (rich-drake-to-matt-clifford-three-hop-all-time-route-2026-08-12; maury-shenk-to-matt-clifford-four-hop-all-time-route-2026-08-12)",
+    "receipt:gov-mod-anduril-ukraine-drone-deal-2025-03-06",
+    "receipt:gov-sdr-terms-of-reference",
+    "receipt:gov-ai-opportunities-action-plan"
+   ],
+   "confidence": "inferred",
+   "lane": "UK/UKD",
+   "subtype": "cross_date_route",
+   "co_participants": [
+    "john-healey",
+    "keir-starmer"
+   ]
+  },
+  {
+   "id": "UK-14",
+   "from": "keir-starmer",
+   "to": "strategic-defence-review",
+   "type": "selection",
+   "date": "2024-07-17 (terms); 2025-06-02 (final)",
+   "establishes": "Official terms name Starmer (launch/commissioning), Healey (oversight) and three external Reviewers: George Robertson (lead), Richard Barrons, Fiona Hill; MoD secretariat. Final report published 2025-06-02.",
+   "does_not_establish": "Who proposed the reviewers or on what criteria; any industry input route; Clifford involvement (not named); private meetings.",
+   "source": [
+    "receipt:gov-sdr-terms-of-reference",
+    "receipt:gov-sdr-2025-publication"
+   ],
+   "confidence": "official record",
+   "lane": "UK/UKD",
+   "co_participants": [
+    "john-healey",
+    "george-robertson",
+    "richard-barrons",
+    "fiona-hill"
+   ]
+  },
+  {
+   "id": "UK-15",
+   "from": "laura-gilbert",
+   "to": "dsit",
+   "type": "move",
+   "date": "2025-01 onward",
+   "establishes": "RAW MASTER ONLY: 10DS founding director (2020-09) and i.AI director (2023-01) to Jan 2025; then EIT Oxford senior director plus one day a week as DSIT expert adviser and one day a week at the Tony Blair Institute.",
+   "does_not_establish": "Whether the split roles produced any conflict, or what the TBI/EIT funders (reported: Gulf states, philanthropic) obtained.",
+   "source": [
+    "path:docs/clifford-number-master.md Part 21 (Laura Gilbert)"
+   ],
+   "confidence": "press",
+   "lane": "UK",
+   "subtype": "public_to_private_with_retained_access",
+   "confidence_note": "Reported/raw-master; not ledger-promoted."
+  },
+  {
+   "id": "UK-16",
+   "from": "jeremy-fleming",
+   "to": "gallos-technologies",
+   "type": "move",
+   "date": "2023-09 (GALLOS role; GCHQ tenure ended 2023-05)",
+   "establishes": "RAW MASTER ONLY: GCHQ Director 2017-2023 then chair of GALLOS Technologies' strategic advisory board from Sept 2023 (ACOBA-approved per master).",
+   "does_not_establish": "Any GALLOS contract or information advantage.",
+   "source": [
+    "path:docs/clifford-number-master.md Part 21 (Jeremy Fleming)"
+   ],
+   "confidence": "press",
+   "lane": "UK",
+   "subtype": "public_to_private_advisory",
+   "confidence_note": "Reported/raw-master; not ledger-promoted."
+  },
+  {
+   "id": "UKD-01",
+   "from": "mod",
+   "to": "anduril-industries-inc",
+   "type": "money",
+   "date": "2021-07-31 (awarded); notice published 2021-11-29",
+   "establishes": "Single-source GBP 375,000 contract (1 Aug 2021-31 Mar 2022) for 'AI Fight Tonight' integration of Anduril's Lattice platform; buyer Field Army Procurement Team; sole supplier Anduril Industries, Inc.",
+   "does_not_establish": "Any natural-person participant; renewal; effectiveness; influence.",
+   "source": [
+    "receipt:contracts-finder-anduril-ai-fight-tonight-2021-07-31",
+    "url:https://www.contractsfinder.service.gov.uk/notice/e6f1ac88-dd62-44c3-848b-242da512e649"
+   ],
+   "confidence": "official record",
+   "lane": "UKD",
+   "subtype": "single_source_award"
+  },
+  {
+   "id": "UKD-02",
+   "from": "strategic-command-jhub",
+   "to": "anduril-industries-inc",
+   "type": "money",
+   "date": "2021-08-02 (concluded); award decision 2021-09-03; MoD release 2021-09-10",
+   "establishes": "TALOS Phase II: hardware-subscription perimeter security integrated with SAPIENT; estimated GBP 3.8M (VEAT, negotiated without prior publication on stated technical reasons); final GBP 3,736,687.50; contractor Anduril Industries, Inc.",
+   "does_not_establish": "That the technical-uniqueness rationale is correct (authority's own statement); personal access; effectiveness.",
+   "source": [
+    "receipt:find-tender-anduril-project-talos-phase-2-2021-08-02",
+    "url:https://www.find-tender.service.gov.uk/Notice/020710-2021",
+    "url:https://www.find-tender.service.gov.uk/Notice/022297-2021",
+    "url:https://www.gov.uk/government/news/mod-awards-38-million-contract-for-advanced-base-protection-system"
+   ],
+   "confidence": "official record",
+   "lane": "UKD",
+   "subtype": "negotiated_without_prior_publication",
+   "co_participants": [
+    "programme-talos"
+   ]
+  },
+  {
+   "id": "UKD-03",
+   "from": "greg-kausner",
+   "to": "anduril-us",
+   "type": "move",
+   "date": "2022-03-28",
+   "establishes": "Anduril announces Gregory Kausner as Head of Global Defense; company bio cites prior senior acquisition, security-cooperation, State Department, Senate, DIU and Navy roles. By 2023-11-02 he is Anduril's named voice on TALOS Phase 3.",
+   "does_not_establish": "Preferential treatment; any ethics-regime conditions applied to him; his role in any specific UK award.",
+   "source": [
+    "receipt:anduril-kausner-2022",
+    "url:https://www.anduril.com/news/anduril-welcomes-gregory-kausner-as-head-of-global-defense",
+    "receipt:gov-mod-anduril-talos-phase-3-contract-2023-11-02"
+   ],
+   "confidence": "primary statement",
+   "lane": "UKD/AND",
+   "subtype": "public_to_private",
+   "confidence_note": "Company announcement; government-side ethics file not in record."
+  },
+  {
+   "id": "UKD-04",
+   "from": "home-office-border-force",
+   "to": "anduril-industries-uk-ltd",
+   "type": "money",
+   "date": "2022-06-21 (awarded); notice published 2025-06-06",
+   "establishes": "GBP 21,086,291.12 negotiated-without-prior-publication contract (22 Jun 2022-22 Jun 2026) for a Common Operating Picture and Command Interface managed service; sole supplier Anduril Industries UK Ltd (12316056). Notice was published ~3 years after award.",
+   "does_not_establish": "What data is processed, who selected/signed, effectiveness, extensions, rights exercised.",
+   "source": [
+    "receipt:contracts-finder-anduril-copci-border-force-2022-06-21",
+    "url:https://www.contractsfinder.service.gov.uk/Notice/b244c2db-3ea2-4273-991d-6067fd21696e"
+   ],
+   "confidence": "official record",
+   "lane": "UKD",
+   "subtype": "negotiated_without_prior_publication"
+  },
+  {
+   "id": "UKD-05",
+   "from": "mod",
+   "to": "anduril-industries-uk-ltd",
+   "type": "money",
+   "date": "2023-10-09 (awarded); notice published 2024-07-05",
+   "establishes": "Project ENTRELEZAR: GBP 6,323,364 TALOS force-protection service for British Forces Cyprus (10 Oct 2023-31 Mar 2026); one supplier. Notice labels the supplier 'Anduril Industries Inc.' (Irvine, CA) while giving the UK company number 12316056.",
+   "does_not_establish": "Which legal entity contracted (conflict preserved, not resolved); who selected; effectiveness.",
+   "source": [
+    "receipt:contracts-finder-anduril-project-entrelezar-2023-10-09",
+    "url:https://www.contractsfinder.service.gov.uk/notice/6862d425-6b83-4d34-8c25-52c2b26868fe"
+   ],
+   "confidence": "official record",
+   "lane": "UKD",
+   "subtype": "supplier_identity_conflict"
+  },
+  {
+   "id": "UKD-06",
+   "from": "strategic-command-jhub",
+   "to": "anduril-industries-inc",
+   "type": "money",
+   "date": "2023-11-02",
+   "establishes": "Programme TALOS Phase 3: 31-month GBP 17M contract announced; public route is Strategic Command's innovation team jHub; statements by Lt Col Dan Sawyers (jHub) and Greg Kausner (Anduril). Announced in the AI Safety Summit period; Clifford not named.",
+   "does_not_establish": "Personal meeting/negotiation between Sawyers and Kausner; any Clifford recommendation, approval or influence; effectiveness; follow-on procurement.",
+   "source": [
+    "receipt:gov-mod-anduril-talos-phase-3-contract-2023-11-02",
+    "url:https://www.gov.uk/government/news/17million-contract-awarded-for-force-protection-technology"
+   ],
+   "confidence": "official record",
+   "lane": "UKD",
+   "co_participants": [
+    "dan-sawyers",
+    "greg-kausner",
+    "programme-talos"
+   ]
+  },
+  {
+   "id": "UKD-07",
+   "from": "anduril-industries-uk-ltd",
+   "to": "rich-drake",
+   "type": "seat",
+   "date": "2024-07-31",
+   "establishes": "Companies House: Richard Daniel Drake and Maury David Shenk appointed Anduril UK directors on 2024-07-31 (Matthew Grimm director since incorporation 2019-11-14). PSC page carries an active statement that there is no registrable person or registrable relevant legal entity.",
+   "does_not_establish": "A meeting, policy influence, who ultimately controls the UK entity (PSC statement is silent on parent).",
+   "source": [
+    "receipt:companies-house-anduril-industries-uk-12316056",
+    "url:https://find-and-update.company-information.service.gov.uk/company/12316056"
+   ],
+   "confidence": "official record",
+   "lane": "UKD",
+   "co_participants": [
+    "maury-shenk"
+   ]
+  },
+  {
+   "id": "UKD-08",
+   "from": "des",
+   "to": "anduril-industries-uk-ltd",
+   "type": "money",
+   "date": "2025-03-06",
+   "establishes": "Contracts totalling nearly GBP 30M for Anduril UK to supply Altius 600m/700 systems, launchers and spares for Ukraine, backed by the International Fund for Ukraine and led by DE&S. Healey and Drake both quoted; release says Healey visited Anduril in Washington the previous day.",
+   "does_not_establish": "That Drake attended that visit; a private Healey-Drake meeting; procurement authorship; whether the buy was competed (not stated in the record).",
+   "source": [
+    "receipt:gov-mod-anduril-ukraine-drone-deal-2025-03-06",
+    "url:https://www.gov.uk/government/news/advanced-attack-drones-for-ukraine-in-new-deal-struck-by-uk-government-and-anduril-uk"
+   ],
+   "confidence": "official record",
+   "lane": "UKD",
+   "co_participants": [
+    "john-healey",
+    "rich-drake"
+   ]
+  },
+  {
+   "id": "UKD-09",
+   "from": "anduril-industries-uk-ltd",
+   "to": "dbt",
+   "type": "venue",
+   "date": "2025-04 to 2025-06 (meeting 2025-05-19; Chequers lunch in same quarter)",
+   "establishes": "DBT ministerial register documents a 19 May 2025 Anduril engagement on defence spending, FDI and innovation; the PM's Chequers guest list for Apr-Jun 2025 shows Anduril at a London Tech Week lunch. Both are independent Anduril access routes in the record.",
+   "does_not_establish": "Content of discussions; any Clifford involvement (absent); outcomes.",
+   "source": [
+    "path:data/intake/m05-answerable-power-sprint-02-leg-02-sources.json (SRC-007, SRC-008)",
+    "url:https://www.gov.uk/csv-preview/68dba200ef1c2f72bc1e4bf6/ministers_meetings_april_june_2025.csv",
+    "url:https://www.gov.uk/csv-preview/68d54fc78c739d679fb1dddb/No10_Sir_Keir_Starmer_KCB_KC_MP_-_Guests_at_Chequers__April_to_June_2025.csv"
+   ],
+   "confidence": "official record",
+   "lane": "UKD",
+   "confidence_note": "Organisation-level rows from ministerial transparency returns."
+  },
+  {
+   "id": "UKD-10",
+   "from": "john-healey",
+   "to": "atlantic-bastion",
+   "type": "venue",
+   "date": "2025-12-08",
+   "establishes": "Official launch release attributes statements to Healey, First Sea Lord Jenkins, Dr Rich Drake (Anduril UK), Scott Jamieson (BAE) and Amelia Gould (Helsing); reports 26 firms submitted proposals and 20 showed demonstrators, but names only Anduril UK, BAE and Helsing.",
+   "does_not_establish": "Physical co-attendance, selection authority, contract, who the other 23 proposers are, Clifford involvement (not named).",
+   "source": [
+    "receipt:gov-mod-atlantic-bastion-launch-2025-12-08",
+    "url:https://www.gov.uk/government/news/uk-unveils-new-undersea-warfare-technology-to-counter-threat-from-russia"
+   ],
+   "confidence": "official record",
+   "lane": "UKD",
+   "co_participants": [
+    "gwyn-jenkins",
+    "rich-drake",
+    "scott-jamieson-bae",
+    "amelia-gould-helsing",
+    "helsing"
+   ]
+  },
+  {
+   "id": "UKD-11",
+   "from": "mod",
+   "to": "anduril-industries-uk-ltd",
+   "type": "selection",
+   "date": "2026-01-09 (award); framework 2026-01-26 to 2029-01-26",
+   "establishes": "Anduril UK is one of 26 suppliers on the Digital Decision Accelerators for Defence framework; each supplier shows a nominal GBP 1 value.",
+   "does_not_establish": "Any call-off, payment, ranking or deployment; the nominal values are not economic values.",
+   "source": [
+    "receipt:contracts-finder-anduril-ddad-framework-2026-01-09",
+    "url:https://www.contractsfinder.service.gov.uk/Notice/7aafc1b3-ff70-4d93-a920-a3e9100923f2"
+   ],
+   "confidence": "official record",
+   "lane": "UKD",
+   "subtype": "multi_supplier_framework"
+  },
+  {
+   "id": "UKD-12",
+   "from": "mod",
+   "to": "project-nyx",
+   "type": "selection",
+   "date": "2026-01-24 (7 shortlisted); 2026-05-15 (4 selected)",
+   "establishes": "Project NYX: seven industry partners shortlisted incl. Anduril Industries (UK) Ltd; then four selected for the next design stage: Anduril UK, BAE Systems Operations Ltd, Tekever Ltd, Thales UK Ltd; GBP 10M programme investment (not allocated by supplier); prototype and final-partner decisions outstanding. The other shortlisted firms are not named in the repo receipt.",
+   "does_not_establish": "A winner, an allocation, deployment, any person-level role, why the three others dropped.",
+   "source": [
+    "receipt:gov-mod-project-nyx-seven-supplier-shortlist-2026-01-24",
+    "receipt:gov-mod-project-nyx-four-supplier-downselect-2026-05-15",
+    "url:https://www.gov.uk/government/news/british-based-firms-lead-the-way-for-apache-helicopter-support-drones"
+   ],
+   "confidence": "official record",
+   "lane": "UKD",
+   "co_participants": [
+    "anduril-industries-uk-ltd",
+    "bae-systems",
+    "tekever",
+    "thales-uk"
+   ]
+  },
+  {
+   "id": "ET-01",
+   "from": "ben-warner",
+   "to": "faculty",
+   "type": "seat",
+   "date": "2018-01-24",
+   "establishes": "Dated speaker profile identifies Ben Warner as 'Commercial Principal, ASI Data Science' on 2018-01-24; ASI Data Science is Faculty's earlier brand (same Companies House number 08873131, rebrand 2019-02-08) and Marc Warner was an officer of that company.",
+   "does_not_establish": "Contact between Ben and Marc Warner at that date, tenure length, Vote Leave participation (the 2016 Vote Leave/ASI record is organisation-only).",
+   "source": [
+    "receipt:zebra-ben-warner-asi-commercial-principal-2018-01-24",
+    "receipt:faculty-asi-data-science-legal-identity-08873131",
+    "receipt:companies-house-faculty-science-officers-08873131",
+    "receipt:uk-parliament-wylie-vote-leave-asi-2018-03-27"
+   ],
+   "confidence": "primary statement",
+   "lane": "ET",
+   "co_participants": [
+    "marc-warner"
+   ],
+   "confidence_note": "Employee observation is a dated primary_public speaker profile; the company identity is official."
+  },
+  {
+   "id": "ET-01b",
+   "from": "ben-warner",
+   "to": "no-10",
+   "type": "seat",
+   "date": "2020-03-13 to 2021-05-13 (first and last official observations)",
+   "establishes": "UK Covid-19 Inquiry record (13-16 Mar 2020) identifies Ben Warner as Chief Adviser to the Prime Minister on Digital and Data; GOV.UK SAGE 89 minutes (13 May 2021) list him as Ben Warner (No.10). A separate 8 Mar 2020 email routes from Warner to Imran Shafi and Dominic Cummings on contain-to-delay triggers.",
+   "does_not_establish": "A complete appointment/continuous-tenure interval, a reply or policy authorship, or that later Electric Twin methods originated in government.",
+   "source": [
+    "receipt:uk-covid-inquiry-ben-warner-decision-forward-planning-2020-03-13-16",
+    "receipt:gov-sage-89-ben-warner-no10-2021-05-13",
+    "receipt:uk-covid-inquiry-ben-warner-cummings-shafi-email-2020-03-08"
+   ],
+   "confidence": "official record",
+   "lane": "ET",
+   "subtype": "government_role_observation"
+  },
+  {
+   "id": "ET-01c",
+   "from": "ben-warner",
+   "to": "electric-twin",
+   "type": "move",
+   "date": "2023-09-28 (incorporation)",
+   "establishes": "Companies House records Electric Twin Ltd (15173006) incorporated 2023-09-28 with Ben Warner and Alex Cooper as initial directors; both remain directors through the 2026-08-11 retrieval. Warner went from ASI/Faculty (2018) to No. 10 (2020-21) to co-founding Electric Twin.",
+   "does_not_establish": "That any Electric Twin product, method or customer derives from his government work; ownership split beyond the 2025-09-27 CS01 (1,000,000 Ordinary each for Cooper and Warner).",
+   "source": [
+    "receipt:companies-house-electric-twin-incorporation-2023-09-28",
+    "receipt:companies-house-electric-twin-cs01-shareholders-2025-09-27"
+   ],
+   "confidence": "official record",
+   "lane": "ET",
+   "subtype": "public_to_private_founder",
+   "co_participants": [
+    "alex-cooper"
+   ]
+  },
+  {
+   "id": "ET-01d",
+   "from": "alex-cooper",
+   "to": "electric-twin",
+   "type": "move",
+   "date": "2020 (DHSC mass-testing director, raw master) -> 2023-09-28 (Electric Twin)",
+   "establishes": "Cooper is Electric Twin's CEO/co-founder and initial director (official). The raw master records him as Director of Mass COVID-19 Testing (DHSC / No. 10 testing taskforce) in 2020 before founding; the ledger carries only the Electric Twin side.",
+   "does_not_establish": "Anything about the 2020 role beyond the master's primary_public transcription; the master's 'three-person No. 10 alumni cluster' framing is not a ledger finding.",
+   "source": [
+    "receipt:companies-house-electric-twin-incorporation-2023-09-28",
+    "path:docs/clifford-number-master.md Part 21 (Alex Cooper)"
+   ],
+   "confidence": "official record",
+   "lane": "ET",
+   "subtype": "public_to_private_founder",
+   "confidence_note": "Electric Twin side: official; DHSC side: raw master only (primary_public, not ledger-promoted)."
+  },
+  {
+   "id": "ET-02",
+   "from": "accenture",
+   "to": "faculty",
+   "type": "money",
+   "date": "2026-01-06 (agreement); 2026-03-12 (PSC effective); 2026-03-16 (completion announced)",
+   "establishes": "Accenture agreed to acquire Faculty (announced 6 Jan 2026); Companies House records Accenture Plc as PSC effective 12 Mar 2026; Accenture announced completion 16 Mar 2026; >400 staff joined; Marc Warner became Accenture CTO and joined its Global Management Committee while remaining Faculty CEO.",
+   "does_not_establish": "Consideration (undisclosed), novation/continuation of any UK public contract, what Faculty's earlier shareholders (incl. the former adviser) received.",
+   "source": [
+    "issue:#33 comment 2026-07-19",
+    "url:https://newsroom.accenture.com/news/2026/accenture-to-acquire-faculty-to-scale-ai-capabilities",
+    "url:https://newsroom.accenture.com/news/2026/accenture-completes-acquisition-of-faculty",
+    "url:https://find-and-update.company-information.service.gov.uk/company/08873131"
+   ],
+   "confidence": "primary statement",
+   "lane": "ET",
+   "co_participants": [
+    "marc-warner"
+   ],
+   "confidence_note": "Acquirer announcements cross-checked to Companies House PSC (official); not yet a promoted ledger receipt."
+  },
+  {
+   "id": "ET-03",
+   "from": "atomico",
+   "to": "electric-twin",
+   "type": "money",
+   "date": "2025-09-12 to 2025-09-26 (Seed 2); register state 2025-09-27",
+   "establishes": "Seed 2: 739,180 Seed 2 Preferred allotted 16/17/26 Sep 2025 at GBP 9.267 (implied ~GBP 6.85M by arithmetic only). CS01 at 2025-09-27 shows two Atomico Venture VI vehicles with 604,294 Seed 2; LocalGlobe XII 631,578 Seed 1 + 48,559 Seed 2; Mercuri 70,175 Seed 1 + 86,327 Seed 2; founders Cooper and Warner 1,000,000 Ordinary each. Numerical congruence between SH01s and CS01 is noted but not treated as proof of who received which allotment.",
+   "does_not_establish": "Allottee identity per allotment, beneficial ownership, cash settlement, source of funds, any exercised right.",
+   "source": [
+    "receipt:companies-house-electric-twin-cs01-shareholders-2025-09-27",
+    "receipt:companies-house-electric-twin-sh01-seed2-2025-09-16",
+    "receipt:companies-house-electric-twin-sh01-seed2-2025-09-17",
+    "receipt:companies-house-electric-twin-sh01-seed2-2025-09-26",
+    "receipt:companies-house-electric-twin-articles-2025-09-12"
+   ],
+   "confidence": "official record",
+   "lane": "ET",
+   "co_participants": [
+    "localglobe",
+    "mercuri"
+   ]
+  },
+  {
+   "id": "ET-04",
+   "from": "atomico",
+   "to": "electric-twin",
+   "type": "seat",
+   "date": "2025-09-12",
+   "establishes": "Replacement articles give Atomico a conditional right to appoint one director and one non-voting observer, LocalGlobe a conditional right to appoint one director (while each holds equity); Founder Majority appoints a board majority; Major Investor threshold 78,251 equity shares (both exceeded at 2025-09-27). Ben Blume was appointed director the same day, nominator unidentified. Seed Preferred ranks ahead of Ordinary in the exit waterfall; Major Investors get pro-rata first-offer rights.",
+   "does_not_establish": "That either right was exercised, who nominated Blume, any veto/consent actually used, coordination between investors.",
+   "source": [
+    "receipt:companies-house-electric-twin-articles-2025-09-12",
+    "receipt:companies-house-electric-twin-ben-blume-director-2025-09-12",
+    "receipt:companies-house-electric-twin-written-resolutions-2025-09-12",
+    "receipt:companies-house-electric-twin-sh10-rights-2025-09-12"
+   ],
+   "confidence": "official record",
+   "lane": "ET",
+   "co_participants": [
+    "localglobe",
+    "ben-blume"
+   ]
+  },
+  {
+   "id": "ET-05",
+   "from": "marc-andreessen",
+   "to": "electric-twin",
+   "type": "money",
+   "date": "2026-02-11 (announced); 2026-02-12 (angel list)",
+   "establishes": "Electric Twin announced $14M total ($10M round led by Atomico with LocalGlobe, Mercuri, Samos, plus a previously undisclosed, undated $4M pre-seed). Named angels: Marc Andreessen, Cal Henderson, Eric Salama, Tom Shinner, Louis Mosley.",
+   "does_not_establish": "Allocation per investor, closing date, security, rights, acquaintance or coordination; who was in the $4M pre-seed.",
+   "source": [
+    "receipt:electric-twin-seed-round-announcement-2026-02-11",
+    "receipt:alex-cooper-linkedin-electric-twin-funding-2026-02-12",
+    "url:https://www.electrictwin.com/blog/electric-twin-announcing-14m-in-funding"
+   ],
+   "confidence": "primary statement",
+   "lane": "ET",
+   "co_participants": [
+    "cal-henderson",
+    "eric-salama",
+    "tom-shinner",
+    "louis-mosley",
+    "atomico",
+    "localglobe",
+    "mercuri",
+    "samos"
+   ]
+  },
+  {
+   "id": "ET-06",
+   "from": "louis-mosley",
+   "to": "electric-twin",
+   "type": "money",
+   "date": "2026-02-11/12",
+   "establishes": "Palantir's Louis Mosley is a named Electric Twin angel (person-level, not Palantir the company). Earlier (2023-06-02) he and Clifford appear on one government roundtable attendance list (UK-05).",
+   "does_not_establish": "Palantir corporate investment, Thiel control, Clifford coordination, any product/data relationship between Palantir and Electric Twin.",
+   "source": [
+    "receipt:alex-cooper-linkedin-electric-twin-funding-2026-02-12",
+    "path:data/research/clifford-thiel-trump-wrap-up.json (palantir-electric-twin-capital)"
+   ],
+   "confidence": "primary statement",
+   "lane": "ET/BRIDGE",
+   "confidence_note": "Occupational descriptor 'Palantir EVP' is reported, not receipted in ledger."
+  },
+  {
+   "id": "ET-07",
+   "from": "simon-case",
+   "to": "electric-twin",
+   "type": "move",
+   "date": "2020-09-09 to 2024-12-15 (Cab Sec); 2025-02-10 (Barrow chair); 2025-03-31 (last civil-service day); 2026-06-11 (BAR case page)",
+   "establishes": "Case moved from Cabinet Secretary/Head of the Civil Service to chair of the Team Barrow Delivery Board (govt GBP 200M Transformation Fund; BAE Systems and the council are partners) while still a civil servant, then to an UNPAID, PART-TIME seat on Electric Twin's Ethics Board (about two meetings a year; role 'will not involve contact with or lobbying of government').",
+   "does_not_establish": "Any government mandate, privileged access, influence; whether the no-lobbying condition was observed (no compliance record); any link between Case's Barrow and Electric Twin roles.",
+   "source": [
+    "receipt:civil-service-commission-simon-case-electric-twin-ethics-board-2026-06-11",
+    "receipt:gov-mhclg-simon-case-barrow-chair-2025-02-10",
+    "receipt:gov-simon-case-cabinet-secretary-tenure-end-2024-12-15",
+    "receipt:civil-service-commission-simon-case-barrow-role-2026-07-02",
+    "url:https://civilservicecommission.independent.gov.uk/case/member-of-the-ethics-board-electric-twin/"
+   ],
+   "confidence": "official record",
+   "lane": "ET",
+   "subtype": "public_to_private_advisory_unpaid",
+   "co_participants": [
+    "team-barrow"
+   ]
+  },
+  {
+   "id": "ET-08",
+   "from": "michael-muthukrishna",
+   "to": "electric-twin",
+   "type": "seat",
+   "date": "2024-11-03 (first public role observation) to 2026-08-12; 2025-08-05 (CHP directors)",
+   "establishes": "Electric Twin names Muthukrishna Scientific Advisor (2024-11-03); the 2026-02-11 accuracy article (authors Ben Warner, Andrew Bailey) attributes 'independent validation' to LSE; Muthukrishna and Ben Warner are two of five directors appointed to the Centre for Human Progress on 2025-08-05.",
+   "does_not_establish": "That Muthukrishna performed the validation, controlled holdout data, or that the validation protocol is reproducible; funding, product lineage or control between CHP and Electric Twin.",
+   "source": [
+    "receipt:electric-twin-lse-muthukrishna-adviser-observations-2024-2026",
+    "receipt:electric-twin-accuracy-methodology-2026-02-11",
+    "receipt:companies-house-centre-human-progress-directors-16630851"
+   ],
+   "confidence": "primary statement",
+   "lane": "ET",
+   "co_participants": [
+    "ben-warner",
+    "lse",
+    "centre-for-human-progress"
+   ],
+   "confidence_note": "Adviser role and article: first-party; CHP directorships: official."
+  },
+  {
+   "id": "ET-09",
+   "from": "news-uk",
+   "to": "electric-twin",
+   "type": "money",
+   "date": "2026-04-27",
+   "establishes": "News UK launched Times ExplorAItion built in partnership with Electric Twin (first-party launch records from both sides); Lebara customer use reported 2026-03-11; Virgin shared-stage session at MAD//Fest 2026-07-08; Electric Twin reports Gartner category inclusion (33 of 60 reviewed) 2026-06-25.",
+   "does_not_establish": "Contract terms, procurement, accuracy, privacy compliance, replacement of human research, personal participation by Warner.",
+   "source": [
+    "receipt:newsuk-times-exploraition-launch-2026-04-27",
+    "receipt:electric-twin-times-exploraition-launch-2026-04-28",
+    "receipt:electric-twin-lebara-customer-use-2026-03-11",
+    "receipt:madfest-electric-twin-virgin-session-2026-07-08",
+    "receipt:electric-twin-linkedin-gartner-category-2026-06-25"
+   ],
+   "confidence": "primary statement",
+   "lane": "ET",
+   "co_participants": [
+    "lebara",
+    "virgin",
+    "gartner"
+   ]
+  },
+  {
+   "id": "PAL-01",
+   "from": "peter-thiel",
+   "to": "palantir",
+   "type": "seat",
+   "date": "since 2003 (chair); FY2025 10-K filed 2026-02-17",
+   "establishes": "Thiel co-founded Palantir and has chaired it since 2003 (Palantir IR per raw master); Palantir's filings describe multi-class stock, a Founder Voting Trust and Agreement letting founders and certain affiliates control up to 49.999999% of voting power. Also Founders Fund managing partner.",
+   "does_not_establish": "Personal control of any subsidiary, award or appointment (wrap-up: 'generic governance role does not establish...'). Founder control is DISCLOSED in SEC filings (hidden-structure claim is a bounded non-link).",
+   "source": [
+    "url:https://www.sec.gov/Archives/edgar/data/1321655/000132165526000011/pltr-20251231.htm",
+    "path:data/research/clifford-thiel-trump-wrap-up.json (thiel-palantir-governance)",
+    "path:docs/milestones/m04d-fog-resolution-wave-03.md"
+   ],
+   "confidence": "official record",
+   "lane": "PAL"
+  },
+  {
+   "id": "PAL-02",
+   "from": "us-federal-government",
+   "to": "palantir",
+   "type": "money",
+   "date": "FY2025 (10-K filed 2026-02-17)",
+   "establishes": "Palantir's FY2025 10-K: government revenue $2.402B = 54% of total; US government $1.9B vs $1.2B in 2024; government-segment contribution $1.576B at 66% margin.",
+   "does_not_establish": "Award-level margin, profit from any challenged gate, personal enrichment.",
+   "source": [
+    "url:https://www.sec.gov/Archives/edgar/data/1321655/000132165526000011/pltr-20251231.htm",
+    "path:docs/milestones/m04d-fog-resolution-wave-03.md"
+   ],
+   "confidence": "official record",
+   "lane": "PAL",
+   "subtype": "revenue_dependence",
+   "confidence_note": "Whole US government (not only Army) in the 10-K."
+  },
+  {
+   "id": "PAL-03",
+   "from": "palantir",
+   "to": "dcgs-a2",
+   "type": "selection",
+   "date": "2015-12-23 -> 2016-05-18 -> 2016-10-31 -> 2018-03-08 -> 2018-07-02 -> 2018-09-13",
+   "establishes": "Army issues DCGS-A Increment 2 RFP (2015-12-23); GAO denies Palantir's pre-award protest (2016-05-18); Court of Federal Claims enjoins the solicitation for breaching commercial-item market-research duties (2016-10-31); Army awards Capability Drop 1 to Raytheon and Palantir (2018-03-08); GAO denies General Dynamics' evaluation protest (2018-07-02); Federal Circuit affirms the injunction (2018-09-13). Repo codes this the one 'deliberate market shaping' (I2) lane: actor strategy -> gate challenge -> adjudicated requirement -> changed constraint.",
+   "does_not_establish": "That Palantir was favoured (court did not order it picked), that the gate challenge caused later awards, or any improper tailoring. Only 3 of 8 proposal slots are publicly named (Raytheon, Palantir, GDMS); 5 are restricted.",
+   "source": [
+    "path:data/intake/status-sovereignty-f13-dcgsa-first-pass.json",
+    "path:data/research/status-sovereignty-rd-wave02-rd06-offeror-universe/summary.json",
+    "url:https://www.cafc.uscourts.gov/opinions-orders/palantir_17-1465.opinion.9-13-18.pdf",
+    "path:docs/milestones/m04d-adversarial-triage-adjudication.md"
+   ],
+   "confidence": "official record",
+   "lane": "PAL",
+   "subtype": "outsider_gate_challenge_won",
+   "confidence_note": "Also a COUNTERWEIGHT: external court check on the Army."
+  },
+  {
+   "id": "PAL-04",
+   "from": "us-army",
+   "to": "army-enterprise-palantir",
+   "type": "money",
+   "date": "2025 (exact date not recorded in repo)",
+   "establishes": "Army enterprise service agreement with Palantir consolidating 75 contracts, ceiling $10B over 10 years; justification (J&A) cites a proprietary integrated platform, extensive customisation, dependence, rebuild/migration/reaccreditation cost, sole-source continuity; Government keeps rights in its data, Palantir keeps commercial software rights.",
+   "does_not_establish": "Obligations/outlays (ceiling is not spend), abuse or capture, ability to phase a transition; the estimates behind the J&A are not public.",
+   "source": [
+    "path:docs/milestones/m04d-fog-resolution-wave-01.md",
+    "url:https://www.army.mil/article/287506/u_s_army_awards_enterprise_service_agreement_to_enhance_military_readiness_and_drive_operational_efficiency",
+    "url:https://sam.gov/opp/75d217c184194d83a0c0ec868c182c73/view",
+    "path:data/intake/m04f-epistemic-jurisdiction-matrix-army-palantir-enterprise.json"
+   ],
+   "confidence": "official record",
+   "lane": "PAL",
+   "subtype": "single_award_enterprise_ceiling"
+  },
+  {
+   "id": "PAL-05",
+   "from": "shyam-sankar",
+   "to": "detachment-201",
+   "type": "seat",
+   "date": "2025-06-13 (cohort 1); 2026-06-10 (cohort 2)",
+   "establishes": "Army Public Affairs names Shyam Sankar (Palantir CTO), Andrew Bosworth (Meta CTO), Kevin Weil (OpenAI CPO) and Bob McGrew as the four new Army Reserve lieutenant colonels commissioned into Detachment 201 as part-time senior advisers (ceremony record corroborates). Cohort 2 (Knecht/Cloudflare, Pullara/Sutter Hill, Piantino) was commissioned 2026-06-10 with the Secretary of the Army administering the oath. Raw master lists the Army's stated influence areas: munitions supply-chain data analysis, organic-industrial-base investments, autonomous-systems strategy, counter-drone strategy.",
+   "does_not_establish": "Procurement, preferred-vendor status, company participation in Army decisions, technology transfer, what advice was given, any recusal screen (none public). Clifford is not on this surface.",
+   "source": [
+    "receipt:army-detachment-201",
+    "receipt:army-detachment-201-second-cohort-2026-06-10",
+    "url:https://www.army.mil/article/286317/army_launches_detachment_201_executive_innovation_corps_to_drive_tech_transformation",
+    "url:https://www.army.mil/article/293173/army_commissions_second_cohort_of_tech_executives_into_executive_innovation_corps"
+   ],
+   "confidence": "official record",
+   "lane": "PAL",
+   "subtype": "sitting_executive_to_part_time_public_adviser",
+   "co_participants": [
+    "andrew-bosworth",
+    "kevin-weil",
+    "bob-mcgrew",
+    "dan-driscoll"
+   ],
+   "confidence_note": "Commissioning facts: official. 'Part-time senior adviser' wording and the influence-area list are the raw master's transcription of Army statements."
+  },
+  {
+   "id": "PAL-06",
+   "from": "peter-thiel",
+   "to": "dialog",
+   "type": "seat",
+   "date": "2026-06-16 (WIRED observation; no appointment date)",
+   "establishes": "WIRED reports Thiel as Dialog co-founder (with Auren Hoffman, chairman; Raffi Grinberg, executive director). The exposed 112-name directory includes Joe Lonsdale (8VC; Palantir co-founder), Army Secretary Dan Driscoll, SACEUR Alexus Grynkewich, Reid Hoffman, Eric Schmidt, Matt Clifford and others (Thiel himself is in the 3 leadership-role rows, not the 112).",
+   "does_not_establish": "Membership, attendance or any pairwise meeting among listed people; the directory mixes members, guests, speakers and past guests.",
+   "source": [
+    "receipt:wired-dialog-leak",
+    "receipt:dialog-directory-extract",
+    "path:receipts/topology/dialog-directory-extract-2026-06-16.md",
+    "path:docs/clifford-number-master.md Part 5, 8, 13"
+   ],
+   "confidence": "press",
+   "lane": "PAL/BRIDGE",
+   "subtype": "invitation_only_convening",
+   "co_participants": [
+    "joe-lonsdale",
+    "dan-driscoll",
+    "matt-clifford"
+   ],
+   "confidence_note": "Leaked/exposed website directory plus journalism; no event-level attendance ledger exists."
+  },
+  {
+   "id": "PAL-07",
+   "from": "founders-fund",
+   "to": "palantir",
+   "type": "money",
+   "date": "portfolio listing observed 2026-07-14",
+   "establishes": "Fund census lists Palantir in both 8VC's and Founders Fund's portfolios (also Anduril in both). Raw master: Sanabil (PIF-owned) lists Founders Fund as a fund partner; chain 'Sanabil -> Founders Fund (LP) -> Thiel -> Palantir -> Maven/$10B' is flagged primary_public + reported.",
+   "does_not_establish": "Investment amount, ownership, LP vehicle, commitment dates, control rights (wrap-up lists the Sanabil-Founders Fund vehicles as a LOCKED DOOR).",
+   "source": [
+    "path:data/intake/person-centered-defense-routers/co-investor-edges.jsonl",
+    "receipt:r-fund-portfolio-census-2026",
+    "path:docs/clifford-number-master.md Part 11",
+    "path:data/research/clifford-thiel-trump-wrap-up.json (locked doors)"
+   ],
+   "confidence": "primary statement",
+   "lane": "PAL/CAP",
+   "co_participants": [
+    "eight-vc",
+    "sanabil"
+   ],
+   "confidence_note": "Portfolio listings are first-party pages; Sanabil->FF edge is from a portfolio page, not a Form D or LPA."
+  },
+  {
+   "id": "PAL-08",
+   "from": "us-army",
+   "to": "ngc2",
+   "type": "selection",
+   "date": "2025-07-18 (prototype); 2025-09-03; 2026-05-05; 2026-06-22 (baseline)",
+   "establishes": "Army awards an 11-month, $99.6M prototype OTA to Team Anduril (4th ID) (2025-07-18), a separate $26M prototype for another division (2025-09-03), launches 'Right to Integrate' (2026-05-05), then names Anduril lead of the common data baseline with Palantir (Foundry in the data mesh) and Raft (registries/transformation/federation); Lockheed leads the 25th ID stack; >80 proposals were received.",
+   "does_not_establish": "Production acceptance of the full stack, a closed Anduril-Palantir programme (repo: bounded non-link), common governance across the companies, an independent removal-and-substitution test.",
+   "source": [
+    "path:data/intake/m05-answerable-power-sprint-02-leg-03-ngc2-sources.json",
+    "receipt:army-ngc2-baseline-2026",
+    "url:https://www.army.mil/article/293409/army_and_industry_align_on_common_data_baseline_as_next_generation_command_and_control_moves_from_prototyping_to_delivery",
+    "url:https://www.army.mil/article/287180/army_announces_next_generation_command_and_control_ngc2_prototype_award"
+   ],
+   "confidence": "official record",
+   "lane": "PAL/AND",
+   "co_participants": [
+    "anduril-us",
+    "palantir",
+    "raft",
+    "lockheed-martin"
+   ]
+  },
+  {
+   "id": "PAL-09",
+   "from": "palantir",
+   "to": "ngc2",
+   "type": "venue",
+   "date": "2026-06-22",
+   "establishes": "Palantir-Anduril are operationally integrated inside one bounded Army programme (Lattice + Foundry); repo ceiling: 'deployment_specific_operational_integration'.",
+   "does_not_establish": "Cross-customer or system-wide common purpose; a partnership outside NGC2 (Reuters-reported partnership is raw master only).",
+   "source": [
+    "receipt:army-ngc2-baseline-2026",
+    "path:data/project/m05-answerable-power-sprint-01-triad.json (M05-SP01-T06)"
+   ],
+   "confidence": "official record",
+   "lane": "PAL/AND",
+   "co_participants": [
+    "anduril-us"
+   ]
+  },
+  {
+   "id": "PAL-10",
+   "from": "palantir",
+   "to": "uk-public-sector",
+   "type": "money",
+   "date": "2025-09-15 (guidance) / 2025-09 delivery; 2026-04-09 account",
+   "establishes": "UK public-sector footprint in the record: Palantir Foundry as Homes for Ukraine data platform, then exit to in-house 'Share' (build from summer 2024, delivered Sept 2025, reported lower running costs) - the one completed public exit; NHS Federated Data Platform continues with product-level Foundry-to-EDGE transitions. Brave1 Dataroom (Ukraine) is built on Palantir software; UK says Ukraine frontline datasets will be plugged into UK production lines (Palantir-specific transfer to UK not shown). No Palantir-MoD contract appears in the repo.",
+   "does_not_establish": "Palantir-MoD contracts, dependency, Clifford/Action Plan route to Palantir (open join), independent audit of Share savings.",
+   "source": [
+    "path:data/intake/m05-answerable-power-sprint-01-sources.json (SRC-011..013)",
+    "url:https://mhclgdigital.blog.gov.uk/2026/04/09/from-emergency-to-sustainability-creating-share-homes-for-ukraine-data/",
+    "path:docs/milestones/m04d-fog-resolution-wave-07.md",
+    "url:https://www.contractsfinder.service.gov.uk/Notice/ab872e51-c3e8-4188-aae8-86cd8c40affb"
+   ],
+   "confidence": "official record",
+   "lane": "PAL/UK",
+   "subtype": "customer_and_exit",
+   "confidence_note": "Target is the UK public-sector customer set; the repo has no MoD-Palantir instrument."
+  },
+  {
+   "id": "AND-01",
+   "from": "anduril-us",
+   "to": "lda-fec",
+   "type": "money",
+   "date": "2025-Q2 (LDA); 2025-01-01 to 2026-05-31 (FEC)",
+   "establishes": "Anduril's Q2 2025 LD-2 reports $700,000 lobbying expense naming Autonomous Surveillance Towers, H.R.1, appropriations, acquisition policy, rocket motors, connected warfare/C2, strike, space, maritime, export controls, FMS. Corporate PAC: receipts $202,217.33; disbursements $172,233.95; contributions to other committees $166,000; no independent expenditures.",
+   "does_not_establish": "Authorship of any legislation, influence on a decision, award causation, recipient-level PAC detail (Schedule B not pulled).",
+   "source": [
+    "receipt:lda-anduril-2025-q2",
+    "url:https://lda.senate.gov/filings/public/filing/7669d276-b770-4e54-9b71-4b8689943fdc/print/",
+    "receipt:fec-anduril-pac",
+    "url:https://www.fec.gov/data/committee/C00763623/"
+   ],
+   "confidence": "official record",
+   "lane": "AND",
+   "subtype": "lobbying_and_pac"
+  },
+  {
+   "id": "AND-02",
+   "from": "michael-obadal",
+   "to": "us-army",
+   "type": "move",
+   "date": "2025-09-22",
+   "establishes": "Army identifies Michael Obadal as Under Secretary of the Army, responsible for acquisition strategy and enterprise reform, after prior Anduril employment (case file labels him a former Anduril director). Anduril's $20B single-award Army enterprise contract followed on 2026-03-13 (~5.5 months later).",
+   "does_not_establish": "Participation in any Anduril matter, an ethics violation, or the content of any recusal/waiver (ethics file not public). Chronology only.",
+   "source": [
+    "receipt:army-obadal-bio-2025",
+    "url:https://www.army.mil/leaders/usa",
+    "path:cases/anduril-access-ownership/claims.jsonl (clm-obadal-army-role)"
+   ],
+   "confidence": "official record",
+   "lane": "AND",
+   "subtype": "private_to_public",
+   "confidence_note": "Army bio confirms the appointment; the 'former Anduril director' label is the case file's, and the receipt is an undated current-state page."
+  },
+  {
+   "id": "AND-03",
+   "from": "us-army",
+   "to": "army-enterprise-anduril",
+   "type": "money",
+   "date": "2026-03-13",
+   "establishes": "Single-award, 10-year IDIQ W9128Z-26-D-A001 with a $20B ceiling for Anduril's full commercial suite; Army says it consolidates more than 120 Anduril procurement actions; SAM.gov award and justification notice exists.",
+   "does_not_establish": "Committed revenue (ceiling only), source-selection and pricing rules, data rights, substitution rules, whether acquired products enter the catalogue without new competition.",
+   "source": [
+    "receipt:sam-army-enterprise-w9128z26da001",
+    "receipt:army-enterprise-2026",
+    "path:cases/anduril-access-ownership/claims.jsonl (clm-army-enterprise-vehicle, clm-army-enterprise-consolidation)"
+   ],
+   "confidence": "official record",
+   "lane": "AND",
+   "subtype": "single_award_enterprise_ceiling"
+  },
+  {
+   "id": "AND-04",
+   "from": "congress-pl119-21",
+   "to": "cbp",
+   "type": "selection",
+   "date": "2025-07-04 (law); 2025-12-25 (order)",
+   "establishes": "Public Law 119-21 s.90004 restricts specified border-technology funds to surveillance towers CBP has already tested and accepted to deliver autonomous capabilities (does not name Anduril). CBP places a $362,974,500 delivery order with Anduril (IDV 70B02C20D00000019); USAspending shows $24.5M outlaid at retrieval. Anduril's Q2 2025 LD-2 named the same programme.",
+   "does_not_establish": "Who proposed or drafted the language, whether alternatives were tested, whether lobbying caused the order, how acceptance was timed relative to competitors.",
+   "source": [
+    "receipt:pl11921-section90004",
+    "receipt:usaspending-cbp-70b02c26f00000035",
+    "receipt:lda-anduril-2025-q2",
+    "path:cases/anduril-access-ownership/relations.jsonl (rel-lobbying-to-cbp-gate, rel-cbp-gate-to-order)",
+    "path:data/intake/person-centered-defense-routers/government-awards.jsonl"
+   ],
+   "confidence": "official record",
+   "lane": "AND",
+   "subtype": "statutory_eligibility_gate_then_order",
+   "co_participants": [
+    "anduril-us"
+   ]
+  },
+  {
+   "id": "AND-05",
+   "from": "dod-dpa",
+   "to": "anduril-us",
+   "type": "money",
+   "date": "2025-01-07 (award); Adranos acquired 2023-06-25",
+   "establishes": "DoD announces a $14.3M Defense Production Act Title III award for solid-rocket-motor capacity 'building on' a stated $75M Anduril private investment. Anduril announced buying Adranos (2023-06-25), Area-I (2021-04) and Numerica radar/C2 (2025-01-09) before the Army enterprise and NGC2 gates.",
+   "does_not_establish": "Qualification/yield/accepted output, guaranteed production demand, that the acquisitions caused the awards.",
+   "source": [
+    "receipt:dod-dpa-rocket-motors-2025",
+    "receipt:anduril-adranos-2023",
+    "receipt:anduril-area-i-2021",
+    "receipt:anduril-numerica-2025",
+    "path:cases/anduril-access-ownership/relations.jsonl"
+   ],
+   "confidence": "official record",
+   "lane": "AND",
+   "subtype": "public_capacity_support_on_private_match"
+  },
+  {
+   "id": "AND-06",
+   "from": "space-force",
+   "to": "anduril-us",
+   "type": "selection",
+   "date": "2024-09-24 (vehicle); 2024-11-21 (company PoR account)",
+   "establishes": "USAspending describes FA882024DB001 as an SBIR III follow-on single-award IDIQ for Lattice mesh networking; Anduril describes the path from innovation work to Program of Record.",
+   "does_not_establish": "Substitutability, child-order scope, price analysis, replacement plan.",
+   "source": [
+    "receipt:usaspending-sdanet-fa882024db001",
+    "receipt:anduril-spaceforce-por-2024"
+   ],
+   "confidence": "official record",
+   "lane": "AND"
+  },
+  {
+   "id": "AND-07",
+   "from": "public-counterweights",
+   "to": "anduril-us",
+   "type": "selection",
+   "date": "2021-02-22; 2025-03-07; 2025-05-19; 2026-04-15; 2026-07-07 (COUNTERWEIGHTS)",
+   "establishes": "Controls the case file preserves: GAO denied Anduril's protest of an Air Force solicitation (2021-02-22); USMC installation counter-UAS IDIQ drew 10 offers ($642.21M ceiling, 2025-03-07); an Air Force Phase III solicitation to Anduril was cancelled in corrective action (2025-05-19); Australia took delivery of Ghost Shark after a co-funded development (2026-04-15); NATO NCIA gave first-phase eAirC2 work to Anduril, Palantir and Athea for evaluation (2026-07-07).",
+   "does_not_establish": "A general rule about the company's access; the NATO scoring and final selection are undisclosed.",
+   "source": [
+    "receipt:gao-b419420",
+    "receipt:dod-usmc-cuas-2025",
+    "receipt:gao-b423319",
+    "receipt:australia-ghost-shark-delivery-2026",
+    "receipt:ncia-eairc2-2026"
+   ],
+   "confidence": "official record",
+   "lane": "AND",
+   "subtype": "counterweight_controls",
+   "confidence_note": "Edge from/to are placeholders for a cluster of control cases."
+  },
+  {
+   "id": "CAP-01",
+   "from": "jackson-moses",
+   "to": "silent-ventures",
+   "type": "seat",
+   "date": "Fund II Form D filed 2025-08-27; IAPD ERA (Texas 2024-03-27; SEC effective 2026-03-31)",
+   "establishes": "IAPD lists Silent Ventures Management, LLC (CRD 326901, SEC 802-136152) as an Exempt Reporting Adviser (not SEC-registered; filings not verified by SEC). Form D for Silent Ventures Fund II, LP (Delaware, formed 2025; GP and UGP vehicles; Jackson Moses manager of the UGP; Rule 506(b)/3(c)(7)) states first sale had not occurred. Silent Capital is a separate private syndicate whose terms say it is 'not a single legal entity'.",
+   "does_not_establish": "Fund size, investors, close, ownership or governance rights in any portfolio company; which Silent vehicle holds which security.",
+   "source": [
+    "path:data/intake/security-state-organism-evidence-intake.json (M04B-EV-006, EV-015, EV-016)",
+    "url:https://adviserinfo.sec.gov/firm/summary/326901",
+    "url:https://www.sec.gov/Archives/edgar/data/2080468/000147083125000151/xslFormDX01/primary_doc.xml"
+   ],
+   "confidence": "official record",
+   "lane": "CAP",
+   "co_participants": [
+    "silent-capital"
+   ],
+   "confidence_note": "Form D is filer-supplied; ERA status is self-reported to regulators."
+  },
+  {
+   "id": "CAP-02",
+   "from": "silent-ventures",
+   "to": "anduril-us",
+   "type": "money",
+   "date": "portfolio listing observed 2026-07-14/24",
+   "establishes": "Silent Ventures' site lists Anduril among select prior investments, Erebor Bank and Traysar among current companies; the router census counts 23 defence-relevant Silent companies, 11 of which are on the NatSec100 (Anduril, Armada, Axiom, Castelion, Firehawk, Firestorm, Hadrian, Impulse, Saronic, Starfish, Voyager). Jackson Moses's personal list shows 61 companies, 14 on the NatSec100. (The Austin-corridor pass counts only 2 Silent x NatSec100 overlaps - Firestorm, Hadrian - on a narrower source; Armada held as name-match-only.)",
+   "does_not_establish": "Date, amount, security, vehicle, rights or exit for any of these; portfolio listing is not investment.",
+   "source": [
+    "receipt:r-silent-home-2026",
+    "receipt:r-fund-portfolio-census-2026",
+    "path:data/intake/security-state-organism-evidence-intake.json (M04B-EV-007)",
+    "path:data/intake/person-centered-defense-routers/analysis.md",
+    "path:data/intake/austin-israel-defense-corridor/analysis.md"
+   ],
+   "confidence": "primary statement",
+   "lane": "CAP",
+   "subtype": "self_reported_portfolio",
+   "co_participants": [
+    "erebor",
+    "traysar"
+   ],
+   "confidence_note": "First-party portfolio claim; counterpart (company) confirmations not systematically searched except advisory/sourcing claims."
+  },
+  {
+   "id": "CAP-03",
+   "from": "silent-ventures",
+   "to": "traysar",
+   "type": "money",
+   "date": "2026-06-16",
+   "establishes": "Traysar announces a $25M seed led by Silent Ventures, with Lux Capital, Ora Global, named angels and founders from Anduril and Erebor.",
+   "does_not_establish": "Closing documents, exact vehicle, ownership, rights, control.",
+   "source": [
+    "path:data/intake/security-state-organism-evidence-intake.json (M04B-EV-003)",
+    "url:https://traysar.com/news/traysar-raises-25m-seed",
+    "receipt:r-traysar-prnewswire-2026"
+   ],
+   "confidence": "primary statement",
+   "lane": "CAP",
+   "co_participants": [
+    "lux-capital"
+   ]
+  },
+  {
+   "id": "CAP-04",
+   "from": "occ",
+   "to": "erebor",
+   "type": "selection",
+   "date": "2025-10-15 (OCC conditional); 2025-12-16 (FDIC); 2026-02-06 (opening); 2026-03-25 (CRA plan)",
+   "establishes": "OCC conditionally approves charter 25357 for Erebor Bank, N.A.: 12% Tier 1 leverage for 3 years, prior non-objection for material business-plan changes, and a binding committed equity line tied in timing to Erebor Group's Series A; organizing group Erebor Group, Inc.; Atticus Digital as a bank subsidiary; Palmer Luckey named proposed director and principal shareholder (with Owen Rapaport, Jacob Hirshman). FDIC approves deposit insurance 2025-12-16 (app 20250699, cert 59378); opens 2026-02-06; OCC approves CRA strategic plan 2026-03-25.",
+   "does_not_establish": "Preferential or adverse treatment (comparator roster exists but is unmatched), who supplied the equity line, final ownership, customers or any ecosystem-banking traffic.",
+   "source": [
+    "path:data/intake/security-state-organism-evidence-intake.json (M04B-EV-010..014, 017)",
+    "url:https://www.occ.gov/news-issuances/news-releases/2025/nr-occ-2025-101a.pdf",
+    "url:https://www.fdic.gov/bank-examinations/decisions-bank-applications-deposit-insurance"
+   ],
+   "confidence": "official record",
+   "lane": "CAP",
+   "subtype": "conditional_charter_then_opening",
+   "co_participants": [
+    "fdic",
+    "palmer-luckey"
+   ]
+  },
+  {
+   "id": "CAP-05",
+   "from": "fundrise",
+   "to": "erebor",
+   "type": "money",
+   "date": "2026-02-20",
+   "establishes": "Fundrise Innovation Fund's audited annual report (FYE 2026-03-31) lists Erebor Bank Series B preferred, initially acquired 2026-02-20, cost and fair value $5M (0.7% of net assets), restricted Level 3 - 14 days after opening. The same fund also holds Anduril and SpaceX, so 'only the named network funded Erebor' does not survive.",
+   "does_not_establish": "Round size or composition, Fundrise's governance rights, use of proceeds, any favouritism.",
+   "source": [
+    "path:docs/milestones/m04d-fog-resolution-wave-08.md",
+    "url:https://www.sec.gov/Archives/edgar/data/1867090/000199937126011950/fundrise-ncsra_033126.htm"
+   ],
+   "confidence": "official record",
+   "lane": "CAP",
+   "subtype": "outsider_capital_counterweight"
+  },
+  {
+   "id": "CAP-06",
+   "from": "svdg-natsec100",
+   "to": "anduril-us",
+   "type": "selection",
+   "date": "2023, 2024, 2025, 2026 editions",
+   "establishes": "NatSec100 ranks Anduril #2 (2023), #2 (2024), #1 (2025), #1 (2026). 2026 eligibility: venture/PE-backed, not public, defence/dual-use relevance, at least one US government contract by 2025-12-31, FOCI vetting; four disclosed scoring inputs (USG contracting activity, recent capital, total capital, headcount growth); exact weights, candidate universe, rejected rows and FOCI decisions are unpublished.",
+   "does_not_establish": "Technical superiority, causation of capital or awards, selector accuracy, government endorsement; only SpaceX and Anthropic are discussed as assessed non-selections.",
+   "source": [
+    "path:data/intake/status-sovereignty-natsec100-denominator-first-pass.json",
+    "path:data/intake/natsec100-pathways/chunk1/company_years.jsonl",
+    "url:https://www.natsec100.org/natsec100-2026",
+    "path:docs/milestones/ssc-rd01-natsec100-outcome-controls.md"
+   ],
+   "confidence": "primary statement",
+   "lane": "CAP",
+   "subtype": "credential_ranking",
+   "confidence_note": "Operator's own published report (SVDG); the repo seed labelled such rows 'official' but they are first-party."
+  },
+  {
+   "id": "CAP-07",
+   "from": "james-cross",
+   "to": "franklin-templeton",
+   "type": "seat",
+   "date": "all four editions (2023-2026); JPMorgan sponsor from 2024",
+   "establishes": "SVDG co-founder James Cross is also co-head of Franklin Templeton's private investing; Franklin Templeton has been NatSec100 scoring-methodology partner in all four editions; Balyasny is a methodology partner; J.P. Morgan is title sponsor from 2024; Pryzm federal-award data became a direct input in 2026 (largest rank movements in report history, per SVDG). In-Q-Tel is the #1 investor by count (34/100 in 2023; 33 in 2026); Lockheed Martin Ventures 14 in 2026, with 60+ portfolio cos turned LM suppliers and $750M+ contracts (operator's report).",
+   "does_not_establish": "Selection control by any sponsor or investor, coordination, wrongdoing; the repo records this as a documented dual role, not an inference of intent.",
+   "source": [
+    "path:data/intake/natsec100-pathways/chunk1/actors.jsonl (A001-A012)",
+    "url:https://static1.squarespace.com/static/5f82250a85dd3125aeba053d/t/64a5b95b1103ec7e2301d085/1688582491786/SVDG+NatSec100+2023+Report+(Public+Release+v1).pdf",
+    "url:https://static1.squarespace.com/static/6824e488de9281397c0dfb01/t/6a14a90aae1f4367c7d9c89b/1779738890973/2026+NatSec100+Report-WEB.pdf"
+   ],
+   "confidence": "primary statement",
+   "lane": "CAP",
+   "subtype": "ranker_is_also_capital",
+   "co_participants": [
+    "svdg-natsec100",
+    "jpmorgan",
+    "balyasny",
+    "pryzm",
+    "lockheed-martin-ventures"
+   ]
+  },
+  {
+   "id": "CAP-08",
+   "from": "founders-fund",
+   "to": "anduril-us",
+   "type": "money",
+   "date": "portfolio listings observed 2026-07-14",
+   "establishes": "Anduril appears in 8 of the 11 censused fund portfolios: 8VC, Founders Fund, In-Q-Tel, Lux Capital, Silent Ventures, Valor Equity, Washington Harbour, a16z American Dynamism. Hadrian and Impulse sit in 5 each. Trae Stephens is Founders Fund partner and Anduril executive chairman (Founders Fund page); Katherine Boyle (a16z AD) holds board seats at Apex and Hadrian and observer seats at Saronic and Castelion.",
+   "does_not_establish": "Coordination or relationship between the funds (shared cap-table is not coordination); investment amounts or ownership; Fundrise-style broad funds hold the same names as an ordinary diversified mandate.",
+   "source": [
+    "path:data/intake/person-centered-defense-routers/co-investor-edges.jsonl",
+    "path:data/intake/person-centered-defense-routers/advisory-edges.jsonl",
+    "receipt:r-foundersfund-stephens-2026",
+    "receipt:r-a16z-boyle-2026"
+   ],
+   "confidence": "primary statement",
+   "lane": "CAP",
+   "co_participants": [
+    "eight-vc",
+    "in-q-tel",
+    "lux-capital",
+    "silent-ventures",
+    "valor-equity",
+    "washington-harbour",
+    "a16z-ad",
+    "trae-stephens",
+    "katherine-boyle"
+   ],
+   "confidence_note": "Portfolio-page listings (first-party) and counterpart-reported board roles."
+  },
+  {
+   "id": "CAP-09",
+   "from": "jackson-moses",
+   "to": "castelion",
+   "type": "seat",
+   "date": "self-description observed 2026-07-14",
+   "establishes": "Jackson Moses's own site claims senior-advisor roles at Castelion, Privateer, Long Wall and Thor Dynamics; deal-sourcing roles for 8VC, Founders Fund, a16z, Bessemer, Lightspeed, NEA; Weekend Fund scout (Jan 2022-Apr 2023, via third-party database); Afore Capital venture partner. Castelion is also a Boyle board-observer company (shared company node only).",
+   "does_not_establish": "Any of these roles: the counterpart pages searched on 2026-07-14 do not mention him (see NL-08). Role dates are absent from his site.",
+   "source": [
+    "receipt:r-jacksonmoses-about-2026",
+    "path:data/intake/person-centered-defense-routers/advisory-edges.jsonl",
+    "path:data/intake/person-centered-defense-routers/deal-sourcing-claims.jsonl",
+    "path:data/intake/person-centered-defense-routers/sources/counterpart-searches.jsonl"
+   ],
+   "confidence": "primary statement",
+   "lane": "CAP",
+   "subtype": "self_claimed_unconfirmed_advisory",
+   "confidence_note": "Self-claimed; the repo labels these 'self_claimed' with 'no_counterpart_confirmation_observed'."
+  },
+  {
+   "id": "CAP-10",
+   "from": "sally-donnelly",
+   "to": "pallas",
+   "type": "move",
+   "date": "Pallas Advisors 2018; Pallas Ventures 2020",
+   "establishes": "Sally Donnelly and Tony DeMartino (ex-OSD/CENTCOM) are the principals of Pallas Advisors (advisory, 2018) and Pallas Ventures (fund, 2020); Pallas Ventures' censused portfolio (Hermeus, Interos, Morpheus Space, Rebellion Defense, Second Front Systems) is 5/5 on the NatSec100. Pallas Foundation is named in site navigation with no detail page.",
+   "does_not_establish": "Investment amounts, ownership, any government decision influenced; Pallas x Capital Factory join (none found).",
+   "source": [
+    "path:data/intake/austin-israel-defense-corridor/analysis.md",
+    "path:data/intake/person-centered-defense-routers/evidence-trails.jsonl",
+    "receipt:r-pallas-advisors-site-2026",
+    "receipt:r-pallas-ventures-site-2026"
+   ],
+   "confidence": "primary statement",
+   "lane": "CAP",
+   "subtype": "public_service_to_adviser_to_fund",
+   "co_participants": [
+    "tony-demartino"
+   ]
+  },
+  {
+   "id": "CAP-11",
+   "from": "capital-factory",
+   "to": "svdg-natsec100",
+   "type": "venue",
+   "date": "portfolio index observed 2026-07-14",
+   "establishes": "Capital Factory's 837-company portfolio index overlaps the 196-company NatSec100 universe in 12 co-listings (4 independently corroborated: ICON, Saronic, Firefly, Venus); Jackson Moses's list overlaps Capital Factory in 5 (Allen Control, Firehawk, Saronic, Proteus Space, Orbit Fab).",
+   "does_not_establish": "Equity investment (portfolio listing is expressly not investment), routing, contact.",
+   "source": [
+    "path:data/intake/austin-israel-defense-corridor/analysis.md",
+    "path:data/intake/natsec100-pathways/README.md"
+   ],
+   "confidence": "primary statement",
+   "lane": "CAP",
+   "co_participants": [
+    "joshua-baer"
+   ]
+  },
+  {
+   "id": "CAP-12",
+   "from": "us-federal-government",
+   "to": "silent-ventures",
+   "type": "money",
+   "date": "USAspending rows retrieved 2026-07-14",
+   "establishes": "Federal award rows for 12 Silent-listed NatSec100 companies (one resolved USAspending award each: Anduril CBP, Axiom NASA, Castelion AF, Hadrian Army, Starfish AF, Impulse AF, Firestorm AF, Firehawk AF, Privateer AF, Orbit Fab AFRL, CHAOS DoI, Saronic MDA initial order) sum to ~$954.6M OBLIGATED. Ceiling, obligated and outlay are kept separate (e.g. Anduril CBP $362.97M obligated / $24.5M outlaid). Cambium identity held; Morpheus unavailable.",
+   "does_not_establish": "Complete award histories (one hand-picked row per company), award causation by any investor or router, personal benefit.",
+   "source": [
+    "path:data/intake/person-centered-defense-routers/government-awards.jsonl",
+    "path:data/intake/person-centered-defense-routers/analysis.md"
+   ],
+   "confidence": "official record",
+   "lane": "CAP",
+   "subtype": "public_money_into_portfolio",
+   "confidence_note": "Awards are official (USAspending); membership of the group is first-party self-listing."
+  },
+  {
+   "id": "CAP-13",
+   "from": "osc",
+   "to": "vulcan-elements",
+   "type": "money",
+   "date": "2025 (MP Materials executed Aug 2025); four conditional commitments 2025-2026",
+   "establishes": "DoD Office of Strategic Capital: MP Materials $150M executed loan (12-yr, 5.38%, matures 2037-08-01); conditional commitments to Vulcan Elements $620M (a NatSec100 company), ReElement $80M, Phoenix Tailings $500M, Energy Fuels $725M - none observed closed or disbursed; release says FY2026 OSC commitments exceed $5B so the five are not the full denominator; 70 negotiated-term fields unobtainable.",
+   "does_not_establish": "Underwriting quality, favouritism, repayment, public recovery; any link to Clifford, Silent or Palantir.",
+   "source": [
+    "path:docs/milestones/ssc-rd03-osc-instrument-lifecycle.md",
+    "path:data/intake/status-sovereignty-rd03-osc-instrument-lifecycle.json"
+   ],
+   "confidence": "official record",
+   "lane": "CAP",
+   "subtype": "conditional_commitments",
+   "confidence_note": "Target is Vulcan Elements (a NatSec100 company) as one of five instruments; kept as a structural example of conditional instruments."
+  },
+  {
+   "id": "CAP-14",
+   "from": "lockheed-martin-ventures",
+   "to": "firestorm",
+   "type": "money",
+   "date": "2024-03-21 (seed); X-Bow round 2023-11-16",
+   "establishes": "Firestorm announced a $12.5M seed on 2024-03-21 led by Lockheed Martin Ventures with BVVC participating (counterparty primary_public); Silent Ventures' site and Washington Harbour's portfolio both list Firestorm (a seed-file claim naming Silent as a seed co-investor rests on receipt r-linkedin-silentventures-2026, which is receipt_unresolved). Lockheed Martin Ventures also led X-Bow's 2023-11-16 interim round with BVVC participating. BVVC led Vatn Systems' $60M Series A (2025-12-10). BVVC publicly claims 'first-look access' to special operations; nine companies it publicly backs are absent from its own portfolio page (e.g. Furientis, also on Moses's list).",
+   "does_not_establish": "Ownership, governance rights, which BVVC vehicle invested (0 transaction-to-vehicle joins), any procurement preference from 'first-look' access (BVVC claims are self-represented), coordination among co-investors.",
+   "source": [
+    "path:data/intake/bvvc-defense-capital/lake.json (transactions)",
+    "path:data/intake/bvvc-defense-capital/transactions.jsonl",
+    "path:data/intake/bvvc-defense-capital/institutional-claims.jsonl",
+    "path:data/intake/natsec100-pathways/seed/claims.jsonl (c-firestorm-lockheed-coinvest)"
+   ],
+   "confidence": "primary statement",
+   "lane": "CAP",
+   "subtype": "prime_corporate_venture_lead",
+   "co_participants": [
+    "bvvc",
+    "silent-ventures",
+    "washington-harbour"
+   ],
+   "confidence_note": "Round announcements are counterparty/first-party; Silent-as-seed-co-investor is NOT independently receipted (portfolio listing only)."
+  }
+ ],
+ "non_links": [
+  {
+   "id": "NL-01",
+   "pair_or_proposition": "matt-clifford x anduril (bilateral instrument)",
+   "proposition": "No exact policy, defence, investment, convening, procurement, review or implementation instrument materially connects Clifford and Anduril.",
+   "searched_denominator": "GOV.UK exact-name/org searches; DSIT ministerial meeting registers for the Summit period; published MOD and DBT contract/meeting records; parliamentary testimony; Anduril UK news archive; Companies House (window 2021-01-01 to 2026-07-26).",
+   "result": "bounded_non_link at the frozen denominator. Process-mediated overlap (Summit window: his 25 Oct roundtable vs Anduril's 17 Oct roundtable vs TALOS Phase 3 on 2 Nov 2023) is 'supported_for_human_review' only.",
+   "date": "2026-07-26 (Sprint-02 Leg-02, PR #331); canonical 2026-08-13 (PR #1966)",
+   "source": [
+    "issue:#324",
+    "issue:#308",
+    "path:docs/milestones/m05-answerable-power-sprint-02-leg-02.md",
+    "path:data/intake/m05-answerable-power-sprint-02-leg-02-sources.json"
+   ],
+   "caveat": "Absence in published ministerial registers does not prove absence of unpublished meetings, submissions, correspondence or conflict records. Reopen only with one exact two-sided instrument and a material mechanism. Company-specific Anduril benefit from the AI Opportunities role: 'requires_additional_acquisition' (not closed)."
+  },
+  {
+   "id": "NL-02",
+   "pair_or_proposition": "matt-clifford -> TALOS / any named defence award",
+   "proposition": "Clifford effect on TALOS or another named MoD award.",
+   "searched_denominator": "Same as NL-01; TALOS Phase II (2021) and Phase 3 (2023) route through Strategic Command/jHub; first Anduril UK defence work predates Clifford's Summit and Action Plan roles.",
+   "result": "bounded_non_link at current record.",
+   "date": "2026-07-26",
+   "source": [
+    "issue:#324",
+    "receipt:gov-mod-anduril-talos-phase-3-contract-2023-11-02",
+    "receipt:find-tender-anduril-project-talos-phase-2-2021-08-02"
+   ],
+   "caveat": "Does not show he had no informal influence; shows the record contains none."
+  },
+  {
+   "id": "NL-03",
+   "pair_or_proposition": "matt-clifford x atlantic-bastion / BAE / Helsing",
+   "proposition": "Direct Clifford-Anduril/BAE/Helsing surface in the Atlantic Bastion launch release.",
+   "searched_denominator": "The 2025-12-08 MoD release (26 proposals / 20 demonstrators; only 3 named firms).",
+   "result": "Not named; no surface.",
+   "date": "2025-12-08",
+   "source": [
+    "receipt:gov-mod-atlantic-bastion-launch-2025-12-08",
+    "path:data/ledger/claims.jsonl (matt-clifford-atlantic-bastion-boundary-2025-12-08)"
+   ],
+   "caveat": "Bounded to the cited release; 23 unnamed proposers."
+  },
+  {
+   "id": "NL-04",
+   "pair_or_proposition": "matt-clifford x palantir",
+   "proposition": "Dated instrument or material decision joining Clifford and Palantir beyond co-presence.",
+   "searched_denominator": "Sprint-01 frozen source registry.",
+   "result": "retained_candidate_only; ceiling 'documented co-presence only' (2023-06-02 roundtable). Lane #307 shows no closing comment.",
+   "date": "2026-07-26",
+   "source": [
+    "issue:#307",
+    "path:data/project/m05-answerable-power-sprint-01-triad.json (M05-SP01-T04)"
+   ],
+   "caveat": "Not closed as a terminal non-link; acquisition targets named: agenda, minutes, submissions, bilateral correspondence, recusal records."
+  },
+  {
+   "id": "NL-05",
+   "pair_or_proposition": "matt-clifford + palantir + anduril (three-way)",
+   "proposition": "One three-way common-purpose compact.",
+   "searched_denominator": "Sprint-01 frozen registry.",
+   "result": "bounded_non_link.",
+   "date": "2026-07-26",
+   "source": [
+    "path:data/project/m05-answerable-power-sprint-01-triad.json (triad_guardrail)",
+    "issue:#303"
+   ],
+   "caveat": "Three pairwise overlaps are not one compact; reopen needs two-sided Clifford bridges plus common-design records."
+  },
+  {
+   "id": "NL-06",
+   "pair_or_proposition": "matt-clifford x peter-thiel (Dialog)",
+   "proposition": "A shared surface between Clifford and Thiel via Dialog.",
+   "searched_denominator": "112-name directory, 3 reported leadership roles, WIRED statement of Clifford's non-attendance.",
+   "result": "context_only_no_hop; failed gate 'eligible_bounded_surface_or_transaction'.",
+   "date": "2026-06-16",
+   "source": [
+    "path:data/research/clifford-thiel-trump-wrap-up.json (evaluated_paths)",
+    "receipt:wired-dialog-leak"
+   ],
+   "caveat": "Does not prove he never had other contact with Thiel or any undisclosed Dialog event."
+  },
+  {
+   "id": "NL-07",
+   "pair_or_proposition": "matt-clifford x peter-thiel (capital/policy)",
+   "proposition": "Named co-investment, board, contract, advisory or procurement surface joining the two.",
+   "searched_denominator": "Existing corpus incl. EF and UK AI policy roles vs Thiel fund/company roles.",
+   "result": "not_established_in_existing_corpus; failed gate 'source_explicit_material_predicate'.",
+   "date": "2026-08-12",
+   "source": [
+    "path:data/research/clifford-thiel-trump-wrap-up.json"
+   ],
+   "caveat": "EF investor/portfolio pull from Companies House/Form D was named as the next step and is not shown as done."
+  },
+  {
+   "id": "NL-08",
+   "pair_or_proposition": "jackson-moses x 8VC / Founders Fund / a16z / Bessemer / Lightspeed / NEA / (Castelion, Privateer, Long Wall, Thor Dynamics)",
+   "proposition": "Counterpart confirmation of Jackson Moses's self-claimed deal-sourcing and advisory roles.",
+   "searched_denominator": "Counterpart-search ledger: 8VC and Founders Fund team pages domain-scoped (no mention); a16z, Bessemer/Lightspeed/NEA only self + aggregator surfaces; Weekend Fund third-party reported; Afore not searched; 8 of 11 rows are query-only provenance.",
+   "result": "no_counterpart_confirmation_observed.",
+   "date": "2026-07-14",
+   "source": [
+    "path:data/intake/person-centered-defense-routers/sources/counterpart-searches.jsonl",
+    "path:data/intake/person-centered-defense-routers/coverage-gaps.jsonl"
+   ],
+   "caveat": "A team page omitting a scout/adviser is not proof the role does not exist; LinkedIn was auth-gated; role dates absent."
+  },
+  {
+   "id": "NL-09",
+   "pair_or_proposition": "thiel x trump; clifford x trump; clifford x thiel x trump",
+   "proposition": "Any material, dated, identity-resolved crossing.",
+   "searched_denominator": "OGE/FEC/NY registry pipelines (588,535 normalized FEC transaction records; 21 OGE docs parsed; 0 resolved cross-source legal entities).",
+   "result": "not_established / no_material_three_person_path_in_existing_corpus.",
+   "date": "2026-08-12",
+   "source": [
+    "path:data/research/clifford-thiel-trump-wrap-up.json",
+    "path:data/research/clifford-cross-corpus-public-interest-map.json",
+    "path:data/research/cohort-disclosed-business-entities.json"
+   ],
+   "caveat": "'Zero promoted crossings' is the outcome of the identity/beneficial-interest/temporal gates, not zero data; Trump coverage is asymmetric (6 NY registry candidate entities, ownership unresolved; other presidents' sets empty)."
+  },
+  {
+   "id": "NL-10",
+   "pair_or_proposition": "story chain: Action Plan -> Detachment 201 -> ex-No.10 staff -> Electric Twin -> News UK",
+   "proposition": "A single bounded surface carrying Clifford co-participation across the chain.",
+   "searched_denominator": "Ledger chains.jsonl.",
+   "result": "corrected_after_source_custody_and_actor_admission_review; deliberately left as chronology, no hop.",
+   "date": "2026-08",
+   "source": [
+    "path:data/ledger/chains.jsonl"
+   ],
+   "caveat": "Chronology is retained for testing; Det. 201 stage is organisation-level and does not include Clifford."
+  },
+  {
+   "id": "NL-11",
+   "pair_or_proposition": "saul-klein x localglobe (Electric Twin round)",
+   "proposition": "Substituting Saul Klein onto the Electric Twin LocalGlobe participation.",
+   "searched_denominator": "First-party round announcements.",
+   "result": "actor substitution refused; round receipts name only LocalGlobe the organisation.",
+   "date": "2026-02-12",
+   "source": [
+    "path:data/ledger/claims.jsonl (electric-twin-localglobe-saul-klein-actor-boundary-2026-02-12)"
+   ],
+   "caveat": "Not proof Klein had no role; Klein is separately a Faculty director (2016-04-21) alongside Clifford's shareholding (2024-10-10)."
+  },
+  {
+   "id": "NL-12",
+   "pair_or_proposition": "ben/marc warner x vote-leave (personal campaign basis)",
+   "proposition": "Personal participation of either Warner in Vote Leave.",
+   "searched_denominator": "Wylie evidence 2018-03-27 (organisation-level ASI/Vote Leave); 8 Mar 2020 No.10 email Warner->Shafi/Cummings.",
+   "result": "organisation-only; 2020 email creates a Warner-Cummings communication basis but does not backfill 2016.",
+   "date": "2018-03-27 / 2020-03-08",
+   "source": [
+    "receipt:uk-parliament-wylie-vote-leave-asi-2018-03-27",
+    "receipt:uk-covid-inquiry-ben-warner-cummings-shafi-email-2020-03-08"
+   ],
+   "caveat": ""
+  },
+  {
+   "id": "NL-13",
+   "pair_or_proposition": "erebor capital supplied exclusively by the named defence-tech/aligned-venture network",
+   "proposition": "Exclusivity of post-opening Erebor equity.",
+   "searched_denominator": "Fundrise annual report; Silent Ventures portfolio claim; OCC/FDIC records.",
+   "result": "bounded_non_link: Fundrise (outside the named set) bought Series B on 2026-02-20.",
+   "date": "2026-02-20",
+   "source": [
+    "path:docs/milestones/m04d-fog-resolution-wave-08.md"
+   ],
+   "caveat": "Does not prove independence or absence of syndication; round composition unknown."
+  },
+  {
+   "id": "NL-14",
+   "pair_or_proposition": "natsec100 selection -> government money",
+   "proposition": "Selector causation (ranking leads to awards/capital).",
+   "searched_denominator": "102 names (100 ranked + SpaceX + Anthropic): 48 legal-entity resolved, 44 ambiguous, 10 unreachable; no candidate/rejected universe; 0 matched controls.",
+   "result": "selection_causation_unsupported.",
+   "date": "2026-08",
+   "source": [
+    "path:docs/milestones/ssc-rd01-natsec100-outcome-controls.md",
+    "path:data/research/status-sovereignty-rd-wave02-rd01-legal-entity/summary.json"
+   ],
+   "caveat": "Absence of a published pool is why the test cannot run, not evidence the ranking is neutral."
+  },
+  {
+   "id": "NL-15",
+   "pair_or_proposition": "ngc2 as a closed Anduril-Palantir programme",
+   "proposition": "Single closed-vendor NGC2.",
+   "searched_denominator": "Army NGC2 records.",
+   "result": "bounded_non_link: Lockheed leads the 25th ID stack, >80 proposals, continuous solicitation, separate $26M prototype.",
+   "date": "2025-09-03 / 2026-06-22",
+   "source": [
+    "path:docs/milestones/m04d-fog-resolution-wave-04.md",
+    "path:docs/milestones/m05-answerable-power-sprint-02-leg-03.md"
+   ],
+   "caveat": "The data-layer baseline concentration (Anduril/Palantir/Raft) and swap-out remain untested."
+  },
+  {
+   "id": "NL-16",
+   "pair_or_proposition": "palantir hidden-structure claim; private network sole origin of DCGS/biometric architecture; IRS-ICE data transfer x Palantir; ICM = ICE risk-classification system",
+   "proposition": "Four claims tested and rejected.",
+   "searched_denominator": "SEC filings; Army DCGS lineage; ICE justification and court records.",
+   "result": "bounded_non_link x4 (M-04D triage).",
+   "date": "2026-07-24",
+   "source": [
+    "path:docs/milestones/m04d-adversarial-triage-adjudication.md"
+   ],
+   "caveat": "Founder control and 54% government revenue are disclosed, not hidden."
+  },
+  {
+   "id": "NL-17",
+   "pair_or_proposition": "capital-factory x stratos; pallas x capital-factory; stratos x natsec100",
+   "proposition": "Source-explicit joins.",
+   "searched_denominator": "stratos-vc.com, CTech/jpost/refreshmiami, capitalfactory.com, Pallas sites.",
+   "result": "no_source_explicit_join_observed_on_searched_surfaces.",
+   "date": "2026-07-14",
+   "source": [
+    "path:data/intake/austin-israel-defense-corridor/analysis.md"
+   ],
+   "caveat": "Absence on searched surfaces, not proven negative. 21 of 22 seed receipt IDs were unresolved and demoted."
+  },
+  {
+   "id": "NL-18",
+   "pair_or_proposition": "palantir-specific transfer into UK / Poland / NATO via Ukraine feedback",
+   "proposition": "Palantir software/data/IP as the transferred object.",
+   "searched_denominator": "Brave1 Dataroom, UK-Ukraine dataset agreement, Ukraine-Poland group, NATO-Brave1 programme.",
+   "result": "requires_additional_acquisition (no source names Palantir as the transferred object).",
+   "date": "2026-07-24",
+   "source": [
+    "path:docs/milestones/m04d-fog-resolution-wave-07.md"
+   ],
+   "caveat": "Palantir's role inside Brave1 Dataroom itself is documented."
+  },
+  {
+   "id": "NL-19",
+   "pair_or_proposition": "silent-ventures x any UK actor (Clifford, MoD, Anduril UK, Faculty, Electric Twin)",
+   "proposition": "Any repository record joining Silent Ventures/Jackson Moses to the UK cluster.",
+   "searched_denominator": "Ledger, canonical, router and corridor intake searched by this map.",
+   "result": "None found. The only shared nodes are Anduril (Silent: self-listed prior investor; UK: MoD supplier), and fund overlaps (Founders Fund, 8VC, Lux, a16z hold Anduril).",
+   "date": "2026-10-12 (this map)",
+   "source": [
+    "path:data/intake/person-centered-defense-routers/",
+    "path:data/ledger/"
+   ],
+   "caveat": "This is the map's own negative search of the repo, not a repo finding; absence in the repo is not absence in the world."
+  }
+ ],
+ "ambiguity_points": [
+  {
+   "id": "AMB-01",
+   "label": "Unpaid advisory authority leaves no payroll, contract or award record",
+   "where": "Clifford: unpaid AI Opportunities Adviser reporting to PM and DSIT SoS (2025-01-13); PM's Rep (2023); Taskforce board vice-chair (2023); ARIA chair.",
+   "why_clean_receipt_unavailable": "An unpaid adviser with no source-selection authority has no contract, payment or award to find; his channel is advice that ministers accept or reject. Appointment memorandum, criteria, candidate denominator, drafts/redlines, stakeholder submissions and meeting records are not published. The end date of the adviser role is not receipted (raw master reports a ~mid-2025 step-down).",
+   "record_that_would_close_it": "Appointment memorandum + candidate denominator; recommendation drafts/redlines; ministerial acceptance record; one advice-to-decision-to-implementation chain; role end-date notice.",
+   "custodian": "DSIT, PM's Office, Cabinet Office, Action Plan secretariat",
+   "repo_state": "requires_additional_acquisition (Sprint-02 Leg-01, 8 decisive acquisition objects)",
+   "source": [
+    "issue:#323",
+    "path:docs/milestones/m05-answerable-power-sprint-02-leg-01.md"
+   ]
+  },
+  {
+   "id": "AMB-02",
+   "label": "Declared-interest register is not a recusal log",
+   "where": "DSIT register of Clifford's interests (2024-10-10, updated 2025-02-24): Faculty shareholding, 'reasonable endeavours' to divest, divested by 2025-02-24.",
+   "why_clean_receipt_unavailable": "A register shows holdings and promised mitigation; it does not show which decisions he was walled off from or when exactly he sold, to whom, for how much. Faculty's later sale to Accenture has undisclosed consideration.",
+   "record_that_would_close_it": "Conflict assessment, mitigation, recusal and access records; share-transfer records.",
+   "custodian": "DSIT / Cabinet Office ethics team; Faculty share register",
+   "repo_state": "declared_interests_prove_effective_recusal: false; retained_candidate_only (P4)",
+   "source": [
+    "issue:#323",
+    "receipt:gov-dsit-matt-clifford-faculty-shareholding-2024-10-10"
+   ]
+  },
+  {
+   "id": "AMB-03",
+   "label": "Post-role ethics conditions describe future conduct, not observed conduct",
+   "where": "Simon Case (unpaid part-time Electric Twin Ethics Board; 'no contact with or lobbying of government'); Samantha Harrison (Civil Service Commission recorded a consolidated Business Appointment Rules breach on 2026-06-18, after the later work was done); the US moves (Kausner, Obadal) have no published ethics file.",
+   "why_clean_receipt_unavailable": "Business-appointment advice sets conditions; compliance is self-reported and surfaces only if someone finds a breach. Nothing records what an unpaid ethics adviser tells a company or what a former official does not say to government.",
+   "record_that_would_close_it": "Compliance attestations, access logs, any lobbying register entries.",
+   "custodian": "Civil Service Commission / ACOBA; employers",
+   "repo_state": "Conditions preserved as receipts; compliance unobservable",
+   "source": [
+    "receipt:civil-service-commission-simon-case-electric-twin-ethics-board-2026-06-11",
+    "receipt:civil-service-commission-samantha-harrison-breach-2026"
+   ]
+  },
+  {
+   "id": "AMB-04",
+   "label": "Sitting executives commissioned as part-time Army advisers",
+   "where": "Detachment 201 (Sankar of Palantir, Bosworth, Weil; cohort 2 Knecht, Pullara, Piantino) while Palantir holds a 10-year $10B-ceiling Army enterprise agreement (2025).",
+   "why_clean_receipt_unavailable": "The Army describes their advisory areas (munitions data, organic industrial base, autonomous systems, counter-drone) but publishes no task list, advice, recusal screens or conflict determinations. Part-time reserve status means no contract vehicle documents what they do.",
+   "record_that_would_close_it": "Det. 201 task assignments, ethics/recusal screens, meeting records, decision-window communications.",
+   "custodian": "U.S. Army / Army Reserve / DoD ethics",
+   "repo_state": "Commissioning events receipted; participation in decisions not established",
+   "source": [
+    "receipt:army-detachment-201",
+    "receipt:army-detachment-201-second-cohort-2026-06-10"
+   ]
+  },
+  {
+   "id": "AMB-05",
+   "label": "Former-company officials in acquisition-policy offices",
+   "where": "Obadal (prior Anduril) as Under Secretary of the Army from 2025-09-22; Anduril $20B Army enterprise IDIQ 2026-03-13; NGC2 baseline lead 2026-06-22.",
+   "why_clean_receipt_unavailable": "Recusal/waiver files and decision-window communications are not published; the case brief itself says the stronger theory can only be tested with them.",
+   "record_that_would_close_it": "Ethics agreement, recusal/waiver, calendars, communications tied to W9128Z-26-D-A001 and the NGC2 baseline decision.",
+   "custodian": "U.S. Army / DoD IG / FOIA",
+   "repo_state": "decisive_records_target listed in clm-decisive-records; not acquired",
+   "source": [
+    "path:cases/anduril-access-ownership/briefing.json",
+    "receipt:army-obadal-bio-2025"
+   ]
+  },
+  {
+   "id": "AMB-06",
+   "label": "Conditional commitments and ceilings stand in for money",
+   "where": "OSC (4 of 5 named instruments conditional; none closed; 70 negotiated-term fields unobtainable); OCC conditional approval of Erebor (committed equity line terms unpublished); Army $20B / $10B ceilings; DDAD GBP 1 nominal values; IDIQ ceilings.",
+   "why_clean_receipt_unavailable": "An announced ceiling or conditional approval creates a credential, valuation and headline before any obligation exists, and the closing documents are not public. Ceiling != obligated != outlay (e.g. Anduril CBP $362.97M obligated / $24.5M outlaid).",
+   "record_that_would_close_it": "Executed agreements, closing/disbursement records, call reports, order-level obligations.",
+   "custodian": "DoD OSC; OCC/FDIC; contracting officers",
+   "repo_state": "Kept as separate financial types throughout",
+   "source": [
+    "path:docs/milestones/ssc-rd03-osc-instrument-lifecycle.md",
+    "path:docs/milestones/m04d-fog-resolution-wave-08.md"
+   ]
+  },
+  {
+   "id": "AMB-07",
+   "label": "Non-public bidder, candidate and offeror universes",
+   "where": "NatSec100 (candidate, rejected, FOCI-held rows; weights); DCGS-A2 (8 proposal slots, 5 protective-ordered); Atlantic Bastion (26 submitters, 3 named); Project NYX (7 shortlisted, 4 named in repo, GBP 10M unallocated); NATO eAirC2 (3 vendors, no scores); Army enterprise (Sources Sought responses, J&A estimates).",
+   "why_clean_receipt_unavailable": "Selection can be described only from the winner's side. Without the denominator, 'selected because better' and 'selected because positioned' cannot be told apart; the matched-control test cannot be run.",
+   "record_that_would_close_it": "Full offeror lists, scoring sheets, source-selection decisions, rejected/ineligible/FOCI-held rows, weights, version history.",
+   "custodian": "SVDG; Army/MoD contracting authorities; courts (protective orders)",
+   "repo_state": "selection_causation_unsupported; bounded_source_restricted",
+   "source": [
+    "path:data/intake/status-sovereignty-natsec100-denominator-first-pass.json",
+    "path:data/research/status-sovereignty-rd-wave02-rd06-offeror-universe/summary.json",
+    "receipt:gov-mod-atlantic-bastion-launch-2025-12-08"
+   ]
+  },
+  {
+   "id": "AMB-08",
+   "label": "A ranking with no appeal route, owned by capital",
+   "where": "NatSec100 2024-2026: 0 correction/errata records, 0 formal appeal routes, 0 re-ranking records across 24 fields; co-founder James Cross is Franklin Templeton private-investing co-head and Franklin Templeton is scoring partner every year; 2026 rule makes a US government contract a prerequisite.",
+   "why_clean_receipt_unavailable": "A credential that is downstream of a government contract and upstream of private capital, designed with capital firms, publishes its inputs but not weights, candidate pool or decisions and offers no challenge route - so no external party can inspect or contest it (one prospective future re-evaluation statement is the only related record).",
+   "record_that_would_close_it": "Scoring weights, input snapshots, overrides, FOCI decision records, appeal/correction records.",
+   "custodian": "SVDG",
+   "repo_state": "bounded_source_unavailable (RD-01-C06, 24/24 fields terminal)",
+   "source": [
+    "path:data/research/status-sovereignty-rd-wave03-rd01-methodology-correction/summary.json",
+    "path:data/intake/natsec100-pathways/chunk1/actors.jsonl"
+   ]
+  },
+  {
+   "id": "AMB-09",
+   "label": "Unsent register and records requests",
+   "where": "Electric Twin s.116 register-of-members request ET-ROM-2025-09-01 (issue #2138): 'prepared, not sent'; requester name, address, date and dispatch authorisation fields all unfilled. News UK matched synthetic-human workflow request PC-AQ-NEWSUK-MATCHED-METHOD-01 (issue #646): prepared_not_sent, contact_authorized false. SAM.gov defence opportunity search: 0 queries run (missing SAM_API_KEY). BVVC SEC Form D pull: 95 requests, all HTTP 403.",
+   "why_clean_receipt_unavailable": "The one document that would name who received 739,180 Seed 2 shares is a statutory register extract that only the company holds and that nobody has asked for; the repo's own rules refuse to infer allottees from numerical congruence.",
+   "record_that_would_close_it": "Register of members/allotments extract (CA 2006 s.116-117), subscription/closing schedules, News UK paired-workflow answer, SAM opportunities, Form D filings.",
+   "custodian": "Electric Twin Ltd; News UK; GSA/SAM; SEC",
+   "repo_state": "prepared_not_sent; expressly not counted as evidence",
+   "source": [
+    "path:data/research/electric-twin-register-of-members-acquisition/README.md",
+    "issue:#2138",
+    "issue:#646",
+    "path:data/research/clifford-cross-corpus-public-interest-map.json (sam-gov lane)",
+    "path:data/intake/bvvc-defense-capital/README.md"
+   ]
+  },
+  {
+   "id": "AMB-10",
+   "label": "Cap-table and vehicle opacity",
+   "where": "Electric Twin SH01 allottees and Blume's nominator unidentified; Silent Ventures is an Exempt Reporting Adviser (not SEC-registered; Fund II first sale 'not yet'; Form D filer-supplied; Silent Capital 'not a single legal entity'); Erebor Series B composition and rights unknown; Sanabil->Founders Fund LP vehicle, amounts and dates unresolved; Anduril UK PSC statement 'no registrable person'.",
+   "why_clean_receipt_unavailable": "Private placements under Rule 506(b) and UK allotments disclose class and quantity, not holders or rights; first-party portfolio pages name companies but not vehicle, date, amount or rights.",
+   "record_that_would_close_it": "Form D amendments/ADV private-fund schedules; stock ledgers; investor-rights agreements; LPA/subscription docs.",
+   "custodian": "Companies; SEC filers; Companies House; Founders Fund/Sanabil",
+   "repo_state": "fail-closed: no allottee/ownership inferred",
+   "source": [
+    "path:data/intake/m04d-fog-resolution-wave-08.md",
+    "receipt:companies-house-electric-twin-sh01-seed2-2025-09-16",
+    "receipt:companies-house-anduril-industries-uk-12316056"
+   ]
+  },
+  {
+   "id": "AMB-11",
+   "label": "Lobbying and PAC disclosures show spend and topics, not contacts or authorship",
+   "where": "Anduril Q2 2025 LD-2 ($700,000) naming Autonomous Surveillance Towers; PL 119-21 s.90004 (2025-07-04) gate; CBP $362.97M order (2025-12-25); PAC $166,000 to committees (no recipient-level Schedule B).",
+   "why_clean_receipt_unavailable": "The statute names no company and legislative technical-assistance, drafting and testing-timetable records are not public; the LDA filing lists issues not meetings.",
+   "record_that_would_close_it": "Legislative technical-assistance records, acquisition plan, tower acceptance chronology, competitor test timetable, Schedule B recipients.",
+   "custodian": "Congress; CBP; FEC",
+   "repo_state": "relation recorded as 'overlapping_policy_scope: not_established'",
+   "source": [
+    "path:cases/anduril-access-ownership/relations.jsonl",
+    "receipt:lda-anduril-2025-q2",
+    "receipt:fec-anduril-pac"
+   ]
+  },
+  {
+   "id": "AMB-12",
+   "label": "Single-source and negotiated awards justified by the authority's own statement; late publication",
+   "where": "AI Fight Tonight (single source, 2021-07-31, published 2021-11-29); TALOS Phase II (VEAT, 'technical reasons'); COPCI GBP 21.09M (negotiated without prior publication, awarded 2022-06-21, published 2025-06-06); ENTRELEZAR (awarded 2023-10-09, published 2024-07-05, supplier identity conflict); Army-Palantir J&A (continuity/integration); Army-Anduril J&A.",
+   "why_clean_receipt_unavailable": "The justification is the buyer's assertion; the alternatives analysis and technical-uniqueness evidence are not public, and notices can surface years after award with contradictory supplier identifiers.",
+   "record_that_would_close_it": "Statements of requirement, market research, J&A estimates, signed contracts, price analysis.",
+   "custodian": "MoD, Home Office, Army contracting",
+   "repo_state": "Preserved as source claims, not adopted",
+   "source": [
+    "receipt:contracts-finder-anduril-copci-border-force-2022-06-21",
+    "receipt:contracts-finder-anduril-project-entrelezar-2023-10-09",
+    "receipt:find-tender-anduril-project-talos-phase-2-2021-08-02"
+   ]
+  },
+  {
+   "id": "AMB-13",
+   "label": "Meeting transparency covers published ministerial rows, not advisers' or officials' contacts",
+   "where": "DSIT (Oct-Dec 2023), DBT (Apr-Jun 2025) and Chequers guest lists are the only meeting records found; Clifford appears in one DSIT row, Anduril in others.",
+   "why_clean_receipt_unavailable": "The repo's bounded non-link is explicitly limited to the published registers; correspondence, submissions and non-ministerial meetings are outside them.",
+   "record_that_would_close_it": "Calendars, correspondence and submission logs of the Summit secretariat, AI Opportunities Unit and MoD/DBT officials (FOI).",
+   "custodian": "DSIT, DBT, MoD, No. 10",
+   "repo_state": "bounded_non_link at frozen denominator; global absence not asserted",
+   "source": [
+    "path:data/intake/m05-answerable-power-sprint-02-leg-02-sources.json (search_denominator)"
+   ]
+  },
+  {
+   "id": "AMB-14",
+   "label": "Invitation-only convening with no attendance ledger",
+   "where": "Dialog: 112-name directory observed 2026-06-16, 3 leadership roles, WIRED; Clifford 'invited, not attended' is his own statement.",
+   "why_clean_receipt_unavailable": "The only roster is an exposed web directory mixing members, guests, speakers and past guests; sessions, registrations, delegations and dated encounters are private by design.",
+   "record_that_would_close_it": "Event-level attendance and registration records.",
+   "custodian": "Dialog",
+   "repo_state": "directory_roster_surface non-hop; locked door #4",
+   "source": [
+    "receipt:dialog-directory-extract",
+    "path:data/research/clifford-thiel-trump-wrap-up.json"
+   ]
+  },
+  {
+   "id": "AMB-15",
+   "label": "'Independent' validation credited to an adviser's institution",
+   "where": "Electric Twin accuracy article (2026-02-11, authors Warner and Bailey) credits independent validation to LSE; Muthukrishna is Scientific Advisor (2024-11-03) and co-director with Warner of the Centre for Human Progress (2025-08-05).",
+   "why_clean_receipt_unavailable": "The article names no external validator as participant, publishes no white paper or question-level results; independence cannot be checked without the protocol, holdout control and funding records.",
+   "record_that_would_close_it": "Validation protocol, holdout data custody, engagement terms, funding flows between CHP/LSE and Electric Twin.",
+   "custodian": "Electric Twin; LSE; CHP",
+   "repo_state": "bounded_non_link on 'validator performed independent study' cannot be tested",
+   "source": [
+    "receipt:electric-twin-accuracy-methodology-2026-02-11",
+    "receipt:electric-twin-lse-muthukrishna-adviser-observations-2024-2026"
+   ]
+  },
+  {
+   "id": "AMB-16",
+   "label": "Self-claimed advisory and deal-sourcing roles in private companies",
+   "where": "Jackson Moses: senior advisor (Castelion, Privateer, Long Wall, Thor Dynamics), sourcing for six funds, Weekend Fund scout, Afore venture partner; BVVC 'first-look access'.",
+   "why_clean_receipt_unavailable": "Advisory and scout roles in private companies carry no filing obligation and no dates; counterpart sites need not list scouts or advisers.",
+   "record_that_would_close_it": "Advisory agreements, scout/side-letter records, counterpart confirmations with dates.",
+   "custodian": "Companies and funds concerned",
+   "repo_state": "self_claimed / no_counterpart_confirmation_observed",
+   "source": [
+    "path:data/intake/person-centered-defense-routers/sources/counterpart-searches.jsonl",
+    "path:data/intake/bvvc-defense-capital/institutional-claims.jsonl"
+   ]
+  },
+  {
+   "id": "AMB-17",
+   "label": "Shared cap-table is indistinguishable from an ordinary diversified mandate",
+   "where": "Anduril in 8 of 11 funds; Fundrise also holds Anduril, SpaceX and Erebor; router score 6/8 for Jackson Moses is 'discovery routing, not suspicion'.",
+   "why_clean_receipt_unavailable": "Co-listing is public and cheap to produce; coordination, if any, would live in private side agreements, board seats and information flows.",
+   "record_that_would_close_it": "Co-investment agreements, syndicate allocations, board/observer rights, side letters.",
+   "custodian": "Funds and portfolio companies",
+   "repo_state": "forbidden_inference: shared cap-table is not coordination",
+   "source": [
+    "path:data/intake/person-centered-defense-routers/co-investor-edges.jsonl",
+    "path:docs/milestones/m04d-fog-resolution-wave-08.md"
+   ]
+  },
+  {
+   "id": "AMB-18",
+   "label": "Cross-date routes and organisation-only rows cannot create person-level edges",
+   "where": "Drake->Healey->Starmer->Clifford spans 2025-03-06, 2024-07-17, 2025-01-13; Atlantic Bastion, NYX, DDAD, TALOS rows are organisation-only; Anduril's UK legal entity is unresolved in several rows.",
+   "why_clean_receipt_unavailable": "The method refuses to convert institutional proximity into person adjacency, so proximity is by design recorded as 'no edge' even when dense.",
+   "record_that_would_close_it": "A dated, two-sided, person-named instrument.",
+   "custodian": "n/a (method boundary)",
+   "repo_state": "hop rules: bounded surface + named actors + dated overlap",
+   "source": [
+    "path:data/ledger/claims.jsonl",
+    "path:docs/clifford-number-master.md (Surface-Hop Compiler Law)"
+   ]
+  },
+  {
+   "id": "AMB-19",
+   "label": "Government-side exit and substitution are rarely tested",
+   "where": "Palantir enterprise lock-in (J&A: rebuild, migration, reaccreditation); NGC2 shared data layer untested for removal; only one completed public exit (UK Homes for Ukraine Foundry -> Share, delivered Sept 2025, savings unaudited).",
+   "why_clean_receipt_unavailable": "Dependence claims rest on the vendor-adjacent justification until a substitution is actually run.",
+   "record_that_would_close_it": "Staged migration tests, fallback exercises, independent transition assessments, cost audits.",
+   "custodian": "Army; MHCLG; NHS England",
+   "repo_state": "R5 observed once; R6/R7 not observed",
+   "source": [
+    "path:data/project/m05-answerable-power-sprint-03-leg-05-public-platform-exit.json"
+   ]
+  }
+ ],
+ "obvious": [
+  "A small set of private funds (8VC, Founders Fund, In-Q-Tel, Lux, Silent Ventures, Valor, Washington Harbour, a16z American Dynamism) hold the same few companies: Anduril sits in 8 of the 11 funds the repo censused and Hadrian and Impulse in 5 each; a broad retail fund (Fundrise) holds Anduril, SpaceX and Erebor as well, so overlap alone is also what an ordinary diversified mandate looks like.",
+  "Those companies are then rated by a ranking whose 2026 entry rule is a US government contract, whose scoring partners are investment firms (Franklin Templeton, Balyasny), whose co-founder is also a co-head at one of them, and whose weights, candidate pool, rejected rows and FOCI decisions are unpublished with no appeal route; Anduril was #2, #2, #1, #1 across 2023 to 2026, and Silent Ventures' own list overlaps it on 11 of 23 censused companies.",
+  "Public money then enters at the gates the credential points toward: a DPA Title III award on a stated $75M private match (2025-01-07), an NGC2 prototype OTA (2025-07-18) followed by the data-baseline lead role (2026-06-22), a $20B-ceiling single-award Army enterprise IDIQ (2026-03-13), and a $362.97M CBP order (2025-12-25) that came after (temporal sequence only) a $700,000 lobbying quarter naming the same program and a statute limiting funds to towers CBP had already accepted; Palantir's equivalent is a sole-source $10B-ceiling enterprise agreement and 54% government revenue ($2.402B in FY2025).",
+  "Capital, credential, contract and next round form a loop in which every link is public and individually documented (the repo alleges no wrongdoing), no link requires the others to coordinate, and the external checks the record shows act at the contract gate, where GAO, courts and competitors operate (Palantir beat the Army in court on DCGS-A2; Anduril lost a GAO protest and had a Phase III solicitation cancelled; the Marines drew ten offers).",
+  "People move across the seam in both directions and each move is individually visible in the record: Kausner (State/Senate/DIU/Navy to Anduril, 2022), Obadal (Anduril to Under Secretary of the Army, 2025-09-22), Sankar of Palantir into an Army Reserve advisory unit (2025-06-13), Warner and Cooper (No. 10 and DHSC to Electric Twin, 2023), Case (Cabinet Secretary to Barrow chair to Electric Twin ethics board, 2025 to 2026), Donnelly and DeMartino (OSD/CENTCOM to Pallas); where an ethics regime is documented (UK Business Appointment Rules for Case) it binds future conduct rather than recording observed conduct, and for the US moves (Kausner, Obadal) no ethics file is public.",
+  "Clifford's documented roles are all advisory, convening or unpaid (summit representative, Taskforce board vice-chair, ARIA chair, unpaid AI Opportunities Adviser) and none carries award or source-selection authority, so the record contains no contract, payment or decision he signed; the one private-interest overlap on file (Faculty shares, declared 2024-10-10, divested by 2025-02-24) is handled by a register plus a divest-by-date, not a decision-level recusal log.",
+  "The Action Plan he led recommends the demand-side machinery (government as strategic AI customer, procurement reform, sovereign compute, domestic champions, national-security collaboration), was accepted in full on 2025-01-13, and on the same day he was appointed unpaid adviser on its implementation; the supplier side (Anduril UK, Palantir in the NHS and Homes for Ukraine, Faculty, Electric Twin) is documented in other records, and no instrument joins the two sides.",
+  "Anduril UK's own documented path runs through ministers and MoD rather than through Clifford: six instruments from 2021 to 2025 with stated values of roughly GBP 78M (375k, 3.7M, 21.1M, 6.3M, 17M and about 30M), at least three of them single-source or negotiated without prior publication, a Defence Secretary visit to Anduril in Washington the day before the 6 March 2025 deal, a DBT meeting on 19 May 2025, a Chequers lunch, Atlantic Bastion, DDAD and the Project NYX downselect; the repo's closed result is that Clifford and Anduril share a policy ecology and one Summit-window overlap, with no two-sided instrument.",
+  "The same few names recur on both sides of the Atlantic without a connecting document: Anduril (UK supplier and US portfolio holding), Palantir (Louis Mosley on the same 2 June 2023 roundtable list as Clifford, and as an Electric Twin angel in 2026), a16z-adjacent capital (Boyle's board seats; Andreessen as an Electric Twin angel), and Dialog (Thiel co-founder; Clifford, Lonsdale, Army Secretary Driscoll and five of the Entrepreneur First investors and advisers named in the raw master are on the directory).",
+  "The decisive joints sit in artifacts nobody is required to publish and the record names them: appointment memoranda and candidate lists, recommendation redlines, source-selection and J&A files, ethics and recusal files, ranking weights and rejected rows, allotment schedules and side letters, closing documents for conditional commitments.",
+  "Unpaid, part-time or 'individual capacity' roles (Case on Electric Twin's ethics board, Detachment 201 officers, Clifford as adviser, Muthukrishna as adviser to the company whose accuracy article credits 'independent validation' to his institution, Moses's self-described advisories) place people between public and private actors without leaving a payroll, contract or filing trail, so for this kind of role the record that would prove or disprove influence is of a type that is not generated or not published, not merely one nobody has found.",
+  "Conditional and ceiling instruments carry the headline while the money is unobserved: four of five named OSC instruments are conditional with none closed, Erebor was charter-approved on conditions that include an equity line whose terms are unpublished, and the Army enterprise vehicles are ceilings, not obligations (Anduril's CBP order shows $362.97M obligated against $24.5M outlaid).",
+  "What the record does not contain is equally structural: no document links Jackson Moses or Silent Ventures to Clifford, the MoD, Faculty or Electric Twin, and the only shared node is Anduril itself (a self-listed prior Silent investment and a UK MoD supplier); no Clifford-Palantir or Clifford-Thiel instrument exists beyond co-presence and a listing; and the repo's own gates treat dense co-listing as non-adjacency, so a reader gets the shared incentives and the missing join side by side, which is the repo's stated method rather than a verdict."
+ ]
+}
