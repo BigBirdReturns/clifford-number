@@ -1,0 +1,198 @@
+{
+  "schema_version": "ssc-rd04-a07-core@1",
+  "hypothesis_id": "SSC-H01",
+  "lane_id": "SSC-RD04",
+  "execution_id": "SSC-RD04-SNAP-A07",
+  "issue": 741,
+  "as_of": "2026-08-02",
+  "title": "California CalFresh public compliance, issuance, and restoration receipt census",
+  "status": "constitution_frozen_acquisition_not_yet_executed",
+  "parent": {
+    "execution_id": "SSC-RD04-SNAP-A06",
+    "issue": 721,
+    "pull_request": 732,
+    "main_commit": "d1597233110715e58e76e3b50b6792c226d9f7e8",
+    "core_path": "data/intake/status-sovereignty-rd04-calfresh-decision-corpus-a06/core.json",
+    "release_manifest_path": "data/project/status-sovereignty-rd04-calfresh-decision-corpus-a06-release-manifest.json",
+    "milestone_path": "docs/milestones/ssc-rd04-a06-full-corpus.md",
+    "terminal_receipt": "bounded_registry_denominator_orders_without_compliance_join"
+  },
+  "frozen_parent_denominator": {
+    "date_interval": "2025-07-01/2026-06-30",
+    "program": "CalFresh",
+    "registry_rows": 12282,
+    "unique_registry_ids": 12282,
+    "unique_current_decision_documents": 11672,
+    "exact_pdf_documents": 11672,
+    "exact_text_documents": 11672,
+    "missing_or_non_pdf_documents": 0,
+    "row_to_document_links": 12282,
+    "shared_document_groups": 530,
+    "excess_rows_sharing_documents": 610,
+    "maximum_rows_per_document": 7,
+    "denominator_reopened": false
+  },
+  "unit_contract": {
+    "state": "CA",
+    "program": "CalFresh",
+    "unit": "one A06 registry-row identity plus separately sourced public compliance, issuance, restoration, approval, correction, or residual-harm receipt",
+    "all_parent_rows_in_scope": true,
+    "all_parent_documents_processed_before_follow_up_selection": true,
+    "county_census_count": 58,
+    "outcome_selected_sampling_allowed": false,
+    "claimant_or_representative_contact_allowed": false,
+    "agency_or_county_contact_allowed": false,
+    "outside_human_dependency": false
+  },
+  "anti_laundering_law": [
+    "legal_duty_to_comply_is_not_a_submitted_compliance_report",
+    "submitted_compliance_report_is_not_shd_approval",
+    "shd_approval_is_not_actual_benefit_issuance",
+    "ordered_restoration_is_not_observed_restoration",
+    "observed_issuance_is_not_complete_restoration_without_amount_period_and_scope",
+    "complete_restoration_is_not_timely_material_recovery_without_exact_dates",
+    "absence_of_a_public_receipt_is_not_evidence_of_noncompliance",
+    "aggregate_county_performance_is_not_a_case_level_join"
+  ],
+  "governing_rule_contract": {
+    "target": "MPP 22-078 and official county implementations",
+    "exact_state_rule_custody": "pending",
+    "mechanical_chain_to_test": [
+      "county_receives_adopted_decision",
+      "county_initiates_compliance",
+      "favorable_or_partially_favorable_decision_triggers_compliance_reporting_when_applicable",
+      "report_states_specific_manner_or_status_of_compliance",
+      "state_hearings_division_approves_or_directs_additional_steps",
+      "claimant_may_contest_compliance"
+    ],
+    "rule_proves_case_compliance": false,
+    "rule_proves_issuance": false,
+    "rule_proves_restoration": false
+  },
+  "source_universe_order": [
+    {
+      "ordinal": 1,
+      "source_class": "merged_a06_custody",
+      "purpose": "construct complete identifiers and content-neutral ordered-relief candidates; never implementation proof"
+    },
+    {
+      "ordinal": 2,
+      "source_class": "official_state_rule_and_process_surfaces",
+      "purpose": "freeze governing versions, forms, instructions, reporting duties, public/authenticated boundaries, and aggregate hearing controls"
+    },
+    {
+      "ordinal": 3,
+      "source_class": "complete_58_county_public_source_census",
+      "purpose": "inventory every official county policy, document search, board archive, audit repository, open-data surface, and exact zero-result receipt"
+    },
+    {
+      "ordinal": 4,
+      "source_class": "official_adjudicative_and_enforcement_surfaces",
+      "purpose": "permit joins only through exact A06 identifiers or an unambiguous county-date-decision identity"
+    },
+    {
+      "ordinal": 5,
+      "source_class": "official_aggregate_controls",
+      "purpose": "preserve county or state timeliness, issuance, churn, accuracy, and appeals aggregates without converting them into case trajectories"
+    }
+  ],
+  "source_state_taxonomy": [
+    "exact_public_case_receipt",
+    "public_official_aggregate_only",
+    "public_policy_only",
+    "public_decision_only",
+    "authenticated_or_claimant_only",
+    "public_index_without_retrievable_record",
+    "zero_result_with_exact_query_receipt",
+    "source_restricted",
+    "source_unavailable",
+    "malformed_or_conflicting"
+  ],
+  "candidate_extraction_contract": {
+    "population": "all_11672_parent_document_texts",
+    "processing_order": "ascending_document_identity",
+    "dictionary_and_rule_version_required": true,
+    "positive_and_negative_matches_preserved": true,
+    "substantive_ranking_before_complete_pass": false,
+    "fields": [
+      "explicit_order_or_directed_action",
+      "benefit_increase_or_decrease_language",
+      "restoration_or_retroactive_benefit_language",
+      "remand_or_rehearing_language",
+      "compliance_report_language",
+      "responsible_agency_or_county",
+      "release_or_adoption_date",
+      "shn_number",
+      "registry_id",
+      "decision_id",
+      "stated_amount_if_any",
+      "stated_period_if_any"
+    ],
+    "disposition_label_alone_authorizes_follow_up": false,
+    "ambiguous_identity_fails_closed": true
+  },
+  "required_receipt_chain": [
+    "a06_decision_identity",
+    "ordered_relief",
+    "county_compliance_report_or_equivalent_official_receipt",
+    "implementation_action",
+    "issuance_or_restoration_amount",
+    "issuance_or_restoration_date",
+    "shd_approval_or_corrective_instruction",
+    "later_complaint_correction_or_residual_harm"
+  ],
+  "required_products": [
+    "58_county_public_source_availability_matrix",
+    "versioned_state_rule_and_county_policy_custody",
+    "complete_a06_ordered_relief_candidate_ledger",
+    "exact_public_search_request_response_and_zero_result_ledger",
+    "case_level_compliance_issuance_restoration_join_ledger_if_any",
+    "separate_official_aggregate_control_ledger",
+    "conflict_alias_privacy_authentication_and_missing_source_ledgers",
+    "schema_builder_validator_adversarial_suite_exact_byte_manifest_noindex_report_and_read_only_workflow",
+    "explicit_nonblocking_a08_handoff_if_the_frozen_public_universe_cannot_supply_a_required_link"
+  ],
+  "current_state": {
+    "source_bytes_newly_preserved": 0,
+    "parent_documents_processed": 0,
+    "ordered_relief_candidates": 0,
+    "counties_censused": 0,
+    "exact_public_search_receipts": 0,
+    "exact_public_case_receipts": 0,
+    "case_level_implementation_joins": 0,
+    "complete_restoration_chains": 0,
+    "remedy_timeliness_observations": 0,
+    "reviewed_disposition_changes": 0,
+    "residual_classes_closed": 0
+  },
+  "terminal_receipts": [
+    "complete_public_compliance_and_restoration_chain",
+    "partial_public_compliance_chain",
+    "public_compliance_report_without_issuance_receipt",
+    "public_issuance_receipt_without_complete_chain",
+    "public_official_aggregate_only",
+    "public_policy_only",
+    "decision_only_no_separate_public_receipt",
+    "authenticated_or_claimant_only",
+    "source_restricted",
+    "source_unavailable",
+    "requires_additional_acquisition"
+  ],
+  "authority_ceiling": {
+    "outside_human_dependency": false,
+    "external_contacts": 0,
+    "external_reviews": 0,
+    "case_level_implementation_joins": 0,
+    "complete_restoration_findings": 0,
+    "remedy_timeliness_findings": 0,
+    "residual_class_closures": 0,
+    "reviewed_disposition_changes": 0,
+    "prevalence_findings": 0,
+    "racial_order_findings": 0,
+    "coordination_findings": 0,
+    "common_purpose_findings": 0,
+    "graph_effect": "none",
+    "publication_effect": "none",
+    "adoption_effect": "none"
+  }
+}

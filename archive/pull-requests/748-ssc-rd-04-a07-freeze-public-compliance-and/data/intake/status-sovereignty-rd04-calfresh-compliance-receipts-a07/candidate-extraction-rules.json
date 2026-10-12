@@ -1,0 +1,229 @@
+{
+  "schema_version": "ssc-rd04-a07-candidate-extraction-rules@1",
+  "execution_id": "SSC-RD04-SNAP-A07",
+  "issue": 741,
+  "as_of": "2026-08-02",
+  "dictionary_version": "a07-order-candidate-v1",
+  "title": "Content-neutral ordered-relief candidate extraction rules",
+  "population_contract": {
+    "parent_execution_id": "SSC-RD04-SNAP-A06",
+    "expected_documents": 11672,
+    "expected_registry_rows": 12282,
+    "processing_order": "ascending_document_identity",
+    "complete_population_required_before_follow_up": true,
+    "negative_documents_preserved": true
+  },
+  "normalization_contract": {
+    "unicode_normalization": "NFKC",
+    "line_endings": "LF",
+    "case_matching": "unicode_case_insensitive",
+    "offset_unit": "utf16_code_units_in_normalized_text",
+    "source_text_sha256_required": true,
+    "source_text_bytes_required": true,
+    "normalization_changes_source_custody": false
+  },
+  "selection_boundaries": {
+    "dictionary_frozen_before_parent_text_inspection": true,
+    "disposition_used_for_matching": false,
+    "county_name_used_for_matching": false,
+    "claimant_name_used_for_matching": false,
+    "issue_code_used_for_matching": false,
+    "amount_used_for_substantive_ranking": false,
+    "candidate_count_used_for_substantive_ranking": false,
+    "query_expansion_after_result_inspection": false,
+    "rule_match_proves_ordered_relief": false,
+    "rule_match_proves_implementation": false,
+    "rule_match_proves_separate_compliance_receipt": false,
+    "follow_up_selection_authorized_by_rule_match_alone": false
+  },
+  "candidate_fields": [
+    "explicit_order_or_directed_action",
+    "benefit_increase_or_decrease_language",
+    "restoration_or_retroactive_benefit_language",
+    "remand_or_rehearing_language",
+    "compliance_report_language"
+  ],
+  "support_fields": [
+    "stated_amount_if_any",
+    "stated_period_if_any"
+  ],
+  "metadata_passthrough_fields": [
+    "responsible_agency_or_county",
+    "release_or_adoption_date",
+    "shn_number",
+    "registry_id",
+    "decision_id"
+  ],
+  "text_rules": [
+    {
+      "field_id": "explicit_order_or_directed_action",
+      "source": "document_text",
+      "candidate_signal": true,
+      "patterns": [
+        {
+          "pattern_id": "A07-ORD-001",
+          "regex": "\\b(?:the\\s+)?county\\s+(?:is\\s+)?(?:ordered|directed|required)\\s+to\\b",
+          "flags": "giu"
+        },
+        {
+          "pattern_id": "A07-ORD-002",
+          "regex": "\\b(?:the\\s+)?agency\\s+(?:is\\s+)?(?:ordered|directed|required)\\s+to\\b",
+          "flags": "giu"
+        },
+        {
+          "pattern_id": "A07-ORD-003",
+          "regex": "\\b(?:shall|must)\\s+(?:take|provide|issue|restore|recalculate|recompute|redetermine|correct|process)\\b",
+          "flags": "giu"
+        },
+        {
+          "pattern_id": "A07-ORD-004",
+          "regex": "\\b(?:the\\s+decision|this\\s+matter)\\s+is\\s+(?:remanded|returned)\\b",
+          "flags": "giu"
+        }
+      ]
+    },
+    {
+      "field_id": "benefit_increase_or_decrease_language",
+      "source": "document_text",
+      "candidate_signal": true,
+      "patterns": [
+        {
+          "pattern_id": "A07-BEN-001",
+          "regex": "\\b(?:increase|decrease|reduce|adjust|recalculate|recompute|redetermine)\\w*\\s+(?:the\\s+)?(?:calfresh\\s+)?benefits?\\b",
+          "flags": "giu"
+        },
+        {
+          "pattern_id": "A07-BEN-002",
+          "regex": "\\bbenefits?\\s+(?:shall|must|are\\s+to\\s+be|should\\s+be)\\s+(?:increased|decreased|reduced|adjusted|recalculated|recomputed|redetermined)\\b",
+          "flags": "giu"
+        },
+        {
+          "pattern_id": "A07-BEN-003",
+          "regex": "\\b(?:supplemental|additional|corrected)\\s+(?:calfresh\\s+)?benefits?\\b",
+          "flags": "giu"
+        }
+      ]
+    },
+    {
+      "field_id": "restoration_or_retroactive_benefit_language",
+      "source": "document_text",
+      "candidate_signal": true,
+      "patterns": [
+        {
+          "pattern_id": "A07-RES-001",
+          "regex": "\\brestor(?:e|ed|es|ing|ation)\\s+(?:the\\s+)?(?:calfresh\\s+)?benefits?\\b",
+          "flags": "giu"
+        },
+        {
+          "pattern_id": "A07-RES-002",
+          "regex": "\\b(?:retroactive|restored|lost)\\s+(?:calfresh\\s+)?benefits?\\b",
+          "flags": "giu"
+        },
+        {
+          "pattern_id": "A07-RES-003",
+          "regex": "\\bbenefits?\\s+(?:shall|must|are\\s+to\\s+be)\\s+restor(?:e|ed)\\b",
+          "flags": "giu"
+        },
+        {
+          "pattern_id": "A07-RES-004",
+          "regex": "\\b(?:issue|issued|issuance)\\s+(?:of\\s+)?(?:retroactive|restored|supplemental)\\s+benefits?\\b",
+          "flags": "giu"
+        }
+      ]
+    },
+    {
+      "field_id": "remand_or_rehearing_language",
+      "source": "document_text",
+      "candidate_signal": true,
+      "patterns": [
+        {
+          "pattern_id": "A07-REM-001",
+          "regex": "\\b(?:remand(?:ed|ing)?|return(?:ed|ing)?)\\s+(?:this\\s+matter|the\\s+case|the\\s+matter)\\b",
+          "flags": "giu"
+        },
+        {
+          "pattern_id": "A07-REM-002",
+          "regex": "\\b(?:new|further|additional)\\s+(?:hearing|determination|review)\\b",
+          "flags": "giu"
+        }
+      ]
+    },
+    {
+      "field_id": "compliance_report_language",
+      "source": "document_text",
+      "candidate_signal": true,
+      "patterns": [
+        {
+          "pattern_id": "A07-COM-001",
+          "regex": "\\bcompliance\\s+(?:report|statement|submission|documentation)\\b",
+          "flags": "giu"
+        },
+        {
+          "pattern_id": "A07-COM-002",
+          "regex": "\\b(?:report|demonstrate|document)\\s+(?:its\\s+|the\\s+)?compliance\\b",
+          "flags": "giu"
+        }
+      ]
+    },
+    {
+      "field_id": "stated_amount_if_any",
+      "source": "document_text",
+      "candidate_signal": false,
+      "patterns": [
+        {
+          "pattern_id": "A07-AMT-001",
+          "regex": "(?<![\\p{L}\\p{N}])\\$\\s?\\d{1,3}(?:,\\d{3})*(?:\\.\\d{2})?(?![\\p{L}\\p{N}])",
+          "flags": "giu"
+        },
+        {
+          "pattern_id": "A07-AMT-002",
+          "regex": "\\b\\d+(?:\\.\\d{1,2})?\\s+dollars?\\b",
+          "flags": "giu"
+        }
+      ]
+    },
+    {
+      "field_id": "stated_period_if_any",
+      "source": "document_text",
+      "candidate_signal": false,
+      "patterns": [
+        {
+          "pattern_id": "A07-PER-001",
+          "regex": "\\b(?:January|February|March|April|May|June|July|August|September|October|November|December)\\s+(?:19|20)\\d{2}\\b",
+          "flags": "giu"
+        },
+        {
+          "pattern_id": "A07-PER-002",
+          "regex": "\\b(?:19|20)\\d{2}\\s*(?:-|–|through|to)\\s*(?:19|20)\\d{2}\\b",
+          "flags": "giu"
+        }
+      ]
+    }
+  ],
+  "output_contract": {
+    "schema_version": "ssc-rd04-a07-order-candidate-ledger@1",
+    "preserve_every_document": true,
+    "preserve_every_negative_field": true,
+    "preserve_pattern_id": true,
+    "preserve_match_text": true,
+    "preserve_match_sha256": true,
+    "preserve_normalized_offsets": true,
+    "preserve_line_number": true,
+    "preserve_line_sha256": true,
+    "preserve_source_text_sha256": true,
+    "preserve_source_text_bytes": true,
+    "preserve_full_context_excerpt": false,
+    "candidate_state_positive": "content_neutral_rule_match",
+    "candidate_state_negative": "no_predeclared_rule_match",
+    "follow_up_authorized": false,
+    "implementation_observed": false,
+    "separate_public_compliance_receipt_observed": false
+  },
+  "pilot_contract": {
+    "content_neutral_shard_allowed": true,
+    "pilot_results_are_population_complete": false,
+    "pilot_results_authorize_follow_up": false,
+    "pilot_results_authorize_rule_change": false,
+    "full_run_requires_all_64_parent_shards": true
+  }
+}

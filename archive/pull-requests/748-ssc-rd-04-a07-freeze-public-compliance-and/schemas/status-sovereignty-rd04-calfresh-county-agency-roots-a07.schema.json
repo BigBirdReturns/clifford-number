@@ -1,0 +1,228 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bigbirdreturns.github.io/clifford-number/schemas/status-sovereignty-rd04-calfresh-county-agency-roots-a07.schema.json",
+  "title": "SSC RD-04 A07 California county official agency-root denominator",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "execution_id",
+    "issue",
+    "as_of",
+    "title",
+    "source",
+    "denominator",
+    "counts",
+    "counties",
+    "authority"
+  ],
+  "properties": {
+    "schema_version": { "const": "ssc-rd04-a07-county-agency-roots@1" },
+    "execution_id": { "const": "SSC-RD04-SNAP-A07" },
+    "issue": { "const": 741 },
+    "as_of": { "const": "2026-08-02" },
+    "title": { "type": "string", "minLength": 1 },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_id",
+        "acquisition_ledger_path",
+        "body_path",
+        "requested_url",
+        "final_url",
+        "http_status",
+        "content_type",
+        "body_bytes",
+        "body_sha256",
+        "terminal_state"
+      ],
+      "properties": {
+        "source_id": { "const": "CDSS-COUNTY-OFFICES" },
+        "acquisition_ledger_path": { "const": "data/intake/status-sovereignty-rd04-calfresh-compliance-receipts-a07/source-custody/a07-official-source-acquisition/source-acquisition-ledger.json" },
+        "body_path": { "type": "string", "minLength": 1 },
+        "requested_url": { "type": "string", "format": "uri" },
+        "final_url": { "type": "string", "format": "uri" },
+        "http_status": { "const": 200 },
+        "content_type": { "type": ["string", "null"] },
+        "body_bytes": { "const": 50202 },
+        "body_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "terminal_state": { "const": "exact_response_preserved_pending_semantic_classification" }
+      }
+    },
+    "denominator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "expected_counties",
+        "parsed_counties",
+        "processing_order",
+        "exact_order_match",
+        "unique_counties",
+        "agency_root_rows_materialized",
+        "county_census_complete",
+        "county_selection_authorized"
+      ],
+      "properties": {
+        "expected_counties": { "const": 58 },
+        "parsed_counties": { "const": 58 },
+        "processing_order": { "const": "alphabetical_county_name" },
+        "exact_order_match": { "const": true },
+        "unique_counties": { "const": 58 },
+        "agency_root_rows_materialized": { "const": 58 },
+        "county_census_complete": { "const": false },
+        "county_selection_authorized": { "const": false }
+      }
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "exact_public_agency_roots",
+        "multiple_public_root_candidates",
+        "public_sections_without_agency_root",
+        "link_candidates",
+        "counties_censused",
+        "exact_public_case_receipts",
+        "case_level_implementation_joins",
+        "complete_restorations_observed",
+        "remedy_timeliness_observed"
+      ],
+      "properties": {
+        "exact_public_agency_roots": { "type": "integer", "minimum": 0, "maximum": 58 },
+        "multiple_public_root_candidates": { "type": "integer", "minimum": 0, "maximum": 58 },
+        "public_sections_without_agency_root": { "type": "integer", "minimum": 0, "maximum": 58 },
+        "link_candidates": { "type": "integer", "minimum": 0 },
+        "counties_censused": { "const": 0 },
+        "exact_public_case_receipts": { "const": 0 },
+        "case_level_implementation_joins": { "const": 0 },
+        "complete_restorations_observed": { "const": 0 },
+        "remedy_timeliness_observed": { "const": 0 }
+      }
+    },
+    "counties": {
+      "type": "array",
+      "minItems": 58,
+      "maxItems": 58,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "ordinal",
+          "county",
+          "agency_heading",
+          "heading_html_sha256",
+          "section_start_byte",
+          "section_end_byte",
+          "section_bytes",
+          "section_sha256",
+          "link_candidates",
+          "selection_state",
+          "selected_agency_root_url",
+          "selected_candidate_score",
+          "competing_top_urls",
+          "county_follow_up_authorized",
+          "county_census_complete",
+          "case_level_receipt_observed",
+          "implementation_observed",
+          "source_unavailable_proves_noncompliance"
+        ],
+        "properties": {
+          "ordinal": { "type": "integer", "minimum": 1, "maximum": 58 },
+          "county": { "type": "string", "minLength": 2 },
+          "agency_heading": { "type": "string", "minLength": 3 },
+          "heading_html_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "section_start_byte": { "type": "integer", "minimum": 0 },
+          "section_end_byte": { "type": "integer", "minimum": 1 },
+          "section_bytes": { "type": "integer", "minimum": 1 },
+          "section_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "link_candidates": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "href_raw",
+                "resolved_url",
+                "host",
+                "anchor_text",
+                "title",
+                "score",
+                "source_start_byte",
+                "source_end_byte",
+                "anchor_html_sha256"
+              ],
+              "properties": {
+                "href_raw": { "type": "string", "minLength": 1 },
+                "resolved_url": { "type": "string", "format": "uri" },
+                "host": { "type": "string", "minLength": 1 },
+                "anchor_text": { "type": "string" },
+                "title": { "type": ["string", "null"] },
+                "score": { "type": "integer" },
+                "source_start_byte": { "type": "integer", "minimum": 0 },
+                "source_end_byte": { "type": "integer", "minimum": 1 },
+                "anchor_html_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+              }
+            }
+          },
+          "selection_state": {
+            "enum": [
+              "exact_public_agency_root",
+              "multiple_public_root_candidates",
+              "public_section_without_agency_root"
+            ]
+          },
+          "selected_agency_root_url": { "type": ["string", "null"], "format": "uri" },
+          "selected_candidate_score": { "type": ["integer", "null"] },
+          "competing_top_urls": {
+            "type": "array",
+            "items": { "type": "string", "format": "uri" }
+          },
+          "county_follow_up_authorized": { "const": false },
+          "county_census_complete": { "const": false },
+          "case_level_receipt_observed": { "const": false },
+          "implementation_observed": { "const": false },
+          "source_unavailable_proves_noncompliance": { "const": false }
+        }
+      }
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "agency_root_is_case_receipt",
+        "agency_root_is_compliance_record",
+        "agency_root_is_implementation_receipt",
+        "missing_root_is_source_unavailable",
+        "missing_root_is_noncompliance",
+        "ambiguous_root_authorizes_selection",
+        "county_follow_up_authorized",
+        "county_census_complete",
+        "prevalence_supported",
+        "racial_order_supported",
+        "coordination_supported",
+        "common_purpose_supported",
+        "graph_effect",
+        "publication_effect",
+        "adoption_effect"
+      ],
+      "properties": {
+        "agency_root_is_case_receipt": { "const": false },
+        "agency_root_is_compliance_record": { "const": false },
+        "agency_root_is_implementation_receipt": { "const": false },
+        "missing_root_is_source_unavailable": { "const": false },
+        "missing_root_is_noncompliance": { "const": false },
+        "ambiguous_root_authorizes_selection": { "const": false },
+        "county_follow_up_authorized": { "const": false },
+        "county_census_complete": { "const": false },
+        "prevalence_supported": { "const": false },
+        "racial_order_supported": { "const": false },
+        "coordination_supported": { "const": false },
+        "common_purpose_supported": { "const": false },
+        "graph_effect": { "const": "none" },
+        "publication_effect": { "const": "none" },
+        "adoption_effect": { "const": "none" }
+      }
+    }
+  }
+}
