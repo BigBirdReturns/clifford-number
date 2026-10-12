@@ -1,16 +1,18 @@
 #!/usr/bin/env node
+// Contract for the two manually dispatched crawl workflows and their shared
+// pull-request helper: they may open a pull request, and nothing else.
+// They must never merge, approve, enable auto-merge, dispatch another workflow,
+// push main, or change branch policy.
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 const paths = {
   industrial: '.github/workflows/crawl-industrial-exhaust.yml',
   official: '.github/workflows/crawl-official.yml',
-  release: '.github/workflows/ci.yml',
-  noMagic: '.github/workflows/no-magic-human-gate.yml',
   helper: '.github/scripts/promote-scheduled-crawl.sh',
   recovery: '.github/scripts/retain-scheduled-crawl-candidate.sh'
 };
@@ -39,92 +41,104 @@ function requireOrdered(errors, text, markers, message) {
   }
 }
 
-export function validateScheduledCrawlPromotion(files) {
+const stripComments = (text) => text.replace(/^[ \t]*#.*$/gm, '');
+
+function triggers(workflow) {
+  const block = workflow.match(/^on:\n((?:(?: {2}.*|#.*)?\n)*)/m)?.[1] ?? '';
+  return [...block.matchAll(/^ {2}([a-z_]+):/gm)].map((match) => match[1]);
+}
+
+function jobPermissions(workflow) {
+  const block = workflow.match(/^ {4}permissions:\n((?: {6}.*\n)+)/m)?.[1] ?? '';
+  return block
+    .split('\n')
+    .filter((line) => line.trim() && !line.trim().startsWith('#'))
+    .map((line) => line.trim())
+    .sort();
+}
+
+export function validateCrawlPullRequestContract(files) {
   const errors = [];
 
   for (const [label, workflow, kind] of [
     ['industrial-exhaust workflow', files.industrial, 'industrial-exhaust'],
     ['official-record workflow', files.official, 'official-record']
   ]) {
-    requireMatch(errors, workflow, /permissions:\n  contents: read\n/, `${label} must default to read-only contents`);
-    requireMatch(errors, workflow, /permissions:\n(?:      .+\n)*      actions: write\n      contents: write\n      pull-requests: write\n/, `${label} promotion job must carry only the required mutation scopes`);
-    requireMatch(errors, workflow, /group: scheduled-crawl-main-promotion\n      cancel-in-progress: false|group: scheduled-crawl-main-promotion\n  cancel-in-progress: false/, `${label} must share the serialized main-promotion concurrency group`);
-    requireMatch(errors, workflow, /ref: main\n          fetch-depth: 0/, `${label} must crawl from a full-history main checkout`);
-    requireMatch(errors, workflow, new RegExp(`PROMOTION_KIND: ${kind.replace('-', '\\-')}`), `${label} must bind the exact promotion kind`);
-    requireMatch(errors, workflow, /run: bash \.github\/scripts\/promote-scheduled-crawl\.sh/, `${label} must invoke the common promotion helper`);
-    requireMatch(errors, workflow, /- name: Retain exact candidate recovery bundle\n        if: always\(\)\n        run: bash \.github\/scripts\/retain-scheduled-crawl-candidate\.sh/, `${label} must retain the exact candidate bundle after promotion`);
+    if (JSON.stringify(triggers(workflow)) !== JSON.stringify(['workflow_dispatch'])) {
+      errors.push(`${label} must be workflow_dispatch only`);
+    }
+    requireMatch(errors, workflow, /^permissions:\n {2}contents: read\n/m, `${label} must default to read-only contents`);
+    if (JSON.stringify(jobPermissions(workflow)) !== JSON.stringify(['contents: write', 'pull-requests: write'])) {
+      errors.push(`${label} crawl job must carry exactly contents: write (candidate branch) and pull-requests: write`);
+    }
+    requireAbsent(errors, workflow, /^\s+(?:actions|checks|statuses|issues|pages|id-token|packages|deployments): write\s*$/m, `${label} must not hold any other write scope`);
+    requireMatch(errors, workflow, /group: crawl-candidate-pull-request\n/, `${label} must share the serialized crawl concurrency group`);
+    requireMatch(errors, workflow, /cancel-in-progress: false/, `${label} must not cancel a running crawl`);
+    requireMatch(errors, workflow, /ref: main\n {10}fetch-depth: 0/, `${label} must crawl from a full-history main checkout`);
+    requireMatch(errors, workflow, new RegExp(`PROMOTION_KIND: ${kind.replace('-', '\\-')}\\n`), `${label} must bind the exact promotion kind`);
+    requireMatch(errors, workflow, /run: bash \.github\/scripts\/promote-scheduled-crawl\.sh/, `${label} must invoke the common pull-request helper`);
+    requireMatch(errors, workflow, /- name: Retain exact candidate recovery bundle\n {8}if: always\(\)\n {8}run: bash \.github\/scripts\/retain-scheduled-crawl-candidate\.sh/, `${label} must retain the exact candidate bundle`);
     requireMatch(errors, workflow, /uses: actions\/upload-artifact@v4/, `${label} must retain a promotion receipt`);
     requireMatch(errors, workflow, /path: \$\{\{ runner\.temp \}\}\/scheduled-crawl-promotion-receipt/, `${label} must upload the exact receipt directory`);
     requireMatch(errors, workflow, /PROMOTION_STEP_OUTCOME: \$\{\{ steps\.promote\.outcome \}\}/, `${label} must expose the helper outcome to the terminal gate`);
-    requireMatch(errors, workflow, /run: test "\$PROMOTION_STEP_OUTCOME" = success/, `${label} must fail the workflow when promotion fails`);
-    requireAbsent(errors, workflow, /git push(?:\s|$)/, `${label} must not push main or any branch directly inside the workflow`);
+    requireMatch(errors, workflow, /run: test "\$PROMOTION_STEP_OUTCOME" = success/, `${label} must fail the workflow when the helper fails`);
+    requireAbsent(errors, workflow, /git push(?:\s|$)/, `${label} must not push anything directly inside the workflow`);
     requireAbsent(errors, workflow, /git pull --rebase/, `${label} must not rebase generated intake over a moved main`);
+    requireAbsent(errors, stripComments(workflow), /gh pr |gh workflow|gh run |\/merge\b|actions\/workflows|dispatches|--approve|APPROVE|[Aa]uto-?[Mm]erge/, `${label} must not merge, approve, auto-merge, or dispatch anything`);
     requireOrdered(errors, workflow, [
       'run: bash .github/scripts/promote-scheduled-crawl.sh',
       'run: bash .github/scripts/retain-scheduled-crawl-candidate.sh',
       'uses: actions/upload-artifact@v4'
-    ], `${label} must bundle the candidate before uploading the promotion receipt`);
+    ], `${label} must bundle the candidate before uploading the receipt`);
   }
 
-  requireMatch(errors, files.industrial, /if: github\.event_name != 'pull_request'/, 'industrial-exhaust mutation must remain disabled on pull_request');
-
-  requireMatch(errors, files.noMagic, /jobs:\n  no-magic-human-gate:\n/, 'No magic human gate must publish a unique stable check name');
-  requireAbsent(errors, files.noMagic, /jobs:\n  validate:\n/, 'No magic human gate must not reuse the generic validate check name');
-  requireMatch(errors, files.release, /Run scheduled crawler promotion contract tests\n        run: node test\/scheduled-crawl-promotion\.test\.js/, 'Release checks must execute the scheduled promotion contract test');
-  requireMatch(errors, files.release, /Run scheduled crawler admission observation tests\n        run: node test\/scheduled-crawl-admission\.test\.js/, 'Release checks must execute native-admission observation tests');
-  requireMatch(errors, files.release, /Run scheduled crawler resumption tests\n        run: node test\/scheduled-crawl-resumption\.test\.js/, 'Release checks must execute protected resumption tests');
-
   const helper = files.helper;
-  requireMatch(errors, helper, /^#!\/usr\/bin\/env bash\nset -Eeuo pipefail\n/, 'promotion helper must use strict Bash error handling');
-  requireMatch(errors, helper, /industrial-exhaust\)[\s\S]*ALLOWED_ROOTS=\('data\/exhaust' 'receipts\/exhaust'\)/, 'industrial-exhaust promotion must be limited to its two intake roots');
-  requireMatch(errors, helper, /official-record\)[\s\S]*ALLOWED_ROOTS=\('data\/crawl' 'receipts\/crawl'\)/, 'official-record promotion must be limited to its two intake roots');
+  requireMatch(errors, helper, /^#!\/usr\/bin\/env bash\nset -Eeuo pipefail\n/, 'helper must use strict Bash error handling');
+  requireMatch(errors, helper, /industrial-exhaust\)[\s\S]*ALLOWED_ROOTS=\('data\/exhaust' 'receipts\/exhaust'\)/, 'industrial-exhaust pull request must be limited to its two intake roots');
+  requireMatch(errors, helper, /official-record\)[\s\S]*ALLOWED_ROOTS=\('data\/crawl' 'receipts\/crawl'\)/, 'official-record pull request must be limited to its two intake roots');
   requireMatch(errors, helper, /CANDIDATE_BRANCH="automation-crawl-\$\{SLUG\}-run-\$\{RUN_ID\}-\$\{RUN_ATTEMPT\}"/, 'candidate branch must be unique to workflow run and attempt');
-  requireMatch(errors, helper, /BASE_SHA="\$\(git rev-parse HEAD\)"/, 'promotion must lease the exact checked-out base SHA');
+  requireMatch(errors, helper, /BASE_SHA="\$\(git rev-parse HEAD\)"/, 'helper must lease the exact checked-out base SHA');
   const mainLeaseAssertions = helper.match(/test "\$\(git rev-parse origin\/main\)" = "\$BASE_SHA"/g) || [];
-  if (mainLeaseAssertions.length < 2) errors.push('promotion must refuse a moved main before candidate construction and again before publication');
+  if (mainLeaseAssertions.length < 2) errors.push('helper must refuse a moved main before candidate construction and again before publication');
   requireMatch(errors, helper, /test "\$\(git rev-parse "\$CANDIDATE_SHA\^"\)" = "\$BASE_SHA"/, 'candidate must be one direct child of the leased base');
   requireMatch(errors, helper, /git diff --no-renames --name-only -z HEAD --/, 'worktree path census must expand renames into both paths');
   requireMatch(errors, helper, /git diff-tree --no-commit-id --no-renames --name-only -r -z/, 'commit path census must expand renames into both paths');
   requireMatch(errors, helper, /previous_filename \/\/ empty/, 'remote comparison must include a renamed source path');
-  requireMatch(errors, helper, /git push origin "\$CANDIDATE_SHA:refs\/heads\/\$CANDIDATE_BRANCH"/, 'promotion may publish only the run-scoped candidate branch');
-  requireAbsent(errors, helper, /git push[^\n]*(?:refs\/heads\/main|\s+main(?=\s|$)|:main(?=\s|$))/, 'promotion helper must never push main');
-  requireMatch(errors, helper, /repos\/\$REPO\/pulls" --input/, 'promotion must open an ordinary pull request');
-  requireMatch(errors, helper, /actions\/workflows\/ci\.yml\/dispatches/, 'promotion must dispatch Release checks explicitly');
-  requireMatch(errors, helper, /actions\/workflows\/no-magic-human-gate\.yml\/dispatches/, 'promotion must dispatch No magic human gate explicitly');
-  requireMatch(errors, helper, /assert_check_success 'release-check'/, 'promotion must bind the stable Release checks context');
-  requireMatch(errors, helper, /assert_check_success 'no-magic-human-gate'/, 'promotion must bind the stable No magic human gate context');
-  requireMatch(errors, helper, /\.app\.id == 15368 and \.check_suite\.id == \$suite/, 'dispatched checks must bind the GitHub Actions app and exact suite');
-  requireMatch(errors, helper, /if \[\[ "\$OPEN_CRAWLER_COUNT" -gt 0 \]\]; then[\s\S]*blocked_by_open_crawler_candidate/, 'promotion must refuse a second open crawler candidate');
-  requireMatch(errors, helper, /PRESERVE_CANDIDATE='true'[\s\S]*OUTCOME='awaiting_native_pr_admission'/, 'promotion must preserve a candidate while native admission is unresolved');
-  requireMatch(errors, helper, /NATIVE_ADMISSION_POLLS="\$\{NATIVE_ADMISSION_POLLS:-120\}"/, 'native admission must use a bounded default polling window');
-  requireMatch(errors, helper, /for \(\(attempt = 1; attempt <= NATIVE_ADMISSION_POLLS; attempt\+\+\)\)/, 'native admission must poll within the bounded window');
-  requireMatch(errors, helper, /native-admission-timeline\.jsonl/, 'native admission must retain every polling observation');
-  requireMatch(errors, helper, /pending\|awaiting_approval\)/, 'pending and approval-required states must remain non-mergeable');
-  requireMatch(errors, helper, /node \.github\/scripts\/inspect-scheduled-crawl-admission\.mjs/, 'promotion must inspect native PR admission before merge');
-  requireMatch(errors, helper, /preserved_pending_native_admission/, 'failure cleanup must retain an approval-pending candidate');
-  requireMatch(errors, helper, /ready\)[\s\S]*OUTCOME='native_admission_ready'[\s\S]*break/, 'native readiness must retain the candidate until merge admission');
-  requireOrdered(errors, helper, ["MERGED='true'", "PRESERVE_CANDIDATE='false'", "STAGE='verify-merge-topology'"], 'candidate preservation may clear only after the exact merge is admitted');
   requireMatch(errors, helper, /\.status == "ahead" and \.ahead_by == 1 and \.behind_by == 0 and \.total_commits == 1/, 'remote comparison must remain exactly one commit ahead and zero behind');
-  const mergePayloadStart = helper.indexOf('MERGE_PAYLOAD=');
-  const mergeCallStart = helper.indexOf('gh api --method PUT "repos/$REPO/pulls/$PR_NUMBER/merge"', mergePayloadStart);
-  const mergeSection = mergePayloadStart >= 0 && mergeCallStart > mergePayloadStart
-    ? helper.slice(mergePayloadStart, mergeCallStart)
-    : '';
-  requireMatch(errors, mergeSection, /--arg sha "\$CANDIDATE_SHA"[\s\S]*sha: \$sha, merge_method: "merge"/, 'merge request must be leased to the exact candidate SHA');
-  requireMatch(errors, helper, /test "\$\(jq -r '\.parents\[0\]\.sha'[^\n]*\)" = "\$BASE_SHA"[\s\S]*test "\$\(jq -r '\.parents\[1\]\.sha'[^\n]*\)" = "\$CANDIDATE_SHA"/, 'post-merge receipt must authenticate both merge parents');
-  requireMatch(errors, helper, /jq -e '\.parents \| length == 2'/, 'post-merge receipt must require exactly two parents');
-  requireMatch(errors, helper, /\.tree\.sha[^\n]*CANDIDATE_SHA\^\{tree\}/, 'post-merge receipt must preserve the candidate tree');
+  requireMatch(errors, helper, /assert_paths_allowed 'remote comparison'/, 'remote comparison must be held to the intake roots');
+  requireMatch(errors, helper, /if \[\[ "\$OPEN_CRAWLER_COUNT" -gt 0 \]\]; then[\s\S]*blocked_by_open_crawler_candidate/, 'helper must refuse a second open crawler candidate');
+  requireMatch(errors, helper, /OUTCOME='pull_request_opened'/, 'a successful run must end with an open pull request');
   requireMatch(errors, helper, /remote_candidate" == "\$CANDIDATE_SHA"/, 'cleanup may delete a candidate ref only while it retains the leased SHA');
   requireMatch(errors, helper, /cleanup-branch-refused\.txt/, 'cleanup must record and refuse a moved candidate ref');
-  requireAbsent(errors, helper, /branches\/main\/protection|repos\/\$REPO\/rulesets/, 'scheduled promotion must not mutate branch policy');
 
-  requireOrdered(errors, helper, [
-    "STAGE='dispatch-required-checks'",
-    "STAGE='qualify-exact-candidate'",
-    "STAGE='revalidate-lease-and-remote-denominator'",
-    "STAGE='inspect-native-pr-admission'",
-    "STAGE='merge-qualified-pull-request'"
-  ], 'dispatched checks, native PR admission, lease revalidation, and merge must occur in order');
+  const pushes = helper.match(/^\s*(?:\S+\s+)?git push[^\n]*$/gm) || [];
+  for (const push of pushes) {
+    const publishes = /git push origin "\$CANDIDATE_SHA:refs\/heads\/\$CANDIDATE_BRANCH"$/.test(push.trim());
+    const retires = /git push --force-with-lease="refs\/heads\/\$CANDIDATE_BRANCH:\$CANDIDATE_SHA" \\?$/.test(push.trim());
+    if (!publishes && !retires) errors.push(`helper may push only its own run-scoped candidate branch: ${push.trim()}`);
+  }
+  if (!pushes.some((push) => /git push origin "\$CANDIDATE_SHA:refs\/heads\/\$CANDIDATE_BRANCH"$/.test(push.trim()))) {
+    errors.push('helper must publish the run-scoped candidate branch');
+  }
+
+  const apiCalls = helper.split('\n').filter((line) => /gh api[^\n]*--method/.test(line));
+  const allowedCalls = [
+    /^gh api --method POST "repos\/\$REPO\/pulls" --input - <<< "\$PR_PAYLOAD" \\$/,
+    /^gh api --method PATCH "repos\/\$REPO\/pulls\/\$PR_NUMBER" -f state=closed \\$/
+  ];
+  for (const call of apiCalls) {
+    if (!allowedCalls.some((pattern) => pattern.test(call.trim()))) {
+      errors.push(`helper may only open a pull request or close its own failed one: ${call.trim()}`);
+    }
+  }
+  if (apiCalls.length !== 2) errors.push('helper must make exactly two mutating API calls: open and (on failure) close');
+
+  const helperCode = stripComments(helper);
+  requireAbsent(errors, helperCode, /--method (?:PUT|DELETE)|\/merge\b|merge_method|enable_pull_request_automerge|[Aa]uto-?[Mm]erge|\/reviews|--approve|APPROVE/, 'helper must never merge, approve, or auto-merge');
+  requireAbsent(errors, helperCode, /dispatches|actions\/workflows|actions\/runs|gh workflow|gh run |gh pr /, 'helper must never dispatch or poll another workflow');
+  requireAbsent(errors, helperCode, /git push[^\n]*(?:refs\/heads\/main|\s+main(?=\s|$)|:main(?=\s|$))/, 'helper must never push main');
+  requireAbsent(errors, helperCode, /branches\/main\/protection|repos\/\$REPO\/rulesets/, 'helper must not mutate branch policy');
+  requireAbsent(errors, helperCode, /inspect-scheduled-crawl-admission|resume-scheduled-crawl-admission|watch-scheduled-crawl-admission/, 'helper must not call the removed auto-merge watchers');
 
   const recovery = files.recovery;
   requireMatch(errors, recovery, /^#!\/usr\/bin\/env bash\nset -Eeuo pipefail\n/, 'candidate recovery custodian must use strict Bash error handling');
@@ -145,51 +159,38 @@ export function validateScheduledCrawlPromotion(files) {
 }
 
 const canonical = load();
-assert.deepEqual(validateScheduledCrawlPromotion(canonical), [], 'canonical scheduled-crawl promotion contract must validate');
+assert.deepEqual(validateCrawlPullRequestContract(canonical), [], 'canonical crawl pull-request contract must validate');
 
 const mutations = [
-  ['restore generic no-magic check name', (c) => { c.noMagic = c.noMagic.replace('  no-magic-human-gate:', '  validate:'); }],
-  ['remove the release-gate contract test', (c) => { c.release = c.release.replace('      - name: Run scheduled crawler promotion contract tests\n        run: node test/scheduled-crawl-promotion.test.js\n', ''); }],
-  ['remove native-admission tests from release', (c) => { c.release = c.release.replace('      - name: Run scheduled crawler admission observation tests\n        run: node test/scheduled-crawl-admission.test.js\n', ''); }],
-  ['remove resumption tests from release', (c) => { c.release = c.release.replace('      - name: Run scheduled crawler resumption tests\n        run: node test/scheduled-crawl-resumption.test.js\n', ''); }],
+  ['re-add a schedule trigger', (c) => { c.official = c.official.replace('on:\n  workflow_dispatch:', "on:\n  schedule:\n    - cron: '0 6 * * *'\n  workflow_dispatch:"); }],
+  ['re-add a pull_request trigger', (c) => { c.industrial = c.industrial.replace('on:\n  workflow_dispatch:', 'on:\n  pull_request:\n  workflow_dispatch:'); }],
   ['reintroduce a direct workflow push', (c) => { c.official += '\n      - run: git push origin main\n'; }],
-  ['remove actions dispatch authority', (c) => { c.industrial = c.industrial.replace('      actions: write\n', ''); }],
-  ['remove pull-request authority', (c) => { c.official = c.official.replace('      pull-requests: write\n', ''); }],
-  ['split the crawler concurrency lock', (c) => { c.official = c.official.replace('scheduled-crawl-main-promotion', 'official-only-promotion'); }],
+  ['restore actions dispatch authority', (c) => { c.industrial = c.industrial.replace('      contents: write\n', '      actions: write\n      contents: write\n'); }],
+  ['drop pull-request authority', (c) => { c.official = c.official.replace('      pull-requests: write\n', ''); }],
+  ['grant a wider contents scope at job level', (c) => { c.official = c.official.replace('      contents: write\n      pull-requests: write\n', '      contents: write\n      pull-requests: write\n      issues: write\n'); }],
+  ['split the crawler concurrency lock', (c) => { c.official = c.official.replace('crawl-candidate-pull-request', 'official-only'); }],
   ['allow shallow candidate ancestry', (c) => { c.industrial = c.industrial.replace('          fetch-depth: 0', '          fetch-depth: 1'); }],
   ['misbind the official promotion kind', (c) => { c.official = c.official.replace('PROMOTION_KIND: official-record', 'PROMOTION_KIND: industrial-exhaust'); }],
+  ['add a gh pr merge step', (c) => { c.official += '\n      - run: gh pr merge --merge 1\n'; }],
+  ['add a workflow dispatch call', (c) => { c.industrial += '\n      - run: gh api -X POST repos/o/r/actions/workflows/ci.yml/dispatches -f ref=main\n'; }],
   ['broaden industrial intake roots', (c) => { c.helper = c.helper.replace("ALLOWED_ROOTS=('data/exhaust' 'receipts/exhaust')", "ALLOWED_ROOTS=('data' 'receipts')"); }],
-  ['drop run-attempt branch uniqueness', (c) => { c.helper = c.helper.replace('-${RUN_ATTEMPT}', ''); }],
+  ['drop run-attempt branch uniqueness', (c) => { c.helper = c.helper.replace('-${RUN_ATTEMPT}"', '"'); }],
   ['remove exact-main lease refusal', (c) => { c.helper = c.helper.replaceAll('test "$(git rev-parse origin/main)" = "$BASE_SHA"', 'true # main lease removed'); }],
-  ['skip No magic workflow dispatch', (c) => { c.helper = c.helper.replace('gh api --method POST "repos/$REPO/actions/workflows/no-magic-human-gate.yml/dispatches"', 'echo skipped-no-magic'); }],
-  ['bind a generic no-magic check', (c) => { c.helper = c.helper.replace("assert_check_success 'no-magic-human-gate'", "assert_check_success 'validate'"); }],
-  ['drop dispatched-check app binding', (c) => { c.helper = c.helper.replace('.app.id == 15368 and .check_suite.id == $suite and ', ''); }],
-  ['drop duplicate pending-candidate refusal', (c) => { c.helper = c.helper.replace("if [[ \"$OPEN_CRAWLER_COUNT\" -gt 0 ]]; then", 'if false; then'); }],
-  ['drop native-admission inspection', (c) => { c.helper = c.helper.replace('node .github/scripts/inspect-scheduled-crawl-admission.mjs', 'node -e true'); }],
-  ['drop pending-candidate preservation', (c) => { c.helper = c.helper.replace("PRESERVE_CANDIDATE='true'", "PRESERVE_CANDIDATE='false'"); }],
-  ['remove bounded native polling', (c) => { c.helper = c.helper.replace('NATIVE_ADMISSION_POLLS="${NATIVE_ADMISSION_POLLS:-120}"', 'NATIVE_ADMISSION_POLLS=unbounded'); }],
-  ['drop native-admission timeline', (c) => { c.helper = c.helper.replaceAll('native-admission-timeline.jsonl', 'discarded-native-admission'); }],
-  ['clear preservation before merge admission', (c) => { c.helper = c.helper.replace("MERGED='true'\nPRESERVE_CANDIDATE='false'", "PRESERVE_CANDIDATE='false'\nMERGED='true'"); }],
+  ['drop duplicate pending-candidate refusal', (c) => { c.helper = c.helper.replace('if [[ "$OPEN_CRAWLER_COUNT" -gt 0 ]]; then', 'if false; then'); }],
   ['allow worktree rename collapse', (c) => { c.helper = c.helper.replace('git diff --no-renames --name-only -z HEAD --', 'git diff --name-only -z HEAD --'); }],
   ['allow commit rename collapse', (c) => { c.helper = c.helper.replace('git diff-tree --no-commit-id --no-renames --name-only -r -z', 'git diff-tree --no-commit-id --name-only -r -z'); }],
-  ['omit remote renamed source path', (c) => { c.helper = c.helper.replace(".filename, (.previous_filename // empty)", '.filename'); }],
+  ['omit remote renamed source path', (c) => { c.helper = c.helper.replace('(.previous_filename // empty)', '(empty)'); }],
   ['weaken remote one-commit topology', (c) => { c.helper = c.helper.replace('and .ahead_by == 1 and .behind_by == 0 and .total_commits == 1', 'and .ahead_by >= 1'); }],
-  ['merge against the base instead of candidate', (c) => {
-    const marker = 'MERGE_PAYLOAD=';
-    const start = c.helper.indexOf(marker);
-    c.helper = c.helper.slice(0, start) + c.helper.slice(start).replace('--arg sha "$CANDIDATE_SHA"', '--arg sha "$BASE_SHA"');
-  }],
-  ['drop exact two-parent merge proof', (c) => { c.helper = c.helper.replace("jq -e '.parents | length == 2'", 'true # parent count removed'); }],
-  ['drop candidate-tree merge proof', (c) => { c.helper = c.helper.replace('test "$(jq -r .tree.sha "$RECEIPT_DIR/merge-commit.json")" = "$(git rev-parse "$CANDIDATE_SHA^{tree}")"', 'true # tree proof removed'); }],
+  ['push the base branch', (c) => { c.helper += '\ngit push origin "$CANDIDATE_SHA:refs/heads/main"\n'; }],
+  ['merge the pull request', (c) => { c.helper += '\ngh api --method PUT "repos/$REPO/pulls/$PR_NUMBER/merge" --input - <<< \'{}\'\n'; }],
+  ['approve the pull request', (c) => { c.helper += '\ngh api --method POST "repos/$REPO/pulls/$PR_NUMBER/reviews" -f event=APPROVE\n'; }],
+  ['dispatch a check workflow', (c) => { c.helper += '\ngh api --method POST "repos/$REPO/actions/workflows/ci.yml/dispatches" -f ref="$CANDIDATE_BRANCH"\n'; }],
+  ['enable auto-merge', (c) => { c.helper += '\ngh pr merge "$PR_NUMBER" --auto --merge\n'; }],
+  ['call the removed watcher', (c) => { c.helper += '\nnode .github/scripts/watch-scheduled-crawl-admission.mjs\n'; }],
   ['delete a moved candidate ref', (c) => { c.helper = c.helper.replace('if [[ "$remote_candidate" == "$CANDIDATE_SHA" ]]; then', 'if [[ -n "$remote_candidate" ]]; then'); }],
-  ['let scheduled promotion mutate policy', (c) => { c.helper += '\ngh api --method PUT "repos/$REPO/branches/main/protection"\n'; }],
-  ['merge before exact check qualification', (c) => {
-    c.helper = c.helper.replace("STAGE='dispatch-required-checks'", "STAGE='temporary-swap-marker'")
-      .replace("STAGE='merge-qualified-pull-request'", "STAGE='dispatch-required-checks'")
-      .replace("STAGE='temporary-swap-marker'", "STAGE='merge-qualified-pull-request'");
-  }],
-  ['drop the industrial recovery custodian', (c) => {
-    c.industrial = c.industrial.replace("      - name: Retain exact candidate recovery bundle\n        if: always()\n        run: bash .github/scripts/retain-scheduled-crawl-candidate.sh\n", '');
+  ['let the helper mutate policy', (c) => { c.helper += '\ngh api "repos/$REPO/branches/main/protection"\n'; }],
+  ['drop the recovery custodian', (c) => {
+    c.industrial = c.industrial.replace('      - name: Retain exact candidate recovery bundle\n        if: always()\n        run: bash .github/scripts/retain-scheduled-crawl-candidate.sh\n', '');
   }],
   ['remove recovery direct-parent authentication', (c) => {
     c.recovery = c.recovery.replace('test "$(git rev-parse "$CANDIDATE_SHA^")" = "$BASE_SHA"', 'true # parent binding removed');
@@ -202,12 +203,12 @@ const mutations = [
 for (const [label, mutate] of mutations) {
   const candidate = structuredClone(canonical);
   mutate(candidate);
-  const errors = validateScheduledCrawlPromotion(candidate);
+  const errors = validateCrawlPullRequestContract(candidate);
   assert.ok(errors.length > 0, `mutation should fail closed: ${label}`);
 }
 
-function git(cwd, args) {
-  return execFileSync('git', args, { cwd, encoding: 'utf8' }).trim();
+function git(cwd, args, env = {}) {
+  return execFileSync('git', args, { cwd, encoding: 'utf8', env: { ...process.env, ...env } }).trim();
 }
 
 function gitPaths(cwd, args) {
@@ -215,12 +216,12 @@ function gitPaths(cwd, args) {
 }
 
 function verifyRenamePathExpansionFixture() {
-  const root = mkdtempSync(join(tmpdir(), 'scheduled-crawl-rename-'));
+  const root = mkdtempSync(join(tmpdir(), 'crawl-rename-'));
   try {
     mkdirSync(join(root, 'data', 'crawl'), { recursive: true });
     git(root, ['init', '-q']);
-    git(root, ['config', 'user.name', 'scheduled-crawl-test']);
-    git(root, ['config', 'user.email', 'scheduled-crawl-test@example.invalid']);
+    git(root, ['config', 'user.name', 'crawl-test']);
+    git(root, ['config', 'user.email', 'crawl-test@example.invalid']);
     writeFileSync(join(root, 'graph.json'), '{}\n');
     git(root, ['add', 'graph.json']);
     git(root, ['commit', '-q', '-m', 'base']);
@@ -236,7 +237,7 @@ function verifyRenamePathExpansionFixture() {
 }
 
 function verifyRecoveryBundleFixture() {
-  const root = mkdtempSync(join(tmpdir(), 'scheduled-crawl-recovery-'));
+  const root = mkdtempSync(join(tmpdir(), 'crawl-recovery-'));
   try {
     const workspace = join(root, 'workspace');
     const runnerTemp = join(root, 'runner');
@@ -245,8 +246,8 @@ function verifyRecoveryBundleFixture() {
     mkdirSync(receiptDir, { recursive: true });
 
     git(workspace, ['init', '-q']);
-    git(workspace, ['config', 'user.name', 'scheduled-crawl-test']);
-    git(workspace, ['config', 'user.email', 'scheduled-crawl-test@example.invalid']);
+    git(workspace, ['config', 'user.name', 'crawl-test']);
+    git(workspace, ['config', 'user.email', 'crawl-test@example.invalid']);
     writeFileSync(join(workspace, 'state.txt'), 'base\n');
     git(workspace, ['add', 'state.txt']);
     git(workspace, ['commit', '-q', '-m', 'base']);
@@ -293,6 +294,143 @@ function verifyRecoveryBundleFixture() {
   }
 }
 
+// Fake GitHub CLI: answers only the read calls and the single pull-request
+// creation the helper is allowed to make, and logs every invocation. Any other
+// endpoint exits 99 so an unexpected merge, dispatch, or review cannot succeed.
+const FAKE_GH = `#!/usr/bin/env bash
+printf '%s\\n' "$*" >> "$CALL_LOG"
+[[ "\${1:-}" == api ]] || { echo "unexpected gh subcommand: $*" >&2; exit 99; }
+shift
+method=GET; target=''; jqexpr=''
+while (($#)); do
+  case "$1" in
+    --method) method="$2"; shift 2 ;;
+    --jq) jqexpr="$2"; shift 2 ;;
+    --input) cat > /dev/null; shift 2 ;;
+    --paginate|--slurp) shift ;;
+    -f|-H) shift 2 ;;
+    *) target="$1"; shift ;;
+  esac
+done
+remote() { git --git-dir="$FAKE_REMOTE" "$@"; }
+branch='automation-crawl-official-record-run-1-1'
+emit() { if [[ -n "$jqexpr" ]]; then jq -r "$jqexpr" <<< "$1"; else printf '%s\\n' "$1"; fi; }
+pull() {
+  jq -n --arg head "$(remote rev-parse "refs/heads/$branch")" --arg base "$(remote rev-parse refs/heads/main)" \\
+    '{number: 7, state: "open", draft: false, merged: false, html_url: "https://example.invalid/pull/7", head: {sha: $head}, base: {sha: $base}}'
+}
+case "$method $target" in
+  "GET repos/o/r/pulls?state=open&base=main&per_page=100")
+    if [[ "\${FAKE_OPEN_CRAWLER_PR:-0}" == 1 ]]; then
+      emit '[[{"state":"open","base":{"ref":"main"},"head":{"ref":"automation-crawl-official-record-run-0-1","repo":{"full_name":"o/r"}}}]]'
+    else
+      emit '[[]]'
+    fi ;;
+  "GET repos/o/r/git/ref/heads/$branch")
+    sha="$(remote rev-parse -q --verify "refs/heads/$branch")" || exit 1
+    emit "{\\"object\\":{\\"sha\\":\\"$sha\\"}}" ;;
+  "POST repos/o/r/pulls") pull ;;
+  "GET repos/o/r/pulls/7") emit "$(pull)" ;;
+  "GET repos/o/r/compare/"*)
+    cand="$(remote rev-parse "refs/heads/$branch")"
+    files="$(remote diff-tree --no-commit-id --no-renames --name-only -r "$cand" | jq -R '{filename: .}' | jq -s .)"
+    emit "$(jq -n --argjson files "$files" '{status: "ahead", ahead_by: 1, behind_by: 0, total_commits: 1, files: $files}')" ;;
+  *) echo "unexpected GitHub API call: $method $target" >&2; exit 99 ;;
+esac
+`;
+
+function runHelperFixture({ dirty, openCrawlerPr = false }) {
+  const root = mkdtempSync(join(tmpdir(), 'crawl-helper-'));
+  try {
+    const env = {
+      ...process.env,
+      HOME: root,
+      GIT_CONFIG_GLOBAL: '/dev/null',
+      GIT_CONFIG_SYSTEM: '/dev/null',
+      GIT_TERMINAL_PROMPT: '0'
+    };
+    const remote = join(root, 'remote.git');
+    const workspace = join(root, 'workspace');
+    const bin = join(root, 'bin');
+    const runnerTemp = join(root, 'runner');
+    const callLog = join(root, 'gh-calls.log');
+    mkdirSync(bin, { recursive: true });
+    mkdirSync(runnerTemp, { recursive: true });
+    git(root, ['init', '-q', '--bare', '-b', 'main', remote], env);
+    git(root, ['clone', '-q', remote, workspace], env);
+    git(workspace, ['config', 'user.name', 'crawl-test'], env);
+    git(workspace, ['config', 'user.email', 'crawl-test@example.invalid'], env);
+    mkdirSync(join(workspace, 'data', 'crawl'), { recursive: true });
+    mkdirSync(join(workspace, 'receipts', 'crawl'), { recursive: true });
+    writeFileSync(join(workspace, 'receipts', 'crawl', 'README.md'), 'receipts\n');
+    writeFileSync(join(workspace, 'graph.json'), '{}\n');
+    writeFileSync(join(workspace, 'data', 'crawl', 'state.json'), '{"n":0}\n');
+    git(workspace, ['add', '-A'], env);
+    git(workspace, ['commit', '-q', '-m', 'base'], env);
+    git(workspace, ['push', '-q', 'origin', 'HEAD:refs/heads/main'], env);
+    const baseSha = git(workspace, ['rev-parse', 'HEAD'], env);
+
+    writeFileSync(join(workspace, 'data', 'crawl', 'state.json'), '{"n":1}\n');
+    if (dirty) writeFileSync(join(workspace, 'graph.json'), '{"edited":true}\n');
+
+    writeFileSync(join(bin, 'gh'), FAKE_GH);
+    chmodSync(join(bin, 'gh'), 0o755);
+
+    const result = spawnSync('bash', [join(process.cwd(), paths.helper)], {
+      cwd: workspace,
+      encoding: 'utf8',
+      env: {
+        ...env,
+        PATH: `${bin}:${process.env.PATH}`,
+        GITHUB_REPOSITORY: 'o/r',
+        GITHUB_RUN_ID: '1',
+        GITHUB_RUN_ATTEMPT: '1',
+        GITHUB_WORKSPACE: workspace,
+        RUNNER_TEMP: runnerTemp,
+        PROMOTION_KIND: 'official-record',
+        CALL_LOG: callLog,
+        FAKE_REMOTE: remote,
+        FAKE_OPEN_CRAWLER_PR: openCrawlerPr ? '1' : '0'
+      }
+    });
+
+    const checkpoint = readFileSync(join(runnerTemp, 'scheduled-crawl-promotion-receipt', 'checkpoint.txt'), 'utf8');
+    const calls = existsSync(callLog) ? readFileSync(callLog, 'utf8').trim().split('\n').filter(Boolean) : [];
+    const branches = git(root, ['--git-dir', remote, 'for-each-ref', '--format=%(refname:short)', 'refs/heads'], env).split('\n').sort();
+    return { result, checkpoint, calls, branches, mainSha: git(root, ['--git-dir', remote, 'rev-parse', 'refs/heads/main'], env), baseSha };
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+}
+
+function verifyHelperBehavior() {
+  const forbidden = /merge|dispatches|workflows|runs\/|reviews|protection|rulesets|--method (?:PUT|DELETE)|--approve/;
+
+  const opened = runHelperFixture({ dirty: false });
+  assert.equal(opened.result.status, 0, `helper must open the pull request: ${opened.result.stderr}`);
+  assert.match(opened.checkpoint, /outcome=pull_request_opened\n/);
+  assert.match(opened.checkpoint, /pull_request=7\n/);
+  assert.match(opened.checkpoint, /remote_cleanup=not_needed\n/);
+  assert.deepEqual(opened.branches, ['automation-crawl-official-record-run-1-1', 'main'], 'only the run-scoped candidate branch may be published');
+  assert.equal(opened.mainSha, opened.baseSha, 'main must be untouched');
+  assert.equal(opened.calls.filter((call) => /--method POST/.test(call)).length, 1, 'exactly one mutating API call: open the pull request');
+  assert.equal(opened.calls.filter((call) => /--method/.test(call)).length, 1, 'no other mutating verb may be used');
+  for (const call of opened.calls) assert.doesNotMatch(call, forbidden, `forbidden GitHub call: ${call}`);
+
+  const dirty = runHelperFixture({ dirty: true });
+  assert.notEqual(dirty.result.status, 0, 'a path outside the intake roots must fail closed');
+  assert.match(dirty.result.stderr, /forbidden path: graph\.json/);
+  assert.deepEqual(dirty.branches, ['main'], 'nothing may be published when the denominator is violated');
+  assert.equal(dirty.calls.length, 0, 'no GitHub call before the local denominator passes');
+
+  const blocked = runHelperFixture({ dirty: false, openCrawlerPr: true });
+  assert.notEqual(blocked.result.status, 0, 'an open crawler pull request must block a second one');
+  assert.match(blocked.checkpoint, /outcome=blocked_by_open_crawler_candidate\n/);
+  assert.deepEqual(blocked.branches, ['main'], 'nothing may be published while another candidate is open');
+  for (const call of blocked.calls) assert.doesNotMatch(call, forbidden, `forbidden GitHub call: ${call}`);
+}
+
 verifyRenamePathExpansionFixture();
 verifyRecoveryBundleFixture();
-console.log(`scheduled-crawl-promotion.test: ${mutations.length} adversarial mutations, rename-expansion and recovery bundle fixtures PASS`);
+verifyHelperBehavior();
+console.log(`scheduled-crawl-promotion.test: ${mutations.length} adversarial mutations, rename-expansion, recovery bundle and PR-only helper fixtures PASS`);

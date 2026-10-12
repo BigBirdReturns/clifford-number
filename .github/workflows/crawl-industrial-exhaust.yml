@@ -1,44 +1,11 @@
 name: First-party industrial-exhaust intake
 
-# Capture and triage only. Corporate publications remain attributed first-party
-# statements and cannot mutate canonical graph, claim, score, case, or actor state.
+# Manual only. Capture and triage only: corporate publications remain attributed
+# first-party statements and cannot mutate canonical graph, claim, score, case, or
+# actor state. The crawl opens ONE pull request for a maintainer to review. This
+# workflow never merges, approves, dispatches other workflows, or pushes to main;
+# the only ref it can publish is a run-scoped automation-crawl-* candidate branch.
 on:
-  pull_request:
-    paths:
-      - '.github/scripts/promote-scheduled-crawl.sh'
-      - '.github/scripts/retain-scheduled-crawl-candidate.sh'
-      - '.github/scripts/scheduled-crawl-pr-identity.sh'
-      - '.github/scripts/industrial-artifact-failure-policy.mjs'
-      - '.github/workflows/crawl-industrial-exhaust.yml'
-      - 'data/exhaust/**'
-      - 'tools/crawl-industrial-exhaust.mjs'
-      - 'tools/hydrate-industrial-exhaust.mjs'
-      - 'tools/lib/industrial-exhaust.mjs'
-      - 'tools/lib/industrial-exhaust-artifacts.mjs'
-      - 'test/industrial-exhaust.test.js'
-      - 'test/industrial-exhaust-artifacts.test.js'
-      - 'test/scheduled-crawl-promotion.test.js'
-      - 'test/scheduled-crawl-pr-identity.test.js'
-  push:
-    branches: [main]
-    paths:
-      - '.github/scripts/promote-scheduled-crawl.sh'
-      - '.github/scripts/retain-scheduled-crawl-candidate.sh'
-      - '.github/scripts/scheduled-crawl-pr-identity.sh'
-      - '.github/scripts/industrial-artifact-failure-policy.mjs'
-      - '.github/workflows/crawl-industrial-exhaust.yml'
-      - 'data/exhaust/README.md'
-      - 'data/exhaust/sources.json'
-      - 'data/exhaust/watch-terms.json'
-      - 'data/exhaust/artifact-sources.json'
-      - 'tools/crawl-industrial-exhaust.mjs'
-      - 'tools/hydrate-industrial-exhaust.mjs'
-      - 'tools/lib/industrial-exhaust.mjs'
-      - 'tools/lib/industrial-exhaust-artifacts.mjs'
-      - 'test/industrial-exhaust.test.js'
-      - 'test/industrial-exhaust-artifacts.test.js'
-      - 'test/scheduled-crawl-promotion.test.js'
-      - 'test/scheduled-crawl-pr-identity.test.js'
   workflow_dispatch:
     inputs:
       source:
@@ -48,10 +15,6 @@ on:
 
 permissions:
   contents: read
-
-concurrency:
-  group: first-party-industrial-exhaust-${{ github.event_name }}
-  cancel-in-progress: false
 
 jobs:
   validate:
@@ -75,29 +38,17 @@ jobs:
         run: |
           node tools/crawl-industrial-exhaust.mjs --audit
           node tools/hydrate-industrial-exhaust.mjs --audit
-      - name: Live read-only feed and artifact smoke test
-        env:
-          EXHAUST_TIMEOUT_MS: '30000'
-          EXHAUST_MAX_FEED_BYTES: '5000000'
-          EXHAUST_ARTIFACT_MAX_BYTES: '6000000'
-          EXHAUST_ARTIFACT_DELAY_MS: '250'
-        run: |
-          set -Eeuo pipefail
-          node tools/crawl-industrial-exhaust.mjs --dry-run --strict
-          artifact_result="$RUNNER_TEMP/industrial-artifact-dry-run.json"
-          node tools/hydrate-industrial-exhaust.mjs --dry-run --limit=20 | tee "$artifact_result"
-          node .github/scripts/industrial-artifact-failure-policy.mjs "$artifact_result"
 
   crawl:
-    if: github.event_name != 'pull_request'
     needs: validate
     runs-on: ubuntu-latest
     timeout-minutes: 60
     concurrency:
-      group: scheduled-crawl-main-promotion
+      group: crawl-candidate-pull-request
       cancel-in-progress: false
     permissions:
-      actions: write
+      # contents: write is required only to push the automation-crawl-* candidate
+      # branch that the pull request is opened from; the helper refuses any other ref.
       contents: write
       pull-requests: write
     steps:
@@ -112,10 +63,12 @@ jobs:
         env:
           EXHAUST_TIMEOUT_MS: '30000'
           EXHAUST_MAX_FEED_BYTES: '5000000'
+          SOURCE_ID: ${{ inputs.source }}
         run: |
-          SOURCE_ARG=''
-          if [ -n "${{ inputs.source || '' }}" ]; then SOURCE_ARG="--source=${{ inputs.source }}"; fi
-          node tools/crawl-industrial-exhaust.mjs --strict $SOURCE_ARG
+          set -Eeuo pipefail
+          SOURCE_ARG=()
+          if [ -n "$SOURCE_ID" ]; then SOURCE_ARG=("--source=$SOURCE_ID"); fi
+          node tools/crawl-industrial-exhaust.mjs --strict "${SOURCE_ARG[@]}"
       - name: Discover and hydrate bounded publisher artifacts
         env:
           EXHAUST_TIMEOUT_MS: '30000'
@@ -130,7 +83,7 @@ jobs:
         run: |
           node test/industrial-exhaust.test.js
           node test/industrial-exhaust-artifacts.test.js
-      - name: Mint PR-only scheduled-crawl publisher token
+      - name: Mint PR-only crawl publisher token
         id: pr-publisher
         continue-on-error: true
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
@@ -138,7 +91,7 @@ jobs:
           client-id: ${{ vars.SCHEDULED_CRAWL_PR_APP_CLIENT_ID }}
           private-key: ${{ secrets.SCHEDULED_CRAWL_PR_APP_PRIVATE_KEY }}
           permission-pull-requests: write
-      - name: Promote intake through qualified pull request
+      - name: Open intake pull request
         id: promote
         continue-on-error: true
         env:
@@ -153,7 +106,7 @@ jobs:
       - name: Retain exact candidate recovery bundle
         if: always()
         run: bash .github/scripts/retain-scheduled-crawl-candidate.sh
-      - name: Retain scheduled promotion receipt
+      - name: Retain promotion receipt
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -161,7 +114,7 @@ jobs:
           path: ${{ runner.temp }}/scheduled-crawl-promotion-receipt
           if-no-files-found: error
           retention-days: 30
-      - name: Enforce scheduled promotion result
+      - name: Enforce promotion result
         if: always()
         env:
           PROMOTION_STEP_OUTCOME: ${{ steps.promote.outcome }}

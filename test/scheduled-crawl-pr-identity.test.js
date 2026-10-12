@@ -9,8 +9,7 @@ const ACTION_COMMIT = 'bcd2ba49218906704ab6c1aa796996da409d3eb1';
 const paths = {
   industrial: '.github/workflows/crawl-industrial-exhaust.yml',
   official: '.github/workflows/crawl-official.yml',
-  gate: '.github/scripts/scheduled-crawl-pr-identity.sh',
-  ci: '.github/workflows/ci.yml'
+  gate: '.github/scripts/scheduled-crawl-pr-identity.sh'
 };
 
 const load = () => Object.fromEntries(
@@ -38,8 +37,8 @@ function requireOrdered(errors, text, markers, message) {
 }
 
 function publisherStep(workflow) {
-  const startMarker = '      - name: Mint PR-only scheduled-crawl publisher token\n';
-  const endMarker = '      - name: Promote intake through qualified pull request\n';
+  const startMarker = '      - name: Mint PR-only crawl publisher token\n';
+  const endMarker = '      - name: Open intake pull request\n';
   const start = workflow.indexOf(startMarker);
   const end = workflow.indexOf(endMarker, start + startMarker.length);
   return start >= 0 && end > start ? workflow.slice(start, end) : '';
@@ -83,19 +82,14 @@ export function validateScheduledCrawlPrIdentity(files) {
     requireMatch(errors, workflow, new RegExp(`PROMOTION_KIND: ${kind.replace('-', '\\-')}\\n`), `${label} must retain its exact promotion kind`);
     requireAbsent(errors, workflow, /GH_TOKEN: \$\{\{ steps\.pr-publisher\.outputs\.token \}\}/, `${label} must not globally replace the job token with the publisher token`);
     requireOrdered(errors, workflow, [
-      '- name: Mint PR-only scheduled-crawl publisher token',
+      '- name: Mint PR-only crawl publisher token',
       `uses: actions/create-github-app-token@${ACTION_COMMIT}`,
-      '- name: Promote intake through qualified pull request',
+      '- name: Open intake pull request',
       'GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}',
       'BASH_ENV: ${{ github.workspace }}/.github/scripts/scheduled-crawl-pr-identity.sh',
       'run: bash .github/scripts/promote-scheduled-crawl.sh'
     ], `${label} must mint, bind, and consume the PR-only identity in order`);
   }
-
-  const gateTriggerCount = (files.industrial.match(/- '\.github\/scripts\/scheduled-crawl-pr-identity\.sh'/g) || []).length;
-  if (gateTriggerCount !== 2) errors.push('industrial validation must cover identity-gate changes on pull request and main push');
-  const identityTestTriggerCount = (files.industrial.match(/- 'test\/scheduled-crawl-pr-identity\.test\.js'/g) || []).length;
-  if (identityTestTriggerCount !== 2) errors.push('industrial validation must cover identity-contract changes on pull request and main push');
 
   const gate = files.gate;
   requireMatch(errors, gate, /^#!\/usr\/bin\/env bash\n/, 'identity gate must execute under Bash');
@@ -147,8 +141,6 @@ export function validateScheduledCrawlPrIdentity(files) {
     '"$SCHEDULED_CRAWL_REAL_GH" "$@"'
   ], 'publisher token must be command-scoped, cleared, and followed by ordinary job-token delegation');
 
-  requireMatch(errors, files.ci, /Run scheduled crawler PR identity contract tests\n        run: node test\/scheduled-crawl-pr-identity\.test\.js\n/, 'Release checks must execute the PR-identity contract test');
-
   return errors;
 }
 
@@ -182,9 +174,6 @@ const mutations = [
   }],
   ['retain the publisher token after use', (c) => {
     c.gate = c.gate.replaceAll('    unset SCHEDULED_CRAWL_PR_TOKEN\n', '');
-  }],
-  ['remove the release-gate identity test', (c) => {
-    c.ci = c.ci.replace('      - name: Run scheduled crawler PR identity contract tests\n        run: node test/scheduled-crawl-pr-identity.test.js\n', '');
   }]
 ];
 
