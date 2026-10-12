@@ -1,0 +1,1741 @@
+{
+  "schema_version": "lake-identity-merge@1",
+  "purpose": "Registry growth only: merges the evidence-lake identity registries (archive/evidence-lake-identity, waves 01-20) onto the canonical registries. No participation row, surface, relation, hop edge or cross-case join is created.",
+  "base_commit": "d8392cfb19b8fd870bc65e5a3dcf9a8ae4bcfb07",
+  "source": {
+    "archive": "archive/evidence-lake-identity",
+    "registries": {
+      "actors": "archive/evidence-lake-identity/data/canonical/actors.json",
+      "organizations": "archive/evidence-lake-identity/data/canonical/organizations.json",
+      "aliases": "archive/evidence-lake-identity/data/canonical/aliases.json"
+    },
+    "adjudication_registry": "archive/evidence-lake-identity/data/project/lake-unresolved-subject-adjudication-registry-wave-15.jsonl",
+    "resolution_registry": "archive/evidence-lake-identity/data/project/lake-local-canonical-resolution-registry-wave-16.jsonl",
+    "mention_registry": "archive/evidence-lake-identity/data/project/lake-canonical-identity-mention-registry-wave-09.jsonl"
+  },
+  "counts": {
+    "base": {
+      "actors": 170,
+      "organizations": 32,
+      "aliases": 65
+    },
+    "archive": {
+      "actors": 161,
+      "organizations": 65,
+      "aliases": 30
+    },
+    "added": {
+      "actors": 7,
+      "organizations": 16,
+      "aliases": 7
+    },
+    "at_merge": {
+      "actors": 177,
+      "organizations": 48,
+      "aliases": 72
+    }
+  },
+  "added": {
+    "actors": [
+      "anita-baldwin",
+      "frederic-hsieh",
+      "gregory-kausner",
+      "lucky-baldwin",
+      "michael-obadal",
+      "ben-zhang",
+      "erik-wahl"
+    ],
+    "organizations": [
+      "anduril-pac",
+      "arcadia-successor-agency",
+      "arcadia-town-center-llc",
+      "chandler-syndicate",
+      "la-turf-club",
+      "pi-properties-111",
+      "positive-investments",
+      "sanyao-pds",
+      "stronach-group",
+      "anti-defamation-league",
+      "arcadia-improvement-association",
+      "city-of-arcadia",
+      "data-blanket",
+      "opendefense",
+      "regent-defense",
+      "trammell-crow-residential"
+    ],
+    "aliases": [
+      {
+        "alias": "ADL",
+        "canonical_id": "anti-defamation-league"
+      },
+      {
+        "alias": "DAIA",
+        "canonical_id": "arcadia-improvement-association"
+      },
+      {
+        "alias": "Downtown Arcadia Improvement Association",
+        "canonical_id": "arcadia-improvement-association"
+      },
+      {
+        "alias": "Arcadia, CA",
+        "canonical_id": "city-of-arcadia"
+      },
+      {
+        "alias": "Data Blanket Inc.",
+        "canonical_id": "data-blanket"
+      },
+      {
+        "alias": "Regent Defense",
+        "canonical_id": "regent-defense"
+      },
+      {
+        "alias": "TCR",
+        "canonical_id": "trammell-crow-residential"
+      }
+    ]
+  },
+  "main_wins": {
+    "not_added": [
+      {
+        "registry": "actors",
+        "id": "alex-karp",
+        "reason": "legacy_graph_bridge_entity",
+        "label": "Alex Karp",
+        "main_legacy_node": {
+          "id": "alex-karp",
+          "label": "Alex Karp",
+          "type": "person",
+          "description": "CEO and co-founder, Palantir.",
+          "tags": []
+        },
+        "archive_row": {
+          "id": "alex-karp",
+          "label": "Alex Karp",
+          "kind": "person",
+          "source": "lake-canonical-adjudication-wave-11",
+          "source_case_id": "uk-ai-policy",
+          "source_acquisition_id": "CANACQ-9c81c35b2fc079122c903f5d",
+          "source_routing_id": "SUBJROUTE-86bdb01b1fe7db8975aea78b",
+          "receipt_ids": [
+            "s-public-record"
+          ],
+          "canonical_status": "bounded_provisional_canonical_record",
+          "graph_effect": "none"
+        }
+      },
+      {
+        "registry": "actors",
+        "id": "charles-koch",
+        "reason": "legacy_graph_bridge_entity",
+        "label": "Charles Koch",
+        "main_legacy_node": {
+          "id": "charles-koch",
+          "label": "Charles Koch",
+          "type": "person",
+          "description": "Officer of Charles Koch Foundation.",
+          "tags": []
+        },
+        "archive_row": {
+          "id": "charles-koch",
+          "label": "Charles Koch",
+          "kind": "person",
+          "source": "lake-canonical-adjudication-wave-11",
+          "source_case_id": "uk-ai-policy",
+          "source_acquisition_id": "CANACQ-ac010aff00a8ee3bf734d269",
+          "source_routing_id": "SUBJROUTE-f451426352fb975ae4318d76",
+          "receipt_ids": [
+            "s-propublica"
+          ],
+          "canonical_status": "bounded_provisional_canonical_record",
+          "graph_effect": "none"
+        }
+      },
+      {
+        "registry": "actors",
+        "id": "demis-hassabis",
+        "reason": "legacy_graph_bridge_entity",
+        "label": "Demis Hassabis",
+        "main_legacy_node": {
+          "id": "demis-hassabis",
+          "label": "Demis Hassabis",
+          "type": "person",
+          "description": "CEO, Google DeepMind; ARIA external adviser; EF investor.",
+          "tags": []
+        },
+        "archive_row": {
+          "id": "demis-hassabis",
+          "label": "Demis Hassabis",
+          "kind": "person",
+          "source": "lake-canonical-adjudication-wave-11",
+          "source_case_id": "uk-ai-policy",
+          "source_acquisition_id": "CANACQ-1caf10db98bcfb3caf5e1a7d",
+          "source_routing_id": "SUBJROUTE-6441d810c164c63be76dfb57",
+          "receipt_ids": [
+            "s-public-record"
+          ],
+          "canonical_status": "bounded_provisional_canonical_record",
+          "graph_effect": "none"
+        }
+      },
+      {
+        "registry": "actors",
+        "id": "jacob-dewitte",
+        "reason": "legacy_graph_bridge_entity",
+        "label": "Jacob Dewitte",
+        "main_legacy_node": {
+          "id": "jacob-dewitte",
+          "label": "Jacob DeWitte",
+          "type": "person",
+          "description": "Co-founder, CEO and chair, Oklo.",
+          "tags": []
+        },
+        "archive_row": {
+          "id": "jacob-dewitte",
+          "label": "Jacob Dewitte",
+          "kind": "person",
+          "source": "lake-canonical-adjudication-wave-11",
+          "source_case_id": "uk-ai-policy",
+          "source_acquisition_id": "CANACQ-82fdd8dc52d32b948a11147f",
+          "source_routing_id": "SUBJROUTE-1123c230c7291d782a5863df",
+          "receipt_ids": [
+            "s-public-record"
+          ],
+          "canonical_status": "bounded_provisional_canonical_record",
+          "graph_effect": "none"
+        }
+      },
+      {
+        "registry": "actors",
+        "id": "jeremy-obrien",
+        "reason": "legacy_graph_bridge_entity",
+        "label": "Jeremy O'Brien",
+        "main_legacy_node": {
+          "id": "jeremy-obrien",
+          "label": "Jeremy O'Brien",
+          "type": "person",
+          "description": "Co-founder and CEO, PsiQuantum.",
+          "tags": []
+        },
+        "archive_row": {
+          "id": "jeremy-obrien",
+          "label": "Jeremy O'Brien",
+          "kind": "person",
+          "source": "lake-canonical-adjudication-wave-11",
+          "source_case_id": "uk-ai-policy",
+          "source_acquisition_id": "CANACQ-59dcc83c810b9cdf37540747",
+          "source_routing_id": "SUBJROUTE-a0dac09926040c2fd2afb496",
+          "receipt_ids": [
+            "s-public-record"
+          ],
+          "canonical_status": "bounded_provisional_canonical_record",
+          "graph_effect": "none"
+        }
+      },
+      {
+        "registry": "actors",
+        "id": "jonathan-greenblatt",
+        "reason": "legacy_graph_bridge_entity",
+        "label": "Jonathan Greenblatt",
+        "main_legacy_node": {
+          "id": "jonathan-greenblatt",
+          "label": "Jonathan Greenblatt",
+          "type": "person",
+          "description": "Officer of Anti-Defamation League.",
+          "tags": []
+        },
+        "archive_row": {
+          "id": "jonathan-greenblatt",
+          "label": "Jonathan Greenblatt",
+          "kind": "person",
+          "source": "lake-canonical-adjudication-wave-11",
+          "source_case_id": "uk-ai-policy",
+          "source_acquisition_id": "CANACQ-f1a7497c092036eadf75032d",
+          "source_routing_id": "SUBJROUTE-7753a8c7c41016f09d819eb7",
+          "receipt_ids": [
+            "s-propublica"
+          ],
+          "canonical_status": "bounded_provisional_canonical_record",
+          "graph_effect": "none"
+        }
+      },
+      {
+        "registry": "actors",
+        "id": "mark-zuckerberg",
+        "reason": "legacy_graph_bridge_entity",
+        "label": "Mark Zuckerberg",
+        "main_legacy_node": {
+          "id": "mark-zuckerberg",
+          "label": "Mark Zuckerberg",
+          "type": "person",
+          "description": "Founder and CEO, Meta.",
+          "tags": []
+        },
+        "archive_row": {
+          "id": "mark-zuckerberg",
+          "label": "Mark Zuckerberg",
+          "kind": "person",
+          "source": "lake-canonical-adjudication-wave-11",
+          "source_case_id": "uk-ai-policy",
+          "source_acquisition_id": "CANACQ-3d71b500ae88066056a5078a",
+          "source_routing_id": "SUBJROUTE-901f30018c249c8f9ad753f1",
+          "receipt_ids": [
+            "s-public-record"
+          ],
+          "canonical_status": "bounded_provisional_canonical_record",
+          "graph_effect": "none"
+        }
+      },
+      {
+        "registry": "actors",
+        "id": "max-jaderberg",
+        "reason": "legacy_graph_bridge_entity",
+        "label": "Max Jaderberg",
+        "main_legacy_node": {
+          "id": "max-jaderberg",
+          "label": "Max Jaderberg",
+          "type": "person",
+          "description": "President, Isomorphic Labs; ARIA board member.",
+          "tags": []
+        },
+        "archive_row": {
+          "id": "max-jaderberg",
+          "label": "Max Jaderberg",
+          "kind": "person",
+          "source": "lake-canonical-adjudication-wave-11",
+          "source_case_id": "uk-ai-policy",
+          "source_acquisition_id": "CANACQ-3c7e4d10707b5cf306142650",
+          "source_routing_id": "SUBJROUTE-7b4c21e257cb4855ab0781e5",
+          "receipt_ids": [
+            "s-public-record"
+          ],
+          "canonical_status": "bounded_provisional_canonical_record",
+          "graph_effect": "none"
+        }
+      },
+      {
+        "registry": "actors",
+        "id": "robert-mercer",
+        "reason": "legacy_graph_bridge_entity",
+        "label": "Robert Mercer",
+        "main_legacy_node": {
+          "id": "robert-mercer",
+          "label": "Robert Mercer",
+          "type": "person",
+          "description": "Former co-CEO, Renaissance Technologies; political donor.",
+          "tags": []
+        },
+        "archive_row": {
+          "id": "robert-mercer",
+          "label": "Robert Mercer",
+          "kind": "person",
+          "source": "lake-canonical-adjudication-wave-11",
+          "source_case_id": "uk-ai-policy",
+          "source_acquisition_id": "CANACQ-ddc643ec42dd806ab469cc59",
+          "source_routing_id": "SUBJROUTE-4b8f3721e957891f7367cc9e",
+          "receipt_ids": [
+            "s-public-record"
+          ],
+          "canonical_status": "bounded_provisional_canonical_record",
+          "graph_effect": "none"
+        }
+      },
+      {
+        "registry": "actors",
+        "id": "ryan-stowers",
+        "reason": "legacy_graph_bridge_entity",
+        "label": "Ryan Stowers",
+        "main_legacy_node": {
+          "id": "ryan-stowers",
+          "label": "Ryan Stowers",
+          "type": "person",
+          "description": "Officer of Charles Koch Foundation.",
+          "tags": []
+        },
+        "archive_row": {
+          "id": "ryan-stowers",
+          "label": "Ryan Stowers",
+          "kind": "person",
+          "source": "lake-canonical-adjudication-wave-11",
+          "source_case_id": "uk-ai-policy",
+          "source_acquisition_id": "CANACQ-6beead6aa9011d72f59cea0d",
+          "source_routing_id": "SUBJROUTE-b3a9157fe8a229a1646c2307",
+          "receipt_ids": [
+            "s-propublica"
+          ],
+          "canonical_status": "bounded_provisional_canonical_record",
+          "graph_effect": "none"
+        }
+      },
+      {
+        "registry": "actors",
+        "id": "sam-altman",
+        "reason": "legacy_graph_bridge_entity",
+        "label": "Sam Altman",
+        "main_legacy_node": {
+          "id": "sam-altman",
+          "label": "Sam Altman",
+          "type": "person",
+          "description": "CEO, OpenAI; former chair, Oklo.",
+          "tags": []
+        },
+        "archive_row": {
+          "id": "sam-altman",
+          "label": "Sam Altman",
+          "kind": "person",
+          "source": "lake-canonical-adjudication-wave-11",
+          "source_case_id": "uk-ai-policy",
+          "source_acquisition_id": "CANACQ-0ed6d6463859dce1cfc63710",
+          "source_routing_id": "SUBJROUTE-81d883e6da483d804d29f0b0",
+          "receipt_ids": [
+            "s-public-record"
+          ],
+          "canonical_status": "bounded_provisional_canonical_record",
+          "graph_effect": "none"
+        }
+      },
+      {
+        "registry": "actors",
+        "id": "yasmin-green",
+        "reason": "legacy_graph_bridge_entity",
+        "label": "Yasmin Green",
+        "main_legacy_node": {
+          "id": "yasmin-green",
+          "label": "Yasmin Green",
+          "type": "person",
+          "description": "Officer of Anti-Defamation League.",
+          "tags": []
+        },
+        "archive_row": {
+          "id": "yasmin-green",
+          "label": "Yasmin Green",
+          "kind": "person",
+          "source": "lake-canonical-adjudication-wave-11",
+          "source_case_id": "uk-ai-policy",
+          "source_acquisition_id": "CANACQ-ceb3661afb58224fd5fdd290",
+          "source_routing_id": "SUBJROUTE-20817f4a83ccb593f36e7b92",
+          "receipt_ids": [
+            "s-propublica"
+          ],
+          "canonical_status": "bounded_provisional_canonical_record",
+          "graph_effect": "none"
+        }
+      },
+      {
+        "registry": "organizations",
+        "id": "ai-opportunities-unit",
+        "reason": "legacy_graph_bridge_entity",
+        "label": "AI Opportunities Unit",
+        "main_legacy_node": {
+          "id": "ai-opportunities-unit",
+          "label": "AI Opportunities Unit",
+          "type": "government-unit",
+          "description": "Unit described by DSIT and HM Treasury as a way to pool expertise and implement proposals from the Action Plan.",
+          "tags": [
+            "implementation",
+            "uk-ai"
+          ]
+        },
+        "archive_row": {
+          "id": "ai-opportunities-unit",
+          "label": "AI Opportunities Unit",
+          "kind": "government_unit",
+          "broad_institution": true,
+          "source": "lake-canonical-adjudication-wave-11",
+          "source_case_id": "uk-ai-policy",
+          "source_acquisition_id": "CANACQ-8f2a9d1f2af5f4a9123fa379",
+          "source_routing_id": "SUBJROUTE-3f920d434601c6202c249b6a",
+          "receipt_ids": [
+            "gov-clifford-commission"
+          ],
+          "canonical_status": "bounded_provisional_canonical_record",
+          "graph_effect": "none"
+        }
+      },
+      {
+        "registry": "organizations",
+        "id": "anduril",
+        "reason": "axm_entity_id_collision_with_main",
+        "label": "Anduril Industries",
+        "axm_entity_id": "e1_x6fvy2vlvbxp5p5h5xuztlspuxagfbcff7iu3xi4xuos3a2fqkpq",
+        "main_entity": {
+          "registry": "organizations",
+          "id": "anduril-industries"
+        },
+        "archive_row": {
+          "id": "anduril",
+          "label": "Anduril Industries",
+          "kind": "company",
+          "source": "lake-canonical-adjudication-wave-11",
+          "source_case_id": "anduril-access-ownership",
+          "source_acquisition_id": "CANACQ-c6acce40476666c45bb9f52c",
+          "source_routing_id": "SUBJROUTE-174d3559818ce58fe4531011",
+          "receipt_ids": [
+            "anduril-adranos-2023",
+            "anduril-area-i-2021",
+            "anduril-bundle-r3",
+            "anduril-numerica-2025",
+            "dod-dpa-rocket-motors-2025",
+            "lda-anduril-2025-q2"
+          ],
+          "canonical_status": "bounded_provisional_canonical_record",
+          "graph_effect": "none"
+        }
+      },
+      {
+        "registry": "organizations",
+        "id": "anthropic",
+        "reason": "legacy_graph_bridge_entity",
+        "label": "Anthropic",
+        "main_legacy_node": {
+          "id": "anthropic",
+          "label": "Anthropic",
+          "type": "company",
+          "description": "Frontier AI company named in the Action Plan as having a significant UK office.",
+          "tags": [
+            "frontier-ai",
+            "uk-ecosystem"
+          ]
+        },
+        "archive_row": {
+          "id": "anthropic",
+          "label": "Anthropic",
+          "kind": "company",
+          "source": "lake-canonical-adjudication-wave-11",
+          "source_case_id": "uk-ai-policy",
+          "source_acquisition_id": "CANACQ-1813e866182cb8e7f2cfd385",
+          "source_routing_id": "SUBJROUTE-812448201be27fa13830dd55",
+          "receipt_ids": [
+            "gov-ai-action-plan"
+          ],
+          "canonical_status": "bounded_provisional_canonical_record",
+          "graph_effect": "none"
+        }
+      },
+      {
+        "registry": "organizations",
+        "id": "charles-koch-foundation",
+        "reason": "legacy_graph_bridge_entity",
+        "label": "Charles Koch Foundation",
+        "main_legacy_node": {
+          "id": "charles-koch-foundation",
+          "label": "Charles Koch Foundation",
+          "type": "nonprofit",
+          "description": "501(c)(3); 2024 expenses ~$67.9M, net assets ~$755.6M.",
+          "tags": []
+        },
+        "archive_row": {
+          "id": "charles-koch-foundation",
+          "label": "Charles Koch Foundation",
+          "kind": "foundation",
+          "source": "lake-canonical-adjudication-wave-11",
+          "source_case_id": "uk-ai-policy",
+          "source_acquisition_id": "CANACQ-3ee81ea4d7073befb95a3971",
+          "source_routing_id": "SUBJROUTE-8143fd01bcaf9650a8b38be7",
+          "receipt_ids": [
+            "s-public-record"
+          ],
+          "canonical_status": "bounded_provisional_canonical_record",
+          "graph_effect": "none"
+        }
+      },
+      {
+        "registry": "organizations",
+        "id": "digital-centre-of-government",
+        "reason": "legacy_graph_bridge_entity",
+        "label": "Digital Centre of Government",
+        "main_legacy_node": {
+          "id": "digital-centre-of-government",
+          "label": "Digital Centre of Government",
+          "type": "government-unit",
+          "description": "Digital centre in DSIT described in the Action Plan as driving technological transformation of the state.",
+          "tags": [
+            "digital-government",
+            "implementation"
+          ]
+        },
+        "archive_row": {
+          "id": "digital-centre-of-government",
+          "label": "Digital Centre of Government",
+          "kind": "government_unit",
+          "broad_institution": true,
+          "source": "lake-canonical-adjudication-wave-11",
+          "source_case_id": "uk-ai-policy",
+          "source_acquisition_id": "CANACQ-ce954febdba04b33cf618d3e",
+          "source_routing_id": "SUBJROUTE-add98c43b3a909beb0232f12",
+          "receipt_ids": [
+            "gov-ai-action-plan"
+          ],
+          "canonical_status": "bounded_provisional_canonical_record",
+          "graph_effect": "none"
+        }
+      },
+      {
+        "registry": "organizations",
+        "id": "federalist-society",
+        "reason": "legacy_graph_bridge_entity",
+        "label": "Federalist Society",
+        "main_legacy_node": {
+          "id": "federalist-society",
+          "label": "Federalist Society",
+          "type": "nonprofit",
+          "description": "501(c)(3); FY2024 revenue ~$22.5M.",
+          "tags": []
+        },
+        "archive_row": {
+          "id": "federalist-society",
+          "label": "Federalist Society",
+          "kind": "nonprofit",
+          "source": "lake-canonical-adjudication-wave-11",
+          "source_case_id": "uk-ai-policy",
+          "source_acquisition_id": "CANACQ-ab7d58ba847328207faad2e5",
+          "source_routing_id": "SUBJROUTE-382624767826f71924eb95ba",
+          "receipt_ids": [
+            "s-public-record"
+          ],
+          "canonical_status": "bounded_provisional_canonical_record",
+          "graph_effect": "none"
+        }
+      },
+      {
+        "registry": "organizations",
+        "id": "founders-fund",
+        "reason": "legacy_graph_bridge_entity",
+        "label": "Founders Fund",
+        "main_legacy_node": {
+          "id": "founders-fund",
+          "label": "Founders Fund",
+          "type": "capital-fund",
+          "description": "Venture fund; Peter Thiel managing partner; Sanabil LP relationship.",
+          "tags": []
+        },
+        "archive_row": {
+          "id": "founders-fund",
+          "label": "Founders Fund",
+          "kind": "fund",
+          "source": "lake-canonical-adjudication-wave-11",
+          "source_case_id": "uk-ai-policy",
+          "source_acquisition_id": "CANACQ-25d5a5d87c9e54151cadc93a",
+          "source_routing_id": "SUBJROUTE-a0ab4e55140fc3f7fc1ff0fc",
+          "receipt_ids": [
+            "s-public-record"
+          ],
+          "canonical_status": "bounded_provisional_canonical_record",
+          "graph_effect": "none"
+        }
+      },
+      {
+        "registry": "organizations",
+        "id": "google-deepmind",
+        "reason": "legacy_graph_bridge_entity",
+        "label": "Google DeepMind",
+        "main_legacy_node": {
+          "id": "google-deepmind",
+          "label": "Google DeepMind",
+          "type": "company",
+          "description": "Frontier AI company with London headquarters named in the Action Plan.",
+          "tags": [
+            "frontier-ai",
+            "uk-ecosystem"
+          ]
+        },
+        "archive_row": {
+          "id": "google-deepmind",
+          "label": "Google DeepMind",
+          "kind": "company",
+          "source": "lake-canonical-adjudication-wave-11",
+          "source_case_id": "uk-ai-policy",
+          "source_acquisition_id": "CANACQ-eb02e772f1497f469479e5e6",
+          "source_routing_id": "SUBJROUTE-f7effb6c32d6e93caf1a2560",
+          "receipt_ids": [
+            "gov-ai-action-plan"
+          ],
+          "canonical_status": "bounded_provisional_canonical_record",
+          "graph_effect": "none"
+        }
+      },
+      {
+        "registry": "organizations",
+        "id": "groq",
+        "reason": "legacy_graph_bridge_entity",
+        "label": "Groq",
+        "main_legacy_node": {
+          "id": "groq",
+          "label": "Groq",
+          "type": "company",
+          "description": "AI inference chip company; DOE Genesis Mission participant; UK data centre.",
+          "tags": []
+        },
+        "archive_row": {
+          "id": "groq",
+          "label": "Groq",
+          "kind": "company",
+          "source": "lake-canonical-adjudication-wave-11",
+          "source_case_id": "uk-ai-policy",
+          "source_acquisition_id": "CANACQ-1fa6a8e148857cb53258774b",
+          "source_routing_id": "SUBJROUTE-c10fd7f8e80244f22ffd1eef",
+          "receipt_ids": [
+            "s-public-record",
+            "s-reuters-procurement"
+          ],
+          "canonical_status": "bounded_provisional_canonical_record",
+          "graph_effect": "none"
+        }
+      },
+      {
+        "registry": "organizations",
+        "id": "hm-treasury",
+        "reason": "legacy_graph_bridge_entity",
+        "label": "HM Treasury",
+        "main_legacy_node": {
+          "id": "hm-treasury",
+          "label": "HM Treasury",
+          "type": "government-department",
+          "description": "UK government department for finance and economic policy.",
+          "tags": [
+            "government",
+            "finance"
+          ]
+        },
+        "archive_row": {
+          "id": "hm-treasury",
+          "label": "HM Treasury",
+          "kind": "agency",
+          "broad_institution": true,
+          "source": "lake-canonical-adjudication-wave-11",
+          "source_case_id": "uk-ai-policy",
+          "source_acquisition_id": "CANACQ-fed60f575b22ec474f2e5629",
+          "source_routing_id": "SUBJROUTE-514b3da41577825df555008c",
+          "receipt_ids": [
+            "gov-clifford-commission"
+          ],
+          "canonical_status": "bounded_provisional_canonical_record",
+          "graph_effect": "none"
+        }
+      },
+      {
+        "registry": "organizations",
+        "id": "mercatus-center",
+        "reason": "legacy_graph_bridge_entity",
+        "label": "Mercatus Center",
+        "main_legacy_node": {
+          "id": "mercatus-center",
+          "label": "Mercatus Center",
+          "type": "nonprofit",
+          "description": "501(c)(3); 2024 revenue ~$39.3M.",
+          "tags": []
+        },
+        "archive_row": {
+          "id": "mercatus-center",
+          "label": "Mercatus Center",
+          "kind": "nonprofit",
+          "source": "lake-canonical-adjudication-wave-11",
+          "source_case_id": "uk-ai-policy",
+          "source_acquisition_id": "CANACQ-8d3b6704f1f9e4498be91c30",
+          "source_routing_id": "SUBJROUTE-5ada01d34411d7ed0f797907",
+          "receipt_ids": [
+            "s-public-record"
+          ],
+          "canonical_status": "bounded_provisional_canonical_record",
+          "graph_effect": "none"
+        }
+      },
+      {
+        "registry": "organizations",
+        "id": "meta-ai",
+        "reason": "legacy_graph_bridge_entity",
+        "label": "Meta AI",
+        "main_legacy_node": {
+          "id": "meta-ai",
+          "label": "Meta AI",
+          "type": "company",
+          "description": "Company named in the Action Plan as having a significant UK AI office.",
+          "tags": [
+            "frontier-ai",
+            "uk-ecosystem"
+          ]
+        },
+        "archive_row": {
+          "id": "meta-ai",
+          "label": "Meta AI",
+          "kind": "company_division",
+          "source": "lake-canonical-adjudication-wave-11",
+          "source_case_id": "uk-ai-policy",
+          "source_acquisition_id": "CANACQ-ba84c6d4e4824a0088007470",
+          "source_routing_id": "SUBJROUTE-c506dea5d29bcfd3076a031c",
+          "receipt_ids": [
+            "gov-ai-action-plan",
+            "s-public-record"
+          ],
+          "canonical_status": "bounded_provisional_canonical_record",
+          "graph_effect": "none"
+        }
+      },
+      {
+        "registry": "organizations",
+        "id": "microsoft-ai",
+        "reason": "legacy_graph_bridge_entity",
+        "label": "Microsoft AI",
+        "main_legacy_node": {
+          "id": "microsoft-ai",
+          "label": "Microsoft AI",
+          "type": "company",
+          "description": "Company named in the Action Plan as having a significant UK AI office.",
+          "tags": [
+            "frontier-ai",
+            "uk-ecosystem"
+          ]
+        },
+        "archive_row": {
+          "id": "microsoft-ai",
+          "label": "Microsoft AI",
+          "kind": "company_division",
+          "source": "lake-canonical-adjudication-wave-11",
+          "source_case_id": "uk-ai-policy",
+          "source_acquisition_id": "CANACQ-18dbe3834c95c93c138be949",
+          "source_routing_id": "SUBJROUTE-f190198eac68be2c96bdcabd",
+          "receipt_ids": [
+            "gov-ai-action-plan"
+          ],
+          "canonical_status": "bounded_provisional_canonical_record",
+          "graph_effect": "none"
+        }
+      },
+      {
+        "registry": "organizations",
+        "id": "new-america",
+        "reason": "legacy_graph_bridge_entity",
+        "label": "New America",
+        "main_legacy_node": {
+          "id": "new-america",
+          "label": "New America Foundation",
+          "type": "nonprofit",
+          "description": "501(c)(3); 2024 revenue ~$37.2M.",
+          "tags": []
+        },
+        "archive_row": {
+          "id": "new-america",
+          "label": "New America",
+          "kind": "nonprofit",
+          "source": "lake-canonical-adjudication-wave-11",
+          "source_case_id": "uk-ai-policy",
+          "source_acquisition_id": "CANACQ-d1a3cf966f3308a8014f1fb5",
+          "source_routing_id": "SUBJROUTE-c07dabe565fb55edaa90f0b7",
+          "receipt_ids": [
+            "s-public-record"
+          ],
+          "canonical_status": "bounded_provisional_canonical_record",
+          "graph_effect": "none"
+        }
+      },
+      {
+        "registry": "organizations",
+        "id": "oklo",
+        "reason": "legacy_graph_bridge_entity",
+        "label": "Oklo",
+        "main_legacy_node": {
+          "id": "oklo",
+          "label": "Oklo",
+          "type": "company",
+          "description": "Advanced nuclear reactor company; DOE/NRC regulatory surface; data-center power deals.",
+          "tags": []
+        },
+        "archive_row": {
+          "id": "oklo",
+          "label": "Oklo",
+          "kind": "company",
+          "source": "lake-canonical-adjudication-wave-11",
+          "source_case_id": "uk-ai-policy",
+          "source_acquisition_id": "CANACQ-32aa6471d8ec3ab72c85afb2",
+          "source_routing_id": "SUBJROUTE-2ca96212965be9d73d11d248",
+          "receipt_ids": [
+            "s-reuters-procurement"
+          ],
+          "canonical_status": "bounded_provisional_canonical_record",
+          "graph_effect": "none"
+        }
+      },
+      {
+        "registry": "organizations",
+        "id": "psiquantum",
+        "reason": "legacy_graph_bridge_entity",
+        "label": "PsiQuantum",
+        "main_legacy_node": {
+          "id": "psiquantum",
+          "label": "PsiQuantum",
+          "type": "company",
+          "description": "Quantum computing company; Australia/UK/US government investment; DARPA evaluation.",
+          "tags": []
+        },
+        "archive_row": {
+          "id": "psiquantum",
+          "label": "PsiQuantum",
+          "kind": "company",
+          "source": "lake-canonical-adjudication-wave-11",
+          "source_case_id": "uk-ai-policy",
+          "source_acquisition_id": "CANACQ-2399224a275974a7c6e51d4c",
+          "source_routing_id": "SUBJROUTE-7942a65cd95e43dde181a2e8",
+          "receipt_ids": [
+            "s-public-record",
+            "s-reuters-procurement"
+          ],
+          "canonical_status": "bounded_provisional_canonical_record",
+          "graph_effect": "none"
+        }
+      },
+      {
+        "registry": "organizations",
+        "id": "sanabil",
+        "reason": "legacy_graph_bridge_entity",
+        "label": "Sanabil",
+        "main_legacy_node": {
+          "id": "sanabil",
+          "label": "Sanabil Investments",
+          "type": "sovereign-fund",
+          "description": "Wholly owned by Saudi PIF; commits $3B+/year; LP to multiple US venture funds.",
+          "tags": []
+        },
+        "archive_row": {
+          "id": "sanabil",
+          "label": "Sanabil",
+          "kind": "fund",
+          "source": "lake-canonical-adjudication-wave-11",
+          "source_case_id": "uk-ai-policy",
+          "source_acquisition_id": "CANACQ-b2deba9912fafdd5be2fb999",
+          "source_routing_id": "SUBJROUTE-8f4faf9d86de2480aa5a9751",
+          "receipt_ids": [
+            "s-pif-sanabil",
+            "s-public-record",
+            "s-reuters-procurement"
+          ],
+          "canonical_status": "bounded_provisional_canonical_record",
+          "graph_effect": "none"
+        }
+      },
+      {
+        "registry": "organizations",
+        "id": "saudi-pif",
+        "reason": "legacy_graph_bridge_entity",
+        "label": "Saudi PIF",
+        "main_legacy_node": {
+          "id": "saudi-pif",
+          "label": "Saudi Public Investment Fund",
+          "type": "sovereign-fund",
+          "description": "Saudi sovereign wealth fund; $1T+ AUM, 220+ portfolio companies.",
+          "tags": []
+        },
+        "archive_row": {
+          "id": "saudi-pif",
+          "label": "Saudi PIF",
+          "kind": "fund",
+          "source": "lake-canonical-adjudication-wave-11",
+          "source_case_id": "uk-ai-policy",
+          "source_acquisition_id": "CANACQ-7637a9d74291ea0c221906e5",
+          "source_routing_id": "SUBJROUTE-1fbfa3c44a52f1b161ab3c38",
+          "receipt_ids": [
+            "s-public-record"
+          ],
+          "canonical_status": "bounded_provisional_canonical_record",
+          "graph_effect": "none"
+        }
+      },
+      {
+        "registry": "organizations",
+        "id": "spacex",
+        "reason": "legacy_graph_bridge_entity",
+        "label": "SpaceX",
+        "main_legacy_node": {
+          "id": "spacex",
+          "label": "SpaceX",
+          "type": "company",
+          "description": "Launch and satellite company; Space Force and NASA contracts.",
+          "tags": []
+        },
+        "archive_row": {
+          "id": "spacex",
+          "label": "SpaceX",
+          "kind": "company",
+          "source": "lake-canonical-adjudication-wave-11",
+          "source_case_id": "uk-ai-policy",
+          "source_acquisition_id": "CANACQ-0fb884c0f9c901f6196e8636",
+          "source_routing_id": "SUBJROUTE-31e3704fd9a05b21c095f830",
+          "receipt_ids": [
+            "s-reuters-procurement"
+          ],
+          "canonical_status": "bounded_provisional_canonical_record",
+          "graph_effect": "none"
+        }
+      },
+      {
+        "registry": "organizations",
+        "id": "wayve",
+        "reason": "legacy_graph_bridge_entity",
+        "label": "Wayve",
+        "main_legacy_node": {
+          "id": "wayve",
+          "label": "Wayve",
+          "type": "company",
+          "description": "UK autonomous vehicle company named in the Action Plan as an emerging local winner.",
+          "tags": [
+            "embodied-ai",
+            "uk-ecosystem"
+          ]
+        },
+        "archive_row": {
+          "id": "wayve",
+          "label": "Wayve",
+          "kind": "company",
+          "source": "lake-canonical-adjudication-wave-11",
+          "source_case_id": "uk-ai-policy",
+          "source_acquisition_id": "CANACQ-f71d1ec703dd1c63fca002b9",
+          "source_routing_id": "SUBJROUTE-db3f5e2a711b4b6eb0889ae3",
+          "receipt_ids": [
+            "gov-ai-action-plan"
+          ],
+          "canonical_status": "bounded_provisional_canonical_record",
+          "graph_effect": "none"
+        }
+      },
+      {
+        "registry": "organizations",
+        "id": "liveramp",
+        "reason": "legacy_graph_bridge_entity",
+        "label": "LiveRamp",
+        "main_legacy_node": {
+          "id": "liveramp",
+          "label": "LiveRamp",
+          "type": "data-company",
+          "description": "Identity-resolution and data onboarding company associated with Auren Hoffman.",
+          "tags": [
+            "data-broker"
+          ]
+        },
+        "archive_row": {
+          "id": "liveramp",
+          "label": "LiveRamp",
+          "kind": "company",
+          "source": "lake-bounded-hold-resolution-wave-12",
+          "source_local_subject_id": "liveramp",
+          "source_wave11_adjudication_id": "CANONDEC-104bd0b6697a1ea564e53163",
+          "source_ids": [
+            "W12-SRC-UKAI-COMPANY-CASE",
+            "W12-SRC-LIVERAMP-OFFICIAL"
+          ],
+          "canonical_status": "bounded_source_custodied_canonical_record",
+          "graph_effect": "none"
+        }
+      },
+      {
+        "registry": "organizations",
+        "id": "safegraph",
+        "reason": "legacy_graph_bridge_entity",
+        "label": "SafeGraph",
+        "main_legacy_node": {
+          "id": "safegraph",
+          "label": "SafeGraph",
+          "type": "data-company",
+          "description": "Location-data company founded by Auren Hoffman.",
+          "tags": [
+            "data-broker"
+          ]
+        },
+        "archive_row": {
+          "id": "safegraph",
+          "label": "SafeGraph",
+          "kind": "company",
+          "source": "lake-bounded-hold-resolution-wave-12",
+          "source_local_subject_id": "safegraph",
+          "source_wave11_adjudication_id": "CANONDEC-d4ca4847cf5a1bc58bdff982",
+          "source_ids": [
+            "W12-SRC-UKAI-COMPANY-CASE",
+            "W12-SRC-SAFEGRAPH-OFFICIAL"
+          ],
+          "canonical_status": "bounded_source_custodied_canonical_record",
+          "graph_effect": "none"
+        }
+      },
+      {
+        "registry": "organizations",
+        "id": "code-first-girls",
+        "reason": "legacy_graph_bridge_entity",
+        "label": "Code First Girls",
+        "main_legacy_node": {
+          "id": "code-first-girls",
+          "label": "Code First Girls",
+          "type": "education-org",
+          "description": "Coding education organization co-founded by Matt Clifford and Alice Bentinck.",
+          "tags": [
+            "talent",
+            "education"
+          ]
+        },
+        "archive_row": {
+          "id": "code-first-girls",
+          "label": "Code First Girls",
+          "kind": "organization",
+          "source": "lake-subject-integration-wave-16",
+          "source_case_id": "uk-ai-policy",
+          "source_local_subject_id": "code-first-girls",
+          "source_decision_id": "SUBJDEC-d57e840ae510495edcf84f55",
+          "source_unresolved_subject_id": "UNRESOLVEDSUBJECT-94014b43c44c5fac77000972",
+          "receipt_ids": [
+            "guardian-clifford-stepdown"
+          ],
+          "canonical_status": "bounded_source_custodied_canonical_record",
+          "graph_effect": "none"
+        }
+      },
+      {
+        "registry": "organizations",
+        "id": "detachment-201",
+        "reason": "legacy_graph_bridge_entity",
+        "label": "Detachment 201",
+        "main_legacy_node": {
+          "id": "detachment-201",
+          "label": "Detachment 201, Executive Innovation Corps",
+          "type": "military-unit",
+          "description": "U.S. Army Reserve unit (launched 13 Jun 2025) commissioning senior tech executives as part-time Lt. Colonels to advise on Army modernization: munitions supply-chain data, autonomous systems, counter-drone strategy.",
+          "tags": []
+        },
+        "archive_row": {
+          "id": "detachment-201",
+          "label": "Detachment 201",
+          "kind": "military_unit",
+          "source": "lake-subject-integration-wave-16",
+          "source_case_id": "uk-ai-policy",
+          "source_local_subject_id": "detachment-201",
+          "source_decision_id": "SUBJDEC-41ed4c6a8385dfed11327c28",
+          "source_unresolved_subject_id": "UNRESOLVEDSUBJECT-ecf1828d5ca14b47aa8b65ac",
+          "receipt_ids": [
+            "s-army-det201",
+            "s-public-record"
+          ],
+          "canonical_status": "bounded_source_custodied_canonical_record",
+          "graph_effect": "none"
+        }
+      },
+      {
+        "registry": "aliases",
+        "id": "Anduril",
+        "reason": "alias_text_maps_to_different_entity",
+        "main_canonical_id": "anduril-industries",
+        "archive_canonical_id": "anduril",
+        "archive_row": {
+          "alias": "Anduril",
+          "canonical_id": "anduril",
+          "kind": "organization",
+          "source": "lake-canonical-adjudication-wave-11",
+          "source_acquisition_id": "CANACQ-c6acce40476666c45bb9f52c",
+          "receipt_ids": [
+            "anduril-adranos-2023",
+            "anduril-area-i-2021",
+            "anduril-bundle-r3",
+            "anduril-numerica-2025",
+            "dod-dpa-rocket-motors-2025",
+            "lda-anduril-2025-q2"
+          ],
+          "graph_effect": "none"
+        }
+      }
+    ],
+    "shared_rows_that_differ": {
+      "actors": [
+        {
+          "id": "matt-clifford",
+          "archive_only_fields": {},
+          "main_only_fields": [
+            "plain"
+          ],
+          "changed_fields": []
+        },
+        {
+          "id": "ben-warner",
+          "archive_only_fields": {},
+          "main_only_fields": [],
+          "changed_fields": [
+            {
+              "key": "plain"
+            }
+          ]
+        },
+        {
+          "id": "marc-warner",
+          "archive_only_fields": {},
+          "main_only_fields": [
+            "plain"
+          ],
+          "changed_fields": []
+        },
+        {
+          "id": "saul-klein",
+          "archive_only_fields": {},
+          "main_only_fields": [
+            "plain"
+          ],
+          "changed_fields": []
+        },
+        {
+          "id": "keir-starmer",
+          "archive_only_fields": {},
+          "main_only_fields": [
+            "plain"
+          ],
+          "changed_fields": []
+        },
+        {
+          "id": "john-healey",
+          "archive_only_fields": {},
+          "main_only_fields": [
+            "plain"
+          ],
+          "changed_fields": []
+        },
+        {
+          "id": "george-robertson",
+          "archive_only_fields": {},
+          "main_only_fields": [
+            "plain"
+          ],
+          "changed_fields": []
+        },
+        {
+          "id": "richard-barrons",
+          "archive_only_fields": {},
+          "main_only_fields": [
+            "plain"
+          ],
+          "changed_fields": []
+        },
+        {
+          "id": "fiona-hill",
+          "archive_only_fields": {},
+          "main_only_fields": [
+            "plain"
+          ],
+          "changed_fields": []
+        },
+        {
+          "id": "alice-bentinck",
+          "archive_only_fields": {
+            "source": "lake-canonical-adjudication-wave-11",
+            "source_case_id": "uk-ai-policy",
+            "source_acquisition_id": "CANACQ-6b60ae5c965b5f453a37ecde",
+            "source_routing_id": "SUBJROUTE-66701feebe60a7ca94ca4218",
+            "receipt_ids": [
+              "s-public-record"
+            ],
+            "canonical_status": "bounded_provisional_canonical_record",
+            "graph_effect": "none"
+          },
+          "main_only_fields": [
+            "plain"
+          ],
+          "changed_fields": []
+        },
+        {
+          "id": "andrew-bosworth",
+          "archive_only_fields": {
+            "source": "lake-canonical-adjudication-wave-11",
+            "source_case_id": "uk-ai-policy",
+            "source_acquisition_id": "CANACQ-f57db67da23f9216da0f69ba",
+            "source_routing_id": "SUBJROUTE-0424b3703b198f32ef736b9e",
+            "receipt_ids": [
+              "s-army-det201",
+              "s-public-record"
+            ],
+            "canonical_status": "bounded_provisional_canonical_record",
+            "graph_effect": "none"
+          },
+          "main_only_fields": [
+            "plain"
+          ],
+          "changed_fields": [
+            {
+              "key": "label",
+              "main": "Andrew “Boz” Bosworth",
+              "archive": "Andrew Bosworth"
+            }
+          ]
+        },
+        {
+          "id": "bob-mcgrew",
+          "archive_only_fields": {
+            "source": "lake-canonical-adjudication-wave-11",
+            "source_case_id": "uk-ai-policy",
+            "source_acquisition_id": "CANACQ-8dd8852731f4dd06acb10ebd",
+            "source_routing_id": "SUBJROUTE-5487c9732386a1b97aa6d0dc",
+            "receipt_ids": [
+              "s-army-det201"
+            ],
+            "canonical_status": "bounded_provisional_canonical_record",
+            "graph_effect": "none"
+          },
+          "main_only_fields": [
+            "plain"
+          ],
+          "changed_fields": []
+        },
+        {
+          "id": "kevin-weil",
+          "archive_only_fields": {
+            "source": "lake-canonical-adjudication-wave-11",
+            "source_case_id": "uk-ai-policy",
+            "source_acquisition_id": "CANACQ-d5e1b13e3a9dbf10f929495b",
+            "source_routing_id": "SUBJROUTE-146f19030e3b20d460f07938",
+            "receipt_ids": [
+              "s-army-det201",
+              "s-public-record"
+            ],
+            "canonical_status": "bounded_provisional_canonical_record",
+            "graph_effect": "none"
+          },
+          "main_only_fields": [
+            "plain"
+          ],
+          "changed_fields": []
+        },
+        {
+          "id": "shyam-sankar",
+          "archive_only_fields": {
+            "source": "lake-canonical-adjudication-wave-11",
+            "source_case_id": "uk-ai-policy",
+            "source_acquisition_id": "CANACQ-e69dd8d833c74daeffd2a2d6",
+            "source_routing_id": "SUBJROUTE-cff8882949f460fcfe3b812b",
+            "receipt_ids": [
+              "s-army-det201",
+              "s-public-record"
+            ],
+            "canonical_status": "bounded_provisional_canonical_record",
+            "graph_effect": "none"
+          },
+          "main_only_fields": [
+            "plain"
+          ],
+          "changed_fields": []
+        }
+      ],
+      "organizations": [
+        {
+          "id": "faculty",
+          "archive_only_fields": {},
+          "main_only_fields": [
+            "identity_status",
+            "receipt_ids"
+          ],
+          "changed_fields": []
+        }
+      ],
+      "aliases": [
+        {
+          "alias": "ASI Data Science",
+          "canonical_id": "faculty",
+          "archive_only_fields": {},
+          "main_only_fields": [
+            "identity_status",
+            "receipt_ids"
+          ],
+          "changed_fields": []
+        }
+      ]
+    }
+  },
+  "decisions": {
+    "wave_15_identity_decisions": 17,
+    "applied_as_resolution_rows": 15,
+    "resolution_rows_file": "data/canonical/local-subject-resolutions.jsonl",
+    "pending": {
+      "wave_15_identity_decisions_not_applied": [
+        {
+          "resolution_id": "LOCALCANON-35320e554fd93f69c1469711",
+          "source_decision_id": "SUBJDEC-d57e840ae510495edcf84f55",
+          "source_case_id": "uk-ai-policy",
+          "local_subject_id": "code-first-girls",
+          "canonical_id": "code-first-girls",
+          "canonical_kind": "organization",
+          "blocked_by": "organizations:code-first-girls (legacy_graph_bridge_entity)"
+        },
+        {
+          "resolution_id": "LOCALCANON-cdbd9b176162afe0b40d67fc",
+          "source_decision_id": "SUBJDEC-41ed4c6a8385dfed11327c28",
+          "source_case_id": "uk-ai-policy",
+          "local_subject_id": "detachment-201",
+          "canonical_id": "detachment-201",
+          "canonical_kind": "organization",
+          "blocked_by": "organizations:detachment-201 (legacy_graph_bridge_entity)"
+        }
+      ],
+      "wave_12_local_resolutions_not_applied": [
+        {
+          "resolution_id": "LOCALCANON-1217aa7289ce8c2feb6f8b98",
+          "source_case_id": "arcadia-field-autopsy",
+          "local_subject_id": "org-city-of-arcadia",
+          "canonical_id": "city-of-arcadia"
+        },
+        {
+          "resolution_id": "LOCALCANON-304076bdcf933a56ce41dc23",
+          "source_case_id": "uk-ai-policy",
+          "local_subject_id": "liveramp",
+          "canonical_id": "liveramp"
+        },
+        {
+          "resolution_id": "LOCALCANON-356238ee286802cf8f625a25",
+          "source_case_id": "arcadia-field-autopsy",
+          "local_subject_id": "org-city-arcadia",
+          "canonical_id": "city-of-arcadia"
+        },
+        {
+          "resolution_id": "LOCALCANON-3a798d360414d4996af8ef53",
+          "source_case_id": "uk-ai-policy",
+          "local_subject_id": "safegraph",
+          "canonical_id": "safegraph"
+        },
+        {
+          "resolution_id": "LOCALCANON-478ccbfdf0416527352225a2",
+          "source_case_id": "field-autopsy-03",
+          "local_subject_id": "org-opendefense",
+          "canonical_id": "opendefense"
+        },
+        {
+          "resolution_id": "LOCALCANON-5579075eb64fe909df6a115f",
+          "source_case_id": "field-autopsy-03",
+          "local_subject_id": "org-data-blanket",
+          "canonical_id": "data-blanket"
+        },
+        {
+          "resolution_id": "LOCALCANON-58eb01ce4cddb03ba1c60879",
+          "source_case_id": "arcadia-field-autopsy",
+          "local_subject_id": "org-tcr",
+          "canonical_id": "trammell-crow-residential"
+        },
+        {
+          "resolution_id": "LOCALCANON-617000236c224d0fa5123a17",
+          "source_case_id": "uk-ai-policy",
+          "local_subject_id": "adl",
+          "canonical_id": "anti-defamation-league"
+        },
+        {
+          "resolution_id": "LOCALCANON-65db4f49e5e7db37053a6f7b",
+          "source_case_id": "field-autopsy-03",
+          "local_subject_id": "org-regent-defense",
+          "canonical_id": "regent-defense"
+        },
+        {
+          "resolution_id": "LOCALCANON-6c364ae24750789db8b10451",
+          "source_case_id": "arcadia-field-autopsy",
+          "local_subject_id": "p-erik-wahl-arcadia",
+          "canonical_id": "erik-wahl"
+        },
+        {
+          "resolution_id": "LOCALCANON-97914756df516005b76c6969",
+          "source_case_id": "arcadia-field-autopsy",
+          "local_subject_id": "p-ben-zhang-atc",
+          "canonical_id": "ben-zhang"
+        },
+        {
+          "resolution_id": "LOCALCANON-b4362733345945a0e87a7c6b",
+          "source_case_id": "arcadia-field-autopsy",
+          "local_subject_id": "org-daia",
+          "canonical_id": "arcadia-improvement-association"
+        }
+      ],
+      "wave_15_typed_nonidentity_objects": [
+        {
+          "adjudication_id": "SUBJDEC-00fc568ccb4bdadbdec64f33",
+          "subject_object_id": "SUBJECTOBJECT-bb24adce5474f1efe124240d",
+          "source_case_id": "arcadia-field-autopsy",
+          "local_subject_id": "site-santa-anita-park",
+          "object_kind": "racetrack_site"
+        },
+        {
+          "adjudication_id": "SUBJDEC-010f77838d874d668e5639db",
+          "subject_object_id": "SUBJECTOBJECT-d2036d74287f39a8c2f85ea9",
+          "source_case_id": "uk-ai-policy",
+          "local_subject_id": "starmer-adoption-layer",
+          "object_kind": "analytic_construct"
+        },
+        {
+          "adjudication_id": "SUBJDEC-081577b1f44b4c5aa0d30065",
+          "subject_object_id": "SUBJECTOBJECT-32846ebe3592bfca9f94ab01",
+          "source_case_id": "arcadia-field-autopsy",
+          "local_subject_id": "infra-gold-line-arcadia",
+          "object_kind": "transit_infrastructure"
+        },
+        {
+          "adjudication_id": "SUBJDEC-083794dd9c32ac3570956c15",
+          "subject_object_id": "SUBJECTOBJECT-c65364809e00c18098cbada3",
+          "source_case_id": "field-autopsy-03",
+          "local_subject_id": "product-helsing-hx2",
+          "object_kind": "defense_product"
+        },
+        {
+          "adjudication_id": "SUBJDEC-0949999685612650d25d1b82",
+          "subject_object_id": "SUBJECTOBJECT-129a0ae2371c131b24988abc",
+          "source_case_id": "anduril-access-ownership",
+          "local_subject_id": "ghost-shark-program",
+          "object_kind": "defense_program"
+        },
+        {
+          "adjudication_id": "SUBJDEC-22fd546a0866c33f6862ba76",
+          "subject_object_id": "SUBJECTOBJECT-db00115e1371154c8c87c6c4",
+          "source_case_id": "arcadia-field-autopsy",
+          "local_subject_id": "infra-arcadia-water-wells",
+          "object_kind": "water_infrastructure"
+        },
+        {
+          "adjudication_id": "SUBJDEC-259c55ffa832538336ff6125",
+          "subject_object_id": "SUBJECTOBJECT-7515e7caac59dc06d57029c5",
+          "source_case_id": "uk-ai-policy",
+          "local_subject_id": "uk-sovereign-ai",
+          "object_kind": "proposed_state_market_program"
+        },
+        {
+          "adjudication_id": "SUBJDEC-2996787244c074e7513fe1ac",
+          "subject_object_id": "SUBJECTOBJECT-f2875b853c210008e8cb8a0f",
+          "source_case_id": "arcadia-field-autopsy",
+          "local_subject_id": "site-morlan-church",
+          "object_kind": "site"
+        },
+        {
+          "adjudication_id": "SUBJDEC-2ffea2eaef2c9b945f4a8df6",
+          "subject_object_id": "SUBJECTOBJECT-c3158cc28a843cef845cbefd",
+          "source_case_id": "arcadia-field-autopsy",
+          "local_subject_id": "site-alexan-azalea",
+          "object_kind": "development_site"
+        },
+        {
+          "adjudication_id": "SUBJDEC-3b3142bc0587fc1b37831751",
+          "subject_object_id": "SUBJECTOBJECT-3aa584524fc0a47ca3de44f6",
+          "source_case_id": "field-autopsy-03",
+          "local_subject_id": "program-crucible-2",
+          "object_kind": "defense_innovation_program"
+        },
+        {
+          "adjudication_id": "SUBJDEC-3eeb701b7182e8ef6bff0754",
+          "subject_object_id": "SUBJECTOBJECT-c303c5aa0190501c21309675",
+          "source_case_id": "anduril-access-ownership",
+          "local_subject_id": "70b02c26f00000035",
+          "object_kind": "contract_order_identifier"
+        },
+        {
+          "adjudication_id": "SUBJDEC-401b531259c75edc03e46f04",
+          "subject_object_id": "SUBJECTOBJECT-e3461eb72d4fef1646baaf8d",
+          "source_case_id": "arcadia-field-autopsy",
+          "local_subject_id": "proj-57-wheeler",
+          "object_kind": "development_project"
+        },
+        {
+          "adjudication_id": "SUBJDEC-41ad97354585d3edf159b2c0",
+          "subject_object_id": "SUBJECTOBJECT-68be0dfd54de0c8862887e9a",
+          "source_case_id": "arcadia-field-autopsy",
+          "local_subject_id": "site-rancho-santa-anita",
+          "object_kind": "historic_landholding"
+        },
+        {
+          "adjudication_id": "SUBJDEC-606966efd958cc4ae5d8d9e5",
+          "subject_object_id": "SUBJECTOBJECT-f88a75b82be5aa3645ffee06",
+          "source_case_id": "arcadia-field-autopsy",
+          "local_subject_id": "infra-santa-anita-flood-system",
+          "object_kind": "flood_control_infrastructure"
+        },
+        {
+          "adjudication_id": "SUBJDEC-66c5dcf189648409b85d3c73",
+          "subject_object_id": "SUBJECTOBJECT-e7d07427907c1f8c886e9d13",
+          "source_case_id": "uk-ai-policy",
+          "local_subject_id": "ai-opportunities-action-plan",
+          "object_kind": "policy_document"
+        },
+        {
+          "adjudication_id": "SUBJDEC-6a4e1b7d048a805403617c9b",
+          "subject_object_id": "SUBJECTOBJECT-ca08d233a661c0a6a130c51b",
+          "source_case_id": "anduril-access-ownership",
+          "local_subject_id": "gao-b423319",
+          "object_kind": "legal_protest_record"
+        },
+        {
+          "adjudication_id": "SUBJDEC-6c0535efaa59775ceadaed62",
+          "subject_object_id": "SUBJECTOBJECT-4079a507daf1ff389e8c279e",
+          "source_case_id": "anduril-access-ownership",
+          "local_subject_id": "ngc2-common-data-baseline",
+          "object_kind": "data_baseline"
+        },
+        {
+          "adjudication_id": "SUBJDEC-6c8081e0257f15a1dfaedef0",
+          "subject_object_id": "SUBJECTOBJECT-716121efbba7d730184a7794",
+          "source_case_id": "arcadia-field-autopsy",
+          "local_subject_id": "proj-le-meridien",
+          "object_kind": "development_project"
+        },
+        {
+          "adjudication_id": "SUBJDEC-6e287f8de12d67d6f186f348",
+          "subject_object_id": "SUBJECTOBJECT-5918a14430bf013656e136fd",
+          "source_case_id": "arcadia-field-autopsy",
+          "local_subject_id": "geo-raymond-basin",
+          "object_kind": "geographic_feature"
+        },
+        {
+          "adjudication_id": "SUBJDEC-708b3930e7805cbae86e9004",
+          "subject_object_id": "SUBJECTOBJECT-d30edf1c78718c6321780267",
+          "source_case_id": "arcadia-field-autopsy",
+          "local_subject_id": "site-city-parking-lots",
+          "object_kind": "public_land_site"
+        },
+        {
+          "adjudication_id": "SUBJDEC-740139f7494b631700890160",
+          "subject_object_id": "SUBJECTOBJECT-ce856ade7d0c6e1ed523661b",
+          "source_case_id": "anduril-access-ownership",
+          "local_subject_id": "usmc-installation-cuas-2025",
+          "object_kind": "procurement_program"
+        },
+        {
+          "adjudication_id": "SUBJDEC-79d487971ba475d2b56c8785",
+          "subject_object_id": "SUBJECTOBJECT-f819166fb786af6de9b4b51c",
+          "source_case_id": "arcadia-field-autopsy",
+          "local_subject_id": "proj-arcadia-town-center",
+          "object_kind": "development_project"
+        },
+        {
+          "adjudication_id": "SUBJDEC-815b960e67e13e8b84a90622",
+          "subject_object_id": "SUBJECTOBJECT-3786c74ace384497113ab1e5",
+          "source_case_id": "arcadia-field-autopsy",
+          "local_subject_id": "proj-alexan-azalea",
+          "object_kind": "development_project"
+        },
+        {
+          "adjudication_id": "SUBJDEC-8192a6cf72f258e2a7b63df7",
+          "subject_object_id": "SUBJECTOBJECT-d33f7d188a322b32b39d4652",
+          "source_case_id": "field-autopsy-03",
+          "local_subject_id": "case-field-autopsy-03",
+          "object_kind": "analytic_case_identifier"
+        },
+        {
+          "adjudication_id": "SUBJDEC-894e662c3bfd712bc2397678",
+          "subject_object_id": "SUBJECTOBJECT-d08f4a1e47748c7ffa64538c",
+          "source_case_id": "uk-ai-policy",
+          "local_subject_id": "ai-growth-zones",
+          "object_kind": "policy_program"
+        },
+        {
+          "adjudication_id": "SUBJDEC-8d22953bb9c5823584af8b64",
+          "subject_object_id": "SUBJECTOBJECT-8c28968378c7e04e125592d6",
+          "source_case_id": "uk-ai-policy",
+          "local_subject_id": "ai-research-resource",
+          "object_kind": "compute_infrastructure_program"
+        },
+        {
+          "adjudication_id": "SUBJDEC-8da34e63f16143cb7c919380",
+          "subject_object_id": "SUBJECTOBJECT-6fc6f30017a9bf4ad3ebc5fe",
+          "source_case_id": "arcadia-field-autopsy",
+          "local_subject_id": "geo-raymond-fault",
+          "object_kind": "geological_feature"
+        },
+        {
+          "adjudication_id": "SUBJDEC-a04617e532101541d1320e88",
+          "subject_object_id": "SUBJECTOBJECT-0ec494aa85d923b1581413de",
+          "source_case_id": "arcadia-field-autopsy",
+          "local_subject_id": "site-1907-track",
+          "object_kind": "site"
+        },
+        {
+          "adjudication_id": "SUBJDEC-b98dd2c0b941ec44b1aeadf8",
+          "subject_object_id": "SUBJECTOBJECT-b47e88c6254369f31bcd38ae",
+          "source_case_id": "uk-ai-policy",
+          "local_subject_id": "national-data-library",
+          "object_kind": "data_infrastructure_program"
+        },
+        {
+          "adjudication_id": "SUBJDEC-bae7a6f07ef29b1c2afa58e9",
+          "subject_object_id": "SUBJECTOBJECT-49aab3ba2e9a2370edd9a105",
+          "source_case_id": "anduril-access-ownership",
+          "local_subject_id": "case-anduril-access-ownership",
+          "object_kind": "analytic_case_identifier"
+        },
+        {
+          "adjudication_id": "SUBJDEC-c2754c190929601968a3caa7",
+          "subject_object_id": "SUBJECTOBJECT-273af2ae0379cd37aa44c766",
+          "source_case_id": "arcadia-field-autopsy",
+          "local_subject_id": "geo-santa-anita-wash",
+          "object_kind": "watercourse"
+        },
+        {
+          "adjudication_id": "SUBJDEC-c4f488b9133f76cce921eee7",
+          "subject_object_id": "SUBJECTOBJECT-865a344367f947713b39beb5",
+          "source_case_id": "anduril-access-ownership",
+          "local_subject_id": "w9128z-26-d-a001",
+          "object_kind": "contract_vehicle"
+        },
+        {
+          "adjudication_id": "SUBJDEC-cf1fb02016c218c6b393b62b",
+          "subject_object_id": "SUBJECTOBJECT-cdd32ac3598218f9db911dd8",
+          "source_case_id": "arcadia-field-autopsy",
+          "local_subject_id": "proj-derby",
+          "object_kind": "development_project"
+        },
+        {
+          "adjudication_id": "SUBJDEC-d82b0a48d474b4b01bcb83bf",
+          "subject_object_id": "SUBJECTOBJECT-eebdc2a46ebd88d4970d48d3",
+          "source_case_id": "anduril-access-ownership",
+          "local_subject_id": "gao-b419420",
+          "object_kind": "legal_protest_record"
+        },
+        {
+          "adjudication_id": "SUBJDEC-dd10af5698ab043e3a9fbd6e",
+          "subject_object_id": "SUBJECTOBJECT-078de8b89a5506de52b181ca",
+          "source_case_id": "anduril-access-ownership",
+          "local_subject_id": "fa882024db001",
+          "object_kind": "contract_award_identifier"
+        },
+        {
+          "adjudication_id": "SUBJDEC-e0ec749e7f9d258f50e191af",
+          "subject_object_id": "SUBJECTOBJECT-6881a31549b8c35a0dc7e715",
+          "source_case_id": "field-autopsy-03",
+          "local_subject_id": "program-dawg",
+          "object_kind": "defense_acquisition_program"
+        },
+        {
+          "adjudication_id": "SUBJDEC-eb7bc929ae4cfbaff57bea28",
+          "subject_object_id": "SUBJECTOBJECT-8002023553716e073c48d052",
+          "source_case_id": "arcadia-field-autopsy",
+          "local_subject_id": "role-downtown-architect",
+          "object_kind": "institutional_role"
+        },
+        {
+          "adjudication_id": "SUBJDEC-f43cada1ec291f8519b81eb6",
+          "subject_object_id": "SUBJECTOBJECT-00baca96f57ba6903fe28635",
+          "source_case_id": "arcadia-field-autopsy",
+          "local_subject_id": "proj-alexan-arroyo",
+          "object_kind": "development_project"
+        },
+        {
+          "adjudication_id": "SUBJDEC-f45a1621b7274c0b8fa072bc",
+          "subject_object_id": "SUBJECTOBJECT-1328950eab9b0bcb043e30a9",
+          "source_case_id": "anduril-access-ownership",
+          "local_subject_id": "nato-eairc2-2026",
+          "object_kind": "evaluation_program"
+        },
+        {
+          "adjudication_id": "SUBJDEC-fc36085bda9051b5f669af70",
+          "subject_object_id": "SUBJECTOBJECT-594334e4cf5613ade6044ee3",
+          "source_case_id": "anduril-access-ownership",
+          "local_subject_id": "public-law-119-21-section-90004",
+          "object_kind": "statutory_provision"
+        }
+      ],
+      "reason": "current schema has no place for typed non-identity objects; the wave-12 hold resolutions are outside the 17 wave-15 decisions; an identity decision whose canonical target was held back (legacy-bridge entity) cannot be applied until that target is promoted"
+    }
+  },
+  "unresolved_mentions": {
+    "file": "data/canonical/unresolved-mentions.jsonl",
+    "written": 104,
+    "census_total": 229,
+    "census_exact_canonical": 121,
+    "with_exact_canonical_id_at_merge": 9,
+    "with_local_subject_resolution_row": 13,
+    "with_neither_at_merge": 83
+  },
+  "boundary": {
+    "graph_effect": "none",
+    "participation_rows_added": 0,
+    "surfaces_added": 0,
+    "hop_edges_added": 0,
+    "cross_case_joins_authorized": false
+  }
+}
