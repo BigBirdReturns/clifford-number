@@ -262,6 +262,35 @@
       "expires_at": null,
       "authority": "repository_change_receipt_below_canonical_evidence",
       "graph_effect": "none"
+    },
+    {
+      "change_id": "POOF-CONST-2026-10-12-007",
+      "effective_at": "2026-10-12T08:30:00Z",
+      "protected_paths_touched": [
+        "tools/build-poof-clifford-ecology.mjs"
+      ],
+      "affected_invariants": [
+        "the POOF ecology release manifest records exact-byte custody of the ecology contract, schemas, data, docs, tools and tests",
+        "release custody does not depend on CI workflow files that the repository no longer carries",
+        "repository cleanup cannot create evidence, graph, publication, or canonical authority"
+      ],
+      "reason": "The repository consolidated its per-feature GitHub workflows into a small fixed set, so the protected ecology workflow no longer exists on the release tree. The release manifest builder listed that workflow file in its exact-byte release scope, so the builder, the validator and the regression test could no longer run on a valid release tree.",
+      "previous_behavior": [
+        "the release scope of the POOF ecology manifest included .github/workflows/poof-clifford-ecology.yml",
+        "building or validating the manifest failed when that workflow file was absent"
+      ],
+      "proposed_behavior": [
+        "remove the workflow file from the release scope list in tools/build-poof-clifford-ecology.mjs",
+        "keep every contract, schema, data, documentation, tool and test file in the release scope unchanged",
+        "regenerate the release manifest and report so the recorded scope matches the builder"
+      ],
+      "migration": "Append this exact-path constitutional receipt, drop the single workflow entry from the release scope, and regenerate the POOF ecology release manifest and report before merge.",
+      "backward_compatibility": "The change affects release custody scope only. POOF schemas, constitutional rules, evidence objects, graph edges, publication states, browser assertions and prior release interpretations remain unchanged; the only manifest difference is the removed workflow entry and the recomputed combined digest.",
+      "adversarial_fixtures_added": [],
+      "emergency_override": false,
+      "expires_at": null,
+      "authority": "repository_change_receipt_below_canonical_evidence",
+      "graph_effect": "none"
     }
   ],
   "boundaries": {

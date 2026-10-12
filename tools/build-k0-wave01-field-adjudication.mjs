@@ -16,7 +16,6 @@ const write = (rel, value) => {
 };
 
 export const fieldAdjudicationScope = [
-  '.github/workflows/k0-wave01-field-adjudication.yml',
   'data/research/k0-wave01-field-adjudication.json',
   'docs/milestones/m05-k0-wave01-field-adjudication.md',
   'tools/build-k0-wave01-field-adjudication.mjs',

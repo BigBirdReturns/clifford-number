@@ -4,7 +4,6 @@ import path from 'node:path';
 import {ROOT,DATA_REL,DATA_DIR,TARGET_STATES,TARGET_FIELDS,PREDECESSOR,loadAuth,validateAuth,buildProducts,validateProducts,checkProducts,sha256,gitBlobSha} from './build-status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol.mjs';
 const must=(c,m)=>{if(!c)throw new Error(m);};
 const permanentPaths=[
-  '.github/workflows/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol.yml',
   `${DATA_REL}/authored-protocol.json`,`${DATA_REL}/route-ledger.json`,`${DATA_REL}/target-cell-ledger.json`,`${DATA_REL}/source-interpretation-constraints.json`,`${DATA_REL}/execution-receipt-template.json`,`${DATA_REL}/index.json`,`${DATA_REL}/product-manifest.json`,
   'docs/milestones/ssc-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol.md',
   'schemas/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol.schema.json',
@@ -14,7 +13,7 @@ const permanentPaths=[
   'tools/acquisition/status-sovereignty-rd-wave03-rd04/run-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol.py',
 ];
 const a=loadAuth();validateAuth(a);const products=buildProducts(a);validateProducts(products);checkProducts(products);
-must(permanentPaths.length===14&&new Set(permanentPaths).size===14,'exact 14 paths');
+must(permanentPaths.length===13&&new Set(permanentPaths).size===13,'exact 13 paths');
 for(const rel of permanentPaths){must(fs.existsSync(path.join(ROOT,rel)),`${rel}: missing`);must(!/(^|\/)(tmp|transport|carrier|materializer|trigger|archive|chunk|shard)(\/|$)/.test(rel),`${rel}: transport`);}
 const schema=JSON.parse(fs.readFileSync(path.join(ROOT,'schemas/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol.schema.json'),'utf8'));
 must(schema.$schema==='https://json-schema.org/draft/2020-12/schema'&&schema.oneOf.length===7,'closed 7-object schema family');

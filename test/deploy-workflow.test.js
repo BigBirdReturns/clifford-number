@@ -38,6 +38,8 @@ for (const name of [
   'reporter-briefings.yml',
   'visual-aperture-scale.yml'
 ]) {
+  // These per-feature workflows were consolidated away; keep the lockfile/Playwright contract for any that remain.
+  if (!fs.existsSync(`.github/workflows/${name}`)) continue;
   const source = fs.readFileSync(`.github/workflows/${name}`, 'utf8');
   assert.match(source, /npm ci/u, `${name} must install from the lockfile`);
   assert.match(source, /devDependencies\.playwright/u, `${name} must verify the declared Playwright version`);

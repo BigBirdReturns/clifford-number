@@ -19,7 +19,6 @@ const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => 
 }[char]));
 
 export const releaseScope = [
-  '.github/workflows/status-sovereignty-wave-02-second-party-review.yml',
   'data/project/status-sovereignty-wave-02-second-party-review-campaign.json',
   'data/project/status-sovereignty-wave-02-second-party-review-packet-registry.json',
   'data/research/status-sovereignty-wave-02-second-party-review-candidates.json',

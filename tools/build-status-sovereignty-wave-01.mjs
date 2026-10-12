@@ -19,8 +19,6 @@ const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({
 }[character]));
 
 export const releaseScope = [
-  '.github/workflows/status-sovereignty-wave-01.yml',
-  '.github/workflows/status-sovereignty-wave-01-review.yml',
   'data/research/status-sovereignty-wave-01-source-receipts.json',
   'data/research/status-sovereignty-wave-01.json',
   'data/research/status-sovereignty-wave-01-maintainer-review.json',

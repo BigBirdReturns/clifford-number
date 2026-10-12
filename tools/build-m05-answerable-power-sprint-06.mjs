@@ -13,7 +13,6 @@ const schema=readJson('data/project/m05-answerable-power-sprint-06-receipt-schem
 const registry=readJson('data/project/m05-answerable-power-sprint-06-registry.json');
 const scope=[
   '.github/ISSUE_TEMPLATE/apc-independent-reproduction.yml',
-  '.github/workflows/m05-answerable-power-sprint-06.yml',
   'data/project/m05-answerable-power-sprint-06-plan.json',
   'data/project/m05-answerable-power-sprint-06-protocol.json',
   'data/project/m05-answerable-power-sprint-06-receipt-schema.json',

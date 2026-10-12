@@ -19,12 +19,6 @@ const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({
 }[character]));
 
 export const releaseScope = [
-  '.github/workflows/status-sovereignty-compact.yml',
-  '.github/workflows/status-sovereignty-wave-01.yml',
-  '.github/workflows/status-sovereignty-wave-01-review.yml',
-  '.github/workflows/status-sovereignty-wave-01-targeted-acquisition.yml',
-  '.github/workflows/status-sovereignty-wave-02-intake.yml',
-  '.github/workflows/status-sovereignty-wave-02-review.yml',
   'data/intake/status-sovereignty-compact-source.md',
   'data/project/status-sovereignty-compact.json',
   'data/project/status-sovereignty-fanout.json',

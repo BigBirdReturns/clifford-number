@@ -19,7 +19,6 @@ const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => 
 }[char]));
 
 export const releaseScope = [
-  '.github/workflows/status-sovereignty-wave-02-internal-adversarial-review.yml',
   'data/project/no-magic-human-gate.json',
   'data/research/status-sovereignty-wave-02-internal-adversarial-review.json',
   'schemas/status-sovereignty-wave-02-internal-adversarial-review.schema.json',

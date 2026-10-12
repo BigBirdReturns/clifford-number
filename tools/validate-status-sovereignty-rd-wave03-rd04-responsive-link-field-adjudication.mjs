@@ -112,7 +112,6 @@ export function validateProduct({ root = ROOT } = {}) {
   assert(Object.values(manifest.boundaries).every((value) => value === false), 'manifest boundaries');
 
   const permanentPaths = [
-    '.github/workflows/status-sovereignty-rd-wave03-rd04-responsive-link-field-adjudication.yml',
     `${DATA_REL}/authored-field-decisions.json`,
     `${DATA_REL}/field-adjudications.jsonl`,
     `${DATA_REL}/promotion-candidate-protocol.json`,
@@ -124,7 +123,7 @@ export function validateProduct({ root = ROOT } = {}) {
     'tools/build-status-sovereignty-rd-wave03-rd04-responsive-link-field-adjudication.mjs',
     'tools/validate-status-sovereignty-rd-wave03-rd04-responsive-link-field-adjudication.mjs',
   ];
-  assert(permanentPaths.length === 11 && new Set(permanentPaths).size === 11, 'permanent path denominator');
+  assert(permanentPaths.length === 10 && new Set(permanentPaths).size === 10, 'permanent path denominator');
   assert(permanentPaths.every((pathname) => fs.existsSync(path.join(ROOT, pathname))), 'every permanent path must exist');
   assert(permanentPaths.every((pathname) => !/(^|\/)(tmp|transport|carrier|materializer|trigger)(\/|$)/.test(pathname)), 'transport path prohibited');
 

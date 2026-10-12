@@ -9,7 +9,6 @@ const readBytes=(rel)=>fs.readFileSync(path.join(root,rel));
 const write=(rel,value)=>{const target=path.join(root,rel);fs.mkdirSync(path.dirname(target),{recursive:true});fs.writeFileSync(target,value)};
 export const releaseScope=[
   '.github/ISSUE_TEMPLATE/apc-a1-adjudicator-nomination.yml',
-  '.github/workflows/m05-answerable-power-sprint-07.yml',
   'data/project/m05-answerable-power-sprint-07-plan.json',
   'data/project/m05-answerable-power-sprint-07-adjudicator-constitution.json',
   'data/project/m05-answerable-power-sprint-07-adjudication-schema.json',

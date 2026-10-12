@@ -13,7 +13,6 @@ const sha256 = (value) => crypto.createHash('sha256').update(value).digest('hex'
 const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
 
 export const releaseScope = [
-  '.github/workflows/status-sovereignty-wave-01-targeted-acquisition.yml',
   'package.json',
   'tools/build-pages.mjs',
   'tools/validate-pages.mjs',

@@ -23,7 +23,6 @@ const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
 }[char]));
 
 export const releaseScope = [
-  '.github/workflows/status-sovereignty-natsec100-first-pass.yml',
   'data/intake/status-sovereignty-natsec100-denominator-first-pass.json',
   'schemas/status-sovereignty-natsec100-denominator-first-pass.schema.json',
   'docs/milestones/ssc-natsec100-denominator-first-pass.md',

@@ -23,7 +23,6 @@ const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
 }[char]));
 
 export const releaseScope = [
-  '.github/workflows/status-sovereignty-f13-dcgsa.yml',
   'data/intake/status-sovereignty-f13-dcgsa-first-pass.json',
   'schemas/status-sovereignty-counterfactual-foreclosure-first-pass.schema.json',
   'docs/milestones/ssc-f13-dcgsa-first-pass.md',
