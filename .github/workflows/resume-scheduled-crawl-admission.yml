@@ -1,14 +1,6 @@
 name: Resume scheduled crawl admission
 
 on:
-  workflow_run:
-    workflows:
-      - Release checks
-      - No magic human gate
-    types:
-      - completed
-  schedule:
-    - cron: '3-58/5 * * * *'
   workflow_dispatch:
 
 permissions:
