@@ -15,7 +15,6 @@ A full record of what the agents did in this repo between 27 June and 14 Septemb
 | `github/branches.txt`, `github/branch-only-analysis.json` | All 2,345 branch names, and which hold content that never reached `main` |
 | `github/topics.json` | Research topics clustered from titles, with on-main status |
 | `github/actions-artifacts-index.jsonl` | Index of all 19,096 GitHub Actions artifacts: run ids, sizes, digests, expiry dates |
-| `github/workflow-run-logs.tar.gz` | Logs and metadata of the 2,455 workflow runs behind the research artifacts |
 | `github/api/` | Labels, milestones, 100 Pages deployments |
 | `trails/raw-trails.json`, `trails/slice-*.json` | 142 research trails, one row each: the question, how far it got, what it found |
 | `trails/tiered-trails.json` | The 142 rows merged into 79 trails and tiered: show it, keep and finish, park it, let it go |
@@ -28,8 +27,15 @@ A full record of what the agents did in this repo between 27 June and 14 Septemb
 | `branches/lake-identity-waves-01-20/` | Research files from the evidence-lake identity branch chain (bulk-closed 11 Aug): canonical registry with 65 organisations, identity census, topology |
 | `branches/lake-allocator-war-waves-21-38/` | Research files from the allocator-war branch chain: 150 official-source captures and 31 open obligations |
 | `branches/lake-branch-heads.tsv` | Head commit of all 43 lake branches |
-| `actions-artifacts/research/` | All 3,622 unique research-tier Actions artifacts (2.5 GB), digest-verified; GitHub would have deleted most by 11 December 2026 |
 | `site/trail-map.html` | Source of the trail-map page built from these files |
+
+## On the archive branch, not here
+
+Branch `archive/retrospective-2026-10-12` holds this folder plus the large binaries, so `main` stays lean:
+
+- `actions-artifacts/research/`: all 3,622 unique research-tier Actions artifacts (2.5 GB), digest-verified, which GitHub would have deleted by 11 December 2026.
+- `github/workflow-run-logs.tar.gz`: logs of the 2,455 workflow runs behind them.
+- `git-bundle/`: a full bundle of every ref as of 12 October 2026, the restore point for any branch pruning.
 
 ## Not copied, and why
 
