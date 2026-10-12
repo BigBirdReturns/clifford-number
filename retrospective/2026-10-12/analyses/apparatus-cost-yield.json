@@ -1,0 +1,2542 @@
+[
+ {
+  "apparatus": "RD-04 SNAP 50-state implementation matrix (A02-A09 + wave-03 state-by-state adjudication loop)",
+  "key": "rd04_snap",
+  "paths": [
+   "data/intake/status-sovereignty-rd04-snap-*",
+   "data/intake/status-sovereignty-rd-wave03-rd04-*",
+   "tools/*status-sovereignty-rd-wave03-rd04-*",
+   "tools/acquisition/*rd04*",
+   ".github/workflows/status-sovereignty-rd-wave03-rd04-*",
+   "docs/milestones/ssc-rd-wave03-rd04-*",
+   "docs/milestones/ssc-rd04-*"
+  ],
+  "cost": {
+   "files": 1624,
+   "lines": 796475,
+   "files_machinery": 276,
+   "lines_machinery": 160640,
+   "files_captured_evidence": 1348,
+   "lines_captured_evidence": 635835,
+   "tests": 32,
+   "tools": 96,
+   "workflows": 37,
+   "transient_workflows_archived": 0,
+   "schemas": 35,
+   "docs": 34,
+   "prs": 536,
+   "prs_merged": 56,
+   "prs_unmerged": 480,
+   "days": 15,
+   "first": "2026-08-01",
+   "last": "2026-08-15",
+   "discarded_lines_in_unmerged_prs": 934106,
+   "discarded_files_in_unmerged_prs": 2870,
+   "rank_score": 2.0
+  },
+  "yield": {
+   "sources": 65,
+   "findings": 1,
+   "findings_AB": 1,
+   "finding_names": [
+    "B: SNAP work requirements: federal rules and a 50-state matrix"
+   ],
+   "on_site": {
+    "deployed_files": 49,
+    "deployed_html_pages": 0,
+    "summary": "Deployed as milestone docs only; nothing linked from the home page; the SNAP B-tier finding is on main but not on the site front."
+   },
+   "ab_findings_per_100_prs": 0.19,
+   "sources_per_pr": 0.12
+  },
+  "smoke_date": "2026-07-31",
+  "last_real_capture": "2026-08-06",
+  "timing": "alongside",
+  "timing_basis": "cage_start 2026-08-01; first dated real evidence in area: 2026-07-31 (+1 days). Rule: cage-first = cage_start more than 1 day before first evidence or no evidence yet; alongside = within 1 day; earned = evidence at least 2 days earlier.",
+  "verdict": "cage that earned its keep",
+  "why": "Opened 1 Aug, a day after the first federal SNAP sources (31 Jul), and was exercised on real state records (12 matrix rows), but at 536 PRs (90% unmerged) it is the most expensive lane, with 79% of PRs opened after 6 Aug when the last new state sources arrived.",
+  "keep": "Federal SNAP rule summary and the 12 state rows; the remaining 38 states stay on the agenda without the adjudication loops.",
+  "cage_start": "2026-08-01",
+  "days_evidence_preceded_cage": 1,
+  "exercised": {
+   "exercised": true,
+   "basis": "51 state-history sources, 12 matrix rows from official sources, 56 merged PRs"
+  },
+  "cost_rank": 1
+ },
+ {
+  "apparatus": "Preference-custody audit lab (floor v1 to v62, PC-01..PC-62)",
+  "key": "pc_lab",
+  "paths": [
+   "docs/preference-custody-*.md",
+   "data/research/preference-custody/",
+   "tools/*preference*, tools/lib/preference-*",
+   "test/preference-*",
+   ".github/workflows/preference-*.yml",
+   "tools/*performative*, docs/performative-*"
+  ],
+  "cost": {
+   "files": 832,
+   "lines": 139154,
+   "files_machinery": 832,
+   "lines_machinery": 139154,
+   "files_captured_evidence": 0,
+   "lines_captured_evidence": 0,
+   "tests": 120,
+   "tools": 360,
+   "workflows": 112,
+   "transient_workflows_archived": 0,
+   "schemas": 0,
+   "docs": 120,
+   "prs": 222,
+   "prs_merged": 73,
+   "prs_unmerged": 149,
+   "days": 14,
+   "first": "2026-08-01",
+   "last": "2026-08-14",
+   "discarded_lines_in_unmerged_prs": 81923,
+   "discarded_files_in_unmerged_prs": 851,
+   "rank_score": 3.67
+  },
+  "yield": {
+   "sources": 18,
+   "findings": 2,
+   "findings_AB": 1,
+   "finding_names": [
+    "A: Synthetic audiences in real use: Times ExplorAItion and others",
+    "C: Exposure-confounding toy: how click shares fake a preference"
+   ],
+   "on_site": {
+    "deployed_files": 240,
+    "deployed_html_pages": 0,
+    "summary": "240 files deployed (fixtures, manifests, docs); none linked from the home page; the real-case finding is on main but not on the site front."
+   },
+   "ab_findings_per_100_prs": 0.45,
+   "sources_per_pr": 0.08
+  },
+  "smoke_date": null,
+  "last_real_capture": "2026-08-03",
+  "timing": "cage-first",
+  "timing_basis": "cage_start 2026-08-01; first dated real evidence in area: none to 2026-09-15. Rule: cage-first = cage_start more than 1 day before first evidence or no evidence yet; alongside = within 1 day; earned = evidence at least 2 days earlier.",
+  "verdict": "golden cage before smoke",
+  "why": "Floor v1 was built on 1 Aug with no counting evidence in its area (the four 1 Aug case captures are flagged not-evidence in their own files and no deployment data exists), then grew to v62 on invented fixtures only.",
+  "keep": "The four real-case files and the one-page exposure-confounding explainer.",
+  "cage_start": "2026-08-01",
+  "smoke_note": "The four real-case captures of 1 Aug are flagged counts_toward_thesis_evidence=false in their own files and no deployment data exists; the nearest sourced material is the synthetic-population issue receipts of 19-21 Jul, which the lab never consumed.",
+  "days_evidence_preceded_cage": null,
+  "exercised": {
+   "exercised": true,
+   "basis": "52 committed control manifests, 120 tests and 112 workflows run in CI on invented fixtures; four real-case descriptions admitted against v7"
+  },
+  "cost_rank": 2
+ },
+ {
+  "apparatus": "Status-sovereignty RD lanes RD-01/02/03/05/06 + CalFresh corpus (A06)",
+  "key": "ssc_rd",
+  "paths": [
+   "data/intake/status-sovereignty-rd0[1-3,5-6]*",
+   "data/intake/status-sovereignty-rd04-calfresh-*",
+   "tools/acquisition/status-sovereignty-rd-wave02-*",
+   "docs/milestones/ssc-rd0[1-3,5-6]*",
+   "docs/milestones/ssc-rd04-a06-*",
+   ".github/workflows/status-sovereignty-rd0[1-3,5-6]*"
+  ],
+  "cost": {
+   "files": 1807,
+   "lines": 3996472,
+   "files_machinery": 198,
+   "lines_machinery": 199220,
+   "files_captured_evidence": 1609,
+   "lines_captured_evidence": 3797252,
+   "tests": 27,
+   "tools": 53,
+   "workflows": 19,
+   "transient_workflows_archived": 0,
+   "schemas": 21,
+   "docs": 25,
+   "prs": 210,
+   "prs_merged": 44,
+   "prs_unmerged": 166,
+   "days": 36,
+   "first": "2026-07-31",
+   "last": "2026-09-04",
+   "discarded_lines_in_unmerged_prs": 47026,
+   "discarded_files_in_unmerged_prs": 387,
+   "rank_score": 5.0
+  },
+  "yield": {
+   "sources": 12355,
+   "findings": 6,
+   "findings_AB": 3,
+   "finding_names": [
+    "A: Army DCGS-A: the outside check that worked",
+    "A: Pentagon strategic-capital loans: one of five executed",
+    "A: California food-benefit appeals: 12,282 decisions, no proof of restoration",
+    "C: Does a NatSec100 ranking cause contracts?",
+    "C: Pentagon SBIC Critical Technologies funds",
+    "C: NOAA space advisory committee: did it have any power?"
+   ],
+   "on_site": {
+    "deployed_files": 74,
+    "deployed_html_pages": 0,
+    "summary": "Milestone docs and research JSON are deployed; no lane is linked from the home page."
+   },
+   "ab_findings_per_100_prs": 1.43,
+   "sources_per_pr": 58.83
+  },
+  "smoke_date": "2026-07-30",
+  "last_real_capture": "2026-08-10",
+  "timing": "alongside",
+  "timing_basis": "cage_start 2026-07-31; first dated real evidence in area: 2026-07-30 (+1 days). Rule: cage-first = cage_start more than 1 day before first evidence or no evidence yet; alongside = within 1 day; earned = evidence at least 2 days earlier.",
+  "verdict": "cage that earned its keep",
+  "why": "Lanes opened 31 Jul, a day after their first registry sources (30 Jul), and were exercised on real records including 12,282 CalFresh decisions, with 199k machinery lines against a 3.5M-line captured corpus.",
+  "keep": "RD-03 OSC, RD-06 DCGS-A, the CalFresh corpus (move the PDFs to a release asset) and the NatSec100/SBIC/ACES nulls.",
+  "cage_start": "2026-07-31",
+  "days_evidence_preceded_cage": 1,
+  "exercised": {
+   "exercised": true,
+   "basis": "OSC, DCGS-A, NatSec100, SBIC, ACES and CalFresh lanes ran on real registries; 12,355 sources"
+  },
+  "cost_rank": 3
+ },
+ {
+  "apparatus": "Core platform and product: ledger, compiler, explorer, cases, briefs, topology admission (comparator)",
+  "key": "core_product",
+  "paths": [
+   "data/ledger/",
+   "data/canonical/",
+   "cases/anduril-access-ownership/",
+   "receipts/topology/",
+   "src/ (compiler, graph, scoring)",
+   "app.js, explorer.html, styles.css",
+   "tools/lib/hops.mjs, ledger.mjs, temporal.mjs, narration.mjs"
+  ],
+  "cost": {
+   "files": 226,
+   "lines": 221604,
+   "files_machinery": 142,
+   "lines_machinery": 219302,
+   "files_captured_evidence": 84,
+   "lines_captured_evidence": 2302,
+   "tests": 15,
+   "tools": 39,
+   "workflows": 1,
+   "transient_workflows_archived": 0,
+   "schemas": 1,
+   "docs": 16,
+   "prs": 66,
+   "prs_merged": 61,
+   "prs_unmerged": 5,
+   "days": 49,
+   "first": "2026-06-27",
+   "last": "2026-08-14",
+   "discarded_lines_in_unmerged_prs": 2049,
+   "discarded_files_in_unmerged_prs": 26,
+   "rank_score": 8.0
+  },
+  "yield": {
+   "sources": 109,
+   "findings": 3,
+   "findings_AB": 3,
+   "finding_names": [
+    "A: Clifford ledger: UK AI policy connection map",
+    "A: Electric Twin ownership and the Atomico round",
+    "B: Dialog society directory names"
+   ],
+   "on_site": {
+    "deployed_files": 133,
+    "deployed_html_pages": 3,
+    "summary": "This is the public site: index.html four-lane page, explorer.html, the 13 Jan 2025 Starmer-Clifford route, receipts."
+   },
+   "ab_findings_per_100_prs": 4.55,
+   "sources_per_pr": 1.65
+  },
+  "smoke_date": "2026-06-28",
+  "last_real_capture": "2026-08-15",
+  "timing": "alongside",
+  "timing_basis": "cage_start 2026-06-27; first dated real evidence in area: 2026-06-28 (-1 days). Rule: cage-first = cage_start more than 1 day before first evidence or no evidence yet; alongside = within 1 day; earned = evidence at least 2 days earlier.",
+  "verdict": "cage that earned its keep",
+  "why": "Built from 27 Jun alongside the first real data (Dialog directory rows, 28-29 Jun) and exercised on every build, since it produces the 93 hop edges and receipts the public site shows.",
+  "keep": "All of it.",
+  "cage_start": "2026-06-27",
+  "days_evidence_preceded_cage": -1,
+  "exercised": {
+   "exercised": true,
+   "basis": "ledger, compiler and explorer run on every build; 93 hop edges"
+  },
+  "cost_rank": 4
+ },
+ {
+  "apparatus": "Counter-selector waves 0-40",
+  "key": "counter_selector",
+  "paths": [
+   "data/project/counter-selector-*",
+   "reports/core-thesis/counter-selector-wave-*",
+   "docs/milestones/counter-selector-wave-*",
+   "docs/methods/counter-selector-*",
+   "tools/*counter-selector*",
+   ".github/workflows/counter-selector-wave-*.yml"
+  ],
+  "cost": {
+   "files": 515,
+   "lines": 78938,
+   "files_machinery": 515,
+   "lines_machinery": 78938,
+   "files_captured_evidence": 0,
+   "lines_captured_evidence": 0,
+   "tests": 39,
+   "tools": 79,
+   "workflows": 39,
+   "transient_workflows_archived": 0,
+   "schemas": 38,
+   "docs": 83,
+   "prs": 47,
+   "prs_merged": 39,
+   "prs_unmerged": 8,
+   "days": 4,
+   "first": "2026-07-31",
+   "last": "2026-08-03",
+   "discarded_lines_in_unmerged_prs": 13991,
+   "discarded_files_in_unmerged_prs": 86,
+   "rank_score": 8.67
+  },
+  "yield": {
+   "sources": 94,
+   "findings": 1,
+   "findings_AB": 0,
+   "finding_names": [
+    "C: Counter-selector: people whose work outruns their status"
+   ],
+   "on_site": {
+    "deployed_files": 320,
+    "deployed_html_pages": 39,
+    "summary": "Wave index pages and project JSON are deployed; not linked from the home page."
+   },
+   "ab_findings_per_100_prs": 0.0,
+   "sources_per_pr": 2.0
+  },
+  "smoke_date": "2026-07-31",
+  "last_real_capture": "2026-08-03",
+  "timing": "alongside",
+  "timing_basis": "cage_start 2026-07-31; first dated real evidence in area: 2026-07-31 (+0 days). Rule: cage-first = cage_start more than 1 day before first evidence or no evidence yet; alongside = within 1 day; earned = evidence at least 2 days earlier.",
+  "verdict": "cage that earned its keep",
+  "why": "Wave 00 opened 31 Jul, the day the first candidate set was seeded, and 40 waves ran on 94 real sources in four days (39 workflows, 38 builder/validator pairs), a heavy ratio of machinery to sources.",
+  "keep": "The 30-case search method and the three near-misses; collapse the wave workflows into one runner.",
+  "cage_start": "2026-07-31",
+  "days_evidence_preceded_cage": 0,
+  "exercised": {
+   "exercised": true,
+   "basis": "83 real sources in the 30-case search plus 13 maintainers and Wave 40; 39 wave workflows with builder/validator pairs"
+  },
+  "cost_rank": 5
+ },
+ {
+  "apparatus": "Stable-ground checkpoints SG-01..SG-12",
+  "key": "stable_ground",
+  "paths": [
+   "data/project/project-stable-ground-*",
+   "docs/milestones/project-stable-ground-*",
+   "reports/core-thesis/stable-ground/",
+   "tools/validate-project-stable-ground-*",
+   ".github/workflows/project-stable-ground-*.yml",
+   "test/project-stable-ground-*"
+  ],
+  "cost": {
+   "files": 110,
+   "lines": 22023,
+   "files_machinery": 110,
+   "lines_machinery": 22023,
+   "files_captured_evidence": 0,
+   "lines_captured_evidence": 0,
+   "tests": 12,
+   "tools": 24,
+   "workflows": 12,
+   "transient_workflows_archived": 0,
+   "schemas": 0,
+   "docs": 12,
+   "prs": 76,
+   "prs_merged": 29,
+   "prs_unmerged": 47,
+   "days": 14,
+   "first": "2026-07-30",
+   "last": "2026-08-12",
+   "discarded_lines_in_unmerged_prs": 78718,
+   "discarded_files_in_unmerged_prs": 731,
+   "rank_score": 9.33
+  },
+  "yield": {
+   "sources": 0,
+   "findings": 0,
+   "findings_AB": 0,
+   "finding_names": [],
+   "on_site": {
+    "deployed_files": 62,
+    "deployed_html_pages": 12,
+    "summary": "62 files deployed (24 report pages); not linked."
+   },
+   "ab_findings_per_100_prs": 0.0,
+   "sources_per_pr": 0.0
+  },
+  "smoke_date": "2026-07-24",
+  "last_real_capture": "2026-07-26",
+  "timing": "earned",
+  "timing_basis": "cage_start 2026-07-29; first dated real evidence in area: 2026-07-24 (+5 days). Rule: cage-first = cage_start more than 1 day before first evidence or no evidence yet; alongside = within 1 day; earned = evidence at least 2 days earlier.",
+  "verdict": "cage that earned its keep",
+  "why": "SG-01 (29 Jul) followed the first sourced findings (24 Jul) by five days and 12 checkpoints were then built and validated in three days, but only the SSC review builders cite them and no release gate, page or reader consumes them.",
+  "keep": "The chain as the dated ledger of what each lane established; no new checkpoints without a new finding.",
+  "cage_start": "2026-07-29",
+  "days_evidence_preceded_cage": 5,
+  "exercised": {
+   "exercised": true,
+   "basis": "12 checkpoints built and validated in CI; SSC review builders cite them as parent checkpoints"
+  },
+  "cost_rank": 6
+ },
+ {
+  "apparatus": "Intel realization monitor + M-05 S03-L7 stage-receipt custody stack",
+  "key": "intel",
+  "paths": [
+   "data/project/m05-*intel*, m05-*leg-07*",
+   "receipts/m05-intel-disposition-readback-20260904/",
+   "tools/lib/m05-*leg-07-*",
+   ".github/workflows/m05-intel-*.yml (16 are amendment workflows)",
+   "test/m05-*leg-07-*"
+  ],
+  "cost": {
+   "files": 150,
+   "lines": 30120,
+   "files_machinery": 144,
+   "lines_machinery": 29571,
+   "files_captured_evidence": 6,
+   "lines_captured_evidence": 549,
+   "tests": 31,
+   "tools": 51,
+   "workflows": 23,
+   "transient_workflows_archived": 0,
+   "schemas": 0,
+   "docs": 2,
+   "prs": 58,
+   "prs_merged": 37,
+   "prs_unmerged": 21,
+   "days": 21,
+   "first": "2026-08-16",
+   "last": "2026-09-05",
+   "discarded_lines_in_unmerged_prs": 11743,
+   "discarded_files_in_unmerged_prs": 129,
+   "rank_score": 10.67
+  },
+  "yield": {
+   "sources": 40,
+   "findings": 1,
+   "findings_AB": 1,
+   "finding_names": [
+    "A: The government's Intel stake: no cash yet"
+   ],
+   "on_site": {
+    "deployed_files": 45,
+    "deployed_html_pages": 0,
+    "summary": "45 files deployed (project JSON and readback receipts); the finding is on main, not on the home page."
+   },
+   "ab_findings_per_100_prs": 1.72,
+   "sources_per_pr": 0.69
+  },
+  "smoke_date": "2026-08-17",
+  "last_real_capture": "2026-09-09",
+  "timing": "alongside",
+  "timing_basis": "cage_start 2026-08-16; first dated real evidence in area: 2026-08-17 (-1 days). Rule: cage-first = cage_start more than 1 day before first evidence or no evidence yet; alongside = within 1 day; earned = evidence at least 2 days earlier.",
+  "verdict": "cage that earned its keep",
+  "why": "Opened 16-17 Aug as the first Intel CHIPS equity sources were captured (17 Aug) and was exercised on 40 real sources to 9 Sep, but with 23 workflows (10 custody amendments) around one re-runnable \"no cash yet\" result.",
+  "keep": "The hash-bound null and the date-gate monitor as one workflow.",
+  "cage_start": "2026-08-16",
+  "days_evidence_preceded_cage": -1,
+  "exercised": {
+   "exercised": true,
+   "basis": "40 real sources; hash-bound receipts; date-gate monitor; 37 merged PRs"
+  },
+  "cost_rank": 7
+ },
+ {
+  "apparatus": "School.House legal-identity hunt",
+  "key": "schoolhouse",
+  "paths": [
+   "data/intake/bvvc-defense-capital/schoolhouse-*",
+   "docs/milestones/schoolhouse-*",
+   "tools/validate-schoolhouse-*"
+  ],
+  "cost": {
+   "files": 196,
+   "lines": 28803,
+   "files_machinery": 43,
+   "lines_machinery": 14836,
+   "files_captured_evidence": 153,
+   "lines_captured_evidence": 13967,
+   "tests": 0,
+   "tools": 34,
+   "workflows": 0,
+   "transient_workflows_archived": 0,
+   "schemas": 0,
+   "docs": 9,
+   "prs": 187,
+   "prs_merged": 28,
+   "prs_unmerged": 159,
+   "days": 4,
+   "first": "2026-08-05",
+   "last": "2026-08-08",
+   "discarded_lines_in_unmerged_prs": 67988,
+   "discarded_files_in_unmerged_prs": 470,
+   "rank_score": 10.67
+  },
+  "yield": {
+   "sources": 12,
+   "findings": 0,
+   "findings_AB": 0,
+   "finding_names": [],
+   "on_site": {
+    "deployed_files": 9,
+    "deployed_html_pages": 0,
+    "summary": "9 milestone docs deployed; intake data held back (data/intake is repository-only)."
+   },
+   "ab_findings_per_100_prs": 0.0,
+   "sources_per_pr": 0.06
+  },
+  "smoke_date": "2026-08-04",
+  "last_real_capture": "2026-08-08",
+  "timing": "alongside",
+  "timing_basis": "cage_start 2026-08-05; first dated real evidence in area: 2026-08-04 (+1 days). Rule: cage-first = cage_start more than 1 day before first evidence or no evidence yet; alongside = within 1 day; earned = evidence at least 2 days earlier.",
+  "verdict": "cage that earned its keep",
+  "why": "Opened 5 Aug, a day after the lead (a domain registration and the site's own 501(c)(3) claim) surfaced on 4 Aug, and was exercised across 23 registry lanes in 187 PRs over four days.",
+  "keep": "The one-paragraph negative and the registry search recipes.",
+  "cage_start": "2026-08-05",
+  "days_evidence_preceded_cage": 1,
+  "exercised": {
+   "exercised": true,
+   "basis": "23 search lanes across 4.4M IRS rows, 12.8M Florida records and 180 Form 990s; 34 tools"
+  },
+  "cost_rank": 8
+ },
+ {
+  "apparatus": "TEMP materializer / trigger / carrier transport layer (cross-cutting)",
+  "key": "transport",
+  "paths": [
+   "reports/transport/",
+   ".github/tmp/",
+   ".m05-review-fix/",
+   "temporary-*.yml workflows (archived copies)",
+   "(cross-cutting: all PRs titled TEMP / NEVER MERGE / materialize / trigger / export)"
+  ],
+  "cost": {
+   "files": 77,
+   "lines": 18766,
+   "files_machinery": 77,
+   "lines_machinery": 18766,
+   "files_captured_evidence": 0,
+   "lines_captured_evidence": 0,
+   "tests": 0,
+   "tools": 0,
+   "workflows": 0,
+   "transient_workflows_archived": 14,
+   "schemas": 0,
+   "docs": 0,
+   "prs": 1336,
+   "prs_merged": 51,
+   "prs_unmerged": 1285,
+   "days": 51,
+   "first": "2026-07-21",
+   "last": "2026-09-09",
+   "discarded_lines_in_unmerged_prs": 919915,
+   "discarded_files_in_unmerged_prs": 5092,
+   "note": "cross-cutting: PRs titled TEMP/NEVER MERGE/controller/materializer/export etc.",
+   "rank_score": 13.0
+  },
+  "yield": {
+   "sources": 0,
+   "findings": 0,
+   "findings_AB": 0,
+   "finding_names": [],
+   "on_site": {
+    "deployed_files": 0,
+    "deployed_html_pages": 0,
+    "summary": "Held by publication allowlist (reports/transport is retained_historical_custody)."
+   },
+   "ab_findings_per_100_prs": 0.0,
+   "sources_per_pr": 0.0
+  },
+  "smoke_date": null,
+  "last_real_capture": null,
+  "timing": "cage-first",
+  "timing_basis": "cage_start 2026-07-21; first dated real evidence in area: none to 2026-09-15. Rule: cage-first = cage_start more than 1 day before first evidence or no evidence yet; alongside = within 1 day; earned = evidence at least 2 days earlier.",
+  "verdict": "golden cage before smoke",
+  "why": "Plumbing used from 21 Jul in every lane (1,336 PRs, 51 merged, 89% of all unmerged PRs) with no evidence area of its own, so it can only be cage-first.",
+  "keep": "Nothing; only what merged is product.",
+  "cage_start": "2026-07-21",
+  "days_evidence_preceded_cage": null,
+  "exercised": {
+   "exercised": true,
+   "basis": "1,336 carrier PRs (51 merged) used in every lane"
+  },
+  "cost_rank": 9
+ },
+ {
+  "apparatus": "K0 epistemic-admissibility waves (role-neutral waves 01-08 + field adjudications)",
+  "key": "k0",
+  "paths": [
+   "data/research/k0-*",
+   "data/project/k0-*",
+   "docs/milestones/m05-k0-*",
+   "reports/core-thesis/answerable-power/k0*",
+   "tools/*k0-*",
+   ".github/workflows/k0-*.yml"
+  ],
+  "cost": {
+   "files": 159,
+   "lines": 39570,
+   "files_machinery": 157,
+   "lines_machinery": 37603,
+   "files_captured_evidence": 2,
+   "lines_captured_evidence": 1967,
+   "tests": 17,
+   "tools": 33,
+   "workflows": 18,
+   "transient_workflows_archived": 0,
+   "schemas": 1,
+   "docs": 19,
+   "prs": 23,
+   "prs_merged": 21,
+   "prs_unmerged": 2,
+   "days": 3,
+   "first": "2026-07-28",
+   "last": "2026-07-30",
+   "discarded_lines_in_unmerged_prs": 2706,
+   "discarded_files_in_unmerged_prs": 24,
+   "rank_score": 14.0
+  },
+  "yield": {
+   "sources": 118,
+   "findings": 2,
+   "findings_AB": 2,
+   "finding_names": [
+    "B: Expert contradicts boss, expert removed: a neutral search",
+    "B: Epistemic ceiling: the original named cases"
+   ],
+   "on_site": {
+    "deployed_files": 88,
+    "deployed_html_pages": 16,
+    "summary": "16 K0 report pages deployed under answerable-power; not linked from the home page."
+   },
+   "ab_findings_per_100_prs": 8.7,
+   "sources_per_pr": 5.13
+  },
+  "smoke_date": "2026-07-27",
+  "last_real_capture": "2026-07-29",
+  "timing": "alongside",
+  "timing_basis": "cage_start 2026-07-28; first dated real evidence in area: 2026-07-27 (+1 days). Rule: cage-first = cage_start more than 1 day before first evidence or no evidence yet; alongside = within 1 day; earned = evidence at least 2 days earlier.",
+  "verdict": "cage that earned its keep",
+  "why": "The field audit of the owner's ten named cases (27 Jul) came a day before the K0 install (28 Jul), and eight waves then ran on 118 real sources in three days.",
+  "keep": "Wave 01-08 results and the nine search templates; fold the 18 workflows into one runner.",
+  "cage_start": "2026-07-28",
+  "days_evidence_preceded_cage": 1,
+  "exercised": {
+   "exercised": true,
+   "basis": "eight role-neutral waves plus seven field adjudications on 118 real sources"
+  },
+  "cost_rank": 10
+ },
+ {
+  "apparatus": "Evidence-lake indexing and AXM Genesis identity waves 1-20",
+  "key": "lake_axm",
+  "paths": [
+   "docs/milestones/m04f-evidence-lake-*",
+   "tools/lib/axm-id.mjs, axm-identity.mjs",
+   "build/axm-identity.json",
+   "test/{axm-id,axm-identity}.test.js",
+   "docs/{identity-reconciliation,axm-instrument-architecture}.md"
+  ],
+  "cost": {
+   "files": 10,
+   "lines": 9827,
+   "files_machinery": 10,
+   "lines_machinery": 9827,
+   "files_captured_evidence": 0,
+   "lines_captured_evidence": 0,
+   "tests": 2,
+   "tools": 2,
+   "workflows": 0,
+   "transient_workflows_archived": 0,
+   "schemas": 0,
+   "docs": 4,
+   "prs": 26,
+   "prs_merged": 3,
+   "prs_unmerged": 23,
+   "days": 43,
+   "first": "2026-07-25",
+   "last": "2026-09-05",
+   "discarded_lines_in_unmerged_prs": 1264217,
+   "discarded_files_in_unmerged_prs": 1096,
+   "rank_score": 14.33
+  },
+  "yield": {
+   "sources": 0,
+   "findings": 0,
+   "findings_AB": 0,
+   "finding_names": [],
+   "on_site": {
+    "deployed_files": 5,
+    "deployed_html_pages": 0,
+    "summary": "5 files deployed (axm docs and identity JSON)."
+   },
+   "ab_findings_per_100_prs": 0.0,
+   "sources_per_pr": 0.0
+  },
+  "smoke_date": null,
+  "last_real_capture": null,
+  "timing": "cage-first",
+  "timing_basis": "cage_start 2026-07-29; first dated real evidence in area: none to 2026-09-15. Rule: cage-first = cage_start more than 1 day before first evidence or no evidence yet; alongside = within 1 day; earned = evidence at least 2 days earlier.",
+  "verdict": "golden cage before smoke",
+  "why": "Identity waves 1-20 opened 29 Jul with no cross-case identity ambiguity on record (the census later found 0 recurrences in 26,046 identifiers) and 20 waves were closed unmerged in one five-minute sweep on 11 Aug.",
+  "keep": "The AXM Genesis identity library already on main.",
+  "cage_start": "2026-07-29",
+  "smoke_note": "No cross-case identity ambiguity is on record: the census found 0 cross-case recurrences. The AXM Genesis identity library did land on main.",
+  "days_evidence_preceded_cage": null,
+  "exercised": {
+   "exercised": true,
+   "basis": "census ran on the repo's own 26,046 identifiers; 20 waves, 23 PRs closed unmerged in one sweep"
+  },
+  "cost_rank": 11
+ },
+ {
+  "apparatus": "Estates + game trails + 143 closure tasks",
+  "key": "estates",
+  "paths": [
+   "data/estates/",
+   "build/estate-game-trails/",
+   "build/estate-fanout/, build/estate-closures/, build/estate-frontier/",
+   "estates/, gametrails/, gametrail-handoffs/, issue-handoffs/",
+   "tools/*estate*, tools/*gametrail*",
+   ".github/workflows/estate*.yml, next-ten-estates.yml"
+  ],
+  "cost": {
+   "files": 494,
+   "lines": 218224,
+   "files_machinery": 474,
+   "lines_machinery": 217493,
+   "files_captured_evidence": 20,
+   "lines_captured_evidence": 731,
+   "tests": 8,
+   "tools": 20,
+   "workflows": 6,
+   "transient_workflows_archived": 0,
+   "schemas": 0,
+   "docs": 3,
+   "prs": 9,
+   "prs_merged": 8,
+   "prs_unmerged": 1,
+   "days": 24,
+   "first": "2026-07-22",
+   "last": "2026-08-14",
+   "discarded_lines_in_unmerged_prs": 62,
+   "discarded_files_in_unmerged_prs": 2,
+   "rank_score": 14.67
+  },
+  "yield": {
+   "sources": 247,
+   "findings": 1,
+   "findings_AB": 0,
+   "finding_names": [
+    "C: UK defence after the Strategic Defence Review"
+   ],
+   "on_site": {
+    "deployed_files": 433,
+    "deployed_html_pages": 6,
+    "summary": "estates/index.html and gametrails/index.html are linked from explorer.html; 313 of the deployed files are generated game-trail JSON."
+   },
+   "ab_findings_per_100_prs": 0.0,
+   "sources_per_pr": 27.44
+  },
+  "smoke_date": "2026-06-29 (earliest of 14 established estates; 10 frontier estates: none)",
+  "last_real_capture": "2026-07-23",
+  "timing": "earned",
+  "timing_basis": "Per estate (see per_estate): 14 of 24 estates had dated evidence 5-24 days before the 22-23 Jul cage; 10 frontier estates were surveyed 23 Jul with 0 records in their corpus to 2026-09-15. Row timing = majority.",
+  "verdict": "cage that earned its keep",
+  "why": "All 24 areas of attention were compiled by 23 Jul and exercised (155 source-route runs, 94 custody runs, 66 bounded non-overlaps, 5 exact pairs); 14 had evidence 5-24 days earlier, while the 10 frontier estates were surveyed ahead of any record in their corpus.",
+  "keep": "All 24 areas stay on the agenda; the next move is acquisition in the frontier surveys, not more compilation.",
+  "cage_start": "2026-07-22",
+  "days_evidence_preceded_cage": 23,
+  "exercised": {
+   "exercised": true,
+   "basis": "24 estates compiled; 155 source-route runs, 94 custody runs, 66 bounded non-overlaps, 5 exact pairs; CI-validated"
+  },
+  "owner_agenda": true,
+  "per_estate": [
+   {
+    "estate": "dialog-estate",
+    "generation": "existing",
+    "cage_date": "2026-07-22",
+    "first_evidence": "2026-06-29",
+    "timing": "earned",
+    "basis": "Dialog directory rows and UK AI ledger imported (PRs #6/#8)"
+   },
+   {
+    "estate": "local-development-estate",
+    "generation": "existing",
+    "cage_date": "2026-07-22",
+    "first_evidence": "2026-07-12",
+    "timing": "earned",
+    "basis": "Arcadia field autopsy first pull (141 sources)"
+   },
+   {
+    "estate": "us-defense-estate",
+    "generation": "existing",
+    "cage_date": "2026-07-22",
+    "first_evidence": "2026-07-14",
+    "timing": "earned",
+    "basis": "Austin corridor and defense-router pulls (17 and 63 sources)"
+   },
+   {
+    "estate": "uk-defense-estate",
+    "generation": "existing",
+    "cage_date": "2026-07-22",
+    "first_evidence": "2026-06-29",
+    "timing": "earned",
+    "basis": "UK AI policy ledger surfaces and receipts"
+   },
+   {
+    "estate": "uk-state-market-estate",
+    "generation": "next",
+    "cage_date": "2026-07-22",
+    "first_evidence": "2026-06-29",
+    "timing": "earned",
+    "basis": "UK AI policy ledger; synthetic-population thesis evidence 21 Jul"
+   },
+   {
+    "estate": "state-municipal-authority-estate",
+    "generation": "next",
+    "cage_date": "2026-07-22",
+    "first_evidence": "2026-07-14",
+    "timing": "earned",
+    "basis": "Arcadia deed and land records; state-officeholder track 17 Jul"
+   },
+   {
+    "estate": "us-legislative-political-finance-estate",
+    "generation": "next",
+    "cage_date": "2026-07-22",
+    "first_evidence": "2026-07-13",
+    "timing": "earned",
+    "basis": "FEC / campaign-to-business pulls; congressional track 17 Jul"
+   },
+   {
+    "estate": "us-executive-appointments-ethics-estate",
+    "generation": "next",
+    "cage_date": "2026-07-22",
+    "first_evidence": "2026-07-13",
+    "timing": "earned",
+    "basis": "OGE disclosure documents (26 sources)"
+   },
+   {
+    "estate": "regulatory-markets-estate",
+    "generation": "next",
+    "cage_date": "2026-07-22",
+    "first_evidence": "2026-07-17",
+    "timing": "earned",
+    "basis": "regulatory revolving-door track (5 sources)"
+   },
+   {
+    "estate": "public-money-industrial-policy-estate",
+    "generation": "next",
+    "cage_date": "2026-07-22",
+    "first_evidence": "2026-07-14",
+    "timing": "earned",
+    "basis": "government-to-property awards; CHIPS fab track 17 Jul"
+   },
+   {
+    "estate": "transatlantic-defense-innovation-estate",
+    "generation": "next",
+    "cage_date": "2026-07-22",
+    "first_evidence": "2026-07-17",
+    "timing": "earned",
+    "basis": "NATO DIANA roster track (5 sources)"
+   },
+   {
+    "estate": "venture-capital-corporate-control-estate",
+    "generation": "next",
+    "cage_date": "2026-07-22",
+    "first_evidence": "2026-07-14",
+    "timing": "earned",
+    "basis": "Capital Factory portfolio universe (837 companies)"
+   },
+   {
+    "estate": "offshore-beneficial-ownership-estate",
+    "generation": "next",
+    "cage_date": "2026-07-22",
+    "first_evidence": "2026-07-13",
+    "timing": "earned",
+    "basis": "ICIJ Panama import (559,600 nodes)"
+   },
+   {
+    "estate": "public-interest-crossing-estate",
+    "generation": "next",
+    "cage_date": "2026-07-22",
+    "first_evidence": "2026-07-13",
+    "timing": "earned",
+    "basis": "Panama import and 2016 Trump disclosure; the Epstein corpus still has 0 documents"
+   },
+   {
+    "estate": "judicial-administrative-adjudication-estate",
+    "generation": "frontier",
+    "cage_date": "2026-07-23",
+    "first_evidence": null,
+    "timing": "cage-first",
+    "basis": "surveyed official source systems only; 0 records in the estate corpus to 2026-09-15"
+   },
+   {
+    "estate": "professional-services-intermediaries-estate",
+    "generation": "frontier",
+    "cage_date": "2026-07-23",
+    "first_evidence": null,
+    "timing": "cage-first",
+    "basis": "surveyed official source systems only; 0 records in the estate corpus to 2026-09-15"
+   },
+   {
+    "estate": "philanthropy-nonprofit-policy-estate",
+    "generation": "frontier",
+    "cage_date": "2026-07-23",
+    "first_evidence": null,
+    "timing": "cage-first",
+    "basis": "surveyed official source systems only; 0 records in the estate corpus to 2026-09-15"
+   },
+   {
+    "estate": "higher-education-research-commercialization-estate",
+    "generation": "frontier",
+    "cage_date": "2026-07-23",
+    "first_evidence": null,
+    "timing": "cage-first",
+    "basis": "surveyed official source systems only; 0 records in the estate corpus to 2026-09-15"
+   },
+   {
+    "estate": "ai-data-compute-infrastructure-estate",
+    "generation": "frontier",
+    "cage_date": "2026-07-23",
+    "first_evidence": null,
+    "timing": "cage-first",
+    "basis": "surveyed official source systems only; 0 records in the estate corpus to 2026-09-15"
+   },
+   {
+    "estate": "energy-utilities-critical-infrastructure-estate",
+    "generation": "frontier",
+    "cage_date": "2026-07-23",
+    "first_evidence": null,
+    "timing": "cage-first",
+    "basis": "surveyed official source systems only; 0 records in the estate corpus to 2026-09-15"
+   },
+   {
+    "estate": "sanctions-export-controls-foreign-investment-estate",
+    "generation": "frontier",
+    "cage_date": "2026-07-23",
+    "first_evidence": null,
+    "timing": "cage-first",
+    "basis": "surveyed official source systems only; 0 records in the estate corpus to 2026-09-15"
+   },
+   {
+    "estate": "intellectual-property-standards-data-rights-estate",
+    "generation": "frontier",
+    "cage_date": "2026-07-23",
+    "first_evidence": null,
+    "timing": "cage-first",
+    "basis": "surveyed official source systems only; 0 records in the estate corpus to 2026-09-15"
+   },
+   {
+    "estate": "labor-immigration-workforce-mobility-estate",
+    "generation": "frontier",
+    "cage_date": "2026-07-23",
+    "first_evidence": null,
+    "timing": "cage-first",
+    "basis": "surveyed official source systems only; 0 records in the estate corpus to 2026-09-15"
+   },
+   {
+    "estate": "real-property-title-debt-estate",
+    "generation": "frontier",
+    "cage_date": "2026-07-23",
+    "first_evidence": null,
+    "timing": "cage-first",
+    "basis": "surveyed official source systems only; 0 records in the estate corpus to 2026-09-15"
+   }
+  ],
+  "timing_split": {
+   "earned": 14,
+   "cage-first": 10
+  },
+  "cost_rank": 12
+ },
+ {
+  "apparatus": "M-05 answerable-power sprints 1-9 (comparator: produced findings)",
+  "key": "m05",
+  "paths": [
+   "data/project/m05-*",
+   "docs/milestones/m05-answerable-power-*",
+   "reports/core-thesis/answerable-power/",
+   "tools/*m05-answerable-power-sprint*",
+   ".github/workflows/m05-answerable-power*.yml"
+  ],
+  "cost": {
+   "files": 206,
+   "lines": 35007,
+   "files_machinery": 200,
+   "lines_machinery": 33187,
+   "files_captured_evidence": 6,
+   "lines_captured_evidence": 1820,
+   "tests": 21,
+   "tools": 42,
+   "workflows": 11,
+   "transient_workflows_archived": 0,
+   "schemas": 0,
+   "docs": 24,
+   "prs": 23,
+   "prs_merged": 21,
+   "prs_unmerged": 2,
+   "days": 22,
+   "first": "2026-07-26",
+   "last": "2026-08-16",
+   "discarded_lines_in_unmerged_prs": 912,
+   "discarded_files_in_unmerged_prs": 11,
+   "rank_score": 14.67
+  },
+  "yield": {
+   "sources": 130,
+   "findings": 5,
+   "findings_AB": 5,
+   "finding_names": [
+    "A: Matt Clifford and Anduril: a documented non-link",
+    "A: Army NGC2: not a closed Anduril-Palantir duo",
+    "A: Leaving Palantir: Homes for Ukraine and the NHS",
+    "A: Does public money come back? TARP versus defence and chips",
+    "B: Answerable power: the seven-part check, seen separately never together"
+   ],
+   "on_site": {
+    "deployed_files": 126,
+    "deployed_html_pages": 21,
+    "summary": "21 answerable-power report pages deployed; the Clifford-Anduril result is on the explorer."
+   },
+   "ab_findings_per_100_prs": 21.74,
+   "sources_per_pr": 5.65
+  },
+  "smoke_date": "2026-07-24",
+  "last_real_capture": "2026-08-17",
+  "timing": "earned",
+  "timing_basis": "cage_start 2026-07-26; first dated real evidence in area: 2026-07-24 (+2 days). Rule: cage-first = cage_start more than 1 day before first evidence or no evidence yet; alongside = within 1 day; earned = evidence at least 2 days earlier.",
+  "verdict": "cage that earned its keep",
+  "why": "Sprints 1-3 opened 26 Jul, two days after the first sourced Palantir and Erebor results (24 Jul), and were exercised on 130 official sources.",
+  "keep": "Sprints 1-3 and the seven-part answerable-power frame; sprints 5-9 are the outside-review row.",
+  "cage_start": "2026-07-26",
+  "days_evidence_preceded_cage": 2,
+  "exercised": {
+   "exercised": true,
+   "basis": "130 official sources across sprints 1-3"
+  },
+  "cost_rank": 13
+ },
+ {
+  "apparatus": "PR #2231 never-merge controller loop (industrial-exhaust identifier classifier repair)",
+  "key": "pr2231",
+  "paths": [
+   "tools/lib/industrial-exhaust.mjs (5,287 lines)",
+   "test/industrial-exhaust.test.js (5,977 lines)",
+   "(discarded in closed PRs) .github/workflows/temporary-current-main-*.yml, .github/diagnostics/, .github/scripts/phone-label-*.py"
+  ],
+  "cost": {
+   "files": 2,
+   "lines": 11264,
+   "files_machinery": 2,
+   "lines_machinery": 11264,
+   "files_captured_evidence": 0,
+   "lines_captured_evidence": 0,
+   "tests": 1,
+   "tools": 1,
+   "workflows": 0,
+   "transient_workflows_archived": 0,
+   "schemas": 0,
+   "docs": 0,
+   "prs": 255,
+   "prs_merged": 7,
+   "prs_unmerged": 248,
+   "days": 16,
+   "first": "2026-08-19",
+   "last": "2026-09-03",
+   "discarded_lines_in_unmerged_prs": 88910,
+   "discarded_files_in_unmerged_prs": 419,
+   "rank_score": 14.67
+  },
+  "yield": {
+   "sources": 0,
+   "findings": 0,
+   "findings_AB": 0,
+   "finding_names": [],
+   "on_site": {
+    "deployed_files": 0,
+    "deployed_html_pages": 0,
+    "summary": "Not deployed; the classifier itself ships inside the crawler."
+   },
+   "ab_findings_per_100_prs": 0.0,
+   "sources_per_pr": 0.0
+  },
+  "smoke_date": null,
+  "last_real_capture": null,
+  "timing": "cage-first",
+  "timing_basis": "cage_start 2026-08-19; first dated real evidence in area: none to 2026-09-15. Rule: cage-first = cage_start more than 1 day before first evidence or no evidence yet; alongside = within 1 day; earned = evidence at least 2 days earlier.",
+  "verdict": "golden cage before smoke",
+  "why": "No source evidence drove it (the driver was automated review threads on its own PR), and 255 PRs in 16 days (7 merged) grew a phone-number redaction classifier to 5,287 lines plus a 5,977-line test inside a feed crawler.",
+  "keep": "Nothing; fix the classifier in one PR.",
+  "cage_start": "2026-08-19",
+  "smoke_note": "No source evidence drove the loop; its driver was automated review threads on its own PR.",
+  "days_evidence_preceded_cage": null,
+  "exercised": {
+   "exercised": true,
+   "basis": "7 merged and 248 unmerged PRs; classifier and test now 11,264 lines"
+  },
+  "cost_rank": 14
+ },
+ {
+  "apparatus": "Early research pipeline: OGE/FEC/LinkedIn/defense routers/Austin/Arcadia (comparator)",
+  "key": "early_pipeline",
+  "paths": [
+   "data/research/ (OGE, FEC, SEC, NARA, NY registry)",
+   "data/intake/{linkedin-targeted-review,person-centered-defense-routers,austin-israel-defense-corridor}",
+   "cases/arcadia-field-autopsy/",
+   "tools/lib/{oge,fec,openfec,disclosure,field-autopsy}*",
+   "test/{oge,fec,linkedin,openfec}*"
+  ],
+  "cost": {
+   "files": 240,
+   "lines": 58793,
+   "files_machinery": 205,
+   "lines_machinery": 54725,
+   "files_captured_evidence": 35,
+   "lines_captured_evidence": 4068,
+   "tests": 40,
+   "tools": 84,
+   "workflows": 0,
+   "transient_workflows_archived": 0,
+   "schemas": 0,
+   "docs": 8,
+   "prs": 7,
+   "prs_merged": 4,
+   "prs_unmerged": 3,
+   "days": 71,
+   "first": "2026-06-28",
+   "last": "2026-09-06",
+   "discarded_lines_in_unmerged_prs": 19410,
+   "discarded_files_in_unmerged_prs": 90,
+   "rank_score": 16.0
+  },
+  "yield": {
+   "sources": 420,
+   "findings": 7,
+   "findings_AB": 4,
+   "finding_names": [
+    "B: Anduril access-and-ownership brief",
+    "B: Arcadia, California: testing a chatbot's 'master plan' against records",
+    "B: Presidents' campaign money versus their own businesses",
+    "B: Defence capital 'routers' across funds and government",
+    "C: LinkedIn profile review of 30 named people",
+    "C: Austin corridor: Capital Factory, Israeli-linked funds and NatSec100",
+    "C: 'Clifford, Thiel, Palantir and Trump' wrap-up"
+   ],
+   "on_site": {
+    "deployed_files": 84,
+    "deployed_html_pages": 1,
+    "summary": "Anduril and Arcadia briefs (briefs/*.html) and their case files are deployed and reader-facing."
+   },
+   "ab_findings_per_100_prs": 57.14,
+   "sources_per_pr": 60.0
+  },
+  "smoke_date": "2026-06-28",
+  "last_real_capture": "2026-08-14",
+  "timing": "alongside",
+  "timing_basis": "cage_start 2026-06-28; first dated real evidence in area: 2026-06-28 (+0 days). Rule: cage-first = cage_start more than 1 day before first evidence or no evidence yet; alongside = within 1 day; earned = evidence at least 2 days earlier.",
+  "verdict": "cage that earned its keep",
+  "why": "Each OGE/FEC/LinkedIn/Austin tool shipped with its first real pull on 12-15 Jul (37, 26, 31 and 17 sources), so evidence and tooling arrived together.",
+  "keep": "All of it; it is the template the later apparatus left behind.",
+  "cage_start": "2026-06-28",
+  "days_evidence_preceded_cage": 0,
+  "exercised": {
+   "exercised": true,
+   "basis": "OGE/FEC/LinkedIn/Austin tools ran on real pulls"
+  },
+  "cost_rank": 15
+ },
+ {
+  "apparatus": "Status-sovereignty compact (waves 01-02, first passes, six-gate reconciliation)",
+  "key": "ssc_core",
+  "paths": [
+   "data/project/status-sovereignty-*",
+   "data/research/status-sovereignty-wave-0*",
+   "build/core-thesis/status-sovereignty/",
+   "reports/core-thesis/status-sovereignty/",
+   "tools/*status-sovereignty-{compact,wave-0*,f0*,f13,six-gate}*",
+   ".github/workflows/status-sovereignty-{compact,wave-0*,f0*}.yml"
+  ],
+  "cost": {
+   "files": 166,
+   "lines": 40336,
+   "files_machinery": 157,
+   "lines_machinery": 38266,
+   "files_captured_evidence": 9,
+   "lines_captured_evidence": 2070,
+   "tests": 14,
+   "tools": 28,
+   "workflows": 14,
+   "transient_workflows_archived": 0,
+   "schemas": 10,
+   "docs": 14,
+   "prs": 10,
+   "prs_merged": 8,
+   "prs_unmerged": 2,
+   "days": 3,
+   "first": "2026-07-30",
+   "last": "2026-08-01",
+   "discarded_lines_in_unmerged_prs": 359,
+   "discarded_files_in_unmerged_prs": 17,
+   "rank_score": 17.0
+  },
+  "yield": {
+   "sources": 71,
+   "findings": 2,
+   "findings_AB": 1,
+   "finding_names": [
+    "B: Federal civil-rights rollbacks 2025-26 and the checks that held",
+    "C: 'Status-for-sovereignty compact' umbrella thesis"
+   ],
+   "on_site": {
+    "deployed_files": 14,
+    "deployed_html_pages": 0,
+    "summary": "Held back by the publication allowlist (status-sovereignty paths are held rules); 16 files deployed."
+   },
+   "ab_findings_per_100_prs": 10.0,
+   "sources_per_pr": 7.1
+  },
+  "smoke_date": "2026-07-30",
+  "last_real_capture": "2026-08-01",
+  "timing": "alongside",
+  "timing_basis": "cage_start 2026-07-30; first dated real evidence in area: 2026-07-30 (+0 days). Rule: cage-first = cage_start more than 1 day before first evidence or no evidence yet; alongside = within 1 day; earned = evidence at least 2 days earlier.",
+  "verdict": "cage that earned its keep",
+  "why": "Opened 30 Jul, the same day as the first lane sources, and was exercised on 71 real sources across 16 lanes with 14 workflows and 28 tools.",
+  "keep": "The civil-rights rollbacks-versus-checks result (B) and the allocator-war cases.",
+  "cage_start": "2026-07-30",
+  "days_evidence_preceded_cage": 0,
+  "exercised": {
+   "exercised": true,
+   "basis": "16 lanes on 71 real sources"
+  },
+  "cost_rank": 16
+ },
+ {
+  "apparatus": "Dentsu industrial-exhaust crawler and receipt store",
+  "key": "dentsu",
+  "paths": [
+   "receipts/exhaust/",
+   "data/exhaust/",
+   "tools/crawl-industrial-exhaust.mjs, hydrate-industrial-exhaust.mjs, lib/industrial-exhaust*.mjs",
+   ".github/workflows/crawl-industrial-exhaust.yml",
+   ".github/scripts/industrial-artifact-failure-policy.mjs"
+  ],
+  "cost": {
+   "files": 575,
+   "lines": 21620,
+   "files_machinery": 7,
+   "lines_machinery": 8544,
+   "files_captured_evidence": 568,
+   "lines_captured_evidence": 13076,
+   "tests": 2,
+   "tools": 4,
+   "workflows": 1,
+   "transient_workflows_archived": 0,
+   "schemas": 0,
+   "docs": 0,
+   "prs": 76,
+   "prs_merged": 35,
+   "prs_unmerged": 41,
+   "days": 24,
+   "first": "2026-08-17",
+   "last": "2026-09-09",
+   "discarded_lines_in_unmerged_prs": 17230,
+   "discarded_files_in_unmerged_prs": 157,
+   "rank_score": 18.0
+  },
+  "yield": {
+   "sources": 115,
+   "findings": 0,
+   "findings_AB": 0,
+   "finding_names": [],
+   "on_site": {
+    "deployed_files": 568,
+    "deployed_html_pages": 0,
+    "summary": "Raw receipts and feed state are deployed; no reader-facing page."
+   },
+   "ab_findings_per_100_prs": 0.0,
+   "sources_per_pr": 1.51
+  },
+  "smoke_date": "2026-08-17",
+  "last_real_capture": "2026-09-03",
+  "timing": "alongside",
+  "timing_basis": "cage_start 2026-08-17; first dated real evidence in area: 2026-08-17 (+0 days). Rule: cage-first = cage_start more than 1 day before first evidence or no evidence yet; alongside = within 1 day; earned = evidence at least 2 days earlier.",
+  "verdict": "cage that earned its keep",
+  "why": "Built 17 Aug, the day the first feed items were saved, and exercised on 427 feed items and 115 articles through 3 Sep, with 76 PRs of its own.",
+  "keep": "The crawler and its raw receipts if Dentsu stays relevant; it is re-crawlable.",
+  "cage_start": "2026-08-17",
+  "days_evidence_preceded_cage": 0,
+  "exercised": {
+   "exercised": true,
+   "basis": "427 feed items and 115 articles (111MB) saved to 3 Sep"
+  },
+  "cost_rank": 17
+ },
+ {
+  "apparatus": "SSC residual-denominator gap closure (waves 01-03 constitutions, ledgers, reconciliation)",
+  "key": "ssc_residual",
+  "paths": [
+   "data/project/ssc-residual-*",
+   "docs/milestones/ssc-residual-denominator-*",
+   "tools/*status-sovereignty-residual-denominator-*",
+   ".github/workflows/status-sovereignty-residual-denominator-*.yml",
+   "test/*residual-denominator*"
+  ],
+  "cost": {
+   "files": 68,
+   "lines": 9540,
+   "files_machinery": 68,
+   "lines_machinery": 9540,
+   "files_captured_evidence": 0,
+   "lines_captured_evidence": 0,
+   "tests": 6,
+   "tools": 10,
+   "workflows": 6,
+   "transient_workflows_archived": 0,
+   "schemas": 7,
+   "docs": 6,
+   "prs": 42,
+   "prs_merged": 20,
+   "prs_unmerged": 22,
+   "days": 35,
+   "first": "2026-08-01",
+   "last": "2026-09-04",
+   "discarded_lines_in_unmerged_prs": 3762,
+   "discarded_files_in_unmerged_prs": 56,
+   "rank_score": 18.33
+  },
+  "yield": {
+   "sources": 0,
+   "findings": 0,
+   "findings_AB": 0,
+   "finding_names": [],
+   "on_site": {
+    "deployed_files": 35,
+    "deployed_html_pages": 0,
+    "summary": "35 files deployed (project JSON and milestone docs); not linked."
+   },
+   "ab_findings_per_100_prs": 0.0,
+   "sources_per_pr": 0.0
+  },
+  "smoke_date": "2026-07-30",
+  "last_real_capture": "2026-08-06",
+  "timing": "earned",
+  "timing_basis": "cage_start 2026-08-01; first dated real evidence in area: 2026-07-30 (+2 days). Rule: cage-first = cage_start more than 1 day before first evidence or no evidence yet; alongside = within 1 day; earned = evidence at least 2 days earlier.",
+  "verdict": "cage that earned its keep",
+  "why": "Opened 1 Aug, two days after the first lane sources (30 Jul) exposed the missing-record gaps, and was exercised across three waves on 42 gaps (10 closed, nearly all by documenting that the record cannot be obtained).",
+  "keep": "The 42-gap list as a table of what is unobtainable.",
+  "cage_start": "2026-08-01",
+  "days_evidence_preceded_cage": 2,
+  "exercised": {
+   "exercised": true,
+   "basis": "three waves over 42 gaps; 10 closed"
+  },
+  "cost_rank": 18
+ },
+ {
+  "apparatus": "Visual aperture / atlas / WebGL releases 1.0-1.3",
+  "key": "visual",
+  "paths": [
+   "src/{visual-aperture*,aperture*,atlas-webgl,social-field}*",
+   "home.js, home.css, index.html",
+   "docs/{atlas-*,aperture-kit,visual-aperture-scale-baseline,releases/*,public-site-handoff/*}",
+   "tools/*aperture*",
+   "test/{visual-aperture*,atlas*,social-field,home-model,ui-contract}*"
+  ],
+  "cost": {
+   "files": 87,
+   "lines": 25959,
+   "files_machinery": 87,
+   "lines_machinery": 25959,
+   "files_captured_evidence": 0,
+   "lines_captured_evidence": 0,
+   "tests": 22,
+   "tools": 6,
+   "workflows": 1,
+   "transient_workflows_archived": 0,
+   "schemas": 0,
+   "docs": 14,
+   "prs": 15,
+   "prs_merged": 13,
+   "prs_unmerged": 2,
+   "days": 57,
+   "first": "2026-07-20",
+   "last": "2026-09-14",
+   "discarded_lines_in_unmerged_prs": 2277,
+   "discarded_files_in_unmerged_prs": 17,
+   "rank_score": 18.67
+  },
+  "yield": {
+   "sources": 0,
+   "findings": 0,
+   "findings_AB": 0,
+   "finding_names": [],
+   "on_site": {
+    "deployed_files": 55,
+    "deployed_html_pages": 1,
+    "summary": "This is the public front end (index.html and explorer.html, releases 1.0-1.3), but the heavy layers render a graph of 93 edges."
+   },
+   "ab_findings_per_100_prs": 0.0,
+   "sources_per_pr": 0.0
+  },
+  "smoke_date": "2026-07-14",
+  "last_real_capture": "2026-08-14",
+  "timing": "earned",
+  "timing_basis": "cage_start 2026-07-20; first dated real evidence in area: 2026-07-14 (+6 days). Rule: cage-first = cage_start more than 1 day before first evidence or no evidence yet; alongside = within 1 day; earned = evidence at least 2 days earlier.",
+  "verdict": "cage that earned its keep",
+  "why": "Aperture work began 20-21 Jul, six days after the first reader-facing content (Arcadia, 14 Jul), and it is the shipped front end (releases 1.0-1.3), though its hardening targeted a 5,000-actor synthetic fixture against a real graph of 93 hop edges.",
+  "keep": "index.html four-lane page and explorer.html; hold the aperture/WebGL layers at their current size.",
+  "cage_start": "2026-07-20",
+  "days_evidence_preceded_cage": 6,
+  "exercised": {
+   "exercised": true,
+   "basis": "shipped front end, releases 1.0-1.3; 22 tests"
+  },
+  "cost_rank": 19
+ },
+ {
+  "apparatus": "Outside-review, adoption, reproduction and revocation machinery",
+  "key": "outside_review",
+  "paths": [
+   "data/project/*second-party-review*",
+   "data/research/status-sovereignty-wave-0*-second-party-review-*",
+   "docs/methods/{answerable-power-adoption-integrity,answerable-power-independent-reproduction,no-magic-human-gate,counter-selector-external-gate-execution}.md",
+   "tools/{m05-adoption-conformance,m05-independent-reproduction,m05-a1-*}.mjs",
+   ".github/ISSUE_TEMPLATE/apc-*.yml",
+   ".github/workflows/status-sovereignty-wave-0*-second-party-review.yml"
+  ],
+  "cost": {
+   "files": 66,
+   "lines": 10371,
+   "files_machinery": 66,
+   "lines_machinery": 10371,
+   "files_captured_evidence": 0,
+   "lines_captured_evidence": 0,
+   "tests": 7,
+   "tools": 9,
+   "workflows": 3,
+   "transient_workflows_archived": 0,
+   "schemas": 7,
+   "docs": 10,
+   "prs": 7,
+   "prs_merged": 6,
+   "prs_unmerged": 1,
+   "days": 7,
+   "first": "2026-07-27",
+   "last": "2026-08-02",
+   "discarded_lines_in_unmerged_prs": 82841,
+   "discarded_files_in_unmerged_prs": 56,
+   "rank_score": 19.0
+  },
+  "yield": {
+   "sources": 0,
+   "findings": 0,
+   "findings_AB": 0,
+   "finding_names": [],
+   "on_site": {
+    "deployed_files": 13,
+    "deployed_html_pages": 0,
+    "summary": "13 files deployed; the shortlist and rules are not linked."
+   },
+   "ab_findings_per_100_prs": 0.0,
+   "sources_per_pr": 0.0
+  },
+  "smoke_date": null,
+  "last_real_capture": null,
+  "timing": "cage-first",
+  "timing_basis": "cage_start 2026-07-27; first dated real evidence in area: none to 2026-09-15. Rule: cage-first = cage_start more than 1 day before first evidence or no evidence yet; alongside = within 1 day; earned = evidence at least 2 days earlier.",
+  "verdict": "scaffold that never got used",
+  "why": "No external reviewer, reproducer or adopter has ever responded (all 2,536 GitHub comments are from the owner account and two bots), and the repo's own no-magic-human-gate rule forbids outreach, so its function has never run.",
+  "keep": "One page of rules and the eight-academic shortlist; writing to one of them is the missing step.",
+  "cage_start": "2026-07-27",
+  "days_evidence_preceded_cage": null,
+  "exercised": {
+   "exercised": false,
+   "basis": "0 external reviewers, 0 reproductions, 0 adoptions; all 2,536 GitHub comments are from the owner account and two bots"
+  },
+  "cost_rank": 20
+ },
+ {
+  "apparatus": "Allocator-war waterline (lake waves 21-38)",
+  "key": "allocator_war",
+  "paths": [
+   "tools/*allocator-war*",
+   "docs/milestones/allocator-war-waterline-wave-01.md",
+   ".github/workflows/allocator-war-waterline.yml",
+   "test/allocator-war-*"
+  ],
+  "cost": {
+   "files": 9,
+   "lines": 1802,
+   "files_machinery": 9,
+   "lines_machinery": 1802,
+   "files_captured_evidence": 0,
+   "lines_captured_evidence": 0,
+   "tests": 1,
+   "tools": 1,
+   "workflows": 1,
+   "transient_workflows_archived": 0,
+   "schemas": 1,
+   "docs": 1,
+   "prs": 24,
+   "prs_merged": 20,
+   "prs_unmerged": 4,
+   "days": 4,
+   "first": "2026-07-31",
+   "last": "2026-08-03",
+   "discarded_lines_in_unmerged_prs": 90691,
+   "discarded_files_in_unmerged_prs": 505,
+   "rank_score": 19.0
+  },
+  "yield": {
+   "sources": 15,
+   "findings": 0,
+   "findings_AB": 0,
+   "finding_names": [],
+   "on_site": {
+    "deployed_files": 5,
+    "deployed_html_pages": 0,
+    "summary": "5 files deployed."
+   },
+   "ab_findings_per_100_prs": 0.0,
+   "sources_per_pr": 0.62
+  },
+  "smoke_date": "2026-07-31",
+  "last_real_capture": "2026-07-31",
+  "timing": "alongside",
+  "timing_basis": "cage_start 2026-07-31; first dated real evidence in area: 2026-07-31 (+0 days). Rule: cage-first = cage_start more than 1 day before first evidence or no evidence yet; alongside = within 1 day; earned = evidence at least 2 days earlier.",
+  "verdict": "cage that earned its keep",
+  "why": "Opened 31 Jul with the 15-source first pass and was exercised through lake waves 22-38 on 1-3 Aug (24 PRs, 20 merged).",
+  "keep": "The 15-source allocator-war pass.",
+  "cage_start": "2026-07-31",
+  "days_evidence_preceded_cage": 0,
+  "exercised": {
+   "exercised": true,
+   "basis": "lake waves 21-38 on a 15-source first pass"
+  },
+  "cost_rank": 21
+ },
+ {
+  "apparatus": "Official-record crawler + scheduled admission / auto-merge / watchdog + cross-corpus gap repair",
+  "key": "crawler",
+  "paths": [
+   "data/crawl/, receipts/crawl/",
+   "tools/crawl-official.mjs, tools/lib/official-crawl.mjs, tools/adapters/",
+   ".github/scripts/*scheduled-crawl*",
+   ".github/workflows/{crawl-official,resume-scheduled-crawl-admission,scheduled-crawl-watchdog-check,update-sweep}.yml",
+   "test/{official-crawl,scheduled-crawl-*,update-sweep}*",
+   "docs/official-record-crawler.md"
+  ],
+  "cost": {
+   "files": 103,
+   "lines": 17984,
+   "files_machinery": 36,
+   "lines_machinery": 4673,
+   "files_captured_evidence": 67,
+   "lines_captured_evidence": 13311,
+   "tests": 6,
+   "tools": 17,
+   "workflows": 4,
+   "transient_workflows_archived": 0,
+   "schemas": 0,
+   "docs": 2,
+   "prs": 36,
+   "prs_merged": 15,
+   "prs_unmerged": 21,
+   "days": 57,
+   "first": "2026-07-12",
+   "last": "2026-09-06",
+   "discarded_lines_in_unmerged_prs": 2264,
+   "discarded_files_in_unmerged_prs": 40,
+   "rank_score": 19.33
+  },
+  "yield": {
+   "sources": 35,
+   "findings": 0,
+   "findings_AB": 0,
+   "finding_names": [],
+   "on_site": {
+    "deployed_files": 3,
+    "deployed_html_pages": 0,
+    "summary": "Held by the allowlist (data/crawl and receipts/crawl are repository-only); only the crawler doc is deployed."
+   },
+   "ab_findings_per_100_prs": 0.0,
+   "sources_per_pr": 0.97
+  },
+  "smoke_date": "2026-07-12",
+  "last_real_capture": "2026-09-03",
+  "timing": "alongside",
+  "timing_basis": "cage_start 2026-07-12; first dated real evidence in area: 2026-07-12 (+0 days). Rule: cage-first = cage_start more than 1 day before first evidence or no evidence yet; alongside = within 1 day; earned = evidence at least 2 days earlier.",
+  "verdict": "cage that earned its keep",
+  "why": "Adapters shipped 12 Jul with their first 4 observations the same day, and the admission and watchdog layer of 1-6 Sep was exercised on 35 kept records and 1,741 rejections.",
+  "keep": "The Palantir/Anduril award list and the USAspending adapter.",
+  "cage_start": "2026-07-12",
+  "days_evidence_preceded_cage": 0,
+  "exercised": {
+   "exercised": true,
+   "basis": "35 observations kept and 1,741 rejected; scheduled runs through 5 Sep"
+  },
+  "cost_rank": 22
+ },
+ {
+  "apparatus": "Thesis assembly kernel, core-thesis, estate-lens audit and unmapped-section mapping",
+  "key": "thesis",
+  "paths": [
+   "reports/core-thesis/ (thesis, unmapped-sections)",
+   "build/core-thesis/estate-lens-*",
+   "build/thesis/, receipts/thesis-state-market/",
+   "tools/*thesis*, tools/*estate-lens*",
+   "docs/core-thesis.md, CORE-THESIS.md"
+  ],
+  "cost": {
+   "files": 145,
+   "lines": 104197,
+   "files_machinery": 134,
+   "lines_machinery": 103958,
+   "files_captured_evidence": 11,
+   "lines_captured_evidence": 239,
+   "tests": 5,
+   "tools": 10,
+   "workflows": 4,
+   "transient_workflows_archived": 0,
+   "schemas": 0,
+   "docs": 7,
+   "prs": 6,
+   "prs_merged": 6,
+   "prs_unmerged": 0,
+   "days": 4,
+   "first": "2026-07-21",
+   "last": "2026-07-24",
+   "discarded_lines_in_unmerged_prs": 0,
+   "discarded_files_in_unmerged_prs": 0,
+   "rank_score": 20.0
+  },
+  "yield": {
+   "sources": 41,
+   "findings": 1,
+   "findings_AB": 1,
+   "finding_names": [
+    "B: Core thesis and its stress test against public records"
+   ],
+   "on_site": {
+    "deployed_files": 125,
+    "deployed_html_pages": 5,
+    "summary": "Core-thesis report pages and estate-lens JSON are deployed; not linked from the home page."
+   },
+   "ab_findings_per_100_prs": 16.67,
+   "sources_per_pr": 6.83
+  },
+  "smoke_date": "2026-07-21",
+  "last_real_capture": "2026-07-24",
+  "timing": "alongside",
+  "timing_basis": "cage_start 2026-07-21; first dated real evidence in area: 2026-07-21 (+0 days). Rule: cage-first = cage_start more than 1 day before first evidence or no evidence yet; alongside = within 1 day; earned = evidence at least 2 days earlier.",
+  "verdict": "cage that earned its keep",
+  "why": "Opened 21 Jul alongside the first synthetic-population sources and was exercised by a 63-ruling stress test, with a 690-item mapping layer of which 59 are mapped by hand.",
+  "keep": "The one-page core thesis and the stress-test rulings.",
+  "cage_start": "2026-07-21",
+  "days_evidence_preceded_cage": 0,
+  "exercised": {
+   "exercised": true,
+   "basis": "63-ruling stress test; 690-item mapping layer, 59 mapped by hand"
+  },
+  "cost_rank": 23
+ },
+ {
+  "apparatus": "Publication allowlist and release-integrity gates",
+  "key": "allowlist",
+  "paths": [
+   "data/project/publication-allowlist.json",
+   "tools/lib/publication-allowlist.mjs",
+   "tools/{validate-publication-artifact,finalize-release-artifact,validate-release,ensure-release-history,smoke-public-routes}.mjs",
+   ".github/workflows/{deploy,ci}.yml",
+   "test/{publication-allowlist,public-route-smoke,deploy-workflow,ensure-release-history}.test.js"
+  ],
+  "cost": {
+   "files": 25,
+   "lines": 16216,
+   "files_machinery": 25,
+   "lines_machinery": 16216,
+   "files_captured_evidence": 0,
+   "lines_captured_evidence": 0,
+   "tests": 8,
+   "tools": 9,
+   "workflows": 2,
+   "transient_workflows_archived": 0,
+   "schemas": 0,
+   "docs": 1,
+   "prs": 19,
+   "prs_merged": 10,
+   "prs_unmerged": 9,
+   "days": 38,
+   "first": "2026-07-28",
+   "last": "2026-09-03",
+   "discarded_lines_in_unmerged_prs": 4745,
+   "discarded_files_in_unmerged_prs": 101,
+   "rank_score": 20.33
+  },
+  "yield": {
+   "sources": 1,
+   "findings": 0,
+   "findings_AB": 0,
+   "finding_names": [],
+   "on_site": {
+    "deployed_files": 6,
+    "deployed_html_pages": 0,
+    "summary": "It is the gate for the whole deployed artifact (3,092 allowlisted paths)."
+   },
+   "ab_findings_per_100_prs": 0.0,
+   "sources_per_pr": 0.05
+  },
+  "smoke_date": "2026-07-14",
+  "last_real_capture": "2026-07-17",
+  "timing": "earned",
+  "timing_basis": "cage_start 2026-07-28; first dated real evidence in area: 2026-07-14 (+14 days). Rule: cage-first = cage_start more than 1 day before first evidence or no evidence yet; alongside = within 1 day; earned = evidence at least 2 days earlier.",
+  "verdict": "cage that earned its keep",
+  "why": "Built 28-30 Jul, two weeks after the first public pages naming real people (14-17 Jul), and it holds back status-sovereignty, POOF, crawler and intake paths on every deploy.",
+  "keep": "Allowlist, deploy smoke and route probes; drop the history-checkout churn PRs.",
+  "cage_start": "2026-07-28",
+  "days_evidence_preceded_cage": 14,
+  "exercised": {
+   "exercised": true,
+   "basis": "gates every deploy: 3,092 allowlisted paths, held rules, size budgets"
+  },
+  "cost_rank": 24
+ },
+ {
+  "apparatus": "M-03/M-04A-F fog-resolution waves, constitutional class, epistemic jurisdiction, sensing map (comparator)",
+  "key": "m04_other",
+  "paths": [
+   "data/project/m04[a-f]-*, data/intake/m04*",
+   "docs/milestones/m04[a-f]-*, m03-*",
+   "reports/core-thesis/{epistemic-jurisdiction,constitutional-awareness}/",
+   "tools/*m04[a-f]*",
+   ".github/workflows/m04[a-f]-*.yml (12)"
+  ],
+  "cost": {
+   "files": 92,
+   "lines": 21395,
+   "files_machinery": 66,
+   "lines_machinery": 7971,
+   "files_captured_evidence": 26,
+   "lines_captured_evidence": 13424,
+   "tests": 12,
+   "tools": 5,
+   "workflows": 12,
+   "transient_workflows_archived": 0,
+   "schemas": 0,
+   "docs": 23,
+   "prs": 19,
+   "prs_merged": 17,
+   "prs_unmerged": 2,
+   "days": 3,
+   "first": "2026-07-23",
+   "last": "2026-07-25",
+   "discarded_lines_in_unmerged_prs": 349,
+   "discarded_files_in_unmerged_prs": 11,
+   "rank_score": 20.33
+  },
+  "yield": {
+   "sources": 186,
+   "findings": 8,
+   "findings_AB": 5,
+   "finding_names": [
+    "A: Palantir: how much is government, who controls it",
+    "A: Erebor bank: regulator records and a non-network investor",
+    "B: Who acts on a hunch and who must prove harm (epistemic jurisdiction)",
+    "B: ICE ImmigrationOS to one arrest in Woodburn, Oregon",
+    "B: Ukraine's Brave1 and battlefield feedback into allied procurement",
+    "C: From counterterror software to today's military platforms",
+    "C: Flock-style sensing networks map",
+    "C: Who holds the rule-making seat and who knows it"
+   ],
+   "on_site": {
+    "deployed_files": 37,
+    "deployed_html_pages": 0,
+    "summary": "Milestone docs and project JSON are deployed; not linked from the home page."
+   },
+   "ab_findings_per_100_prs": 26.32,
+   "sources_per_pr": 9.79
+  },
+  "smoke_date": "2026-07-24",
+  "last_real_capture": "2026-07-26",
+  "timing": "alongside",
+  "timing_basis": "cage_start 2026-07-23; first dated real evidence in area: 2026-07-24 (-1 days). Rule: cage-first = cage_start more than 1 day before first evidence or no evidence yet; alongside = within 1 day; earned = evidence at least 2 days earlier.",
+  "verdict": "cage that earned its keep",
+  "why": "Opened 23-24 Jul as the first sourced results arrived and was exercised on about 190 official sources across eight waves in three days.",
+  "keep": "Waves 01-08 outputs.",
+  "cage_start": "2026-07-23",
+  "days_evidence_preceded_cage": -1,
+  "exercised": {
+   "exercised": true,
+   "basis": "eight fog-resolution waves on about 190 official sources"
+  },
+  "cost_rank": 25
+ },
+ {
+  "apparatus": "M-04G scheduled monitors (hydrology, circulation, source ecology v2)",
+  "key": "m04g",
+  "paths": [
+   "data/project/m04g-*",
+   "docs/milestones/m04g-*",
+   "docs/methods/{evidence-hydrology,global-evidence-circulation}.md",
+   "tools/*m04g*",
+   ".github/workflows/m04g-*.yml (cron)"
+  ],
+  "cost": {
+   "files": 37,
+   "lines": 32551,
+   "files_machinery": 35,
+   "lines_machinery": 23595,
+   "files_captured_evidence": 2,
+   "lines_captured_evidence": 8956,
+   "tests": 2,
+   "tools": 8,
+   "workflows": 3,
+   "transient_workflows_archived": 0,
+   "schemas": 0,
+   "docs": 4,
+   "prs": 12,
+   "prs_merged": 10,
+   "prs_unmerged": 2,
+   "days": 22,
+   "first": "2026-07-26",
+   "last": "2026-08-16",
+   "discarded_lines_in_unmerged_prs": 920,
+   "discarded_files_in_unmerged_prs": 31,
+   "rank_score": 22.0
+  },
+  "yield": {
+   "sources": 192,
+   "findings": 0,
+   "findings_AB": 0,
+   "finding_names": [],
+   "on_site": {
+    "deployed_files": 22,
+    "deployed_html_pages": 2,
+    "summary": "22 files deployed; not linked."
+   },
+   "ab_findings_per_100_prs": 0.0,
+   "sources_per_pr": 16.0
+  },
+  "smoke_date": "2026-07-25",
+  "last_real_capture": "2026-07-26",
+  "timing": "alongside",
+  "timing_basis": "cage_start 2026-07-26; first dated real evidence in area: 2026-07-25 (+1 days). Rule: cage-first = cage_start more than 1 day before first evidence or no evidence yet; alongside = within 1 day; earned = evidence at least 2 days earlier.",
+  "verdict": "cage that earned its keep",
+  "why": "Opened 26 Jul, a day after its 192-source catalogue, and is exercised by scheduled polls (one recorded run reached 63 of 96 routes) that measure availability rather than content.",
+  "keep": "The source catalogue; the cron workflows can pause until a claim depends on a monitored feed.",
+  "cage_start": "2026-07-26",
+  "days_evidence_preceded_cage": 1,
+  "exercised": {
+   "exercised": true,
+   "basis": "scheduled polls; one recorded run reached 63 of 96 routes"
+  },
+  "cost_rank": 26
+ },
+ {
+  "apparatus": "Electric Twin register-request reply tooling and ownership trail",
+  "key": "electric_twin",
+  "paths": [
+   "tools/lib/electric-twin-register-request-*.mjs",
+   "tools/{finalize,record,render,adjudicate,second-party-review}-electric-twin-*.mjs",
+   "data/research/electric-twin-register-of-members-acquisition/",
+   "test/electric-twin-register-request-*",
+   "docs/requests/electric-twin-section-116-*"
+  ],
+  "cost": {
+   "files": 34,
+   "lines": 8535,
+   "files_machinery": 34,
+   "lines_machinery": 8535,
+   "files_captured_evidence": 0,
+   "lines_captured_evidence": 0,
+   "tests": 7,
+   "tools": 15,
+   "workflows": 0,
+   "transient_workflows_archived": 0,
+   "schemas": 0,
+   "docs": 1,
+   "prs": 8,
+   "prs_merged": 8,
+   "prs_unmerged": 0,
+   "days": 2,
+   "first": "2026-08-15",
+   "last": "2026-08-16",
+   "discarded_lines_in_unmerged_prs": 0,
+   "discarded_files_in_unmerged_prs": 0,
+   "rank_score": 23.0
+  },
+  "yield": {
+   "sources": 0,
+   "findings": 0,
+   "findings_AB": 0,
+   "finding_names": [],
+   "on_site": {
+    "deployed_files": 12,
+    "deployed_html_pages": 0,
+    "summary": "Request doc and example inputs are deployed; the Companies House result (A-tier) is separate topology evidence."
+   },
+   "ab_findings_per_100_prs": 0.0,
+   "sources_per_pr": 0.0
+  },
+  "smoke_date": null,
+  "last_real_capture": null,
+  "timing": "cage-first",
+  "timing_basis": "cage_start 2026-08-15; first dated real evidence in area: none to 2026-09-15. Rule: cage-first = cage_start more than 1 day before first evidence or no evidence yet; alongside = within 1 day; earned = evidence at least 2 days earlier.",
+  "verdict": "scaffold that never got used",
+  "why": "Built 15-16 Aug for a reply that cannot exist yet because the section 116 request is \"prepared, not sent\" and the response ledger is empty.",
+  "keep": "The prepared request; the downstream gates wait for a reply.",
+  "cage_start": "2026-08-15",
+  "smoke_note": "The thing the tooling processes, a reply to the section 116 request, does not exist; the Companies House evidence it supports (11-15 Aug) was gathered separately.",
+  "days_evidence_preceded_cage": null,
+  "exercised": {
+   "exercised": false,
+   "basis": "request is \"prepared, not sent\"; response ledger empty"
+  },
+  "cost_rank": 27
+ },
+ {
+  "apparatus": "Security-state organism packets (121 packets, 41 entities)",
+  "key": "security_state",
+  "paths": [
+   "build/core-thesis/security-state-organism/",
+   "data/project/security-state-*",
+   "tools/*security-state-organism*",
+   "docs/security-state-organism-program.md",
+   ".github/workflows/security-state-organism.yml"
+  ],
+  "cost": {
+   "files": 140,
+   "lines": 66397,
+   "files_machinery": 137,
+   "lines_machinery": 62941,
+   "files_captured_evidence": 3,
+   "lines_captured_evidence": 3456,
+   "tests": 1,
+   "tools": 3,
+   "workflows": 1,
+   "transient_workflows_archived": 0,
+   "schemas": 0,
+   "docs": 2,
+   "prs": 7,
+   "prs_merged": 5,
+   "prs_unmerged": 2,
+   "days": 22,
+   "first": "2026-07-24",
+   "last": "2026-08-14",
+   "discarded_lines_in_unmerged_prs": 260,
+   "discarded_files_in_unmerged_prs": 4,
+   "rank_score": 23.33
+  },
+  "yield": {
+   "sources": 17,
+   "findings": 1,
+   "findings_AB": 0,
+   "finding_names": [
+    "C: 'Security-state organism' thesis"
+   ],
+   "on_site": {
+    "deployed_files": 132,
+    "deployed_html_pages": 1,
+    "summary": "132 generated packet files deployed; thesis page not linked from the home page."
+   },
+   "ab_findings_per_100_prs": 0.0,
+   "sources_per_pr": 2.43
+  },
+  "smoke_date": "2026-07-24",
+  "last_real_capture": "2026-07-24",
+  "timing": "alongside",
+  "timing_basis": "cage_start 2026-07-24; first dated real evidence in area: 2026-07-24 (+0 days). Rule: cage-first = cage_start more than 1 day before first evidence or no evidence yet; alongside = within 1 day; earned = evidence at least 2 days earlier.",
+  "verdict": "cage that earned its keep",
+  "why": "Opened 24 Jul with its first 17 sourced records and was exercised as 121 generated packets naming 41 entities, and it seeded the stress test behind the Palantir, NGC2 and Erebor results.",
+  "keep": "The 17 sourced records and the entity registry.",
+  "cage_start": "2026-07-24",
+  "days_evidence_preceded_cage": 0,
+  "exercised": {
+   "exercised": true,
+   "basis": "121 packets generated and validated; 17 sourced records"
+  },
+  "cost_rank": 28
+ },
+ {
+  "apparatus": "NatSec100 identity custody and X-Bow award control",
+  "key": "natsec100",
+  "paths": [
+   "data/intake/natsec100-pathways/",
+   "receipts/natsec100/",
+   "data/research/natsec100-*",
+   "tools/*natsec100*",
+   "test/natsec100-*"
+  ],
+  "cost": {
+   "files": 46,
+   "lines": 4916,
+   "files_machinery": 8,
+   "lines_machinery": 1490,
+   "files_captured_evidence": 38,
+   "lines_captured_evidence": 3426,
+   "tests": 3,
+   "tools": 3,
+   "workflows": 0,
+   "transient_workflows_archived": 0,
+   "schemas": 0,
+   "docs": 0,
+   "prs": 11,
+   "prs_merged": 7,
+   "prs_unmerged": 4,
+   "days": 66,
+   "first": "2026-07-06",
+   "last": "2026-09-09",
+   "discarded_lines_in_unmerged_prs": 5012,
+   "discarded_files_in_unmerged_prs": 17,
+   "rank_score": 26.0
+  },
+  "yield": {
+   "sources": 54,
+   "findings": 2,
+   "findings_AB": 2,
+   "finding_names": [
+    "A: X-Bow: press figures versus the federal spending record",
+    "B: NatSec100 defence-startup rosters 2023-2026"
+   ],
+   "on_site": {
+    "deployed_files": 14,
+    "deployed_html_pages": 0,
+    "summary": "14 files deployed (12 receipts, 2 research JSON); X-Bow finding is on main."
+   },
+   "ab_findings_per_100_prs": 18.18,
+   "sources_per_pr": 4.91
+  },
+  "smoke_date": "2026-07-06",
+  "last_real_capture": "2026-09-09",
+  "timing": "earned",
+  "timing_basis": "cage_start 2026-09-05; first dated real evidence in area: 2026-07-06 (+61 days). Rule: cage-first = cage_start more than 1 day before first evidence or no evidence yet; alongside = within 1 day; earned = evidence at least 2 days earlier.",
+  "verdict": "cage that earned its keep",
+  "why": "Rosters were ingested 6 Jul; the identity-custody layer followed on 5-9 Sep and was exercised on the 2025 roster and the X-Bow award record.",
+  "keep": "X-Bow award-control method and the roster-to-entity table.",
+  "cage_start": "2026-09-05",
+  "days_evidence_preceded_cage": 61,
+  "exercised": {
+   "exercised": true,
+   "basis": "2025 roster recovery, identity adjudication, X-Bow award record"
+  },
+  "cost_rank": 29
+ },
+ {
+  "apparatus": "POOF publication ecology + DCA/AAH convergence",
+  "key": "poof",
+  "paths": [
+   "data/project/poof-clifford-*",
+   "reports/core-thesis/poof-clifford-ecology/",
+   "docs/poof-clifford-ecology.md, docs/methods/poof-*",
+   "schemas/poof-*, test/fixtures/poof-*",
+   "tools/*poof*, tools/*dca-h01*",
+   ".github/workflows/{poof-clifford-ecology,dca-h01}.yml"
+  ],
+  "cost": {
+   "files": 58,
+   "lines": 7258,
+   "files_machinery": 58,
+   "lines_machinery": 7258,
+   "files_captured_evidence": 0,
+   "lines_captured_evidence": 0,
+   "tests": 4,
+   "tools": 5,
+   "workflows": 2,
+   "transient_workflows_archived": 0,
+   "schemas": 6,
+   "docs": 5,
+   "prs": 6,
+   "prs_merged": 2,
+   "prs_unmerged": 4,
+   "days": 2,
+   "first": "2026-07-29",
+   "last": "2026-07-30",
+   "discarded_lines_in_unmerged_prs": 4625,
+   "discarded_files_in_unmerged_prs": 19,
+   "rank_score": 26.33
+  },
+  "yield": {
+   "sources": 0,
+   "findings": 0,
+   "findings_AB": 0,
+   "finding_names": [],
+   "on_site": {
+    "deployed_files": 5,
+    "deployed_html_pages": 0,
+    "summary": "The POOF review site is staged, not deployed (the allowlist holds any path containing \"poof\"); the few deployed files in this bucket are DCA-H01 records."
+   },
+   "ab_findings_per_100_prs": 0.0,
+   "sources_per_pr": 0.0
+  },
+  "smoke_date": "2026-07-24",
+  "last_real_capture": null,
+  "timing": "earned",
+  "timing_basis": "cage_start 2026-07-29; first dated real evidence in area: 2026-07-24 (+5 days). Rule: cage-first = cage_start more than 1 day before first evidence or no evidence yet; alongside = within 1 day; earned = evidence at least 2 days earlier.",
+  "verdict": "cage that earned its keep",
+  "why": "Built 29-30 Jul (PR #410), five days after the first sourced findings, as a generated review site with eight routes, five transaction schemas, OpenAPI and MCP cards and a merge-base constitutional validator, exercised by builds, five fixtures and a browser test in every check run; it is not deployed by its own status line and no outside respondent or cold reader has used it.",
+  "keep": "All of it; deployment is the owner's decision, and the first recorded cold-reader session would complete the exercise.",
+  "cage_start": "2026-07-29",
+  "days_evidence_preceded_cage": 5,
+  "exercised": {
+   "exercised": true,
+   "basis": "build:poof-ecology, validate:poof-ecology and validate:poof-constitution run in every npm check; 5 fixtures; 3 tests including a browser test; bound into SG-03..SG-12"
+  },
+  "not_deployed_status": "staged_repository_native_nonpublic_aperture (its own status line); not evidence of non-use",
+  "cost_rank": 30
+ },
+ {
+  "apparatus": "Research fan-out / synthetic-population / vendor-denominator / Omega programs",
+  "key": "research_fanout",
+  "paths": [
+   "tools/build-research-fanout.mjs, tools/validate-research-fanout.mjs",
+   "docs/research-fanout.md, docs/synthetic-population-vendor-denominator.md",
+   "build/research-fanout/ (generated, git-ignored)",
+   ".github/workflows/{research-fanout,vendor-denominator}.yml"
+  ],
+  "cost": {
+   "files": 18,
+   "lines": 3097,
+   "files_machinery": 18,
+   "lines_machinery": 3097,
+   "files_captured_evidence": 0,
+   "lines_captured_evidence": 0,
+   "tests": 3,
+   "tools": 5,
+   "workflows": 2,
+   "transient_workflows_archived": 0,
+   "schemas": 0,
+   "docs": 3,
+   "prs": 7,
+   "prs_merged": 5,
+   "prs_unmerged": 2,
+   "days": 33,
+   "first": "2026-07-13",
+   "last": "2026-08-14",
+   "discarded_lines_in_unmerged_prs": 2573,
+   "discarded_files_in_unmerged_prs": 17,
+   "rank_score": 27.67
+  },
+  "yield": {
+   "sources": 264,
+   "findings": 8,
+   "findings_AB": 6,
+   "finding_names": [
+    "A: Electric Twin's '96% independently validated' claim",
+    "A: Faculty to Accenture: the dated transaction",
+    "A: Clinical-trial 'digital twins': what the EMA actually qualified",
+    "B: Synthetic-audience market map (F-01 to F-20)",
+    "B: What synthetic-audience vendors disclose about models, clouds and data",
+    "B: Professional rules for synthetic respondents (MRS, ESOMAR, AAPOR)",
+    "C: Simon Case's post-office roles (ACOBA letters)",
+    "C: APFIT 'over 100 technologies transitioned'"
+   ],
+   "on_site": {
+    "deployed_files": 291,
+    "deployed_html_pages": 0,
+    "summary": "Generated fan-out JSON (291 files) is deployed, but the findings themselves are only in issues and not on the site."
+   },
+   "ab_findings_per_100_prs": 85.71,
+   "sources_per_pr": 37.71
+  },
+  "smoke_date": "2026-07-19",
+  "last_real_capture": "2026-08-13",
+  "timing": "alongside",
+  "timing_basis": "cage_start 2026-07-19; first dated real evidence in area: 2026-07-19 (+0 days). Rule: cage-first = cage_start more than 1 day before first evidence or no evidence yet; alongside = within 1 day; earned = evidence at least 2 days earlier.",
+  "verdict": "cage that earned its keep",
+  "why": "Issue batches went out 19 Jul and receipts came back as comments through 13 Aug (about 260 sources), exercised on real material though the results stay in GitHub issues.",
+  "keep": "Port the A/B-tier issue receipts into the repo.",
+  "cage_start": "2026-07-19",
+  "days_evidence_preceded_cage": 0,
+  "exercised": {
+   "exercised": true,
+   "basis": "about 260 real sources returned as issue receipts through 13 Aug"
+  },
+  "cost_rank": 31
+ },
+ {
+  "apparatus": "Scheduled-crawl GitHub App identity (PR-only publisher App)",
+  "key": "scheduled_app",
+  "paths": [
+   ".github/scripts/scheduled-crawl-pr-identity.sh",
+   "test/scheduled-crawl-pr-identity.test.js",
+   "(App-token step in .github/workflows/crawl-official.yml)"
+  ],
+  "cost": {
+   "files": 2,
+   "lines": 444,
+   "files_machinery": 2,
+   "lines_machinery": 444,
+   "files_captured_evidence": 0,
+   "lines_captured_evidence": 0,
+   "tests": 1,
+   "tools": 1,
+   "workflows": 0,
+   "transient_workflows_archived": 0,
+   "schemas": 0,
+   "docs": 0,
+   "prs": 4,
+   "prs_merged": 1,
+   "prs_unmerged": 3,
+   "days": 2,
+   "first": "2026-09-08",
+   "last": "2026-09-09",
+   "discarded_lines_in_unmerged_prs": 424,
+   "discarded_files_in_unmerged_prs": 8,
+   "rank_score": 33.0
+  },
+  "yield": {
+   "sources": 0,
+   "findings": 0,
+   "findings_AB": 0,
+   "finding_names": [],
+   "on_site": {
+    "deployed_files": 0,
+    "deployed_html_pages": 0,
+    "summary": "Not deployed."
+   },
+   "ab_findings_per_100_prs": 0.0,
+   "sources_per_pr": 0.0
+  },
+  "smoke_date": null,
+  "last_real_capture": null,
+  "timing": "cage-first",
+  "timing_basis": "cage_start 2026-09-08; first dated real evidence in area: none to 2026-09-15. Rule: cage-first = cage_start more than 1 day before first evidence or no evidence yet; alongside = within 1 day; earned = evidence at least 2 days earlier.",
+  "verdict": "scaffold that never got used",
+  "why": "Built 8-9 Sep after the crawler's last recorded run (5 Sep) added no observations, with no admitted crawl on record and its own dispatch control still open.",
+  "keep": "Wait for a crawl worth admitting.",
+  "cage_start": "2026-09-08",
+  "smoke_note": "The crawler's last recorded run (5 Sep) added 0 observations.",
+  "days_evidence_preceded_cage": null,
+  "exercised": {
+   "exercised": false,
+   "basis": "no crawl recorded as admitted through it; its dispatch control (#2638) is still open"
+  },
+  "cost_rank": 32
+ },
+ {
+  "apparatus": "Comprehension harness and contribution inbox",
+  "key": "comprehension",
+  "paths": [
+   "comprehension/",
+   "contributions/",
+   "tools/validate-comprehension-session.mjs",
+   "test/comprehension-protocol.test.js",
+   "CONTRIBUTING.md"
+  ],
+  "cost": {
+   "files": 13,
+   "lines": 352,
+   "files_machinery": 13,
+   "lines_machinery": 352,
+   "files_captured_evidence": 0,
+   "lines_captured_evidence": 0,
+   "tests": 1,
+   "tools": 1,
+   "workflows": 0,
+   "transient_workflows_archived": 0,
+   "schemas": 0,
+   "docs": 0,
+   "prs": 1,
+   "prs_merged": 0,
+   "prs_unmerged": 1,
+   "days": 1,
+   "first": "2026-07-15",
+   "last": "2026-07-15",
+   "discarded_lines_in_unmerged_prs": 818,
+   "discarded_files_in_unmerged_prs": 12,
+   "rank_score": 33.67
+  },
+  "yield": {
+   "sources": 0,
+   "findings": 0,
+   "findings_AB": 0,
+   "finding_names": [],
+   "on_site": {
+    "deployed_files": 2,
+    "deployed_html_pages": 0,
+    "summary": "Contribution templates deployed; nothing links to the test."
+   },
+   "ab_findings_per_100_prs": 0.0,
+   "sources_per_pr": 0.0
+  },
+  "smoke_date": null,
+  "last_real_capture": null,
+  "timing": "cage-first",
+  "timing_basis": "cage_start 2026-07-15; first dated real evidence in area: none to 2026-09-15. Rule: cage-first = cage_start more than 1 day before first evidence or no evidence yet; alongside = within 1 day; earned = evidence at least 2 days earlier.",
+  "verdict": "scaffold that never got used",
+  "why": "Opened 15 Jul with no stranger ever run through it and its single PR (#28) closed unmerged.",
+  "keep": "A CONTRIBUTING page.",
+  "cage_start": "2026-07-15",
+  "days_evidence_preceded_cage": null,
+  "exercised": {
+   "exercised": false,
+   "basis": "no stranger has been run through it; PR #28 closed unmerged"
+  },
+  "cost_rank": 33
+ },
+ {
+  "apparatus": "Research-track harnesses (10 place-formation / revolving-door tracks)",
+  "key": "research_tracks",
+  "paths": [
+   "data/research-tracks/ (10 tracks)",
+   "docs/tiered-research-methodology.md",
+   "tools/validate-research-tracks.mjs",
+   "test/research-tracks.test.js"
+  ],
+  "cost": {
+   "files": 55,
+   "lines": 4463,
+   "files_machinery": 55,
+   "lines_machinery": 4463,
+   "files_captured_evidence": 0,
+   "lines_captured_evidence": 0,
+   "tests": 1,
+   "tools": 1,
+   "workflows": 0,
+   "transient_workflows_archived": 0,
+   "schemas": 0,
+   "docs": 1,
+   "prs": 0,
+   "prs_merged": 0,
+   "prs_unmerged": 0,
+   "days": 6,
+   "first": "2026-07-17",
+   "last": "2026-07-22",
+   "discarded_lines_in_unmerged_prs": 0,
+   "discarded_files_in_unmerged_prs": 0,
+   "note": "no dedicated PR; dates from trail record",
+   "rank_score": 34.33
+  },
+  "yield": {
+   "sources": 81,
+   "findings": 5,
+   "findings_AB": 1,
+   "finding_names": [
+    "B: Opportunity Zones: was money already in place before the 2018 map?",
+    "C: Place-formation tracks: transit, chip plants, stadiums, TIF districts",
+    "C: Revolving-door rosters (Commerce, Energy, FDA, FTC)",
+    "C: Legislators' and state officials' holdings versus public money",
+    "C: NATO DIANA accelerator rosters"
+   ],
+   "on_site": {
+    "deployed_files": 53,
+    "deployed_html_pages": 1,
+    "summary": "53 files deployed; the OZ dossier page is public (reader-facing HTML)."
+   },
+   "ab_findings_per_100_prs": null,
+   "sources_per_pr": null
+  },
+  "smoke_date": "2026-07-17",
+  "last_real_capture": "2026-07-22",
+  "timing": "alongside",
+  "timing_basis": "cage_start 2026-07-17; first dated real evidence in area: 2026-07-17 (+0 days). Rule: cage-first = cage_start more than 1 day before first evidence or no evidence yet; alongside = within 1 day; earned = evidence at least 2 days earlier.",
+  "verdict": "cage that earned its keep",
+  "why": "All ten harnesses shipped 17-22 Jul with captured sources (3-32 each, 81 total) on real registries, and 9 of 10 remain \"declared, not wired\".",
+  "keep": "The Opportunity Zones dossier and the stadium-financing numbers; the other tracks stay on the agenda.",
+  "cage_start": "2026-07-17",
+  "days_evidence_preceded_cage": 0,
+  "exercised": {
+   "exercised": true,
+   "basis": "ten harnesses with 81 captured sources"
+  },
+  "cost_rank": 34
+ },
+ {
+  "apparatus": "ICIJ Panama Papers import",
+  "key": "panama",
+  "paths": [
+   "tools/{import-icij-panama,acquire-icij-offshoreleaks}.mjs",
+   "test/icij-panama-import.test.js",
+   "data/research/icij-panama-import-manifest.json"
+  ],
+  "cost": {
+   "files": 4,
+   "lines": 402,
+   "files_machinery": 4,
+   "lines_machinery": 402,
+   "files_captured_evidence": 0,
+   "lines_captured_evidence": 0,
+   "tests": 1,
+   "tools": 2,
+   "workflows": 0,
+   "transient_workflows_archived": 0,
+   "schemas": 0,
+   "docs": 0,
+   "prs": 0,
+   "prs_merged": 0,
+   "prs_unmerged": 0,
+   "days": 3,
+   "first": "2026-07-13",
+   "last": "2026-07-15",
+   "discarded_lines_in_unmerged_prs": 0,
+   "discarded_files_in_unmerged_prs": 0,
+   "note": "no dedicated PR; dates from trail record",
+   "rank_score": 34.33
+  },
+  "yield": {
+   "sources": 2,
+   "findings": 0,
+   "findings_AB": 0,
+   "finding_names": [],
+   "on_site": {
+    "deployed_files": 19,
+    "deployed_html_pages": 0,
+    "summary": "Manifest deployed; large outputs not in repo."
+   },
+   "ab_findings_per_100_prs": null,
+   "sources_per_pr": null
+  },
+  "smoke_date": "2026-07-13",
+  "last_real_capture": "2026-07-15",
+  "timing": "alongside",
+  "timing_basis": "cage_start 2026-07-13; first dated real evidence in area: 2026-07-13 (+0 days). Rule: cage-first = cage_start more than 1 day before first evidence or no evidence yet; alongside = within 1 day; earned = evidence at least 2 days earlier.",
+  "verdict": "cage that earned its keep",
+  "why": "The importer was built 13-15 Jul with the ICIJ pull (559,600 nodes) and exercised once as a pipeline control.",
+  "keep": "The import and its rerunnable manifest.",
+  "cage_start": "2026-07-13",
+  "days_evidence_preceded_cage": 0,
+  "exercised": {
+   "exercised": true,
+   "basis": "559,600 nodes imported; one control record passed"
+  },
+  "cost_rank": 35
+ },
+ {
+  "apparatus": "2037 plan (BUILD-INSTRUCTIONS sections 3-7 + durability / self-assembling architecture plans)",
+  "key": "plan2037",
+  "paths": [
+   "BUILD-INSTRUCTIONS.md sections 3-7",
+   "docs/durability-plan.md",
+   "docs/self-assembling-architecture.md",
+   "docs/project-realignment.md"
+  ],
+  "cost": {
+   "files": 3,
+   "lines": 873,
+   "files_machinery": 3,
+   "lines_machinery": 873,
+   "files_captured_evidence": 0,
+   "lines_captured_evidence": 0,
+   "tests": 0,
+   "tools": 0,
+   "workflows": 0,
+   "transient_workflows_archived": 0,
+   "schemas": 0,
+   "docs": 3,
+   "prs": 2,
+   "prs_merged": 2,
+   "prs_unmerged": 0,
+   "days": 5,
+   "first": "2026-07-02",
+   "last": "2026-07-06",
+   "discarded_lines_in_unmerged_prs": 0,
+   "discarded_files_in_unmerged_prs": 0,
+   "note": "PRs #19, #22",
+   "rank_score": 35.0
+  },
+  "yield": {
+   "sources": 0,
+   "findings": 0,
+   "findings_AB": 0,
+   "finding_names": [],
+   "on_site": {
+    "deployed_files": 3,
+    "deployed_html_pages": 0,
+    "summary": "Durability plan deployed as a doc; README links BUILD-INSTRUCTIONS as the governing document."
+   },
+   "ab_findings_per_100_prs": 0.0,
+   "sources_per_pr": 0.0
+  },
+  "smoke_date": null,
+  "last_real_capture": null,
+  "timing": "cage-first",
+  "timing_basis": "cage_start 2026-07-02; first dated real evidence in area: none to 2026-09-15. Rule: cage-first = cage_start more than 1 day before first evidence or no evidence yet; alongside = within 1 day; earned = evidence at least 2 days earlier.",
+  "verdict": "scaffold that never got used",
+  "why": "Written 2-6 Jul; phases 1-4 (2027-2037) and the 30-year durability and self-assembly plans have no inputs and none has started.",
+  "keep": "A one-page \"next 90 days\"; the dated phases wait for their inputs.",
+  "cage_start": "2026-07-02",
+  "days_evidence_preceded_cage": null,
+  "exercised": {
+   "exercised": false,
+   "basis": "phases 1-4 (2027-2037) have no inputs; none started"
+  },
+  "cost_rank": 36
+ },
+ {
+  "apparatus": "Constitution (BUILD-INSTRUCTIONS sections 1-2, 8-9; methodology/definitions/redaction policy)",
+  "key": "constitution",
+  "paths": [
+   "BUILD-INSTRUCTIONS.md sections 1-2, 8-9",
+   "docs/{methodology,definitions,redaction-policy,plain-language}.md",
+   "tools/validate-release.mjs (enforcement)"
+  ],
+  "cost": {
+   "files": 5,
+   "lines": 476,
+   "files_machinery": 5,
+   "lines_machinery": 476,
+   "files_captured_evidence": 0,
+   "lines_captured_evidence": 0,
+   "tests": 0,
+   "tools": 0,
+   "workflows": 0,
+   "transient_workflows_archived": 0,
+   "schemas": 0,
+   "docs": 4,
+   "prs": 4,
+   "prs_merged": 4,
+   "prs_unmerged": 0,
+   "days": 65,
+   "first": "2026-07-06",
+   "last": "2026-09-08",
+   "discarded_lines_in_unmerged_prs": 0,
+   "discarded_files_in_unmerged_prs": 0,
+   "note": "PRs #22 (adds BUILD-INSTRUCTIONS), #2613, #2615, #2629",
+   "rank_score": 35.0
+  },
+  "yield": {
+   "sources": 0,
+   "findings": 0,
+   "findings_AB": 0,
+   "finding_names": [],
+   "on_site": {
+    "deployed_files": 4,
+    "deployed_html_pages": 0,
+    "summary": "Linked from the README; docs deployed."
+   },
+   "ab_findings_per_100_prs": 0.0,
+   "sources_per_pr": 0.0
+  },
+  "smoke_date": "2026-06-28",
+  "last_real_capture": "2026-07-12",
+  "timing": "earned",
+  "timing_basis": "cage_start 2026-07-06; first dated real evidence in area: 2026-06-28 (+8 days). Rule: cage-first = cage_start more than 1 day before first evidence or no evidence yet; alongside = within 1 day; earned = evidence at least 2 days earlier.",
+  "verdict": "cage that earned its keep",
+  "why": "Written 6 Jul, eight days after the first graph data, and exercised by validate:release on every build, and its density rule is what PR #23 (12 Jul) cited to fix a release that generated 6,555 of 6,589 hops from one roster.",
+  "keep": "Section 1 as the one-pager.",
+  "cage_start": "2026-07-06",
+  "days_evidence_preceded_cage": 8,
+  "exercised": {
+   "exercised": true,
+   "basis": "enforced by validate:release on every build; its density rule is what PR #23 (12 Jul) cited to fix a release that generated 6,555 of 6,589 hops from one roster"
+  },
+  "cost_rank": 37
+ }
+]
