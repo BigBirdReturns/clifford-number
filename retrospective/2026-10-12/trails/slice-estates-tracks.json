@@ -1,0 +1,397 @@
+[
+ {
+  "trail": "Dialog estate (Thiel-linked society directory + UK AI policy)",
+  "question": "Does a listing in the Dialog society directory connect Matt Clifford's UK AI policy circle to Peter Thiel / Palantir money through anything dated and checkable?",
+  "where": [
+   "data/estates/definitions/dialog-estate.json",
+   "build/cases/uk-ai-policy.json",
+   "data/intake/thiel-palantir-dialog-candidates.json"
+  ],
+  "stage": "on-site",
+  "found": "Holds the flagship UK AI policy case (224 claims, only 37 verified and 187 still awaiting review; 14 sources) plus a queue of 5 questions to put to public registries, 4 of which were never run. All it establishes is that a directory listing exists; the repo itself says a listing proves nothing about attendance or dealings, and no dated shared event was found.",
+  "real_sources": 14,
+  "active": "2026-07-22..2026-07-23",
+  "risk": "Case content is inventoried under the cases slice; this row is only the estate wrapper, so do not double-count. The case is 'review_required', not signed off.",
+  "worth": "keep",
+  "why": "Core case of the project, but the Dialog-specific link is still just a listing.",
+  "slice": "estates-tracks",
+  "on_main": true
+ },
+ {
+  "trail": "UK defence estate (Strategic Defence Review and what followed)",
+  "question": "After the 2024-25 UK Strategic Defence Review, which defence suppliers, programmes and appointments actually followed, and who connects them to the review's authors?",
+  "where": [
+   "data/estates/definitions/uk-defense-estate.json",
+   "data/ledger/surfaces.jsonl"
+  ],
+  "stage": "sources-gathered",
+  "found": "Draws on 18 official-record snapshots tagged defence-industrial in the main ledger, e.g. the 17 Jul 2024 review commission naming three external reviewers, Anduril UK contract notices (Project TALOS 2021-23, a March 2025 Ukraine drone deal), a Project NYX shortlist cut from 7 to 4 suppliers (Jan to May 2026) and a 26-supplier decision-tools framework. The estate never listed the full UK supplier universe, so no link between reviewers and suppliers is shown.",
+  "real_sources": 18,
+  "active": "2026-07-22..2026-07-23",
+  "risk": "Ledger snapshots are mixed UK and US items and belong to the ledger slice; estate adds only the wrapper and a to-do (enumerate suppliers).",
+  "worth": "maybe",
+  "why": "Real official records exist but the supplier list that would make them an answer was not built.",
+  "slice": "estates-tracks",
+  "on_main": true
+ },
+ {
+  "trail": "US defence estate (Anduril, Swarm Forge contests, defence-tech people)",
+  "question": "Between US defence-tech vendors (Anduril, the CDAO Swarm Forge contests) and the government buyers, who decides what, and who is connected to whom?",
+  "where": [
+   "data/estates/definitions/us-defense-estate.json",
+   "cases/anduril-access-ownership/case.json",
+   "cases/field-autopsy-03/case.json"
+  ],
+  "stage": "on-site",
+  "found": "Holds two published cases (Anduril access and ownership; 'Every Participant Gets a Contract' on CDAO Swarm Forge; 37 claims and 23 receipts between them), the Austin-Israel defence-VC intake and 18 person leads. Missing and never gathered: the buyers' decision files and money flows by legal entity, which the estate names as its deciding gap.",
+  "real_sources": 23,
+  "active": "2026-07-22..2026-07-23",
+  "risk": "Both cases are 'review_required'. The 18 person leads are one repeated template (person, then board/adviser roles, then defence-tech, stop at two hops).",
+  "worth": "keep",
+  "why": "The project's most developed real-world subject; the cases are inventoried elsewhere.",
+  "slice": "estates-tracks",
+  "on_main": true
+ },
+ {
+  "trail": "Local development estate (Arcadia CA plus place-formation tracks)",
+  "question": "Where public money or policy de-risked land (Arcadia, transit stations, TIF districts, stadiums, Opportunity Zones), who owned the land first and who captured the uplift?",
+  "where": [
+   "data/estates/definitions/local-development-estate.json",
+   "cases/arcadia-field-autopsy/case.json",
+   "data/intake/next-ten-estates/manifest.json"
+  ],
+  "stage": "on-site",
+  "found": "Largest estate: the Arcadia case (75 claims, 142 receipts) plus 4 research tracks and 8 raw intake slices (64 records) of ordinances, board approvals and finance figures. The signed agreements and parcel-by-parcel cash-flow joins that would answer the question were not obtained; Arcadia's county deed chronology is still marked in progress.",
+  "real_sources": 142,
+  "active": "2026-07-17..2026-07-23",
+  "risk": "real_sources counts Arcadia receipt references, not distinct websites. Arcadia is inventoried under the cases slice.",
+  "worth": "keep",
+  "why": "Holds the one place-formation case plus the only track (Opportunity Zones) that reached a sourced result.",
+  "slice": "estates-tracks",
+  "on_main": true
+ },
+ {
+  "trail": "Six 'next-ten' estates that are just homes for track rosters",
+  "question": "Can the research-track name lists be filed under durable domains (transatlantic defence, executive appointments, Congress, state authorities, regulators, public money)?",
+  "where": [
+   "data/estates/track-map.jsonl",
+   "data/estates/slice-map.jsonl",
+   "build/estates/index.json"
+  ],
+  "stage": "sources-gathered",
+  "found": "Their entire content is the roster slices counted in the track rows: US legislative (Senate 100 + House 441 offices = 543 rows), transatlantic defence (DIANA cohorts, 88 rows plus 151 completion rows), state and municipal authorities (52), regulatory markets (23), executive appointments (20), public money and industrial policy (3 CHIPS rows). Name lists and official page inventories only; no joined finding in any of them.",
+  "real_sources": 35,
+  "active": "2026-07-22..2026-07-23",
+  "risk": "Pure labels; counting them as six estates with content double-counts the track data.",
+  "worth": "maybe",
+  "why": "Useful only if you want the 24-bucket taxonomy; the data lives in the track rows.",
+  "slice": "estates-tracks",
+  "on_main": true
+ },
+ {
+  "trail": "UK state-market estate (synthetic-population thesis)",
+  "question": "Are AI-simulated 'synthetic populations' becoming standard for government and business decisions, via people and money moving between UK government AI units (10DS, i.AI, GDS) and vendors such as Faculty and Accenture?",
+  "where": [
+   "data/estates/definitions/uk-state-market-estate.json",
+   "data/research/theses/synthetic-population-infrastructure.json",
+   "data/research/denominators/synthetic-population-vendors.json"
+  ],
+  "stage": "scaffold",
+  "found": "Nothing yet: the thesis is a 'kernel' with 18 case contracts (none started) and no promoted evidence. The vendor list that anchors it (33 vendors in a paywalled Gartner report) is blocked; 14 vendors were recovered from their own public posts and 0 were confirmed from the report, so no market count or claim is possible.",
+  "real_sources": 14,
+  "active": "2026-07-21..2026-07-23",
+  "risk": "Depends on a licensed document the repo does not have; the 14 recovered vendors are a self-selected, non-random set.",
+  "worth": "maybe",
+  "why": "Interesting thesis but blocked until someone obtains the paywalled report.",
+  "slice": "estates-tracks",
+  "on_main": true
+ },
+ {
+  "trail": "Venture capital and corporate-control estate",
+  "question": "Who sits on the boards, funds and ownership tables of defence-tech startups and accelerators, legal entity by legal entity?",
+  "where": [
+   "data/estates/definitions/venture-capital-corporate-control-estate.json",
+   "data/research/denominators/synthetic-population-vendors.json",
+   "data/intake/austin-israel-defense-corridor/manifest.json"
+  ],
+  "stage": "scaffold",
+  "found": "Nothing of its own: it owns zero cases, slices or records and only points at material held elsewhere (the blocked vendor list, the Austin-Israel defence-VC intake, Thiel/Palantir probes, the unstarted accelerator-fund track). Its universe of funds and legal entities was never frozen.",
+  "real_sources": 0,
+  "active": "2026-07-22..2026-07-23",
+  "risk": "Overlaps heavily with US defence estate and the accelerator track; the label adds no data.",
+  "worth": "drop",
+  "why": "A label over other people's data; fold into US defence.",
+  "slice": "estates-tracks",
+  "on_main": true
+ },
+ {
+  "trail": "Offshore and beneficial-ownership estate (Panama Papers)",
+  "question": "Which offshore companies, officers and middlemen in the leaked Panama Papers data can be matched to official company registries, and who actually owns them?",
+  "where": [
+   "data/estates/definitions/offshore-beneficial-ownership-estate.json",
+   "data/research/icij-panama-import-manifest.json",
+   "tools/import-icij-panama.mjs"
+  ],
+  "stage": "sources-gathered",
+  "found": "One real asset: a checksummed bulk import of the ICIJ Panama Papers data, 559,600 records (213,634 companies, 238,402 officers, 93,454 addresses, 14,110 intermediaries) and 674,102 relationships, current only to 2015. Nothing has yet been validated against official registries, so no ownership is established.",
+  "real_sources": 1,
+  "active": null,
+  "risk": "Only the manifest is in the repo; the 216 MB and 267 MB output files are absent, so the import cannot be inspected or rerun from the repo alone. Being in the leak implies nothing improper.",
+  "worth": "maybe",
+  "why": "Real, large dataset, but unvalidated and not reproducible from what is committed.",
+  "slice": "estates-tracks",
+  "on_main": true
+ },
+ {
+  "trail": "Public-interest crossing estate (Epstein, Trump-related, Panama records)",
+  "question": "Can public records on the Epstein document library, Trump-related offices, campaigns and trusts, and the Panama Papers be crossed on exact identifiers without guessing from names?",
+  "where": [
+   "data/estates/definitions/public-interest-crossing-estate.json",
+   "data/research/public-interest-discovery-seeds.jsonl",
+   "docs/public-interest-discovery.md"
+  ],
+  "stage": "scaffold",
+  "found": "Nothing concluded here: it is a plan of 24 search seeds (8 each on the DOJ Epstein library, Trump-related records and Panama Papers) pointing at 20 official source locations, with rules barring inference from names and a privacy rule for victim data. Any actual crossings live in other slices.",
+  "real_sources": null,
+  "active": "2026-07-22..2026-07-23",
+  "risk": "Politically and legally sensitive subject matter naming real individuals; check publication stance before anything here is shown on the site.",
+  "worth": "maybe",
+  "why": "A careful plan, but a plan only.",
+  "slice": "estates-tracks",
+  "on_main": true
+ },
+ {
+  "trail": "Ten 'frontier' estates (courts, lobbying/consulting, nonprofits, universities, AI/compute, energy, sanctions/export, patents, immigration/labor, property title/debt)",
+  "question": "Which further domains deserve their own durable collection, and where would their official records come from?",
+  "where": [
+   "data/estates/surveys/",
+   "build/estate-frontier/manifest.json",
+   "gametrail-handoffs/judicial-administrative-adjudication-estate.md"
+  ],
+  "stage": "scaffold",
+  "found": "Nothing yet: each is a paper survey with a defined counting unit, null controls and 6-8 named official portals (68 in total, e.g. PACER, GAO protests), and 'raw records acquired = 0' by design. They have no cases, tracks or data.",
+  "real_sources": 0,
+  "active": "2026-07-23..2026-07-23",
+  "risk": "Shown on the public Game-Trail page as 'prepared surveys' and counted in '24 estates'; reads as progress but contains no data.",
+  "worth": "maybe",
+  "why": "A reasonable to-do list, but not research and not estates yet.",
+  "slice": "estates-tracks",
+  "on_main": true
+ },
+ {
+  "trail": "M-01 estate pass (143 tasks across 14 estates)",
+  "question": "Can every estate be run through the same five-step lane (freeze the list, collect sources, match identities, check dates, hand off) in parallel?",
+  "where": [
+   "build/estate-closures/manifest.json",
+   "docs/milestones/estate-aperture-v1.md",
+   "issue-handoffs/97-dialog-estate.md"
+  ],
+  "stage": "scaffold",
+  "found": "Nothing yet: the 143 tasks were 'closed' by a script (closed_by 'deterministic_bounded_pass') that wrote down each source's web address and next step. 129 remain 'partially searched'; the 14 'complete' ones are only the hand-off sheets. It records 87 source uses across 54 source families but collected no records itself, and generated 14 issue write-ups (#85-98).",
+  "real_sources": 0,
+  "active": "2026-07-22..2026-07-23",
+  "risk": "The public Estates page and milestone doc say 'closed'; easy to misread as research done. Also renamed the earlier 20 bounded packets from 'estate' to 'slice' after the fact.",
+  "worth": "drop",
+  "why": "Machine-written planning ledger; only the source-address list has lasting value.",
+  "slice": "estates-tracks",
+  "on_main": true
+ },
+ {
+  "trail": "Game trails: what the 308 'trails' actually are",
+  "question": "If you follow each lead from each estate, where does it first touch another estate's records?",
+  "where": [
+   "gametrails/index.html",
+   "build/estate-game-trails/manifest.json",
+   "data/gametrails/methodology.json"
+  ],
+  "stage": "on-site",
+  "found": "A game trail is a short bounded lead (follow a person, place or document up to 4 steps until it touches another domain). The 308 are 35 earlier leads (10 Arcadia place leads, 18 near-identical defence-tech person leads, 4 cross-corpus, 3 Thiel/Trump wrap-up) plus 273 auto-generated bookkeeping trails (155 per source portal, 94 shared-file lookups, 24 per-estate summaries). Outcomes: 38 'typed overlap' (lead falls inside another estate's declared scope, a routing note), 101 'shared custody' (two estates list the same internal file), 101 'shared source website' (e.g. both use SEC EDGAR), 66 'no overlap', 2 unresolved (Arcadia transcript recovery, 'geomantic' claims). Only 5 pairs are a real repeated named entity: Peter Thiel; Downtown Arcadia Improvement Association; Jackson Moses; Katherine Boyle with a16z American Dynamism; Pallas Ventures with Morpheus Space. None is a documented link between subjects.",
+  "real_sources": 0,
+  "active": "2026-07-23..2026-07-23",
+  "risk": "The public page reports 308 trails and 302 estate-to-estate overlaps, nearly all structural bookkeeping; it reads like findings and inflates apparent progress. Methodology itself says shared sources and custody prove nothing.",
+  "worth": "drop",
+  "why": "Keep the 35 original leads and the 5 repeated-entity pairs; the other 273 are generated.",
+  "slice": "estates-tracks",
+  "on_main": true
+ },
+ {
+  "trail": "Opportunity Zones: was money already in place before the 2018 designation?",
+  "question": "When the 2017 Opportunity Zone tax-break map was drawn, was private money already positioned in the chosen areas, and did the gains concentrate in a few middlemen?",
+  "where": [
+   "data/research-tracks/opportunity-zones-value-capture/dossier/01-case-summary.md",
+   "data/research-tracks/opportunity-zones-value-capture/runs/oz-run-2026-07-17-02/run-report.md",
+   "data/research-tracks/opportunity-zones-value-capture/dossier/opportunity-zones-dossier.html"
+  ],
+  "stage": "on-site",
+  "found": "Fund route is a null: SEC Form D filings for 'qualified opportunity fund' number zero before the 14 Jun 2018 designation (16 in 2019, first 2019-01-04); the earliest of any opportunity-zone fund is 21 Jun 2018 (Virtua Opportunity Zone Fund I, AZ). Land route: five press- and oversight-documented cases of already-owned land placed in a designated tract by a governor's pick (Port Covington Baltimore, a West Palm Beach marina, Detroit riverfront, Tahoe Reno Industrial Center, Storey County NV). For Port Covington, Maryland deed records show purchases 2014-2016 (e.g. $46.5M on 2014-12-23; a July 2016 cluster summing exactly to the $70.3M the Baltimore Sun reported). Also a 9-run benchmark showing the cheap model with the right tool matched Opus at about 1/18 the cost.",
+  "real_sources": 32,
+  "active": "2026-07-17..2026-07-22",
+  "risk": "Track README and index still say 'scaffold, not wired' despite real runs. Evidence is news links only (no archived copies); the receipts file marks the Detroit and Nevada quotes as not independently verified though the dossier calls them verified. Deed data has owner names redacted, so the Plank/Sagamore link rests on press; reporting says buying began 2012 but the earliest deed found is May 2014. The dossier HTML is on the public site but not linked. Lawful behaviour; no wrongdoing is claimed.",
+  "worth": "keep",
+  "why": "Only track that reached a sourced conclusion, including a useful negative result.",
+  "slice": "estates-tracks",
+  "on_main": true
+ },
+ {
+  "trail": "Transit stations: did owners position before the station decision?",
+  "question": "Across transit station areas under joint-development policy, where did private positioning precede public activation?",
+  "where": [
+   "data/research-tracks/metro-station-tod-sweep/harness.json",
+   "data/intake/next-ten-estates/raw/district-noho-joint-development.json",
+   "data/intake/estate-expansion-01/next-ten.json"
+  ],
+  "stage": "sources-gathered",
+  "found": "Only two LA Metro board approvals captured: District NoHo (authorized 2024-10-03; 11.8 acres, about 570 initial apartments and 1,400+ total, developer NOHO Development Associates LLC, Trammell Crow / High Street) and Expo/Crenshaw (approved 2025-03-27). Nothing on who owned the land earlier, so the question is unanswered.",
+  "real_sources": 4,
+  "active": "2026-07-17..2026-07-22",
+  "risk": "The full station list (the denominator) was never built; two projects is an anecdote. Harness still labelled scaffold.",
+  "worth": "drop",
+  "why": "Two web pages captured; no analysis worth preserving beyond the question.",
+  "slice": "estates-tracks",
+  "on_main": true
+ },
+ {
+  "trail": "CHIPS Act chip plants: who assembled the land and incentives?",
+  "question": "Where federal chip-plant subsidy de-risked a site, who assembled the land and secured the incentives, and in what order relative to the award?",
+  "where": [
+   "data/research-tracks/chips-act-fab-siting/harness.json",
+   "data/intake/next-ten-estates/raw/tsmc-arizona-chips-cluster.json",
+   "data/intake/estate-expansion-01/next-ten.json"
+  ],
+  "stage": "sources-gathered",
+  "found": "Two federal award pages: TSMC Arizona ($6.6B grant plus $5B loans, over $65B private investment, 6,000+ jobs) and Micron Clay NY ($6.44B grant, up to $150B investment, about 9,000 jobs, environmental sign-off 2025-12-16). No land purchases, state incentives or payouts collected, so the order of events is unknown.",
+  "real_sources": 3,
+  "active": "2026-07-17..2026-07-22",
+  "risk": "The list of all announced CHIPS sites was never built; award figures are announcements, not money paid.",
+  "worth": "drop",
+  "why": "Two press-release-level pages; the question remains but no work done on it.",
+  "slice": "estates-tracks",
+  "on_main": true
+ },
+ {
+  "trail": "Stadium financing: who captured the land value around publicly funded venues?",
+  "question": "Where a stadium or arena was publicly financed, who captured the surrounding land uplift and development rights, and how was the public cost structured?",
+  "where": [
+   "data/research-tracks/stadium-arena-public-finance/harness.json",
+   "data/intake/next-ten-estates/raw/new-highmark-stadium-public-finance.json",
+   "data/intake/estate-expansion-01/next-ten.json"
+  ],
+  "stage": "sources-gathered",
+  "found": "Buffalo's New Highmark Stadium: $2.1B total, of which NY State $600M, Erie County $250M and the Bills $1.25B (including overruns); 30-year lease, 242 acres, substantially complete June 2026, with 11 named board members of the public Erie County Stadium Corporation. Nashville East Bank: $840M Titans/seat-licence money, $500M state and $760M revenue bonds, 66 acres returned, Fallon Company named master developer on 30 Metro-owned acres (approved 2024-04-16). Who profited from surrounding land was not examined.",
+  "real_sources": 6,
+  "active": "2026-07-17..2026-07-22",
+  "risk": "Two venues, from official announcements; no leases, bond documents or land deeds. Board names are people lists, not findings.",
+  "worth": "maybe",
+  "why": "Cleanest financing numbers of the roster tracks, but the land-capture question is untouched.",
+  "slice": "estates-tracks",
+  "on_main": true
+ },
+ {
+  "trail": "TIF districts: who owned parcels before the district was drawn?",
+  "question": "Within a tax-increment-financing district, whose parcels captured the uplift, and were they positioned before the district was drawn?",
+  "where": [
+   "data/research-tracks/tif-district-value-capture/harness.json",
+   "data/intake/next-ten-estates/raw/cortland-chicago-river-tif.json",
+   "data/intake/estate-expansion-01/next-ten.json"
+  ],
+  "stage": "sources-gathered",
+  "found": "Chicago City Council passed, on 2019-04-10, the Cortland and Chicago River TIF designation (O2019-2170) and adoption (O2019-2185) plus a redevelopment agreement with Alloy Property Company LLC and Fleet Portfolio LLC for Lincoln Yards (SO2019-2583); The 78 TIF was in the same meeting packet. Three city TIF datasets (boundaries, projects, fund balance) were identified but no rows downloaded, and nobody checked earlier ownership.",
+  "real_sources": 4,
+  "active": "2026-07-17..2026-07-22",
+  "risk": "Two districts; list of all Chicago TIF districts not built.",
+  "worth": "maybe",
+  "why": "Real council records captured; ownership step not started.",
+  "slice": "estates-tracks",
+  "on_main": true
+ },
+ {
+  "trail": "Senior federal appointees: revolving-door routers (OGE-278)",
+  "question": "Which senior executive-branch appointees pair a prior government role with an investing or advisory vehicle that touches a federal award?",
+  "where": [
+   "data/research-tracks/oge278-revolving-door-routers/harness.json",
+   "data/intake/next-ten-estates/raw/commerce-pas-oge278-2021-2026.json",
+   "data/intake/estate-expansion-01/next-ten.json"
+  ],
+  "stage": "sources-gathered",
+  "found": "Name lists only: 12 Commerce leaders (Lutnick, Dabbar, Kessler and others) from the department page, and 4 Energy Department financing-office leaders including Greg Beard (appointed 2026-01-29; earlier roles at Apollo, Riverstone and Stronghold Digital Mining). No financial-disclosure forms were requested (about 26,000 executive filers exist), so no investment or award link was tested.",
+  "real_sources": 6,
+  "active": "2026-07-17..2026-07-22",
+  "risk": "The Commerce page is a leadership snapshot, not the legal filer list; the slice itself says disclosures were not requested.",
+  "worth": "maybe",
+  "why": "Cheap roster base; the decisive disclosure forms are not yet pulled.",
+  "slice": "estates-tracks",
+  "on_main": true
+ },
+ {
+  "trail": "Defence accelerator rosters (NATO DIANA)",
+  "question": "Across defence-tech accelerator and fund rosters beyond Capital Factory, who clears the routing threshold on public records?",
+  "where": [
+   "data/research-tracks/defense-accelerator-fund-rosters/harness.json",
+   "data/intake/estate-expansion-01/completion.json",
+   "data/intake/estate-expansion-01/next-ten.json"
+  ],
+  "stage": "sources-gathered",
+  "found": "Complete company lists for NATO's DIANA accelerator: 150 companies in the 2026 cohort across 10 challenge areas (UK 27, US 24, Canada 22) and 72 in 2025. The 2025 page lists 72 but a separate official article says 74, an unreconciled gap. No founders, investors or contracts were looked up, and the track's named targets (American Dynamism, Founders Fund, In-Q-Tel) were not touched.",
+  "real_sources": 5,
+  "active": "2026-07-17..2026-07-22",
+  "risk": "Chose a NATO programme rather than the US funds named in the question; company names are not legal-entity matches.",
+  "worth": "maybe",
+  "why": "Complete rosters are a reusable base for later joins.",
+  "slice": "estates-tracks",
+  "on_main": true
+ },
+ {
+  "trail": "Regulators and industry: revolving doors outside defence",
+  "question": "Applying the router tests to non-defence regulators (FDA, FCC, FAA): who moves between regulator and regulated with a capital or advisory vehicle in between?",
+  "where": [
+   "data/research-tracks/regulatory-revolving-doors/harness.json",
+   "data/intake/next-ten-estates/raw/fda-senior-leadership-2021-2026.json",
+   "data/intake/estate-expansion-01/next-ten.json"
+  ],
+  "stage": "sources-gathered",
+  "found": "Name lists only: 12 FDA entries (mostly the Operations admin chart, e.g. HR, security, facilities, plus acting commissioner Kyle Diamantas observed 2026-07-21) and the 10 people who served as FTC commissioner from 2021 to July 2026 with start and end dates. No ethics records or later industry jobs were collected.",
+  "real_sources": 5,
+  "active": "2026-07-17..2026-07-22",
+  "risk": "The FDA slice leaves out the drug and device review centres where revolving-door questions matter; the slice itself says the senior-leadership list remains to be built.",
+  "worth": "maybe",
+  "why": "FTC tenure list is usable; the FDA list is the wrong part of the agency.",
+  "slice": "estates-tracks",
+  "on_main": true
+ },
+ {
+  "trail": "Members of Congress: disclosed holdings vs federal money",
+  "question": "Which members of Congress have disclosed entities that exactly match a federal money recipient, and in what order relative to votes and tenure?",
+  "where": [
+   "data/research-tracks/congressional-disclosure-crossings/harness.json",
+   "data/intake/next-ten-estates/raw/us-senate-119th-disclosures.json",
+   "data/intake/estate-expansion-01/next-ten.json"
+  ],
+  "stage": "sources-gathered",
+  "found": "Complete rosters only: all 100 senators (name, state, party, class) and the 441 House offices (435 seats, 5 delegates, the Resident Commissioner). No financial-disclosure filings or federal-recipient matches were pulled, so zero crossings were found or ruled out.",
+  "real_sources": 5,
+  "active": "2026-07-17..2026-07-22",
+  "risk": "Official disclosure databases carry legal limits on use; source spellings preserved with page anomalies.",
+  "worth": "keep",
+  "why": "Both chambers' full lists exist, so a null-preserving test is now only one data pull away.",
+  "slice": "estates-tracks",
+  "on_main": true
+ },
+ {
+  "trail": "State officials: disclosed entities vs state contracts and land",
+  "question": "Which state legislators or agency heads have disclosed entities that overlap state contracts or land deals, and did the disclosure come before or after?",
+  "where": [
+   "data/research-tracks/state-officeholder-land-contract-crossings/harness.json",
+   "data/intake/next-ten-estates/raw/new-york-state-authority-land-contracts.json",
+   "data/intake/estate-expansion-01/next-ten.json"
+  ],
+  "stage": "sources-gathered",
+  "found": "Lists only: New York's 45 state public authorities, two datasets to mine (eight years of authority procurement; real-property deals over $15,000) and four California High-Speed Rail pages (board packets, procurement, schedule, right-of-way). No officeholder disclosures were matched and no transaction rows downloaded.",
+  "real_sources": 11,
+  "active": "2026-07-17..2026-07-22",
+  "risk": "Needs per-state adapters for portals with no bulk data; officeholder list not frozen.",
+  "worth": "maybe",
+  "why": "Good public datasets identified but nothing joined.",
+  "slice": "estates-tracks",
+  "on_main": true
+ }
+]

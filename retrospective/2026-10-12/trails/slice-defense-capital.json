@@ -1,0 +1,500 @@
+[
+  {
+    "trail": "NatSec100 startup rankings 2023-2026",
+    "slice": "defense-capital",
+    "question": "Who has made the annual NatSec100 list of top national-security startups across its four editions, and how did the list's rules change?",
+    "where": [
+      "data/intake/natsec100-pathways/README.md",
+      "data/intake/natsec100-pathways/chunk1/",
+      "data/intake/natsec100-pathways/seed/"
+    ],
+    "on_main": true,
+    "stage": "findings",
+    "found": "Captured the full 100-company list for 2023, 2024 and 2026; the 2025 list was published only as images, so it was hand-transcribed (100 rows): 77 matched existing company records and 23 still need a human call (19 look like new companies, 2 renames, 2 record updates). Totals: 196 distinct companies, 24 on the list in all four years; the 2026 edition newly requires a federal contract. Nothing was added to the main database, and the original 'seed' claims (supplied from outside) mostly cited sources nobody could trace.",
+    "real_sources": 19,
+    "active": "2026-07-05..2026-09-06",
+    "risk": "Low. Being on the list is explicitly not treated as proof of contracts or influence.",
+    "worth": "keep",
+    "why": "Clean, checkable base list that most other defense trails depend on."
+  },
+  {
+    "trail": "NatSec100 award check and the X-Bow contract mismatch",
+    "slice": "defense-capital",
+    "question": "Do the Air Force contract amounts reported for five ranked startups (Sierra Space, X-Bow, JetZero, Dataminr, Castelion) appear in official federal spending records?",
+    "where": [
+      "data/research/natsec100-award-control-manifest.json",
+      "data/research/natsec100-x-bow-award-adjudication.json",
+      "receipts/natsec100/ce0364-xbow-20260908/"
+    ],
+    "on_main": true,
+    "stage": "findings",
+    "found": "All five firms have federal award records (31 rows) but none of the five press-reported dollar figures matched exactly; the one clean hit was a $20.2M Sierra Space research contract. On X-Bow's rocket-motor factory contract (FA9300-25-C-6015, signed 25 Sep 2025) the Pentagon announcement says $191.3M total with $121.5M committed from foreign-military-sales money, finishing April 2029, while USAspending shows $129.5M committed, $199.3M potential value, finishing July 2028, no foreign funding and only one transaction ever, so the $8M gap has no documented cause.",
+    "real_sources": 9,
+    "active": "2026-09-06..2026-09-08",
+    "risk": "Low. The record states no wrongdoing and no cause is claimed.",
+    "worth": "keep",
+    "why": "Concrete, repeatable check showing how press numbers drift from official records."
+  },
+  {
+    "trail": "Does making the NatSec100 list lead to government money?",
+    "slice": "defense-capital",
+    "question": "Can the ranked companies be pinned to real legal entities, and is there evidence that being ranked (rather than something else) leads to contracts and investment?",
+    "where": [
+      "docs/milestones/ssc-rd01-natsec100-outcome-controls.md",
+      "docs/milestones/ssc-rd-wave02-rd01-legal-entity.md",
+      "data/intake/status-sovereignty-natsec100-denominator-first-pass.json"
+    ],
+    "on_main": true,
+    "stage": "findings",
+    "found": "Negative result. Of 102 names (the 100 ranked plus SpaceX and Anthropic as named non-selections), 48 were matched to legal companies, 44 were too ambiguous and 10 had no reachable record. The cause-and-effect test could not run because the ranker never published the full pool of eligible companies or the rejected ones, so there is no comparison group; the lane ends 'selection causation unsupported'.",
+    "real_sources": 612,
+    "active": "2026-07-31..2026-08-10",
+    "risk": "Sits under a politically loaded 'status-for-sovereignty' hypothesis about racial and class hierarchy; the repo itself marks that program 'publication blocked'.",
+    "worth": "maybe",
+    "why": "Honest null result, but only matters if the umbrella hypothesis is pursued (612 = registry lookups, not distinct documents)."
+  },
+  {
+    "trail": "Austin corridor: Capital Factory, Israeli-linked funds and the NatSec100",
+    "slice": "defense-capital",
+    "question": "Do Austin's Capital Factory accelerator, DC advisory funds and Israeli-linked defense funds connect to the ranked defense startups, and if so how?",
+    "where": [
+      "data/intake/austin-israel-defense-corridor/analysis.md",
+      "data/intake/natsec100-pathways/chunk2-capital-factory/analysis.md",
+      "build/estate-game-trails/legacy/austin-israel-personnel-capital-corridor.json"
+    ],
+    "on_main": true,
+    "stage": "on-site",
+    "found": "Capital Factory's 837 portfolio companies overlap the 196 NatSec100 companies in 12 cases (SpaceX, X-Bow, Saronic, Firefly, ICON...), but only 4 are confirmed by an outside source because a portfolio listing is not proof of investment; Pallas Ventures overlaps 5 ranked firms and Silent Ventures 2; two Austin entities with explicit Israeli-defense ties were recorded (Traysar, Texas Venture Partners) and no link between Capital Factory and Tel Aviv's Stratos Ventures was found. An earlier AI session reported a finished commit and a firm with named partners that never existed; the names were declared fabricated and 21 of 22 original citations were demoted as untraceable.",
+    "real_sources": 17,
+    "active": "2026-07-14..2026-07-14",
+    "risk": "Names real individuals and pairs Israeli origin with defense capital; the repo limits this to self-identification but the framing invites misreading. Earlier fabricated people were purged.",
+    "worth": "maybe",
+    "why": "Mostly list overlaps; the fabrication clean-up is the most instructive part."
+  },
+  {
+    "trail": "Defense 'routers': people who sit across funds, advisers and government",
+    "slice": "defense-capital",
+    "question": "Which individuals publicly hold roles across several defense-tech funds, company advisory seats and government gateways, and where do their paths overlap with ranked companies and federal awards?",
+    "where": [
+      "data/intake/person-centered-defense-routers/analysis.md",
+      "data/intake/linkedin-targeted-review/README.md",
+      "build/estate-game-trails/legacy/trail-jackson-moses-shared-company.json"
+    ],
+    "on_main": true,
+    "stage": "on-site",
+    "found": "From a pool of 100 fund partners and advisers (30 LinkedIn profile captures plus fund team pages), 17 people met a 3-of-8 'routing' threshold, led by Silent Ventures' Jackson Moses (6 of 8), then Heidi Shyu, Trae Stephens, Katherine Boyle and Joshua Baer (5 each) and several ex-officials (Will Roper, Raj Shah, Laura Gilbert, Doug Beck). Jackson Moses' 61-company portfolio overlaps 14 ranked firms; Anduril sits in 8 of 11 funds studied; 17 federal awards were traced (e.g. Firefly $113.5M ceiling but $76.6M paid). The map is self-labelled PARTIAL: 9 of 17 person-level leads were never searched, and an earlier version had wrongly reported 'closed'.",
+    "real_sources": 63,
+    "active": "2026-07-14..2026-07-14",
+    "risk": "High. Scores named real people (some private individuals), built partly on LinkedIn captures; 'router' reads like profiling even though the repo says it is not suspicion; derived trails naming them are on the public list.",
+    "worth": "maybe",
+    "why": "Most distinctive investigative output but the biggest privacy exposure; decide deliberately whether it stays public."
+  },
+  {
+    "trail": "BVVC (Bravo Victor Venture Capital) defense-capital file",
+    "slice": "defense-capital",
+    "question": "Who runs the veteran-founded venture firm BVVC, what does it hold and fund, and how does it connect to defense money and ranked companies?",
+    "where": [
+      "data/intake/bvvc-defense-capital/README.md",
+      "data/intake/bvvc-defense-capital/transactions.jsonl",
+      "data/intake/bvvc-defense-capital/portfolio-current-01.jsonl"
+    ],
+    "on_main": true,
+    "stage": "findings",
+    "found": "Froze what BVVC's public pages said on 4 Aug 2026: 27 current leadership names, 30 portfolio companies, 7 fund/vehicle entities from SEC filings, 17 deal observations (11 dated, e.g. X-Bow's Nov 2023 round led by Lockheed Martin Ventures, Firestorm $12.5M in Mar 2024) and 9 companies BVVC is publicly tied to that are missing from its own portfolio page. No deal could be tied to a specific fund vehicle, and an attempt to pull SEC Form D filings failed (HTTP 403 on all 95 requests).",
+    "real_sources": 482,
+    "active": "2026-08-04..2026-08-08",
+    "risk": "Lists about 27 named individuals and their roles; private messages and exports are explicitly excluded and no wrongdoing is alleged.",
+    "worth": "maybe",
+    "why": "Thorough but narrow: one mid-sized VC firm."
+  },
+  {
+    "trail": "School.House: what legal entity is behind it?",
+    "slice": "defense-capital",
+    "question": "BVVC's School.House training program calls itself a nonprofit; what registered legal entity (name, tax ID, owners) actually operates it?",
+    "where": [
+      "docs/milestones/schoolhouse-legal-identity-current-frontier-v1.md",
+      "data/intake/bvvc-defense-capital/schoolhouse.json",
+      "data/intake/schoolhouse-irs-historical-filing-website-screen-v1/"
+    ],
+    "on_main": true,
+    "stage": "sources-gathered",
+    "found": "Nothing yet. Across 23 separate search lanes it scanned 4.4M IRS rows (641 name look-alikes, 438 tax IDs), 12.8M Florida corporation records, North Carolina lists, 180 older Form 990 filings, web-archive snapshots, domain, trademark and federal-spending databases and found no entity that fits; the only facts are a domain registrar (Namecheap) and the site's own '501(c)(3)' claim. The SEC and SAM.gov lanes were blocked, the loop was formally closed with 'no identical replay authorized', and a checked-in bundle was even found to be 20,083 bytes instead of the 34,492 it claimed.",
+    "real_sources": 12,
+    "active": "2026-08-04..2026-08-08",
+    "risk": "Repeated registry searches on the names of specific private individuals (founder and staff) for a tiny nonprofit.",
+    "worth": "drop",
+    "why": "Nine work products and weeks of effort to find one small organization's legal name, with no result and little public value."
+  },
+  {
+    "trail": "The 'security-state organism' thesis",
+    "slice": "defense-capital",
+    "question": "Were Palantir, Anduril, Founders Fund, Erebor bank, Silent Ventures, ICE/CBP and Israeli units deliberately assembled as one cross-border population-control system?",
+    "where": [
+      "docs/milestones/m04b-security-state-organism-evidence.md",
+      "reports/core-thesis/security-state-organism/data.json",
+      "data/intake/security-state-organism-source-routes.json"
+    ],
+    "on_main": true,
+    "stage": "on-site",
+    "found": "Mostly scaffolding: 121 research packets, 41 named entities (including living people such as Thiel, Luckey, Karp, Lonsdale), 24 topic areas and 82 source routes, of which 13 point nowhere. Only 17 sourced evidence records exist (9 official, 6 company self-descriptions, 1 filing, 1 methodology note), zero conclusions, and the strongest claim stays 'candidate only' with the ordinary explanation (specialised firms in adjacent markets) still leading. The later adversarial pass (Palantir, NGC2, ICE, Ukraine trails) is where real findings came from.",
+    "real_sources": 17,
+    "active": "2026-07-24..2026-07-24",
+    "risk": "High. The thesis under test is conspiracy-shaped, names living people and a foreign military unit, and the per-person packets are on the public list.",
+    "worth": "maybe",
+    "why": "Useful as an organising frame but needs reframing and trimming before it stays public."
+  },
+  {
+    "trail": "Erebor bank and Silent Ventures money trail",
+    "slice": "defense-capital",
+    "question": "How did Erebor (the Luckey-linked defense/crypto bank) get its charter, capital and opening, and was its money supplied only by the same defense-tech network?",
+    "where": [
+      "docs/milestones/m04b-decisive-acquisition-wave-01.md",
+      "docs/milestones/m04d-fog-resolution-wave-08.md",
+      "data/intake/m04d-fog-resolution-wave-08.json"
+    ],
+    "on_main": true,
+    "stage": "findings",
+    "found": "From regulator records: OCC conditional charter approval with a capital floor and pre-opening conditions, FDIC approval, and a bank opening on 6 Feb 2026; Silent Ventures Management LLC is a registered 'exempt reporting adviser' and Silent Ventures Fund II LP filed a Form D. A mutual-fund-style investor (Fundrise) bought $5M of Erebor Series B stock on 20 Feb 2026, so the 'only the named network funded it' idea is ruled out. Still unknown: who else is in the round, board and veto rights, the Silent vehicle's real investors, and actual customer traffic.",
+    "real_sources": 9,
+    "active": "2026-07-24..2026-07-24",
+    "risk": "Names Palmer Luckey and Jackson Moses; limited to regulatory filings, so low to moderate.",
+    "worth": "keep",
+    "why": "Well-sourced, regulator-based and it overturns a tempting assumption."
+  },
+  {
+    "trail": "Palantir: government revenue, founder control and dependency",
+    "slice": "defense-capital",
+    "question": "Is Palantir's role inside Army and ICE systems a real replacement of public capacity, how much does government money drive the company, and is its control structure hidden?",
+    "where": [
+      "docs/milestones/m04d-adversarial-triage-adjudication.md",
+      "docs/milestones/m04d-fog-resolution-wave-03.md",
+      "data/intake/m04d-fog-resolution-wave-03.json"
+    ],
+    "on_main": true,
+    "stage": "findings",
+    "found": "Palantir's 2025 annual report shows $2.402B government revenue (54% of total; US government $1.9B vs $1.2B in 2024), founders can control up to roughly 50% of votes, the government owns its data while Palantir keeps platform IP, and contracts keep termination and audit remedies. The 'hidden structure' claim is rejected because SEC filings disclose it; award-level profit and any personal enrichment are not shown, and 2026 shareholder proposals to curb founder voting were defeated.",
+    "real_sources": 16,
+    "active": "2026-07-24..2026-07-25",
+    "risk": "Moderate. Named company and founders; mitigated by relying on the company's own SEC filings.",
+    "worth": "keep",
+    "why": "Strong, filing-based findings with the limits stated."
+  },
+  {
+    "trail": "Palantir DCGS-A2 procurement challenge",
+    "slice": "defense-capital",
+    "question": "Did Palantir's challenge to the Army's intelligence-system buy show an independent check working, and did the Army's choices shut out alternatives?",
+    "where": [
+      "data/intake/m04f-epistemic-jurisdiction-matrix-dcgs-a2-procurement-gate.json",
+      "docs/milestones/ssc-f13-dcgsa-first-pass.md",
+      "docs/milestones/ssc-rd-wave02-rd06-offeror-universe.md"
+    ],
+    "on_main": true,
+    "stage": "findings",
+    "found": "The Federal Circuit (Palantir USG v. United States, Sept 2018) required the Army to do a commercial-item review before awarding but did not order Palantir picked; the repo calls it the cleanest working example of an outside check. Several architectures competed, but only 3 of 8 proposal slots are publicly named (Raytheon, Palantir, General Dynamics Mission Systems) and the other 5 stay anonymous; foreclosure of alternatives, favouritism and technical superiority are all not established.",
+    "real_sources": 8,
+    "active": "2026-07-24..2026-08-05",
+    "risk": "Low. Court and procurement records only.",
+    "worth": "keep",
+    "why": "A real, court-anchored example of the counter-power the whole project is looking for."
+  },
+  {
+    "trail": "Army NGC2: Anduril, Palantir and who really controls it",
+    "slice": "defense-capital",
+    "question": "In the Army's Next Generation Command and Control program, are Anduril and Palantir a closed duo, and who actually owns the decisions and the data layer?",
+    "where": [
+      "docs/milestones/m05-answerable-power-sprint-02-leg-03.md",
+      "docs/milestones/m04d-fog-resolution-wave-04.md",
+      "data/intake/m05-answerable-power-sprint-02-leg-03-ngc2-sources.json"
+    ],
+    "on_main": true,
+    "stage": "findings",
+    "found": "Anduril leads the common data baseline and the 4th Infantry Division stack, with Palantir's Foundry and Raft's registries as components, while Lockheed Martin leads a separate 25th Infantry Division version and more than 80 proposals were received, so it is NOT a closed Anduril-Palantir program. The Army owns the mission, requirement and baseline choice, but final production acceptance, the rejected-vendor record, and any real human veto (override and abort logs) are not public; whether the shared data layer can be swapped out is untested.",
+    "real_sources": 14,
+    "active": "2026-07-24..2026-07-26",
+    "risk": "Moderate. Names two companies; heavily caveated against inferring common purpose.",
+    "worth": "keep",
+    "why": "Best cross-company case in the file and it cuts against the headline thesis."
+  },
+  {
+    "trail": "ICE ImmigrationOS, case tools and the Woodburn arrests",
+    "slice": "defense-capital",
+    "question": "Can a chain be traced from an executive order to Palantir-built ICE software to a specific person's arrest, and where does it break?",
+    "where": [
+      "docs/milestones/m04d-fog-resolution-wave-05.md",
+      "docs/milestones/m05-answerable-power-sprint-02-leg-04.md",
+      "data/intake/m04f-epistemic-jurisdiction-matrix-ice-icm-immigrationos.json"
+    ],
+    "on_main": true,
+    "stage": "findings",
+    "found": "A policy-to-system chain is supported (Executive Order 14159, then the ImmigrationOS design and contract, then ERO workflows, with congressional oversight). A person-level chain was reached for the 30 Oct 2025 Woodburn, Oregon operation: Palantir-attributed ELITE app helped pick a dense target area, then separate plate checks and Mobile Fortify, a van stop, arrest, release after a habeas filing, and classwide limits on arrest practice. Ruled out or unjoined: ELITE did not identify the individual, Palantir was not shown to be sole cause, the case-management tool is not the risk-scoring system, and IRS-to-ICE data transfer is not tied to Palantir.",
+    "real_sources": 8,
+    "active": "2026-07-24..2026-07-26",
+    "risk": "Moderate to high. Immigration enforcement, a named vendor and court litigants (initials only).",
+    "worth": "keep",
+    "why": "Rare end-to-end person-level chain, with the non-links stated."
+  },
+  {
+    "trail": "From counterterror software to today's military platforms",
+    "slice": "defense-capital",
+    "question": "Did a counterterrorism toolset travel from Army DCGS through Palantir into TITAN, NGC2 and ICE?",
+    "where": [
+      "docs/milestones/m04d-fog-resolution-wave-06.md",
+      "data/intake/m04d-fog-resolution-wave-06.json"
+    ],
+    "on_main": true,
+    "stage": "findings",
+    "found": "A functional lineage is supported: Palantir says it began as counterterror software, Army DCGS grew from wartime use to a service-wide system, a biometric ID method carried over, and Palantir later appears in DCGS, TITAN and NGC2 roles. The exact code, data or people that moved (Gotham to TITAN/NGC2, counterterror to ICE) are not shown, and independent Army lineages mean a private network did not alone originate the architecture.",
+    "real_sources": 7,
+    "active": "2026-07-24..2026-07-24",
+    "risk": "Moderate.",
+    "worth": "maybe",
+    "why": "Solid history but the decisive technical-transfer link is still missing."
+  },
+  {
+    "trail": "Ukraine's Brave1 and battlefield-feedback transfer",
+    "slice": "defense-capital",
+    "question": "How does Ukrainian combat data and feedback flow into allied procurement, production and standards, and what is Palantir's part?",
+    "where": [
+      "docs/milestones/m04d-fog-resolution-wave-07.md",
+      "data/intake/m04f-epistemic-jurisdiction-matrix-brave1.json"
+    ],
+    "on_main": true,
+    "stage": "findings",
+    "found": "Documented a Palantir-backed Brave1 combat-data platform that onboards outside developers, plus exact public routes from Ukraine's frontline data and feedback into UK production, follow-on orders, Polish drone methods and standards, and NATO architecture. Palantir's role outside Brave1's data room is unproven, the claim that an operator can abort an interceptor attack rests on a first-party statement, and there is no failed-test, casualty or compensation record.",
+    "real_sources": 8,
+    "active": "2026-07-24..2026-07-24",
+    "risk": "Moderate. Wartime systems; many Ukrainian MoD sources.",
+    "worth": "keep",
+    "why": "Well-sourced allied-transfer mechanisms with honest gaps."
+  },
+  {
+    "trail": "Epistemic jurisdiction: who sets the threshold and who must prove harm",
+    "slice": "defense-capital",
+    "question": "Do institutions let one side act on uncertainty while forcing affected people to prove injury afterwards, in Palantir-linked and comparator systems (ICE, NHS, Brave1, Erebor, Post Office Horizon, COMPAS, Idaho Medicaid, SyRI, Robodebt)?",
+    "where": [
+      "reports/core-thesis/epistemic-jurisdiction/data.json",
+      "docs/milestones/m04f-epistemic-jurisdiction.md",
+      "docs/milestones/m04f-evidence-lake-wave-03-stratigraphy.md"
+    ],
+    "on_main": true,
+    "stage": "on-site",
+    "found": "15 systems, 122 test records and 66 sources: 76 supported for human review, 29 need more evidence, 14 candidate-only, 3 clear non-links. Court-backed examples exist (DCGS-A2; a student's SEVIS termination reversed by a federal court, the first direct affected-person voice); NHS feedback minutes show public challenges to implied consent but no power to stop or reverse. The claim that one coordinated class monopolises uncertainty and remedy is explicitly not supported.",
+    "real_sources": 66,
+    "active": "2026-07-24..2026-07-25",
+    "risk": "Low to moderate; broad theory but heavily bounded.",
+    "worth": "keep",
+    "why": "Core analytical frame with the most sources and the best caveats."
+  },
+  {
+    "trail": "Flock-style federated sensing map",
+    "slice": "defense-capital",
+    "question": "Do camera, plate-reader, gunshot and data-broker networks (Flock, Vigilant, Fusus, Clearview, Ring, etc.) share one alert-to-police-action pipeline, and who can contest it?",
+    "where": [
+      "docs/milestones/m04f-federated-sensing-action-fanout.md",
+      "data/intake/m04f-federated-sensing-action-sources.json",
+      "data/project/m04f-federated-sensing-action-census.json"
+    ],
+    "on_main": true,
+    "stage": "scaffold",
+    "found": "Nothing concluded: a map of 17 deep systems plus 30 perimeter candidates, 36 source locators and 27 follow-up tasks, with a crosswalk to the other systems studied. The repo states that similar shape does not prove integration and no findings were drawn.",
+    "real_sources": 36,
+    "active": "2026-07-25..2026-07-25",
+    "risk": "Low to moderate; many named vendors, no claims.",
+    "worth": "maybe",
+    "why": "Only a map so far, and it drifts from defense into policing."
+  },
+  {
+    "trail": "Answerable power: is there a working check on power asymmetry?",
+    "slice": "defense-capital",
+    "question": "Can notice, inspection, automatic pause, remedy, public substitution, binding co-governance and value recovery be combined into one repeatable check on powerful systems?",
+    "where": [
+      "reports/core-thesis/answerable-power/data.json",
+      "docs/milestones/m05-answerable-power-sprint-02-reconciliation.md",
+      "docs/milestones/m05-answerable-power-sprint-03-launch.md"
+    ],
+    "on_main": true,
+    "stage": "on-site",
+    "found": "Each level has been seen somewhere but never together: Idaho's K.W. v. Armstrong (pre-action stay), the Dutch SyRI ruling (system banned), UK Homes for Ukraine (public replacement), German works councils with a binding veto on workplace monitoring (BAG 1 ABR 7/15 and three later rulings) and TARP for returns to the public. The project's own test (3 domains, 2 jurisdictions) is not met, and a side effort to repair the 96-feed global source monitor missed its targets (65.6% vs 75% routes).",
+    "real_sources": 68,
+    "active": "2026-07-26..2026-08-17",
+    "risk": "Low, but non-defense cases (benefits, workplace) are a different subject.",
+    "worth": "keep",
+    "why": "Intellectual core of the project, well sourced from official records."
+  },
+  {
+    "trail": "Matt Clifford: AI adviser role and any Anduril link",
+    "slice": "defense-capital",
+    "question": "Do UK AI adviser Matt Clifford's official roles connect him to Anduril or UK defence awards, and who picked him and managed his conflicts?",
+    "where": [
+      "docs/milestones/m05-answerable-power-sprint-02-leg-01.md",
+      "docs/milestones/m05-answerable-power-sprint-02-leg-02.md",
+      "data/intake/m05-answerable-power-sprint-02-leg-02-sources.json"
+    ],
+    "on_main": true,
+    "stage": "findings",
+    "found": "Confirmed: he led the AI Opportunities Action Plan (50 recommendations, 13 Jan 2025), was appointed an unpaid adviser the same day, and his outside interests were published on 24 Feb 2025. The only Anduril overlap is process-level (both were in separate AI Safety Summit meetings); no joint meeting, deal, procurement effect or common purpose was found, and Anduril's UK TALOS route predates his roles. Who selected him and how conflicts operated in any decision remain unknown.",
+    "real_sources": 16,
+    "active": "2026-07-26..2026-07-26",
+    "risk": "High. Named living UK public figure and the repo is named after him; the result is a bounded non-link, which is favourable, but the framing needs care.",
+    "worth": "keep",
+    "why": "The namesake question, with a careful negative answer."
+  },
+  {
+    "trail": "Can a government exit a vendor like Palantir?",
+    "slice": "defense-capital",
+    "question": "What makes a public body leaving a software vendor a real shift of operating power rather than a contract swap?",
+    "where": [
+      "docs/milestones/m05-answerable-power-sprint-03-leg-05.md",
+      "data/project/m05-answerable-power-sprint-03-leg-07-hfu-share-exit-receipt-candidate.json"
+    ],
+    "on_main": true,
+    "stage": "findings",
+    "found": "One genuine example: UK Homes for Ukraine moved from a Palantir Foundry-supported service to an in-house system called Share, migrating three years of data with public code and reported lower running costs. No independent audit of deletion or cost savings exists, NHS Federated Data Platform shows product-level movement but no enterprise exit, and NGC2 has several vendors but a shared data layer that may not be swappable.",
+    "real_sources": 8,
+    "active": "2026-07-26..2026-08-17",
+    "risk": "Low to moderate.",
+    "worth": "keep",
+    "why": "One solid positive control for real public substitution."
+  },
+  {
+    "trail": "Does public defense and chip money come back to the public?",
+    "slice": "defense-capital",
+    "question": "When governments fund defense tech, chips and AI, do they hold enforceable stakes that actually pay the public back?",
+    "where": [
+      "docs/milestones/m05-answerable-power-sprint-03-leg-06.md",
+      "docs/milestones/m05-answerable-power-sprint-02-leg-06.md",
+      "data/intake/m05-answerable-power-sprint-03-leg-06-value-recovery-sources.json"
+    ],
+    "on_main": true,
+    "stage": "findings",
+    "found": "Only the 2008 bank bailout (TARP) closes the loop: $204.9B paid out, $16.3B final net income, and M&I Bank alone returned $1.9448B on $1.715B (a $229.8M gain). The NATO Innovation Fund, UK NSSIF, CHIPS deals (Polar Semiconductor upside-sharing, I-Pulse stake) and NASA COTS have rights or market effects on paper but no realized public return, and nothing reaches affected people.",
+    "real_sources": 24,
+    "active": "2026-07-26..2026-08-17",
+    "risk": "Low.",
+    "worth": "keep",
+    "why": "Clear, quantified answer with an honest 'not yet' for the defense cases."
+  },
+  {
+    "trail": "Has the US government cashed in its Intel stake?",
+    "slice": "defense-capital",
+    "question": "After Commerce took Intel shares in exchange for $8.87B of chip subsidies, has the government sold any, received cash, or passed value to the public?",
+    "where": [
+      "data/project/m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.json",
+      "receipts/m05-intel-disposition-readback-20260904/review.md",
+      "data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-date-gate-monitor.json"
+    ],
+    "on_main": true,
+    "stage": "findings",
+    "found": "Not as of 4 Sep 2026. Commerce got 274,583,000 Intel shares at closing plus a warrant for up to 240.5M shares at $20; about 16M escrowed shares have been released and about 143M are still held back, with no sale, dividend, warrant exercise or cash receipt seen. Intel's Aug 2026 offering of 210.5M shares was Intel selling, not the government, and the check was run against SEC filings and Intel's own releases.",
+    "real_sources": 18,
+    "active": "2026-08-17..2026-09-04",
+    "risk": "Low.",
+    "worth": "keep",
+    "why": "Crisp null result that can be re-run; but 21 data files for one 'not yet' is heavy machinery."
+  },
+  {
+    "trail": "Rules for outsiders to adopt and audit the framework",
+    "slice": "defense-capital",
+    "question": "Can an outside party independently reproduce, approve and use the answerable-power framework, with rules to challenge or revoke that approval?",
+    "where": [
+      "docs/milestones/m05-answerable-power-sprint-05.md",
+      "docs/milestones/m05-answerable-power-sprint-08.md",
+      "docs/milestones/m05-answerable-power-sprint-09.md"
+    ],
+    "on_main": true,
+    "stage": "scaffold",
+    "found": "Nothing yet: five rounds of rule-writing (reproduction protocol, reviewer roles, challenge and revocation rules, a 26-institution contact list across 3 jurisdictions) produced 0 outside reproductions, 0 reviewers, 0 contacts and 0 registry entries, and the verified level is still the lowest (A0). A self-audit also found 8 defects in the first version.",
+    "real_sources": 0,
+    "active": "2026-07-27..2026-07-29",
+    "risk": "Low; reputational risk if the contact list is read as outreach.",
+    "worth": "drop",
+    "why": "Pure process machinery with no outside engagement, and unrelated to defense findings."
+  },
+  {
+    "trail": "Anduril: access, ownership and the government gate (reporter brief)",
+    "slice": "defense-capital",
+    "question": "How do Anduril's lobbying and political access, its acquisitions, and formal government decision points line up in time?",
+    "where": [
+      "cases/anduril-access-ownership/case.json",
+      "briefs/anduril-access-ownership.html",
+      "build/briefings/anduril-access-ownership.json"
+    ],
+    "on_main": true,
+    "stage": "on-site",
+    "found": "A sequenced evidence packet with 21 events, 24 claims and 22 records (Senate lobbying filing Q2 2025, FEC PAC data, Area-I, Adranos and Numerica acquisitions, a rocket-motor award, CBP order, Army enterprise contract, NGC2 baseline, GAO protest denials, NATO and Australian counter-examples). It draws no causal conclusion and says no wrongdoing is alleged; status is 'review required' with no human reviewer named.",
+    "real_sources": 21,
+    "active": "2026-07-17..2026-07-21",
+    "risk": "Moderate to high. Named company, 'access' framing; heavily disclaimered but unreviewed.",
+    "worth": "keep",
+    "why": "Most reader-ready piece, but needs a human reviewer before wider promotion."
+  },
+  {
+    "trail": "Field autopsy 03: 'Every Participant Gets a Contract' (CDAO Crucible 2)",
+    "slice": "defense-capital",
+    "question": "Did the Pentagon's AI office Swarm Forge Crucible 2 really promise contracts to all 25 selectees from 133 submissions?",
+    "where": [
+      "cases/field-autopsy-03/case.json",
+      "cases/field-autopsy-03/claims.jsonl"
+    ],
+    "on_main": true,
+    "stage": "scaffold",
+    "found": "Nothing verified. The case records 13 claims from a prototype (133 submissions, 25 selected, a contract promise, $225.9M DAWG budget) but its only 'source' is that prototype itself, so no outside record was captured; the portfolio file calls it a synthetic test of evidence discipline.",
+    "real_sources": 0,
+    "active": "2026-06-03..2026-06-03",
+    "risk": "Low-moderate: unverified claims about a real program on the public site, labelled review-required.",
+    "worth": "drop",
+    "why": "No real sources; useful only as a test fixture."
+  },
+  {
+    "trail": "Pentagon strategic capital: OSC loans, SBIC funds and the space advisory committee",
+    "slice": "defense-capital",
+    "question": "Who got Pentagon Office of Strategic Capital loans and critical-technology SBIC licenses, on what terms, and with what public return; did the space advisory committee have real power?",
+    "where": [
+      "docs/milestones/ssc-osc-denominator-first-pass.md",
+      "docs/milestones/ssc-rd-wave02-rd03-negotiated-terms.md",
+      "docs/milestones/ssc-rd-wave02-rd05-recommendation-disposition.md"
+    ],
+    "on_main": true,
+    "stage": "findings",
+    "found": "OSC drew 200+ applications asking $8.9B against $984M of initial capacity, but only five named instruments ($2.075B: MP Materials $150M, Vulcan Elements $620M, ReElement $80M, Phoenix Tailings $500M, Energy Fuels $725M) are public, one executed loan and four conditional commitments, and all 70 negotiated-term fields were unobtainable. Of 180 data points for the first 18 SBIC critical-tech funds, only 67 were found and no fund-level commitments or draws; the Advisory Committee on Excellence in Space (17 members) had advice-only authority and none of its 58 documents was a recommendation or agency response.",
+    "real_sources": null,
+    "active": "2026-07-31..2026-08-10",
+    "risk": "Low for the loan facts (public); the ACES lane sits under the loaded 'status-for-sovereignty' hypothesis.",
+    "worth": "maybe",
+    "why": "Concrete figures, mostly 'terms not public'; source count not tallied (dozens of official pages)."
+  },
+  {
+    "trail": "Early defense seed queue and roster-scan template",
+    "slice": "defense-capital",
+    "question": "Which defense actors and funds (Anduril, Silicon Valley Defense Group, Silent Ventures, UK Defence Industrial Strategy and others) should be investigated first, and how would the roster scan be reused?",
+    "where": [
+      "data/intake/defense-industrial-candidates.json",
+      "data/research-tracks/defense-accelerator-fund-rosters/README.md"
+    ],
+    "on_main": true,
+    "stage": "idea",
+    "found": "Nothing yet: a 10-item intake list (Anduril, Palmer Luckey, Trae Stephens, Jackson Moses, Silent Ventures, UK defence industrial strategy and others) and a roster-scan template whose coverage boxes are all 'not searched'. The later routers and corridor trails superseded both.",
+    "real_sources": 0,
+    "active": "2026-06-29..2026-06-29",
+    "risk": "Low.",
+    "worth": "drop",
+    "why": "Superseded by the work it seeded."
+  },
+  {
+    "trail": "Presidents' business entities in New York records",
+    "slice": "defense-capital",
+    "question": "Which New York-registered companies can be reached from campaign-spending names tied to the eight post-1979 US presidents?",
+    "where": [
+      "data/research/cohort-disclosed-business-entities.json",
+      "data/research/portfolio-provenance.json"
+    ],
+    "on_main": true,
+    "stage": "scaffold",
+    "found": "Nothing firm: company-name candidates exist only for Donald Trump (6 entities, ownership unresolved) and the other seven presidents are empty, which the file calls a coverage gap, not a finding. The selection of Trump for review is still waiting on a second reviewer; the sibling portfolio file is only a framing document (five hand-picked topic areas, not a random sample).",
+    "real_sources": 1,
+    "active": null,
+    "risk": "High. Living and former presidents and their businesses; unverified name matches; this is not a defense trail and probably belongs to another slice.",
+    "worth": "drop",
+    "why": "Thin, off-topic for defense and high neutrality exposure; no dates in the files."
+  }
+]
