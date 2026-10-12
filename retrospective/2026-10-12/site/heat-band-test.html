@@ -1,0 +1,213 @@
+<title>Heat Band Test</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,500..800&family=IBM+Plex+Mono:wght@400;500&family=Public+Sans:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<style>
+/* Layout: one reading column; the overlap matrix is the single figure, a CSS-grid heatmap with the universe size as the one control above it. */
+:root {
+  --bg: #f2f5f4; --surface: #ffffff; --ink: #14201d; --muted: #56645f; --line: #d3dbd8;
+  --accent: #0d5c63; --accent-soft: #e1eeee;
+  --h0: #fcfcfb; --h1: #cde2fb; --h2: #9ec5f4; --h3: #6da7ec; --h4: #3987e5; --h5: #256abf; --h6: #184f95; --h7: #0d366b;
+  --flag: #8a5f00; --flag-bg: #f6eed9;
+  --font-display: "Archivo", "Arial Narrow", system-ui, sans-serif;
+  --font-body: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1413; --surface: #151e1d; --ink: #e3ebe8; --muted: #93a29d; --line: #293533; --accent: #63b9bf; --accent-soft: #16302f;
+    --h0: #1a1a19; --h1: #104281; --h2: #184f95; --h3: #1c5cab; --h4: #256abf; --h5: #3987e5; --h6: #6da7ec; --h7: #9ec5f4;
+    --flag: #e2b24d; --flag-bg: #2b2210; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1413; --surface: #151e1d; --ink: #e3ebe8; --muted: #93a29d; --line: #293533; --accent: #63b9bf; --accent-soft: #16302f;
+  --h0: #1a1a19; --h1: #104281; --h2: #184f95; --h3: #1c5cab; --h4: #256abf; --h5: #3987e5; --h6: #6da7ec; --h7: #9ec5f4;
+  --flag: #e2b24d; --flag-bg: #2b2210; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.55; padding-inline: 16px; padding-block: 0 64px; }
+.wrap { max-width: 980px; margin: 0 auto; }
+.read { max-width: 68ch; }
+a { color: var(--accent); text-underline-offset: 2px; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(2rem, 6vw, 3.4rem); font-weight: 800; font-stretch: 112%; line-height: 1.02; letter-spacing: -0.01em; }
+h2 { font-size: 1.35rem; font-weight: 700; font-stretch: 105%; }
+h3 { font-size: 1.05rem; font-weight: 700; }
+.label { font-family: var(--font-mono); font-size: 0.74rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+header.top { padding-block: 40px 28px; border-bottom: 1px solid var(--line); display: grid; gap: 14px; }
+header.top p, section p { margin: 0; }
+section { padding-block: 36px 8px; display: grid; gap: 16px; }
+.verdict { font-size: 1.15rem; line-height: 1.6; display: grid; gap: 12px; }
+.note-bar { background: var(--accent-soft); border-radius: 6px; padding: 12px 16px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 16px 18px; display: grid; gap: 8px; min-width: 0; }
+.card p { color: var(--muted); }
+.card .q { color: var(--ink); font-weight: 600; }
+.stat { font-family: var(--font-display); font-size: 1.6rem; font-weight: 800; font-stretch: 108%; }
+.control { display: flex; flex-wrap: wrap; gap: 12px 18px; align-items: center; padding: 12px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; }
+.control label { font-weight: 600; }
+.control input[type=range] { width: min(320px, 100%); accent-color: var(--accent); }
+.control output { font-family: var(--font-mono); font-variant-numeric: tabular-nums; min-width: 7ch; }
+.matrix-wrap { overflow-x: auto; }
+.matrix { display: grid; gap: 2px; font-size: 0.85rem; min-width: 640px; }
+.matrix .hd { font-family: var(--font-mono); font-size: 0.72rem; color: var(--muted); padding: 6px 4px; display: flex; align-items: flex-end; line-height: 1.2; }
+.matrix .rh { font-family: var(--font-mono); font-size: 0.72rem; color: var(--muted); padding: 6px 8px 6px 0; display: flex; align-items: center; white-space: nowrap; }
+.cell { position: relative; min-height: 56px; border-radius: 4px; display: grid; place-items: center; font-family: var(--font-mono); font-variant-numeric: tabular-nums; cursor: default; outline: none; border: 0; padding: 0; font-size: 0.85rem; }
+.cell:focus-visible { box-shadow: 0 0 0 2px var(--accent); }
+.cell.empty { background: transparent; }
+.cell.flag::after { content: ""; position: absolute; inset: 0; border-radius: 4px; background: repeating-linear-gradient(45deg, transparent 0 6px, color-mix(in oklab, var(--flag) 35%, transparent) 6px 8px); pointer-events: none; }
+.cell.flag { outline: 1px solid var(--flag); }
+.cell span { position: relative; z-index: 1; }
+.tip { position: fixed; z-index: 5; max-width: 320px; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font-size: 0.85rem; box-shadow: 0 6px 24px rgba(0,0,0,0.18); pointer-events: none; }
+.tip b { display: block; margin-bottom: 4px; }
+.tip .m { color: var(--muted); }
+.legend { display: flex; flex-wrap: wrap; gap: 14px 22px; align-items: center; font-size: 0.85rem; color: var(--muted); }
+.ramp { display: inline-grid; grid-auto-flow: column; gap: 2px; }
+.ramp i { width: 22px; height: 12px; border-radius: 2px; display: block; }
+.sw { display: inline-block; width: 22px; height: 12px; border-radius: 2px; vertical-align: middle; outline: 1px solid var(--flag); background: repeating-linear-gradient(45deg, transparent 0 6px, color-mix(in oklab, var(--flag) 35%, transparent) 6px 8px); }
+.tbl { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-family: var(--font-mono); font-size: 0.74rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+td.n, th.n { text-align: right; white-space: nowrap; }
+.pill { font-size: 0.78rem; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+.pill.ok { border-color: var(--accent); color: var(--accent); }
+.pill.flag { border-color: var(--flag); color: var(--flag); }
+ol.steps { margin: 0; padding-left: 1.4em; display: grid; gap: 10px; }
+ol.steps strong { display: block; }
+ol.steps span { color: var(--muted); }
+details { font-size: 0.9rem; }
+details summary { cursor: pointer; font-weight: 600; }
+footer { margin-top: 40px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.9rem; }
+@media (prefers-reduced-motion: no-preference) { .cell { transition: background-color .2s; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <span class="label">BigBirdReturns/clifford-number · 12 Oct 2026</span>
+    <h1>Heat Band Test</h1>
+    <p class="read">The hypothesis: put every list of people the project gathered on one map and the same names recur across lists far more often than chance allows. This page runs that test on what the repo holds, with the universe size as the one free parameter.</p>
+  </header>
+
+  <section>
+    <h2>Result</h2>
+    <div class="verdict read">
+      <p><strong>In the lists that were produced independently of each other, overlap sits at chance.</strong> Every hot cell in the full union is there by construction: the list was built from another list, so the recurrence was put there by the method, not found in the world.</p>
+      <p>That does not refute the band. It means the test has not been run yet, and the repo's rule against cross-case identity joins hid that instead of surfacing it. The last section says what running it takes; three of the five rosters needed are already here.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>The matrix</h2>
+    <p class="read">Each cell: the number of people who appear in both lists, shaded by how far that is above what chance predicts for a universe of U people. Chance for a pair is (size of A × size of B) ÷ U. Hatched cells were built from each other, so their heat is manufactured.</p>
+    <div class="control">
+      <label for="u">Universe size U</label>
+      <input type="range" id="u" min="500" max="50000" step="500" value="5000" aria-describedby="u-help">
+      <output id="u-out" for="u">5,000</output>
+      <span id="u-help" class="label">people who could plausibly appear on such lists</span>
+    </div>
+    <div class="matrix-wrap"><div class="matrix" id="matrix" role="grid" aria-label="Overlap between lists"></div></div>
+    <div class="legend">
+      <span>Observed ÷ expected:</span>
+      <span class="ramp" aria-hidden="true"><i style="background:var(--h1)"></i><i style="background:var(--h2)"></i><i style="background:var(--h3)"></i><i style="background:var(--h4)"></i><i style="background:var(--h5)"></i><i style="background:var(--h6)"></i><i style="background:var(--h7)"></i></span>
+      <span>≤1× · 2× · 4× · 8× · 16× · 32× · 64×+</span>
+      <span><span class="sw" aria-hidden="true"></span> built from each other</span>
+    </div>
+    <div id="tip" class="tip" hidden></div>
+    <details><summary>Table view</summary><div class="tbl"><table id="table"><thead><tr><th>List A</th><th>List B</th><th class="n">A</th><th class="n">B</th><th class="n">Observed</th><th class="n">Expected</th><th class="n">Ratio</th><th>Independent?</th><th>Who</th></tr></thead><tbody></tbody></table></div></details>
+  </section>
+
+  <section>
+    <h2>The three clean cells</h2>
+    <p class="read">Only three pairs of lists were produced without reference to each other. These are the cells that count.</p>
+    <div class="cards">
+      <div class="card"><span class="label">Dialog directory × fund team pages</span><span class="stat">1</span><p class="q">Peter Thiel</p><p>Co-founder of Dialog and managing partner of Founders Fund: the one person on both lists is on both by definition. Chance predicts 0.4 (U = 20,000) to 4 (U = 2,000).</p></div>
+      <div class="card"><span class="label">Dated UK-AI records × fund team pages</span><span class="stat">1</span><p class="q">Marc Andreessen</p><p>On the a16z American Dynamism team page; in the Electric Twin seed round of 11 Feb 2026. Chance predicts 0.2 to 1.8.</p></div>
+      <div class="card"><span class="label">Dialog directory × dated UK-AI records</span><span class="stat">2</span><p class="q">Matt Clifford, Dan Driscoll</p><p>Clifford is the anchor the whole corpus was gathered around, so his presence is selection. Driscoll is listed in Dialog and administered the Detachment 201 Cohort 2 oath on 10 Jun 2026. Chance predicts 0.3 to 2.9.</p></div>
+    </div>
+    <p class="note-bar read">Everything else that looked hot came from a list built out of another list: the Austin corridor from the Pallas and Texas Venture Partners pages; 30 of the 100 "router" names seeded from the repo's own UK-AI graph; each Dialog name's organisation attached at import.</p>
+  </section>
+
+  <section>
+    <h2>What running the real test takes</h2>
+    <ol class="steps read">
+      <li><strong>Freeze the target first.</strong><span>The Dialog directory as exposed on 16 Jun 2026 (115 people), hashed, with the as-of date fixed before anything else is looked at.</span></li>
+      <li><strong>Build the candidate universe from independent public rosters only.</strong><span>Already held: 70 people on eleven fund team pages, 196 NatSec100 companies, 222 NATO DIANA companies, 837 Capital Factory companies, 100 senators and 441 House offices, the Detachment 201 cohorts. Missing: a complete roster of UK AI advisers and appointees 2023–26, and summit attendee lists. Companies need their founders and officers resolved to people.</span></li>
+      <li><strong>Predict from footprint and timelines, then score.</strong><span>Pick the top k by the rule (shared dated records, straight timelines). Report precision and recall against three baselines: random draw, prominence only (page views), and role-matched.</span></li>
+      <li><strong>Run it forward.</strong><span>Predict the next published appointment or attendee list before it appears. A forward hit is the only result nobody can argue was fitted afterwards.</span></li>
+    </ol>
+  </section>
+
+  <footer>
+    <p class="read">Lists: dated UK-AI ledger records (50 people, excluding the Dialog listing), the Dialog directory (115), eleven fund team pages (70), 30 router names seeded from the projection, the Austin corridor (19), BVVC leadership (27), the LinkedIn captures (31), NatSec100 seed people (4). Name matching is by normalised label and is rough. Source data and the computation are in <code>retrospective/2026-10-12/analyses/heat-band-test.json</code> on branch <code>claude/kind-gauss-mgmf99</code>.</p>
+  </footer>
+</div>
+
+<script>
+(function () {
+  var L = [
+    { id: "dialog", name: "Dialog directory", n: 115, indep: true },
+    { id: "ukai", name: "Dated UK-AI records", n: 50, indep: true },
+    { id: "fund", name: "Fund team pages", n: 70, indep: true },
+    { id: "proj", name: "Router names from projection", n: 30, indep: false },
+    { id: "austin", name: "Austin corridor", n: 19, indep: false },
+    { id: "bvvc", name: "BVVC leadership", n: 27, indep: true },
+    { id: "linkedin", name: "LinkedIn captures", n: 31, indep: false },
+    { id: "natsec", name: "NatSec100 seed people", n: 4, indep: false }
+  ];
+  var O = {
+    "dialog|ukai": { o: 2, who: "Matt Clifford, Dan Driscoll", flag: false },
+    "dialog|fund": { o: 1, who: "Peter Thiel", flag: false },
+    "ukai|fund": { o: 1, who: "Marc Andreessen", flag: false },
+    "dialog|proj": { o: 2, who: "Joe Lonsdale, Eric Schmidt", flag: true, why: "the projection rows were seeded from the repo's own graph, which already held these names" },
+    "ukai|proj": { o: 6, who: "Ben Warner, Marc Warner, Bob McGrew, Kevin Weil, Joe Lonsdale, Peter Thiel", flag: true, why: "seeded from the UK-AI graph itself" },
+    "fund|austin": { o: 10, who: "Jackson Moses, Joshua Baer, Aviad Grinfeld, Daniel Fouzailov, Lorne Abony, Richard Spencer, Rotem Kakon, Sally Donnelly, Tal Shmueli, Tony DeMartino", flag: true, why: "the Austin corridor was built from the Pallas, Stratos and Texas Venture Partners team pages" },
+    "fund|natsec": { o: 2, who: "Jackson Moses, Joshua Baer", flag: true, why: "the NatSec100 people were seeded from the Silent Ventures and Capital Factory routers" },
+    "austin|natsec": { o: 2, who: "Jackson Moses, Joshua Baer", flag: true, why: "both lists were seeded from the same two routers" },
+    "dialog|austin": { o: 0 }, "dialog|bvvc": { o: 0 }, "dialog|linkedin": { o: 0 }, "dialog|natsec": { o: 0 },
+    "ukai|austin": { o: 0 }, "ukai|bvvc": { o: 0 }, "ukai|linkedin": { o: 0 }, "ukai|natsec": { o: 0 },
+    "fund|bvvc": { o: 0 }, "fund|linkedin": { o: 0 }, "proj|austin": { o: 0 }, "proj|bvvc": { o: 0 }, "proj|linkedin": { o: 0 }, "proj|natsec": { o: 0 },
+    "austin|bvvc": { o: 0 }, "austin|linkedin": { o: 0 }, "bvvc|linkedin": { o: 0 }, "bvvc|natsec": { o: 0 }, "linkedin|natsec": { o: 0 }
+  };
+  function cellData(a, b) { return O[a.id + "|" + b.id] || O[b.id + "|" + a.id] || { o: 0 }; }
+  function step(ratio) { if (ratio <= 1) return 1; if (ratio <= 2) return 2; if (ratio <= 4) return 3; if (ratio <= 8) return 4; if (ratio <= 16) return 5; if (ratio <= 32) return 6; return 7; }
+  var m = document.getElementById("matrix"), tip = document.getElementById("tip"), tbody = document.querySelector("#table tbody");
+  var range = document.getElementById("u"), out = document.getElementById("u-out");
+  try { var saved = localStorage.getItem("heat-u"); if (saved) range.value = saved; } catch (e) {}
+  function fmt(n) { return n.toLocaleString("en-GB"); }
+  function render() {
+    var U = +range.value; out.value = fmt(U); try { localStorage.setItem("heat-u", String(U)); } catch (e) {}
+    m.innerHTML = ""; tbody.innerHTML = "";
+    m.style.gridTemplateColumns = "150px repeat(" + L.length + ", minmax(56px, 1fr))";
+    m.appendChild(document.createElement("div"));
+    L.forEach(function (l) { var h = document.createElement("div"); h.className = "hd"; h.textContent = l.name + " (" + l.n + ")"; m.appendChild(h); });
+    L.forEach(function (a, i) {
+      var rh = document.createElement("div"); rh.className = "rh"; rh.textContent = a.name; m.appendChild(rh);
+      L.forEach(function (b, j) {
+        var c = document.createElement(j > i ? "button" : "div"); c.className = "cell";
+        if (j <= i) { c.className += " empty"; m.appendChild(c); return; }
+        var d = cellData(a, b), exp = a.n * b.n / U, ratio = d.o / exp;
+        var s = d.o === 0 ? 0 : step(ratio);
+        c.style.background = "var(--h" + s + ")"; c.style.color = s >= 4 ? "#f0efec" : "var(--ink)";
+        if (d.flag) c.className += " flag";
+        c.type = "button"; c.setAttribute("aria-label", a.name + " and " + b.name + ": " + d.o + " shared, " + exp.toFixed(2) + " expected");
+        var sp = document.createElement("span"); sp.textContent = d.o; c.appendChild(sp);
+        var html = "<b>" + a.name + " × " + b.name + "</b>" + d.o + " shared · " + exp.toFixed(2) + " expected at U = " + fmt(U) + (d.o ? " · " + ratio.toFixed(1) + "×" : "") + (d.who ? "<br>" + d.who : "") + (d.flag ? "<br><span class=m>Built from each other: " + d.why + ".</span>" : "");
+        function show(ev) { tip.innerHTML = html; tip.hidden = false; var r = c.getBoundingClientRect(); tip.style.left = Math.min(r.left, innerWidth - 340) + "px"; tip.style.top = (r.bottom + 6) + "px"; }
+        c.addEventListener("mouseenter", show); c.addEventListener("focus", show);
+        c.addEventListener("mouseleave", function () { tip.hidden = true; }); c.addEventListener("blur", function () { tip.hidden = true; });
+        m.appendChild(c);
+        var tr = document.createElement("tr");
+        [a.name, b.name, a.n, b.n, d.o, exp.toFixed(2), d.o ? ratio.toFixed(1) + "×" : "–", d.flag ? "no" : (a.indep && b.indep ? "yes" : "partly"), d.who || ""].forEach(function (v, k) {
+          var td = document.createElement("td"); if (k >= 2 && k <= 6) td.className = "n";
+          if (k === 7) { var p = document.createElement("span"); p.className = "pill " + (v === "yes" ? "ok" : v === "no" ? "flag" : ""); p.textContent = v; td.appendChild(p); } else td.textContent = v;
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+    });
+  }
+  range.addEventListener("input", render); render();
+})();
+</script>
