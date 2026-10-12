@@ -2,7 +2,21 @@
 
 12 October 2026. Base: `211db52794c27d34c5f344e8674258c651672e8d`.
 
-## Decision
+## Current objective: retained attention and circulation
+
+Operator correction, 12 October 2026, after the operating-cut review: retain the attention behind the entire body of work, whatever an individual investigation found. The objective is a stable, circulating ecology spanning the available estate, with Clifford as one component. The 79-trail inventory and Git disposition ledger cover particular collections; they do not define the whole field. The earlier component assessment below remains a record of that bounded review, not a filter deciding which inquiries deserve to survive.
+
+Retain questions, hunches, source encounters, abandoned explanations, failed searches, contrary evidence, working code, failed code, corrections and consequences with their available relationships. Preserve what drew the operator somewhere, what was suspected at the time, what the agents sought, what they actually found, and how the question changed. Attribute operator statements, agent proposals and later reconstruction separately. Where the reason for looking was never recorded, leave it unknown rather than inventing it. A wrong guess can remain a useful address into the history and a clue to a better question.
+
+Source form determines provenance and how a statement can be used, rather than whether it belongs in the reservoir. A comment, closed issue, unmerged branch, local D: collection, negative result or unfinished experiment remains discoverable. An archived flag, review recommendation or incomplete programme test describes its original scope. Retirement removes unnecessary active machinery and recurring obligations while retaining the question, history and recoverable artifacts. Public distribution and claims still use the permissions and evidentiary scope appropriate to their contents.
+
+Accumulating attention should sharpen the next conjecture through comparison with reality. Bring together inquiries that concern the same actor, instrument, dependency or mechanism across projects; expose both supporting and challenging records, changed conditions and unresolved alternatives. Repeated agent restatements are one evidentiary lineage, not independent confirmation. Separate the operator's hypothesis from a retrieval process that only searched for material fitting it. A useful revision becomes more discriminating about what should be observed, where it should appear and what would change the explanation.
+
+Circulation means new material reconnects to retained questions and histories, changes dependent interpretations where warranted, and returns the actual next investigation or executable attempt to that history. Retained questions also guide new acquisition. Use the existing Cantos collection/history owners, Second Run procedures and AXM identities where they already apply; keep other material in its native custody with traversable pointers. Bulk indexing and relationship recovery carry the scale. Inspect individual items when a contradiction or consequential decision needs it, rather than making a complete re-audit of every item the entrance fee to using the collection.
+
+The operating outcome is that a person can enter by a question, actor, project or mechanism, recover why attention went there when documented, see what changed across attempts, compare it with other work and continue from the accumulated state. A new source should reach the inquiries it bears on without restarting their entire histories. Complete coverage and estate-wide circulation remain implementation outcomes to demonstrate; this clarification changes the objective, adds no schema or gate, and installs no timer or external action.
+
+## Earlier implementation assessment (bounded Clifford cut)
 
 Keep the research, the tested domain components, and useful unmerged implementation. Retire the programmes that generated additional process without changing an answer or improving a real operation. Preservation closes the accounting question; the operating decision concerns what another session can inspect, use, and extend.
 
