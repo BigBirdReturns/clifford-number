@@ -1,0 +1,1663 @@
+{
+  "summary": {
+    "generated_for": "BigBirdReturns/clifford-number @ d8392cfb (1.3.0), audited 2026-10-12 in a read-only scratch copy",
+    "top_reusable": [
+      "Hop compiler: hops.mjs + temporal.mjs + density.mjs (400 LOC, tested, portable)",
+      "Constitution (BUILD-INSTRUCTIONS section 1) + definitions.md + methodology.md",
+      "Entity-resolution + generic-crossing gate (no name-only merges, independent-receipt roles)",
+      "Receipt archival gate (hash or Wayback), but add enforced limits text",
+      "Observation-first crawler contract + core (official-crawl.mjs) and PR-admission scripts",
+      "Case-ledger compiler with claim/causal/amount enums",
+      "AXM id + identity layer with cross-language vectors",
+      "FEC bulk acquirer + csv-records + OGE parser pipeline (manifest-only data)",
+      "Route projections + evidence-rank + publication allowlist (browser-safe modules)",
+      "Datasets: CalFresh decision registry (12,282 rows), NatSec100 pathways, core ledger (73 receipts)"
+    ],
+    "caveats": [
+      "Contracts Finder, Companies House, RDAP, USPTO have no fetcher code; SAM and SEC are implemented but yielded nothing; only USAspending and Federal Register produced crawl observations.",
+      "The raw FEC (18.1M rows), OGE (5,945 rows) and ICIJ (1.2M rows) data are NOT in git; only manifests are.",
+      "NatSec100 \"transcription pipeline\" is manual transcription plus validators; no OCR or extraction code.",
+      "Exposure-confounding \"simulator\" is a deterministic two-option toy.",
+      "Receipt SHA-256 covers the project's own extract, not the upstream page.",
+      "\"Limits\" text is not enforced by code."
+    ]
+  },
+  "engines": [
+    {
+      "id": "hop-compiler",
+      "name": "Surface-hop compiler (time-window intersection, density refusal, rejected-hop log)",
+      "paths": [
+        "tools/lib/hops.mjs (251)",
+        "tools/lib/temporal.mjs (118)",
+        "tools/lib/density.mjs (32)",
+        "tools/lib/ledger.mjs (only combinations/uniq/evidenceWeight are used)",
+        "tools/build-hop-graph.mjs (168, repo-specific driver)"
+      ],
+      "one_line": "Derives actor-to-actor hops only from shared hop-eligible bounded surfaces; hop window = intersection of surface window and both participation windows (year/month/day widened to full period); refuses surfaces over max_hop_actor_count (19) and broad-institution-only surfaces; records refused surfaces and non-overlapping pairs; BFS shortest path with as-of slicing and a dated/partially_dated/surface_window_only/undated basis status.",
+      "inputs": "surfaces[] (hop_eligible, time_start/time_end, receipt_ids), participation rows (actor|organization, time_start/time_end, evidence_class, receipt_ids), receipts by id, set of broad-organization ids, density policy {max_hop_actor_count}",
+      "outputs": "edges[] each with per-surface bases (valid_from/valid_until, temporal_status, weakest evidence class, roles, receipts); rejected_hop_surfaces[] (reason enum); rejected_hop_pairs[] (windows, receipts, reverifiable flag, publication_status); adjacency; shortestPath(asOf)",
+      "coupling": "low (library) / high (driver)",
+      "coupling_notes": "Library files are plain ESM, zero npm deps; evidence vocabulary (official, primary_public, reported, derived, judgment, open) is hard-coded in ledger.mjs. build-hop-graph.mjs hard-codes ANCHOR_ACTOR_ID matt-clifford, reads legacy graph.json, cases.json default_case_id and data/intake/defense-industrial-candidates.json, and writes five build/*.json files.",
+      "tests": {
+        "files": [
+          "test/temporal.test.js",
+          "test/density.test.js",
+          "test/hop-stints.test.js",
+          "test/compiler.test.js (2,073 lines, reads live ledger)"
+        ],
+        "status": "all pass",
+        "note": "temporal/density/hop-stints use synthetic inline fixtures, i.e. portable as-is. The rejected-pair path is exercised only by fixtures and validate-release: the live ledger yields 93 edges, 35 rejected surfaces and 0 rejected pairs."
+      },
+      "lift_out": "Copy hops.mjs + temporal.mjs + density.mjs (~400 LOC) and inline the three ledger.mjs helpers; parameterise the evidence-class table and broad-org set; write a 30-line driver. About half a day. Port tests/temporal, density, hop-stints verbatim.",
+      "reuse_value": "very high"
+    },
+    {
+      "id": "query-hops-and-route-modes",
+      "name": "Hop query CLI and route projections (6 route modes, diagnostics)",
+      "paths": [
+        "tools/query-hops.mjs (76)",
+        "src/route-projections.js (420)",
+        "src/route-diagnostics.js (190)",
+        "src/evidence-rank.js (70)",
+        "src/roster-budget.js (228)"
+      ],
+      "one_line": "CLI `--from X [--to Y] [--as-of YYYY[-MM[-DD]]] [--json]` prints the shortest evidenced path with per-hop shared surfaces and windows; the browser-safe route-projections module adds shortest (canonical), strongest-evidence, best-dated, official-only, as-of and blocked-segments projections, all secondary and never changing a hop count.",
+      "inputs": "build/hop-graph.json (edges + rejected_hop_pairs), build/axm-identity.json for id aliasing",
+      "outputs": "text or JSON path {number, actor_path, hops[]}; projection objects tagged kind clifford|secondary",
+      "coupling": "low (route-projections, evidence-rank, route-diagnostics: pure ESM, only import evidence-rank) / medium (query-hops: needs two build files and the identity layer)",
+      "tests": {
+        "files": [
+          "test/route-projections.test.js",
+          "test/route-modes.test.js",
+          "test/route-diagnostics.test.js",
+          "test/evidence-rank.test.js",
+          "test/roster-budget.test.js"
+        ],
+        "status": "all pass",
+        "note": "No standalone test of the CLI flag parsing; route-projections.test.js spawns it."
+      },
+      "lift_out": "Copy the four src/ modules unchanged (<1k LOC, browser + node). Re-implement the 76-line CLI against your own graph path. A few hours.",
+      "reuse_value": "high"
+    },
+    {
+      "id": "receipt-archival",
+      "name": "Receipt archiving gate (SHA-256 content hash or Wayback ref) with limits text",
+      "paths": [
+        "tools/lib/receipt-archival.mjs (203)",
+        "data/ledger/receipts.jsonl (row shape)",
+        "receipts/topology/*.md (57 hand-written extracts)",
+        "BUILD-INSTRUCTIONS.md 2.5"
+      ],
+      "one_line": "Every receipt row must carry archive.method in_repo_content_hash (sha256:<64hex> of the repo-relative extract, CRLF-normalised for text types, path-escape and symlink checks) or internet_archive (timestamped web.archive.org URL whose target equals one of the receipt's source URLs); unrecoverable_local_paste is a failure; enforcement date 2027-01-01 unless strict.",
+      "inputs": "receipt rows {receipt_id, path, source_url, archive:{method, ref, captured, checked}}",
+      "outputs": "{errors[], warnings[], summary{method_counts, unresolved_receipt_count, source_url_count}}",
+      "coupling": "low",
+      "coupling_notes": "Only imports `root` from ledger.mjs. Offline: it never fetches the Wayback snapshot, only checks the URL shape.",
+      "tests": {
+        "files": [
+          "test/receipt-archival.test.js (227 lines; fixtures + live ledger)"
+        ],
+        "status": "pass"
+      },
+      "caveats": [
+        "The SHA-256 covers the project's own paraphrased extract (68 of 73 receipts use in_repo_content_hash on a repo extract: 57 in receipts/topology, 11 in receipts/thesis-state-market), not the upstream page; only 5 receipts have a Wayback snapshot. It is tamper-evidence for the extract, not proof the source says it.",
+        "The \"limits\" text is convention, not code: 38 of 57 receipt files have a Limits / Adjudication boundary / Boundary heading, 19 do not, and no validator or test greps for it. Every receipt row has a `notes` field (73/73)."
+      ],
+      "lift_out": "Copy the file (it is self-contained) and the receipt row convention; add a check that requires a limits heading if you want the \"limits\" rule enforced. ~2 hours.",
+      "reuse_value": "high"
+    },
+    {
+      "id": "narration-no-new-facts",
+      "name": "Narrator that adds no facts (plain blocks, machine-derived fallback)",
+      "paths": [
+        "tools/narrate-hops.mjs (235)",
+        "tools/lib/narration.mjs (28)",
+        "docs/plain-language.md"
+      ],
+      "one_line": "Renders hop paths from ledger rows + optional human-written `plain` {who, why_here, receipt_ids} blocks; unfinished profiles print as \"[machine-derived from ledger; no editorial profile yet]\"; picks the narration basis by smallest population, dated-first, strongest evidence.",
+      "inputs": "build/hop-graph.json, canonical actors with plain blocks, receipts, participation",
+      "outputs": "quotable text with window and receipt citations",
+      "coupling": "medium",
+      "tests": {
+        "files": [
+          "test/narrate-hops.test.js (reads live data)"
+        ],
+        "status": "pass"
+      },
+      "lift_out": "narration.mjs is 28 lines and portable; narrate-hops.mjs needs the actor registry shape. ~half a day.",
+      "reuse_value": "medium"
+    },
+    {
+      "id": "public-explorer-and-connection-checker",
+      "name": "Public explorer app + Connection checker + homepage",
+      "paths": [
+        "explorer.html (390)",
+        "index.html (125)",
+        "app.js (4,059 lines / 246 KB, one module)",
+        "home.js (540)",
+        "styles.css (98 KB)",
+        "src/{ui-utils,i18n,release-delta,social-field,atlas-webgl,aperture-*,visual-aperture-*}.js",
+        "vendor/three-0.186.0, 3d-force-graph-1.80.0 (3.3 MB, MIT)",
+        "tools/build-pages.mjs + lib/publication-allowlist.mjs + build-standalone.mjs"
+      ],
+      "one_line": "Static, no-backend site: topology explorer (actors/orgs/surfaces/receipts), connection checker (two actors + optional year/month/day -> shortest defensible route, evidence floor, copy-ready caveat, refused connections), 3-locale UI, WebGL atlas, and a deploy step that only copies an explicit allowlist of files with held-path rules.",
+      "inputs": "fixed set of build/*.json (surface-graph, hop-graph, scores, scout-report, receipt-graph, public-catalog, atlas-projection, public-data-boundary) + cases/*",
+      "outputs": "dist/ GitHub Pages artifact, single-file standalone HTML variants",
+      "coupling": "high (app shell) / low (route-projections, ui-utils, evidence-rank, release-delta, publication-allowlist)",
+      "coupling_notes": "app.js is a 4k-line monolith with the UK-AI case, `matt-clifford` anchor, en/es/fr strings, Google Fonts CDN links and the exact artifact names baked in.",
+      "tests": {
+        "files": [
+          "test/ui-utils.test.js",
+          "test/ui-contract.test.js",
+          "test/public-route-smoke.test.js",
+          "test/home-model.test.js",
+          "test/atlas-semantic.test.js",
+          "test/atlas-projection.test.js",
+          "test/publication-allowlist.test.js",
+          "test/release-delta.test.js"
+        ],
+        "status": "all pass (release-delta and cross-corpus-map fail only when run in parallel because they race on build/)",
+        "note": "playwright is a devDependency and verify-*-browser.cjs scripts exist; no browser E2E is in npm test and I did not run them."
+      },
+      "lift_out": "Take the pure modules and publication-allowlist (224 lines, SHA-256 artifact manifest + held rules) as-is. Treat app.js as a fork-and-strip job: 1-2 weeks to remove the hard-coded case and split the monolith.",
+      "reuse_value": "medium (modules high, shell low)"
+    },
+    {
+      "id": "case-ledger-compiler",
+      "name": "Case-ledger compiler (case-ledger@1)",
+      "paths": [
+        "tools/lib/case-ledger.mjs (206)",
+        "tools/compile-cases.mjs (5)",
+        "cases/<id>/{case.json,receipts,claims,events,relations,beacons}.jsonl",
+        "docs/case-ledger.md"
+      ],
+      "one_line": "Validates and compiles a six-file case into one artifact: claims need receipts and cannot be `verified` without a public URL or archive URL; money carries amount_kind (requested..ceiling, never \"spent\"); every claim/relation carries causal_status (source_explicit | institutionally_attributed | temporal_association | not_established); beacons expose inputs, formulas and prohibited interpretation.",
+      "inputs": "six JSON/JSONL files per case",
+      "outputs": "build/cases/<id>.json with sections",
+      "coupling": "medium",
+      "coupling_notes": "Hard-wired to cases/ layout and root from ledger.mjs; the same file also validates reporter_briefing metadata. No JSON Schema exists for case-ledger@1 (only the doc).",
+      "tests": {
+        "files": [
+          "test/case-ledger.test.js (66 lines; reads built artifacts of two real cases)"
+        ],
+        "status": "pass"
+      },
+      "lift_out": "Copy case-ledger.mjs, drop the briefing validation, parameterise the root. About a day.",
+      "reuse_value": "high"
+    },
+    {
+      "id": "reporter-brief-compiler",
+      "name": "Reporter-brief compiler (reporter-briefing@2)",
+      "paths": [
+        "tools/lib/reporter-briefing.mjs (534)",
+        "tools/lib/reporter-briefing-html.mjs (291)",
+        "tools/lib/reporter-briefing.css (1 minified line)",
+        "tools/compile-reporter-briefings.mjs (76)",
+        "tools/lib/report-waterline.mjs (25)",
+        "schemas/reporter-briefing.schema.json",
+        "briefs/*.html (2 generated, 76 KB and 143 KB)"
+      ],
+      "one_line": "Compiles a finite, non-narrative public briefing page from a case's claims and events (factual text only from canonical claims; unsequenced claims labelled; per-claim qualification; publication_status review_required|approved|superseded|withdrawn) into one static HTML file with a content hash.",
+      "inputs": "cases/<id>/briefing.json + compiled case",
+      "outputs": "briefs/<id>.html, build/briefings/*.json, review queue",
+      "coupling": "medium",
+      "coupling_notes": "depends on case-ledger shapes and the report-waterline vocabulary; output paths are regex-pinned to briefs/ and ../#case/ links.",
+      "tests": {
+        "files": [
+          "test/reporter-briefing.test.js"
+        ],
+        "status": "pass (not in npm test)"
+      },
+      "lift_out": "Take reporter-briefing(.mjs,-html.mjs,.css) with case-ledger.mjs; 1-2 days to detach from waterline/estate links.",
+      "reuse_value": "medium-high"
+    },
+    {
+      "id": "official-record-crawler-core",
+      "name": "Official-record crawler core (observation-first, graph_effect none) + scheduled PR admission scripts",
+      "paths": [
+        "tools/crawl-official.mjs (132)",
+        "tools/lib/official-crawl.mjs (309)",
+        "data/crawl/{sources.json,state.json,observations,candidates,rejections}",
+        "tools/validate-crawl.mjs (75)",
+        ".github/workflows/crawl-official.yml",
+        ".github/scripts/{promote,retain,inspect,watch,resume}-scheduled-crawl-* + scheduled-crawl-pr-identity.sh (7 files, ~1,356 lines)",
+        "docs/official-record-crawler.md",
+        "test/fixtures/crawl/*.json (5 adapter record shapes)"
+      ],
+      "one_line": "Per source adapter: fetch a bounded term/window with overlap days and delay, project to a whitelisted privacy-minimised record, id = hash(source, official id) for candidate and + content hash for observation (revisions append), amounts keep their stage (ceiling vs obligated), non-matching records go to a rejection journal; a scheduled workflow commits only data/crawl and receipts/crawl through a PR admission/watchdog/resume protocol.",
+      "inputs": "data/crawl/sources.json (frontier terms, adapters, hosts, auth env), env CRAWL_* ",
+      "outputs": "immutable observations, deduped candidates, rejections, per-source state",
+      "coupling": "low-medium (core), high (GitHub Actions promotion scripts need gh CLI and branch/PR conventions)",
+      "tests": {
+        "files": [
+          "test/official-crawl.test.js",
+          "test/scheduled-crawl-admission.test.js",
+          "test/scheduled-crawl-pr-identity.test.js",
+          "test/scheduled-crawl-promotion.test.js",
+          "test/scheduled-crawl-resumption.test.js",
+          "test/scheduled-crawl-watchdog.test.js"
+        ],
+        "status": "all pass (fixture-based; no live network test)"
+      },
+      "live_yield": "data/crawl: 35 observations (31 usaspending-awards, 4 federal-register), 31 candidates, 1,741 rejections (1,664 govuk-search, 67 federal-register, 10 sec-form-d); sam-opportunities state = skipped_missing_credential; govuk and SEC produced zero observations.",
+      "lift_out": "official-crawl.mjs + crawl-official.mjs + sources.json are liftable in ~1 day; replace term-matching with identifier-driven frontiers. The promotion scripts are a separate 1-2 day job and assume the same repo conventions.",
+      "reuse_value": "high (design), medium (yield)"
+    },
+    {
+      "id": "adapter-govuk",
+      "name": "GOV.UK search adapter",
+      "paths": [
+        "tools/lib/official-crawl.mjs normalizeGovuk + fetchAdapterRecords(govuk_search)"
+      ],
+      "one_line": "GOV.UK search -> policy_publication observation.",
+      "inputs": "term",
+      "outputs": "observation",
+      "coupling": "low",
+      "tests": {
+        "files": [
+          "test/official-crawl.test.js (fixture govuk.json)"
+        ],
+        "status": "pass (offline fixture only)"
+      },
+      "status": "implemented, but live yield is zero: 1,664 govuk-search rejections vs 0 observations (local relevance gate rejects everything).",
+      "lift_out": "tune/replace the relevance gate first",
+      "reuse_value": "low-medium"
+    },
+    {
+      "id": "adapter-contracts-finder",
+      "name": "Contracts Finder (UK)",
+      "paths": [
+        "none (4 hand-written receipts in receipts/topology/contracts-finder-* ; hosts in data/ledger/receipts.jsonl)"
+      ],
+      "one_line": "NOT IMPLEMENTED as code. Contracts Finder appears only as hand-extracted receipts (4 in the ledger) and in docs/validate-release fixtures.",
+      "coupling": "n/a",
+      "tests": {
+        "files": [],
+        "status": "none"
+      },
+      "status": "missing",
+      "lift_out": "build from scratch against the Contracts Finder OCDS API; use official-crawl adapter contract",
+      "reuse_value": "none (gap)"
+    },
+    {
+      "id": "adapter-usaspending",
+      "name": "USAspending adapters (4 implementations)",
+      "paths": [
+        "tools/lib/official-crawl.mjs normalizeUsaspending",
+        "tools/adapters/usaspending-awards.py (83, stdlib, 429 backoff, contract + IDV families)",
+        "tools/acquire-gov-property-awards.mjs + lib/gov-property-awards.mjs (cohort x disclosed entities)",
+        "tools/acquire-natsec100-award-controls.mjs",
+        "tools/research/usaspending-bulk-request.mjs"
+      ],
+      "one_line": "Recipient/term award enumeration via api.usaspending.gov v2 spending_by_award (no key); amounts tagged obligated; exact-name recipient matches are candidates, substring matches (TRUMPF for TRUMP) are recorded false positives.",
+      "coupling": "low (python CLI, official-crawl) / medium (cohort lanes)",
+      "tests": {
+        "files": [
+          "test/official-crawl.test.js",
+          "test/gov-property.test.js",
+          "test/natsec100-award-control.test.js"
+        ],
+        "status": "pass; python adapter has no test (help/compile smoke only)"
+      },
+      "status": "working; the main source of live crawl yield (31 of 35 observations; Federal Register gave the other 4); natsec100 control: 31 award rows for 5 leads, 0 trade summaries exactly verified.",
+      "lift_out": "copy usaspending-awards.py as-is",
+      "reuse_value": "high"
+    },
+    {
+      "id": "adapter-sam",
+      "name": "SAM.gov opportunities (and entity registration)",
+      "paths": [
+        "tools/lib/official-crawl.mjs normalizeSam (sam_opportunities)"
+      ],
+      "one_line": "Contract opportunities/award notices; amounts tagged ceiling; needs SAM_API_KEY.",
+      "coupling": "low",
+      "tests": {
+        "files": [
+          "test/official-crawl.test.js (fixture sam.json)"
+        ],
+        "status": "pass (offline)"
+      },
+      "status": "implemented but never run in-repo (data/crawl/state.json: skipped_missing_credential). The SAM entity-registration census exists only as a sealed zip + python validator (data/intake/schoolhouse-sam-public-entity-registration-census-v1); its fetcher is not in the repo.",
+      "lift_out": "add key and run",
+      "reuse_value": "medium"
+    },
+    {
+      "id": "adapter-sec-edgar",
+      "name": "SEC EDGAR (Form D atom, full-text search, exact overlap intake)",
+      "paths": [
+        "tools/lib/official-crawl.mjs normalizeSec (sec_form_d)",
+        "tools/adapters/sec-edgar-fts.py (78; needs descriptive User-Agent)",
+        "tools/research/sec-formd.mjs (41)",
+        "tools/lib/sec-exact-overlap-intake.mjs (247)"
+      ],
+      "one_line": "Form D filer discovery by atom feed, efts full-text search, and a name-overlap intake that never promotes name-only matches.",
+      "coupling": "low",
+      "tests": {
+        "files": [
+          "test/official-crawl.test.js",
+          "test/sec-exact-overlap-intake.test.js"
+        ],
+        "status": "pass"
+      },
+      "status": "implemented; crawl yield 0 observations (10 rejections). Intake manifest records that raw SEC snapshot download returned HTTP 403, so official content hashes are unavailable.",
+      "lift_out": "copy the python adapter; set SEC_UA",
+      "reuse_value": "medium"
+    },
+    {
+      "id": "adapter-fec-bulk",
+      "name": "FEC bulk operating-expenditure cohort acquirer + OpenFEC clients",
+      "paths": [
+        "tools/lib/fec-bulk-oppexp.mjs (120)",
+        "tools/acquire-fec-oppexp-cohort.mjs (resumable, checkpointed)",
+        "tools/ingest-fec-bulk-oppexp.mjs (91)",
+        "tools/lib/acquisition-state.mjs (21)",
+        "tools/lib/openfec-cohort.mjs (139) + openfec-schedule-b.mjs (138) + resolve-openfec-cohort.mjs + ingest-openfec-schedule-b.mjs",
+        "tools/lib/fec-payee-inventory.mjs (447)",
+        "tools/lib/csv-records.mjs (53)"
+      ],
+      "one_line": "Download each 2-year cycle oppexp zip, hash, stream-scan filtering by committee id only (never name), corrected amendment audit (distinct transaction/report keys == matched rows), privacy-project, per-cycle manifest, delete raw after hashing.",
+      "inputs": "data/research/openfec-presidential-identifiers.json (committee ids)",
+      "outputs": "normalized oppexp-YYYY.jsonl (gitignored) + hash-pinned manifests",
+      "coupling": "medium",
+      "tests": {
+        "files": [
+          "test/fec-bulk-oppexp.test.js",
+          "test/fec-oppexp-cohort.test.js",
+          "test/fec-payee-inventory.test.js",
+          "test/openfec-cohort.test.js",
+          "test/openfec-schedule-b.test.js"
+        ],
+        "status": "all pass (fixtures in test/fixtures/fec)"
+      },
+      "live_result": "11 cycles 2004-2024, 18,112,031 source rows scanned, 588,535 matched rows, 46,926 distinct payee candidates. Only manifests are kept in git; the rows must be re-acquired.",
+      "lift_out": "fec-bulk-oppexp.mjs + csv-records.mjs + acquisition-state.mjs lift cleanly (~300 LOC); the cohort acquirer needs a committee list. 1 day.",
+      "reuse_value": "high"
+    },
+    {
+      "id": "adapter-oge",
+      "name": "OGE public financial disclosure (278e/278T) locator + PDF parser",
+      "paths": [
+        "tools/build-oge-locators.mjs",
+        "tools/acquire-oge-beneficial-interests.mjs",
+        "tools/lib/oge-beneficial-interest.mjs (282)",
+        "tools/lib/oge-date-recovery.mjs",
+        "tools/apply-oge-visual-date-corrections.mjs",
+        "tools/recover-oge-temporal-dates.mjs"
+      ],
+      "one_line": "Hash-verify OGE PDFs from recorded locators, extract page items with pdfjs, parse beneficial-interest rows with holder scope and OCR-ambiguity flags, privacy-projection assertion, strict date recovery.",
+      "coupling": "medium",
+      "coupling_notes": "needs pdfjs-dist@5.4.530 installed out-of-band (build/oge-pdf-runtime), not in package.json.",
+      "tests": {
+        "files": [
+          "test/oge-locators.test.js",
+          "test/oge-beneficial-interest.test.js",
+          "test/oge-date-recovery.test.js",
+          "test/oge-visual-date-corrections.test.js"
+        ],
+        "status": "all pass"
+      },
+      "live_result": "26 of 26 documents hashed (131.8 MB, 1,662 pages) -> 5,945 intake rows, 551 rejections (1 privacy, 550 parse); only 2 of 8 presidents have online docs, 6 routed to archives; rows not in git.",
+      "lift_out": "parser is tied to the OGE 278 layout; reuse the structure, not the regexes. 2-3 days for a new form.",
+      "reuse_value": "medium"
+    },
+    {
+      "id": "adapter-companies-house",
+      "name": "Companies House (UK)",
+      "paths": [
+        "none (14 ledger receipts + ~15 receipts/topology/companies-house-*.md written by hand; tools/validate-electric-twin-cs01-shareholders.mjs, validate-electric-twin-class-rights.mjs)"
+      ],
+      "one_line": "NOT IMPLEMENTED as a crawler/fetcher. Only hand-extracted receipts and two validators for one company (Electric Twin).",
+      "coupling": "n/a",
+      "tests": {
+        "files": [],
+        "status": "none for fetching"
+      },
+      "status": "missing",
+      "lift_out": "build against the Companies House REST API (key required)",
+      "reuse_value": "none (gap)"
+    },
+    {
+      "id": "adapter-irs-990",
+      "name": "IRS Form 990 (TEOS XML, Schedule I, candidate census)",
+      "paths": [
+        "tools/research/download-irs-teos.sh (23)",
+        "tools/research/extract-schedule-i.py (135)",
+        "tools/build-schoolhouse-irs-candidate-{census,filing-index-custody,latest-filing-xml-v6-custody}.mjs",
+        "tools/build-schoolhouse-irs-historical-filing-website-screen-custody.mjs"
+      ],
+      "one_line": "Bulk TEOS zips -> priority-EIN Schedule I grant rows (CSV for review); census builders turn an externally produced artifact dir into sealed custody.",
+      "coupling": "medium",
+      "tests": {
+        "files": [
+          "tools/test-schoolhouse-irs-candidate-filing-index-custody.mjs",
+          "tools/test-schoolhouse-irs-candidate-latest-filing-xml-v6-custody.mjs",
+          "tools/test-schoolhouse-irs-historical-filing-website-screen-custody.mjs"
+        ],
+        "status": "the 3 census tests pass; download/extract scripts untested"
+      },
+      "status": "partial: the census builders take `<artifact-dir>` produced by an acquisition step that is not in the repo.",
+      "lift_out": "extract-schedule-i.py is standalone (stdlib)",
+      "reuse_value": "medium"
+    },
+    {
+      "id": "adapter-rdap",
+      "name": "RDAP exact-domain census",
+      "paths": [
+        "data/intake/schoolhouse-rdap-exact-domain-census-v1 (sealed zips + manifest)",
+        "tools/validate-schoolhouse-rdap-exact-domain-census-custody.py"
+      ],
+      "one_line": "NOT IMPLEMENTED as code. Only the sealed result (2 requests, 0 candidate rows, registrar-role value only) and a validator are present; the IANA-bootstrap fetcher is absent.",
+      "coupling": "n/a",
+      "tests": {
+        "files": [],
+        "status": "validator only, orphaned (no workflow/package reference)"
+      },
+      "status": "missing",
+      "reuse_value": "none (gap)"
+    },
+    {
+      "id": "adapter-uspto",
+      "name": "USPTO exact-mark census",
+      "paths": [
+        "data/intake/schoolhouse-uspto-exact-mark-census-v1",
+        "tools/validate-schoolhouse-uspto-exact-mark-census-custody.py"
+      ],
+      "one_line": "NOT IMPLEMENTED as code. Only a sealed result and an orphaned validator.",
+      "coupling": "n/a",
+      "tests": {
+        "files": [],
+        "status": "none"
+      },
+      "status": "missing",
+      "reuse_value": "none (gap)"
+    },
+    {
+      "id": "adapters-other",
+      "name": "Other single-file adapters",
+      "paths": [
+        "tools/adapters/sbir-awards.py (68)",
+        "tools/adapters/md-property-deeds.py (74, Maryland SDAT Socrata)",
+        "tools/research/lda-pull.mjs (44, Senate LDA, needs LDA_API_KEY)",
+        "tools/lib/ny-registry-entity-intake.mjs (76) + acquire-ny-registry-embedded-entities.mjs",
+        "tools/build-nara-locators.mjs + data/research/nara-disclosure-locators.json",
+        "federal_register in official-crawl.mjs"
+      ],
+      "one_line": "Small stdlib/ESM fetchers; the 4 python adapters accept --insecure (unverified TLS) for MITM proxies and --json.",
+      "coupling": "low",
+      "tests": {
+        "files": [
+          "test/ny-registry-entity-intake.test.js",
+          "test/nara-locators.test.js"
+        ],
+        "status": "pass; python adapters smoke-tested only (--help exits 0, py_compile ok); no live calls made"
+      },
+      "reuse_value": "medium"
+    },
+    {
+      "id": "fec-oge-name-matcher",
+      "name": "FEC x OGE payee/entity name matcher + temporal screen",
+      "paths": [
+        "tools/lib/oge-fec-overlap.mjs (534)",
+        "tools/lib/fec-payee-inventory.mjs (normalizePayeeName)",
+        "tools/lib/oge-fec-temporal-screen.mjs (53)",
+        "tools/lib/oge-fec-embedded-name-intake.mjs",
+        "tools/build-oge-fec-overlap.mjs",
+        "tools/screen-oge-fec-temporal-overlap.mjs",
+        "tools/lib/entity-resolution.mjs normalizePayee"
+      ],
+      "one_line": "Streaming three-rule candidate generator: exact normalised name; conservative base/parenthetical forms; token-indexed high similarity (>=2 shared distinctive tokens, Jaccard>=0.75 or subset containment+dice>=0.8, posting-list cap 2% and >=250). Temporal screen can only prove NON-overlap from disjoint bounds; aggregate FEC ranges never establish overlap.",
+      "inputs": "JSONL of OGE interests, JSONL of FEC payee candidates",
+      "outputs": "overlap candidates + rejection examples + manifest (all graph_effect none)",
+      "coupling": "low-medium",
+      "tests": {
+        "files": [
+          "test/oge-fec-overlap.test.js (synthetic)",
+          "test/oge-fec-temporal-screen.test.js",
+          "test/oge-fec-embedded-name-intake.test.js",
+          "test/oge-fec-temporal-promotion-audit.test.js"
+        ],
+        "status": "all pass"
+      },
+      "live_result": "5,945 OGE interests x 46,926 FEC payees (278.8M naive pairs not materialised) -> 1,172 candidate pairs touching 221 interests; 88 exact-name rows examined against SEC with 0 accepted identity resolutions. No labelled gold set: precision/recall unmeasured.",
+      "lift_out": "Lift oge-fec-overlap.mjs (+ normalizePayeeName) as a generic blocking-by-rare-token matcher; remove finance vocabulary; 1-2 days. Needs a labelled sample before trusting thresholds.",
+      "reuse_value": "medium-high"
+    },
+    {
+      "id": "entity-resolution-and-crossing-gate",
+      "name": "Entity resolution + corpus-agnostic crossing gate (+ identity-resolution helpers)",
+      "paths": [
+        "tools/lib/entity-resolution.mjs (224)",
+        "tools/lib/generic-crossing.mjs (83)",
+        "tools/lib/temporal-interval.mjs (40)",
+        "tools/lib/axm-id.mjs (134)",
+        "tools/lib/axm-identity.mjs (116)",
+        "docs/identity-reconciliation.md"
+      ],
+      "one_line": "Never merge on name alone: identity accepted only with a unique official identifier or >=2 independent strong anchors (weak: shared registered-agent/coworking address, generic vendor tokens); every candidate and rule recorded; crossing gate needs resolved endpoints, one independent public receipt per required role, definite temporal overlap (possible/unknown never passes), and a typed predicate from an allowlist (linked_to/tied_to/associated_with are forbidden).",
+      "coupling": "low",
+      "tests": {
+        "files": [
+          "test/entity-resolution.test.js (240 lines)"
+        ],
+        "status": "pass"
+      },
+      "lift_out": "Copy 3 files (~350 LOC). 2-4 hours.",
+      "reuse_value": "high"
+    },
+    {
+      "id": "axm-id-identity-layer",
+      "name": "AXM content-addressed ids (cross-language reconciled) + temporal identity layer",
+      "paths": [
+        "tools/lib/axm-id.mjs (134)",
+        "tools/lib/axm-identity.mjs (116)",
+        "test/fixtures/axm-identity-reconciliation.json (14 entity + 2 claim vectors, byte-identical to axm-genesis)",
+        "docs/identity-reconciliation.md"
+      ],
+      "one_line": "id = prefix(e1_|c1_) + base32lower(SHA-256(NFC + ASCII-lowercase + Cc-strip + frozen-whitespace-collapse preimage)), full 32-byte digest; claims carry windows/roles/receipts outside identity; legacy e_ tokens resolve only to a unique local entity.",
+      "coupling": "low",
+      "tests": {
+        "files": [
+          "test/axm-id.test.js",
+          "test/axm-identity.test.js"
+        ],
+        "status": "pass"
+      },
+      "lift_out": "Copy both files and the fixture (needs temporal.mjs windowOf). 1-2 hours. Matching ids do not imply the same real-world entity across namespaces.",
+      "reuse_value": "high (if you stay in the AXM ecosystem), medium otherwise"
+    },
+    {
+      "id": "icij-panama-importer",
+      "name": "ICIJ Offshore Leaks (Panama Papers) acquirer + importer",
+      "paths": [
+        "tools/acquire-icij-offshoreleaks.mjs (36)",
+        "tools/import-icij-panama.mjs (184)",
+        "tools/lib/csv-records.mjs (53)",
+        "data/research/icij-panama-import-manifest.json"
+      ],
+      "one_line": "Download full-oldb zip, verify pinned SHA-256, stream the six node/relationship CSVs, keep Panama rows only, resolve each node by source-native node id through resolveIdentity, emit per-record receipts with content hash + locator, and a real positive control run through generic-crossing.",
+      "coupling": "medium",
+      "tests": {
+        "files": [
+          "test/icij-panama-import.test.js (21 lines)"
+        ],
+        "status": "passes, but only tests the CSV parser and asserts fields of the committed manifest; import-icij-panama.mjs itself is untested and was not run (raw archive 73 MB is not in the repo)."
+      },
+      "live_result": "2,016,523 node rows scanned -> 559,600 Panama nodes; 3,339,267 relationship rows -> 674,102; manifest only (5.9 KB).",
+      "caveat": "ICIJ data is ODbL / CC BY-SA and ICIJ states inclusion does not imply wrongdoing; node ids are not unique real-world entities.",
+      "lift_out": "csv-records.mjs and the hash-verify-then-stream pattern lift easily; the importer is ~1 day plus building a real test.",
+      "reuse_value": "medium"
+    },
+    {
+      "id": "natsec100-transcription",
+      "name": "NatSec100 roster transcription \"pipeline\"",
+      "paths": [
+        "data/intake/natsec100-pathways/chunk1/roster-2025-official-visual-recovery.{json,jsonl}",
+        "tools/validate-natsec100-2025-roster-recovery.mjs (326)",
+        "tools/validate-natsec100-2025-identity-adjudication.mjs (210)",
+        "data/intake/natsec100-pathways/chunk2-capital-factory/{build-cf-overlap.mjs,validate-chunk2.mjs}"
+      ],
+      "one_line": "There is no transcription code. The 100-row 2025 table (rank, name as reported, website, page) was manually transcribed from an image-rendered PDF (pages 12-15, sha256-pinned, Wayback ref); the repo ships only validators that check completeness (ranks 1..100, 42 prior partial rows reconcile, 77 deterministic registry matches + 23 adjudicated) and the Capital Factory overlap builder (837 x 196 -> 12 co-listings, 4 corroborated).",
+      "coupling": "medium (validators hard-code the 2025 denominators)",
+      "tests": {
+        "files": [
+          "test/natsec100-2025-roster-recovery.test.js",
+          "test/natsec100-2025-identity-adjudication.test.js",
+          "test/chunk2-capital-factory.test.js"
+        ],
+        "status": "all pass"
+      },
+      "lift_out": "Reuse as a protocol: source hash + page numbers + expected-rank completeness + prior-partial reconciliation + candidate-only promotion; if you want automation you must build OCR/vision extraction yourself.",
+      "reuse_value": "medium (protocol), none (code)"
+    },
+    {
+      "id": "calfresh-registry-acquirer",
+      "name": "CalFresh decision-registry acquirer (cap-aware slicing, sharded custody)",
+      "paths": [
+        "tools/ssc-rd04-a06-full-corpus.mjs (1,168)",
+        "tools/acquisition/status-sovereignty-rd04-a07/{shn-full-shard,shn-semantics,official-crawl-shard,official-sitemap-probe,candidate-receipts,*-reconcile}.mjs (2,337 lines)",
+        "tools/acquisition/status-sovereignty-rd04-a08, a09",
+        "tools/lib/ssc_rd04_a04_*.py"
+      ],
+      "one_line": "Walk the California DSS decision registry (acms.dss.ca.gov, public, CAPTCHA parameter bypass value used by the site) by date slices, recursively halving any slice that returns the 100-row source cap down to single days; shard documents by SHA-256(document identity) mod 64; curl each PDF with retries, record headers/body hashes and magic-byte checks per attempt; reconcile to a registry denominator; archive per shard.",
+      "coupling": "high",
+      "coupling_notes": "Each script bakes in an execution id, issue number, PARENT_MAIN commit, a GitHub Actions proof-artifact id/sha and a draft GitHub release tag. The registry-enumeration step that discovered the cap (423 partition requests, 212 terminal slices) comes from an external proof artifact and is NOT in the repo; querySlice() in shn-full-shard.mjs and shn-semantics.mjs is the only recursive-bisection code.",
+      "tests": {
+        "files": [
+          "test/status-sovereignty-rd04-public-implementation-receipts-a07.test.js",
+          "test/status-sovereignty-rd04-snap-route-adjudication-a04.test.py"
+        ],
+        "status": "pass (validate recorded results; no live network test)"
+      },
+      "lift_out": "Extract querySlice + shardForDocument + the per-attempt receipt shape into a ~200-line generic \"capped-API slicer\"; ignore the rest. 1-2 days. Registry content is a CDSS public record; check terms before bulk re-crawling.",
+      "reuse_value": "medium (technique high, code low)"
+    },
+    {
+      "id": "dentsu-feed-crawler",
+      "name": "First-party \"industrial exhaust\" feed + artifact crawler (Dentsu)",
+      "paths": [
+        "tools/crawl-industrial-exhaust.mjs (178)",
+        "tools/hydrate-industrial-exhaust.mjs (357)",
+        "tools/lib/industrial-exhaust.mjs (5,287)",
+        "tools/lib/industrial-exhaust-artifacts.mjs (3,913)",
+        "data/exhaust/*",
+        "receipts/exhaust/*",
+        ".github/workflows/crawl-industrial-exhaust.yml",
+        ".github/scripts/industrial-artifact-failure-policy.mjs"
+      ],
+      "one_line": "RSS/Atom feeds frozen as hashed XML receipts; each item is an immutable observation keyed by source-record key with revisions preserved; watch terms only drive alert queues (all items kept); event-hint classifier; sitemap discovery; hydrates only alerted/matched pages by freezing the HTML/PDF body under a content-addressed receipt; contact data redacted from projections.",
+      "coupling": "medium",
+      "coupling_notes": "config is data/exhaust/sources.json (6 Dentsu feeds). ~4,700 of the 5,287 lines of industrial-exhaust.mjs are 116 phone-number redaction helpers; the artifacts layer adds a descriptor-relative (dirfd) receipt writer that refuses to run as root.",
+      "tests": {
+        "files": [
+          "test/industrial-exhaust.test.js",
+          "test/industrial-exhaust-artifacts.test.js",
+          "test/industrial-exhaust-retained-store-custody.test.js"
+        ],
+        "status": "feed layer passes; the two artifact-layer tests fail ONLY under root (guard), not verified as non-root"
+      },
+      "live_result": "427 feed observations (captured 2026-08-17..09-03), 344 discoveries, 115 hydrated artifacts, 10 + 18 alerts.",
+      "lift_out": "A clean RSS-snapshot-and-revision core is ~600 lines inside the 5k-line lib; rewrite it rather than lifting. Drop the phone redaction unless needed. 1-2 days.",
+      "reuse_value": "medium (pattern), low (code as-is)"
+    },
+    {
+      "id": "exposure-confounding-simulator",
+      "name": "Exposure-confounding simulator (performative synthetic constituency)",
+      "paths": [
+        "tools/lib/performative-synthetic-constituency.mjs (276)",
+        "tools/compile-performative-synthetic-constituency.mjs (18)",
+        "tools/validate-performative-synthetic-constituency.mjs (22)",
+        "data/research/performative-synthetic-constituencies/exposure-confounding.fixture.json (2.4 KB)",
+        "docs/performative-synthetic-constituency.md"
+      ],
+      "one_line": "Deterministic closed-form two-option, two-round toy: fixed 60/40 latent preference, 90/10 exposure -> raw click shares ~93.1/6.9, next-round policy trained on raw shares starves option B; inverse-propensity correction recovers 60/40. No RNG, no multi-option, no noise.",
+      "coupling": "low",
+      "tests": {
+        "files": [
+          "test/performative-synthetic-constituency.test.js"
+        ],
+        "status": "pass"
+      },
+      "lift_out": "Copy simulateExposureRound (~35 lines) or reimplement; the value is the refusal rules (not exposed != rejected; no click != negative preference; raw engagement != preference). 1 hour.",
+      "reuse_value": "low code / medium idea"
+    },
+    {
+      "id": "publication-allowlist-and-build-clock",
+      "name": "Publication allowlist, release artifact manifest, deterministic build clock",
+      "paths": [
+        "tools/lib/publication-allowlist.mjs (224)",
+        "tools/lib/build-clock.mjs (58)",
+        "data/project/publication-allowlist.json",
+        "data/project/build-clock.json",
+        "tools/build-pages.mjs (40)"
+      ],
+      "one_line": "Deploy artifact is built by copying only exactly-allowlisted regular files (no symlinks), held exact/prefix/substring rules veto leaks, builder fails on any unlisted emitted path; SOURCE_DATE_EPOCH-style build clock makes generated JSON reproducible; SHA-256 artifact manifest + deployment SHA.",
+      "coupling": "low-medium",
+      "tests": {
+        "files": [
+          "test/publication-allowlist.test.js",
+          "test/build-clock.test.js",
+          "test/deploy-workflow.test.js"
+        ],
+        "status": "pass"
+      },
+      "lift_out": "Copy both libs + schema names; 2-4 hours. Directly serves the Phase 2 \"verifiable distribution\" goal.",
+      "reuse_value": "high"
+    },
+    {
+      "id": "python-adapters-and-dossier",
+      "name": "Subject-agnostic dossier packager and python research adapters",
+      "paths": [
+        "tools/build-dossier.py (266, stdlib)",
+        "tools/adapters/{usaspending-awards,sec-edgar-fts,sbir-awards,md-property-deeds}.py",
+        "tools/research/{extract-schedule-i.py,download-irs-teos.sh}"
+      ],
+      "one_line": "build-dossier.py packs a directory of .md/.csv (+ optional bundle.json) into one self-contained house-style HTML file with zero network calls; the adapters are single-file stdlib CLIs.",
+      "coupling": "very low",
+      "tests": {
+        "files": [],
+        "status": "no tests; all 6 python files exit 0 on --help and compile"
+      },
+      "lift_out": "copy files",
+      "reuse_value": "medium"
+    },
+    {
+      "id": "field-autopsy-and-signatures",
+      "name": "Field-autopsy case bundle + place-formation signatures",
+      "paths": [
+        "tools/lib/field-autopsy.mjs (643)",
+        "tools/lib/formation-signature.mjs (96)",
+        "data/signatures/formation-signatures.json",
+        "cases/arcadia-field-autopsy (22 files: 75 claims, 142 receipts, 117 searches, 19 observations: 7 confirmed, 4 corrected, 5 unresolved, 3 interpretive)",
+        "docs/field-autopsy.md"
+      ],
+      "one_line": "Method for turning an UNTRUSTED conversation/prototype into a verified case: preserve the intake as expression-only, ledger every observation with a disposition, keep hypotheses graph-inert, require a public receipt for every named person (else unresolved), and expand a signature spine into bounded candidate searches (never findings).",
+      "coupling": "medium",
+      "tests": {
+        "files": [
+          "test/field-autopsy.test.js",
+          "test/fa03-positive-control.test.js"
+        ],
+        "status": "pass"
+      },
+      "lift_out": "Reuse as method; code needs case-ledger.mjs. 2-3 days.",
+      "reuse_value": "medium"
+    },
+    {
+      "id": "deterministic-text-pdf",
+      "name": "Deterministic text PDF writer",
+      "paths": [
+        "tools/lib/deterministic-text-pdf.mjs (229)"
+      ],
+      "one_line": "Byte-reproducible Courier text PDF (fixed layout constants, no timestamps/ids) so a generated letter can be hashed and re-generated identically.",
+      "inputs": "text lines + layout",
+      "outputs": "PDF bytes",
+      "coupling": "very low",
+      "tests": {
+        "files": [
+          "test/electric-twin-register-request-pdf.test.js"
+        ],
+        "status": "pass (checked in the serial run if finished; see tests.failing)"
+      },
+      "lift_out": "copy one file; 30 minutes",
+      "reuse_value": "medium"
+    },
+    {
+      "id": "records-request-lifecycle",
+      "name": "Records-request lifecycle (Electric Twin Register of Members request -> delivery -> dispatch -> response -> adjudication -> second-party review)",
+      "paths": [
+        "tools/lib/electric-twin-register-request-{core,pdf-core,delivery-core,dispatch-core,response-core,response-adjudication-core,response-second-party-review-core}.mjs (4,039 lines)",
+        "tools/*electric-twin-register-request*",
+        "data/research/electric-twin-register-of-members-acquisition/"
+      ],
+      "one_line": "A state machine for requesting a public register/record from a company or registry with hash-bound packet, delivery proof, dispatch authority checks and an adjudicated response; every step carries authority ceilings (no outreach unless explicitly authorised).",
+      "coupling": "high (single request, hard-coded entity and statute)",
+      "tests": {
+        "files": [
+          "test/electric-twin-*.test.js (8 files, 2,857 lines)"
+        ],
+        "status": "see tests.failing; electric-twin-class-rights is in npm test and passes"
+      },
+      "lift_out": "Reuse as a design reference for FOI/records requests, not as code. 3-5 days to generalise.",
+      "reuse_value": "low-medium"
+    },
+    {
+      "id": "release-delta-and-contribution",
+      "name": "Release delta (browser) and MCP server (legacy)",
+      "paths": [
+        "src/release-delta.js (523)",
+        "src/mcp-server.js (+ graph.js, scoring.js, validate.js)",
+        "contributions/{inbox,templates}"
+      ],
+      "one_line": "releaseDelta(current, baseline) diffs two atlas-projection builds (BUILD-INSTRUCTIONS 3.3 \"dark-network delta\" exists only as a UI module, not as a compile-diff CLI); mcp-server.js is a stdio MCP server over the LEGACY graph.json, not over the hop graph.",
+      "coupling": "medium",
+      "tests": {
+        "files": [
+          "test/release-delta.test.js",
+          "test/mcp-server.test.js",
+          "test/graph.test.js"
+        ],
+        "status": "pass"
+      },
+      "lift_out": "Phase 2 plans to promote the MCP server; it must be rewritten against hop-graph.json first.",
+      "reuse_value": "medium"
+    }
+  ],
+  "datasets": [
+    {
+      "id": "core-ledger-and-canonical",
+      "paths": [
+        "data/ledger/{claims,surfaces,participation,receipts,chains}.jsonl",
+        "data/canonical/{actors,organizations,aliases,predicates,surface-types,...}.json",
+        "receipts/topology/*.md"
+      ],
+      "what": "The hand-curated bounded-surface ledger for UK AI policy / Matt Clifford network, the only data the hop engine runs on end-to-end.",
+      "size": {
+        "ledger_rows": {
+          "claims": 44,
+          "surfaces": 54,
+          "participation": 286,
+          "receipts": 73,
+          "chains": 1
+        },
+        "hop_eligible_surfaces": 19,
+        "actors": 170,
+        "organizations": 32,
+        "aliases": 65,
+        "surface_types": 20,
+        "receipt_extract_files": 57,
+        "kb": 728
+      },
+      "provenance": "Official 58 / primary_public 13 / reported 2 receipts; hosts gov.uk (15), Companies House (14), electrictwin.com (5), Contracts Finder (4), army.mil, UK Covid Inquiry, Civil Service Commission, Parliament; short paraphrased extracts, not page copies.",
+      "freshness": "retrieved 2026-08-11 to 2026-08-15",
+      "licence_concern": "Low: facts + short extracts of UK government pages (Open Government Licence not recorded in repo). Names real private-sector people; redaction policy limits to public roles. LinkedIn/press items are paraphrases only.",
+      "keep": "high (small, dense)"
+    },
+    {
+      "id": "calfresh-decision-registry",
+      "paths": [
+        "data/intake/status-sovereignty-rd04-calfresh-decision-corpus-a06/"
+      ],
+      "what": "Full FY2025-26 California CalFresh State Hearing Decision registry denominator with per-document PDF custody receipts (PDFs themselves are in an unpublished draft GitHub release, 132 assets, 1.32 GB).",
+      "size": {
+        "files": 138,
+        "mb": 126,
+        "registry_rows": 12282,
+        "unique_documents": 11672,
+        "shared_document_groups": 530,
+        "shards": 64,
+        "dispositions": {
+          "Denial": 4229,
+          "Dismissal": 1418,
+          "Grant": 1190,
+          "Partial Grant": 2479,
+          "Stipulation": 2964,
+          "Withdrawn": 2
+        },
+        "registry_index_mb": 6.9
+      },
+      "provenance": "Official: California DSS ACMS public decision registry (acms.dss.ca.gov); release dates 07/01/2025-06/30/2026.",
+      "freshness": "captured 2026-08-02",
+      "licence_concern": "Registry rows contain only ids, disposition, county, language, issue codes. The decision PDFs (not in git here) contain hearing narratives about benefit recipients: check CDSS redaction and reuse terms before ever publishing them. Release date strings are MM/DD/YYYY (sorts wrongly as text).",
+      "keep": "high"
+    },
+    {
+      "id": "calfresh-shn-census-a07",
+      "paths": [
+        "data/intake/status-sovereignty-rd04-public-implementation-receipts-a07/"
+      ],
+      "what": "Exact State Hearing Number census (6,292 SHN queries, 1,433 candidate PDFs, 347 official-site bodies, 5,438 sitemap URLs) searching for public implementation/restoration receipts; result is negative (0 verified receipts).",
+      "size": {
+        "files": 83,
+        "mb": 241,
+        "tarball_parts_tracked_in_git_mb": 226.7
+      },
+      "provenance": "Official CDSS/county web captures",
+      "freshness": "captured 2026-08-02",
+      "licence_concern": "Tarballs contain candidate decision PDFs (personal narratives); stored as 3 git blobs (80 MB, 80 MB, 66.7 MB), roughly three quarters of the 295 MiB pack (gzip does not recompress). Move to release assets/object storage.",
+      "keep": "medium (keep hashes + negative result; evict bytes)"
+    },
+    {
+      "id": "snap-50-state-catalogue",
+      "paths": [
+        "data/intake/status-sovereignty-rd04-snap-source-availability-a02/",
+        ".../snap-search-replay-a03/ (608 files, 4.8 MB)",
+        ".../snap-route-adjudication-a04/ (355 files, 15 MB)",
+        "data/intake/status-sovereignty-rd-wave03-rd04-* (~35 small shards)"
+      ],
+      "what": "Fifty-state SNAP official-source catalogue (53 source records, 8 scoring dimensions, 112 route/source reconciliations, 400 dimension decisions) with raw headers/bodies of captured state pages.",
+      "size": {
+        "states": 50,
+        "dimensions": 8,
+        "source_records": 53,
+        "route_source_reconciliations": 112,
+        "mb": 32
+      },
+      "provenance": "Official state agency web pages",
+      "freshness": "as_of 2026-08-01/02",
+      "licence_concern": "State government pages: generally public; scores are the project's own and carry a provisional label (a02: 5 tied-highest, 45 provisional-rejected).",
+      "keep": "medium-high"
+    },
+    {
+      "id": "aces-recommendation-disposition",
+      "paths": [
+        "data/intake/status-sovereignty-rd-wave02-rd05-recommendation-disposition/"
+      ],
+      "what": "58-object ACES advisory-committee candidate universe, 49 fixed official routes (45 HTTP success), exact-object captures (504 txt, 108 bin) closing as a bounded public-record non-link.",
+      "size": {
+        "files": 784,
+        "mb": 30
+      },
+      "provenance": "Official agency sites",
+      "freshness": "as_of 2026-08-02",
+      "licence_concern": "US federal government documents: low; some captured bodies are binary decks/images.",
+      "keep": "medium"
+    },
+    {
+      "id": "ssc-wave02-wave03-research-shards",
+      "paths": [
+        "data/intake/status-sovereignty-rd-wave02-rd01-legal-entity (5.4 MB)",
+        "...rd02-license-leverage (3.3 MB)",
+        "...rd06-offeror-universe (2.6 MB)",
+        "...rd03-negotiated-terms (1.6 MB)",
+        "...wave03-rd05-member-participation (2 MB)",
+        "data/research/status-sovereignty-* (~11 MB)"
+      ],
+      "what": "Per-class acquisition shards with source custody for legal-entity rosters, license terms, offerors, negotiated terms, committee participation.",
+      "size": {
+        "mb": 31
+      },
+      "provenance": "Official + primary public sources",
+      "freshness": "2026-07/08",
+      "licence_concern": "Mixed; review per source.",
+      "keep": "medium (data) / low (the step-by-step wrappers around it)"
+    },
+    {
+      "id": "natsec100-pathways",
+      "paths": [
+        "data/intake/natsec100-pathways/{seed,chunk1,chunk2-capital-factory}"
+      ],
+      "what": "US defense-tech second case: 196 companies, 342 company-year rows (2023-2026 editions), complete 100-row 2025 transcription, 77 deterministic + 23 adjudicated identity mappings, Capital Factory 837-company portfolio, 12 co-listings (4 independently corroborated), 80 seed actors, 66 seed claims, 367 conversion events.",
+      "size": {
+        "files": 26,
+        "kb": 816
+      },
+      "provenance": "Official ranking reports (natsec100.org PDFs) + first-party portfolio pages",
+      "freshness": "visual review 2026-09-06",
+      "licence_concern": "Rank/name/website facts from SVDG reports and Capital Factory pages: facts are low risk, wholesale re-publication of the tables is a judgement call.",
+      "keep": "high"
+    },
+    {
+      "id": "bvvc-defense-capital-lake",
+      "paths": [
+        "data/intake/bvvc-defense-capital/"
+      ],
+      "what": "Bravo Victor Venture Capital / School.House public-source lake: 482 public-source receipts, 27 leadership labels, 30 portfolio labels, 18 faculty, 2024 Demo Day, 7 vehicle rows.",
+      "size": {
+        "files": 146,
+        "mb": 7
+      },
+      "provenance": "First-party site pages, SEC filings, announcements",
+      "freshness": "2026-07/08",
+      "licence_concern": "Names of individuals from a company's own leadership/faculty pages; public-role only.",
+      "keep": "medium"
+    },
+    {
+      "id": "austin-corridor-and-routers",
+      "paths": [
+        "data/intake/austin-israel-defense-corridor/ (17 files, 488 KB)",
+        "data/intake/person-centered-defense-routers/ (31 files, 356 KB)"
+      ],
+      "what": "Cohort, confirmed joins, coverage gaps, co-investor/advisory edges for the Austin-Israel corridor and person-centred defense routers.",
+      "size": {
+        "kb": 844
+      },
+      "provenance": "Public sources (candidate-only, graph_effect none)",
+      "freshness": "2026-07/08",
+      "licence_concern": "Person-centred: check against BUILD-INSTRUCTIONS 9 (not a people-search engine).",
+      "keep": "low-medium"
+    },
+    {
+      "id": "dentsu-first-party-exhaust",
+      "paths": [
+        "data/exhaust/ (11 files, 2.1 MB; 914 JSONL rows)",
+        "receipts/exhaust/ (557 files, 111 MB)"
+      ],
+      "what": "6 Dentsu RSS feeds + sitemap: 427 observations, 344 discoveries, 115 hydrated artifacts, alerts; 451 artifact receipts embed the FULL page body (88 MB under www.dentsu.com), 21 MB of index receipts.",
+      "size": {
+        "files": 568,
+        "mb": 113,
+        "observations": 427,
+        "discoveries": 344,
+        "artifacts": 115
+      },
+      "provenance": "First-party corporate publications (dentsu.com, dentsu.co.jp)",
+      "freshness": "captured 2026-08-17 to 2026-09-03; published back to 2020-03",
+      "licence_concern": "HIGH: byte-for-byte copies of copyrighted corporate HTML/PDF in a public repo (receipt.body field). Keep hashes + normalised projections; evict bodies.",
+      "keep": "low (bodies), medium (observation index)"
+    },
+    {
+      "id": "official-crawl-queue",
+      "paths": [
+        "data/crawl/",
+        "receipts/crawl/"
+      ],
+      "what": "Observation/candidate/rejection queue from the official-record crawler.",
+      "size": {
+        "observations": 35,
+        "candidates": 31,
+        "rejections": 1741,
+        "kb": 884
+      },
+      "provenance": "USAspending (31), Federal Register (4)",
+      "freshness": "2026-07-12 to 2026-09-05",
+      "licence_concern": "US federal public data: none.",
+      "keep": "low (regenerable)"
+    },
+    {
+      "id": "fec-cohort-manifests",
+      "paths": [
+        "data/research/fec-bulk-oppexp-cohort-manifest.json",
+        "fec-payee-inventory-manifest.json",
+        "openfec-presidential-identifiers.json"
+      ],
+      "what": "Hash-pinned record of a scan of FEC operating-expenditure bulk files for 11 cycles (2004-2024) for the committees of 8 presidents: 18,112,031 rows scanned, 588,535 matched, 46,926 distinct payees. The rows themselves are gitignored.",
+      "size": {
+        "kb": 40,
+        "rows_scanned": 18112031,
+        "matched": 588535
+      },
+      "provenance": "Official: fec.gov bulk downloads (no key)",
+      "freshness": "run 2026-07-13",
+      "licence_concern": "FEC data is public but 52 U.S.C. 30111(a)(4) bars using contributor names/addresses for solicitation or commercial purposes (applies to contributor data, not oppexp payees, but note it).",
+      "keep": "high as manifests; raw must be re-downloaded"
+    },
+    {
+      "id": "oge-disclosure-manifests",
+      "paths": [
+        "data/research/oge-disclosure-locators.json",
+        "oge-beneficial-interest-manifest.json",
+        "oge-date-recovery-manifest.json",
+        "oge-visual-date-correction-manifest.json",
+        "nara-disclosure-locators.json"
+      ],
+      "what": "35 locators, 26 hashed OGE PDFs (131.8 MB, 1,662 pages), 5,945 extracted interest rows (not stored), 57 NARA search hits.",
+      "size": {
+        "kb": 110
+      },
+      "provenance": "Official: OGE public disclosure, NARA",
+      "freshness": "2026-07",
+      "licence_concern": "Personal financial disclosures of officials: public records; repo stores no holdings text, only hashes and counts.",
+      "keep": "high as manifests"
+    },
+    {
+      "id": "icij-and-property-manifests",
+      "paths": [
+        "data/research/icij-panama-import-manifest.json (5.9 KB)",
+        "government-to-property-manifest.json",
+        "ny-registry-embedded-entity-manifest.json"
+      ],
+      "what": "Panama Papers retention counts (559,600 nodes, 674,102 relationships), USAspending recipient scan for disclosed businesses, NY registry exact matches (26 names, 6 active matches, 130 filing-history records).",
+      "size": {
+        "kb": 18
+      },
+      "provenance": "ICIJ Offshore Leaks (20250331 archive, sha256 pinned), USAspending, NY DOS",
+      "freshness": "2025-03-31 archive; runs 2026-07",
+      "licence_concern": "ICIJ: ODbL database / CC BY-SA contents; share-alike applies if you redistribute rows.",
+      "keep": "medium"
+    },
+    {
+      "id": "linkedin-targeted-review",
+      "paths": [
+        "data/intake/linkedin-targeted-review/"
+      ],
+      "what": "31 LinkedIn profile captures: 359 role claims, 430 crossing candidates, 21 warnings, with PDF hashes (PDFs not stored).",
+      "size": {
+        "files": 10,
+        "mb": 1.1
+      },
+      "provenance": "LinkedIn-generated profile PDFs, captured 2026-07-14",
+      "freshness": "2026-07-14",
+      "licence_concern": "HIGH: named individuals' career timelines derived from LinkedIn (ToS, personal data); crossing candidates are machine output. Consider removing from the public repo.",
+      "keep": "low"
+    },
+    {
+      "id": "case-ledgers",
+      "paths": [
+        "cases/arcadia-field-autopsy",
+        "cases/anduril-access-ownership",
+        "cases/field-autopsy-03",
+        "cases/template.json"
+      ],
+      "what": "Three case ledgers; arcadia is a full field-autopsy bundle; anduril (74 rows) is the reporter-briefing source; field-autopsy-03 is the golden fixture shipped with zero verified claims.",
+      "size": {
+        "files": 36,
+        "kb": 972
+      },
+      "provenance": "Mixed official + press",
+      "freshness": "2026-07",
+      "licence_concern": "Low-medium.",
+      "keep": "high as templates"
+    },
+    {
+      "id": "schoolhouse-sealed-censuses",
+      "paths": [
+        "data/intake/schoolhouse-*-v1 (9 dirs, 51 files, 1.4 MB)"
+      ],
+      "what": "Sealed zip artifacts for RDAP, USPTO, SAM entity, SEC EDGAR domain, USAspending recipient, IRS filing index/xml/website screen censuses for one entity (\"School.House\"): mostly zero-row terminal results.",
+      "size": {
+        "files": 51,
+        "mb": 1.4
+      },
+      "provenance": "Official registries",
+      "freshness": "2026-07/08",
+      "licence_concern": "None; but the acquisition code is not in the repo, so these cannot be reproduced.",
+      "keep": "low"
+    },
+    {
+      "id": "test-fixtures",
+      "paths": [
+        "test/fixtures/axm-identity-reconciliation.json",
+        "test/fixtures/crawl/*.json (sam, usaspending, sec, federal-register, govuk)",
+        "test/fixtures/fec",
+        "test/fixtures/poof-*.fixture.json",
+        "data/research/performative-synthetic-constituencies/exposure-confounding.fixture.json"
+      ],
+      "what": "Portable regression vectors: cross-language AXM id vectors (14 entity + 2 claim cases), real-shape adapter payloads for 5 official APIs, poof right-of-reply / referral / audit receipt fixtures.",
+      "size": {
+        "files": 14,
+        "kb": 80
+      },
+      "provenance": "Synthetic or trimmed official payloads",
+      "freshness": "2026-07",
+      "licence_concern": "None",
+      "keep": "high"
+    },
+    {
+      "id": "generated-views-in-git",
+      "paths": [
+        "build/ (605 tracked files)",
+        "reports/ (362 files, 10 MB)",
+        "estates/, gametrails/",
+        "briefs/"
+      ],
+      "what": "Derived/disposable outputs tracked in git although docs call them disposable; estates/trails.json and gametrails/data.json are byte-identical (2.3 MB each).",
+      "size": {
+        "files": 974,
+        "mb": 24
+      },
+      "provenance": "derived",
+      "freshness": "regenerated each compile",
+      "licence_concern": "n/a",
+      "keep": "none (regenerate)"
+    }
+  ],
+  "patterns": [
+    {
+      "id": "constitution",
+      "path": "BUILD-INSTRUCTIONS.md section 1 (rules 1.1-1.11), 9 anti-goals",
+      "what": "Eleven non-negotiable invariants: no edge without receipt; hop = bounded surface only; temporal honesty; canonical controls identity; narration adds no facts; no identity-adjacent aggregation; density discipline; verification over trust; tool must not become capture; selection-layer neutrality (checked-in selection declaration, adjacent-actor symmetry, private leads cannot count as public coverage); interpretation contract travels with the data (denominator is not evidence, adversarial review by a second party).",
+      "maturity": "high; copy verbatim and swap the case",
+      "enforcement": "1.1-1.4, 1.7, 1.8 by validate-release; 1.10/1.11 by validate:selection and validate:consumption; 1.5 by the narration test; 1.6 and 1.9 have no mechanical gate that I could find.",
+      "caveat": "sections 2-8 are 2026-2037 roadmap and project-specific; section 8 amendment rule is a good governance clause."
+    },
+    {
+      "id": "definitions",
+      "path": "docs/definitions.md (123 lines)",
+      "what": "Glossary: actor, organization, case anchor, bounded surface, hop basis, hop, path, claim, receipt, evidence class, validity window, temporal precision, undated participation, rejected hop pair, hop-eligible, scorable non-hop surface.",
+      "maturity": "high",
+      "caveat": "uses \"Clifford Number\" terminology throughout."
+    },
+    {
+      "id": "methodology",
+      "path": "docs/methodology.md (111 lines)",
+      "what": "What creates a hop, source-of-truth pipeline (ledgers -> disposable build), temporal rule, receipt boundary statements (a listing proves a name appeared; registration is not attendance; absence from corpus means undocumented), density discipline, publication behaviour.",
+      "maturity": "high"
+    },
+    {
+      "id": "case-ledger-doc",
+      "path": "docs/case-ledger.md (31 lines) + docs/reporter-briefings.md + docs/report-waterline.md",
+      "what": "Claim status enum, causal_status enum, amount_kind enum (never \"spent\"), beacons are not guilt scores, structured report != approved publication, waterline = highest demonstrated publication transition.",
+      "maturity": "high"
+    },
+    {
+      "id": "crawler-contract",
+      "path": "docs/official-record-crawler.md (52 lines)",
+      "what": "harvest/triage/publish separation: observation -> candidate -> model/human draft -> deterministic review gate -> human-reviewed canonical change; ids from (source, official id) and content hash; hard identifiers drive joins, names are hints; amounts carry stage; promotion firewall.",
+      "maturity": "high"
+    },
+    {
+      "id": "plain-language",
+      "path": "docs/plain-language.md (68 lines)",
+      "what": "Narrator adds no facts; optional human `plain` block with receipt_ids; machine-derived fallback must be labelled; a test fails when an anchor-adjacent actor lacks a receipt-backed profile.",
+      "maturity": "high"
+    },
+    {
+      "id": "selection-and-consumption",
+      "path": "docs/corpus-selection.md (112) + docs/consumption-contract.md (100) + data/research/selection-adversarial-reviews.json",
+      "what": "Checked-in selection declaration per lane, symmetric comparison, coverage baseline, private-lead firewall; exported rows carry a machine-checked what-it-is/what-it-is-not statement; \"neutral universe cleared\" requires second-party adversarial review.",
+      "maturity": "medium-high (heavy)"
+    },
+    {
+      "id": "no-magic-human-gate",
+      "path": "docs/methods/no-magic-human-gate.md (37 lines)",
+      "what": "External review is a claim-specific evidence state, not a project gate: no external receipt -> record zero, keep the authority ceiling, continue unrelated lanes; outreach off by default.",
+      "maturity": "high"
+    },
+    {
+      "id": "redaction-policy",
+      "path": "docs/redaction-policy.md (15 lines)",
+      "what": "Public-role-only scope; excluded categories; listing caveat.",
+      "maturity": "medium (short)"
+    },
+    {
+      "id": "identity-reconciliation",
+      "path": "docs/identity-reconciliation.md (21 lines) + test/fixtures/axm-identity-reconciliation.json",
+      "what": "How to prove two implementations produce identical ids (shared byte-identical vector file, hash checked before outputs, .gitattributes to stop line-ending drift); legacy token compatibility rule.",
+      "maturity": "high"
+    },
+    {
+      "id": "edge-schema",
+      "path": "docs/edge-schema.md (50 lines)",
+      "what": "LEGACY edge shape for graph.json (evidence classes confirmed|primary_public|reported|derived|judgment|open; status vocabulary). Superseded by the surface/participation/receipt ledger.",
+      "maturity": "stale; do not copy",
+      "caveat": "There is NO JSON Schema for the current core model (surfaces, participation, receipts, claims, chains): schemas/ holds 127 files, 118 of them wave-specific (79 status-sovereignty, 39 counter-selector), 9 general (reporter-briefing, 5 poof-*, allocator-war, dca-field-record, k0-ceiling-conversion-event). The ledger shape lives only in code and data. docs/README.md also links a non-existent docs/evidence-model.md (3 times)."
+    },
+    {
+      "id": "poof-law-and-schemas",
+      "path": "schemas/poof-{right-of-reply,referral-packet,publication-audit-receipt,comprehension-receipt,projection-manifest}.schema.json + docs/methods/poof-*.md + test/fixtures/poof-*.json",
+      "what": "Newsroom-facing process objects: right-of-reply, referral packet, publication audit receipt, comprehension receipt with fixtures.",
+      "maturity": "medium (schemas + fixtures real, workflow unproven)"
+    },
+    {
+      "id": "methods-pattern-to-proof",
+      "path": "docs/methods/pattern-to-proof.md (136) + docs/tiered-research-methodology.md (70)",
+      "what": "Pattern recognition is a discovery instrument not a verdict; operating procedure for research-track harness with cheap retrieval tier vs reasoning tier (validated on opportunity-zones runs).",
+      "maturity": "medium"
+    },
+    {
+      "id": "inert-by-default-authority-block",
+      "path": "every manifest: graph_effect, promotion_authority, canonical_mutation_authorized, publication_effect, adoption_effect, verification_status, causal_status",
+      "what": "Convention that every machine-produced object declares what it is NOT allowed to do; 233 of 386 validators assert it.",
+      "maturity": "high idea, over-applied (it is the main source of validator boilerplate)"
+    },
+    {
+      "id": "durability-and-architecture",
+      "path": "docs/durability-plan.md (340) + docs/self-assembling-architecture.md (224) + docs/axm-instrument-architecture.md (164)",
+      "what": "30-year survival analysis, self-assembly roadmap, AXM layer-2 instrument note.",
+      "maturity": "medium (long, strategic)"
+    },
+    {
+      "id": "ci-gate-design",
+      "path": ".github/workflows/ci.yml, crawl-official.yml + .github/scripts/*scheduled-crawl*",
+      "what": "PR gate = `npm run release:check` (clean checkout, `npm ci`) plus targeted contract tests; scheduled crawler commits only intake paths and goes through PR admission with watchdog/resume.",
+      "maturity": "medium-high",
+      "caveat": "334 workflows exist; 318 declare workflow_dispatch and only 10 are scheduled; there is one workflow per wave/step."
+    },
+    {
+      "id": "cap-aware-slicing",
+      "path": "tools/acquisition/status-sovereignty-rd04-a07/shn-full-shard.mjs querySlice + shardForDocument in tools/ssc-rd04-a06-full-corpus.mjs",
+      "what": "Technique: when a registry caps responses (100), split the date interval recursively until under the cap or a single day; flag unresolved caps; shard documents by SHA-256 mod N for content-neutral parallelism; per-attempt receipts with headers hash, body hash and magic-byte check.",
+      "maturity": "high technique, code embedded in one-off scripts"
+    }
+  ],
+  "deletion_candidates": [
+    {
+      "id": "preference-custody-and-linkage-chain",
+      "what": "preference-custody laboratory floor v9-v59 + 21 preference-linkage assurance modules (abstract \"assurance floor\" specifications for a synthetic-constituency measurement framework)",
+      "footprint": {
+        "tools_lib": "119 files / 52,163 lines / 4.3 MB",
+        "compile_scripts": 119,
+        "validate_scripts": 119,
+        "tests": "119 files / 17,024 lines",
+        "docs": "119 files / 13,839 lines",
+        "workflows": 111,
+        "fixtures": "119 files / 2.4 MB (data/research/preference-custody)",
+        "approx_total_files": 825
+      },
+      "why": "No real-world input; not referenced by any package.json script or by `npm run check`; no code outside the family imports it; each version re-validates all predecessors (tests grow from seconds to >90 s); 111 workflows. 119 of the 386 validators.",
+      "recommendation": "Archive to a branch/tag. Keep docs/performative-synthetic-constituency.md + the 276-line simulator and one summary doc of the preference-custody idea.",
+      "confidence": "high"
+    },
+    {
+      "id": "counter-selector-wave-chain",
+      "what": "counter-selector waves 00-39 (build + validate + test + workflow + schema per wave)",
+      "footprint": {
+        "tools": "79 files / 15,095 lines",
+        "tests": "39 / 2,605 lines",
+        "workflows": 39,
+        "schemas": "39 (226 KB)",
+        "milestone_docs": 40
+      },
+      "why": "Wave identity/parent-SHA/registry validators (every validator asserts wave identity and exact count tables; 18 of 38 pin parent_main_sha / parent_release_sha256); not in release gate; each wave adds a few records (wave 20: 1 person lane, 10 source records). Person-level profiling of named individuals sits uneasily with BUILD-INSTRUCTIONS section 9 (not a people-search engine) and the \"not a rank\" caveats.",
+      "recommendation": "Freeze the final wave outputs as data; delete per-wave scaffolding; review privacy posture of person lanes.",
+      "confidence": "medium-high"
+    },
+    {
+      "id": "m05-answerable-power-amendment-chain",
+      "what": "m05 sprint/leg/amendment tools (21 builders, 53 validators, 16 libs, 56 tests, 34 workflows, 53 milestone docs)",
+      "footprint": {
+        "tools": "81 files / 10,436 lines",
+        "lib": "16 / 4,229 lines",
+        "tests": "56 / 7,297 lines",
+        "workflows": 34,
+        "milestone_docs": 53
+      },
+      "why": "The intel-realization \"amendment\" series validators pin git blob SHAs of predecessor validators and grep other test files for token strings (validators validating validators); contains a validator that currently fails against its own pinned test file; only 1 package.json hook.",
+      "recommendation": "Keep the resulting data and a single end-state validator; drop the amendment ladder.",
+      "confidence": "high"
+    },
+    {
+      "id": "project-stable-ground-checkpoints",
+      "what": "SG-02..SG-12 checkpoint chain",
+      "footprint": {
+        "tools": "24 files / 4,142 lines",
+        "tests": 12,
+        "workflows": 12,
+        "milestone_docs": 12
+      },
+      "why": "Checkpoints record \"retained observations: 0, field execution: 0, publication: blocked\" with source SHA-256s; 12 validators shell out to git (10) to compare changed-path surfaces. Pure repo-state bookkeeping; 12 of them are wired into release:check, so they also cost every PR.",
+      "recommendation": "Replace with a single signed release manifest (BUILD-INSTRUCTIONS 4.1).",
+      "confidence": "high"
+    },
+    {
+      "id": "status-sovereignty-step-wrappers",
+      "what": "The 75 status-sovereignty validators and ~60 builders/workflows that wrap each acquisition step (rd-wave03-rd04 state-by-state adjudication/promotion/reconciliation ladders; wave-01/02 review/second-party review)",
+      "footprint": {
+        "tools": "144 files / 37,296 lines",
+        "tests": 81,
+        "workflows": 78,
+        "schemas": "79 (4.97 MB)",
+        "data_intake": "2,992 files / 444 MB",
+        "data_research": "73 files / 6.2 MB"
+      },
+      "why": "The captured data (see datasets) has value; the per-step build/validate/schema/workflow wrappers pin hashes of each other. 79 schemas average 63 KB because they embed constants (e.g. a 1.6 MB schema for one promotion step).",
+      "recommendation": "Keep data + final conclusion tables; collapse wrappers to one generic custody validator (hash every file listed in a manifest). Evict the 227 MB of tar.gz parts from git.",
+      "confidence": "medium-high"
+    },
+    {
+      "id": "k0-wave-ladder",
+      "what": "k0 role-neutral waves 01-08 and field adjudications (17 validators, 16 builders, 17 tests, 18 workflows, 18 milestone docs)",
+      "footprint": {
+        "tools": "33 files / 4,272 lines",
+        "data_research": "19 files / 446 KB"
+      },
+      "why": "Each validate-k0-wave-NN compares a freshly built manifest against a wave JSON and release manifest with `*_drift` messages; 16 of 17 read workflows/process files.",
+      "recommendation": "Keep data/research/k0-* as data; merge validators into one parametrised script.",
+      "confidence": "medium"
+    },
+    {
+      "id": "schoolhouse-custody-family",
+      "what": "School.House identity census tooling",
+      "footprint": {
+        "tools": "34 files / 14,600 lines",
+        "docs": 9,
+        "data": "51 files / 1.4 MB"
+      },
+      "why": "All 12 validators are referenced from no package script, workflow or test (no workflow named schoolhouse exists), the acquisition code for RDAP/USPTO/SAM/EDGAR/USAspending is not in the repo, and the results are mostly zero-row terminal censuses; 6 python validators (2,149 lines) check sealed zips.",
+      "recommendation": "Delete validators/builders and keep the sealed results as a data appendix, or restore the missing fetchers if the lane continues.",
+      "confidence": "medium"
+    },
+    {
+      "id": "workflow-sprawl",
+      "what": ".github/workflows: 334 files (318 declare workflow_dispatch; 10 scheduled)",
+      "footprint": {
+        "files": 334
+      },
+      "why": "One workflow per wave/step; only ci.yml gates PRs; 10 are scheduled. Maintenance and GitHub Actions minutes scale with steps taken, not with value.",
+      "recommendation": "One matrix workflow driven by a manifest.",
+      "confidence": "high"
+    },
+    {
+      "id": "oversized-or-duplicated-tracked-files",
+      "what": "Large/derived files tracked in git",
+      "footprint": {
+        "a07_tarballs_mb": 226.7,
+        "dentsu_receipt_bodies_mb": 88,
+        "duplicate": "estates/trails.json == gametrails/data.json (2.3 MB each)",
+        "generated_build_files_tracked": 605,
+        "reports_files": 362
+      },
+      "why": "Pack is 295 MiB and roughly three quarters of it is three tarball parts; derived outputs are described as disposable but committed.",
+      "recommendation": "Release assets / LFS for bytes; ignore build/, reports/, briefs/, estates/, gametrails/ generated outputs or publish from CI.",
+      "confidence": "high"
+    },
+    {
+      "id": "legacy-edge-model",
+      "what": "graph.json (root), legacy/, docs/edge-schema.md, src/graph.js, src/scoring.js, src/validate.js, src/mcp-server.js, tools/build-graph.mjs, tools/ingest-master.mjs, import-master-v3/v4",
+      "footprint": {
+        "legacy_dir_kb": 440
+      },
+      "why": "README says the generic shortest-path edge graph was abandoned; the legacy tests still run (`npm run legacy:test`). Phase 2 plans to revive mcp-server.js, which must then be rewritten for the hop graph.",
+      "recommendation": "Delete or move to a legacy branch once MCP is rebuilt.",
+      "confidence": "medium"
+    },
+    {
+      "id": "stale-or-broken-checks",
+      "what": "Checks that fail or point nowhere",
+      "footprint": {
+        "files": 4
+      },
+      "why": "test/comprehension-protocol.test.js (stale count, fails), validate-m05-...-cross-domain-source-custody-correction.mjs (contradictory pins, fails), validate-reported-hop-evidence-upgrades.mjs (orphan wrapper; the Phase 0.4 control itself is enforced inside validate-release), docs/README.md link to missing evidence-model.md.",
+      "recommendation": "Fix or delete; delete the orphan wrapper.",
+      "confidence": "high"
+    }
+  ],
+  "validator_breakdown": {
+    "total": 386,
+    "total_lines": 48271,
+    "by_language": {
+      "mjs": 376,
+      "py": 10
+    },
+    "method": "Static analysis of each tools/validate-* file plus one level of its imports (./build-*, ./lib/*): which paths it reads (data/intake, receipts, workflows, package.json, docs, git), whether it opens/hashes raw captured bytes, whether it recomputes its sibling builder, pins hashes/SHAs; then manual sampling of 2-4 validators per family (counter-selector-20, k0-05, m05 intel custody amendment, rd04 state-source adjudication, fec-oppexp-cohort, oge-beneficial-interests, natsec100 roster-recovery, schoolhouse irs filing-index, preference v30). Heuristic: treat bucket edges as +-5 points.",
+    "buckets": {
+      "abstract_spec_self_validation": {
+        "n": 119,
+        "pct": 30.8,
+        "lines": 2321,
+        "families": {
+          "preference-custody": 98,
+          "preference-linkage": 21
+        },
+        "what": "preference-custody v9-v59 and preference-linkage-* \"laboratory floor\" chain. Each validator loads a build produced by the sibling compile-preference-* script from tools/lib/preference-*.mjs and re-derives it from the same lib plus a synthetic fixture. Zero real-world input; every docs page says it \"creates no real-world finding\"."
+      },
+      "research_ledger_adjudication_consistency": {
+        "n": 122,
+        "pct": 31.6,
+        "lines": 19335,
+        "families": {
+          "real-data-lanes(oge/fec/disclosure/natsec/gov-property/crawl/selection)": 4,
+          "k0": 17,
+          "m05-answerable-power": 53,
+          "ssc-other": 29,
+          "ssc-rd04-wave03-states": 17,
+          "ssc-rd04-a02-a09-snap": 2
+        },
+        "what": "m05 (53), status-sovereignty (non-capture; ~48), k0 (17), a few lane manifests. They load hand-authored JSON about real-world topics and assert counts/denominators/enums/graph_effect:none/pinned SHA-256 of the authored files and of predecessor validators (git blob SHAs). They verify that the project's own records did not drift; they do not re-open the captured source bytes."
+      },
+      "repo_process_wave_chain_wiring": {
+        "n": 88,
+        "pct": 22.8,
+        "lines": 15237,
+        "families": {
+          "project-level-gates": 21,
+          "estate-gametrail-aperture-pages": 12,
+          "counter-selector": 38,
+          "m04d-g": 5,
+          "project-stable-ground": 12
+        },
+        "what": "counter-selector waves (38+1: wave_id, as_of, parent_main_sha, parent_release_sha256, registries), project-stable-ground checkpoints (12), estate/gametrail/aperture/report page projections (12), m04d-g (5), and release/pages/poof/security-state gates (21). Many shell out to git (diff/changed-path surface), read .github/workflows, or pin parent commits."
+      },
+      "real_world_data_checks": {
+        "n": 57,
+        "pct": 14.8,
+        "lines": 11378,
+        "families": {
+          "real-data-lanes(oge/fec/disclosure/natsec/gov-property/crawl/selection)": 14,
+          "electric-twin": 3,
+          "schoolhouse": 12,
+          "ssc-other": 12,
+          "ssc-rd04-wave03-states": 11,
+          "ssc-rd04-a02-a09-snap": 4,
+          "project-level-gates": 1
+        },
+        "of_which_reopen_and_rehash_captured_bytes": {
+          "n": 14,
+          "pct": 3.6,
+          "examples": [
+            "validate-bvvc-defense-capital",
+            "validate-natsec100-2025-identity-adjudication",
+            "validate-resolution-frontier",
+            "validate-schoolhouse-{irs-latest-filing-xml-v6,sam,sec-edgar,usaspending,uspto}",
+            "validate-status-sovereignty-rd-wave03-rd04-{ar-ga-md-nc-pa-ri-wv,ca-sd-wa}-capture-adjudication",
+            "validate-status-sovereignty-rd04-changed-input-gate-a09"
+          ]
+        },
+        "what": "Schoolhouse custody (12), OGE/FEC/disclosure/NatSec100/gov-property/officeholder/portfolio lanes (14), electric-twin (3), and ssc validators that touch captured pages (27). Mostly manifest reconciliation (sums of per-person counts == totals, denominators, hash format) against data/research manifests or sealed zips."
+      }
+    },
+    "headline": {
+      "real_world_data_fraction_broad": "14.8% (57/386)",
+      "real_world_data_fraction_strict_rehash_raw_bytes": "3.6% (14/386)",
+      "repo_bookkeeping_fraction": "85.2% (329/386) = abstract spec + ledger/manifest consistency + process/wave-chain/page wiring"
+    },
+    "boilerplate_signals": {
+      "assert_graph_effect_field": {
+        "n": 233,
+        "pct": 60.4
+      },
+      "import_sibling_build_script_and_recompute_and_compare": {
+        "n": 128,
+        "pct": 33.2
+      },
+      "pin_git_blob_sha_or_semantic_hash_of_other_repo_files": {
+        "n": 65,
+        "pct": 16.8
+      },
+      "reference_another_tools_script_by_path": {
+        "n": 47,
+        "pct": 12.2
+      },
+      "pin_parent_commit_or_parent_release_sha": {
+        "n": 27,
+        "pct": 7
+      },
+      "shell_out_to_git_diff_or_merge_base": {
+        "n": 27,
+        "pct": 7
+      },
+      "parse_github_workflow_yaml": {
+        "n": 22,
+        "pct": 5.7
+      }
+    },
+    "wiring": {
+      "counts": {
+        "workflow only": 304,
+        "release_gate(npm run release:check)": 61,
+        "imported by a test only": 6,
+        "orphan (no reference)": 14,
+        "package.json script (not in gate)": 1
+      },
+      "meaning": "61 validators are reached from `npm run release:check`; 304 are only reachable from their own per-wave GitHub workflow; 14 are referenced nowhere (12 schoolhouse + electric-twin-cs01-shareholders + reported-hop-evidence-upgrades); 6 only from a test.",
+      "release_gate_validators_worth_keeping": [
+        "release",
+        "pages",
+        "publication-artifact",
+        "crawl",
+        "consumption-contract",
+        "corpus-selection",
+        "disclosure-spine",
+        "fec-oppexp-cohort",
+        "fec-payee-inventory",
+        "oge-beneficial-interests",
+        "oge-fec-overlap",
+        "oge-fec-temporal-screen",
+        "officeholder-cohort",
+        "gov-property"
+      ]
+    },
+    "validate_release_internals": "tools/validate-release.mjs is 2,152 lines. Generic constitutional checks (ledger integrity, density, every hop carries its surface basis, rejected pairs genuinely disjoint, recompute AXM identity layer, receipt archival gate, no session-local paths) are roughly lines 57-232 and 1482-1538 and 1875-1895 (~20%). The remaining ~1,700 lines are hard-coded regression fixtures for specific UK/US actors (Ben Warner, Electric Twin, Anduril UK, Simon Case, Detachment 201, Faculty...). The generic part is the reusable part.",
+    "line_footprint_note": "All 386 validators = 48,271 lines; the 119 preference validators are small (2.3k lines) because the weight is in tools/lib/preference-* (52k lines)."
+  },
+  "tests": {
+    "how_run": "Copied the repo (minus .git, dist, node_modules; node_modules symlinked) into the scratchpad, git-init-ed the copy, and ran each test file with plain `node <file>` (60-180s timeout each). First pass: the 111 files listed in `npm test`, 6 in parallel (2 failed from a build/ write race and passed when re-run serially). Second pass: every test/*.test.js serially. The original repo was not written to by this audit (git status clean); note HEAD moved during the audit because other agents committed retrospective/ (3 commits) on top of d8392cfb.",
+    "test_files_on_disk": "471 .test.js plus 1 .test.py",
+    "files_in_npm_test": 111,
+    "npm_test_files_passing": 111,
+    "note_unwired": "Only ~24% of test files are in `npm test`; the rest (preference-*, counter-selector-*, m05-*, k0-*, ssc-*, schoolhouse, etc.) are reachable only from per-wave GitHub workflows.",
+    "finished_runs": 471,
+    "passing_runs": 458,
+    "failing_runs": 13,
+    "summary": "Of 471 test files run, 458 pass. 13 fail: 2 are genuine repo defects, 10 are environment-only (root guard x2, no Chromium x1, shallow git history x7), 1 is a 150 s timeout of the recursive preference chain (v59). All 111 files in `npm test` pass.",
+    "failing": [
+      {
+        "file": "test/comprehension-protocol.test.js",
+        "rc": 1,
+        "secs": 0
+      },
+      {
+        "file": "test/industrial-exhaust-artifacts.test.js",
+        "rc": 1,
+        "secs": 0
+      },
+      {
+        "file": "test/industrial-exhaust-retained-store-custody.test.js",
+        "rc": 1,
+        "secs": 1
+      },
+      {
+        "file": "test/m05-answerable-power-sprint-03-leg-07-cross-domain-source-custody-correction.test.js",
+        "rc": 1,
+        "secs": 0
+      },
+      {
+        "file": "test/poof-clifford-ecology-browser.test.js",
+        "rc": 1,
+        "secs": 1
+      },
+      {
+        "file": "test/preference-custody-manifest-v59.test.js",
+        "rc": 124,
+        "secs": 150
+      },
+      {
+        "file": "test/status-sovereignty-rd-wave02-rd02-license-leverage.test.js",
+        "rc": 1,
+        "secs": 0
+      },
+      {
+        "file": "test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js",
+        "rc": 1,
+        "secs": 0
+      },
+      {
+        "file": "test/status-sovereignty-rd-wave02-rd06-offeror-universe.test.js",
+        "rc": 1,
+        "secs": 0
+      },
+      {
+        "file": "test/status-sovereignty-rd-wave03-rd01-methodology-correction-intake.test.js",
+        "rc": 1,
+        "secs": 0
+      },
+      {
+        "file": "test/status-sovereignty-rd-wave03-rd03-lifecycle-recovery-intake.test.js",
+        "rc": 1,
+        "secs": 1
+      },
+      {
+        "file": "test/status-sovereignty-residual-denominator-wave-02-current.test.js",
+        "rc": 1,
+        "secs": 0
+      },
+      {
+        "file": "test/status-sovereignty-residual-denominator-wave-02-reconciliation.test.js",
+        "rc": 1,
+        "secs": 0
+      }
+    ],
+    "not_run_when_report_written": 0,
+    "genuine_failures_in_original_repo": [
+      {
+        "file": "test/comprehension-protocol.test.js",
+        "cause": "asserts exactly 1 non-hop directory_roster_surface in data/ledger/surfaces.jsonl; the ledger now has 7 (stale assertion). Not in npm test so CI misses it. Reproduced on a clean copy."
+      },
+      {
+        "file": "test/m05-answerable-power-sprint-03-leg-07-cross-domain-source-custody-correction.test.js",
+        "cause": "tools/validate-m05-...-cross-domain-source-custody-correction.mjs pins the git blob SHA of test/m05-source-health-evidence-state-regression.test.js (matches) AND requires that file to contain the strings missing-source-locator / foreign-source-host / promotedOfficialContract (it does not contain missing-source-locator). Internally inconsistent validator; reproduced by running the validator directly in the original repo."
+      }
+    ],
+    "environment_only_failures": [
+      {
+        "file": "test/poof-clifford-ecology-browser.test.js",
+        "cause": "Playwright cannot launch: no Chromium in this sandbox (/opt/pw-browsers missing). Other *-browser tests, if any remain unrun, fail the same way."
+      },
+      {
+        "file": "test/industrial-exhaust-artifacts.test.js",
+        "cause": "refuses to run as root (\"descriptor-relative receipt helper may not run as root\"); sandbox runs as root. Not verified as non-root. test/industrial-exhaust.test.js (feed layer) passes."
+      },
+      {
+        "file": "test/industrial-exhaust-retained-store-custody.test.js",
+        "cause": "same root guard"
+      }
+    ],
+    "failure_classification": {
+      "test/comprehension-protocol.test.js": "GENUINE (reproduced in the original repo)",
+      "test/industrial-exhaust-artifacts.test.js": "ENVIRONMENT: refuses to run as root",
+      "test/industrial-exhaust-retained-store-custody.test.js": "ENVIRONMENT: refuses to run as root",
+      "test/m05-answerable-power-sprint-03-leg-07-cross-domain-source-custody-correction.test.js": "GENUINE (reproduced in the original repo)",
+      "test/poof-clifford-ecology-browser.test.js": "ENVIRONMENT: no Chromium for Playwright",
+      "test/preference-custody-manifest-v59.test.js": "TIMEOUT at 150 s (recursive preference chain), not a logic failure",
+      "test/status-sovereignty-rd-wave02-rd02-license-leverage.test.js": "ENVIRONMENT: needs full git history (repo here is a 4-commit shallow clone: \"required ancestor missing\", \"merge commit missing\", \"historical blob changed\")",
+      "test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js": "ENVIRONMENT: needs full git history (repo here is a 4-commit shallow clone: \"required ancestor missing\", \"merge commit missing\", \"historical blob changed\")",
+      "test/status-sovereignty-rd-wave02-rd06-offeror-universe.test.js": "ENVIRONMENT: needs full git history (repo here is a 4-commit shallow clone: \"required ancestor missing\", \"merge commit missing\", \"historical blob changed\")",
+      "test/status-sovereignty-rd-wave03-rd01-methodology-correction-intake.test.js": "ENVIRONMENT: needs full git history (repo here is a 4-commit shallow clone: \"required ancestor missing\", \"merge commit missing\", \"historical blob changed\")",
+      "test/status-sovereignty-rd-wave03-rd03-lifecycle-recovery-intake.test.js": "ENVIRONMENT: needs full git history (repo here is a 4-commit shallow clone: \"required ancestor missing\", \"merge commit missing\", \"historical blob changed\")",
+      "test/status-sovereignty-residual-denominator-wave-02-current.test.js": "ENVIRONMENT: needs full git history (repo here is a 4-commit shallow clone: \"required ancestor missing\", \"merge commit missing\", \"historical blob changed\")",
+      "test/status-sovereignty-residual-denominator-wave-02-reconciliation.test.js": "ENVIRONMENT: needs full git history (repo here is a 4-commit shallow clone: \"required ancestor missing\", \"merge commit missing\", \"historical blob changed\")"
+    },
+    "preference_chain_runtime": "Preference-custody tests are recursive (vN re-validates vN-1 ... v9): v42 48s, v44 42s, v45 94s, v46 82s, v47 36s; later ones were still running when this report was written. O(n^2) growth in CI cost.",
+    "side_effects": "Running tests writes into tracked/ignored paths (build/**, and some tool rewrites docs/update-sweep.md in the working tree); tests are not hermetic. Run them in a scratch copy."
+  }
+}
