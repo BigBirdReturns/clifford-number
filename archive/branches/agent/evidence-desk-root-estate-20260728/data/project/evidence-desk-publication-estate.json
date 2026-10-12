@@ -1,0 +1,76 @@
+{
+  "schema_version": "evidence-desk-publication-estate@1",
+  "estate_id": "evidence-desk-root-publication",
+  "as_of": "2026-07-28",
+  "status": "staged_root_publication_estate",
+  "graph_effect": "none",
+  "conclusion_generated": false,
+  "purpose": "Provide a root-deployable, cold-reader publication and newsroom entry layer over the Clifford Number evidence backend without duplicating canonical truth.",
+  "websiteiq_audit": {
+    "service": "https://websiteiq.xyz",
+    "intended_target": "https://bigbirdreturns.github.io/clifford-number/",
+    "audit_only_pr": 378,
+    "completed_run_id": 30389685283,
+    "completed_artifact_id": 8700393116,
+    "completed_artifact_sha256": "9ed926aa973c5adf2fb6d6af883a615acfac1c4f71c36625cab13a47dd9b28f0",
+    "measured_result": "The completed report reached the GitHub Pages account origin, which returned a 404. It did not audit the project page content at /clifford-number/.",
+    "contract_inspection_run_id": 30390266439,
+    "contract_artifact_id": 8700607836,
+    "contract_artifact_sha256": "baa1b586bed496b73ce6f06839770ba21554548dfed1f1f1480a5729cc54ab30",
+    "contract_finding": "WebsiteIQ's API separates the origin URL from landingPath, while the browser-facing flow normalized the submitted path to the origin root.",
+    "corrected_audit_pr": 379,
+    "corrected_run_id": 30390449771,
+    "corrected_artifact_id": 8700685367,
+    "corrected_artifact_sha256": "a9fa00412a9b71347266b435876c500297e77fafaaf65e2193990be0dc13892f",
+    "corrected_result": "The origin plus /clifford-number/ landingPath request was structurally valid, but WebsiteIQ enforced the consumed same-day target limit and offered a paid x402 continuation. No second report was issued.",
+    "interpretation_boundary": "The estate may rely on the measured origin-root failure. It may not claim a WebsiteIQ content score for the project pathname."
+  },
+  "deployment": {
+    "target_origin": "https://evidence.axm.tools",
+    "deployment_mode": "cloudflare_pages_direct_upload",
+    "root_required": true,
+    "evidence_backend": "https://bigbirdreturns.github.io/clifford-number/",
+    "publication_is_not_canonical_ledger": true
+  },
+  "reader_routes": [
+    {"path": "/", "function": "cold-reader orientation"},
+    {"path": "/stories/", "function": "bounded decision files"},
+    {"path": "/newsroom/", "function": "evidence-operation onboarding"},
+    {"path": "/methods/", "function": "selection, receipt, temporal, and publication rules"},
+    {"path": "/trust/", "function": "limitations, privacy, correction, and editorial-control contract"},
+    {"path": "/audit/", "function": "WebsiteIQ custody and remediation"},
+    {"path": "/evidence/", "function": "handoff to canonical evidence backend"}
+  ],
+  "machine_routes": [
+    "/robots.txt",
+    "/sitemap.xml",
+    "/llms.txt",
+    "/manifest.webmanifest",
+    "/data/site.json",
+    "/data/stories.json",
+    "/data/audit.json"
+  ],
+  "publication_contract": {
+    "what_this_is": "A curated public entry layer that exposes bounded questions, evidence limits, counterweights, and open reporting records.",
+    "what_this_is_not": "A guilt graph, influence score, probability engine, or independently approved publication of every backend record.",
+    "standing_refusals": [
+      "co-presence is not coordination",
+      "candidate is not finding",
+      "later evidence does not establish earlier knowledge",
+      "source failure does not prove absence"
+    ]
+  },
+  "validation": {
+    "required": [
+      "one h1 per authored route",
+      "title, description, canonical, JSON-LD, and semantic landmarks",
+      "keyboard skip navigation and visible focus",
+      "zero broken internal links",
+      "root discovery files present",
+      "desktop and 390-pixel mobile browser render",
+      "zero horizontal overflow",
+      "zero browser console or page errors"
+    ],
+    "websiteiq_reaudit_required_after_deployment": true
+  }
+}

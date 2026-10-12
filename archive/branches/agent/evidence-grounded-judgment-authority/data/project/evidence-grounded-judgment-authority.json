@@ -1,0 +1,147 @@
+{
+  "schema_version": "evidence-grounded-judgment-authority@1",
+  "authority_id": "CN-JUDGMENT-01",
+  "title": "Evidence-grounded judgment authority",
+  "status": "active_internal_constitution",
+  "purpose": "Require the project to make bounded, reversible decisions from the evidence it already possesses instead of treating an unspecified future reviewer as the source of judgment.",
+  "constitutional_rule": {
+    "no_magic_human_veto": true,
+    "independent_review_is_evidence_not_permission": true,
+    "absence_of_independent_review_alone_can_block_judgment": false,
+    "absence_of_independent_review_alone_can_block_bounded_execution": false,
+    "clearance_label_may_require_distinct_review": true,
+    "irreversible_external_action_requires_explicit_evidence_and_risk_thresholds": true,
+    "every_judgment_is_revisable_when_the_evidence_changes": true
+  },
+  "decision_ladder": [
+    {
+      "level": "J0",
+      "label": "observed",
+      "meaning": "A source-addressable observation or null is preserved without a mechanism judgment.",
+      "allowed_consequences": ["preserve", "route", "compare", "acquire"]
+    },
+    {
+      "level": "J1",
+      "label": "candidate_judgment",
+      "meaning": "The evidence supports a bounded candidate or non-link decision but not the asserted mechanism.",
+      "allowed_consequences": ["prioritize", "deprioritize", "reject_bridge", "acquire_missing_transition"]
+    },
+    {
+      "level": "J2",
+      "label": "bounded_working_judgment",
+      "meaning": "The available receipts, counterevidence, and causal fields support a working judgment with named limits.",
+      "allowed_consequences": ["use_in_analysis", "compare_across_cases", "allocate_research", "publish_with_explicit_provisional_label"]
+    },
+    {
+      "level": "J3",
+      "label": "provisional_public_judgment",
+      "meaning": "A bounded judgment may be communicated publicly with attached receipts, uncertainty, alternatives, and correction route.",
+      "allowed_consequences": ["publish_provisionally", "invite_challenge", "update_on_new_evidence"]
+    },
+    {
+      "level": "J4",
+      "label": "operational_decision",
+      "meaning": "The evidence is sufficient to choose and execute a reversible research, indexing, acquisition, or governance action.",
+      "allowed_consequences": ["execute", "stop_low_value_work", "reallocate_effort", "open_or_close_lane", "set_next_basin"]
+    },
+    {
+      "level": "J5",
+      "label": "independently_corroborated",
+      "meaning": "A distinct reviewer or reproducer has added independent evidence or successfully attacked the decision.",
+      "allowed_consequences": ["raise_confidence", "revise", "clear_label_when_other_thresholds_pass"]
+    }
+  ],
+  "required_decision_fields": [
+    "decision_id",
+    "domain",
+    "subject_id",
+    "judgment_level",
+    "judgment",
+    "evidence_basis",
+    "counterevidence",
+    "uncertainties",
+    "action",
+    "reversibility",
+    "review_dependency",
+    "publication_effect",
+    "graph_effect"
+  ],
+  "blocker_law": {
+    "allowed_blocker_classes": [
+      "missing_source_content",
+      "broken_receipt_custody",
+      "missing_defining_transition",
+      "unresolved_identity",
+      "selection_asymmetry",
+      "privacy_or_security_risk",
+      "irreversible_consequence",
+      "contradictory_primary_evidence",
+      "invalid_or_nonreproducible_build",
+      "lawful_access_boundary"
+    ],
+    "forbidden_sole_blockers": [
+      "human_reviewer_missing",
+      "independent_review_missing",
+      "expert_has_not_signed_off",
+      "maintainer_is_not_allowed_to_decide",
+      "ai_is_not_allowed_to_decide"
+    ],
+    "rule": "A blocked decision must name a material evidence, custody, selection, privacy, legal, reproducibility, or reversibility defect. Missing independent review may reduce confidence or withhold the word cleared, but it cannot be the sole reason to refuse a bounded judgment or reversible action."
+  },
+  "domain_rules": {
+    "selection_lane": {
+      "decision_unit": "one declared selection lane",
+      "rule": "A valid lane receives an operational decision even while adversarial review is pending. Coverage gaps determine the next action; review absence does not produce wait.",
+      "publication_separate_from_execution": true
+    },
+    "k0_event": {
+      "decision_unit": "one audited ceiling-conversion event",
+      "bounded_working_threshold": {
+        "field_audit_disposition": "supported_for_human_review",
+        "minimum_contiguous_ccd": 4,
+        "counterevidence_required": true,
+        "alternative_explanations_required": true,
+        "minimum_sources": 2
+      },
+      "rule": "Events meeting the threshold become bounded working judgments. Independent review may challenge or raise confidence; it does not create the project’s permission to judge."
+    },
+    "report": {
+      "decision_unit": "one structured report or case projection",
+      "rule": "Verified claim content may support a working report judgment while unresolved claims remain explicitly separated."
+    },
+    "lake_basin": {
+      "decision_unit": "one semantic basin or gap queue",
+      "rule": "The project ranks and executes bounded repair work from measured gap burden. No basin waits for an unspecified reviewer before reversible indexing, custody, or acquisition work proceeds."
+    }
+  },
+  "confidence_law": {
+    "bands": ["low", "moderate", "high"],
+    "inputs": [
+      "source_class",
+      "receipt_inspectability",
+      "contiguous_causal_depth",
+      "counterevidence_retention",
+      "alternative_explanations",
+      "coverage_symmetry",
+      "identity_resolution",
+      "temporal_precision",
+      "reproducibility"
+    ],
+    "independent_review_effect": "Independent review is one confidence input. It can raise, lower, or overturn a judgment, but its absence does not set confidence to zero."
+  },
+  "reversibility_law": {
+    "default": "Every generated judgment is append-preserving and replaceable by a later evidence-backed decision.",
+    "required_correction_route": true,
+    "silent_deletion_forbidden": true,
+    "superseded_judgments_preserved": true
+  },
+  "boundaries": {
+    "working_judgment_is_evidence_truth": false,
+    "working_judgment_is_publication_clearance": false,
+    "operational_priority_is_guilt_ranking": false,
+    "independent_review_is_infallible": false,
+    "maintainer_or_model_judgment_is_infallible": false,
+    "common_shape_proves_common_purpose": false,
+    "graph_effect": "none"
+  }
+}

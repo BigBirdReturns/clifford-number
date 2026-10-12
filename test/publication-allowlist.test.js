@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import { computePayloadDigest, isSafePublicationPath, matchesHeldRule, validateArtifactPathSet, validatePublicationPolicy } from '../tools/lib/publication-allowlist.mjs';
 
 const base = {
@@ -31,4 +32,17 @@ assert.throws(() => validatePublicationPolicy({ ...base, paths: [...base.paths, 
 assert.throws(() => validateArtifactPathSet(base, base.paths.filter(path => path !== 'index.html')), /missing=.*index\.html/u);
 assert.throws(() => validateArtifactPathSet(base, [...base.paths, 'extra.txt'].sort()), /extra=.*extra\.txt/u);
 assert.equal(computePayloadDigest([{ path: 'a', bytes: 1, sha256: '0'.repeat(64) }]).length, 64);
+
+// The recovered-research archive and the retrospective capture are held in the real policy:
+// they can never be allowlisted, so they can never reach the Pages artifact.
+const realPolicy = JSON.parse(fs.readFileSync('data/project/publication-allowlist.json', 'utf8'));
+for (const prefix of ['archive/', 'retrospective/']) {
+  const rule = realPolicy.held_rules.find(candidate => candidate.kind === 'prefix' && candidate.value === prefix);
+  assert.ok(rule, `real publication policy must hold ${prefix}`);
+  assert.equal(matchesHeldRule(`${prefix}README.md`, rule), true);
+  assert.equal(matchesHeldRule(`${prefix}nested/deeper/file.json`, rule), true);
+  assert.throws(() => validatePublicationPolicy({ ...realPolicy, paths: [...realPolicy.paths, `${prefix}README.md`].sort() }), /held rule/u, `${prefix} must not be allowlistable`);
+  assert.equal(realPolicy.paths.some(candidate => candidate.startsWith(prefix)), false, `${prefix} must not be published`);
+}
+assert.doesNotThrow(() => validatePublicationPolicy(realPolicy));
 console.log('publication-allowlist.test: OK (safe paths, holds, exact set and deterministic digest)');

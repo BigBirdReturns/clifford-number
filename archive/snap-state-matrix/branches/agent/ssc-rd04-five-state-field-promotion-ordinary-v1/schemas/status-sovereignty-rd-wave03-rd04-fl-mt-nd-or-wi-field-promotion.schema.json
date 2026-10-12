@@ -1,0 +1,424 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://clifford-number.local/schemas/status-sovereignty-rd-wave03-rd04-fl-mt-nd-or-wi-field-promotion.schema.json",
+  "title": "SSC RD Wave 03 RD-04 FL-MT-ND-OR-WI field promotion product family",
+  "description": "Closed top-level schema for the eight permanent five-state field-promotion JSON objects. Repository validators enforce nested exact custody, deterministic replay, and matrix arithmetic.",
+  "oneOf": [
+    {
+      "title": "promotion-input-custody.json",
+      "type": "object",
+      "required": [
+        "schema_version",
+        "wave_id",
+        "lane_id",
+        "class_id",
+        "issue",
+        "canonical_parent",
+        "promotion_input_export",
+        "candidate_validation",
+        "current_main_reconciliation",
+        "authority_boundary"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "ssc-rd04-wave03-five-state-field-promotion-input-custody@1"
+        },
+        "wave_id": {
+          "const": "SSC-RD-W03"
+        },
+        "lane_id": {
+          "const": "RD-04"
+        },
+        "class_id": {
+          "const": "RD-04-C02"
+        },
+        "issue": {
+          "const": 1017
+        },
+        "canonical_parent": {
+          "type": "object"
+        },
+        "promotion_input_export": {
+          "type": "object"
+        },
+        "candidate_validation": {
+          "type": "object"
+        },
+        "current_main_reconciliation": {
+          "type": "object"
+        },
+        "authority_boundary": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "title": "promotion-decisions.json",
+      "type": "object",
+      "required": [
+        "schema_version",
+        "wave_id",
+        "lane_id",
+        "class_id",
+        "issue",
+        "decision_outcomes",
+        "decision_count",
+        "decisions",
+        "authority_boundary"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "ssc-rd04-wave03-five-state-field-promotion-decisions@1"
+        },
+        "wave_id": {
+          "const": "SSC-RD-W03"
+        },
+        "lane_id": {
+          "const": "RD-04"
+        },
+        "class_id": {
+          "const": "RD-04-C02"
+        },
+        "issue": {
+          "const": 1017
+        },
+        "decision_outcomes": {
+          "type": "array"
+        },
+        "decision_count": {
+          "type": "integer"
+        },
+        "decisions": {
+          "type": "array"
+        },
+        "authority_boundary": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "title": "cell-promotion-ledger.json",
+      "type": "object",
+      "required": [
+        "schema_version",
+        "wave_id",
+        "lane_id",
+        "class_id",
+        "issue",
+        "predecessor_matrix_path",
+        "predecessor_matrix_sha256",
+        "promotion_decisions_path",
+        "promotion_decisions_sha256",
+        "counts",
+        "field_promotion_counts",
+        "cells",
+        "derived_row_state_refreshes",
+        "current_result"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "ssc-rd04-wave03-five-state-cell-promotion-ledger@1"
+        },
+        "wave_id": {
+          "const": "SSC-RD-W03"
+        },
+        "lane_id": {
+          "const": "RD-04"
+        },
+        "class_id": {
+          "const": "RD-04-C02"
+        },
+        "issue": {
+          "const": 1017
+        },
+        "predecessor_matrix_path": {
+          "type": "string"
+        },
+        "predecessor_matrix_sha256": {
+          "type": "string"
+        },
+        "promotion_decisions_path": {
+          "type": "string"
+        },
+        "promotion_decisions_sha256": {
+          "type": "string"
+        },
+        "counts": {
+          "type": "object"
+        },
+        "field_promotion_counts": {
+          "type": "object"
+        },
+        "cells": {
+          "type": "array"
+        },
+        "derived_row_state_refreshes": {
+          "type": "array"
+        },
+        "current_result": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "title": "promoted-partial-field-matrix.json",
+      "type": "object",
+      "required": [
+        "schema_version",
+        "wave_id",
+        "lane_id",
+        "class_id",
+        "issue",
+        "field_order",
+        "counts",
+        "rows",
+        "current_result",
+        "source_product",
+        "composition_product",
+        "row_state_product",
+        "minimum_frontier_capture_adjudication_product",
+        "minimum_frontier_row_state_product",
+        "five_state_field_promotion_product"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "ssc-rd04-wave03-five-state-field-promoted-partial-field-matrix@1"
+        },
+        "wave_id": {
+          "const": "SSC-RD-W03"
+        },
+        "lane_id": {
+          "const": "RD-04"
+        },
+        "class_id": {
+          "const": "RD-04-C02"
+        },
+        "issue": {
+          "const": 1017
+        },
+        "field_order": {
+          "type": "array"
+        },
+        "counts": {
+          "type": "object"
+        },
+        "rows": {
+          "type": "array"
+        },
+        "current_result": {
+          "type": "object"
+        },
+        "source_product": {
+          "type": "object"
+        },
+        "composition_product": {
+          "type": "object"
+        },
+        "row_state_product": {
+          "type": "object"
+        },
+        "minimum_frontier_capture_adjudication_product": {
+          "type": "object"
+        },
+        "minimum_frontier_row_state_product": {
+          "type": "object"
+        },
+        "five_state_field_promotion_product": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "title": "remaining-open-field-census.json",
+      "type": "object",
+      "required": [
+        "schema_version",
+        "wave_id",
+        "lane_id",
+        "class_id",
+        "issue",
+        "matrix_path",
+        "counts",
+        "field_counts",
+        "rows",
+        "next_bounded_operation",
+        "authority_boundary"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "ssc-rd04-wave03-five-state-remaining-open-field-census@1"
+        },
+        "wave_id": {
+          "const": "SSC-RD-W03"
+        },
+        "lane_id": {
+          "const": "RD-04"
+        },
+        "class_id": {
+          "const": "RD-04-C02"
+        },
+        "issue": {
+          "const": 1017
+        },
+        "matrix_path": {
+          "type": "string"
+        },
+        "counts": {
+          "type": "object"
+        },
+        "field_counts": {
+          "type": "array"
+        },
+        "rows": {
+          "type": "array"
+        },
+        "next_bounded_operation": {
+          "type": "string"
+        },
+        "authority_boundary": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "title": "promotion-summary.json",
+      "type": "object",
+      "required": [
+        "schema_version",
+        "wave_id",
+        "lane_id",
+        "class_id",
+        "issue",
+        "input_counts",
+        "promotion_counts",
+        "field_promotion_counts",
+        "matrix_transition",
+        "affected_states",
+        "current_result",
+        "next_bounded_operation"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "ssc-rd04-wave03-five-state-field-promotion-summary@1"
+        },
+        "wave_id": {
+          "const": "SSC-RD-W03"
+        },
+        "lane_id": {
+          "const": "RD-04"
+        },
+        "class_id": {
+          "const": "RD-04-C02"
+        },
+        "issue": {
+          "const": 1017
+        },
+        "input_counts": {
+          "type": "object"
+        },
+        "promotion_counts": {
+          "type": "object"
+        },
+        "field_promotion_counts": {
+          "type": "object"
+        },
+        "matrix_transition": {
+          "type": "object"
+        },
+        "affected_states": {
+          "type": "array"
+        },
+        "current_result": {
+          "type": "object"
+        },
+        "next_bounded_operation": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "title": "index.json",
+      "type": "object",
+      "required": [
+        "schema_version",
+        "wave_id",
+        "lane_id",
+        "class_id",
+        "issue",
+        "status",
+        "product",
+        "custody",
+        "counts",
+        "files",
+        "current_result"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "ssc-rd04-wave03-five-state-field-promotion-index@1"
+        },
+        "wave_id": {
+          "const": "SSC-RD-W03"
+        },
+        "lane_id": {
+          "const": "RD-04"
+        },
+        "class_id": {
+          "const": "RD-04-C02"
+        },
+        "issue": {
+          "const": 1017
+        },
+        "status": {
+          "type": "string"
+        },
+        "product": {
+          "type": "object"
+        },
+        "custody": {
+          "type": "object"
+        },
+        "counts": {
+          "type": "object"
+        },
+        "files": {
+          "type": "array"
+        },
+        "current_result": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "title": "product-manifest.json",
+      "type": "object",
+      "required": [
+        "schema_version",
+        "permanent_data_files",
+        "entries",
+        "combined_sha256"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "ssc-rd04-wave03-five-state-field-promotion-manifest@1"
+        },
+        "permanent_data_files": {
+          "type": "integer"
+        },
+        "entries": {
+          "type": "array"
+        },
+        "combined_sha256": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    }
+  ]
+}
