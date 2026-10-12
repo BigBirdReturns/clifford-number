@@ -70,6 +70,8 @@ Receipt support also has boundaries:
 
 When a source cannot be resolved, archived, or rechecked, that limitation belongs with the receipt and must travel into reader-facing output. It must not be hidden by a score or confident summary.
 
+The receipt contract is mechanical. Every row of `data/ledger/receipts.jsonl` carries a resolvable source URL, an archive reference (the SHA-256 of an extract under `receipts/`, or a Wayback snapshot of the source URL) and a non-empty `limits` statement of what the source does not establish, either on the row or as a `## Limits` section in the archived extract. `npm run validate:receipt-contract` enforces this offline and runs inside `npm run check`.
+
 ## Density discipline
 
 The information value of a shared surface falls as its population grows. Surface types declare hop eligibility, and large rosters, directories, cohorts, and rankings must never become silent all-to-all hop machines.
@@ -109,3 +111,5 @@ Contributions propose candidate surfaces rather than generic associations. A pro
 7. Run `npm run release:check` before publication.
 
 The release check is the minimum gate, not permission to overstate what a source proves. Human review remains responsible for evidence interpretation and public-language discipline.
+
+`npm run validate:constitution-gates` makes two constitutional rules mechanical. For rule 1.6 it fails on protected-attribute fields, on surface, cohort or score bases that name ethnicity, religion, ancestry, national origin or unit affiliation, and on text that builds a rollup on them. For rule 1.9 it fails on paid-placement fields anywhere in published or canonical data, and on sponsor fields in `data/canonical/` registries that lack a `sponsor_disclosure`. Its blocking scope is the canonical ledger, canonical registries, cases and the publication allowlist. Intake is held back from publication, so intake findings are reported as non-blocking warnings for the owner to decide, and the data is not deleted.
