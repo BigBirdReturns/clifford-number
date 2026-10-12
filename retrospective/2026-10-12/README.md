@@ -1,27 +1,43 @@
 # Retrospective capture, 12 October 2026
 
-This folder is a full record of what the agents did in this repo between 27 June and 14 September 2026. It covers everything on `main` plus the work that only lives in pull requests, issues, comments and branches. Nothing outside this folder was changed.
+A full record of what the agents did in this repo between 27 June and 14 September 2026: everything on `main`, plus the work that only lives in pull requests, issues, comments, reviews, branches and GitHub Actions artifacts. Nothing outside this folder was changed.
 
 ## What's here
 
 | Path | What it is |
 |---|---|
-| `github/prs.tsv` | All 2,069 pull requests: number, state, branch, dates, title |
-| `github/pr-bodies.jsonl` | The description of every pull request |
+| `github/prs.tsv`, `github/pr-bodies.jsonl`, `github/pulls-full.jsonl` | All 2,069 pull requests: state, branch, dates, title, description, and the full API objects |
 | `github/pr-files.jsonl` | Files changed by each of 1,442 closed pull requests |
-| `github/issues.tsv`, `github/issue-bodies.jsonl` | All 599 issues and their bodies |
-| `github/comments.jsonl` | Issue and pull request comments |
-| `github/branches.txt` | All 2,345 branch names on GitHub |
-| `github/branch-only-analysis.json` | Branches whose content never reached `main`, with what's on them |
-| `github/topics.json` | Research topics clustered from PR, issue and branch titles, with on-main status |
-| `trails/raw-trails.json` | 142 research trails, one row each: the question, how far it got, what it found |
-| `trails/slice-*.json` | The same rows split by the six areas they were inventoried in |
-| `trails/tiered-trails.json` | The 142 rows merged into 78 trails and tiered: show it, keep and finish, park it, let it go |
-| `analyses/conclusion-tests.json` | Search for any recorded prediction or reproduction test (Dialog list, role shortlists) and what a blind test would need |
+| `github/pr-activity.tsv` | Each pull request classified by activity (acquisition, findings, tools, validators, plumbing, carriers…) |
+| `github/issues.tsv`, `github/issue-bodies.jsonl`, `github/issues-full.jsonl` | All 599 issues, bodies and full API objects |
+| `github/comments.jsonl`, `github/issue-comments-full.jsonl` | All 2,536 issue and pull-request comments (verified complete against GitHub) |
+| `github/pr-review-comments.jsonl`, `github/pr-reviews.jsonl` | 1,516 inline review comments and 987 reviews the first export lacked |
+| `github/branches.txt`, `github/branch-only-analysis.json` | All 2,345 branch names, and which hold content that never reached `main` |
+| `github/topics.json` | Research topics clustered from titles, with on-main status |
+| `github/actions-artifacts-index.jsonl` | Index of all 19,096 GitHub Actions artifacts: run ids, sizes, digests, expiry dates |
+| `github/workflow-run-logs.tar.gz` | Logs and metadata of the 2,455 workflow runs behind the research artifacts |
+| `github/api/` | Labels, milestones, 100 Pages deployments |
+| `trails/raw-trails.json`, `trails/slice-*.json` | 142 research trails, one row each: the question, how far it got, what it found |
+| `trails/tiered-trails.json` | The 142 rows merged into 79 trails and tiered: show it, keep and finish, park it, let it go |
+| `analyses/time-ledger.json` | Weekly phases, effort split, time sinks, instruction-of-record quotes, the 11 August pivot |
+| `analyses/apparatus-cost-yield.json` | 37 apparatuses: PR, tool, test, workflow and line counts; first-evidence versus build dates; verdicts |
+| `analyses/reusable-kit.json` | 34 engines, 19 datasets, 17 method documents; what the 386 validators check |
+| `analyses/incentive-map.json` | 134 actors, 71 dated and sourced edges, 19 documented non-links, 19 ambiguity points |
+| `analyses/conclusion-tests.json` | Search for any recorded prediction or reproduction test, and what a blind test would need |
+| `analyses/preservation.json` | What was at risk of loss, by when, and what was saved |
+| `branches/lake-identity-waves-01-20/` | Research files from the evidence-lake identity branch chain (bulk-closed 11 Aug): canonical registry with 65 organisations, identity census, topology |
+| `branches/lake-allocator-war-waves-21-38/` | Research files from the allocator-war branch chain: 150 official-source captures and 31 open obligations |
+| `branches/lake-branch-heads.tsv` | Head commit of all 43 lake branches |
+| `actions-artifacts/research/` | All 3,622 unique research-tier Actions artifacts (2.5 GB), digest-verified; GitHub would have deleted most by 11 December 2026 |
 | `site/trail-map.html` | Source of the trail-map page built from these files |
+
+## Not copied, and why
+
+- The draft CalFresh release (132 assets, 1.33 GB, the only copy of the 11,672 decision PDFs): it never expires and stays on GitHub.
+- The diagnostic and derived-build artifact tiers (15,438 artifacts, 9 GB): indexed above; they regenerate from the repository's tools and workflows.
+- Tooling and generated build products on the lake branches: listed in each branch folder's `NOT-COPIED-regenerable-and-tooling.txt`; they regenerate from the branches.
+- The full git mirror: redundant while the branches exist on GitHub. `analyses/preservation.json` lists the 64 research branches reachable only by name, which pruning would lose.
 
 ## How it was made
 
-Agents read the repo slice by slice and pulled the full PR, issue, comment and branch history from GitHub. A separate model merged and tiered the trails and spot-checked key figures against the files. Tiers are a judgment, not an outside review.
-
-Follow-up commits on this branch add the time ledger (what the agents spent their time on), the reusable-tools catalogue, the cost-versus-yield measure of each apparatus, the documented incentive map, and a list of anything at risk of being lost.
+Agents read the repo slice by slice and pulled the full history from GitHub. A separate model merged and tiered the trails and spot-checked key figures against the files. Tiers are a judgment, not an outside review.
