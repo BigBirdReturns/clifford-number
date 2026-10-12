@@ -1,0 +1,493 @@
+{
+  "schema_version": "lake-allocator-war-bounded-source-snapshots-wave-32-plan@1",
+  "program_ref": "CN-LAKE-ALLOCATOR-WAR-W32",
+  "wave_ref": "LAW-W32",
+  "as_of": "2026-08-01",
+  "authority": "frozen_official_source_response_acquisition_only",
+  "request_defaults": {
+    "timeout_ms": 30000,
+    "max_attempts": 3,
+    "max_response_bytes": 6000000,
+    "retry_statuses": [
+      408,
+      425,
+      429,
+      500,
+      502,
+      503,
+      504
+    ],
+    "user_agent": "clifford-number-wave32/1.0 (+https://github.com/BigBirdReturns/clifford-number)"
+  },
+  "snapshot_specs": [
+    {
+      "snapshot_ref": "LAW32-S001",
+      "source_ref": "LAW31-S001",
+      "capture_mode": "public_http",
+      "expected_format": "json",
+      "required_success": true,
+      "request": {
+        "method": "GET",
+        "url": "https://data.opm.gov/api/v1/files/employment?current=true&year=2026",
+        "headers": {
+          "accept": "application/json"
+        }
+      },
+      "request_purpose": "Freeze the official current 2026 employment-file inventory rather than downloading the multi-million-row payload.",
+      "coverage": "Machine-addressable OPM employment-file metadata, including current versions and downloadable file locators for the bounded year query.",
+      "limits": "File inventory metadata does not create a person-level decision roster, agency inventory submission, exception ledger, comparator join, or complete action denominator.",
+      "source_title": "Federal Workforce Data",
+      "publisher": "U.S. Office of Personnel Management",
+      "source_locator": "https://data.opm.gov/",
+      "source_authority": "official_public_data_system",
+      "source_observed_on": "2026-08-01"
+    },
+    {
+      "snapshot_ref": "LAW32-S002",
+      "source_ref": "LAW31-S002",
+      "capture_mode": "public_http",
+      "expected_format": "json",
+      "required_success": true,
+      "request": {
+        "method": "GET",
+        "url": "https://data.opm.gov/api/v1/files/accessions?current=true&year=2026",
+        "headers": {
+          "accept": "application/json"
+        }
+      },
+      "request_purpose": "Freeze the official current 2026 accessions-file inventory.",
+      "coverage": "Machine-addressable OPM accessions-file metadata for current 2026 releases.",
+      "limits": "Accessions file metadata does not identify the complete decision-level hiring, transfer, exception, override, appeal, or no-action universe.",
+      "source_title": "OPM public datasets",
+      "publisher": "U.S. Office of Personnel Management",
+      "source_locator": "https://www.opm.gov/data/datasets/",
+      "source_authority": "official_public_dataset_catalog",
+      "source_observed_on": "2026-08-01"
+    },
+    {
+      "snapshot_ref": "LAW32-S003",
+      "source_ref": "LAW31-S003",
+      "capture_mode": "public_http",
+      "expected_format": "json",
+      "required_success": true,
+      "request": {
+        "method": "GET",
+        "url": "https://data.opm.gov/api/v1/files/separations?current=true&year=2026",
+        "headers": {
+          "accept": "application/json"
+        }
+      },
+      "request_purpose": "Freeze the official current 2026 separations-file inventory.",
+      "coverage": "Machine-addressable OPM separations-file metadata for current 2026 releases.",
+      "limits": "Separations file metadata does not identify protected person-level decisions, agency programme dispositions, comparators, appeals, final outcomes, or no-action rows.",
+      "source_title": "Federal Workforce Data getting started",
+      "publisher": "U.S. Office of Personnel Management",
+      "source_locator": "https://data.opm.gov/info-and-help/getting-started",
+      "source_authority": "official_system_documentation",
+      "source_observed_on": "2026-08-01"
+    },
+    {
+      "snapshot_ref": "LAW32-S004",
+      "source_ref": "LAW31-S004",
+      "capture_mode": "public_http",
+      "expected_format": "json",
+      "required_success": true,
+      "request": {
+        "method": "GET",
+        "url": "https://www.federalregister.gov/api/v1/documents.json?per_page=100&order=newest&conditions%5Bpublication_date%5D%5Bgte%5D=2025-01-20&conditions%5Bterm%5D=diversity%20equity%20inclusion",
+        "headers": {
+          "accept": "application/json"
+        }
+      },
+      "request_purpose": "Freeze a bounded official Federal Register search for the relevant implementation vocabulary and period.",
+      "coverage": "Published presidential documents, rules, notices, agencies, dates, and metadata returned by the exact query.",
+      "limits": "Federal Register publication does not expose every internal delegation, dissent, recusal, waiver, implementation file, or no-action decision.",
+      "source_title": "Federal Register API documentation",
+      "publisher": "Office of the Federal Register and Government Publishing Office",
+      "source_locator": "https://www.federalregister.gov/developers/documentation/api/v1",
+      "source_authority": "official_public_api_documentation",
+      "source_observed_on": "2026-08-01"
+    },
+    {
+      "snapshot_ref": "LAW32-S005",
+      "source_ref": "LAW31-S005",
+      "capture_mode": "public_http",
+      "expected_format": "json",
+      "required_success": true,
+      "request": {
+        "method": "POST",
+        "url": "https://api.usaspending.gov/api/v2/search/spending_by_award_count/",
+        "headers": {
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "body": {
+          "filters": {
+            "time_period": [
+              {
+                "start_date": "2025-01-20",
+                "end_date": "2026-08-01"
+              }
+            ],
+            "award_type_codes": [
+              "A",
+              "B",
+              "C",
+              "D",
+              "02",
+              "03",
+              "04",
+              "05",
+              "06",
+              "07",
+              "08",
+              "09",
+              "10",
+              "11",
+              "IDV_A",
+              "IDV_B",
+              "IDV_B_A",
+              "IDV_B_B",
+              "IDV_B_C",
+              "IDV_C",
+              "IDV_D",
+              "IDV_E"
+            ]
+          }
+        }
+      },
+      "request_purpose": "Freeze an official all-award-type count for the bounded administration period without downloading the complete award universe.",
+      "coverage": "USAspending award-count response for the exact time and award-type filter.",
+      "limits": "An award count does not identify which awards were subject to a disputed condition, certification, investigation, termination, correction, or no-action decision.",
+      "source_title": "USAspending API",
+      "publisher": "U.S. Department of the Treasury",
+      "source_locator": "https://api.usaspending.gov/",
+      "source_authority": "official_public_spending_api",
+      "source_observed_on": "2026-08-01"
+    },
+    {
+      "snapshot_ref": "LAW32-S006",
+      "source_ref": "LAW31-S006",
+      "capture_mode": "public_http",
+      "expected_format": "json",
+      "required_success": true,
+      "request": {
+        "method": "GET",
+        "url": "https://api.usaspending.gov/api/v2/references/award_types/",
+        "headers": {
+          "accept": "application/json"
+        }
+      },
+      "request_purpose": "Freeze the official award-type vocabulary used by the bounded USAspending request.",
+      "coverage": "Current machine-readable USAspending award-type group definitions.",
+      "limits": "A vocabulary response establishes query semantics rather than downstream enforcement, recovery, comparator, or correction completeness.",
+      "source_title": "USAspending API documentation",
+      "publisher": "U.S. Department of the Treasury",
+      "source_locator": "https://api.usaspending.gov/docs/",
+      "source_authority": "official_public_api_documentation",
+      "source_observed_on": "2026-08-01"
+    },
+    {
+      "snapshot_ref": "LAW32-S007",
+      "source_ref": "LAW31-S007",
+      "capture_mode": "credential_boundary",
+      "expected_format": "none",
+      "required_success": false,
+      "credential_requirement": "SAM.gov public contract-award API key or authorized bulk-access channel",
+      "boundary_reason": "No repository secret or operator credential is available to the acquisition runner, and the public locator is not substituted for the data response.",
+      "request_purpose": "Preserve the exact contract-award data access boundary without manufacturing an empty response.",
+      "coverage": "Credential and system boundary for machine-addressable contract-award acquisition.",
+      "limits": "The boundary record contains no contract rows and proves neither absence nor completeness.",
+      "source_title": "SAM.gov Contract Award Data",
+      "publisher": "U.S. General Services Administration",
+      "source_locator": "https://sam.gov/contract-data",
+      "source_authority": "official_public_contract_system",
+      "source_observed_on": "2026-08-01"
+    },
+    {
+      "snapshot_ref": "LAW32-S008",
+      "source_ref": "LAW31-S008",
+      "capture_mode": "public_http",
+      "expected_format": "html",
+      "required_success": false,
+      "request": {
+        "method": "GET",
+        "url": "https://sam.gov/fpds",
+        "headers": {
+          "accept": "text/html,application/xhtml+xml"
+        }
+      },
+      "request_purpose": "Freeze the official public FPDS-to-SAM contract-award transition notice.",
+      "coverage": "Public system-transition and availability notice returned at the exact locator.",
+      "limits": "System migration documentation does not establish a condition-specific action denominator or provide contract action rows.",
+      "source_title": "Contract Awards in SAM.gov",
+      "publisher": "U.S. General Services Administration",
+      "source_locator": "https://sam.gov/fpds",
+      "source_authority": "official_public_contract_system_notice",
+      "source_observed_on": "2026-08-01"
+    },
+    {
+      "snapshot_ref": "LAW32-S009",
+      "source_ref": "LAW31-S009",
+      "capture_mode": "credential_boundary",
+      "expected_format": "none",
+      "required_success": false,
+      "credential_requirement": "SAM.gov federal-assistance API key or authorized bulk-access channel",
+      "boundary_reason": "No repository secret or operator credential is available to the acquisition runner, and the public catalogue is not treated as the queried assistance response.",
+      "request_purpose": "Preserve the exact federal-assistance data access boundary.",
+      "coverage": "Credential and system boundary for machine-addressable assistance acquisition.",
+      "limits": "The boundary record contains no assistance rows and proves neither absence nor completeness.",
+      "source_title": "SAM.gov Federal Assistance",
+      "publisher": "U.S. General Services Administration",
+      "source_locator": "https://sam.gov/federal-assistance",
+      "source_authority": "official_public_assistance_system",
+      "source_observed_on": "2026-08-01"
+    },
+    {
+      "snapshot_ref": "LAW32-S010",
+      "source_ref": "LAW31-S010",
+      "capture_mode": "public_http",
+      "expected_format": "json",
+      "required_success": true,
+      "request": {
+        "method": "POST",
+        "url": "https://api.grants.gov/v1/api/search2",
+        "headers": {
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "body": {
+          "rows": 100,
+          "keyword": "civil rights",
+          "oppStatuses": "forecasted|posted"
+        }
+      },
+      "request_purpose": "Freeze a bounded public Grants.gov opportunity search using the exact keyword and status predicate.",
+      "coverage": "The first bounded page of forecasted or posted federal opportunities matching the exact civil-rights query.",
+      "limits": "Opportunity records do not supply the complete post-award recipient, condition, action, appeal, correction, recovery, or no-action ledger.",
+      "source_title": "Grants.gov opportunity search",
+      "publisher": "U.S. Department of Health and Human Services",
+      "source_locator": "https://www.grants.gov/en/web/grants/search-grants.html",
+      "source_authority": "official_public_grant_opportunity_system",
+      "source_observed_on": "2026-08-01"
+    },
+    {
+      "snapshot_ref": "LAW32-S011",
+      "source_ref": "LAW31-S011",
+      "capture_mode": "public_http",
+      "expected_format": "html",
+      "required_success": false,
+      "request": {
+        "method": "GET",
+        "url": "https://www.justice.gov/opa/pr/justice-department-establishes-civil-rights-fraud-initiative",
+        "headers": {
+          "accept": "text/html,application/xhtml+xml"
+        }
+      },
+      "request_purpose": "Freeze the official Civil Rights Fraud Initiative announcement as published.",
+      "coverage": "Published initiative description, stated authority, actors, and reporting channel.",
+      "limits": "The announcement is not a complete referral, investigation, declination, settlement, withdrawal, appeal, or no-action register.",
+      "source_title": "Justice Department Establishes Civil Rights Fraud Initiative",
+      "publisher": "U.S. Department of Justice",
+      "source_locator": "https://www.justice.gov/opa/pr/justice-department-establishes-civil-rights-fraud-initiative",
+      "source_authority": "official_enforcement_policy_announcement",
+      "source_observed_on": "2026-08-01"
+    },
+    {
+      "snapshot_ref": "LAW32-S012",
+      "source_ref": "LAW31-S012",
+      "capture_mode": "public_http",
+      "expected_format": "html",
+      "required_success": false,
+      "request": {
+        "method": "GET",
+        "url": "https://www.justice.gov/opa/pr/ibm-pays-17-million-resolve-allegations-discrimination-through-illegal-dei-practices",
+        "headers": {
+          "accept": "text/html,application/xhtml+xml"
+        }
+      },
+      "request_purpose": "Freeze the named IBM resolution page as an official published action record.",
+      "coverage": "Published allegations, represented payment, remediation terms, actors, and date for the named resolution.",
+      "limits": "One announced resolution does not establish prevalence, uniform enforcement, realized payment, system-wide remediation, or admission beyond the instrument.",
+      "source_title": "IBM Civil Rights Fraud Initiative resolution",
+      "publisher": "U.S. Department of Justice",
+      "source_locator": "https://www.justice.gov/opa/pr/ibm-pays-17-million-resolve-allegations-discrimination-through-illegal-dei-practices",
+      "source_authority": "official_named_enforcement_resolution",
+      "source_observed_on": "2026-08-01"
+    },
+    {
+      "snapshot_ref": "LAW32-S013",
+      "source_ref": "LAW31-S013",
+      "capture_mode": "public_http",
+      "expected_format": "html",
+      "required_success": false,
+      "request": {
+        "method": "GET",
+        "url": "https://www.justice.gov/dag/select-publications",
+        "headers": {
+          "accept": "text/html,application/xhtml+xml"
+        }
+      },
+      "request_purpose": "Freeze the official Deputy Attorney General publication index.",
+      "coverage": "Published policy memoranda and index metadata visible at the official locator.",
+      "limits": "A publication index does not expose internal referrals, staffing, budgets, declined matters, exceptions, dissent, or decision custody.",
+      "source_title": "Deputy Attorney General select publications",
+      "publisher": "U.S. Department of Justice",
+      "source_locator": "https://www.justice.gov/dag/select-publications",
+      "source_authority": "official_policy_publication_index",
+      "source_observed_on": "2026-08-01"
+    },
+    {
+      "snapshot_ref": "LAW32-S014",
+      "source_ref": "LAW31-S014",
+      "capture_mode": "public_http",
+      "expected_format": "html",
+      "required_success": false,
+      "request": {
+        "method": "GET",
+        "url": "https://www.gao.gov/legal/bid-protests",
+        "headers": {
+          "accept": "text/html,application/xhtml+xml"
+        }
+      },
+      "request_purpose": "Freeze the official GAO bid-protest process and public docket surface.",
+      "coverage": "Published protest process, docket access, filing, review, and decision routes.",
+      "limits": "The public surface omits some underlying pleadings, routine dismissals, implementation records, cost, access, and durable corrective-action outcomes.",
+      "source_title": "GAO Bid Protests",
+      "publisher": "U.S. Government Accountability Office",
+      "source_locator": "https://www.gao.gov/legal/bid-protests",
+      "source_authority": "official_procurement_review_system",
+      "source_observed_on": "2026-08-01"
+    },
+    {
+      "snapshot_ref": "LAW32-S015",
+      "source_ref": "LAW31-S015",
+      "capture_mode": "public_http",
+      "expected_format": "html",
+      "required_success": false,
+      "request": {
+        "method": "GET",
+        "url": "https://www.gao.gov/legal/bid-protests/faqs",
+        "headers": {
+          "accept": "text/html,application/xhtml+xml"
+        }
+      },
+      "request_purpose": "Freeze the official GAO publication and access limitations stated in its FAQs.",
+      "coverage": "Published rules concerning searchable fields, redaction, dismissals, decisions, and document availability.",
+      "limits": "The FAQ confirms system boundaries rather than completing the correction, access, cost, outcome, and durability denominator.",
+      "source_title": "GAO Bid Protest FAQs",
+      "publisher": "U.S. Government Accountability Office",
+      "source_locator": "https://www.gao.gov/legal/bid-protests/faqs",
+      "source_authority": "official_procurement_review_documentation",
+      "source_observed_on": "2026-08-01"
+    },
+    {
+      "snapshot_ref": "LAW32-S016",
+      "source_ref": "LAW31-S016",
+      "capture_mode": "credential_boundary",
+      "expected_format": "none",
+      "required_success": false,
+      "credential_requirement": "PACER account, charge-bearing access, and case-specific query predicates",
+      "boundary_reason": "The repository runner has no PACER account or billing authority, and the public FAQ is not substituted for a nationwide case-result export.",
+      "request_purpose": "Preserve the exact federal-court case access boundary.",
+      "coverage": "Credential, fee, sealed-record, and query-predicate boundary for federal court records.",
+      "limits": "The boundary record contains no case rows and proves neither absence, remedy effectiveness, nor denominator completeness.",
+      "source_title": "PACER Case Locator",
+      "publisher": "Administrative Office of the U.S. Courts",
+      "source_locator": "https://pacer.uscourts.gov/help/faqs/what-pacer-case-locator",
+      "source_authority": "official_federal_court_case_index",
+      "source_observed_on": "2026-08-01"
+    },
+    {
+      "snapshot_ref": "LAW32-S017",
+      "source_ref": "LAW31-S017",
+      "capture_mode": "public_http",
+      "expected_format": "html",
+      "required_success": false,
+      "request": {
+        "method": "GET",
+        "url": "https://www.mspb.gov/decisions/casereports.htm",
+        "headers": {
+          "accept": "text/html,application/xhtml+xml"
+        }
+      },
+      "request_purpose": "Freeze the official MSPB case-report index surface.",
+      "coverage": "Published precedential, nonprecedential, and case-report access routes visible at the official locator.",
+      "limits": "Published decisions do not expose the complete grievance, settlement, abandoned, no-action, implementation, access, cost, or durability universe.",
+      "source_title": "MSPB Case Reports",
+      "publisher": "U.S. Merit Systems Protection Board",
+      "source_locator": "https://www.mspb.gov/decisions/casereports.htm",
+      "source_authority": "official_personnel_adjudication_index",
+      "source_observed_on": "2026-08-01"
+    },
+    {
+      "snapshot_ref": "LAW32-S018",
+      "source_ref": "LAW31-S018",
+      "capture_mode": "public_http",
+      "expected_format": "html",
+      "required_success": false,
+      "request": {
+        "method": "GET",
+        "url": "https://www.fac.gov/data/",
+        "headers": {
+          "accept": "text/html,application/xhtml+xml"
+        }
+      },
+      "request_purpose": "Freeze the official Federal Audit Clearinghouse public-data surface and its stated coverage boundaries.",
+      "coverage": "Published single-audit data access, threshold, package, and finding information visible at the official locator.",
+      "limits": "Single-audit coverage is thresholded and does not provide every award condition, termination, repayment, clawback, continuity, or no-recovery row.",
+      "source_title": "Federal Audit Clearinghouse data",
+      "publisher": "U.S. General Services Administration",
+      "source_locator": "https://www.fac.gov/data/",
+      "source_authority": "official_public_single_audit_data",
+      "source_observed_on": "2026-08-01"
+    },
+    {
+      "snapshot_ref": "LAW32-S019",
+      "source_ref": "LAW31-S019",
+      "capture_mode": "credential_boundary",
+      "expected_format": "none",
+      "required_success": false,
+      "credential_requirement": "Data.gov API key for Federal Audit Clearinghouse API requests",
+      "boundary_reason": "No repository secret is available to the acquisition runner, and the documentation page is not substituted for a data response.",
+      "request_purpose": "Preserve the exact FAC API access boundary.",
+      "coverage": "Credential and versioned API boundary for structured single-audit acquisition.",
+      "limits": "The boundary record contains no API data rows and proves neither recovery completeness nor continuity.",
+      "source_title": "Federal Audit Clearinghouse API resources",
+      "publisher": "U.S. General Services Administration",
+      "source_locator": "https://www.fac.gov/api/",
+      "source_authority": "official_public_audit_api_documentation",
+      "source_observed_on": "2026-08-01"
+    }
+  ],
+  "required_success_snapshot_refs": [
+    "LAW32-S001",
+    "LAW32-S002",
+    "LAW32-S003",
+    "LAW32-S004",
+    "LAW32-S005",
+    "LAW32-S006",
+    "LAW32-S010"
+  ],
+  "counts": {
+    "source_receipts": 19,
+    "snapshot_specs": 19,
+    "public_http_specs": 15,
+    "credential_boundary_specs": 4,
+    "json_specs": 7,
+    "html_specs": 8,
+    "required_success_specs": 7,
+    "get_requests": 13,
+    "post_requests": 2
+  },
+  "boundaries": {
+    "source_locator_is_snapshot": false,
+    "request_attempt_is_success": false,
+    "http_success_is_complete_denominator": false,
+    "credential_boundary_is_empty_result": false,
+    "snapshot_is_evidence_row": false,
+    "snapshot_is_adjudication": false,
+    "snapshot_is_publication_authority": false,
+    "secret_material_may_be_committed": false
+  }
+}

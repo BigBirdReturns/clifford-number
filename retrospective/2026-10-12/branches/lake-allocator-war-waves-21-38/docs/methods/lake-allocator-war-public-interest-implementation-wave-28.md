@@ -1,0 +1,13 @@
+# Allocator-war public-interest implementation denominator Wave 28
+
+Wave 28 consumes the two public-interest results that Wave 27 retained as `partial`. It does not rerun the completed institutional-gate search and does not alter the legislative and political-finance no-gate lane. It decomposes the remaining public-interest denominator into exact, estate-owned acquisition obligations.
+
+The source denominator is fixed at `LAW25-LAW21-EST-05/C01` and `LAW25-LAW21-EST-05/C03`. Both rows must remain partial, acquisition-only, graph-inert, publication-blocked, and attached to the repaired nine-record institutional source set. A complete result, changed source set, evidence promotion, or finding promotion invalidates the Wave 28 input.
+
+Five estate consumers receive twelve tasks. Public-interest crossing owns the programme and office inventory, complete affected-party denominator, and burden and collective-claim ledger. Regulatory markets owns contractor and subcontractor action rows, civil-rights enforcement and replacement-rule rows, and regulated-entity correction outcomes. Labor and workforce mobility owns personnel decisions and practical personnel correction. Public money and industrial policy owns grant and funding-recipient actions plus substitution, exit, and public-value recovery. Executive appointments and ethics owns implementing-office custody, delegations, versions, exceptions, overrides, checking functions, and correction durability.
+
+Every task has one owner, a stable task reference, a priority tier, one or both source partials, an exact closure target, and a required receipt class. Tasks enter as `ready_for_targeted_acquisition`. Queue admission does not establish estate adoption, close either source partial, adjudicate evidence, create a complete denominator, promote a finding, modify the graph, or clear publication.
+
+The deterministic builder emits one JSONL queue ledger per estate and one projection. The validator reconstructs the complete object from the policy, Wave 27 projection and ledger, and Wave 21 estate registry. It reconciles queue and task counts, source custody, estate identity, authority, priorities, task classes, output hashes, graph digests, lake basin membership, authoritative roots, generator paths, release-gate registration, ancestry, and transport cleanup.
+
+The control question is whether each remaining implementation gap has one accountable estate owner and a receipt-complete closure test while every unresolved, absent, no-action, comparator, failed, appealed, corrected, and no-observed-effect row remains visible and non-promotional.
