@@ -38,6 +38,25 @@ A reviewer can inspect the current public release in about a minute:
 
 Other folders: [`docs/`](docs/README.md) (documentation index), [`contributions/`](contributions/) (candidate-surface inbox), [`legacy/`](legacy/) (the old generic edge graph, kept only as history), [`vendor/`](vendor/) (exact vendored browser libraries).
 
+## Run the application locally
+
+For a local research session, run `npm ci`, `npm run compile`, then `npm run serve`.
+On Windows use `run-local.cmd` (optional port argument), or `npm.cmd` in PowerShell.
+The launcher installs missing dependencies, compiles the existing data, and serves
+on loopback only. It performs no crawl, merge, publication, or outreach.
+
+Open `/explorer.html` for the evidence field and connection checker. The retained
+research inventory is `/retrospective/2026-10-12/site/trail-map.html`; its historical
+tiers and recommendations are assessments, not instructions to repeat its work.
+The operating assessment is [Operating cut](retrospective/2026-10-12/OPERATING-CUT.md).
+
+`npm test` checks the application and retained evidence. The optional records-request
+lifecycle runs separately with `node test/electric-twin-register-request.test.js`. That suite covers
+preparing, dispatching, delivering and reviewing a request, not the app's ability
+to render existing shareholder evidence. Its Windows symlink-creation failure is
+recorded in the operating assessment; these checks have not been declared passed.
+The publication build retains its separate gate below.
+
 ## Running the gate
 
 One gate decides whether a change is releasable. Run it from a clean checkout:

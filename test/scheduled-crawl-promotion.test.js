@@ -150,7 +150,7 @@ export function validateCrawlPullRequestContract(files) {
   requireMatch(errors, recovery, /test "\$\(git rev-parse "\$CANDIDATE_SHA\^"\)" = "\$BASE_SHA"/, 'candidate recovery must authenticate direct-parent topology');
   requireMatch(errors, recovery, /git bundle create "\$BUNDLE" HEAD "\^\$BASE_SHA"/, 'candidate recovery must create a base-bound Git bundle');
   requireMatch(errors, recovery, /git bundle verify "\$BUNDLE"/, 'candidate recovery must verify the emitted bundle');
-  requireMatch(errors, recovery, /BUNDLE_SHA256="\$\(sha256sum "\$BUNDLE" \| awk '\{print \$1\}'\)"/, 'candidate recovery must digest the exact bundle bytes');
+  requireMatch(errors, recovery, /BUNDLE_SHA256="\$\(sha256sum(?: <)? "\$BUNDLE" \| awk '\{print \$1\}'\)"/, 'candidate recovery must digest the exact bundle bytes');
   requireMatch(errors, recovery, /restore_hint=git fetch candidate\.bundle HEAD:refs\/heads\/recovered-scheduled-crawl/, 'candidate recovery must publish an executable restore hint');
   requireAbsent(errors, recovery, /gh api|git push/, 'candidate recovery must remain local and read-only with respect to GitHub');
   requireAbsent(errors, recovery, /branches\/main\/protection|repos\/\$REPO\/rulesets/, 'candidate recovery must not mutate branch policy');
@@ -196,7 +196,7 @@ const mutations = [
     c.recovery = c.recovery.replace('test "$(git rev-parse "$CANDIDATE_SHA^")" = "$BASE_SHA"', 'true # parent binding removed');
   }],
   ['replace exact bundle digest with a constant', (c) => {
-    c.recovery = c.recovery.replace('BUNDLE_SHA256="$(sha256sum "$BUNDLE" | awk \'{print $1}\')"', 'BUNDLE_SHA256=unverified');
+    c.recovery = c.recovery.replace('BUNDLE_SHA256="$(sha256sum < "$BUNDLE" | awk \'{print $1}\')"', 'BUNDLE_SHA256=unverified');
   }]
 ];
 
