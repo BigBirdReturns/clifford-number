@@ -37,7 +37,6 @@ export const sourcePaths = {
 };
 
 export const releaseScope = [
-  '.github/workflows/status-sovereignty-wave-01-second-party-review.yml',
   'package.json',
   'tools/build-pages.mjs',
   'tools/validate-pages.mjs',

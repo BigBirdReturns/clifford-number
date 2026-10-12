@@ -23,7 +23,6 @@ const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
 }[char]));
 
 export const releaseScope = [
-  '.github/workflows/status-sovereignty-six-gate-first-pass-reconciliation.yml',
   'data/intake/status-sovereignty-six-gate-first-pass-reconciliation.json',
   'schemas/status-sovereignty-six-gate-first-pass-reconciliation.schema.json',
   'docs/milestones/ssc-six-gate-first-pass-reconciliation.md',

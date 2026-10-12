@@ -19,6 +19,6 @@ assert.equal(constitution.roles.length,6);assert.equal(constitution.lifecycle_st
 assert.equal(scenarios.scenarios.length,24);assert.deepEqual(scenarios.denominator,{total:24,eligible_for_lifecycle_proposal:3,blocked:16,mandatory_pause:5});
 assert.ok(Object.values(ledger.counts).every((value)=>value===0));assert.equal(ledger.verified_state.a1_observed,false);assert.equal(ledger.verified_state.maximum_verified_adoption_level,'A0');assert.equal(ledger.verified_state.real_person_pilot_authorized,false);
 assert.equal(plan.current_result.a1_observed,false);assert.equal(plan.current_result.real_person_pilot_authorized,false);assert.equal(plan.current_result.project_complete,false);
-assert.equal(releaseScope.length,17);assert.deepEqual(manifest,computeReleaseManifest());assert.equal(report.release_manifest.combined_sha256,manifest.combined_sha256);assert.equal(report.counts.a1_entries,0);
+assert.equal(releaseScope.length,16);assert.deepEqual(manifest,computeReleaseManifest());assert.equal(report.release_manifest.combined_sha256,manifest.combined_sha256);assert.equal(report.counts.a1_entries,0);
 const before=fs.readFileSync(path.join(root,'reports/core-thesis/answerable-power/sprint-08.json'),'utf8');execFileSync(process.execPath,['tools/build-m05-answerable-power-sprint-08.mjs'],{cwd:root,stdio:'pipe'});const after=fs.readFileSync(path.join(root,'reports/core-thesis/answerable-power/sprint-08.json'),'utf8');assert.equal(after,before);
 console.log('m05-answerable-power-sprint-08.test: OK');

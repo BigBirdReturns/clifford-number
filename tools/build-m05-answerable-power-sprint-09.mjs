@@ -14,7 +14,6 @@ const write = (relativePath, value) => {
 };
 
 export const releaseScope = [
-  '.github/workflows/m05-answerable-power-sprint-09.yml',
   'data/project/m05-answerable-power-sprint-09-plan.json',
   'data/project/m05-answerable-power-sprint-09-field-gate.json',
   'data/project/m05-answerable-power-sprint-09-candidate-registry.json',

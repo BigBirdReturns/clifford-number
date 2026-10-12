@@ -23,7 +23,6 @@ const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
 }[char]));
 
 export const releaseScope = [
-  '.github/workflows/status-sovereignty-f04-aces.yml',
   'data/intake/status-sovereignty-f04-aces-governance-first-pass.json',
   'schemas/status-sovereignty-governance-denominator-first-pass.schema.json',
   'docs/milestones/ssc-f04-aces-governance-first-pass.md',

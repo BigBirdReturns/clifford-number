@@ -266,7 +266,7 @@ export function validateDocuments(documents, { rootDir = root, verifyManifest = 
     assert(manifest.graph_effect === 'none', 'manifest graph effect must be none');
     assert(manifest.publication_status === 'blocked', 'manifest publication must remain blocked');
     const entries = manifest.files ?? [];
-    assert(entries.length >= 8, 'release manifest file denominator is unexpectedly small');
+    assert(entries.length >= 7, 'release manifest file denominator is unexpectedly small');
     assert(unique(entries.map((row) => row.path)), 'duplicate release-manifest path');
     for (const entry of entries) {
       const absolutePath = path.join(rootDir, entry.path);
