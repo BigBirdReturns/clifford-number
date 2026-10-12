@@ -92,6 +92,22 @@ pending lane represented as cleared.
 
 ---
 
+> **Note, 12 October 2026 (added; Sections 1 to 9 are otherwise unchanged).**
+> Phase 0 is closed: its closure record is
+> [`docs/milestones/phase0-foundation-lock.md`](docs/milestones/phase0-foundation-lock.md).
+> On 12 October 2026 the 2.0 consolidation happened. Workflows went from 334 to
+> 5, validator scripts from 386 to 170, and npm scripts from 160 to 46. No
+> workflow runs on a timer. The receipt contract and rules 1.6 and 1.9 became
+> mechanical checks inside `npm run check`. The "now through end of 2026"
+> heading below is the original schedule, kept as written. Section 1 names
+> some validators by old npm aliases (`validate:selection`,
+> `validate:consumption`); those commands now run inside `npm run check`.
+> What changed and what is not claimed: see
+> [`docs/releases/2.0.0.md`](docs/releases/2.0.0.md). The plan through 2037 is
+> intact.
+
+---
+
 ## 2. Phase 0: Foundation Lock (now through end of 2026)
 
 **Status:** completed at the current release boundary. The exact closure ledger is
