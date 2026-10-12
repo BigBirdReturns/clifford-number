@@ -1,3 +1,71 @@
+# Consolidation deletions, 2026-10-12
+
+This is the record of what the 2026-10-12 consolidation milestone removed from `tools/`, `test/` and `package.json`. The first part below is the verbatim list that the validator-pruning work package (WP2) wrote for the workflow package: the 116 npm scripts it removed, the 495 files under `tools/` and 189 under `test/` it deleted and why, the workflows that referenced them, and the kept files it edited. Its section F listed the kept validators and tests that could not pass once the workflow package (WP3) reduced `.github/workflows` to five files, because each pins the exact bytes or git blob SHA of a now-deleted workflow file (or of a sibling validator removed with it) inside sealed data. The repository owner approved deleting them, and the consolidation green-up commit did so: 54 files (27 under `tools/`, 27 under `test/`), listed in the addendum after the verbatim text. The sealed data those files pinned was not edited and stays in place, and no data check in the release gate was weakened.
+
+## Addendum: files deleted by the green-up commit
+
+The 40 validators and tests listed in section F, the 9 tests that belong to the listed validators, `tools/validate-no-magic-human-gate.mjs` with its test (its workflow was removed by WP3), and 3 more files of the same class found by running every kept test and validator before and after the deletion: the rd04 state-implementation-intake validator (its sealed manifest pins a deleted workflow), and the m05 observation-time custody validator and test (they pin the git blob SHA of the deleted connection-authentication validator). 40 + 9 + 2 + 3 = 54 files.
+
+- `tools/validate-m05-answerable-power-sprint-03-leg-07-intel-post-gate-route-watch.mjs`
+- `tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-connection-authentication-custody-amendment.mjs`
+- `tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-observation-time-custody-amendment.mjs`
+- `tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-request-envelope-custody-amendment.mjs`
+- `tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.mjs`
+- `tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-repository-tree-custody-amendment.mjs`
+- `tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-temporal-reconciliation-admission-amendment.mjs`
+- `tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-transport-body-representation-amendment.mjs`
+- `tools/validate-no-magic-human-gate.mjs`
+- `tools/validate-status-sovereignty-rd-wave03-rd04-mt-row-state-reconciliation-v1.py`
+- `tools/validate-status-sovereignty-rd-wave03-rd04-nd-row-state-reconciliation-v3.py`
+- `tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.mjs`
+- `tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion.mjs`
+- `tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.mjs`
+- `tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion.mjs`
+- `tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion.mjs`
+- `tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication.mjs`
+- `tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.mjs`
+- `tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs`
+- `tools/validate-status-sovereignty-rd-wave03-rd04-state-implementation-intake.mjs`
+- `tools/validate-status-sovereignty-rd-wave03-rd05-member-participation-intake.mjs`
+- `tools/validate-status-sovereignty-rd04-changed-input-gate-a09.mjs`
+- `tools/validate-status-sovereignty-rd04-internal-adjudication-a08.mjs`
+- `tools/validate-status-sovereignty-rd04-public-implementation-receipts-a07.mjs`
+- `tools/validate-status-sovereignty-rd04-snap-route-adjudication-a04.py`
+- `tools/validate-status-sovereignty-rd04-snap-source-availability-a02.mjs`
+- `tools/validate-status-sovereignty-six-gate-first-pass-reconciliation.mjs`
+- `test/m05-answerable-power-sprint-03-leg-07-five-domain-route-watch.test.js`
+- `test/m05-answerable-power-sprint-03-leg-07-intel-post-gate-route-watch.test.js`
+- `test/m05-answerable-power-sprint-03-leg-07-intel-realization-connection-authentication-custody-amendment.test.js`
+- `test/m05-answerable-power-sprint-03-leg-07-intel-realization-observation-time-custody-amendment.test.js`
+- `test/m05-answerable-power-sprint-03-leg-07-intel-realization-request-envelope-custody-amendment.test.js`
+- `test/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.test.js`
+- `test/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-repository-tree-custody-amendment.test.js`
+- `test/m05-answerable-power-sprint-03-leg-07-intel-realization-temporal-reconciliation-admission-amendment.test.js`
+- `test/m05-answerable-power-sprint-03-leg-07-intel-realization-transport-body-representation-amendment.test.js`
+- `test/no-magic-human-gate.test.js`
+- `test/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.test.js`
+- `test/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion.test.js`
+- `test/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.test.js`
+- `test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion.test.js`
+- `test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion.test.js`
+- `test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication.test.js`
+- `test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.test.js`
+- `test/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.test.js`
+- `test/status-sovereignty-rd-wave03-rd04-state-implementation-intake.test.js`
+- `test/status-sovereignty-rd-wave03-rd05-member-participation-intake.test.js`
+- `test/status-sovereignty-rd04-a06-full-corpus.test.js`
+- `test/status-sovereignty-rd04-changed-input-gate-a09.test.js`
+- `test/status-sovereignty-rd04-internal-adjudication-a08.test.js`
+- `test/status-sovereignty-rd04-public-implementation-receipts-a07.test.js`
+- `test/status-sovereignty-rd04-snap-route-adjudication-a04.test.py`
+- `test/status-sovereignty-rd04-snap-source-availability-a02.test.js`
+- `test/status-sovereignty-six-gate-first-pass-reconciliation.test.js`
+
+Not deleted, still failing outside the release gate, and unrelated to workflow files: validators that compare the branch diff with `origin/main` or a later ledger state (`validate-status-sovereignty-rd-wave03-rd04-official-source-adjudication.mjs`, `...-state-source-adjudication.mjs`, `validate-status-sovereignty-rd-wave03-rd02-search-census.mjs`), a Python validator that needs environment variables (`...-nd-row-state-reconciliation-v2.py`), and the Playwright browser tests, which need an installed Chromium.
+
+## Verbatim WP2 list (generated against base commit d8392cfb)
+
+~~~~text
 WP2 - pruned process-only validators, tests and npm scripts
 ==========================================================
 Purpose: tell the workflow package which npm scripts and repo paths no longer exist, so
@@ -1322,4 +1390,4 @@ test/scheduled-crawl-admission.test.js
 test/scheduled-crawl-promotion.test.js
 test/scheduled-crawl-resumption.test.js
 test/scheduled-crawl-watchdog.test.js
-
+~~~~
