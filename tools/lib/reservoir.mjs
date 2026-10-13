@@ -22,7 +22,15 @@ export const ORIGIN_KINDS = [
   'derived_from_record',
 ];
 export const HUMAN_ORIGIN_KINDS = ['human_words', 'human_relayed'];
-export const DISPOSITION_STATES = ['open', 'narrowed', 'answered', 'disproved', 'superseded', 'parked', 'retired'];
+// `held` means no disposition has been made: the inquiry is retained as it
+// was found, available for comparison, and nothing about its import decided
+// whether its question still matters.
+export const DISPOSITION_STATES = ['held', 'open', 'narrowed', 'answered', 'disproved', 'superseded', 'parked', 'retired'];
+export const PROMPTING_STATUSES = ['not_located_in_inputs'];
+// Repositories that a project's bare git_path locators refer to. A locator may
+// name its own `repo`; otherwise the row's project decides, so two projects'
+// identically named files never meet by accident.
+export const DEFAULT_REPOS = { 'clifford-number': 'BigBirdReturns/clifford-number' };
 export const EXPLANATION_STATES = ['live', 'narrowed', 'disproved', 'superseded', 'retired'];
 export const DECISION_ACTIONS = ['accept', 'reject', 'merge', 'split', 'downgrade', 'reframe', 'retire'];
 export const REASON_CODES = [
@@ -53,12 +61,10 @@ export const LOCATOR_REQUIRED = {
 };
 export const DEFAULT_PROJECT = 'clifford-number';
 export const RETROSPECTIVE_SOURCE_ID = 'retrospective-2026-10-12';
-export const TIER_MEANING = {
-  A: { label: 'show it', state: 'answered' },
-  B: { label: 'keep and finish', state: 'open' },
-  C: { label: 'park it', state: 'parked' },
-  D: { label: 'let it go', state: 'retired' },
-};
+// What the retrospective's README says each tier meant. These are the
+// retrospective model's recommendations about the work; the import records
+// them as attributed assessments and never turns them into dispositions.
+export const TIER_MEANING = { A: 'show it', B: 'keep and finish', C: 'park it', D: 'let it go' };
 
 const DATE_RE = /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/u;
 const isDate = (value) => typeof value === 'string' && DATE_RE.test(value);
@@ -121,6 +127,28 @@ export function validateInquiry(row, index = 0, errors = []) {
   if (row.prompting_observation !== undefined && row.prompting_observation !== null) {
     if (!nonEmpty(row.prompting_observation.text)) errors.push(`${where}.prompting_observation: text is required`);
     validateOrigin(row.prompting_observation.origin, `${where}.prompting_observation.origin`, errors);
+    if (row.prompting_observation_status !== undefined) errors.push(`${where}: prompting_observation_status cannot accompany a prompting_observation`);
+  } else if (row.prompting_observation_status !== undefined && !PROMPTING_STATUSES.includes(row.prompting_observation_status)) {
+    errors.push(`${where}: prompting_observation_status ${JSON.stringify(row.prompting_observation_status)} is not allowed`);
+  }
+  if (row.assessments !== undefined) {
+    if (!Array.isArray(row.assessments)) errors.push(`${where}: assessments must be an array`);
+    else {
+      const seen = new Set();
+      row.assessments.forEach((assessment, i) => {
+        const at = `${where}.assessments[${i}]`;
+        if (!nonEmpty(assessment.assessment_id)) errors.push(`${at}: assessment_id is required`);
+        else if (seen.has(assessment.assessment_id)) errors.push(`${at}: duplicate assessment_id ${assessment.assessment_id}`);
+        seen.add(assessment.assessment_id);
+        validateOrigin(assessment.by, `${at}.by`, errors);
+        if (!isDate(assessment.at)) errors.push(`${at}: at must be YYYY-MM-DD`);
+        if (!nonEmpty(assessment.rating)) errors.push(`${at}: rating is required`);
+        if (!nonEmpty(assessment.meaning)) errors.push(`${at}: meaning is required`);
+        if (assessment.by && HUMAN_ORIGIN_KINDS.includes(assessment.by.kind) === false && assessment.by.kind === 'derived_from_record') {
+          errors.push(`${at}: an assessment is a judgment and must name who judged, not derived_from_record`);
+        }
+      });
+    }
   }
   if (!Array.isArray(row.competing_explanations)) {
     errors.push(`${where}: competing_explanations must be an array`);
@@ -301,6 +329,8 @@ function baseRow(project, id, question, origin, extra) {
     question,
     question_origin: origin,
     ...(extra.prompting_observation ? { prompting_observation: extra.prompting_observation } : {}),
+    ...(extra.prompting_observation ? {} : extra.prompting_observation_status ? { prompting_observation_status: extra.prompting_observation_status } : {}),
+    ...(extra.assessments ? { assessments: extra.assessments } : {}),
     competing_explanations: extra.competing_explanations || [],
     dispositions: extra.dispositions,
     locators: extra.locators || [],
@@ -359,39 +389,51 @@ export function deriveRetrospective({ root, project, asOfDate }) {
     if (trail.on_main === 'no' && anyPresent) {
       contradictions.push({ kind: 'on_main_no_but_path_present', trail: trail.name, tier: trail.tier, paths: presence.filter((entry) => entry.present).map((entry) => entry.path) });
     }
-    const tier = TIER_MEANING[trail.tier] || { label: trail.tier, state: 'open' };
     const questions = rows.map((row) => row.question).filter(nonEmpty);
     const lastActivity = rows.map((row) => lastDateOf(row.active)).filter(Boolean).sort().pop() || null;
     const id = `retro-2026-10-12:${String(index + 1).padStart(2, '0')}:${slug(trail.name)}`;
-    const origin = { kind: 'retrospective_interpretation', author: 'retrospective tiering model (a judgment, not an outside review)', locator: sourceLocator };
-    const competing = rows
-      .filter((row) => nonEmpty(row.why) || nonEmpty(row.worth))
-      .map((row, i) => ({
-        explanation_id: `why-${i + 1}`,
-        text: [row.worth ? `worth: ${row.worth}` : null, row.why ? `why: ${row.why}` : null].filter(Boolean).join(' '),
-        origin: { kind: 'retrospective_interpretation', author: 'retrospective capture agents', note: `raw trail: ${row.trail}` },
-        status: 'live',
-        evidence_for: [],
-        evidence_against: [],
-      }));
+    const origin = { kind: 'retrospective_interpretation', author: 'retrospective capture agents (question text as the retrospective recorded it)', locator: sourceLocator };
+    const tieringModel = { kind: 'retrospective_interpretation', author: 'retrospective tiering model (a judgment, not an outside review)', locator: sourceLocator };
+    const captureAgents = { kind: 'retrospective_interpretation', author: 'retrospective capture agents', locator: sourceLocator };
+    // The retrospective's ratings are attributed historical judgments about
+    // the work. They are kept for comparison and never become dispositions.
+    const assessments = [
+      {
+        assessment_id: `tier-${trail.tier}`,
+        by: tieringModel,
+        at: provenance.origin.commit_date.slice(0, 10),
+        rating: `tier ${trail.tier}`,
+        meaning: TIER_MEANING[trail.tier] || 'unknown tier',
+        ...(nonEmpty(trail.note) ? { note: trail.note } : {}),
+        ...(nonEmpty(trail.headline) ? { headline: trail.headline } : {}),
+      },
+      ...rows.map((row, i) => ({
+        assessment_id: `raw-${i + 1}`,
+        by: { ...captureAgents, note: `raw trail: ${row.trail}` },
+        at: provenance.origin.commit_date.slice(0, 10),
+        rating: `stage ${row.stage || 'unknown'}; on_main ${String(row.on_main)}; real_sources ${Number(row.real_sources) || 0}`,
+        meaning: [row.worth ? `worth: ${row.worth}` : null, row.why ? `why: ${row.why}` : null, row.risk ? `risk: ${row.risk}` : null].filter(Boolean).join(' ') || 'no stated worth, why or risk',
+        ...(nonEmpty(row.found) ? { found: row.found } : {}),
+      })),
+    ];
     inquiries.push(baseRow(project, id, questions.length ? questions.join(' | ') : trail.headline, origin, {
       recorded_at: asOfDate,
       last_activity: lastActivity,
-      prompting_observation: nonEmpty(trail.headline)
-        ? { text: trail.headline, origin: { kind: 'retrospective_interpretation', author: 'retrospective tiering model', note: 'The headline is what the retrospective found, not what first drew attention; the original reason for looking was not recorded on the trail.' } }
-        : undefined,
-      competing_explanations: competing,
+      // The retrospective headline is what was found later, not what first
+      // drew attention. The original prompt is not in these inputs; recovery
+      // continues through conversations and estate records.
+      prompting_observation_status: 'not_located_in_inputs',
+      assessments,
+      competing_explanations: [],
       dispositions: [{
         at: asOfDate,
-        state: tier.state,
-        by: 'retrospective_interpretation',
-        reason: `Tier ${trail.tier} (${tier.label}). ${trail.note || ''}`.trim(),
+        state: 'held',
+        by: 'derived_from_record',
+        reason: 'Imported from the retrospective. No disposition has been made; the retrospective\'s tier and stage are recorded under assessments as its own judgment.',
         evidence: [sourceLocator],
       }],
       locators: [sourceLocator, ...locators],
-      next_examination: tier.state === 'open' || tier.state === 'parked'
-        ? { what: `Decide whether the ${rows.length} underlying trail${rows.length === 1 ? '' : 's'} still carr${rows.length === 1 ? 'ies' : 'y'} a live question; the retrospective recorded stage(s) ${[...new Set(rows.map((row) => row.stage))].join(', ') || 'unknown'} and ${rows.reduce((sum, row) => sum + (Number(row.real_sources) || 0), 0)} real sources.`, where: locators.filter((locator) => locator.kind !== 'text') }
-        : null,
+      next_examination: null,
       derived: {
         source: RETROSPECTIVE_SOURCE_ID,
         tiered_index: index,
@@ -401,7 +443,6 @@ export function deriveRetrospective({ root, project, asOfDate }) {
         raw_rows_missing: missingRows,
         stages: [...new Set(rows.map((row) => row.stage))],
         real_sources: rows.reduce((sum, row) => sum + (Number(row.real_sources) || 0), 0),
-        risk: rows.map((row) => row.risk).filter(nonEmpty),
         path_presence: presence,
       },
     }));
@@ -528,20 +569,25 @@ export function reconnect(inquiries) {
   // share a path. Rows derived from the same source file already sit
   // together, so pairing them would only restate that file.
   const sourceOf = new Map(inquiries.map((row) => [`${row.project}:${row.inquiry_id}`, row.derived ? `${row.project}/${row.derived.source}` : `${row.project}/canonical/${row.inquiry_id}`]));
+  // Paths are scoped to a repository: the locator's own `repo`, else the
+  // project's default. Two projects meet only when they name the same repo.
   const byPath = new Map();
   for (const row of inquiries) {
     for (const locator of row.locators) {
       if (locator.kind !== 'git_path') continue;
-      const key = locator.path.replace(/\/$/u, '');
+      const scope = locator.repo || DEFAULT_REPOS[row.project] || row.project;
+      const key = `${scope}|${locator.path.replace(/\/$/u, '')}`;
       if (!byPath.has(key)) byPath.set(key, new Set());
       byPath.get(key).add(`${row.project}:${row.inquiry_id}`);
     }
   }
   const pairs = new Map();
   const keys = [...byPath.keys()].sort();
+  const scopeOf = (key) => key.slice(0, key.indexOf('|'));
   for (const a of keys) {
     for (const b of keys) {
       if (a > b) continue;
+      if (scopeOf(a) !== scopeOf(b)) continue;
       if (a !== b && !(b.startsWith(`${a}/`) || a.startsWith(`${b}/`))) continue;
       for (const left of byPath.get(a)) {
         for (const right of byPath.get(b)) {
@@ -577,11 +623,114 @@ function count(rows, keyFn) {
   return Object.fromEntries(Object.entries(out).sort(([a], [b]) => a.localeCompare(b)));
 }
 
-export function buildReservoir({ root = repoRoot, write = true, join = [], outDir = 'build/reservoir' } = {}) {
+// ---------------------------------------------------------------------------
+// Views: a project exposes its own records without adopting the three ledgers
+// ---------------------------------------------------------------------------
+//
+// A view is a JSONL file of rows shaped
+//   { project, record_id, text, question?, locators: [locator], origin?,
+//     as_of?, kind?, prompting?: { text, origin } }
+// Each row becomes a held inquiry that points back at the project's native
+// record through its locators. Nothing is copied out of the project.
+
+export function deriveFromViews({ root, views, asOfDate }) {
+  const inquiries = [];
+  const projects = new Set();
+  const files = [];
+  for (const viewPath of views) {
+    const resolved = path.resolve(root, viewPath);
+    const relative = path.relative(root, resolved) || viewPath;
+    const rows = readJsonlFile(resolved);
+    if (rows.length === 0) throw new Error(`view ${viewPath} holds no rows`);
+    files.push(relative);
+    rows.forEach((row, index) => {
+      const where = `view ${viewPath} row ${index + 1}`;
+      if (!nonEmpty(row.project)) throw new Error(`${where}: project is required`);
+      if (!nonEmpty(row.record_id)) throw new Error(`${where}: record_id is required`);
+      if (!nonEmpty(row.text) && !nonEmpty(row.question)) throw new Error(`${where}: text or question is required`);
+      if (!Array.isArray(row.locators) || row.locators.length === 0) throw new Error(`${where}: at least one locator is required`);
+      const errors = [];
+      row.locators.forEach((locator, i) => validateLocator(locator, `${where}.locators[${i}]`, errors));
+      if (row.origin) validateOrigin(row.origin, `${where}.origin`, errors);
+      if (row.prompting) {
+        if (!nonEmpty(row.prompting.text)) errors.push(`${where}.prompting: text is required`);
+        validateOrigin(row.prompting.origin, `${where}.prompting.origin`, errors);
+      }
+      if (errors.length) throw new Error(errors.join('\n  '));
+      projects.add(row.project);
+      const asOf = isDate(row.as_of) ? row.as_of : asOfDate;
+      inquiries.push(baseRow(row.project, `view:${row.record_id}`, nonEmpty(row.question) ? row.question : row.text, row.origin || derivedOrigin(relative, row.kind || 'view_record'), {
+        recorded_at: asOf,
+        last_activity: asOf,
+        prompting_observation: row.prompting || undefined,
+        prompting_observation_status: row.prompting ? undefined : 'not_located_in_inputs',
+        dispositions: [{ at: asOf, state: 'held', by: 'derived_from_record', reason: `Exposed by ${row.project} through view ${relative}; no disposition made by the join.`, evidence: row.locators }],
+        locators: row.locators,
+        derived: { source: relative, kind: row.kind || 'view_record', record_id: row.record_id, text: row.text || null },
+      }));
+    });
+  }
+  return { inquiries, projects: [...projects].sort(), files };
+}
+
+// ---------------------------------------------------------------------------
+// Inputs and delta: what changed since the previous build, without rebuilding
+// anyone's judgment of unchanged items
+// ---------------------------------------------------------------------------
+
+function sha256File(file) {
+  return crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+}
+
+export function fingerprintInputs(root, relativePaths) {
+  return [...new Set(relativePaths)]
+    .sort()
+    .map((relative) => {
+      const absolute = path.isAbsolute(relative) ? relative : path.join(root, relative);
+      return { path: relative, sha256: fs.existsSync(absolute) ? sha256File(absolute) : null };
+    });
+}
+
+export function computeDelta({ previousManifest, previousRows, manifest, rows }) {
+  if (!previousManifest) {
+    return { schema_version: 'reservoir-delta@1', previous_fingerprint: null, current_fingerprint: manifest.fingerprint, first_build: true, inputs_changed: [], inputs_added: manifest.inputs.map((i) => i.path), inputs_removed: [], inquiries_added: rows.map((r) => `${r.project}:${r.inquiry_id}`), inquiries_removed: [], inquiries_changed: [], reconnections_added: manifest.reconnections.length, reconnections_removed: 0 };
+  }
+  const prevInputs = new Map((previousManifest.inputs || []).map((i) => [i.path, i.sha256]));
+  const curInputs = new Map(manifest.inputs.map((i) => [i.path, i.sha256]));
+  const inputsChanged = [...curInputs].filter(([p, h]) => prevInputs.has(p) && prevInputs.get(p) !== h).map(([p]) => p);
+  const inputsAdded = [...curInputs.keys()].filter((p) => !prevInputs.has(p));
+  const inputsRemoved = [...prevInputs.keys()].filter((p) => !curInputs.has(p));
+  const prevById = new Map((previousRows || []).map((r) => [`${r.project}:${r.inquiry_id}`, JSON.stringify(r)]));
+  const curById = new Map(rows.map((r) => [`${r.project}:${r.inquiry_id}`, JSON.stringify(r)]));
+  const inquiriesAdded = [...curById.keys()].filter((id) => !prevById.has(id));
+  const inquiriesRemoved = [...prevById.keys()].filter((id) => !curById.has(id));
+  const inquiriesChanged = [...curById].filter(([id, json]) => prevById.has(id) && prevById.get(id) !== json).map(([id]) => id);
+  const pairKey = (p) => `${p.a}|${p.b}`;
+  const prevPairs = new Set((previousManifest.reconnections || []).map(pairKey));
+  const curPairs = new Set(manifest.reconnections.map(pairKey));
+  return {
+    schema_version: 'reservoir-delta@1',
+    previous_fingerprint: previousManifest.fingerprint,
+    current_fingerprint: manifest.fingerprint,
+    first_build: false,
+    unchanged: inputsChanged.length + inputsAdded.length + inputsRemoved.length + inquiriesAdded.length + inquiriesRemoved.length + inquiriesChanged.length === 0,
+    inputs_changed: inputsChanged,
+    inputs_added: inputsAdded,
+    inputs_removed: inputsRemoved,
+    inquiries_added: inquiriesAdded,
+    inquiries_removed: inquiriesRemoved,
+    inquiries_changed: inquiriesChanged,
+    reconnections_added: [...curPairs].filter((k) => !prevPairs.has(k)).length,
+    reconnections_removed: [...prevPairs].filter((k) => !curPairs.has(k)).length,
+  };
+}
+
+export function buildReservoir({ root = repoRoot, write = true, join = [], views = [], outDir = 'build/reservoir' } = {}) {
   const clock = readBuildClock({ root });
   const asOfDate = clock.timestamp.slice(0, 10);
   const projects = [];
   const canonical = { inquiries: [], decisions: [], disagreements: [] };
+  const inputPaths = ['data/reservoir/inquiries.jsonl', 'data/reservoir/disagreements.jsonl', 'data/decisions/prune-decisions.jsonl', 'data/project/build-clock.json'];
 
   const ownDir = path.join(root, 'data/reservoir');
   const own = loadCanonical(ownDir, { decisionsDir: path.join(root, 'data/decisions') });
@@ -596,14 +745,23 @@ export function buildReservoir({ root = repoRoot, write = true, join = [], outDi
     if (names.has(DEFAULT_PROJECT)) throw new Error(`joined reservoir at ${joinDir} must not use project ${DEFAULT_PROJECT}`);
     for (const name of names) projects.push({ project: name, dir: joinDir, joined: true });
     for (const kind of Object.keys(canonical)) canonical[kind].push(...other[kind]);
+    for (const file of ['inquiries.jsonl', 'disagreements.jsonl', 'decisions/prune-decisions.jsonl']) inputPaths.push(path.join(resolved, file));
   }
 
   const errors = validateCanonical(canonical);
   if (errors.length) throw new Error(`reservoir canonical rows invalid:\n  ${errors.join('\n  ')}`);
 
   const retrospective = deriveRetrospective({ root, project: DEFAULT_PROJECT, asOfDate });
+  if (retrospective.provenance) {
+    inputPaths.push(`data/reservoir/sources/${RETROSPECTIVE_SOURCE_ID}/provenance.json`);
+    for (const file of retrospective.provenance.files) inputPaths.push(`data/reservoir/sources/${RETROSPECTIVE_SOURCE_ID}/${file.path}`);
+  }
   const main = deriveFromMain({ root, project: DEFAULT_PROJECT, asOfDate });
-  const derived = [...retrospective.inquiries, ...main.inquiries];
+  inputPaths.push(...main.sources);
+  const viewed = deriveFromViews({ root, views, asOfDate });
+  for (const name of viewed.projects) if (!projects.some((p) => p.project === name)) projects.push({ project: name, dir: null, joined: true });
+  inputPaths.push(...viewed.files);
+  const derived = [...retrospective.inquiries, ...main.inquiries, ...viewed.inquiries];
   const derivedErrors = [];
   derived.forEach((row, i) => validateInquiry(row, i, derivedErrors));
   if (derivedErrors.length) throw new Error(`reservoir derived rows invalid:\n  ${derivedErrors.join('\n  ')}`);
@@ -618,7 +776,9 @@ export function buildReservoir({ root = repoRoot, write = true, join = [], outDi
 
   const reconnections = reconnect(all);
   const open = all.filter((row) => ['open', 'narrowed', 'parked'].includes(currentState(row)));
+  const held = all.filter((row) => currentState(row) === 'held');
   const withoutPrompting = all.filter((row) => !row.prompting_observation);
+  const assessmentsByRating = count(all.flatMap((row) => (row.assessments || []).filter((a) => a.assessment_id.startsWith('tier-'))), (a) => a.rating);
   const disproved = all.flatMap((row) => row.competing_explanations.filter((e) => e.status === 'disproved').map((e) => ({ inquiry_id: row.inquiry_id, explanation_id: e.explanation_id, evidence_against: e.evidence_against.length })));
   const narrowed = all.flatMap((row) => row.competing_explanations.filter((e) => e.status === 'narrowed').map((e) => ({ inquiry_id: row.inquiry_id, explanation_id: e.explanation_id, narrowed_by: e.narrowed_by })));
   const nextExaminations = all.filter((row) => row.next_examination).map((row) => ({ inquiry_id: row.inquiry_id, project: row.project, state: currentState(row), what: row.next_examination.what }));
@@ -639,7 +799,9 @@ export function buildReservoir({ root = repoRoot, write = true, join = [], outDi
       canonical: ['data/reservoir/inquiries.jsonl', 'data/reservoir/disagreements.jsonl', 'data/decisions/prune-decisions.jsonl'],
       retrospective: retrospective.provenance ? { source_id: retrospective.provenance.source_id, commit: retrospective.provenance.origin.commit, branch: retrospective.provenance.origin.branch, files: retrospective.provenance.files.map((file) => ({ path: file.path, sha256: file.sha256 || null, rows: file.rows || null })) } : null,
       derived_from_main: main.sources,
+      views: viewed.files,
     },
+    inputs: fingerprintInputs(root, inputPaths),
     counts: {
       projects: projects.length,
       canonical_inquiries: canonical.inquiries.length,
@@ -647,10 +809,13 @@ export function buildReservoir({ root = repoRoot, write = true, join = [], outDi
       disagreements: canonical.disagreements.length,
       retrospective_inquiries: retrospective.inquiries.length,
       main_derived_inquiries: main.inquiries.length,
+      view_inquiries: viewed.inquiries.length,
       total_inquiries: all.length,
       by_state: count(all, currentState),
       by_question_origin: count(all, (row) => row.question_origin.kind),
       open_or_parked: open.length,
+      held: held.length,
+      retrospective_assessments_by_tier: assessmentsByRating,
       without_prompting_observation: withoutPrompting.length,
       explanations_disproved_with_evidence: disproved.length,
       explanations_narrowed: narrowed.length,
@@ -662,7 +827,7 @@ export function buildReservoir({ root = repoRoot, write = true, join = [], outDi
     },
     attention_lost: {
       inquiries_without_prompting_observation: withoutPrompting.map((row) => row.inquiry_id),
-      note: 'Rows derived from records that kept a question but not the reason for looking. The reason can only be restored from the owner or from a record that holds it; the build does not invent one.',
+      note: 'Rows whose original prompt is not located in these inputs: records that kept a question but not the reason for looking, and retrospective trails whose headline is a later finding, not the original prompt. Recovery continues through conversations and estate records; the build does not invent a reason.',
     },
     contradictions: retrospective.contradictions,
     reconnections,
@@ -680,25 +845,136 @@ export function buildReservoir({ root = repoRoot, write = true, join = [], outDi
     fingerprint,
   };
 
-  const report = renderReport(manifest, canonical);
+  const target = path.join(root, outDir);
+  const previousManifestPath = path.join(target, 'manifest.json');
+  const previousRowsPath = path.join(target, 'inquiries.compiled.jsonl');
+  const previousManifest = fs.existsSync(previousManifestPath) ? readJsonFile(previousManifestPath) : null;
+  const previousRows = fs.existsSync(previousRowsPath) ? readJsonlFile(previousRowsPath) : null;
+  const delta = computeDelta({ previousManifest, previousRows, manifest, rows: all });
+  const report = renderReport(manifest, canonical, delta);
 
   if (write) {
-    const target = path.join(root, outDir);
     fs.mkdirSync(target, { recursive: true });
     fs.writeFileSync(path.join(target, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
     fs.writeFileSync(path.join(target, 'inquiries.compiled.jsonl'), compiledJsonl);
     fs.writeFileSync(path.join(target, 'circulation-report.md'), report);
+    fs.writeFileSync(path.join(target, 'delta.json'), `${JSON.stringify(delta, null, 2)}\n`);
   }
-  return { manifest, inquiries: all, canonical, report };
+  return { manifest, inquiries: all, canonical, report, delta };
 }
 
-function renderReport(manifest, canonical) {
+// ---------------------------------------------------------------------------
+// Open one inquiry: what drew attention, what it touched, what supports or
+// challenges its explanations, and what to return to its history
+// ---------------------------------------------------------------------------
+
+export function openInquiry({ inquiries, manifest, canonical }, requestedId) {
+  const key = requestedId.includes(':') && inquiries.some((r) => `${r.project}:${r.inquiry_id}` === requestedId) ? requestedId : null;
+  const row = key ? inquiries.find((r) => `${r.project}:${r.inquiry_id}` === key) : inquiries.find((r) => r.inquiry_id === requestedId);
+  if (!row) return null;
+  const id = `${row.project}:${row.inquiry_id}`;
+  const byId = new Map(inquiries.map((r) => [`${r.project}:${r.inquiry_id}`, r]));
+  const resolve = (ref) => (ref.includes(':') ? ref : `${row.project}:${ref}`);
+  const related = row.related_inquiry_ids.map(resolve).map((ref) => byId.get(ref)).filter(Boolean).map((r) => ({ id: `${r.project}:${r.inquiry_id}`, question: r.question, state: currentState(r) }));
+  const incoming = inquiries.filter((r) => r !== row && r.related_inquiry_ids.map((ref) => (ref.includes(':') ? ref : `${r.project}:${ref}`)).includes(id)).map((r) => ({ id: `${r.project}:${r.inquiry_id}`, question: r.question, state: currentState(r) }));
+  const reconnections = manifest.reconnections.filter((p) => p.a === id || p.b === id).map((p) => ({ id: p.a === id ? p.b : p.a, shared_paths: p.shared_paths, question: (byId.get(p.a === id ? p.b : p.a) || {}).question || null }));
+  const decisions = canonical.decisions.filter((d) => d.inquiry_ids.map((ref) => (ref.includes(':') ? ref : `${d.project}:${ref}`)).includes(id));
+  const disagreements = canonical.disagreements.filter((d) => d.inquiry_ids.map((ref) => (ref.includes(':') ? ref : `${d.project}:${ref}`)).includes(id));
+  return {
+    id,
+    question: row.question,
+    question_origin: row.question_origin,
+    prompting: row.prompting_observation ? { status: 'recorded', ...row.prompting_observation } : { status: row.prompting_observation_status || 'not_recorded', note: 'The original prompt is not in the reservoir inputs. Recovery continues through conversations and estate records.' },
+    assessments: row.assessments || [],
+    explanations: row.competing_explanations.map((e) => ({ id: e.explanation_id, status: e.status, text: e.text, origin: e.origin.kind, supported_by: e.evidence_for, challenged_by: e.evidence_against, ...(e.narrowed_by ? { narrowed_by: e.narrowed_by } : {}) })),
+    history: row.dispositions,
+    current_state: currentState(row),
+    touches: row.locators,
+    related,
+    incoming,
+    reconnections,
+    decisions: decisions.map((d) => ({ id: d.decision_id, action: d.action, reason_code: d.reason_code, decided_at: d.decided_at, verified: d.verified, reason: d.reason })),
+    disagreements: disagreements.map((d) => ({ id: d.disagreement_id, current_disposition: d.current_disposition, missing_distinction: d.missing_distinction })),
+    next_examination: row.next_examination,
+    derived: row.derived || null,
+    how_to_return_a_result: row.derived
+      ? `This row is derived from ${row.derived.source}. Return a result by adding a canonical inquiry in data/reservoir/inquiries.jsonl whose related_inquiry_ids names ${id}, or by correcting the source record.`
+      : `Append a disposition or competing explanation to ${row.inquiry_id} in data/reservoir/inquiries.jsonl, citing evidence locators.`,
+  };
+}
+
+export function renderOpenInquiry(view) {
+  const lines = [];
+  lines.push(`# ${view.id}`);
+  lines.push('');
+  lines.push(`Question (${view.question_origin.kind}, ${view.question_origin.author}):`);
+  lines.push(`  ${view.question}`);
+  lines.push('');
+  lines.push(`What drew attention: ${view.prompting.status}`);
+  if (view.prompting.text) lines.push(`  "${view.prompting.text}" (${view.prompting.origin.kind}, ${view.prompting.origin.author})`);
+  else lines.push(`  ${view.prompting.note}`);
+  lines.push('');
+  lines.push(`Current state: ${view.current_state}`);
+  for (const d of view.history) lines.push(`  ${d.at} ${d.state} (${d.by}): ${d.reason}`);
+  if (view.assessments.length) {
+    lines.push('');
+    lines.push('Assessments (attributed judgments, not dispositions):');
+    for (const a of view.assessments) lines.push(`  ${a.at} ${a.rating} = ${a.meaning} [${a.by.author}]${a.note ? ` ${a.note}` : ''}`);
+  }
+  lines.push('');
+  lines.push(`Competing explanations: ${view.explanations.length}`);
+  for (const e of view.explanations) lines.push(`  ${e.id} [${e.status}] ${e.text}\n    supported by ${e.supported_by.length}, challenged by ${e.challenged_by.length}${e.narrowed_by ? `\n    narrowed by: ${e.narrowed_by}` : ''}`);
+  lines.push('');
+  lines.push(`Touches: ${view.touches.length} locator(s)`);
+  for (const l of view.touches) lines.push(`  ${l.kind} ${l.repo ? `${l.repo} ` : ''}${l.path || l.branch || l.commit || l.url || l.name || (l.number !== undefined ? `#${l.number}` : '') || l.text || ''}${l.host ? ` on ${l.host}` : ''}${l.verified === false ? ' (unverified)' : ''}${l.note ? ` : ${l.note}` : ''}`);
+  if (view.related.length || view.incoming.length || view.reconnections.length) {
+    lines.push('');
+    lines.push('Connected inquiries:');
+    for (const r of view.related) lines.push(`  related -> ${r.id} [${r.state}] ${r.question}`);
+    for (const r of view.incoming) lines.push(`  related <- ${r.id} [${r.state}] ${r.question}`);
+    for (const r of view.reconnections) lines.push(`  shares ${r.shared_paths.join(', ')} with ${r.id}${r.question ? `: ${r.question}` : ''}`);
+  }
+  if (view.decisions.length) {
+    lines.push('');
+    lines.push('Decisions:');
+    for (const d of view.decisions) lines.push(`  ${d.decided_at} ${d.action} (${d.reason_code}${d.verified ? '' : ', unverified'}): ${d.reason}`);
+  }
+  if (view.disagreements.length) {
+    lines.push('');
+    lines.push('Disagreements:');
+    for (const d of view.disagreements) lines.push(`  ${d.id} [${d.current_disposition}] missing distinction: ${d.missing_distinction}`);
+  }
+  lines.push('');
+  lines.push(`Next examination: ${view.next_examination ? view.next_examination.what : 'none recorded'}`);
+  lines.push('');
+  lines.push(`To return a result: ${view.how_to_return_a_result}`);
+  return `${lines.join('\n')}\n`;
+}
+
+function renderReport(manifest, canonical, delta) {
   const c = manifest.counts;
   const lines = [];
   lines.push('# Reservoir circulation report');
   lines.push('');
   lines.push(`Built at ${manifest.as_of} (build clock, not an evidence date). Fingerprint ${manifest.fingerprint}.`);
   lines.push('');
+  if (delta) {
+    lines.push('## Changed since the previous build');
+    lines.push('');
+    if (delta.first_build) lines.push('First build in this output directory; every input and inquiry is new.');
+    else if (delta.unchanged) lines.push(`No input changed since fingerprint ${delta.previous_fingerprint}. Nothing needs reconsidering.`);
+    else {
+      lines.push(`Previous fingerprint ${delta.previous_fingerprint}.`);
+      for (const p of delta.inputs_changed) lines.push(`- input changed: ${p}`);
+      for (const p of delta.inputs_added) lines.push(`- input added: ${p}`);
+      for (const p of delta.inputs_removed) lines.push(`- input removed: ${p}`);
+      for (const id of delta.inquiries_changed) lines.push(`- inquiry changed: ${id}`);
+      for (const id of delta.inquiries_added) lines.push(`- inquiry added: ${id}`);
+      for (const id of delta.inquiries_removed) lines.push(`- inquiry removed: ${id}`);
+      lines.push(`- reconnections added ${delta.reconnections_added}, removed ${delta.reconnections_removed}`);
+    }
+    lines.push('');
+  }
   lines.push('Nothing in this report is a claim, hop, graph edge or publication state. It shows what the body of inquiry holds, what is still open, what was disproved and with what, and what to examine next.');
   lines.push('');
   lines.push('## Holdings');
@@ -709,7 +985,9 @@ function renderReport(manifest, canonical) {
   lines.push(`| Canonical inquiries (hand-maintained) | ${c.canonical_inquiries} |`);
   lines.push(`| Inquiries circulated in from the retrospective's 79 tiered trails | ${c.retrospective_inquiries} |`);
   lines.push(`| Inquiries derived from question-bearing records on main | ${c.main_derived_inquiries} |`);
+  lines.push(`| Inquiries exposed by other projects' views | ${c.view_inquiries} |`);
   lines.push(`| Total inquiries | ${c.total_inquiries} |`);
+  lines.push(`| Held (imported, no disposition made) | ${c.held} |`);
   lines.push(`| Open, narrowed or parked | ${c.open_or_parked} |`);
   lines.push(`| Prune decisions | ${c.decisions} |`);
   lines.push(`| Model disagreements | ${c.disagreements} |`);
@@ -726,6 +1004,12 @@ function renderReport(manifest, canonical) {
   lines.push('### By origin of the question');
   lines.push('');
   for (const [kind, n] of Object.entries(c.by_question_origin)) lines.push(`- ${kind}: ${n}`);
+  lines.push('');
+  lines.push('### Retrospective ratings, kept as attributed judgments');
+  lines.push('');
+  lines.push('The retrospective\'s tiers say what its model recommended for the work. They are recorded on each imported inquiry under assessments and do not decide whether the question still matters.');
+  lines.push('');
+  for (const [rating, n] of Object.entries(c.retrospective_assessments_by_tier)) lines.push(`- ${rating}: ${n}`);
   lines.push('');
   lines.push('## Contradictions');
   lines.push('');

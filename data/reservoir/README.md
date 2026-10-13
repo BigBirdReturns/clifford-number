@@ -26,12 +26,20 @@ taught.
 Nothing here creates a claim, hop, graph edge, score or publication state.
 Every row carries `graph_effect: none`.
 
+Imported rows (the retrospective's trails, other projects' views) are
+`held`: no disposition has been made, their ratings are kept under
+`assessments` as attributed judgments, and importing them creates no review
+chore. A later headline is never recorded as the original prompt; the row
+says `prompting_observation_status: not_located_in_inputs` instead.
+
 Commands:
 
 ```bash
-npm run build:reservoir
+npm run build:reservoir                       # build/reservoir/{manifest.json,inquiries.compiled.jsonl,circulation-report.md,delta.json}
 npm run validate:reservoir
 node test/reservoir.test.js
+node tools/reservoir-open.mjs <inquiry_id>   # one inquiry: prompt, history, touches, support and challenge, how to return a result
+node tools/build-reservoir.mjs --view <other-project>/reservoir-view.jsonl --join <other-project>/data/reservoir
 ```
 
 See `docs/methods/reservoir.md` for the model and for how another project on

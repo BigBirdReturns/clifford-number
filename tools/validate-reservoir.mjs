@@ -31,11 +31,24 @@ try {
     }
   }
 
+  // Import discipline: nothing imported from the retrospective or a view
+  // acquires a disposition or a review chore merely by being imported, and
+  // a later headline never stands in for the original prompt.
+  for (const row of built.inquiries) {
+    const imported = row.derived && (row.derived.source === 'retrospective-2026-10-12' || row.derived.kind === 'view_record');
+    if (!imported) continue;
+    const state = row.dispositions[row.dispositions.length - 1].state;
+    if (state !== 'held') throw new Error(`${row.inquiry_id}: imported rows stay held, found ${state}`);
+    if (row.next_examination) throw new Error(`${row.inquiry_id}: an import must not generate a review chore`);
+    if (row.derived.source === 'retrospective-2026-10-12' && row.prompting_observation) throw new Error(`${row.inquiry_id}: a retrospective headline is not a prompting observation`);
+    if (row.derived.source === 'retrospective-2026-10-12' && !(row.assessments || []).some((a) => a.assessment_id.startsWith('tier-'))) throw new Error(`${row.inquiry_id}: the retrospective tier must be kept as an attributed assessment`);
+  }
+
   const c = built.manifest.counts;
   if (c.retrospective_inquiries !== 79) throw new Error(`expected 79 retrospective inquiries, found ${c.retrospective_inquiries}`);
   if (built.manifest.boundaries.graph_effect !== 'none') throw new Error('graph_effect must stay none');
 
-  console.log(`validate-reservoir: OK (${c.total_inquiries} inquiries, ${c.decisions} decisions, ${c.disagreements} disagreements, ${c.contradictions} contradictions, ${c.without_prompting_observation} without a recorded reason for looking)`);
+  console.log(`validate-reservoir: OK (${c.total_inquiries} inquiries, ${c.held} held, ${c.decisions} decisions, ${c.disagreements} disagreements, ${c.contradictions} contradictions, ${c.without_prompting_observation} whose original prompt is not located in these inputs)`);
 } catch (error) {
   console.error(`validate-reservoir failed: ${error.message}`);
   process.exit(1);

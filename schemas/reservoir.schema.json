@@ -63,12 +63,27 @@
       "required": ["at", "state", "by", "reason", "evidence"],
       "properties": {
         "at": { "$ref": "#/$defs/date" },
-        "state": { "type": "string", "enum": ["open", "narrowed", "answered", "disproved", "superseded", "parked", "retired"] },
+        "state": { "type": "string", "enum": ["held", "open", "narrowed", "answered", "disproved", "superseded", "parked", "retired"] },
         "by": { "$ref": "#/$defs/origin_kind" },
         "reason": { "type": "string", "minLength": 1 },
         "evidence": { "type": "array", "items": { "$ref": "#/$defs/evidence" } }
       },
-      "description": "Dispositions are a history; the last entry is current. disproved and superseded need at least one evidence entry."
+      "description": "Dispositions are a history; the last entry is current. held means no disposition has been made: the inquiry is retained as found and available for comparison. disproved and superseded need at least one evidence entry."
+    },
+    "assessment": {
+      "type": "object",
+      "required": ["assessment_id", "by", "at", "rating", "meaning"],
+      "properties": {
+        "assessment_id": { "type": "string", "minLength": 1 },
+        "by": { "$ref": "#/$defs/origin" },
+        "at": { "$ref": "#/$defs/date" },
+        "rating": { "type": "string", "minLength": 1 },
+        "meaning": { "type": "string", "minLength": 1 },
+        "note": { "type": "string" },
+        "headline": { "type": "string" },
+        "found": { "type": "string" }
+      },
+      "description": "An attributed historical judgment about the work, such as a retrospective tier. It is kept for comparison and never becomes a disposition; `by` names who judged and cannot be derived_from_record."
     },
     "inquiry": {
       "type": "object",
@@ -87,6 +102,12 @@
           "properties": { "text": { "type": "string", "minLength": 1 }, "origin": { "$ref": "#/$defs/origin" } },
           "description": "What drew attention, in the words of whoever recorded it. Absent on rows derived from records that never kept it; the build counts those as attention lost."
         },
+        "prompting_observation_status": {
+          "type": "string",
+          "enum": ["not_located_in_inputs"],
+          "description": "Set instead of prompting_observation when the original prompt is not in the reservoir's inputs. A later headline or finding never stands in for it; recovery continues through conversations and estate records."
+        },
+        "assessments": { "type": "array", "items": { "$ref": "#/$defs/assessment" } },
         "competing_explanations": { "type": "array", "items": { "$ref": "#/$defs/competing_explanation" } },
         "dispositions": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/disposition" } },
         "locators": { "type": "array", "items": { "$ref": "#/$defs/locator" } },

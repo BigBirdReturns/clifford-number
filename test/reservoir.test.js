@@ -5,7 +5,10 @@ import path from 'node:path';
 import { readJson } from '../tools/lib/ledger.mjs';
 import {
   buildReservoir,
+  computeDelta,
+  openInquiry,
   parseWhere,
+  renderOpenInquiry,
   validateInquiry,
   validateDecision,
   validateDisagreement,
@@ -27,14 +30,21 @@ const compiled = fs.readFileSync('build/reservoir/inquiries.compiled.jsonl', 'ut
 assert.equal(compiled.length, first.manifest.counts.total_inquiries);
 assert.equal(first.manifest.counts.total_inquiries, first.manifest.counts.canonical_inquiries + first.manifest.counts.retrospective_inquiries + first.manifest.counts.main_derived_inquiries);
 
-// 2. The retrospective's 79 tiered trails circulate in, with provenance.
+// 2. The retrospective's 79 tiered trails circulate in, with provenance, and
+//    its ratings stay attributed judgments: no disposition, no review chore,
+//    no headline posing as the original prompt.
 assert.equal(first.manifest.counts.retrospective_inquiries, 79);
 assert.equal(first.manifest.sources.retrospective.commit, '8d275d4b5aef8c27ff4d624b6814cc024253af99');
-const tiers = compiled.filter((row) => row.derived && row.derived.source === 'retrospective-2026-10-12').reduce((acc, row) => ({ ...acc, [row.derived.tier]: (acc[row.derived.tier] || 0) + 1 }), {});
-assert.deepEqual(tiers, { A: 17, B: 25, C: 26, D: 11 });
-const retired = compiled.filter((row) => row.derived && row.derived.tier === 'D');
-assert.ok(retired.every((row) => row.dispositions.at(-1).state === 'retired'), 'tier D trails are retired, not erased');
-assert.ok(retired.every((row) => row.question.length > 0), 'a retired trail keeps its question');
+const retro = compiled.filter((row) => row.derived && row.derived.source === 'retrospective-2026-10-12');
+assert.deepEqual(first.manifest.counts.retrospective_assessments_by_tier, { 'tier A': 17, 'tier B': 25, 'tier C': 26, 'tier D': 11 });
+assert.ok(retro.every((row) => row.dispositions.at(-1).state === 'held'), 'imported trails are held, whatever their tier');
+assert.ok(retro.every((row) => row.next_examination === null), 'importing a trail creates no review chore');
+assert.ok(retro.every((row) => !row.prompting_observation && row.prompting_observation_status === 'not_located_in_inputs'), 'a later headline is not the original prompt');
+assert.ok(retro.every((row) => row.assessments.some((a) => a.assessment_id === `tier-${row.derived.tier}` && a.by.kind === 'retrospective_interpretation')), 'the tier is kept as an attributed assessment');
+const letGo = retro.filter((row) => row.derived.tier === 'D');
+assert.equal(letGo.length, 11);
+assert.ok(letGo.every((row) => row.question.length > 0 && row.assessments[0].meaning === 'let it go'), 'a trail the retrospective let go keeps its question and the recommendation');
+assert.ok(first.manifest.counts.without_prompting_observation >= 79, 'imported trails count as prompt not located');
 
 // 3. Derived rows never carry the owner's words, and say what they derive from.
 for (const row of compiled) {
@@ -82,6 +92,35 @@ assert.deepEqual(parseWhere('branch diagnostic/electric-twin-2026-sh01-form-cust
 assert.deepEqual(parseWhere('data/ledger/'), { kind: 'git_path', path: 'data/ledger/' });
 assert.equal(parseWhere('somewhere in a conversation').kind, 'text');
 
+// 8b. Opening an inquiry recovers its prompt, history, touches, connections and how to return a result.
+const opened = openInquiry(first, 'inq-desktop-relay-slowdown-2026-10-12');
+assert.equal(opened.prompting.status, 'recorded');
+assert.equal(opened.prompting.origin.kind, 'human_words');
+assert.ok(opened.explanations.some((e) => e.status === 'narrowed' && e.challenged_by.length > 0));
+assert.ok(opened.related.some((r) => r.id === 'clifford-number:inq-estate-circulation-objective'));
+assert.ok(opened.incoming.some((r) => r.id === 'clifford-number:inq-estate-circulation-objective'));
+const openedRetro = openInquiry(first, retro[0].inquiry_id);
+assert.equal(openedRetro.prompting.status, 'not_located_in_inputs');
+assert.ok(openedRetro.assessments.length >= 1);
+assert.ok(renderOpenInquiry(openedRetro).includes('attributed judgments'));
+assert.equal(openInquiry(first, 'no-such-inquiry'), null);
+
+// 8c. A delta between builds names changed inputs and inquiries instead of asking for everything again.
+const rebuilt = buildReservoir();
+assert.equal(rebuilt.delta.first_build, false);
+assert.equal(rebuilt.delta.unchanged, true);
+assert.equal(rebuilt.delta.previous_fingerprint, first.manifest.fingerprint);
+assert.ok(first.manifest.inputs.some((i) => i.path === 'data/reservoir/inquiries.jsonl' && /^[0-9a-f]{64}$/u.test(i.sha256)));
+const deltaFile = readJson('build/reservoir/delta.json');
+assert.equal(deltaFile.current_fingerprint, rebuilt.manifest.fingerprint);
+const fakePrev = { ...first.manifest, fingerprint: 'prev', inputs: first.manifest.inputs.map((i, n) => (n === 0 ? { ...i, sha256: 'x' } : i)), reconnections: [] };
+const fakeRows = first.inquiries.slice(1).map((r, n) => (n === 0 ? { ...r, question: 'changed' } : r));
+const simulated = computeDelta({ previousManifest: fakePrev, previousRows: fakeRows, manifest: first.manifest, rows: first.inquiries });
+assert.deepEqual(simulated.inputs_changed, [first.manifest.inputs[0].path]);
+assert.equal(simulated.inquiries_added.length, 1);
+assert.equal(simulated.inquiries_changed.length, 1);
+assert.equal(simulated.reconnections_added, first.manifest.reconnections.length);
+
 // 9. Estate-wide join: another project's reservoir is indexed without being copied.
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'reservoir-join-'));
 fs.mkdirSync(path.join(tmp, 'decisions'));
@@ -107,6 +146,34 @@ assert.ok(joined.inquiries.some((row) => row.project === 'estate-tooling' && row
 const badOther = { ...other, project: 'clifford-number' };
 fs.writeFileSync(path.join(tmp, 'inquiries.jsonl'), `${JSON.stringify(badOther)}\n`);
 assert.throws(() => buildReservoir({ write: false, join: [tmp] }), /must not use project clifford-number/);
+
+// 10. Reconnection is scoped by repository: another project's identically
+//     named file does not meet ours unless it names our repository.
+const sameName = { ...other, inquiry_id: 'inq-same-name', locators: [{ kind: 'git_path', path: 'gametrails/data.json' }], related_inquiry_ids: [] };
+fs.writeFileSync(path.join(tmp, 'inquiries.jsonl'), `${JSON.stringify(sameName)}\n`);
+const unscoped = buildReservoir({ write: false, join: [tmp] });
+assert.ok(!unscoped.manifest.reconnections.some((p) => p.a === 'estate-tooling:inq-same-name' || p.b === 'estate-tooling:inq-same-name'), 'a bare path in another project does not reconnect');
+const explicit = { ...sameName, locators: [{ kind: 'git_path', repo: 'BigBirdReturns/clifford-number', path: 'gametrails/data.json' }] };
+fs.writeFileSync(path.join(tmp, 'inquiries.jsonl'), `${JSON.stringify(explicit)}\n`);
+const scoped = buildReservoir({ write: false, join: [tmp] });
+assert.ok(scoped.manifest.reconnections.some((p) => p.a === 'estate-tooling:inq-same-name' || p.b === 'estate-tooling:inq-same-name'), 'an explicit reference to our repository reconnects across projects');
+
+// 11. A view exposes another project's native records as held inquiries without a ledger migration.
+const viewPath = path.join(tmp, 'estate-view.jsonl');
+fs.writeFileSync(viewPath, [
+  JSON.stringify({ project: 'estate-tooling', record_id: 'peer-registry', text: 'Which host owns each estate resource, per estate_peer_registry.json?', locators: [{ kind: 'estate_path', host: 'octo-n01', path: 'D:\\Projects\\Tooling\\Estate\\main\\estate_peer_registry.json' }], as_of: '2026-09-09' }),
+  JSON.stringify({ project: 'estate-tooling', record_id: 'teardown-status', question: 'Is W01 ready to power off?', text: 'ESTATE STATUS: HOLD', locators: [{ kind: 'estate_path', host: 'octo-w01', path: 'D:\\ESTATE-STATUS.txt' }], prompting: { text: 'READY markers must come from receipts, never by hand.', origin: { kind: 'human_relayed', author: 'D:\\README.md' } } }),
+].join('\n') + '\n');
+const viewed = buildReservoir({ write: false, views: [viewPath] });
+assert.equal(viewed.manifest.counts.view_inquiries, 2);
+assert.ok(viewed.manifest.projects.some((p) => p.project === 'estate-tooling'));
+const viewRows = viewed.inquiries.filter((r) => r.derived && r.derived.kind === 'view_record');
+assert.ok(viewRows.every((r) => r.dispositions.at(-1).state === 'held' && r.next_examination === null));
+assert.equal(viewRows.find((r) => r.inquiry_id === 'view:peer-registry').prompting_observation_status, 'not_located_in_inputs');
+assert.equal(viewRows.find((r) => r.inquiry_id === 'view:teardown-status').prompting_observation.origin.kind, 'human_relayed');
+assert.ok(viewed.manifest.inputs.some((i) => i.path.endsWith('estate-view.jsonl')));
+fs.writeFileSync(viewPath, `${JSON.stringify({ project: 'estate-tooling', record_id: 'bad', text: 'no locators', locators: [] })}\n`);
+assert.throws(() => buildReservoir({ write: false, views: [viewPath] }), /at least one locator/);
 fs.rmSync(tmp, { recursive: true, force: true });
 
 console.log('reservoir.test: OK');
