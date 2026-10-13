@@ -673,7 +673,7 @@ export function deriveFromViews({ root, views, asOfDate }) {
   const files = [];
   for (const viewPath of views) {
     const resolved = path.resolve(root, viewPath);
-    const relative = path.relative(root, resolved) || viewPath;
+    const relative = (path.relative(root, resolved) || viewPath).replace(/\\/gu, '/');
     const rows = readJsonlFile(resolved);
     if (rows.length === 0) throw new Error(`view ${viewPath} holds no rows`);
     files.push(relative);
@@ -700,6 +700,7 @@ export function deriveFromViews({ root, views, asOfDate }) {
         prompting_observation_status: row.prompting ? undefined : 'not_located_in_inputs',
         dispositions: [{ at: asOf, state: 'held', by: 'derived_from_record', reason: `Exposed by ${row.project} through view ${relative}; no disposition made by the join.`, evidence: row.locators }],
         locators: row.locators,
+        related_inquiry_ids: row.related_inquiry_ids || [],
         derived: { source: relative, kind: row.kind || 'view_record', record_id: row.record_id, text: row.text || null },
       }));
     });

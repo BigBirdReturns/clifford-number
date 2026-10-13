@@ -240,3 +240,12 @@ The reservoir cannot create a claim, hop, graph edge, score, allegation,
 causal conclusion or publication approval. It records attention and its
 corrections so that the next investigation starts from the accumulated
 history rather than from the first guess.
+
+
+## Local estate operation
+
+`python -B tools/serve-reservoir.py --estate <project-estate-root> --state <durable-private-state> --port 8877 --open` serves the existing reservoir page on loopback with native collection search, source inspection and a result-return form. The estate registry selects canonical project roots; real checkouts in its declared wings supplement it. Sources remain in place. The catalog indexes working-tree paths and text prefixes, plus textual session/notes records, without requiring projects to adopt the reservoir ledgers. Text search covers the first 16 KiB; opening a source reads up to 256 KiB and identifies whether that is an excerpt. Media and benchmark payloads retain their native custody rather than being relabelled as inquiries. Unmounted or unenumerated holdings are outside this pass.
+
+The source reader and interactive circulation run separately. Native readback enters the existing `--view` build; returned observations retain their origin, sources and parent inquiry. Result writes use a separate durable history database so a long acquisition cannot hold their write lock. Stable request ids prevent a lost response from duplicating a returned result. `returned-results.jsonl` exposes that history without altering the original inquiry or source. Each completed page generation keeps its input delta and the previous generation remains available if a build fails.
+
+While this local process runs, it checks known source metadata periodically and discovers new files through later passes. These checks trigger readback; they are not full cryptographic audits or new research findings. The page polls for completed generations and retains unsaved notes instead of replacing them. There is no new GitHub schedule, external collection job, publication or arbitrary-command endpoint. Private catalog/history state stays outside Git and the public artifact.

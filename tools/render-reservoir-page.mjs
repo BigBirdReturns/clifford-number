@@ -54,7 +54,7 @@ const data = {
 };
 const json = JSON.stringify(data).replace(/<\//gu, '<\\/');
 
-const html = `<title>Clifford Reservoir</title>
+const html = `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Clifford Reservoir</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,500..800&family=IBM+Plex+Mono:wght@400;500&family=Public+Sans:ital,wght@0,400;0,600;0,700;1,400&display=swap">
@@ -230,7 +230,7 @@ footer { margin-top: 28px; border-top: 1px solid var(--line); padding-top: 12px;
   }
   function locHref(l) {
     var repo = l.repo && /^[\\w.-]+\\/[\\w.-]+$/.test(l.repo) ? l.repo : null;
-    if (l.kind === 'url' || l.kind === 'conversation') return l.url;
+    if (l.kind === 'url' || l.kind === 'conversation') return typeof l.url === 'string' && (l.url.startsWith('https://') || l.url.startsWith('http://')) ? l.url : null;
     if (l.kind === 'github_item' && repo) return 'https://github.com/' + repo + '/issues/' + l.number;
     if (l.kind === 'git_path' && repo) return 'https://github.com/' + repo + '/blob/' + (l.ref || 'main') + '/' + l.path;
     if (l.kind === 'git_path' && !l.repo) return 'https://github.com/BigBirdReturns/clifford-number/blob/main/' + l.path;
@@ -396,7 +396,9 @@ footer { margin-top: 28px; border-top: 1px solid var(--line); padding-top: 12px;
     h += '<div class="block"><div class="eyebrow">Next examination</div><div>' + (r.next ? esc(r.next.what) : 'None recorded.') + '</div>' + (r.next && r.next.where.length ? '<ul class="loc">' + r.next.where.map(locItem).join('') + '</ul>' : '') + '</div>';
     h += '<div class="ret"><b>To return a result:</b> ' + (r.source === 'canonical' ? 'append a disposition or a competing explanation to <span class="mono">' + esc(r.inquiry_id) + '</span> in <span class="mono">data/reservoir/inquiries.jsonl</span>, citing evidence locators.' :
       'this row is derived from <span class="mono">' + esc(r.source) + '</span>. Add a canonical inquiry whose <span class="mono">related_inquiry_ids</span> names <span class="mono">' + esc(r.id) + '</span>, or correct the source record.') + '</div>';
+    if (r.text) h += '<div class="block"><div class="eyebrow">Native record</div><div class="source-record">' + esc(r.text) + '</div></div>';
     el.innerHTML = h;
+    window.dispatchEvent(new CustomEvent('reservoir:select', { detail: { id: r.id } }));
     el.querySelectorAll('[data-hubfilter]').forEach(function (b) { b.addEventListener('click', function () { filter.hub = b.dataset.hubfilter; render(); window.scrollTo({ top: 0 }); }); });
     if (window.innerWidth <= 860) el.scrollIntoView({ block: 'start' });
   }
@@ -407,7 +409,9 @@ footer { margin-top: 28px; border-top: 1px solid var(--line); padding-top: 12px;
 
   render();
   var first = D.inquiries.filter(function (r) { return r.source === 'canonical'; }).sort(function (a, b) { return a.recorded_at < b.recorded_at ? -1 : 1; })[0];
-  if (first) open(first.id);
+  window.ReservoirView = { open: open };
+  var requested = ''; try { requested = decodeURIComponent(location.hash.slice(1)); } catch (e) {}
+  if (requested && byId[requested]) open(requested); else if (first) open(first.id);
 })();
 </script>
 `;
