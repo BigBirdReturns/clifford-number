@@ -1,0 +1,176 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bigbirdreturns.github.io/clifford-number/schemas/reservoir.schema.json",
+  "title": "Reservoir: inquiries, prune decisions, model disagreements and estate-wide locators",
+  "description": "Rows of the continuing body of inquiry. Every row names its origin so that an owner's own words, an agent's observation, an agent's interpretation and a value derived from another record are never confused. Nothing in these rows creates a claim, hop, graph edge, score or publication state. The validator in tools/validate-reservoir.mjs enforces this file's constraints without a schema library.",
+  "$defs": {
+    "date": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
+    "origin_kind": {
+      "type": "string",
+      "enum": ["human_words", "human_relayed", "agent_observation", "agent_interpretation", "retrospective_interpretation", "derived_from_record"],
+      "description": "human_words: verbatim text the owner wrote. human_relayed: the owner's position as relayed or paraphrased, flagged as such. agent_observation: something an agent saw or measured. agent_interpretation: an agent's reading of what it saw. retrospective_interpretation: a judgment made by the retrospective capture, which its README calls a judgment and not an outside review. derived_from_record: a value lifted mechanically from another checked-in record."
+    },
+    "origin": {
+      "type": "object",
+      "required": ["kind", "author"],
+      "properties": {
+        "kind": { "$ref": "#/$defs/origin_kind" },
+        "author": { "type": "string", "minLength": 1 },
+        "locator": { "$ref": "#/$defs/locator" },
+        "note": { "type": "string" }
+      }
+    },
+    "locator": {
+      "type": "object",
+      "required": ["kind"],
+      "properties": {
+        "kind": { "type": "string", "enum": ["git_path", "git_commit", "git_branch", "github_item", "github_artifact", "estate_path", "local_file", "conversation", "url", "reservoir", "text"] },
+        "repo": { "type": "string" },
+        "ref": { "type": "string" },
+        "path": { "type": "string" },
+        "commit": { "type": "string" },
+        "branch": { "type": "string" },
+        "number": { "type": "integer" },
+        "run_id": { "type": "string" },
+        "host": { "type": "string", "description": "Estate node name, for example octo-w01." },
+        "name": { "type": "string" },
+        "url": { "type": "string" },
+        "project": { "type": "string" },
+        "id": { "type": "string" },
+        "text": { "type": "string" },
+        "verified": { "type": "boolean", "description": "false when this repository has not inspected the target, for example a commit on an estate checkout." },
+        "note": { "type": "string" }
+      },
+      "description": "Required fields by kind: git_path needs path; git_commit needs commit; git_branch needs branch; github_item needs number; github_artifact needs run_id; estate_path needs host and path; local_file needs name; conversation and url need url; reservoir needs project and id; text needs text."
+    },
+    "evidence": { "$ref": "#/$defs/locator" },
+    "competing_explanation": {
+      "type": "object",
+      "required": ["explanation_id", "text", "origin", "status", "evidence_for", "evidence_against"],
+      "properties": {
+        "explanation_id": { "type": "string", "minLength": 1 },
+        "text": { "type": "string", "minLength": 1 },
+        "origin": { "$ref": "#/$defs/origin" },
+        "status": { "type": "string", "enum": ["live", "narrowed", "disproved", "superseded", "retired"] },
+        "narrowed_by": { "type": "string" },
+        "evidence_for": { "type": "array", "items": { "$ref": "#/$defs/evidence" } },
+        "evidence_against": { "type": "array", "items": { "$ref": "#/$defs/evidence" } }
+      },
+      "description": "A disproved or superseded explanation must carry at least one evidence_against entry; the observation that prompted it stays on the inquiry."
+    },
+    "disposition": {
+      "type": "object",
+      "required": ["at", "state", "by", "reason", "evidence"],
+      "properties": {
+        "at": { "$ref": "#/$defs/date" },
+        "state": { "type": "string", "enum": ["held", "open", "narrowed", "answered", "disproved", "superseded", "parked", "retired"] },
+        "by": { "$ref": "#/$defs/origin_kind" },
+        "reason": { "type": "string", "minLength": 1 },
+        "evidence": { "type": "array", "items": { "$ref": "#/$defs/evidence" } }
+      },
+      "description": "Dispositions are a history; the last entry is current. held means no disposition has been made: the inquiry is retained as found and available for comparison. disproved and superseded need at least one evidence entry."
+    },
+    "assessment": {
+      "type": "object",
+      "required": ["assessment_id", "by", "at", "rating", "meaning"],
+      "properties": {
+        "assessment_id": { "type": "string", "minLength": 1 },
+        "by": { "$ref": "#/$defs/origin" },
+        "at": { "$ref": "#/$defs/date" },
+        "rating": { "type": "string", "minLength": 1 },
+        "meaning": { "type": "string", "minLength": 1 },
+        "note": { "type": "string" },
+        "headline": { "type": "string" },
+        "found": { "type": "string" }
+      },
+      "description": "An attributed historical judgment about the work, such as a retrospective tier. It is kept for comparison and never becomes a disposition; `by` names who judged and cannot be derived_from_record."
+    },
+    "inquiry": {
+      "type": "object",
+      "required": ["schema_version", "project", "inquiry_id", "recorded_at", "question", "question_origin", "competing_explanations", "dispositions", "locators", "related_inquiry_ids", "graph_effect", "conclusion_generated"],
+      "properties": {
+        "schema_version": { "const": "reservoir-inquiry@1" },
+        "project": { "type": "string", "minLength": 1 },
+        "inquiry_id": { "type": "string", "minLength": 1 },
+        "recorded_at": { "$ref": "#/$defs/date" },
+        "last_activity": { "$ref": "#/$defs/date" },
+        "question": { "type": "string", "minLength": 1 },
+        "question_origin": { "$ref": "#/$defs/origin" },
+        "prompting_observation": {
+          "type": "object",
+          "required": ["text", "origin"],
+          "properties": { "text": { "type": "string", "minLength": 1 }, "origin": { "$ref": "#/$defs/origin" } },
+          "description": "What drew attention, in the words of whoever recorded it. Absent on rows derived from records that never kept it; the build counts those as attention lost."
+        },
+        "prompting_observation_status": {
+          "type": "string",
+          "enum": ["not_located_in_inputs"],
+          "description": "Set instead of prompting_observation when the original prompt is not in the reservoir's inputs. A later headline or finding never stands in for it; recovery continues through conversations and estate records."
+        },
+        "assessments": { "type": "array", "items": { "$ref": "#/$defs/assessment" } },
+        "competing_explanations": { "type": "array", "items": { "$ref": "#/$defs/competing_explanation" } },
+        "dispositions": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/disposition" } },
+        "locators": { "type": "array", "items": { "$ref": "#/$defs/locator" } },
+        "related_inquiry_ids": { "type": "array", "items": { "type": "string" }, "description": "Ids within this project, or project:inquiry_id for another project's reservoir." },
+        "next_examination": {
+          "type": ["object", "null"],
+          "required": ["what", "where"],
+          "properties": { "what": { "type": "string", "minLength": 1 }, "where": { "type": "array", "items": { "$ref": "#/$defs/locator" } } }
+        },
+        "retired_machinery": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["what", "what_it_taught"],
+            "properties": { "what": { "type": "string" }, "locator": { "$ref": "#/$defs/locator" }, "what_it_taught": { "type": "string" } }
+          }
+        },
+        "derived": { "type": "object", "description": "Present only on compiled rows: the source record and the fields the value was lifted from." },
+        "graph_effect": { "const": "none" },
+        "conclusion_generated": { "const": false }
+      }
+    },
+    "decision": {
+      "type": "object",
+      "required": ["schema_version", "project", "decision_id", "decided_at", "decided_by", "action", "subject", "reason_code", "reason", "verified", "inquiry_ids", "graph_effect"],
+      "properties": {
+        "schema_version": { "const": "reservoir-decision@1" },
+        "project": { "type": "string", "minLength": 1 },
+        "decision_id": { "type": "string", "minLength": 1 },
+        "decided_at": { "$ref": "#/$defs/date" },
+        "decided_by": { "$ref": "#/$defs/origin", "description": "kind must be human_words or human_relayed." },
+        "action": { "type": "string", "enum": ["accept", "reject", "merge", "split", "downgrade", "reframe", "retire"] },
+        "subject": {
+          "type": "object",
+          "required": ["text", "locators"],
+          "properties": { "text": { "type": "string", "minLength": 1 }, "locators": { "type": "array", "items": { "$ref": "#/$defs/locator" } } }
+        },
+        "reason_code": { "type": "string", "enum": ["insufficient_receipt", "wrong_frame", "duplicate", "out_of_scope", "privacy", "density", "superseded", "cost_over_yield", "objective_correction", "other"] },
+        "reason": { "type": "string", "minLength": 1 },
+        "verified": { "type": "boolean" },
+        "inquiry_ids": { "type": "array", "items": { "type": "string" } },
+        "graph_effect": { "const": "none" }
+      }
+    },
+    "disagreement": {
+      "type": "object",
+      "required": ["schema_version", "project", "disagreement_id", "recorded_at", "original_human_claim", "model_reformulation", "reason_for_rejection", "missing_distinction", "later_evidence", "current_disposition", "inquiry_ids", "graph_effect", "conclusion_generated"],
+      "properties": {
+        "schema_version": { "const": "reservoir-disagreement@1" },
+        "project": { "type": "string", "minLength": 1 },
+        "disagreement_id": { "type": "string", "minLength": 1 },
+        "recorded_at": { "$ref": "#/$defs/date" },
+        "original_human_claim": { "type": "object", "required": ["text", "origin"], "properties": { "text": { "type": "string", "minLength": 1 }, "origin": { "$ref": "#/$defs/origin" } } },
+        "model_reformulation": { "type": "object", "required": ["text", "origin"], "properties": { "text": { "type": "string", "minLength": 1 }, "origin": { "$ref": "#/$defs/origin" } } },
+        "reason_for_rejection": { "type": "string", "minLength": 1 },
+        "missing_distinction": { "type": "string", "minLength": 1 },
+        "later_evidence": { "type": "array", "items": { "$ref": "#/$defs/evidence" } },
+        "current_disposition": { "type": "string", "enum": ["open", "corrected", "model_upheld", "human_withdrawn"] },
+        "inquiry_ids": { "type": "array", "items": { "type": "string" } },
+        "graph_effect": { "const": "none" },
+        "conclusion_generated": { "const": false }
+      },
+      "description": "The six fields docs/methods/pattern-to-proof.md names for the model disagreement log: original human claim, model reformulation, reason for rejection, missing distinction, later evidence, current disposition. original_human_claim.origin.kind must be human_words or human_relayed."
+    }
+  }
+}
