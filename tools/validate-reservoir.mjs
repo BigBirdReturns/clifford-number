@@ -35,7 +35,7 @@ try {
   // acquires a disposition or a review chore merely by being imported, and
   // a later headline never stands in for the original prompt.
   for (const row of built.inquiries) {
-    const imported = row.derived && (row.derived.source === 'retrospective-2026-10-12' || row.derived.kind === 'view_record');
+    const imported = row.derived && (row.derived.source === 'retrospective-2026-10-12' || String(row.derived.source).endsWith('.view.jsonl'));
     if (!imported) continue;
     const state = row.dispositions[row.dispositions.length - 1].state;
     if (state !== 'held') throw new Error(`${row.inquiry_id}: imported rows stay held, found ${state}`);

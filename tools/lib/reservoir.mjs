@@ -581,12 +581,25 @@ export function reconnect(inquiries) {
       byPath.get(key).add(`${row.project}:${row.inquiry_id}`);
     }
   }
+  // A path cited by many records is a hub, listed once with everything that
+  // meets there, instead of being expanded into every pairwise meeting.
+  const hubs = [];
+  const hubKeys = new Set();
+  for (const [key, ids] of byPath) {
+    if (ids.size > RECONNECT_HUB_LIMIT) {
+      hubKeys.add(key);
+      hubs.push({ path: key, inquiries: [...ids].sort(), sources: [...new Set([...ids].map((id) => sourceOf.get(id)))].sort() });
+    }
+  }
+  hubs.sort((p, q) => p.path.localeCompare(q.path));
   const pairs = new Map();
   const keys = [...byPath.keys()].sort();
   const scopeOf = (key) => key.slice(0, key.indexOf('|'));
   for (const a of keys) {
+    if (hubKeys.has(a)) continue;
     for (const b of keys) {
       if (a > b) continue;
+      if (hubKeys.has(b)) continue;
       if (scopeOf(a) !== scopeOf(b)) continue;
       if (a !== b && !(b.startsWith(`${a}/`) || a.startsWith(`${b}/`))) continue;
       for (const left of byPath.get(a)) {
@@ -601,10 +614,14 @@ export function reconnect(inquiries) {
       }
     }
   }
-  return [...pairs.values()]
+  const list = [...pairs.values()]
     .map((pair) => ({ a: pair.a, b: pair.b, shared_paths: [...pair.shared_paths].sort() }))
     .sort((p, q) => (p.a + p.b).localeCompare(q.a + q.b));
+  list.hubs = hubs;
+  return list;
 }
+
+export const RECONNECT_HUB_LIMIT = 10;
 
 // ---------------------------------------------------------------------------
 // Build
@@ -758,7 +775,11 @@ export function buildReservoir({ root = repoRoot, write = true, join = [], views
   }
   const main = deriveFromMain({ root, project: DEFAULT_PROJECT, asOfDate });
   inputPaths.push(...main.sources);
-  const viewed = deriveFromViews({ root, views, asOfDate });
+  // Views checked into data/reservoir/views/ are always part of the build;
+  // --view adds others from elsewhere on the estate.
+  const viewsDir = path.join(root, 'data/reservoir/views');
+  const checkedInViews = fs.existsSync(viewsDir) ? fs.readdirSync(viewsDir).filter((name) => name.endsWith('.view.jsonl')).sort().map((name) => path.join('data/reservoir/views', name)) : [];
+  const viewed = deriveFromViews({ root, views: [...checkedInViews, ...views], asOfDate });
   for (const name of viewed.projects) if (!projects.some((p) => p.project === name)) projects.push({ project: name, dir: null, joined: true });
   inputPaths.push(...viewed.files);
   const derived = [...retrospective.inquiries, ...main.inquiries, ...viewed.inquiries];
@@ -821,6 +842,7 @@ export function buildReservoir({ root = repoRoot, write = true, join = [], views
       explanations_narrowed: narrowed.length,
       next_examinations: nextExaminations.length,
       reconnections: reconnections.length,
+      hubs: reconnections.hubs.length,
       contradictions: retrospective.contradictions.length,
       decisions_by_action: count(canonical.decisions, (row) => row.action),
       disagreements_by_disposition: count(canonical.disagreements, (row) => row.current_disposition),
@@ -830,7 +852,8 @@ export function buildReservoir({ root = repoRoot, write = true, join = [], views
       note: 'Rows whose original prompt is not located in these inputs: records that kept a question but not the reason for looking, and retrospective trails whose headline is a later finding, not the original prompt. Recovery continues through conversations and estate records; the build does not invent a reason.',
     },
     contradictions: retrospective.contradictions,
-    reconnections,
+    reconnections: [...reconnections],
+    hubs: reconnections.hubs,
     disproved,
     narrowed,
     oldest_open: oldestOpen,
@@ -878,6 +901,7 @@ export function openInquiry({ inquiries, manifest, canonical }, requestedId) {
   const related = row.related_inquiry_ids.map(resolve).map((ref) => byId.get(ref)).filter(Boolean).map((r) => ({ id: `${r.project}:${r.inquiry_id}`, question: r.question, state: currentState(r) }));
   const incoming = inquiries.filter((r) => r !== row && r.related_inquiry_ids.map((ref) => (ref.includes(':') ? ref : `${r.project}:${ref}`)).includes(id)).map((r) => ({ id: `${r.project}:${r.inquiry_id}`, question: r.question, state: currentState(r) }));
   const reconnections = manifest.reconnections.filter((p) => p.a === id || p.b === id).map((p) => ({ id: p.a === id ? p.b : p.a, shared_paths: p.shared_paths, question: (byId.get(p.a === id ? p.b : p.a) || {}).question || null }));
+  const hubs = (manifest.hubs || []).filter((h) => h.inquiries.includes(id)).map((h) => ({ path: h.path.slice(h.path.indexOf('|') + 1), others: h.inquiries.length - 1 }));
   const decisions = canonical.decisions.filter((d) => d.inquiry_ids.map((ref) => (ref.includes(':') ? ref : `${d.project}:${ref}`)).includes(id));
   const disagreements = canonical.disagreements.filter((d) => d.inquiry_ids.map((ref) => (ref.includes(':') ? ref : `${d.project}:${ref}`)).includes(id));
   return {
@@ -893,6 +917,7 @@ export function openInquiry({ inquiries, manifest, canonical }, requestedId) {
     related,
     incoming,
     reconnections,
+    hubs,
     decisions: decisions.map((d) => ({ id: d.decision_id, action: d.action, reason_code: d.reason_code, decided_at: d.decided_at, verified: d.verified, reason: d.reason })),
     disagreements: disagreements.map((d) => ({ id: d.disagreement_id, current_disposition: d.current_disposition, missing_distinction: d.missing_distinction })),
     next_examination: row.next_examination,
@@ -933,6 +958,11 @@ export function renderOpenInquiry(view) {
     for (const r of view.related) lines.push(`  related -> ${r.id} [${r.state}] ${r.question}`);
     for (const r of view.incoming) lines.push(`  related <- ${r.id} [${r.state}] ${r.question}`);
     for (const r of view.reconnections) lines.push(`  shares ${r.shared_paths.join(', ')} with ${r.id}${r.question ? `: ${r.question}` : ''}`);
+  }
+  if (view.hubs && view.hubs.length) {
+    lines.push('');
+    lines.push('Meets at hubs:');
+    for (const h of view.hubs) lines.push(`  ${h.path} (${h.others} other inquiries)`);
   }
   if (view.decisions.length) {
     lines.push('');
@@ -994,6 +1024,7 @@ function renderReport(manifest, canonical, delta) {
   lines.push(`| Explanations disproved with evidence | ${c.explanations_disproved_with_evidence} |`);
   lines.push(`| Explanations narrowed | ${c.explanations_narrowed} |`);
   lines.push(`| Reconnections (records sharing a path) | ${c.reconnections} |`);
+  lines.push(`| Hubs (a path cited by more than ${RECONNECT_HUB_LIMIT} records) | ${c.hubs} |`);
   lines.push(`| Contradictions between the retrospective and main | ${c.contradictions} |`);
   lines.push(`| Inquiries whose reason for looking was never recorded | ${c.without_prompting_observation} |`);
   lines.push('');
@@ -1015,6 +1046,13 @@ function renderReport(manifest, canonical, delta) {
   lines.push('');
   if (manifest.contradictions.length === 0) lines.push('None found between the retrospective\'s on_main judgment and the paths present on main.');
   for (const item of manifest.contradictions) lines.push(`- ${item.kind}: tier ${item.tier} "${item.trail}" (${item.paths.join(', ')})`);
+  lines.push('');
+  lines.push('## Hubs');
+  lines.push('');
+  lines.push('Paths where many records meet. Each is one place to enter the body of work by mechanism or collection rather than a thousand pairwise links.');
+  lines.push('');
+  for (const hub of manifest.hubs) lines.push(`- ${hub.path.slice(hub.path.indexOf('|') + 1)}: ${hub.inquiries.length} inquiries from ${hub.sources.length} source(s)`);
+  if (manifest.hubs.length === 0) lines.push('None.');
   lines.push('');
   lines.push('## Disproved and narrowed explanations');
   lines.push('');

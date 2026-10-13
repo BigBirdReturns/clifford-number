@@ -189,7 +189,24 @@ in its own locations and formats:
 `project`, `record_id`, `text` or `question`, and at least one locator are
 required; `origin`, `prompting`, `as_of` and `kind` are optional. Each row
 becomes a `held` inquiry pointing back at the native record. A project can
-generate its view from whatever it already keeps.
+generate its view from whatever it already keeps. Views checked in under
+`data/reservoir/views/*.view.jsonl` are part of every build.
+
+The first such adapter is `tools/reservoir-view-from-disposition.mjs`. It
+reads the 12 October 2026 Git disposition ledger, the owner's record of
+where every one of the 2,069 pull requests and 599 issues lives now, from
+its native custody on branch `audit/clifford-operating-cut-20261012`, and
+writes `data/reservoir/views/disposition-2026-10-12.view.jsonl`: one row
+per issue, with its GitHub item and the path its substance lives at
+(archive, head or bundle), and one row per pull request whose research
+content is not on main. The ledger itself is not copied; its hashes are
+recorded in the view's provenance row and in
+`data/reservoir/sources/operating-cut-2026-10-12/provenance.json`.
+
+A path cited by more than ten records is a **hub**: the build lists it
+once with everything that meets there instead of expanding it into every
+pairwise link. Hubs are the places to enter the body of work by collection
+or mechanism; pairwise reconnections stay for the specific meetings.
 
 **A reservoir** is a project that keeps the three ledgers itself:
 

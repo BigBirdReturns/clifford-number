@@ -28,7 +28,7 @@ assert.equal(first.manifest.boundaries.conclusion_generated, false);
 
 const compiled = fs.readFileSync('build/reservoir/inquiries.compiled.jsonl', 'utf8').trim().split('\n').map((line) => JSON.parse(line));
 assert.equal(compiled.length, first.manifest.counts.total_inquiries);
-assert.equal(first.manifest.counts.total_inquiries, first.manifest.counts.canonical_inquiries + first.manifest.counts.retrospective_inquiries + first.manifest.counts.main_derived_inquiries);
+assert.equal(first.manifest.counts.total_inquiries, first.manifest.counts.canonical_inquiries + first.manifest.counts.retrospective_inquiries + first.manifest.counts.main_derived_inquiries + first.manifest.counts.view_inquiries);
 
 // 2. The retrospective's 79 tiered trails circulate in, with provenance, and
 //    its ratings stay attributed judgments: no disposition, no review chore,
@@ -62,6 +62,17 @@ for (const expected of ['gametrails/data.json', 'cases/arcadia-field-autopsy/hyp
   assert.ok(sources.has(expected), `expected derived rows from ${expected}`);
 }
 assert.ok(first.manifest.counts.reconnections > 0, 'retrospective trails and main records share paths');
+assert.ok(first.manifest.counts.hubs > 0, 'paths cited by many records are listed as hubs');
+assert.ok(first.manifest.hubs.every((h) => h.inquiries.length > 10), 'a hub holds more than the pairwise limit');
+
+// 4b. The checked-in disposition view circulates the Git ledger's issues and research-bearing pull requests.
+assert.ok(first.manifest.sources.views.includes('data/reservoir/views/disposition-2026-10-12.view.jsonl'));
+const disposition = compiled.filter((row) => row.derived && row.derived.source === 'data/reservoir/views/disposition-2026-10-12.view.jsonl');
+assert.equal(disposition.filter((row) => row.derived.kind === 'github_issue_disposition').length, 599);
+assert.equal(disposition.filter((row) => row.derived.kind === 'github_pull_request_disposition').length, 261);
+assert.ok(disposition.every((row) => row.dispositions.at(-1).state === 'held' && row.next_examination === null));
+assert.ok(disposition.filter((row) => row.derived.kind !== 'view_provenance').every((row) => row.locators.some((l) => l.kind === 'github_item')));
+assert.equal(disposition.filter((row) => row.derived.kind === 'view_provenance').length, 1, 'the view carries one provenance row naming the native ledger');
 
 // 5. A disproved explanation must keep evidence against it; a narrowed one must say what narrowed it.
 const base = JSON.parse(JSON.stringify(canonicalRows[0]));
@@ -151,12 +162,13 @@ assert.throws(() => buildReservoir({ write: false, join: [tmp] }), /must not use
 //     named file does not meet ours unless it names our repository.
 const sameName = { ...other, inquiry_id: 'inq-same-name', locators: [{ kind: 'git_path', path: 'gametrails/data.json' }], related_inquiry_ids: [] };
 fs.writeFileSync(path.join(tmp, 'inquiries.jsonl'), `${JSON.stringify(sameName)}\n`);
+const meets = (built, id) => built.manifest.reconnections.some((p) => p.a === id || p.b === id) || built.manifest.hubs.some((h) => h.inquiries.includes(id));
 const unscoped = buildReservoir({ write: false, join: [tmp] });
-assert.ok(!unscoped.manifest.reconnections.some((p) => p.a === 'estate-tooling:inq-same-name' || p.b === 'estate-tooling:inq-same-name'), 'a bare path in another project does not reconnect');
+assert.ok(!meets(unscoped, 'estate-tooling:inq-same-name'), 'a bare path in another project does not reconnect, pairwise or at a hub');
 const explicit = { ...sameName, locators: [{ kind: 'git_path', repo: 'BigBirdReturns/clifford-number', path: 'gametrails/data.json' }] };
 fs.writeFileSync(path.join(tmp, 'inquiries.jsonl'), `${JSON.stringify(explicit)}\n`);
 const scoped = buildReservoir({ write: false, join: [tmp] });
-assert.ok(scoped.manifest.reconnections.some((p) => p.a === 'estate-tooling:inq-same-name' || p.b === 'estate-tooling:inq-same-name'), 'an explicit reference to our repository reconnects across projects');
+assert.ok(meets(scoped, 'estate-tooling:inq-same-name'), 'an explicit reference to our repository meets across projects, pairwise or at a hub');
 
 // 11. A view exposes another project's native records as held inquiries without a ledger migration.
 const viewPath = path.join(tmp, 'estate-view.jsonl');
@@ -165,7 +177,7 @@ fs.writeFileSync(viewPath, [
   JSON.stringify({ project: 'estate-tooling', record_id: 'teardown-status', question: 'Is W01 ready to power off?', text: 'ESTATE STATUS: HOLD', locators: [{ kind: 'estate_path', host: 'octo-w01', path: 'D:\\ESTATE-STATUS.txt' }], prompting: { text: 'READY markers must come from receipts, never by hand.', origin: { kind: 'human_relayed', author: 'D:\\README.md' } } }),
 ].join('\n') + '\n');
 const viewed = buildReservoir({ write: false, views: [viewPath] });
-assert.equal(viewed.manifest.counts.view_inquiries, 2);
+assert.equal(viewed.manifest.counts.view_inquiries, first.manifest.counts.view_inquiries + 2);
 assert.ok(viewed.manifest.projects.some((p) => p.project === 'estate-tooling'));
 const viewRows = viewed.inquiries.filter((r) => r.derived && r.derived.kind === 'view_record');
 assert.ok(viewRows.every((r) => r.dispositions.at(-1).state === 'held' && r.next_examination === null));
