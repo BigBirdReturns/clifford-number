@@ -258,7 +258,11 @@ export function validateDisagreement(row, index = 0, errors = []) {
   return errors;
 }
 
-export function validateCanonical({ inquiries, decisions, disagreements }) {
+// Structural validation of the canonical ledgers. Related ids are resolved
+// only when `knownInquiryIds` is given: a canonical inquiry may relate to a
+// derived row (that is how a result returns to an imported question), so
+// resolution belongs to the build, where the whole body is known.
+export function validateCanonical({ inquiries, decisions, disagreements }, { knownInquiryIds = null } = {}) {
   const errors = [];
   inquiries.forEach((row, i) => validateInquiry(row, i, errors));
   decisions.forEach((row, i) => validateDecision(row, i, errors));
@@ -271,16 +275,29 @@ export function validateCanonical({ inquiries, decisions, disagreements }) {
       ids.set(id, kind);
     }
   }
-  const inquiryIds = new Set(inquiries.map((row) => `${row.project}:${row.inquiry_id}`));
-  const resolve = (project, id) => (id.includes(':') ? id : `${project}:${id}`);
+  if (knownInquiryIds) errors.push(...resolveReferences({ inquiries, decisions, disagreements }, knownInquiryIds));
+  return errors;
+}
+
+// Ids may contain colons (view:…, retro-2026-10-12:05:…), so a reference is
+// project-qualified only when it starts with a known project name and a colon.
+export function qualifyReference(id, project, projects) {
+  for (const name of projects) if (id.startsWith(`${name}:`)) return id;
+  return `${project}:${id}`;
+}
+
+export function resolveReferences({ inquiries, decisions, disagreements }, knownInquiryIds) {
+  const errors = [];
+  const projects = new Set([...knownInquiryIds].map((key) => key.slice(0, key.indexOf(':'))));
+  const resolve = (project, id) => qualifyReference(id, project, projects);
   for (const row of inquiries) {
     for (const id of row.related_inquiry_ids) {
-      if (!inquiryIds.has(resolve(row.project, id))) errors.push(`inquiry ${row.inquiry_id}: related_inquiry_ids names unknown inquiry ${id}`);
+      if (!knownInquiryIds.has(resolve(row.project, id))) errors.push(`inquiry ${row.inquiry_id}: related_inquiry_ids names unknown inquiry ${id}`);
     }
   }
   for (const row of [...decisions, ...disagreements]) {
     for (const id of row.inquiry_ids) {
-      if (!inquiryIds.has(resolve(row.project, id))) errors.push(`${row.decision_id || row.disagreement_id}: inquiry_ids names unknown inquiry ${id}`);
+      if (!knownInquiryIds.has(resolve(row.project, id))) errors.push(`${row.decision_id || row.disagreement_id}: inquiry_ids names unknown inquiry ${id}`);
     }
   }
   return errors;
@@ -794,6 +811,8 @@ export function buildReservoir({ root = repoRoot, write = true, join = [], views
     if (seen.has(key)) throw new Error(`duplicate inquiry id across canonical and derived rows: ${key}`);
     seen.add(key);
   }
+  const unresolved = resolveReferences(canonical, seen);
+  if (unresolved.length) throw new Error(`reservoir references do not resolve:\n  ${unresolved.join('\n  ')}`);
 
   const reconnections = reconnect(all);
   const open = all.filter((row) => ['open', 'narrowed', 'parked'].includes(currentState(row)));
@@ -897,13 +916,14 @@ export function openInquiry({ inquiries, manifest, canonical }, requestedId) {
   if (!row) return null;
   const id = `${row.project}:${row.inquiry_id}`;
   const byId = new Map(inquiries.map((r) => [`${r.project}:${r.inquiry_id}`, r]));
-  const resolve = (ref) => (ref.includes(':') ? ref : `${row.project}:${ref}`);
-  const related = row.related_inquiry_ids.map(resolve).map((ref) => byId.get(ref)).filter(Boolean).map((r) => ({ id: `${r.project}:${r.inquiry_id}`, question: r.question, state: currentState(r) }));
-  const incoming = inquiries.filter((r) => r !== row && r.related_inquiry_ids.map((ref) => (ref.includes(':') ? ref : `${r.project}:${ref}`)).includes(id)).map((r) => ({ id: `${r.project}:${r.inquiry_id}`, question: r.question, state: currentState(r) }));
+  const projects = new Set(inquiries.map((r) => r.project));
+  const resolve = (ref, project = row.project) => qualifyReference(ref, project, projects);
+  const related = row.related_inquiry_ids.map((ref) => resolve(ref)).map((ref) => byId.get(ref)).filter(Boolean).map((r) => ({ id: `${r.project}:${r.inquiry_id}`, question: r.question, state: currentState(r) }));
+  const incoming = inquiries.filter((r) => r !== row && r.related_inquiry_ids.map((ref) => resolve(ref, r.project)).includes(id)).map((r) => ({ id: `${r.project}:${r.inquiry_id}`, question: r.question, state: currentState(r) }));
   const reconnections = manifest.reconnections.filter((p) => p.a === id || p.b === id).map((p) => ({ id: p.a === id ? p.b : p.a, shared_paths: p.shared_paths, question: (byId.get(p.a === id ? p.b : p.a) || {}).question || null }));
   const hubs = (manifest.hubs || []).filter((h) => h.inquiries.includes(id)).map((h) => ({ path: h.path.slice(h.path.indexOf('|') + 1), others: h.inquiries.length - 1 }));
-  const decisions = canonical.decisions.filter((d) => d.inquiry_ids.map((ref) => (ref.includes(':') ? ref : `${d.project}:${ref}`)).includes(id));
-  const disagreements = canonical.disagreements.filter((d) => d.inquiry_ids.map((ref) => (ref.includes(':') ? ref : `${d.project}:${ref}`)).includes(id));
+  const decisions = canonical.decisions.filter((d) => d.inquiry_ids.map((ref) => resolve(ref, d.project)).includes(id));
+  const disagreements = canonical.disagreements.filter((d) => d.inquiry_ids.map((ref) => resolve(ref, d.project)).includes(id));
   return {
     id,
     question: row.question,

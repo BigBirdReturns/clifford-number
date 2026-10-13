@@ -93,9 +93,18 @@ assert.equal(validateDisagreement(disagreement).length, 0);
 const swapped = { ...disagreement, original_human_claim: { ...disagreement.original_human_claim, origin: { kind: 'agent_observation', author: 'bot' } } };
 assert.ok(validateDisagreement(swapped).some((e) => e.includes('human_words')));
 
-// 7. Related ids must resolve, across projects with the project:id form.
-const dangling = validateCanonical({ inquiries: [{ ...canonicalRows[0], related_inquiry_ids: ['nope'] }], decisions: [], disagreements: [] });
+// 7. Related ids must resolve against the whole body, so a canonical inquiry can
+//    return a result to a derived row; a dangling id fails the build.
+const dangling = validateCanonical({ inquiries: [{ ...canonicalRows[0], related_inquiry_ids: ['nope'] }], decisions: [], disagreements: [] }, { knownInquiryIds: new Set() });
 assert.ok(dangling.some((e) => e.includes('unknown inquiry nope')));
+assert.equal(validateCanonical({ inquiries: [{ ...canonicalRows[0], related_inquiry_ids: ['nope'] }], decisions: [], disagreements: [] }).length, 0, 'structural validation alone does not resolve references');
+const returned = compiled.find((row) => row.inquiry_id === 'inq-synthetic-audience-vendor-disclosures');
+assert.ok(returned.related_inquiry_ids.includes('view:disposition-2026-10-12:issue-46'), 'a canonical inquiry relates to a view row');
+assert.ok(returned.competing_explanations.some((e) => e.status === 'disproved' && e.evidence_against.length >= 2));
+const openedReturned = openInquiry(first, 'inq-synthetic-audience-vendor-disclosures');
+assert.ok(openedReturned.related.some((r) => r.id === 'clifford-number:view:disposition-2026-10-12:issue-46'));
+const openedLedgerRow = openInquiry(first, 'view:disposition-2026-10-12:issue-46');
+assert.ok(openedLedgerRow.incoming.some((r) => r.id === 'clifford-number:inq-synthetic-audience-vendor-disclosures'), 'opening the ledger row shows the result that returned to it');
 
 // 8. Locator parsing for the retrospective's free-text "where" strings.
 assert.deepEqual(parseWhere('BigBirdReturns/clifford-number#47 (issue, 3 passes)'), { kind: 'github_item', repo: 'BigBirdReturns/clifford-number', number: 47, note: 'issue, 3 passes' });
