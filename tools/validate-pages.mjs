@@ -67,7 +67,7 @@ const required = [
   'legacy/graph.edge-model.json', 'legacy/uk-ai-policy.edge-model.json',
   'src/ui-utils.js', 'src/i18n.js', 'src/evidence-rank.js', 'src/route-projections.js', 'src/release-delta.js', 'src/aperture-bootstrap.js', 'src/visual-aperture-core.mjs',
   'src/visual-aperture-state.mjs', 'src/visual-aperture-workspace.mjs',
-  'src/visual-aperture-export.mjs',
+  'src/visual-aperture-export.mjs', 'src/visual-aperture-timeline.mjs',
   'src/visual-aperture-workspace-runtime.js', 'src/visual-aperture-export-runtime.js', 'src/visual-aperture.js',
   ...Array.from({ length: 11 }, (_, index) => `src/visual-aperture-part-${index + 1}.js`),
   'src/visual-aperture.css', 'src/visual-aperture-layout.css', 'src/visual-aperture-svg.css',
