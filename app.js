@@ -1656,6 +1656,20 @@ function recordReceiptsCell(ids, label = 'Row receipts') {
   if (!unique.length) return '<span class="meta">no receipt id on this row</span>';
   return `<details class="ledger-receipts"><summary>${recordPlural(unique.length, 'receipt')}</summary>${renderReceiptGrid(unique, label)}</details>`;
 }
+// On a surface page the surface's own receipts are rendered once, in the
+// "Surface receipts" panel. A row whose receipts are exactly that set gets a
+// compact reference that jumps there instead of the same cards again (the
+// Dialog roster carried the same 3 receipts inside 112 closed details
+// elements); a row with receipts of its own that differ keeps its full list.
+function recordReceiptsMatchSurface(rowIds, surfaceIds) {
+  const row = recordUnique(rowIds).sort(recordCompare);
+  const surface = recordUnique(surfaceIds).sort(recordCompare);
+  return row.length > 0 && row.length === surface.length && row.every((id, index) => id === surface[index]);
+}
+function recordSurfaceRowReceiptsCell(row, surfaceReceiptIds) {
+  if (!recordReceiptsMatchSurface(row.receipt_ids, surfaceReceiptIds)) return recordReceiptsCell(row.receipt_ids);
+  return `<button type="button" class="ledger-receipts-ref" data-record-scroll="record-surface-receipts">same ${recordPlural(recordUnique(surfaceReceiptIds).length, 'receipt')} as the surface</button>`;
+}
 function recordTable(columns, rows, cellsFor, { rowAttributes = () => '' } = {}) {
   if (!rows.length) return '<p class="meta ledger-empty">No row passes the current filters. The status line above names what hid them.</p>';
   const head = `<thead><tr>${columns.map(column => `<th scope="col">${esc(column)}</th>`).join('')}</tr></thead>`;
@@ -1776,6 +1790,12 @@ function bindRecordPage(record) {
   };
   for (const mark of detail.querySelectorAll('[data-record-mark]')) activate(mark, () => focusLedgerRow(mark.dataset.recordMark));
   for (const aggregate of detail.querySelectorAll('[data-record-rows]')) activate(aggregate, () => focusLedgerRow(aggregate.dataset.recordRows.split(' ')[0], { open: false }));
+  for (const button of detail.querySelectorAll('[data-record-scroll]')) button.addEventListener('click', () => {
+    const target = document.getElementById(button.dataset.recordScroll);
+    if (!target) return;
+    target.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'start' });
+    target.focus({ preventScroll: true });
+  });
   detail.querySelector('#record-floor')?.addEventListener('change', event => {
     state.recordFloor = RECORD_FLOORS.some(([value]) => value === event.target.value) ? event.target.value : 'open';
     renderEntity(record.kind, record.id);
@@ -2036,6 +2056,8 @@ function renderSurface(id) {
     ? recordTimelineMarkup(recordTimelineLayout('surface', id, { dense: record.dense }), { filteredKeys: new Set(partition.hidden_keys), title: record.dense ? `${s.surface_label}: the roster as one contained object on its day` : `${s.surface_label}: one mark per participant row` })
     : '<p class="meta">No participation row to place on the axis; the surface window above is the only dated fact.</p>';
 
+  const surfaceReceiptIds = recordUnique(s.receipt_ids);
+  const receiptsCellFor = row => recordSurfaceRowReceiptsCell(row, surfaceReceiptIds);
   const columns = ['#', 'Participant', 'Role', 'Window', 'Evidence', 'Receipts', 'Also documented on'];
   const cellsFor = (row, index) => [
     String(index + 1),
@@ -2043,7 +2065,7 @@ function renderSurface(id) {
     recordRoleCell(row),
     esc(recordWindowText(row)),
     evidenceBadge(row.evidence_class),
-    recordReceiptsCell(row.receipt_ids),
+    receiptsCellFor(row),
     (elsewhereFor.get(row.key) ?? 0) > 0 ? `<a href="#actor/${encodeURIComponent(row.entity_id)}">${recordPlural(elsewhereFor.get(row.key), 'other surface')}</a>` : '<span class="meta">only here</span>'
   ];
   let participantsTable;
@@ -2067,7 +2089,7 @@ function renderSurface(id) {
 
   const claims = `<section class="panel"><span class="panel-label">Claims referencing this surface</span><h3>${recordPlural(record.claims.length, 'claim')} in the receipt graph</h3>${record.claims.length ? `<ul class="record-pattern-list record-claims">${record.claims.map(claim => `<li>${evidenceBadge(claim.evidence_class || 'open')} <span>${esc(claim.text)}</span><small>${esc(claim.date || 'date not recorded')}${claim.limits ? ` · Limits: ${esc(claim.limits)}` : ''}</small>${recordReceiptsCell(claim.receipt_ids, 'Claim receipts')}</li>`).join('')}</ul>` : '<p class="meta">No claim in the receipt graph references this surface. The participation rows above carry their own receipts.</p>'}</section>`;
 
-  const receipts = `<section class="panel"><span class="panel-label">Surface receipts</span><h3>${recordPlural(recordUnique(s.receipt_ids).length, 'receipt')} attached to the surface record</h3>${renderReceiptGrid(s.receipt_ids, 'Surface receipts')}</section>`;
+  const receipts = `<section class="panel record-surface-receipts" id="record-surface-receipts" tabindex="-1"><span class="panel-label">Surface receipts</span><h3>${recordPlural(surfaceReceiptIds.length, 'receipt')} attached to the surface record</h3><p class="meta">Rendered once here; a row marked “same ${recordPlural(surfaceReceiptIds.length, 'receipt')} as the surface” carries exactly these.</p>${renderReceiptGrid(surfaceReceiptIds, 'Surface receipts')}</section>`;
 
   $('#detail').innerHTML = `<article class="record record--surface" data-record-kind="surface" data-record-id="${esc(id)}">${headPanel}${participants}${organizations}${bases}${claims}${receipts}</article>`;
   bindRecordPage(record);

@@ -130,6 +130,16 @@ assert.equal(dialog.window_text, '2026-06-16');
 assert.equal(dialog.organization_rows.length, 1);
 same(dialog.evidence_counts, { primary_public: 112, reported: 1 });
 assert.ok(dialog.facts.some(fact => fact.text === '2 of 112 listed people appear on any other documented surface'));
+// Every Dialog row carries exactly the surface's 3 receipts, so the page
+// renders them once and each row points at that panel instead of repeating
+// 3 cards inside 113 closed details elements.
+assert.ok(dialog.rows.every(row => context.recordReceiptsMatchSurface(row.receipt_ids, dialogSurface.receipt_ids)), 'every Dialog row carries exactly the surface receipts');
+assert.match(context.recordSurfaceRowReceiptsCell(dialog.rows[0], dialogSurface.receipt_ids), /^<button type="button" class="ledger-receipts-ref" data-record-scroll="record-surface-receipts">same 3 receipts as the surface<\/button>$/);
+assert.equal(context.recordReceiptsMatchSurface(['b', 'a', 'a'], ['a', 'b']), true, 'order and duplicates do not matter');
+assert.equal(context.recordReceiptsMatchSurface(['a'], ['a', 'b']), false, 'a subset is not the same set');
+assert.equal(context.recordReceiptsMatchSurface(['a', 'b', 'c'], ['a', 'b']), false, 'a row with a receipt of its own keeps its full list');
+assert.equal(context.recordReceiptsMatchSurface([], []), false, 'no receipts is never "the same receipts"');
+assert.match(source, /id="record-surface-receipts" tabindex="-1"/, 'the surface receipts panel is the reference target');
 
 // A hop surface lists its bases by day; a surface with only the compiler's generic reason says so.
 const frontier = context.surfaceRecordModel(model, hopGraph, receiptGraph, surfaceGraph.surfaces.find(item => item.surface_id === 'frontier-ai-taskforce-external-advisory-board-appointments-2023-09-07'));
