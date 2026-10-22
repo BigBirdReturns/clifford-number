@@ -272,8 +272,11 @@ function setTimelineStageActive(active) {
   }
   if (guide) {
     if (!guide.dataset.defaultMarkup) guide.dataset.defaultMarkup = guide.innerHTML;
+    // The pointer hint is its own span so the phone sheet (visual-aperture-
+    // timeline.css, max-width 760px) can drop it: there is no Ctrl + wheel on
+    // a touch screen, and the shorter caption fits beside the badge there.
     guide.innerHTML = active
-      ? '<strong>Timeline</strong><span>one mark per ledger row &middot; click a mark &middot; Ctrl + wheel = zoom time</span>'
+      ? '<strong>Timeline</strong><span>one mark per ledger row &middot; click a mark</span><span class="aperture-stage-guide-pointer">&middot; Ctrl + wheel = zoom time</span>'
       : guide.dataset.defaultMarkup;
   }
   if (legend) {

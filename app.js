@@ -15,7 +15,9 @@ const state = {
   releaseDeltaModel: null, dataBoundary: null,
   // The ledger timeline model (src/visual-aperture-timeline.mjs) built once at
   // init from the loaded surface and hop graphs; every record page reads it.
-  timeline: null, receiptGraph: null, record: null, recordFloor: 'open', recordText: ''
+  timeline: null, receiptGraph: null, record: null, recordFloor: 'open', recordText: '',
+  // Browse-index sections the reader opened past their cap (by kind).
+  browseExpanded: new Set()
 };
 const $ = sel => document.querySelector(sel);
 
@@ -606,6 +608,7 @@ async function init() {
     state.hopEdgeByPair.set(`${edge.actor_a}||${edge.actor_b}`, edge);
     state.hopEdgeByPair.set(`${edge.actor_b}||${edge.actor_a}`, edge);
   }
+  renderHeroCounts();
   const flagshipCase = [...state.caseIndex.values()].sort((a, b) => (b.featured_priority ?? 0) - (a.featured_priority ?? 0))[0];
   // Ledger-derived examples: every count is read from the timeline model, never typed.
   $('#try-examples').innerHTML = recordExampleButtons(flagshipCase).map(item => `<button data-kind="${esc(item.kind)}" data-id="${esc(item.id)}">${esc(item.label)}</button>`).join('');
@@ -880,6 +883,25 @@ function recordFactLine(kind, id, extra = null) {
   return '';
 }
 
+// The hero eyebrow counts, read from the loaded surface graph and hop graph the
+// moment they arrive. The aperture (src/visual-aperture-part-2.js,
+// updatePublicHero) later writes the same two strings from the same artifacts,
+// so the eyebrow never shows its static placeholder once the data is in and
+// the two writers never disagree; test/record-pages.test.js pins both templates.
+function heroCountsText(surfaceGraph, hopGraph) {
+  const actorCount = surfaceGraph?.actors?.length ?? 0;
+  const surfaceCount = surfaceGraph?.surfaces?.length ?? 0;
+  const hopCount = hopGraph?.edges?.length ?? 0;
+  return { nodes: `${actorCount} actors · ${surfaceCount} surfaces`, edges: `${hopCount} admitted hops` };
+}
+function renderHeroCounts() {
+  const text = heroCountsText(state.surfaceGraph, state.hopGraph);
+  const nodes = $('#hero-node-count');
+  const edges = $('#hero-edge-count');
+  if (nodes) nodes.textContent = text.nodes;
+  if (edges) edges.textContent = text.edges;
+}
+
 // The "Start with" buttons: labels and counts come from the ledger, never from a literal.
 function recordExampleButtons(flagshipCase) {
   const model = state.timeline;
@@ -985,32 +1007,94 @@ function compareSearchResults(a, b) {
     || a.label.localeCompare(b.label);
 }
 
-function browseAll() {
-  const items = [
+// The browse index lists every kind the search knows, one section per kind in
+// this order, each cut at BROWSE_SECTION_CAP with its own "Show all" control.
+// A flat alphabetical cut of 80 never reached the surface-type and year
+// records; sections guarantee every kind is represented without laying out
+// the whole index (several hundred records) by default.
+const BROWSE_SECTIONS = [
+  ['actor', 'People'], ['organization', 'Organizations'], ['surface', 'Surfaces'], ['type', 'Surface types'], ['year', 'Years'],
+  ['case', 'Cases'], ['track', 'Tracks'], ['chain', 'Pathways'], ['claim', 'Claims'], ['receipt', 'Receipts'], ['candidate', 'Candidates']
+];
+const BROWSE_SECTION_CAP = 8;
+
+function browseIndexItems() {
+  return [
     ...state.surfaceGraph.actors.map(item => ({ kind: 'actor', id: item.id, label: item.label })),
     ...state.surfaceGraph.organizations.map(item => ({ kind: 'organization', id: item.id, label: item.label })),
     ...state.surfaceGraph.surfaces.map(item => ({ kind: 'surface', id: item.surface_id, label: item.surface_label })),
     ...[...(state.timeline?.lanes.type.values() ?? [])].map(lane => ({ kind: 'type', id: lane.id, label: lane.label })),
     ...(state.timeline?.range.years_with_rows ?? []).map(year => ({ kind: 'year', id: year, label: `Year ${year}` })),
-    ...[...state.chains.values()].map(item => ({ kind: 'chain', id: item.chain_id, label: item.chain_label })),
     ...[...state.caseIndex.values()].map(item => ({ kind: 'case', id: item.case_id, label: item.title })),
     ...[...state.tracks.values()].map(item => ({ kind: 'track', id: item.track_id, label: item.label })),
+    ...[...state.chains.values()].map(item => ({ kind: 'chain', id: item.chain_id, label: item.chain_label })),
     ...[...state.claimCatalog.values()].map(item => ({ kind: 'claim', id: item.key, label: item.plain })),
-    ...[...publicReceiptRecords().values()].map(item => ({ kind: 'receipt', id: item.receipt_id, label: receiptTitle(item) }))
-  ].sort((a, b) => a.label.localeCompare(b.label)).slice(0, 80);
-  for (const item of items) item.fact = recordFactLine(item.kind, item.id, item.kind === 'receipt' ? publicReceiptRecords().get(item.id) : null);
-  state.searchResults = items;
+    ...[...publicReceiptRecords().values()].map(item => ({ kind: 'receipt', id: item.receipt_id, label: receiptTitle(item) })),
+    ...[...state.candidates.values()].map(item => ({ kind: 'candidate', id: item.id, label: item.label }))
+  ];
+}
+
+// Pure: the sections in BROWSE_SECTIONS order, each sorted like search
+// results of one kind (records with ledger rows first, then by label) and cut
+// at `cap` unless its kind is in `expanded`. Every kind with a record is a
+// section; `visible` is the flat option list in DOM order, which the
+// keyboard handler indexes.
+function browseIndexModel(items, { cap = BROWSE_SECTION_CAP, expanded = new Set(), hasRows = () => 0 } = {}) {
+  const byKind = new Map();
+  for (const item of items) {
+    if (!byKind.has(item.kind)) byKind.set(item.kind, []);
+    byKind.get(item.kind).push(item);
+  }
+  const sections = [];
+  for (const [kind, label] of BROWSE_SECTIONS) {
+    const all = (byKind.get(kind) ?? []).sort((a, b) => hasRows(a) - hasRows(b) || a.label.localeCompare(b.label));
+    if (!all.length) continue;
+    const open = expanded.has(kind);
+    const shown = open ? all : all.slice(0, cap);
+    sections.push({ kind, label, total: all.length, items: shown, hidden: all.length - shown.length, expanded: open, cap });
+  }
+  return { sections, visible: sections.flatMap(section => section.items), total: items.length };
+}
+
+function browseOptionMarkup(item, index) {
+  return `<button id="search-option-${index}" class="result" role="option" tabindex="0" aria-selected="false" data-kind="${esc(item.kind)}" data-id="${esc(item.id)}"><span class="kind-glyph">${kindGlyph(item.kind)}</span><span class="result-label">${esc(item.label)}<small>${esc(searchKindLabel(item.kind))}</small>${item.fact ? `<span class="result-fact">${esc(item.fact)}</span>` : ''}</span></button>`;
+}
+
+function browseAll({ focusKind = null } = {}) {
+  const model = browseIndexModel(browseIndexItems(), { expanded: state.browseExpanded, hasRows: searchHasRows });
+  // Facts are computed for the options on screen only.
+  for (const item of model.visible) item.fact = recordFactLine(item.kind, item.id, item.kind === 'receipt' ? publicReceiptRecords().get(item.id) : null);
+  state.searchResults = model.visible;
   state.searchActiveIndex = -1;
   $('#search').value = '';
   $('#search').setAttribute('aria-expanded', 'true');
   $('#search').removeAttribute('aria-activedescendant');
   const box = $('#results');
-  box.innerHTML = items.length
-    ? items.map((item, i) => `<button id="search-option-${i}" class="result" role="option" tabindex="0" aria-selected="false" data-kind="${esc(item.kind)}" data-id="${esc(item.id)}"><span class="kind-glyph">${kindGlyph(item.kind)}</span><span class="result-label">${esc(item.label)}<small>${esc(searchKindLabel(item.kind))}</small>${item.fact ? `<span class="result-fact">${esc(item.fact)}</span>` : ''}</span></button>`).join('')
+  let index = 0;
+  box.innerHTML = model.sections.length
+    ? model.sections.map(section => {
+      const options = section.items.map(item => browseOptionMarkup(item, index++)).join('');
+      const control = section.total > section.cap
+        ? `<button type="button" class="results-more" data-browse-kind="${esc(section.kind)}" aria-expanded="${String(section.expanded)}">${esc(translate(state.locale, section.expanded ? 'browseShowFewer' : 'browseShowAll', { count: section.expanded ? section.cap : section.total }))}</button>`
+        : '';
+      const count = section.items.length === section.total ? recordPlural(section.total, 'record') : `${section.items.length} of ${recordPlural(section.total, 'record')}`;
+      return `<div class="results-section" role="group" aria-labelledby="browse-section-${esc(section.kind)}"><div class="results-section-head"><span id="browse-section-${esc(section.kind)}" class="results-section-title">${esc(section.label)}</span><span class="results-section-count">${esc(count)}</span></div>${options}${control}</div>`;
+    }).join('')
     : `<div class="meta" role="option" aria-disabled="true">${esc(translate(state.locale, 'noRecords'))}</div>`;
   for (const btn of box.querySelectorAll('.result')) btn.addEventListener('click', () => activateResult(btn.dataset.kind, btn.dataset.id));
-  announce(translate(state.locale, 'browseShowing', { count: items.length }));
-  box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  for (const btn of box.querySelectorAll('.results-more')) btn.addEventListener('click', () => {
+    const kind = btn.dataset.browseKind;
+    if (state.browseExpanded.has(kind)) state.browseExpanded.delete(kind);
+    else state.browseExpanded.add(kind);
+    browseAll({ focusKind: kind });
+  });
+  announce(translate(state.locale, 'browseShowingOf', { count: model.visible.length, total: model.total, sections: model.sections.length }));
+  if (focusKind) {
+    // A section just opened or closed: the keyboard stays on its control.
+    box.querySelector(`.results-more[data-browse-kind="${CSS.escape(focusKind)}"]`)?.focus();
+  } else {
+    box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
 }
 
 function onSearchKeydown(e) {
@@ -1592,6 +1676,20 @@ function recordReceiptsCell(ids, label = 'Row receipts') {
   if (!unique.length) return '<span class="meta">no receipt id on this row</span>';
   return `<details class="ledger-receipts"><summary>${recordPlural(unique.length, 'receipt')}</summary>${renderReceiptGrid(unique, label)}</details>`;
 }
+// On a surface page the surface's own receipts are rendered once, in the
+// "Surface receipts" panel. A row whose receipts are exactly that set gets a
+// compact reference that jumps there instead of the same cards again (the
+// Dialog roster carried the same 3 receipts inside 112 closed details
+// elements); a row with receipts of its own that differ keeps its full list.
+function recordReceiptsMatchSurface(rowIds, surfaceIds) {
+  const row = recordUnique(rowIds).sort(recordCompare);
+  const surface = recordUnique(surfaceIds).sort(recordCompare);
+  return row.length > 0 && row.length === surface.length && row.every((id, index) => id === surface[index]);
+}
+function recordSurfaceRowReceiptsCell(row, surfaceReceiptIds) {
+  if (!recordReceiptsMatchSurface(row.receipt_ids, surfaceReceiptIds)) return recordReceiptsCell(row.receipt_ids);
+  return `<button type="button" class="ledger-receipts-ref" data-record-scroll="record-surface-receipts">same ${recordPlural(recordUnique(surfaceReceiptIds).length, 'receipt')} as the surface</button>`;
+}
 function recordTable(columns, rows, cellsFor, { rowAttributes = () => '' } = {}) {
   if (!rows.length) return '<p class="meta ledger-empty">No row passes the current filters. The status line above names what hid them.</p>';
   const head = `<thead><tr>${columns.map(column => `<th scope="col">${esc(column)}</th>`).join('')}</tr></thead>`;
@@ -1712,6 +1810,12 @@ function bindRecordPage(record) {
   };
   for (const mark of detail.querySelectorAll('[data-record-mark]')) activate(mark, () => focusLedgerRow(mark.dataset.recordMark));
   for (const aggregate of detail.querySelectorAll('[data-record-rows]')) activate(aggregate, () => focusLedgerRow(aggregate.dataset.recordRows.split(' ')[0], { open: false }));
+  for (const button of detail.querySelectorAll('[data-record-scroll]')) button.addEventListener('click', () => {
+    const target = document.getElementById(button.dataset.recordScroll);
+    if (!target) return;
+    target.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'start' });
+    target.focus({ preventScroll: true });
+  });
   detail.querySelector('#record-floor')?.addEventListener('change', event => {
     state.recordFloor = RECORD_FLOORS.some(([value]) => value === event.target.value) ? event.target.value : 'open';
     renderEntity(record.kind, record.id);
@@ -1752,7 +1856,9 @@ function renderActor(id) {
   const headPanel = `<header class="panel record-head">${recordHeading(label, actor ? entityReceiptIds('actor', id) : [], actions)}<div class="badge-row record-kind-line">${badges}</div>${profileHtml}${recordFacts(record.facts)}<aside class="profile-boundary"><strong>What this entry supports</strong><br>Documented participation on named public-role surfaces.<br><br><strong>What it does not support</strong><br>Claims about motive, agreement, influence, coordination, character, or wrongdoing.</aside></header>`;
 
   if (!record.rows.length) {
-    $('#detail').innerHTML = headPanel;
+    // Still a record page: the article wrapper is what gives a receipt
+    // opened here its "Record / <label>" crumb (recordInspectorOrigin).
+    $('#detail').innerHTML = `<article class="record record--actor" data-record-kind="actor" data-record-id="${esc(id)}">${headPanel}</article>`;
     bindRecordPage(record);
     return;
   }
@@ -1972,6 +2078,8 @@ function renderSurface(id) {
     ? recordTimelineMarkup(recordTimelineLayout('surface', id, { dense: record.dense }), { filteredKeys: new Set(partition.hidden_keys), title: record.dense ? `${s.surface_label}: the roster as one contained object on its day` : `${s.surface_label}: one mark per participant row` })
     : '<p class="meta">No participation row to place on the axis; the surface window above is the only dated fact.</p>';
 
+  const surfaceReceiptIds = recordUnique(s.receipt_ids);
+  const receiptsCellFor = row => recordSurfaceRowReceiptsCell(row, surfaceReceiptIds);
   const columns = ['#', 'Participant', 'Role', 'Window', 'Evidence', 'Receipts', 'Also documented on'];
   const cellsFor = (row, index) => [
     String(index + 1),
@@ -1979,7 +2087,7 @@ function renderSurface(id) {
     recordRoleCell(row),
     esc(recordWindowText(row)),
     evidenceBadge(row.evidence_class),
-    recordReceiptsCell(row.receipt_ids),
+    receiptsCellFor(row),
     (elsewhereFor.get(row.key) ?? 0) > 0 ? `<a href="#actor/${encodeURIComponent(row.entity_id)}">${recordPlural(elsewhereFor.get(row.key), 'other surface')}</a>` : '<span class="meta">only here</span>'
   ];
   let participantsTable;
@@ -1995,7 +2103,18 @@ function renderSurface(id) {
     ? `<section class="panel record-ledger"><span class="panel-label">Participants</span><h3>${recordPlural(record.participant_count, 'person', 'people')} documented on this surface${record.dense ? ', one contained roster' : ''}</h3><section class="record-strip-wrap">${strip}</section><div class="ledger-controls">${recordFloorControl(partition.floor)}<p class="ledger-status" id="record-ledger-status" role="status">${esc(recordStatusText(partition, participantRows.length, 'participant row'))}</p></div>${rosterStatus}${participantsTable}<p class="meta record-boundary">${esc(RECORD_BOUNDARY)}</p></section>`
     : `<section class="panel record-ledger"><span class="panel-label">Participants</span><h3>No person is documented on this surface</h3><section class="record-strip-wrap">${strip}</section><p class="meta">${recordPlural(record.organization_rows.length, 'organization row')} only; a surface without two people can never be a hop basis.</p></section>`;
 
-  const organizations = `<section class="panel"><span class="panel-label">Organizations on this surface</span><h3>${recordPlural(record.organization_rows.length, 'organization')}</h3>${recordPatternList(record.organization_rows.map(row => `<li><a href="#organization/${encodeURIComponent(row.entity_id)}">${esc(row.entity_label)}</a> · ${esc(row.role || humanLabel(row.participation_type || 'organization'))} <small>${esc(humanLabel(row.participation_type || ''))} · ${esc(recordWindowText(row))} · ${esc(recordEvidenceWord(row.evidence_class))}</small></li>`), { empty: 'No organization row on this surface.' })}</section>`;
+  // Organization rows are participation rows too: the same ledger table and
+  // the same receipts cell as the people above, so their receipt_ids are read.
+  const organizationColumns = ['#', 'Organization', 'Role', 'Window', 'Evidence', 'Receipts'];
+  const organizationCellsFor = (row, index) => [
+    String(index + 1),
+    `<a href="#organization/${encodeURIComponent(row.entity_id)}">${esc(row.entity_label)}</a>`,
+    recordRoleCell(row),
+    esc(recordWindowText(row)),
+    evidenceBadge(row.evidence_class),
+    receiptsCellFor(row)
+  ];
+  const organizations = `<section class="panel record-ledger record-organizations"><span class="panel-label">Organizations on this surface</span><h3>${recordPlural(record.organization_rows.length, 'organization')}</h3><p class="meta">Venue or context rows: an organization never creates a hop.</p>${record.organization_rows.length ? recordTable(organizationColumns, record.organization_rows, organizationCellsFor, { rowAttributes: recordRowAttributes }) : '<p class="meta">No organization row on this surface.</p>'}</section>`;
 
   const bases = s.hop_eligible
     ? `<section class="panel record-bases"><span class="panel-label">Admitted hop bases</span><h3>${recordPlural(record.basis_count, 'actor pair')} share this surface${record.basis_days.length ? ` on ${esc(record.basis_days.join(', '))}` : ''}</h3><p class="meta">Each basis is one compiler-admitted pair on this surface's day. It is listed, never drawn as a line; open the connection checker to see the pair with its receipts.</p>${record.basis_count ? `<details class="participant-overflow"><summary>List the ${recordPlural(record.basis_count, 'pair')}</summary><ul class="record-pattern-list">${record.bases.map(basis => `<li><a href="#desk/${encodeURIComponent(basis.actor_a)}/${encodeURIComponent(basis.actor_b)}">${esc(labelActor(basis.actor_a))} × ${esc(labelActor(basis.actor_b))}</a> · ${esc(basis.iso_day ?? 'not dated')} · ${evidenceBadge(basis.evidence_class)}<small>${esc(labelActor(basis.actor_a))}: ${esc(basis.actor_a_role || 'named participant')} · ${esc(labelActor(basis.actor_b))}: ${esc(basis.actor_b_role || 'named participant')}</small></li>`).join('')}</ul></details>` : '<p class="meta">The compiler admitted no pair on this surface.</p>'}</section>`
@@ -2003,7 +2122,7 @@ function renderSurface(id) {
 
   const claims = `<section class="panel"><span class="panel-label">Claims referencing this surface</span><h3>${recordPlural(record.claims.length, 'claim')} in the receipt graph</h3>${record.claims.length ? `<ul class="record-pattern-list record-claims">${record.claims.map(claim => `<li>${evidenceBadge(claim.evidence_class || 'open')} <span>${esc(claim.text)}</span><small>${esc(claim.date || 'date not recorded')}${claim.limits ? ` · Limits: ${esc(claim.limits)}` : ''}</small>${recordReceiptsCell(claim.receipt_ids, 'Claim receipts')}</li>`).join('')}</ul>` : '<p class="meta">No claim in the receipt graph references this surface. The participation rows above carry their own receipts.</p>'}</section>`;
 
-  const receipts = `<section class="panel"><span class="panel-label">Surface receipts</span><h3>${recordPlural(recordUnique(s.receipt_ids).length, 'receipt')} attached to the surface record</h3>${renderReceiptGrid(s.receipt_ids, 'Surface receipts')}</section>`;
+  const receipts = `<section class="panel record-surface-receipts" id="record-surface-receipts" tabindex="-1"><span class="panel-label">Surface receipts</span><h3>${recordPlural(surfaceReceiptIds.length, 'receipt')} attached to the surface record</h3><p class="meta">Rendered once here; a row marked “same ${recordPlural(surfaceReceiptIds.length, 'receipt')} as the surface” carries exactly these.</p>${renderReceiptGrid(surfaceReceiptIds, 'Surface receipts')}</section>`;
 
   $('#detail').innerHTML = `<article class="record record--surface" data-record-kind="surface" data-record-id="${esc(id)}">${headPanel}${participants}${organizations}${bases}${claims}${receipts}</article>`;
   bindRecordPage(record);

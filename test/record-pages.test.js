@@ -130,6 +130,24 @@ assert.equal(dialog.window_text, '2026-06-16');
 assert.equal(dialog.organization_rows.length, 1);
 same(dialog.evidence_counts, { primary_public: 112, reported: 1 });
 assert.ok(dialog.facts.some(fact => fact.text === '2 of 112 listed people appear on any other documented surface'));
+// Every Dialog row carries exactly the surface's 3 receipts, so the page
+// renders them once and each row points at that panel instead of repeating
+// 3 cards inside 113 closed details elements.
+assert.ok(dialog.rows.every(row => context.recordReceiptsMatchSurface(row.receipt_ids, dialogSurface.receipt_ids)), 'every Dialog row carries exactly the surface receipts');
+assert.match(context.recordSurfaceRowReceiptsCell(dialog.rows[0], dialogSurface.receipt_ids), /^<button type="button" class="ledger-receipts-ref" data-record-scroll="record-surface-receipts">same 3 receipts as the surface<\/button>$/);
+assert.equal(context.recordReceiptsMatchSurface(['b', 'a', 'a'], ['a', 'b']), true, 'order and duplicates do not matter');
+assert.equal(context.recordReceiptsMatchSurface(['a'], ['a', 'b']), false, 'a subset is not the same set');
+assert.equal(context.recordReceiptsMatchSurface(['a', 'b', 'c'], ['a', 'b']), false, 'a row with a receipt of its own keeps its full list');
+assert.equal(context.recordReceiptsMatchSurface([], []), false, 'no receipts is never "the same receipts"');
+assert.match(source, /id="record-surface-receipts" tabindex="-1"/, 'the surface receipts panel is the reference target');
+// Organization rows carry receipt_ids and get the same receipts cell as the
+// people rows, in a ledger table of their own on the surface page.
+assert.equal(dialog.organization_rows[0].entity_id, 'dialog');
+assert.ok(dialog.organization_rows[0].receipt_ids.length >= 1, 'the Dialog organization row carries receipt ids');
+assert.ok(model.rows.filter(row => row.participant_type === 'organization').every(row => row.receipt_ids.length >= 1), 'every organization participation row carries receipt ids');
+assert.match(source, /const organizationColumns = \['#', 'Organization', 'Role', 'Window', 'Evidence', 'Receipts'\];/);
+assert.match(source, /recordTable\(organizationColumns, record\.organization_rows, organizationCellsFor, \{ rowAttributes: recordRowAttributes \}\)/, 'organization rows render through the same ledger table');
+assert.match(source, /const organizationCellsFor = \(row, index\) => \[[^\]]*receiptsCellFor\(row\)\s*\]/, 'organization rows use the same receipts cell as actor rows');
 
 // A hop surface lists its bases by day; a surface with only the compiler's generic reason says so.
 const frontier = context.surfaceRecordModel(model, hopGraph, receiptGraph, surfaceGraph.surfaces.find(item => item.surface_id === 'frontier-ai-taskforce-external-advisory-board-appointments-2023-09-07'));
@@ -191,6 +209,46 @@ context.__cliffordApertureOrigin = 'not an object';
 assert.equal(context.atlasInspectorOrigin({}), null, 'a malformed origin is ignored, never rendered');
 context.__cliffordApertureOrigin = { mode: '', objectLabel: '' };
 assert.equal(context.atlasInspectorOrigin({}), null, 'an empty origin produces no crumb');
+
+// --- every entity page, zero-row pages included, is an article.record[data-record-kind]:
+// the receipt dialog reads that wrapper for its "Record / <label>" crumb.
+for (const name of ['renderActor', 'renderOrg', 'renderSurface', 'renderType', 'renderYear']) {
+  const start = source.indexOf(`\nfunction ${name}(`);
+  assert.notEqual(start, -1, `${name} is defined`);
+  const body = source.slice(start, source.indexOf('\nfunction ', start + 1));
+  const assignments = [...body.matchAll(/\$\('#detail'\)\.innerHTML = ([^\n]{0,120})/g)].map(match => match[1]);
+  assert.ok(assignments.length >= 1, `${name} renders into #detail`);
+  for (const html of assignments) assert.match(html, /^`<article class="record record--\w+" data-record-kind="\w+" data-record-id=/, `${name}: ${html.slice(0, 40)}… must be wrapped in article.record[data-record-kind]`);
+  if (name === 'renderActor' || name === 'renderOrg') assert.equal(assignments.length, 2, `${name} renders both its zero-row page and its ledger page`);
+}
+
+// --- the hero eyebrow: app.js writes it from the loaded graphs; the aperture
+// later writes the same two strings from the same artifacts.
+same(context.heroCountsText(surfaceGraph, hopGraph), { nodes: `${surfaceGraph.actors.length} actors · ${surfaceGraph.surfaces.length} surfaces`, edges: `${hopGraph.edges.length} admitted hops` });
+assert.equal(context.heroCountsText(surfaceGraph, hopGraph).edges, '93 admitted hops');
+same(context.heroCountsText(null, null), { nodes: '0 actors · 0 surfaces', edges: '0 admitted hops' });
+const part2Source = fs.readFileSync('src/visual-aperture-part-2.js', 'utf8');
+for (const template of ['`${actorCount} actors · ${surfaceCount} surfaces`', '`${hopCount} admitted hops`']) {
+  assert.ok(source.includes(template) && part2Source.includes(template), `app.js and the aperture share the hero template ${template}`);
+}
+assert.match(source, /\n  renderHeroCounts\(\);\n/, 'init writes the hero counts as soon as the data is loaded');
+
+// --- the browse index: one section per kind, capped, every kind represented
+const browseKinds = ['actor', 'organization', 'surface', 'type', 'year', 'case', 'track', 'chain', 'claim', 'receipt', 'candidate'];
+const browseItems = [
+  ...Array.from({ length: 12 }, (_, i) => ({ kind: 'actor', id: `a${i}`, label: `Person ${String(i).padStart(2, '0')}` })),
+  ...browseKinds.filter(kind => kind !== 'actor').map(kind => ({ kind, id: `${kind}-1`, label: `${kind} one` }))
+];
+const browse = context.browseIndexModel(browseItems, { cap: 8, hasRows: item => (item.id === 'a11' ? 0 : 1) });
+same(browse.sections.map(section => section.kind), browseKinds, 'every searchable kind is a section, in the fixed order');
+same([browse.sections[0].items.length, browse.sections[0].total, browse.sections[0].hidden, browse.sections[0].expanded], [8, 12, 4, false], 'a section is cut at the cap and counts what it hides');
+assert.equal(browse.sections[0].items[0].id, 'a11', 'records with ledger rows lead their section');
+assert.equal(browse.visible.length, 8 + 10, 'the visible list is the flat option list the keyboard handler indexes');
+assert.equal(browse.total, 22);
+const opened = context.browseIndexModel(browseItems, { cap: 8, expanded: new Set(['actor']) });
+same([opened.sections[0].items.length, opened.sections[0].hidden, opened.sections[0].expanded], [12, 0, true], 'Show all opens one section past its cap');
+assert.equal(opened.sections[0].items[0].label, 'Person 00', 'without the row signal a section is alphabetical');
+same(context.browseIndexModel([]).sections, [], 'no records, no sections');
 
 // --- registration
 assert.match(JSON.parse(fs.readFileSync('package.json', 'utf8')).scripts.test, /node test\/record-pages\.test\.js/);

@@ -62,6 +62,11 @@ assert.match(smokeSource, /#aperture-timeline line\[data-ap-time-pair\]/, 'the r
 assert.match(smokeSource, /ROUTE_CASES\.find\(routeCase => routeCase\.route\.includes\('#'\)\)/, 'back/forward is exercised on a hash route, not the query-less arrival page');
 assert.equal(ROUTE_CASES.find(routeCase => routeCase.route.includes('#')).id, 'dated-connection');
 assert.match(smokeSource, /#aperture-timeline \[data-ap-time-mark\]/);
+// The renderer badge and the mode caption are measured against every lane
+// label's cell and the case fails on any intersection, at every viewport.
+assert.match(smokeSource, /querySelectorAll\('\.aperture-renderer-badge, \.aperture-stage-guide'\)/, 'the stage chrome is measured by its real class names');
+assert.match(smokeSource, /querySelectorAll\('#aperture-timeline \[data-ap-time-lane\]'\)/, 'every lane label group is measured');
+assert.match(smokeSource, /if \(metrics\.label_overlaps\.length\) throw new Error/, 'any chrome-over-label intersection fails the timeline case');
 assert.match(smokeSource, /\[data-ap-mode="timeline"\]\.is-active/);
 assert.match(smokeSource, /delay_json_ms/);
 assert.match(smokeSource, /const response = await route\.fetch\(\);[\s\S]*?setTimeout\(resolve, delayJsonMs\)[\s\S]*?route\.fulfill\(\{ response \}\)/, 'delayed JSON is the real body served late, not a stub');
