@@ -116,6 +116,8 @@
 
 /* stage chrome while the timeline is on screen */
 .aperture-deck[data-aperture-timeline="true"] .aperture-stage-legend { bottom: 48px; }
+/* leave scroll room under the last lane so the bottom-anchored legend never has to sit on a lane label */
+.aperture-deck[data-aperture-timeline="true"] .aperture-time-lanes { padding-bottom: 40px; }
 .aperture-renderer-badge[data-engine="timeline"] { border-color: rgba(243, 188, 78, .6); color: #ffd98a; }
 .aperture-time-key { width: 12px; height: 12px; display: inline-block; border: 1px solid var(--ap-line-strong); flex: 0 0 auto; }
 .aperture-time-key--day { width: 5px; height: 11px; border-radius: 1px; background: var(--ap-muted); }
