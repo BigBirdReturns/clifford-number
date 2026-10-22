@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import crypto from 'node:crypto';
 
 export const ROOT = process.cwd();
@@ -612,7 +613,7 @@ export function buildProduct() {
   return {custody,decisionObject,ledger,matrix,census,summary,index,manifest,schema};
 }
 
-if (import.meta.url === new URL(`file://${process.argv[1]}`).href) {
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const product = buildProduct();
   console.log(`rd04_nd_followup_one_cell_promotion=built candidates=${product.decisionObject.decisions.length} terminal_cells=${product.matrix.counts.terminal_cells} open_substantive=${product.matrix.counts.still_open_substantive_cells}`);
 }

@@ -2,6 +2,7 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { readJson, root, writeJson } from './lib/ledger.mjs';
 
 export const ESTATE_CLOSURE_SCHEMA_VERSION = 'estate-closure-packet@1';
@@ -410,7 +411,7 @@ export function buildEstateClosures({ write = true } = {}) {
   return { manifest, packets, apertureData };
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const built = buildEstateClosures();
   console.log(`estate closures: ${built.manifest.counts.estates} estates, ${built.manifest.counts.tasks} tasks, ${built.manifest.counts.surface_complete_tasks} candidate handoffs`);
 }

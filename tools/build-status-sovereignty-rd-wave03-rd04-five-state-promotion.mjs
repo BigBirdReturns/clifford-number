@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import crypto from 'node:crypto';
 
 export const ROOT = process.cwd();
@@ -101,4 +102,4 @@ export function buildProduct(){
  const combined=sha256Bytes(Buffer.from(entries.map(e=>`${e.sha256}  ${e.path}`).join('\n')+'\n'));const manifest={schema_version:'ssc-rd04-wave03-five-state-promotion-manifest@1',permanent_data_files:8,entries,combined_sha256:combined};writeJson('product-manifest.json',manifest);
  return {custody,decisionObj,ledger,matrix,census,summary,index,manifest};
 }
-if(import.meta.url===new URL(`file://${process.argv[1]}`).href){const p=buildProduct();console.log(`rd04_five_state_promotion=built candidates=${p.decisions?.length??p.decisionObj.decisions.length} terminal_cells=${p.matrix.counts.terminal_cells}`);}
+if(process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)){const p=buildProduct();console.log(`rd04_five_state_promotion=built candidates=${p.decisions?.length??p.decisionObj.decisions.length} terminal_cells=${p.matrix.counts.terminal_cells}`);}

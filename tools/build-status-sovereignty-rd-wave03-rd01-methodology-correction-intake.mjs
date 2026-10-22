@@ -290,7 +290,7 @@ export function checkPackage(root = ROOT) {
   return observed;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const mode = process.argv[2] || '--write';
   if (mode === '--write') {
     write(ROOT, PACKAGE_PATH, derivePackage(ROOT));

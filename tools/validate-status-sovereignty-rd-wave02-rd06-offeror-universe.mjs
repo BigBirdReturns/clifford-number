@@ -295,7 +295,7 @@ export function validateProduct(root = ROOT) {
   return bundle;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const bundle = validateProduct(ROOT);
   console.log(`RD-06 terminal product validated: ${bundle.terminal.counts.proposal_slots}/8 slots terminal; ${bundle.terminal.counts.public_identity_source_restricted_slots} source restricted`);
 }

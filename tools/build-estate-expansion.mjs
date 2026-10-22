@@ -242,7 +242,7 @@ export function buildEstateExpansion({ write = true } = {}) {
   return manifest;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const manifest = buildEstateExpansion();
   console.log(`estate expansion: ${manifest.counts.first_ten_incomplete_layers_closed} first-pass layers closed, ${manifest.counts.second_cohort_estates} control estates, ${manifest.counts.second_cohort_records} logical second-cohort records`);
 }
