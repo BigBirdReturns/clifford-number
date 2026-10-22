@@ -90,12 +90,19 @@ const apertureModuleFiles = [
   'src/visual-aperture-state.mjs',
   'src/visual-aperture-workspace.mjs',
   'src/visual-aperture-export.mjs',
-  'src/visual-aperture-windowing.mjs'
+  'src/visual-aperture-windowing.mjs',
+  'src/visual-aperture-timeline.mjs'
 ];
 const apertureModuleRecords = apertureModuleFiles.map(file => {
   const source = read(file);
   const names = [...source.matchAll(/^export\s+(?:const|function|class)\s+(\w+)/gm)].map(match => match[1]);
-  const body = source.replace(/^export\s+/gm, '');
+  // A module that imports from a sibling (visual-aperture-timeline.mjs imports
+  // core.mjs) would leave an `import` statement inside a classic script, so it
+  // goes through isolateModule, which strips the import lines; the sibling's
+  // exports are already on globalThis because core.mjs is flattened first.
+  const body = /^import\s/m.test(source)
+    ? `const { ${names.join(', ')} } = ${isolateModule(source)};`
+    : source.replace(/^export\s+/gm, '');
   return { names, body };
 });
 const apertureNames = [...new Set(apertureModuleRecords.flatMap(record => record.names))];
