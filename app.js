@@ -914,6 +914,15 @@ function onSearch(e) {
       if (match) results.push({ kind: 'organization', id: o.id, label: o.label, ...match });
     }
     for (const s of state.surfaceGraph.surfaces) { const match = rankMatch(q, s.surface_label, s.surface_id); if (match) results.push({ kind: 'surface', id: s.surface_id, label: s.surface_label, ...match }); }
+    // Surface types and the years with rows are searchable records of the timeline model.
+    for (const lane of state.timeline?.lanes.type.values() ?? []) {
+      const match = rankMatch(q, lane.label, lane.id, [`${lane.label} surface type`]);
+      if (match) results.push({ kind: 'type', id: lane.id, label: lane.label, ...match });
+    }
+    for (const year of state.timeline?.range.years_with_rows ?? []) {
+      const match = rankMatch(q, `Year ${year}`, year);
+      if (match) results.push({ kind: 'year', id: year, label: `Year ${year}`, ...match });
+    }
     for (const c of state.chains.values()) { const match = rankMatch(q, c.chain_label, c.chain_id); if (match) results.push({ kind: 'chain', id: c.chain_id, label: c.chain_label, ...match }); }
     for (const c of state.candidates.values()) {
       const match = rankMatch(q, c.label, c.id, c.aliases ?? []);
@@ -933,19 +942,35 @@ function onSearch(e) {
     }
     for (const receipt of publicReceiptRecords().values()) {
       const match = rankMatch(q, receiptTitle(receipt), receipt.receipt_id, [receipt.publisher, receipt.extract, receipt.notes, receipt.path]);
-      if (match) results.push({ kind: 'receipt', id: receipt.receipt_id, label: receiptTitle(receipt), ...match });
+      if (match) results.push({ kind: 'receipt', id: receipt.receipt_id, label: receiptTitle(receipt), fact: recordFactLine('receipt', receipt.receipt_id, receipt), ...match });
     }
   }
-  const kindOrder = { track: 0, case: 1, actor: 2, organization: 3, claim: 4, receipt: 5, surface: 6, chain: 7, candidate: 8 };
-  state.searchResults = results.sort((a, b) => a.score - b.score || kindOrder[a.kind] - kindOrder[b.kind] || a.label.localeCompare(b.label)).slice(0, 12);
+  for (const result of results) if (result.fact === undefined) result.fact = recordFactLine(result.kind, result.id);
+  state.searchResults = results.sort(compareSearchResults).slice(0, 12);
   state.searchActiveIndex = -1;
   const box = $('#results');
   box.innerHTML = state.searchResults.length
-    ? state.searchResults.map((r, i) => `<button id="search-option-${i}" class="result" role="option" tabindex="-1" aria-selected="false" data-kind="${esc(r.kind)}" data-id="${esc(r.id)}"><span class="kind-glyph">${kindGlyph(r.kind)}</span><span class="result-label">${esc(r.label)}<small>${esc(r.kind)} · ${esc(r.context)}</small></span></button>`).join('')
+    ? state.searchResults.map((r, i) => `<button id="search-option-${i}" class="result" role="option" tabindex="-1" aria-selected="false" data-kind="${esc(r.kind)}" data-id="${esc(r.id)}"><span class="kind-glyph">${kindGlyph(r.kind)}</span><span class="result-label">${esc(r.label)}<small>${esc(searchKindLabel(r.kind))} · ${esc(r.context)}</small>${r.fact ? `<span class="result-fact">${esc(r.fact)}</span>` : ''}</span></button>`).join('')
     : q.length >= 2 ? `<div class="meta" role="option" aria-disabled="true">No public record in this release matches “${esc(e.target.value.trim())}”. Absence here is not evidence of absence.</div>` : '';
   $('#search').setAttribute('aria-expanded', String(q.length >= 2));
   $('#search').removeAttribute('aria-activedescendant');
   for (const btn of box.querySelectorAll('.result')) btn.addEventListener('click', () => activateResult(btn.dataset.kind, btn.dataset.id));
+}
+
+// Ranking: match quality, then kind, then records with ledger rows before
+// zero-row records, then label. The kind order puts the ledger's own objects first.
+const SEARCH_KIND_ORDER = { actor: 0, organization: 1, surface: 2, type: 3, year: 4, case: 5, track: 6, chain: 7, claim: 8, receipt: 9, candidate: 10 };
+const SEARCH_KIND_LABEL = { actor: 'person', organization: 'organization', surface: 'surface', type: 'surface type', year: 'year', case: 'case', track: 'track', chain: 'pathway', claim: 'claim', receipt: 'receipt', candidate: 'candidate' };
+function searchKindLabel(kind) { return SEARCH_KIND_LABEL[kind] ?? kind; }
+function searchHasRows(result) {
+  if (result.kind === 'actor' || result.kind === 'organization') return (state.timeline?.lanes[result.kind].get(result.id)?.row_count ?? 0) > 0 ? 0 : 1;
+  return 0;
+}
+function compareSearchResults(a, b) {
+  return a.score - b.score
+    || (SEARCH_KIND_ORDER[a.kind] ?? 99) - (SEARCH_KIND_ORDER[b.kind] ?? 99)
+    || searchHasRows(a) - searchHasRows(b)
+    || a.label.localeCompare(b.label);
 }
 
 function browseAll() {
@@ -953,12 +978,15 @@ function browseAll() {
     ...state.surfaceGraph.actors.map(item => ({ kind: 'actor', id: item.id, label: item.label })),
     ...state.surfaceGraph.organizations.map(item => ({ kind: 'organization', id: item.id, label: item.label })),
     ...state.surfaceGraph.surfaces.map(item => ({ kind: 'surface', id: item.surface_id, label: item.surface_label })),
+    ...[...(state.timeline?.lanes.type.values() ?? [])].map(lane => ({ kind: 'type', id: lane.id, label: lane.label })),
+    ...(state.timeline?.range.years_with_rows ?? []).map(year => ({ kind: 'year', id: year, label: `Year ${year}` })),
     ...[...state.chains.values()].map(item => ({ kind: 'chain', id: item.chain_id, label: item.chain_label })),
     ...[...state.caseIndex.values()].map(item => ({ kind: 'case', id: item.case_id, label: item.title })),
     ...[...state.tracks.values()].map(item => ({ kind: 'track', id: item.track_id, label: item.label })),
     ...[...state.claimCatalog.values()].map(item => ({ kind: 'claim', id: item.key, label: item.plain })),
     ...[...publicReceiptRecords().values()].map(item => ({ kind: 'receipt', id: item.receipt_id, label: receiptTitle(item) }))
   ].sort((a, b) => a.label.localeCompare(b.label)).slice(0, 80);
+  for (const item of items) item.fact = recordFactLine(item.kind, item.id, item.kind === 'receipt' ? publicReceiptRecords().get(item.id) : null);
   state.searchResults = items;
   state.searchActiveIndex = -1;
   $('#search').value = '';
@@ -966,7 +994,7 @@ function browseAll() {
   $('#search').removeAttribute('aria-activedescendant');
   const box = $('#results');
   box.innerHTML = items.length
-    ? items.map((item, i) => `<button id="search-option-${i}" class="result" role="option" tabindex="0" aria-selected="false" data-kind="${esc(item.kind)}" data-id="${esc(item.id)}"><span class="kind-glyph">${kindGlyph(item.kind)}</span><span class="result-label">${esc(item.label)}<small>${esc(item.kind)}</small></span></button>`).join('')
+    ? items.map((item, i) => `<button id="search-option-${i}" class="result" role="option" tabindex="0" aria-selected="false" data-kind="${esc(item.kind)}" data-id="${esc(item.id)}"><span class="kind-glyph">${kindGlyph(item.kind)}</span><span class="result-label">${esc(item.label)}<small>${esc(searchKindLabel(item.kind))}</small>${item.fact ? `<span class="result-fact">${esc(item.fact)}</span>` : ''}</span></button>`).join('')
     : `<div class="meta" role="option" aria-disabled="true">${esc(translate(state.locale, 'noRecords'))}</div>`;
   for (const btn of box.querySelectorAll('.result')) btn.addEventListener('click', () => activateResult(btn.dataset.kind, btn.dataset.id));
   announce(translate(state.locale, 'browseShowing', { count: items.length }));
