@@ -244,6 +244,51 @@ function checkMarks(layout, minWidth) {
   }
   assert.ok(!('lines' in layout));
 }
+// Counts name their denominator and every filter says what it hid: each
+// candidate row of the grouping is drawn once (mark, +N or block member) or
+// sits in exactly one hidden list.
+function checkAccounting(layout, sourceModel = model) {
+  const c = layout.counts;
+  assert.equal(c.rows_in_view + c.filtered + c.pre_domain + c.post_domain + c.undated, c.candidate_rows, 'in view + hidden = candidate rows');
+  assert.equal(c.candidate_rows + c.rows_outside_grouping, c.total_rows, 'candidates + rows outside the grouping = the denominator');
+  assert.ok(c.in_window <= c.rows_in_view);
+  if (!layout.window.active) assert.equal(c.in_window, c.rows_in_view);
+  assert.ok(c.pre_domain_overlapping <= c.pre_domain, 'overlapping rows are a subset of the pre-domain rows');
+  const viewKeys = new Set([
+    ...layout.marks.map(mark => mark.key),
+    ...layout.aggregates.flatMap(aggregate => aggregate.hidden_keys),
+    ...layout.blocks.flatMap(block => block.visible_member_keys)
+  ]);
+  assert.equal(viewKeys.size, c.rows_in_view, 'rows in view are unique row keys, never a mark plus a block member twice');
+  const hiddenLists = ['filtered', 'pre_domain', 'post_domain', 'undated'];
+  const hiddenKeys = hiddenLists.flatMap(name => layout.hidden[name]);
+  assert.equal(new Set(hiddenKeys).size, hiddenKeys.length, 'hidden lists are unique and disjoint');
+  for (const key of hiddenKeys) assert.ok(!viewKeys.has(key), `${key} is hidden and drawn at once`);
+  for (const key of layout.hidden.pre_domain_overlapping) assert.ok(layout.hidden.pre_domain.includes(key));
+  assert.equal(c.filtered, layout.hidden.filtered.length);
+  assert.equal(c.pre_domain, layout.hidden.pre_domain.length);
+  assert.equal(c.post_domain, layout.hidden.post_domain.length);
+  assert.equal(c.undated, layout.hidden.undated.length);
+  for (const block of layout.blocks) {
+    assert.ok(block.visible_row_count >= 1, 'a block is drawn only when at least one member passes the filters');
+    assert.equal(block.visible_member_keys.length, block.visible_row_count);
+    assert.equal(block.visible_row_count + block.filtered_count, block.row_count);
+    const members = block.member_keys.map(key => sourceModel.rowsByKey.get(key));
+    assert.deepEqual(filterTimelineRows(members, layout.filters).map(row => row.key).sort(), [...block.visible_member_keys].sort(), 'block members pass the same filters as every other row');
+    for (const key of block.filtered_member_keys) assert.ok(layout.hidden.filtered.includes(key) || viewKeys.has(key), 'a dropped member is listed as filtered unless its own lane draws it');
+    assert.ok(block.in_window_count <= block.visible_row_count);
+  }
+  for (const aggregate of layout.aggregates) {
+    assert.equal(Object.values(aggregate.evidence_counts).reduce((sum, value) => sum + value, 0), aggregate.count, 'a +N carries the evidence classes of the rows it hides');
+    assert.ok(aggregate.hop_eligible_count <= aggregate.count);
+    assert.ok(aggregate.in_window_count <= aggregate.count);
+  }
+  for (const column of layout.columns) {
+    assert.deepEqual([...new Set(column.pairs.flatMap(pair => [pair.actor_a, pair.actor_b]))].sort(), column.actor_ids, 'column actors are the actors of the bases that pass the floor');
+    assert.equal(Object.values(column.evidence_counts).reduce((sum, value) => sum + value, 0), column.basis_count);
+    assert.ok(column.basis_count <= column.total_basis_count);
+  }
+}
 
 for (const plotWidth of [690, 880]) {
   const layout = layoutTimeline(model, { plotWidth });
@@ -262,8 +307,17 @@ for (const plotWidth of [690, 880]) {
   assert.equal(layout.counts.post_domain, 0);
   assert.equal(layout.counts.undated, 0);
   assert.equal(layout.counts.filtered, 0);
+  assert.equal(layout.counts.total_rows, 286);
+  assert.equal(layout.counts.candidate_rows, 201, '200 actor rows plus the Dialog organization row carried by the block');
+  assert.equal(layout.counts.rows_outside_grouping, 85, 'the other organization rows are not part of a People view');
+  assert.equal(layout.counts.rows_in_view, 190, '79 marks + 113 block members, the two cross-referenced Dialog rows counted once');
+  assert.equal(layout.counts.in_window, 190);
+  assert.equal(layout.counts.block_visible_rows, 113);
+  assert.deepEqual(layout.hidden.pre_domain_overlapping, ['simon-case-cabinet-secretary-2020-2024::actor::simon-case'], 'a tenure span that began before the domain and is active inside it is flagged, not called pre-domain');
+  assert.equal(layout.counts.pre_domain_overlapping, 1);
   assert.equal(layout.counts.max_named_stack, 2);
   assert.equal(layout.counts.max_strip_stack, 6);
+  checkAccounting(layout);
   assert.equal(layout.lanes.length, 17);
   assert.equal(layout.lanes.find(lane => lane.kind === 'strip').height, 68);
   assert.equal(layout.lanes.find(lane => lane.kind === 'block').height, 32);
@@ -286,6 +340,11 @@ for (const plotWidth of [690, 880]) {
   assert.equal(block.listed_count, 112);
   assert.equal(block.surface_id, dialog.surface_id);
   assert.equal(block.member_keys.length, 113);
+  assert.equal(block.visible_row_count, 113);
+  assert.equal(block.visible_listed_count, 112);
+  assert.equal(block.filtered_count, 0);
+  assert.equal(block.hop_eligible, false);
+  assert.equal(layout.lanes.find(lane => lane.kind === 'block').visible_row_count, 113);
   assert.deepEqual(block.elsewhere.map(entry => entry.actor_id), ['matt-clifford', 'dan-driscoll']);
   assert.equal(layout.marks.filter(mark => mark.surface_id === dialog.surface_id).length, 2, 'only the two cross-referenced people get personal Dialog marks');
   assert.ok(layout.marks.filter(mark => mark.surface_id === dialog.surface_id).every(mark => ['matt-clifford', 'dan-driscoll'].includes(mark.entity_id)));
@@ -310,6 +369,10 @@ assert.equal(phone.counts.blocks, 1);
 assert.equal(phone.counts.drawn, 49, 'SPEC (j): 49 marks on phone');
 assert.equal(phone.counts.columns, 10, 'SPEC (j): 10 columns on phone');
 assert.equal(phone.counts.pre_domain, 42);
+assert.equal(phone.counts.pre_domain_overlapping, 8, 'the 2023-2024 tenure and SDR spans are still active in the 2025 domain');
+assert.equal(phone.counts.rows_in_view, 159, '48 marks + 113 block members - 2 counted once');
+assert.equal(phone.counts.candidate_rows, 201);
+checkAccounting(phone);
 assert.ok(phone.lanes.every(lane => lane.height <= 56));
 assert.equal(phone.lanes.find(lane => lane.kind === 'strip').height, 56);
 assert.equal(phone.lanes.find(lane => lane.kind === 'block').height, 28);
@@ -334,9 +397,16 @@ assert.equal(organizationLayout.counts.strip_rows, 13);
 assert.equal(organizationLayout.counts.columns, 0);
 assert.equal(organizationLayout.counts.blocks, 0);
 assert.equal(organizationLayout.counts.marks + organizationLayout.counts.pre_domain, 86);
+assert.equal(organizationLayout.counts.candidate_rows, 86);
+assert.equal(organizationLayout.counts.rows_outside_grouping, 200, 'actor rows are not part of an Organizations view');
+assert.deepEqual(organizationLayout.hidden.pre_domain_overlapping, ['simon-case-cabinet-secretary-2020-2024::organization::cabinet-office']);
+checkAccounting(organizationLayout);
 const typeLayout = layoutTimeline(model, { by: 'type', plotWidth: 690, domainFrom: '2016-01-01', domainTo: '2026-09-11' });
 assert.equal(typeLayout.counts.named_lanes, 14);
 assert.equal(typeLayout.counts.marks, 54);
+assert.equal(typeLayout.counts.total_rows, 54, 'the surface-type view counts surfaces');
+assert.equal(typeLayout.counts.rows_in_view, 54);
+checkAccounting(typeLayout);
 assert.equal(typeLayout.counts.columns, 0);
 assert.equal(typeLayout.marks.filter(mark => !mark.evidence_recorded).length, 10);
 assert.ok(typeLayout.marks.filter(mark => !mark.evidence_recorded).every(mark => mark.evidence_class === null));
@@ -360,6 +430,9 @@ assert.equal(openMark.clipped_end, true);
 assert.ok(openMark.w > 100, 'the open-ended row runs to the domain edge');
 assert.ok(fullRange.counts.aggregates >= 1, 'at 0.18 px/day the strip clusters past six slots and collapses into +N');
 assert.equal(fullRange.counts.marks + fullRange.counts.aggregated_rows, 52 + 38, 'collapsed rows are still counted: 52 named-lane rows + 38 strip rows');
+assert.equal(fullRange.counts.rows_in_view, 201, 'the whole People view: 90 lane rows + 113 block members - 2 counted once');
+assert.equal(fullRange.counts.pre_domain_overlapping, 0);
+checkAccounting(fullRange);
 
 // Window (fix e): out-of-window marks are dimmed, never removed; status counts name the denominator.
 const windowed = layoutTimeline(model, { plotWidth: 690, windowFrom: '2025-01-01', windowTo: '2025-12-31' });
@@ -368,25 +441,76 @@ assert.equal(windowed.counts.marks, 79, 'the window removes nothing');
 assert.equal(windowed.marks.filter(mark => mark.in_window).length, 32);
 assert.equal(windowed.marks.filter(mark => !mark.in_window).length, 47);
 assert.equal(windowed.counts.in_window, 32);
-assert.equal(windowed.counts.rows_in_view, 192);
+assert.equal(windowed.counts.rows_in_view, 190);
 assert.equal(windowed.blocks[0].in_window, false);
+assert.equal(windowed.blocks[0].in_window_count, 0);
+checkAccounting(windowed);
 assert.ok(windowed.marks.find(mark => mark.key === 'electric-twin-ben-warner-director-tenure-2023-09-28::actor::ben-warner').in_window, 'a span covering the window is in it');
 assert.equal(layoutTimeline(model, { plotWidth: 690 }).window.active, false);
 
-// Hop and evidence filters remove rows and say how many.
+// Hop and evidence filters remove rows and say how many: the dense block's
+// members go through the same filters and are counted when they drop.
+const dialogMemberKeys = [...dialog.member_keys].sort();
 const hopOnly = layoutTimeline(model, { plotWidth: 690, hop: 'hop' });
 assert.ok(hopOnly.marks.every(mark => mark.hop_eligible));
 assert.equal(hopOnly.counts.columns, 16);
 assert.equal(hopOnly.counts.blocks, 0, 'the Dialog roster is context-only');
-assert.ok(hopOnly.counts.filtered > 0);
+assert.equal(hopOnly.counts.marks, 56);
+assert.equal(hopOnly.counts.rows_in_view, 56);
+assert.equal(hopOnly.counts.filtered, 137, '24 context rows on lanes + the 113 Dialog rows, the two cross-referenced rows counted once');
+assert.equal(hopOnly.counts.pre_domain, 8);
+assert.ok(dialogMemberKeys.every(key => hopOnly.hidden.filtered.includes(key)), 'every roster member the hop filter hides is listed');
+checkAccounting(hopOnly);
 const contextOnly = layoutTimeline(model, { plotWidth: 690, hop: 'context' });
 assert.ok(contextOnly.marks.every(mark => !mark.hop_eligible));
 assert.equal(contextOnly.counts.columns, 0);
 assert.equal(contextOnly.counts.blocks, 1);
+assert.equal(contextOnly.counts.marks, 23);
+assert.equal(contextOnly.counts.rows_in_view, 134, '23 marks + 113 block members - 2 counted once');
+assert.equal(contextOnly.counts.filtered, 64);
+checkAccounting(contextOnly);
 assert.equal(hopOnly.counts.marks + contextOnly.counts.marks, 79);
+assert.equal(hopOnly.counts.filtered + contextOnly.counts.filtered, 201, 'hop and context filters partition the People view');
 const officialOnly = layoutTimeline(model, { plotWidth: 690, evidenceFloor: 'official' });
 assert.ok(officialOnly.marks.every(mark => mark.evidence_class === 'official'));
 assert.ok(officialOnly.counts.columns < 16, 'primary_public bases drop below the official floor');
+assert.equal(officialOnly.counts.columns, 12);
+assert.equal(officialOnly.counts.blocks, 0, 'no Dialog row is official (112 primary_public, 1 reported), so the block is not drawn');
+assert.equal(officialOnly.counts.marks, 59);
+assert.equal(officialOnly.counts.rows_in_view, 59);
+assert.equal(officialOnly.counts.filtered, 132);
+assert.equal(officialOnly.counts.pre_domain, 10);
+assert.ok(dialogMemberKeys.every(key => officialOnly.hidden.filtered.includes(key)), 'every roster member below the floor is listed');
+assert.ok(!officialOnly.marks.some(mark => mark.surface_id === dialog.surface_id));
+checkAccounting(officialOnly);
+for (const column of officialOnly.columns) assert.ok(column.pairs.every(pair => pair.evidence_class === 'official'));
+const primaryPublic = layoutTimeline(model, { plotWidth: 690, evidenceFloor: 'primary_public' });
+assert.equal(primaryPublic.counts.blocks, 1);
+assert.equal(primaryPublic.blocks[0].visible_row_count, 112, 'the one reported row drops below the primary_public floor');
+assert.equal(primaryPublic.blocks[0].visible_listed_count, 111, 'that row is a listed name; the organization row is primary_public');
+assert.equal(primaryPublic.blocks[0].filtered_count, 1);
+assert.deepEqual(primaryPublic.blocks[0].filtered_member_keys, [`${dialog.surface_id}::actor::alexus-grynkewich`]);
+assert.ok(primaryPublic.hidden.filtered.includes(`${dialog.surface_id}::actor::alexus-grynkewich`));
+assert.equal(primaryPublic.counts.filtered, 5);
+assert.equal(primaryPublic.counts.rows_in_view, 185);
+checkAccounting(primaryPublic);
+// A year chip puts the roster day outside the domain: its rows are listed as post-domain, not lost.
+const year2024 = layoutTimeline(model, { plotWidth: 690, domainFrom: '2024-01-01', domainTo: '2024-12-31' });
+assert.equal(year2024.counts.blocks, 0);
+assert.equal(year2024.counts.marks, 16);
+assert.equal(year2024.counts.columns, 3);
+assert.equal(year2024.counts.pre_domain, 26);
+assert.equal(year2024.counts.post_domain, 159);
+assert.ok(dialogMemberKeys.every(key => year2024.hidden.post_domain.includes(key)));
+assert.deepEqual(year2024.hidden.pre_domain_overlapping, [
+  'electric-twin-ben-warner-director-tenure-2023-09-28::actor::ben-warner',
+  'simon-case-cabinet-secretary-2020-2024::actor::simon-case',
+  'electric-twin-alex-cooper-director-tenure-2023-09-28::actor::alex-cooper'
+], 'spans active in 2024 that began earlier are flagged for the status text');
+checkAccounting(year2024);
+const pinnedLayout = layoutTimeline(model, { plotWidth: 690, laneIds: ['ben-warner'], hop: 'hop', evidenceFloor: 'official' });
+assert.equal(pinnedLayout.counts.candidate_rows, 201, 'pinned lanes: the strip carries every other actor row, the block its roster');
+checkAccounting(pinnedLayout);
 
 // --- entity summaries and the single-lane layout the entity pages reuse
 const summary = entityTimelineSummary(model, 'actor', 'ben-warner');
@@ -408,9 +532,12 @@ assert.equal(lane.counts.blocks, 0);
 assert.equal(lane.domain.from, '2016-01-01');
 assert.equal(lane.domain.to, '2026-09-11');
 assert.equal(lane.height, 28);
+checkAccounting(lane);
+assert.equal(lane.counts.candidate_rows, 10, 'a single-lane layout considers that lane only');
 const orgLane = entityLaneLayout(model, 'organization', 'electric-twin', { plotWidth: 600 });
 assert.equal(orgLane.counts.marks + orgLane.counts.aggregated_rows, 18, 'at 0.15 px/day the 2026 rows chain past six slots into a +N aggregate');
 assert.equal(orgLane.counts.rows_in_view, 18);
+checkAccounting(orgLane);
 assert.equal(orgLane.marks.filter(mark => mark.kind === 'span').length, 5);
 assert.equal(entityLaneLayout(model, 'organization', 'electric-twin', { plotWidth: 1400 }).counts.marks, 18, 'wide enough, every row is its own mark');
 const dialogLane = entityLaneLayout(model, 'surface', dialog.surface_id, { plotWidth: 600 });
@@ -419,6 +546,10 @@ assert.equal(dialogLane.counts.marks, TIMELINE_CLUSTER_SLOTS - 1, '113 rows on o
 assert.equal(dialogLane.counts.aggregates, 1);
 assert.equal(dialogLane.aggregates[0].count, 113 - (TIMELINE_CLUSTER_SLOTS - 1));
 assert.equal(dialogLane.counts.marks + dialogLane.counts.aggregated_rows, 113);
+assert.equal(dialogLane.counts.rows_in_view, 113);
+assert.deepEqual(dialogLane.aggregates[0].evidence_counts, { primary_public: 108 }, 'the +N says which evidence classes it hides');
+assert.ok(dialogLane.marks.some(mark => mark.evidence_class === 'reported'), 'the one reported row sorts into the drawn slots by key');
+checkAccounting(dialogLane);
 assert.equal(dialogLane.lanes[0].height, 8 + 10 * TIMELINE_CLUSTER_SLOTS);
 
 // --- synthetic fixture: undated, month, open, year, dense and two surfaces on one day
@@ -484,6 +615,23 @@ assert.equal(sameDay[1].x - sameDay[0].x, TIMELINE_DESKTOP_METRICS.slotOffset);
 assert.equal(fixtureLayout.columns[0].x, sameDay[0].x, 'the column stands over its own surface marks');
 assert.equal(fixtureLayout.marks.find(mark => mark.key === 's-open::actor::d').clipped_end, true);
 assert.equal(fixtureLayout.marks.find(mark => mark.key === 's-year::actor::d').kind, 'year');
+assert.equal(fixtureLayout.counts.total_rows, 31);
+assert.equal(fixtureLayout.counts.candidate_rows, 30, '30 actor rows; the venue organization row is outside the People view');
+assert.equal(fixtureLayout.counts.rows_in_view, 29, '8 marks + 22 block members with a\'s dense row counted once');
+assert.equal(fixtureLayout.counts.rows_outside_grouping, 1);
+checkAccounting(fixtureLayout, fixtureModel);
+const fixtureOfficial = layoutTimeline(fixtureModel, { plotWidth: 400, domainFrom: '2023-01-01', domainTo: '2025-01-01', evidenceFloor: 'official' });
+assert.equal(fixtureOfficial.counts.blocks, 0, 'a roster with no member at the floor is not drawn');
+assert.equal(fixtureOfficial.counts.filtered, 25, '22 roster rows + the two primary_public rows on the same-day surface + the reported undated row (filters run before placement)');
+assert.equal(fixtureOfficial.counts.undated, 0);
+assert.ok(fixtureModel.dense[0].member_keys.every(key => fixtureOfficial.hidden.filtered.includes(key)));
+assert.equal(fixtureOfficial.counts.rows_in_view, 5);
+checkAccounting(fixtureOfficial, fixtureModel);
+const fixtureEarly = layoutTimeline(fixtureModel, { plotWidth: 400, domainFrom: '2024-06-01', domainTo: '2024-10-01' });
+assert.equal(fixtureEarly.counts.blocks, 0, 'the roster day is after the domain');
+assert.ok(fixtureModel.dense[0].member_keys.every(key => fixtureEarly.hidden.post_domain.includes(key)), 'its members are listed as post-domain');
+assert.deepEqual(fixtureEarly.hidden.pre_domain_overlapping, [], 'the year bar ended in 2023 and the day rows are single days');
+checkAccounting(fixtureEarly, fixtureModel);
 assert.equal(layoutTimeline(fixtureModel, { plotWidth: 400, laneIds: ['b'] }).lanes.filter(lane => lane.kind === 'entity').length, 1);
 
 // --- the standalone flattening (tools/build-standalone.mjs): core then timeline, imports stripped

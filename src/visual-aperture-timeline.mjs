@@ -12,7 +12,10 @@
 //   - a dense roster surface (>= DENSE_ACTOR_ROWS actor rows) is one contained
 //     object with a count, never per-person marks;
 //   - undated rows are never placed on the axis or sliced by a window;
-//   - evidence class and receipt ids stay attached to every mark and column.
+//   - evidence class and receipt ids stay attached to every mark and column;
+//   - counts name their denominator: a layout's rows_in_view + filtered +
+//     pre_domain + post_domain + undated equals its candidate_rows (unique row
+//     keys), and dense-block members pass the same filters as every other row.
 // One-line import on purpose: tools/build-standalone.mjs strips import lines with a single-line regex.
 import { dayIndex, humanLabel, isoFromDayIndex, meetsEvidenceFloor, normalizeEvidence } from './visual-aperture-core.mjs';
 
@@ -637,7 +640,36 @@ export function layoutTimeline(model, options = {}) {
   const pxPerDay = width / domainDays;
   const x = day => plotLeft + ((day - domain.from_day) / domainDays) * width;
 
-  const hidden = { filtered: [], pre_domain: [], post_domain: [], undated: [] };
+  // Accounting is by unique row key. A row may sit in a named lane AND be a
+  // member of a dense block (the two cross-referenced Dialog names today); it
+  // is one ledger row and is counted once. Every candidate row of the grouping
+  // ends in exactly one place: drawn (mark, +N aggregate or block member) or
+  // one of the hidden lists, so rows_in_view + filtered + pre_domain +
+  // post_domain + undated === candidate_rows. pre_domain_overlapping is the
+  // subset of pre_domain whose documented window still reaches into the
+  // domain (a tenure span that began earlier): not "before the domain".
+  const hiddenSets = { filtered: new Set(), pre_domain: new Set(), pre_domain_overlapping: new Set(), post_domain: new Set(), undated: new Set() };
+  const candidateKeys = new Set();
+  const viewKeys = new Set();
+  const inWindowKeys = new Set();
+  const inWindow = row => rowInWindow(row, timeWindow.from_day, timeWindow.to_day);
+  // Classify one candidate row against the filters and the domain. Returns true
+  // when it may be drawn. Block members are classified at the block's own
+  // placement because the block is one object on the surface's day.
+  const admit = (key, kept, startDay, endDay, rowKind) => {
+    candidateKeys.add(key);
+    if (!kept) { hiddenSets.filtered.add(key); return false; }
+    if (startDay == null || domain.from_day == null) { hiddenSets.undated.add(key); return false; }
+    if (startDay < domain.from_day) {
+      hiddenSets.pre_domain.add(key);
+      const end = rowKind === 'open' ? Infinity : (endDay ?? startDay);
+      if (end >= domain.from_day) hiddenSets.pre_domain_overlapping.add(key);
+      return false;
+    }
+    if (startDay > domain.to_day) { hiddenSets.post_domain.add(key); return false; }
+    return true;
+  };
+
   const laneSpecs = [];
   for (const lane of grouping.lanes) laneSpecs.push({ id: lane.id, kind: 'entity', entity: lane, label: lane.label, rows: lane.rows });
   if (includeStrip && grouping.strip.rows.length) {
@@ -653,29 +685,31 @@ export function layoutTimeline(model, options = {}) {
     surfacesByDay.get(day).add(surfaceId);
   };
   for (const spec of laneSpecs) {
-    const kept = filterTimelineRows(spec.rows, { evidenceFloor, hop });
-    const keptKeys = new Set(kept.map(row => row.key));
-    for (const row of spec.rows) if (!keptKeys.has(row.key)) hidden.filtered.push(row.key);
+    const keptKeys = new Set(filterTimelineRows(spec.rows, { evidenceFloor, hop }).map(row => row.key));
     const placed = [];
-    for (const row of kept) {
-      if (row.start_day == null) { hidden.undated.push(row.key); continue; }
-      if (domain.from_day == null) { hidden.undated.push(row.key); continue; }
-      if (row.start_day < domain.from_day) { hidden.pre_domain.push(row.key); continue; }
-      if (row.start_day > domain.to_day) { hidden.post_domain.push(row.key); continue; }
+    for (const row of spec.rows) {
+      if (!admit(row.key, keptKeys.has(row.key), row.start_day, row.end_day, row.kind)) continue;
       placed.push(row);
       noteDay(row.start_day, row.surface_id);
     }
     placedByLane.set(spec.id, placed);
   }
-  const blocksDrawn = blockSpecs.filter(spec => {
+  // Dense blocks: the member rows go through the same filters as every other
+  // row. The block is drawn only when at least one member passes; dropped
+  // members are recorded in hidden.filtered like any filtered row.
+  const blocksDrawn = [];
+  for (const spec of blockSpecs) {
     const block = spec.block;
-    if (block.day == null || domain.from_day == null) return false;
-    if (block.day < domain.from_day || block.day > domain.to_day) return false;
-    if (hop === 'hop' && !block.hop_eligible) return false;
-    if (hop === 'context' && block.hop_eligible) return false;
+    const members = block.member_keys.map(key => model.rowsByKey.get(key)).filter(Boolean);
+    const keptKeys = new Set(filterTimelineRows(members, { evidenceFloor, hop }).map(row => row.key));
+    const visible = [];
+    for (const row of members) {
+      if (admit(row.key, keptKeys.has(row.key), block.day, block.end_day, block.kind)) visible.push(row);
+    }
+    if (!visible.length) continue;
     noteDay(block.day, block.surface_id);
-    return true;
-  });
+    blocksDrawn.push({ ...spec, visible, filtered_keys: members.filter(row => !keptKeys.has(row.key)).map(row => row.key) });
+  }
   const surfaceOffset = (day, surfaceId) => {
     const list = [...(surfacesByDay.get(day) ?? [])].sort(compareText);
     const index = list.indexOf(surfaceId);
@@ -789,14 +823,24 @@ export function layoutTimeline(model, options = {}) {
           hop_basis_count: row.hop_basis_count,
           receipt_ids: row.receipt_ids,
           dense: row.dense,
-          in_window: rowInWindow(row, timeWindow.from_day, timeWindow.to_day)
+          in_window: inWindow(row)
         };
         marks.push(mark);
         lane.mark_keys.push(row.key);
         clusterRecord.mark_keys.push(row.key);
+        viewKeys.add(row.key);
+        if (mark.in_window) inWindowKeys.add(row.key);
       });
       if (clusterRecord.hidden_keys.length) {
-        const first = cluster.rows[visibleCount];
+        const collapsed = cluster.rows.slice(visibleCount);
+        const first = collapsed[0];
+        const evidenceCounts = {};
+        let inWindowCount = 0;
+        for (const row of collapsed) {
+          increment(evidenceCounts, row.evidence_class ?? 'not_recorded');
+          viewKeys.add(row.key);
+          if (inWindow(row)) { inWindowKeys.add(row.key); inWindowCount += 1; }
+        }
         aggregates.push({
           key: `aggregate::${clusterId}`,
           laneId: spec.id,
@@ -808,8 +852,11 @@ export function layoutTimeline(model, options = {}) {
           h: markHeight,
           count: clusterRecord.hidden_keys.length,
           hidden_keys: clusterRecord.hidden_keys,
-          receipt_ids: uniqueList(cluster.rows.slice(visibleCount).flatMap(row => row.receipt_ids)),
-          surface_ids: uniqueList(cluster.rows.slice(visibleCount).map(row => row.surface_id))
+          receipt_ids: uniqueList(collapsed.flatMap(row => row.receipt_ids)),
+          surface_ids: uniqueList(collapsed.map(row => row.surface_id)),
+          evidence_counts: evidenceCounts,
+          hop_eligible_count: collapsed.filter(row => row.surface_hop_eligible).length,
+          in_window_count: inWindowCount
         });
       }
       clusters.push(clusterRecord);
@@ -825,10 +872,16 @@ export function layoutTimeline(model, options = {}) {
     const laneY = y;
     const startX = x(block.day) + surfaceOffset(block.day, block.surface_id);
     const w = Math.max(markWidth, x(Math.min(block.end_day ?? block.day, domain.to_day)) - x(block.day));
+    const visibleKeys = spec.visible.map(row => row.key);
+    let inWindowCount = 0;
+    for (const row of spec.visible) {
+      viewKeys.add(row.key);
+      if (inWindow(row)) { inWindowKeys.add(row.key); inWindowCount += 1; }
+    }
     lanes.push({
       id: spec.id, kind: 'block', by: kind, entity_id: null, label: block.surface_label, y: laneY, height: blockHeight, stack: 1,
-      row_count: block.row_count, drawn_count: 1, surface_ids: [block.surface_id], entity_count: block.listed_count,
-      hop_eligible_surface_count: 0, first_day: block.iso_day, last_day: isoFromDayIndex(block.end_day), has_open_end: false, mark_keys: [block.key]
+      row_count: block.row_count, visible_row_count: visibleKeys.length, drawn_count: 1, surface_ids: [block.surface_id], entity_count: block.listed_count,
+      hop_eligible_surface_count: block.hop_eligible ? 1 : 0, first_day: block.iso_day, last_day: isoFromDayIndex(block.end_day), has_open_end: false, mark_keys: [block.key]
     });
     blocks.push({
       key: block.key,
@@ -847,9 +900,17 @@ export function layoutTimeline(model, options = {}) {
       organization_count: block.organization_count,
       row_count: block.row_count,
       member_keys: block.member_keys,
+      // What the current filters leave of the roster: the ledger facts above
+      // stay as the denominator ("N of 112 listed names pass the floor").
+      visible_member_keys: visibleKeys,
+      visible_row_count: visibleKeys.length,
+      visible_listed_count: spec.visible.filter(row => row.participant_type === 'actor').length,
+      filtered_member_keys: spec.filtered_keys,
+      filtered_count: spec.filtered_keys.length,
+      in_window_count: inWindowCount,
       evidence_counts: block.evidence_counts,
       evidence_class: block.evidence_class,
-      hop_eligible: false,
+      hop_eligible: block.hop_eligible,
       refusal_reason: block.refusal_reason,
       reason_recorded: block.reason_recorded,
       receipt_ids: block.receipt_ids,
@@ -876,6 +937,11 @@ export function layoutTimeline(model, options = {}) {
       if (hopDay.day < domain.from_day || hopDay.day > domain.to_day) continue;
       const bases = hopDay.bases.filter(basis => meetsEvidenceFloor(basis.evidence_class, evidenceFloor));
       if (!bases.length) continue;
+      // Every column field describes the bases that pass the floor, so the
+      // actor list, evidence counts and receipts never outrun the pairs shown.
+      const basisEvidenceCounts = {};
+      for (const basis of bases) increment(basisEvidenceCounts, basis.evidence_class);
+      const basisEvidenceClass = Object.entries(basisEvidenceCounts).sort((a, b) => b[1] - a[1] || compareText(a[0], b[0]))[0][0];
       const touching = (marksBySurface.get(hopDay.surface_id) ?? [])
         .filter(mark => mark.start_day <= hopDay.day && (mark.kind === 'open' || (mark.end_day ?? mark.start_day) >= hopDay.day));
       if (!touching.length) continue;
@@ -902,10 +968,13 @@ export function layoutTimeline(model, options = {}) {
         x: x(hopDay.day) + surfaceOffset(hopDay.day, hopDay.surface_id),
         w: markWidth,
         basis_count: bases.length,
-        actor_ids: [...hopDay.actor_ids].sort(compareText),
+        total_basis_count: hopDay.basis_count,
+        actor_ids: uniqueList(bases.flatMap(basis => [basis.actor_a, basis.actor_b])).sort(compareText),
+        all_actor_ids: [...hopDay.actor_ids].sort(compareText),
         visible_actor_ids: uniqueList(touching.map(mark => mark.entity_id)).sort(compareText),
         pairs: bases.map(basis => ({ actor_a: basis.actor_a, actor_b: basis.actor_b, actor_a_role: basis.actor_a_role, actor_b_role: basis.actor_b_role, evidence_class: basis.evidence_class, receipt_ids: basis.receipt_ids })),
-        evidence_class: hopDay.evidence_class,
+        evidence_counts: basisEvidenceCounts,
+        evidence_class: basisEvidenceClass,
         hop_eligible: true,
         receipt_ids: uniqueList(bases.flatMap(basis => basis.receipt_ids)),
         mark_keys: touching.map(mark => mark.key),
@@ -935,10 +1004,18 @@ export function layoutTimeline(model, options = {}) {
     window: domain.from_day == null ? null : { x1: overviewX(domain.from_day), x2: overviewX(domain.to_day) }
   };
 
-  const drawnRowCount = marks.length + aggregates.reduce((sum, aggregate) => sum + aggregate.count, 0) + blocks.reduce((sum, block) => sum + block.row_count, 0);
-  const inWindowMarks = marks.filter(mark => mark.in_window).length + blocks.filter(block => block.in_window).reduce((sum, block) => sum + block.row_count, 0);
+  // A row drawn anywhere (its own lane or a block) is in view; it leaves every
+  // hidden list so the identity below holds by construction.
+  for (const set of Object.values(hiddenSets)) for (const key of viewKeys) set.delete(key);
+  const hidden = Object.fromEntries(Object.entries(hiddenSets).map(([name, set]) => [name, [...set]]));
+  // The denominator of this grouping: participation rows, or surfaces in the
+  // surface-type view. Rows of the other participant type (organization rows
+  // in a People view) are not candidates and are reported as outside it.
+  const universe = kind === 'type' ? model.surfaceMarks : model.rows;
   const counts = {
-    total_rows: model.rows.length,
+    total_rows: universe.length,
+    candidate_rows: candidateKeys.size,
+    rows_outside_grouping: universe.length - candidateKeys.size,
     lanes: lanes.length,
     named_lanes: grouping.lanes.length,
     strip_rows: grouping.strip.row_count,
@@ -948,12 +1025,14 @@ export function layoutTimeline(model, options = {}) {
     aggregated_rows: aggregates.reduce((sum, aggregate) => sum + aggregate.count, 0),
     blocks: blocks.length,
     block_rows: blocks.reduce((sum, block) => sum + block.row_count, 0),
+    block_visible_rows: blocks.reduce((sum, block) => sum + block.visible_row_count, 0),
     columns: columns.length,
     drawn: marks.length + blocks.length + aggregates.length,
-    rows_in_view: drawnRowCount,
-    in_window: timeWindow.active ? inWindowMarks : drawnRowCount,
+    rows_in_view: viewKeys.size,
+    in_window: timeWindow.active ? inWindowKeys.size : viewKeys.size,
     filtered: hidden.filtered.length,
     pre_domain: hidden.pre_domain.length,
+    pre_domain_overlapping: hidden.pre_domain_overlapping.length,
     post_domain: hidden.post_domain.length,
     undated: hidden.undated.length,
     max_named_stack: maxNamedStack,
