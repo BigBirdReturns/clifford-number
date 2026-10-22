@@ -394,6 +394,47 @@ runtimeState.ecology.fromDay = null;
 runtimeState.ecology.toDay = null;
 assert.match(context.ecologyClockLabel(), /· all time · 286 rows$/);
 
+// A node with more than APERTURE_FIELD_ROW_LIMIT rows: every row is rendered
+// (the later ones inside a details element), nothing is "not shown here", and
+// the header's denominator is the ledger's whatever the window.
+const electricTwinMarkup = context.fieldRowsMarkup('electric-twin');
+assert.equal((electricTwinMarkup.match(/data-ap-row=/g) ?? []).length, 18, 'all 18 Electric Twin rows are rendered');
+assert.match(electricTwinMarkup, /<span data-ap-window-count data-ap-node="electric-twin">18 rows · all time<\/span>/);
+assert.match(electricTwinMarkup, /<details class="aperture-field-rows-more"><summary>Show the 8 later rows \(the list continues oldest first\)<\/summary>/);
+assert.doesNotMatch(electricTwinMarkup, /not shown here|earlier-listed/, 'no row is cut from the list');
+assert.equal((context.fieldRowsMarkup('ben-warner').match(/<details/g) ?? []).length, 0, 'ten rows or fewer need no details element');
+runtimeState.ecology.fromDay = ecologyDay('2025-06-01');
+runtimeState.ecology.toDay = null;
+const electricTwinWindowed = context.fieldRowsMarkup('electric-twin');
+assert.match(electricTwinWindowed, /17 of 18 rows in window/);
+assert.equal((electricTwinWindowed.match(/is-outside/g) ?? []).length, 1, 'the one 2023 single-day row dims; the 17 later or still-open rows do not');
+assert.match(context.fieldRowsMarkup('mod'), /6 of 13 rows in window/);
+// syncInspectorWindowMarks recomputes the header from the ledger summary of the
+// node it names, not from the rows it can see in the DOM.
+const windowHeader = { dataset: { apNode: 'electric-twin' }, textContent: 'stale' };
+const visibleRow = {
+  dataset: { apStart: String(ecologyDay('2023-09-28')), apEnd: String(ecologyDay('2023-09-28')) },
+  classList: { toggles: [], toggle(name, force) { this.toggles.push([name, force]); } },
+  style: {}
+};
+const undatedRow = { dataset: { apStart: '', apEnd: '' }, classList: { toggles: [], toggle(name, force) { this.toggles.push([name, force]); } }, style: {} };
+const previousRoot = runtimeState.root;
+runtimeState.root = {
+  dataset: {},
+  querySelector: selector => (selector === '[data-ap-window-count]' ? windowHeader : null),
+  querySelectorAll: selector => (selector === '[data-ap-row]' ? [visibleRow, undatedRow] : [])
+};
+context.syncInspectorWindowMarks();
+assert.equal(windowHeader.textContent, '17 of 18 rows in window', 'two visible items do not become the denominator');
+assert.deepEqual(visibleRow.classList.toggles, [['is-outside', true]]);
+assert.equal(visibleRow.style.opacity, '.45');
+runtimeState.ecology.fromDay = null;
+runtimeState.ecology.toDay = null;
+context.syncInspectorWindowMarks();
+assert.equal(windowHeader.textContent, '18 rows · all time');
+assert.equal(visibleRow.style.opacity, '');
+runtimeState.root = previousRoot;
+
 const lifecycle = [];
 runtimeState.mode = 'map';
 runtimeState.webgl.renderer = { pause: () => lifecycle.push('pause'), resume: () => lifecycle.push('resume') };

@@ -131,14 +131,21 @@ function syncEcologyClockControls() {
   const allTime = $('[data-ap-action="ecology-all-time"]', state.root);
   if (allTime) allTime.disabled = window.unbounded;
 }
+// "N of M rows in window": M is always the ledger's row count for the object,
+// N the ledger's in-window count. Neither is ever read off the DOM.
+function fieldWindowCountLabel(counts, window) {
+  const total = counts.rows_total, inside = counts.rows_in_window;
+  return window.unbounded ? `${total} row${total === 1 ? '' : 's'} · all time` : `${inside} of ${total} rows in window`;
+}
 function syncInspectorWindowMarks() {
   if (!state.root) return;
   const api = state.webgl?.eventApi;
+  const ledger = state.webgl?.ledger;
   const window = ecologyWindow();
   let inWindow = 0, total = 0;
   for (const item of $$('[data-ap-row]', state.root)) {
-    const start = Number(item.dataset.apStart);
-    const end = item.dataset.apEnd === '' ? null : Number(item.dataset.apEnd);
+    const start = item.dataset.apStart === '' || item.dataset.apStart == null ? null : Number(item.dataset.apStart);
+    const end = item.dataset.apEnd === '' || item.dataset.apEnd == null ? null : Number(item.dataset.apEnd);
     const inside = api?.rowInWindow ? api.rowInWindow({ start_day: start, end_day: end }, window) : true;
     item.classList.toggle('is-outside', !inside);
     item.style.opacity = inside ? '' : '.45';
@@ -146,7 +153,16 @@ function syncInspectorWindowMarks() {
     if (inside) inWindow += 1;
   }
   const header = $('[data-ap-window-count]', state.root);
-  if (header) header.textContent = window.unbounded ? `${total} row${total === 1 ? '' : 's'} · all time` : `${inWindow} of ${total} rows in window`;
+  if (!header) return;
+  // The header names the object it counts (data-ap-node); its numbers come from
+  // the ledger summary of that object. The visible items are a fallback only
+  // when no ledger is available, never a denominator of their own.
+  const nodeId = header.dataset?.apNode;
+  const summary = nodeId && api?.nodeLedgerSummary && ledger ? api.nodeLedgerSummary(ledger, nodeId, window) : null;
+  header.textContent = fieldWindowCountLabel(
+    summary ? { rows_total: summary.rows.length, rows_in_window: summary.rows_in_window } : { rows_total: total, rows_in_window: inWindow },
+    window
+  );
 }
 function applyEcologyWindow({ sync = true } = {}) {
   const renderer = state.webgl?.renderer;
@@ -374,7 +390,9 @@ function fieldRowItem(row, window) {
   </li>`;
 }
 // The documented rows of one field object, oldest first: every ledger row,
-// including the ones the field cannot draw, with the window state on each.
+// including the ones the field cannot draw, with the window state on each. The
+// first APERTURE_FIELD_ROW_LIMIT rows are open; the rest are listed inside a
+// details element. No row is left out: a bounded rendering is not a deletion.
 function fieldRowsMarkup(id) {
   const api = state.webgl?.eventApi;
   const ledger = state.webgl?.ledger;
@@ -383,15 +401,17 @@ function fieldRowsMarkup(id) {
   const summary = api.nodeLedgerSummary(ledger, id, window);
   const rows = summary.rows;
   if (!rows.length) return '<h4>Documented rows</h4><p class="aperture-muted">No participation row in this release names this object. It appears on the field as research context only, and the time window never fades it.</p>';
-  const header = window.unbounded
-    ? `<span data-ap-window-count>${rows.length} row${rows.length === 1 ? '' : 's'} · all time</span>`
-    : `<span data-ap-window-count>${summary.rows_in_window} of ${rows.length} rows in window</span>`;
-  const visible = rows.slice(0, APERTURE_FIELD_ROW_LIMIT);
+  const header = `<span data-ap-window-count data-ap-node="${esc(id)}">${fieldWindowCountLabel({ rows_total: rows.length, rows_in_window: summary.rows_in_window }, window)}</span>`;
+  const lead = rows.slice(0, APERTURE_FIELD_ROW_LIMIT);
+  const rest = rows.slice(APERTURE_FIELD_ROW_LIMIT);
   const guarded = rows.filter(row => row.off_field_reason === 'privacy_guard').length;
   const guardNote = guarded
     ? ` ${guarded} of these rows ${guarded === 1 ? 'is' : 'are'} not drawn on the field (privacy guard): the public graph carries no node for that surface, so the row is listed here instead of omitted.`
     : '';
-  return `<h4>Documented rows</h4><p class="aperture-muted">${header} · ${esc(api.ecologyWindowLabel(ledger.range, window))}. Rows outside the window dim and stay listed; they are never removed.${guardNote}</p><ul class="aperture-activity-list">${visible.map(row => fieldRowItem(row, window)).join('')}</ul>${rows.length > visible.length ? `<p class="aperture-muted">+${rows.length - visible.length} earlier-listed rows not shown here; open the public record for the complete list.</p>` : ''}`;
+  const restMarkup = rest.length
+    ? `<details class="aperture-field-rows-more"><summary>Show the ${rest.length} later row${rest.length === 1 ? '' : 's'} (the list continues oldest first)</summary><ul class="aperture-activity-list">${rest.map(row => fieldRowItem(row, window)).join('')}</ul></details>`
+    : '';
+  return `<h4>Documented rows</h4><p class="aperture-muted">${header} · ${esc(api.ecologyWindowLabel(ledger.range, window))}. Rows outside the window dim and stay listed; they are never removed.${guardNote}</p><ul class="aperture-activity-list">${lead.map(row => fieldRowItem(row, window)).join('')}</ul>${restMarkup}`;
 }
 function fieldFactGrid(node, summary) {
   const api = state.webgl?.eventApi;
