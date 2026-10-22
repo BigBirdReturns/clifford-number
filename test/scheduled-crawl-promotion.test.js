@@ -430,7 +430,33 @@ function verifyHelperBehavior() {
   for (const call of blocked.calls) assert.doesNotMatch(call, forbidden, `forbidden GitHub call: ${call}`);
 }
 
-verifyRenamePathExpansionFixture();
-verifyRecoveryBundleFixture();
-verifyHelperBehavior();
-console.log(`scheduled-crawl-promotion.test: ${mutations.length} adversarial mutations, rename-expansion, recovery bundle and PR-only helper fixtures PASS`);
+// The recovery-bundle and PR-only helper fixtures run the real shell helpers:
+// retain-scheduled-crawl-candidate.sh needs bash (plus sha256sum and awk), and
+// promote-scheduled-crawl.sh needs bash and jq. CI on ubuntu-latest has all of
+// them; a host without one skips that fixture and says so instead of failing
+// on a missing tool. The adversarial mutations above and the git
+// rename-expansion fixture run everywhere.
+function toolOnPath(name) {
+  return !spawnSync(name, ['--version'], { stdio: 'ignore' }).error;
+}
+
+const fixtures = [
+  ['rename-expansion', [], verifyRenamePathExpansionFixture],
+  ['recovery bundle', ['bash'], verifyRecoveryBundleFixture],
+  ['PR-only helper', ['bash', 'jq'], verifyHelperBehavior]
+];
+const ran = [];
+const skipped = [];
+for (const [label, requiredTools, run] of fixtures) {
+  const missing = requiredTools.filter((tool) => !toolOnPath(tool));
+  if (missing.length > 0) {
+    skipped.push(`${label} (${missing.join(' and ')} not on PATH)`);
+    continue;
+  }
+  run();
+  ran.push(label);
+}
+if (skipped.length > 0) {
+  console.log(`scheduled-crawl-promotion.test: SKIPPED ${skipped.join('; ')}; CI on ubuntu-latest has bash and jq, so these fixtures still gate there`);
+}
+console.log(`scheduled-crawl-promotion.test: ${mutations.length} adversarial mutations and ${ran.join(', ')} fixture(s) PASS`);

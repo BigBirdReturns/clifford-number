@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 
 const smoke = fs.readFileSync('tools/smoke-public-routes.mjs', 'utf8');
@@ -82,7 +83,13 @@ assert.ok(order.every((index) => index >= 0) && order.every((index, i) => i === 
 assert.match(workflow, /path: dist\n/);
 
 // The crawl workflows may open a pull request and nothing else; the helper
-// behavior is exercised against fake git remotes and a fake GitHub CLI.
+// behavior is exercised against fake git remotes and a fake GitHub CLI. Those
+// fixtures run the real bash helpers, which need jq on PATH (CI on
+// ubuntu-latest has it); where jq is missing the imported test skips them and
+// says so, and the static workflow contract below still runs in full.
+if (spawnSync('jq', ['--version'], { stdio: 'ignore' }).error) {
+  console.log('deploy-workflow.test: jq not on PATH; the scheduled-crawl helper fixtures in scheduled-crawl-promotion.test.js are skipped here (CI has jq)');
+}
 await import('./scheduled-crawl-promotion.test.js');
 await import('./scheduled-crawl-pr-identity.test.js');
 
