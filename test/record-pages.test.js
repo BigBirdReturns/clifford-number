@@ -192,6 +192,23 @@ assert.equal(context.atlasInspectorOrigin({}), null, 'a malformed origin is igno
 context.__cliffordApertureOrigin = { mode: '', objectLabel: '' };
 assert.equal(context.atlasInspectorOrigin({}), null, 'an empty origin produces no crumb');
 
+// --- the browse index: one section per kind, capped, every kind represented
+const browseKinds = ['actor', 'organization', 'surface', 'type', 'year', 'case', 'track', 'chain', 'claim', 'receipt', 'candidate'];
+const browseItems = [
+  ...Array.from({ length: 12 }, (_, i) => ({ kind: 'actor', id: `a${i}`, label: `Person ${String(i).padStart(2, '0')}` })),
+  ...browseKinds.filter(kind => kind !== 'actor').map(kind => ({ kind, id: `${kind}-1`, label: `${kind} one` }))
+];
+const browse = context.browseIndexModel(browseItems, { cap: 8, hasRows: item => (item.id === 'a11' ? 0 : 1) });
+same(browse.sections.map(section => section.kind), browseKinds, 'every searchable kind is a section, in the fixed order');
+same([browse.sections[0].items.length, browse.sections[0].total, browse.sections[0].hidden, browse.sections[0].expanded], [8, 12, 4, false], 'a section is cut at the cap and counts what it hides');
+assert.equal(browse.sections[0].items[0].id, 'a11', 'records with ledger rows lead their section');
+assert.equal(browse.visible.length, 8 + 10, 'the visible list is the flat option list the keyboard handler indexes');
+assert.equal(browse.total, 22);
+const opened = context.browseIndexModel(browseItems, { cap: 8, expanded: new Set(['actor']) });
+same([opened.sections[0].items.length, opened.sections[0].hidden, opened.sections[0].expanded], [12, 0, true], 'Show all opens one section past its cap');
+assert.equal(opened.sections[0].items[0].label, 'Person 00', 'without the row signal a section is alphabetical');
+same(context.browseIndexModel([]).sections, [], 'no records, no sections');
+
 // --- registration
 assert.match(JSON.parse(fs.readFileSync('package.json', 'utf8')).scripts.test, /node test\/record-pages\.test\.js/);
 

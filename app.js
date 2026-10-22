@@ -15,7 +15,9 @@ const state = {
   releaseDeltaModel: null, dataBoundary: null,
   // The ledger timeline model (src/visual-aperture-timeline.mjs) built once at
   // init from the loaded surface and hop graphs; every record page reads it.
-  timeline: null, receiptGraph: null, record: null, recordFloor: 'open', recordText: ''
+  timeline: null, receiptGraph: null, record: null, recordFloor: 'open', recordText: '',
+  // Browse-index sections the reader opened past their cap (by kind).
+  browseExpanded: new Set()
 };
 const $ = sel => document.querySelector(sel);
 
@@ -985,32 +987,94 @@ function compareSearchResults(a, b) {
     || a.label.localeCompare(b.label);
 }
 
-function browseAll() {
-  const items = [
+// The browse index lists every kind the search knows, one section per kind in
+// this order, each cut at BROWSE_SECTION_CAP with its own "Show all" control.
+// A flat alphabetical cut of 80 never reached the surface-type and year
+// records; sections guarantee every kind is represented without laying out
+// the whole index (several hundred records) by default.
+const BROWSE_SECTIONS = [
+  ['actor', 'People'], ['organization', 'Organizations'], ['surface', 'Surfaces'], ['type', 'Surface types'], ['year', 'Years'],
+  ['case', 'Cases'], ['track', 'Tracks'], ['chain', 'Pathways'], ['claim', 'Claims'], ['receipt', 'Receipts'], ['candidate', 'Candidates']
+];
+const BROWSE_SECTION_CAP = 8;
+
+function browseIndexItems() {
+  return [
     ...state.surfaceGraph.actors.map(item => ({ kind: 'actor', id: item.id, label: item.label })),
     ...state.surfaceGraph.organizations.map(item => ({ kind: 'organization', id: item.id, label: item.label })),
     ...state.surfaceGraph.surfaces.map(item => ({ kind: 'surface', id: item.surface_id, label: item.surface_label })),
     ...[...(state.timeline?.lanes.type.values() ?? [])].map(lane => ({ kind: 'type', id: lane.id, label: lane.label })),
     ...(state.timeline?.range.years_with_rows ?? []).map(year => ({ kind: 'year', id: year, label: `Year ${year}` })),
-    ...[...state.chains.values()].map(item => ({ kind: 'chain', id: item.chain_id, label: item.chain_label })),
     ...[...state.caseIndex.values()].map(item => ({ kind: 'case', id: item.case_id, label: item.title })),
     ...[...state.tracks.values()].map(item => ({ kind: 'track', id: item.track_id, label: item.label })),
+    ...[...state.chains.values()].map(item => ({ kind: 'chain', id: item.chain_id, label: item.chain_label })),
     ...[...state.claimCatalog.values()].map(item => ({ kind: 'claim', id: item.key, label: item.plain })),
-    ...[...publicReceiptRecords().values()].map(item => ({ kind: 'receipt', id: item.receipt_id, label: receiptTitle(item) }))
-  ].sort((a, b) => a.label.localeCompare(b.label)).slice(0, 80);
-  for (const item of items) item.fact = recordFactLine(item.kind, item.id, item.kind === 'receipt' ? publicReceiptRecords().get(item.id) : null);
-  state.searchResults = items;
+    ...[...publicReceiptRecords().values()].map(item => ({ kind: 'receipt', id: item.receipt_id, label: receiptTitle(item) })),
+    ...[...state.candidates.values()].map(item => ({ kind: 'candidate', id: item.id, label: item.label }))
+  ];
+}
+
+// Pure: the sections in BROWSE_SECTIONS order, each sorted like search
+// results of one kind (records with ledger rows first, then by label) and cut
+// at `cap` unless its kind is in `expanded`. Every kind with a record is a
+// section; `visible` is the flat option list in DOM order, which the
+// keyboard handler indexes.
+function browseIndexModel(items, { cap = BROWSE_SECTION_CAP, expanded = new Set(), hasRows = () => 0 } = {}) {
+  const byKind = new Map();
+  for (const item of items) {
+    if (!byKind.has(item.kind)) byKind.set(item.kind, []);
+    byKind.get(item.kind).push(item);
+  }
+  const sections = [];
+  for (const [kind, label] of BROWSE_SECTIONS) {
+    const all = (byKind.get(kind) ?? []).sort((a, b) => hasRows(a) - hasRows(b) || a.label.localeCompare(b.label));
+    if (!all.length) continue;
+    const open = expanded.has(kind);
+    const shown = open ? all : all.slice(0, cap);
+    sections.push({ kind, label, total: all.length, items: shown, hidden: all.length - shown.length, expanded: open, cap });
+  }
+  return { sections, visible: sections.flatMap(section => section.items), total: items.length };
+}
+
+function browseOptionMarkup(item, index) {
+  return `<button id="search-option-${index}" class="result" role="option" tabindex="0" aria-selected="false" data-kind="${esc(item.kind)}" data-id="${esc(item.id)}"><span class="kind-glyph">${kindGlyph(item.kind)}</span><span class="result-label">${esc(item.label)}<small>${esc(searchKindLabel(item.kind))}</small>${item.fact ? `<span class="result-fact">${esc(item.fact)}</span>` : ''}</span></button>`;
+}
+
+function browseAll({ focusKind = null } = {}) {
+  const model = browseIndexModel(browseIndexItems(), { expanded: state.browseExpanded, hasRows: searchHasRows });
+  // Facts are computed for the options on screen only.
+  for (const item of model.visible) item.fact = recordFactLine(item.kind, item.id, item.kind === 'receipt' ? publicReceiptRecords().get(item.id) : null);
+  state.searchResults = model.visible;
   state.searchActiveIndex = -1;
   $('#search').value = '';
   $('#search').setAttribute('aria-expanded', 'true');
   $('#search').removeAttribute('aria-activedescendant');
   const box = $('#results');
-  box.innerHTML = items.length
-    ? items.map((item, i) => `<button id="search-option-${i}" class="result" role="option" tabindex="0" aria-selected="false" data-kind="${esc(item.kind)}" data-id="${esc(item.id)}"><span class="kind-glyph">${kindGlyph(item.kind)}</span><span class="result-label">${esc(item.label)}<small>${esc(searchKindLabel(item.kind))}</small>${item.fact ? `<span class="result-fact">${esc(item.fact)}</span>` : ''}</span></button>`).join('')
+  let index = 0;
+  box.innerHTML = model.sections.length
+    ? model.sections.map(section => {
+      const options = section.items.map(item => browseOptionMarkup(item, index++)).join('');
+      const control = section.total > section.cap
+        ? `<button type="button" class="results-more" data-browse-kind="${esc(section.kind)}" aria-expanded="${String(section.expanded)}">${esc(translate(state.locale, section.expanded ? 'browseShowFewer' : 'browseShowAll', { count: section.expanded ? section.cap : section.total }))}</button>`
+        : '';
+      const count = section.items.length === section.total ? recordPlural(section.total, 'record') : `${section.items.length} of ${recordPlural(section.total, 'record')}`;
+      return `<div class="results-section" role="group" aria-labelledby="browse-section-${esc(section.kind)}"><div class="results-section-head"><span id="browse-section-${esc(section.kind)}" class="results-section-title">${esc(section.label)}</span><span class="results-section-count">${esc(count)}</span></div>${options}${control}</div>`;
+    }).join('')
     : `<div class="meta" role="option" aria-disabled="true">${esc(translate(state.locale, 'noRecords'))}</div>`;
   for (const btn of box.querySelectorAll('.result')) btn.addEventListener('click', () => activateResult(btn.dataset.kind, btn.dataset.id));
-  announce(translate(state.locale, 'browseShowing', { count: items.length }));
-  box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  for (const btn of box.querySelectorAll('.results-more')) btn.addEventListener('click', () => {
+    const kind = btn.dataset.browseKind;
+    if (state.browseExpanded.has(kind)) state.browseExpanded.delete(kind);
+    else state.browseExpanded.add(kind);
+    browseAll({ focusKind: kind });
+  });
+  announce(translate(state.locale, 'browseShowingOf', { count: model.visible.length, total: model.total, sections: model.sections.length }));
+  if (focusKind) {
+    // A section just opened or closed: the keyboard stays on its control.
+    box.querySelector(`.results-more[data-browse-kind="${CSS.escape(focusKind)}"]`)?.focus();
+  } else {
+    box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
 }
 
 function onSearchKeydown(e) {

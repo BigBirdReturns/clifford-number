@@ -614,6 +614,13 @@ input::placeholder { color: color-mix(in srgb, var(--muted) 76%, transparent); }
 .result[data-kind="year"] { --kind-color: #3f3f6b; }
 .result[data-kind="chain"] { --kind-color: #873636; }
 .result[data-kind="candidate"] { --kind-color: #6a5c1f; }
+/* Browse index: one section per kind, capped, each with its own Show-all control. */
+.results-section { display: grid; gap: 8px; }
+.results-section + .results-section { margin-top: 8px; padding-top: 14px; border-top: 1px solid var(--line); }
+.results-section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; color: var(--muted-strong); font-family: var(--font-condensed); font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.results-section-count { color: var(--muted); font-family: var(--font-mono); font-size: 11px; font-weight: 400; letter-spacing: 0; text-transform: none; }
+.results-more { justify-self: start; min-height: 34px; padding: 5px 12px; border: 1px solid var(--line-strong); border-radius: 999px; background: var(--panel-raised); color: var(--ink-2); font-family: var(--font-mono); font-size: 11px; font-weight: 700; cursor: pointer; }
+.results-more:hover, .results-more:focus-visible { border-color: var(--ink); background: var(--wash); }
 
 .summary-grid {
   display: grid;

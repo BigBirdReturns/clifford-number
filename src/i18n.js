@@ -37,7 +37,8 @@ const messages = {
     copyCite: 'Copy / cite', copyLink: 'Copy link', copyCitation: 'Plain citation', copyMarkdown: 'Markdown', copyBibtex: 'BibTeX', copyJson: 'Evidence JSON', shareCitation: 'Share citation', copied: 'Copied', generatedCitation: 'Generated citation',
     boundedSurfaces: 'bounded surfaces', validHops: 'valid actor-to-actor hops', releaseReceipts: 'receipts in the release', refusedConnections: 'time-overlap connections refused',
     compilerRule: 'The compiler rule', whatCounts: 'What counts as a connection?',
-    browseShowing: 'Browse index: showing {count} public records.', noRecords: 'No public records are available in this release.'
+    browseShowing: 'Browse index: showing {count} public records.', noRecords: 'No public records are available in this release.',
+    browseShowingOf: 'Browse index: showing {count} of {total} public records in {sections} sections.', browseShowAll: 'Show all {count}', browseShowFewer: 'Show the first {count}'
   },
   es: {
     skip: 'Saltar al explorador', status: 'Instrumento de investigación pública', method: 'Método', source: 'Fuente',
@@ -69,7 +70,8 @@ const messages = {
     copyCite: 'Copiar / citar', copyLink: 'Copiar enlace', copyCitation: 'Cita simple', copyMarkdown: 'Markdown', copyBibtex: 'BibTeX', copyJson: 'JSON de evidencia', shareCitation: 'Compartir cita', copied: 'Copiado', generatedCitation: 'Cita generada',
     boundedSurfaces: 'superficies delimitadas', validHops: 'saltos válidos entre actores', releaseReceipts: 'comprobantes de la versión', refusedConnections: 'conexiones rechazadas por fechas',
     compilerRule: 'La regla del compilador', whatCounts: '¿Qué cuenta como conexión?',
-    browseShowing: 'Índice: se muestran {count} registros públicos.', noRecords: 'No hay registros públicos disponibles en esta versión.'
+    browseShowing: 'Índice: se muestran {count} registros públicos.', noRecords: 'No hay registros públicos disponibles en esta versión.',
+    browseShowingOf: 'Índice: se muestran {count} de {total} registros públicos en {sections} secciones.', browseShowAll: 'Mostrar los {count}', browseShowFewer: 'Mostrar los primeros {count}'
   },
   fr: {
     skip: 'Aller à l’explorateur', status: 'Instrument de recherche publique', method: 'Méthode', source: 'Source',
@@ -101,7 +103,8 @@ const messages = {
     copyCite: 'Copier / citer', copyLink: 'Copier le lien', copyCitation: 'Citation simple', copyMarkdown: 'Markdown', copyBibtex: 'BibTeX', copyJson: 'JSON des preuves', shareCitation: 'Partager la citation', copied: 'Copié', generatedCitation: 'Citation générée',
     boundedSurfaces: 'surfaces délimitées', validHops: 'sauts valides entre acteurs', releaseReceipts: 'justificatifs de la version', refusedConnections: 'connexions refusées pour chevauchement temporel',
     compilerRule: 'La règle du compilateur', whatCounts: 'Qu’est-ce qui constitue une connexion ?',
-    browseShowing: 'Index : {count} dossiers publics affichés.', noRecords: 'Aucun dossier public n’est disponible dans cette version.'
+    browseShowing: 'Index : {count} dossiers publics affichés.', noRecords: 'Aucun dossier public n’est disponible dans cette version.',
+    browseShowingOf: 'Index : {count} dossiers publics affichés sur {total}, en {sections} sections.', browseShowAll: 'Afficher les {count}', browseShowFewer: 'Afficher les {count} premiers'
   }
 };
 
