@@ -202,6 +202,18 @@ assert.equal(context.atlasInspectorOrigin({}), null, 'a malformed origin is igno
 context.__cliffordApertureOrigin = { mode: '', objectLabel: '' };
 assert.equal(context.atlasInspectorOrigin({}), null, 'an empty origin produces no crumb');
 
+// --- every entity page, zero-row pages included, is an article.record[data-record-kind]:
+// the receipt dialog reads that wrapper for its "Record / <label>" crumb.
+for (const name of ['renderActor', 'renderOrg', 'renderSurface', 'renderType', 'renderYear']) {
+  const start = source.indexOf(`\nfunction ${name}(`);
+  assert.notEqual(start, -1, `${name} is defined`);
+  const body = source.slice(start, source.indexOf('\nfunction ', start + 1));
+  const assignments = [...body.matchAll(/\$\('#detail'\)\.innerHTML = ([^\n]{0,120})/g)].map(match => match[1]);
+  assert.ok(assignments.length >= 1, `${name} renders into #detail`);
+  for (const html of assignments) assert.match(html, /^`<article class="record record--\w+" data-record-kind="\w+" data-record-id=/, `${name}: ${html.slice(0, 40)}… must be wrapped in article.record[data-record-kind]`);
+  if (name === 'renderActor' || name === 'renderOrg') assert.equal(assignments.length, 2, `${name} renders both its zero-row page and its ledger page`);
+}
+
 // --- the browse index: one section per kind, capped, every kind represented
 const browseKinds = ['actor', 'organization', 'surface', 'type', 'year', 'case', 'track', 'chain', 'claim', 'receipt', 'candidate'];
 const browseItems = [

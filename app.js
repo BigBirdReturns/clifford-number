@@ -1836,7 +1836,9 @@ function renderActor(id) {
   const headPanel = `<header class="panel record-head">${recordHeading(label, actor ? entityReceiptIds('actor', id) : [], actions)}<div class="badge-row record-kind-line">${badges}</div>${profileHtml}${recordFacts(record.facts)}<aside class="profile-boundary"><strong>What this entry supports</strong><br>Documented participation on named public-role surfaces.<br><br><strong>What it does not support</strong><br>Claims about motive, agreement, influence, coordination, character, or wrongdoing.</aside></header>`;
 
   if (!record.rows.length) {
-    $('#detail').innerHTML = headPanel;
+    // Still a record page: the article wrapper is what gives a receipt
+    // opened here its "Record / <label>" crumb (recordInspectorOrigin).
+    $('#detail').innerHTML = `<article class="record record--actor" data-record-kind="actor" data-record-id="${esc(id)}">${headPanel}</article>`;
     bindRecordPage(record);
     return;
   }
