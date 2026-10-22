@@ -140,6 +140,30 @@ function seededPoint(node, radius) {
   return { x: direction[0] * r, y: direction[1] * r, z: direction[2] * r };
 }
 
+// The ledger counts a node carries. A canonical surface node (id prefixed
+// surface-) counts its participation rows; every other node counts the distinct
+// surfaces its rows name. nodeLedgerSummary in the inspector keys the same way,
+// so the number on the node is the number in the inspector.
+export function ledgerCountsForNode(ledger, nodeId) {
+  if (!ledger?.rowsByNode || !ledger?.rowsBySurfaceNode) return null;
+  const canonicalSurface = String(nodeId).startsWith('surface-');
+  const rows = canonicalSurface ? (ledger.rowsBySurfaceNode.get(nodeId) ?? []) : (ledger.rowsByNode.get(nodeId) ?? []);
+  return {
+    rows: rows.length,
+    surfaces: new Set(rows.map(row => row.surface_id)).size,
+    count_kind: canonicalSurface ? 'participants' : 'surfaces'
+  };
+}
+
+// The one count a node's tooltip names, worded exactly as the inspector words
+// it. "no ledger rows" is said only when the ledger has none for the node.
+export function nodeCountLabel(node) {
+  const count = node?.size_count ?? 0;
+  const kind = node?.count_kind === 'participants' ? 'participant' : 'surface';
+  const noRows = node?.ledger_row_count == null ? !count : node.ledger_row_count === 0;
+  return `${count} documented ${kind}${count === 1 ? '' : 's'}${noRows ? ' · research context · no ledger rows' : ''}`;
+}
+
 export function buildSocialFieldModel(model, { radius = SOCIAL_FIELD_RADIUS, ledger = null } = {}) {
   if (!model?.nodes || !model?.edges || !model?.nodeById) throw new TypeError('social field requires a network model');
   const adjacency = buildAdjacency(model);
@@ -148,19 +172,31 @@ export function buildSocialFieldModel(model, { radius = SOCIAL_FIELD_RADIUS, led
   const nodes = model.nodes.map(node => {
     const position = seededPoint(node, radius);
     const ontology = nodeOntology(node);
-    const surfaceCount = reinforcement.memberCount.get(node.id) ?? 0;
-    const participantCount = ontology === 'surface' ? new Set(reinforcement.membersBySurface.get(node.id) ?? []).size : 0;
+    // Arc-derived counts: what the drawn topology arcs say. They under-count
+    // nodes whose rows the field cannot draw (the contained Dialog roster, the
+    // privacy-guarded surface), so they size nothing when a ledger is present.
+    const arcSurfaceCount = reinforcement.memberCount.get(node.id) ?? 0;
+    const arcParticipantCount = ontology === 'surface' ? new Set(reinforcement.membersBySurface.get(node.id) ?? []).size : 0;
+    const ledgerCounts = ledgerCountsForNode(ledger, node.id);
+    const countKind = ledgerCounts ? ledgerCounts.count_kind : ontology === 'surface' ? 'participants' : 'surfaces';
     return {
       ...node,
       ...position,
       ontology,
       color: ONTOLOGY_COLORS[ontology],
       documented_degree: adjacency.get(node.id)?.size ?? 0,
-      surface_count: surfaceCount,
-      participant_count: participantCount,
+      arc_surface_count: arcSurfaceCount,
+      arc_participant_count: arcParticipantCount,
+      ledger_row_count: ledgerCounts ? ledgerCounts.rows : null,
+      ledger_surface_count: ledgerCounts ? ledgerCounts.surfaces : null,
+      count_kind: countKind,
+      count_source: ledgerCounts ? 'ledger' : 'arcs',
       // The one quantity that sizes a node: a documented count with a legend label,
-      // never a composite score.
-      size_count: ontology === 'surface' ? participantCount : surfaceCount,
+      // never a composite score. With a ledger it is the ledger's count (the
+      // inspector's number); without one, the drawn-arc count.
+      size_count: ledgerCounts
+        ? (countKind === 'participants' ? ledgerCounts.rows : ledgerCounts.surfaces)
+        : (ontology === 'surface' ? arcParticipantCount : arcSurfaceCount),
       strongest_repeat: reinforcement.strongestByMember.get(node.id) ?? 0
     };
   });

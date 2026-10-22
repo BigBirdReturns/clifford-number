@@ -1,5 +1,5 @@
 import * as THREE from '../vendor/three-0.186.0.module.js';
-import { buildSocialFieldModel, eventInWindow, normalizeEcologyWindow, SOCIAL_FIELD_RADIUS, socialFieldNeighbors, isSurfaceNode } from './social-field.js';
+import { buildSocialFieldModel, eventInWindow, nodeCountLabel, normalizeEcologyWindow, SOCIAL_FIELD_RADIUS, socialFieldNeighbors, isSurfaceNode } from './social-field.js';
 
 const FORCE_GRAPH_VENDOR = '../vendor/3d-force-graph-1.80.0.min.js';
 const LINK_SEGMENTS = 18;
@@ -216,14 +216,12 @@ function setObjectStrength(object, factor, { selected = false, emphasis = false 
   });
 }
 
-function countLabel(node) {
-  if (node.ontology === 'surface') return `${node.size_count ?? 0} documented participant${node.size_count === 1 ? '' : 's'}`;
-  return `${node.size_count ?? 0} documented surface${node.size_count === 1 ? '' : 's'}`;
-}
+// The tooltip names the same ledger count the inspector names (nodeCountLabel
+// reads size_count and ledger_row_count, both set from the ledger by
+// buildSocialFieldModel); it never prints a count the inspector would contradict.
 function tooltipForNode(node) {
   const kind = node.ontology === 'surface' ? 'bounded surface' : node.ontology === 'person' ? 'actor' : 'organization';
-  const dated = node.size_count ? '' : ' · research context · no ledger rows';
-  return `<div class="atlas-3d-tooltip"><strong>${escapeHtml(node.label)}</strong><br><span>${escapeHtml(kind)} · ${escapeHtml(countLabel(node))}${dated}</span></div>`;
+  return `<div class="atlas-3d-tooltip"><strong>${escapeHtml(node.label)}</strong><br><span>${escapeHtml(kind)} · ${escapeHtml(nodeCountLabel(node))}</span></div>`;
 }
 
 function tooltipForLink(link) {

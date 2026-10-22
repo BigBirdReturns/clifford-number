@@ -7,6 +7,7 @@ import {
   buildSocialFieldModel, buildEcologyEventModel, buildFieldLedgerIndex, buildResearchNetworkModel,
   activeEcologyEvents, ecologyEventsForNode, ecologyPlayheadLabel, isSurfaceNode, socialFieldNeighbors,
   normalizeEcologyWindow, rowInWindow, eventInWindow, fieldWindowFactors, nodeLedgerSummary, ecologyWindowLabel, ecologyDay, dayIso,
+  nodeCountLabel, ledgerCountsForNode,
   ONTOLOGY_COLORS
 } from '../src/social-field.js';
 
@@ -51,11 +52,18 @@ assert.equal(a.strongest_repeat, 2);
 assert.equal(b.strongest_repeat, 2);
 assert.equal(c.strongest_repeat, 1);
 // Size is a documented count with a legend label, never a composite score.
-assert.equal(a.surface_count, 2);
-assert.equal(c.surface_count, 2);
+// Without a ledger the count comes from the drawn arcs and says so.
+assert.equal(a.arc_surface_count, 2);
+assert.equal(c.arc_surface_count, 2);
 assert.equal(a.size_count, 2);
+assert.equal(a.count_source, 'arcs');
+assert.equal(a.ledger_row_count, null);
 assert.equal(surfaceOne.size_count, 3, 'a surface node is sized by its documented participant count');
+assert.equal(surfaceOne.count_kind, 'participants');
 assert.equal(orgX.size_count, 1);
+assert.equal(nodeCountLabel(a), '2 documented surfaces');
+assert.equal(nodeCountLabel(surfaceOne), '3 documented participants');
+assert.equal(nodeCountLabel(first.nodes.find(node => node.id === 'surface-open')), '1 documented participant');
 for (const node of first.nodes) {
   assert.equal('heat' in node, false, `node ${node.id} must not carry a composite heat score`);
   assert.equal('heat_color' in node, false);
@@ -161,6 +169,25 @@ assert.deepEqual(ledger.rowsByLinkKey.get('a||surface-one').map(row => row.role)
 const withRows = buildSocialFieldModel(model, { ledger });
 assert.equal(withRows.links.find(link => link.id === 'edge-0').rows[0].role, 'Director', 'topology arcs carry their participation row');
 assert.deepEqual(withRows.links.find(link => link.id === 'edge-research').rows, [], 'research arcs carry no ledger row');
+// With a ledger, size and halo come from the ledger's counts, not the drawn arcs.
+// The fixture graph and ledger deliberately disagree: the graph draws a and b
+// on surface-two, the ledger lists 40 directory entries (c and 39 unresolved
+// ids) there. The ledger decides the count; the arc count is kept, named as such.
+const cWithLedger = withRows.nodeById.get('c');
+assert.equal(cWithLedger.count_source, 'ledger');
+assert.equal(cWithLedger.size_count, 2, 'c: the contained directory row and the year-precision campaign');
+assert.equal(cWithLedger.ledger_row_count, 2);
+assert.equal(cWithLedger.arc_surface_count, 2);
+const denseWithLedger = withRows.nodeById.get('surface-two');
+assert.equal(denseWithLedger.size_count, 40, 'a dense surface is sized by its ledger rows, not by the arcs the field draws');
+assert.equal(denseWithLedger.arc_participant_count, 2);
+assert.equal(nodeCountLabel(denseWithLedger), '40 documented participants');
+const bWithLedger = withRows.nodeById.get('b');
+assert.equal(bWithLedger.size_count, 1, 'b is on one ledger surface although two arcs are drawn for it');
+assert.equal(bWithLedger.arc_surface_count, 2);
+assert.equal(nodeCountLabel(bWithLedger), '1 documented surface');
+assert.deepEqual(ledgerCountsForNode(ledger, 'surface-guarded'), { rows: 1, surfaces: 1, count_kind: 'participants' });
+assert.equal(ledgerCountsForNode(null, 'a'), null);
 
 // Window semantics: [from, to] in days, swap when reversed, clamp to the range,
 // all-time when both sides are open or cover the range.
@@ -226,7 +253,30 @@ assert.equal(realEvents.counts.events, 163);
 assert.equal(realField.metrics.node_count, 346);
 assert.equal(realField.metrics.link_count, 392);
 assert.equal(realField.links.filter(link => link.rows.length).length, 169, 'every canonical overlay arc carries its participation row');
-assert.equal(realField.metrics.max_size_count, 18, 'the largest documented count is Electric Twin on 18 surfaces');
+// Size, halo and tooltip count come from the ledger and agree with the inspector
+// (nodeLedgerSummary) for every node on the field.
+const realNode = id => realField.nodeById.get(id);
+assert.equal(realNode('matt-clifford').size_count, 9, 'Matt Clifford: 9 documented surfaces (the Dialog roster row counts)');
+assert.equal(realNode('ben-warner').size_count, 10, 'Ben Warner: 10 documented surfaces (the privacy-guarded row counts)');
+assert.equal(realNode('electric-twin').size_count, 18);
+assert.equal(realNode('surface-dialog-public-directory-exposure-2026-06-16').size_count, 113, 'the Dialog roster surface is sized by its 113 ledger rows, not by its arcs');
+assert.equal(realNode('surface-dialog-public-directory-exposure-2026-06-16').arc_participant_count, 0, 'the field draws no arc into the contained roster, so an arc count would size it as empty');
+assert.equal(realField.metrics.max_size_count, 113, 'the largest documented count is the Dialog roster surface with 113 participation rows');
+assert.equal(nodeCountLabel(realNode('matt-clifford')), '9 documented surfaces');
+assert.equal(nodeCountLabel(realNode('surface-dialog-public-directory-exposure-2026-06-16')), '113 documented participants');
+assert.equal(nodeCountLabel(realNode('joe-lonsdale')), '1 documented surface', 'a Dialog roster actor has a ledger row and the tooltip says so');
+assert.equal(nodeCountLabel(realNode('alex-karp')), '0 documented surfaces · research context · no ledger rows', 'only a node with no ledger row is called research context');
+let tooltipInspectorDisagreements = 0;
+let nodesWithoutLedgerRows = 0;
+for (const node of realField.nodes) {
+  const summary = nodeLedgerSummary(realLedger, node.id);
+  const inspectorCount = String(node.id).startsWith('surface-') ? summary.rows.length : summary.surface_count;
+  if (node.size_count !== inspectorCount || node.ledger_row_count !== summary.rows.length) tooltipInspectorDisagreements += 1;
+  if (node.ledger_row_count === 0) nodesWithoutLedgerRows += 1;
+  assert.equal(nodeCountLabel(node).includes('no ledger rows'), summary.rows.length === 0, `${node.id}: "no ledger rows" is said only when the ledger has none`);
+}
+assert.equal(tooltipInspectorDisagreements, 0, 'the tooltip count and the inspector count agree on every node');
+assert.equal(nodesWithoutLedgerRows, 103, '103 of 346 field nodes carry no ledger row (research context only)');
 const window2025 = normalizeEcologyWindow(realLedger.range, { fromDay: ecologyDay('2025-01-01'), toDay: ecologyDay('2025-12-31') });
 const realFactors = fieldWindowFactors(realLedger, window2025);
 assert.equal(realFactors.rows_in_window, 63);
@@ -248,6 +298,8 @@ assert.match(rendererSource, /enableNodeDrag\(false\)/, 'individual field nodes 
 assert.doesNotMatch(rendererSource, /particleCount|updateParticles/, 'ambient particles without dated evidence must not animate links');
 assert.doesNotMatch(rendererSource, /node\.heat|heat_color|reinforcement heat|strongest_repeat/, 'no composite heat score may drive a visual channel or a tooltip');
 assert.match(rendererSource, /size_count/, 'node size and halo derive from the documented count');
+assert.match(rendererSource, /escapeHtml\(nodeCountLabel\(node\)\)/, 'the tooltip prints the shared ledger count label');
+assert.doesNotMatch(rendererSource, /no ledger rows/, 'the renderer does not word the count itself: social-field owns the one label');
 assert.match(rendererSource, /setTimeWindow/);
 assert.match(rendererSource, /eventInWindow/);
 assert.doesNotMatch(rendererSource, /pulseDays|ecologyTemporalIntensity/, 'the 45-day pulse shoulder is gone');
