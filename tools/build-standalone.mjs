@@ -7,7 +7,9 @@ const read = file => fs.readFileSync(path.join(root, file), 'utf8');
 const readJson = file => JSON.parse(read(file));
 const escapeScript = value => value.replace(/<\/script/gi, '<\\/script');
 const faviconData = Buffer.from(read('assets/favicon.svg')).toString('base64');
-const dataPaths = ['graph.json', 'build/hop-graph.json', 'build/surface-graph.json', 'build/receipt-graph.json', 'build/public-data-boundary.json'];
+// Exactly the datasets home.js loads: the research graph for the lanes, the
+// receipt graph for receipt labels, and the public projection boundary.
+const dataPaths = ['graph.json', 'build/receipt-graph.json', 'build/public-data-boundary.json'];
 const embedded = Object.fromEntries(dataPaths.map(file => [file, readJson(file)]));
 
 let app = read('home.js').replace(

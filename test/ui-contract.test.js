@@ -48,19 +48,6 @@ test('the missing joined receipt is a physical, labelled open aperture', () => {
   assert.doesNotMatch(app, /data-speculative-bridge|data-aperture-bridge/);
 });
 
-test('evidence inspection is explicit and separate from homepage reading', () => {
-  assert.match(html, /id="evidence-inspection-toggle"/);
-  assert.match(html, /id="evidence-inspection-toggle"[^>]+aria-controls="evidence-inspector"/);
-  assert.match(html, /id="evidence-inspection-toggle"[^>]+aria-expanded="false"/);
-  assert.match(html, /id="evidence-inspector"[^>]+hidden/);
-  assert.match(html, /id="provenance-projection"/);
-  assert.match(html, /id="provenance-labels"[^>]+data-location="outside-projection"/);
-  assert.match(html, /data-provenance-plate="A"/);
-  assert.match(html, /data-provenance-plate="B"/);
-  assert.match(html, /data-provenance-plate="C"/);
-
-});
-
 test('the obsolete three-plane world dive cannot satisfy the homepage contract', () => {
   assert.doesNotMatch(html, /graph-planes|3 depth planes|stop the dive/i);
   assert.doesNotMatch(app, /function\s+planeMarkup|\[0,\s*1,\s*2\]\.map/);
@@ -72,8 +59,20 @@ test('keyboard and reduced-motion equivalents remain first-class', () => {
   assert.match(css, /:focus-visible\s*\{/);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
   assert.match(css, /@media \(max-width: 600px\)/);
-  assert.match(app, /function\s+(open|toggle)EvidenceInspection|function\s+setInspectionMode/);
-  assert.match(app, /\.focus\(\{\s*preventScroll:\s*true\s*\}\)/);
+  assert.match(app, /function\s+closeReceipts/);
+  assert.match(app, /event\.key !== 'Escape'/);
+});
+
+test('the lane table is explicit about overlay rows and unmapped edge types', () => {
+  // The 169 topology-only overlay rows in graph.json are not documented
+  // records of any lane, and an edge type missing from the table must be
+  // reported rather than absorbed into workflow-admission by default.
+  assert.match(app, /projection_layer === OVERLAY_PROJECTION_LAYER/);
+  assert.match(app, /OVERLAY_PROJECTION_LAYER = 'canonical_surface_overlay'/);
+  assert.match(app, /throw new Error\(`Unmapped research edge type/);
+  assert.doesNotMatch(app, /\?\?\s*'workflow-admission'/);
+  assert.doesNotMatch(app, /evidenceInspectionModel|data-provenance-plate|setInspectionMode/);
+  assert.doesNotMatch(html, /evidence-inspection|provenance-plate|provenance-projection/);
 });
 
 test('projection boundaries are visible and explicitly separated from source freshness', () => {

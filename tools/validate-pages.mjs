@@ -287,11 +287,12 @@ if (i18n.includes('visual-aperture')) {
 if (!html.includes('id="causal-map"') || !html.includes('id="causal-map-legend"') || !html.includes('id="causal-route-summary"')
   || (html.match(/data-lane="/g) ?? []).length !== 4
   || !html.includes('id="causal-receipt-aperture"') || !html.includes('data-state="open"')
-  || !html.includes('id="evidence-inspection-toggle"') || !html.includes('data-provenance-plate="A"')) {
+  || !html.includes('id="causal-numbers"') || !html.includes('id="causal-detail"')) {
   console.error('validate-pages failed: four-lane causal homepage contract is incomplete');
   process.exit(1);
 }
-if (!homeApp.includes('function homepageModel') || !homeApp.includes('function evidenceInspectionModel')
+if (!homeApp.includes('function homepageModel') || !homeApp.includes('function buildLaneModel')
+  || !homeApp.includes("'canonical_surface_overlay'") || !homeApp.includes('Unmapped research edge type')
   || !homeApp.includes('DEFAULT_ENDPOINTS') || !homeApp.includes('CLIFFORD_GRAPH_CONFIG')
   || homeApp.includes('requestAnimationFrame') || homeApp.includes('getContext(')) {
   console.error('validate-pages failed: homepage model or configurable endpoint boundary regressed');
