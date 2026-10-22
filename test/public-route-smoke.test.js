@@ -41,6 +41,8 @@ assert.doesNotMatch(smokeSource, /^import\s+.*from ['"]playwright['"];?$/m);
 assert.match(smokeSource, /await import\(['"]playwright['"]\)/);
 assert.match(smokeSource, /body\?\.textContent\.includes/);
 assert.match(smokeSource, /#aperture-timeline line\[data-ap-time-pair\]/, 'the reserved never-matching selector is asserted absent');
+assert.match(smokeSource, /ROUTE_CASES\.find\(routeCase => routeCase\.route\.includes\('#'\)\)/, 'back/forward is exercised on a hash route, not the query-less arrival page');
+assert.equal(ROUTE_CASES.find(routeCase => routeCase.route.includes('#')).id, 'dated-connection');
 assert.match(smokeSource, /#aperture-timeline \[data-ap-time-mark\]/);
 assert.match(smokeSource, /\[data-ap-mode="timeline"\]\.is-active/);
 assert.match(explorerSource, /<h1 id="desk-title"/);

@@ -16,8 +16,10 @@ export const ROUTE_CASES = Object.freeze([
   Object.freeze({
     id: 'timeline-default',
     route: 'explorer.html',
+    // The arrival card and the roster block read the same at every width; lane
+    // labels are truncated at phone widths, so they are not text anchors here.
     expected: Object.freeze([
-      'People documented on one surface',
+      'Every mark is one ledger row.',
       'names listed'
     ]),
     timeline: Object.freeze({ min_marks: 48, blocks: 1, block_text: '112', no_webgl: true, single_fetch: true })
@@ -321,20 +323,23 @@ export async function runSmoke(options) {
       { timeout: options.timeoutMs }
     );
     await waitForText(page, 'The machine is already in the records.', options.timeoutMs);
-    const navigationHash = new URL(ROUTE_CASES[0].route, options.baseUrl).hash;
+    // Back/Forward is exercised on the first hash route (the desk), not on the
+    // query-less arrival page, so the history step is a real route change.
+    const navigationCase = ROUTE_CASES.find(routeCase => routeCase.route.includes('#'));
+    const navigationHash = new URL(navigationCase.route, options.baseUrl).hash;
     await page.evaluate((route) => { location.hash = route; }, navigationHash);
-    await waitForText(page, ROUTE_CASES[0].expected[0], options.timeoutMs);
+    await waitForText(page, navigationCase.expected[0], options.timeoutMs);
     await page.goBack();
     await page.waitForFunction(() => location.hash === '', null, { timeout: options.timeoutMs });
     await waitForText(page, 'The machine is already in the records.', options.timeoutMs);
     await page.goForward();
     await page.waitForFunction((route) => location.hash === route, navigationHash, { timeout: options.timeoutMs });
-    await waitForText(page, ROUTE_CASES[0].expected[0], options.timeoutMs);
+    await waitForText(page, navigationCase.expected[0], options.timeoutMs);
     if (navigationExternalRequests.length) {
       throw new Error(`navigation: undeclared external requests ${JSON.stringify(navigationExternalRequests)}`);
     }
     report.navigation = {
-      route: ROUTE_CASES[0].route,
+      route: navigationCase.route,
       back_forward: 'PASS',
       final_url: page.url(),
       external_requests: navigationExternalRequests
