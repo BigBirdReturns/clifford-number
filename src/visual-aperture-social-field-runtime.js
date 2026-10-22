@@ -347,15 +347,28 @@ function selectApertureFieldActor(id) {
 function fieldNodeLabel(id) {
   return state.actors.get(id)?.label || state.legacyNodes.get(id)?.label || state.surfaces.get(String(id).replace(/^surface-/, ''))?.surface_label || id;
 }
+// A row the field cannot draw is labelled, never omitted. privacy_guard: the
+// public graph carries no node for that surface at all. dense_roster_contained:
+// the surface is drawn as one contained object, so the row has no arc of its own.
+function fieldRowFieldNote(row) {
+  if (row.on_field) return '';
+  const text = row.off_field_reason === 'privacy_guard'
+    ? 'not drawn on the field (privacy guard)'
+    : row.off_field_reason === 'dense_roster_contained'
+      ? 'drawn as one contained roster object, not as an arc'
+      : 'not drawn on the field';
+  return `<small class="aperture-field-row-note" data-ap-off-field="${esc(row.off_field_reason || 'unresolved')}">${text}</small>`;
+}
 function fieldRowItem(row, window) {
   const api = state.webgl?.eventApi;
   const inside = api?.rowInWindow ? api.rowInWindow(row, window) : true;
   const classes = ['aperture-field-row', inside ? '' : 'is-outside', row.on_field ? '' : 'is-off-field'].filter(Boolean).join(' ');
   const receipts = row.receipt_ids.length;
   return `<li class="${classes}"${inside ? '' : ' style="opacity:.45"'} data-ap-row="${esc(row.row_id)}" data-ap-start="${row.start_day ?? ''}" data-ap-end="${row.end_day ?? ''}">
-    <strong>${esc(row.time_label)}${row.precision === 'year' ? ' (year precision)' : ''}</strong>
+    <strong>${esc(row.time_label)}${row.precision === 'year' ? ' (year precision)' : row.precision === 'month' ? ' (month precision)' : ''}</strong>
     <span>${esc(row.surface_label)}</span>
     <small>${esc(row.role)} · ${esc(evidenceLabel(row.evidence_class))} · ${receipts} receipt${receipts === 1 ? '' : 's'}</small>
+    ${fieldRowFieldNote(row)}
     ${receiptButtons(row.receipt_ids, 3)}
     <div class="aperture-actions"><button type="button" class="aperture-secondary-button" data-ap-surface="${esc(row.surface_id)}">Open bounded surface</button></div>
   </li>`;
@@ -374,7 +387,11 @@ function fieldRowsMarkup(id) {
     ? `<span data-ap-window-count>${rows.length} row${rows.length === 1 ? '' : 's'} · all time</span>`
     : `<span data-ap-window-count>${summary.rows_in_window} of ${rows.length} rows in window</span>`;
   const visible = rows.slice(0, APERTURE_FIELD_ROW_LIMIT);
-  return `<h4>Documented rows</h4><p class="aperture-muted">${header} · ${esc(api.ecologyWindowLabel(ledger.range, window))}. Rows outside the window dim and stay listed; they are never removed.</p><ul class="aperture-activity-list">${visible.map(row => fieldRowItem(row, window)).join('')}</ul>${rows.length > visible.length ? `<p class="aperture-muted">+${rows.length - visible.length} earlier-listed rows not shown here; open the public record for the complete list.</p>` : ''}`;
+  const guarded = rows.filter(row => row.off_field_reason === 'privacy_guard').length;
+  const guardNote = guarded
+    ? ` ${guarded} of these rows ${guarded === 1 ? 'is' : 'are'} not drawn on the field (privacy guard): the public graph carries no node for that surface, so the row is listed here instead of omitted.`
+    : '';
+  return `<h4>Documented rows</h4><p class="aperture-muted">${header} · ${esc(api.ecologyWindowLabel(ledger.range, window))}. Rows outside the window dim and stay listed; they are never removed.${guardNote}</p><ul class="aperture-activity-list">${visible.map(row => fieldRowItem(row, window)).join('')}</ul>${rows.length > visible.length ? `<p class="aperture-muted">+${rows.length - visible.length} earlier-listed rows not shown here; open the public record for the complete list.</p>` : ''}`;
 }
 function fieldFactGrid(node, summary) {
   const api = state.webgl?.eventApi;
