@@ -5,9 +5,11 @@ import vm from 'node:vm';
 
 const source = fs.readFileSync('home.js', 'utf8').replace(/\ninit\(\);\s*$/, '');
 const researchGraph = JSON.parse(fs.readFileSync('graph.json', 'utf8'));
-const hopGraph = JSON.parse(fs.readFileSync('build/hop-graph.json', 'utf8'));
-const surfaceGraph = JSON.parse(fs.readFileSync('build/surface-graph.json', 'utf8'));
 const receiptGraph = JSON.parse(fs.readFileSync('build/receipt-graph.json', 'utf8'));
+
+const OVERLAY_LAYER = 'canonical_surface_overlay';
+const overlayEdges = researchGraph.edges.filter(edge => edge.projection_layer === OVERLAY_LAYER);
+const documentedEdges = researchGraph.edges.filter(edge => edge.projection_layer !== OVERLAY_LAYER);
 
 const context = {
   console,
@@ -15,22 +17,21 @@ const context = {
   URL,
   location: { href: 'https://clifford.test/home' },
   CLIFFORD_GRAPH_CONFIG: {},
-  __input: { researchGraph, hopGraph, surfaceGraph, receiptGraph }
+  __input: { researchGraph, receiptGraph }
 };
 
 vm.createContext(context);
 vm.runInContext(`${source}
 state.researchGraph = __input.researchGraph;
-state.hopGraph = __input.hopGraph;
-state.surfaceGraph = __input.surfaceGraph;
 state.receiptGraph = __input.receiptGraph;
 state.receiptById = new Map((__input.receiptGraph.receipts ?? []).map(receipt => [receipt.receipt_id, receipt]));
 globalThis.__contract = {
   homepage: typeof homepageModel === 'function' ? homepageModel() : null,
+  buildLaneModel: typeof buildLaneModel === 'function' ? buildLaneModel : null,
   inspection: typeof evidenceInspectionModel === 'function' ? evidenceInspectionModel() : null
 };`, context);
 
-const { homepage, inspection } = context.__contract;
+const { homepage, buildLaneModel, inspection } = context.__contract;
 const sourceIds = new Set((researchGraph.sources ?? []).map(source => source.id));
 
 function requireHomepage() {
@@ -38,17 +39,8 @@ function requireHomepage() {
   return homepage;
 }
 
-function requireInspection() {
-  assert.ok(inspection, 'home.js must provide evidenceInspectionModel() separately from the homepage model');
-  return inspection;
-}
-
 function allMarks(model) {
   return model.lanes.flatMap(lane => lane.marks ?? []);
-}
-
-function coordinateMap(plate) {
-  return new Map((plate.marks ?? []).map(mark => [mark.id, [mark.x, mark.y]]));
 }
 
 test('every published research edge resolves to its exact authorized receipts', () => {
@@ -98,6 +90,28 @@ test('visible counts are derived from the documented aggregate marks', () => {
   assert.ok(marks.every(mark => mark.receiptIds?.length), 'every aggregate mark must expose the receipts behind its count');
 });
 
+test('canonical surface overlay rows are excluded from every lane and from documented records', () => {
+  const model = requireHomepage();
+  assert.ok(overlayEdges.length > 0, 'graph.json is expected to carry topology-only overlay rows; retire this guard deliberately if that changes');
+  assert.equal(model.visibleCounts.overlayEdgesExcluded, overlayEdges.length, 'the model must report how many overlay rows it set aside');
+  assert.equal(model.visibleCounts.documentedRecords, documentedEdges.length, 'documented records must count only research edges');
+  const totalNumber = model.displayedNumbers.find(number => number.id === 'total-documented-records');
+  assert.equal(totalNumber?.value, documentedEdges.length);
+  const overlayIds = new Set(overlayEdges.map(edge => edge.id));
+  assert.ok(model.edges.every(edge => !overlayIds.has(edge.pathStepId)), 'no overlay row may appear as a displayed edge');
+  assert.ok(allMarks(model).every(mark => !/topology/i.test(mark.label)), 'no lane may carry a mark made of overlay rows');
+});
+
+test('an unmapped research edge type is reported, never absorbed into a lane by default', () => {
+  assert.equal(typeof buildLaneModel, 'function', 'home.js must expose buildLaneModel as a top-level function');
+  const unmapped = { id: 'edge-unmapped', from: 'a', to: 'b', type: 'not-a-lane-type', source_ids: ['src-1'] };
+  assert.throws(() => buildLaneModel({ edges: [unmapped] }), /Unmapped research edge type "not-a-lane-type"/);
+  // The same type as an overlay row is set aside before classification, so it
+  // neither throws nor lands in a lane.
+  const overlayOnly = buildLaneModel({ edges: [{ ...unmapped, type: 'topology', projection_layer: OVERLAY_LAYER }] });
+  assert.equal(overlayOnly.flatMap(lane => lane.marks).length, 0);
+});
+
 test('the joined causal-receipt aperture stays physically open', () => {
   const model = requireHomepage();
   assert.deepEqual(
@@ -121,27 +135,8 @@ test('the joined causal-receipt aperture stays physically open', () => {
   );
 });
 
-test('provenance A/B/C is an aligned inspection view, not homepage depth', () => {
-  const home = requireHomepage();
-  const evidence = requireInspection();
-  assert.equal(home.provenancePlates, undefined, 'the homepage must not distribute the research across depth planes');
-  assert.equal(evidence.interactionMode, 'evidence-inspection');
-  assert.deepEqual(evidence.visibleCounts, home.visibleCounts, 'counts must agree between homepage and evidence inspection');
-  assert.deepEqual(Array.from(evidence.plates, plate => plate.id), ['A', 'B', 'C']);
-
-  const [reference, ...others] = evidence.plates.map(coordinateMap);
-  for (const plate of others) {
-    assert.deepEqual(Array.from(plate.keys()), Array.from(reference.keys()), 'every provenance plate must carry the same marks');
-    for (const [id, coordinates] of reference) {
-      assert.deepEqual(plate.get(id), coordinates, `${id} must keep shared X/Y coordinates across A/B/C`);
-    }
-  }
-});
-
-test('persistent provenance labels remain outside the projection', () => {
-  const evidence = requireInspection();
-  assert.ok(evidence.labels?.length, 'inspection needs persistent semantic labels');
-  assert.ok(evidence.labels.every(label => label.persistent === true));
-  assert.ok(evidence.labels.every(label => label.location === 'outside-projection'));
-  assert.ok(evidence.plates.every(plate => (plate.labels ?? []).every(label => ['A', 'B', 'C'].includes(label))));
+test('the homepage carries no depth planes and no stub provenance inspector', () => {
+  const model = requireHomepage();
+  assert.equal(model.provenancePlates, undefined, 'the homepage must not distribute the research across depth planes');
+  assert.equal(inspection, null, 'the Plate A/B/C evidence inspector (three identical dot grids) is retired');
 });

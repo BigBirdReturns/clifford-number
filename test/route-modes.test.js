@@ -9,13 +9,11 @@ import {
 import { releaseDelta, summarizeDelta } from '../src/release-delta.js';
 import { EVIDENCE_RANK } from '../src/evidence-rank.js';
 
-/* Regression gate for docs/atlas-representation-ladder.md steps 5-6: route
-   projections, blocked segments, the corridor overlay, the release-delta
-   strip, and route subordination. app.js is loaded the same way
-   test/atlas-semantic.test.js and test/evidence-overview.test.js load it:
-   strip the ES imports (not valid in a vm.Script) and the trailing init()
-   call (needs a real DOM/fetch), then run the rest as a classic script so
-   every top-level `function` declaration attaches to the vm context as a
+/* Regression gate for the live Connection desk's route projections, blocked
+   segments, and the release-delta strip. app.js is loaded by stripping the ES
+   imports (not valid in a vm.Script) and the trailing init() call (needs a
+   real DOM/fetch), then running the rest as a classic script so every
+   top-level `function` declaration attaches to the vm context as a
    directly-callable global. app.js now imports the route-projections.js and
    release-delta.js engines by name, so those exact bindings are injected
    into the vm context here -- the same mechanism the vm already relies on
@@ -43,13 +41,10 @@ const context = {
 vm.createContext(context);
 vm.runInContext(source, context);
 
-const {
-  routeModesModel, buildCorridorLayerModel, releaseStripModel,
-  computeRouteSubordinationClasses, routeMemberIdsForSelection
-} = context;
+const { routeModesModel, releaseStripModel } = context;
 
-for (const fn of [routeModesModel, buildCorridorLayerModel, releaseStripModel, computeRouteSubordinationClasses, routeMemberIdsForSelection]) {
-  assert.equal(typeof fn, 'function', 'app.js must expose the route-modes ladder functions as plain top-level function declarations');
+for (const fn of [routeModesModel, releaseStripModel]) {
+  assert.equal(typeof fn, 'function', 'app.js must expose the desk route-projection functions as plain top-level function declarations');
 }
 
 console.log('route-modes.test.js: definitions loaded, node:test running');
@@ -176,47 +171,7 @@ test('routeModesModel: a non-overlapping as-of period is an honest absence, not 
 });
 
 // ---------------------------------------------------------------------------
-// (e) corridor mount model: every corridor graph_effect 'none', invalid ones excluded
-
-test('buildCorridorLayerModel: only graph_effect "none" corridors render; any other graph_effect is excluded', () => {
-  const machines = [
-    { organization_id: 'org-a', position: { x: 10, y: 20 } },
-    { organization_id: 'org-b', position: { x: 90, y: 40 } }
-  ];
-  const atlas = {
-    machines,
-    corridors: [
-      { chain_id: 'c-ok', label: 'Legit corridor', graph_effect: 'none', chain_length: 2, stages: [{ organization_id: 'org-a' }, { organization_id: 'org-b' }] },
-      { chain_id: 'c-bad', label: 'Should never render', graph_effect: 'hop-eligible', chain_length: 2, stages: [{ organization_id: 'org-a' }, { organization_id: 'org-b' }] }
-    ]
-  };
-  const model = buildCorridorLayerModel(atlas);
-  assert.equal(model.corridors.length, 1);
-  assert.equal(model.corridors[0].id, 'c-ok');
-  assert.equal(model.corridors[0].graphEffect, 'none');
-  assert.equal(model.excludedCount, 1);
-  assert.equal(model.corridors[0].anchors.length, 2);
-  assert.equal(model.corridors[0].anchors[0].id, 'org-a');
-  assert.equal(model.corridors[0].anchors[0].x, 10);
-  assert.equal(model.corridors[0].anchors[0].y, 20);
-});
-
-test('buildCorridorLayerModel: an absent atlasProjection is an honest empty model, never a crash', () => {
-  for (const empty of [buildCorridorLayerModel(null), buildCorridorLayerModel(undefined)]) {
-    assert.equal(empty.corridors.length, 0);
-    assert.equal(empty.excludedCount, 0);
-  }
-});
-
-test('buildCorridorLayerModel: the real build/atlas-projection.json never contains a corridor with a graph_effect other than "none"', () => {
-  const model = buildCorridorLayerModel(atlasProjection);
-  assert.equal(model.excludedCount, 0);
-  assert.equal(model.corridors.length, (atlasProjection.corridors ?? []).length);
-  for (const corridor of model.corridors) assert.equal(corridor.graphEffect, 'none');
-});
-
-// ---------------------------------------------------------------------------
-// (f) delta strip model: honest on null baseline
+// (e) delta strip model: honest on null baseline
 
 test('releaseStripModel: a null baseline reports the honest absent-baseline one-liner', () => {
   const model = releaseStripModel(atlasProjection, null);
@@ -243,36 +198,6 @@ test('releaseStripModel: an identical baseline reports honestly that nothing cha
   const model = releaseStripModel(atlasProjection, baseline);
   assert.equal(model.baselineAbsent, false);
   assert.match(model.message, /no changes across \d+ compared objects/);
-});
-
-// ---------------------------------------------------------------------------
-// (g) route subordination class assignment (pure function)
-
-test('computeRouteSubordinationClasses: route members get is-route-member, everyone else gets is-route-dimmed', () => {
-  const classes = computeRouteSubordinationClasses(['a', 'b', 'c'], new Set(['a', 'b']));
-  assert.equal(classes.get('a'), 'is-route-member');
-  assert.equal(classes.get('b'), 'is-route-member');
-  assert.equal(classes.get('c'), 'is-route-dimmed');
-});
-
-test('computeRouteSubordinationClasses: empty route membership dims everyone, never throws', () => {
-  const classes = computeRouteSubordinationClasses(['a', 'b'], new Set());
-  assert.equal(classes.get('a'), 'is-route-dimmed');
-  assert.equal(classes.get('b'), 'is-route-dimmed');
-});
-
-test('routeMemberIdsForSelection: research mode never yields route members (hop routes only exist in hops mode)', () => {
-  assert.equal(routeMemberIdsForSelection(hopGraph, 'research', 'dialog').size, 0);
-});
-
-test('routeMemberIdsForSelection: no selection yields no route members', () => {
-  assert.equal(routeMemberIdsForSelection(hopGraph, 'hops', null).size, 0);
-});
-
-test('routeMemberIdsForSelection: hops mode returns exactly the actor path of the selected route', () => {
-  const [routeId, path] = Object.entries(hopGraph.shortest_paths).find(([, p]) => p && p.number > 0);
-  const ids = routeMemberIdsForSelection(hopGraph, 'hops', routeId);
-  assert.deepEqual([...ids].sort(), [...new Set(path.actor_path)].sort());
 });
 
 console.log('route-modes.test.js: OK');

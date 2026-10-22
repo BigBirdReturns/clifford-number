@@ -287,11 +287,12 @@ if (i18n.includes('visual-aperture')) {
 if (!html.includes('id="causal-map"') || !html.includes('id="causal-map-legend"') || !html.includes('id="causal-route-summary"')
   || (html.match(/data-lane="/g) ?? []).length !== 4
   || !html.includes('id="causal-receipt-aperture"') || !html.includes('data-state="open"')
-  || !html.includes('id="evidence-inspection-toggle"') || !html.includes('data-provenance-plate="A"')) {
+  || !html.includes('id="causal-numbers"') || !html.includes('id="causal-detail"')) {
   console.error('validate-pages failed: four-lane causal homepage contract is incomplete');
   process.exit(1);
 }
-if (!homeApp.includes('function homepageModel') || !homeApp.includes('function evidenceInspectionModel')
+if (!homeApp.includes('function homepageModel') || !homeApp.includes('function buildLaneModel')
+  || !homeApp.includes("'canonical_surface_overlay'") || !homeApp.includes('Unmapped research edge type')
   || !homeApp.includes('DEFAULT_ENDPOINTS') || !homeApp.includes('CLIFFORD_GRAPH_CONFIG')
   || homeApp.includes('requestAnimationFrame') || homeApp.includes('getContext(')) {
   console.error('validate-pages failed: homepage model or configurable endpoint boundary regressed');
@@ -314,11 +315,18 @@ if (homeCss.includes('world-dive') || !homeCss.includes('prefers-reduced-motion'
   console.error('validate-pages failed: causal homepage styling or reduced-motion contract regressed');
   process.exit(1);
 }
-if (!explorerHtml.includes('id="network-svg"') || !explorerHtml.includes('id="view-desk"')
-  || !explorerHtml.includes('id="view-map"') || !app.includes('function semanticLevel')
-  || !app.includes('function atlasScale') || !app.includes('routeProjections')
-  || !app.includes('does not redefine the Clifford Number')) {
-  console.error('validate-pages failed: semantic topology explorer or route-projection contract is incomplete');
+// The explorer page hosts the Visual Aperture in <section id="network-atlas">
+// (the aperture mounts into it by id), the Connection desk, the shared
+// evidence dialog and the route-projection panel. The legacy SVG atlas that
+// app.js used to render into that section is retired.
+if (!explorerHtml.includes('id="network-atlas"') || !explorerHtml.includes('id="view-desk"')
+  || !explorerHtml.includes('id="view-map"') || !explorerHtml.includes('id="evidence-dialog"')
+  || !app.includes('function routeModesModel') || !app.includes('function openReceiptDialog')
+  || !app.includes('function inspectorBreadcrumbModel') || !app.includes('routeProjections')
+  || !app.includes('does not redefine the Clifford Number')
+  || app.includes('function initNetworkAtlas') || app.includes('function renderEvidenceOverview')
+  || explorerHtml.includes('id="network-svg"') || explorerHtml.includes('id="evidence-overview"')) {
+  console.error('validate-pages failed: public explorer or route-projection contract is incomplete');
   process.exit(1);
 }
 if (atlasProjection.scheme?.schema_version !== 'atlas-projection@1'

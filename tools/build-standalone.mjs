@@ -7,7 +7,9 @@ const read = file => fs.readFileSync(path.join(root, file), 'utf8');
 const readJson = file => JSON.parse(read(file));
 const escapeScript = value => value.replace(/<\/script/gi, '<\\/script');
 const faviconData = Buffer.from(read('assets/favicon.svg')).toString('base64');
-const dataPaths = ['graph.json', 'build/hop-graph.json', 'build/surface-graph.json', 'build/receipt-graph.json', 'build/public-data-boundary.json'];
+// Exactly the datasets home.js loads: the research graph for the lanes, the
+// receipt graph for receipt labels, and the public projection boundary.
+const dataPaths = ['graph.json', 'build/receipt-graph.json', 'build/public-data-boundary.json'];
 const embedded = Object.fromEntries(dataPaths.map(file => [file, readJson(file)]));
 
 let app = read('home.js').replace(
@@ -35,20 +37,18 @@ console.log(`build-standalone: ${path.relative(root, output)} (${fs.statSync(out
 // a click could reach is already on the page. Unlike the Pages release (which
 // fetches live), the standalone must have zero network dependency.
 const explorerCatalog = readJson('build/public-catalog.json');
+// Exactly the datasets app.js init() loads (the aperture bundle re-reads
+// surface-graph, hop-graph, receipt-graph and graph.json from the same blob),
+// plus every lazily-loaded case and track record a click could reach.
+// build/atlas-projection.json and build/scout-report.json are no longer read
+// by the public page and are not embedded.
 const explorerDataPaths = [
   'build/surface-graph.json',
   'build/hop-graph.json',
   'build/scores.json',
   'graph.json',
-  'build/scout-report.json',
   'build/receipt-graph.json',
   'build/public-catalog.json',
-  // Ladder step 6: the corridor overlay's data artifact is embedded so the
-  // standalone renders corridors offline too. build/atlas-projection-baseline.json
-  // is deliberately NOT embedded here (it does not exist yet) — app.js's
-  // loadJson().catch(() => null) then resolves it to null exactly as it does
-  // for a live 404, so the standalone renders the honest absent-baseline line.
-  'build/atlas-projection.json',
   'build/public-data-boundary.json',
   ...(explorerCatalog.cases ?? []).map(item => item.href),
   ...(explorerCatalog.tracks ?? []).map(item => item.href)
