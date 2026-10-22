@@ -326,11 +326,13 @@ export async function createWebGlAtlasRenderer({ host, onNodeSelect, onLinkSelec
       const selected = node.id === id || semanticView.primaryIds?.has(node.id) || (linkEndpoints?.includes(node.id) ?? false);
       setObjectStrength(node.__threeObj, semanticNodeFactor(node.id) * hoverFactor * timeNodeFactor(node.id), { selected });
     }
+    // 3d-force-graph binds a custom link object at link.__lineObj (nodes use
+    // __threeObj). Reading the node property here left every arc factor inert.
     for (const link of field.links) {
       const source = endpointId(link.source), target = endpointId(link.target);
       const hoverFactor = !id || source === id || target === id ? 1 : .06;
       const emphasis = link.id === selectedLinkId;
-      setObjectStrength(link.__threeObj, emphasis ? 1 : semanticLinkFactor(link) * hoverFactor * timeLinkFactor(link), { emphasis });
+      setObjectStrength(link.__lineObj, emphasis ? 1 : semanticLinkFactor(link) * hoverFactor * timeLinkFactor(link), { emphasis });
     }
   }
   function clearEcologyLayer() {
@@ -473,6 +475,11 @@ export async function createWebGlAtlasRenderer({ host, onNodeSelect, onLinkSelec
     onLinkSelect?.(link);
   });
   graph.onBackgroundClick(() => applyHighlight(selectedId));
+  // The library builds node and link objects on its first tick after
+  // graphData(), which cannot happen while the stage is off-screen and paused.
+  // The engine stops on that same tick (cooldownTicks 0), so this is the first
+  // moment every arc factor can actually be written.
+  graph.onEngineStop(() => applyHighlight(selectedId));
   controls.addEventListener('change', () => {
     const distance = cameraDistance();
     const distanceChanged = lastCameraDistance == null || Math.abs(distance - lastCameraDistance) > .35;

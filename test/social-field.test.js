@@ -256,6 +256,8 @@ assert.doesNotMatch(rendererSource, /function ecologyFrame|ecologyRaf/, 'no cont
 assert.equal((rendererSource.match(/material\.needsUpdate/g) ?? []).length, 1, 'material.needsUpdate is set only when the transparent flag flips');
 assert.match(rendererSource, /geometry\.attributes\.position\.needsUpdate = true/, 'arc rebuilds still mark their geometry');
 assert.match(rendererSource, /onLinkSelect\?\.\(link\)/, 'arc clicks hand the whole link to the runtime');
+assert.match(rendererSource, /setObjectStrength\(link\.__lineObj/, '3d-force-graph binds custom link objects at __lineObj; arc factors must address that object');
+assert.doesNotMatch(rendererSource, /link\.__threeObj/, 'reading the node binding on a link leaves every arc factor inert');
 assert.match(rendererSource, /selectLink/);
 assert.doesNotMatch(rendererSource, /function shellForce|function clusterForce/, 'dead layout forces are deleted');
 assert.ok(eventModel.events.every(event => event.graph_effect == null), 'display events remain graph-inert objects inside a graph-inert projection');
