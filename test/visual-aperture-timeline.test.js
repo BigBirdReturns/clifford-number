@@ -55,7 +55,7 @@ assert.equal(TIMELINE_MODEL_SCHEMA, 'clifford-timeline-model@1');
 assert.equal(model.derived, true);
 assert.equal(model.graph_effect, 'none');
 assert.equal(DENSE_ACTOR_ROWS, 20);
-assert.equal(TIMELINE_MAX_LANES, 12);
+assert.equal(TIMELINE_MAX_LANES, 18, '15 default People lanes plus three added before a default is dropped');
 assert.equal(TIMELINE_CLUSTER_SLOTS, 6);
 
 assert.equal(model.counts.rows, 286);
@@ -180,7 +180,8 @@ const pinnedLanes = defaultTimelineLanes(model, 'actor', { laneIds: ['ben-warner
 assert.deepEqual(pinnedLanes.lanes.map(lane => lane.id), ['ben-warner', 'marc-warner']);
 assert.equal(pinnedLanes.pinned, true);
 assert.equal(pinnedLanes.strip.row_count, 200 - 10 - 2 - 112, 'the strip holds every other actor row; dense rows stay in the block unless the actor has a lane');
-assert.equal(defaultTimelineLanes(model, 'actor', { laneIds: [...model.lanes.actor.keys()].slice(0, 20) }).lanes.length, 12, 'at most 12 named lanes');
+assert.equal(defaultTimelineLanes(model, 'actor', { laneIds: [...model.lanes.actor.keys()].slice(0, 20) }).lanes.length, 18, 'at most 18 named lanes');
+assert.equal(defaultTimelineLanes(model, 'actor', { laneIds: ['auren-hoffman', ...actorLanes.lanes.map(lane => lane.id)] }).lanes.length, 16, 'adding one lane to the 15 defaults drops none of them');
 
 // --- default domain by row share
 assert.deepEqual(defaultTimelineDomain(model, 690), { from: '2023-01-01', to: '2026-09-11', from_day: dayIndex('2023-01-01'), to_day: dayIndex('2026-09-11'), auto: true, share: 0.92, threshold: 0.85 });

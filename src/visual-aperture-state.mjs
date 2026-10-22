@@ -22,7 +22,8 @@ const OVERVIEW_PAGE_SIZES = new Set([25, 50, 100]);
 const TIME_BY = new Set(['actor', 'organization', 'type']);
 const HOP_FILTERS = new Set(['all', 'hop', 'context']);
 const MAX_PINS = 36;
-const MAX_LANES = 12;
+// Mirrors TIMELINE_MAX_LANES in visual-aperture-timeline.mjs (15 defaults + 3).
+const MAX_LANES = 18;
 const MAX_LANE_TOKEN = 200;
 const MAX_ROW_KEY = 400;
 

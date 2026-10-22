@@ -23,7 +23,10 @@ export const TIMELINE_MODEL_SCHEMA = 'clifford-timeline-model@1';
 // density_policy.max_hop_actor_count (19) + 1: the same threshold app.js uses
 // for standing refusals. Today it selects exactly the Dialog public directory.
 export const DENSE_ACTOR_ROWS = 20;
-export const TIMELINE_MAX_LANES = 12;
+// The 15 default People lanes plus three added before the oldest-first order
+// starts dropping defaults from the end (a cap of 12 silently demoted four
+// defaults, among them one of the five 2024-07-17 names, on the first add).
+export const TIMELINE_MAX_LANES = 18;
 export const TIMELINE_CLUSTER_SLOTS = 6;
 export const TIMELINE_DOMAIN_PADDING_DAYS = 30;
 export const TIMELINE_BY = Object.freeze(['actor', 'organization', 'type']);

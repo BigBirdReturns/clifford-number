@@ -146,7 +146,7 @@ assert.equal(timelineClamped.timeline.by, 'actor', 'unknown by falls back to Peo
 assert.equal(timelineClamped.timeline.from, '', 'an impossible day decodes as auto');
 assert.equal(timelineClamped.timeline.to, '', '2024-02-30 does not exist');
 assert.equal(timelineClamped.timeline.cursor, '2025-01-01..2025-12-31', 'a reversed window is reordered');
-assert.deepEqual(timelineClamped.timeline.lanes, twentyLanes.slice(0, 12), '20 lanes clamp to the first 12 in insertion order');
+assert.deepEqual(timelineClamped.timeline.lanes, twentyLanes.slice(0, 18), '20 lanes clamp to the first 18 in insertion order');
 assert.equal(timelineClamped.timeline.evidenceFloor, 'open');
 assert.equal(timelineClamped.timeline.hop, 'all');
 assert.equal(timelineClamped.timeline.selectedKey.length, 400, 'row keys are bounded');
