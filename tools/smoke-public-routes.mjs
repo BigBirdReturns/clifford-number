@@ -200,6 +200,7 @@ function timelineAssertions(routeCase, viewport, metrics) {
   if (metrics.blocks.length !== spec.blocks) throw new Error(`${label}: ${metrics.blocks.length} roster blocks, expected ${spec.blocks}`);
   if (spec.block_text && !metrics.blocks.some(text => text.includes(spec.block_text))) throw new Error(`${label}: no roster block names ${spec.block_text}`);
   if (metrics.pair_lines !== 0) throw new Error(`${label}: ${metrics.pair_lines} person-to-person lines drawn; the timeline must never draw one`);
+  if (metrics.label_overlaps.length) throw new Error(`${label}: stage chrome covers lane labels: ${metrics.label_overlaps.join('; ')}`);
   if (spec.selected && metrics.selected !== spec.selected) throw new Error(`${label}: selected mark ${metrics.selected}, expected ${spec.selected}`);
   if (spec.no_webgl) {
     const webgl = metrics.resources.filter(entry => WEBGL_PATH_PATTERN.test(entry.name));
@@ -300,6 +301,19 @@ export async function runSmoke(options) {
               columns: document.querySelectorAll('#aperture-timeline [data-ap-time-column]').length,
               blocks: [...document.querySelectorAll('#aperture-timeline [data-ap-time-block]')].map(element => element.textContent.replace(/\s+/g, ' ').trim()),
               pair_lines: document.querySelectorAll('#aperture-timeline line[data-ap-time-pair]').length,
+              // The stage chrome (renderer badge, mode caption) must never
+              // sit on a lane label: at phone widths it takes its own row
+              // above the axis. Each lane label group is its hit rectangle,
+              // the whole label column cell of that lane.
+              label_overlaps: (() => {
+                const intersects = (a, b) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+                const chrome = [...document.querySelectorAll('.aperture-renderer-badge, .aperture-stage-guide')]
+                  .filter(element => getComputedStyle(element).display !== 'none')
+                  .map(element => ({ name: element.className, rect: element.getBoundingClientRect() }));
+                const lanes = [...document.querySelectorAll('#aperture-timeline [data-ap-time-lane]')]
+                  .map(element => ({ id: element.dataset.apTimeLane, rect: element.getBoundingClientRect() }));
+                return chrome.flatMap(item => lanes.filter(lane => intersects(item.rect, lane.rect)).map(lane => `${item.name} covers lane ${lane.id}`));
+              })(),
               selected: document.querySelector('#aperture-timeline .is-selected[data-ap-time-mark]')?.dataset.apTimeMark ?? null,
               document_bytes: navigation?.encodedBodySize ?? 0,
               resources,
