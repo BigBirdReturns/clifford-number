@@ -359,6 +359,22 @@ function participantNodeId(participant) {
 function ecologyEvidenceWeight(value) {
   return ECOLOGY_EVIDENCE_WEIGHT[value] ?? ECOLOGY_EVIDENCE_WEIGHT.open;
 }
+// The dated window of one event, with the ledger row's end rule: a recorded
+// start and no recorded end is open-ended (end_day null, "no end recorded"),
+// never a single day.
+function eventWindow(start, rawEnd) {
+  const openEnded = start != null && rawEnd == null;
+  const end = openEnded ? null : (rawEnd ?? start);
+  const startDay = ecologyDay(start);
+  return {
+    time_start: start,
+    time_end: end,
+    time_label: openEnded ? `${start} → no end recorded` : ecologyDateLabel(start, end),
+    start_day: startDay,
+    end_day: openEnded ? null : (ecologyDay(end, true) ?? startDay),
+    open_ended: openEnded
+  };
+}
 export function buildEcologyEventModel(surfaceGraph, networkModel, { denseThreshold = DENSE_EVENT_THRESHOLD } = {}) {
   if (!surfaceGraph?.surfaces || !networkModel?.nodeById) throw new TypeError('ecology events require surface graph and network model');
   const events = [];
@@ -374,9 +390,9 @@ export function buildEcologyEventModel(surfaceGraph, networkModel, { denseThresh
     if (dense) {
       suppressedDenseParticipations += participants.length;
       if (!networkModel.nodeById.has(surfaceNodeId)) { unresolvedLinks += 1; continue; }
-      const start = surface.time_start || null, end = surface.time_end || start;
-      const startDay = ecologyDay(start), endDay = ecologyDay(end, true) ?? startDay;
-      if (startDay == null) continue;
+      const start = surface.time_start || null;
+      const window = eventWindow(start, surface.time_end === '' || surface.time_end == null ? null : surface.time_end);
+      if (window.start_day == null) continue;
       events.push({
         id: `surface-activity:${surface.surface_id}:${eventSequence++}`,
         event_kind: 'surface_activity', channel: 'forum', direction: 'undirected_activity',
@@ -384,7 +400,7 @@ export function buildEcologyEventModel(surfaceGraph, networkModel, { denseThresh
         link_key: null, aggregate_count: participants.length,
         surface_id: surface.surface_id, surface_label: surface.surface_label, surface_type: surface.surface_type,
         participation_type: 'dense_roster_contained', role: 'Bounded roster activation',
-        time_start: start, time_end: end, time_label: ecologyDateLabel(start, end), start_day: startDay, end_day: endDay,
+        ...window,
         evidence_class: surface.evidence_class || 'open', evidence_weight: ecologyEvidenceWeight(surface.evidence_class),
         receipt_ids: [...new Set(surface.receipt_ids ?? [])], weight: .14,
         dense_roster_contained: true
@@ -399,9 +415,13 @@ export function buildEcologyEventModel(surfaceGraph, networkModel, { denseThresh
         continue;
       }
       const start = participant.time_start || surface.time_start || null;
-      const end = participant.time_end || surface.time_end || start;
-      const startDay = ecologyDay(start), endDay = ecologyDay(end, true) ?? startDay;
-      if (startDay == null) continue;
+      // The same end rule as the ledger row (buildFieldLedgerIndex): a row with
+      // no recorded end is open-ended, and its pulse is in every later window.
+      const rawEnd = participant.time_end === '' || participant.time_end == null
+        ? (surface.time_end === '' || surface.time_end == null ? null : surface.time_end)
+        : participant.time_end;
+      const window = eventWindow(start, rawEnd);
+      if (window.start_day == null) continue;
       const channel = ecologyChannel(participant, surface);
       const evidenceClass = participant.evidence_class || surface.evidence_class || 'open';
       events.push({
@@ -411,7 +431,7 @@ export function buildEcologyEventModel(surfaceGraph, networkModel, { denseThresh
         link_key: linkKey, aggregate_count: 1,
         surface_id: surface.surface_id, surface_label: surface.surface_label, surface_type: surface.surface_type,
         participation_type: participant.participation_type || 'participant', role: participant.role || 'Recorded participant',
-        time_start: start, time_end: end, time_label: ecologyDateLabel(start, end), start_day: startDay, end_day: endDay,
+        ...window,
         evidence_class: evidenceClass, evidence_weight: ecologyEvidenceWeight(evidenceClass),
         receipt_ids: [...new Set([...(surface.receipt_ids ?? []), ...(participant.receipt_ids ?? [])])],
         weight: channel === 'context' ? .3 : .7 + ecologyEvidenceWeight(evidenceClass) * .3,
@@ -420,9 +440,9 @@ export function buildEcologyEventModel(surfaceGraph, networkModel, { denseThresh
     }
   }
 
-  events.sort((a, b) => a.start_day - b.start_day || a.end_day - b.end_day || a.id.localeCompare(b.id));
+  events.sort((a, b) => a.start_day - b.start_day || (a.end_day ?? Infinity) - (b.end_day ?? Infinity) || a.id.localeCompare(b.id));
   const firstDay = events.length ? Math.min(...events.map(event => event.start_day)) : null;
-  const lastDay = events.length ? Math.max(...events.map(event => event.end_day)) : null;
+  const lastDay = events.length ? Math.max(...events.map(event => event.end_day ?? event.start_day)) : null;
   const channelCounts = Object.fromEntries([...new Set(events.map(event => event.channel))]
     .sort().map(channel => [channel, events.filter(event => event.channel === channel).length]));
   return {
@@ -553,6 +573,7 @@ export function buildFieldLedgerIndex(surfaceGraph, networkModel) {
       actor_rows: rows.filter(row => row.participant_type === 'actor').length,
       organization_rows: rows.filter(row => row.participant_type === 'organization').length,
       dated_rows: rows.filter(row => row.dated).length,
+      undated_rows: rows.filter(row => !row.dated).length,
       open_ended_rows: rows.filter(row => row.open_ended).length,
       off_field_rows: rows.filter(row => !row.on_field).length,
       privacy_guard_rows: rows.filter(row => row.off_field_reason === 'privacy_guard').length,
@@ -592,11 +613,24 @@ function asWindow(range, window) {
   return window && typeof window === 'object' && 'unbounded' in window ? window : normalizeEcologyWindow(range, window);
 }
 
+// An undated row is never time-sliced: the window cannot say anything about
+// it, so it is never "outside" and never dims. Counts name it separately
+// (rows_undated) instead of folding it into either side.
 export function rowInWindow(row, window) {
   if (!window || window.unbounded) return true;
   const start = row?.start_day, end = row?.end_day ?? Infinity;
-  if (!Number.isFinite(start)) return false;
+  if (!Number.isFinite(start)) return true;
   return start <= window.endDay && end >= window.startDay;
+}
+
+// "N of M rows in window" for a bounded window, "M rows" for all time. M is
+// every row of the object. Undated rows are inside no window and outside none;
+// a bounded window names them rather than counting them on either side.
+export function windowCountPhrase(counts, window) {
+  const total = counts?.rows_total ?? 0, inside = counts?.rows_in_window ?? 0, undated = counts?.rows_undated ?? 0;
+  if (!window || window.unbounded) return `${total} row${total === 1 ? '' : 's'}`;
+  const undatedNote = undated ? ` · ${undated} undated row${undated === 1 ? '' : 's'} never time-sliced` : '';
+  return `${inside} of ${total} rows in window${undatedNote}`;
 }
 
 export function ecologyWindowLabel(range, window) {
@@ -615,8 +649,10 @@ export function fieldWindowFactors(index, window = null) {
   const rows = index?.rows ?? [];
   const inWindowNodeIds = new Set();
   const inWindowLinkKeys = new Set();
-  let inWindow = 0;
+  let inWindow = 0, undated = 0;
   for (const row of rows) {
+    // An undated row lights nothing and dims nothing: it is counted apart.
+    if (!Number.isFinite(row.start_day)) { undated += 1; continue; }
     if (!rowInWindow(row, normalized)) continue;
     inWindow += 1;
     inWindowNodeIds.add(row.node_id);
@@ -628,6 +664,7 @@ export function fieldWindowFactors(index, window = null) {
     unbounded: normalized.unbounded,
     rows_total: rows.length,
     rows_in_window: inWindow,
+    rows_undated: undated,
     datedNodeIds: index?.datedNodeIds ?? new Set(),
     inWindowNodeIds,
     inWindowLinkKeys
@@ -644,7 +681,9 @@ export function nodeLedgerSummary(index, nodeId, window = null) {
   return {
     node_id: nodeId,
     rows,
-    rows_in_window: rows.filter(row => rowInWindow(row, normalized)).length,
+    rows_total: rows.length,
+    rows_in_window: rows.filter(row => Number.isFinite(row.start_day) && rowInWindow(row, normalized)).length,
+    rows_undated: rows.filter(row => !Number.isFinite(row.start_day)).length,
     surface_count: new Set(rows.map(row => row.surface_id)).size,
     first_day: startDays.length ? Math.min(...startDays) : null,
     last_day: endDays.length ? Math.max(...endDays) : null,
@@ -673,8 +712,9 @@ export function ecologyPlayheadLabel(eventModel, position = 0) {
 // recorded dates. In the all-time state no window is set, so no pulse is drawn.
 export function eventInWindow(event, window) {
   if (!window || window.unbounded) return false;
-  const start = event?.start_day, end = event?.end_day;
-  if (!Number.isFinite(start) || !Number.isFinite(end)) return false;
+  // end_day null is an open-ended row: inside every window after its start.
+  const start = event?.start_day, end = event?.end_day ?? Infinity;
+  if (!Number.isFinite(start)) return false;
   return start <= window.endDay && end >= window.startDay;
 }
 export function activeEcologyEvents(eventModel, window = null) {

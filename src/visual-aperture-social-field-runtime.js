@@ -70,9 +70,7 @@ function ecologyClockLabel() {
   const label = api.ecologyWindowLabel(range, window);
   const factors = ecologyWindowFactors(window);
   if (!factors) return label;
-  return window.unbounded
-    ? `${label} · ${factors.rows_total} rows`
-    : `${label} · ${factors.rows_in_window} of ${factors.rows_total} rows in window`;
+  return `${label} · ${fieldWindowCountPhrase(factors, window)}`;
 }
 // part-3 renders one range input (#ap-ecology-time). The field upgrades it into
 // a window: the existing input becomes the start handle, a second input is the
@@ -132,25 +130,34 @@ function syncEcologyClockControls() {
   if (allTime) allTime.disabled = window.unbounded;
 }
 // "N of M rows in window": M is always the ledger's row count for the object,
-// N the ledger's in-window count. Neither is ever read off the DOM.
+// N the ledger's in-window count, undated rows named apart. Neither is ever
+// read off the DOM. social-field owns the wording (windowCountPhrase).
+function fieldWindowCountPhrase(counts, window) {
+  const api = state.webgl?.eventApi;
+  if (api?.windowCountPhrase) return api.windowCountPhrase(counts, window);
+  const total = counts.rows_total ?? 0;
+  return window.unbounded ? `${total} row${total === 1 ? '' : 's'}` : `${counts.rows_in_window ?? 0} of ${total} rows in window`;
+}
 function fieldWindowCountLabel(counts, window) {
-  const total = counts.rows_total, inside = counts.rows_in_window;
-  return window.unbounded ? `${total} row${total === 1 ? '' : 's'} · all time` : `${inside} of ${total} rows in window`;
+  const phrase = fieldWindowCountPhrase(counts, window);
+  return window.unbounded ? `${phrase} · all time` : phrase;
 }
 function syncInspectorWindowMarks() {
   if (!state.root) return;
   const api = state.webgl?.eventApi;
   const ledger = state.webgl?.ledger;
   const window = ecologyWindow();
-  let inWindow = 0, total = 0;
+  let inWindow = 0, undated = 0, total = 0;
   for (const item of $$('[data-ap-row]', state.root)) {
     const start = item.dataset.apStart === '' || item.dataset.apStart == null ? null : Number(item.dataset.apStart);
     const end = item.dataset.apEnd === '' || item.dataset.apEnd == null ? null : Number(item.dataset.apEnd);
-    const inside = api?.rowInWindow ? api.rowInWindow({ start_day: start, end_day: end }, window) : true;
+    // An undated row is never time-sliced, so it never dims.
+    const dated = start != null;
+    const inside = !dated || !api?.rowInWindow || api.rowInWindow({ start_day: start, end_day: end }, window);
     item.classList.toggle('is-outside', !inside);
     item.style.opacity = inside ? '' : '.45';
     total += 1;
-    if (inside) inWindow += 1;
+    if (!dated) undated += 1; else if (inside) inWindow += 1;
   }
   const header = $('[data-ap-window-count]', state.root);
   if (!header) return;
@@ -159,10 +166,7 @@ function syncInspectorWindowMarks() {
   // when no ledger is available, never a denominator of their own.
   const nodeId = header.dataset?.apNode;
   const summary = nodeId && api?.nodeLedgerSummary && ledger ? api.nodeLedgerSummary(ledger, nodeId, window) : null;
-  header.textContent = fieldWindowCountLabel(
-    summary ? { rows_total: summary.rows.length, rows_in_window: summary.rows_in_window } : { rows_total: total, rows_in_window: inWindow },
-    window
-  );
+  header.textContent = fieldWindowCountLabel(summary ?? { rows_total: total, rows_in_window: inWindow, rows_undated: undated }, window);
 }
 function applyEcologyWindow({ sync = true } = {}) {
   const renderer = state.webgl?.renderer;
@@ -401,7 +405,7 @@ function fieldRowsMarkup(id) {
   const summary = api.nodeLedgerSummary(ledger, id, window);
   const rows = summary.rows;
   if (!rows.length) return '<h4>Documented rows</h4><p class="aperture-muted">No participation row in this release names this object. It appears on the field as research context only, and the time window never fades it.</p>';
-  const header = `<span data-ap-window-count data-ap-node="${esc(id)}">${fieldWindowCountLabel({ rows_total: rows.length, rows_in_window: summary.rows_in_window }, window)}</span>`;
+  const header = `<span data-ap-window-count data-ap-node="${esc(id)}">${fieldWindowCountLabel(summary, window)}</span>`;
   const lead = rows.slice(0, APERTURE_FIELD_ROW_LIMIT);
   const rest = rows.slice(APERTURE_FIELD_ROW_LIMIT);
   const guarded = rows.filter(row => row.off_field_reason === 'privacy_guard').length;
@@ -459,7 +463,9 @@ function inspectFieldParticipationRow(link) {
   const inside = api?.rowInWindow ? api.rowInWindow(row, window) : true;
   const windowNote = window.unbounded
     ? 'the window is all time'
-    : `${inside ? 'inside' : 'outside'} the window ${esc(api?.ecologyWindowLabel?.(ecologyRange(), window) ?? '')}`;
+    : row.dated === false
+      ? 'the row is undated, so the time window never slices it'
+      : `${inside ? 'inside' : 'outside'} the window ${esc(api?.ecologyWindowLabel?.(ecologyRange(), window) ?? '')}`;
   const precision = row.precision === 'year' ? ' (year precision)' : row.precision === 'month' ? ' (month precision)' : '';
   const record = fieldRecordAction(row);
   setInspector(label, `<p class="aperture-kicker">Participation row · ${row.participant_type === 'actor' ? 'actor' : 'organization'} on a bounded surface</p><h3>${esc(label)}</h3>

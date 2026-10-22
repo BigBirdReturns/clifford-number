@@ -7,7 +7,7 @@ import {
   buildSocialFieldModel, buildEcologyEventModel, buildFieldLedgerIndex, buildResearchNetworkModel,
   activeEcologyEvents, ecologyEventsForNode, ecologyPlayheadLabel, isSurfaceNode, socialFieldNeighbors,
   normalizeEcologyWindow, rowInWindow, eventInWindow, fieldWindowFactors, nodeLedgerSummary, ecologyWindowLabel, ecologyDay, dayIso,
-  nodeCountLabel, ledgerCountsForNode,
+  nodeCountLabel, ledgerCountsForNode, windowCountPhrase,
   ONTOLOGY_COLORS
 } from '../src/social-field.js';
 
@@ -19,12 +19,13 @@ const nodes = [
   { id: 'surface-one', label: 'Surface One', type: 'surface', cluster: 'policy' },
   { id: 'surface-two', label: 'Surface Two', type: 'surface', cluster: 'policy' },
   { id: 'surface-open', label: 'Open-ended programme', type: 'surface', cluster: 'policy' },
-  { id: 'surface-year', label: 'Year-precision campaign', type: 'surface', cluster: 'policy' }
+  { id: 'surface-year', label: 'Year-precision campaign', type: 'surface', cluster: 'policy' },
+  { id: 'surface-undated', label: 'Undated context surface', type: 'surface', cluster: 'policy' }
 ];
 const edges = [
   ['a', 'surface-one'], ['b', 'surface-one'], ['c', 'surface-one'],
   ['a', 'surface-two'], ['b', 'surface-two'],
-  ['org-x', 'surface-open'], ['c', 'surface-year']
+  ['org-x', 'surface-open'], ['c', 'surface-year'], ['b', 'surface-undated']
 ].map(([from, to], index) => ({
   id: `edge-${index}`, from, to, type: 'topology', topology: true,
   evidence_class: 'official'
@@ -38,8 +39,8 @@ const second = buildSocialFieldModel(model);
 assert.equal(first.nodes.length, nodes.length);
 assert.equal(first.links.length, edges.length);
 assert.deepEqual(first.links.map(link => [link.source, link.target]), edges.map(edge => [edge.from, edge.to]));
-assert.equal(first.metrics.topology_link_count, 7);
-assert.equal(first.metrics.surface_count, 4);
+assert.equal(first.metrics.topology_link_count, 8);
+assert.equal(first.metrics.surface_count, 5);
 assert.equal(first.nodeById.size, nodes.length, 'the field carries a hoisted nodeById map');
 assert.equal(isSurfaceNode(first.nodes.find(node => node.id === 'surface-one')), true);
 const a = first.nodes.find(node => node.id === 'a');
@@ -126,6 +127,14 @@ const surfaceGraph = {
       participants: [
         { actor_id: 'c', participant_type: 'actor', participation_type: 'contractor', role: 'Contractor', time_start: '2016', time_end: '2016', evidence_class: 'official', receipt_ids: ['year-r1'] }
       ]
+    },
+    {
+      // No date at all: the row exists, is drawn, and is never time-sliced.
+      surface_id: 'undated', surface_label: 'Undated context surface', surface_type: 'government_advisory_surface',
+      time_start: null, time_end: null, receipt_ids: ['undated-r1'],
+      participants: [
+        { actor_id: 'b', participant_type: 'actor', participation_type: 'adviser', role: 'Adviser', time_start: null, time_end: null, evidence_class: 'reported', receipt_ids: ['undated-r1'] }
+      ]
     }
   ]
 };
@@ -143,13 +152,23 @@ assert.equal(ecologyEventsForNode(eventModel, 'a').length, 1);
 assert.equal(ecologyEventsForNode(eventModel, 'surface-one').length, 2);
 assert.equal(ecologyPlayheadLabel(eventModel, 0), '2016-01-01');
 assert.equal(ecologyPlayheadLabel(eventModel, 1), '2026-06-16');
+// An open-ended row's event is open-ended too (no single-day collapse), so its
+// pulse is in every later window exactly as its row is.
+const openEvent = eventModel.events.find(event => event.surface_id === 'open');
+assert.equal(openEvent.open_ended, true);
+assert.equal(openEvent.end_day, null);
+assert.equal(openEvent.time_end, null);
+assert.equal(openEvent.time_label, '2025-06-13 → no end recorded');
+assert.equal(eventModel.events.filter(event => event.open_ended).length, 1);
 console.log('ecology event projection: PASS');
 
 // The ledger index keeps every row, including rows the field cannot draw.
 const ledger = buildFieldLedgerIndex(surfaceGraph, model);
-assert.equal(ledger.counts.rows, 45);
-assert.equal(ledger.counts.actor_rows, 44);
+assert.equal(ledger.counts.rows, 46);
+assert.equal(ledger.counts.actor_rows, 45);
 assert.equal(ledger.counts.organization_rows, 1);
+assert.equal(ledger.counts.dated_rows, 45);
+assert.equal(ledger.counts.undated_rows, 1);
 assert.equal(ledger.counts.privacy_guard_rows, 1);
 assert.equal(ledger.counts.dense_contained_rows, 40);
 assert.equal(ledger.counts.open_ended_rows, 1);
@@ -183,9 +202,9 @@ assert.equal(denseWithLedger.size_count, 40, 'a dense surface is sized by its le
 assert.equal(denseWithLedger.arc_participant_count, 2);
 assert.equal(nodeCountLabel(denseWithLedger), '40 documented participants');
 const bWithLedger = withRows.nodeById.get('b');
-assert.equal(bWithLedger.size_count, 1, 'b is on one ledger surface although two arcs are drawn for it');
-assert.equal(bWithLedger.arc_surface_count, 2);
-assert.equal(nodeCountLabel(bWithLedger), '1 documented surface');
+assert.equal(bWithLedger.size_count, 2, 'b is on two ledger surfaces (one dated, one undated) although three arcs are drawn for it');
+assert.equal(bWithLedger.arc_surface_count, 3);
+assert.equal(nodeCountLabel(bWithLedger), '2 documented surfaces');
 assert.deepEqual(ledgerCountsForNode(ledger, 'surface-guarded'), { rows: 1, surfaces: 1, count_kind: 'participants' });
 assert.equal(ledgerCountsForNode(null, 'a'), null);
 
@@ -203,16 +222,36 @@ assert.equal(ecologyWindowLabel(ledger.range, null), '2016-01-01 → 2026-06-16 
 const window2024 = reversed;
 assert.equal(rowInWindow(guardedRow, window2024), false);
 assert.equal(rowInWindow(openRow, window2024), false);
-assert.equal(rowInWindow(openRow, normalizeEcologyWindow(ledger.range, { fromDay: ecologyDay('2026-01-01'), toDay: null })), true, 'an open-ended row overlaps every later window');
+const laterWindow = normalizeEcologyWindow(ledger.range, { fromDay: ecologyDay('2026-01-01'), toDay: null });
+assert.equal(rowInWindow(openRow, laterWindow), true, 'an open-ended row overlaps every later window');
+assert.equal(eventInWindow(openEvent, laterWindow), true, 'and so does its pulse');
+assert.equal(eventInWindow(openEvent, window2024), false);
 assert.equal(rowInWindow(guardedRow, allTime), true);
+// An undated row is never time-sliced: inside no window, outside none, dimmed never.
+const undatedRow = ledger.rows.find(row => row.surface_id === 'undated');
+assert.equal(undatedRow.dated, false);
+assert.equal(undatedRow.on_field, true);
+assert.equal(undatedRow.time_label, 'undated');
+assert.equal(rowInWindow(undatedRow, window2024), true, 'an undated row is never outside a window');
+assert.equal(rowInWindow(undatedRow, allTime), true);
 const factors2024 = fieldWindowFactors(ledger, window2024);
-assert.equal(factors2024.rows_total, 45);
+assert.equal(factors2024.rows_total, 46);
 assert.equal(factors2024.rows_in_window, 2);
-assert.deepEqual([...factors2024.inWindowNodeIds].sort(), ['a', 'b', 'surface-one']);
+assert.equal(factors2024.rows_undated, 1, 'the undated row is named apart, not counted on either side');
+assert.deepEqual([...factors2024.inWindowNodeIds].sort(), ['a', 'b', 'surface-one'], 'an undated row lights no node');
 assert.deepEqual([...factors2024.inWindowLinkKeys].sort(), ['a||surface-one', 'b||surface-one']);
 assert.equal(factors2024.datedNodeIds.has('a'), true);
 assert.equal(factors2024.datedNodeIds.has('org-x'), true);
+assert.equal(factors2024.datedNodeIds.has('surface-undated'), false, 'a node with only undated rows holds the constant mid opacity');
 assert.equal(fieldWindowFactors(ledger, null).unbounded, true);
+const summaryB = nodeLedgerSummary(ledger, 'b', window2024);
+assert.equal(summaryB.rows_total, 2);
+assert.equal(summaryB.rows_in_window, 1);
+assert.equal(summaryB.rows_undated, 1);
+assert.equal(windowCountPhrase(summaryB, window2024), '1 of 2 rows in window · 1 undated row never time-sliced');
+assert.equal(windowCountPhrase(summaryB, allTime), '2 rows');
+assert.equal(windowCountPhrase(nodeLedgerSummary(ledger, 'a', window2024), window2024), '1 of 2 rows in window');
+assert.equal(windowCountPhrase(factors2024, window2024), '2 of 46 rows in window · 1 undated row never time-sliced');
 const summaryA = nodeLedgerSummary(ledger, 'a', window2024);
 assert.equal(summaryA.rows.length, 2);
 assert.equal(summaryA.rows_in_window, 1);
@@ -246,6 +285,23 @@ assert.equal(realLedger.counts.privacy_guard_rows, 4);
 assert.equal(realLedger.counts.dense_contained_rows, 113);
 assert.equal(realLedger.counts.unresolved_rows, 0);
 assert.equal(realLedger.counts.open_ended_rows, 1);
+assert.equal(realLedger.counts.undated_rows, 0, 'every row in this release is dated; the undated rule is latent');
+assert.equal(realEvents.events.filter(event => event.open_ended).length, 1, 'the detachment-201 / us-army row pulses open-ended');
+// A pulse is drawn exactly when its row is in the window: 0 disagreements over
+// every drawn participation row and every calendar year of the range.
+const eventByRowKey = new Map(realEvents.events.filter(event => event.event_kind === 'participation').map(event => [`${event.surface_id}::${event.participant_node_id}::${event.participation_type}`, event]));
+let rowEventPairs = 0, rowEventDisagreements = 0;
+for (let year = 2016; year <= 2026; year += 1) {
+  const yearWindow = normalizeEcologyWindow(realLedger.range, { fromDay: ecologyDay(String(year)), toDay: ecologyDay(String(year), true) });
+  for (const row of realLedger.rows) {
+    const event = row.on_field ? eventByRowKey.get(`${row.surface_id}::${row.node_id}::${row.participation_type}`) : null;
+    if (!event) continue;
+    rowEventPairs += 1;
+    if (rowInWindow(row, yearWindow) !== eventInWindow(event, yearWindow)) rowEventDisagreements += 1;
+  }
+}
+assert.equal(rowEventPairs, 1716);
+assert.equal(rowEventDisagreements, 0, 'the pulse is drawn only, and always, inside its row\'s window');
 assert.deepEqual(realLedger.rows.filter(row => row.off_field_reason === 'privacy_guard').map(row => row.node_id).sort(), ['ben-warner', 'dominic-cummings', 'imran-shafi', 'no-10']);
 assert.equal(realLedger.range.first_date, '2016-01-01');
 assert.equal(realLedger.range.last_date, '2026-08-12');
@@ -428,17 +484,19 @@ const visibleRow = {
   classList: { toggles: [], toggle(name, force) { this.toggles.push([name, force]); } },
   style: {}
 };
-const undatedRow = { dataset: { apStart: '', apEnd: '' }, classList: { toggles: [], toggle(name, force) { this.toggles.push([name, force]); } }, style: {} };
+const undatedItem = { dataset: { apStart: '', apEnd: '' }, classList: { toggles: [], toggle(name, force) { this.toggles.push([name, force]); } }, style: {} };
 const previousRoot = runtimeState.root;
 runtimeState.root = {
   dataset: {},
   querySelector: selector => (selector === '[data-ap-window-count]' ? windowHeader : null),
-  querySelectorAll: selector => (selector === '[data-ap-row]' ? [visibleRow, undatedRow] : [])
+  querySelectorAll: selector => (selector === '[data-ap-row]' ? [visibleRow, undatedItem] : [])
 };
 context.syncInspectorWindowMarks();
 assert.equal(windowHeader.textContent, '17 of 18 rows in window', 'two visible items do not become the denominator');
 assert.deepEqual(visibleRow.classList.toggles, [['is-outside', true]]);
 assert.equal(visibleRow.style.opacity, '.45');
+assert.deepEqual(undatedItem.classList.toggles, [['is-outside', false]], 'an undated list row never dims');
+assert.equal(undatedItem.style.opacity, '');
 runtimeState.ecology.fromDay = null;
 runtimeState.ecology.toDay = null;
 context.syncInspectorWindowMarks();
