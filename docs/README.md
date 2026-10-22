@@ -31,6 +31,7 @@ Read these first:
 - [`../data/canonical/evidence-layers.json`](../data/canonical/evidence-layers.json) — the canonical vocabulary for evidence layers, accepted provenance forms and source lifecycle states.
 - [`methodology.md`](methodology.md) — what creates a hop, how dates work, evidence boundaries, density discipline, and publication behavior.
 - [`definitions.md`](definitions.md) — the current vocabulary in one place.
+- [`explorer.md`](explorer.md) — how to read the explorer page: the four aperture modes (Timeline, Explore, Route, Roster), the connection checker and the entity pages, with the display rules stated once.
 - [`reporter-briefings.md`](reporter-briefings.md) — structured, non-narrative case reports whose factual text is compiled from canonical claims and events and whose workplans may expose candidate-only case trails.
 - [`report-waterline.md`](report-waterline.md) — the current transition law from intake or projection through case ledger, structured report, independent review, and approved publication.
 - [`estates.md`](estates.md) — durable domain corpora, estate slices, fog classes, and the bounded acquisition law.

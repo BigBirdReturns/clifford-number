@@ -1,0 +1,95 @@
+# The explorer
+
+Status: current (2026-10-22, release line 2.1.0). This page explains what a reader sees on [`explorer.html`](../explorer.html) and how to read it. The rules of the evidence model are in [`methodology.md`](methodology.md); the vocabulary is in [`definitions.md`](definitions.md); what each release changed is in [`releases/`](releases/2.1.0.md).
+
+The explorer is a static page over four compiled artifacts: `build/surface-graph.json` (actors, organizations, bounded surfaces and their participation rows), `build/hop-graph.json` (the admitted hop bases and shortest routes), `build/receipt-graph.json` (the receipts) and `graph.json` (the older research-network context). Everything on the page is derived from them in the browser. Nothing on the page is a fact that is not in those files, and the page never writes anything back.
+
+## The display rules, once
+
+Every view below obeys the same rules. They are stated here and not repeated.
+
+1. **Every mark is one ledger row.** A dot, bar or node stands for one participation row or one surface row, never for a score or a summary of rows.
+2. **A hop is a surface, never a line between two people.** Where two people share a bounded surface on a documented day, the display shows the surface (a column, a diamond, a step card). No view draws a person-to-person line, and shared context never becomes an arc between two people.
+3. **A dense roster is one object.** The Dialog public directory (112 listed names) is drawn as one block or one roster container with its count. Its names get no personal marks and no lines join any two of them.
+4. **Undated rows are never time-sliced.** A row with no documented date is listed, never placed on an axis, and never dimmed or counted as inside or outside a time window.
+5. **Evidence class and receipts stay attached.** Every mark, column, step and row carries its evidence class (official, primary public, reported) and opens its receipts.
+6. **No composite score drives a channel.** Size, colour and prominence come from documented counts and evidence classes. There is no heat, factory or machine score behind any visual.
+7. **Counts name their denominator.** "N of M rows in window", "112 listed names", "15 named lanes": a number on the page says what it is a count of.
+8. **Prominence is not an allegation.** Co-presence is never coordination. The page shows documented shared context and nothing more; the reader draws the conclusion, in their own name.
+
+## The four aperture modes
+
+The Visual Aperture is the panel headed "Pick a person. Follow the public record." It has four tabs. A URL with no `ap_` parameters opens the first.
+
+### 01 Timeline (arrival)
+
+A ledger timeline: rows on lanes against a date axis.
+
+- **Lanes** group the rows by People (default), Organizations or Surface types. In the People view every actor documented on two or more surfaces has a named lane (15 at this release); everyone else sits in one strip labelled "People documented on one surface" (38 rows). Up to 18 named lanes can be shown; "Add a lane" searches people, organizations and surface types.
+- **A mark** is one participation row at its documented date. Fill is evidence class; outline says whether the surface is hop-eligible. A row with an end date is a span; a year or month row is widened to the period it names; an open-ended row runs to the edge of the axis; rows within a few pixels fold into one "+N" object that still counts each row.
+- **A column** is one hop basis: a surface that two or more people share on one day, drawn as segments that touch only the lanes of that surface's participants. The 95 hop bases in the release form 19 such surface-day objects on 18 days.
+- **The roster block** is the Dialog directory, drawn once with its count.
+- **Controls:** year chips and All; the Surfaces filter (all, hop-eligible only, context only); the evidence floor; "Mark a window" to dim rows outside a [from, to] window without removing them; Reset. Ctrl (or Cmd) + wheel zooms the axis; a plain wheel scrolls the page. The overview strip under the plot carries the axis handles.
+- **Keyboard:** Tab reaches one mark, then the arrow keys, Home and End walk the days and lanes; the lane labels are a second stop.
+- **Cards:** every mark, lane, column, block and fold has an inspector card with its role, window, evidence class, receipt buttons and actions (open the record, add lanes, route from here, open the roster view). The first card, "Every mark is one ledger row.", explains the view.
+- **URL keys:** `ap_time_by`, `ap_time_from`, `ap_time_to`, `ap_time_cursor`, `ap_time_lanes`, `ap_time_sel`, `ap_time_evidence`, `ap_time_hop`, written only when they differ from their defaults.
+
+### 02 Explore
+
+The research network as a spherical field, rendered with WebGL when the browser has it and as SVG scenes otherwise.
+
+- **Nodes** are actors, organizations and surfaces. Size and halo are the documented surface count for that object (participants, for a surface), as the legend says. **Arcs** are the sourced edges of `graph.json`, one for one, coloured by evidence class; the canonical overlay arcs run from a participant to a surface.
+- **Controls:** "Start with a person or organization" (a name search); **Depth**, a slider whose stops are Whole network, Neighborhood, Bounded surface and Evidence; **Evidence time**, a [from, to] window with two handles and an "All time" button. Out-of-window arcs and pulses dim and are never removed; the header reads "N of M rows in window". Play advances the window over 52 seconds; it is off by default and never starts under a reduced-motion preference.
+- **Selecting an arc** opens what it is: a participation row (surface, role, window, evidence class, receipts, "Open public record") for an overlay arc, or the claim with its receipts for a research arc.
+- **The inspector** lists every ledger row of the selected object, oldest first. A row the field cannot draw is still listed and says why: "not drawn on the field (privacy guard)" or "drawn as one contained roster object, not as an arc".
+- The field pauses when the stage is off-screen or the tab is hidden. "Jump to a bounded surface" picks a surface family and surface directly.
+
+### 03 Route
+
+The shortest admitted route between two actors as actor → bounded surface → actor steps, from `build/hop-graph.json`.
+
+- **Controls:** From actor, To actor (and a swap button), "Active during" (a year, month or day), the evidence floor, Reset.
+- Each step is a surface card with the two roles, the validity window, the evidence class and the receipt count; selecting a step opens its exact roles, window, receipts and archive state. A route longer than 24 steps is shown in a window of 24 with the whole path retained and reachable.
+- When no route survives the controls, the view says so and, where the compiler recorded a refusal (two participations on one surface whose dates do not overlap), shows it as a blocked step with both windows. "No route" means not documented in this corpus; it is never proof of absence.
+
+### 04 Roster
+
+One bounded surface as a roster container, for surfaces with two or more actors.
+
+- **Controls:** the surface; "Find actor or role"; "Active during"; the evidence floor; the bracket budget (6 to 36 actors shown at once, 18 by default); Clear pins.
+- Participants render as fixed-size brackets with their recorded role, dates, evidence class and receipts. Participants beyond the budget are an honest count ("+N eligible actors held by budget"), never omitted silently, and no participant-to-participant line is drawn. Pinned actors stay visible.
+
+### Shared by every mode
+
+- **The evidence overview** under the stage is a stable, paged table of the rows the view is showing (25, 50 or 100 per page). Selecting a row selects the object; sorting and paging never reorder the row under the pointer.
+- **Copy exact view** puts the current view, as `ap_` parameters, into a link. **Saved views** keep several such views in the browser and compare them. **Export** produces a publication packet (a printable page with the receipt union and the interpretation caveat) for the current view.
+- **The evidence dialog** opens any receipt or claim. When it was opened from the aperture, its breadcrumb names the mode and object it came from.
+- Hash routes (`#actor/...`, `#surface/...`, `#desk/...`) keep the aperture's `ap_` state, so a shared link restores the view the sender had.
+
+## The connection checker
+
+The second tab of the lower explorer ("Check a connection before it prints") takes two actors and an optional date and answers from `build/hop-graph.json`:
+
+- the Clifford route (minimum hops) first, always, and labelled canonical;
+- optionally a secondary projection (strongest evidence, best dated, official only), clearly labelled as secondary and shown as an explicit absence when none exists;
+- for each step, both roles, the overlap window and its precision, the evidence class and the receipts;
+- the connections the compiler refused and why;
+- copy-ready caveat language for publication.
+
+## The entity pages
+
+Searching, or following any name, opens a record page under a hash route: `#actor/<id>`, `#organization/<id>`, `#surface/<id>`, `#chain/<id>`. The pages are being rewritten (Workstream E of the 22 October 2026 specification) to be fed from the same derived model as the Timeline. The contract for the rewritten pages:
+
+- fact chips with their denominators;
+- a date-sorted ledger table (row number, date or window with precision, surface, role, organizations, evidence class, receipts) with a status line that is never silent;
+- "Patterns in the rows": surface-type counts, organization counts, hop partners with the day of their shared surface, then counted co-presence with dense surfaces excluded;
+- type and year routes within the page; the Dialog roster sorted by "Also documented on";
+- a single-lane mini timeline above each ledger table and an "Open in the timeline" button;
+- "Copy ledger as text"; a machine-derived profile, where one is shown, labelled as such;
+- no "Structural context index" and no "Factory Score".
+
+Until that work lands, the pages are the 1.3.0 record pages. Either way, what they show comes from the same ledgers as the aperture, and the display rules above apply.
+
+## What the page is not
+
+The explorer is a reading instrument over published records. It does not compute Clifford Numbers (the compiler does, in `tools/`), it does not fetch anything beyond the compiled artifacts, and it does not add, weigh or rank evidence. A number of hops is a count of documented shared surfaces on a route and nothing else.
