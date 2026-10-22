@@ -3,6 +3,9 @@ import { buildSocialFieldModel, eventInWindow, nodeCountLabel, normalizeEcologyW
 
 const FORCE_GRAPH_VENDOR = '../vendor/3d-force-graph-1.80.0.min.js';
 const LINK_SEGMENTS = 18;
+// Radial lift of an arc above the sphere at its midpoint. A pulse bead rides a
+// topology arc, so it uses the same constant and sits on the line it claims.
+const ARC_LIFT = Object.freeze({ topology: 8, research: 12 });
 const NODE_SHAPES = Object.freeze({ person: 'sphere', surface: 'octahedron' });
 // Arc colour names the evidence class of the documented edge. Pulse colour
 // names the role category derived from the recorded role text (a labelled
@@ -165,7 +168,7 @@ function rebuildArc(group, start, end, link) {
   const ua = a.clone().normalize(), ub = b.clone().normalize();
   const dot = THREE.MathUtils.clamp(ua.dot(ub), -.9995, .9995);
   const theta = Math.acos(dot), sinTheta = Math.sin(theta);
-  const lift = link.topology_only ? 8 : 12;
+  const lift = link.topology_only ? ARC_LIFT.topology : ARC_LIFT.research;
   for (let index = 0; index < LINK_SEGMENTS; index += 1) {
     const t = index / (LINK_SEGMENTS - 1);
     let point;
@@ -358,7 +361,7 @@ export async function createWebGlAtlasRenderer({ host, onNodeSelect, onLinkSelec
       pulse.userData.participant = participant;
       pulse.userData.surface = surface;
       pulse.userData.dense = dense;
-      pulse.userData.lift = 12 + Math.min(22, (event.weight ?? 1) * 18);
+      pulse.userData.lift = ARC_LIFT.topology;
       pulse.userData.denseScale = 1 + Math.min(2.4, Math.log2(Math.max(1, event.aggregate_count || 1)) * .22);
       ecologyPulses.push(pulse);
       ecologyLayer.add(pulse);

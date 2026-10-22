@@ -312,6 +312,9 @@ assert.match(rendererSource, /setObjectStrength\(link\.__lineObj/, '3d-force-gra
 assert.doesNotMatch(rendererSource, /link\.__threeObj/, 'reading the node binding on a link leaves every arc factor inert');
 assert.match(rendererSource, /selectLink/);
 assert.doesNotMatch(rendererSource, /function shellForce|function clusterForce/, 'dead layout forces are deleted');
+assert.match(rendererSource, /const ARC_LIFT = Object\.freeze\(\{ topology: 8, research: 12 \}\)/, 'one lift constant per arc kind');
+assert.equal((rendererSource.match(/ARC_LIFT\.topology/g) ?? []).length, 2, 'the arc and the pulse bead that rides it share the topology lift');
+assert.doesNotMatch(rendererSource, /lift = 12 \+ Math\.min/, 'no weight-scaled pulse lift floats the bead off its arc');
 assert.ok(eventModel.events.every(event => event.graph_effect == null), 'display events remain graph-inert objects inside a graph-inert projection');
 assert.ok(eventModel.events.filter(event => event.event_kind === 'participation').every(event => event.surface_node_id.startsWith('surface-')));
 console.log('ecology renderer contract: PASS');
@@ -358,6 +361,14 @@ assert.match(inspector.html, /data-open-receipt="companies-house-electric-twin-i
 assert.match(inspector.html, /data-ap-action="open-record" data-actor-id="ben-warner"/);
 assert.match(inspector.html, /data-ap-surface="electric-twin-incorporation-2023-09-28"/);
 assert.doesNotMatch(inspector.html, /not drawn on the field/, 'a drawn arc has no off-field note');
+// Every receipt on a row is a button: no "+N more" stub on the five rows that carry four.
+const fourReceiptRows = realLedger.rows.filter(row => row.receipt_ids.length > 3);
+assert.equal(fourReceiptRows.length, 5);
+assert.ok(fourReceiptRows.every(row => row.receipt_ids.length === 4));
+const fourReceiptItem = context.fieldRowItem(fourReceiptRows[0], context.ecologyWindow());
+assert.equal((fourReceiptItem.match(/data-open-receipt=/g) ?? []).length, 4, 'all four receipts are buttons');
+assert.doesNotMatch(fourReceiptItem, /\+\d+ more/);
+assert.doesNotMatch(runtimeSource, /receiptButtons\(row\.receipt_ids, 3\)/, 'row receipts are not capped');
 
 const researchLink = realField.links.find(link => link.id === 'e-mc-authors-action-plan');
 assert.equal(researchLink.topology_only, false);

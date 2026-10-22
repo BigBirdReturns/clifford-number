@@ -385,7 +385,7 @@ function fieldRowItem(row, window) {
     <span>${esc(row.surface_label)}</span>
     <small>${esc(row.role)} · ${esc(evidenceLabel(row.evidence_class))} · ${receipts} receipt${receipts === 1 ? '' : 's'}</small>
     ${fieldRowFieldNote(row)}
-    ${receiptButtons(row.receipt_ids, 3)}
+    ${receiptButtons(row.receipt_ids, row.receipt_ids.length)}
     <div class="aperture-actions"><button type="button" class="aperture-secondary-button" data-ap-surface="${esc(row.surface_id)}">Open bounded surface</button></div>
   </li>`;
 }
