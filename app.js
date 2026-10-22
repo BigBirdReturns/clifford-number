@@ -608,6 +608,7 @@ async function init() {
     state.hopEdgeByPair.set(`${edge.actor_a}||${edge.actor_b}`, edge);
     state.hopEdgeByPair.set(`${edge.actor_b}||${edge.actor_a}`, edge);
   }
+  renderHeroCounts();
   const flagshipCase = [...state.caseIndex.values()].sort((a, b) => (b.featured_priority ?? 0) - (a.featured_priority ?? 0))[0];
   // Ledger-derived examples: every count is read from the timeline model, never typed.
   $('#try-examples').innerHTML = recordExampleButtons(flagshipCase).map(item => `<button data-kind="${esc(item.kind)}" data-id="${esc(item.id)}">${esc(item.label)}</button>`).join('');
@@ -880,6 +881,25 @@ function recordFactLine(kind, id, extra = null) {
     return `${recordEvidenceWord(extra.evidence_class || 'open')} · ${extra.publisher || 'publisher not recorded'} · ${extra.source_published_at || extra.published_at || 'published date not recorded'}`;
   }
   return '';
+}
+
+// The hero eyebrow counts, read from the loaded surface graph and hop graph the
+// moment they arrive. The aperture (src/visual-aperture-part-2.js,
+// updatePublicHero) later writes the same two strings from the same artifacts,
+// so the eyebrow never shows its static placeholder once the data is in and
+// the two writers never disagree; test/record-pages.test.js pins both templates.
+function heroCountsText(surfaceGraph, hopGraph) {
+  const actorCount = surfaceGraph?.actors?.length ?? 0;
+  const surfaceCount = surfaceGraph?.surfaces?.length ?? 0;
+  const hopCount = hopGraph?.edges?.length ?? 0;
+  return { nodes: `${actorCount} actors · ${surfaceCount} surfaces`, edges: `${hopCount} admitted hops` };
+}
+function renderHeroCounts() {
+  const text = heroCountsText(state.surfaceGraph, state.hopGraph);
+  const nodes = $('#hero-node-count');
+  const edges = $('#hero-edge-count');
+  if (nodes) nodes.textContent = text.nodes;
+  if (edges) edges.textContent = text.edges;
 }
 
 // The "Start with" buttons: labels and counts come from the ledger, never from a literal.

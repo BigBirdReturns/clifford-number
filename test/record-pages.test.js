@@ -214,6 +214,17 @@ for (const name of ['renderActor', 'renderOrg', 'renderSurface', 'renderType', '
   if (name === 'renderActor' || name === 'renderOrg') assert.equal(assignments.length, 2, `${name} renders both its zero-row page and its ledger page`);
 }
 
+// --- the hero eyebrow: app.js writes it from the loaded graphs; the aperture
+// later writes the same two strings from the same artifacts.
+same(context.heroCountsText(surfaceGraph, hopGraph), { nodes: `${surfaceGraph.actors.length} actors · ${surfaceGraph.surfaces.length} surfaces`, edges: `${hopGraph.edges.length} admitted hops` });
+assert.equal(context.heroCountsText(surfaceGraph, hopGraph).edges, '93 admitted hops');
+same(context.heroCountsText(null, null), { nodes: '0 actors · 0 surfaces', edges: '0 admitted hops' });
+const part2Source = fs.readFileSync('src/visual-aperture-part-2.js', 'utf8');
+for (const template of ['`${actorCount} actors · ${surfaceCount} surfaces`', '`${hopCount} admitted hops`']) {
+  assert.ok(source.includes(template) && part2Source.includes(template), `app.js and the aperture share the hero template ${template}`);
+}
+assert.match(source, /\n  renderHeroCounts\(\);\n/, 'init writes the hero counts as soon as the data is loaded');
+
 // --- the browse index: one section per kind, capped, every kind represented
 const browseKinds = ['actor', 'organization', 'surface', 'type', 'year', 'case', 'track', 'chain', 'claim', 'receipt', 'candidate'];
 const browseItems = [
