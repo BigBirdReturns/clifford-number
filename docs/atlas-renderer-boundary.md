@@ -38,7 +38,7 @@ The GPU adapter owns Three.js geometry, arcs, picking, orbit controls and camera
 - Undated rows are listed, never placed on an axis or time-sliced.
 - Evidence class and receipt ids stay attached to every mark, column and step.
 - No composite score drives a visual channel; counts name their denominator.
-- Changing zoom, depth, window or mode never changes a hop count or what a hop means. The aperture's route search was measured against the compiler's `shortest_paths` on 12 October 2026 (177 of 177 actors and 1,128 of 1,128 pairs agreed; as-of traversal agreed on 744 of 744 checks); the fixture tests pin the evidence-floor and as-of filters.
+- Changing zoom, depth, window or mode never changes a hop count or what a hop means. The aperture's route search was audited against the compiler's `shortest_paths` and against the route projections on 21-22 October 2026; the audit script is not in the repository, so its figures are not restated here. The committed fixture tests pin the evidence-floor and as-of filters.
 
 ## Standalone
 

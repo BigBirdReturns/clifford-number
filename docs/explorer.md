@@ -2,7 +2,7 @@
 
 Status: current (2026-10-22, release line 2.1.0). This page explains what a reader sees on [`explorer.html`](../explorer.html) and how to read it. The rules of the evidence model are in [`methodology.md`](methodology.md); the vocabulary is in [`definitions.md`](definitions.md); what each release changed is in [`releases/`](releases/2.1.0.md).
 
-The explorer is a static page over four compiled artifacts: `build/surface-graph.json` (actors, organizations, bounded surfaces and their participation rows), `build/hop-graph.json` (the admitted hop bases and shortest routes), `build/receipt-graph.json` (the receipts) and `graph.json` (the older research-network context). Everything on the page is derived from them in the browser. Nothing on the page is a fact that is not in those files, and the page never writes anything back.
+The explorer is a static page over compiled artifacts. The aperture reads four: `build/surface-graph.json` (actors, organizations, bounded surfaces and their participation rows), `build/hop-graph.json` (the admitted hop bases and shortest routes), `build/receipt-graph.json` (the receipts) and `graph.json` (the older research-network context). `app.js` loads three more for the rest of the page: `build/scores.json` (the entity pages' numbers), `build/public-catalog.json` (the case, track, claim and receipt catalogue) and `build/public-data-boundary.json` (the data-boundary notice). Everything on the page is derived from those seven files in the browser. Nothing on the page is a fact that is not in them, and the page never writes anything back.
 
 ## The display rules, once
 
@@ -63,7 +63,7 @@ One bounded surface as a roster container, for surfaces with two or more actors.
 
 - **The evidence overview** under the stage is a stable, paged table of the rows the view is showing (25, 50 or 100 per page). Selecting a row selects the object; sorting and paging never reorder the row under the pointer.
 - **Copy exact view** puts the current view, as `ap_` parameters, into a link. **Saved views** keep several such views in the browser and compare them. **Export** produces a publication packet (a printable page with the receipt union and the interpretation caveat) for the current view.
-- **The evidence dialog** opens any receipt or claim. When it was opened from the aperture, its breadcrumb names the mode and object it came from.
+- **The evidence dialog** opens any receipt or claim. The aperture publishes the mode and object a receipt was opened from (`globalThis.__cliffordApertureOrigin`), but `app.js` does not read it yet, so at this release the dialog opens with its plain toolbar label. A breadcrumb naming the mode and object is part of the entity-page contract below.
 - Hash routes (`#actor/...`, `#surface/...`, `#desk/...`) keep the aperture's `ap_` state, so a shared link restores the view the sender had.
 
 ## The connection checker
@@ -88,7 +88,7 @@ Searching, or following any name, opens a record page under a hash route: `#acto
 - "Copy ledger as text"; a machine-derived profile, where one is shown, labelled as such;
 - no "Structural context index" and no "Factory Score".
 
-Until that work lands, the pages are the 1.3.0 record pages. Either way, what they show comes from the same ledgers as the aperture, and the display rules above apply.
+Until that work lands, the pages are the 1.3.0 record pages. They read the same compiled artifacts as the aperture, but they do not yet obey the display rules above: an actor page shows a Clifford Number, a documented-surface count, a "Structural context index" and a list of bounded-surface cards rather than a row-by-row ledger, and an organization page shows a "Factory Score". The rules apply to the pages once the rewrite lands.
 
 ## What the page is not
 

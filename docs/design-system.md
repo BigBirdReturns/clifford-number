@@ -11,7 +11,7 @@
 >
 > **Fonts, corrected 2026-10-22.** An earlier version of this note said the
 > shipped interface used Lora and Barlow Condensed. It does not. The explorer
-> (`styles.css` lines 25 to 27 and the Google Fonts link in `explorer.html`)
+> (the `--font-serif`, `--font-condensed` and `--font-mono` custom properties at the top of `styles.css`, and the Google Fonts link in `explorer.html`)
 > uses **Bitter** (`--font-serif`), **Atkinson Hyperlegible** (`--font-condensed`)
 > and **IBM Plex Mono** (`--font-mono`); the aperture stylesheets under `src/`
 > use the same three tokens. The homepage (`home.css`) uses **Inter** with system
