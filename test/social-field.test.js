@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import vm from 'node:vm';
+import * as core from '../src/visual-aperture-core.mjs';
+import * as social from '../src/social-field.js';
 import {
   buildSocialFieldModel, buildEcologyEventModel, buildFieldLedgerIndex, buildResearchNetworkModel,
   activeEcologyEvents, ecologyEventsForNode, ecologyPlayheadLabel, isSurfaceNode, socialFieldNeighbors,
@@ -258,3 +261,115 @@ assert.doesNotMatch(rendererSource, /function shellForce|function clusterForce/,
 assert.ok(eventModel.events.every(event => event.graph_effect == null), 'display events remain graph-inert objects inside a graph-inert projection');
 assert.ok(eventModel.events.filter(event => event.event_kind === 'participation').every(event => event.surface_node_id.startsWith('surface-')));
 console.log('ecology renderer contract: PASS');
+
+// Runtime contract. The classic-script field runtime is evaluated in a vm
+// context seeded with the core helpers and part-1's shared state, then driven
+// with the real field: an arc opens its participation row or its claim, rows
+// the field cannot draw are labelled, the window header counts its rows, and
+// the animation lifecycle reports its state.
+const runtimeSource = readFileSync('src/visual-aperture-social-field-runtime.js', 'utf8');
+const partOneSource = readFileSync('src/visual-aperture-part-1.js', 'utf8');
+const partTenSource = readFileSync('src/visual-aperture-part-10.js', 'utf8');
+const loaderSource = readFileSync('src/visual-aperture.js', 'utf8');
+const realCatalog = JSON.parse(readFileSync('build/public-catalog.json', 'utf8'));
+const realReceiptGraph = JSON.parse(readFileSync('build/receipt-graph.json', 'utf8'));
+const inspector = { label: null, html: '' };
+const context = vm.createContext({
+  console,
+  EMBEDDED_DATA: { 'build/public-catalog.json': realCatalog },
+  setInspector: (label, html) => { inspector.label = label; inspector.html = html; },
+  routeActorIds: () => []
+});
+Object.assign(context, core);
+vm.runInContext(partOneSource, context);
+vm.runInContext(runtimeSource, context);
+const runtimeState = vm.runInContext('state', context);
+runtimeState.data = { surfaceGraph: realSurfaceGraph, legacyGraph: realGraph, receiptGraph: realReceiptGraph, hopGraph: { edges: [] } };
+runtimeState.actors = new Map((realSurfaceGraph.actors ?? []).map(actor => [actor.id, actor]));
+runtimeState.surfaces = new Map(realSurfaceGraph.surfaces.map(surface => [surface.surface_id, surface]));
+runtimeState.receipts = new Map((realReceiptGraph.receipts ?? []).map(receipt => [receipt.receipt_id, receipt]));
+runtimeState.legacyNodes = new Map(realGraph.nodes.map(node => [node.id, node]));
+runtimeState.root = { querySelector: () => null, querySelectorAll: () => [], dataset: {} };
+runtimeState.webgl = { renderer: null, model: realModel, ledger: realLedger, events: realEvents, eventApi: social, failed: false, rendered: true, active: true, intersecting: true };
+
+const topologyLink = realField.links.find(link => link.topology_only && link.rows.some(row => row.node_id === 'ben-warner' && row.surface_id === 'electric-twin-incorporation-2023-09-28'));
+assert.ok(topologyLink, 'the Ben Warner to Electric Twin incorporation arc carries its participation row');
+assert.equal(context.selectFieldLink(topologyLink), true);
+assert.equal(inspector.label, runtimeState.actors.get('ben-warner').label);
+assert.match(inspector.html, /Participation row/);
+assert.match(inspector.html, /Initial director appointed on the incorporation date/);
+assert.match(inspector.html, /Electric Twin incorporation and initial-director surface, 28 September 2023/);
+assert.match(inspector.html, /aperture-badge--official/);
+assert.match(inspector.html, /data-open-receipt="companies-house-electric-twin-incorporation-2023-09-28"/);
+assert.match(inspector.html, /data-ap-action="open-record" data-actor-id="ben-warner"/);
+assert.match(inspector.html, /data-ap-surface="electric-twin-incorporation-2023-09-28"/);
+assert.doesNotMatch(inspector.html, /not drawn on the field/, 'a drawn arc has no off-field note');
+
+const researchLink = realField.links.find(link => link.id === 'e-mc-authors-action-plan');
+assert.equal(researchLink.topology_only, false);
+assert.deepEqual(researchLink.rows, []);
+assert.equal(context.selectFieldLink(researchLink), true);
+assert.match(inspector.html, /Research-context edge · undated · not a hop/);
+assert.match(inspector.html, /Peter Kyle appointed Matt Clifford/);
+assert.match(inspector.html, /data-ap-field-claim="clm-e-mc-authors-action-plan"/);
+assert.match(inspector.html, /GOV\.UK, AI expert to lead Action Plan, 26 Jul 2024/, 'graph sources are named on the edge');
+assert.match(inspector.html, /the time window never fades it/);
+const claimKeys = await context.fieldClaimKeys();
+assert.ok(claimKeys.get('clm-e-mc-authors-action-plan')?.endsWith('::clm-e-mc-authors-action-plan'), 'the research edge resolves to its catalogued claim key');
+const researchLinks = realField.links.filter(link => !link.topology_only);
+const rowlessTopology = realField.links.filter(link => link.topology_only && !link.rows.length);
+assert.equal(researchLinks.length, 202);
+assert.equal(rowlessTopology.length, 21, 'umbrella-membership overlays carry no participation row and read as claims');
+const unresolvedClaims = [...researchLinks, ...rowlessTopology].filter(link => !claimKeys.has(`clm-${link.id}`));
+assert.equal(unresolvedClaims.length, 0, `every arc without a participation row opens a catalogued claim: ${unresolvedClaims.map(link => link.id).join(', ')}`);
+assert.equal(context.selectFieldLink(rowlessTopology[0]), true);
+assert.match(inspector.html, /Documented topology edge · undated · not a hop/);
+
+const rowsMarkup = context.fieldRowsMarkup('ben-warner');
+assert.match(rowsMarkup, /10 rows · all time/);
+assert.equal((rowsMarkup.match(/not drawn on the field \(privacy guard\)/g) ?? []).length, 2, 'the guarded row is labelled on the row and counted in the header');
+assert.equal((rowsMarkup.match(/data-ap-off-field="privacy_guard"/g) ?? []).length, 1);
+assert.equal((rowsMarkup.match(/data-ap-row=/g) ?? []).length, 10);
+runtimeState.ecology.fromDay = ecologyDay('2025-01-01');
+runtimeState.ecology.toDay = ecologyDay('2025-12-31');
+const windowedMarkup = context.fieldRowsMarkup('ben-warner');
+assert.match(windowedMarkup, /4 of 10 rows in window/);
+assert.equal((windowedMarkup.match(/is-outside/g) ?? []).length, 6, 'out-of-window rows dim and stay listed');
+assert.match(context.ecologyClockLabel(), /^2025-01-01 → 2025-12-31 · 63 of 286 rows in window$/);
+runtimeState.ecology.fromDay = null;
+runtimeState.ecology.toDay = null;
+assert.match(context.ecologyClockLabel(), /· all time · 286 rows$/);
+
+const lifecycle = [];
+runtimeState.mode = 'map';
+runtimeState.webgl.renderer = { pause: () => lifecycle.push('pause'), resume: () => lifecycle.push('resume') };
+context.syncFieldAnimation();
+assert.equal(runtimeState.root.dataset.apertureAnimation, 'running');
+runtimeState.webgl.intersecting = false;
+context.syncFieldAnimation();
+assert.equal(runtimeState.root.dataset.apertureAnimation, 'paused', 'an off-screen stage pauses the field');
+runtimeState.webgl.intersecting = true;
+context.document = { visibilityState: 'hidden' };
+context.syncFieldAnimation();
+assert.equal(runtimeState.root.dataset.apertureAnimation, 'paused', 'a hidden document pauses the field');
+context.document = { visibilityState: 'visible' };
+context.syncFieldAnimation();
+assert.equal(runtimeState.root.dataset.apertureAnimation, 'running');
+assert.deepEqual(lifecycle, ['resume', 'pause', 'pause', 'resume']);
+assert.equal(runtimeState.ecology.playing, false, 'playback never starts on its own');
+
+assert.doesNotMatch(runtimeSource, /onLinkSelect: \(\) => \{\}/, 'arc selection is wired');
+assert.match(runtimeSource, /onLinkSelect: selectFieldLink/);
+assert.match(runtimeSource, /data-open-claim=/, 'a research arc opens its claim through the public evidence dialog');
+assert.match(runtimeSource, /apertureAnimation = running \? 'running' : 'paused'/);
+assert.match(runtimeSource, /new IntersectionObserver/);
+assert.match(runtimeSource, /addEventListener\('visibilitychange'/);
+assert.match(runtimeSource, /prefers-reduced-motion: reduce/);
+assert.match(runtimeSource, /rows in window/);
+assert.doesNotMatch(runtimeSource, /level !== 'corpus'/, 'the field stays active at all four map levels');
+assert.doesNotMatch(runtimeSource, /reinforcement heat|node\.heat/, 'no heat channel survives in the runtime');
+assert.match(partOneSource, /ecology: \{ fromDay: null, toDay: null, [^}]*playing: false/, 'playing defaults to false');
+assert.match(partTenSource, /ap-ecology-time-to/);
+assert.match(partTenSource, /ecology-all-time/);
+assert.match(loaderSource, /\{ \.\.\.social, \.\.\.renderer \}/, 'the loader exposes the whole social-field API to the runtime');
+console.log('field runtime contract: PASS');
