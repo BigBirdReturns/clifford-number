@@ -114,6 +114,10 @@ function setInspector(label, html, { openOnMobile = false } = {}) {
   $('#aperture-inspector-body', state.root).innerHTML = html;
   if (openOnMobile && isMobile()) state.sheetOpen = true;
   syncInspectorSheet();
+  // Every selection change passes through here, so this is where the aperture
+  // publishes its origin { mode, objectLabel, objectId, selectObject } for the
+  // shared receipt dialog's breadcrumb (app.js reads globalThis.__cliffordApertureOrigin).
+  if (typeof publishApertureOrigin === 'function') publishApertureOrigin(label);
 }
 
 function syncInspectorSheet() {
