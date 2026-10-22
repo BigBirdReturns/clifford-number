@@ -4,10 +4,33 @@ import { pathToFileURL } from 'node:url';
 
 export const VIEWPORTS = Object.freeze([
   Object.freeze({ name: 'desktop', width: 1440, height: 1000 }),
-  Object.freeze({ name: 'mobile', width: 390, height: 844 })
+  Object.freeze({ name: 'mobile', width: 390, height: 844 }),
+  Object.freeze({ name: 'narrow', width: 320, height: 568 })
 ]);
 
+// Files the ledger timeline must never pull on arrival: the GPU field is loaded
+// only when the Explore tab is chosen.
+export const WEBGL_PATH_PATTERN = /atlas-webgl\.js|social-field\.js|\/vendor\//;
+
 export const ROUTE_CASES = Object.freeze([
+  Object.freeze({
+    id: 'timeline-default',
+    route: 'explorer.html',
+    expected: Object.freeze([
+      'People documented on one surface',
+      'names listed'
+    ]),
+    timeline: Object.freeze({ min_marks: 48, blocks: 1, block_text: '112', no_webgl: true, single_fetch: true })
+  }),
+  Object.freeze({
+    id: 'timeline-shared-view',
+    route: 'explorer.html?ap_v=1&ap_mode=timeline&ap_time_lanes=ben-warner,marc-warner,saul-klein&ap_time_from=2018-01-01&ap_time_to=2018-12-31&ap_time_sel=faculty-science-officer-employee-overlap-2018-01-24::actor::ben-warner',
+    expected: Object.freeze([
+      'Faculty Science officer / employee overlap, 24 January 2018',
+      'Commercial Principal, ASI Data Science'
+    ]),
+    timeline: Object.freeze({ min_marks: 3, blocks: 0, selected: 'faculty-science-officer-employee-overlap-2018-01-24::actor::ben-warner', no_webgl: true, single_fetch: true })
+  }),
   Object.freeze({
     id: 'dated-connection',
     route: 'explorer.html#desk/keir-starmer/matt-clifford/2025',
@@ -104,6 +127,42 @@ function safeName(value) {
   return value.replace(/[^a-z0-9._-]+/gi, '-').replace(/^-+|-+$/g, '').toLowerCase();
 }
 
+// A route without a query must end without one; a route that carries aperture
+// state may be normalized (the aperture writes every key it owns) but every
+// requested parameter must survive with its value, and path and hash must hold.
+export function urlDrift(target, actual) {
+  const expected = new URL(target);
+  const current = new URL(actual);
+  if (expected.origin !== current.origin || expected.pathname !== current.pathname || expected.hash !== current.hash) return 'path or hash changed';
+  if (!expected.search) return current.search ? `query added: ${current.search}` : null;
+  for (const [key, value] of expected.searchParams) {
+    if (current.searchParams.get(key) !== value) return `query parameter ${key} changed`;
+  }
+  return null;
+}
+
+function timelineAssertions(routeCase, viewport, metrics) {
+  const spec = routeCase.timeline;
+  const label = `${routeCase.id}/${viewport.name}`;
+  if (!metrics.active_tab) throw new Error(`${label}: the Timeline tab is not active`);
+  if (metrics.stage_hidden) throw new Error(`${label}: #aperture-timeline is hidden`);
+  if (metrics.marks < spec.min_marks) throw new Error(`${label}: ${metrics.marks} timeline marks, expected at least ${spec.min_marks}`);
+  if (metrics.blocks.length !== spec.blocks) throw new Error(`${label}: ${metrics.blocks.length} roster blocks, expected ${spec.blocks}`);
+  if (spec.block_text && !metrics.blocks.some(text => text.includes(spec.block_text))) throw new Error(`${label}: no roster block names ${spec.block_text}`);
+  if (metrics.pair_lines !== 0) throw new Error(`${label}: ${metrics.pair_lines} person-to-person lines drawn; the timeline must never draw one`);
+  if (spec.selected && metrics.selected !== spec.selected) throw new Error(`${label}: selected mark ${metrics.selected}, expected ${spec.selected}`);
+  if (spec.no_webgl) {
+    const webgl = metrics.resources.filter(entry => WEBGL_PATH_PATTERN.test(entry.name));
+    if (webgl.length) throw new Error(`${label}: WebGL path fetched on arrival ${JSON.stringify(webgl.map(entry => entry.name))}`);
+  }
+  if (spec.single_fetch) {
+    const counts = new Map();
+    for (const entry of metrics.resources) if (/\.json$/.test(entry.name)) counts.set(entry.name, (counts.get(entry.name) ?? 0) + 1);
+    const duplicates = [...counts.entries()].filter(([, count]) => count > 1).map(([name]) => name);
+    if (duplicates.length) throw new Error(`${label}: JSON fetched more than once ${JSON.stringify(duplicates)}`);
+  }
+}
+
 async function configureContext(browser, baseOrigin, viewport, timeoutMs, externalRequests) {
   const context = await browser.newContext({
     viewport: { width: viewport.width, height: viewport.height },
@@ -164,7 +223,33 @@ export async function runSmoke(options) {
           { timeout: options.timeoutMs }
         );
         for (const expected of routeCase.expected) await waitForText(page, expected, options.timeoutMs);
-        if (page.url() !== target) throw new Error(`${routeCase.id}/${viewport.name}: URL drifted to ${page.url()}`);
+        let timeline = null;
+        if (routeCase.timeline) {
+          await page.waitForFunction(
+            (minimum) => document.querySelectorAll('#aperture-timeline [data-ap-time-mark]').length >= minimum,
+            routeCase.timeline.min_marks,
+            { timeout: options.timeoutMs }
+          );
+          timeline = await page.evaluate(() => {
+            const navigation = performance.getEntriesByType('navigation')[0];
+            const resources = performance.getEntriesByType('resource').map(entry => ({ name: new URL(entry.name).pathname, bytes: entry.encodedBodySize }));
+            return {
+              active_tab: document.querySelector('[data-ap-mode="timeline"].is-active') !== null,
+              stage_hidden: document.querySelector('#aperture-timeline')?.hidden ?? true,
+              marks: document.querySelectorAll('#aperture-timeline [data-ap-time-mark]').length,
+              columns: document.querySelectorAll('#aperture-timeline [data-ap-time-column]').length,
+              blocks: [...document.querySelectorAll('#aperture-timeline [data-ap-time-block]')].map(element => element.textContent.replace(/\s+/g, ' ').trim()),
+              pair_lines: document.querySelectorAll('#aperture-timeline line[data-ap-time-pair]').length,
+              selected: document.querySelector('#aperture-timeline .is-selected[data-ap-time-mark]')?.dataset.apTimeMark ?? null,
+              document_bytes: navigation?.encodedBodySize ?? 0,
+              resources,
+              resource_bytes: resources.reduce((sum, entry) => sum + entry.bytes, 0)
+            };
+          });
+          timelineAssertions(routeCase, viewport, timeline);
+        }
+        const drift = urlDrift(target, page.url());
+        if (drift) throw new Error(`${routeCase.id}/${viewport.name}: URL drifted to ${page.url()} (${drift})`);
         const metrics = await page.evaluate(visibleCountSource => {
           const countVisible = new Function(`return (${visibleCountSource})`)();
           const root = document.documentElement;
@@ -214,6 +299,7 @@ export async function runSmoke(options) {
           viewport,
           expected: routeCase.expected,
           metrics,
+          timeline: timeline ? { ...timeline, resources: timeline.resources.length, resource_list: timeline.resources } : null,
           focused,
           console_errors: consoleErrors,
           page_errors: pageErrors,
@@ -279,11 +365,19 @@ async function main() {
     return;
   }
   const report = await runSmoke(options);
+  const arrival = report.cases.find(item => item.id === 'timeline-default' && item.viewport.name === 'desktop');
   console.log(JSON.stringify({
     schema: report.schema,
     browser: report.browser,
     cases: report.cases.length,
     navigation: report.navigation?.back_forward,
+    timeline_arrival: arrival?.timeline ? {
+      marks: arrival.timeline.marks,
+      columns: arrival.timeline.columns,
+      blocks: arrival.timeline.blocks.length,
+      requests: arrival.timeline.resources + 1,
+      bytes: arrival.timeline.document_bytes + arrival.timeline.resource_bytes
+    } : null,
     status: 'PASS'
   }));
 }

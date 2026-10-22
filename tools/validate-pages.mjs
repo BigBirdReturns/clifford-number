@@ -68,6 +68,7 @@ const required = [
   'src/ui-utils.js', 'src/i18n.js', 'src/evidence-rank.js', 'src/route-projections.js', 'src/release-delta.js', 'src/aperture-bootstrap.js', 'src/visual-aperture-core.mjs',
   'src/visual-aperture-state.mjs', 'src/visual-aperture-workspace.mjs',
   'src/visual-aperture-export.mjs', 'src/visual-aperture-timeline.mjs',
+  'src/visual-aperture-timeline-runtime.js', 'src/visual-aperture-timeline.css',
   'src/visual-aperture-workspace-runtime.js', 'src/visual-aperture-export-runtime.js', 'src/visual-aperture.js',
   ...Array.from({ length: 11 }, (_, index) => `src/visual-aperture-part-${index + 1}.js`),
   'src/visual-aperture.css', 'src/visual-aperture-layout.css', 'src/visual-aperture-svg.css',
@@ -181,10 +182,15 @@ const apertureWorkspace = fs.readFileSync(path.join(destination, 'src', 'visual-
 const apertureExport = fs.readFileSync(path.join(destination, 'src', 'visual-aperture-export.mjs'), 'utf8');
 const apertureWorkspaceRuntime = fs.readFileSync(path.join(destination, 'src', 'visual-aperture-workspace-runtime.js'), 'utf8');
 const apertureExportRuntime = fs.readFileSync(path.join(destination, 'src', 'visual-aperture-export-runtime.js'), 'utf8');
+const apertureTimelineModel = fs.readFileSync(path.join(destination, 'src', 'visual-aperture-timeline.mjs'), 'utf8');
+const apertureTimelineRuntime = fs.readFileSync(path.join(destination, 'src', 'visual-aperture-timeline-runtime.js'), 'utf8');
+// Loader order: workspace, export, parts 1-10, the timeline runtime, then part-11 (mount).
 const aperture = [
   apertureWorkspaceRuntime,
   apertureExportRuntime,
-  ...Array.from({ length: 11 }, (_, index) => fs.readFileSync(path.join(destination, 'src', `visual-aperture-part-${index + 1}.js`), 'utf8'))
+  ...Array.from({ length: 10 }, (_, index) => fs.readFileSync(path.join(destination, 'src', `visual-aperture-part-${index + 1}.js`), 'utf8')),
+  apertureTimelineRuntime,
+  fs.readFileSync(path.join(destination, 'src', 'visual-aperture-part-11.js'), 'utf8')
 ].join('\n');
 const standalone = fs.readFileSync(path.join(destination, 'Clifford-Number-standalone.html'), 'utf8');
 const explorerStandalone = fs.readFileSync(path.join(destination, 'Clifford-Number-explorer-standalone.html'), 'utf8');
@@ -260,6 +266,26 @@ if (!apertureState.includes("APERTURE_STATE_VERSION = '1'")
   || !aperture.includes('Copy exact view')
   || !aperture.includes("addEventListener('popstate'")) {
   console.error('validate-pages failed: aperture exact-view URL contract is missing');
+  process.exit(1);
+}
+// Ledger timeline mode: the arrival tab, its runtime in the loader order, the
+// ap_time_* URL keys, the export branch, and the reserved pair selector that
+// must never be written (a hop basis is a surface-day column, never a line
+// between two people).
+if (!aperture.includes('data-ap-mode="timeline"')
+  || !apertureEntry.includes('visual-aperture-timeline-runtime.js')
+  || !apertureEntry.includes("from './visual-aperture-timeline.mjs'")
+  || !apertureTimelineModel.includes("TIMELINE_MODEL_SCHEMA = 'clifford-timeline-model@1'")
+  || !apertureTimelineRuntime.includes('function renderTimelineMode')
+  || !apertureTimelineRuntime.includes('data-ap-time-mark')
+  || !apertureTimelineRuntime.includes('data-ap-time-column')
+  || !apertureTimelineRuntime.includes('data-ap-time-block')
+  || apertureTimelineRuntime.includes('data-ap-time-pair')
+  || !apertureState.includes('ap_time_cursor')
+  || !apertureState.includes('ap_time_lanes')
+  || !apertureExport.includes("'timeline'")
+  || !apertureExportRuntime.includes('currentTimelineExportView')) {
+  console.error('validate-pages failed: ledger timeline mode is not wired into the public runtime');
   process.exit(1);
 }
 if (!apertureWorkspace.includes("APERTURE_WORKSPACE_VERSION = '1'")
@@ -364,6 +390,9 @@ if (!explorerStandalone.includes('globalThis.__CLIFFORD_APERTURE_BUNDLED__ = tru
   || !explorerStandalone.includes('Local operator workspace')
   || !explorerStandalone.includes('Export the view with its limits attached.')
   || !explorerStandalone.includes('Copy exact view')
+  || !explorerStandalone.includes('clifford-timeline-model@1')
+  || !explorerStandalone.includes('data-ap-mode="timeline"')
+  || !explorerStandalone.includes('data-ap-time-mark')
   || /<(?:script|link)[^>]+(?:src|href)="[^"]*visual-aperture/.test(explorerStandalone)) {
   console.error('validate-pages failed: standalone release omits or externally references the operator aperture');
   process.exit(1);

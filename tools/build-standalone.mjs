@@ -113,6 +113,7 @@ const apertureRuntime = [
   read('src/visual-aperture-workspace-runtime.js'),
   read('src/visual-aperture-export-runtime.js'),
   ...Array.from({ length: 10 }, (_, index) => read(`src/visual-aperture-part-${index + 1}.js`)),
+  read('src/visual-aperture-timeline-runtime.js'),
   read('src/visual-aperture-social-field-runtime.js'),
   read('src/visual-aperture-bounded-runtime.js'),
   read('src/visual-aperture-export-preview-runtime.js'),
@@ -128,7 +129,8 @@ const inlineExplorerCss = [
   read('src/visual-aperture-responsive.css'),
   read('src/visual-aperture-workspace.css'),
   read('src/visual-aperture-export.css'),
-  read('src/visual-aperture-bounded.css')
+  read('src/visual-aperture-bounded.css'),
+  read('src/visual-aperture-timeline.css')
 ].join('\n\n');
 
 let explorerHtml = read('explorer.html')

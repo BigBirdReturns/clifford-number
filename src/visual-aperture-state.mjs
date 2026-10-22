@@ -84,7 +84,7 @@ export function isoDay(value) {
 // The window [from, to] is one token 'YYYY-MM-DD..YYYY-MM-DD'; a bare day is a
 // one-day window; a reversed pair is reordered; anything invalid is no window.
 export function dayWindow(value) {
-  const cleaned = text(value, 21) ?? '';
+  const cleaned = text(value, 22) ?? '';
   if (!cleaned) return '';
   const [first, second = first] = cleaned.split('..');
   const from = isoDay(first);

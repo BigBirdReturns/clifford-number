@@ -1,14 +1,31 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import vm from 'node:vm';
 import {
   computeCorridors,
+  dayIndex,
   diagnosePathFilters,
+  evidenceRank,
+  humanLabel,
+  isoFromDayIndex,
+  normalizeEvidence,
   periodBounds,
   selectBudgetedParticipants,
   semanticLevelForScale,
   shortestFilteredPath,
   summarizeClusters
 } from '../src/visual-aperture-core.mjs';
+import {
+  TIMELINE_BY,
+  TIMELINE_DESKTOP_METRICS,
+  TIMELINE_DOMAIN_PADDING_DAYS,
+  TIMELINE_HOP_FILTERS,
+  TIMELINE_MAX_LANES,
+  TIMELINE_PHONE_METRICS,
+  buildTimelineModel,
+  layoutTimeline,
+  rowInWindow
+} from '../src/visual-aperture-timeline.mjs';
 
 const actors = [
   ['actor-a', 'Actor A'], ['actor-b', 'Actor B'], ['actor-c', 'Actor C'],
@@ -139,11 +156,74 @@ assert.ok(searched.visible.every(item => item.role === 'Public official'));
 assert.equal(searched.filteredOut, 9);
 
 const uiEntry = readFileSync('src/visual-aperture.js', 'utf8');
-const ui = Array.from({ length: 11 }, (_, index) => index + 1).map(index => readFileSync(`src/visual-aperture-part-${index}.js`, 'utf8')).join('\n');
-const css = ['layout', 'svg', 'responsive'].map(part => readFileSync(`src/visual-aperture-${part}.css`, 'utf8')).join('\n');
+const timelineRuntime = readFileSync('src/visual-aperture-timeline-runtime.js', 'utf8');
+const ui = [...Array.from({ length: 11 }, (_, index) => index + 1).map(index => readFileSync(`src/visual-aperture-part-${index}.js`, 'utf8')), timelineRuntime].join('\n');
+const css = ['layout', 'svg', 'responsive', 'timeline'].map(part => readFileSync(`src/visual-aperture-${part}.css`, 'utf8')).join('\n');
 const core = readFileSync('src/visual-aperture-core.mjs', 'utf8');
 
 assert.match(uiEntry, /visual-aperture-part-\$\{index \+ 1\}\.js/);
+// Timeline mode: first tab, runtime between part-10 and the social-field runtime, no pair line anywhere.
+assert.match(ui, /data-ap-mode="timeline"[^>]*><span>01<\/span> Timeline/);
+assert.match(ui, /data-ap-mode="map"[^>]*><span>02<\/span> Explore/);
+assert.match(ui, /id="aperture-timeline"/);
+assert.match(uiEntry, /from '\.\/visual-aperture-timeline\.mjs'/);
+const loaderIndex = name => uiEntry.indexOf(`./visual-aperture-${name}.js`);
+const partsTemplateIndex = uiEntry.indexOf('visual-aperture-part-${index + 1}.js');
+assert.ok(partsTemplateIndex >= 0 && loaderIndex('timeline-runtime') > partsTemplateIndex, 'the timeline runtime loads after the shared handlers');
+assert.ok(loaderIndex('timeline-runtime') < loaderIndex('social-field-runtime') && loaderIndex('timeline-runtime') < loaderIndex('part-11'), 'and before the social field and the mount');
+assert.match(timelineRuntime, /data-ap-time-mark/);
+assert.match(timelineRuntime, /data-ap-time-column/);
+assert.match(timelineRuntime, /data-ap-time-block/);
+assert.doesNotMatch(timelineRuntime, /data-ap-time-pair/, 'the reserved pair selector is never written by the runtime');
+assert.doesNotMatch(timelineRuntime, /<line[^>]*(?:data-ap-time|data-lane|actor)/, 'no line element carries a row, lane or actor identity');
+assert.doesNotMatch(timelineRuntime, /machine_score|factory_score|deniability|laundry_score|recurrence_score|heat/, 'no composite score drives a visual channel');
+assert.match(readFileSync('src/visual-aperture-part-9.js', 'utf8'), /if \(state\.mode !== 'map'\) deactivateApertureSocialField\(\);[\s\S]*if \(state\.mode === 'timeline'\) renderTimelineMode\(\);/, 'the GPU field is deactivated in timeline mode');
+assert.match(readFileSync('src/visual-aperture-part-10.js', 'utf8'), /function handleAction\(button\) \{\n  if \(handleTimelineAction\(button\)\) return;/);
+assert.match(readFileSync('src/visual-aperture-part-3.js', 'utf8'), /publishApertureOrigin\(label\)/, 'the origin hook publishes on every selection change');
+assert.match(readFileSync('src/visual-aperture-part-1.js', 'utf8'), /globalThis\.__cliffordPublicData/, 'readData uses the app.js handoff before fetching');
+
+// vm render of the runtime against the real artifacts: the SVG the page draws on
+// arrival, counted. Lines exist only as axis, grid, lane rules and overview ticks.
+const realSurfaceGraph = JSON.parse(readFileSync('build/surface-graph.json', 'utf8'));
+const realHopGraph = JSON.parse(readFileSync('build/hop-graph.json', 'utf8'));
+const realModel = buildTimelineModel(realSurfaceGraph, realHopGraph);
+function renderTimelineStage(layout, phone) {
+  layout.phone = phone;
+  layout.containerWidth = layout.width;
+  const context = vm.createContext({
+    state: { mode: 'timeline', root: null, timeline: { selectedKey: null, windowFrom: '', windowTo: '', lanes: [], by: layout.by, model: realModel, rowIndex: new Map(), search: [], suggestion: null }, actors: new Map(), surfaces: new Map() },
+    esc: value => String(value ?? '').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]),
+    shortLabel: (value, max = 32) => { const text = String(value ?? ''); return text.length > max ? `${text.slice(0, max - 1)}…` : text; },
+    humanLabel, normalizeEvidence, evidenceRank, isoFromDayIndex, dayIndex,
+    evidenceLabel: value => humanLabel(normalizeEvidence(value)),
+    TIMELINE_DESKTOP_METRICS, TIMELINE_PHONE_METRICS, TIMELINE_BY, TIMELINE_HOP_FILTERS, TIMELINE_MAX_LANES, TIMELINE_DOMAIN_PADDING_DAYS, layoutTimeline, rowInWindow,
+    LAYOUT: layout
+  });
+  vm.runInContext(`${timelineRuntime}\nglobalThis.__svg = buildTimelineStage(LAYOUT);`, context);
+  const svg = context.__svg;
+  const count = needle => (svg.match(new RegExp(needle, 'g')) ?? []).length;
+  const lineClasses = count('<line class="aperture-time-(?:axis-year|axis-month|axis-base|lane-rule|grid|ov-row|ov-hop|ov-dense)"') + count('<line x1="0" y1="0" x2="0" y2="4"');
+  return { marks: count('data-ap-time-mark="'), columns: count('data-ap-time-column="'), segments: count('aperture-time-column-segment'), blocks: count('data-ap-time-block="'), aggregates: count('data-ap-time-aggregate="'), lanes: count('data-ap-time-lane="'), lines: count('<line'), lineClasses, pair: count('data-ap-time-pair'), svg };
+}
+const desktopRender = renderTimelineStage(layoutTimeline(realModel, { plotWidth: 690 }), false);
+assert.equal(desktopRender.marks, 79, 'desktop default: 79 marks');
+assert.equal(desktopRender.blocks, 1, 'plus one roster block = 80 drawn objects');
+assert.equal(desktopRender.columns, 16);
+assert.equal(desktopRender.segments, 35, 'per-lane segments touch only involved lanes');
+assert.equal(desktopRender.aggregates, 0);
+assert.equal(desktopRender.lanes, 17);
+assert.equal(desktopRender.pair, 0);
+assert.equal(desktopRender.lines, desktopRender.lineClasses, 'every line is an axis, grid, lane rule, overview tick or hatch stroke');
+assert.match(desktopRender.svg, /names listed/);
+assert.match(desktopRender.svg, /People documented on one surface/);
+const phoneRender = renderTimelineStage(layoutTimeline(realModel, { plotWidth: 216, ...TIMELINE_PHONE_METRICS }), true);
+assert.equal(phoneRender.marks, 48, 'phone default: 48 marks');
+assert.equal(phoneRender.blocks, 1);
+assert.equal(phoneRender.columns, 10);
+assert.equal(phoneRender.segments, 20);
+assert.equal(phoneRender.pair, 0);
+assert.equal(phoneRender.lines, phoneRender.lineClasses);
+console.log(`visual-aperture.test.js: timeline render desktop ${desktopRender.marks} marks + ${desktopRender.blocks} block, ${desktopRender.columns} columns (${desktopRender.segments} segments); phone ${phoneRender.marks} + ${phoneRender.blocks}, ${phoneRender.columns} columns (${phoneRender.segments} segments)`);
 assert.match(ui, /readData\('build\/surface-graph\.json'\)/);
 assert.match(ui, /readData\('build\/hop-graph\.json'\)/);
 assert.match(ui, /readData\('build\/receipt-graph\.json'\)/);
@@ -158,5 +238,12 @@ assert.match(css, /@media \(max-width: 760px\)/);
 assert.match(css, /\.aperture-inspector\.is-open/);
 assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
 assert.match(css, /\.aperture-overview table/);
+const timelineCss = readFileSync('src/visual-aperture-timeline.css', 'utf8');
+for (const breakpoint of ['860px', '760px', '430px', '340px']) assert.match(timelineCss, new RegExp(`@media \\(max-width: ${breakpoint}\\)`), `timeline css has the ${breakpoint} breakpoint`);
+assert.match(timelineCss, /@media print/);
+assert.match(timelineCss, /\.aperture-time-mark--hop \{ stroke: var\(--ap-amber\)/);
+assert.match(timelineCss, /\.aperture-time-column-segment/);
+assert.match(timelineCss, /repeat\(4, minmax\(0, 1fr\)\)/, 'four mode tabs fit a phone');
+assert.match(readFileSync('src/visual-aperture.css', 'utf8'), /visual-aperture-timeline\.css/);
 
 console.log('visual-aperture.test.js: OK');
