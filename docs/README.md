@@ -83,7 +83,10 @@ A candidate is a research question. It may preserve a non-hop fact, pattern, seq
 - [`methods/reported-hop-evidence-upgrade.md`](methods/reported-hop-evidence-upgrade.md) — the Phase 0 §2.4 gate requiring a source-bounded upgrade disposition for every accepted `reported` hop basis.
 - [`retrospectives/README.md`](retrospectives/README.md) — the index of the 2026-10-12 consolidation records: what was deleted, the retrospective capture, and the archive branch.
 - [`self-assembling-architecture.md`](self-assembling-architecture.md) — proposed future intake architecture; it does not override the current compiler law.
-- [`design-system.md`](design-system.md) — interface design guidance.
+- [`atlas-renderer-boundary.md`](atlas-renderer-boundary.md) — the explorer's three layers (compiled artifacts, pure projections, renderers), which renderer each aperture mode uses, the rules every renderer obeys, and what the standalone embeds. Rewritten 2026-10-22.
+- [`aperture-kit.md`](aperture-kit.md) — the two harvested kit modules and their conformance test; the aperture does not import them.
+- [`visual-aperture-scale-baseline.md`](visual-aperture-scale-baseline.md) — the dated Phase 4 scale measurements and what of Phase 4b is implemented; its metrics workflow no longer exists.
+- [`design-system.md`](design-system.md) — the original design-system proposal, with the shipped fonts corrected; `styles.css` is the implementation authority.
 - [`mcp.md`](mcp.md) — legacy MCP implementation notes; verify package scripts and current graph inputs before relying on them.
 
 The release gate is one command after a clean install:
@@ -147,6 +150,14 @@ Check each document's date and status before treating it as current behavior.
 - [`../legacy/`](../legacy/) preserves additional superseded artifacts.
 
 Legacy material can preserve useful sourced facts, but it must pass the current promotion process before it can affect a surface-hop release or skip directly into a structured report.
+
+### Historical design notes
+
+These governed the SVG representation ladder that `app.js` rendered from 1.1.0 until the Visual Aperture mounted over it; the ladder's code was removed on 2026-10-22. Each carries a superseded banner and is kept as design history. The live atlas is described in [`explorer.md`](explorer.md) and [`atlas-renderer-boundary.md`](atlas-renderer-boundary.md).
+
+- [`atlas-representation-ladder.md`](atlas-representation-ladder.md) — the five-level ladder, its legibility addendum and its regression gate (the gate still applies to the aperture).
+- [`atlas-interaction-contract.md`](atlas-interaction-contract.md) — the interaction contract for that ladder.
+- [`design-system.md`](design-system.md) — the original design-system proposal; not what shipped.
 
 ## Historical programmes (archived)
 

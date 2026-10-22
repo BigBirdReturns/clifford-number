@@ -1,5 +1,7 @@
 # Atlas interaction contract
 
+> **Superseded 2026-10-22:** the SVG representation ladder this governed was removed from `app.js`; the live atlas is the Visual Aperture (Timeline, Explore, Route, Roster); kept as design history. Its section 7 ("no canvas/WebGL migration", "no new dependencies") was overtaken by 1.3.0, which vendored Three.js and 3d-force-graph for the Explore field. The orientation strip of section 6 was removed with the ladder. For what the explorer does now, read [`docs/explorer.md`](explorer.md).
+
 Status: design contract (RODOH spec form — see the axm-world
 `GAMEPLAY_SCREEN_REDESIGN_SPEC.md` for the parent doctrine). Not code.
 Companion to `atlas-representation-ladder.md` and its legibility addendum;
