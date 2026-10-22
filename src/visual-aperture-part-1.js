@@ -14,7 +14,7 @@ const state = {
   sheetOpen: false,
   visibilityObserver: null,
   webgl: { renderer: null, model: null, events: null, eventApi: null, failed: false, rendered: false, cameraOwnsScale: false, lastFocusKey: null },
-  ecology: { position: 0, playing: true, frame: 0, lastTimestamp: 0, cycleMs: 52000 },
+  ecology: { fromDay: null, toDay: null, position: 0, playing: false, clockEnd: null, frame: 0, lastTimestamp: 0, cycleMs: 52000 },
   address: {
     ready: false,
     active: false,
