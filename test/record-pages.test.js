@@ -140,6 +140,14 @@ assert.equal(context.recordReceiptsMatchSurface(['a'], ['a', 'b']), false, 'a su
 assert.equal(context.recordReceiptsMatchSurface(['a', 'b', 'c'], ['a', 'b']), false, 'a row with a receipt of its own keeps its full list');
 assert.equal(context.recordReceiptsMatchSurface([], []), false, 'no receipts is never "the same receipts"');
 assert.match(source, /id="record-surface-receipts" tabindex="-1"/, 'the surface receipts panel is the reference target');
+// Organization rows carry receipt_ids and get the same receipts cell as the
+// people rows, in a ledger table of their own on the surface page.
+assert.equal(dialog.organization_rows[0].entity_id, 'dialog');
+assert.ok(dialog.organization_rows[0].receipt_ids.length >= 1, 'the Dialog organization row carries receipt ids');
+assert.ok(model.rows.filter(row => row.participant_type === 'organization').every(row => row.receipt_ids.length >= 1), 'every organization participation row carries receipt ids');
+assert.match(source, /const organizationColumns = \['#', 'Organization', 'Role', 'Window', 'Evidence', 'Receipts'\];/);
+assert.match(source, /recordTable\(organizationColumns, record\.organization_rows, organizationCellsFor, \{ rowAttributes: recordRowAttributes \}\)/, 'organization rows render through the same ledger table');
+assert.match(source, /const organizationCellsFor = \(row, index\) => \[[^\]]*receiptsCellFor\(row\)\s*\]/, 'organization rows use the same receipts cell as actor rows');
 
 // A hop surface lists its bases by day; a surface with only the compiler's generic reason says so.
 const frontier = context.surfaceRecordModel(model, hopGraph, receiptGraph, surfaceGraph.surfaces.find(item => item.surface_id === 'frontier-ai-taskforce-external-advisory-board-appointments-2023-09-07'));

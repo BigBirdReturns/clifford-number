@@ -2103,7 +2103,18 @@ function renderSurface(id) {
     ? `<section class="panel record-ledger"><span class="panel-label">Participants</span><h3>${recordPlural(record.participant_count, 'person', 'people')} documented on this surface${record.dense ? ', one contained roster' : ''}</h3><section class="record-strip-wrap">${strip}</section><div class="ledger-controls">${recordFloorControl(partition.floor)}<p class="ledger-status" id="record-ledger-status" role="status">${esc(recordStatusText(partition, participantRows.length, 'participant row'))}</p></div>${rosterStatus}${participantsTable}<p class="meta record-boundary">${esc(RECORD_BOUNDARY)}</p></section>`
     : `<section class="panel record-ledger"><span class="panel-label">Participants</span><h3>No person is documented on this surface</h3><section class="record-strip-wrap">${strip}</section><p class="meta">${recordPlural(record.organization_rows.length, 'organization row')} only; a surface without two people can never be a hop basis.</p></section>`;
 
-  const organizations = `<section class="panel"><span class="panel-label">Organizations on this surface</span><h3>${recordPlural(record.organization_rows.length, 'organization')}</h3>${recordPatternList(record.organization_rows.map(row => `<li><a href="#organization/${encodeURIComponent(row.entity_id)}">${esc(row.entity_label)}</a> · ${esc(row.role || humanLabel(row.participation_type || 'organization'))} <small>${esc(humanLabel(row.participation_type || ''))} · ${esc(recordWindowText(row))} · ${esc(recordEvidenceWord(row.evidence_class))}</small></li>`), { empty: 'No organization row on this surface.' })}</section>`;
+  // Organization rows are participation rows too: the same ledger table and
+  // the same receipts cell as the people above, so their receipt_ids are read.
+  const organizationColumns = ['#', 'Organization', 'Role', 'Window', 'Evidence', 'Receipts'];
+  const organizationCellsFor = (row, index) => [
+    String(index + 1),
+    `<a href="#organization/${encodeURIComponent(row.entity_id)}">${esc(row.entity_label)}</a>`,
+    recordRoleCell(row),
+    esc(recordWindowText(row)),
+    evidenceBadge(row.evidence_class),
+    receiptsCellFor(row)
+  ];
+  const organizations = `<section class="panel record-ledger record-organizations"><span class="panel-label">Organizations on this surface</span><h3>${recordPlural(record.organization_rows.length, 'organization')}</h3><p class="meta">Venue or context rows: an organization never creates a hop.</p>${record.organization_rows.length ? recordTable(organizationColumns, record.organization_rows, organizationCellsFor, { rowAttributes: recordRowAttributes }) : '<p class="meta">No organization row on this surface.</p>'}</section>`;
 
   const bases = s.hop_eligible
     ? `<section class="panel record-bases"><span class="panel-label">Admitted hop bases</span><h3>${recordPlural(record.basis_count, 'actor pair')} share this surface${record.basis_days.length ? ` on ${esc(record.basis_days.join(', '))}` : ''}</h3><p class="meta">Each basis is one compiler-admitted pair on this surface's day. It is listed, never drawn as a line; open the connection checker to see the pair with its receipts.</p>${record.basis_count ? `<details class="participant-overflow"><summary>List the ${recordPlural(record.basis_count, 'pair')}</summary><ul class="record-pattern-list">${record.bases.map(basis => `<li><a href="#desk/${encodeURIComponent(basis.actor_a)}/${encodeURIComponent(basis.actor_b)}">${esc(labelActor(basis.actor_a))} × ${esc(labelActor(basis.actor_b))}</a> · ${esc(basis.iso_day ?? 'not dated')} · ${evidenceBadge(basis.evidence_class)}<small>${esc(labelActor(basis.actor_a))}: ${esc(basis.actor_a_role || 'named participant')} · ${esc(labelActor(basis.actor_b))}: ${esc(basis.actor_b_role || 'named participant')}</small></li>`).join('')}</ul></details>` : '<p class="meta">The compiler admitted no pair on this surface.</p>'}</section>`
