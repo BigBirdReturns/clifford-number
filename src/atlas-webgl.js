@@ -1,5 +1,10 @@
 import * as THREE from '../vendor/three-0.186.0.module.js';
 import { buildSocialFieldModel, eventInWindow, nodeCountLabel, normalizeEcologyWindow, SOCIAL_FIELD_RADIUS, socialFieldNeighbors, isSurfaceNode } from './social-field.js';
+// The field runtime reads the whole social-field model API (ledger index,
+// window helpers, day formatting) through the renderer module, so the loader
+// in visual-aperture.js needs no edit when this API grows. The two modules
+// share no export name.
+export * from './social-field.js';
 
 const FORCE_GRAPH_VENDOR = '../vendor/3d-force-graph-1.80.0.min.js';
 const LINK_SEGMENTS = 18;

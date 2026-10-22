@@ -535,5 +535,12 @@ assert.doesNotMatch(runtimeSource, /reinforcement heat|node\.heat/, 'no heat cha
 assert.match(partOneSource, /ecology: \{ fromDay: null, toDay: null, [^}]*playing: false/, 'playing defaults to false');
 assert.match(partTenSource, /ap-ecology-time-to/);
 assert.match(partTenSource, /ecology-all-time/);
-assert.match(loaderSource, /\{ \.\.\.social, \.\.\.renderer \}/, 'the loader exposes the whole social-field API to the runtime');
+assert.match(rendererSource, /^export \* from '\.\/social-field\.js';$/m, 'the renderer re-exports the whole social-field API, so the runtime gets it through the loader');
+assert.match(loaderSource, /\{ \.\.\.renderer,/, 'the loader spreads the renderer module, which carries the social-field API');
+const renderer = await import('../src/atlas-webgl.js').catch(() => null);
+if (renderer) {
+  for (const name of ['buildFieldLedgerIndex', 'nodeLedgerSummary', 'windowCountPhrase', 'rowInWindow', 'normalizeEcologyWindow', 'ecologyWindowLabel', 'dayIso', 'fieldWindowFactors']) {
+    assert.equal(typeof renderer[name], 'function', `${name} reaches the runtime through the renderer module`);
+  }
+}
 console.log('field runtime contract: PASS');

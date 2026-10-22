@@ -8,10 +8,7 @@ Object.assign(globalThis, core, addressState, workspaceModel, exportModel, windo
 
 globalThis.loadCliffordSocialField = async () => {
   const [renderer, social] = await Promise.all([import('./atlas-webgl.js'), import('./social-field.js')]);
-  // The runtime reads the whole social-field model API (ledger index, window
-  // helpers, day formatting) alongside the renderer; the two modules share no
-  // export name, so the renderer's names win only in theory.
-  return { ...social, ...renderer };
+  return { ...renderer, buildResearchNetworkModel: social.buildResearchNetworkModel, buildEcologyEventModel: social.buildEcologyEventModel, ecologyEventsForNode: social.ecologyEventsForNode, activeEcologyEvents: social.activeEcologyEvents, ecologyPlayheadLabel: social.ecologyPlayheadLabel };
 };
 
 const RUNTIME_VERSION = '20260914-ecology1';
