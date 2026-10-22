@@ -281,17 +281,29 @@ function inspectorBreadcrumbModel({ mode, objectLabel, objectId, claimLabel } = 
 
 // Origin context for a claim/receipt opened from inside the aperture deck
 // (#network-atlas): { mode, objectId, objectLabel, rect, selectObject? } --
-// which mode was mounted, which object was selected, the clicked element's
+// which mode is showing, which object is selected, the clicked element's
 // screen rect (for the open animation's transform-origin) and an optional
-// selectObject(objectId) callback for the object crumb. The legacy SVG atlas
-// that used to supply this from its own selection state is retired, and the
-// Visual Aperture does not yet hand its mode/object over, so there is no live
-// origin provider: this returns null and the dialog opens with its plain
-// toolbar label instead of a breadcrumb naming a provenance the click did not
-// produce. inspectorBreadcrumbModel stays exported for the aperture to feed.
+// selectObject(objectId) callback for the object crumb. The Visual Aperture
+// publishes { mode, objectLabel, objectId, selectObject } on
+// globalThis.__cliffordApertureOrigin whenever its selection changes
+// (src/visual-aperture-timeline-runtime.js publishApertureOrigin, called from
+// part-3 setInspector), so the crumb names the provenance the click actually
+// came from. With nothing published, or a malformed or empty value, this
+// returns null and the dialog opens with its plain toolbar label rather than
+// a breadcrumb the click did not produce.
 function atlasInspectorOrigin(el) {
-  void el;
-  return null;
+  const published = globalThis.__cliffordApertureOrigin;
+  if (!published || typeof published !== 'object') return null;
+  const mode = typeof published.mode === 'string' ? published.mode.trim() : '';
+  const objectLabel = typeof published.objectLabel === 'string' ? published.objectLabel.trim() : '';
+  if (!mode && !objectLabel) return null;
+  return {
+    mode: mode || null,
+    objectLabel: objectLabel || null,
+    objectId: published.objectId == null ? null : String(published.objectId),
+    selectObject: typeof published.selectObject === 'function' ? published.selectObject : null,
+    rect: el?.getBoundingClientRect?.() ?? null
+  };
 }
 
 function renderInspectorBreadcrumb(origin, claimLabel) {
