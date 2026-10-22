@@ -1,6 +1,6 @@
 # The Clifford Number
 
-Current release line: **2.0.0** (consolidation). See [the 2.0.0 release notes](docs/releases/2.0.0.md). Earlier releases: [1.3.0](docs/releases/1.3.0.md), [1.2.0](docs/releases/1.2.0.md), [1.1.0](docs/releases/1.1.0.md), [1.0.0](docs/releases/1.0.0.md).
+Current release line: **2.1.0** (the explorer release). See [the 2.1.0 release notes](docs/releases/2.1.0.md). Earlier releases: [2.0.0](docs/releases/2.0.0.md), [1.3.0](docs/releases/1.3.0.md), [1.2.0](docs/releases/1.2.0.md), [1.1.0](docs/releases/1.1.0.md), [1.0.0](docs/releases/1.0.0.md).
 
 ## What this is
 
@@ -10,9 +10,11 @@ Every statement in the output traces to a **receipt**: a public source with a li
 
 Governance: [BUILD-INSTRUCTIONS.md](BUILD-INSTRUCTIONS.md) is the governing document. Its Section 1 (the constitution) never changes. Agents and maintainers read it before doing any work here. [CONTRIBUTING.md](CONTRIBUTING.md) turns it into working rules.
 
-## What 2.0.0 is
+## What 2.1.0 is
 
-2.0.0 is a consolidation release. It adds no new research findings and has had no outside review. It removes machinery: GitHub workflows went from 334 to 5, validator scripts from 386 to 170 (plus one Python file kept outside the gate), npm scripts from 160 to 46. No workflow runs on a timer. Research that lived only in closed issues and unmerged branches is gathered into a held `archive/` folder. See the [release notes](docs/releases/2.0.0.md) for the full list and for what is not claimed.
+2.1.0 is the explorer release. It adds no new research findings and has had no outside review. The explorer now opens on a ledger timeline (one mark per participation row; a shared surface is a column, never a line between two people); the Explore field sizes nodes by documented counts instead of a composite heat and opens the row or claim behind every arc; the dead SVG atlas that the aperture had been mounting over was removed from `app.js` (4,059 to 1,820 lines); three retired programmes moved to `archive/programmes/` and 577 of their paths left the publication allowlist; 25 builders and validators gained a main-guard that is true on Windows; the release gate runs clean again. The explorer's first load fell from about 8.4 MB to about 3.0 MB by file-size sum. See the [release notes](docs/releases/2.1.0.md) for the full list, the figures and what is not claimed.
+
+2.0.0 (12 October 2026) was the consolidation release: GitHub workflows went from 334 to 5, validator scripts from 386 to 170, npm scripts from 160 to 46, and no workflow runs on a timer. At 2.1.0 the counts are 5 workflows, 172 `tools/validate-*.mjs` files plus one Python file kept outside the gate, and 52 npm scripts (the lake-identity and reservoir work on the cut after 2.0.0 added six: `validate:lake-identity`, `merge:lake-identity`, `build:reservoir`, `validate:reservoir`, `reservoir:open`, `reservoir:view-disposition`). Research that lived only in closed issues and unmerged branches stays in the held `archive/` folder. See [the 2.0.0 notes](docs/releases/2.0.0.md).
 
 ## Public inspection path
 
@@ -29,7 +31,7 @@ A reviewer can inspect the current public release in about a minute:
 | Area | Paths | What it is |
 |---|---|---|
 | Kernel | [`data/ledger/`](data/ledger/), [`data/canonical/`](data/canonical/), [`schemas/`](schemas/), [`tools/lib/`](tools/lib/) | The source of truth and the code that reads it. Ledgers hold claims, surfaces, participation rows, receipts and chains. Canonical files control identities and vocabularies. `tools/lib/` holds the compiler, the receipt and archival checks and the constitution gates. Everything else is derived from these. |
-| Product | [`index.html`](index.html), [`explorer.html`](explorer.html), [`app.js`](app.js), [`src/`](src/), [`reports/core-thesis/poof-clifford-ecology/`](reports/core-thesis/poof-clifford-ecology/) | The public site: a homepage, the topology explorer and connection checker, and the browser code behind them. The POOF ecology folder holds the generated review pages for the publication contract described in [`docs/poof-clifford-ecology.md`](docs/poof-clifford-ecology.md). |
+| Product | [`index.html`](index.html), [`explorer.html`](explorer.html), [`app.js`](app.js), [`src/`](src/), [`reports/core-thesis/poof-clifford-ecology/`](reports/core-thesis/poof-clifford-ecology/) | The public site: a homepage, the explorer (the Visual Aperture with its Timeline, Explore, Route and Roster modes, the entity pages and the connection checker) and the browser code behind them. `app.js` owns the entity pages and the checker; `src/visual-aperture-*` owns the aperture; `src/atlas-webgl.js` and `src/social-field.js` own the Explore field. [`docs/explorer.md`](docs/explorer.md) explains the page. The POOF ecology folder holds the generated review pages for the publication contract described in [`docs/poof-clifford-ecology.md`](docs/poof-clifford-ecology.md). |
 | Cases and briefs | [`cases/`](cases/), [`briefs/`](briefs/), [`receipts/`](receipts/), [`reports/`](reports/) | Case ledgers (claims, events, relations and publication metadata per case), the structured briefs compiled from them, the archived source extracts, and generated report pages. |
 | Agenda | [`data/estates/`](data/estates/), [`estates/`](estates/), [`gametrails/`](gametrails/) | What to look at next. An estate is a durable domain corpus. The estate and game-trail pages show where records are missing. They never create a claim or a hop. |
 | Archive | [`archive/`](archive/README.md) | Read-only research recovered from closed issues, unmerged branches and the retrospective. Held from publication. |
@@ -45,7 +47,7 @@ On Windows use `run-local.cmd` (optional port argument), or `npm.cmd` in PowerSh
 The launcher installs missing dependencies, compiles the existing data, and serves
 on loopback only. It performs no crawl, merge, publication, or outreach.
 
-Open `/explorer.html` for the evidence field and connection checker. The retained
+Open `/explorer.html` for the ledger timeline, the Explore field, the Route and Roster views and the connection checker. The retained
 research inventory is `/retrospective/2026-10-12/site/trail-map.html`; its historical
 tiers and recommendations are assessments, not instructions to repeat its work.
 The operating assessment is [Operating cut](retrospective/2026-10-12/OPERATING-CUT.md).
@@ -122,12 +124,13 @@ npm run query:hops -- --from simon-case --to ben-warner --as-of 2026-06 --json
 
 ## Public app
 
-The public site is two static pages: `index.html`, a four-lane causal homepage projecting the research graph across model production, workflow admission, activation spend, and measurement feedback; and `explorer.html`, the topology explorer, linked from the homepage header. The explorer has two views:
+The public site is two static pages: `index.html`, a four-lane causal homepage projecting the research graph across model production, workflow admission, activation spend, and measurement feedback; and `explorer.html`, the explorer, linked from the homepage header. The explorer has three parts, all read from the same compiled artifacts:
 
-- **Topology explorer:** search public actors, organizations and bounded surfaces; inspect an actor → surface → actor route; open every receipt and archival reference behind it.
-- **Connection checker:** enter two public actors and an optional year, month or day; get the shortest defensible route, its evidence floor, copy-ready caveat language, and the connections the compiler refused to make.
+- **The Visual Aperture**, with four modes: **Timeline** (the arrival view: one mark per participation row on lanes against a date axis; a surface two people share on one day is a column touching only their lanes; the Dialog roster is one contained block), **Explore** (the research network as a field; node size is the documented surface count; selecting an arc opens its participation row or claim), **Route** (actor → bounded surface → actor steps with evidence floor and as-of controls) and **Roster** (one bounded surface as a budgeted roster container).
+- **The entity pages:** search public actors, organizations, bounded surfaces and chains; read every ledger row behind a name; open every receipt and archival reference behind it.
+- **The connection checker:** enter two public actors and an optional year, month or day; get the shortest defensible route, its evidence floor, copy-ready caveat language, and the connections the compiler refused to make.
 
-The interface treats receipt health, temporal precision, dense-surface exclusions and inference boundaries as first-class output. Structural context is shown separately from Clifford hops and is never presented as probability, guilt or motive.
+[`docs/explorer.md`](docs/explorer.md) explains each view and states the display rules once: every mark is one ledger row, a hop is a surface and never a line between two people, a dense roster is one object, undated rows are never time-sliced, evidence class and receipts stay attached, no composite score drives a visual channel, counts name their denominator. Structural context is shown separately from Clifford hops and is never presented as probability, guilt or motive.
 
 Compiled case files carry the same discipline into programs, typed capital flows, public-role transitions, capability observations and outcomes. The first golden case, FA-03, is intentionally review-gated: the prototype's assertions are preserved without being mislabeled as independently verified. See [the case-ledger contract](docs/case-ledger.md).
 
@@ -199,7 +202,7 @@ npm run serve              # serve the site locally on port 8080
 npm run release:check      # the full gate
 ```
 
-There are 46 npm scripts in total. Run `npm run` to list them. Many older notes name scripts that were folded into `check` or removed in 2.0.0; [the deletion record](docs/retrospectives/2026-10-12-consolidation-deletions.md) maps each removed script to the `node` command that replaces it.
+There are 52 npm scripts in total. Run `npm run` to list them. Many older notes name scripts that were folded into `check` or removed in 2.0.0; [the deletion record](docs/retrospectives/2026-10-12-consolidation-deletions.md) maps each removed script to the `node` command that replaces it.
 
 ## Regression fixtures
 

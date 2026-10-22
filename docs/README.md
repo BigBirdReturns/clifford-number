@@ -40,7 +40,7 @@ Read these first:
 - [`milestones/estate-frontier-game-trails-v1.md`](milestones/estate-frontier-game-trails-v1.md) — M-02: ten prepared frontier estates and the complete twenty-four-estate Game-Trail Aperture pass.
 - [`redaction-policy.md`](redaction-policy.md) — public-role-only scope and material the project excludes.
 - [`plain-language.md`](plain-language.md) — how narration is generated without adding facts.
-- [`releases/2.0.0.md`](releases/2.0.0.md) — what the current release is and is not.
+- [`releases/2.1.0.md`](releases/2.1.0.md) — what the current release is and is not; [`releases/2.0.0.md`](releases/2.0.0.md) for the consolidation before it.
 
 The essential reading rules are: a hop means documented shared context on a bounded surface, nothing more; and **no hop does not mean no relationship**. Co-presence is never coordination, a missing live source does not erase a preserved observation, and absence from the corpus is not proof of absence. The hop graph is a conservative projection of a larger, typed evidence model.
 
@@ -72,7 +72,7 @@ A candidate is a research question. It may preserve a non-hop fact, pattern, seq
 ## Maintainers and developers
 
 - [`../BUILD-INSTRUCTIONS.md`](../BUILD-INSTRUCTIONS.md) — governing invariants and phased acceptance criteria.
-- [`releases/2.0.0.md`](releases/2.0.0.md) — the consolidation release: what was removed, what the gate runs, what is not claimed. Earlier notes: [1.3.0](releases/1.3.0.md), [1.2.0](releases/1.2.0.md), [1.1.0](releases/1.1.0.md), [1.0.0](releases/1.0.0.md).
+- [`releases/2.1.0.md`](releases/2.1.0.md) — the explorer release: the Timeline arrival mode, the Explore-tab changes, the retired legacy atlas, the archived programmes, the gate fixes, the payload, what is not claimed. Earlier notes: [2.0.0](releases/2.0.0.md) (the consolidation), [1.3.0](releases/1.3.0.md), [1.2.0](releases/1.2.0.md), [1.1.0](releases/1.1.0.md), [1.0.0](releases/1.0.0.md). The 1.1.0 to 2.0.0 notes carry dated notes where a sentence stopped being true.
 - [`release-architecture.md`](release-architecture.md) — current ledger-to-build architecture.
 - [`reporter-briefings.md`](reporter-briefings.md) — the `reporter-briefing@2` source, compiler, manifest, review-queue, Pages, browser, trail, and unsequenced-claim contracts.
 - [`report-waterline.md`](report-waterline.md) — the project-level report frontier and allowed promotion transitions.
