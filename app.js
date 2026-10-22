@@ -554,6 +554,11 @@ async function init() {
   state.hopGraph = hopGraph;
   state.scores = scores;
   state.legacyGraph = legacyGraph;
+  // Hand the loaded public artifacts to the Visual Aperture before
+  // #app-status gets is-ready: src/visual-aperture-part-1.js readData reads
+  // these before it would fetch, so the aperture no longer re-requests the
+  // surface, hop and receipt graphs and graph.json the page already holds.
+  globalThis.__cliffordPublicData = { surfaceGraph, hopGraph, receiptGraph, legacyGraph };
   state.receipts = new Map((receiptGraph.receipts ?? []).map(r => [r.receipt_id, r]));
   state.actors = new Map(surfaceGraph.actors.map(a => [a.id, a]));
   state.orgs = new Map(surfaceGraph.organizations.map(o => [o.id, o]));

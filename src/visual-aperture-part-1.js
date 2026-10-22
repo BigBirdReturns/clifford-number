@@ -99,7 +99,20 @@ function cloneValue(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
+// The public app (app.js init) hands over the artifacts it already loaded on
+// globalThis.__cliffordPublicData, keyed by the names below; the aperture reads
+// them in place (it never mutates them) and fetches only when a key is absent.
+const PUBLIC_DATA_HANDOFF = Object.freeze({
+  'build/surface-graph.json': 'surfaceGraph',
+  'build/hop-graph.json': 'hopGraph',
+  'build/receipt-graph.json': 'receiptGraph',
+  'graph.json': 'legacyGraph'
+});
+
 async function readData(path) {
+  const shared = globalThis.__cliffordPublicData;
+  const handoffKey = PUBLIC_DATA_HANDOFF[path];
+  if (shared && handoffKey && shared[handoffKey]) return shared[handoffKey];
   if (typeof EMBEDDED_DATA !== 'undefined' && Object.hasOwn(EMBEDDED_DATA, path)) return cloneValue(EMBEDDED_DATA[path]);
   const response = await fetch(path, { cache: 'no-cache' });
   if (!response.ok) throw new Error(`${path}: ${response.status}`);
