@@ -13,6 +13,7 @@ function handleAction(button) {
     return;
   }
   if (action === 'ecology-toggle') { setEcologyPlaying(!state.ecology.playing); return; }
+  if (action === 'ecology-all-time') { setEcologyWindow(null, null, { pause: true }); return; }
   if (action === 'zoom-in') { setMapScale(state.map.scale + .85, { history: 'push' }); return; }
   if (action === 'zoom-out') { setMapScale(state.map.scale - .85, { history: 'push' }); return; }
   if (action === 'reset-map') {
@@ -122,7 +123,7 @@ function handleClick(event) {
 function handleInput(event) {
   if (handleTimelineInput(event)) return;
   const target = event.target;
-  if (target.id === 'ap-ecology-time') { setEcologyClockPosition(Number(target.value) / 1000, { pause: true }); return; }
+  if (target.id === 'ap-ecology-time' || target.id === 'ap-ecology-time-to') { setEcologyWindowFromControl(target); return; }
   if (target.id === 'ap-map-scale') { setMapScale(target.value, { history: 'replace' }); return; }
   if (target.id === 'ap-surface-query') {
     state.surface.query = target.value;

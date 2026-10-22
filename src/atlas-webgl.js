@@ -1,10 +1,21 @@
 import * as THREE from '../vendor/three-0.186.0.module.js';
-import { buildSocialFieldModel, ecologyPlayheadDay, SOCIAL_FIELD_RADIUS, socialFieldClusterAnchor, socialFieldNeighbors, isSurfaceNode } from './social-field.js';
+import { buildSocialFieldModel, eventInWindow, nodeCountLabel, normalizeEcologyWindow, SOCIAL_FIELD_RADIUS, socialFieldNeighbors, isSurfaceNode } from './social-field.js';
+// The field runtime reads the whole social-field model API (ledger index,
+// window helpers, day formatting) through the renderer module, so the loader
+// in visual-aperture.js needs no edit when this API grows. The two modules
+// share no export name.
+export * from './social-field.js';
 
 const FORCE_GRAPH_VENDOR = '../vendor/3d-force-graph-1.80.0.min.js';
 const LINK_SEGMENTS = 18;
+// Radial lift of an arc above the sphere at its midpoint. A pulse bead rides a
+// topology arc, so it uses the same constant and sits on the line it claims.
+const ARC_LIFT = Object.freeze({ topology: 8, research: 12 });
 const NODE_SHAPES = Object.freeze({ person: 'sphere', surface: 'octahedron' });
-const EVIDENCE_COLORS = Object.freeze({
+// Arc colour names the evidence class of the documented edge. Pulse colour
+// names the role category derived from the recorded role text (a labelled
+// derived category, not a score).
+export const EVIDENCE_COLORS = Object.freeze({
   official: '#ffd061',
   confirmed: '#ffd061',
   primary_public: '#69b7ff',
@@ -12,7 +23,8 @@ const EVIDENCE_COLORS = Object.freeze({
   judgment: '#8f94a1',
   derived: '#6a707d',
   context: '#596170'
-});const ECOLOGY_CHANNEL_COLORS = Object.freeze({
+});
+const ECOLOGY_CHANNEL_COLORS = Object.freeze({
   capital: '#ffd061',
   procurement: '#5ad7ff',
   governance: '#cb97ff',
@@ -21,9 +33,14 @@ const EVIDENCE_COLORS = Object.freeze({
   commercial: '#62d3bd',
   context: '#7d8797'
 });
+// Opacity factors for the time window. Dated objects outside the window fade
+// but are never removed; objects with no dated ledger row are held at a
+// constant mid value because the window cannot say anything about them.
+export const TIME_FACTORS = Object.freeze({ inWindow: 1, outOfWindow: .18, undated: .55, linkOutOfWindow: .1 });
+const OPACITY_EPSILON = .002;
 
 let vendorPromise = null;
-let heatTexture = null;
+let haloTexture = null;
 
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
@@ -52,8 +69,8 @@ function loadForceGraphVendor() {
   return vendorPromise;
 }
 
-function radialHeatTexture() {
-  if (heatTexture) return heatTexture;
+function radialHaloTexture() {
+  if (haloTexture) return haloTexture;
   const canvas = document.createElement('canvas');
   canvas.width = 128; canvas.height = 128;
   const ctx = canvas.getContext('2d');
@@ -64,8 +81,8 @@ function radialHeatTexture() {
   gradient.addColorStop(1, 'rgba(255,255,255,0)');
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, 128, 128);
-  heatTexture = new THREE.CanvasTexture(canvas);
-  return heatTexture;
+  haloTexture = new THREE.CanvasTexture(canvas);
+  return haloTexture;
 }
 
 function nodeShape(node) {
@@ -80,40 +97,54 @@ function makeCoreGeometry(node, size) {
   return new THREE.BoxGeometry(size * 1.65, size * 1.65, size * 1.65);
 }
 
+// Node size and halo derive from one documented count (size_count: the number
+// of surfaces a person or organization is documented on, or the number of
+// documented participants for a surface). The legend names this count.
+export function nodeSizeForCount(count) {
+  return 2.3 + Math.log2(1 + Math.max(0, Number(count) || 0)) * 1.15;
+}
+export function haloSizeForCount(count) {
+  const safe = Math.max(0, Number(count) || 0);
+  return safe > 0 ? 10 + Math.log2(1 + safe) * 8 : 0;
+}
+
 function makeNodeObject(node) {
   const group = new THREE.Group();
-  const size = 2.3 + node.heat * 2.8;
+  const count = node.size_count ?? 0;
+  const size = nodeSizeForCount(count);
   const coreMaterial = new THREE.MeshLambertMaterial({
-    color: new THREE.Color(node.heat_color),
+    color: new THREE.Color(node.color || '#b8c0cf'),
     transparent: true,
-    opacity: .78 + node.heat * .2
+    opacity: .84
   });
   coreMaterial.userData.baseOpacity = coreMaterial.opacity;
   const core = new THREE.Mesh(makeCoreGeometry(node, size), coreMaterial);
   core.userData.role = 'core';
   group.add(core);
 
-  const haloMaterial = new THREE.SpriteMaterial({
-    map: radialHeatTexture(),
-    color: new THREE.Color(node.heat_color),
-    transparent: true,
-    opacity: .08 + node.heat * .34,
-    depthWrite: false,
-    blending: THREE.AdditiveBlending
-  });
-  haloMaterial.userData.baseOpacity = haloMaterial.opacity;
-  const halo = new THREE.Sprite(haloMaterial);
-  const haloSize = 12 + Math.pow(node.heat, .72) * 58;
-  halo.scale.set(haloSize, haloSize, 1);
-  halo.userData.role = 'heat';
-  group.add(halo);
+  const haloSize = haloSizeForCount(count);
+  if (haloSize > 0) {
+    const haloMaterial = new THREE.SpriteMaterial({
+      map: radialHaloTexture(),
+      color: new THREE.Color(node.color || '#b8c0cf'),
+      transparent: true,
+      opacity: Math.min(.4, .1 + Math.log2(1 + count) * .07),
+      depthWrite: false,
+      blending: THREE.AdditiveBlending
+    });
+    haloMaterial.userData.baseOpacity = haloMaterial.opacity;
+    const halo = new THREE.Sprite(haloMaterial);
+    halo.scale.set(haloSize, haloSize, 1);
+    halo.userData.role = 'count-halo';
+    group.add(halo);
+  }
   group.userData.nodeId = node.id;
   return group;
 }
-function makeLinkObject(link, reducedMotion) {
+function makeLinkObject(link) {
   const group = new THREE.Group();
   const color = EVIDENCE_COLORS[link.evidence_class] ?? EVIDENCE_COLORS.context;
-  const opacity = link.topology_only ? .12 + link.heat * .12 : .18 + link.evidence_weight * .24 + link.heat * .18;
+  const opacity = link.topology_only ? .16 + link.evidence_weight * .12 : .14 + link.evidence_weight * .2;
   const positions = new Float32Array(LINK_SEGMENTS * 3);
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
@@ -142,7 +173,7 @@ function rebuildArc(group, start, end, link) {
   const ua = a.clone().normalize(), ub = b.clone().normalize();
   const dot = THREE.MathUtils.clamp(ua.dot(ub), -.9995, .9995);
   const theta = Math.acos(dot), sinTheta = Math.sin(theta);
-  const lift = (link.topology_only ? 6 : 11) + link.heat * 26;
+  const lift = link.topology_only ? ARC_LIFT.topology : ARC_LIFT.research;
   for (let index = 0; index < LINK_SEGMENTS; index += 1) {
     const t = index / (LINK_SEGMENTS - 1);
     let point;
@@ -163,37 +194,6 @@ function rebuildArc(group, start, end, link) {
   group.userData.lastEndpoints = [start.x, start.y, start.z, end.x, end.y, end.z];
 }
 
-function shellForce(radius = SOCIAL_FIELD_RADIUS, strength = .075) {
-  let nodes = [];
-  function force(alpha) {
-    for (const node of nodes) {
-      const x = node.x || .001, y = node.y || .001, z = node.z || .001;
-      const current = Math.hypot(x, y, z) || 1;
-      const target = radius * (isSurfaceNode(node) ? 1.035 : 1);
-      const gain = ((target - current) / current) * strength * Math.max(.18, alpha);
-      node.vx += x * gain; node.vy += y * gain; node.vz += z * gain;
-    }
-  }
-  force.initialize = nextNodes => { nodes = nextNodes ?? []; };
-  return force;
-}
-
-function clusterForce(radius = SOCIAL_FIELD_RADIUS, strength = .008) {
-  let nodes = [];
-  function force(alpha) {
-    for (const node of nodes) {
-      const anchor = socialFieldClusterAnchor(node.cluster, radius);
-      if (!anchor) continue;
-      const gain = strength * Math.max(.12, alpha) * (.65 + node.heat * .35);
-      node.vx += (anchor.x - node.x) * gain;
-      node.vy += (anchor.y - node.y) * gain;
-      node.vz += (anchor.z - node.z) * gain;
-    }
-  }
-  force.initialize = nextNodes => { nodes = nextNodes ?? []; };
-  return force;
-}
-
 function makeShell(radius) {
   const geometry = new THREE.SphereGeometry(radius * 1.015, 44, 30);
   const material = new THREE.MeshBasicMaterial({ color: 0x55708f, wireframe: true, transparent: true, opacity: .032, depthWrite: false });
@@ -203,41 +203,62 @@ function makeShell(radius) {
 }
 function endpointId(value) { return typeof value === 'object' && value ? value.id : value; }
 
-function setObjectStrength(object, factor, selected = false) {
+// Opacity is written only when it actually changes (beyond OPACITY_EPSILON).
+// Changing opacity never needs the material update flag; only flipping the
+// transparent flag does, and every field material is created transparent.
+function setObjectStrength(object, factor, { selected = false, emphasis = false } = {}) {
   if (!object) return;
-  object.scale.setScalar(selected ? 1.42 : 1);
+  const scale = selected ? 1.42 : 1;
+  if (object.scale.x !== scale) object.scale.setScalar(scale);
   object.traverse(child => {
     const materials = child.material ? (Array.isArray(child.material) ? child.material : [child.material]) : [];
     for (const material of materials) {
-      if (!material.transparent && factor < 1) material.transparent = true;
+      if (!material.transparent && factor < 1) {
+        material.transparent = true;
+        material.needsUpdate = true;
+      }
       const base = material.userData.baseOpacity ?? material.opacity ?? 1;
-      material.opacity = Math.max(.012, base * factor);
-      material.needsUpdate = true;
+      const next = emphasis ? Math.min(1, Math.max(base, .92) * factor) : Math.max(.012, base * factor);
+      if (Math.abs(material.opacity - next) >= OPACITY_EPSILON) material.opacity = next;
     }
   });
 }
 
+// The tooltip names the same ledger count the inspector names (nodeCountLabel
+// reads size_count and ledger_row_count, both set from the ledger by
+// buildSocialFieldModel); it never prints a count the inspector would contradict.
 function tooltipForNode(node) {
-  const heat = Math.round((node.heat ?? 0) * 100);
-  const repeat = node.strongest_repeat ? ` · ${node.strongest_repeat}× repeated co-surface` : '';
-  return `<div class="atlas-3d-tooltip"><strong>${escapeHtml(node.label)}</strong><br><span>reinforcement heat ${heat}%${repeat}</span></div>`;
+  const kind = node.ontology === 'surface' ? 'bounded surface' : node.ontology === 'person' ? 'actor' : 'organization';
+  return `<div class="atlas-3d-tooltip"><strong>${escapeHtml(node.label)}</strong><br><span>${escapeHtml(kind)} · ${escapeHtml(nodeCountLabel(node))}</span></div>`;
 }
 
 function tooltipForLink(link) {
   const evidence = escapeHtml(link.evidence_class || 'context');
+  const row = link.rows?.[0];
+  if (link.topology_only && row) {
+    return `<div class="atlas-3d-tooltip"><strong>${escapeHtml(row.role)}</strong><br><span>${escapeHtml(row.time_label)} · ${evidence}</span><br><small>participation row on ${escapeHtml(row.surface_label)} · select to read receipts</small></div>`;
+  }
   const claim = link.claim ? `<br><span>${escapeHtml(link.claim)}</span>` : '';
-  return `<div class="atlas-3d-tooltip"><strong>${evidence}</strong>${claim}<br><small>line = documented topology; dated activity pulses do not imply causality</small></div>`;
+  return `<div class="atlas-3d-tooltip"><strong>${evidence}</strong>${claim}<br><small>${link.topology_only ? 'documented topology' : 'research context · undated · not a hop'} · select to read the claim</small></div>`;
 }
+
+// Scratch vectors for the per-frame arc-point math: no allocation per pulse.
+const scratchA = new THREE.Vector3();
+const scratchB = new THREE.Vector3();
+const scratchUa = new THREE.Vector3();
+const scratchUb = new THREE.Vector3();
 
 export async function createWebGlAtlasRenderer({ host, onNodeSelect, onLinkSelect, onInteraction, reducedMotion = false } = {}) {
   if (!host || !supportsWebGlAtlas()) throw new Error('WebGL atlas is unavailable');
   const ForceGraph3D = await loadForceGraphVendor();
-  let field = null, selectedId = null;
+  let field = null, selectedId = null, selectedLinkId = null;
   let semanticView = { level: 'corpus', focusIds: new Set(), primaryIds: new Set(), fade: .08 };
+  let timeView = { unbounded: true, window: null, datedNodeIds: new Set(), inWindowNodeIds: new Set(), inWindowLinkKeys: new Set() };
   let programmaticCameraUntil = 0;
   let lastCameraDistance = null;
-  let ecologyModel = null, ecologyPosition = 0, ecologyRaf = 0, ecologyRunning = false;
-  const ecologyPulseById = new Map();
+  let ecologyModel = null;
+  let animationRunning = true;
+  const ecologyPulses = [];
   const graph = new ForceGraph3D(host, {
     controlType: 'orbit',
     rendererConfig: { antialias: true, alpha: true, powerPreference: 'high-performance' }
@@ -251,7 +272,7 @@ export async function createWebGlAtlasRenderer({ host, onNodeSelect, onLinkSelec
     .nodeLabel(tooltipForNode)
     .nodeThreeObject(node => makeNodeObject(node))
     .linkLabel(tooltipForLink)
-    .linkThreeObject(link => makeLinkObject(link, reducedMotion))
+    .linkThreeObject(link => makeLinkObject(link))
     .linkPositionUpdate((object, { start, end }, link) => {
       if (vectorChanged(object.userData.lastEndpoints, start, end)) rebuildArc(object, start, end, link);
       return true;
@@ -289,39 +310,65 @@ export async function createWebGlAtlasRenderer({ host, onNodeSelect, onLinkSelec
     const source = endpointId(link.source), target = endpointId(link.target);
     return focus.has(source) && focus.has(target) ? 1 : Math.max(.012, semanticView.fade * .45);
   }
+  // Time factors: only objects that carry a dated ledger row are sliced by the
+  // window. Research-context arcs and legacy-only nodes carry no date, so the
+  // window never claims anything about them.
+  function timeNodeFactor(id) {
+    if (timeView.unbounded) return 1;
+    if (!timeView.datedNodeIds.has(id)) return TIME_FACTORS.undated;
+    return timeView.inWindowNodeIds.has(id) ? TIME_FACTORS.inWindow : TIME_FACTORS.outOfWindow;
+  }
+  function timeLinkFactor(link) {
+    if (timeView.unbounded || !link.rows?.length) return 1;
+    return timeView.inWindowLinkKeys.has(link.link_key) ? TIME_FACTORS.inWindow : TIME_FACTORS.linkOutOfWindow;
+  }
   function applyHighlight(id) {
     if (!field) return;
     const activeNodes = id ? socialFieldNeighbors(field, id) : null;
+    const selectedLink = selectedLinkId ? field.linkById.get(selectedLinkId) : null;
+    const linkEndpoints = selectedLink ? [endpointId(selectedLink.source), endpointId(selectedLink.target)] : null;
     for (const node of field.nodes) {
       const hoverFactor = !activeNodes || activeNodes.has(node.id) ? 1 : .08;
-      const selected = node.id === id || semanticView.primaryIds?.has(node.id);
-      setObjectStrength(node.__threeObj, semanticNodeFactor(node.id) * hoverFactor, selected);
+      const selected = node.id === id || semanticView.primaryIds?.has(node.id) || (linkEndpoints?.includes(node.id) ?? false);
+      setObjectStrength(node.__threeObj, semanticNodeFactor(node.id) * hoverFactor * timeNodeFactor(node.id), { selected });
     }
+    // 3d-force-graph binds a custom link object at link.__lineObj (nodes use
+    // __threeObj). Reading the node property here left every arc factor inert.
     for (const link of field.links) {
       const source = endpointId(link.source), target = endpointId(link.target);
       const hoverFactor = !id || source === id || target === id ? 1 : .06;
-      setObjectStrength(link.__threeObj, semanticLinkFactor(link) * hoverFactor, false);
+      const emphasis = link.id === selectedLinkId;
+      setObjectStrength(link.__lineObj, emphasis ? 1 : semanticLinkFactor(link) * hoverFactor * timeLinkFactor(link), { emphasis });
     }
   }
   function clearEcologyLayer() {
-    for (const object of ecologyPulseById.values()) object.material?.dispose?.();
-    ecologyPulseById.clear();
+    for (const pulse of ecologyPulses) pulse.material?.dispose?.();
+    ecologyPulses.length = 0;
     ecologyLayer.clear();
   }
+  // Pulses resolve their nodes once, here, from the field's hoisted nodeById map.
+  // The per-frame loop then touches only the precomputed references.
   function buildEcologyPulses(model) {
     clearEcologyLayer();
     ecologyModel = model || null;
+    if (!field) return;
     for (const event of ecologyModel?.events ?? []) {
+      const participant = event.participant_node_id ? field.nodeById.get(event.participant_node_id) ?? null : null;
+      const surface = event.surface_node_id ? field.nodeById.get(event.surface_node_id) ?? null : null;
+      const dense = event.event_kind === 'surface_activity';
+      if (!surface || (!dense && !participant)) continue;
       const color = ECOLOGY_CHANNEL_COLORS[event.channel] ?? ECOLOGY_CHANNEL_COLORS.context;
       const material = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending });
       material.userData.baseOpacity = .92;
-      const geometry = event.event_kind === 'surface_activity' ? ecologySurfaceGeometry : ecologyPulseGeometry;
-      const pulse = new THREE.Mesh(geometry, material);
+      const pulse = new THREE.Mesh(dense ? ecologySurfaceGeometry : ecologyPulseGeometry, material);
       pulse.visible = false;
-      pulse.userData.eventId = event.id;
-      pulse.userData.channel = event.channel;
-      pulse.userData.phase = (visualHash(event.id) % 1000) / 1000;
-      ecologyPulseById.set(event.id, pulse);
+      pulse.userData.event = event;
+      pulse.userData.participant = participant;
+      pulse.userData.surface = surface;
+      pulse.userData.dense = dense;
+      pulse.userData.lift = ARC_LIFT.topology;
+      pulse.userData.denseScale = 1 + Math.min(2.4, Math.log2(Math.max(1, event.aggregate_count || 1)) * .22);
+      ecologyPulses.push(pulse);
       ecologyLayer.add(pulse);
     }
   }
@@ -332,59 +379,47 @@ export async function createWebGlAtlasRenderer({ host, onNodeSelect, onLinkSelec
     if (event.surface_node_id && focus.has(event.surface_node_id)) return 1;
     return .035;
   }
-  function updateEcologyPulses(now = performance.now()) {
+  // A pulse is drawn only for a row inside the current window; in the all-time
+  // state no window is set and no pulse is drawn. Pulses are static beads on the
+  // documented arc (no flicker, no wave), so this runs on demand, not per frame.
+  function updateEcologyPulses() {
     if (!ecologyModel || !field) return;
-    const day = ecologyPlayheadDay(ecologyModel, ecologyPosition);
-    const nodeById = new Map(field.nodes.map(node => [node.id, node]));
-    for (const event of ecologyModel.events ?? []) {
-      const pulse = ecologyPulseById.get(event.id);
-      if (!pulse) continue;
-      const temporal = ecologyTemporalIntensity(event, day);
-      const intensity = temporal * (event.weight ?? 1) * ecologyFocusFactor(event);
-      pulse.visible = intensity > .025;
-      if (!pulse.visible) continue;
-      const flicker = reducedMotion ? 1 : .72 + .28 * Math.sin(now * .004 + pulse.userData.phase * Math.PI * 2);
-      pulse.material.opacity = Math.min(.96, Math.max(.04, intensity * flicker));
-      if (event.event_kind === 'surface_activity') {
-        const node = nodeById.get(event.surface_node_id);
-        if (!node) { pulse.visible = false; continue; }
-        pulse.position.set(node.x, node.y, node.z);
-        const aggregate = Math.max(1, event.aggregate_count || 1);
-        const scale = 1 + Math.min(2.4, Math.log2(aggregate) * .22) * intensity;
-        pulse.scale.setScalar(scale);
+    const window = timeView.window;
+    for (let index = 0; index < ecologyPulses.length; index += 1) {
+      const pulse = ecologyPulses[index];
+      const event = pulse.userData.event;
+      const intensity = eventInWindow(event, window) ? (event.weight ?? 1) * ecologyFocusFactor(event) : 0;
+      const visible = intensity > .025;
+      if (pulse.visible !== visible) pulse.visible = visible;
+      if (!visible) continue;
+      const opacity = Math.min(.96, Math.max(.04, intensity));
+      if (Math.abs(pulse.material.opacity - opacity) >= OPACITY_EPSILON) pulse.material.opacity = opacity;
+      const surface = pulse.userData.surface;
+      if (pulse.userData.dense) {
+        pulse.position.set(surface.x, surface.y, surface.z);
+        pulse.scale.setScalar(1 + (pulse.userData.denseScale - 1) * intensity);
         continue;
       }
-      const participant = nodeById.get(event.participant_node_id);
-      const surface = nodeById.get(event.surface_node_id);
-      if (!participant || !surface) { pulse.visible = false; continue; }
-      const wave = reducedMotion ? .5 : .5 + .5 * Math.sin(now * .0018 + pulse.userData.phase * Math.PI * 2);
-      const point = fieldArcPoint(participant, surface, wave, 12 + Math.min(22, (event.weight ?? 1) * 18));
-      pulse.position.copy(point);
+      writeFieldArcPoint(pulse.userData.participant, surface, .5, pulse.userData.lift, pulse.position);
       pulse.scale.setScalar(.8 + intensity * 1.35);
     }
   }
-  function ecologyFrame(now) {
-    if (!ecologyRunning) return;
-    updateEcologyPulses(now);
-    ecologyRaf = requestAnimationFrame(ecologyFrame);
-  }
-  function startEcology() {
-    if (ecologyRunning) return;
-    ecologyRunning = true;
-    ecologyRaf = requestAnimationFrame(ecologyFrame);
-  }
-  function stopEcology() {
-    ecologyRunning = false;
-    if (ecologyRaf) cancelAnimationFrame(ecologyRaf);
-    ecologyRaf = 0;
-  }
-  function setEcology(model, position = ecologyPosition) {
+  function setEcology(model) {
     buildEcologyPulses(model);
-    ecologyPosition = Math.max(0, Math.min(1, Number(position) || 0));
     updateEcologyPulses();
   }
-  function setEcologyPosition(position) {
-    ecologyPosition = Math.max(0, Math.min(1, Number(position) || 0));
+  function setTimeWindow(view = {}) {
+    const window = view.window && typeof view.window === 'object' && 'unbounded' in view.window
+      ? view.window
+      : normalizeEcologyWindow(view.range ?? ecologyModel?.range, view.window ?? view);
+    timeView = {
+      unbounded: window.unbounded,
+      window,
+      datedNodeIds: view.datedNodeIds instanceof Set ? view.datedNodeIds : new Set(view.datedNodeIds || []),
+      inWindowNodeIds: view.inWindowNodeIds instanceof Set ? view.inWindowNodeIds : new Set(view.inWindowNodeIds || []),
+      inWindowLinkKeys: view.inWindowLinkKeys instanceof Set ? view.inWindowLinkKeys : new Set(view.inWindowLinkKeys || [])
+    };
+    applyHighlight(selectedId);
     updateEcologyPulses();
   }
   function cameraDistance() {
@@ -413,7 +448,7 @@ export async function createWebGlAtlasRenderer({ host, onNodeSelect, onLinkSelec
     graph.cameraPosition(next, { x: target.x, y: target.y, z: target.z }, duration);
   }
   function focus(nodeId, duration = reducedMotion ? 0 : 520, scale = null) {
-    const node = field?.nodes.find(item => item.id === nodeId);
+    const node = field?.nodeById.get(nodeId);
     if (!node || !Number.isFinite(node.x) || !Number.isFinite(node.y) || !Number.isFinite(node.z)) return;
     const currentScale = scaleForDistance(cameraDistance());
     const targetScale = scale == null ? Math.max(currentScale, 1.9) : scale;
@@ -431,16 +466,26 @@ export async function createWebGlAtlasRenderer({ host, onNodeSelect, onLinkSelec
   });
   graph.onNodeClick(node => {
     selectedId = node.id;
+    selectedLinkId = null;
     applyHighlight(selectedId);
     focus(selectedId);
     onInteraction?.('select');
     onNodeSelect?.(selectedId);
   });
+  // A click on an arc hands the whole field link (graph edge fields plus its
+  // ledger rows) to the runtime, which opens the participation row or the claim.
   graph.onLinkClick(link => {
+    selectedLinkId = link.id;
+    applyHighlight(selectedId);
     onInteraction?.('select');
-    onLinkSelect?.(link.id);
+    onLinkSelect?.(link);
   });
   graph.onBackgroundClick(() => applyHighlight(selectedId));
+  // The library builds node and link objects on its first tick after
+  // graphData(), which cannot happen while the stage is off-screen and paused.
+  // The engine stops on that same tick (cooldownTicks 0), so this is the first
+  // moment every arc factor can actually be written.
+  graph.onEngineStop(() => applyHighlight(selectedId));
   controls.addEventListener('change', () => {
     const distance = cameraDistance();
     const distanceChanged = lastCameraDistance == null || Math.abs(distance - lastCameraDistance) > .35;
@@ -458,10 +503,12 @@ export async function createWebGlAtlasRenderer({ host, onNodeSelect, onLinkSelec
   resizeObserver.observe(host);
   resize();
   let lastMode = null;
-  function render(model, { selectedNodeId = null } = {}) {
-    field = buildSocialFieldModel(model);
+  function render(model, { selectedNodeId = null, ledger = null } = {}) {
+    field = buildSocialFieldModel(model, { ledger });
+    field.linkById = new Map(field.links.map(link => [link.id, link]));
     graph.graphData({ nodes: field.nodes, links: field.links });
-    selectedId = selectedNodeId && model.nodeById.has(selectedNodeId) ? selectedNodeId : null;
+    selectedId = selectedNodeId && field.nodeById.has(selectedNodeId) ? selectedNodeId : null;
+    selectedLinkId = null;
     requestAnimationFrame(() => applyHighlight(selectedId));
     if (lastMode !== model.mode) {
       const initialPlacement = lastMode === null;
@@ -498,8 +545,17 @@ export async function createWebGlAtlasRenderer({ host, onNodeSelect, onLinkSelec
   }
 
   function select(nodeId) {
-    selectedId = nodeId && field?.nodes.some(node => node.id === nodeId) ? nodeId : null;
+    selectedId = nodeId && field?.nodeById.has(nodeId) ? nodeId : null;
+    if (nodeId) selectedLinkId = null;
     applyHighlight(selectedId);
+  }
+  function selectLink(linkId) {
+    selectedLinkId = linkId && field?.linkById.has(linkId) ? linkId : null;
+    applyHighlight(selectedId);
+    return selectedLinkId ? field.linkById.get(selectedLinkId) : null;
+  }
+  function linkById(linkId) {
+    return field?.linkById.get(linkId) ?? null;
   }
 
   function zoom(action) {
@@ -511,15 +567,26 @@ export async function createWebGlAtlasRenderer({ host, onNodeSelect, onLinkSelec
     const factor = action === 'in' ? .78 : 1.28;
     graph.cameraPosition({ x: camera.x * factor, y: camera.y * factor, z: camera.z * factor }, undefined, reducedMotion ? 0 : 240);
   }
-  function pause() { stopEcology(); graph.pauseAnimation(); }
-  function resume() { graph.resumeAnimation(); startEcology(); }
+  // pause/resume stop and restart the library's render loop (the only
+  // continuous loop the field runs). The runtime calls them when the stage is
+  // off-screen, the document is hidden, or the mode leaves the field.
+  function pause() {
+    if (!animationRunning) return;
+    animationRunning = false;
+    graph.pauseAnimation();
+  }
+  function resume() {
+    if (animationRunning) return;
+    animationRunning = true;
+    graph.resumeAnimation();
+  }
   function destroy() {
     resizeObserver.disconnect();
-    stopEcology();
     clearEcologyLayer();
     ecologyPulseGeometry.dispose();
     ecologySurfaceGeometry.dispose();
     graph.pauseAnimation();
+    animationRunning = false;
     graph.scene().remove(ecologyLayer);
     graph.scene().remove(shell);
     host.replaceChildren();
@@ -530,54 +597,42 @@ export async function createWebGlAtlasRenderer({ host, onNodeSelect, onLinkSelec
     engine: 'force3d',
     render,
     select,
+    selectLink,
+    linkById,
     focus,
     setView,
+    setTimeWindow,
     setScale,
     setEcology,
-    setEcologyPosition,
     home,
     zoom,
     resize,
     pause,
     resume,
     destroy,
+    isRunning: () => animationRunning,
     field: () => field,
     ecology: () => ecologyModel,
+    timeView: () => timeView,
     graph: () => graph
   };
 }
 
-
-function visualHash(value) {
-  let hash = 2166136261;
-  for (const ch of String(value)) {
-    hash ^= ch.charCodeAt(0);
-    hash = Math.imul(hash, 16777619);
-  }
-  return hash >>> 0;
-}
-
-function fieldArcPoint(start, end, t, lift = 18) {
-  const a = new THREE.Vector3(start.x, start.y, start.z);
-  const b = new THREE.Vector3(end.x, end.y, end.z);
-  const ra = Math.max(1, a.length()), rb = Math.max(1, b.length());
-  const ua = a.clone().normalize(), ub = b.clone().normalize();
-  const dot = THREE.MathUtils.clamp(ua.dot(ub), -.9995, .9995);
+// Writes the point at parameter t along the lifted great-circle arc between
+// two field nodes into `out`, using module scratch vectors (zero allocations).
+export function writeFieldArcPoint(start, end, t, lift, out) {
+  scratchA.set(start.x, start.y, start.z);
+  scratchB.set(end.x, end.y, end.z);
+  const ra = Math.max(1, scratchA.length()), rb = Math.max(1, scratchB.length());
+  scratchUa.copy(scratchA).normalize();
+  scratchUb.copy(scratchB).normalize();
+  const dot = THREE.MathUtils.clamp(scratchUa.dot(scratchUb), -.9995, .9995);
   const theta = Math.acos(dot), sinTheta = Math.sin(theta);
-  let point;
   if (sinTheta > .02) {
     const wa = Math.sin((1 - t) * theta) / sinTheta;
     const wb = Math.sin(t * theta) / sinTheta;
-    point = ua.multiplyScalar(wa).add(ub.multiplyScalar(wb)).normalize();
-  } else point = ua.lerp(ub, t).normalize();
+    out.copy(scratchUa).multiplyScalar(wa).addScaledVector(scratchUb, wb).normalize();
+  } else out.copy(scratchUa).lerp(scratchUb, t).normalize();
   const radial = ra * (1 - t) + rb * t + Math.sin(Math.PI * t) * lift;
-  return point.multiplyScalar(radial);
-}
-function ecologyTemporalIntensity(event, day, pulseDays = 45) {
-  if (!Number.isFinite(day)) return 0;
-  const start = event.start_day, end = event.end_day;
-  if (!Number.isFinite(start) || !Number.isFinite(end)) return 0;
-  if (start <= day && end >= day) return 1;
-  const distance = Math.min(Math.abs(day - start), Math.abs(day - end));
-  return Math.max(0, 1 - distance / Math.max(1, pulseDays));
+  return out.multiplyScalar(radial);
 }
