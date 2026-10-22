@@ -355,6 +355,22 @@ if (!explorerHtml.includes('id="network-atlas"') || !explorerHtml.includes('id="
   console.error('validate-pages failed: public explorer or route-projection contract is incomplete');
   process.exit(1);
 }
+// The record pages (actor, organization, surface, type, year) are fed by the
+// same ledger-derived model as the Timeline mode: app.js imports
+// src/visual-aperture-timeline.mjs, every page carries facts with denominators,
+// a 'Patterns in the rows' section and an Open-in-the-timeline handoff, and no
+// composite score bar or surface-factory verdict stands in for a ledger fact.
+if (!app.includes("from './src/visual-aperture-timeline.mjs'")
+  || !app.includes('function actorRecordModel') || !app.includes('function organizationRecordModel')
+  || !app.includes('function surfaceRecordModel') || !app.includes('function typeRecordModel')
+  || !app.includes('function yearRecordModel') || !app.includes('function renderType') || !app.includes('function renderYear')
+  || !app.includes('data-ap-open-timeline=') || !app.includes('Patterns in the rows') || !app.includes('Copy ledger as text')
+  || !app.includes('machine-derived from ledger; no editorial profile yet')
+  || !app.includes('globalThis.__cliffordApertureOrigin')
+  || app.includes('Structural context index') || app.includes('Factory Score') || app.includes('machine_score') || app.includes('factory_score')) {
+  console.error('validate-pages failed: the explorer record pages do not read the ledger timeline model, or a score survives on them');
+  process.exit(1);
+}
 if (atlasProjection.scheme?.schema_version !== 'atlas-projection@1'
   || !String(atlasProjection.scheme?.disposability_notice ?? '').includes('never canonical truth')
   || !Array.isArray(atlasProjection.regions) || !Array.isArray(atlasProjection.machines)) {

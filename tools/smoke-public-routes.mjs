@@ -78,6 +78,40 @@ export const ROUTE_CASES = Object.freeze([
       'Dialog public-directory exposure, 16 June 2026',
       'The 112-name roster is dense and semantically insufficient for pairwise topology.'
     ])
+  }),
+  // Record pages: a facts chip with its denominator and the first date-sorted
+  // ledger row (the oldest surface, so the sort is what is asserted).
+  Object.freeze({
+    id: 'actor-record',
+    route: 'explorer.html#actor/ben-warner',
+    expected: Object.freeze([
+      '10 documented surfaces of 54',
+      'Faculty Science officer / employee overlap, 24 January 2018'
+    ])
+  }),
+  Object.freeze({
+    id: 'organization-record',
+    route: 'explorer.html#organization/electric-twin',
+    expected: Object.freeze([
+      '18 documented surfaces of 54',
+      'Electric Twin incorporation and initial-director surface, 28 September 2023'
+    ])
+  }),
+  Object.freeze({
+    id: 'type-record',
+    route: 'explorer.html#type/employment_investment_surface',
+    expected: Object.freeze([
+      '8 surfaces of 54',
+      'Faculty Science officer / employee overlap, 24 January 2018'
+    ])
+  }),
+  Object.freeze({
+    id: 'year-record',
+    route: 'explorer.html#year/2025',
+    expected: Object.freeze([
+      '12 surfaces started of 54',
+      '28 admitted hop bases dated in the year'
+    ])
   })
 ]);
 

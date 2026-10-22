@@ -111,3 +111,30 @@ test('the corrected homepage remains in every release artifact', () => {
   assert.match(standaloneBuilder, /read\('home\.css'\)/);
   assert.ok(statSync('assets/social-card.png').size > 10_000);
 });
+
+// The explorer's record pages (actor, organization, surface, type, year) read
+// the same ledger-derived model as the aperture's Timeline mode. Every count
+// names its denominator; no composite score or factory verdict stands in for
+// a ledger fact; the only hop rendering on a record page is a listed basis.
+test('the explorer record pages are fed by the ledger timeline model', () => {
+  const explorerApp = readFileSync('app.js', 'utf8');
+  const explorerCss = readFileSync('styles.css', 'utf8');
+  assert.match(explorerApp, /^import \{[^\n]*\} from '\.\/src\/visual-aperture-timeline\.mjs';$/m);
+  assert.match(explorerApp, /function actorRecordModel/);
+  assert.match(explorerApp, /function surfaceRecordModel/);
+  assert.match(explorerApp, /Patterns in the rows/);
+  assert.match(explorerApp, /Copy ledger as text/);
+  assert.match(explorerApp, /data-ap-open-timeline=/);
+  assert.match(explorerApp, /Also documented on/);
+  assert.match(explorerApp, /machine-derived from ledger; no editorial profile yet/);
+  assert.match(explorerApp, /globalThis\.__cliffordApertureOrigin/);
+  assert.doesNotMatch(explorerApp, /Structural context index|Factory Score|machine_score|factory_score|surface_type_recurrence/);
+  assert.doesNotMatch(explorerApp, /data-ap-time-pair|<line[^>]*data-record/, 'no person-to-person line is drawn on a record page');
+  assert.doesNotMatch(explorerHtml, /Structural context index|Factory Score/);
+  assert.match(explorerCss, /\.record-facts/);
+  assert.match(explorerCss, /\.ledger-status/);
+  assert.match(explorerCss, /#summary:empty/);
+  for (const file of ['src/visual-aperture-timeline.mjs', 'src/visual-aperture-timeline-runtime.js', 'src/visual-aperture-timeline.css']) {
+    assert.ok(publicationPolicy.paths.includes(file), `publication allowlist must include ${file}`);
+  }
+});
