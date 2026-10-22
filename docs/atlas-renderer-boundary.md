@@ -34,7 +34,7 @@ The GPU adapter owns Three.js geometry, arcs, picking, orbit controls and camera
 ## Rules every renderer obeys
 
 - Every mark is one ledger row; a hop basis is a surface object (a column, a diamond, a step card), never a line between two people.
-- A dense roster (20 or more actor rows) is one contained object with its count, in every mode.
+- A dense roster (20 or more actor rows) is one contained object with its count wherever a mode draws it: one block on the Timeline, one roster container in Roster mode, and in the Explore inspector a row that reads "drawn as one contained roster object, not as an arc". A member documented on other surfaces keeps its own lane or node, and its roster row is drawn as one mark there, counted once.
 - Undated rows are listed, never placed on an axis or time-sliced.
 - Evidence class and receipt ids stay attached to every mark, column and step.
 - No composite score drives a visual channel; counts name their denominator.
