@@ -410,6 +410,101 @@ function fieldFactGrid(node, summary) {
   </div>
   <p class="aperture-muted">${summary.receipt_ids.length} distinct receipt${summary.receipt_ids.length === 1 ? '' : 's'} across these rows. Node size and halo show the documented ${isSurface ? 'participant' : 'surface'} count: a count, not a score. It creates no actor-to-actor edge, hop, or causal claim.</p>`;
 }
+// An arc is one of two documented objects, read in place without changing the
+// map scope or the address. A canonical overlay (topology) arc carries its
+// participation row(s): selecting it shows that row with surface, role, window,
+// evidence class and receipts. A research arc is an undated claim: selecting it
+// shows the claim with its sources and opens the claim dialog with its receipts.
+function fieldLinkEndpointId(value) {
+  return typeof value === 'object' && value ? value.id : value;
+}
+function selectFieldLink(link) {
+  if (!link || !state.root) return false;
+  if (link.topology_only && link.rows?.length) return inspectFieldParticipationRow(link);
+  return inspectFieldResearchEdge(link);
+}
+function fieldRecordAction(row) {
+  if (row.participant_type === 'actor') {
+    return state.actors.has(row.node_id) ? `<button type="button" data-ap-action="open-record" data-actor-id="${esc(row.node_id)}">Open public record</button>` : '';
+  }
+  const known = (state.data?.surfaceGraph?.organizations ?? []).some(item => item.id === row.node_id);
+  return known ? `<a class="aperture-secondary-button" href="#organization/${encodeURIComponent(row.node_id)}">Open public record</a>` : '';
+}
+function inspectFieldParticipationRow(link) {
+  const api = state.webgl?.eventApi;
+  const rows = link.rows;
+  const row = rows[0];
+  const window = ecologyWindow();
+  const label = fieldNodeLabel(row.node_id);
+  const inside = api?.rowInWindow ? api.rowInWindow(row, window) : true;
+  const windowNote = window.unbounded
+    ? 'the window is all time'
+    : `${inside ? 'inside' : 'outside'} the window ${esc(api?.ecologyWindowLabel?.(ecologyRange(), window) ?? '')}`;
+  const precision = row.precision === 'year' ? ' (year precision)' : row.precision === 'month' ? ' (month precision)' : '';
+  const record = fieldRecordAction(row);
+  setInspector(label, `<p class="aperture-kicker">Participation row · ${row.participant_type === 'actor' ? 'actor' : 'organization'} on a bounded surface</p><h3>${esc(label)}</h3>
+    <div class="aperture-badge-row">${evidenceBadge(row.evidence_class)}<span class="aperture-badge">${esc(row.time_label)}${precision}</span>${row.hop_eligible ? '' : '<span class="aperture-badge aperture-badge--reported">Context-only surface</span>'}</div>
+    <dl class="aperture-definition-list">
+      <div><dt>Bounded surface</dt><dd>${esc(row.surface_label)}</dd></div>
+      <div><dt>Recorded role</dt><dd>${esc(row.role)}</dd></div>
+      <div><dt>Documented window</dt><dd>${esc(row.time_label)}${precision}</dd></div>
+      <div><dt>Participation type</dt><dd>${esc(humanLabel(row.participation_type))}</dd></div>
+    </dl>
+    <p class="aperture-muted">This arc is this one participation row on a named surface; ${windowNote}. It is not a hop and says nothing about any other participant on the surface.${rows.length > 1 ? ` ${rows.length} rows share this arc; each is listed below.` : ''}</p>
+    <ul class="aperture-activity-list">${rows.map(item => fieldRowItem(item, window)).join('')}</ul>
+    ${record ? `<div class="aperture-actions">${record}</div>` : ''}`, { openOnMobile: true });
+  return true;
+}
+function fieldLegacySource(id) {
+  if (!state.webgl.sourceById) state.webgl.sourceById = new Map((state.data?.legacyGraph?.sources ?? []).map(source => [source.id, source]));
+  return state.webgl.sourceById.get(id) ?? null;
+}
+function fieldSourceItem(id) {
+  if (state.receipts.has(id)) return `<li>${receiptButtons([id], 1)}</li>`;
+  const source = fieldLegacySource(id);
+  if (!source) return `<li><span>${esc(id)}</span><small>source id not in this release's receipt graph</small></li>`;
+  return `<li><strong>${esc(humanLabel(source.source_type || 'source'))}</strong><span>${esc(source.label || id)}</span>${source.publisher ? `<small>${esc(source.publisher)}</small>` : ''}</li>`;
+}
+// Claim keys live in build/public-catalog.json (key = case::claim_id); the
+// catalog is read once, on the first research-arc selection.
+function fieldClaimKeys() {
+  if (!state.webgl.claimKeys) {
+    state.webgl.claimKeys = readData('build/public-catalog.json')
+      .then(catalog => new Map((catalog?.claims ?? []).map(item => [item.claim_id, item.key])))
+      .catch(() => new Map());
+  }
+  return state.webgl.claimKeys;
+}
+async function openFieldClaim(claimId) {
+  const keys = await fieldClaimKeys();
+  const holder = $$('[data-ap-field-claim]', state.root).find(element => element.dataset.apFieldClaim === claimId);
+  if (!holder) return false;
+  const key = keys.get(claimId);
+  if (!key) {
+    holder.innerHTML = '<p class="aperture-muted">No catalogued claim carries this edge in the public release; the sources listed above are its record.</p>';
+    return false;
+  }
+  holder.innerHTML = `<button type="button" data-open-claim="${esc(key)}">Open the claim and its receipts</button>`;
+  // The public app owns the evidence dialog: its document-level listener turns
+  // this click into openClaimDialog(key).
+  holder.firstElementChild.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+  return true;
+}
+function inspectFieldResearchEdge(link) {
+  const from = fieldLinkEndpointId(link.source), to = fieldLinkEndpointId(link.target);
+  const title = `${fieldNodeLabel(from)} · ${fieldNodeLabel(to)}`;
+  const claimId = link.id ? `clm-${link.id}` : '';
+  const sources = (link.source_ids ?? []).map(fieldSourceItem).join('');
+  const kicker = link.topology_only ? 'Documented topology edge · undated · not a hop' : 'Research-context edge · undated · not a hop';
+  setInspector(title, `<p class="aperture-kicker">${kicker}</p><h3>${esc(title)}</h3>
+    <p>${esc(link.claim || 'No claim text is recorded on this edge.')}</p>
+    <div class="aperture-badge-row">${evidenceBadge(link.evidence_class || 'context')}${link.status ? `<span class="aperture-badge">${esc(humanLabel(link.status))}</span>` : ''}${link.type ? `<span class="aperture-badge">${esc(humanLabel(link.type))}</span>` : ''}</div>
+    <p class="aperture-muted">This arc carries no dated participation row, so the time window never fades it. It establishes only the exact claim above at its displayed evidence class; it is not a hop and creates no actor-to-actor edge.</p>
+    ${sources ? `<h4>Sources on this edge</h4><ul class="aperture-activity-list">${sources}</ul>` : ''}
+    <div class="aperture-actions" data-ap-field-claim="${esc(claimId)}"><span class="aperture-muted">${claimId ? 'Looking up the catalogued claim…' : 'This edge has no claim id, so no catalogued claim can be opened.'}</span></div>`, { openOnMobile: true });
+  if (claimId) openFieldClaim(claimId);
+  return true;
+}
 function inspectApertureFieldNode(id, { select = true } = {}) {
   const renderer = state.webgl?.renderer;
   const node = renderer?.field?.()?.nodeById?.get(id);
@@ -459,7 +554,7 @@ async function renderApertureSocialField() {
         host,
         reducedMotion: fieldReducedMotion(),
         onNodeSelect: inspectApertureFieldNode,
-        onLinkSelect: () => {},
+        onLinkSelect: selectFieldLink,
         onInteraction: event => {
           if (event?.type !== 'scale' || state.mode !== 'map') return;
           state.webgl.cameraOwnsScale = true;
