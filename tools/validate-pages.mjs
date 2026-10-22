@@ -315,11 +315,18 @@ if (homeCss.includes('world-dive') || !homeCss.includes('prefers-reduced-motion'
   console.error('validate-pages failed: causal homepage styling or reduced-motion contract regressed');
   process.exit(1);
 }
-if (!explorerHtml.includes('id="network-svg"') || !explorerHtml.includes('id="view-desk"')
-  || !explorerHtml.includes('id="view-map"') || !app.includes('function semanticLevel')
-  || !app.includes('function atlasScale') || !app.includes('routeProjections')
-  || !app.includes('does not redefine the Clifford Number')) {
-  console.error('validate-pages failed: semantic topology explorer or route-projection contract is incomplete');
+// The explorer page hosts the Visual Aperture in <section id="network-atlas">
+// (the aperture mounts into it by id), the Connection desk, the shared
+// evidence dialog and the route-projection panel. The legacy SVG atlas that
+// app.js used to render into that section is retired.
+if (!explorerHtml.includes('id="network-atlas"') || !explorerHtml.includes('id="view-desk"')
+  || !explorerHtml.includes('id="view-map"') || !explorerHtml.includes('id="evidence-dialog"')
+  || !app.includes('function routeModesModel') || !app.includes('function openReceiptDialog')
+  || !app.includes('function inspectorBreadcrumbModel') || !app.includes('routeProjections')
+  || !app.includes('does not redefine the Clifford Number')
+  || app.includes('function initNetworkAtlas') || app.includes('function renderEvidenceOverview')
+  || explorerHtml.includes('id="network-svg"') || explorerHtml.includes('id="evidence-overview"')) {
+  console.error('validate-pages failed: public explorer or route-projection contract is incomplete');
   process.exit(1);
 }
 if (atlasProjection.scheme?.schema_version !== 'atlas-projection@1'
