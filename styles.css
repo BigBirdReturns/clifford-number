@@ -299,15 +299,6 @@ img, svg { display: block; max-width: 100%; }
 [data-theme="light"] .theme-toggle, [data-theme="light"] .preferences-menu > summary { border-color: var(--line-strong); background: rgba(255,255,255,.42); color: var(--ink); }
 [data-theme="light"] .inference-boundary { color: var(--muted-strong); border-color: var(--line); }
 [data-theme="light"] .inference-boundary strong { color: var(--ink); }
-[data-theme="light"] .topology-card { border-color: var(--line-strong); background: rgba(255,255,255,.56); box-shadow: 24px 28px 0 rgba(7,30,74,.06), var(--shadow); }
-[data-theme="light"] .topology-toolbar, [data-theme="light"] .topology-card figcaption { border-color: var(--line); color: var(--muted); }
-[data-theme="light"] .topology-toolbar > span:first-child { color: var(--ink); }
-[data-theme="light"] .topology-grid-line { stroke: rgba(7,30,74,.08); }
-[data-theme="light"] .network-line, [data-theme="light"] .network-line--ghost { stroke: rgba(7,30,74,.44); }
-[data-theme="light"] .network-node { stroke: var(--paper-deep); }
-[data-theme="light"] .network-node--actor, [data-theme="light"] .legend-actor { fill: var(--ink); background: var(--ink); }
-[data-theme="light"] .network-label { fill: var(--ink); }
-[data-theme="light"] .network-sublabel { fill: var(--muted); }
 
 [data-reading="large"] body { font-size: 1.16rem; line-height: 1.78; }
 [data-reading="large"] .shell-wide { width: min(1080px, calc(100% - clamp(32px, 8vw, 112px))); }
@@ -405,56 +396,6 @@ img, svg { display: block; max-width: 100%; }
 }
 .inference-boundary strong { color: rgba(255,248,233,.9); }
 
-.topology-card {
-  position: relative;
-  margin: 0;
-  overflow: hidden;
-  border: 1px solid rgba(255,255,255,.22);
-  border-radius: 2px;
-  background: rgba(3, 14, 35, .58);
-  box-shadow: 24px 28px 0 rgba(0,0,0,.11), 0 34px 80px rgba(0,0,0,.26);
-  backdrop-filter: blur(12px);
-}
-.topology-card::before {
-  content: "";
-  position: absolute;
-  z-index: 2;
-  inset: 0;
-  border: 1px solid rgba(217,162,47,.3);
-  pointer-events: none;
-}
-.topology-toolbar, .topology-card figcaption {
-  min-height: 52px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 18px;
-  padding: 0 18px;
-  border-bottom: 1px solid rgba(255,255,255,.14);
-  color: rgba(255,248,233,.72);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-}
-.topology-toolbar > span:first-child { display: inline-flex; align-items: center; gap: 9px; color: #fff8e9; }
-.topology-card figcaption { justify-content: flex-start; border-top: 1px solid rgba(255,255,255,.14); border-bottom: 0; }
-.topology-legend { display: inline-flex; align-items: center; gap: 7px; }
-.topology-legend i { width: 9px; height: 9px; display: inline-block; }
-.legend-actor { border-radius: 50%; background: #fff8e9; }
-.legend-surface { background: var(--gold); transform: rotate(45deg); }
-.legend-anchor { border-radius: 50%; background: #7ad69d; box-shadow: 0 0 0 3px rgba(122,214,157,.15); }
-.topology-grid-line { stroke: rgba(255,255,255,.075); stroke-width: 1; }
-.network-line { fill: none; stroke: rgba(255,248,233,.5); stroke-width: 2; stroke-dasharray: 7 8; animation: route-flow 8s linear infinite; }
-.network-line--ghost { stroke: rgba(255,255,255,.22); }
-@keyframes route-flow { to { stroke-dashoffset: -120; } }
-.network-node { stroke: #071e4a; stroke-width: 5; }
-.network-node--actor { fill: #fff8e9; }
-.network-node--surface { fill: var(--gold); }
-.network-node--anchor { fill: #7ad69d; filter: url(#node-glow); }
-.network-label { fill: #fff8e9; font-family: var(--font-mono); font-size: 12px; font-weight: 600; }
-.network-sublabel { fill: rgba(255,248,233,.54); font-family: var(--font-mono); font-size: 9px; text-transform: uppercase; }
-
 /* Explorer */
 main { display: block; }
 .explorer { padding-block: clamp(70px, 8vw, 112px) 110px; }
@@ -537,7 +478,7 @@ main { display: block; }
 }
 .tab-index { color: var(--gold-text); font-family: var(--font-mono); font-size: 10px; }
 
-.search-card, .panel, .surface-card, .path-card {
+.search-card, .panel, .surface-card {
   min-width: 0;
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
@@ -956,7 +897,6 @@ input::placeholder { color: color-mix(in srgb, var(--muted) 76%, transparent); }
 .case-claim--disputed, .case-claim--rejected { border-left-color: var(--danger); }
 .case-claim p { margin: 9px 0 0; }
 .case-value { color: var(--ink); font-family: var(--font-mono); font-size: 15px; font-weight: 700; }
-.case-receipt { display: flex; flex-direction: column; gap: 3px; margin-top: 12px; color: var(--muted); font-family: var(--font-mono); font-size: 10px; overflow-wrap: anywhere; }
 .beacon-panel { border-top: 4px solid var(--ink); }
 .relation-panel { border-top: 4px solid var(--gold); }
 .relation-list { display: grid; gap: 10px; margin-top: 20px; }
@@ -1092,7 +1032,6 @@ input::placeholder { color: color-mix(in srgb, var(--muted) 76%, transparent); }
 @media (max-width: 1040px) {
   .hero { grid-template-columns: 1fr; }
   .hero-copy { max-width: 780px; }
-  .topology-card { width: min(720px, 100%); }
   .desk-row { grid-template-columns: 1fr auto 1fr; }
   .desk-field--date { grid-column: 1 / 2; }
   #desk-check { grid-column: 2 / 4; }
@@ -1132,8 +1071,6 @@ input::placeholder { color: color-mix(in srgb, var(--muted) 76%, transparent); }
   .hero-dek { font-size: 17px; }
   .hero-actions { align-items: stretch; flex-direction: column; gap: 11px; }
   .primary-action, .text-action { width: 100%; justify-content: center; }
-  .topology-toolbar { align-items: flex-start; flex-direction: column; justify-content: center; gap: 2px; padding-block: 10px; }
-  .topology-card figcaption { flex-wrap: wrap; height: auto; padding-block: 12px; }
   .explorer { padding-block: 58px 80px; }
   .tabs { display: grid; grid-template-columns: 1fr 1fr; }
   .tab { min-width: 0; padding: 10px; font-size: 13px; }
@@ -1274,14 +1211,6 @@ h1, h2, h3, h4, .brand-name, .metric { font-family: var(--font-serif); }
 }
 .hero--civic .primary-action:hover { box-shadow: none; transform: translateY(-1px); }
 .hero--civic .text-action { font-size: 14px; }
-.civic-boundary {
-  top: 14px;
-  padding: clamp(22px, 2.5vw, 30px);
-  border-radius: 8px;
-  box-shadow: none;
-}
-.civic-boundary h2 { font-size: clamp(22px, 2.2vw, 29px); line-height: 1.25; }
-.civic-boundary p { font-size: 14px; line-height: 1.65; }
 .release-strip { color: var(--gold-bright); letter-spacing: 0; text-transform: none; }
 
 .section-kicker, .panel-label, .badge, .claim-status-line, .track-card-status, .track-status-line {
@@ -1326,294 +1255,10 @@ h1, h2, h3, h4, .brand-name, .metric { font-family: var(--font-serif); }
 .hotspot-boundary { margin: 22px 0 0; color: var(--muted); font-size: 13px; }
 .hotspot-boundary strong { color: var(--ink); }
 
-/* Interaction contract Section 6, "First three minutes": lives in normal
-   document flow ABOVE the atlas, never overlaying it, so it costs no map
-   real estate and cannot cover any encoded content. */
-.atlas-orientation-strip {
-  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;
-  margin: 18px 0; padding: 12px 18px; border: 1px solid var(--line-strong);
-  border-radius: 8px; background: var(--wash); color: var(--ink-2);
-  font-size: 13px; line-height: 1.5;
-}
-.atlas-orientation-strip p { margin: 0; max-width: 68ch; }
-.atlas-orientation-dismiss {
-  flex: 0 0 auto; padding: 7px 14px; border: 1px solid var(--line-strong); border-radius: 6px;
-  background: transparent; color: var(--ink); font: 700 11px/1 var(--font-mono); text-transform: uppercase; cursor: pointer;
-}
-.atlas-orientation-dismiss:hover { border-color: var(--gold); color: var(--gold-bright); }
-
-.network-atlas {
-  margin: clamp(28px, 5vw, 72px) 0;
-  padding: clamp(22px, 3vw, 42px);
-  border: 1px solid #43382d;
-  background: #090b10;
-  color: #f7f0e4;
-  box-shadow: 0 34px 90px rgba(0, 0, 0, .3);
-}
-.atlas-heading { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 32px; }
-.atlas-heading h2 { max-width: 15ch; margin: 6px 0 12px; color: #fff6e8; font-size: clamp(40px, 6vw, 82px); line-height: .92; }
-.atlas-heading p { max-width: 76ch; color: #b9b5ae; }
+/* The Visual Aperture (src/visual-aperture-*.css) owns the #network-atlas deck
+   it mounts into. This host rule only keeps the deck's remaining kickers (the
+   export and workspace panels) legible on its dark background. */
 .network-atlas .section-kicker { color: #ffb14e; }
-.atlas-mode { display: flex; gap: 6px; padding: 5px; border: 1px solid #3f4148; background: #12151c; }
-.atlas-mode-button { padding: 12px 15px; border: 0; background: transparent; color: #aaa9a6; font: 700 12px/1 var(--font-mono); cursor: pointer; }
-.atlas-mode-button.is-active { background: #f2b940; color: #12100d; }
-.atlas-stats { display: flex; flex-wrap: wrap; gap: 12px; margin: 28px 0 14px; color: #aaa9a6; font-family: var(--font-mono); font-size: 12px; text-transform: uppercase; }
-.atlas-stats strong { color: #fff4dd; font-size: 17px; }
-.atlas-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(290px, 360px); min-height: 650px; border: 1px solid #34363d; }
-.atlas-canvas-wrap { position: relative; min-width: 0; overflow: hidden; background: radial-gradient(circle at 25% 50%, rgba(255, 81, 26, .12), transparent 32%), radial-gradient(circle at 72% 35%, rgba(60, 139, 255, .1), transparent 28%), #06080d; }
-.network-svg { display: block; width: 100%; height: 650px; touch-action: none; cursor: grab; user-select: none; }
-.network-svg.is-panning { cursor: grabbing; }
-.atlas-toolbar { position: absolute; z-index: 4; top: 14px; left: 14px; display: flex; gap: 5px; }
-.atlas-toolbar button { min-width: 40px; height: 40px; padding: 0 12px; border: 1px solid #4a4d57; background: rgba(12, 15, 22, .9); color: #f8edd9; font: 700 13px/1 var(--font-mono); cursor: pointer; }
-.atlas-toolbar button:hover { border-color: #ffb14e; color: #ffb14e; }
-/* Section 2 Rebuild, "Hover = meaning": one shared screen-space chip, HTML
-   absolutely positioned over the canvas so it never affects page layout
-   (position:absolute inside the already-relative .atlas-canvas-wrap). */
-.atlas-hover-chip {
-  position: absolute; z-index: 6; max-width: min(320px, calc(100% - 32px));
-  padding: 7px 11px; border: 1px solid #ffb14e; border-radius: 6px;
-  background: rgba(9, 11, 17, .94); color: #fff4df;
-  font: 600 11px/1.4 var(--font-mono); pointer-events: none;
-}
-.atlas-legend-stack { position: absolute; z-index: 4; right: 12px; bottom: 12px; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; max-width: calc(100% - 24px); }
-.atlas-legend { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px 14px; padding: 9px 11px; background: rgba(7, 9, 14, .88); color: #bbb9b4; font: 10px/1.3 var(--font-mono); }
-.atlas-legend span { display: inline-flex; align-items: center; gap: 6px; }
-.legend-line { width: 20px; height: 2px; background: #ffd061; }
-.legend-line--primary { background: #69b7ff; }
-.legend-line--reported { background: #b48eff; }
-.legend-line--derived { background: #777c88; }
-.legend-line--corridor { background: transparent; border-top: 2px dashed #8b7bd8; }
-/* Legibility addendum rule 2: the shape legend mirrors glyphShapeFor exactly
-   -- circle/actor, square/organization, diamond/surface, ring/aggregate. */
-.legend-shape { width: 11px; height: 11px; display: inline-block; background: #d8d9dd; flex: 0 0 auto; }
-.legend-shape--circle { border-radius: 50%; }
-.legend-shape--square { border-radius: 2px; }
-.legend-shape--diamond { border-radius: 2px; transform: rotate(45deg); }
-.legend-shape--ring { border-radius: 50%; background: transparent; border: 2px solid #ffb14e; }
-.network-edge { stroke-width: 1.15; vector-effect: non-scaling-stroke; opacity: .44; }
-.network-edge--confirmed { stroke: #ffd061; opacity: .72; }
-.network-edge--primary { stroke: #69b7ff; opacity: .58; }
-.network-edge--reported { stroke: #b48eff; opacity: .48; }
-.network-edge--derived { stroke: #6a707d; opacity: .3; }
-.network-edge--topology { stroke-dasharray: 4 5; opacity: .2; }
-.network-edge-hit { stroke: transparent; stroke-width: 13; vector-effect: non-scaling-stroke; pointer-events: stroke; cursor: pointer; }
-.network-edge-hit:hover + .network-edge { opacity: 1; }
-.atlas-node { cursor: pointer; outline: none; }
-.atlas-node-core { fill: #d8d9dd; stroke: #0a0d13; stroke-width: 2; vector-effect: non-scaling-stroke; transition: filter .15s ease, stroke .15s ease; }
-.atlas-node--dialog .atlas-node-core { fill: #ff6a2d; }
-.atlas-node--policy .atlas-node-core { fill: #f4bd48; }
-.atlas-node--defense .atlas-node-core { fill: #61b8ff; }
-.atlas-node--capital .atlas-node-core { fill: #bf8bff; }
-.atlas-node--technology .atlas-node-core { fill: #5bd6bd; }
-.atlas-node--hop .atlas-node-core { fill: #f4bd48; }
-.atlas-node:hover .atlas-node-core, .atlas-node:focus-visible .atlas-node-core, .atlas-node.is-selected .atlas-node-core { stroke: #fff; filter: brightness(1.3); }
-.atlas-node.is-selected .atlas-node-core { stroke-width: 4; }
-.atlas-node-halo { fill: rgba(255, 91, 31, .12); stroke: rgba(255, 121, 48, .5); stroke-width: 1; transform-origin: center; animation: hotspot-burn 2.8s ease-in-out infinite; }
-.atlas-node--policy .atlas-node-halo { fill: rgba(244, 189, 72, .1); stroke: rgba(244, 189, 72, .4); }
-.atlas-node--defense .atlas-node-halo { fill: rgba(97, 184, 255, .1); stroke: rgba(97, 184, 255, .4); }
-.atlas-node-label { fill: #fff4df; paint-order: stroke; stroke: #080a0f; stroke-width: 4px; font: 700 16px/1 var(--font-condensed); text-anchor: middle; pointer-events: none; }
-@keyframes hotspot-burn { 0%, 100% { opacity: .45; transform: scale(.92); } 50% { opacity: 1; transform: scale(1.18); } }
-@media (prefers-reduced-motion: reduce) { .atlas-node-halo { animation: none; } }
-
-/* Representation ladder: aggregate layer, bipartite hop expansion, layer mounting */
-.atlas-layer[hidden] { display: none; }
-.atlas-node--bypass .atlas-node-core { stroke: #ffb14e; stroke-width: 3; }
-.atlas-agg { cursor: pointer; outline: none; }
-.atlas-agg-core { fill: #23262f; stroke: #ffb14e; stroke-width: 2; stroke-dasharray: 5 3; vector-effect: non-scaling-stroke; transition: filter .15s ease, stroke .15s ease; }
-.atlas-agg:hover .atlas-agg-core, .atlas-agg:focus-visible .atlas-agg-core, .atlas-agg.is-selected .atlas-agg-core { stroke: #fff; filter: brightness(1.25); }
-.atlas-agg-label { fill: #fff4df; paint-order: stroke; stroke: #080a0f; stroke-width: 4px; font: 700 15px/1 var(--font-condensed); text-anchor: middle; pointer-events: none; }
-.atlas-agg-metric { fill: #ffb14e; text-anchor: middle; paint-order: stroke; stroke: #080a0f; stroke-width: 3px; font: 800 15px/1 var(--font-mono); pointer-events: none; }
-/* Section 2 Rebuild, "every aggregate is a sentence": a quiet worded second
-   line naming the dominant evidence class, never a bare palette. */
-.atlas-agg-mix { fill: rgba(255, 244, 223, .62); text-anchor: middle; paint-order: stroke; stroke: #080a0f; stroke-width: 3px; font: 600 10px/1 var(--font-mono); pointer-events: none; }
-.atlas-hop-link { stroke: #f4bd48; stroke-width: 1.4; opacity: .75; vector-effect: non-scaling-stroke; }
-.atlas-hop-surface { fill: #f4bd48; stroke: #0a0d13; stroke-width: 2; vector-effect: non-scaling-stroke; }
-.atlas-hop-surface-label { fill: #fff4df; text-anchor: middle; paint-order: stroke; stroke: #080a0f; stroke-width: 3px; font: 700 10px/1 var(--font-mono); pointer-events: none; }
-.atlas-hop-roster { fill: #2a2d36; stroke: #ffb14e; stroke-width: 2; stroke-dasharray: 4 3; vector-effect: non-scaling-stroke; }
-.atlas-hop-roster-label { fill: #fff4df; text-anchor: middle; paint-order: stroke; stroke: #080a0f; stroke-width: 3px; font: 700 9px/1 var(--font-mono); pointer-events: none; }
-
-/* Legibility addendum rule 2: shape carries the ontology. A "ring" aggregate
-   is a hollow circle (fill nearly transparent, a visibly thicker border) so
-   it never reads as just another filled actor circle. Square/diamond
-   organization and surface glyphs share .atlas-node-core with the actor
-   circle for color-by-cluster, which already works regardless of the
-   underlying SVG tag (rect vs circle). */
-.atlas-agg-core { fill: rgba(35, 38, 47, .4); stroke: #ffb14e; stroke-width: 4; vector-effect: non-scaling-stroke; transition: filter .15s ease, stroke .15s ease; }
-.atlas-agg-arc { fill: none; stroke-width: 5; vector-effect: non-scaling-stroke; }
-.atlas-agg-arc--confirmed { stroke: #ffd061; }
-.atlas-agg-arc--primary { stroke: #69b7ff; }
-.atlas-agg-arc--reported { stroke: #b48eff; }
-.atlas-agg-arc--derived { stroke: #777c88; }
-
-/* Legibility addendum rule 4: machine-level containers. One labeled box per
-   top surface-factory organization; its docked bounded surfaces render as
-   small diamonds inside, grouped by surface type; an honest "+N more"
-   overflow line replaces silently truncating the list. */
-.atlas-container { cursor: default; }
-.atlas-container-box { fill: rgba(18, 21, 28, .92); stroke: #4a4d57; stroke-width: 1.5; vector-effect: non-scaling-stroke; }
-.atlas-container--factory .atlas-container-box { stroke: #ffb14e; }
-.atlas-container-title { fill: #fff4df; font: 700 13px/1 var(--font-condensed); pointer-events: none; }
-.atlas-container-metric { fill: #aaa9a6; font: 700 9px/1 var(--font-mono); text-transform: uppercase; pointer-events: none; }
-.atlas-container-surface { fill: #f4bd48; stroke: #0a0d13; stroke-width: 1.5; vector-effect: non-scaling-stroke; }
-.atlas-container-overflow { fill: #ffb14e; font: 700 9px/1 var(--font-mono); pointer-events: none; }
-
-/* Corridor overlay (ladder step 6): visually distinct from hop lines — dashed,
-   a different color family, and always labelled as having no Clifford Number
-   effect. Never mounted outside corpus/machine levels. Interaction contract
-   Section 2: the corridor is a clickable, hoverable object like any other —
-   the label now only renders when it wins the collision budget
-   (renderCorridorGlyph's corridor.showLabel), replacing the old
-   always-on "fly-speck" text with a legible chip. */
-.atlas-corridor { cursor: pointer; outline: none; }
-.atlas-corridor-path { fill: none; stroke: #8b7bd8; stroke-width: 2; stroke-dasharray: 11 7; opacity: .55; vector-effect: non-scaling-stroke; pointer-events: stroke; }
-.atlas-corridor:hover .atlas-corridor-path, .atlas-corridor:focus-visible .atlas-corridor-path, .atlas-corridor.is-selected .atlas-corridor-path { opacity: .9; stroke: #cabaff; }
-.atlas-corridor-chip { fill: rgba(11, 13, 20, .88); stroke: #8b7bd8; stroke-width: 1; vector-effect: non-scaling-stroke; }
-.atlas-corridor-label { fill: #e4defc; text-anchor: middle; font: 700 10px/1 var(--font-mono); pointer-events: none; }
-
-/* Region washes (ladder step 2/3, "spacing means territory"): very low
-   opacity fills behind everything else, so the corpus canvas reads as
-   labelled territory rather than a black void with rings floating in it.
-   Persist (fainter) at machine level per the contract's own instruction. */
-.atlas-layer--wash { pointer-events: none; }
-.atlas-wash-fill { fill: rgba(255, 177, 78, .05); stroke: rgba(255, 177, 78, .1); stroke-width: 1; vector-effect: non-scaling-stroke; }
-.atlas-wash-label { fill: rgba(255, 244, 223, .38); text-anchor: middle; font: 700 11px/1 var(--font-mono); text-transform: uppercase; letter-spacing: .06em; pointer-events: none; }
-.atlas-scene[data-atlas-scene-level="machine"] .atlas-wash-fill { fill: rgba(255, 177, 78, .028); stroke: rgba(255, 177, 78, .06); }
-.atlas-scene[data-atlas-scene-level="machine"] .atlas-wash-label { fill: rgba(255, 244, 223, .22); }
-
-/* Interaction contract Section 2, the "stray glyph" fix: a thin tether from
-   a bypassed individual glyph (e.g. the default Dialog selection) back to
-   its own aggregate ring, so the dot reads as "part of that ring" instead of
-   an unexplained orphan next to it. */
-.atlas-bypass-tether { stroke: rgba(255, 177, 78, .45); stroke-width: 1; stroke-dasharray: 3 4; vector-effect: non-scaling-stroke; pointer-events: none; }
-
-/* Machine-level edge bands (Section 3, "edges arrive banded, not raw"). */
-.atlas-edge-band-path { stroke: rgba(105, 183, 255, .45); fill: none; vector-effect: non-scaling-stroke; }
-.atlas-edge-band:hover .atlas-edge-band-path, .atlas-edge-band:focus-visible .atlas-edge-band-path { stroke: rgba(105, 183, 255, .85); }
-.atlas-edge-band--self .atlas-edge-band-path { fill: none; }
-.atlas-edge-band-chip { fill: rgba(11, 13, 20, .85); stroke: #4a4d57; stroke-width: 1; vector-effect: non-scaling-stroke; }
-.atlas-edge-band-count { fill: #cfe4ff; font: 700 10px/1 var(--font-mono); pointer-events: none; }
-
-/* Edge locality (Section 4): a stub is a short directional hint toward an
-   off-screen partner, never the full through-traffic line the contract
-   deletes. The "+N offscreen" chip replaces N unreadable per-edge labels. */
-.atlas-edge-stub { stroke-dasharray: 2 4; opacity: .55; }
-.atlas-offscreen-chip-bg { fill: rgba(11, 13, 20, .88); stroke: #ffb14e; stroke-width: 1; vector-effect: non-scaling-stroke; }
-.atlas-offscreen-chip-text { fill: #ffcf85; font: 700 9px/1 var(--font-mono); pointer-events: none; }
-
-/* Unmistakable selection (Section 4 Rebuild): a dedicated, high-contrast
-   treatment distinct from the ordinary bypass halo -- gold core ring plus a
-   white outer stroke -- and a filled name chip instead of the plain
-   stroke-outlined label every other glyph uses, so it survives a screenshot
-   at arm's length. */
-.atlas-node.atlas-selected .atlas-node-core, .atlas-agg.is-selected .atlas-agg-core { stroke: #ffffff; stroke-width: 3; filter: drop-shadow(0 0 6px rgba(255, 177, 78, .85)); }
-.atlas-node-halo.atlas-selected { fill: rgba(255, 177, 78, .16); stroke: #ffb14e; stroke-width: 2; animation: none; }
-.atlas-name-chip-bg { fill: rgba(11, 13, 20, .92); stroke: #ffb14e; stroke-width: 1.5; vector-effect: non-scaling-stroke; }
-.atlas-node-label--selected { fill: #fff4df; stroke: none; font-weight: 800; }
-.atlas-edge--selected { opacity: 1 !important; stroke-width: 2; }
-.atlas-layer--topology .is-selection-dim { opacity: .14; transition: opacity .2s ease; }
-.atlas-layer--topology .is-selection-adjacent { opacity: 1; transition: opacity .2s ease; }
-@media (prefers-reduced-motion: reduce) {
-  .atlas-layer--topology .is-selection-dim, .atlas-layer--topology .is-selection-adjacent { transition: none; }
-}
-
-/* Section 3 Rebuild, "the opened cluster is primary": at machine level with
-   no selection active, objects in the cluster nearest the view center stay
-   full-strength; the rest dim until the camera crosses into their
-   territory. */
-.atlas-layer--topology .is-cluster-dimmed { opacity: .3; transition: opacity .2s ease; }
-.atlas-layer--topology .is-cluster-primary { opacity: 1; transition: opacity .2s ease; }
-@media (prefers-reduced-motion: reduce) {
-  .atlas-layer--topology .is-cluster-dimmed, .atlas-layer--topology .is-cluster-primary { transition: none; }
-}
-
-/* Route subordination (ladder step 5): at the 'route' semantic level, route
-   members stay bright and everything else is strongly dimmed. Opacity only —
-   no motion — so this needs no prefers-reduced-motion exception, but any
-   transition added to it must still be disabled under reduced motion. */
-.atlas-layer--topology.is-route-active .is-route-dimmed { opacity: .16; transition: opacity .2s ease; }
-.atlas-layer--topology.is-route-active .is-route-member { opacity: 1; transition: opacity .2s ease; }
-@media (prefers-reduced-motion: reduce) {
-  .atlas-layer--topology.is-route-active .is-route-dimmed, .atlas-layer--topology.is-route-active .is-route-member { transition: none; }
-}
-
-/* Interaction contract Section 1 Rebuild, "Level cross-fade": the outgoing
-   and incoming scene both stay mounted for the fade duration, opacity only,
-   <=250ms. mountAtlasSceneWithCrossFade skips this entirely (instant swap)
-   under prefers-reduced-motion, so the transition rule only needs to exist
-   at all inside the non-reduced-motion media query. */
-.atlas-scene { opacity: 0; }
-.atlas-scene.is-visible { opacity: 1; }
-@media (prefers-reduced-motion: no-preference) {
-  .atlas-scene { transition: opacity .2s linear; }
-}
-
-/* Legibility addendum rule 7: a level/zoom change must never change page
-   height. The inspector already sits in a min-height:650px grid row
-   (.atlas-layout); pinning its own min-height here too means its content
-   swap (selection change, level change) can never shrink the row and pull
-   the rest of the page up underneath the pointer. */
-.network-inspector { min-width: 0; min-height: 650px; max-height: 650px; overflow: auto; padding: 24px; border-left: 1px solid #34363d; background: #11141b; color: #ddd8cf; }
-.network-inspector h3 { margin: 4px 0 14px; color: #fff4df; font-size: 30px; line-height: 1; }
-.network-inspector h4 { margin: 28px 0 10px; color: #ffb14e; font: 700 12px/1 var(--font-mono); text-transform: uppercase; }
-.network-node-metric { display: flex; align-items: end; gap: 9px; margin: 12px 0; }
-.network-node-metric strong { color: #ff6a2d; font: 700 48px/.8 var(--font-serif); }
-.network-node-metric span { color: #a9a7a2; font: 11px/1 var(--font-mono); text-transform: uppercase; }
-.network-profile-link { width: 100%; margin-top: 16px; border-color: #444852; background: #0b0e14; color: #f1eadc; }
-.network-edge-list { display: grid; gap: 8px; }
-.network-edge-card { padding: 13px; border: 1px solid #333741; background: #0a0d13; }
-.network-edge-card > div:first-child { display: flex; align-items: center; gap: 8px; }
-.network-edge-card strong { color: #fff1d5; font-size: 14px; }
-.network-edge-card p { margin: 9px 0; color: #b8b5ae; font-size: 12px; }
-.edge-evidence-button, .network-receipt-buttons button { border: 0; background: transparent; color: #ffbd54; font: 700 11px/1.4 var(--font-mono); text-align: left; cursor: pointer; }
-.network-receipt-buttons { display: flex; flex-wrap: wrap; gap: 7px; }
-
-.hop-spine { display: grid; grid-template-columns: minmax(260px, .7fr) 1.3fr; gap: 28px; align-items: start; padding: 30px 0 0; }
-.hop-spine h3 { margin: 5px 0 10px; color: #fff4df; font-size: 32px; }
-.hop-spine p { color: #aaa9a6; }
-.hop-spine-routes { display: grid; gap: 8px; }
-.hop-route { display: grid; grid-template-columns: 190px 1fr; gap: 16px; align-items: center; width: 100%; padding: 15px; border: 1px solid #363943; background: #11141b; color: #f6eedf; text-align: left; cursor: pointer; }
-.hop-route:hover { border-color: #f4bd48; }
-.hop-route span { display: grid; gap: 4px; }
-.hop-route strong { color: #f4bd48; font: 700 11px/1 var(--font-mono); text-transform: uppercase; }
-.hop-route small { color: #a9a7a2; font: 10px/1.45 var(--font-mono); }
-
-.evidence-overview { margin: 36px 0; }
-.evidence-overview-shell { border-top: 1px solid var(--line-strong); border-bottom: 1px solid var(--line-strong); }
-.evidence-overview-shell > summary { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px; padding: 22px 0; cursor: pointer; list-style: none; }
-.evidence-overview-shell > summary::-webkit-details-marker { display: none; }
-.evidence-overview-shell > summary h2 { margin: 4px 0 0; font-size: clamp(24px, 3vw, 34px); }
-.evidence-overview-summary { color: var(--muted); font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; white-space: nowrap; }
-.evidence-overview-shell[open] > summary { border-bottom: 1px solid var(--line); }
-.evidence-overview-body { padding: 18px 0 6px; }
-/* Legibility addendum rule 7: tab/filter/level changes swap row counts, not
-   just at the map -- pin a floor so the table body cannot collapse thinner
-   than a handful of rows and drag the rest of the page up with it. */
-.evidence-overview-table-wrap { min-height: 220px; }
-.evidence-overview-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 14px 0; }
-.evidence-overview-tabs button {
-  padding: 9px 13px; border: 1px solid var(--line); border-radius: var(--radius-sm);
-  background: var(--panel); color: var(--muted); font: 700 11px/1 var(--font-mono);
-  text-transform: uppercase; cursor: pointer;
-}
-.evidence-overview-tabs button[aria-selected="true"] { border-color: var(--gold); background: var(--gold); color: #111; }
-.eo-tab-count { color: inherit; opacity: .72; font-weight: 700; }
-.evidence-overview-table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel); }
-.evidence-overview-table { width: 100%; min-width: 760px; border-collapse: collapse; font-size: 13px; }
-.evidence-overview-table th, .evidence-overview-table td { padding: 10px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
-.evidence-overview-table thead th { background: var(--wash); font: 700 10px/1.2 var(--font-mono); text-transform: uppercase; color: var(--muted-strong); white-space: nowrap; }
-.evidence-overview-table th button { display: inline-flex; align-items: center; gap: 4px; border: 0; background: transparent; padding: 0; color: inherit; font: inherit; text-transform: inherit; cursor: pointer; }
-.evidence-overview-table th[aria-sort="ascending"], .evidence-overview-table th[aria-sort="descending"] { color: var(--gold-ink, var(--ink)); }
-.evidence-overview-row { cursor: pointer; }
-.evidence-overview-row:hover, .evidence-overview-row:focus-visible { background: var(--wash); outline: none; }
-.evidence-overview-row.is-selected { background: var(--wash-strong); box-shadow: inset 3px 0 0 var(--gold); }
-.evidence-overview-row td:first-child { font-weight: 700; white-space: nowrap; }
-.eo-boundary { color: var(--muted-strong); font-size: 12px; }
-.evidence-overview-empty { padding: 16px; }
-.atlas-hop-expansion.is-overview-highlight .atlas-hop-surface { stroke: #fff; filter: brightness(1.35); }
-.atlas-hop-expansion.is-overview-highlight .atlas-hop-roster { stroke: #fff; }
-@media (max-width: 680px) {
-  .evidence-overview-tabs button { flex: 1; min-width: 44%; }
-}
 
 .research-queue { margin: 36px 0; border-top: 1px solid var(--line-strong); border-bottom: 1px solid var(--line-strong); }
 .research-queue > summary { display: flex; justify-content: space-between; gap: 24px; padding: 22px 0; cursor: pointer; list-style: none; font-family: var(--font-mono); font-size: 12px; text-transform: uppercase; }
@@ -1652,21 +1297,9 @@ h1, h2, h3, h4, .brand-name, .metric { font-family: var(--font-serif); }
 .receipt-archive-grid button { padding: 11px; border: 1px solid var(--gold); background: transparent; color: var(--gold-ink); font: 700 11px/1 var(--font-mono); cursor: pointer; }
 
 @media (max-width: 980px) {
-  .atlas-heading, .atlas-layout, .hop-spine { grid-template-columns: 1fr; }
-  .atlas-mode { width: fit-content; }
-  .network-inspector { min-height: 0; max-height: none; border-top: 1px solid #34363d; border-left: 0; }
-  .network-svg { height: 560px; }
-  .hop-route { grid-template-columns: 160px 1fr; }
   .receipt-archive-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 680px) {
-  .network-atlas { margin-inline: -14px; padding: 18px 12px; }
-  .atlas-heading h2 { font-size: 48px; }
-  .atlas-mode { width: 100%; }
-  .atlas-mode-button { flex: 1; }
-  .network-svg { height: 490px; }
-  .atlas-legend { justify-content: flex-start; }
-  .hop-route { grid-template-columns: 1fr; }
   .case-policy-spine, .method-equation { grid-template-columns: 1fr; }
   .case-policy-spine b, .method-equation b { transform: rotate(90deg); justify-self: center; }
   .case-network-actions, .definition-grid, .boundary-grid, .receipt-archive-grid { grid-template-columns: 1fr; }
@@ -1690,7 +1323,7 @@ h1, h2, h3, h4, .brand-name, .metric { font-family: var(--font-serif); }
   .hero--civic { padding-block: 25px 34px; }
   .hero--civic h1 { font-size: clamp(36px, 10vw, 46px); }
   .hero--civic .hero-dek { font-size: 15px; }
-  .civic-search, .civic-boundary, .track-card { padding: 16px; }
+  .civic-search, .track-card { padding: 16px; }
 }
 
 /* Public research shell: Civic Record + Instrument evidence inspector */
@@ -1748,19 +1381,6 @@ h1, h2, h3, h4, .brand-name, .metric { font-family: var(--font-serif); }
   color: var(--ink);
   cursor: pointer;
 }
-.civic-boundary {
-  position: sticky;
-  top: 18px;
-  padding: clamp(24px, 3vw, 36px);
-  border-radius: 14px;
-  background: var(--ink);
-  color: var(--paper);
-  box-shadow: var(--shadow);
-}
-.civic-boundary .section-kicker { color: var(--gold-bright); }
-.civic-boundary h2 { margin: 8px 0 14px; color: inherit; font-size: clamp(24px, 2.6vw, 34px); }
-.civic-boundary p { color: inherit; }
-.civic-boundary-rule { display: grid; gap: 5px; margin-top: 22px; padding-top: 18px; border-top: 1px solid rgba(255,255,255,.26); }
 .release-strip { margin-top: 24px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,.26); color: var(--gold-bright); font-family: var(--font-mono); font-size: 10px; line-height: 1.7; text-transform: uppercase; }
 .release-delta-line { margin-top: 4px; color: #cfcac0; opacity: .85; }
 
@@ -1921,7 +1541,6 @@ h1, h2, h3, h4, .brand-name, .metric { font-family: var(--font-serif); }
 
 @media (max-width: 1040px) {
   .hero--civic { grid-template-columns: 1fr; }
-  .civic-boundary { position: static; }
   .track-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
@@ -1937,7 +1556,6 @@ h1, h2, h3, h4, .brand-name, .metric { font-family: var(--font-serif); }
   .hero--civic h1 { font-size: clamp(38px, 11vw, 52px); }
   .hero--civic .hero-dek { font-size: 16px; }
   .civic-search { padding: 14px; }
-  .civic-boundary { padding: 22px; }
   .track-directory { padding-top: 42px; }
   .track-grid { grid-template-columns: minmax(0, 1fr); }
   .track-card { padding: 18px; }
@@ -1984,7 +1602,7 @@ h1, h2, h3, h4, .brand-name, .metric { font-family: var(--font-serif); }
 }
 .hero--civic h1 em { color: inherit; font-style: normal; font-weight: 700; }
 .hero--civic .hero-dek { max-width: 61ch; font-size: 16px; line-height: 1.65; }
-.civic-search, .civic-boundary, .track-card, .panel, .receipt-inspector { border-radius: 8px; box-shadow: none; }
+.civic-search, .track-card, .panel, .receipt-inspector { border-radius: 8px; box-shadow: none; }
 .track-card { border-color: var(--line-strong); }
 .track-card h3 { font-family: var(--font-serif); font-size: 18px; }
 .track-card p { font-size: 13px; line-height: 1.58; }
@@ -2001,14 +1619,13 @@ h1, h2, h3, h4, .brand-name, .metric { font-family: var(--font-serif); }
   .hero--civic { padding-block: 25px 34px; }
   .hero--civic h1 { font-size: clamp(36px, 10vw, 46px); }
   .hero--civic .hero-dek { font-size: 15px; }
-  .civic-search, .civic-boundary, .track-card { padding: 16px; }
+  .civic-search, .track-card { padding: 16px; }
 }
 
 @media print {
   body { background: #fff; color: #000; }
   .site-header, .view-nav, .search-card, .site-footer, .copy-link { display: none !important; }
 }
-
 
 .public-data-boundary {
   display: grid; grid-template-columns: minmax(190px,.75fr) minmax(260px,1fr) minmax(320px,1.5fr);
@@ -2019,8 +1636,8 @@ h1, h2, h3, h4, .brand-name, .metric { font-family: var(--font-serif); }
 .public-data-boundary p { margin: 0; }
 .public-data-boundary > div p + p { margin-top: 5px; }
 .public-data-boundary strong { color: var(--ink-strong, currentColor); }
-.public-data-boundary span { font-family: var(--mono); font-size: .86em; }
-.public-data-boundary-contract { color: var(--muted); font: .78rem/1.55 var(--mono); }
+.public-data-boundary span { font-family: var(--font-mono); font-size: .86em; }
+.public-data-boundary-contract { color: var(--muted); font: .78rem/1.55 var(--font-mono); }
 .public-data-boundary[data-mixed="false"] { border-left-color: var(--mint, #62d3bd); }
 @media (max-width: 900px) { .public-data-boundary { grid-template-columns: 1fr 1fr; } .public-data-boundary-contract { grid-column: 1 / -1; } }
 @media (max-width: 620px) { .public-data-boundary { grid-template-columns: 1fr; } .public-data-boundary-contract { grid-column: auto; } }
