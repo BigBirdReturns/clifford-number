@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 import { readJson } from '../tools/lib/ledger.mjs';
 import {
   buildReservoir,
@@ -73,6 +74,33 @@ assert.equal(disposition.filter((row) => row.derived.kind === 'github_pull_reque
 assert.ok(disposition.every((row) => row.dispositions.at(-1).state === 'held' && row.next_examination === null));
 assert.ok(disposition.filter((row) => row.derived.kind !== 'view_provenance').every((row) => row.locators.some((l) => l.kind === 'github_item')));
 assert.equal(disposition.filter((row) => row.derived.kind === 'view_provenance').length, 1, 'the view carries one provenance row naming the native ledger');
+
+// Regenerating the real ledgers must preserve the published snapshot after
+// the working branch is pruned, including the provenance link and hashes.
+const dispositionFile = 'data/reservoir/views/disposition-2026-10-12.view.jsonl';
+const publishedView = fs.readFileSync(dispositionFile, 'utf8');
+const publishedRows = publishedView.trim().split('\n').map((line) => JSON.parse(line));
+const publishedLocators = publishedRows.flatMap((row) => row.locators);
+assert.ok(publishedLocators.filter((l) => l.kind === 'git_path').every((l) => l.ref === 'v2.1.0'));
+assert.ok(publishedRows[0].locators.some((l) => l.kind === 'url' && l.url === 'https://github.com/BigBirdReturns/clifford-number/tree/v2.1.0'));
+assert.ok(publishedLocators.filter((l) => l.kind === 'git_branch').every((l) => l.branch === 'archive/retrospective-2026-10-12'));
+assert.ok(publishedLocators.filter((l) => l.kind === 'git_path').every((l) => !/[\s*]/u.test(l.path)), 'ledger prose and wildcard groups must not become literal file links');
+assert.ok(publishedLocators.some((l) => l.kind === 'text' && l.text === 'open on GitHub (no content moved)'));
+assert.ok(publishedLocators.some((l) => l.kind === 'git_path' && l.path === 'docs/milestones/' && l.note.includes('docs/milestones/m04c-*.md (5 files)')), 'a grouped-file locator opens its folder and retains the exact ledger description');
+assert.ok(publishedLocators.some((l) => l.kind === 'git_path' && l.path === 'retrospective/2026-10-12/github/issue-bodies.jsonl' && l.note.includes('verbatim copies:')));
+const generatedViewDir = fs.mkdtempSync(path.join(os.tmpdir(), 'reservoir-disposition-'));
+try {
+  const generatedView = path.join(generatedViewDir, 'disposition.view.jsonl');
+  execFileSync(process.execPath, [
+    'tools/reservoir-view-from-disposition.mjs',
+    '--issues', 'retrospective/2026-10-12/disposition/issue-disposition.tsv',
+    '--prs', 'retrospective/2026-10-12/disposition/pr-disposition.tsv',
+    '--out', generatedView,
+  ]);
+  assert.equal(fs.readFileSync(generatedView, 'utf8'), publishedView, 'the generator default must reproduce the checked-in release view');
+} finally {
+  fs.rmSync(generatedViewDir, { recursive: true, force: true });
+}
 
 // 5. A disproved explanation must keep evidence against it; a narrowed one must say what narrowed it.
 const base = JSON.parse(JSON.stringify(canonicalRows[0]));

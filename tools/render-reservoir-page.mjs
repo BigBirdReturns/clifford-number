@@ -232,8 +232,7 @@ footer { margin-top: 28px; border-top: 1px solid var(--line); padding-top: 12px;
     var repo = l.repo && /^[\\w.-]+\\/[\\w.-]+$/.test(l.repo) ? l.repo : null;
     if (l.kind === 'url' || l.kind === 'conversation') return typeof l.url === 'string' && (l.url.startsWith('https://') || l.url.startsWith('http://')) ? l.url : null;
     if (l.kind === 'github_item' && repo) return 'https://github.com/' + repo + '/issues/' + l.number;
-    if (l.kind === 'git_path' && repo) return 'https://github.com/' + repo + '/blob/' + (l.ref || 'main') + '/' + l.path;
-    if (l.kind === 'git_path' && !l.repo) return 'https://github.com/BigBirdReturns/clifford-number/blob/main/' + l.path;
+    if (l.kind === 'git_path' && (repo || !l.repo)) return 'https://github.com/' + (repo || 'BigBirdReturns/clifford-number') + (l.path.endsWith('/') ? '/tree/' : '/blob/') + (l.ref || 'main') + '/' + l.path;
     if (l.kind === 'git_branch' && repo) return 'https://github.com/' + repo + '/tree/' + l.branch;
     return null;
   }

@@ -194,14 +194,34 @@ generate its view from whatever it already keeps. Views checked in under
 
 The first such adapter is `tools/reservoir-view-from-disposition.mjs`. It
 reads the 12 October 2026 Git disposition ledger, the owner's record of
-where every one of the 2,069 pull requests and 599 issues lives now, from
-its native custody on branch `audit/clifford-operating-cut-20261012`, and
+where every one of the 2,069 pull requests and 599 issues was recorded, from
+the published `v2.1.0` tag, and
 writes `data/reservoir/views/disposition-2026-10-12.view.jsonl`: one row
 per issue, with its GitHub item and the path its substance lives at
 (archive, head or bundle), and one row per pull request whose research
 content is not on main. The ledger itself is not copied; its hashes are
 recorded in the view's provenance row and in
 `data/reservoir/sources/operating-cut-2026-10-12/provenance.json`.
+
+Regenerate the view from the repository root:
+
+```bash
+npm run reservoir:view-disposition -- \
+  --issues retrospective/2026-10-12/disposition/issue-disposition.tsv \
+  --prs retrospective/2026-10-12/disposition/pr-disposition.tsv
+npm run build:reservoir
+npm run validate:reservoir
+```
+
+The adapter defaults to `v2.1.0`; `--ref <tag-or-branch>` selects another
+snapshot. The tag preserves the audit branch's exact commit, so the view's
+links survive branch pruning. Bundle-only research continues to point to
+`archive/retrospective-2026-10-12`. Original source provenance and quoted
+branch names remain historical records.
+
+Grouped-file descriptions open their containing folder and retain the exact
+pattern and file count in the locator note. Custody prose such as “open on
+GitHub (no content moved)” stays text alongside the GitHub item link.
 
 A path cited by more than ten records is a **hub**: the build lists it
 once with everything that meets there instead of expanding it into every

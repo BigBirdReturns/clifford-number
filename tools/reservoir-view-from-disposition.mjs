@@ -4,7 +4,7 @@
 //
 //   node tools/reservoir-view-from-disposition.mjs \
 //     --issues <issue-disposition.tsv> [--prs <pr-disposition.tsv>] \
-//     [--ref audit/clifford-operating-cut-20261012] [--out data/reservoir/views/disposition-2026-10-12.view.jsonl]
+//     [--ref v2.1.0] [--out data/reservoir/views/disposition-2026-10-12.view.jsonl]
 //
 // Every issue becomes one view row: its title is the question-bearing text,
 // its locators are the GitHub item and the path where its substance lives
@@ -19,7 +19,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 
 const args = process.argv.slice(2);
-const opt = { issues: null, prs: null, ref: 'audit/clifford-operating-cut-20261012', out: 'data/reservoir/views/disposition-2026-10-12.view.jsonl', project: 'clifford-number', repo: 'BigBirdReturns/clifford-number' };
+const opt = { issues: null, prs: null, ref: 'v2.1.0', out: 'data/reservoir/views/disposition-2026-10-12.view.jsonl', project: 'clifford-number', repo: 'BigBirdReturns/clifford-number' };
 for (let i = 0; i < args.length; i += 1) {
   const key = args[i].replace(/^--/u, '');
   if (!(key in opt)) {
@@ -29,7 +29,7 @@ for (let i = 0; i < args.length; i += 1) {
   opt[key] = args[++i];
 }
 if (!opt.issues) {
-  console.error('usage: --issues <issue-disposition.tsv> [--prs <pr-disposition.tsv>] [--ref <branch>] [--out <file>]');
+  console.error('usage: --issues <issue-disposition.tsv> [--prs <pr-disposition.tsv>] [--ref <tag-or-branch>] [--out <file>]');
   process.exit(2);
 }
 
@@ -50,7 +50,18 @@ const prs = prsBuffer ? parseTsv(prsBuffer.toString('utf8')) : [];
 
 const RESEARCH_DISPOSITIONS = new Set(['landed', 'archived', 'partly-archived', 'bundle-only', 'merged-elsewhere']);
 const rows = [];
-const ledgerLocator = (relativePath, note) => ({ kind: 'git_path', repo: opt.repo, ref: opt.ref, path: relativePath, ...(note ? { note } : {}) });
+const ledgerLocator = (location, note) => {
+  // The ledger also names grouped files and describes custody in prose.
+  // Keep that wording, but only turn repository paths into file links.
+  const relativePath = location.replace(/^(?:related|verbatim copies):\s*/u, '').replace(/ \(\d+ files\)$/u, '');
+  if (!relativePath.includes('/') || /\s/u.test(relativePath)) {
+    return { kind: 'text', text: location, ...(note ? { note } : {}) };
+  }
+  const wildcard = relativePath.indexOf('*');
+  const target = wildcard < 0 ? relativePath : relativePath.slice(0, relativePath.lastIndexOf('/', wildcard) + 1);
+  const notes = [note, target !== location ? `ledger location: ${location}` : null].filter(Boolean);
+  return { kind: 'git_path', repo: opt.repo, ref: opt.ref, path: target, ...(notes.length ? { note: notes.join('; ') } : {}) };
+};
 
 for (const issue of issues) {
   const number = Number(issue.number);
@@ -98,7 +109,7 @@ const provenance = {
   kind: 'view_provenance',
   text: `View over the 12 October 2026 disposition ledger: ${issues.length} issues and ${prs.length} pull requests read; ${rows.length} rows emitted. Pull requests by disposition: ${Object.entries(prCounts).sort().map(([k, v]) => `${k} ${v}`).join(', ') || 'not read'}. Only research-bearing dispositions are emitted for pull requests.`,
   locators: [
-    { kind: 'git_branch', repo: opt.repo, branch: opt.ref, note: 'the ledger stays in its native custody on this branch' },
+    { kind: 'url', url: `https://github.com/${opt.repo}/tree/${opt.ref}`, note: `ledger snapshot at ${opt.ref}` },
     ledgerLocator('retrospective/2026-10-12/disposition/issue-disposition.tsv', `sha256 ${sha(issuesBuffer)}`),
     ...(prsBuffer ? [ledgerLocator('retrospective/2026-10-12/disposition/pr-disposition.tsv', `sha256 ${sha(prsBuffer)}`)] : []),
     ledgerLocator('retrospective/2026-10-12/disposition/SUMMARY.md', 'how the ledger was computed'),
