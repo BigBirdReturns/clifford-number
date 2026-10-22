@@ -1,4 +1,5 @@
 function handleAction(button) {
+  if (handleTimelineAction(button)) return;
   if (handleExportAction(button)) return;
   if (handleWorkspaceAction(button)) return;
   const action = button.dataset.apAction;
@@ -86,6 +87,7 @@ function handleClick(event) {
   if (!target) return;
   const receipt = target.closest('[data-open-receipt]');
   if (receipt) return;
+  if (handleTimelineClick(event)) return;
   const modeButton = target.closest('[data-ap-mode]');
   if (modeButton) { setMode(modeButton.dataset.apMode); return; }
   const action = target.closest('[data-ap-action]');
@@ -118,6 +120,7 @@ function handleClick(event) {
 }
 
 function handleInput(event) {
+  if (handleTimelineInput(event)) return;
   const target = event.target;
   if (target.id === 'ap-ecology-time') { setEcologyClockPosition(Number(target.value) / 1000, { pause: true }); return; }
   if (target.id === 'ap-map-scale') { setMapScale(target.value, { history: 'replace' }); return; }
@@ -156,6 +159,7 @@ function openMapSearch(value) {
 }
 
 function handleChange(event) {
+  if (handleTimelineChange(event)) return;
   const target = event.target;
   if (target.id === 'ap-map-search') { openMapSearch(target.value); return; }
   if (target.id === 'ap-map-cluster') { selectCluster(target.value, { advance: false }); return; }
@@ -178,6 +182,7 @@ function handleChange(event) {
 }
 
 function handleKeydown(event) {
+  if (handleTimelineKeydown(event)) return;
   const target = event.target instanceof Element ? event.target : event.target?.parentElement;
   if (!target) return;
   if (target.id === 'ap-map-search' && event.key === 'Enter') {

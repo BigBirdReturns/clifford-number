@@ -24,6 +24,10 @@ function findMapSearchNode(value) {
 
 function renderModeControls() {
   const controls = $('#aperture-mode-controls', state.root);
+  if (state.mode === 'timeline') {
+    controls.innerHTML = timelineControlsMarkup();
+    return;
+  }
   if (state.mode === 'map') {
     const clusters = summarizeClusters(state.data.surfaceGraph);
     ensureMapSelection();
@@ -64,7 +68,7 @@ function renderModeControls() {
 }
 
 function setMode(mode, { renderControls = true, history = 'push' } = {}) {
-  if (!['map', 'route', 'surface'].includes(mode)) return;
+  if (!['timeline', 'map', 'route', 'surface'].includes(mode)) return;
   state.mode = mode;
   state.root.dataset.apertureMode = mode;
   for (const button of $$('[data-ap-mode]', state.root)) {

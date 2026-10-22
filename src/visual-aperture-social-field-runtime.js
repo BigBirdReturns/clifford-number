@@ -225,6 +225,9 @@ async function renderApertureSocialField() {
         }
       });
     }
+    // Timeline-mode deactivation guard: the mode may have changed while the
+    // renderer loaded; never activate the field over a non-map stage.
+    if (state.mode !== 'map') return;
     if (!state.webgl.rendered) {
       state.webgl.renderer.render(state.webgl.model);
       state.webgl.rendered = true;

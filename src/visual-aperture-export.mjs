@@ -8,8 +8,11 @@ export const APERTURE_EXPORT_SOURCE_ARTIFACTS = Object.freeze([
   'build/receipt-graph.json'
 ]);
 
-const MODES = new Set(['map', 'route', 'surface']);
+const MODES = new Set(['timeline', 'map', 'route', 'surface']);
 const LEVELS = new Set(['corpus', 'machine', 'surface', 'evidence']);
+const TIMELINE_BY = new Set(['actor', 'organization', 'type']);
+const TIMELINE_HOP = new Set(['all', 'hop', 'context']);
+const TIMELINE_BY_LABELS = Object.freeze({ actor: 'People', organization: 'Organizations', type: 'Surface types' });
 
 function clean(value, maximum = 500) {
   return String(value ?? '').replace(/\s+/g, ' ').trim().slice(0, maximum);
@@ -195,8 +198,133 @@ function surfaceCaption(view) {
   return `This exact Clifford Number surface view shows ${view.visible_participants.length} of ${view.total_actors} documented actors on ${view.surface.surface_label}; ${view.hidden_by_budget} eligible actors are held by the bracket budget and ${view.filtered_out} are outside the current filters. The bounded container creates no participant-to-participant adjacency.${displaySentence(view.display)}`;
 }
 
+function timelineCaption(view) {
+  const rows = view.counts.rows_in_view;
+  const lanes = view.lanes.length;
+  const columns = view.hop_days.length;
+  const noun = view.by === 'type' ? 'documented surface rows' : 'documented participation rows';
+  const denseText = view.dense.length
+    ? ` ${view.dense.length} dense roster${view.dense.length === 1 ? '' : 's'} (${view.dense.map(item => `${item.surface_label}, ${item.listed_count} names`).join('; ')}) stay${view.dense.length === 1 ? 's' : ''} one contained object each, with no per-person marks.`
+    : '';
+  const windowText = view.window.active
+    ? ` ${view.counts.in_window} of ${rows} rows fall inside the marked window ${view.window.from} → ${view.window.to}; the rest are dimmed, never removed.`
+    : '';
+  return `This exact Clifford Number timeline shows ${rows} of ${view.counts.total_rows} ${noun} on ${lanes} lane${lanes === 1 ? '' : 's'} (${TIMELINE_BY_LABELS[view.by]}) between ${view.domain.from} and ${view.domain.to}. ${columns} surface-day${columns === 1 ? '' : 's'} carr${columns === 1 ? 'ies' : 'y'} admitted hop bases and ${columns === 1 ? 'is' : 'are'} drawn as a column on the surface, never as a line between people.${denseText}${windowText}${displaySentence(view.display)}`;
+}
+
 function appendBoundary(caption, url) {
   return `${caption} ${APERTURE_EXPORT_BOUNDARY} Exact view: ${url}`;
+}
+
+function timelineRow(value) {
+  const hopEligible = bool(value?.hop_eligible);
+  return {
+    key: clean(value?.key, 400),
+    surface_id: clean(value?.surface_id, 200),
+    surface_label: clean(value?.surface_label || value?.surface_id, 500),
+    surface_type: clean(value?.surface_type || 'unknown_type', 200),
+    participant_type: clean(value?.participant_type || 'actor', 40),
+    entity_id: clean(value?.entity_id, 200),
+    entity_label: clean(value?.entity_label || value?.entity_id, 300),
+    role: clean(value?.role || 'not recorded', 500),
+    participation_type: clean(value?.participation_type || 'not_recorded', 200),
+    time_start: nullable(value?.time_start, 20),
+    time_end: nullable(value?.time_end, 20),
+    precision: clean(value?.precision || 'day', 20),
+    kind: clean(value?.kind || 'day', 20),
+    window_label: clean(value?.window_label || value?.time_start || 'not dated', 80),
+    evidence_class: clean(value?.evidence_class || 'open', 80),
+    evidence_recorded: value?.evidence_recorded !== false,
+    hop_eligible: hopEligible,
+    hop_refusal_reason: hopEligible ? null : nullable(value?.hop_refusal_reason, 200),
+    hop_basis_count: integer(value?.hop_basis_count),
+    in_window: value?.in_window === null || value?.in_window === undefined ? null : bool(value.in_window),
+    lane_id: nullable(value?.lane_id, 200),
+    dense: bool(value?.dense),
+    rendering: clean(value?.rendering || 'mark', 80),
+    receipt_ids: strings(value?.receipt_ids, 200)
+  };
+}
+
+function timelineView(input) {
+  const by = TIMELINE_BY.has(input?.by) ? input.by : 'actor';
+  const lanes = (Array.isArray(input?.lanes) ? input.lanes : []).map(item => ({
+    id: clean(item?.id, 200),
+    kind: clean(item?.kind || 'entity', 40),
+    label: clean(item?.label || item?.id, 300),
+    row_count: integer(item?.row_count),
+    drawn_count: integer(item?.drawn_count)
+  }));
+  const rows = (Array.isArray(input?.rows) ? input.rows : []).map(timelineRow);
+  const hopDays = (Array.isArray(input?.hop_days) ? input.hop_days : []).map(item => ({
+    day: nullable(item?.day, 20),
+    surface_id: clean(item?.surface_id, 200),
+    surface_label: clean(item?.surface_label || item?.surface_id, 500),
+    basis_count: integer(item?.basis_count),
+    total_basis_count: integer(item?.total_basis_count, integer(item?.basis_count)),
+    actor_ids: strings(item?.actor_ids, 200),
+    lane_ids: strings(item?.lane_ids, 200),
+    receipt_ids: strings(item?.receipt_ids, 200),
+    rendering: 'surface_day_column_segments_on_participant_lanes',
+    graph_effect: 'none'
+  }));
+  const dense = (Array.isArray(input?.dense) ? input.dense : []).map(item => ({
+    surface_id: clean(item?.surface_id, 200),
+    surface_label: clean(item?.surface_label || item?.surface_id, 500),
+    day: nullable(item?.day, 20),
+    listed_count: integer(item?.listed_count),
+    row_count: integer(item?.row_count),
+    visible_row_count: integer(item?.visible_row_count, integer(item?.row_count)),
+    refusal_reason: nullable(item?.refusal_reason, 200),
+    elsewhere: (Array.isArray(item?.elsewhere) ? item.elsewhere : []).map(entry => ({ actor_id: clean(entry?.actor_id, 200), other_surface_count: integer(entry?.other_surface_count) })),
+    nowhere_else_count: integer(item?.nowhere_else_count),
+    receipt_ids: strings(item?.receipt_ids, 200),
+    rendering: 'one_contained_object_no_per_person_marks'
+  }));
+  const countsInput = input?.counts ?? {};
+  const counts = {
+    total_rows: integer(countsInput.total_rows, rows.length),
+    candidate_rows: integer(countsInput.candidate_rows, rows.length),
+    rows_in_view: integer(countsInput.rows_in_view, rows.length),
+    in_window: integer(countsInput.in_window, integer(countsInput.rows_in_view, rows.length)),
+    filtered: integer(countsInput.filtered),
+    pre_domain: integer(countsInput.pre_domain),
+    post_domain: integer(countsInput.post_domain),
+    undated: integer(countsInput.undated),
+    marks: integer(countsInput.marks),
+    columns: integer(countsInput.columns, hopDays.length),
+    blocks: integer(countsInput.blocks, dense.length),
+    aggregated_rows: integer(countsInput.aggregated_rows)
+  };
+  const table = {
+    columns: ['Date(s)', 'Who', 'Surface', 'Role', 'Type', 'Evidence', 'Hop', 'Receipt IDs'],
+    rows: rows.map(row => [
+      row.window_label,
+      row.entity_label,
+      row.surface_label,
+      row.role,
+      row.surface_type,
+      row.evidence_recorded ? row.evidence_class : 'not recorded',
+      row.hop_eligible ? 'hop-eligible' : `context-only${row.hop_refusal_reason ? ` (${row.hop_refusal_reason})` : ''}`,
+      row.receipt_ids.join(', ')
+    ])
+  };
+  return {
+    by,
+    domain: { from: nullable(input?.domain?.from, 20), to: nullable(input?.domain?.to, 20), auto: input?.domain?.auto !== false },
+    window: { from: nullable(input?.window?.from, 20), to: nullable(input?.window?.to, 20), active: bool(input?.window?.active) },
+    filters: {
+      evidence_floor: clean(input?.filters?.evidence_floor || 'open', 80),
+      hop: TIMELINE_HOP.has(input?.filters?.hop) ? input.filters.hop : 'all'
+    },
+    counts,
+    lanes,
+    rows,
+    hop_days: hopDays,
+    dense,
+    display: displayMetadata(input?.display, table.rows.length),
+    table
+  };
 }
 
 function mapView(input) {
@@ -344,24 +472,30 @@ function surfaceView(input) {
 
 export function buildApertureExportPacket(input) {
   const mode = clean(input?.mode, 20);
-  if (!MODES.has(mode)) throw new Error('mode must be map, route, or surface');
+  if (!MODES.has(mode)) throw new Error('mode must be timeline, map, route, or surface');
   const url = exactUrl(input?.exactViewUrl);
-  const view = mode === 'map'
-    ? mapView(input?.view)
-    : mode === 'route'
-      ? routeView(input?.view)
-      : surfaceView(input?.view);
-  const baseCaption = mode === 'map' ? mapCaption(view) : mode === 'route' ? routeCaption(view) : surfaceCaption(view);
-  const receiptIds = mode === 'map'
-    ? strings([...(view.surface?.receipt_ids ?? []), ...view.participants.flatMap(item => item.receipt_ids)], 200)
-    : mode === 'route'
-      ? strings(view.path?.hops.flatMap(hop => hop.surface.receipt_ids) ?? [], 200)
-      : strings([...(view.surface.receipt_ids ?? []), ...view.visible_participants.flatMap(item => item.receipt_ids)], 200);
-  const title = mode === 'map'
-    ? `Clifford Number map · ${view.level}`
-    : mode === 'route'
-      ? `Clifford Number route · ${view.from.actor_label} → ${view.to.actor_label}`
-      : `Clifford Number surface · ${view.surface.surface_label}`;
+  const view = mode === 'timeline'
+    ? timelineView(input?.view)
+    : mode === 'map'
+      ? mapView(input?.view)
+      : mode === 'route'
+        ? routeView(input?.view)
+        : surfaceView(input?.view);
+  const baseCaption = mode === 'timeline' ? timelineCaption(view) : mode === 'map' ? mapCaption(view) : mode === 'route' ? routeCaption(view) : surfaceCaption(view);
+  const receiptIds = mode === 'timeline'
+    ? strings([...view.rows.flatMap(item => item.receipt_ids), ...view.dense.flatMap(item => item.receipt_ids)], 200)
+    : mode === 'map'
+      ? strings([...(view.surface?.receipt_ids ?? []), ...view.participants.flatMap(item => item.receipt_ids)], 200)
+      : mode === 'route'
+        ? strings(view.path?.hops.flatMap(hop => hop.surface.receipt_ids) ?? [], 200)
+        : strings([...(view.surface.receipt_ids ?? []), ...view.visible_participants.flatMap(item => item.receipt_ids)], 200);
+  const title = mode === 'timeline'
+    ? `Clifford Number timeline · ${TIMELINE_BY_LABELS[view.by]} · ${view.domain.from ?? '…'} → ${view.domain.to ?? '…'}`
+    : mode === 'map'
+      ? `Clifford Number map · ${view.level}`
+      : mode === 'route'
+        ? `Clifford Number route · ${view.from.actor_label} → ${view.to.actor_label}`
+        : `Clifford Number surface · ${view.surface.surface_label}`;
   return {
     schema_version: APERTURE_EXPORT_SCHEMA_VERSION,
     generated_at: generatedAt(input?.generatedAt),
@@ -378,11 +512,13 @@ export function buildApertureExportPacket(input) {
 
 export function apertureExportFilename(packet) {
   const mode = clean(packet?.mode, 20) || 'view';
-  const subject = mode === 'route'
-    ? `${packet?.view?.from?.actor_label || 'from'}-to-${packet?.view?.to?.actor_label || 'to'}`
-    : mode === 'surface'
-      ? packet?.view?.surface?.surface_label || 'surface'
-      : packet?.view?.level || 'map';
+  const subject = mode === 'timeline'
+    ? `${packet?.view?.by || 'actor'}-${packet?.view?.domain?.from || 'start'}-${packet?.view?.domain?.to || 'end'}`
+    : mode === 'route'
+      ? `${packet?.view?.from?.actor_label || 'from'}-to-${packet?.view?.to?.actor_label || 'to'}`
+      : mode === 'surface'
+        ? packet?.view?.surface?.surface_label || 'surface'
+        : packet?.view?.level || 'map';
   const slug = clean(subject, 120).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'view';
   return `clifford-${mode}-${slug}.json`;
 }

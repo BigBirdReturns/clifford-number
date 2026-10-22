@@ -47,7 +47,8 @@ function apertureSnapshot() {
       budget: state.surface.budget,
       pins: [...state.surface.pinned].sort(),
       actorId: state.surface.selectedActorId
-    }
+    },
+    timeline: timelineSnapshot()
   };
 }
 
@@ -62,7 +63,7 @@ function normalizedSemanticLevel(scale, requested) {
 }
 
 function applyApertureSnapshot(snapshot) {
-  if (!snapshot || !['map', 'route', 'surface'].includes(snapshot.mode)) return false;
+  if (!snapshot || !['timeline', 'map', 'route', 'surface'].includes(snapshot.mode)) return false;
   const clusterIds = new Set(summarizeClusters(state.data.surfaceGraph).map(cluster => cluster.id));
   const routeIds = new Set(routeActorIds());
   const denseIds = new Set(denseSurfaces(state.data.surfaceGraph, { minimumActors: 2 }).map(item => item.surface.surface_id));
@@ -106,12 +107,16 @@ function applyApertureSnapshot(snapshot) {
   state.surface.pinned = new Set((snapshot.surface?.pins ?? []).filter(id => participantIds.has(id)).slice(0, 36));
   state.surface.selectedActorId = snapshot.surface?.actorId && participantIds.has(snapshot.surface.actorId) ? snapshot.surface.actorId : null;
 
+  applyTimelineSnapshot(snapshot.timeline);
+
   state.selectedActorId = state.mode === 'map'
     ? state.map.selectedActorId
     : state.mode === 'route'
       ? state.route.selectedActorId
-      : state.surface.selectedActorId;
-  state.selectedSurfaceId = state.mode === 'surface' ? state.surface.surfaceId : state.map.selectedSurfaceId;
+      : state.mode === 'surface'
+        ? state.surface.selectedActorId
+        : state.selectedActorId;
+  state.selectedSurfaceId = state.mode === 'surface' ? state.surface.surfaceId : state.mode === 'timeline' ? state.selectedSurfaceId : state.map.selectedSurfaceId;
   return true;
 }
 
@@ -231,6 +236,15 @@ function bindExternalFocus() {
     event.stopImmediatePropagation();
     focusExternal(focusTarget.dataset.networkFocus);
   }, true);
+  // Entity pages open the timeline with data-ap-open-timeline="actor:<id>"
+  // (or organization:, type:, surface:); the aperture catches it in the capture phase.
+  document.addEventListener('click', event => {
+    const openTarget = event.target instanceof Element ? event.target.closest('[data-ap-open-timeline]') : event.target?.parentElement?.closest('[data-ap-open-timeline]');
+    if (!openTarget) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    openTimelineFor(openTarget.dataset.apOpenTimeline);
+  }, true);
 }
 
 function bindEvents() {
@@ -277,6 +291,7 @@ async function mount() {
   state.root = root;
   initializeIndexes();
   initializeSelections();
+  initializeTimelineDefaults();
   initializeOperatorWorkspace();
   restoreWorkspacePins(state.surface.surfaceId);
   state.address.defaults = apertureSnapshot();

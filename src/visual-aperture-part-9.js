@@ -1,7 +1,12 @@
 function renderCurrent() {
   if (!state.root) return;
+  // The GPU field renders only from renderMapMode, so in timeline mode it is
+  // deactivated here (canvas hidden, renderer paused, ecology clock stopped) and
+  // never loaded on arrival.
   if (state.mode !== 'map') deactivateApertureSocialField();
-  if (state.mode === 'map') renderMapMode();
+  if (state.mode !== 'timeline') deactivateTimelineStage();
+  if (state.mode === 'timeline') renderTimelineMode();
+  else if (state.mode === 'map') renderMapMode();
   else if (state.mode === 'route') renderRouteMode();
   else renderSurfaceMode();
 }

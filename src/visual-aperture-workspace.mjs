@@ -12,7 +12,8 @@ const VIEW_QUERY_KEYS = new Set([
   'ap_v', 'ap_mode', 'ap_overview_page', 'ap_overview_size',
   'ap_map_scale', 'ap_map_level', 'ap_map_cluster', 'ap_map_type', 'ap_map_surface', 'ap_map_actor',
   'ap_route_from', 'ap_route_to', 'ap_route_asof', 'ap_route_evidence', 'ap_route_step', 'ap_route_window', 'ap_route_actor',
-  'ap_surface_id', 'ap_surface_query', 'ap_surface_asof', 'ap_surface_evidence', 'ap_surface_budget', 'ap_surface_pins', 'ap_surface_actor'
+  'ap_surface_id', 'ap_surface_query', 'ap_surface_asof', 'ap_surface_evidence', 'ap_surface_budget', 'ap_surface_pins', 'ap_surface_actor',
+  'ap_time_by', 'ap_time_from', 'ap_time_to', 'ap_time_cursor', 'ap_time_lanes', 'ap_time_sel', 'ap_time_evidence', 'ap_time_hop'
 ]);
 
 function text(value, maximum) {
@@ -37,7 +38,7 @@ function evidenceFloor(value) {
 function normalizedViewQuery(value) {
   const raw = String(value ?? '').replace(/^\?/, '').slice(0, 12_000);
   const params = new URLSearchParams(raw);
-  if (params.get('ap_v') !== '1' || !['map', 'route', 'surface'].includes(params.get('ap_mode'))) return null;
+  if (params.get('ap_v') !== '1' || !['timeline', 'map', 'route', 'surface'].includes(params.get('ap_mode'))) return null;
   for (const key of [...params.keys()]) if (!VIEW_QUERY_KEYS.has(key)) params.delete(key);
   return params.toString();
 }
