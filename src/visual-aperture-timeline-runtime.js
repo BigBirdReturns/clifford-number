@@ -273,7 +273,7 @@ function setTimelineStageActive(active) {
   if (guide) {
     if (!guide.dataset.defaultMarkup) guide.dataset.defaultMarkup = guide.innerHTML;
     guide.innerHTML = active
-      ? '<strong>Timeline</strong><span>one mark per ledger row &middot; click a mark &middot; wheel = zoom time</span>'
+      ? '<strong>Timeline</strong><span>one mark per ledger row &middot; click a mark &middot; Ctrl + wheel = zoom time</span>'
       : guide.dataset.defaultMarkup;
   }
   if (legend) {
@@ -399,6 +399,8 @@ function timelinePlotSvg(layout) {
   const width = layout.width;
   const height = Math.max(1, layout.height);
   const m = layout.metrics;
+  layout.rovingKey = timelineRovingKey(layout);
+  layout.rovingLaneId = timelineRovingLaneId(layout);
   const parts = [];
   parts.push(`<defs><pattern id="aperture-time-hatch" patternUnits="userSpaceOnUse" width="4" height="4" patternTransform="rotate(45)"><rect width="4" height="4" fill="#2a3140"/><line x1="0" y1="0" x2="0" y2="4" stroke="#9aa3b2" stroke-width="1.4"/></pattern><clipPath id="aperture-time-labels-clip"><rect x="0" y="0" width="${m.labelWidth + m.padding}" height="${height}"/></clipPath>${layout.marks.filter(mark => mark.kind === 'open').map(mark => `<linearGradient id="${esc(timelineOpenGradientId(mark))}" gradientUnits="userSpaceOnUse" x1="${timelineRound(Math.max(mark.x, mark.x + mark.w - 24))}" y1="0" x2="${timelineRound(mark.x + mark.w)}" y2="0"><stop offset="0" stop-color="${timelineEvidenceColor(mark.evidence_class)}" stop-opacity=".55"/><stop offset="1" stop-color="${timelineEvidenceColor(mark.evidence_class)}" stop-opacity="0"/></linearGradient>`).join('')}</defs>`);
   layout.lanes.forEach((lane, index) => {
@@ -415,8 +417,8 @@ function timelinePlotSvg(layout) {
     const x2 = Math.min(layout.plotLeft + layout.plotWidth, timelineX(layout, toDay + 1));
     if (x2 > x1) parts.push(`<rect class="aperture-time-window-shade" x="${timelineRound(x1)}" y="0" width="${timelineRound(x2 - x1)}" height="${height}"/>`);
   }
-  for (const column of layout.columns) parts.push(timelineColumnMarkup(column));
-  for (const mark of layout.marks) parts.push(timelineMarkMarkup(mark));
+  for (const column of layout.columns) parts.push(timelineColumnMarkup(column, layout));
+  for (const mark of layout.marks) parts.push(timelineMarkMarkup(mark, layout));
   for (const aggregate of layout.aggregates) parts.push(timelineAggregateMarkup(aggregate, layout));
   for (const block of layout.blocks) parts.push(timelineBlockMarkup(block, layout));
   parts.push(`<g clip-path="url(#aperture-time-labels-clip)"><rect class="aperture-time-labels-bg" x="0" y="0" width="${m.labelWidth + m.padding}" height="${height}"/>${layout.lanes.map(lane => timelineLaneLabelMarkup(lane, layout)).join('')}</g>`);
@@ -435,16 +437,49 @@ function timelineOpenGradientId(mark) {
   return `aperture-time-open-${String(mark.key).replace(/[^a-z0-9]+/gi, '-')}`;
 }
 
-function timelineColumnMarkup(column) {
+// One Tab stop for the whole plot: the focused or selected object when it is
+// drawn, otherwise the first mark in lane order; the arrow keys walk the rest
+// and move the stop with the focus (focusTimelineNeighbour). Lane labels are a
+// second single stop. Without this every mark, column and label was a stop.
+function timelineRovingKey(layout) {
+  const t = state.timeline;
+  const drawn = new Set([...layout.marks, ...layout.columns, ...layout.blocks, ...layout.aggregates].map(item => item.key));
+  if (t.focusKey && drawn.has(t.focusKey)) return t.focusKey;
+  if (t.selectedKey && drawn.has(t.selectedKey)) return t.selectedKey;
+  return layout.marks[0]?.key ?? layout.blocks[0]?.key ?? layout.columns[0]?.key ?? layout.aggregates[0]?.key ?? null;
+}
+
+function timelineRovingLaneId(layout) {
+  const t = state.timeline;
+  const ids = new Set(layout.lanes.map(lane => lane.id));
+  for (const key of [t.focusKey, t.selectedKey]) {
+    if (key && String(key).startsWith('lane::') && ids.has(String(key).slice(6))) return String(key).slice(6);
+  }
+  return layout.lanes[0]?.id ?? null;
+}
+
+function timelineTabIndex(layout, key) {
+  return layout.rovingKey === key ? 0 : -1;
+}
+
+function timelineColumnMarkup(column, layout) {
   const selected = state.timeline.selectedKey === column.key;
-  const segments = column.segments.map(segment => `<rect class="aperture-time-column-segment" x="${timelineRound(column.x - 1.5)}" y="${timelineRound(segment.y1 - 2)}" width="${timelineRound(column.w + 3)}" height="${timelineRound(segment.y2 - segment.y1 + 4)}" rx="1"/>`).join('');
+  const laneKinds = new Map(layout.lanes.map(lane => [lane.id, lane.kind]));
+  // In a named lane the segment gets a small halo round that person's marks.
+  // In the strip, where another person's mark can sit one slot away or a few
+  // days on, it covers exactly the touching marks (half a pixel of rim, no
+  // vertical reach) so it never reads as touching a stranger's row.
+  const segments = column.segments.map(segment => {
+    const pad = laneKinds.get(segment.laneId) === 'entity' ? { x: 1.5, y: 2 } : { x: .5, y: 0 };
+    return `<rect class="aperture-time-column-segment" x="${timelineRound(column.x - pad.x)}" y="${timelineRound(segment.y1 - pad.y)}" width="${timelineRound(column.w + pad.x * 2)}" height="${timelineRound(segment.y2 - segment.y1 + pad.y * 2)}" rx="1"/>`;
+  }).join('');
   const top = Math.min(...column.segments.map(segment => segment.y1));
   const label = `<text class="aperture-time-column-label" x="${timelineRound(column.x + column.w / 2)}" y="${timelineRound(Math.max(9, top - 4))}" text-anchor="middle">${esc(shortLabel(column.surface_label, 30))} · ${column.basis_count} base${column.basis_count === 1 ? '' : 's'}</text>`;
   const aria = `${column.surface_label}, ${column.iso_day}: ${column.basis_count} admitted hop base${column.basis_count === 1 ? '' : 's'} among ${column.actor_ids.length} people, drawn as one surface column`;
-  return `<g class="aperture-time-column aperture-interactive${selected ? ' is-selected' : ''}${column.in_window ? '' : ' is-out-of-window'}" data-ap-time-column="${esc(column.key)}" data-lane="${esc(column.segments[0]?.laneId ?? '')}" tabindex="0" role="button" aria-label="${esc(aria)}">${segments}${label}</g>`;
+  return `<g class="aperture-time-column aperture-interactive${selected ? ' is-selected' : ''}${column.in_window ? '' : ' is-out-of-window'}" data-ap-time-column="${esc(column.key)}" data-lane="${esc(column.segments[0]?.laneId ?? '')}" tabindex="${timelineTabIndex(layout, column.key)}" role="button" aria-label="${esc(aria)}">${segments}${label}</g>`;
 }
 
-function timelineMarkMarkup(mark) {
+function timelineMarkMarkup(mark, layout) {
   const classes = ['aperture-time-mark', `aperture-time-mark--${mark.kind}`, mark.hop_eligible ? 'aperture-time-mark--hop' : 'aperture-time-mark--context', `aperture-time-mark--ev-${mark.evidence_recorded ? normalizeEvidence(mark.evidence_class) : 'unrecorded'}`, 'aperture-interactive'];
   if (!mark.in_window) classes.push('is-out-of-window');
   if (state.timeline.selectedKey === mark.key) classes.push('is-selected');
@@ -453,14 +488,14 @@ function timelineMarkMarkup(mark) {
   else if (mark.kind === 'open') style = ` style="fill:url(#${esc(timelineOpenGradientId(mark))})"`;
   const who = mark.participant_type === 'surface' ? mark.surface_label : `${mark.entity_label} · ${mark.surface_label}`;
   const aria = `${who}, ${timelineWindowText(mark, { long: true })}, ${mark.evidence_recorded ? evidenceLabel(mark.evidence_class) : 'evidence class not recorded'}, ${mark.hop_eligible ? 'hop-eligible surface' : 'context-only surface'}`;
-  return `<rect class="${classes.join(' ')}" x="${timelineRound(mark.x)}" y="${timelineRound(mark.y)}" width="${timelineRound(mark.w)}" height="${mark.h}" rx="${mark.kind === 'day' ? 1 : 0}"${style} data-ap-time-mark="${esc(mark.key)}" data-lane="${esc(mark.laneId)}" tabindex="0" role="button" aria-label="${esc(aria)}"/>`;
+  return `<rect class="${classes.join(' ')}" x="${timelineRound(mark.x)}" y="${timelineRound(mark.y)}" width="${timelineRound(mark.w)}" height="${mark.h}" rx="${mark.kind === 'day' ? 1 : 0}"${style} data-ap-time-mark="${esc(mark.key)}" data-lane="${esc(mark.laneId)}" tabindex="${timelineTabIndex(layout, mark.key)}" role="button" aria-label="${esc(aria)}"/>`;
 }
 
 function timelineAggregateMarkup(aggregate, layout) {
   const selected = state.timeline.selectedKey === aggregate.key;
   const width = Math.max(20, aggregate.w + 16);
   const x = Math.min(aggregate.x - 1, layout.width - width - 2);
-  return `<g class="aperture-time-aggregate aperture-interactive${selected ? ' is-selected' : ''}" data-ap-time-aggregate="${esc(aggregate.key)}" data-lane="${esc(aggregate.laneId)}" tabindex="0" role="button" aria-label="${esc(`${aggregate.count} more rows in this lane fold into one mark`)}"><rect x="${timelineRound(x)}" y="${timelineRound(aggregate.y)}" width="${width}" height="${aggregate.h}" rx="${aggregate.h / 2}"/><text x="${timelineRound(x + width / 2)}" y="${timelineRound(aggregate.y + aggregate.h - 2)}" text-anchor="middle">+${aggregate.count}</text></g>`;
+  return `<g class="aperture-time-aggregate aperture-interactive${selected ? ' is-selected' : ''}" data-ap-time-aggregate="${esc(aggregate.key)}" data-lane="${esc(aggregate.laneId)}" tabindex="${timelineTabIndex(layout, aggregate.key)}" role="button" aria-label="${esc(`${aggregate.count} more rows in this lane fold into one mark`)}"><rect x="${timelineRound(x)}" y="${timelineRound(aggregate.y)}" width="${width}" height="${aggregate.h}" rx="${aggregate.h / 2}"/><text x="${timelineRound(x + width / 2)}" y="${timelineRound(aggregate.y + aggregate.h - 2)}" text-anchor="middle">+${aggregate.count}</text></g>`;
 }
 
 function timelineBlockMarkup(block, layout) {
@@ -470,7 +505,7 @@ function timelineBlockMarkup(block, layout) {
   const boxX = fitsRight ? block.x + block.w + 3 : block.x - 3 - boxWidth;
   const names = block.visible_listed_count === block.listed_count ? `${block.listed_count}` : `${block.visible_listed_count} of ${block.listed_count}`;
   const aria = `${block.surface_label}: ${block.listed_count} listed names and ${block.organization_count} organization${block.organization_count === 1 ? '' : 's'} on ${block.iso_day}, one contained roster without per-person marks`;
-  return `<g class="aperture-time-block aperture-interactive${selected ? ' is-selected' : ''}${block.in_window ? '' : ' is-out-of-window'}" data-ap-time-block="${esc(block.key)}" data-lane="${esc(block.laneId)}" tabindex="0" role="button" aria-label="${esc(aria)}">
+  return `<g class="aperture-time-block aperture-interactive${selected ? ' is-selected' : ''}${block.in_window ? '' : ' is-out-of-window'}" data-ap-time-block="${esc(block.key)}" data-lane="${esc(block.laneId)}" tabindex="${timelineTabIndex(layout, block.key)}" role="button" aria-label="${esc(aria)}">
     <rect class="aperture-time-block-day" x="${timelineRound(block.x)}" y="${timelineRound(block.y)}" width="${block.w}" height="${block.h}"/>
     <rect class="aperture-time-block-box" x="${timelineRound(boxX)}" y="${timelineRound(block.y)}" width="${boxWidth}" height="${block.h}" rx="3"/>
     <text class="aperture-time-block-text" x="${timelineRound(boxX + 7)}" y="${timelineRound(block.y + block.h / 2 + 4)}"><tspan class="aperture-time-block-count">${esc(names)}</tspan> names listed</text>
@@ -495,7 +530,7 @@ function timelineLaneLabelMarkup(lane, layout) {
   const text = layout.phone
     ? `<text class="aperture-time-lane-label" x="6" y="${timelineRound(midY + 4)}">${esc(name)}</text>`
     : `<text class="aperture-time-lane-label" x="8" y="${timelineRound(midY - 1)}">${esc(name)}</text><text class="aperture-time-lane-meta" x="8" y="${timelineRound(midY + 10)}">${esc(meta)}</text>`;
-  return `<g class="aperture-time-lane aperture-time-lane--${lane.kind} aperture-interactive${selected ? ' is-selected' : ''}" data-ap-time-lane="${esc(lane.id)}" data-lane="${esc(lane.id)}" tabindex="0" role="button" aria-label="${esc(`${lane.label}: ${meta}`)}"><rect class="aperture-time-lane-hit" x="0" y="${timelineRound(lane.y)}" width="${m.labelWidth + m.padding}" height="${timelineRound(lane.height)}"/>${text}</g>`;
+  return `<g class="aperture-time-lane aperture-time-lane--${lane.kind} aperture-interactive${selected ? ' is-selected' : ''}" data-ap-time-lane="${esc(lane.id)}" data-lane="${esc(lane.id)}" tabindex="${layout.rovingLaneId === lane.id ? 0 : -1}" role="button" aria-label="${esc(`${lane.label}: ${meta}`)}"><rect class="aperture-time-lane-hit" x="0" y="${timelineRound(lane.y)}" width="${m.labelWidth + m.padding}" height="${timelineRound(lane.height)}"/>${text}</g>`;
 }
 
 function timelineOverviewSvg(layout, height) {
@@ -634,7 +669,13 @@ function timelineRowCard(row, mark, drawn, layout) {
     if (!partners.has(partner)) partners.set(partner, { role, count: 0, evidence: basis.evidence_class });
     partners.get(partner).count += 1;
   }
-  const notDrawn = !drawn ? `<p class="aperture-muted">This row is outside the current axis or filters, so it is not drawn. ${row.start_day != null ? `<button type="button" class="aperture-inline-button" data-ap-action="timeline-show-row" data-key="${esc(row.key)}">Show its year</button>` : 'It has no documented date and is never placed on the axis.'}</p>` : '';
+  // The column is drawn under its marks, so a pointer on it usually lands on
+  // this row; its card is one click from here for every drawn column day.
+  const columnJumps = row.participant_type === 'actor'
+    ? unique(bases.map(basis => isoFromDayIndex(basis.day))).map(iso => ({ iso, key: `column::${iso}::${row.surface_id}` })).filter(item => layout.columns.some(column => column.key === item.key))
+    : [];
+  const columnJumpMarkup = columnJumps.length ? `<p class="aperture-time-column-jump">${columnJumps.map(item => timelineSelectButton(item.key, `Select the ${item.iso} column`)).join(' ')}</p>` : '';
+  const notDrawn =!drawn ? `<p class="aperture-muted">This row is outside the current axis or filters, so it is not drawn. ${row.start_day != null ? `<button type="button" class="aperture-inline-button" data-ap-action="timeline-show-row" data-key="${esc(row.key)}">Show its year</button>` : 'It has no documented date and is never placed on the axis.'}</p>` : '';
   const windowNote = mark && layout.window.active && !mark.in_window ? '<p class="aperture-muted">Outside the marked window: dimmed, not removed.</p>' : '';
   const alsoOn = dense
     ? `<p>${dense.listed_count} listed names on this roster, one contained object. ${timelineSelectButton(dense.key, 'Open the roster card')}.</p>`
@@ -644,7 +685,7 @@ function timelineRowCard(row, mark, drawn, layout) {
     : row.participant_type === 'organization'
       ? '<p class="aperture-muted">Organization rows are venue or context. They never create a hop and never produce a column.</p>'
       : bases.length
-        ? `<p>${bases.length} admitted base${bases.length === 1 ? '' : 's'} on this surface ${row.kind === 'day' ? 'on this day' : 'inside this row’s window'}, each drawn as a column on the surface day.</p><ul class="aperture-time-pairs">${[...partners.entries()].map(([partner, info]) => `<li><span>with <strong>${esc(actorLabel(partner))}</strong> (${esc(info.role || 'role not recorded')})</span><small>${info.count} basis${info.count === 1 ? '' : 'es'} · ${esc(evidenceLabel(info.evidence))}</small>${timelineRouteButton(row.entity_id, partner, `Route ${shortLabel(actorLabel(row.entity_id), 16)} → ${shortLabel(actorLabel(partner), 16)}`)}</li>`).join('')}</ul>`
+        ? `<p>${bases.length} admitted base${bases.length === 1 ? '' : 's'} on this surface ${row.kind === 'day' ? 'on this day' : 'inside this row’s window'}, each drawn as a column on the surface day.</p><ul class="aperture-time-pairs">${[...partners.entries()].map(([partner, info]) => `<li><span>with <strong>${esc(actorLabel(partner))}</strong> (${esc(info.role || 'role not recorded')})</span><small>${info.count} basis${info.count === 1 ? '' : 'es'} · ${esc(evidenceLabel(info.evidence))}</small>${timelineRouteButton(row.entity_id, partner, `Route ${shortLabel(actorLabel(row.entity_id), 16)} → ${shortLabel(actorLabel(partner), 16)}`)}</li>`).join('')}</ul>${columnJumpMarkup}`
         : row.surface_hop_eligible
           ? '<p class="aperture-muted">The surface is hop-eligible, but no admitted basis has this person as an endpoint inside this row’s window.</p>'
           : '<p class="aperture-muted">Context-only surface: no hop basis can arise here.</p>';
@@ -766,7 +807,7 @@ function timelineRosterCard(dense, block, layout) {
 function timelineAggregateCard(aggregate, layout) {
   const rows = aggregate.hidden_keys.map(key => timelineRow(key)).filter(Boolean);
   const lane = layout.lanes.find(item => item.id === aggregate.laneId);
-  return `<p class="aperture-kicker">Folded rows</p><h3>+${aggregate.count} rows</h3><p>${lane ? `${esc(lane.label)}: ` : ''}these rows sit within a few pixels at this axis width, so they fold into one mark. Each is still one ledger row; zoom the axis to separate them.</p>
+  return `<p class="aperture-kicker">Folded rows</p><h3>+${aggregate.count} rows</h3><p>${lane ? `${esc(lane.label)}: ` : ''}these rows sit within a few pixels at this axis width, so they fold into one mark. Each is still one ledger row; narrow the axis (drag the overview window, or Ctrl + wheel) to separate them.</p>
     <div class="aperture-badge-row">${timelineEvidenceBadges(aggregate.evidence_counts)}<span class="aperture-badge">${aggregate.hop_eligible_count} on hop-eligible surfaces</span></div>
     <ul>${rows.map(row => `<li>${timelineSelectButton(row.key, row.participant_type === 'surface' ? row.surface_label : row.entity_label)} · ${esc(shortLabel(row.surface_label, 40))} · ${esc(timelineWindowText(row))}</li>`).join('')}</ul>`;
 }
@@ -784,7 +825,7 @@ function timelineDefaultCard(layout) {
   return `<p class="aperture-kicker">How to read this</p><h3>Every mark is one ledger row.</h3>
     <p>Lanes are ${esc(TIMELINE_BY_LABELS[layout.by].toLowerCase())}; the axis is the documented day. A tick is one documented day and a bar is an observed span, filled with the row’s evidence class and outlined amber when its surface is hop-eligible.</p>
     <p>An amber column is a surface that two or more people share on one day. The surface is the column, so a route reads actor → surface → actor; no line is ever drawn between two people, and a dense roster stays one block with its count.</p>
-    <p>Click a mark to read its role, window, evidence class and receipts. Lane labels, columns and the roster block have their own cards. Year chips and the strip under the axis move the window of time; the marked window dims rows outside it and never removes them.</p>
+    <p>Click a mark to read its role, window, evidence class and receipts. Lane labels, columns and the roster block have their own cards; a column sits under its marks, so each mark card on it also offers “Select the column”. Year chips, the strip under the axis and Ctrl + wheel move the axis; the marked window dims rows outside it and never removes them. Tab reaches one mark, then the arrow keys walk the days and lanes.</p>
     <ul class="aperture-time-legend-list"><li><i class="aperture-time-key aperture-time-key--day"></i> one documented day</li><li><i class="aperture-time-key aperture-time-key--span"></i> observed span (dotted: year precision)</li><li><i class="aperture-time-key aperture-time-key--hop"></i> amber outline: hop-eligible surface · grey: context-only</li><li><i class="aperture-time-key aperture-time-key--column"></i> shared surface on one day</li><li><i class="aperture-time-key aperture-time-key--official"></i> official <i class="aperture-time-key aperture-time-key--primary_public"></i> primary public <i class="aperture-time-key aperture-time-key--reported"></i> reported <i class="aperture-time-key aperture-time-key--open"></i> derived or judgment</li><li><i class="aperture-time-key aperture-time-key--block"></i> dense roster, one contained object</li></ul>
     ${tryMarkup}`;
 }
@@ -822,6 +863,12 @@ function timelineOverviewEntries(layout) {
   }
   for (const block of layout.blocks) {
     entries.push({ key: block.key, day: block.day, laneIndex: laneIndex.get(block.laneId) ?? 999, block, inWindow: block.in_window, rendering: 'one block' });
+  }
+  // Undated rows pass the filters but have no day: listed last, never placed
+  // on the axis or sliced by the window (the status line counts them too).
+  for (const key of layout.hidden?.undated ?? []) {
+    const row = timelineRow(key);
+    if (row) entries.push({ key, day: null, laneIndex: 999, row, inWindow: true, rendering: 'not placed in time' });
   }
   return entries.sort((a, b) => (a.day ?? Infinity) - (b.day ?? Infinity) || a.laneIndex - b.laneIndex || String(a.key).localeCompare(String(b.key)));
 }
@@ -1052,7 +1099,11 @@ function openTimelineFor(token) {
       const actors = unique(rows.filter(row => row.participant_type === 'actor').map(row => row.entity_id));
       const organizations = unique(rows.filter(row => row.participant_type === 'organization').map(row => row.entity_id));
       const dense = model.denseSurfaceIds.has(id);
-      if (actors.length && !dense) { t.by = 'actor'; t.lanes = actors.slice(0, TIMELINE_MAX_LANES); }
+      // A dense roster opens as its one block in the People view with the
+      // default lanes: its listed names never get lanes from this entry point,
+      // and the Organizations view has no block to select.
+      if (dense) { t.by = 'actor'; t.lanes = []; }
+      else if (actors.length) { t.by = 'actor'; t.lanes = actors.slice(0, TIMELINE_MAX_LANES); }
       else if (organizations.length) { t.by = 'organization'; t.lanes = organizations.slice(0, TIMELINE_MAX_LANES); }
       else { t.by = 'type'; t.lanes = []; }
       const first = rows.find(row => row.participant_type === (t.by === 'type' ? 'surface' : t.by)) ?? rows[0] ?? null;
@@ -1243,6 +1294,15 @@ function handleTimelineKeydown(event) {
     return true;
   }
   if (event.key === 'Escape') { event.preventDefault(); clearTimelineSelection(); return true; }
+  const laneLabel = target.closest('[data-ap-time-lane]');
+  if (laneLabel && ['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) {
+    event.preventDefault();
+    const labels = [...$('#aperture-timeline', state.root).querySelectorAll('[data-ap-time-lane]')];
+    const index = labels.indexOf(laneLabel);
+    const next = event.key === 'Home' ? labels[0] : event.key === 'End' ? labels[labels.length - 1] : labels[Math.max(0, Math.min(labels.length - 1, index + (event.key === 'ArrowDown' ? 1 : -1)))];
+    if (next && next !== laneLabel) moveTimelineRovingFocus(laneLabel, next);
+    return true;
+  }
   const item = target.closest('[data-ap-time-mark], [data-ap-time-block], [data-ap-time-aggregate], [data-ap-time-column]');
   if (item && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) {
     event.preventDefault();
@@ -1283,10 +1343,16 @@ function focusTimelineNeighbour(current, key) {
       if (candidates.length) next = candidates.sort((a, b) => Math.abs(a.x - currentX) - Math.abs(b.x - currentX))[0];
     }
   }
-  if (next?.element && next.element !== current) {
-    state.timeline.focusKey = timelineElementKey(next.element);
-    next.element.focus({ preventScroll: false });
-  }
+  if (next?.element && next.element !== current) moveTimelineRovingFocus(current, next.element);
+}
+
+// The Tab stop travels with the focus: the element left behind leaves the tab
+// order, the one reached joins it, and the next render keeps it there.
+function moveTimelineRovingFocus(current, next) {
+  current.setAttribute('tabindex', '-1');
+  next.setAttribute('tabindex', '0');
+  state.timeline.focusKey = timelineElementKey(next);
+  next.focus({ preventScroll: false });
 }
 
 function nudgeTimelineHandle(handle, deltaDays) {
@@ -1345,13 +1411,14 @@ function bindTimelineStage(host) {
 
 function handleTimelineWheel(event) {
   if (state.mode !== 'timeline') return;
+  // A plain wheel keeps scrolling the page (or the lane list when it
+  // overflows); only Ctrl/Cmd + wheel, which is also how a trackpad pinch
+  // arrives, zooms the axis. The stage never takes the page scroll.
+  if (!event.ctrlKey && !event.metaKey) return;
   const layout = state.timeline.layout;
   const host = event.currentTarget;
   const plot = host?.querySelector('.aperture-time-plot');
   if (!layout || !plot) return;
-  const lanes = host.querySelector('.aperture-time-lanes');
-  const overflowing = lanes && lanes.scrollHeight > lanes.clientHeight + 1;
-  if (overflowing && !event.ctrlKey && !event.metaKey) return;
   const rect = plot.getBoundingClientRect();
   const x = event.clientX - rect.left;
   if (x < layout.plotLeft) return;

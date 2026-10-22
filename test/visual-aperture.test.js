@@ -203,7 +203,7 @@ function renderTimelineStage(layout, phone) {
   const svg = context.__svg;
   const count = needle => (svg.match(new RegExp(needle, 'g')) ?? []).length;
   const lineClasses = count('<line class="aperture-time-(?:axis-year|axis-month|axis-base|lane-rule|grid|ov-row|ov-hop|ov-dense)"') + count('<line x1="0" y1="0" x2="0" y2="4"');
-  return { marks: count('data-ap-time-mark="'), columns: count('data-ap-time-column="'), segments: count('aperture-time-column-segment'), blocks: count('data-ap-time-block="'), aggregates: count('data-ap-time-aggregate="'), lanes: count('data-ap-time-lane="'), lines: count('<line'), lineClasses, pair: count('data-ap-time-pair'), svg };
+  return { marks: count('data-ap-time-mark="'), columns: count('data-ap-time-column="'), segments: count('aperture-time-column-segment'), blocks: count('data-ap-time-block="'), aggregates: count('data-ap-time-aggregate="'), lanes: count('data-ap-time-lane="'), lines: count('<line'), lineClasses, pair: count('data-ap-time-pair'), tabStops: count('tabindex="0"'), noStops: count('tabindex="-1"'), svg };
 }
 const desktopRender = renderTimelineStage(layoutTimeline(realModel, { plotWidth: 690 }), false);
 assert.equal(desktopRender.marks, 79, 'desktop default: 79 marks');
@@ -213,6 +213,12 @@ assert.equal(desktopRender.segments, 35, 'per-lane segments touch only involved 
 assert.equal(desktopRender.aggregates, 0);
 assert.equal(desktopRender.lanes, 17);
 assert.equal(desktopRender.pair, 0);
+// Roving focus: one Tab stop for the plot (the first mark), one for the lane
+// labels, two overview handles; every other mark, column, block and label is
+// reached with the arrow keys, not with Tab.
+assert.equal(desktopRender.tabStops, 4, 'first mark + first lane label + two overview handles');
+assert.equal(desktopRender.noStops, desktopRender.marks + desktopRender.columns + desktopRender.blocks + desktopRender.aggregates + desktopRender.lanes - 2);
+assert.match(timelineRuntime, /function handleTimelineWheel\(event\) \{\n  if \(state\.mode !== 'timeline'\) return;\n(?:\s*\/\/.*\n)*\s*if \(!event\.ctrlKey && !event\.metaKey\) return;/, 'a plain wheel scrolls the page; only Ctrl/Cmd + wheel zooms the axis');
 assert.equal(desktopRender.lines, desktopRender.lineClasses, 'every line is an axis, grid, lane rule, overview tick or hatch stroke');
 assert.match(desktopRender.svg, /names listed/);
 assert.match(desktopRender.svg, /People documented on one surface/);
