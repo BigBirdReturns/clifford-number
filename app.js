@@ -1645,8 +1645,11 @@ function recordTimelineMarkup(layout, { filteredKeys = new Set(), title = 'Docum
 function recordPatternList(items, { empty = 'None in these rows.' } = {}) {
   return items.length ? `<ul class="record-pattern-list">${items.join('')}</ul>` : `<p class="meta">${esc(empty)}</p>`;
 }
-function recordHopPartnerItems(partners) {
-  return partners.map(partner => `<li><a href="#desk/${encodeURIComponent(partner.actor_id)}">${esc(partner.label)}</a> · ${recordPlural(partner.bases.length, 'admitted hop basis', 'admitted hop bases')}<ul>${partner.bases.map(basis => `<li><a href="#surface/${encodeURIComponent(basis.surface_id)}">${esc(basis.surface_label)}</a> · ${esc(basis.day ?? 'not dated')} · ${evidenceBadge(basis.evidence_class)}</li>`).join('')}</ul></li>`);
+// A hop partner links to the connection desk with both names filled in, so the
+// pair's dated check (and its receipts) is one click away; each basis names
+// its surface and day.
+function recordHopPartnerItems(partners, actorId = null) {
+  return partners.map(partner => `<li><a href="#desk/${actorId ? `${encodeURIComponent(actorId)}/` : ''}${encodeURIComponent(partner.actor_id)}">${esc(partner.label)}</a> · ${recordPlural(partner.bases.length, 'admitted hop basis', 'admitted hop bases')}<ul>${partner.bases.map(basis => `<li><a href="#surface/${encodeURIComponent(basis.surface_id)}">${esc(basis.surface_label)}</a> · ${esc(basis.day ?? 'not dated')} · ${evidenceBadge(basis.evidence_class)}</li>`).join('')}</ul></li>`);
 }
 function recordRecurringItems(entries) {
   return entries.map(entry => `<li><a href="#actor/${encodeURIComponent(entry.actor_id)}">${esc(entry.label)}</a> · also on the same surface ${recordPlural(entry.surface_ids.length, 'time')}: ${esc(entry.dates.join(', '))}<small>shared context only; listed above only where the compiler admitted a hop</small></li>`);
@@ -1768,7 +1771,7 @@ function renderActor(id) {
     <div class="record-pattern-grid">
       <div><h4>Surface types</h4>${recordPatternList(record.type_counts.map(entry => `<li><a href="#type/${encodeURIComponent(entry.id)}">${esc(entry.label)}</a> · ${entry.count} of ${recordPlural(record.rows.length, 'row')}</li>`))}</div>
       <div><h4>Organizations on these surfaces</h4>${recordPatternList(record.organization_counts.map(entry => `<li><a href="#organization/${encodeURIComponent(entry.id)}">${esc(entry.label)}</a> · ${entry.count} of ${recordPlural(record.rows.length, 'surface row')}</li>`))}</div>
-      <div><h4>Co-documented people</h4><p class="meta">Admitted hop partners first (each basis names its surface and day), then counted co-presence on non-dense surfaces.</p>${recordPatternList(recordHopPartnerItems(record.hop_partners), { empty: 'No admitted hop basis names this person.' })}${recordPatternList(recordRecurringItems(record.recurring), { empty: 'No one is documented beside this person on two or more non-dense surfaces.' })}${recordDenseNote(record.dense_memberships)}</div>
+      <div><h4>Co-documented people</h4><p class="meta">Admitted hop partners first (each basis names its surface and day), then counted co-presence on non-dense surfaces.</p>${recordPatternList(recordHopPartnerItems(record.hop_partners, id), { empty: 'No admitted hop basis names this person.' })}${recordPatternList(recordRecurringItems(record.recurring), { empty: 'No one is documented beside this person on two or more non-dense surfaces.' })}${recordDenseNote(record.dense_memberships)}</div>
     </div></section>`;
 
   const path = record.clifford.path;
