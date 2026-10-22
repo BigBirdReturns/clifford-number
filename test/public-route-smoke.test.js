@@ -9,11 +9,22 @@ assert.deepEqual(ROUTE_CASES.map(({ route }) => route), [
   'explorer.html#desk/keir-starmer/matt-clifford/2025',
   'explorer.html#desk/demet-mutlu/matt-clifford',
   'explorer.html#desk/keir-starmer/matt-clifford/2020',
-  'explorer.html#surface/dialog-public-directory-exposure-2026-06-16'
+  'explorer.html#surface/dialog-public-directory-exposure-2026-06-16',
+  'explorer.html#actor/ben-warner',
+  'explorer.html#organization/electric-twin',
+  'explorer.html#type/employment_investment_surface',
+  'explorer.html#year/2025'
 ]);
 for (const routeCase of ROUTE_CASES) {
   assert.equal(routeCase.expected.length, 2, `${routeCase.id} must retain both semantic assertions`);
 }
+// Record pages assert a facts chip that names its denominator and the oldest
+// ledger row, so the date sort and the 'of 54' denominator are both exercised
+// in a browser at every viewport.
+const recordCases = ROUTE_CASES.filter(routeCase => routeCase.id.endsWith('-record'));
+assert.deepEqual(recordCases.map(routeCase => routeCase.id), ['actor-record', 'organization-record', 'type-record', 'year-record']);
+assert.ok(recordCases.every(routeCase => / of 54\b|dated in the year/.test(routeCase.expected[0])), 'every record case pins a count with its denominator');
+assert.equal(recordCases[0].expected[1], 'Faculty Science officer / employee overlap, 24 January 2018', 'Ben Warner\'s ledger opens on his oldest surface, not the ledger order');
 const timelineCases = ROUTE_CASES.filter(routeCase => routeCase.timeline);
 assert.deepEqual(timelineCases.map(routeCase => routeCase.id), ['timeline-default', 'timeline-default-slow-data', 'timeline-shared-view']);
 assert.equal(timelineCases[0].timeline.min_marks, 48, 'the phone default domain draws 48 marks plus the roster block');
@@ -64,5 +75,15 @@ assert.match(appSource, /<h1>Actor → named surface → actor\.<\/h1>/);
 assert.match(appSource, /<h1>The receipts, inside the instrument\.<\/h1>/);
 assert.match(appSource, /<h1>\$\{esc\(track\.label\)\}<\/h1>/);
 assert.match(appSource, /globalThis\.__cliffordPublicData = \{ surfaceGraph, hopGraph, receiptGraph, legacyGraph \}/, 'app.js hands its loaded artifacts to the aperture');
+// The record pages behind the four record cases: fed by the timeline model,
+// routed by hash, and handed to the aperture through data-ap-open-timeline.
+assert.match(appSource, /^import \{[^\n]*buildTimelineModel[^\n]*\} from '\.\/src\/visual-aperture-timeline\.mjs';$/m, 'app.js imports the ledger timeline model on one line');
+assert.match(appSource, /state\.timeline = buildTimelineModel\(surfaceGraph, hopGraph\)/, 'one timeline model is built at init');
+for (const name of ['renderActor', 'renderOrg', 'renderSurface', 'renderType', 'renderYear', 'actorRecordModel', 'organizationRecordModel', 'surfaceRecordModel', 'typeRecordModel', 'yearRecordModel', 'atlasInspectorOrigin']) {
+  assert.match(appSource, new RegExp(`^function ${name}\\(`, 'm'), `app.js defines ${name}`);
+}
+assert.match(appSource, /data-ap-open-timeline="\$\{esc\(timelineToken\)\}"/);
+assert.match(appSource, /globalThis\.__cliffordApertureOrigin/, 'the receipt dialog reads the origin the aperture publishes');
+assert.doesNotMatch(appSource, /Structural context index|Factory Score|machine_score|factory_score/, 'no score bar survives on a record page');
 
 console.log('public-route-smoke.test: OK');

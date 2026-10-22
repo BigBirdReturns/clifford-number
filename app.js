@@ -3,6 +3,8 @@ import { applyTranslations, normalizeLocale, translate } from './src/i18n.js';
 import { shortestRoute, strongestEvidenceRoute, bestDatedRoute, officialOnlyRoute, asOfRoute, blockedSegments, routeProjections } from './src/route-projections.js';
 import { releaseDelta, summarizeDelta } from './src/release-delta.js';
 import { EVIDENCE_RANK } from './src/evidence-rank.js';
+// One-line import on purpose: tools/build-standalone.mjs strips import lines with a single-line regex, and the flattened aperture bundle then supplies these names on globalThis.
+import { buildTimelineModel, entityTimelineSummary, entityLaneLayout, layoutTimeline, filterTimelineRows, timelineDay, TIMELINE_DESKTOP_METRICS, TIMELINE_PHONE_METRICS } from './src/visual-aperture-timeline.mjs';
 
 const PREFERENCES_KEY = 'clifford-preferences';
 const state = {
@@ -10,7 +12,10 @@ const state = {
   tracks: new Map(), trackHarnesses: new Map(), cases: new Map(), caseIndex: new Map(),
   claims: new Map(), caseReceipts: new Map(), claimCatalog: new Map(), receiptCatalog: new Map(), claimKeyById: new Map(), catalogCounts: {},
   deskProjection: 'clifford',
-  releaseDeltaModel: null, dataBoundary: null
+  releaseDeltaModel: null, dataBoundary: null,
+  // The ledger timeline model (src/visual-aperture-timeline.mjs) built once at
+  // init from the loaded surface and hop graphs; every record page reads it.
+  timeline: null, receiptGraph: null, record: null, recordFloor: 'open', recordText: ''
 };
 const $ = sel => document.querySelector(sel);
 
@@ -276,17 +281,29 @@ function inspectorBreadcrumbModel({ mode, objectLabel, objectId, claimLabel } = 
 
 // Origin context for a claim/receipt opened from inside the aperture deck
 // (#network-atlas): { mode, objectId, objectLabel, rect, selectObject? } --
-// which mode was mounted, which object was selected, the clicked element's
+// which mode is showing, which object is selected, the clicked element's
 // screen rect (for the open animation's transform-origin) and an optional
-// selectObject(objectId) callback for the object crumb. The legacy SVG atlas
-// that used to supply this from its own selection state is retired, and the
-// Visual Aperture does not yet hand its mode/object over, so there is no live
-// origin provider: this returns null and the dialog opens with its plain
-// toolbar label instead of a breadcrumb naming a provenance the click did not
-// produce. inspectorBreadcrumbModel stays exported for the aperture to feed.
+// selectObject(objectId) callback for the object crumb. The Visual Aperture
+// publishes { mode, objectLabel, objectId, selectObject } on
+// globalThis.__cliffordApertureOrigin whenever its selection changes
+// (src/visual-aperture-timeline-runtime.js publishApertureOrigin, called from
+// part-3 setInspector), so the crumb names the provenance the click actually
+// came from. With nothing published, or a malformed or empty value, this
+// returns null and the dialog opens with its plain toolbar label rather than
+// a breadcrumb the click did not produce.
 function atlasInspectorOrigin(el) {
-  void el;
-  return null;
+  const published = globalThis.__cliffordApertureOrigin;
+  if (!published || typeof published !== 'object') return null;
+  const mode = typeof published.mode === 'string' ? published.mode.trim() : '';
+  const objectLabel = typeof published.objectLabel === 'string' ? published.objectLabel.trim() : '';
+  if (!mode && !objectLabel) return null;
+  return {
+    mode: mode || null,
+    objectLabel: objectLabel || null,
+    objectId: published.objectId == null ? null : String(published.objectId),
+    selectObject: typeof published.selectObject === 'function' ? published.selectObject : null,
+    rect: el?.getBoundingClientRect?.() ?? null
+  };
 }
 
 function renderInspectorBreadcrumb(origin, claimLabel) {
@@ -356,19 +373,21 @@ function initEvidenceDialog() {
   dialog?.addEventListener('click', event => {
     if (event.target === dialog) closeEvidenceDialog();
   });
+  // The dialog's origin is honest about where the click came from: the
+  // aperture deck supplies its own mode and object; a record page supplies
+  // the record; anywhere else opens with the plain toolbar label.
+  const originFor = button => (button.closest('#network-atlas') ? atlasInspectorOrigin(button) : button.closest('#detail .record') ? recordInspectorOrigin(button) : null);
   document.addEventListener('click', event => {
     const claimButton = event.target.closest?.('[data-open-claim]');
     if (claimButton) {
       event.preventDefault();
-      const inAtlas = !!claimButton.closest('#network-atlas');
-      openClaimDialog(claimButton.dataset.openClaim, inAtlas ? atlasInspectorOrigin(claimButton) : null);
+      openClaimDialog(claimButton.dataset.openClaim, originFor(claimButton));
       return;
     }
     const receiptButton = event.target.closest?.('[data-open-receipt]');
     if (receiptButton) {
       event.preventDefault();
-      const inAtlas = !!receiptButton.closest('#network-atlas');
-      openReceiptDialog(receiptButton.dataset.openReceipt, inAtlas ? atlasInspectorOrigin(receiptButton) : null);
+      openReceiptDialog(receiptButton.dataset.openReceipt, originFor(receiptButton));
     }
   });
 }
@@ -559,6 +578,8 @@ async function init() {
   // these before it would fetch, so the aperture no longer re-requests the
   // surface, hop and receipt graphs and graph.json the page already holds.
   globalThis.__cliffordPublicData = { surfaceGraph, hopGraph, receiptGraph, legacyGraph };
+  state.receiptGraph = receiptGraph;
+  state.timeline = buildTimelineModel(surfaceGraph, hopGraph);
   state.receipts = new Map((receiptGraph.receipts ?? []).map(r => [r.receipt_id, r]));
   state.actors = new Map(surfaceGraph.actors.map(a => [a.id, a]));
   state.orgs = new Map(surfaceGraph.organizations.map(o => [o.id, o]));
@@ -586,11 +607,13 @@ async function init() {
     state.hopEdgeByPair.set(`${edge.actor_b}||${edge.actor_a}`, edge);
   }
   const flagshipCase = [...state.caseIndex.values()].sort((a, b) => (b.featured_priority ?? 0) - (a.featured_priority ?? 0))[0];
-  $('#try-examples').innerHTML = `
-    <button data-network-focus="dialog">${esc(focusButtonLabel('Dialog', 'dialog'))}</button>
-    ${flagshipCase ? `<button data-kind="case" data-id="${esc(flagshipCase.case_id)}">Clifford → Starmer · official</button>` : ''}
-    ${state.actors.has('ben-warner') ? '<button data-kind="actor" data-id="ben-warner">Ben Warner → Clifford · hops</button>' : ''}`;
-  for (const btn of $('#try-examples').querySelectorAll('[data-kind]')) btn.addEventListener('click', () => go(btn.dataset.kind, btn.dataset.id));
+  // Ledger-derived examples: every count is read from the timeline model, never typed.
+  $('#try-examples').innerHTML = recordExampleButtons(flagshipCase).map(item => `<button data-kind="${esc(item.kind)}" data-id="${esc(item.id)}">${esc(item.label)}</button>`).join('');
+  for (const btn of document.querySelectorAll('#try-examples [data-kind], .hero-records [data-kind]')) btn.addEventListener('click', () => go(btn.dataset.kind, btn.dataset.id));
+  for (const node of document.querySelectorAll('[data-record-fact]')) {
+    const [kind, ...rest] = String(node.dataset.recordFact).split(':');
+    node.textContent = recordFactLine(kind, rest.join(':'));
+  }
 
   $('#search').addEventListener('input', onSearch);
   $('#search').addEventListener('keydown', onSearchKeydown);
@@ -746,16 +769,17 @@ function renderHomeV2() {
     <div class="panel"><div class="metric">${state.catalogCounts.claims ?? state.claimCatalog.size}</div><div class="metric-label">public-indexed claims</div></div>
     <div class="panel"><div class="metric">${rejected}</div><div class="metric-label">${verifiedRefusals} verified · ${reviewRefusals} review-required refusals</div></div>`;
   const preferred = ['fiona-hill', 'ben-warner', 'simon-case', 'dominic-cummings', 'keir-starmer'];
+  const documentedSurfaces = actorId => state.timeline?.lanes.actor.get(actorId)?.surface_count ?? 0;
   const fallback = [...state.actorScores.values()]
     .filter(score => Number.isInteger(score.clifford_number) && score.clifford_number > 0)
-    .sort((a, b) => a.clifford_number - b.clifford_number || b.surface_density - a.surface_density)
+    .sort((a, b) => a.clifford_number - b.clifford_number || documentedSurfaces(b.actor_id) - documentedSurfaces(a.actor_id))
     .map(score => score.actor_id);
   const routeIds = [...new Set([...preferred, ...fallback])]
     .filter(id => Number.isInteger(state.actorScores.get(id)?.clifford_number) && state.actorScores.get(id).clifford_number > 0)
     .slice(0, 5);
   const routeList = routeIds.map(id => {
     const score = state.actorScores.get(id);
-    return `<button class="result" data-kind="actor" data-id="${esc(id)}"><span class="kind-glyph">A</span><span class="result-label">${esc(labelActor(id))}<small>Clifford Number ${score.clifford_number} · ${score.surfaces.length} documented surface${score.surfaces.length === 1 ? '' : 's'}</small></span></button>`;
+    return `<button class="result" data-kind="actor" data-id="${esc(id)}"><span class="kind-glyph">A</span><span class="result-label">${esc(labelActor(id))}<small>Clifford Number ${score.clifford_number} · ${documentedSurfaces(id)} documented surface${documentedSurfaces(id) === 1 ? '' : 's'} of ${state.timeline.counts.surfaces}</small></span></button>`;
   }).join('');
   const caseList = [...state.caseIndex.values()].map(item => `<button class="result" data-kind="case" data-id="${esc(item.case_id)}"><span class="kind-glyph">F</span><span class="result-label">${esc(item.title)}<small>${esc(item.tracking_id)} · ${esc(humanLabel(item.status))} · ${item.counts.events} typed events · ${item.claim_status_counts.verified} verified claims</small></span></button>`).join('');
   const sampleId = routeIds[0];
@@ -815,6 +839,64 @@ function releaseStripModel(current, baseline) {
   return { baselineAbsent: false, message, summary, delta };
 }
 
+// One fact line per searchable object, read from the timeline model: a count
+// with its noun, a dated span, and for people the Clifford Number. Zero-row and
+// legacy-only records say so instead of showing nothing.
+function recordFactLine(kind, id, extra = null) {
+  const model = state.timeline;
+  if (!model) return '';
+  if (kind === 'actor') {
+    const summary = entityTimelineSummary(model, 'actor', id);
+    const path = state.hopGraph?.shortest_paths?.[id];
+    const cn = Number.isInteger(path?.number) ? `Clifford Number ${path.number}` : 'Clifford Number N/A';
+    if (!summary) return state.actorScores.has(id) ? `no documented surface in this release · ${cn}` : 'legacy research node · no canonical record';
+    const years = recordRowYears(summary.rows);
+    const rosterOnly = summary.surface_count === 1 && summary.dense_memberships.length ? ' · listed on one contained roster only' : '';
+    return `${recordPlural(summary.surface_count, 'surface')} · ${recordPlural(Object.keys(summary.type_counts).length, 'type')} · ${years[0]}${years.length > 1 ? ` → ${years.at(-1)}` : ''}${rosterOnly} · ${cn}`;
+  }
+  if (kind === 'organization') {
+    const summary = entityTimelineSummary(model, 'organization', id);
+    if (!summary) return state.orgScores.has(id) ? 'no documented surface in this release' : 'legacy research node · no canonical record';
+    const years = recordRowYears(summary.rows);
+    return `${recordPlural(summary.surface_count, 'surface')} · ${recordPlural(Object.keys(summary.type_counts).length, 'type')} · ${years[0]}${years.length > 1 ? ` → ${years.at(-1)}` : ''}${summary.hop_eligible_surface_count ? ` · ${summary.hop_eligible_surface_count} hop-eligible` : ' · context only'}`;
+  }
+  if (kind === 'surface') {
+    const mark = model.surfaceMarks.find(item => item.surface_id === id);
+    if (!mark) return '';
+    return `${humanLabel(mark.surface_type || 'unknown')} · ${recordWindowText(mark)} · ${recordPlural(mark.actor_count, 'person', 'people')} · ${mark.surface_hop_eligible ? 'hop-eligible' : 'context only'}${mark.dense ? ' · contained roster' : ''}`;
+  }
+  if (kind === 'type') {
+    const lane = model.lanes.type.get(id);
+    if (!lane) return '';
+    return `${recordPlural(lane.surface_count, 'surface')} of ${model.counts.surfaces} · ${lane.hop_eligible_surface_count} hop-eligible`;
+  }
+  if (kind === 'year') {
+    const started = model.surfaceMarks.filter(mark => String(mark.time_start ?? '').startsWith(id)).length;
+    return `${recordPlural(started, 'surface')} started · ${recordPlural(model.counts.hop_bases_by_year?.[id] ?? 0, 'hop basis', 'hop bases')} dated in the year`;
+  }
+  if (kind === 'receipt' && extra) {
+    return `${recordEvidenceWord(extra.evidence_class || 'open')} · ${extra.publisher || 'publisher not recorded'} · ${extra.source_published_at || extra.published_at || 'published date not recorded'}`;
+  }
+  return '';
+}
+
+// The "Start with" buttons: labels and counts come from the ledger, never from a literal.
+function recordExampleButtons(flagshipCase) {
+  const model = state.timeline;
+  const items = [];
+  const warner = model.lanes.actor.get('ben-warner');
+  if (warner) items.push({ kind: 'actor', id: 'ben-warner', label: `${labelActor('ben-warner')} · ${recordPlural(warner.surface_count, 'surface')}` });
+  const twin = model.lanes.organization.get('electric-twin');
+  if (twin) items.push({ kind: 'organization', id: 'electric-twin', label: `${labelOrg('electric-twin')} · ${recordPlural(twin.surface_count, 'surface')}` });
+  const block = model.dense[0];
+  if (block) {
+    const organizationRow = (model.surfaceRows.get(block.surface_id) ?? []).find(row => row.participant_type === 'organization');
+    items.push({ kind: 'surface', id: block.surface_id, label: `${organizationRow?.entity_label ?? 'Roster'} roster · ${recordPlural(block.listed_count, 'listed name')}` });
+  }
+  if (flagshipCase) items.push({ kind: 'case', id: flagshipCase.case_id, label: 'Clifford → Starmer · official' });
+  return items;
+}
+
 function rankMatch(q, label, id, aliases = []) {
   const values = [{ value: norm(label), context: 'name' }, ...aliases.map(value => ({ value: norm(value), context: `alias: ${value}` })), { value: norm(id), context: 'canonical ID' }];
   let best = null;
@@ -844,6 +926,15 @@ function onSearch(e) {
       if (match) results.push({ kind: 'organization', id: o.id, label: o.label, ...match });
     }
     for (const s of state.surfaceGraph.surfaces) { const match = rankMatch(q, s.surface_label, s.surface_id); if (match) results.push({ kind: 'surface', id: s.surface_id, label: s.surface_label, ...match }); }
+    // Surface types and the years with rows are searchable records of the timeline model.
+    for (const lane of state.timeline?.lanes.type.values() ?? []) {
+      const match = rankMatch(q, lane.label, lane.id, [`${lane.label} surface type`]);
+      if (match) results.push({ kind: 'type', id: lane.id, label: lane.label, ...match });
+    }
+    for (const year of state.timeline?.range.years_with_rows ?? []) {
+      const match = rankMatch(q, `Year ${year}`, year);
+      if (match) results.push({ kind: 'year', id: year, label: `Year ${year}`, ...match });
+    }
     for (const c of state.chains.values()) { const match = rankMatch(q, c.chain_label, c.chain_id); if (match) results.push({ kind: 'chain', id: c.chain_id, label: c.chain_label, ...match }); }
     for (const c of state.candidates.values()) {
       const match = rankMatch(q, c.label, c.id, c.aliases ?? []);
@@ -863,19 +954,35 @@ function onSearch(e) {
     }
     for (const receipt of publicReceiptRecords().values()) {
       const match = rankMatch(q, receiptTitle(receipt), receipt.receipt_id, [receipt.publisher, receipt.extract, receipt.notes, receipt.path]);
-      if (match) results.push({ kind: 'receipt', id: receipt.receipt_id, label: receiptTitle(receipt), ...match });
+      if (match) results.push({ kind: 'receipt', id: receipt.receipt_id, label: receiptTitle(receipt), fact: recordFactLine('receipt', receipt.receipt_id, receipt), ...match });
     }
   }
-  const kindOrder = { track: 0, case: 1, actor: 2, organization: 3, claim: 4, receipt: 5, surface: 6, chain: 7, candidate: 8 };
-  state.searchResults = results.sort((a, b) => a.score - b.score || kindOrder[a.kind] - kindOrder[b.kind] || a.label.localeCompare(b.label)).slice(0, 12);
+  for (const result of results) if (result.fact === undefined) result.fact = recordFactLine(result.kind, result.id);
+  state.searchResults = results.sort(compareSearchResults).slice(0, 12);
   state.searchActiveIndex = -1;
   const box = $('#results');
   box.innerHTML = state.searchResults.length
-    ? state.searchResults.map((r, i) => `<button id="search-option-${i}" class="result" role="option" tabindex="-1" aria-selected="false" data-kind="${esc(r.kind)}" data-id="${esc(r.id)}"><span class="kind-glyph">${kindGlyph(r.kind)}</span><span class="result-label">${esc(r.label)}<small>${esc(r.kind)} · ${esc(r.context)}</small></span></button>`).join('')
+    ? state.searchResults.map((r, i) => `<button id="search-option-${i}" class="result" role="option" tabindex="-1" aria-selected="false" data-kind="${esc(r.kind)}" data-id="${esc(r.id)}"><span class="kind-glyph">${kindGlyph(r.kind)}</span><span class="result-label">${esc(r.label)}<small>${esc(searchKindLabel(r.kind))} · ${esc(r.context)}</small>${r.fact ? `<span class="result-fact">${esc(r.fact)}</span>` : ''}</span></button>`).join('')
     : q.length >= 2 ? `<div class="meta" role="option" aria-disabled="true">No public record in this release matches “${esc(e.target.value.trim())}”. Absence here is not evidence of absence.</div>` : '';
   $('#search').setAttribute('aria-expanded', String(q.length >= 2));
   $('#search').removeAttribute('aria-activedescendant');
   for (const btn of box.querySelectorAll('.result')) btn.addEventListener('click', () => activateResult(btn.dataset.kind, btn.dataset.id));
+}
+
+// Ranking: match quality, then kind, then records with ledger rows before
+// zero-row records, then label. The kind order puts the ledger's own objects first.
+const SEARCH_KIND_ORDER = { actor: 0, organization: 1, surface: 2, type: 3, year: 4, case: 5, track: 6, chain: 7, claim: 8, receipt: 9, candidate: 10 };
+const SEARCH_KIND_LABEL = { actor: 'person', organization: 'organization', surface: 'surface', type: 'surface type', year: 'year', case: 'case', track: 'track', chain: 'pathway', claim: 'claim', receipt: 'receipt', candidate: 'candidate' };
+function searchKindLabel(kind) { return SEARCH_KIND_LABEL[kind] ?? kind; }
+function searchHasRows(result) {
+  if (result.kind === 'actor' || result.kind === 'organization') return (state.timeline?.lanes[result.kind].get(result.id)?.row_count ?? 0) > 0 ? 0 : 1;
+  return 0;
+}
+function compareSearchResults(a, b) {
+  return a.score - b.score
+    || (SEARCH_KIND_ORDER[a.kind] ?? 99) - (SEARCH_KIND_ORDER[b.kind] ?? 99)
+    || searchHasRows(a) - searchHasRows(b)
+    || a.label.localeCompare(b.label);
 }
 
 function browseAll() {
@@ -883,12 +990,15 @@ function browseAll() {
     ...state.surfaceGraph.actors.map(item => ({ kind: 'actor', id: item.id, label: item.label })),
     ...state.surfaceGraph.organizations.map(item => ({ kind: 'organization', id: item.id, label: item.label })),
     ...state.surfaceGraph.surfaces.map(item => ({ kind: 'surface', id: item.surface_id, label: item.surface_label })),
+    ...[...(state.timeline?.lanes.type.values() ?? [])].map(lane => ({ kind: 'type', id: lane.id, label: lane.label })),
+    ...(state.timeline?.range.years_with_rows ?? []).map(year => ({ kind: 'year', id: year, label: `Year ${year}` })),
     ...[...state.chains.values()].map(item => ({ kind: 'chain', id: item.chain_id, label: item.chain_label })),
     ...[...state.caseIndex.values()].map(item => ({ kind: 'case', id: item.case_id, label: item.title })),
     ...[...state.tracks.values()].map(item => ({ kind: 'track', id: item.track_id, label: item.label })),
     ...[...state.claimCatalog.values()].map(item => ({ kind: 'claim', id: item.key, label: item.plain })),
     ...[...publicReceiptRecords().values()].map(item => ({ kind: 'receipt', id: item.receipt_id, label: receiptTitle(item) }))
   ].sort((a, b) => a.label.localeCompare(b.label)).slice(0, 80);
+  for (const item of items) item.fact = recordFactLine(item.kind, item.id, item.kind === 'receipt' ? publicReceiptRecords().get(item.id) : null);
   state.searchResults = items;
   state.searchActiveIndex = -1;
   $('#search').value = '';
@@ -896,7 +1006,7 @@ function browseAll() {
   $('#search').removeAttribute('aria-activedescendant');
   const box = $('#results');
   box.innerHTML = items.length
-    ? items.map((item, i) => `<button id="search-option-${i}" class="result" role="option" tabindex="0" aria-selected="false" data-kind="${esc(item.kind)}" data-id="${esc(item.id)}"><span class="kind-glyph">${kindGlyph(item.kind)}</span><span class="result-label">${esc(item.label)}<small>${esc(item.kind)}</small></span></button>`).join('')
+    ? items.map((item, i) => `<button id="search-option-${i}" class="result" role="option" tabindex="0" aria-selected="false" data-kind="${esc(item.kind)}" data-id="${esc(item.id)}"><span class="kind-glyph">${kindGlyph(item.kind)}</span><span class="result-label">${esc(item.label)}<small>${esc(searchKindLabel(item.kind))}</small>${item.fact ? `<span class="result-fact">${esc(item.fact)}</span>` : ''}</span></button>`).join('')
     : `<div class="meta" role="option" aria-disabled="true">${esc(translate(state.locale, 'noRecords'))}</div>`;
   for (const btn of box.querySelectorAll('.result')) btn.addEventListener('click', () => activateResult(btn.dataset.kind, btn.dataset.id));
   announce(translate(state.locale, 'browseShowing', { count: items.length }));
@@ -934,7 +1044,7 @@ function clearSearchResults() {
 }
 
 function kindGlyph(kind) {
-  return { actor: 'A', organization: 'O', surface: 'S', chain: 'C', case: 'F', track: 'T', claim: 'K', receipt: 'R', candidate: '?' }[kind] || '•';
+  return { actor: 'A', organization: 'O', surface: 'S', type: '#', year: 'Y', chain: 'C', case: 'F', track: 'T', claim: 'K', receipt: 'R', candidate: '?' }[kind] || '•';
 }
 
 function renderMethod(section = 'overview') {
@@ -977,6 +1087,8 @@ async function renderEntity(kind, id) {
   else if (kind === 'chain') renderChain(id);
   else if (kind === 'candidate') renderCandidate(id);
   else if (kind === 'surface') renderSurface(id);
+  else if (kind === 'type') renderType(id);
+  else if (kind === 'year') renderYear(id);
   else if (kind === 'case') await renderCase(id);
   else if (kind === 'track') await renderTrack(id);
   else if (kind === 'method') renderMethod(id);
@@ -1082,12 +1194,6 @@ async function renderCase(id) {
     ${sections}`;
 }
 
-function metricPanelRatio(label, value, max) {
-  if (value == null) return metricPanel(label, 'N/A');
-  const pct = max > 0 ? Math.min(100, Math.round((value / max) * 100)) : 0;
-  return `<div class="panel"><div class="metric">${pct}</div><div class="metric-bar"><div class="metric-bar-fill" style="width:${pct}%"></div></div><div class="metric-label">${esc(label)} · relative 0–100 index, not probability</div></div>`;
-}
-
 function renderTopologyMap(path) {
   if (!path?.actor_path?.length) return '';
   const items = [];
@@ -1108,112 +1214,580 @@ function renderTopologyMap(path) {
   return `<div class="route-map" role="img" aria-label="${esc(aria)}"><svg viewBox="0 0 ${width} 260" aria-hidden="true" preserveAspectRatio="xMidYMid meet" style="min-width:${width}px">${lines}${nodes}</svg></div>`;
 }
 
-function legacyIsTopology(edge) {
-  return edge?.topology === true
-    || edge?.topology_only === true
-    || edge?.type === 'topology'
-    || edge?.type === 'umbrella-membership'
-    || edge?.status === 'topology'
-    || edge?.status === 'topology-membership';
+/* ---------------- Record pages ----------------
+   Design 2's entity pages (actor, organization, surface, surface type, year),
+   fed by the ledger timeline model in src/visual-aperture-timeline.mjs: the
+   same derived model the aperture's Timeline mode draws. Every table row is
+   one participation row of that model; every count names its denominator; a
+   hop basis is listed with its surface and day and never drawn as a line
+   between two people; a dense roster stays one contained object; undated rows
+   are listed, never placed on an axis; no composite score is read.
+
+   The *RecordModel functions are pure (vm-tested in test/record-pages.test.js):
+   they read only the model and data handed to them. The render* functions
+   below them are the DOM wiring. */
+
+const RECORD_BOUNDARY = 'Documented participation on bounded public surfaces only. Shared context does not establish contact, influence, coordination, agreement, or wrongdoing.';
+const RECORD_MACHINE_NOTE = '[machine-derived from ledger; no editorial profile yet]';
+const RECORD_EVIDENCE_ORDER = ['official', 'confirmed', 'government_record', 'primary_public', 'reported', 'derived', 'judgment', 'open', 'not_recorded'];
+const RECORD_FLOORS = [['open', 'All admitted evidence'], ['reported', 'Reported or stronger'], ['primary_public', 'Primary public or stronger'], ['official', 'Official only']];
+const RECORD_PREVIEW_ROWS = 18;
+
+function recordPlural(count, noun, pluralNoun = `${noun}s`) { return `${count} ${count === 1 ? noun : pluralNoun}`; }
+function recordCompare(a, b) { return String(a ?? '').localeCompare(String(b ?? '')); }
+function recordUnique(values) { return [...new Set((values ?? []).filter(Boolean))]; }
+function recordEvidenceWord(cls) {
+  const value = String(cls || 'open');
+  if (value === 'primary_public') return 'primary public';
+  if (value === 'government_record') return 'government record';
+  if (value === 'not_recorded') return 'not recorded';
+  return value.replace(/_/g, ' ');
+}
+function recordEvidenceOrder(cls) { const index = RECORD_EVIDENCE_ORDER.indexOf(cls); return index === -1 ? RECORD_EVIDENCE_ORDER.length : index; }
+function recordEvidenceMix(counts) {
+  return Object.entries(counts ?? {})
+    .sort((a, b) => recordEvidenceOrder(a[0]) - recordEvidenceOrder(b[0]))
+    .map(([cls, count]) => `${count} ${recordEvidenceWord(cls)}`).join(' · ');
+}
+function recordCountEntries(counts, labelFor) {
+  return Object.entries(counts ?? {})
+    .map(([id, count]) => ({ id, label: labelFor(id), count }))
+    .sort((a, b) => b.count - a.count || recordCompare(a.label, b.label));
+}
+// The date cell: precision and open ends are spelled out, never rounded away.
+function recordWindowText(row) {
+  if (!row || row.precision === 'undated' || row.start_day == null) return 'not dated';
+  if (row.kind === 'open') return `${row.time_start} → end not recorded`;
+  if (row.precision === 'year') return `${row.time_start} · year precision`;
+  if (row.precision === 'month') return `${row.time_start}${row.time_end && row.time_end !== row.time_start ? ` → ${row.time_end}` : ''} · month precision`;
+  if (row.kind === 'span') return `${row.time_start} → ${row.time_end}`;
+  return row.time_start;
+}
+function recordSpanText(summary) {
+  if (!summary?.first_day) return 'no dated row';
+  const last = summary.has_open_end ? 'end not recorded' : summary.last_day;
+  return summary.first_day === last ? summary.first_day : `${summary.first_day} → ${last}`;
+}
+function recordRowYears(rows) {
+  return [...new Set((rows ?? []).filter(row => row.start_day != null).map(row => String(row.time_start).slice(0, 4)))].sort();
+}
+function recordRowsByDate(rows) {
+  return [...(rows ?? [])].sort((a, b) => (a.start_day ?? Infinity) - (b.start_day ?? Infinity) || recordCompare(a.surface_label, b.surface_label) || recordCompare(a.key, b.key));
+}
+function recordLabels(model, labels = {}) {
+  return {
+    actor: labels.actor ?? (id => model.lanes.actor.get(id)?.label ?? id),
+    organization: labels.organization ?? (id => model.lanes.organization.get(id)?.label ?? id)
+  };
+}
+function recordSurfaceRows(model, surfaceId, participantType) {
+  return (model.surfaceRows.get(surfaceId) ?? []).filter(row => row.participant_type === participantType);
+}
+function recordDenseBlock(model, surfaceId) {
+  return (model.dense ?? []).find(block => block.surface_id === surfaceId) ?? null;
 }
 
-function legacyShortestPath(startId, targetId = state.legacyGraph?.target_node_id) {
-  if (!startId || !targetId || startId === targetId) return null;
-  const nodes = state.legacyNodes;
-  if (!nodes?.has(startId) || !nodes.has(targetId)) return null;
-  const adjacency = new Map();
-  for (const edge of state.legacyGraph.edges ?? []) {
-    if (legacyIsTopology(edge)) continue;
-    if (!adjacency.has(edge.from)) adjacency.set(edge.from, []);
-    if (!adjacency.has(edge.to)) adjacency.set(edge.to, []);
-    adjacency.get(edge.from).push({ from: edge.from, to: edge.to, edge, reversed: false });
-    adjacency.get(edge.to).push({ from: edge.to, to: edge.from, edge, reversed: true });
+// Admitted hop partners of one actor from hop-graph edges: every basis names
+// its surface and day. temporal_envelope is never read.
+function actorHopPartners(hopGraph, model, actorId, labelActorFor) {
+  const partners = new Map();
+  for (const edge of hopGraph?.edges ?? []) {
+    if (edge.actor_a !== actorId && edge.actor_b !== actorId) continue;
+    const partnerId = edge.actor_a === actorId ? edge.actor_b : edge.actor_a;
+    const bases = (edge.surfaces ?? []).map(basis => ({
+      surface_id: basis.surface_id,
+      surface_label: basis.surface_label || model.lanes.surface.get(basis.surface_id)?.label || basis.surface_id,
+      day: basis.valid_from ?? null,
+      evidence_class: basis.evidence_class ?? 'open',
+      role: (edge.actor_a === actorId ? basis.actor_a_role : basis.actor_b_role) ?? null,
+      partner_role: (edge.actor_a === actorId ? basis.actor_b_role : basis.actor_a_role) ?? null,
+      receipt_ids: recordUnique(basis.receipt_ids)
+    })).sort((a, b) => recordCompare(a.day ?? '9999', b.day ?? '9999') || recordCompare(a.surface_id, b.surface_id));
+    partners.set(partnerId, { actor_id: partnerId, label: labelActorFor(partnerId), bases });
   }
-  const queue = [{ id: startId, hops: [] }];
-  const seen = new Set([startId]);
-  while (queue.length) {
-    const current = queue.shift();
-    if (current.hops.length >= 12) continue;
-    for (const hop of adjacency.get(current.id) ?? []) {
-      if (seen.has(hop.to)) continue;
-      const hops = [...current.hops, hop];
-      if (hop.to === targetId) return { number: hops.length, hops, node_ids: [startId, ...hops.map(h => h.to)] };
-      seen.add(hop.to);
-      queue.push({ id: hop.to, hops });
+  return [...partners.values()].sort((a, b) => recordCompare(a.bases[0]?.day ?? '9999', b.bases[0]?.day ?? '9999') || recordCompare(a.label, b.label));
+}
+
+// Counted co-presence from the rows alone: people documented beside this
+// actor on at least `minimum` non-dense surfaces. Dense rosters are excluded
+// by rule and reported separately so the exclusion is visible.
+function actorRecurringCoPresence(rows, labelActorFor, { minimum = 2 } = {}) {
+  const shared = new Map();
+  for (const row of rows ?? []) {
+    if (row.dense) continue;
+    for (const other of row.co_actor_ids ?? []) {
+      if (!shared.has(other)) shared.set(other, { actor_id: other, label: labelActorFor(other), surface_ids: [], surface_labels: [], dates: [] });
+      const entry = shared.get(other);
+      entry.surface_ids.push(row.surface_id);
+      entry.surface_labels.push(row.surface_label);
+      entry.dates.push(recordWindowText(row));
     }
   }
-  return null;
+  return [...shared.values()]
+    .filter(entry => entry.surface_ids.length >= minimum)
+    .sort((a, b) => b.surface_ids.length - a.surface_ids.length || recordCompare(a.label, b.label));
 }
 
-function renderLegacyPath(path) {
-  if (!path) return '<p class="why-no-hop"><strong>Legacy edge graph: no path found.</strong></p>';
-  const steps = [`<div class="path-step"><span class="path-node">${esc(state.legacyNodes.get(path.node_ids[0])?.label ?? path.node_ids[0])}</span></div>`];
-  for (const h of path.hops) {
-    steps.push(`<div class="path-step path-connector"><span class="path-surface">${esc(h.edge.type || 'edge')} · ${esc(h.edge.evidence_class || 'unknown')}</span></div>`);
-    steps.push(`<div class="path-step"><span class="path-node">${esc(state.legacyNodes.get(h.to)?.label ?? h.to)}</span></div>`);
+function actorRecordModel(model, hopGraph, score, id, labels = {}) {
+  const label = recordLabels(model, labels);
+  const summary = entityTimelineSummary(model, 'actor', id);
+  const rows = recordRowsByDate(summary?.rows);
+  const surfaceTotal = model.counts.surfaces;
+  const path = hopGraph?.shortest_paths?.[id] ?? null;
+  const cliffordNumber = Number.isInteger(path?.number) ? path.number : null;
+  const typeCounts = recordCountEntries(summary?.type_counts, type => humanLabel(type));
+  const organizationCounts = recordCountEntries(summary?.co_organization_counts, label.organization);
+  const hopPartners = actorHopPartners(hopGraph, model, id, label.actor);
+  const recurring = actorRecurringCoPresence(rows, label.actor);
+  const denseMemberships = (summary?.dense_memberships ?? []).map(surfaceId => recordDenseBlock(model, surfaceId)).filter(Boolean)
+    .map(block => ({ surface_id: block.surface_id, surface_label: block.surface_label, listed_count: block.listed_count }));
+  const years = recordRowYears(rows);
+  const surfaceCount = summary?.surface_count ?? 0;
+  const facts = [{ key: 'surfaces', text: `${recordPlural(surfaceCount, 'documented surface')} of ${surfaceTotal}` }];
+  if (rows.length) {
+    facts.push({ key: 'types', text: `across ${recordPlural(typeCounts.length, 'surface type')}` });
+    facts.push({ key: 'organizations', text: `with ${recordPlural(organizationCounts.length, 'organization')} on those surfaces` });
+    facts.push({ key: 'span', text: `${recordSpanText(summary)} · ${recordPlural(years.length, 'active year')}` });
+    facts.push({ key: 'hop', text: `${summary.hop_eligible_surface_count} hop-eligible · ${summary.context_surface_count} context-only` });
+    facts.push({ key: 'receipts', text: `${recordPlural(summary.receipt_ids.length, 'receipt')} on ${recordPlural(rows.length, 'row')}: ${recordEvidenceMix(summary.evidence_counts)}` });
   }
-  return `<div class="path-timeline">${steps.join('')}</div>`
-    + path.hops.map(h => `<div class="receipts">${esc(state.legacyNodes.get(h.from)?.label ?? h.from)} ↔ ${esc(state.legacyNodes.get(h.to)?.label ?? h.to)}: ${esc(h.edge.type || 'edge')} · ${esc(h.edge.evidence_class || 'unknown')}</div>`).join('');
+  facts.push({ key: 'cn', text: cliffordNumber == null ? 'Clifford Number N/A' : `Clifford Number ${cliffordNumber}` });
+  const machineSentence = rows.length
+    ? `Documented on ${recordPlural(surfaceCount, 'surface')} of ${recordPlural(typeCounts.length, 'type')} ${summary.first_day === (summary.has_open_end ? null : summary.last_day) ? `on ${summary.first_day}` : `between ${summary.first_day} and ${summary.has_open_end ? 'an end not recorded' : summary.last_day}`}, beside ${recordPlural(organizationCounts.length, 'organization')}.`
+    : 'No participation row in this release.';
+  return {
+    kind: 'actor', id, label: label.actor(id), summary, rows,
+    row_count: rows.length, surface_count: surfaceCount, surface_total: surfaceTotal,
+    type_counts: typeCounts, type_count: typeCounts.length,
+    organization_counts: organizationCounts, organization_count: organizationCounts.length,
+    hop_partners: hopPartners, hop_partner_count: hopPartners.length,
+    recurring, dense_memberships: denseMemberships, years,
+    clifford: { number: cliffordNumber, path, why_no_hop: score?.why_no_hop ?? null },
+    receipt_ids: summary?.receipt_ids ?? [],
+    facts, machine_sentence: machineSentence
+  };
+}
+
+function organizationRecordModel(model, organization, id, labels = {}) {
+  const label = recordLabels(model, labels);
+  const summary = entityTimelineSummary(model, 'organization', id);
+  const rows = recordRowsByDate(summary?.rows);
+  const surfaceTotal = model.counts.surfaces;
+  const typeCounts = recordCountEntries(summary?.type_counts, type => humanLabel(type));
+  // People documented on these surfaces, from the rows: dense rosters are one
+  // line each, never 112 names folded into the count.
+  const actorCounts = {};
+  const organizationCounts = {};
+  const denseLines = [];
+  for (const row of rows) {
+    if (row.dense) {
+      const block = recordDenseBlock(model, row.surface_id);
+      if (block) denseLines.push({ surface_id: block.surface_id, surface_label: block.surface_label, listed_count: block.listed_count });
+    } else {
+      for (const actorId of row.co_actor_ids ?? []) actorCounts[actorId] = (actorCounts[actorId] ?? 0) + 1;
+    }
+    for (const orgId of row.co_organization_ids ?? []) organizationCounts[orgId] = (organizationCounts[orgId] ?? 0) + 1;
+  }
+  const people = recordCountEntries(actorCounts, label.actor);
+  const coOrganizations = recordCountEntries(organizationCounts, label.organization);
+  const years = recordRowYears(rows);
+  const surfaceCount = summary?.surface_count ?? 0;
+  const facts = [{ key: 'surfaces', text: `${recordPlural(surfaceCount, 'documented surface')} of ${surfaceTotal}` }];
+  if (rows.length) {
+    facts.push({ key: 'types', text: `across ${recordPlural(typeCounts.length, 'surface type')}` });
+    facts.push({ key: 'people', text: `${recordPlural(people.length, 'person', 'people')} documented on them${denseLines.length ? ` · plus ${denseLines.map(line => `${line.listed_count} names on one contained roster`).join(', ')}` : ''}` });
+    facts.push({ key: 'span', text: `${recordSpanText(summary)} · ${recordPlural(years.length, 'active year')}` });
+    facts.push({ key: 'hop', text: `${summary.hop_eligible_surface_count} hop-eligible · ${summary.context_surface_count} context-only` });
+    facts.push({ key: 'receipts', text: `${recordPlural(summary.receipt_ids.length, 'receipt')} on ${recordPlural(rows.length, 'row')}: ${recordEvidenceMix(summary.evidence_counts)}` });
+  }
+  const machineSentence = rows.length
+    ? `Documented on ${recordPlural(surfaceCount, 'surface')} of ${recordPlural(typeCounts.length, 'type')} between ${summary.first_day} and ${summary.has_open_end ? 'an end not recorded' : summary.last_day}, beside ${recordPlural(people.length, 'person', 'people')}${denseLines.length ? ` and ${denseLines.map(line => `${line.listed_count} roster names`).join(', ')}` : ''}.`
+    : 'No participation row in this release.';
+  return {
+    kind: 'organization', id, label: label.organization(id), summary, rows,
+    row_count: rows.length, surface_count: surfaceCount, surface_total: surfaceTotal,
+    type_counts: typeCounts, type_count: typeCounts.length,
+    people, people_count: people.length, dense_lines: denseLines,
+    co_organizations: coOrganizations, years,
+    declared: { surface_factory: organization?.surface_factory === true, broad_institution: organization?.broad_institution === true, kind: organization?.kind ?? null },
+    receipt_ids: summary?.receipt_ids ?? [],
+    facts, machine_sentence: machineSentence
+  };
+}
+
+function surfaceRecordModel(model, hopGraph, receiptGraph, surface, labels = {}) {
+  const label = recordLabels(model, labels);
+  const id = surface.surface_id;
+  const rows = model.surfaceRows.get(id) ?? [];
+  const mark = model.surfaceMarks.find(item => item.surface_id === id) ?? null;
+  const dense = model.denseSurfaceIds.has(id);
+  const actorRows = rows.filter(row => row.participant_type === 'actor');
+  const organizationRows = rows.filter(row => row.participant_type === 'organization');
+  const participants = actorRows.map(row => ({ row, elsewhere: Math.max(0, (model.lanes.actor.get(row.entity_id)?.surface_count ?? 1) - 1) }));
+  // Ledger order for ordinary surfaces; a dense roster is sorted by the only
+  // cross-reference the ledger supports: how many other surfaces name the person.
+  if (dense) participants.sort((a, b) => b.elsewhere - a.elsewhere || recordCompare(a.row.entity_label, b.row.entity_label));
+  const elsewhereCount = participants.filter(entry => entry.elsewhere > 0).length;
+  const bases = (model.hopBases ?? []).filter(basis => basis.surface_id === id)
+    .sort((a, b) => recordCompare(a.iso_day ?? '9999', b.iso_day ?? '9999') || recordCompare(label.actor(a.actor_a), label.actor(b.actor_a)) || recordCompare(label.actor(a.actor_b), label.actor(b.actor_b)));
+  const basisDays = recordUnique(bases.map(basis => basis.iso_day));
+  const refusal = surface.hop_eligible ? null : (model.refusalReasons.get(id) ?? { reason: surface.hop_refusal_reason ?? null, reason_recorded: Boolean(surface.hop_refusal_reason) });
+  const claims = (receiptGraph?.claims ?? []).filter(claim => (claim.surface_ids ?? []).includes(id))
+    .sort((a, b) => recordCompare(a.date ?? '9999', b.date ?? '9999') || recordCompare(a.claim_id, b.claim_id));
+  const evidenceCounts = {};
+  for (const row of rows) evidenceCounts[row.evidence_class] = (evidenceCounts[row.evidence_class] ?? 0) + 1;
+  const receiptIds = recordUnique([...(surface.receipt_ids ?? []), ...rows.flatMap(row => row.participant_receipt_ids ?? [])]);
+  const windowText = mark ? recordWindowText(mark) : 'not dated';
+  const hopStatus = surface.hop_eligible
+    ? `Hop-eligible · ${recordPlural(bases.length, 'admitted actor-pair basis', 'admitted actor-pair bases')}${basisDays.length ? ` dated ${basisDays.join(', ')}` : ''}`
+    : `Context only · ${refusal?.reason_recorded ? `reason: ${refusal.reason}` : 'no reason recorded in the ledger'}`;
+  const facts = [
+    { key: 'people', text: `${recordPlural(participants.length, 'person', 'people')} documented${dense ? ' on one contained roster' : ''}` },
+    { key: 'organizations', text: recordPlural(organizationRows.length, 'organization') },
+    { key: 'evidence', text: rows.length ? `rows: ${recordEvidenceMix(evidenceCounts)}` : 'no participation row' },
+    { key: 'receipts', text: `${recordPlural(receiptIds.length, 'receipt')} (${recordPlural(recordUnique(surface.receipt_ids).length, 'surface receipt')})` },
+    { key: 'hop', text: surface.hop_eligible ? recordPlural(bases.length, 'admitted hop basis', 'admitted hop bases') : 'no hop basis · context only' },
+    { key: 'claims', text: `${recordPlural(claims.length, 'claim')} referencing this surface` }
+  ];
+  if (dense) facts.splice(1, 0, { key: 'elsewhere', text: `${elsewhereCount} of ${participants.length} listed people appear on any other documented surface` });
+  return {
+    kind: 'surface', id, label: surface.surface_label || id, surface, mark, dense, rows,
+    actor_rows: actorRows, organization_rows: organizationRows, participants,
+    participant_count: participants.length, elsewhere_count: elsewhereCount, nowhere_else_count: participants.length - elsewhereCount,
+    bases, basis_count: bases.length, basis_days: basisDays, refusal, claims, evidence_counts: evidenceCounts,
+    receipt_ids: receiptIds, window_text: windowText, hop_status: hopStatus, facts
+  };
+}
+
+function typeRecordModel(model, type) {
+  const lane = model.lanes.type.get(type) ?? null;
+  if (!lane) return null;
+  const surfaces = recordRowsByDate(lane.rows);
+  const rows = recordRowsByDate(model.rows.filter(row => row.surface_type === type));
+  const actorRows = rows.filter(row => row.participant_type === 'actor');
+  const organizationRows = rows.filter(row => row.participant_type === 'organization');
+  const peopleCounts = {};
+  for (const row of actorRows) if (!row.dense) peopleCounts[row.entity_id] = (peopleCounts[row.entity_id] ?? 0) + 1;
+  const organizationCounts = {};
+  for (const row of organizationRows) organizationCounts[row.entity_id] = (organizationCounts[row.entity_id] ?? 0) + 1;
+  const people = recordCountEntries(peopleCounts, id => model.lanes.actor.get(id)?.label ?? id).filter(entry => entry.count >= 2);
+  const organizations = recordCountEntries(organizationCounts, id => model.lanes.organization.get(id)?.label ?? id);
+  const denseLines = surfaces.filter(mark => mark.dense).map(mark => recordDenseBlock(model, mark.surface_id)).filter(Boolean)
+    .map(block => ({ surface_id: block.surface_id, surface_label: block.surface_label, listed_count: block.listed_count }));
+  const years = recordRowYears(surfaces);
+  const hopCount = surfaces.filter(mark => mark.surface_hop_eligible).length;
+  const facts = [
+    { key: 'surfaces', text: `${recordPlural(surfaces.length, 'surface')} of ${model.counts.surfaces}` },
+    { key: 'hop', text: `${hopCount} hop-eligible · ${surfaces.length - hopCount} context-only` },
+    { key: 'rows', text: `${recordPlural(actorRows.length, 'person row', 'people rows')} · ${recordPlural(organizationRows.length, 'organization row')}` },
+    { key: 'span', text: years.length ? `${years[0]}${years.length > 1 ? ` → ${years.at(-1)}` : ''} · ${recordPlural(years.length, 'active year')}` : 'no dated surface' }
+  ];
+  return { kind: 'type', id: type, label: humanLabel(type), lane, surfaces, rows, actor_rows: actorRows, organization_rows: organizationRows, people, organizations, dense_lines: denseLines, years, hop_count: hopCount, facts, receipt_ids: recordUnique(rows.flatMap(row => row.receipt_ids)) };
+}
+
+// A year page lists the rows active in that calendar year. A row that began
+// earlier is flagged, not re-dated; hop bases are counted by basis day (never
+// by an edge envelope); receipts without a published date are counted as such.
+function yearRecordModel(model, year, receipts = []) {
+  const text = String(year ?? '').trim();
+  if (!/^\d{4}$/.test(text)) return null;
+  const fromDay = timelineDay(text);
+  const toDay = timelineDay(text, true);
+  const active = row => row.start_day != null && row.start_day <= toDay && (row.kind === 'open' ? Infinity : (row.end_day ?? row.start_day)) >= fromDay;
+  const startsIn = row => row.start_day != null && String(row.time_start).slice(0, 4) === text;
+  const rowsActive = recordRowsByDate(model.rows.filter(active)).map(row => ({ row, began_earlier: !startsIn(row) }));
+  const rowsStarted = rowsActive.filter(entry => !entry.began_earlier).length;
+  const surfacesActive = model.surfaceMarks.filter(active);
+  const surfacesStarted = surfacesActive.filter(startsIn).length;
+  if (!rowsActive.length && !surfacesActive.length) return null;
+  const published = receipts.filter(receipt => String(receipt?.source_published_at ?? '').startsWith(text)).length;
+  const undatedReceipts = receipts.filter(receipt => !receipt?.source_published_at).length;
+  const hopBases = model.counts.hop_bases_by_year?.[text] ?? 0;
+  const peopleCounts = {};
+  const organizationCounts = {};
+  for (const { row } of rowsActive) {
+    if (row.participant_type === 'actor' && !row.dense) peopleCounts[row.entity_id] = (peopleCounts[row.entity_id] ?? 0) + 1;
+    if (row.participant_type === 'organization') organizationCounts[row.entity_id] = (organizationCounts[row.entity_id] ?? 0) + 1;
+  }
+  const people = recordCountEntries(peopleCounts, id => model.lanes.actor.get(id)?.label ?? id).filter(entry => entry.count >= 2);
+  const organizations = recordCountEntries(organizationCounts, id => model.lanes.organization.get(id)?.label ?? id).filter(entry => entry.count >= 2);
+  const denseLines = surfacesActive.filter(mark => mark.dense).map(mark => recordDenseBlock(model, mark.surface_id)).filter(Boolean)
+    .map(block => ({ surface_id: block.surface_id, surface_label: block.surface_label, listed_count: block.listed_count }));
+  const facts = [
+    { key: 'surfaces', text: `${recordPlural(surfacesStarted, 'surface')} started of ${model.counts.surfaces} · ${surfacesActive.length} active in the year` },
+    { key: 'rows', text: `${recordPlural(rowsActive.length, 'row')} active of ${model.counts.rows} · ${rowsStarted} started in the year · ${rowsActive.length - rowsStarted} began earlier` },
+    { key: 'hop', text: `${recordPlural(hopBases, 'admitted hop basis', 'admitted hop bases')} dated in the year, of ${model.counts.hop_bases}` },
+    { key: 'receipts', text: `${recordPlural(published, 'receipt')} published in the year, of ${receipts.length} (${undatedReceipts} without a published date)` }
+  ];
+  return { kind: 'year', id: text, label: `Year ${text}`, from_day: fromDay, to_day: toDay, rows_active: rowsActive, rows_started: rowsStarted, surfaces_active: surfacesActive, surfaces_started: surfacesStarted, hop_bases: hopBases, receipts_published: published, people, organizations, dense_lines: denseLines, facts, receipt_ids: recordUnique(rowsActive.flatMap(entry => entry.row.receipt_ids)) };
+}
+
+// The evidence floor never hides a row silently: the status line names the
+// shown count, the denominator, and what each filter removed.
+function recordFloorPartition(rows, floor = 'open') {
+  const kept = new Set(filterTimelineRows(rows, { evidenceFloor: floor }).map(row => row.key));
+  const shown = rows.filter(row => kept.has(row.key));
+  const undated = shown.filter(row => row.start_day == null).length;
+  return { shown, hidden_by_floor: rows.length - shown.length, undated, floor, hidden_keys: rows.filter(row => !kept.has(row.key)).map(row => row.key) };
+}
+function recordStatusText(partition, total, noun = 'row') {
+  const floorLabel = (RECORD_FLOORS.find(([value]) => value === partition.floor) ?? RECORD_FLOORS[0])[1];
+  const parts = [`Showing ${partition.shown.length} of ${recordPlural(total, noun)}`];
+  parts.push(partition.hidden_by_floor ? `${partition.hidden_by_floor} hidden by the evidence floor (${floorLabel})` : 'nothing hidden by a filter');
+  if (partition.undated) parts.push(`${partition.undated} not dated (listed, never placed on the axis)`);
+  return parts.join(' · ');
+}
+
+// Plain-text ledger: the facts, one line per visible row, then the boundary.
+function ledgerText(record, rows, { organizationsFor = () => [] } = {}) {
+  const lines = [`${record.label} — ${record.facts.map(fact => fact.text).join(' · ')}`, ''];
+  rows.forEach((row, index) => {
+    const organizations = organizationsFor(row).map(entry => entry.label).join(', ');
+    const who = record.kind === 'actor' ? '' : ` · ${row.entity_label}`;
+    lines.push(`${String(index + 1).padStart(2, '0')}. ${recordWindowText(row)} · ${row.surface_label}${who} · ${row.role || humanLabel(row.participation_type || 'participant')}${organizations ? ` · ${organizations}` : ''} · ${recordEvidenceWord(row.evidence_class)} · ${row.surface_hop_eligible ? 'hop-eligible' : 'context only'} · receipts: ${row.receipt_ids.join(', ')}`);
+  });
+  lines.push('', RECORD_BOUNDARY);
+  return lines.join('\n');
+}
+
+// ---- Render (impure: everything below touches the DOM or module state) ----
+
+function recordFloorControl(floor) {
+  return `<label class="ledger-control">Evidence floor <select id="record-floor">${RECORD_FLOORS.map(([value, text]) => `<option value="${value}"${value === floor ? ' selected' : ''}>${esc(text)}</option>`).join('')}</select></label>`;
+}
+function recordFacts(facts) {
+  return `<ul class="record-facts" aria-label="Ledger facts">${facts.map(fact => `<li class="record-fact record-fact--${esc(fact.key)}">${fact.href ? `<a href="${esc(fact.href)}">${esc(fact.text)}</a>` : esc(fact.text)}</li>`).join('')}</ul>`;
+}
+function recordTypeLink(type) {
+  return `<a class="badge badge--link" href="#type/${encodeURIComponent(type)}">${esc(humanLabel(type))}</a>`;
+}
+function recordSurfaceCell(row) {
+  return `<a href="#surface/${encodeURIComponent(row.surface_id)}">${esc(row.surface_label)}</a><small>${esc(humanLabel(row.surface_type || 'unknown'))} · ${row.surface_hop_eligible ? 'hop-eligible' : 'context only'}${row.dense ? ' · contained roster' : ''}</small>`;
+}
+function recordRoleCell(row) {
+  return `${esc(row.role || humanLabel(row.participation_type || 'participant'))}${row.participation_type ? `<small>${esc(humanLabel(row.participation_type))}</small>` : ''}`;
+}
+function recordOrganizationEntries(row) {
+  return recordSurfaceRows(state.timeline, row.surface_id, 'organization')
+    .filter(item => !(row.participant_type === 'organization' && item.entity_id === row.entity_id))
+    .map(item => ({ id: item.entity_id, label: labelOrg(item.entity_id), role: item.role || humanLabel(item.participation_type || 'organization') }));
+}
+function recordOrganizationsCell(row) {
+  const entries = recordOrganizationEntries(row);
+  if (!entries.length) return '<span class="meta">none on this surface</span>';
+  return `<ul class="ledger-list">${entries.map(entry => `<li><a href="#organization/${encodeURIComponent(entry.id)}">${esc(entry.label)}</a><small>${esc(entry.role)}</small></li>`).join('')}</ul>`;
+}
+function recordPeopleCell(row) {
+  if (row.dense) {
+    const block = recordDenseBlock(state.timeline, row.surface_id);
+    return `<span>${recordPlural(block?.listed_count ?? 0, 'person', 'people')} (contained roster)</span><small><a href="#surface/${encodeURIComponent(row.surface_id)}">open the roster</a></small>`;
+  }
+  const people = recordSurfaceRows(state.timeline, row.surface_id, 'actor');
+  if (!people.length) return '<span class="meta">no person documented on this surface</span>';
+  const shown = people.slice(0, 3);
+  return `<span>${recordPlural(people.length, 'person', 'people')}</span><ul class="ledger-list">${shown.map(item => `<li><a href="#actor/${encodeURIComponent(item.entity_id)}">${esc(item.entity_label)}</a><small>${esc(item.role || humanLabel(item.participation_type || 'participant'))}</small></li>`).join('')}${people.length > shown.length ? `<li><a href="#surface/${encodeURIComponent(row.surface_id)}">+${people.length - shown.length} more on the surface page</a></li>` : ''}</ul>`;
+}
+function recordReceiptsCell(ids, label = 'Row receipts') {
+  const unique = recordUnique(ids);
+  if (!unique.length) return '<span class="meta">no receipt id on this row</span>';
+  return `<details class="ledger-receipts"><summary>${recordPlural(unique.length, 'receipt')}</summary>${renderReceiptGrid(unique, label)}</details>`;
+}
+function recordTable(columns, rows, cellsFor, { rowAttributes = () => '' } = {}) {
+  if (!rows.length) return '<p class="meta ledger-empty">No row passes the current filters. The status line above names what hid them.</p>';
+  const head = `<thead><tr>${columns.map(column => `<th scope="col">${esc(column)}</th>`).join('')}</tr></thead>`;
+  const body = rows.map((row, index) => `<tr${rowAttributes(row, index)}>${cellsFor(row, index).map((cell, cellIndex) => `<td data-label="${esc(columns[cellIndex])}">${cell}</td>`).join('')}</tr>`).join('');
+  return `<div class="ledger-scroll"><table class="ledger">${head}<tbody>${body}</tbody></table></div>`;
+}
+function recordRowAttributes(row, index) {
+  return ` class="ledger-row ${row.surface_hop_eligible ? 'is-hop' : 'is-context'}${row.dense ? ' is-dense' : ''}" data-row-key="${esc(row.key)}" data-row-index="${index + 1}"`;
+}
+function recordLegend() {
+  return `<ul class="record-legend" aria-label="How to read the strip">
+    <li><i class="record-key ev-official"></i>official / confirmed</li><li><i class="record-key ev-primary_public"></i>primary public</li><li><i class="record-key ev-reported"></i>reported</li><li><i class="record-key ev-open"></i>derived / judgment / open</li><li><i class="record-key ev-not_recorded"></i>class not recorded</li>
+    <li><i class="record-key is-hop"></i>hop-eligible surface</li><li><i class="record-key is-context"></i>context only</li><li><i class="record-key record-key--span"></i>documented span</li><li><i class="record-key has-basis"></i>row is an admitted hop basis</li><li><span class="record-key-text">+N</span>rows stacked on one day</li>
+  </ul>`;
+}
+// The single-lane mini timeline (Design 1's layoutTimeline, one lane, no
+// strip, blocks or columns) above each ledger table. Marks are buttons that
+// focus their ledger row; filtered rows stay drawn at low opacity.
+function recordTimelineLayout(kind, id, { dense = false } = {}) {
+  const width = Math.max(280, $('#detail')?.clientWidth || 1000);
+  const metrics = width < 600 ? TIMELINE_PHONE_METRICS : TIMELINE_DESKTOP_METRICS;
+  const options = { plotWidth: Math.max(140, width - metrics.labelWidth - metrics.padding * 2 - 4), ...metrics };
+  if (dense) options.maxSlots = 1;
+  return entityLaneLayout(state.timeline, kind, id, options);
+}
+function recordTimelineMarkup(layout, { filteredKeys = new Set(), title = 'Documented rows on the corpus axis' } = {}) {
+  if (!layout?.lanes?.length) return '';
+  const axisHeight = 22;
+  const height = layout.height + axisHeight;
+  const labelChars = Math.max(6, Math.floor(layout.metrics.labelWidth / 6.8));
+  const lanes = layout.lanes.map((lane, index) => `<g class="record-lane"><rect class="record-lane-bg${index % 2 ? ' is-alt' : ''}" x="0" y="${lane.y}" width="${layout.width}" height="${lane.height}"/><text class="record-lane-label" x="6" y="${lane.y + lane.height / 2 + 4}"><title>${esc(lane.label)}</title>${esc(shortLabel(lane.label, labelChars))}</text></g>`).join('');
+  const ticks = layout.axisTicks.map(tick => tick.kind === 'year'
+    ? `<line class="record-axis-year" x1="${tick.x}" x2="${tick.x}" y1="0" y2="${layout.height}"/><text class="record-axis-label" x="${tick.x + 3}" y="${layout.height + 15}">${esc(tick.label)}</text>`
+    : `<line class="record-axis-month" x1="${tick.x}" x2="${tick.x}" y1="${layout.height - 4}" y2="${layout.height}"/>`).join('');
+  const marks = layout.marks.map(mark => {
+    const evidence = mark.evidence_class ?? 'not_recorded';
+    const classes = ['record-mark', `record-mark--${mark.kind}`, `ev-${evidence}`, mark.hop_eligible ? 'is-hop' : 'is-context', filteredKeys.has(mark.key) ? 'is-filtered' : '', mark.hop_basis_count ? 'has-basis' : '', mark.clipped_end ? 'is-clipped' : ''].filter(Boolean).join(' ');
+    const who = mark.participant_type === 'surface' ? '' : ` · ${mark.entity_label}`;
+    const title = `${recordWindowText(mark)} · ${mark.surface_label}${who}${mark.role ? ` · ${mark.role}` : ''} · ${recordEvidenceWord(evidence)} · ${recordPlural(mark.receipt_ids.length, 'receipt')} · ${mark.hop_eligible ? 'hop-eligible' : 'context only'}${mark.hop_basis_count ? ` · ${recordPlural(mark.hop_basis_count, 'admitted hop basis', 'admitted hop bases')}` : ''}${filteredKeys.has(mark.key) ? ' · hidden from the table by the evidence floor' : ''}`;
+    return `<g role="listitem"><rect class="${classes}" x="${mark.x.toFixed(2)}" y="${mark.y.toFixed(2)}" width="${mark.w.toFixed(2)}" height="${mark.h}" rx="1.5" tabindex="0" role="button" data-record-mark="${esc(mark.key)}" aria-label="${esc(title)}"><title>${esc(title)}</title></rect>${mark.hop_basis_count ? `<circle class="record-mark-basis" cx="${(mark.x + Math.min(mark.w, layout.metrics.markWidth) / 2).toFixed(2)}" cy="${(mark.y + mark.h / 2).toFixed(2)}" r="1.6"/>` : ''}</g>`;
+  }).join('');
+  const aggregates = layout.aggregates.map(aggregate => {
+    const title = `${recordPlural(aggregate.count, 'more row')} on this day: ${recordEvidenceMix(aggregate.evidence_counts)} · ${recordPlural(aggregate.hop_eligible_count, 'hop-eligible row')}`;
+    const wide = aggregate.count > 9;
+    return `<g role="listitem"><rect class="record-aggregate" x="${aggregate.x.toFixed(2)}" y="${aggregate.y.toFixed(2)}" width="${wide ? 34 : 22}" height="${aggregate.h}" rx="2" tabindex="0" role="button" data-record-rows="${esc(aggregate.hidden_keys.join(' '))}" aria-label="${esc(title)}"><title>${esc(title)}</title></rect><text class="record-aggregate-label" x="${(aggregate.x + 3).toFixed(2)}" y="${(aggregate.y + aggregate.h - 2).toFixed(2)}">+${aggregate.count}</text></g>`;
+  }).join('');
+  const placed = layout.counts.rows_in_view;
+  const caption = `${title} · axis ${layout.domain.from} → ${layout.domain.to} · ${placed} of ${recordPlural(layout.counts.candidate_rows, 'row')} placed${layout.counts.undated ? ` · ${layout.counts.undated} not dated (listed in the table, never placed)` : ''}${filteredKeys.size ? ` · ${filteredKeys.size} dimmed by the evidence floor, never removed` : ''}`;
+  return `<figure class="record-strip"><figcaption class="meta">${esc(caption)}</figcaption><svg class="record-strip-svg" viewBox="0 0 ${layout.width} ${height}" width="${layout.width}" height="${height}" role="list" aria-label="${esc(title)}">${lanes}${ticks}<line class="record-axis-base" x1="${layout.plotLeft}" x2="${layout.plotLeft + layout.plotWidth}" y1="${layout.height}" y2="${layout.height}"/>${marks}${aggregates}</svg>${recordLegend()}</figure>`;
+}
+function recordPatternList(items, { empty = 'None in these rows.' } = {}) {
+  return items.length ? `<ul class="record-pattern-list">${items.join('')}</ul>` : `<p class="meta">${esc(empty)}</p>`;
+}
+// A hop partner links to the connection desk with both names filled in, so the
+// pair's dated check (and its receipts) is one click away; each basis names
+// its surface and day.
+function recordHopPartnerItems(partners, actorId = null) {
+  return partners.map(partner => `<li><a href="#desk/${actorId ? `${encodeURIComponent(actorId)}/` : ''}${encodeURIComponent(partner.actor_id)}">${esc(partner.label)}</a> · ${recordPlural(partner.bases.length, 'admitted hop basis', 'admitted hop bases')}<ul>${partner.bases.map(basis => `<li><a href="#surface/${encodeURIComponent(basis.surface_id)}">${esc(basis.surface_label)}</a> · ${esc(basis.day ?? 'not dated')} · ${evidenceBadge(basis.evidence_class)}</li>`).join('')}</ul></li>`);
+}
+function recordRecurringItems(entries) {
+  return entries.map(entry => `<li><a href="#actor/${encodeURIComponent(entry.actor_id)}">${esc(entry.label)}</a> · also on the same surface ${recordPlural(entry.surface_ids.length, 'time')}: ${esc(entry.dates.join(', '))}<small>shared context only; listed above only where the compiler admitted a hop</small></li>`);
+}
+function recordDenseNote(denseLines, verb = 'excluded from the counted co-presence by rule') {
+  return denseLines.length ? `<p class="meta">Dense rosters ${verb}: ${denseLines.map(line => `<a href="#surface/${encodeURIComponent(line.surface_id)}">${esc(line.surface_label)}</a> (${line.listed_count} listed names, one contained object)`).join('; ')}.</p>` : '';
+}
+function recordActions(record, { timelineToken, desk = false, copyLedger = true, extra = '' } = {}) {
+  return [
+    copyLedger ? '<button class="copy-link" type="button" onclick="copyLedgerText(this)">Copy ledger as text</button>' : '',
+    timelineToken ? `<button class="copy-link" type="button" data-ap-open-timeline="${esc(timelineToken)}">Open in the timeline</button>` : '',
+    desk ? `<a class="copy-link" href="#desk/${encodeURIComponent(record.id)}">Check a connection</a>` : '',
+    extra
+  ].filter(Boolean).join('');
+}
+function recordHeading(label, receiptIds, actionsHtml) {
+  state.citation = citationContext(label, receiptIds);
+  return `<div class="entity-heading"><h1>${esc(label)}</h1><div class="entity-actions">${actionsHtml}${citationActions()}</div></div>`;
+}
+// Receipts opened from a record page carry the record as the dialog's origin
+// crumb ("Record / <label> / <receipt>"); the object crumb returns to the page.
+function recordInspectorOrigin(element) {
+  const record = state.record;
+  if (!record) return null;
+  return {
+    mode: 'Record',
+    objectLabel: record.label,
+    objectId: `${record.kind}/${record.id}`,
+    rect: element?.getBoundingClientRect?.() ?? null,
+    selectObject: objectId => { const target = `#${objectId}`; if (location.hash !== target) location.hash = target; }
+  };
+}
+async function copyLedgerText(button) {
+  try {
+    await copyFeedback(button, state.recordText || RECORD_BOUNDARY);
+  } catch (err) {
+    console.warn('Could not copy the ledger text', err);
+  }
+}
+window.copyLedgerText = copyLedgerText;
+
+function setRecord(kind, id, label) {
+  if (state.record?.kind !== kind || state.record?.id !== id) state.recordFloor = 'open';
+  state.record = { kind, id, label };
+}
+function focusLedgerRow(key, { open = true } = {}) {
+  const row = [...document.querySelectorAll('#detail [data-row-key]')].find(element => element.dataset.rowKey === key);
+  if (!row) { announce('That row is hidden from the table by the evidence floor; widen the floor to list it.'); return; }
+  for (const hot of document.querySelectorAll('#detail .ledger-row.is-hot')) hot.classList.remove('is-hot');
+  row.classList.add('is-hot');
+  row.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'center' });
+  if (open) { const details = row.querySelector('details'); if (details) details.open = true; }
+  row.querySelector('a, button, summary')?.focus({ preventScroll: true });
+}
+function bindRecordPage(record) {
+  const detail = $('#detail');
+  const activate = (element, handler) => {
+    element.addEventListener('click', handler);
+    element.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); handler(); } });
+  };
+  for (const mark of detail.querySelectorAll('[data-record-mark]')) activate(mark, () => focusLedgerRow(mark.dataset.recordMark));
+  for (const aggregate of detail.querySelectorAll('[data-record-rows]')) activate(aggregate, () => focusLedgerRow(aggregate.dataset.recordRows.split(' ')[0], { open: false }));
+  detail.querySelector('#record-floor')?.addEventListener('change', event => {
+    state.recordFloor = RECORD_FLOORS.some(([value]) => value === event.target.value) ? event.target.value : 'open';
+    renderEntity(record.kind, record.id);
+  });
+  bindResults();
+}
+function recordLedgerPanel({ title, kicker = 'Dated ledger', columns, rows, cellsFor, partition, total, noun = 'row', before = '', after = '' }) {
+  return `<section class="panel record-ledger"><span class="panel-label">${esc(kicker)}</span><h3>${esc(title)}</h3>${before}<div class="ledger-controls">${recordFloorControl(partition.floor)}<p class="ledger-status" id="record-ledger-status" role="status">${esc(recordStatusText(partition, total, noun))}</p></div>${recordTable(columns, rows, cellsFor, { rowAttributes: recordRowAttributes })}${after}<p class="meta record-boundary">${esc(RECORD_BOUNDARY)}</p></section>`;
 }
 
 function renderActor(id) {
   const actor = state.actors.get(id);
-  const score = state.actorScores.get(id);
-  const path = state.hopGraph.shortest_paths[id];
   const legacyNode = state.legacyNodes.get(id);
-  const legacyPath = !score && legacyNode ? legacyShortestPath(id) : null;
   if (!actor && !legacyNode) return renderNotFound('actor', id);
-  setDocumentTitle(actor?.label ?? legacyNode.label);
-  if (!score && legacyNode) {
-    const related = (state.legacyGraph.edges ?? []).filter(edge => edge.from === id || edge.to === id).slice(0, 10);
-    $('#summary').innerHTML = [
-      metricPanel('Legacy Edge Number', legacyPath?.number ?? 'N/A'),
-      metricPanel('Surface-Hop Number', 'N/A'),
-      metricPanelRatio('Structural context index', 0, 1),
-      metricPanel('Source', 'legacy graph'),
-    ].join('');
-    $('#detail').innerHTML = `
-      <div class="panel">${entityHeading(actor?.label ?? legacyNode.label, actor ? entityReceiptIds('actor', id) : [])}<p>${esc(legacyNode.description || 'Legacy graph node imported for search continuity.')}</p><div class="badge-row">${(legacyNode.tags ?? []).map(t => `<span class="badge">${esc(t)}</span>`).join('')}</div></div>
-      <div class="panel why-no-hop"><h3>Surface-hop status</h3><p>This actor is search-visible through the legacy edge graph bridge, but has not yet been promoted into bounded surface-hop ledgers. The path below is legacy edge-graph context, not a newly manufactured surface hop.</p></div>
-      <div class="panel"><h3>Legacy edge-graph path</h3>${renderLegacyPath(legacyPath)}</div>
-      <div class="panel"><h3>Legacy public edges</h3>${related.length ? related.map(edge => `<div class="receipts">${esc(state.legacyNodes.get(edge.from)?.label ?? edge.from)} → ${esc(state.legacyNodes.get(edge.to)?.label ?? edge.to)}: ${esc(edge.claim || edge.type || edge.id)}</div>`).join('') : '<p>None.</p>'}</div>
-    `;
-    return;
-  }
-  $('#summary').innerHTML = [
-    metricPanel('Clifford Number', score?.clifford_number ?? 'N/A'),
-    metricPanel('Documented Surfaces', score?.surfaces?.length ?? 0),
-    metricPanelRatio('Structural context index', score?.machine_score ?? 0, 1),
-    metricPanel('Recurring Surface Types', Object.keys(score?.surface_type_recurrence ?? {}).length),
-  ].join('');
+  const label = actor?.label ?? legacyNode.label;
+  setDocumentTitle(label);
+  setRecord('actor', id, label);
+  const canonical = state.actorScores.has(id);
+  const record = actorRecordModel(state.timeline, state.hopGraph, state.actorScores.get(id) ?? null, id, { actor: labelActor, organization: labelOrg });
+  record.label = label;
+  const partition = recordFloorPartition(record.rows, state.recordFloor);
+  state.recordText = ledgerText(record, partition.shown, { organizationsFor: recordOrganizationEntries });
+  $('#summary').innerHTML = '';
 
-  const noHop = path?.number === null || path?.number === undefined;
-  const pathHtml = noHop
-    ? `<p class="why-no-hop"><strong>Clifford Number: N/A.</strong> ${esc(score?.why_no_hop || 'No valid surface-hop path to Matt Clifford.')}</p>`
-    : renderPath(path);
-
-  const recur = score?.surface_type_recurrence ?? {};
-  const recurHtml = Object.keys(recur).length
-    ? `<div class="panel"><span class="panel-label">Structural context</span><h3>Recurring surface types</h3><p class="meta">The same surface logic appearing across unrelated venues. This is a pattern signal, not an actor-to-actor hop.</p>${Object.entries(recur).map(([t, sids]) => `<div class="receipts"><span class="badge">${esc(humanLabel(t))}</span> across ${sids.length}: ${sids.map(s => esc(surface(s)?.surface_label || s)).join('; ')}</div>`).join('')}</div>`
-    : '';
-
-  const chainsHtml = (score?.chains ?? []).length
-    ? `<div class="panel"><span class="panel-label">Context only · never a hop</span><h3>Multi-stage institutional pathways</h3><div class="results">${(score.chains).map(cid => { const c = state.chains.get(cid); return `<button class="result" data-kind="chain" data-id="${esc(cid)}"><span class="kind-glyph">C</span><span class="result-label">${esc(c?.chain_label || cid)}<small>${c?.chain_length ?? 0} documented stages</small></span></button>`; }).join('')}</div></div>`
-    : '';
-
-  const profile = actor.plain;
+  const badges = [
+    `<span class="badge">${esc(actor?.kind || legacyNode?.type || 'person')}</span>`,
+    canonical ? '<span class="badge">canonical record</span>' : '<span class="badge">legacy research node · no canonical record</span>',
+    actor?.anchor ? '<span class="badge">anchor</span>' : ''
+  ].filter(Boolean).join('');
+  const profile = actor?.plain;
   const profileHtml = profile
     ? `<div class="profile-copy"><p><strong>Who this is.</strong> ${esc(profile.who)}</p><p><strong>Why they appear.</strong> ${esc(profile.why_here)}</p></div>${renderReceiptGrid(profile.receipt_ids, 'Profile receipts')}`
-    : `<div class="profile-copy"><p><strong>Editorial profile pending.</strong> This entry is visible because it participates in receipted surfaces, but no human-written plain-language profile has been promoted yet.</p></div>`;
+    : record.rows.length
+      ? `<div class="profile-copy"><p>${esc(record.machine_sentence)} <span class="record-machine-note">${esc(RECORD_MACHINE_NOTE)}</span></p></div>`
+      : `<div class="profile-copy"><p><strong>No participation row in this release.</strong> ${canonical ? 'This canonical record has no row in the bounded-surface ledger yet, so it has no dated record, no receipts and no Clifford Number here.' : 'This name is search-visible from the research graph only; it has no canonical record and no ledger row.'}</p>${legacyNode?.description ? `<p>${esc(legacyNode.description)} <span class="record-machine-note">[legacy research-graph description, not a ledger fact]</span></p>` : ''}</div>`;
+  const isHopEndpoint = (state.hopGraph.edges ?? []).some(edge => edge.actor_a === id || edge.actor_b === id);
+  const actions = recordActions(record, { timelineToken: record.rows.length ? `actor:${id}` : null, desk: isHopEndpoint, copyLedger: record.rows.length > 0 });
+  const headPanel = `<header class="panel record-head">${recordHeading(label, actor ? entityReceiptIds('actor', id) : [], actions)}<div class="badge-row record-kind-line">${badges}</div>${profileHtml}${recordFacts(record.facts)}<aside class="profile-boundary"><strong>What this entry supports</strong><br>Documented participation on named public-role surfaces.<br><br><strong>What it does not support</strong><br>Claims about motive, agreement, influence, coordination, character, or wrongdoing.</aside></header>`;
 
-  $('#detail').innerHTML = `
-    <div class="panel">${entityHeading(actor.label, entityReceiptIds('actor', id))}<div class="profile-intro"><div>${profileHtml}<div class="badge-row">${(score?.secondary_surface_types ?? []).map(t => `<span class="badge">${esc(humanLabel(t))}</span>`).join('')}</div></div><aside class="profile-boundary"><strong>What this entry supports</strong><br>Documented participation on named public-role surfaces.<br><br><strong>What it does not support</strong><br>Claims about motive, agreement, influence, coordination, character, or wrongdoing.</aside></div></div>
-    <div class="panel"><span class="panel-label">Shortest defensible route</span><h3>Documented surface path</h3>${noHop ? pathHtml : `${renderTopologyMap(path)}${pathHtml}`}</div>
-    ${chainsHtml}
-    ${recurHtml}
-    <div class="panel"><span class="panel-label">Source ledger</span><h3>Bounded surfaces</h3><div class="surface-list">${(score?.surfaces ?? []).map(renderSurfaceCard).join('')}</div></div>
-  `;
-  bindResults();
+  if (!record.rows.length) {
+    $('#detail').innerHTML = headPanel;
+    bindRecordPage(record);
+    return;
+  }
+
+  const strip = recordTimelineMarkup(recordTimelineLayout('actor', id), { filteredKeys: new Set(partition.hidden_keys), title: `${label}: one mark per documented row` });
+  const ledger = recordLedgerPanel({
+    title: `${recordPlural(record.rows.length, 'participation row')} on ${recordPlural(record.surface_count, 'surface')}, by date`,
+    columns: ['#', 'Date or window', 'Surface', 'Role', 'Organizations on the surface', 'Evidence', 'Receipts'],
+    rows: partition.shown,
+    cellsFor: (row, index) => [String(index + 1), esc(recordWindowText(row)), recordSurfaceCell(row), recordRoleCell(row), recordOrganizationsCell(row), evidenceBadge(row.evidence_class), recordReceiptsCell(row.receipt_ids)],
+    partition, total: record.rows.length,
+    before: `<section class="record-strip-wrap">${strip}</section>`
+  });
+
+  const patterns = `<section class="panel record-patterns"><span class="panel-label">Patterns in the rows</span><h3>Counted from the ${recordPlural(record.rows.length, 'row')} above. Nothing here is a line between two people.</h3>
+    <div class="record-pattern-grid">
+      <div><h4>Surface types</h4>${recordPatternList(record.type_counts.map(entry => `<li><a href="#type/${encodeURIComponent(entry.id)}">${esc(entry.label)}</a> · ${entry.count} of ${recordPlural(record.rows.length, 'row')}</li>`))}</div>
+      <div><h4>Organizations on these surfaces</h4>${recordPatternList(record.organization_counts.map(entry => `<li><a href="#organization/${encodeURIComponent(entry.id)}">${esc(entry.label)}</a> · ${entry.count} of ${recordPlural(record.rows.length, 'surface row')}</li>`))}</div>
+      <div><h4>Co-documented people</h4><p class="meta">Admitted hop partners first (each basis names its surface and day), then counted co-presence on non-dense surfaces.</p>${recordPatternList(recordHopPartnerItems(record.hop_partners, id), { empty: 'No admitted hop basis names this person.' })}${recordPatternList(recordRecurringItems(record.recurring), { empty: 'No one is documented beside this person on two or more non-dense surfaces.' })}${recordDenseNote(record.dense_memberships)}</div>
+    </div></section>`;
+
+  const path = record.clifford.path;
+  const noHop = record.clifford.number == null;
+  const routeHtml = noHop
+    ? `<p class="why-no-hop"><strong>Clifford Number: N/A.</strong> ${esc(record.clifford.why_no_hop || 'No valid surface-hop path to Matt Clifford.')}</p>`
+    : `${renderTopologyMap(path)}${renderPath(path)}`;
+  const anchorLabel = labelActor(state.hopGraph.anchor_actor_id);
+  const route = `<section class="panel record-route"><span class="panel-label">Shortest documented route</span><h3>${noHop ? 'Clifford Number N/A' : `Clifford Number ${record.clifford.number} · shortest documented route to ${esc(anchorLabel)}`}</h3>${routeHtml}</section>`;
+  const score = state.actorScores.get(id);
+  const chainsHtml = (score?.chains ?? []).length
+    ? `<section class="panel"><span class="panel-label">Context only · never a hop</span><h3>Multi-stage institutional pathways</h3><div class="results">${score.chains.map(cid => { const c = state.chains.get(cid); return `<button class="result" data-kind="chain" data-id="${esc(cid)}"><span class="kind-glyph">C</span><span class="result-label">${esc(c?.chain_label || cid)}<small>${c?.chain_length ?? 0} documented stages</small></span></button>`; }).join('')}</div></section>`
+    : '';
+
+  $('#detail').innerHTML = `<article class="record record--actor" data-record-kind="actor" data-record-id="${esc(id)}">${headPanel}${ledger}${patterns}${route}${chainsHtml}</article>`;
+  bindRecordPage(record);
 }
 
 function bindResults() {
@@ -1224,24 +1798,40 @@ function renderChain(id) {
   const c = state.chains.get(id);
   if (!c) return renderNotFound('pathway', id);
   setDocumentTitle(c.chain_label);
-  $('#summary').innerHTML = [
-    metricPanel('Clifford Number', 'N/A'),
-    metricPanel('Context Stages', c.chain_length),
-    metricPanelRatio('Structural context index', c.machine_score, 1),
-    metricPanel('Creates Hops', 'No'),
-  ].join('');
-  const stages = (c.stages ?? []).map(s => `
-    <div class="surface-card surface-card--nonhop">
-      <h4>${esc(s.order)}. ${esc(s.stage_category.replace(/_/g, ' '))}</h4>
-      <div class="meta">${esc(s.surface_label)}${s.actor_id ? ' · ' + esc(labelActor(s.actor_id)) : ''}${s.organization_id ? ' · ' + esc(labelOrg(s.organization_id)) : ''}</div>
+  setRecord('chain', id, c.chain_label);
+  $('#summary').innerHTML = '';
+  const model = state.timeline;
+  const stageMarks = (c.stages ?? []).map(stage => model.surfaceMarks.find(mark => mark.surface_id === stage.surface_id) ?? null);
+  const facts = [
+    { key: 'stages', text: recordPlural(c.chain_length ?? (c.stages ?? []).length, 'documented context stage') },
+    { key: 'hop', text: 'creates hops: no' },
+    { key: 'cn', text: 'Clifford Number N/A' },
+    { key: 'span', text: stageMarks.some(Boolean) ? `${recordSpanText({ first_day: stageMarks.filter(Boolean).map(mark => mark.time_start).sort()[0], last_day: stageMarks.filter(Boolean).map(mark => mark.kind === 'open' ? null : (mark.time_end || mark.time_start)).filter(Boolean).sort().at(-1), has_open_end: stageMarks.some(mark => mark?.kind === 'open') })}` : 'stage windows not dated' }
+  ];
+  // The stages drawn on the corpus axis, one lane per stage surface in date
+  // order, so a stage that began earlier than stage 1 visibly precedes it.
+  const laneIds = recordUnique(stageMarks.filter(Boolean).sort((a, b) => (a.start_day ?? Infinity) - (b.start_day ?? Infinity)).map(mark => mark.surface_id));
+  const width = Math.max(280, $('#detail')?.clientWidth || 1000);
+  const metrics = width < 600 ? TIMELINE_PHONE_METRICS : TIMELINE_DESKTOP_METRICS;
+  const layout = laneIds.length ? layoutTimeline(model, { by: 'surface', laneIds, includeStrip: false, includeBlocks: false, includeColumns: false, domainFrom: model.range.first_day, domainTo: model.range.last_day, plotWidth: Math.max(140, width - metrics.labelWidth - metrics.padding * 2 - 4), ...metrics }) : null;
+  const stages = (c.stages ?? []).map((s, index) => {
+    const mark = stageMarks[index];
+    return `
+    <div class="surface-card surface-card--nonhop" data-row-key="${esc(mark?.key ?? '')}">
+      <h4>${esc(s.order)}. ${esc(humanLabel(s.stage_category))}</h4>
+      <div class="meta"><a href="#surface/${encodeURIComponent(s.surface_id)}">${esc(s.surface_label)}</a>${s.actor_id ? ' · ' + esc(labelActor(s.actor_id)) : ''}${s.organization_id ? ' · ' + esc(labelOrg(s.organization_id)) : ''}</div>
+      <div class="badge-row"><span class="badge">${esc(mark ? recordWindowText(mark) : 'window not in the ledger')}</span>${mark ? (mark.evidence_class ? evidenceBadge(mark.evidence_class) : '<span class="badge">surface evidence class not recorded</span>') : ''}<span class="badge">${mark?.hop_eligible ? 'hop-eligible surface' : 'context only'}</span></div>
       <p>${esc(s.note)}</p>
       ${renderReceiptGrid(s.receipt_ids, 'Stage receipts')}
-    </div>`).join('<div class="chain-arrow">↓</div>');
-  $('#detail').innerHTML = `
-    <div class="panel">${entityHeading(c.chain_label, entityReceiptIds('chain', id))}<div class="badge-row"><span class="badge">${esc(humanLabel(c.pattern))}</span>${evidenceBadge(c.evidence_class)}</div></div>
+    </div>`;
+  }).join('<div class="chain-arrow">↓</div>');
+  $('#detail').innerHTML = `<article class="record record--chain" data-record-kind="chain" data-record-id="${esc(id)}">
+    <header class="panel record-head">${recordHeading(c.chain_label, entityReceiptIds('chain', id), '')}<div class="badge-row record-kind-line"><span class="badge">${esc(humanLabel(c.pattern))}</span>${evidenceBadge(c.evidence_class)}</div>${recordFacts(facts)}</header>
     <div class="panel why-no-hop"><span class="panel-label">Inference boundary</span><h3>Why this is context, not a hop</h3><p>${esc(c.why_no_hop)}</p></div>
+    ${layout ? `<section class="panel"><span class="panel-label">Stages on the corpus axis</span><h3>Each lane is one stage surface; the order of the ledger is the order of the dates, not of the stage numbers.</h3>${recordTimelineMarkup(layout, { title: 'Stage surfaces: one mark per documented row' })}</section>` : ''}
     <div class="panel"><span class="panel-label">Documented sequence</span><h3>Pathway stages</h3><div class="surface-list">${stages}</div></div>
-  `;
+  </article>`;
+  bindRecordPage({ kind: 'chain', id });
 }
 
 function hopWindow(basis) {
@@ -1292,28 +1882,48 @@ function renderReceiptGrid(ids, label = 'Receipts') {
   }).join('')}</div>`;
 }
 
-function renderSurfaceCard(id) {
-  const s = surface(id);
-  if (!s) return '';
-  const cls = s.hop_eligible ? 'surface-card--hop' : 'surface-card--nonhop';
-  return `<article class="surface-card ${cls}"><h4>${esc(s.surface_label)}</h4><div class="meta">${esc(humanLabel(s.surface_type))} · ${s.hop_eligible ? 'hop-eligible' : 'context only'} · ${esc(humanLabel(s.status))}</div><div class="badge-row">${(s.secondary_surface_types ?? []).map(t => `<span class="badge">${esc(humanLabel(t))}</span>`).join('')}</div><p>${esc(s.notes || '')}</p>${renderReceiptGrid(s.receipt_ids, 'Surface receipts')}<div class="surface-card-footer"><span class="meta">${(s.participants ?? []).length} documented participant${(s.participants ?? []).length === 1 ? '' : 's'}</span><a href="#surface/${encodeURIComponent(s.surface_id)}">Inspect surface →</a></div></article>`;
-}
-
 function renderOrg(id) {
   const org = state.orgs.get(id);
-  const score = state.orgScores.get(id);
   if (!org) return renderNotFound('organization', id);
   setDocumentTitle(org.label);
-  $('#summary').innerHTML = [
-    metricPanel('Surface Count', score?.surface_count),
-    metricPanel('Factory Score', score?.factory_score),
-    metricPanel('Surface Factory', score?.surface_factory ? 'yes' : 'no'),
-    metricPanel('Types', score?.surface_types?.length ?? 0),
-  ].join('');
-  $('#detail').innerHTML = `
-    <div class="panel">${entityHeading(org.label, entityReceiptIds('organization', id))}<p>${score?.surface_factory ? 'This organization behaves as a surface factory. It must be decomposed into bounded surfaces, not used as a generic hop node.' : 'Organization context. It does not create Clifford hops by itself.'}</p></div>
-    <div class="panel"><h3>Surfaces</h3><div class="surface-list">${(score?.surfaces ?? []).map(renderSurfaceCard).join('')}</div></div>
-  `;
+  setRecord('organization', id, org.label);
+  const record = organizationRecordModel(state.timeline, org, id, { actor: labelActor, organization: labelOrg });
+  record.label = org.label;
+  const partition = recordFloorPartition(record.rows, state.recordFloor);
+  state.recordText = ledgerText(record, partition.shown, { organizationsFor: recordOrganizationEntries });
+  $('#summary').innerHTML = '';
+  const canonical = state.orgScores.has(id);
+  const badges = [
+    `<span class="badge">${esc(org.kind || 'organization')}</span>`,
+    canonical ? '<span class="badge">canonical record</span>' : '<span class="badge">legacy research node · no canonical record</span>',
+    record.declared.surface_factory ? '<span class="badge">declared surface factory in the canonical registry</span>' : '',
+    record.declared.broad_institution ? '<span class="badge">broad institution: venue context only</span>' : ''
+  ].filter(Boolean).join('');
+  const intro = `<div class="profile-copy"><p><strong>Organizations never create hops.</strong> Hops happen between people documented together on these surfaces.</p><p>${esc(record.machine_sentence)} <span class="record-machine-note">${esc(RECORD_MACHINE_NOTE)}</span></p>${org.notes ? `<p>${esc(org.notes)}</p>` : ''}${!canonical && org.description ? `<p>${esc(org.description)} <span class="record-machine-note">[legacy research-graph description, not a ledger fact]</span></p>` : ''}</div>`;
+  const actions = recordActions(record, { timelineToken: record.rows.length ? `organization:${id}` : null, copyLedger: record.rows.length > 0 });
+  const headPanel = `<header class="panel record-head">${recordHeading(org.label, entityReceiptIds('organization', id), actions)}<div class="badge-row record-kind-line">${badges}</div>${intro}${recordFacts(record.facts)}</header>`;
+  if (!record.rows.length) {
+    $('#detail').innerHTML = `<article class="record record--organization" data-record-kind="organization" data-record-id="${esc(id)}">${headPanel}</article>`;
+    bindRecordPage(record);
+    return;
+  }
+  const strip = recordTimelineMarkup(recordTimelineLayout('organization', id), { filteredKeys: new Set(partition.hidden_keys), title: `${org.label}: one mark per surface it bounds` });
+  const ledger = recordLedgerPanel({
+    title: `${recordPlural(record.surface_count, 'surface')} this organization bounds, by date`,
+    columns: ['#', 'Date or window', 'Surface', "This organization's role", 'People on this surface', 'Evidence', 'Receipts'],
+    rows: partition.shown,
+    cellsFor: (row, index) => [String(index + 1), esc(recordWindowText(row)), recordSurfaceCell(row), recordRoleCell(row), recordPeopleCell(row), evidenceBadge(row.evidence_class), recordReceiptsCell(row.receipt_ids)],
+    partition, total: record.rows.length,
+    before: `<section class="record-strip-wrap">${strip}</section>`
+  });
+  const patterns = `<section class="panel record-patterns"><span class="panel-label">Patterns in the rows</span><h3>Counted from the ${recordPlural(record.rows.length, 'row')} above. Organizations are context; no line is drawn.</h3>
+    <div class="record-pattern-grid">
+      <div><h4>Surface types</h4>${recordPatternList(record.type_counts.map(entry => `<li><a href="#type/${encodeURIComponent(entry.id)}">${esc(entry.label)}</a> · ${entry.count} of ${recordPlural(record.rows.length, 'surface')}</li>`))}</div>
+      <div><h4>People documented on these surfaces</h4>${recordPatternList(record.people.map(entry => `<li><a href="#actor/${encodeURIComponent(entry.id)}">${esc(entry.label)}</a> · ${recordPlural(entry.count, 'shared surface')}</li>`), { empty: 'No person is documented on these surfaces.' })}${recordDenseNote(record.dense_lines, 'are one contained line each, never folded into the people count')}</div>
+      <div><h4>Co-present organizations</h4>${recordPatternList(record.co_organizations.map(entry => `<li><a href="#organization/${encodeURIComponent(entry.id)}">${esc(entry.label)}</a> · ${recordPlural(entry.count, 'shared surface')}</li>`), { empty: 'No other organization is documented on these surfaces.' })}</div>
+    </div></section>`;
+  $('#detail').innerHTML = `<article class="record record--organization" data-record-kind="organization" data-record-id="${esc(id)}">${headPanel}${ledger}${patterns}</article>`;
+  bindRecordPage(record);
 }
 
 function humanLabel(s) { return String(s || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()); }
@@ -1341,23 +1951,118 @@ function renderSurface(id) {
   const s = surface(id);
   if (!s) return renderNotFound('surface', id);
   setDocumentTitle(s.surface_label);
-  $('#summary').innerHTML = [
-    metricPanel('Hop Eligible', s.hop_eligible ? 'yes' : 'no'),
-    metricPanel('Scorable', s.scorable ? 'yes' : 'no'),
-    metricPanel('Participants', s.participants?.length ?? 0),
-    metricPanel('Type', s.surface_type),
-  ].join('');
-  const roster = partitionParticipantRows(s.participants ?? []);
-  const renderRows = rows => rows.map(p => `<li>${p.participant_type === 'actor' ? esc(labelActor(p.actor_id)) : esc(labelOrg(p.organization_id))}: ${esc(p.role)} <span class="meta">${esc(p.participation_type)}</span></li>`).join('');
-  const remainingParticipantLabel = `${roster.remaining.length} participant ${roster.remaining.length === 1 ? 'record' : 'records'}`;
-  const parts = `<ul>${renderRows(roster.preview)}</ul>${roster.remaining.length ? `
-    <p class="meta">First ${roster.preview.length} of ${roster.total} participant records. Display order is unchanged; this is not a count of unique people.</p>
-    <details class="participant-overflow"><summary>Show remaining ${remainingParticipantLabel}</summary><ul>${renderRows(roster.remaining)}</ul></details>` : ''}`;
-  $('#detail').innerHTML = `
-    <div class="panel">${entityHeading(s.surface_label, entityReceiptIds('surface', id))}<div class="badge-row"><span class="badge">${esc(s.surface_type)}</span>${(s.secondary_surface_types ?? []).map(t => `<span class="badge">${esc(t)}</span>`).join('')}</div><p>${esc(s.notes || '')}</p></div>
-    <div class="panel"><h3>Participants</h3>${parts}</div>
-    <div class="panel"><h3>Bounded by</h3><p>${(s.bounded_by ?? []).map(esc).join(', ')}</p>${renderReceiptGrid(s.receipt_ids, 'Surface receipts')}</div>
-  `;
+  setRecord('surface', id, s.surface_label);
+  const record = surfaceRecordModel(state.timeline, state.hopGraph, state.receiptGraph, s, { actor: labelActor, organization: labelOrg });
+  const participantRows = record.participants.map(entry => entry.row);
+  const partition = recordFloorPartition(participantRows, state.recordFloor);
+  const elsewhereFor = new Map(record.participants.map(entry => [entry.row.key, entry.elsewhere]));
+  state.recordText = ledgerText({ ...record, facts: [{ text: record.window_text }, { text: record.hop_status }, ...record.facts] }, partition.shown);
+  $('#summary').innerHTML = '';
+  const badges = [
+    recordTypeLink(s.surface_type),
+    ...(s.secondary_surface_types ?? []).map(type => `<span class="badge">${esc(humanLabel(type))}</span>`),
+    `<span class="badge">${s.hop_eligible ? 'hop-eligible' : 'context only'}</span>`,
+    record.dense ? '<span class="badge">dense roster · one contained object</span>' : ''
+  ].filter(Boolean).join('');
+  const actions = recordActions(record, { timelineToken: record.rows.length ? `surface:${id}` : null, copyLedger: record.rows.length > 0 });
+  const status = `<dl class="record-status"><div><dt>Window</dt><dd>${esc(record.window_text)}</dd></div><div><dt>Hop status</dt><dd>${esc(record.hop_status)}</dd></div><div><dt>Surface evidence class</dt><dd>${s.evidence_class ? evidenceBadge(s.evidence_class) : 'not recorded'}</dd></div><div><dt>Status</dt><dd>${esc(humanLabel(s.status || 'not recorded'))}</dd></div><div><dt>Bounded by</dt><dd>${(s.bounded_by ?? []).length ? (s.bounded_by ?? []).map(esc).join('; ') : 'not recorded'}</dd></div></dl>${s.notes ? `<p class="record-notes">${esc(s.notes)}</p>` : ''}`;
+  const headPanel = `<header class="panel record-head">${recordHeading(s.surface_label, entityReceiptIds('surface', id), actions)}<div class="badge-row record-kind-line">${badges}</div>${status}${recordFacts(record.facts)}</header>`;
+
+  const strip = record.rows.length
+    ? recordTimelineMarkup(recordTimelineLayout('surface', id, { dense: record.dense }), { filteredKeys: new Set(partition.hidden_keys), title: record.dense ? `${s.surface_label}: the roster as one contained object on its day` : `${s.surface_label}: one mark per participant row` })
+    : '<p class="meta">No participation row to place on the axis; the surface window above is the only dated fact.</p>';
+
+  const columns = ['#', 'Participant', 'Role', 'Window', 'Evidence', 'Receipts', 'Also documented on'];
+  const cellsFor = (row, index) => [
+    String(index + 1),
+    `<a href="#actor/${encodeURIComponent(row.entity_id)}">${esc(row.entity_label)}</a>`,
+    recordRoleCell(row),
+    esc(recordWindowText(row)),
+    evidenceBadge(row.evidence_class),
+    recordReceiptsCell(row.receipt_ids),
+    (elsewhereFor.get(row.key) ?? 0) > 0 ? `<a href="#actor/${encodeURIComponent(row.entity_id)}">${recordPlural(elsewhereFor.get(row.key), 'other surface')}</a>` : '<span class="meta">only here</span>'
+  ];
+  let participantsTable;
+  let rosterStatus = '';
+  if (record.dense) {
+    const roster = partitionParticipantRows(partition.shown, RECORD_PREVIEW_ROWS);
+    rosterStatus = `<p class="ledger-status" role="status">${record.elsewhere_count} of ${record.participant_count} listed people appear on any other documented surface; ${record.nowhere_else_count} appear only here. Sorted by that count, then by name.</p>`;
+    participantsTable = `${recordTable(columns, roster.preview, cellsFor, { rowAttributes: recordRowAttributes })}${roster.remaining.length ? `<p class="meta">First ${roster.preview.length} of ${roster.total} participant records shown. This is a count of ledger rows, not a verdict about any person.</p><details class="participant-overflow"><summary>Show remaining ${recordPlural(roster.remaining.length, 'participant record')}</summary>${recordTable(columns, roster.remaining, (row, index) => cellsFor(row, index + roster.preview.length), { rowAttributes: (row, index) => recordRowAttributes(row, index + roster.preview.length) })}</details>` : ''}`;
+  } else {
+    participantsTable = recordTable(columns, partition.shown, cellsFor, { rowAttributes: recordRowAttributes });
+  }
+  const participants = record.actor_rows.length
+    ? `<section class="panel record-ledger"><span class="panel-label">Participants</span><h3>${recordPlural(record.participant_count, 'person', 'people')} documented on this surface${record.dense ? ', one contained roster' : ''}</h3><section class="record-strip-wrap">${strip}</section><div class="ledger-controls">${recordFloorControl(partition.floor)}<p class="ledger-status" id="record-ledger-status" role="status">${esc(recordStatusText(partition, participantRows.length, 'participant row'))}</p></div>${rosterStatus}${participantsTable}<p class="meta record-boundary">${esc(RECORD_BOUNDARY)}</p></section>`
+    : `<section class="panel record-ledger"><span class="panel-label">Participants</span><h3>No person is documented on this surface</h3><section class="record-strip-wrap">${strip}</section><p class="meta">${recordPlural(record.organization_rows.length, 'organization row')} only; a surface without two people can never be a hop basis.</p></section>`;
+
+  const organizations = `<section class="panel"><span class="panel-label">Organizations on this surface</span><h3>${recordPlural(record.organization_rows.length, 'organization')}</h3>${recordPatternList(record.organization_rows.map(row => `<li><a href="#organization/${encodeURIComponent(row.entity_id)}">${esc(row.entity_label)}</a> · ${esc(row.role || humanLabel(row.participation_type || 'organization'))} <small>${esc(humanLabel(row.participation_type || ''))} · ${esc(recordWindowText(row))} · ${esc(recordEvidenceWord(row.evidence_class))}</small></li>`), { empty: 'No organization row on this surface.' })}</section>`;
+
+  const bases = s.hop_eligible
+    ? `<section class="panel record-bases"><span class="panel-label">Admitted hop bases</span><h3>${recordPlural(record.basis_count, 'actor pair')} share this surface${record.basis_days.length ? ` on ${esc(record.basis_days.join(', '))}` : ''}</h3><p class="meta">Each basis is one compiler-admitted pair on this surface's day. It is listed, never drawn as a line; open the connection checker to see the pair with its receipts.</p>${record.basis_count ? `<details class="participant-overflow"><summary>List the ${recordPlural(record.basis_count, 'pair')}</summary><ul class="record-pattern-list">${record.bases.map(basis => `<li><a href="#desk/${encodeURIComponent(basis.actor_a)}/${encodeURIComponent(basis.actor_b)}">${esc(labelActor(basis.actor_a))} × ${esc(labelActor(basis.actor_b))}</a> · ${esc(basis.iso_day ?? 'not dated')} · ${evidenceBadge(basis.evidence_class)}<small>${esc(labelActor(basis.actor_a))}: ${esc(basis.actor_a_role || 'named participant')} · ${esc(labelActor(basis.actor_b))}: ${esc(basis.actor_b_role || 'named participant')}</small></li>`).join('')}</ul></details>` : '<p class="meta">The compiler admitted no pair on this surface.</p>'}</section>`
+    : `<section class="panel why-no-hop"><span class="panel-label">Standing refusal</span><h3>Context only: no actor-pair basis</h3><p>${record.refusal?.reason_recorded ? `Ledger reason: <code>${esc(record.refusal.reason)}</code>.` : 'No reason is recorded in the ledger for this surface; the compiler marks it only as not hop-eligible.'} ${record.dense ? `The ${record.participant_count}-name roster is one contained object; the only cross-reference the ledger supports is the "Also documented on" column above.` : ''}</p></section>`;
+
+  const claims = `<section class="panel"><span class="panel-label">Claims referencing this surface</span><h3>${recordPlural(record.claims.length, 'claim')} in the receipt graph</h3>${record.claims.length ? `<ul class="record-pattern-list record-claims">${record.claims.map(claim => `<li>${evidenceBadge(claim.evidence_class || 'open')} <span>${esc(claim.text)}</span><small>${esc(claim.date || 'date not recorded')}${claim.limits ? ` · Limits: ${esc(claim.limits)}` : ''}</small>${recordReceiptsCell(claim.receipt_ids, 'Claim receipts')}</li>`).join('')}</ul>` : '<p class="meta">No claim in the receipt graph references this surface. The participation rows above carry their own receipts.</p>'}</section>`;
+
+  const receipts = `<section class="panel"><span class="panel-label">Surface receipts</span><h3>${recordPlural(recordUnique(s.receipt_ids).length, 'receipt')} attached to the surface record</h3>${renderReceiptGrid(s.receipt_ids, 'Surface receipts')}</section>`;
+
+  $('#detail').innerHTML = `<article class="record record--surface" data-record-kind="surface" data-record-id="${esc(id)}">${headPanel}${participants}${organizations}${bases}${claims}${receipts}</article>`;
+  bindRecordPage(record);
+}
+
+function renderType(type) {
+  const record = typeRecordModel(state.timeline, type);
+  if (!record) return renderNotFound('surface type', type);
+  setDocumentTitle(`${record.label} (surface type)`);
+  setRecord('type', type, record.label);
+  const partition = recordFloorPartition(record.rows, state.recordFloor);
+  state.recordText = ledgerText(record, partition.shown, { organizationsFor: recordOrganizationEntries });
+  $('#summary').innerHTML = '';
+  const actions = recordActions(record, { timelineToken: `type:${type}` });
+  const strip = recordTimelineMarkup(recordTimelineLayout('type', type), { title: `${record.label}: one mark per surface of this type` });
+  const ledger = recordLedgerPanel({
+    title: `${recordPlural(record.rows.length, 'participation row')} on ${recordPlural(record.surfaces.length, 'surface')} of this type, by date`,
+    columns: ['#', 'Date or window', 'Surface', 'Participant', 'Role', 'Evidence', 'Receipts'],
+    rows: partition.shown,
+    cellsFor: (row, index) => [String(index + 1), esc(recordWindowText(row)), recordSurfaceCell(row), `<a href="#${row.participant_type === 'organization' ? 'organization' : 'actor'}/${encodeURIComponent(row.entity_id)}">${esc(row.entity_label)}</a><small>${row.participant_type}</small>`, recordRoleCell(row), evidenceBadge(row.evidence_class), recordReceiptsCell(row.receipt_ids)],
+    partition, total: record.rows.length,
+    before: `<section class="record-strip-wrap">${strip}</section>`
+  });
+  const patterns = `<section class="panel record-patterns"><span class="panel-label">Patterns in the rows</span><h3>Who recurs inside this surface type</h3><div class="record-pattern-grid">
+    <div><h4>People on two or more rows of this type</h4>${recordPatternList(record.people.map(entry => `<li><a href="#actor/${encodeURIComponent(entry.id)}">${esc(entry.label)}</a> · ${recordPlural(entry.count, 'row')}</li>`), { empty: 'No person appears on two rows of this type.' })}${recordDenseNote(record.dense_lines)}</div>
+    <div><h4>Organizations</h4>${recordPatternList(record.organizations.map(entry => `<li><a href="#organization/${encodeURIComponent(entry.id)}">${esc(entry.label)}</a> · ${recordPlural(entry.count, 'row')}</li>`), { empty: 'No organization row of this type.' })}</div>
+  </div></section>`;
+  $('#detail').innerHTML = `<article class="record record--type" data-record-kind="type" data-record-id="${esc(type)}"><header class="panel record-head">${recordHeading(record.label, record.receipt_ids, actions)}<div class="badge-row record-kind-line"><span class="badge">surface type</span><span class="badge">${esc(type)}</span></div><p class="profile-copy">Every surface the compiler typed as <code>${esc(type)}</code>, with every participation row on those surfaces. A type groups surfaces for navigation; it creates no hop.</p>${recordFacts(record.facts)}</header>${ledger}${patterns}</article>`;
+  bindRecordPage(record);
+}
+
+function renderYear(year) {
+  const record = yearRecordModel(state.timeline, year, [...state.receipts.values()]);
+  if (!record) return renderNotFound('year', year);
+  setDocumentTitle(record.label);
+  setRecord('year', record.id, record.label);
+  const rows = record.rows_active.map(entry => entry.row);
+  const beganEarlier = new Set(record.rows_active.filter(entry => entry.began_earlier).map(entry => entry.row.key));
+  const partition = recordFloorPartition(rows, state.recordFloor);
+  state.recordText = ledgerText(record, partition.shown, { organizationsFor: recordOrganizationEntries });
+  $('#summary').innerHTML = '';
+  const width = Math.max(280, $('#detail')?.clientWidth || 1000);
+  const metrics = width < 600 ? TIMELINE_PHONE_METRICS : TIMELINE_DESKTOP_METRICS;
+  const layout = layoutTimeline(state.timeline, { by: 'type', includeStrip: false, includeBlocks: false, includeColumns: false, domainFrom: `${record.id}-01-01`, domainTo: `${record.id}-12-31`, plotWidth: Math.max(140, width - metrics.labelWidth - metrics.padding * 2 - 4), ...metrics });
+  const strip = recordTimelineMarkup(layout, { title: `Surfaces active in ${record.id}, one lane per surface type` });
+  const ledger = recordLedgerPanel({
+    title: `${recordPlural(rows.length, 'participation row')} active in ${record.id}, by date`,
+    columns: ['#', 'Date or window', 'Surface', 'Participant', 'Role', 'Evidence', 'Receipts'],
+    rows: partition.shown,
+    cellsFor: (row, index) => [String(index + 1), `${esc(recordWindowText(row))}${beganEarlier.has(row.key) ? '<small>began before this year</small>' : ''}`, recordSurfaceCell(row), `<a href="#${row.participant_type === 'organization' ? 'organization' : 'actor'}/${encodeURIComponent(row.entity_id)}">${esc(row.entity_label)}</a><small>${row.participant_type}</small>`, recordRoleCell(row), evidenceBadge(row.evidence_class), recordReceiptsCell(row.receipt_ids)],
+    partition, total: rows.length,
+    before: `<section class="record-strip-wrap">${strip}</section><p class="meta">Surfaces that began before ${esc(record.id)} and were still documented inside it are listed with that note; the axis above shows only the calendar year.</p>`
+  });
+  const patterns = `<section class="panel record-patterns"><span class="panel-label">Patterns in the rows</span><h3>Who recurs inside ${esc(record.id)}</h3><div class="record-pattern-grid">
+    <div><h4>People on two or more rows active this year</h4>${recordPatternList(record.people.map(entry => `<li><a href="#actor/${encodeURIComponent(entry.id)}">${esc(entry.label)}</a> · ${recordPlural(entry.count, 'row')}</li>`), { empty: 'No person appears on two rows active this year.' })}${recordDenseNote(record.dense_lines)}</div>
+    <div><h4>Organizations on two or more rows</h4>${recordPatternList(record.organizations.map(entry => `<li><a href="#organization/${encodeURIComponent(entry.id)}">${esc(entry.label)}</a> · ${recordPlural(entry.count, 'row')}</li>`), { empty: 'No organization appears on two rows active this year.' })}</div>
+  </div></section>`;
+  $('#detail').innerHTML = `<article class="record record--year" data-record-kind="year" data-record-id="${esc(record.id)}"><header class="panel record-head">${recordHeading(record.label, record.receipt_ids, recordActions(record, { copyLedger: true }))}<div class="badge-row record-kind-line"><span class="badge">calendar year</span></div><p class="profile-copy">Every participation row whose documented window touches ${esc(record.id)}. Hop bases are counted by their basis day, never by an edge envelope.</p>${recordFacts(record.facts)}</header>${ledger}${patterns}</article>`;
+  bindRecordPage(record);
 }
 
 /* ---------------- Claims Desk ----------------

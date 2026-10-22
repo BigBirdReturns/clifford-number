@@ -39,7 +39,7 @@ function shellMarkup() {
     <div class="aperture-layout">
       <div class="aperture-stage-wrap">
         <div class="aperture-stage-guide" aria-hidden="true"><strong>Explore</strong><span>rotate background &middot; wheel = depth &middot; click = focus</span></div>
-        <div id="aperture-webgl" class="aperture-webgl" role="img" aria-label="Spherical social field. Heat represents repeated documented reinforcement; arcs remain sourced graph edges." hidden></div>
+        <div id="aperture-webgl" class="aperture-webgl" role="img" aria-label="Spherical social field. Node size and halo show the documented surface count for each object; arcs are sourced graph edges coloured by evidence class." hidden></div>
         <div id="aperture-timeline" class="aperture-timeline" aria-label="Ledger timeline: one mark per documented participation row" hidden></div>
         <svg id="aperture-stage" class="aperture-stage" viewBox="0 0 1200 720" role="img" aria-labelledby="aperture-stage-title aperture-stage-desc">
           <title id="aperture-stage-title">Clifford Number operating map</title>

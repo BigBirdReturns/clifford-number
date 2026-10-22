@@ -606,9 +606,12 @@ input::placeholder { color: color-mix(in srgb, var(--muted) 76%, transparent); }
   font-size: 11px;
   font-weight: 800;
 }
+.result-fact { display: block; margin-top: 3px; color: var(--ink); font-family: var(--font-mono); font-size: 11px; line-height: 1.4; }
 .result[data-kind="actor"] { --kind-color: #295f99; }
 .result[data-kind="organization"] { --kind-color: #7b4d14; }
 .result[data-kind="surface"] { --kind-color: #276746; }
+.result[data-kind="type"] { --kind-color: #4d5e2a; }
+.result[data-kind="year"] { --kind-color: #3f3f6b; }
 .result[data-kind="chain"] { --kind-color: #873636; }
 .result[data-kind="candidate"] { --kind-color: #6a5c1f; }
 
@@ -1641,3 +1644,135 @@ h1, h2, h3, h4, .brand-name, .metric { font-family: var(--font-serif); }
 .public-data-boundary[data-mixed="false"] { border-left-color: var(--mint, #62d3bd); }
 @media (max-width: 900px) { .public-data-boundary { grid-template-columns: 1fr 1fr; } .public-data-boundary-contract { grid-column: 1 / -1; } }
 @media (max-width: 620px) { .public-data-boundary { grid-template-columns: 1fr; } .public-data-boundary-contract { grid-column: auto; } }
+
+/* ---------------- Record pages ----------------
+   Design 2's entity pages fed by the ledger timeline model: facts chips with
+   denominators, a single-lane mini timeline, a date-sorted ledger table that
+   becomes stacked cards at phone widths, and counted "Patterns in the rows".
+   Mark fill = evidence class (the same palette as .badge.ev-*), outline = hop
+   eligibility; nothing here draws a line between two people. */
+#summary:empty { display: none; }
+.record { display: grid; gap: 16px; }
+.record-head .profile-copy { margin-top: 16px; }
+.record-head .profile-boundary { margin-top: 18px; }
+.record-kind-line { margin: 14px 0 0; }
+.record-machine-note { color: var(--muted); font-family: var(--font-mono); font-size: 11px; }
+.record-facts { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 0; padding: 0; list-style: none; }
+.record-fact {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: var(--wash);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.record-fact--surfaces, .record-fact--cn { border-color: var(--ink); }
+.record-fact a { color: inherit; text-decoration-color: var(--gold); }
+.record-status { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; margin: 18px 0 0; }
+.record-status > div { min-width: 0; padding: 12px; border: 1px solid var(--line); background: var(--wash); }
+.record-status dt { color: var(--muted); font-family: var(--font-mono); font-size: 9px; text-transform: uppercase; }
+.record-status dd { margin: 6px 0 0; color: var(--ink); font-size: 14px; line-height: 1.45; overflow-wrap: anywhere; }
+.record-notes { margin: 16px 0 0; color: var(--muted-strong); font-size: 15px; line-height: 1.6; }
+.record code, .record .badge--link, .record-kind-line .badge { overflow-wrap: anywhere; }
+.badge--link { text-decoration: none; }
+.badge--link:hover { border-color: var(--ink); }
+
+/* the single-lane mini timeline */
+.record-strip-wrap { margin: 0 0 18px; }
+.record-strip { margin: 0; }
+.record-strip figcaption { margin-bottom: 8px; }
+.record-strip-svg { display: block; width: 100%; height: auto; border: 1px solid var(--line); background: var(--panel-raised); }
+.record-lane-bg { fill: transparent; }
+.record-lane-bg.is-alt { fill: rgba(var(--ink-rgb), .035); }
+.record-lane-label { fill: var(--ink); font: 700 12px var(--font-condensed); }
+.record-axis-base { stroke: var(--line-strong); }
+.record-axis-year { stroke: rgba(var(--ink-rgb), .18); }
+.record-axis-month { stroke: rgba(var(--ink-rgb), .3); }
+.record-axis-label { fill: var(--muted-strong); font: 700 10px var(--font-mono); }
+.record-mark { stroke: var(--muted); stroke-width: 1; cursor: pointer; outline: none; }
+.record-mark.is-hop { stroke: var(--ink); stroke-width: 1.5; }
+.record-mark.is-context { stroke-dasharray: 2 1.5; }
+.record-mark.ev-official, .record-mark.ev-confirmed, .record-mark.ev-government_record, .record-key.ev-official { fill: var(--ok); background: var(--ok); }
+.record-mark.ev-primary_public, .record-key.ev-primary_public { fill: #316ba5; background: #316ba5; }
+.record-mark.ev-reported, .record-key.ev-reported { fill: var(--warning); background: var(--warning); }
+.record-mark.ev-derived, .record-mark.ev-judgment, .record-mark.ev-open, .record-key.ev-open { fill: var(--danger); background: var(--danger); }
+.record-mark.ev-not_recorded, .record-key.ev-not_recorded { fill: transparent; background: transparent; stroke-dasharray: 1 1; }
+.record-mark--span { fill-opacity: .55; }
+.record-mark--year { fill-opacity: .3; stroke-dasharray: 2 2; }
+.record-mark--open { fill-opacity: .4; }
+.record-mark.is-filtered { opacity: .3; }
+.record-mark:hover, .record-mark:focus-visible { stroke: var(--focus); stroke-width: 2.5; }
+.record-mark-basis { fill: var(--paper); pointer-events: none; }
+.record-aggregate { fill: var(--wash-strong); stroke: var(--ink); stroke-width: 1; cursor: pointer; outline: none; }
+.record-aggregate:hover, .record-aggregate:focus-visible { stroke: var(--focus); stroke-width: 2.5; }
+.record-aggregate-label { fill: var(--ink); font: 700 8px var(--font-mono); pointer-events: none; }
+.record-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 10px 0 0; padding: 0; list-style: none; color: var(--muted); font-family: var(--font-mono); font-size: 10px; }
+.record-legend li { display: inline-flex; align-items: center; gap: 6px; }
+.record-key { width: 12px; height: 10px; display: inline-block; border: 1.5px solid var(--ink); border-radius: 2px; }
+.record-key.is-hop { background: transparent; }
+.record-key.is-context { background: transparent; border-style: dashed; border-color: var(--muted); }
+.record-key--span { width: 26px; background: color-mix(in srgb, var(--ok) 55%, transparent); }
+.record-key.has-basis { background: var(--ok); position: relative; }
+.record-key.has-basis::after { content: ""; position: absolute; inset: 50% auto auto 50%; width: 3px; height: 3px; border-radius: 50%; background: var(--paper); transform: translate(-50%, -50%); }
+.record-key-text { font-weight: 700; color: var(--ink); }
+
+/* the ledger table */
+.ledger-controls { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 18px; margin: 0 0 12px; }
+.ledger-control { display: inline-flex; align-items: center; gap: 8px; color: var(--muted-strong); font-family: var(--font-mono); font-size: 11px; font-weight: 700; text-transform: uppercase; }
+.ledger-control select { min-height: 34px; padding: 4px 8px; border: 1px solid var(--line-strong); border-radius: var(--radius-sm); background: var(--panel-raised); color: var(--ink); font: 13px var(--font-condensed); }
+.ledger-status { margin: 0; color: var(--ink); font-family: var(--font-mono); font-size: 12px; line-height: 1.5; }
+.ledger-scroll { overflow-x: auto; }
+.ledger { width: 100%; border-collapse: collapse; font-size: 14px; }
+.ledger th { padding: 9px 10px; border-bottom: 2px solid var(--ink); color: var(--muted-strong); font: 700 10px/1.3 var(--font-mono); letter-spacing: .04em; text-align: left; text-transform: uppercase; white-space: nowrap; }
+.ledger td { min-width: 0; padding: 10px; border-bottom: 1px solid var(--line); vertical-align: top; line-height: 1.45; overflow-wrap: anywhere; }
+.ledger td:first-child { color: var(--muted); font-family: var(--font-mono); font-size: 11px; white-space: nowrap; }
+.ledger td small { display: block; margin-top: 3px; color: var(--muted); font-family: var(--font-mono); font-size: 10px; line-height: 1.4; }
+.ledger-row.is-context td:nth-child(3) { box-shadow: inset 3px 0 var(--line-strong); }
+.ledger-row.is-hop td:nth-child(3) { box-shadow: inset 3px 0 var(--ok); }
+.ledger-row.is-hot td { background: color-mix(in srgb, var(--gold) 22%, transparent); }
+.ledger-list { margin: 0; padding: 0; list-style: none; }
+.ledger-list li + li { margin-top: 4px; }
+.ledger-receipts > summary { cursor: pointer; color: var(--ink-2); font-family: var(--font-mono); font-size: 11px; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+.ledger-receipts .receipt-grid { margin-top: 8px; }
+.ledger-empty { padding: 14px; border: 1px dashed var(--line-strong); }
+.record-boundary { margin-top: 14px; }
+
+/* patterns in the rows */
+.record-pattern-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px 28px; }
+.record-patterns h4 { margin: 0 0 8px; font-size: 15px; }
+.record-pattern-list { margin: 0; padding: 0; list-style: none; }
+.record-pattern-list > li { padding: 8px 0; border-top: 1px solid var(--line); font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
+.record-pattern-list > li:first-child { border-top: 0; }
+.record-pattern-list ul { margin: 4px 0 0 14px; padding: 0; list-style: none; color: var(--muted-strong); font-size: 13px; }
+.record-pattern-list small { display: block; margin-top: 3px; color: var(--muted); font-family: var(--font-mono); font-size: 10px; line-height: 1.45; }
+.record-pattern-list .badge { min-height: 22px; margin-left: 4px; padding: 2px 7px; font-size: 9px; }
+.record-claims > li > span { display: block; margin: 6px 0 2px; }
+.record-claims .ledger-receipts { margin-top: 6px; }
+
+@media (max-width: 600px) {
+  .record-fact { font-size: 11px; padding: 5px 10px; }
+  .ledger-controls { align-items: flex-start; flex-direction: column; }
+  .ledger-scroll { overflow: visible; }
+  .ledger thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .ledger, .ledger tbody, .ledger tr, .ledger td { display: block; width: 100%; }
+  .ledger tr { margin: 0 0 10px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel-raised); }
+  .ledger td { padding: 8px 10px; border-bottom: 1px solid var(--line); }
+  .ledger td:last-child { border-bottom: 0; }
+  .ledger td::before { content: attr(data-label); display: block; margin-bottom: 2px; color: var(--muted); font: 700 9px/1.3 var(--font-mono); letter-spacing: .04em; text-transform: uppercase; }
+  .ledger td:first-child { font-size: 12px; white-space: normal; }
+  .ledger td:first-child::before { display: inline; margin-right: 6px; }
+  .ledger-row.is-hop td:nth-child(3), .ledger-row.is-context td:nth-child(3) { box-shadow: none; }
+  .record-pattern-grid { grid-template-columns: 1fr; }
+}
+
+@media print {
+  .ledger-controls, .record-legend, .record-strip-wrap, [data-ap-open-timeline] { display: none !important; }
+  .ledger-receipts[open] > summary, .ledger-receipts > summary { display: none; }
+  .ledger-receipts .receipt-grid { display: grid !important; }
+}

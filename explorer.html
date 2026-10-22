@@ -40,7 +40,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bitter:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20261022-aperture1">
+  <link rel="stylesheet" href="styles.css?v=20261022-explorer1">
 </head>
 <body>
   <a class="skip-link" href="#main-content" data-i18n="skip">Skip to the explorer</a>
@@ -105,8 +105,8 @@
     <div class="hero hero--civic shell-wide">
       <div class="hero-copy">
         <p class="eyebrow"><span id="hero-node-count">Public research network</span><span class="eyebrow-rule" aria-hidden="true"></span><span id="hero-edge-count">Sourced topology</span></p>
-        <h1>The machine is already in the records.<br><em>Zoom out.</em></h1>
-        <p class="hero-dek">See the policy spine, the Dialog directory, capital, government, defence, and technology clusters at once. Then touch any edge and read the exact claim and receipts underneath it.</p>
+        <h1>The machine is already in the records.<br><em>Read it in date order.</em></h1>
+        <p class="hero-dek">Every documented participation row sits on one dated timeline: who was on which bounded surface, in which role, on which day. Open a person, an organization or a surface to read its ledger, then open the receipts under each row.</p>
 
         <section class="search-card search-card--hero civic-search" aria-labelledby="search-label">
           <div class="search-label-row">
@@ -115,7 +115,7 @@
           </div>
           <div class="search-input-wrap">
             <span class="search-icon" aria-hidden="true">⌕</span>
-            <input id="search" type="search" role="combobox" placeholder="Try a person, case, claim, receipt, or research track…" autocomplete="off" aria-controls="results" aria-autocomplete="list" aria-expanded="false" aria-describedby="search-help">
+            <input id="search" type="search" role="combobox" placeholder="Try a person, organization, surface, surface type, year, case or receipt…" autocomplete="off" aria-controls="results" aria-autocomplete="list" aria-expanded="false" aria-describedby="search-help">
             <span class="search-shortcut" aria-hidden="true">/</span>
           </div>
           <p class="try-row" id="search-help"><span data-i18n="startWith">Start with:</span> <span id="try-examples"></span> <button id="browse-all" type="button" data-i18n="browseIndex">Browse index</button></p>
@@ -123,7 +123,7 @@
         </section>
 
         <div class="hero-actions">
-          <a class="primary-action" href="#network-atlas">Open the whole network <span aria-hidden="true">→</span></a>
+          <a class="primary-action" href="#network-atlas">Open the timeline <span aria-hidden="true">→</span></a>
           <button class="text-action" id="hero-check" type="button"><span data-i18n="checkConnection">Check a connection</span> <span aria-hidden="true">→</span></button>
           <a class="text-action" href="estates/">Open Estate Aperture <span aria-hidden="true">→</span></a>
           <a class="text-action" href="gametrails/">Open Game-Trail Aperture <span aria-hidden="true">→</span></a>
@@ -131,13 +131,13 @@
         <p class="inference-boundary"><strong data-i18n="boundaryStrong">A timeline is not a causal verdict.</strong> <span data-i18n="boundaryText">The instrument distinguishes source-explicit causation from attribution, temporal association, and causation not established.</span></p>
       </div>
 
-      <aside class="hero-hotspots" aria-labelledby="hotspots-title">
-        <p class="section-kicker">Highest-density public clusters</p>
-        <h2 id="hotspots-title">Start where the record burns hottest.</h2>
-        <button class="hotspot-jump hotspot-jump--dialog" type="button" data-network-focus="dialog"><strong>Dialog</strong><span id="hotspot-dialog-count">Highest-density public cluster</span></button>
-        <button class="hotspot-jump" type="button" data-network-focus="ai-opportunities-action-plan"><strong>AI Opportunities Action Plan</strong><span id="hotspot-action-plan-count">Public policy surface</span></button>
-        <button class="hotspot-jump" type="button" data-network-focus="palantir"><strong>Palantir</strong><span id="hotspot-palantir-count">Public organization cluster</span></button>
-        <p class="hotspot-boundary"><strong>Edge ≠ allegation.</strong> Color shows evidence class. The claim and receipt stay attached all the way down.</p>
+      <aside class="hero-hotspots hero-records" aria-labelledby="hotspots-title">
+        <p class="section-kicker">Start with a record</p>
+        <h2 id="hotspots-title">Three ledgers, read row by row.</h2>
+        <button class="hotspot-jump" type="button" data-kind="actor" data-id="ben-warner"><strong>Dr. Ben Warner</strong><span data-record-fact="actor:ben-warner">Documented person</span></button>
+        <button class="hotspot-jump" type="button" data-kind="organization" data-id="electric-twin"><strong>Electric Twin</strong><span data-record-fact="organization:electric-twin">Documented organization</span></button>
+        <button class="hotspot-jump" type="button" data-kind="surface" data-id="dialog-public-directory-exposure-2026-06-16"><strong>Dialog roster</strong><span data-record-fact="surface:dialog-public-directory-exposure-2026-06-16">One contained roster</span></button>
+        <p class="hotspot-boundary"><strong>A row ≠ an allegation.</strong> Every count names its denominator; every row keeps its evidence class and receipts.</p>
         <div class="release-strip" id="release-strip">Loading the current public release…</div>
       </aside>
     </div>
@@ -303,7 +303,7 @@
     </div>
   </footer>
 
-  <script src="app.js?v=20261022-aperture1" type="module"></script>
-  <script src="src/aperture-bootstrap.js?v=20261022-timeline1" type="module"></script>
+  <script src="app.js?v=20261022-explorer1" type="module"></script>
+  <script src="src/aperture-bootstrap.js?v=20261022-explorer1" type="module"></script>
 </body>
 </html>
