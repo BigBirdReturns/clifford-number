@@ -1,0 +1,367 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bigbirdreturns.github.io/clifford-number/schemas/status-sovereignty-rd04-a08-internal-adjudication.schema.json",
+  "title": "SSC RD-04 A08 internal adjudication",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "hypothesis_id",
+    "lane_id",
+    "execution_id",
+    "issue",
+    "as_of",
+    "title",
+    "status",
+    "parent",
+    "execution_receipt",
+    "candidate_denominator",
+    "adjudication",
+    "public_source_refresh",
+    "current_result",
+    "next_handoff",
+    "authority",
+    "boundaries"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "ssc-rd04-a08-core@1"
+    },
+    "hypothesis_id": {
+      "const": "SSC-H01"
+    },
+    "lane_id": {
+      "const": "SSC-RD04"
+    },
+    "execution_id": {
+      "const": "SSC-RD04-INTERNAL-ADJUDICATION-A08"
+    },
+    "issue": {
+      "const": 765
+    },
+    "as_of": {
+      "const": "2026-08-02"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "const": "complete_internal_zero_candidate_adjudication_public_source_refresh_open"
+    },
+    "parent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "a07_merge",
+        "a07_product_commit",
+        "a07_release_sha256",
+        "a07_postmerge_proof_run",
+        "a07_postmerge_proof_artifact",
+        "a07_postmerge_proof_artifact_sha256"
+      ],
+      "properties": {
+        "a07_merge": {
+          "const": "281f2c5ef735d3e2a744f5977061c7c36b97a8a9"
+        },
+        "a07_product_commit": {
+          "const": "ffbbbf832a264b15f7c10cf9f6c4ff407134e01c"
+        },
+        "a07_release_sha256": {
+          "const": "a4be788259cd48235006d06b43271e61de625b72f2c7bb6d8663e63b82d520a3"
+        },
+        "a07_postmerge_proof_run": {
+          "const": 30757174885
+        },
+        "a07_postmerge_proof_artifact": {
+          "const": 8836293666
+        },
+        "a07_postmerge_proof_artifact_sha256": {
+          "const": "9ef3c023e4a9298f872a4caf30c9b7a750f731f1a0f49d3d58763087d3aac912"
+        }
+      }
+    },
+    "execution_receipt": {
+      "type": "object"
+    },
+    "candidate_denominator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "a07_machine_candidate_denominator",
+        "same_shn_decision_candidates",
+        "official_page_candidates",
+        "admitted_machine_candidates",
+        "adjudicated_candidates",
+        "candidate_denominator_changed_after_inspection",
+        "zero_candidate_set_is_terminal_for_internal_adjudication"
+      ],
+      "properties": {
+        "a07_machine_candidate_denominator": {
+          "const": 0
+        },
+        "same_shn_decision_candidates": {
+          "const": 0
+        },
+        "official_page_candidates": {
+          "const": 0
+        },
+        "admitted_machine_candidates": {
+          "const": 0
+        },
+        "adjudicated_candidates": {
+          "const": 0
+        },
+        "candidate_denominator_changed_after_inspection": {
+          "const": false
+        },
+        "zero_candidate_set_is_terminal_for_internal_adjudication": {
+          "const": true
+        }
+      }
+    },
+    "adjudication": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "internally_supported_public_completed_action_receipts",
+        "internally_supported_public_restoration_receipts",
+        "rejected_or_unresolved_candidates",
+        "negative_controls",
+        "negative_control_failures",
+        "source_or_structure_failures",
+        "complete"
+      ],
+      "properties": {
+        "internally_supported_public_completed_action_receipts": {
+          "const": 0
+        },
+        "internally_supported_public_restoration_receipts": {
+          "const": 0
+        },
+        "rejected_or_unresolved_candidates": {
+          "const": 0
+        },
+        "negative_controls": {
+          "const": 5
+        },
+        "negative_control_failures": {
+          "const": 0
+        },
+        "source_or_structure_failures": {
+          "const": 0
+        },
+        "complete": {
+          "const": true
+        }
+      }
+    },
+    "public_source_refresh": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "frozen_selected_urls",
+        "successful_at_parent_cutoff",
+        "unresolved_at_parent_cutoff",
+        "refresh_attempts",
+        "refresh_terminal_receipts",
+        "complete",
+        "unresolved_source_is_noncompliance"
+      ],
+      "properties": {
+        "frozen_selected_urls": {
+          "const": 347
+        },
+        "successful_at_parent_cutoff": {
+          "const": 346
+        },
+        "unresolved_at_parent_cutoff": {
+          "const": 1
+        },
+        "refresh_attempts": {
+          "const": 0
+        },
+        "refresh_terminal_receipts": {
+          "const": 0
+        },
+        "complete": {
+          "const": false
+        },
+        "unresolved_source_is_noncompliance": {
+          "const": false
+        }
+      }
+    },
+    "current_result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "terminal_state",
+        "internal_adjudication_complete",
+        "public_source_refresh_complete",
+        "verified_implementation_supported",
+        "verified_restoration_supported",
+        "complete_restoration_chain_supported",
+        "remedy_timeliness_supported",
+        "residual_class_closed",
+        "reviewed_disposition_changed",
+        "publication_effect",
+        "graph_effect",
+        "adoption_effect"
+      ],
+      "properties": {
+        "terminal_state": {
+          "const": "internal_zero_candidate_adjudication_complete_public_source_refresh_pending"
+        },
+        "internal_adjudication_complete": {
+          "const": true
+        },
+        "public_source_refresh_complete": {
+          "const": false
+        },
+        "verified_implementation_supported": {
+          "const": false
+        },
+        "verified_restoration_supported": {
+          "const": false
+        },
+        "complete_restoration_chain_supported": {
+          "const": false
+        },
+        "remedy_timeliness_supported": {
+          "const": false
+        },
+        "residual_class_closed": {
+          "const": false
+        },
+        "reviewed_disposition_changed": {
+          "const": false
+        },
+        "publication_effect": {
+          "const": "none"
+        },
+        "graph_effect": {
+          "const": "none"
+        },
+        "adoption_effect": {
+          "const": "none"
+        }
+      }
+    },
+    "next_handoff": {
+      "type": "object"
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "outside_human_dependency",
+        "external_contacts",
+        "external_reviews",
+        "case_level_implementation_joins",
+        "complete_restoration_findings",
+        "remedy_timeliness_findings",
+        "residual_class_closures",
+        "reviewed_disposition_changes",
+        "prevalence_findings",
+        "racial_order_findings",
+        "coordination_findings",
+        "common_purpose_findings",
+        "graph_effect",
+        "publication_effect",
+        "adoption_effect"
+      ],
+      "properties": {
+        "outside_human_dependency": {
+          "const": false
+        },
+        "external_contacts": {
+          "const": 0
+        },
+        "external_reviews": {
+          "const": 0
+        },
+        "case_level_implementation_joins": {
+          "const": 0
+        },
+        "complete_restoration_findings": {
+          "const": 0
+        },
+        "remedy_timeliness_findings": {
+          "const": 0
+        },
+        "residual_class_closures": {
+          "const": 0
+        },
+        "reviewed_disposition_changes": {
+          "const": 0
+        },
+        "prevalence_findings": {
+          "const": 0
+        },
+        "racial_order_findings": {
+          "const": 0
+        },
+        "coordination_findings": {
+          "const": 0
+        },
+        "common_purpose_findings": {
+          "const": 0
+        },
+        "graph_effect": {
+          "const": "none"
+        },
+        "publication_effect": {
+          "const": "none"
+        },
+        "adoption_effect": {
+          "const": "none"
+        }
+      }
+    },
+    "boundaries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "same_shn_alone_proves_claimant_identity",
+        "official_page_string_hit_proves_case_specific_implementation",
+        "internally_supported_receipt_requires_exact_source_and_two_independent_rules",
+        "missing_public_material_is_noncompliance",
+        "internal_adjudication_is_external_review",
+        "project_blocking",
+        "graph_effect",
+        "publication_effect",
+        "adoption_effect"
+      ],
+      "properties": {
+        "same_shn_alone_proves_claimant_identity": {
+          "const": false
+        },
+        "official_page_string_hit_proves_case_specific_implementation": {
+          "const": false
+        },
+        "internally_supported_receipt_requires_exact_source_and_two_independent_rules": {
+          "const": true
+        },
+        "missing_public_material_is_noncompliance": {
+          "const": false
+        },
+        "internal_adjudication_is_external_review": {
+          "const": false
+        },
+        "project_blocking": {
+          "const": false
+        },
+        "graph_effect": {
+          "const": "none"
+        },
+        "publication_effect": {
+          "const": "none"
+        },
+        "adoption_effect": {
+          "const": "none"
+        }
+      }
+    }
+  }
+}

@@ -2,6 +2,7 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { readJson, readJsonl, root, writeJson } from './lib/ledger.mjs';
 
 export const GAME_TRAIL_MANIFEST_SCHEMA = 'estate-game-trail-manifest@2';
@@ -826,7 +827,7 @@ export function buildEstateGameTrails({ write = true } = {}) {
   return output;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const built = buildEstateGameTrails();
   const counts = built.manifest.counts;
   console.log(`estate game trails: ${counts.legacy_preserved_trails} legacy + ${counts.estate_source_route_trails} route + ${counts.estate_custody_trails} custody + ${counts.estate_frontier_summary_trails} estate summaries = ${counts.total_compiled_trails}`);

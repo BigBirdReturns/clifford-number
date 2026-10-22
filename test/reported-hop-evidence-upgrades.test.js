@@ -21,7 +21,9 @@ const actual = evaluateReportedHopEvidenceUpgrades({
 });
 
 assert.deepEqual(actual.errors, []);
-assert.equal(actual.global.canonical_actor_count, 170);
+// 170 on the base; 177 after the evidence-lake registry merge (WP4). The seven
+// added actors hold no participation row, so every figure below is unchanged.
+assert.equal(actual.global.canonical_actor_count, 177);
 assert.equal(actual.global.accepted_edge_actor_count, 48);
 assert.equal(actual.global.basis_count, 95);
 assert.deepEqual(actual.global.evidence_counts, { official: 75, primary_public: 20 });

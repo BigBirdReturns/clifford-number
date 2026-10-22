@@ -1,0 +1,204 @@
+{
+  "schema_version": "lake-basin-execution-policy@1",
+  "program_id": "CN-LAKE-EXECUTION-W01",
+  "title": "Evidence Lake Basin Execution Wave 01",
+  "status": "active_reversible_execution",
+  "purpose": "Execute the first six evidence-grounded lake decisions from the current census: core-thesis lineage, unclassified path disposition, identifier repair, case catalog classification, branch-shadow disposition, and ranked next-action selection.",
+  "decision_authority": {
+    "human_permission_required": false,
+    "independent_review_effect": "may_reorder_or_overturn_a_decision_but_does_not_block_reversible_execution",
+    "correction_mode": "append_preserving_supersession"
+  },
+  "input_paths": [
+    "build/lake-index/files.jsonl",
+    "build/lake-index/objects.jsonl",
+    "build/lake-index/id-gaps.jsonl",
+    "build/lake-index/cases.json",
+    "build/lake-index/branch-shadow.jsonl",
+    "build/lake-index/basin-membership.jsonl",
+    "build/lake-index/basin-gaps.jsonl",
+    "build/lake-index/basins.json",
+    "data/project/lake-basin-registry.json"
+  ],
+  "core_thesis": {
+    "source_prefix": "build/core-thesis/",
+    "report_prefix": "reports/core-thesis/",
+    "entrypoint": "build/core-thesis/index.json",
+    "owner_program_id": "core-thesis-program",
+    "publication_disposition": "internal_or_explicitly_authorized",
+    "rule": "Every tracked core-thesis projection is indexed with its hash, size, detected source references, report projections, and status values. The index is a lineage map, not independent evidence."
+  },
+  "unclassified_path_rules": [
+    {
+      "rule_id": "comprehension-protocol",
+      "prefixes": ["comprehension/"],
+      "owner_program_id": "comprehension-protocol",
+      "semantic_role": "method_and_fixture",
+      "disposition": "retain_and_index",
+      "publication_disposition": "internal_or_explicitly_authorized"
+    },
+    {
+      "rule_id": "contribution-pipeline",
+      "prefixes": ["contributions/"],
+      "owner_program_id": "contribution-pipeline",
+      "semantic_role": "contribution_source_or_template",
+      "disposition": "retain_and_index",
+      "publication_disposition": "blocked_unless_explicitly_authorized"
+    },
+    {
+      "rule_id": "temporary-transport",
+      "prefixes": [".github/tmp/", ".github/temporary/"],
+      "owner_program_id": "build-system",
+      "semantic_role": "temporary_transport",
+      "disposition": "delete_when_inactive",
+      "publication_disposition": "not_evidence"
+    },
+    {
+      "rule_id": "standalone-public-release",
+      "path_regex": "^(?:Clifford-.*\\.html|[^/]+-standalone\\.html)$",
+      "owner_program_id": "public-interface",
+      "semantic_role": "standalone_public_projection",
+      "disposition": "retain_if_manifest_authorized",
+      "publication_disposition": "explicit_manifest_only"
+    },
+    {
+      "rule_id": "root-legacy-artifact",
+      "path_regex": "^(?:graph\\.json|mcp-config\\.json|mcp-registry\\.json)$",
+      "owner_program_id": "project-governance",
+      "semantic_role": "legacy_or_configuration_artifact",
+      "disposition": "retain_with_explicit_retirement_or_configuration_status",
+      "publication_disposition": "not_current_evidence"
+    },
+    {
+      "rule_id": "repository-config",
+      "path_regex": "^[^/]+\\.(?:json|md|txt|ya?ml)$",
+      "owner_program_id": "project-governance",
+      "semantic_role": "repository_configuration_or_governance",
+      "disposition": "retain_and_index",
+      "publication_disposition": "documentation_or_internal"
+    }
+  ],
+  "case_rules": [
+    {
+      "rule_id": "public-catalogued-case",
+      "condition": "public_catalogued",
+      "disposition": "public_case",
+      "owner_program_id": "case-ledger-program",
+      "action": "retain_in_public_catalog_with_current_claim_and_publication_status"
+    },
+    {
+      "rule_id": "answerable-power-benchmark",
+      "case_id_regex": "^M05-",
+      "disposition": "internal_benchmark_or_control",
+      "owner_program_id": "answerable-power-program",
+      "action": "index_under_answerable_power_benchmarks_not_as_a_public_case"
+    },
+    {
+      "rule_id": "thesis-case-packet",
+      "path_tokens": ["thesis-case-packets", "thesis/case-packets"],
+      "disposition": "internal_case_packet",
+      "owner_program_id": "synthetic-population-thesis-program",
+      "action": "index_through_the_thesis_case_packet_entrypoint"
+    },
+    {
+      "rule_id": "synthetic-thesis-subcase",
+      "path_tokens": ["synthetic-population-infrastructure"],
+      "disposition": "thesis_subcase_not_public_case",
+      "owner_program_id": "synthetic-population-thesis-program",
+      "action": "index_as_a_thesis_dimension_and_do_not_add_to_the_public_case_catalog_without_a_native_case_ledger"
+    }
+  ],
+  "identifier_gap_priorities": {
+    "projection_id_without_source": {
+      "priority": 1,
+      "action": "identify_or_create_the_source_object_or_downgrade_the_projection_to_unresolved"
+    },
+    "divergent_identifier_projection": {
+      "priority": 2,
+      "action": "compare_object_hashes_and_split_versions_or_correct_the_projection"
+    },
+    "source_id_without_projection": {
+      "priority": 3,
+      "action": "decide_whether_a_projection_is_required_or_record_source_only_status"
+    },
+    "unindexed_machine_id": {
+      "priority": 4,
+      "action": "attach_the_identifier_to_an_authoritative_index_or_record_intentional_isolation"
+    }
+  },
+  "branch_dispositions": {
+    "28": {
+      "disposition": "salvage_method_and_fixtures_then_close",
+      "action": "migrate_unique_comprehension_protocol_material_into_current_method_governance_and_close_the_stale_branch"
+    },
+    "50": {
+      "disposition": "salvage_program_sources_then_close",
+      "action": "reconcile_unique_synthetic_population_program_rows_into_the_current_thesis_and_research_track_surfaces"
+    },
+    "198": {
+      "disposition": "abandon_temporary_transport_and_close",
+      "action": "preserve_only_any_unique_receipted_payload_after_hash_verification; do_not_merge_temporary_transport"
+    },
+    "211": {
+      "disposition": "salvage_mapping_rows_then_close",
+      "action": "reconcile_unique_case_and_report_membership_rows_against_current_estate_maps"
+    },
+    "245": {
+      "disposition": "salvage_unique_evidence_then_close",
+      "action": "diff_against_current_M04F_and_M05_lakes_and retain_only_unique_receipted_rows"
+    },
+    "356": {
+      "disposition": "superseded_by_merged_source_ecology_repair",
+      "action": "preserve_the_observed_orbit_receipt_if_unique_and_close_the_stale_branch"
+    },
+    "362": {
+      "disposition": "active_separate_research_program",
+      "action": "continue_as_a_separate_public_health_control_surface_with_its_existing_safety_boundaries"
+    },
+    "365": {
+      "disposition": "abandon_broken_transport_preserve_requirements",
+      "action": "close_the_hash_mismatched_transport_and_rebuild_any_still_needed_A1_lifecycle_requirements_from_verified_source_bytes"
+    },
+    "378": {
+      "disposition": "archive_terminal_audit_and_close",
+      "action": "preserve_the_bounded_WebsiteIQ_baseline_result_and_close_the_temporary_runner"
+    },
+    "379": {
+      "disposition": "archive_terminal_audit_and_close",
+      "action": "preserve_the_landing_path_limit_result_and_close_the_temporary_runner"
+    },
+    "380": {
+      "disposition": "active_publication_followup",
+      "action": "stack_after_release_integrity_and_reconcile_with_the_status_aware_publication_manifest"
+    },
+    "382": {
+      "disposition": "active_release_integrity_dependency",
+      "action": "complete_and_merge_before_any_internal_lake_or_judgment_products_land_on_main"
+    },
+    "384": {
+      "disposition": "active_lake_index_parent",
+      "action": "retain_as_the_parent_census_for_this_execution_wave"
+    },
+    "386": {
+      "disposition": "active_judgment_authority_dependency",
+      "action": "retain_the_no_magic_human_constitution_and_decision_ledger_as_a_parallel_dependency"
+    }
+  },
+  "work_queue_order": [
+    "core_thesis_entrypoint",
+    "unclassified_path_disposition",
+    "identifier_projection_integrity",
+    "case_catalog_disposition",
+    "branch_shadow_disposition",
+    "public_reachability_after_release_integrity"
+  ],
+  "boundaries": {
+    "disposition_proves_evidence_truth": false,
+    "program_owner_proves_semantic_correctness": false,
+    "case_disposition_is_publication_clearance": false,
+    "branch_disposition_executes_GitHub_closure": false,
+    "identifier_repair_priority_proves_materiality": false,
+    "core_thesis_index_is_independent_evidence": false,
+    "graph_effect": "none"
+  }
+}

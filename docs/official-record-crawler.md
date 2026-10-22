@@ -12,7 +12,7 @@ official API or bulk source
   -> compiled case, delta, and beacon
 ```
 
-An observation or candidate has `graph_effect: none`. The scheduled workflow cannot edit `data/ledger/`, `data/canonical/`, `cases/`, scores, or the public application. `build:pages` explicitly excludes crawl intake and its snapshots from the deployed artifact.
+An observation or candidate has `graph_effect: none`. The crawl workflow cannot edit `data/ledger/`, `data/canonical/`, `cases/`, scores, or the public application. `build:pages` explicitly excludes crawl intake and its snapshots from the deployed artifact.
 
 ## Source adapters
 
@@ -49,4 +49,4 @@ SAM_API_KEY=... npm run crawl:official -- --source sam-opportunities --term Pala
 npm run validate:crawl
 ```
 
-The scheduled `.github/workflows/crawl-official.yml` commits only `data/crawl/` and `receipts/crawl/`. It uses overlapping windows so revisions are caught, backs off between requests, caps each run, and journals normalization failures instead of silently dropping them.
+As of 2.0.0, `.github/workflows/crawl-official.yml` runs only when a person starts it; it has no schedule. It stages only `data/crawl/` and `receipts/crawl/`, pushes them to a run-scoped `automation-crawl-*` branch, and opens one pull request for a maintainer to review. It cannot merge, approve, or push to `main`. It uses overlapping windows so revisions are caught, backs off between requests, caps each run, and journals normalization failures instead of silently dropping them.

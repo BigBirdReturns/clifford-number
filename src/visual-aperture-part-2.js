@@ -2,9 +2,9 @@ function shellMarkup() {
   return `
     <div class="aperture-header">
       <div>
-        <p class="section-kicker">Operational public topology</p>
-        <h2 id="network-title">Map the system. Keep the receipt attached.</h2>
-        <p>Semantic zoom changes the object under inspection. Route mode preserves every actor → bounded surface → actor step. Surface mode keeps dense rosters inside their container instead of manufacturing pairwise adjacency.</p>
+        <p class="section-kicker">Evidence-backed relationship map</p>
+        <h2 id="network-title">Pick a person. Follow the public record.</h2>
+        <p>Clifford Number shows where people and organizations appear together on documented public surfaces: companies, boards, programs, cohorts, events, and roles. Start with a name, follow the named surface, then open the receipts. A route is actor → bounded surface → actor; co-presence never becomes coordination, and the visualizer creates no pairwise lines from shared context.</p>
       </div>
       <div class="aperture-live" aria-live="polite">
         <span class="aperture-live-dot" aria-hidden="true"></span>
@@ -13,11 +13,17 @@ function shellMarkup() {
       </div>
     </div>
 
+    <div class="aperture-how" aria-label="How Clifford Number works">
+      <span><b>1</b> Find a person or organization</span><i aria-hidden="true">&rarr;</i><span><b>2</b> Follow the named surface</span><i aria-hidden="true">&rarr;</i><span><b>3</b> Open the receipts</span>
+      <small>Timeline: one mark per documented row, columns are shared surfaces on one day &middot; Explore: drag to rotate, scroll to drill, click a node to focus.</small>
+    </div>
+
     <div class="aperture-commandbar">
       <div class="aperture-mode-switch" role="tablist" aria-label="Choose operating mode">
-        <button type="button" role="tab" class="aperture-mode-button is-active" data-ap-mode="map" aria-selected="true"><span>01</span> Map</button>
-        <button type="button" role="tab" class="aperture-mode-button" data-ap-mode="route" aria-selected="false" tabindex="-1"><span>02</span> Route</button>
-        <button type="button" role="tab" class="aperture-mode-button" data-ap-mode="surface" aria-selected="false" tabindex="-1"><span>03</span> Surface</button>
+        <button type="button" role="tab" class="aperture-mode-button is-active" data-ap-mode="timeline" aria-selected="true"><span>01</span> Timeline</button>
+        <button type="button" role="tab" class="aperture-mode-button" data-ap-mode="map" aria-selected="false" tabindex="-1"><span>02</span> Explore</button>
+        <button type="button" role="tab" class="aperture-mode-button" data-ap-mode="route" aria-selected="false" tabindex="-1"><span>03</span> Route</button>
+        <button type="button" role="tab" class="aperture-mode-button" data-ap-mode="surface" aria-selected="false" tabindex="-1"><span>04</span> Roster</button>
       </div>
       <div id="aperture-mode-controls" class="aperture-mode-controls"></div>
     </div>
@@ -32,7 +38,9 @@ function shellMarkup() {
 
     <div class="aperture-layout">
       <div class="aperture-stage-wrap">
-        <div id="aperture-webgl" class="aperture-webgl" role="img" aria-label="Spherical social field. Heat represents repeated documented reinforcement; arcs remain sourced graph edges." hidden></div>
+        <div class="aperture-stage-guide" aria-hidden="true"><strong>Explore</strong><span>rotate background &middot; wheel = depth &middot; click = focus</span></div>
+        <div id="aperture-webgl" class="aperture-webgl" role="img" aria-label="Spherical social field. Node size and halo show the documented surface count for each object; arcs are sourced graph edges coloured by evidence class." hidden></div>
+        <div id="aperture-timeline" class="aperture-timeline" aria-label="Ledger timeline: one mark per documented participation row" hidden></div>
         <svg id="aperture-stage" class="aperture-stage" viewBox="0 0 1200 720" role="img" aria-labelledby="aperture-stage-title aperture-stage-desc">
           <title id="aperture-stage-title">Clifford Number operating map</title>
           <desc id="aperture-stage-desc">An interactive semantic map of bounded public surfaces, actors, routes, and evidence states.</desc>
@@ -79,6 +87,9 @@ function initializeIndexes() {
   for (const [id, node] of state.legacyNodes) {
     if (!state.actors.has(id) && node.type === 'person') state.actors.set(id, { id, label: node.label, description: node.description });
   }
+  // The ledger timeline model is derived from the same two artifacts; graph.json
+  // contributes nothing to it (its edges carry no dates and its legacy-only nodes have no rows).
+  state.timeline.model = buildTimelineModel(state.data.surfaceGraph, state.data.hopGraph);
 }
 
 function largestSurface(surfaces = []) {
@@ -119,7 +130,8 @@ function updatePublicHero() {
 }
 
 function setDataStatus() {
-  $('#aperture-data-meta', state.root).textContent = `${state.actors.size} actors · ${state.surfaces.size} bounded surfaces · ${state.data.hopGraph.edges?.length ?? 0} valid hops`;
+  const rows = state.timeline?.model?.counts?.rows;
+  $('#aperture-data-meta', state.root).textContent = `${state.actors.size} actors · ${state.surfaces.size} bounded surfaces · ${state.data.hopGraph.edges?.length ?? 0} valid hops${Number.isInteger(rows) ? ` · ${rows} participation rows` : ''}`;
 }
 
 function evidenceOptions(selected = 'open') {

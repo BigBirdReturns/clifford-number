@@ -1,5 +1,7 @@
 # Visual aperture scale baseline
 
+> **Note (2026-10-22).** This is a dated measurement record. The "focused workflow" named under Outputs no longer exists: the 2.0.0 consolidation cut `.github/workflows/` to five files, none of which runs `tools/measure-visual-aperture-*`, and `build/metrics/` is not produced by any gate step. The three measurement programs are still in `tools/` and can be run by hand. The Phase 4b requirements under "What follows" (overview pages of 25, 50 or 100 rows with 50 as the default; at most 24 route steps shown at once with the whole path retained; page and route-window state in the URL) are implemented in `src/visual-aperture-windowing.mjs` and the bounded runtime and are pinned by `test/visual-aperture-windowing.test.js` and `test/visual-aperture-bounded-contract.test.js`. The budget enforcement it asked for is not a gate step. The Evidence Overview that this baseline measured on the legacy `app.js` atlas was removed on 2026-10-22; the aperture's own paged overview is what ships.
+
 Phase 4 begins with measurement, not optimization.
 
 The integrated aperture already constrains SVG cardinality at each semantic level and keeps dense Surface mode inside a fixed bracket budget. Map surface/evidence mode and long Route mode did not have equivalent row or path windows. This tranche records those costs before pagination, virtualization, caching, indexing, or fallback decisions are made.

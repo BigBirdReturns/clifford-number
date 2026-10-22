@@ -180,7 +180,7 @@ export function validateSprint09Package(documents, { expectedManifest = null } =
 
   const exactManifest = expectedManifest || computeReleaseManifest();
   if (JSON.stringify(manifest) !== JSON.stringify(exactManifest)) error('RELEASE_MANIFEST', 'Exact-byte release manifest drift.');
-  if (manifest?.entries?.length !== 11 || manifest?.combined_sha256?.length !== 64) error('RELEASE_MANIFEST_SHAPE', 'Release manifest shape drift.');
+  if (manifest?.entries?.length !== 10 || manifest?.combined_sha256?.length !== 64) error('RELEASE_MANIFEST_SHAPE', 'Release manifest shape drift.');
   if (!allFalse(manifest?.boundaries)) error('RELEASE_BOUNDARY', 'Release manifest boundary drift.');
 
   if (!isObject(report) || report.schema_version !== 'm05-answerable-power-sprint-09-report@1') error('REPORT_IDENTITY', 'Report identity drift.');

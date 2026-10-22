@@ -10,7 +10,6 @@ const write=(rel,value)=>{const target=path.join(root,rel);fs.mkdirSync(path.dir
 export const releaseScope=[
   '.github/ISSUE_TEMPLATE/apc-a1-support-challenge.yml',
   '.github/ISSUE_TEMPLATE/apc-a1-support-incident.yml',
-  '.github/workflows/m05-answerable-power-sprint-08.yml',
   'data/project/m05-answerable-power-sprint-08-plan.json',
   'data/project/m05-answerable-power-sprint-08-lifecycle-constitution.json',
   'data/project/m05-answerable-power-sprint-08-challenge-schema.json',

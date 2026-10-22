@@ -1,7 +1,12 @@
 function renderCurrent() {
   if (!state.root) return;
-  if (state.mode !== 'map' || state.map.level !== 'corpus') deactivateApertureSocialField();
-  if (state.mode === 'map') renderMapMode();
+  // The GPU field renders only from renderMapMode, so in timeline mode it is
+  // deactivated here (canvas hidden, renderer paused, ecology clock stopped) and
+  // never loaded on arrival.
+  if (state.mode !== 'map') deactivateApertureSocialField();
+  if (state.mode !== 'timeline') deactivateTimelineStage();
+  if (state.mode === 'timeline') renderTimelineMode();
+  else if (state.mode === 'map') renderMapMode();
   else if (state.mode === 'route') renderRouteMode();
   else renderSurfaceMode();
 }
@@ -9,6 +14,8 @@ function renderCurrent() {
 function selectCluster(id, { advance = true } = {}) {
   state.map.selectedClusterId = id;
   state.map.selectedTypeId = null;
+  state.map.selectedFieldNodeId = null;
+  state.map.hasExplicitFocus = true;
   const cluster = summarizeClusters(state.data.surfaceGraph).find(item => item.id === id);
   state.map.selectedSurfaceId = largestSurface(cluster?.surfaces)?.surface_id ?? null;
   state.map.selectedActorId = null;
@@ -28,6 +35,8 @@ function selectType(id) {
   const group = surfaceTypeGroups(state.data.surfaceGraph, state.map.selectedClusterId).find(item => item.id === id);
   state.map.selectedSurfaceId = largestSurface(group?.surfaces)?.surface_id ?? state.map.selectedSurfaceId;
   state.map.selectedActorId = null;
+  state.map.selectedFieldNodeId = apertureFieldSurfaceNodeId(state.map.selectedSurfaceId);
+  state.map.hasExplicitFocus = true;
   state.selectedSurfaceId = state.map.selectedSurfaceId;
   state.map.scale = Math.max(state.map.scale, 3.05);
   state.map.level = 'surface';
@@ -44,6 +53,8 @@ function selectMapSurface(id, { advance = true } = {}) {
   state.map.selectedTypeId = surface.surface_type;
   state.map.selectedSurfaceId = id;
   state.map.selectedActorId = null;
+  state.map.selectedFieldNodeId = apertureFieldSurfaceNodeId(id);
+  state.map.hasExplicitFocus = true;
   state.selectedSurfaceId = id;
   if (advance) {
     state.map.scale = Math.max(state.map.scale, 3.05);
@@ -59,6 +70,8 @@ function selectActor(id, context = 'map') {
   state.selectedActorId = id;
   if (context === 'map') {
     state.map.selectedActorId = id;
+    state.map.selectedFieldNodeId = id;
+    state.map.hasExplicitFocus = true;
     state.map.scale = Math.max(state.map.scale, 4.3);
     state.map.level = 'evidence';
     renderMapMode();

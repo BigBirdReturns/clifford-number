@@ -180,11 +180,13 @@ function currentSurfaceExportView() {
 
 function buildCurrentPublicationPacket() {
   const exactViewUrl = buildApertureUrl(apertureSnapshot(), location.href);
-  const view = state.mode === 'map'
-    ? currentMapExportView()
-    : state.mode === 'route'
-      ? currentRouteExportView()
-      : currentSurfaceExportView();
+  const view = state.mode === 'timeline'
+    ? currentTimelineExportView()
+    : state.mode === 'map'
+      ? currentMapExportView()
+      : state.mode === 'route'
+        ? currentRouteExportView()
+        : currentSurfaceExportView();
   return buildApertureExportPacket({
     mode: state.mode,
     exactViewUrl,

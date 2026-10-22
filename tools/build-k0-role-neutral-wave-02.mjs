@@ -16,7 +16,6 @@ const stable = value => JSON.stringify(value, null, 2) + '\n';
 const sha256 = value => crypto.createHash('sha256').update(value).digest('hex');
 
 export const releaseScope = [
-  '.github/workflows/k0-role-neutral-wave-02.yml',
   'data/research/k0-role-neutral-wave-02.json',
   'docs/milestones/m05-k0-role-neutral-wave-02.md',
   'tools/build-k0-role-neutral-wave-02.mjs',

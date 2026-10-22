@@ -23,7 +23,6 @@ const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
 }[char]));
 
 export const releaseScope = [
-  '.github/workflows/status-sovereignty-sbicct-first-pass.yml',
   'data/intake/status-sovereignty-sbicct-denominator-first-pass.json',
   'schemas/status-sovereignty-sbicct-denominator-first-pass.schema.json',
   'docs/milestones/ssc-sbicct-denominator-first-pass.md',

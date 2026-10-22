@@ -26,7 +26,6 @@ export const paths = {
 };
 
 const fixedReleaseScope = [
-  '.github/workflows/status-sovereignty-rd04-california-remedy-chain-a05.yml',
   'docs/milestones/ssc-rd04-california-remedy-chain-a05.md',
   'schemas/status-sovereignty-rd04-california-remedy-chain-a05.schema.json',
   'test/status-sovereignty-rd04-california-remedy-chain-a05.test.js',

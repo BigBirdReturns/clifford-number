@@ -1,0 +1,168 @@
+{
+  "schema_version": "lake-allocator-war-denominator-closure-wave-25-policy@1",
+  "program_ref": "CN-LAKE-ALLOCATOR-WAR-W25",
+  "wave_ref": "LAW-W25",
+  "as_of": "2026-07-31",
+  "title": "Allocator-war denominator closure fan-out Wave 25",
+  "purpose": "Convert every explicit unavailable obligation retained by Wave 24 into a deterministic packet-owned closure queue, require institutional-gate identification before downstream work in gate-unspecified packets, and preserve zero evidence adjudication, finding promotion, graph effect, or publication authority.",
+  "base_checkpoint": {
+    "branch": "agent/lake-allocator-war-wave-21",
+    "commit": "5911e735a2e14cccea2d64b8c9f7328d142dae3a",
+    "required_ancestry": true
+  },
+  "paths": {
+    "source_plan": "data/project/lake-allocator-war-lead-execution-wave-24-source-plan.json",
+    "source_projection": "build/lake-actions/allocator-war-lead-execution-wave-24.json",
+    "projection": "build/lake-actions/allocator-war-denominator-closure-wave-25.json",
+    "report": "reports/lake-allocator-war-denominator-closure-wave-25.md",
+    "method": "docs/methods/lake-allocator-war-denominator-closure-wave-25.md",
+    "milestone": "docs/milestones/lake-allocator-war-denominator-closure-wave-25.md",
+    "queue_root": "data/acquisition/lake-allocator-war-wave-25"
+  },
+  "expected_counts": {
+    "source_packets": 11,
+    "closure_queues": 11,
+    "closure_tasks": 40,
+    "queue_summary_rows": 11,
+    "closure_task_rows": 40,
+    "closure_rows": 51,
+    "named_gate_queues": 9,
+    "gate_unspecified_queues": 2,
+    "ready_tasks": 36,
+    "blocked_tasks": 4,
+    "gate_identification_tasks": 2,
+    "evidence_rows": 0,
+    "finding_promotions": 0,
+    "graph_effects": 0,
+    "publication_clearances": 0
+  },
+  "classification_law": {
+    "order": [
+      "gate_identification",
+      "denominator_closure",
+      "instrument_rights_recovery",
+      "entity_resolution",
+      "outcome_correction_recovery"
+    ],
+    "gate_identification_keywords": [
+      "institutional gate",
+      "bounded institutional gate",
+      "specific legislative or political-finance institutional gate"
+    ],
+    "denominator_keywords": [
+      "denominator",
+      "universe",
+      "roster",
+      "all rejected",
+      "all proposed",
+      "all enforcement actions",
+      "complete applicant",
+      "complete bidder",
+      "complete candidate",
+      "complete regulated",
+      "complete appointment",
+      "complete programme"
+    ],
+    "instrument_keywords": [
+      "agreement",
+      "schedule",
+      "terms",
+      "criteria",
+      "evaluation",
+      "FOCI",
+      "committee",
+      "contract",
+      "rights",
+      "interface",
+      "acceptance",
+      "rule",
+      "guidance"
+    ],
+    "entity_keywords": [
+      "legal-entity",
+      "entity resolution",
+      "cross-system entity"
+    ]
+  },
+  "priority_law": {
+    "gate_identification": "G0",
+    "denominator_closure": "P0",
+    "instrument_rights_recovery": "P1",
+    "entity_resolution": "P1",
+    "outcome_correction_recovery": "P2"
+  },
+  "output_law": {
+    "gate_identification": {
+      "required_output": "Bounded institutional-gate identification packet with named selector, decision instrument, affected rows, consequence, correction route, source custody, and an explicit no-gate result when the search remains negative.",
+      "closure_test": "A source-addressed institutional decision surface is identified with selector, bounded window, affected rows, consequence, and correction route, or the bounded search terminates explicitly with no qualifying gate identified."
+    },
+    "denominator_closure": {
+      "required_output": "Complete denominator ledger with included, excluded, rejected, ineligible, withdrawn, failed, unavailable, null, appealed, and corrected rows for the bounded gate.",
+      "closure_test": "Every row in the declared option or affected universe has a source-addressed disposition, and no unavailable or excluded row is silently converted into a null."
+    },
+    "instrument_rights_recovery": {
+      "required_output": "Operative instrument-and-rights ledger containing executed agreements, criteria, custody, schedules, interfaces, exceptions, review rights, termination, substitution, and public-recovery terms.",
+      "closure_test": "The operative instrument, decision custody, rights and obligations, exceptions, review routes, and exit or recovery terms are source-addressed and reversible."
+    },
+    "entity_resolution": {
+      "required_output": "Exact legal-entity crosswalk with source names, aliases, registration identifiers, temporal validity, unresolved variants, and prohibited joins.",
+      "closure_test": "Every admitted cross-system join resolves to the same legal entity within the bounded period, and every unresolved or conflicting variant remains blocked."
+    },
+    "outcome_correction_recovery": {
+      "required_output": "Longitudinal consequence-and-correction ledger with selection, nonselection, performance, failure, substitution, appeal, remedy, recurrence, exit, recovery, and no-observed-effect controls.",
+      "closure_test": "The bounded outcome window includes supportive, contradictory, failed, substituted, appealed, corrected, recovered, and explicit no-observed-effect rows with dated provenance."
+    }
+  },
+  "execution_law": {
+    "named_gate_queue_state": "ready_for_targeted_acquisition",
+    "gate_unspecified_queue_state": "gate_first_acquisition_required",
+    "gate_task_state": "ready_for_targeted_acquisition",
+    "downstream_gate_unspecified_state": "blocked_pending_gate_identification",
+    "other_task_state": "ready_for_targeted_acquisition",
+    "task_result_states": [
+      "complete",
+      "partial",
+      "contradicted",
+      "no_qualifying_gate",
+      "unavailable_after_search",
+      "outside_bounded_window"
+    ]
+  },
+  "blocked_promotions": [
+    "evidence_row",
+    "estate_finding",
+    "complete_compact_finding",
+    "racial_order_finding",
+    "prevalence_finding",
+    "coordination_finding",
+    "common_purpose_finding",
+    "identity_edge",
+    "relationship_edge",
+    "participation_row",
+    "active_claim",
+    "hop_edge",
+    "publication_clearance"
+  ],
+  "boundaries": {
+    "closure_queue_is_acquisition_execution": false,
+    "closure_task_is_evidence_row": false,
+    "task_priority_is_truth_or_merit_score": false,
+    "unavailable_obligation_is_null": false,
+    "gate_unspecified_packet_has_institutional_gate": false,
+    "downstream_task_may_bypass_gate_identification": false,
+    "queue_recurrence_is_prevalence": false,
+    "shared_source_is_relationship": false,
+    "reviewed_route_is_second_party_review": false,
+    "split_route_launders_unreviewed_intake": false,
+    "unreviewed_route_may_promote_finding": false,
+    "identity_created": false,
+    "relationship_created": false,
+    "participation_created": false,
+    "active_claim_created": false,
+    "hop_created": false,
+    "evidence_adjudicated": false,
+    "finding_promoted": false,
+    "publication_cleared": false,
+    "graph_effect": "none"
+  }
+}

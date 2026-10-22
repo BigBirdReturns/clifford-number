@@ -48,7 +48,8 @@ assert.equal(recordMatchBasis('federal_register', fixture('federal-register'), '
 assert.equal(candidateFromObservation(observationFromRecord(definitions[3][1], 'advisory committee', fixture('federal-register'), retrievedAt)).priority, 'high');
 
 const workflow = fs.readFileSync('.github/workflows/crawl-official.yml', 'utf8');
-assert.match(workflow, /schedule:\s*[\s\S]*cron:/, 'official intake must run on a schedule');
+assert.match(workflow, /^on:\n  workflow_dispatch:/m, 'official intake must be dispatched by a maintainer');
+assert.doesNotMatch(workflow, /^\s*(?:schedule|workflow_run|push|pull_request):/m, 'official intake must have no unattended trigger');
 assert.match(workflow, /secrets\.SAM_API_KEY/, 'SAM authentication must come from a repository secret');
 assert.match(workflow, /git add data\/crawl receipts\/crawl/, 'the intake commit must stage only crawler-owned paths');
 for (const forbidden of ['data/ledger', 'data/canonical', 'cases/', 'build/', 'dist/']) {

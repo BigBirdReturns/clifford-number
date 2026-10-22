@@ -262,6 +262,65 @@
       "expires_at": null,
       "authority": "repository_change_receipt_below_canonical_evidence",
       "graph_effect": "none"
+    },
+    {
+      "change_id": "POOF-CONST-2026-10-12-007",
+      "effective_at": "2026-10-12T08:30:00Z",
+      "protected_paths_touched": [
+        "tools/build-poof-clifford-ecology.mjs"
+      ],
+      "affected_invariants": [
+        "the POOF ecology release manifest records exact-byte custody of the ecology contract, schemas, data, docs, tools and tests",
+        "release custody does not depend on CI workflow files that the repository no longer carries",
+        "repository cleanup cannot create evidence, graph, publication, or canonical authority"
+      ],
+      "reason": "The repository consolidated its per-feature GitHub workflows into a small fixed set, so the protected ecology workflow no longer exists on the release tree. The release manifest builder listed that workflow file in its exact-byte release scope, so the builder, the validator and the regression test could no longer run on a valid release tree.",
+      "previous_behavior": [
+        "the release scope of the POOF ecology manifest included .github/workflows/poof-clifford-ecology.yml",
+        "building or validating the manifest failed when that workflow file was absent"
+      ],
+      "proposed_behavior": [
+        "remove the workflow file from the release scope list in tools/build-poof-clifford-ecology.mjs",
+        "keep every contract, schema, data, documentation, tool and test file in the release scope unchanged",
+        "regenerate the release manifest and report so the recorded scope matches the builder"
+      ],
+      "migration": "Append this exact-path constitutional receipt, drop the single workflow entry from the release scope, and regenerate the POOF ecology release manifest and report before merge.",
+      "backward_compatibility": "The change affects release custody scope only. POOF schemas, constitutional rules, evidence objects, graph edges, publication states, browser assertions and prior release interpretations remain unchanged; the only manifest difference is the removed workflow entry and the recomputed combined digest.",
+      "adversarial_fixtures_added": [],
+      "emergency_override": false,
+      "expires_at": null,
+      "authority": "repository_change_receipt_below_canonical_evidence",
+      "graph_effect": "none"
+    },
+    {
+      "change_id": "POOF-CONST-2026-10-12-008",
+      "effective_at": "2026-10-12T10:00:00Z",
+      "protected_paths_touched": [
+        ".github/workflows/poof-clifford-ecology.yml"
+      ],
+      "affected_invariants": [
+        "a change to a protected constitutional path requires an appended exact-path receipt in this change log",
+        "the POOF constitutional change custody check, the ecology build and validation, and the ecology regression tests remain inside the repository release gate",
+        "repository cleanup cannot create evidence, graph, publication, or canonical authority"
+      ],
+      "reason": "At the consolidation milestone the repository workflows were reduced from 334 files to five (ci, deploy, update-sweep, crawl-official, crawl-industrial-exhaust). Every scheduled and workflow_run trigger was turned off, and the crawl scripts were changed to open pull requests only. The dedicated protected POOF ecology workflow was deleted together with the other per-feature workflows.",
+      "previous_behavior": [
+        ".github/workflows/poof-clifford-ecology.yml ran on pull requests and pushes that touched POOF paths and on manual dispatch",
+        "it ran the constitutional change custody check and its test, rebuilt and validated the core thesis, the m05 answerable power products, the k0 epistemic admissibility products and the POOF ecology, and ran the full release gate",
+        "it installed the browser harness from the lockfile and ran the Playwright play-test, rebuilt the products and required git diff --exit-code, and uploaded the review aperture and browser receipt as an artifact"
+      ],
+      "proposed_behavior": [
+        "delete .github/workflows/poof-clifford-ecology.yml; no replacement POOF-specific workflow is added",
+        ".github/workflows/ci.yml runs npm run release:check on every pull request and push to main, and that gate still runs tools/validate-poof-constitutional-change.mjs, build:poof-ecology, validate:poof-ecology, test/poof-constitutional-change.test.js and test/poof-clifford-ecology.test.js",
+        "test/poof-clifford-ecology-browser.test.js stays in the repository but no workflow runs it; the deterministic rebuild diff and the artifact upload are no longer automated"
+      ],
+      "migration": "Append this exact-path receipt together with the workflow deletion and regenerate the POOF ecology release manifest and report, because the change log is inside the manifest release scope.",
+      "backward_compatibility": "The change affects CI execution only. POOF schemas, constitutional rules, evidence objects, graph edges, publication states, browser assertions and prior release interpretations remain unchanged. The browser play-test is now a manual check.",
+      "adversarial_fixtures_added": [],
+      "emergency_override": false,
+      "expires_at": null,
+      "authority": "repository_change_receipt_below_canonical_evidence",
+      "graph_effect": "none"
     }
   ],
   "boundaries": {

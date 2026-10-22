@@ -10,10 +10,11 @@ const state = {
   surfaces: new Map(),
   receipts: new Map(),
   legacyNodes: new Map(),
-  mode: 'map',
+  mode: 'timeline',
   sheetOpen: false,
   visibilityObserver: null,
-  webgl: { renderer: null, model: null, failed: false, rendered: false },
+  webgl: { renderer: null, model: null, events: null, eventApi: null, failed: false, rendered: false, cameraOwnsScale: false, lastFocusKey: null },
+  ecology: { fromDay: null, toDay: null, position: 0, playing: false, clockEnd: null, frame: 0, lastTimestamp: 0, cycleMs: 52000 },
   address: {
     ready: false,
     active: false,
@@ -27,13 +28,36 @@ const state = {
   },
   selectedActorId: null,
   selectedSurfaceId: null,
+  // Ledger timeline (arrival mode). The window [from, to] is the shared cursor
+  // (SPEC fix e); model, layout and indexes are filled by part-2 and the timeline runtime.
+  timeline: {
+    by: 'actor',
+    from: '',
+    to: '',
+    windowFrom: '',
+    windowTo: '',
+    lanes: [],
+    selectedKey: null,
+    focusKey: null,
+    followSelected: false,
+    evidenceFloor: 'open',
+    hop: 'all',
+    model: null,
+    layout: null,
+    plotWidth: 0,
+    rowIndex: new Map(),
+    search: [],
+    suggestion: null
+  },
   map: {
     scale: 1,
     level: 'corpus',
     selectedClusterId: null,
     selectedTypeId: null,
     selectedSurfaceId: null,
-    selectedActorId: null
+    selectedActorId: null,
+    selectedFieldNodeId: null,
+    hasExplicitFocus: false
   },
   route: {
     fromId: null,
@@ -75,7 +99,20 @@ function cloneValue(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
+// The public app (app.js init) hands over the artifacts it already loaded on
+// globalThis.__cliffordPublicData, keyed by the names below; the aperture reads
+// them in place (it never mutates them) and fetches only when a key is absent.
+const PUBLIC_DATA_HANDOFF = Object.freeze({
+  'build/surface-graph.json': 'surfaceGraph',
+  'build/hop-graph.json': 'hopGraph',
+  'build/receipt-graph.json': 'receiptGraph',
+  'graph.json': 'legacyGraph'
+});
+
 async function readData(path) {
+  const shared = globalThis.__cliffordPublicData;
+  const handoffKey = PUBLIC_DATA_HANDOFF[path];
+  if (shared && handoffKey && shared[handoffKey]) return shared[handoffKey];
   if (typeof EMBEDDED_DATA !== 'undefined' && Object.hasOwn(EMBEDDED_DATA, path)) return cloneValue(EMBEDDED_DATA[path]);
   const response = await fetch(path, { cache: 'no-cache' });
   if (!response.ok) throw new Error(`${path}: ${response.status}`);

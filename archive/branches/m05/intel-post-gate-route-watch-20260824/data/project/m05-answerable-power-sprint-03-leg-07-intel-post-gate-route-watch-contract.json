@@ -1,0 +1,225 @@
+{
+  "schema_version": "m05-answerable-power-s03-l7-intel-post-gate-route-watch-contract@1",
+  "object_class": "bounded_intel_post_gate_official_route_watch_contract",
+  "program_id": "M-05",
+  "sprint_id": "M05-SPRINT-03",
+  "leg_id": "S03-L7",
+  "issue": 345,
+  "status": "network_observation_only",
+  "canonical_base_at_authoring": {
+    "branch": "main",
+    "commit": "7d8b8484e0a33d71a82142e3e9935c003f65e4e7",
+    "tree": "c66311bbba129f33856d6da726a84249f1e734ca"
+  },
+  "canonical_bindings": {
+    "intel_date_gate_monitor": {
+      "path": "data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-date-gate-monitor.json",
+      "blob_sha": "b4643f2131cf7ebb27e53765fec31f86447d6b8f"
+    },
+    "five_domain_contract": {
+      "path": "data/project/m05-answerable-power-sprint-03-leg-07-five-domain-route-watch-contract.json",
+      "blob_sha": "0a3a6ec5170141967eea740f5f2bb17022fb8b8f"
+    },
+    "five_domain_library": {
+      "path": "tools/lib/m05-answerable-power-sprint-03-leg-07-five-domain-route-watch.mjs",
+      "blob_sha": "f6bc24e43a7f909db4c3f69eef1f988d9501680b"
+    },
+    "five_domain_runner": {
+      "path": "tools/run-m05-answerable-power-sprint-03-leg-07-five-domain-route-watch.mjs",
+      "blob_sha": "6fba4c69c502eee6a534f4a9402c965a302c7824"
+    },
+    "five_domain_validator": {
+      "path": "tools/validate-m05-answerable-power-sprint-03-leg-07-five-domain-route-watch.mjs",
+      "blob_sha": "a029596b949b12db586f2ce72b61c442c38ac3a5"
+    },
+    "five_domain_test": {
+      "path": "test/m05-answerable-power-sprint-03-leg-07-five-domain-route-watch.test.js",
+      "blob_sha": "210697aa768f02f1e8e2c723ecbab410e1545045"
+    },
+    "five_domain_workflow": {
+      "path": ".github/workflows/m05-five-domain-route-watch.yml",
+      "blob_sha": "e09165a68326df658fdd0607d70dd283add23c35"
+    }
+  },
+  "denominator": {
+    "routes": 5,
+    "failed_routes_preserved": true,
+    "gated_routes_preserved": true,
+    "one_terminal_observation_per_route": true
+  },
+  "execution_policy": {
+    "allowed_methods": [
+      "GET",
+      "POST"
+    ],
+    "required_protocol": "https:",
+    "global_concurrency": 3,
+    "per_host_concurrency": 1,
+    "minimum_host_interval_ms": 250,
+    "timeout_ms": 20000,
+    "max_redirects": 5,
+    "max_body_bytes": 2097152,
+    "credentials": "omit",
+    "cookies_sent": false,
+    "authorization_sent": false,
+    "cache_mode": "no-store",
+    "body_hash_domain": "http_representation_octets_after_content_decoding",
+    "body_retained_in_receipt": false,
+    "user_agent": "CliffordNumber-M05-Intel-Post-Gate-Route-Watch/1.0 (+https://github.com/BigBirdReturns/clifford-number)",
+    "host_interval_applies_to_each_http_request": true,
+    "challenge_pages_count_as_substantive_content": false,
+    "receipt_unknown_fields_allowed": false,
+    "future_observation_clock_authorizes_execution": false,
+    "retained_response_headers": [
+      "content-type",
+      "content-length",
+      "content-encoding",
+      "etag",
+      "last-modified",
+      "cache-control",
+      "date"
+    ]
+  },
+  "time_gate": {
+    "ordinary_gate_utc": "2026-08-27T00:00:00Z",
+    "before_gate_route_state": "gated_not_before",
+    "earlier_activation_requires_source_addressed_bilateral_agreement": true,
+    "bilateral_exception_observed": false,
+    "elapsed_time_is_transaction_evidence": false,
+    "scheduled_clock_check_cron_utc": "17 12 * * *"
+  },
+  "authority_boundaries": {
+    "network_observation_only": true,
+    "metadata_counts_as_substantive_content": false,
+    "route_reachability_is_evidentiary_sufficiency": false,
+    "changed_bytes_are_claim_evidence": false,
+    "access_controls_bypassed": false,
+    "promotion_authority": false,
+    "answer_changes_authorized": false,
+    "effective_domain_answers": 0,
+    "qualifying_jurisdictions": 0,
+    "cross_domain_regression_completed": false,
+    "graph_effect": "none",
+    "issue_345_may_close": false
+  },
+  "routes": [
+    {
+      "route_id": "M05-INTEL-POST-GATE-SEC-SUBMISSIONS",
+      "monitor_route_id": "US-INTEL-REALIZATION-01",
+      "authority": "United States Securities and Exchange Commission",
+      "source_class": "official_primary_record_discovery",
+      "method": "GET",
+      "url": "https://data.sec.gov/submissions/CIK0000050863.json",
+      "allowed_hosts": [
+        "data.sec.gov"
+      ],
+      "request_body": null,
+      "request_body_sha256": null
+    },
+    {
+      "route_id": "M05-INTEL-POST-GATE-INTEL-IR-RSS",
+      "monitor_route_id": "US-INTEL-REALIZATION-02",
+      "authority": "Intel Corporation",
+      "source_class": "source_native_primary_record_discovery",
+      "method": "GET",
+      "url": "https://www.intc.com/news-events/press-releases/rss",
+      "allowed_hosts": [
+        "www.intc.com",
+        "intc.com"
+      ],
+      "request_body": null,
+      "request_body_sha256": null
+    },
+    {
+      "route_id": "M05-INTEL-POST-GATE-COMMERCE-SEARCH",
+      "monitor_route_id": "US-INTEL-REALIZATION-03",
+      "authority": "United States Department of Commerce",
+      "source_class": "official_primary_record_discovery",
+      "method": "GET",
+      "url": "https://www.commerce.gov/search?search_api_fulltext=Intel",
+      "allowed_hosts": [
+        "www.commerce.gov",
+        "commerce.gov"
+      ],
+      "request_body": null,
+      "request_body_sha256": null
+    },
+    {
+      "route_id": "M05-INTEL-POST-GATE-TREASURY-MTS",
+      "monitor_route_id": "US-INTEL-REALIZATION-04",
+      "authority": "United States Department of the Treasury",
+      "source_class": "official_primary_accounting_discovery",
+      "method": "GET",
+      "url": "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/mts/mts_table_1?sort=-record_date&page%5Bsize%5D=100",
+      "allowed_hosts": [
+        "api.fiscaldata.treasury.gov"
+      ],
+      "request_body": null,
+      "request_body_sha256": null
+    },
+    {
+      "route_id": "M05-INTEL-POST-GATE-USASPENDING-SEARCH",
+      "monitor_route_id": "US-INTEL-REALIZATION-05",
+      "authority": "United States Government public-spending and program authorities",
+      "source_class": "official_primary_distribution_discovery",
+      "method": "POST",
+      "url": "https://api.usaspending.gov/api/v2/search/spending_by_award/",
+      "allowed_hosts": [
+        "api.usaspending.gov"
+      ],
+      "request_body": {
+        "filters": {
+          "time_period": [
+            {
+              "start_date": "2025-08-27",
+              "end_date": "2030-12-31"
+            }
+          ],
+          "award_type_codes": [
+            "A",
+            "B",
+            "C",
+            "D",
+            "02",
+            "03",
+            "04",
+            "05",
+            "06",
+            "07",
+            "08",
+            "09",
+            "-1",
+            "10",
+            "11",
+            "IDV_A",
+            "IDV_B",
+            "IDV_B_A",
+            "IDV_B_B",
+            "IDV_B_C",
+            "IDV_C",
+            "IDV_D",
+            "IDV_E"
+          ],
+          "keywords": [
+            "Intel"
+          ]
+        },
+        "fields": [
+          "Award ID",
+          "Recipient Name",
+          "Awarding Agency",
+          "Funding Agency",
+          "Description",
+          "Last Modified Date"
+        ],
+        "page": 1,
+        "limit": 100,
+        "sort": "Last Modified Date",
+        "order": "desc",
+        "subawards": false,
+        "spending_level": "awards"
+      },
+      "request_body_sha256": "151b8811b52a342aadc84a6c108af2648881a64006a3d2dac4300cd8cbe529b5"
+    }
+  ]
+}

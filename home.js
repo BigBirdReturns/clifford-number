@@ -1,7 +1,5 @@
 const DEFAULT_ENDPOINTS = {
   research: 'graph.json',
-  hops: 'build/hop-graph.json',
-  surfaces: 'build/surface-graph.json',
   receipts: 'build/receipt-graph.json',
   boundary: 'build/public-data-boundary.json'
 };
@@ -10,13 +8,6 @@ const runtimeConfig = globalThis.CLIFFORD_GRAPH_CONFIG ?? {};
 const PATHS = { ...DEFAULT_ENDPOINTS, ...(runtimeConfig.endpoints ?? {}) };
 
 const LANE_IDS = ['model-production', 'workflow-admission', 'activation-spend', 'measurement-feedback'];
-
-const LANE_DESCRIPTIONS = Object.freeze({
-  'model-production': 'Who produced the policy or model machinery: commissions, plans, and governance foundations.',
-  'workflow-admission': 'Who or what was admitted into the government workflow: appointments, roles, and directory listings.',
-  'activation-spend': 'Where public spend or infrastructure was activated: procurement records, compute, and data assets.',
-  'measurement-feedback': 'What was measured afterward. The corpus documents no direct records here yet.'
-});
 
 const LANE_POSITION = Object.freeze({
   'model-production': { x: 150, y: 300 },
@@ -162,13 +153,10 @@ const LANE_THEME_ORDER = Object.freeze({
 
 const state = {
   researchGraph: null,
-  hopGraph: null,
-  surfaceGraph: null,
   receiptGraph: null,
   dataBoundary: null,
   receiptById: new Map(),
-  sourceById: new Map(),
-  inspecting: false
+  sourceById: new Map()
 };
 
 const $ = selector => document.querySelector(selector);
@@ -193,19 +181,42 @@ function compactNumber(value) {
   return new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format(Number(value ?? 0));
 }
 
+// graph.json carries two layers. Research edges are the typed, sourced records
+// the lanes count. Rows whose projection_layer is 'canonical_surface_overlay'
+// are the topology-only actor-to-surface overlay projected from the
+// bounded-surface ledger: each creates no actor-to-actor edge and documents no
+// pipeline stage, so the homepage excludes them instead of letting them fall
+// into a lane by default.
+const OVERLAY_PROJECTION_LAYER = 'canonical_surface_overlay';
+
+function isOverlayEdge(edge) {
+  return edge?.projection_layer === OVERLAY_PROJECTION_LAYER;
+}
+
+function researchEdges(graph) {
+  return (graph?.edges ?? []).filter(edge => !isOverlayEdge(edge));
+}
+
+// Every research-edge type must be classified explicitly. An unmapped type is
+// a data/code mismatch that used to fall silently into workflow-admission; it
+// is reported loudly so the lane table has to be extended on purpose
+// (test/home-model.test.js runs this over the published graph.json).
 function laneForEdgeType(type) {
-  return EDGE_TYPE_LANE[type] ?? 'workflow-admission';
+  const lane = EDGE_TYPE_LANE[type];
+  if (!lane) throw new Error(`Unmapped research edge type "${type}": add it to EDGE_TYPE_LANE before it can be counted`);
+  return lane;
 }
 
 function themeForEdgeType(type) {
-  return EDGE_TYPE_THEME[type] ?? type;
+  const theme = EDGE_TYPE_THEME[type];
+  if (!theme) throw new Error(`Unmapped research edge type "${type}": add it to EDGE_TYPE_THEME before it can be displayed`);
+  return theme;
 }
 
 function buildLaneModel(graph) {
   const edgesByLane = new Map(LANE_IDS.map(id => [id, []]));
-  for (const edge of graph.edges ?? []) {
-    const lane = laneForEdgeType(edge.type);
-    (edgesByLane.get(lane) ?? edgesByLane.get('workflow-admission')).push(edge);
+  for (const edge of researchEdges(graph)) {
+    edgesByLane.get(laneForEdgeType(edge.type)).push(edge);
   }
 
   return LANE_IDS.map(laneId => {
@@ -251,8 +262,9 @@ function homepageModel() {
   const graph = state.researchGraph ?? { edges: [], nodes: [], sources: [] };
   const lanes = buildLaneModel(graph);
   const allMarks = lanes.flatMap(lane => lane.marks);
+  const documentedEdges = researchEdges(graph);
 
-  const edges = (graph.edges ?? []).map(edge => {
+  const edges = documentedEdges.map(edge => {
     const lane = laneForEdgeType(edge.type);
     return {
       id: `path__${edge.id}`,
@@ -286,7 +298,7 @@ function homepageModel() {
   // measurement-feedback. None exists in the corpus, so this computes to empty — and the
   // aperture stays open. Deriving it from the injected edge list (never a fresh literal)
   // also keeps the array in the graph data's own realm for strict deep-equality.
-  const joinedReceiptIds = (graph.edges ?? [])
+  const joinedReceiptIds = documentedEdges
     .filter(edge => laneForEdgeType(edge.type) === 'measurement-feedback')
     .flatMap(edge => edge.source_ids ?? []);
 
@@ -304,39 +316,12 @@ function homepageModel() {
     lanes,
     edges,
     displayedNumbers,
-    visibleCounts: { marks: allMarks.length, documentedRecords: totalDocumented },
+    visibleCounts: {
+      marks: allMarks.length,
+      documentedRecords: totalDocumented,
+      overlayEdgesExcluded: (graph.edges ?? []).length - documentedEdges.length
+    },
     aperture
-  };
-}
-
-function evidenceInspectionModel() {
-  const home = homepageModel();
-  const marks = home.lanes.flatMap(lane => lane.marks);
-  const columns = 4;
-  const gridMarks = marks.map((mark, index) => ({
-    id: mark.id,
-    x: 120 + (index % columns) * 200,
-    y: 90 + Math.floor(index / columns) * 96
-  }));
-
-  const plates = ['A', 'B', 'C'].map(plateId => ({
-    id: plateId,
-    marks: gridMarks.map(mark => ({ id: mark.id, x: mark.x, y: mark.y })),
-    labels: [plateId]
-  }));
-
-  const labels = LANE_IDS.map(laneId => ({
-    id: `label-${laneId}`,
-    persistent: true,
-    location: 'outside-projection',
-    text: LANE_DESCRIPTIONS[laneId]
-  }));
-
-  return {
-    interactionMode: 'evidence-inspection',
-    visibleCounts: home.visibleCounts,
-    plates,
-    labels
   };
 }
 
@@ -407,18 +392,6 @@ function renderNumbers(model) {
   }
 }
 
-function renderEvidenceInspector(inspection) {
-  for (const plate of inspection.plates) {
-    const svg = document.querySelector(`[data-provenance-plate="${plate.id}"] svg`);
-    if (!svg) continue;
-    svg.innerHTML = plate.marks.map(mark => `<circle class="provenance-mark" data-provenance-mark="${esc(mark.id)}" cx="${mark.x}" cy="${mark.y}" r="7"></circle>`).join('');
-  }
-  const list = $('#provenance-labels');
-  if (list) {
-    list.innerHTML = inspection.labels.map(label => `<li>${esc(label.text)}</li>`).join('');
-  }
-}
-
 function formatProjectionBoundary(value) {
   const text = String(value ?? '').trim();
   if (!text) return 'Not declared';
@@ -475,59 +448,30 @@ function closeReceipts() {
   if (panel) panel.hidden = true;
 }
 
-function setInspectionMode(open) {
-  const panel = $('#evidence-inspector');
-  const toggle = $('#evidence-inspection-toggle');
-  if (!panel || !toggle) return;
-  state.inspecting = Boolean(open);
-  panel.hidden = !state.inspecting;
-  toggle.setAttribute('aria-expanded', String(state.inspecting));
-  toggle.textContent = state.inspecting ? 'Close evidence inspection' : 'Open evidence inspection';
-  if (state.inspecting) {
-    panel.focus({ preventScroll: true });
-  } else {
-    toggle.focus({ preventScroll: true });
-  }
-}
-
-function toggleEvidenceInspection() {
-  setInspectionMode(!state.inspecting);
-}
-
 function bindControls() {
-  $('#evidence-inspection-toggle')?.addEventListener('click', toggleEvidenceInspection);
-  $('#evidence-inspection-close')?.addEventListener('click', () => setInspectionMode(false));
   $('#causal-detail-close')?.addEventListener('click', closeReceipts);
   document.addEventListener('keydown', event => {
     if (event.key !== 'Escape') return;
     const detail = $('#causal-detail');
-    if (detail && !detail.hidden) {
-      closeReceipts();
-      return;
-    }
-    if (state.inspecting) setInspectionMode(false);
+    if (detail && !detail.hidden) closeReceipts();
   });
 }
 
 async function init() {
   bindControls();
   try {
-    const [researchGraph, hopGraph, surfaceGraph, receiptGraph, dataBoundary] = await Promise.all([
-      loadJson(PATHS.research), loadJson(PATHS.hops), loadJson(PATHS.surfaces), loadJson(PATHS.receipts), loadJson(PATHS.boundary)
+    const [researchGraph, receiptGraph, dataBoundary] = await Promise.all([
+      loadJson(PATHS.research), loadJson(PATHS.receipts), loadJson(PATHS.boundary)
     ]);
     state.researchGraph = researchGraph;
-    state.hopGraph = hopGraph;
-    state.surfaceGraph = surfaceGraph;
     state.receiptGraph = receiptGraph;
     state.dataBoundary = dataBoundary;
     state.receiptById = new Map((receiptGraph.receipts ?? []).map(receipt => [receipt.receipt_id, receipt]));
     state.sourceById = new Map((researchGraph.sources ?? []).map(source => [source.id, source]));
 
     const model = homepageModel();
-    const inspection = evidenceInspectionModel();
     renderCausalMap(model);
     renderNumbers(model);
-    renderEvidenceInspector(inspection);
     renderDataBoundary(dataBoundary);
     updateRouteSummary(model);
     $('#load-status').classList.add('is-ready');

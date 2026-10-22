@@ -1,0 +1,49 @@
+{
+  "schema_version": "lake-identifier-topology-wave-18-policy@1",
+  "program_id": "CN-LAKE-IDENTIFIER-TOPOLOGY-W18",
+  "as_of": "2026-07-29",
+  "purpose": "Freeze and classify the identifier-topology frontier exposed after Wave 17. Unindexed identifiers, source-only identifiers, and divergent projections remain separate populations. Every frozen identifier receives a bounded topology disposition, an index action, a projection action or refusal, and an append-preserving correction route. Missing a reviewer is not a blocker.",
+  "baseline": {
+    "wave_17_final_head": "ee5d35a8f779d4b47d9f6a0c235a0f4d875221a8",
+    "lake_source_fingerprint_sha256": "8abacfca8edb31a588de86b5b54870813991b068a3370309dbfb554778263c0e",
+    "distinct_machine_ids": 15381,
+    "unindexed_machine_ids": 6661,
+    "source_ids_without_projection": 5612,
+    "divergent_identifier_projections": 3129,
+    "projection_ids_without_source": 0
+  },
+  "paths": {
+    "preflight": "build/lake-actions/identifier-topology-wave-18-preflight.json",
+    "preflight_report": "reports/lake-identifier-topology-wave-18-preflight.md",
+    "diagnostics": "build/lake-actions/identifier-topology-wave-18-diagnostics.json",
+    "diagnostics_report": "reports/lake-identifier-topology-wave-18-diagnostics.md",
+    "registry": "data/project/lake-identifier-topology-registry-wave-18.json",
+    "projection": "build/lake-actions/identifier-topology-wave-18.json",
+    "receipt": "data/project/lake-identifier-topology-wave-18.json",
+    "reconciliation": "build/lake-actions/identifier-topology-wave-18-reconciliation.json",
+    "report": "reports/lake-identifier-topology-wave-18.md"
+  },
+  "decision_law": {
+    "review_required_to_decide": false,
+    "missing_reviewer_blocks_reversible_execution": false,
+    "unindexed_does_not_mean_unknown_or_false": true,
+    "source_only_does_not_automatically_require_public_projection": true,
+    "projection_divergence_compares_projection_hashes_only": true,
+    "cross_family_views_may_be_valid": true,
+    "intra_family_hash_variants_require_explicit_disposition": true,
+    "bare_local_ids_remain_excluded_from_global_joins": true,
+    "source_bytes_must_not_be_invented": true,
+    "correction_mode": "append_preserving_supersession"
+  },
+  "boundaries": {
+    "identifier_indexing_proves_identity": false,
+    "source_projection_proves_truth": false,
+    "divergence_proves_conflict": false,
+    "cross_key_join_authorized": false,
+    "semantic_completeness_claimed": false,
+    "publication_cleared": false,
+    "relationship_created": false,
+    "participation_created": false,
+    "graph_effect": "none"
+  }
+}

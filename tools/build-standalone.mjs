@@ -7,7 +7,9 @@ const read = file => fs.readFileSync(path.join(root, file), 'utf8');
 const readJson = file => JSON.parse(read(file));
 const escapeScript = value => value.replace(/<\/script/gi, '<\\/script');
 const faviconData = Buffer.from(read('assets/favicon.svg')).toString('base64');
-const dataPaths = ['graph.json', 'build/hop-graph.json', 'build/surface-graph.json', 'build/receipt-graph.json', 'build/public-data-boundary.json'];
+// Exactly the datasets home.js loads: the research graph for the lanes, the
+// receipt graph for receipt labels, and the public projection boundary.
+const dataPaths = ['graph.json', 'build/receipt-graph.json', 'build/public-data-boundary.json'];
 const embedded = Object.fromEntries(dataPaths.map(file => [file, readJson(file)]));
 
 let app = read('home.js').replace(
@@ -35,20 +37,18 @@ console.log(`build-standalone: ${path.relative(root, output)} (${fs.statSync(out
 // a click could reach is already on the page. Unlike the Pages release (which
 // fetches live), the standalone must have zero network dependency.
 const explorerCatalog = readJson('build/public-catalog.json');
+// Exactly the datasets app.js init() loads (the aperture bundle re-reads
+// surface-graph, hop-graph, receipt-graph and graph.json from the same blob),
+// plus every lazily-loaded case and track record a click could reach.
+// build/atlas-projection.json and build/scout-report.json are no longer read
+// by the public page and are not embedded.
 const explorerDataPaths = [
   'build/surface-graph.json',
   'build/hop-graph.json',
   'build/scores.json',
   'graph.json',
-  'build/scout-report.json',
   'build/receipt-graph.json',
   'build/public-catalog.json',
-  // Ladder step 6: the corridor overlay's data artifact is embedded so the
-  // standalone renders corridors offline too. build/atlas-projection-baseline.json
-  // is deliberately NOT embedded here (it does not exist yet) — app.js's
-  // loadJson().catch(() => null) then resolves it to null exactly as it does
-  // for a live 404, so the standalone renders the honest absent-baseline line.
-  'build/atlas-projection.json',
   'build/public-data-boundary.json',
   ...(explorerCatalog.cases ?? []).map(item => item.href),
   ...(explorerCatalog.tracks ?? []).map(item => item.href)
@@ -90,12 +90,19 @@ const apertureModuleFiles = [
   'src/visual-aperture-state.mjs',
   'src/visual-aperture-workspace.mjs',
   'src/visual-aperture-export.mjs',
-  'src/visual-aperture-windowing.mjs'
+  'src/visual-aperture-windowing.mjs',
+  'src/visual-aperture-timeline.mjs'
 ];
 const apertureModuleRecords = apertureModuleFiles.map(file => {
   const source = read(file);
   const names = [...source.matchAll(/^export\s+(?:const|function|class)\s+(\w+)/gm)].map(match => match[1]);
-  const body = source.replace(/^export\s+/gm, '');
+  // A module that imports from a sibling (visual-aperture-timeline.mjs imports
+  // core.mjs) would leave an `import` statement inside a classic script, so it
+  // goes through isolateModule, which strips the import lines; the sibling's
+  // exports are already on globalThis because core.mjs is flattened first.
+  const body = /^import\s/m.test(source)
+    ? `const { ${names.join(', ')} } = ${isolateModule(source)};`
+    : source.replace(/^export\s+/gm, '');
   return { names, body };
 });
 const apertureNames = [...new Set(apertureModuleRecords.flatMap(record => record.names))];
@@ -106,6 +113,7 @@ const apertureRuntime = [
   read('src/visual-aperture-workspace-runtime.js'),
   read('src/visual-aperture-export-runtime.js'),
   ...Array.from({ length: 10 }, (_, index) => read(`src/visual-aperture-part-${index + 1}.js`)),
+  read('src/visual-aperture-timeline-runtime.js'),
   read('src/visual-aperture-social-field-runtime.js'),
   read('src/visual-aperture-bounded-runtime.js'),
   read('src/visual-aperture-export-preview-runtime.js'),
@@ -121,7 +129,8 @@ const inlineExplorerCss = [
   read('src/visual-aperture-responsive.css'),
   read('src/visual-aperture-workspace.css'),
   read('src/visual-aperture-export.css'),
-  read('src/visual-aperture-bounded.css')
+  read('src/visual-aperture-bounded.css'),
+  read('src/visual-aperture-timeline.css')
 ].join('\n\n');
 
 let explorerHtml = read('explorer.html')

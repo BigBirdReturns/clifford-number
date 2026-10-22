@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import crypto from 'node:crypto';
 import process from 'node:process';
 
@@ -112,4 +113,4 @@ export function build() {
   return {candidate_count: 1, field_decision_count: 2, held_field_count: 1, permanent_path_count: PERMANENT_PATHS.length, source_decision_count: 2, transport_observations: 6, unique_body_count: 2};
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) console.log(JSON.stringify(build()));
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) console.log(JSON.stringify(build()));

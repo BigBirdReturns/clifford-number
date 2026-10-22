@@ -9,7 +9,6 @@ const stable = value => JSON.stringify(value, null, 2) + '\n';
 const sha256 = value => crypto.createHash('sha256').update(value).digest('hex');
 
 export const releaseScope = [
-  '.github/workflows/k0-wave01-additional-acquisition.yml',
   'data/research/k0-wave01-additional-acquisition-resolution.json',
   'docs/milestones/m05-k0-wave01-additional-acquisition.md',
   'tools/build-k0-wave01-additional-acquisition.mjs',

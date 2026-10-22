@@ -1,0 +1,74 @@
+{
+  "schema_version": "0.1.0",
+  "title": "Template Clifford",
+  "subtitle": "Replace this with a custom target graph.",
+  "tagline": "Receipts first.",
+  "status": "Template case, hidden from the default picker.",
+  "target_node_id": "target-node",
+  "generated": "2026-06-29",
+  "disclaimer": "No wrongdoing is alleged. This template maps public-role adjacency only.",
+  "evidence_classes": [
+    "confirmed",
+    "primary_public",
+    "reported",
+    "derived",
+    "judgment",
+    "open"
+  ],
+  "edge_statuses": [
+    "published",
+    "reported",
+    "listed",
+    "registered",
+    "attended",
+    "appointed",
+    "contracted",
+    "derived",
+    "public-role"
+  ],
+  "sources": [
+    {
+      "id": "template-source",
+      "label": "Template source placeholder",
+      "url": "docs/methodology.md",
+      "publisher": "Local template",
+      "source_type": "template",
+      "notes": "Replace this source with a public receipt before publishing a real case."
+    }
+  ],
+  "nodes": [
+    {
+      "id": "target-node",
+      "label": "Target Node",
+      "type": "target",
+      "description": "Replace with the anchor person, institution, policy object, or system being mapped.",
+      "aliases": [],
+      "tags": ["template"],
+      "privacy": "public-role-only"
+    },
+    {
+      "id": "example-node",
+      "label": "Example Node",
+      "type": "person",
+      "description": "Example public-role node used to prove the template validates.",
+      "aliases": [],
+      "tags": ["template"],
+      "privacy": "public-role-only"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e-example-target",
+      "from": "example-node",
+      "to": "target-node",
+      "type": "example-public-role",
+      "claim": "This placeholder edge shows the required shape for a typed, sourced, public-role relationship.",
+      "source_ids": ["template-source"],
+      "evidence_class": "open",
+      "status": "public-role",
+      "weight": 1,
+      "ui_weight": 4,
+      "notes": "Template edge only. Replace before publishing a real case."
+    }
+  ]
+}

@@ -1,5 +1,7 @@
 # The atlas representation ladder
 
+> **Superseded 2026-10-22:** the SVG representation ladder this governed was removed from `app.js`; the live atlas is the Visual Aperture (Timeline, Explore, Route, Roster); kept as design history. The regression gate at the end of this note (zoom never changes a hop count; every actor-to-actor abstraction expands to a named surface basis; dense surfaces never generate pairwise adjacency; time slicing matches the compiler) is still the standard the aperture is held to, and [`docs/explorer.md`](explorer.md) states the current display rules. The thresholds, channel table and implementation sequence below describe the retired code.
+
 Status: adopted design note (2026-07-20). Governs the topology explorer's atlas
 rendering. BUILD-INSTRUCTIONS.md Section 1 remains constitutionally superior:
 nothing here may change hop counts, hop eligibility, dense-surface exclusions,

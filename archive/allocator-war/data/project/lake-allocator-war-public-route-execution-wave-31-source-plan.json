@@ -1,0 +1,309 @@
+{
+  "schema_version": "lake-allocator-war-public-route-execution-wave-31-source-plan@1",
+  "program_ref": "CN-LAKE-ALLOCATOR-WAR-W31",
+  "wave_ref": "LAW-W31",
+  "as_of": "2026-08-01",
+  "authority": "official_locator_and_source_system_acquisition_only",
+  "sources": [
+    {
+      "source_ref": "LAW31-S001",
+      "title": "Federal Workforce Data",
+      "publisher": "U.S. Office of Personnel Management",
+      "url": "https://data.opm.gov/",
+      "authority": "official_public_data_system",
+      "retrieval_state": "verified_live_official_locator",
+      "observed_on": "2026-08-01",
+      "coverage": "Official federal civilian workforce aggregates, downloadable datasets, monthly updates, workforce composition and change measures.",
+      "limits": "Aggregate workforce data do not expose the complete decision-level roster, agency DEIA inventory submissions, exceptions, overrides, or no-action rows."
+    },
+    {
+      "source_ref": "LAW31-S002",
+      "title": "OPM public datasets",
+      "publisher": "U.S. Office of Personnel Management",
+      "url": "https://www.opm.gov/data/datasets/",
+      "authority": "official_public_dataset_catalog",
+      "retrieval_state": "verified_live_official_locator",
+      "observed_on": "2026-08-01",
+      "coverage": "Downloadable employment, accession, separation, and related federal workforce files.",
+      "limits": "Published statistical files do not provide person-level protected personnel decisions or complete programme and office disposition files."
+    },
+    {
+      "source_ref": "LAW31-S003",
+      "title": "Federal Workforce Data getting started",
+      "publisher": "U.S. Office of Personnel Management",
+      "url": "https://data.opm.gov/info-and-help/getting-started",
+      "authority": "official_system_documentation",
+      "retrieval_state": "verified_live_official_locator",
+      "observed_on": "2026-08-01",
+      "coverage": "Documents available FWD dimensions, downloadable data, update cadence, and public-use boundaries.",
+      "limits": "Documentation describes the data surface rather than completing any contested affected-person or decision denominator."
+    },
+    {
+      "source_ref": "LAW31-S004",
+      "title": "Federal Register API documentation",
+      "publisher": "Office of the Federal Register and Government Publishing Office",
+      "url": "https://www.federalregister.gov/developers/documentation/api/v1",
+      "authority": "official_public_api_documentation",
+      "retrieval_state": "verified_live_official_locator",
+      "observed_on": "2026-08-01",
+      "coverage": "Public API endpoints for presidential documents, rules, notices, agencies, dates, and document metadata.",
+      "limits": "Federal Register publication does not contain every internal delegation, dissent, recusal, implementation file, or no-action decision."
+    },
+    {
+      "source_ref": "LAW31-S005",
+      "title": "USAspending API",
+      "publisher": "U.S. Department of the Treasury",
+      "url": "https://api.usaspending.gov/",
+      "authority": "official_public_spending_api",
+      "retrieval_state": "verified_live_official_locator",
+      "observed_on": "2026-08-01",
+      "coverage": "Comprehensive standardized federal award data covering contracts, grants, recipients, agencies, amounts, and geography.",
+      "limits": "The award universe does not by itself identify which rows were subject to a disputed condition, certification, investigation, termination, correction, or no-action decision."
+    },
+    {
+      "source_ref": "LAW31-S006",
+      "title": "USAspending API documentation",
+      "publisher": "U.S. Department of the Treasury",
+      "url": "https://api.usaspending.gov/docs/",
+      "authority": "official_public_api_documentation",
+      "retrieval_state": "verified_live_official_locator",
+      "observed_on": "2026-08-01",
+      "coverage": "Endpoint, filter, and technical documentation for programmatic award-universe acquisition.",
+      "limits": "API documentation establishes addressability, not the completeness of downstream enforcement or recovery joins."
+    },
+    {
+      "source_ref": "LAW31-S007",
+      "title": "SAM.gov Contract Award Data",
+      "publisher": "U.S. General Services Administration",
+      "url": "https://sam.gov/contract-data",
+      "authority": "official_public_contract_system",
+      "retrieval_state": "verified_live_official_locator",
+      "observed_on": "2026-08-01",
+      "coverage": "Federal contract actions required to be reported, with agency, entity, identifier, competition, date, status, and other fields.",
+      "limits": "Public contract data do not preserve every certification, records request, referral, declination, investigation, appeal, or no-action row."
+    },
+    {
+      "source_ref": "LAW31-S008",
+      "title": "Contract Awards in SAM.gov",
+      "publisher": "U.S. General Services Administration",
+      "url": "https://sam.gov/fpds",
+      "authority": "official_public_contract_system_notice",
+      "retrieval_state": "verified_live_official_locator",
+      "observed_on": "2026-08-01",
+      "coverage": "Documents the February 24, 2026 transition of public FPDS contract-award functionality into SAM.gov.",
+      "limits": "System migration documentation does not establish a condition-specific action denominator."
+    },
+    {
+      "source_ref": "LAW31-S009",
+      "title": "SAM.gov Federal Assistance",
+      "publisher": "U.S. General Services Administration",
+      "url": "https://sam.gov/federal-assistance",
+      "authority": "official_public_assistance_system",
+      "retrieval_state": "verified_live_official_locator",
+      "observed_on": "2026-08-01",
+      "coverage": "Searchable assistance listings, federal assistance programmes, and subaward reports.",
+      "limits": "Programme and subaward listings do not enumerate every certification, withholding, termination, continuation, correction, or no-action disposition."
+    },
+    {
+      "source_ref": "LAW31-S010",
+      "title": "Grants.gov opportunity search",
+      "publisher": "U.S. Department of Health and Human Services",
+      "url": "https://www.grants.gov/en/web/grants/search-grants.html",
+      "authority": "official_public_grant_opportunity_system",
+      "retrieval_state": "verified_live_official_locator",
+      "observed_on": "2026-08-01",
+      "coverage": "Public federal funding-opportunity records with agency, status, dates, expected awards, and award ranges.",
+      "limits": "Opportunity records do not supply the complete post-award recipient, condition, action, appeal, and recovery ledger."
+    },
+    {
+      "source_ref": "LAW31-S011",
+      "title": "Justice Department Establishes Civil Rights Fraud Initiative",
+      "publisher": "U.S. Department of Justice",
+      "url": "https://www.justice.gov/opa/pr/justice-department-establishes-civil-rights-fraud-initiative",
+      "authority": "official_enforcement_policy_announcement",
+      "retrieval_state": "verified_live_official_locator",
+      "observed_on": "2026-08-01",
+      "coverage": "Defines the Civil Rights Fraud Initiative and the use of the False Claims Act against federal funding recipients.",
+      "limits": "The initiative announcement is not a complete investigation, declination, referral, settlement, or no-action register."
+    },
+    {
+      "source_ref": "LAW31-S012",
+      "title": "IBM Civil Rights Fraud Initiative resolution",
+      "publisher": "U.S. Department of Justice",
+      "url": "https://www.justice.gov/opa/pr/ibm-pays-17-million-resolve-allegations-discrimination-through-illegal-dei-practices",
+      "authority": "official_named_enforcement_resolution",
+      "retrieval_state": "verified_live_official_locator",
+      "observed_on": "2026-08-01",
+      "coverage": "Named April 10, 2026 False Claims Act resolution under the Civil Rights Fraud Initiative, including represented payment and remediation terms.",
+      "limits": "One announced resolution does not establish enforcement prevalence, a complete contractor register, realized recovery beyond the instrument, or system-wide remedy adequacy."
+    },
+    {
+      "source_ref": "LAW31-S013",
+      "title": "Deputy Attorney General select publications",
+      "publisher": "U.S. Department of Justice",
+      "url": "https://www.justice.gov/dag/select-publications",
+      "authority": "official_policy_publication_index",
+      "retrieval_state": "verified_live_official_locator",
+      "observed_on": "2026-08-01",
+      "coverage": "Official index for current Deputy Attorney General policy memoranda, including the Civil Rights Fraud Initiative.",
+      "limits": "A publication index does not expose internal referrals, staffing, budgets, declined matters, exceptions, or decision custody."
+    },
+    {
+      "source_ref": "LAW31-S014",
+      "title": "GAO Bid Protests",
+      "publisher": "U.S. Government Accountability Office",
+      "url": "https://www.gao.gov/legal/bid-protests",
+      "authority": "official_procurement_review_system",
+      "retrieval_state": "verified_live_official_locator",
+      "observed_on": "2026-08-01",
+      "coverage": "Official bid-protest process, published decisions, docket search, filing, and review routes.",
+      "limits": "GAO does not publish every pleading, routine dismissal decision, implementation record, cost, access, or durable corrective-action outcome."
+    },
+    {
+      "source_ref": "LAW31-S015",
+      "title": "GAO Bid Protest FAQs",
+      "publisher": "U.S. Government Accountability Office",
+      "url": "https://www.gao.gov/legal/bid-protests/faqs",
+      "authority": "official_procurement_review_documentation",
+      "retrieval_state": "verified_live_official_locator",
+      "observed_on": "2026-08-01",
+      "coverage": "Documents searchable docket fields, publication practices, redaction, and limits on public decisions and pleadings.",
+      "limits": "The FAQ confirms that routine dismissals and many underlying documents are not automatically public, so the public docket is not the complete correction denominator."
+    },
+    {
+      "source_ref": "LAW31-S016",
+      "title": "PACER Case Locator",
+      "publisher": "Administrative Office of the U.S. Courts",
+      "url": "https://pacer.uscourts.gov/help/faqs/what-pacer-case-locator",
+      "authority": "official_federal_court_case_index",
+      "retrieval_state": "verified_live_official_locator",
+      "observed_on": "2026-08-01",
+      "coverage": "Nationwide index for federal district, bankruptcy, and appellate case records, updated daily.",
+      "limits": "PACER requires registration, charges for many records, omits sealed material, and does not itself provide complete practical access, cost, remedy, compliance, or durability measures."
+    },
+    {
+      "source_ref": "LAW31-S017",
+      "title": "MSPB Case Reports",
+      "publisher": "U.S. Merit Systems Protection Board",
+      "url": "https://www.mspb.gov/decisions/casereports.htm",
+      "authority": "official_personnel_adjudication_index",
+      "retrieval_state": "verified_live_official_locator",
+      "observed_on": "2026-08-01",
+      "coverage": "Official index for MSPB precedential, nonprecedential, and case-report materials.",
+      "limits": "Published decisions do not expose the complete grievance, settlement, abandoned, no-action, implementation, access, cost, and durability universe."
+    },
+    {
+      "source_ref": "LAW31-S018",
+      "title": "Federal Audit Clearinghouse data",
+      "publisher": "U.S. General Services Administration",
+      "url": "https://www.fac.gov/data/",
+      "authority": "official_public_single_audit_data",
+      "retrieval_state": "verified_live_official_locator",
+      "observed_on": "2026-08-01",
+      "coverage": "Public single-audit packages and structured award and finding data for non-federal entities meeting the statutory expenditure threshold.",
+      "limits": "Single-audit coverage is thresholded, some tribal material may be suppressed, and the data do not provide every award condition, termination, repayment, clawback, or no-recovery row."
+    },
+    {
+      "source_ref": "LAW31-S019",
+      "title": "Federal Audit Clearinghouse API resources",
+      "publisher": "U.S. General Services Administration",
+      "url": "https://www.fac.gov/api/",
+      "authority": "official_public_audit_api_documentation",
+      "retrieval_state": "verified_live_official_locator",
+      "observed_on": "2026-08-01",
+      "coverage": "API guides, dictionaries, versioning, pagination, and public access to submitted single-audit data.",
+      "limits": "API availability does not make FAC a complete recovery or continuity ledger and requires careful handling of threshold and suppression boundaries."
+    }
+  ],
+  "route_source_sets": [
+    {
+      "route_ref": "LAW30-R01",
+      "route_class": "protected-personnel-records",
+      "public_execution": false,
+      "source_refs": []
+    },
+    {
+      "route_ref": "LAW30-R02",
+      "route_class": "internal-authority-and-inventory",
+      "public_execution": true,
+      "source_refs": [
+        "LAW31-S001",
+        "LAW31-S002",
+        "LAW31-S003",
+        "LAW31-S004"
+      ]
+    },
+    {
+      "route_ref": "LAW30-R03",
+      "route_class": "public-award-and-contract-denominators",
+      "public_execution": true,
+      "source_refs": [
+        "LAW31-S005",
+        "LAW31-S006",
+        "LAW31-S007",
+        "LAW31-S008",
+        "LAW31-S009",
+        "LAW31-S010"
+      ]
+    },
+    {
+      "route_ref": "LAW30-R04",
+      "route_class": "published-enforcement-and-action-registers",
+      "public_execution": true,
+      "source_refs": [
+        "LAW31-S004",
+        "LAW31-S011",
+        "LAW31-S012",
+        "LAW31-S013"
+      ]
+    },
+    {
+      "route_ref": "LAW30-R05",
+      "route_class": "correction-dockets-and-outcomes",
+      "public_execution": true,
+      "source_refs": [
+        "LAW31-S014",
+        "LAW31-S015",
+        "LAW31-S016",
+        "LAW31-S017"
+      ]
+    },
+    {
+      "route_ref": "LAW30-R06",
+      "route_class": "affected-comparator-and-distributional-joins",
+      "public_execution": true,
+      "source_refs": [
+        "LAW31-S001",
+        "LAW31-S005",
+        "LAW31-S007",
+        "LAW31-S009",
+        "LAW31-S018"
+      ]
+    },
+    {
+      "route_ref": "LAW30-R07",
+      "route_class": "financial-recovery-and-continuity",
+      "public_execution": true,
+      "source_refs": [
+        "LAW31-S005",
+        "LAW31-S009",
+        "LAW31-S012",
+        "LAW31-S018",
+        "LAW31-S019"
+      ]
+    }
+  ],
+  "counts": {
+    "source_receipts": 19,
+    "public_route_source_sets": 6,
+    "protected_route_source_sets": 1,
+    "source_receipt_uses": 153
+  },
+  "boundaries": {
+    "locator_is_content_snapshot": false,
+    "source_system_is_complete_denominator": false,
+    "source_receipt_is_evidence_row": false,
+    "source_plan_is_adjudication": false,
+    "source_plan_is_publication_authority": false
+  }
+}

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { readJson, root } from './lib/ledger.mjs';
 
 export const ESTATE_APERTURE_HTML = 'estates/index.html';
@@ -58,7 +59,7 @@ export function buildEstateApertureStandalone() {
   return { ...rendered, standalone_path: ESTATE_APERTURE_STANDALONE };
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const rendered = renderEstateAperture();
   console.log(`estate aperture: ${rendered.output_path} (${rendered.data.estates.length} estates, ${rendered.data.manifest.counts.tasks} tasks)`);
 }

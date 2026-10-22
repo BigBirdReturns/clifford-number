@@ -36,6 +36,9 @@ assert.equal(normalizeLocale('es-MX'), 'es');
 assert.equal(normalizeLocale('de'), 'en');
 assert.equal(translate('fr', 'themeDark'), 'Sombre');
 assert.equal(translate('es', 'browseShowing', { count: 12 }), 'Índice: se muestran 12 registros públicos.');
+assert.equal(translate('fr', 'browseShowingOf', { count: 56, total: 500, sections: 11 }), 'Index : 56 dossiers publics affichés sur 500, en 11 sections.');
+assert.equal(translate('en', 'browseShowAll', { count: 189 }), 'Show all 189');
+assert.equal(translate('es', 'browseShowFewer', { count: 8 }), 'Mostrar los primeros 8');
 
 console.log('ui-utils.test.js: OK');
 

@@ -16,7 +16,6 @@ const write = (rel, value) => {
 };
 
 export const releaseScope = [
-  '.github/workflows/k0-role-neutral-wave-07.yml',
   'data/research/k0-role-neutral-wave-07.json',
   'docs/milestones/m05-k0-role-neutral-wave-07.md',
   'tools/build-k0-role-neutral-wave-07.mjs',

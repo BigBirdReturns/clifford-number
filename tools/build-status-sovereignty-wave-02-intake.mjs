@@ -11,7 +11,6 @@ const sha=(v)=>crypto.createHash('sha256').update(v).digest('hex');
 const write=(p,v)=>{const q=path.join(root,p);fs.mkdirSync(path.dirname(q),{recursive:true});fs.writeFileSync(q,v)};
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
 export const releaseScope=[
- '.github/workflows/status-sovereignty-wave-02-intake.yml',
  'data/intake/status-sovereignty-wave-02-structural-synthesis.md',
  'data/intake/status-sovereignty-wave-02-source-denominator.json',
  'data/intake/status-sovereignty-wave-02-candidate-observations.json',

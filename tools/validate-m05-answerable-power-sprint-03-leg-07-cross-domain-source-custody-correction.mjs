@@ -55,7 +55,7 @@ check(bindings.intel_source_provenance_minimum.blob_sha===expectedBlobs.provenan
 check(candidates.schema_version==='m05-cross-domain-official-receipt-candidates@1'&&candidates.status==='candidate_repository_receipts'&&candidates.candidate_count===3,'candidate identity drift');
 for(const token of ["source_addressed_receipt===true","parsed.protocol==='https:'",'OFFICIAL_RECEIPT_HOSTS'])check(raw.helper.toString().includes(token),`helper integration drift: ${token}`);
 for(const token of ['m05-cross-domain-official-receipt-candidates.json','validateOfficialReceiptCandidates'])check(raw.regressionValidator.toString().includes(token),`regression validator drift: ${token}`);
-for(const token of ['missing-source-locator','foreign-source-host','promotedOfficialContract'])check(raw.regressionTest.toString().includes(token),`regression test drift: ${token}`);
+for(const token of ['lacks a locator','outside the official host boundary','promotedOfficialContract'])check(raw.regressionTest.toString().includes(token),`regression test drift: ${token}`);
 const sourceFields=['source_authority','source_authority_identifier','source_record_class','source_origin_url','source_origin_observed_at_utc','source_origin_content_type','source_origin_body_sha256','origin_verification_mode','origin_evidence_sha256','acquisition_method','acquisition_receipt_sha256','source_custody_mode','source_custody_locator','source_custody_body_sha256','repository_blob_sha_if_used'];
 const acquisitionFields=['requested_url','resolved_url','redirect_chain','response_status','response_headers_sha256','observed_at_utc','content_type','body_length_bytes','source_origin_body_sha256'];
 const correctionSourceFields=correction.required_source_custody.required_fields_per_source;

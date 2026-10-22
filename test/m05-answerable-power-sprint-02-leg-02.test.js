@@ -22,8 +22,4 @@ assert.equal(report.current_result.procurement_effect,'bounded_non_link');
 assert.equal(report.current_result.common_purpose,'bounded_non_link');
 assert.equal(report.search_denominator.found_direct_bilateral_instrument,false);
 assert.equal(report.search_denominator.found_process_mediated_overlap,true);
-const workflow=fs.readFileSync(path.join(root,'.github/workflows/m05-answerable-power.yml'),'utf8');
-assert.ok(workflow.includes('m05-answerable-power-sprint-02-leg-02.test.js'));
-assert.ok(workflow.includes('build-m05-answerable-power-sprint-02-leg-02.mjs'));
-assert.ok(workflow.includes('validate-m05-answerable-power-sprint-02-leg-02.mjs'));
 console.log('m05-answerable-power-sprint-02-leg-02.test: OK');

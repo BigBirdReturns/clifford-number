@@ -1,15 +1,45 @@
+const MAP_LEVEL_LABELS = Object.freeze({ corpus: 'Whole network', machine: 'Neighborhood', surface: 'Bounded surface', evidence: 'Evidence' });
+function mapLevelLabel(level) { return MAP_LEVEL_LABELS[level] || humanLabel(level); }
+function mapSearchOptions() {
+  return [...state.legacyNodes.values()]
+    .filter(node => node?.id && node?.label && !String(node.id).startsWith('surface-'))
+    .sort((a, b) => String(a.label).localeCompare(String(b.label)))
+    .map(node => `<option value="${esc(node.label)}" data-node-id="${esc(node.id)}">${esc(humanLabel(node.type || 'public object'))}</option>`)
+    .join('');
+}
+function findMapSearchNode(value) {
+  const needle = String(value || '').trim().toLowerCase();
+  if (!needle) return null;
+  const nodes = [...state.legacyNodes.values()].filter(node => node?.id && node?.label && !String(node.id).startsWith('surface-'));
+  const exact = nodes.find(node => String(node.id).toLowerCase() === needle || String(node.label).toLowerCase() === needle);
+  if (exact) return exact;
+  const normalizedNeedle = needle.replace(/^(dr|sir|dame|lord|prof|professor)\.\s+/, '');
+  const matches = nodes.filter(node => {
+    const label = String(node.label).toLowerCase();
+    const normalizedLabel = label.replace(/^(dr|sir|dame|lord|prof|professor)\.\s+/, '');
+    return normalizedLabel.includes(normalizedNeedle) || label.includes(needle);
+  });
+  return matches.length === 1 ? matches[0] : null;
+}
+
 function renderModeControls() {
   const controls = $('#aperture-mode-controls', state.root);
+  if (state.mode === 'timeline') {
+    controls.innerHTML = timelineControlsMarkup();
+    return;
+  }
   if (state.mode === 'map') {
     const clusters = summarizeClusters(state.data.surfaceGraph);
     ensureMapSelection();
     const cluster = clusters.find(item => item.id === state.map.selectedClusterId);
     const surfaces = [...(cluster?.surfaces ?? [])].sort((a, b) => actorParticipants(b).length - actorParticipants(a).length || a.surface_label.localeCompare(b.surface_label));
+    const selectedSearchNode = state.map.selectedFieldNodeId ? state.legacyNodes.get(state.map.selectedFieldNodeId) : null;
     controls.innerHTML = `
-      <label class="aperture-control aperture-control--scale"><span>Semantic scale · <strong id="ap-map-level">${esc(humanLabel(state.map.level))}</strong></span><input id="ap-map-scale" type="range" min="1" max="5.4" step="0.05" value="${state.map.scale}"></label>
-      <div class="aperture-control-buttons" aria-label="Semantic zoom controls"><button type="button" data-ap-action="zoom-out" aria-label="Zoom out">−</button><button type="button" data-ap-action="zoom-in" aria-label="Zoom in">+</button><button type="button" data-ap-action="reset-map">Whole field</button></div>
-      <label class="aperture-control"><span>Surface family</span><select id="ap-map-cluster">${clusters.map(item => `<option value="${esc(item.id)}"${item.id === state.map.selectedClusterId ? ' selected' : ''}>${esc(item.label)} · ${item.surfaceCount}</option>`).join('')}</select></label>
-      <label class="aperture-control aperture-control--wide"><span>Bounded surface</span><select id="ap-map-surface">${surfaces.map(surface => `<option value="${esc(surface.surface_id)}"${surface.surface_id === state.map.selectedSurfaceId ? ' selected' : ''}>${esc(shortLabel(surface.surface_label, 68))} · ${actorParticipants(surface).length}</option>`).join('')}</select></label>
+      <label class="aperture-control aperture-control--wide aperture-control--start"><span>Start with a person or organization</span><input id="ap-map-search" type="search" list="ap-map-search-options" placeholder="Type a name" value="${esc(selectedSearchNode?.label || '')}"><datalist id="ap-map-search-options">${mapSearchOptions()}</datalist></label>
+      <label class="aperture-control aperture-control--scale"><span>Depth &middot; <strong id="ap-map-level">${esc(mapLevelLabel(state.map.level))}</strong></span><input id="ap-map-scale" type="range" min="1" max="5.4" step="0.05" value="${state.map.scale}"></label>
+      <div class="aperture-control-buttons" aria-label="Map depth controls"><button type="button" data-ap-action="zoom-out" aria-label="Zoom out">-</button><button type="button" data-ap-action="zoom-in" aria-label="Zoom in">+</button><button type="button" data-ap-action="reset-map">Reset</button></div>      <label class="aperture-control aperture-control--timeline"><span>Evidence time &middot; <strong id="ap-ecology-date">${esc(ecologyClockLabel())}</strong></span><input id="ap-ecology-time" type="range" min="0" max="1000" step="1" value="${Math.round(state.ecology.position * 1000)}"></label>
+      <button type="button" class="aperture-secondary-button aperture-ecology-toggle" data-ap-action="ecology-toggle" aria-pressed="${String(state.ecology.playing)}">${state.ecology.playing ? 'Pause time' : 'Play time'}</button>
+      <details class="aperture-jump"><summary>Jump to a bounded surface</summary><div class="aperture-jump-controls"><label class="aperture-control"><span>Family</span><select id="ap-map-cluster">${clusters.map(item => `<option value="${esc(item.id)}"${item.id === state.map.selectedClusterId ? ' selected' : ''}>${esc(item.label)} &middot; ${item.surfaceCount}</option>`).join('')}</select></label><label class="aperture-control aperture-control--wide"><span>Surface</span><select id="ap-map-surface">${surfaces.map(surface => `<option value="${esc(surface.surface_id)}"${surface.surface_id === state.map.selectedSurfaceId ? ' selected' : ''}>${esc(shortLabel(surface.surface_label, 68))} &middot; ${actorParticipants(surface).length}</option>`).join('')}</select></label></div></details>
       ${addressActionMarkup()}`;
     return;
   }
@@ -38,7 +68,7 @@ function renderModeControls() {
 }
 
 function setMode(mode, { renderControls = true, history = 'push' } = {}) {
-  if (!['map', 'route', 'surface'].includes(mode)) return;
+  if (!['timeline', 'map', 'route', 'surface'].includes(mode)) return;
   state.mode = mode;
   state.root.dataset.apertureMode = mode;
   for (const button of $$('[data-ap-mode]', state.root)) {
@@ -84,6 +114,10 @@ function setInspector(label, html, { openOnMobile = false } = {}) {
   $('#aperture-inspector-body', state.root).innerHTML = html;
   if (openOnMobile && isMobile()) state.sheetOpen = true;
   syncInspectorSheet();
+  // Every selection change passes through here, so this is where the aperture
+  // publishes its origin { mode, objectLabel, objectId, selectObject } for the
+  // shared receipt dialog's breadcrumb (app.js reads globalThis.__cliffordApertureOrigin).
+  if (typeof publishApertureOrigin === 'function') publishApertureOrigin(label);
 }
 
 function syncInspectorSheet() {
@@ -130,7 +164,7 @@ function setMapScale(value, { history = 'replace' } = {}) {
   const input = $('#ap-map-scale', state.root);
   if (input) input.value = String(state.map.scale);
   const label = $('#ap-map-level', state.root);
-  if (label) label.textContent = humanLabel(state.map.level);
+  if (label) label.textContent = mapLevelLabel(state.map.level);
   if (unchanged) return;
   renderMapMode();
   commitApertureAddress(history);

@@ -3,11 +3,20 @@
 > **Status: partially superseded.** The navy / cream / gold foundations and
 > accessibility requirements below remain useful, but the shipped public
 > interface deliberately uses an editorial public-record cartography direction:
-> Lora, Barlow Condensed, and IBM Plex Mono; restrained 8–20px radii; explicit
-> actor → surface → actor route diagrams; receipt-health cards; and visible
-> inference boundaries. `styles.css` is the implementation authority. This file
-> is retained as the original proposal and should not be used to overwrite the
-> shipped type, shape, or evidence hierarchy without a reviewed design change.
+> restrained 8–20px radii; explicit actor → surface → actor route diagrams;
+> receipt-health cards; and visible inference boundaries. `styles.css` is the
+> implementation authority. This file is retained as the original proposal and
+> should not be used to overwrite the shipped type, shape, or evidence hierarchy
+> without a reviewed design change.
+>
+> **Fonts, corrected 2026-10-22.** An earlier version of this note said the
+> shipped interface used Lora and Barlow Condensed. It does not. The explorer
+> (the `--font-serif`, `--font-condensed` and `--font-mono` custom properties at the top of `styles.css`, and the Google Fonts link in `explorer.html`)
+> uses **Bitter** (`--font-serif`), **Atkinson Hyperlegible** (`--font-condensed`)
+> and **IBM Plex Mono** (`--font-mono`); the aperture stylesheets under `src/`
+> use the same three tokens. The homepage (`home.css`) uses **Inter** with system
+> fallbacks (`--sans`) and IBM Plex Mono (`--mono`) and loads no web font. The
+> Inter recommendation under Typography below applies to the homepage only.
 
 A professional, accessible design system aligned with AXM house style standards for the clifford-number topology project.
 

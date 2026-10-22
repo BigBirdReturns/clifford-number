@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { readJson, root } from './lib/ledger.mjs';
 
 export const GAMETRAIL_APERTURE_HTML = 'gametrails/index.html';
@@ -51,7 +52,7 @@ export function buildGametrailApertureStandalone() {
   return { ...rendered, standalone_path: GAMETRAIL_APERTURE_STANDALONE };
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const rendered = renderGametrailAperture();
   console.log(`game-trail aperture: ${rendered.output_path} (${rendered.data.manifest.counts.total_compiled_trails} trails, ${rendered.data.estates.length} estates)`);
 }

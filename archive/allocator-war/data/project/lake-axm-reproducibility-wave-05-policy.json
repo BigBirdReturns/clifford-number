@@ -1,0 +1,73 @@
+{
+  "schema_version": "lake-axm-reproducibility-wave-05-policy@1",
+  "program_key": "CN-LAKE-AXM-REPRO-W05",
+  "as_of": "2026-07-29",
+  "purpose": "Execute a pinned cross-runtime reconciliation against AXM Genesis v1, materialize a complete one-to-one migration map from the quarantined provisional IDs to Genesis IDs, and preserve the cross-case join prohibition until the active projection is migrated.",
+  "external_reference": {
+    "repository": "BigBirdReturns/axm-genesis",
+    "commit": "411ef40e6cfc3ecb97ac3e256c8151be678347c8",
+    "identity_module_path": "src/axm_verify/identity.py",
+    "identity_module_blob_sha": "f8a47adaad4840977e3048b8e48b674e273a6b8c",
+    "fixture_path": "tests/vectors/identity.json",
+    "fixture_blob_sha": "56499e3ae003ecf96da2d23e7e3370eafab27980"
+  },
+  "local_fixture_path": "data/project/axm-genesis-v1-identity-vectors.json",
+  "runtime_attestation_path": "data/project/axm-genesis-v1-runtime-attestation.json",
+  "input_paths": [
+    "build/lake-actions/axm-lineage-wave-04-reconciliation.json",
+    "build/axm-identity.json",
+    "data/project/axm-genesis-v1-identity-vectors.json",
+    "data/project/axm-genesis-v1-runtime-attestation.json",
+    "data/canonical/actors.json",
+    "data/canonical/organizations.json",
+    "data/canonical/aliases.json",
+    "data/ledger/surfaces.jsonl",
+    "data/ledger/participation.jsonl",
+    "cases.json",
+    "BUILD-INSTRUCTIONS.md"
+  ],
+  "implementation_paths": [
+    "tools/lib/axm-genesis-identity-v1.mjs",
+    "tools/emit-axm-genesis-v1-vectors.mjs",
+    "tools/build-lake-axm-reproducibility-wave-05.mjs"
+  ],
+  "migration_map_path": "build/axm-identity-genesis-v1-migration.json",
+  "migration_receipt_path": "data/project/lake-axm-reproducibility-wave-05.json",
+  "plan_path": "build/lake-actions/axm-reproducibility-wave-05.json",
+  "reconciliation_path": "build/lake-actions/axm-reproducibility-wave-05-reconciliation.json",
+  "report_path": "reports/lake-axm-reproducibility-wave-05.md",
+  "reconciliation_report_path": "reports/lake-axm-reproducibility-wave-05-reconciliation.md",
+  "expected": {
+    "canonicalization_vectors": 20,
+    "entity_id_vectors": 12,
+    "claim_id_vectors": 3,
+    "provenance_id_vectors": 1,
+    "span_id_vectors": 1,
+    "legacy_claim_migrations": 164,
+    "external_runtime_outputs_equal": true,
+    "active_projection_migrated": false,
+    "cross_case_join_authorized": false
+  },
+  "decision_law": {
+    "review_required_to_decide": false,
+    "missing_reviewer_blocks_reproducibility_test": false,
+    "external_reference_must_be_commit_pinned": true,
+    "fixture_bytes_must_equal_the_pinned_genesis_fixture": true,
+    "python_and_node_runtime_outputs_must_be_semantically_identical": true,
+    "migration_map_must_be_one_to_one": true,
+    "active_projection_may_change_in_this_wave": false,
+    "cross_case_join_authorized": false,
+    "correction_mode": "append_preserving_supersession"
+  },
+  "boundaries": {
+    "reference_runtime_parity_migrates_the_active_projection": false,
+    "migration_map_authorizes_cross_case_join": false,
+    "genesis_id_proves_entity_identity": false,
+    "same_label_across_namespaces_proves_same_entity": false,
+    "external_fixture_proves_evidence_truth": false,
+    "active_projection_migrated": false,
+    "cross_case_join_authorized": false,
+    "publication_cleared": false,
+    "graph_effect": "none"
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "schema_version": "ssc-rd04-a06-contract@1",
+  "execution_id": "SSC-RD04-SNAP-A06",
+  "issue": 722,
+  "as_of": "2026-08-02",
+  "parent": {
+    "main_commit": "80f6f10e0a0a631dd89d7b92df24fd1ffd2d1589",
+    "a05_release_sha256": "b3f36dff2969d95767e6f0d564f7d3744bd72de98cf2b758d4729c6bc0de50c4"
+  },
+  "query": {
+    "endpoint": "https://acms.dss.ca.gov/acms/page.request.do",
+    "ordered_parameters": [
+      ["page", "public.decisionRegistry"],
+      ["releasedAfter", "06/01/2026"],
+      ["releasedBefore", "06/30/2026"],
+      ["programType", "2"],
+      ["isForSearch", "1"]
+    ],
+    "program": "CalFresh",
+    "unsupplied_filters": [
+      "disposition",
+      "responsibleAgency",
+      "issueCodes",
+      "shnNumber",
+      "language",
+      "orgArName"
+    ],
+    "date_boundary_semantics": "registry_defined_not_assumed_inclusive",
+    "max_attempts": 2,
+    "timeout_seconds": 30
+  },
+  "pdf_selection": {
+    "cap": 24,
+    "canonical_hash": "sha256_utf8_canonical_row_json",
+    "order": [
+      "canonical_row_sha256_ascending",
+      "row_identity_ascending"
+    ],
+    "selection_before_pdf_content": true,
+    "replacement_after_content_inspection": false,
+    "stratified_by_disposition": false
+  },
+  "implementation_states": [
+    "separate_public_compliance_receipt_observed",
+    "order_only_no_compliance_receipt",
+    "no_relief_order_observed",
+    "source_unavailable_after_bounded_retry",
+    "unparseable_exact_bytes_preserved"
+  ],
+  "authority": {
+    "outside_human_dependency": false,
+    "external_contacts": 0,
+    "external_reviews": 0,
+    "residual_class_closures": 0,
+    "reviewed_disposition_changes": 0,
+    "prevalence_findings": 0,
+    "racial_order_findings": 0,
+    "coordination_findings": 0,
+    "common_purpose_findings": 0,
+    "graph_effect": "none",
+    "publication_effect": "none",
+    "adoption_effect": "none"
+  }
+}

@@ -79,6 +79,22 @@
 .aperture-live strong { color: var(--ap-text); font-size: 12px; letter-spacing: .04em; }
 .aperture-live span:last-child { color: var(--ap-muted); font-size: 10px; line-height: 1.45; }
 
+.aperture-how {
+  display: flex;
+  align-items: center;
+  gap: 10px 14px;
+  flex-wrap: wrap;
+  padding: 11px clamp(18px, 3vw, 42px);
+  border-bottom: 1px solid var(--ap-line);
+  background: #0b0e14;
+  color: #d8d3ca;
+  font: 700 11px/1.3 var(--font-mono);
+}
+.aperture-how span { display: inline-flex; align-items: center; gap: 8px; }
+.aperture-how b { display: inline-grid; place-items: center; width: 20px; height: 20px; border: 1px solid rgba(243,188,78,.5); color: var(--ap-amber); font-size: 9px; }
+.aperture-how i { color: var(--ap-muted-2); font-style: normal; }
+.aperture-how small { margin-left: auto; color: var(--ap-muted); font: 9px/1.35 var(--font-mono); font-weight: 400; }
+
 .aperture-commandbar {
   position: sticky;
   z-index: 30;
@@ -132,7 +148,10 @@
   flex: 0 0 auto;
 }
 .aperture-control--wide { min-width: min(310px, 34vw); }
+.aperture-control--start { min-width: min(340px, 40vw); }
 .aperture-control--scale { min-width: 210px; }
+.aperture-control--timeline { min-width: 250px; }
+.aperture-ecology-toggle { align-self: end; min-width: 96px; }
 .aperture-control > span {
   color: var(--ap-muted);
   font: 10px/1.2 var(--font-mono);
@@ -179,6 +198,12 @@
 .aperture-secondary-button:hover { border-color: var(--ap-amber); color: var(--ap-amber); background: var(--ap-panel-2); }
 .aperture-swap { align-self: end; font-size: 16px; }
 
+.aperture-jump { flex: 0 0 auto; align-self: end; min-width: 190px; }
+.aperture-jump > summary { min-height: 38px; display: flex; align-items: center; padding: 0 11px; border: 1px solid var(--ap-line); background: var(--ap-panel); color: var(--ap-muted); font: 700 10px/1 var(--font-mono); cursor: pointer; list-style: none; }
+.aperture-jump > summary::-webkit-details-marker { display: none; }
+.aperture-jump[open] > summary { border-color: var(--ap-amber); color: var(--ap-amber); }
+.aperture-jump-controls { display: flex; gap: 8px; padding: 10px; border: 1px solid var(--ap-line-strong); border-top: 0; background: rgba(7,9,14,.98); }
+
 .aperture-telemetry {
   min-height: 54px;
   display: flex;
@@ -221,9 +246,12 @@
 .aperture-webgl.is-active { display: block; }
 .aperture-webgl:active { cursor: grabbing; }
 .aperture-webgl canvas { width: 100% !important; height: 100% !important; display: block; outline: none; }
+
+.aperture-stage-guide { position: absolute; z-index: 7; top: 10px; right: 10px; display: flex; align-items: baseline; gap: 8px; padding: 7px 9px; border: 1px solid rgba(74,83,98,.62); background: rgba(7,9,14,.82); pointer-events: none; }
+.aperture-stage-guide strong { color: var(--ap-amber); font: 700 9px/1 var(--font-mono); text-transform: uppercase; }
+.aperture-stage-guide span { color: var(--ap-muted); font: 9px/1 var(--font-mono); }
 .aperture-renderer-badge { position: absolute; z-index: 6; top: 10px; left: 10px; padding: 7px 9px; border: 1px solid var(--ap-line-strong); background: rgba(7,9,14,.88); color: var(--ap-muted); font: 700 9px/1 var(--font-mono); text-transform: uppercase; pointer-events: none; }
 .aperture-renderer-badge[data-engine="webgl"] { border-color: rgba(255,177,78,.6); color: #ffd7a1; }
-.aperture-key--heat { border-radius: 50%; border: 0; background: radial-gradient(circle, #ff4c1f 0 20%, #de843f 35%, rgba(122,104,132,.35) 68%, transparent 72%); box-shadow: 0 0 10px rgba(255,76,31,.65); }
 .aperture-key--activity { width: 22px; height: 2px; border: 0; background: linear-gradient(90deg, transparent, var(--ap-amber), transparent); }
 .aperture-stage-legend {
   position: absolute;
@@ -319,3 +347,18 @@
 .aperture-pin-button[aria-pressed="true"] { border-color: var(--ap-teal); color: var(--ap-teal); }
 .aperture-boundary { margin: 0; padding: 15px 20px; border-top: 1px solid var(--ap-line); background: #090c11; color: var(--ap-muted); font: 10px/1.55 var(--font-mono); }
 .aperture-boundary strong { color: var(--ap-text); }
+
+.aperture-activity-list { list-style: none; display: grid; gap: 6px; margin: 10px 0 0 !important; padding: 0 !important; }
+.aperture-activity-list li { display: grid; gap: 3px; padding: 9px 10px; border: 1px solid var(--ap-line); background: #0a0d13; }
+.aperture-activity-list li.is-active { border-color: var(--ap-amber); box-shadow: inset 2px 0 var(--ap-amber); }
+.aperture-activity-list strong { color: var(--ap-amber); font: 700 9px/1.2 var(--font-mono); text-transform: uppercase; }
+.aperture-activity-list span { color: var(--ap-text); font-size: 11px; line-height: 1.35; }
+.aperture-activity-list small { color: var(--ap-muted); font: 9px/1.4 var(--font-mono); }
+/* Field rows in the Explore inspector: a row the field does not draw (privacy
+   guard, contained roster, unresolved node) stays listed and says why. */
+.aperture-field-row.is-off-field { border-style: dashed; border-color: rgba(122, 104, 132, .7); }
+.aperture-field-row-note { display: block; color: #c9b8d6; font: 700 9px/1.4 var(--font-mono); letter-spacing: .04em; text-transform: uppercase; }
+details.aperture-field-rows-more { margin-top: 8px; }
+details.aperture-field-rows-more > summary { min-height: 30px; display: flex; align-items: center; padding: 0 10px; border: 1px solid var(--ap-line); background: #0a0d13; color: var(--ap-muted); font: 700 9px/1.2 var(--font-mono); cursor: pointer; list-style: none; }
+details.aperture-field-rows-more > summary::-webkit-details-marker { display: none; }
+details.aperture-field-rows-more[open] > summary { border-color: var(--ap-amber); color: var(--ap-amber); }

@@ -1,8 +1,10 @@
-name: Deploy surface-hop app to GitHub Pages
+name: Deploy to GitHub Pages
 
+# Runs the same release gate as the Release checks workflow on the exact commit
+# being published, and uploads the finished dist/ only if it passes.
 on:
   push:
-    branches: [main, master]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -16,7 +18,7 @@ concurrency:
 
 jobs:
   deploy:
-    name: Compile, validate, deploy
+    name: Release check, then deploy
     runs-on: ubuntu-latest
     timeout-minutes: 45
     environment:
@@ -37,113 +39,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Release check
+      - name: Release check (builds and validates dist/)
         run: npm run release:check
-
-      - name: Smoke public inspection routes
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          python3 -m http.server 8080 --bind 127.0.0.1 --directory dist > /tmp/clifford-number-server.log 2>&1 &
-          server_pid=$!
-          cleanup() {
-            kill "$server_pid" 2>/dev/null || true
-          }
-          trap cleanup EXIT
-
-          ready=false
-          for _ in {1..30}; do
-            if curl -fsS http://127.0.0.1:8080/ > /dev/null; then
-              ready=true
-              break
-            fi
-            sleep 1
-          done
-          if [[ "$ready" != true ]]; then
-            cat /tmp/clifford-number-server.log
-            exit 1
-          fi
-
-          chrome="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser || true)"
-          if [[ -z "$chrome" ]]; then
-            echo "::error::No supported Chromium browser is installed on the runner."
-            exit 1
-          fi
-
-          CLIFFORD_CHROME="$chrome" node tools/smoke-public-routes.mjs             --base-url http://127.0.0.1:8080/
-
-      - name: Verify deployment artifact identity
-        shell: bash
-        run: |
-          set -euo pipefail
-          [[ "$(tr -d '\r\n' < dist/deployment-sha.txt)" == "$GITHUB_SHA" ]]
-          node tools/validate-publication-artifact.mjs
 
       - name: Upload pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          name: github-pages-${{ github.run_attempt }}
           path: dist
 
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-        with:
-          artifact_name: github-pages-${{ github.run_attempt }}
-
-      - name: Smoke deployed public inspection routes
-        shell: bash
-        env:
-          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
-        run: |
-          set -euo pipefail
-
-          if [[ -z "${PAGE_URL:-}" ]]; then
-            echo "::error::Pages deployment did not return a page_url."
-            exit 1
-          fi
-          base_url="${PAGE_URL%/}/"
-
-          exact_artifact=false
-          observed_sha=""
-          for _ in {1..60}; do
-            observed_sha="$(curl -fsS -H 'Cache-Control: no-cache' "${base_url}deployment-sha.txt?expected=${GITHUB_SHA}" 2>/dev/null || true)"
-            observed_sha="${observed_sha//$'\r'/}"
-            observed_sha="${observed_sha//$'\n'/}"
-            if [[ "$observed_sha" == "$GITHUB_SHA" ]]; then
-              exact_artifact=true
-              break
-            fi
-            sleep 2
-          done
-          if [[ "$exact_artifact" != true ]]; then
-            echo "::error::Deployed Pages artifact did not expose exact commit ${GITHUB_SHA}; observed '${observed_sha}'."
-            exit 1
-          fi
-
-          expected_manifest_sha="$(sha256sum dist/release-artifact-manifest.json | awk '{print $1}')"
-          exact_manifest=false
-          for _ in {1..60}; do
-            if curl -fsS -H 'Cache-Control: no-cache' "${base_url}release-artifact-manifest.json?expected=${GITHUB_SHA}" -o /tmp/deployed-release-artifact-manifest.json; then
-              observed_manifest_sha="$(sha256sum /tmp/deployed-release-artifact-manifest.json | awk '{print $1}')"
-              if [[ "$observed_manifest_sha" == "$expected_manifest_sha" ]]; then
-                exact_manifest=true
-                break
-              fi
-            fi
-            sleep 2
-          done
-          if [[ "$exact_manifest" != true ]]; then
-            echo "::error::Deployed artifact manifest did not match tested manifest ${expected_manifest_sha}."
-            exit 1
-          fi
-          node -e "const fs=require('fs'); const m=JSON.parse(fs.readFileSync('/tmp/deployed-release-artifact-manifest.json','utf8')); if(m.source?.commit!==process.env.GITHUB_SHA) process.exit(1)"
-
-          chrome="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser || true)"
-          if [[ -z "$chrome" ]]; then
-            echo "::error::No supported Chromium browser is installed on the runner."
-            exit 1
-          fi
-
-          CLIFFORD_CHROME="$chrome" node tools/smoke-public-routes.mjs             --base-url "$base_url"

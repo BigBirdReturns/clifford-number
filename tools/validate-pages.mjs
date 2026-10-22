@@ -67,7 +67,8 @@ const required = [
   'legacy/graph.edge-model.json', 'legacy/uk-ai-policy.edge-model.json',
   'src/ui-utils.js', 'src/i18n.js', 'src/evidence-rank.js', 'src/route-projections.js', 'src/release-delta.js', 'src/aperture-bootstrap.js', 'src/visual-aperture-core.mjs',
   'src/visual-aperture-state.mjs', 'src/visual-aperture-workspace.mjs',
-  'src/visual-aperture-export.mjs',
+  'src/visual-aperture-export.mjs', 'src/visual-aperture-timeline.mjs',
+  'src/visual-aperture-timeline-runtime.js', 'src/visual-aperture-timeline.css',
   'src/visual-aperture-workspace-runtime.js', 'src/visual-aperture-export-runtime.js', 'src/visual-aperture.js',
   ...Array.from({ length: 11 }, (_, index) => `src/visual-aperture-part-${index + 1}.js`),
   'src/visual-aperture.css', 'src/visual-aperture-layout.css', 'src/visual-aperture-svg.css',
@@ -181,10 +182,15 @@ const apertureWorkspace = fs.readFileSync(path.join(destination, 'src', 'visual-
 const apertureExport = fs.readFileSync(path.join(destination, 'src', 'visual-aperture-export.mjs'), 'utf8');
 const apertureWorkspaceRuntime = fs.readFileSync(path.join(destination, 'src', 'visual-aperture-workspace-runtime.js'), 'utf8');
 const apertureExportRuntime = fs.readFileSync(path.join(destination, 'src', 'visual-aperture-export-runtime.js'), 'utf8');
+const apertureTimelineModel = fs.readFileSync(path.join(destination, 'src', 'visual-aperture-timeline.mjs'), 'utf8');
+const apertureTimelineRuntime = fs.readFileSync(path.join(destination, 'src', 'visual-aperture-timeline-runtime.js'), 'utf8');
+// Loader order: workspace, export, parts 1-10, the timeline runtime, then part-11 (mount).
 const aperture = [
   apertureWorkspaceRuntime,
   apertureExportRuntime,
-  ...Array.from({ length: 11 }, (_, index) => fs.readFileSync(path.join(destination, 'src', `visual-aperture-part-${index + 1}.js`), 'utf8'))
+  ...Array.from({ length: 10 }, (_, index) => fs.readFileSync(path.join(destination, 'src', `visual-aperture-part-${index + 1}.js`), 'utf8')),
+  apertureTimelineRuntime,
+  fs.readFileSync(path.join(destination, 'src', 'visual-aperture-part-11.js'), 'utf8')
 ].join('\n');
 const standalone = fs.readFileSync(path.join(destination, 'Clifford-Number-standalone.html'), 'utf8');
 const explorerStandalone = fs.readFileSync(path.join(destination, 'Clifford-Number-explorer-standalone.html'), 'utf8');
@@ -251,7 +257,7 @@ if (!apertureBootstrap.includes("import('./visual-aperture.js")
   || !apertureEntry.includes('visual-aperture-workspace-runtime.js')
   || !apertureEntry.includes('visual-aperture-export-runtime.js')
   || !apertureEntry.includes('visual-aperture-part-${index + 1}.js')
-  || !aperture.includes('Map the system. Keep the receipt attached.')) {
+  || !(aperture.includes('Map the system. Keep the receipt attached.') || aperture.includes('Pick a person. Follow the public record.'))) {
   console.error('validate-pages failed: integrated visual aperture is not wired into the public runtime');
   process.exit(1);
 }
@@ -260,6 +266,26 @@ if (!apertureState.includes("APERTURE_STATE_VERSION = '1'")
   || !aperture.includes('Copy exact view')
   || !aperture.includes("addEventListener('popstate'")) {
   console.error('validate-pages failed: aperture exact-view URL contract is missing');
+  process.exit(1);
+}
+// Ledger timeline mode: the arrival tab, its runtime in the loader order, the
+// ap_time_* URL keys, the export branch, and the reserved pair selector that
+// must never be written (a hop basis is a surface-day column, never a line
+// between two people).
+if (!aperture.includes('data-ap-mode="timeline"')
+  || !apertureEntry.includes('visual-aperture-timeline-runtime.js')
+  || !apertureEntry.includes("from './visual-aperture-timeline.mjs'")
+  || !apertureTimelineModel.includes("TIMELINE_MODEL_SCHEMA = 'clifford-timeline-model@1'")
+  || !apertureTimelineRuntime.includes('function renderTimelineMode')
+  || !apertureTimelineRuntime.includes('data-ap-time-mark')
+  || !apertureTimelineRuntime.includes('data-ap-time-column')
+  || !apertureTimelineRuntime.includes('data-ap-time-block')
+  || apertureTimelineRuntime.includes('data-ap-time-pair')
+  || !apertureState.includes('ap_time_cursor')
+  || !apertureState.includes('ap_time_lanes')
+  || !apertureExport.includes("'timeline'")
+  || !apertureExportRuntime.includes('currentTimelineExportView')) {
+  console.error('validate-pages failed: ledger timeline mode is not wired into the public runtime');
   process.exit(1);
 }
 if (!apertureWorkspace.includes("APERTURE_WORKSPACE_VERSION = '1'")
@@ -287,11 +313,12 @@ if (i18n.includes('visual-aperture')) {
 if (!html.includes('id="causal-map"') || !html.includes('id="causal-map-legend"') || !html.includes('id="causal-route-summary"')
   || (html.match(/data-lane="/g) ?? []).length !== 4
   || !html.includes('id="causal-receipt-aperture"') || !html.includes('data-state="open"')
-  || !html.includes('id="evidence-inspection-toggle"') || !html.includes('data-provenance-plate="A"')) {
+  || !html.includes('id="causal-numbers"') || !html.includes('id="causal-detail"')) {
   console.error('validate-pages failed: four-lane causal homepage contract is incomplete');
   process.exit(1);
 }
-if (!homeApp.includes('function homepageModel') || !homeApp.includes('function evidenceInspectionModel')
+if (!homeApp.includes('function homepageModel') || !homeApp.includes('function buildLaneModel')
+  || !homeApp.includes("'canonical_surface_overlay'") || !homeApp.includes('Unmapped research edge type')
   || !homeApp.includes('DEFAULT_ENDPOINTS') || !homeApp.includes('CLIFFORD_GRAPH_CONFIG')
   || homeApp.includes('requestAnimationFrame') || homeApp.includes('getContext(')) {
   console.error('validate-pages failed: homepage model or configurable endpoint boundary regressed');
@@ -314,11 +341,34 @@ if (homeCss.includes('world-dive') || !homeCss.includes('prefers-reduced-motion'
   console.error('validate-pages failed: causal homepage styling or reduced-motion contract regressed');
   process.exit(1);
 }
-if (!explorerHtml.includes('id="network-svg"') || !explorerHtml.includes('id="view-desk"')
-  || !explorerHtml.includes('id="view-map"') || !app.includes('function semanticLevel')
-  || !app.includes('function atlasScale') || !app.includes('routeProjections')
-  || !app.includes('does not redefine the Clifford Number')) {
-  console.error('validate-pages failed: semantic topology explorer or route-projection contract is incomplete');
+// The explorer page hosts the Visual Aperture in <section id="network-atlas">
+// (the aperture mounts into it by id), the Connection desk, the shared
+// evidence dialog and the route-projection panel. The legacy SVG atlas that
+// app.js used to render into that section is retired.
+if (!explorerHtml.includes('id="network-atlas"') || !explorerHtml.includes('id="view-desk"')
+  || !explorerHtml.includes('id="view-map"') || !explorerHtml.includes('id="evidence-dialog"')
+  || !app.includes('function routeModesModel') || !app.includes('function openReceiptDialog')
+  || !app.includes('function inspectorBreadcrumbModel') || !app.includes('routeProjections')
+  || !app.includes('does not redefine the Clifford Number')
+  || app.includes('function initNetworkAtlas') || app.includes('function renderEvidenceOverview')
+  || explorerHtml.includes('id="network-svg"') || explorerHtml.includes('id="evidence-overview"')) {
+  console.error('validate-pages failed: public explorer or route-projection contract is incomplete');
+  process.exit(1);
+}
+// The record pages (actor, organization, surface, type, year) are fed by the
+// same ledger-derived model as the Timeline mode: app.js imports
+// src/visual-aperture-timeline.mjs, every page carries facts with denominators,
+// a 'Patterns in the rows' section and an Open-in-the-timeline handoff, and no
+// composite score bar or surface-factory verdict stands in for a ledger fact.
+if (!app.includes("from './src/visual-aperture-timeline.mjs'")
+  || !app.includes('function actorRecordModel') || !app.includes('function organizationRecordModel')
+  || !app.includes('function surfaceRecordModel') || !app.includes('function typeRecordModel')
+  || !app.includes('function yearRecordModel') || !app.includes('function renderType') || !app.includes('function renderYear')
+  || !app.includes('data-ap-open-timeline=') || !app.includes('Patterns in the rows') || !app.includes('Copy ledger as text')
+  || !app.includes('machine-derived from ledger; no editorial profile yet')
+  || !app.includes('globalThis.__cliffordApertureOrigin')
+  || app.includes('Structural context index') || app.includes('Factory Score') || app.includes('machine_score') || app.includes('factory_score')) {
+  console.error('validate-pages failed: the explorer record pages do not read the ledger timeline model, or a score survives on them');
   process.exit(1);
 }
 if (atlasProjection.scheme?.schema_version !== 'atlas-projection@1'
@@ -349,13 +399,16 @@ if (!standalone.includes('data-portable-release="true"') || !standalone.includes
 }
 if (!explorerStandalone.includes('globalThis.__CLIFFORD_APERTURE_BUNDLED__ = true')
   || !explorerStandalone.includes('clifford-public-data-boundary@1')
-  || !explorerStandalone.includes('Map the system. Keep the receipt attached.')
+  || !(explorerStandalone.includes('Map the system. Keep the receipt attached.') || explorerStandalone.includes('Pick a person. Follow the public record.'))
   || !explorerStandalone.includes("APERTURE_STATE_VERSION = '1'")
   || !explorerStandalone.includes("APERTURE_WORKSPACE_VERSION = '1'")
   || !explorerStandalone.includes("APERTURE_EXPORT_SCHEMA_VERSION = 'clifford-aperture-export@1'")
   || !explorerStandalone.includes('Local operator workspace')
   || !explorerStandalone.includes('Export the view with its limits attached.')
   || !explorerStandalone.includes('Copy exact view')
+  || !explorerStandalone.includes('clifford-timeline-model@1')
+  || !explorerStandalone.includes('data-ap-mode="timeline"')
+  || !explorerStandalone.includes('data-ap-time-mark')
   || /<(?:script|link)[^>]+(?:src|href)="[^"]*visual-aperture/.test(explorerStandalone)) {
   console.error('validate-pages failed: standalone release omits or externally references the operator aperture');
   process.exit(1);

@@ -40,7 +40,7 @@ test "$(git rev-parse "$CANDIDATE_SHA^")" = "$BASE_SHA"
 rm -f "$BUNDLE" "$VERIFY_RECEIPT" "$DIGEST_RECEIPT" "$BUNDLE_RECEIPT"
 git bundle create "$BUNDLE" HEAD "^$BASE_SHA"
 git bundle verify "$BUNDLE" > "$VERIFY_RECEIPT" 2>&1
-BUNDLE_SHA256="$(sha256sum "$BUNDLE" | awk '{print $1}')"
+BUNDLE_SHA256="$(sha256sum < "$BUNDLE" | awk '{print $1}')"
 printf '%s  candidate.bundle\n' "$BUNDLE_SHA256" > "$DIGEST_RECEIPT"
 {
   printf 'base_sha=%s\n' "$BASE_SHA"

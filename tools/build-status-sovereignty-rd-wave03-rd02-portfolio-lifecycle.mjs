@@ -610,7 +610,7 @@ export function checkProduct(root = ROOT) {
   return product;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const write = process.argv.includes('--write');
   const product = write ? writeProduct(ROOT) : checkProduct(ROOT);
   console.log(`RD-02 Wave-03 portfolio lifecycle: ${product.terminal.counts.terminal_fields}/180 terminal; ${product.terminal.counts.lifecycle_events_observed} lifecycle events; ${product.terminal.current_result.terminal_state}`);

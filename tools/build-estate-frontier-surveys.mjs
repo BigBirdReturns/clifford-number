@@ -2,6 +2,7 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { readJson, root, writeJson } from './lib/ledger.mjs';
 
 export const ESTATE_FRONTIER_SURVEY_MANIFEST_SCHEMA = 'estate-frontier-survey-manifest@1';
@@ -135,7 +136,7 @@ export function buildEstateFrontierSurveys({ write = true } = {}) {
   return { manifest, packets };
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const built = buildEstateFrontierSurveys();
   console.log(`estate frontier surveys: ${built.manifest.counts.estates} estates, ${built.manifest.counts.source_route_uses} route uses, ${built.manifest.counts.raw_records_acquired} promoted records`);
 }

@@ -23,7 +23,6 @@ const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
 }[char]));
 
 export const releaseScope = [
-  '.github/workflows/status-sovereignty-f02-snap.yml',
   'data/intake/status-sovereignty-f02-snap-gate-first-pass.json',
   'schemas/status-sovereignty-institutional-gate-first-pass.schema.json',
   'docs/milestones/ssc-f02-snap-gate-first-pass.md',

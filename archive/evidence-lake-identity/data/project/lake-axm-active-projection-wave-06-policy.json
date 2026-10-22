@@ -1,0 +1,69 @@
+{
+  "schema_version": "lake-axm-active-projection-wave-06-policy@1",
+  "program_key": "CN-LAKE-AXM-ACTIVE-W06",
+  "as_of": "2026-07-29",
+  "purpose": "Migrate the active AXM identity projection from the retired provisional e_/c_ scheme to the pinned AXM Genesis v1 e1_/c1_ scheme while preserving every legacy identifier as a resolvable predecessor, every temporal and evidentiary payload, and the cross-case join prohibition.",
+  "input_paths": [
+    "build/axm-identity.json",
+    "build/axm-identity-genesis-v1-migration.json",
+    "build/lake-actions/axm-reproducibility-wave-05-reconciliation.json",
+    "data/project/axm-genesis-v1-runtime-attestation.json",
+    "data/project/lake-identifier-source-supersessions-wave-04.jsonl",
+    "data/canonical/actors.json",
+    "data/canonical/organizations.json",
+    "data/canonical/aliases.json",
+    "data/ledger/surfaces.jsonl",
+    "data/ledger/participation.jsonl",
+    "cases.json",
+    "BUILD-INSTRUCTIONS.md",
+    "README.md"
+  ],
+  "active_projection_path": "build/axm-identity.json",
+  "migration_registry_path": "data/project/lake-axm-active-identity-registry-wave-06.jsonl",
+  "migration_receipt_path": "data/project/lake-axm-active-projection-wave-06.json",
+  "plan_path": "build/lake-actions/axm-active-projection-wave-06.json",
+  "reconciliation_path": "build/lake-actions/axm-active-projection-wave-06-reconciliation.json",
+  "report_path": "reports/lake-axm-active-projection-wave-06.md",
+  "reconciliation_report_path": "reports/lake-axm-active-projection-wave-06-reconciliation.md",
+  "external_reference": {
+    "repository": "BigBirdReturns/axm-genesis",
+    "commit": "411ef40e6cfc3ecb97ac3e256c8151be678347c8",
+    "identity_module_path": "src/axm_verify/identity.py",
+    "runtime_attestation_path": "data/project/axm-genesis-v1-runtime-attestation.json"
+  },
+  "expected": {
+    "entity_migrations": 176,
+    "alias_migrations": 21,
+    "claim_migrations": 164,
+    "migration_registry_rows": 340,
+    "legacy_entity_tokens_resolvable": 197,
+    "legacy_claim_tokens_resolvable": 164,
+    "active_scheme_status": "reconciled_genesis_v1",
+    "active_projection_migrated": true,
+    "external_axm_gate_complete": true,
+    "cross_case_join_authorized": false
+  },
+  "decision_law": {
+    "review_required_to_decide": false,
+    "missing_reviewer_blocks_active_migration": false,
+    "migration_map_must_be_one_to_one": true,
+    "legacy_identifiers_must_remain_resolvable": true,
+    "temporal_windows_may_change": false,
+    "evidence_payloads_may_change": false,
+    "local_identifiers_may_change": false,
+    "cross_case_join_authorized": false,
+    "correction_mode": "append_preserving_supersession"
+  },
+  "boundaries": {
+    "active_projection_migration_proves_entity_identity": false,
+    "active_projection_migration_proves_evidence_truth": false,
+    "legacy_identifier_resolution_merges_entities": false,
+    "genesis_identifier_authorizes_cross_case_join": false,
+    "same_label_across_namespaces_proves_same_entity": false,
+    "external_axm_gate_complete": true,
+    "active_projection_migrated": true,
+    "cross_case_join_authorized": false,
+    "publication_cleared": false,
+    "graph_effect": "none"
+  }
+}

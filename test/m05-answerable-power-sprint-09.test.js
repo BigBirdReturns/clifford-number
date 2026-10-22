@@ -12,7 +12,7 @@ const clone = (value) => structuredClone(value);
 const documents = loadSprint09Package();
 const expectedManifest = computeReleaseManifest();
 
-assert.equal(releaseScope.length, 11);
+assert.equal(releaseScope.length, 10);
 assert.deepEqual(documents.manifest, expectedManifest);
 assert.deepEqual(validateSprint09Package(documents, { expectedManifest }), []);
 assert.equal(documents.plan.current_result.candidate_records, 26);

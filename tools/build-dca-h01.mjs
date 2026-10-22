@@ -14,7 +14,6 @@ const write = (rel, value) => {
 };
 
 export const releaseScope = [
-  '.github/workflows/dca-h01.yml',
   'data/project/dca-h01-field-hypothesis.json',
   'data/project/dca-h01-crosswalk.json',
   'data/project/dca-h01-role-neutral-denominator.json',

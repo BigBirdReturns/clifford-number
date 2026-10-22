@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { readJson, root } from './lib/ledger.mjs';
 import { renderReportFrontierHtml } from './lib/report-frontier-html.mjs';
 
@@ -15,7 +16,7 @@ export function renderReportFrontier() {
   return { frontier, html, output_path: REPORT_FRONTIER_HTML_PATH };
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const rendered = renderReportFrontier();
   console.log(`report frontier page: ${rendered.output_path} (${rendered.frontier.cases.length} cases, ${rendered.frontier.trail_programs.length} trail programs)`);
 }

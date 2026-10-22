@@ -23,7 +23,6 @@ const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
 }[char]));
 
 export const releaseScope = [
-  '.github/workflows/status-sovereignty-osc-first-pass.yml',
   'data/intake/status-sovereignty-osc-denominator-first-pass.json',
   'schemas/status-sovereignty-osc-denominator-first-pass.schema.json',
   'docs/milestones/ssc-osc-denominator-first-pass.md',

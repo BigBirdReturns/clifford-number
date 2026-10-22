@@ -1,0 +1,263 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bigbirdreturns.github.io/clifford-number/schemas/counter-selector-candidate-v1.json",
+  "title": "Counter-Selector Candidate Record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "candidate_id",
+    "program_id",
+    "subject_type",
+    "candidate_token",
+    "identity_status",
+    "intake_surface",
+    "artifact_refs",
+    "blind_first_review",
+    "support_ledger",
+    "operational_residues",
+    "transfer_test",
+    "disruption_test",
+    "custody_test",
+    "handoff_test",
+    "update_behavior",
+    "false_positive_controls",
+    "comparison_set",
+    "evidence_vector",
+    "disposition",
+    "source_ids",
+    "review_state",
+    "privacy",
+    "graph_effect"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "counter-selector-candidate@1"
+    },
+    "candidate_id": {
+      "type": "string",
+      "pattern": "^CS-C[0-9]{4,}$"
+    },
+    "program_id": {
+      "const": "CS-P01"
+    },
+    "subject_type": {
+      "enum": [
+        "individual",
+        "team",
+        "project",
+        "maintainer_group"
+      ]
+    },
+    "candidate_token": {
+      "type": "string",
+      "minLength": 3
+    },
+    "identity_status": {
+      "enum": [
+        "withheld",
+        "self_disclosed",
+        "public_record"
+      ]
+    },
+    "intake_surface": {
+      "type": "object",
+      "required": [
+        "lane_id",
+        "bounded_task",
+        "date_window"
+      ],
+      "additionalProperties": true
+    },
+    "artifact_refs": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      }
+    },
+    "blind_first_review": {
+      "type": "object",
+      "required": [
+        "performed",
+        "reviewer_ids",
+        "artifact_validity",
+        "missing_receipts"
+      ],
+      "additionalProperties": true
+    },
+    "support_ledger": {
+      "type": "object",
+      "required": [
+        "documented",
+        "support_present",
+        "support_missing",
+        "state_load"
+      ],
+      "additionalProperties": true
+    },
+    "operational_residues": {
+      "type": "array",
+      "minItems": 8,
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "required": [
+          "residue_id",
+          "score",
+          "evidence",
+          "limits"
+        ],
+        "properties": {
+          "residue_id": {
+            "pattern": "^CS-R0[1-8]$"
+          },
+          "score": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "limits": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "transfer_test": {
+      "type": "object",
+      "required": [
+        "performed",
+        "result",
+        "limits"
+      ],
+      "additionalProperties": true
+    },
+    "disruption_test": {
+      "type": "object",
+      "required": [
+        "performed",
+        "disruption",
+        "response",
+        "recovery"
+      ],
+      "additionalProperties": true
+    },
+    "custody_test": {
+      "type": "object",
+      "required": [
+        "performed",
+        "object",
+        "return_state",
+        "damage_externalized"
+      ],
+      "additionalProperties": true
+    },
+    "handoff_test": {
+      "type": "object",
+      "required": [
+        "performed",
+        "next_operator",
+        "resumable",
+        "rollback_available"
+      ],
+      "additionalProperties": true
+    },
+    "update_behavior": {
+      "type": "object",
+      "required": [
+        "contradiction_presented",
+        "model_changed",
+        "retaliation_or_concealment"
+      ],
+      "additionalProperties": true
+    },
+    "false_positive_controls": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "control_id",
+          "status",
+          "evidence"
+        ],
+        "additionalProperties": true
+      }
+    },
+    "comparison_set": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    },
+    "evidence_vector": {
+      "type": "object",
+      "minProperties": 10,
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 4
+      }
+    },
+    "disposition": {
+      "enum": [
+        "retain_as_candidate",
+        "advance_to_bounded_collaboration",
+        "bounded_non_link",
+        "false_positive",
+        "insufficient_evidence",
+        "withdrawn",
+        "privacy_blocked"
+      ]
+    },
+    "source_ids": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      }
+    },
+    "review_state": {
+      "enum": [
+        "candidate_only",
+        "blind_artifact_reviewed",
+        "support_ledger_complete",
+        "transfer_tested",
+        "disruption_tested",
+        "custody_tested",
+        "second_party_reviewed",
+        "retained_for_collaboration",
+        "bounded_non_link",
+        "false_positive",
+        "withdrawn",
+        "source_restricted",
+        "requires_named_acquisition"
+      ]
+    },
+    "privacy": {
+      "type": "object",
+      "required": [
+        "consent_status",
+        "identity_public",
+        "sensitive_data_minimized"
+      ],
+      "additionalProperties": true
+    },
+    "graph_effect": {
+      "const": "none"
+    }
+  }
+}

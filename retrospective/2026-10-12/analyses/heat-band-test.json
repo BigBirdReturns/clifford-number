@@ -1,0 +1,677 @@
+{
+ "question": "Do the same people recur across independently gathered lists more often than chance?",
+ "lists": {
+  "dialog-directory": 115,
+  "dated-uk-ai-ledger-records": 50,
+  "fund-team-pages": 70,
+  "router-names-seeded-from-projection": 30,
+  "austin-corridor": 19,
+  "bvvc-leadership": 27,
+  "linkedin-captures": 31,
+  "natsec100-seed-people": 4
+ },
+ "null_model": "expected shared people for a pair = |A| x |B| / U, U = universe of people who could appear on such lists; U is unknown and reported at 2,000, 5,000 and 20,000",
+ "clean_cells": [
+  {
+   "a": "dialog-directory",
+   "b": "fund-team-pages",
+   "observed": 1,
+   "who": [
+    "Peter Thiel"
+   ],
+   "expected": {
+    "2000": 4.03,
+    "5000": 1.61,
+    "20000": 0.4
+   }
+  },
+  {
+   "a": "dated-uk-ai-ledger-records",
+   "b": "fund-team-pages",
+   "observed": 1,
+   "who": [
+    "Marc Andreessen"
+   ],
+   "expected": {
+    "2000": 1.75,
+    "5000": 0.7,
+    "20000": 0.18
+   }
+  },
+  {
+   "a": "dialog-directory",
+   "b": "dated-uk-ai-ledger-records",
+   "observed": 2,
+   "who": [
+    "Matt Clifford (anchor; selection)",
+    "Dan Driscoll"
+   ],
+   "expected": {
+    "2000": 2.88,
+    "5000": 1.15,
+    "20000": 0.29
+   }
+  }
+ ],
+ "constructed_cells": [
+  {
+   "a": "fund-team-pages",
+   "b": "austin-corridor",
+   "observed": 10,
+   "why": "Austin corridor built from Pallas, Stratos and Texas Venture Partners team pages"
+  },
+  {
+   "a": "dated-uk-ai-ledger-records",
+   "b": "router-names-seeded-from-projection",
+   "observed": 6,
+   "why": "30 of 100 router names were seeded from the repo's own UK-AI graph (router-source-universe note: 'Signatures computed from committed projection role-claims')"
+  },
+  {
+   "a": "dialog-directory",
+   "b": "legacy-graph-role-edges",
+   "observed": 13,
+   "why": "each Dialog name's organisation was attached at import; not an independent appearance"
+  },
+  {
+   "a": "fund-team-pages",
+   "b": "natsec100-seed-people",
+   "observed": 2,
+   "why": "seeded from the Silent Ventures and Capital Factory routers"
+  }
+ ],
+ "conclusion": "Independently produced lists overlap at chance. The recurrence in the full union is manufactured by list construction. The hypothesis is untested, not refuted.",
+ "test_spec": [
+  "freeze the target roster (Dialog, 115, as of 2026-06-16) and hash it before looking",
+  "build the candidate universe only from independently produced public rosters (fund team pages 70, NatSec100 196 companies, DIANA 222 companies, Capital Factory 837 companies, 100 senators, 441 House offices, Detachment 201 cohorts; missing: complete UK AI adviser/appointee roster 2023-26, summit attendee lists); resolve companies to founders and officers",
+  "predict top-k from footprint and straight timelines; score precision/recall against random, prominence-only and role-matched baselines",
+  "run forward on the next published appointment or attendee list"
+ ],
+ "full_union_pairs": [
+  {
+   "a": "austin-corridor",
+   "b": "bvvc",
+   "observed": 0,
+   "exp5000": 0.1026,
+   "exp20000": 0.02565,
+   "people": []
+  },
+  {
+   "a": "austin-corridor",
+   "b": "dialog",
+   "observed": 0,
+   "exp5000": 0.437,
+   "exp20000": 0.10925,
+   "people": []
+  },
+  {
+   "a": "austin-corridor",
+   "b": "linkedin-captures",
+   "observed": 0,
+   "exp5000": 0.1178,
+   "exp20000": 0.02945,
+   "people": []
+  },
+  {
+   "a": "austin-corridor",
+   "b": "natsec100",
+   "observed": 2,
+   "exp5000": 0.0152,
+   "exp20000": 0.0038,
+   "people": [
+    "Jackson Moses",
+    "Joshua Baer"
+   ]
+  },
+  {
+   "a": "austin-corridor",
+   "b": "uk-ai",
+   "observed": 0,
+   "exp5000": 0.2774,
+   "exp20000": 0.06935,
+   "people": []
+  },
+  {
+   "a": "austin-corridor",
+   "b": "us-defence-fund-partners",
+   "observed": 10,
+   "exp5000": 0.38,
+   "exp20000": 0.095,
+   "people": [
+    "Aviad Grinfeld",
+    "Daniel Fouzailov",
+    "Jackson Moses",
+    "Joshua Baer",
+    "Lorne Abony",
+    "Richard Spencer",
+    "Rotem (Yehuda) Kakon",
+    "Sally Donnelly",
+    "Tal Shmueli",
+    "Tony DeMartino"
+   ]
+  },
+  {
+   "a": "bvvc",
+   "b": "dialog",
+   "observed": 0,
+   "exp5000": 0.621,
+   "exp20000": 0.15525,
+   "people": []
+  },
+  {
+   "a": "bvvc",
+   "b": "linkedin-captures",
+   "observed": 0,
+   "exp5000": 0.1674,
+   "exp20000": 0.04185,
+   "people": []
+  },
+  {
+   "a": "bvvc",
+   "b": "natsec100",
+   "observed": 0,
+   "exp5000": 0.0216,
+   "exp20000": 0.0054,
+   "people": []
+  },
+  {
+   "a": "bvvc",
+   "b": "uk-ai",
+   "observed": 0,
+   "exp5000": 0.3942,
+   "exp20000": 0.09855,
+   "people": []
+  },
+  {
+   "a": "bvvc",
+   "b": "us-defence-fund-partners",
+   "observed": 0,
+   "exp5000": 0.54,
+   "exp20000": 0.135,
+   "people": []
+  },
+  {
+   "a": "dialog",
+   "b": "linkedin-captures",
+   "observed": 0,
+   "exp5000": 0.713,
+   "exp20000": 0.17825,
+   "people": []
+  },
+  {
+   "a": "dialog",
+   "b": "natsec100",
+   "observed": 0,
+   "exp5000": 0.092,
+   "exp20000": 0.023,
+   "people": []
+  },
+  {
+   "a": "dialog",
+   "b": "uk-ai",
+   "observed": 13,
+   "exp5000": 1.679,
+   "exp20000": 0.41975,
+   "people": [
+    "anne-marie-slaughter",
+    "auren-hoffman",
+    "dan-driscoll",
+    "grover-norquist",
+    "joe-lonsdale",
+    "kaja-kallas",
+    "leonard-leo",
+    "matt-clifford",
+    "nicolas-berggruen",
+    "peter-thiel",
+    "reid-hoffman",
+    "shivon-zilis",
+    "tyler-cowen"
+   ]
+  },
+  {
+   "a": "dialog",
+   "b": "us-defence-fund-partners",
+   "observed": 3,
+   "exp5000": 2.3,
+   "exp20000": 0.575,
+   "people": [
+    "eric-schmidt",
+    "joe-lonsdale",
+    "peter-thiel"
+   ]
+  },
+  {
+   "a": "linkedin-captures",
+   "b": "natsec100",
+   "observed": 0,
+   "exp5000": 0.0248,
+   "exp20000": 0.0062,
+   "people": []
+  },
+  {
+   "a": "linkedin-captures",
+   "b": "uk-ai",
+   "observed": 0,
+   "exp5000": 0.4526,
+   "exp20000": 0.11315,
+   "people": []
+  },
+  {
+   "a": "linkedin-captures",
+   "b": "us-defence-fund-partners",
+   "observed": 0,
+   "exp5000": 0.62,
+   "exp20000": 0.155,
+   "people": []
+  },
+  {
+   "a": "natsec100",
+   "b": "uk-ai",
+   "observed": 0,
+   "exp5000": 0.0584,
+   "exp20000": 0.0146,
+   "people": []
+  },
+  {
+   "a": "natsec100",
+   "b": "us-defence-fund-partners",
+   "observed": 2,
+   "exp5000": 0.08,
+   "exp20000": 0.02,
+   "people": [
+    "Jackson Moses",
+    "Joshua Baer"
+   ]
+  },
+  {
+   "a": "uk-ai",
+   "b": "us-defence-fund-partners",
+   "observed": 7,
+   "exp5000": 1.46,
+   "exp20000": 0.365,
+   "people": [
+    "ben-warner",
+    "bob-mcgrew",
+    "joe-lonsdale",
+    "kevin-weil",
+    "marc-andreessen",
+    "marc-warner",
+    "peter-thiel"
+   ]
+  }
+ ],
+ "recurring_people_in_full_union": {
+  "ben-warner": {
+   "label": "ben-warner",
+   "contexts": {
+    "uk-ai": [
+     "graph:topology->surface-ben-warner-no10-digital-data-role-observation-2020-2021",
+     "graph:topology->surface-centre-human-progress-director-appointments-2025-08-05",
+     "graph:topology->surface-electric-twin-accuracy-methodology-publication-2026-02-11"
+    ],
+    "us-defence-fund-partners": [
+     "routers:candidate"
+    ]
+   }
+  },
+  "marc-warner": {
+   "label": "marc-warner",
+   "contexts": {
+    "uk-ai": [
+     "graph:topology->surface-faculty-science-director-shareholder-overlap-2024-10-10",
+     "graph:topology->surface-faculty-science-officer-employee-overlap-2018-01-24",
+     "ledger:faculty-science-director-shareholder-overlap-2024-10-10"
+    ],
+    "us-defence-fund-partners": [
+     "routers:candidate"
+    ]
+   }
+  },
+  "matt-clifford": {
+   "label": "matt-clifford",
+   "contexts": {
+    "uk-ai": [
+     "graph:chair->aria",
+     "graph:co-founder->code-first-girls",
+     "graph:co-founder->entrepreneur-first"
+    ],
+    "dialog": [
+     "graph:listed-in-directory->dialog",
+     "graph:public-directory-listing->dialog",
+     "graph:topology->surface-dialog-matt-clifford-invitation-nonattendance-2026-06-16"
+    ]
+   }
+  },
+  "marc-andreessen": {
+   "label": "marc-andreessen",
+   "contexts": {
+    "uk-ai": [
+     "graph:topology->surface-electric-twin-seed-round-2026-02-11",
+     "ledger:electric-twin-seed-round-2026-02-11"
+    ],
+    "us-defence-fund-partners": [
+     "routers:candidate"
+    ]
+   }
+  },
+  "kevin-weil": {
+   "label": "kevin-weil",
+   "contexts": {
+    "uk-ai": [
+     "graph:commissioned-into->detachment-201",
+     "graph:cpo-of->openai",
+     "graph:topology->surface-detachment-201-commissioning-2025"
+    ],
+    "us-defence-fund-partners": [
+     "routers:actor",
+     "routers:candidate"
+    ]
+   }
+  },
+  "bob-mcgrew": {
+   "label": "bob-mcgrew",
+   "contexts": {
+    "uk-ai": [
+     "graph:commissioned-into->detachment-201",
+     "graph:former-cro-of->openai",
+     "graph:topology->surface-detachment-201-commissioning-2025"
+    ],
+    "us-defence-fund-partners": [
+     "routers:candidate"
+    ]
+   }
+  },
+  "dan-driscoll": {
+   "label": "dan-driscoll",
+   "contexts": {
+    "uk-ai": [
+     "graph:topology->surface-detachment-201-second-cohort-commissioning-2026-06-10",
+     "ledger:detachment-201-second-cohort-commissioning-2026-06-10"
+    ],
+    "dialog": [
+     "graph:listed-in-directory->dialog",
+     "graph:public-directory-listing->dialog",
+     "ledger:dialog-public-directory-exposure-2026-06-16"
+    ]
+   }
+  },
+  "auren-hoffman": {
+   "label": "auren-hoffman",
+   "contexts": {
+    "uk-ai": [
+     "graph:founder->liveramp",
+     "graph:founder->safegraph",
+     "graph:founder-led->liveramp"
+    ],
+    "dialog": [
+     "graph:co-founder-chair->dialog",
+     "graph:listed-in-directory->dialog",
+     "graph:topology->surface-dialog-leadership-role-observations-2026-06-16"
+    ]
+   }
+  },
+  "peter-thiel": {
+   "label": "peter-thiel",
+   "contexts": {
+    "uk-ai": [
+     "graph:co-founder->palantir",
+     "graph:co-founder-link->palantir",
+     "graph:managing-partner-of->founders-fund"
+    ],
+    "dialog": [
+     "graph:co-founder->dialog",
+     "graph:listed-in-directory->dialog",
+     "graph:topology->surface-dialog-leadership-role-observations-2026-06-16"
+    ],
+    "us-defence-fund-partners": [
+     "routers:candidate"
+    ]
+   }
+  },
+  "joe-lonsdale": {
+   "label": "joe-lonsdale",
+   "contexts": {
+    "uk-ai": [
+     "graph:co-founder->palantir"
+    ],
+    "dialog": [
+     "graph:listed-in-directory->dialog",
+     "graph:public-directory-listing->dialog",
+     "ledger:dialog-public-directory-exposure-2026-06-16"
+    ],
+    "us-defence-fund-partners": [
+     "routers:actor",
+     "routers:candidate"
+    ]
+   }
+  },
+  "shivon-zilis": {
+   "label": "shivon-zilis",
+   "contexts": {
+    "uk-ai": [
+     "graph:director-of->neuralink"
+    ],
+    "dialog": [
+     "graph:listed-in-directory->dialog",
+     "ledger:dialog-public-directory-exposure-2026-06-16"
+    ]
+   }
+  },
+  "nicolas-berggruen": {
+   "label": "nicolas-berggruen",
+   "contexts": {
+    "uk-ai": [
+     "graph:chair-of->berggruen-institute"
+    ],
+    "dialog": [
+     "graph:listed-in-directory->dialog",
+     "ledger:dialog-public-directory-exposure-2026-06-16"
+    ]
+   }
+  },
+  "anne-marie-slaughter": {
+   "label": "anne-marie-slaughter",
+   "contexts": {
+    "uk-ai": [
+     "graph:ceo-of->new-america"
+    ],
+    "dialog": [
+     "graph:listed-in-directory->dialog",
+     "ledger:dialog-public-directory-exposure-2026-06-16"
+    ]
+   }
+  },
+  "reid-hoffman": {
+   "label": "reid-hoffman",
+   "contexts": {
+    "uk-ai": [
+     "graph:director-of->new-america"
+    ],
+    "dialog": [
+     "graph:listed-in-directory->dialog",
+     "ledger:dialog-public-directory-exposure-2026-06-16"
+    ]
+   }
+  },
+  "tyler-cowen": {
+   "label": "tyler-cowen",
+   "contexts": {
+    "uk-ai": [
+     "graph:board-chair-of->mercatus-center"
+    ],
+    "dialog": [
+     "graph:listed-in-directory->dialog",
+     "ledger:dialog-public-directory-exposure-2026-06-16"
+    ]
+   }
+  },
+  "leonard-leo": {
+   "label": "leonard-leo",
+   "contexts": {
+    "uk-ai": [
+     "graph:co-chairman-of->federalist-society"
+    ],
+    "dialog": [
+     "graph:listed-in-directory->dialog",
+     "ledger:dialog-public-directory-exposure-2026-06-16"
+    ]
+   }
+  },
+  "grover-norquist": {
+   "label": "grover-norquist",
+   "contexts": {
+    "uk-ai": [
+     "graph:president-of->americans-for-tax-reform"
+    ],
+    "dialog": [
+     "graph:listed-in-directory->dialog",
+     "ledger:dialog-public-directory-exposure-2026-06-16"
+    ]
+   }
+  },
+  "kaja-kallas": {
+   "label": "kaja-kallas",
+   "contexts": {
+    "uk-ai": [
+     "graph:vp-and-hr-of->european-commission"
+    ],
+    "dialog": [
+     "graph:listed-in-directory->dialog",
+     "ledger:dialog-public-directory-exposure-2026-06-16"
+    ]
+   }
+  },
+  "eric-schmidt": {
+   "label": "eric-schmidt",
+   "contexts": {
+    "dialog": [
+     "graph:listed-in-directory->dialog",
+     "ledger:dialog-public-directory-exposure-2026-06-16"
+    ],
+    "us-defence-fund-partners": [
+     "routers:candidate"
+    ]
+   }
+  },
+  "jackson-moses": {
+   "label": "Jackson Moses",
+   "contexts": {
+    "us-defence-fund-partners": [
+     "routers:actor",
+     "routers:candidate"
+    ],
+    "natsec100": [
+     "natsec100:seed"
+    ],
+    "austin-corridor": [
+     "austin:actors"
+    ]
+   }
+  },
+  "joshua-baer": {
+   "label": "Joshua Baer",
+   "contexts": {
+    "us-defence-fund-partners": [
+     "routers:actor",
+     "routers:candidate"
+    ],
+    "natsec100": [
+     "natsec100:seed"
+    ],
+    "austin-corridor": [
+     "austin:actors"
+    ]
+   }
+  },
+  "sally-donnelly": {
+   "label": "Sally Donnelly",
+   "contexts": {
+    "us-defence-fund-partners": [
+     "routers:actor",
+     "routers:candidate"
+    ],
+    "austin-corridor": [
+     "austin:actors"
+    ]
+   }
+  },
+  "tony-demartino": {
+   "label": "Tony DeMartino",
+   "contexts": {
+    "us-defence-fund-partners": [
+     "routers:actor",
+     "routers:candidate"
+    ],
+    "austin-corridor": [
+     "austin:actors"
+    ]
+   }
+  },
+  "tal-shmueli": {
+   "label": "Tal Shmueli",
+   "contexts": {
+    "us-defence-fund-partners": [
+     "routers:actor",
+     "routers:candidate"
+    ],
+    "austin-corridor": [
+     "austin:actors"
+    ]
+   }
+  },
+  "richard-spencer": {
+   "label": "Richard Spencer",
+   "contexts": {
+    "us-defence-fund-partners": [
+     "routers:candidate"
+    ],
+    "austin-corridor": [
+     "austin:actors"
+    ]
+   }
+  },
+  "rotem-kakon": {
+   "label": "Rotem (Yehuda) Kakon",
+   "contexts": {
+    "us-defence-fund-partners": [
+     "routers:candidate"
+    ],
+    "austin-corridor": [
+     "austin:actors"
+    ]
+   }
+  },
+  "aviad-grinfeld": {
+   "label": "Aviad Grinfeld",
+   "contexts": {
+    "us-defence-fund-partners": [
+     "routers:candidate"
+    ],
+    "austin-corridor": [
+     "austin:actors"
+    ]
+   }
+  },
+  "daniel-fouzailov": {
+   "label": "Daniel Fouzailov",
+   "contexts": {
+    "us-defence-fund-partners": [
+     "routers:candidate"
+    ],
+    "austin-corridor": [
+     "austin:actors"
+    ]
+   }
+  },
+  "lorne-abony": {
+   "label": "Lorne Abony",
+   "contexts": {
+    "us-defence-fund-partners": [
+     "routers:candidate"
+    ],
+    "austin-corridor": [
+     "austin:actors"
+    ]
+   }
+  }
+ }
+}

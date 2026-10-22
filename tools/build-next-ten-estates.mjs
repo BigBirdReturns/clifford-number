@@ -2,6 +2,7 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { readJson, readJsonl, root, writeJson } from './lib/ledger.mjs';
 
 export const NEXT_TEN_ESTATES_SCHEMA_VERSION = 'next-ten-estates-manifest@1';
@@ -264,7 +265,7 @@ export function buildNextTenEstates({ write = true } = {}) {
   return manifest;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const manifest = buildNextTenEstates();
   console.log(`next ten estates: ${manifest.counts.estates} estates, ${manifest.counts.sources} sources, ${manifest.counts.raw_records} raw records`);
 }

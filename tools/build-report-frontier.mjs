@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { readJson, readJsonl, root, writeJson } from './lib/ledger.mjs';
 
 export const REPORT_FRONTIER_SCHEMA_VERSION = 'report-frontier@1';
@@ -239,7 +240,7 @@ export function buildReportFrontier() {
   return output;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const output = buildReportFrontier();
   console.log(`report frontier: ${output.totals.cases} cases, ${output.totals.structured_reports} structured reports, ${output.totals.report_linked_trails} linked trails, waterline ${output.waterline.stage}`);
 }

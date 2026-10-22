@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import {
   ROOT,
@@ -273,7 +274,7 @@ export function validatePackage(root = ROOT) {
   return bundle.package;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const value = validatePackage(ROOT);
   console.log(`RD-01 Wave-03 intake validated: ${value.counts.edition_rows} editions / ${value.counts.required_field_slots} cells / ${value.counts.fixed_routes} routes; execution not started`);
 }

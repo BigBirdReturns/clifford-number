@@ -1,0 +1,230 @@
+/* Ledger timeline mode: one mark per ledger row, hop bases as surface-day
+   columns, dense rosters as one contained block. Imported after the
+   responsive sheet so its breakpoints win where they overlap. */
+.aperture-timeline {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: 650px;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  min-width: 0;
+  overflow: hidden;
+}
+.aperture-timeline[hidden] { display: none; }
+.aperture-time-axis { position: relative; overflow: hidden; border-bottom: 1px solid var(--ap-line); background: rgba(7, 9, 14, .92); }
+.aperture-time-lanes { min-height: 0; overflow: hidden auto; scrollbar-width: thin; scrollbar-color: var(--ap-line-strong) transparent; }
+.aperture-time-overview { position: relative; border-top: 1px solid var(--ap-line); background: rgba(7, 9, 14, .94); touch-action: none; }
+.aperture-time-axis-svg, .aperture-time-plot, .aperture-time-overview-svg { display: block; max-width: 100%; }
+.aperture-time-plot { touch-action: pan-y; }
+
+/* axis */
+.aperture-time-axis-base { stroke: var(--ap-line-strong); }
+.aperture-time-axis-year { stroke: #4a5362; }
+.aperture-time-axis-month { stroke: #303744; }
+.aperture-time-axis-label { fill: #ddd8cf; font: 700 10px/1 var(--font-mono); }
+.aperture-time-axis-month-label { fill: #777d87; font: 8px/1 var(--font-mono); }
+.aperture-time-axis-domain { fill: var(--ap-amber); font: 700 9px/1 var(--font-mono); }
+
+/* lanes and labels */
+.aperture-time-lane-bg { fill: transparent; }
+.aperture-time-lane-bg.is-alt { fill: rgba(255, 255, 255, .025); }
+.aperture-time-lane-bg--strip { fill: rgba(103, 184, 255, .045); }
+.aperture-time-lane-bg--block { fill: rgba(188, 141, 255, .06); }
+.aperture-time-lane-rule { stroke: rgba(48, 55, 68, .85); }
+.aperture-time-grid { stroke: rgba(74, 83, 98, .35); }
+.aperture-time-labels-bg { fill: rgba(11, 14, 20, .96); }
+.aperture-time-lane-hit { fill: transparent; }
+.aperture-time-lane:hover .aperture-time-lane-hit,
+.aperture-time-lane:focus-visible .aperture-time-lane-hit,
+.aperture-time-lane.is-selected .aperture-time-lane-hit { fill: rgba(243, 188, 78, .1); }
+.aperture-time-lane.is-selected .aperture-time-lane-hit { stroke: var(--ap-amber); stroke-width: 1; }
+.aperture-time-lane-label { fill: #fff4df; font: 700 12px/1 var(--font-condensed); }
+.aperture-time-lane-meta { fill: #a6a7a7; font: 9px/1 var(--font-mono); }
+.aperture-time-lane--strip .aperture-time-lane-label { fill: #a9d7ff; }
+.aperture-time-lane--block .aperture-time-lane-label { fill: #d8c4ff; }
+
+/* marks: fill = evidence class, outline = hop eligibility */
+.aperture-time-mark { stroke: #4a5362; stroke-width: 1; }
+.aperture-time-mark--hop { stroke: var(--ap-amber); stroke-width: 1.5; }
+.aperture-time-mark--ev-official, .aperture-time-mark--ev-confirmed, .aperture-time-mark--ev-government_record { fill: var(--ap-green); }
+.aperture-time-mark--ev-primary_public { fill: var(--ap-blue); }
+.aperture-time-mark--ev-reported { fill: #cfabff; }
+.aperture-time-mark--ev-derived, .aperture-time-mark--ev-judgment, .aperture-time-mark--ev-open { fill: #ff9c9c; }
+.aperture-time-mark--span { fill-opacity: .55; }
+.aperture-time-mark--year { fill-opacity: .35; stroke-dasharray: 2 2; stroke-width: 1; }
+.aperture-time-mark--open { stroke-dasharray: none; }
+.aperture-time-mark:hover, .aperture-time-mark:focus-visible { stroke: #fff; stroke-width: 1.5; }
+.aperture-time-mark.is-selected { stroke: #fff; stroke-width: 2; filter: drop-shadow(0 0 6px rgba(255, 255, 255, .35)); }
+.is-out-of-window { opacity: .45; }
+
+/* a hop basis: per-lane segments of one surface-day column, never a line between people */
+.aperture-time-column-segment { fill: rgba(243, 188, 78, .22); stroke: var(--ap-amber); stroke-width: 1; }
+.aperture-time-column:hover .aperture-time-column-segment,
+.aperture-time-column:focus-visible .aperture-time-column-segment { fill: rgba(243, 188, 78, .42); stroke-width: 1.5; }
+.aperture-time-column.is-selected .aperture-time-column-segment { fill: rgba(243, 188, 78, .5); stroke: #fff; stroke-width: 1.5; }
+.aperture-time-column-label { display: none; fill: #ffd98a; paint-order: stroke; stroke: #07090e; stroke-width: 3px; font: 700 9px/1 var(--font-mono); pointer-events: none; }
+.aperture-time-column:hover .aperture-time-column-label,
+.aperture-time-column:focus-visible .aperture-time-column-label,
+.aperture-time-column.is-selected .aperture-time-column-label { display: block; }
+
+/* +N folded rows */
+.aperture-time-aggregate rect { fill: #181e28; stroke: #687384; stroke-width: 1.5; stroke-dasharray: 3 3; }
+.aperture-time-aggregate text { fill: #fff4df; font: 700 8px/1 var(--font-mono); pointer-events: none; }
+.aperture-time-aggregate.is-selected rect, .aperture-time-aggregate:hover rect { stroke: #fff; }
+
+/* dense roster: one contained object */
+.aperture-time-block-day { fill: #8d93a1; }
+.aperture-time-block-box { fill: rgba(14, 18, 25, .72); stroke: #3d4654; stroke-width: 1.5; stroke-dasharray: 5 4; }
+.aperture-time-block:hover .aperture-time-block-box, .aperture-time-block:focus-visible .aperture-time-block-box { stroke: var(--ap-violet); }
+.aperture-time-block.is-selected .aperture-time-block-box { stroke: #fff; }
+.aperture-time-block-text { fill: #ddd8cf; font: 9px/1 var(--font-mono); pointer-events: none; }
+.aperture-time-block-count { fill: #fff4df; font-weight: 800; font-size: 12px; }
+
+/* window [from, to]: dims, never removes */
+.aperture-time-window-shade { fill: rgba(255, 255, 255, .035); stroke: rgba(243, 188, 78, .6); stroke-dasharray: 3 3; }
+.aperture-time-window-bar { fill: rgba(243, 188, 78, .35); }
+.aperture-time-window-label { fill: #ffd98a; font: 700 9px/1 var(--font-mono); }
+.aperture-time-window-handle { fill: var(--ap-amber); cursor: ew-resize; }
+.aperture-time-window-handle:focus-visible { fill: #fff; }
+
+/* overview strip over the whole record */
+.aperture-time-ov-label { fill: var(--ap-muted); font: 700 9px/1 var(--font-mono); }
+.aperture-time-ov-row { stroke: #596171; stroke-width: 1; }
+.aperture-time-ov-hop { stroke: var(--ap-amber); stroke-width: 1; }
+.aperture-time-ov-dense { stroke: var(--ap-violet); stroke-width: 2; }
+.aperture-time-ov-year { fill: #777d87; font: 8px/1 var(--font-mono); }
+.aperture-time-ov-window { fill: rgba(243, 188, 78, .12); stroke: var(--ap-amber); stroke-width: 1; cursor: grab; }
+.aperture-time-ov-window:active { cursor: grabbing; }
+.aperture-time-ov-handle { fill: rgba(243, 188, 78, .85); cursor: ew-resize; }
+.aperture-time-ov-handle:focus-visible { fill: #fff; }
+
+/* tooltip */
+.aperture-time-tip {
+  position: absolute;
+  z-index: 9;
+  max-width: 280px;
+  padding: 7px 9px;
+  border: 1px solid var(--ap-line-strong);
+  background: rgba(7, 9, 14, .96);
+  color: var(--ap-text);
+  font: 10px/1.4 var(--font-mono);
+  transform: translate(-50%, -100%);
+  pointer-events: none;
+}
+.aperture-time-tip[hidden] { display: none; }
+
+/* stage chrome while the timeline is on screen */
+.aperture-deck[data-aperture-timeline="true"] .aperture-stage-legend { bottom: 48px; }
+/* leave scroll room under the last lane so the bottom-anchored legend never has to sit on a lane label */
+.aperture-deck[data-aperture-timeline="true"] .aperture-time-lanes { padding-bottom: 40px; }
+.aperture-renderer-badge[data-engine="timeline"] { border-color: rgba(243, 188, 78, .6); color: #ffd98a; }
+.aperture-time-key { width: 12px; height: 12px; display: inline-block; border: 1px solid var(--ap-line-strong); flex: 0 0 auto; }
+.aperture-time-key--day { width: 5px; height: 11px; border-radius: 1px; background: var(--ap-muted); }
+.aperture-time-key--span { width: 18px; height: 9px; background: rgba(166, 167, 167, .55); }
+.aperture-time-key--hop { background: transparent; border: 1.5px solid var(--ap-amber); }
+.aperture-time-key--column { width: 6px; height: 14px; border-color: var(--ap-amber); background: rgba(243, 188, 78, .3); }
+.aperture-time-key--official { background: var(--ap-green); }
+.aperture-time-key--primary_public { background: var(--ap-blue); }
+.aperture-time-key--reported { background: #cfabff; }
+.aperture-time-key--open { background: #ff9c9c; }
+.aperture-time-key--block { width: 16px; height: 10px; border: 1px dashed #3d4654; background: rgba(14, 18, 25, .7); }
+
+/* controls */
+.aperture-time-by, .aperture-time-year-chips {
+  display: inline-flex;
+  align-items: stretch;
+  flex: 0 0 auto;
+  align-self: end;
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid var(--ap-line);
+  background: #0b0e14;
+}
+.aperture-time-by button, .aperture-time-year-chips button {
+  min-height: 32px;
+  padding: 0 9px;
+  border: 0;
+  background: transparent;
+  color: var(--ap-muted);
+  font: 700 10px/1 var(--font-mono);
+}
+.aperture-time-year-chips button { min-width: 36px; padding: 0 6px; }
+.aperture-time-by button:hover, .aperture-time-year-chips button:hover { color: var(--ap-text); background: var(--ap-panel-2); }
+.aperture-time-by button[aria-pressed="true"], .aperture-time-year-chips button[aria-pressed="true"] { background: var(--ap-amber); color: #17120a; }
+.aperture-time-control-label { align-self: center; padding: 0 6px; color: var(--ap-muted-2); font: 9px/1 var(--font-mono); letter-spacing: .04em; text-transform: uppercase; }
+.aperture-time-window-toggle[aria-pressed="true"] { border-color: var(--ap-amber); color: var(--ap-amber); }
+
+/* inspector pieces */
+.aperture-inline-button { padding: 0; border: 0; background: transparent; color: var(--ap-text); font: inherit; text-align: left; text-decoration: underline; text-decoration-color: rgba(243, 188, 78, .5); text-underline-offset: 3px; cursor: pointer; }
+.aperture-inline-button:hover { color: var(--ap-amber); }
+.aperture-time-surface-line { margin-top: -6px; }
+.aperture-time-pairs { list-style: none; display: grid; gap: 6px; margin: 8px 0 0 !important; padding: 0 !important; }
+.aperture-time-pairs li { display: grid; gap: 4px; padding: 8px 9px; border: 1px solid var(--ap-line); background: #0a0d13; color: #d5d1c9; font-size: 11px; }
+.aperture-time-pairs li small { color: var(--ap-muted); font: 9px/1.4 var(--font-mono); }
+.aperture-time-pairs li button { justify-self: start; min-height: 30px; padding: 5px 8px; border: 1px solid var(--ap-line-strong); background: #0a0d13; color: var(--ap-text); font: 700 9px/1.2 var(--font-mono); }
+.aperture-time-pairs li button:hover { border-color: var(--ap-amber); color: var(--ap-amber); }
+.aperture-time-legend-list { list-style: none; display: grid; gap: 6px; margin: 10px 0 0 !important; padding: 0 !important; font-size: 11px; }
+.aperture-time-legend-list li { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; }
+.aperture-overview tr.is-out-of-window td { color: #8a8d93; }
+
+@media (max-width: 860px) {
+  .aperture-timeline { height: 600px; }
+}
+
+@media (max-width: 760px) {
+  .aperture-mode-switch { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .aperture-mode-button { font-size: 12px; }
+  .aperture-timeline { height: 62vh; min-height: 510px; }
+  /* Phone widths: the renderer badge and the mode caption leave the overlay
+     and take a row of their own above the axis, so no lane label is ever
+     covered (at 320 the caption used to run across the first two lanes). The
+     pointer hint is dropped here: there is no Ctrl + wheel on a touch screen.
+     The desktop overlay (visual-aperture-layout.css) is untouched. */
+  .aperture-deck[data-aperture-timeline="true"] .aperture-stage-wrap {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+  .aperture-deck[data-aperture-timeline="true"] .aperture-renderer-badge { position: static; grid-area: 1 / 1 / 2 / 2; align-self: start; margin: 8px 0 6px 8px; }
+  .aperture-deck[data-aperture-timeline="true"] .aperture-stage-guide { position: static; grid-area: 1 / 2 / 2 / 3; align-self: start; justify-self: end; max-width: 100%; flex-wrap: wrap; row-gap: 4px; margin: 8px 8px 6px 6px; }
+  .aperture-deck[data-aperture-timeline="true"] .aperture-stage-guide span { line-height: 1.3; }
+  .aperture-deck[data-aperture-timeline="true"] .aperture-stage-guide-pointer { display: none; }
+  .aperture-deck[data-aperture-timeline="true"] .aperture-timeline { grid-area: 2 / 1 / 3 / 3; }
+  .aperture-deck[data-aperture-timeline="true"] .aperture-stage-legend { bottom: 42px; font-size: 8px; gap: 6px 10px; }
+  .aperture-time-add { min-width: 245px; }
+  .aperture-time-by button { padding: 0 7px; }
+  .aperture-time-tip { max-width: 220px; }
+}
+
+@media (max-width: 430px) {
+  .aperture-mode-button { font-size: 11px; padding-inline: 4px; }
+  .aperture-timeline { min-height: 480px; }
+  .aperture-time-lane-label { font-size: 11px; }
+  .aperture-deck[data-aperture-timeline="true"] .aperture-stage-legend span:nth-child(n + 6) { display: none; }
+}
+
+@media (max-width: 340px) {
+  .aperture-mode-button { font-size: 10px; padding-inline: 2px; letter-spacing: -.01em; }
+  .aperture-timeline { min-height: 510px; }
+  .aperture-time-year-chips button { min-width: 32px; padding: 0 4px; }
+  .aperture-deck[data-aperture-timeline="true"] .aperture-stage-legend span:nth-child(n + 4) { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aperture-time-mark, .aperture-time-column-segment, .aperture-time-tip { transition: none; }
+}
+
+@media print {
+  .aperture-deck[data-aperture-mode="timeline"] .aperture-stage { display: none !important; }
+  .aperture-deck[data-aperture-mode="timeline"] .aperture-timeline { display: grid !important; height: auto; min-height: 0; overflow: visible; }
+  .aperture-time-lanes { overflow: visible; max-height: none; }
+  .aperture-time-tip, .aperture-time-window-handle, .aperture-time-ov-handle { display: none !important; }
+  .aperture-time-axis, .aperture-time-overview { background: #fff; }
+  .aperture-time-labels-bg, .aperture-time-lane-bg, .aperture-time-lane-bg.is-alt, .aperture-time-lane-bg--strip, .aperture-time-lane-bg--block { fill: #fff; }
+  .aperture-time-lane-label, .aperture-time-axis-label, .aperture-time-ov-year, .aperture-time-block-text, .aperture-time-block-count, .aperture-time-aggregate text { fill: #000; }
+  .aperture-time-lane-meta, .aperture-time-axis-domain, .aperture-time-ov-label { fill: #333; }
+  .aperture-time-lane-rule, .aperture-time-grid { stroke: #ccc; }
+  .aperture-time-aggregate rect { fill: #fff; stroke: #333; }
+  .aperture-time-block-box { fill: #fff; stroke: #333; }
+}

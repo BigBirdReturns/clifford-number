@@ -25,8 +25,4 @@ assert.equal(report.current_result.final_full_stack_acceptance,'requires_additio
 assert.equal(report.current_result.meaningful_human_veto,'retained_candidate_only');
 assert.equal(report.current_result.complete_program_foreclosure,'bounded_non_link');
 assert.equal(report.current_result.common_private_governance,'bounded_non_link');
-const workflow=fs.readFileSync(path.join(root,'.github/workflows/m05-answerable-power.yml'),'utf8');
-assert.ok(workflow.includes('m05-answerable-power-sprint-02-leg-03.test.js'));
-assert.ok(workflow.includes('build-m05-answerable-power-sprint-02-leg-03.mjs'));
-assert.ok(workflow.includes('validate-m05-answerable-power-sprint-02-leg-03.mjs'));
 console.log('m05-answerable-power-sprint-02-leg-03.test: OK');

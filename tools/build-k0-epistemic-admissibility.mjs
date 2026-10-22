@@ -16,16 +16,6 @@ const sha256 = value => crypto.createHash('sha256').update(value).digest('hex');
 const stable = value => JSON.stringify(value, null, 2) + '\n';
 
 export const releaseScope = [
-  '.github/workflows/k0-epistemic-admissibility.yml',
-  '.github/workflows/k0-source-field-audit.yml',
-  '.github/workflows/k0-role-neutral-wave-01.yml',
-  '.github/workflows/k0-role-neutral-wave-02.yml',
-  '.github/workflows/k0-role-neutral-wave-03.yml',
-  '.github/workflows/k0-role-neutral-wave-04.yml',
-  '.github/workflows/k0-role-neutral-wave-05.yml',
-  '.github/workflows/k0-role-neutral-wave-06.yml',
-  '.github/workflows/k0-role-neutral-wave-07.yml',
-  '.github/workflows/k0-role-neutral-wave-08.yml',
   'data/intake/k0-epistemic-admissibility-source.txt',
   'data/intake/k0-ceiling-conversion-seed-events.json',
   'data/project/k0-epistemic-admissibility-methodology.json',

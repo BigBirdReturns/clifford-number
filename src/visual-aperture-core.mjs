@@ -67,6 +67,26 @@ export function periodBounds(value) {
   return null;
 }
 
+// UTC day index (days since 1970-01-01) for a ledger date string, widened by
+// precision exactly as periodBounds widens it: 'YYYY' → Jan 1 / Dec 31,
+// 'YYYY-MM' → first / last day of the month, 'YYYY-MM-DD' → that day. Empty or
+// unparseable values → null. The timeline model is the first consumer; it
+// deliberately shares periodBounds so Route, Roster and Timeline place the same
+// row on the same day.
+const DAY_MS = 86400000;
+
+export function dayIndex(value, end = false) {
+  const bounds = periodBounds(value);
+  if (!bounds) return null;
+  const [year, month, day] = (end ? bounds.end : bounds.start).split('-').map(Number);
+  return Math.floor(Date.UTC(year, month - 1, day) / DAY_MS);
+}
+
+export function isoFromDayIndex(index) {
+  if (!Number.isFinite(index)) return null;
+  return new Date(Math.round(index) * DAY_MS).toISOString().slice(0, 10);
+}
+
 function expandedStart(value) {
   return periodBounds(value)?.start ?? null;
 }

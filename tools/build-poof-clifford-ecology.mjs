@@ -18,7 +18,6 @@ export const outputRoot = 'reports/core-thesis/poof-clifford-ecology';
 export const manifestPath = 'data/project/poof-clifford-ecology-release-manifest.json';
 
 export const releaseScope = [
-  '.github/workflows/poof-clifford-ecology.yml',
   'CORE-THESIS.md',
   'docs/README.md',
   'data/project/core-thesis.json',
