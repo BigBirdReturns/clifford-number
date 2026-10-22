@@ -280,8 +280,16 @@ function bindEvents() {
 async function mount() {
   const root = document.getElementById(ROOT_ID);
   if (!root || root.dataset.apertureMounted === 'true') return;
-  const [_, surfaceGraph, hopGraph, receiptGraph, legacyGraph] = await Promise.all([
-    waitForPublicApp(),
+  // SPEC (g): app.js publishes the artifacts it already holds on
+  // globalThis.__cliffordPublicData just before #app-status gets is-ready.
+  // Wait for that BEFORE reading, so readData finds the handoff instead of
+  // racing it: when the aperture's script chain finishes first (a slow
+  // network, or a returning visitor whose scripts come from cache while
+  // app.js's JSON revalidates) an eager read would fetch all four files a
+  // second time. waitForPublicApp resolves on its own after 8 s, so a public
+  // app that never becomes ready still falls back to fetch.
+  await waitForPublicApp();
+  const [surfaceGraph, hopGraph, receiptGraph, legacyGraph] = await Promise.all([
     readData('build/surface-graph.json'),
     readData('build/hop-graph.json'),
     readData('build/receipt-graph.json').catch(() => ({ receipts: [] })),

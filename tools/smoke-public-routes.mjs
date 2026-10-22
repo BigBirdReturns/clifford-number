@@ -25,6 +25,20 @@ export const ROUTE_CASES = Object.freeze([
     timeline: Object.freeze({ min_marks: 48, blocks: 1, block_text: '112', no_webgl: true, single_fetch: true })
   }),
   Object.freeze({
+    id: 'timeline-default-slow-data',
+    route: 'explorer.html',
+    // Every JSON response is held for DELAYED_JSON_MS while the scripts arrive
+    // at full speed, so the aperture's 24-file chain finishes before app.js
+    // has its data. On a zero-latency server the handoff race never shows;
+    // here single_fetch fails unless the mount waits for app.js first.
+    network: Object.freeze({ delay_json_ms: 500 }),
+    expected: Object.freeze([
+      'Every mark is one ledger row.',
+      'names listed'
+    ]),
+    timeline: Object.freeze({ min_marks: 48, blocks: 1, block_text: '112', no_webgl: true, single_fetch: true })
+  }),
+  Object.freeze({
     id: 'timeline-shared-view',
     route: 'explorer.html?ap_v=1&ap_mode=timeline&ap_time_lanes=ben-warner,marc-warner,saul-klein&ap_time_from=2018-01-01&ap_time_to=2018-12-31&ap_time_sel=faculty-science-officer-employee-overlap-2018-01-24::actor::ben-warner',
     expected: Object.freeze([
@@ -165,7 +179,7 @@ function timelineAssertions(routeCase, viewport, metrics) {
   }
 }
 
-async function configureContext(browser, baseOrigin, viewport, timeoutMs, externalRequests) {
+async function configureContext(browser, baseOrigin, viewport, timeoutMs, externalRequests, network = {}) {
   const context = await browser.newContext({
     viewport: { width: viewport.width, height: viewport.height },
     reducedMotion: 'reduce',
@@ -174,9 +188,19 @@ async function configureContext(browser, baseOrigin, viewport, timeoutMs, extern
   });
   context.setDefaultTimeout(timeoutMs);
   context.setDefaultNavigationTimeout(timeoutMs);
+  const delayJsonMs = Number(network.delay_json_ms) || 0;
   await context.route('**/*', async (route) => {
     const requestUrl = new URL(route.request().url());
-    if (requestUrl.origin === baseOrigin) return route.continue();
+    if (requestUrl.origin === baseOrigin) {
+      if (delayJsonMs > 0 && /\.json$/.test(requestUrl.pathname)) {
+        // Serve the real body, late: the server answers now, the page sees it
+        // after the delay, so script order versus data order is inverted.
+        const response = await route.fetch();
+        await new Promise(resolve => setTimeout(resolve, delayJsonMs));
+        return route.fulfill({ response });
+      }
+      return route.continue();
+    }
     if (requestUrl.hostname === 'fonts.googleapis.com') {
       return route.fulfill({ status: 200, contentType: 'text/css; charset=utf-8', body: '' });
     }
@@ -208,7 +232,7 @@ export async function runSmoke(options) {
     for (const viewport of VIEWPORTS) {
       for (const routeCase of ROUTE_CASES) {
         const externalRequests = [];
-        const context = await configureContext(browser, baseOrigin, viewport, options.timeoutMs, externalRequests);
+        const context = await configureContext(browser, baseOrigin, viewport, options.timeoutMs, externalRequests, routeCase.network);
         const page = await context.newPage();
         const consoleErrors = [];
         const pageErrors = [];
@@ -299,6 +323,7 @@ export async function runSmoke(options) {
           id: routeCase.id,
           route: routeCase.route,
           viewport,
+          network: routeCase.network ?? null,
           expected: routeCase.expected,
           metrics,
           timeline: timeline ? { ...timeline, resources: timeline.resources.length, resource_list: timeline.resources } : null,
@@ -371,6 +396,8 @@ async function main() {
   }
   const report = await runSmoke(options);
   const arrival = report.cases.find(item => item.id === 'timeline-default' && item.viewport.name === 'desktop');
+  const slowData = report.cases.find(item => item.id === 'timeline-default-slow-data' && item.viewport.name === 'desktop');
+  const jsonRequests = item => item?.timeline ? item.timeline.resource_list.filter(entry => /\.json$/.test(entry.name)).length : null;
   console.log(JSON.stringify({
     schema: report.schema,
     browser: report.browser,
@@ -381,7 +408,15 @@ async function main() {
       columns: arrival.timeline.columns,
       blocks: arrival.timeline.blocks.length,
       requests: arrival.timeline.resources + 1,
+      json_requests: jsonRequests(arrival),
       bytes: arrival.timeline.document_bytes + arrival.timeline.resource_bytes
+    } : null,
+    // The same arrival with every JSON response held back: the JSON request
+    // count must match the fast arrival, or the aperture re-fetched.
+    timeline_slow_data: slowData?.timeline ? {
+      delay_json_ms: slowData.network?.delay_json_ms ?? null,
+      requests: slowData.timeline.resources + 1,
+      json_requests: jsonRequests(slowData)
     } : null,
     status: 'PASS'
   }));

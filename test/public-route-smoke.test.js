@@ -4,6 +4,7 @@ import { ROUTE_CASES, VIEWPORTS, WEBGL_PATH_PATTERN, normalizeBaseUrl, parseArgs
 assert.deepEqual(VIEWPORTS.map(({ width, height }) => `${width},${height}`), ['1440,1000', '390,844', '320,568']);
 assert.deepEqual(ROUTE_CASES.map(({ route }) => route), [
   'explorer.html',
+  'explorer.html',
   'explorer.html?ap_v=1&ap_mode=timeline&ap_time_lanes=ben-warner,marc-warner,saul-klein&ap_time_from=2018-01-01&ap_time_to=2018-12-31&ap_time_sel=faculty-science-officer-employee-overlap-2018-01-24::actor::ben-warner',
   'explorer.html#desk/keir-starmer/matt-clifford/2025',
   'explorer.html#desk/demet-mutlu/matt-clifford',
@@ -14,11 +15,17 @@ for (const routeCase of ROUTE_CASES) {
   assert.equal(routeCase.expected.length, 2, `${routeCase.id} must retain both semantic assertions`);
 }
 const timelineCases = ROUTE_CASES.filter(routeCase => routeCase.timeline);
-assert.deepEqual(timelineCases.map(routeCase => routeCase.id), ['timeline-default', 'timeline-shared-view']);
+assert.deepEqual(timelineCases.map(routeCase => routeCase.id), ['timeline-default', 'timeline-default-slow-data', 'timeline-shared-view']);
 assert.equal(timelineCases[0].timeline.min_marks, 48, 'the phone default domain draws 48 marks plus the roster block');
 assert.equal(timelineCases[0].timeline.blocks, 1);
 assert.equal(timelineCases[0].timeline.block_text, '112');
-assert.equal(timelineCases[1].timeline.selected, 'faculty-science-officer-employee-overlap-2018-01-24::actor::ben-warner');
+assert.equal(timelineCases[0].network, undefined, 'the fast arrival runs against the server as served');
+// SPEC (g) under the race it was reviewed for: every JSON answer is held back so
+// the aperture's script chain beats app.js; single_fetch then only passes when
+// the mount waits for the handoff instead of reading eagerly.
+assert.deepEqual(timelineCases[1].network, { delay_json_ms: 500 });
+assert.deepEqual(timelineCases[1].timeline, timelineCases[0].timeline, 'the slow-data arrival asserts exactly what the fast one does');
+assert.equal(timelineCases[2].timeline.selected, 'faculty-science-officer-employee-overlap-2018-01-24::actor::ben-warner');
 assert.ok(timelineCases.every(routeCase => routeCase.timeline.no_webgl && routeCase.timeline.single_fetch), 'arrival never loads the WebGL path or fetches a JSON twice');
 assert.equal(WEBGL_PATH_PATTERN.test('/src/atlas-webgl.js'), true);
 assert.equal(WEBGL_PATH_PATTERN.test('/vendor/three.core.js'), true);
@@ -45,6 +52,11 @@ assert.match(smokeSource, /ROUTE_CASES\.find\(routeCase => routeCase\.route\.inc
 assert.equal(ROUTE_CASES.find(routeCase => routeCase.route.includes('#')).id, 'dated-connection');
 assert.match(smokeSource, /#aperture-timeline \[data-ap-time-mark\]/);
 assert.match(smokeSource, /\[data-ap-mode="timeline"\]\.is-active/);
+assert.match(smokeSource, /delay_json_ms/);
+assert.match(smokeSource, /const response = await route\.fetch\(\);[\s\S]*?setTimeout\(resolve, delayJsonMs\)[\s\S]*?route\.fulfill\(\{ response \}\)/, 'delayed JSON is the real body served late, not a stub');
+assert.match(smokeSource, /configureContext\(browser, baseOrigin, viewport, options\.timeoutMs, externalRequests, routeCase\.network\)/, 'each case carries its own network shaping');
+const part11Source = fs.readFileSync('src/visual-aperture-part-11.js', 'utf8');
+assert.match(part11Source, /await waitForPublicApp\(\);\s*\n\s*const \[surfaceGraph, hopGraph, receiptGraph, legacyGraph\] = await Promise\.all\(\[\s*\n\s*readData\('build\/surface-graph\.json'\)/, 'the mount waits for the app.js handoff before it reads any artifact');
 assert.match(explorerSource, /<h1 id="desk-title"/);
 assert.doesNotMatch(explorerSource, /<h3 id="desk-title"/);
 assert.match(appSource, /function entityHeading[\s\S]*?<h1>\$\{esc\(label\)\}<\/h1>/);
