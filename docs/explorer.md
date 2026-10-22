@@ -78,17 +78,15 @@ The second tab of the lower explorer ("Check a connection before it prints") tak
 
 ## The entity pages
 
-Searching, or following any name, opens a record page under a hash route: `#actor/<id>`, `#organization/<id>`, `#surface/<id>`, `#chain/<id>`. The pages are being rewritten (Workstream E of the 22 October 2026 specification) to be fed from the same derived model as the Timeline. The contract for the rewritten pages:
+Searching, or following any name, opens a record page under a hash route: `#actor/<id>`, `#organization/<id>`, `#surface/<id>`, `#chain/<id>`, and from 2.1.0 also `#type/<surface_type>` and `#year/<yyyy>`. The pages are fed from the same derived model as the Timeline, so a row on a page and a mark on the timeline are the same ledger row. Every page shows:
 
-- fact chips with their denominators;
-- a date-sorted ledger table (row number, date or window with precision, surface, role, organizations, evidence class, receipts) with a status line that is never silent;
-- "Patterns in the rows": surface-type counts, organization counts, hop partners with the day of their shared surface, then counted co-presence with dense surfaces excluded;
-- type and year routes within the page; the Dialog roster sorted by "Also documented on";
-- a single-lane mini timeline above each ledger table and an "Open in the timeline" button;
-- "Copy ledger as text"; a machine-derived profile, where one is shown, labelled as such;
-- no "Structural context index" and no "Factory Score".
+- fact chips with their denominators ("10 documented surfaces of 54", "across 6 surface types", "with 8 organizations", first and last dated day);
+- a date-sorted ledger table (row number, date or window with precision, surface, role, organizations, evidence class, receipts) with a status line that is never silent: it says how many rows are shown of how many, and what any filter hid;
+- "Patterns in the rows": surface-type counts, organization counts, hop partners with the day of their shared surface (each opens the connection checker with both names), then counted co-presence with dense surfaces excluded and labelled;
+- a single-lane mini timeline above the ledger table and an "Open in the timeline" button that opens the Timeline tab on that person, organization or surface;
+- "Copy ledger as text"; a machine-derived profile, where no hand-written one exists, labelled as such.
 
-Until that work lands, the pages are the 1.3.0 record pages. They read the same compiled artifacts as the aperture, but they do not yet obey the display rules above: an actor page shows a Clifford Number, a documented-surface count, a "Structural context index" and a list of bounded-surface cards rather than a row-by-row ledger, and an organization page shows a "Factory Score". The rules apply to the pages once the rewrite lands.
+A surface page adds the surface's window with precision, every participant with their own window and role, the evidence-class mix, hop eligibility and the ledger's refusal reason; the Dialog surface page lists its roster sorted by "Also documented on". Nothing on a page is a score: the "Structural context index" and "Factory Score" of 1.3.0 are gone.
 
 ## What the page is not
 
