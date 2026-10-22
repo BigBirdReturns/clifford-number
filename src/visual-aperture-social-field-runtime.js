@@ -426,9 +426,12 @@ function fieldFactGrid(node, summary) {
   const first = api?.dayIso?.(summary.first_day) ?? '';
   const last = api?.dayIso?.(summary.last_day) ?? '';
   const isSurface = String(node.id).startsWith('surface-');
+  // The same count, the same noun, as the node's tooltip (nodeCountLabel).
+  const count = isSurface ? summary.rows.length : summary.surface_count;
+  const countNoun = isSurface ? 'documented participant' : 'documented surface';
   return `<div class="aperture-metric-grid">
-    <div><strong>${isSurface ? summary.rows.length : summary.surface_count}</strong><span>${isSurface ? 'documented participants' : 'documented surfaces'}</span></div>
-    <div><strong>${summary.rows.length}</strong><span>participation rows</span></div>
+    <div><strong>${count}</strong><span>${countNoun}${count === 1 ? '' : 's'}</span></div>
+    <div><strong>${summary.rows.length}</strong><span>participation row${summary.rows.length === 1 ? '' : 's'}</span></div>
     <div><strong>${esc(first)}</strong><span>first documented day</span></div>
     <div><strong>${esc(last)}</strong><span>${summary.open_ended ? 'latest documented day · no end recorded' : 'last documented day'}</span></div>
   </div>

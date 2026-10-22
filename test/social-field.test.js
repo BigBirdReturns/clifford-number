@@ -446,6 +446,15 @@ assert.equal(unresolvedClaims.length, 0, `every arc without a participation row 
 assert.equal(context.selectFieldLink(rowlessTopology[0]), true);
 assert.match(inspector.html, /Documented topology edge · undated · not a hop/);
 
+// The inspector's fact grid names the same count with the same noun as the tooltip.
+const factGrid = id => context.fieldFactGrid(realField.nodeById.get(id), nodeLedgerSummary(realLedger, id));
+assert.match(factGrid('joe-lonsdale'), /<strong>1<\/strong><span>documented surface<\/span>/);
+assert.match(factGrid('joe-lonsdale'), /<strong>1<\/strong><span>participation row<\/span>/);
+assert.match(factGrid('matt-clifford'), /<strong>9<\/strong><span>documented surfaces<\/span>/);
+assert.match(factGrid('ben-warner'), /<strong>10<\/strong><span>documented surfaces<\/span>/);
+assert.match(factGrid('surface-dialog-public-directory-exposure-2026-06-16'), /<strong>113<\/strong><span>documented participants<\/span>/);
+assert.equal(factGrid('matt-clifford').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').includes(nodeCountLabel(realField.nodeById.get('matt-clifford'))), true, 'the fact grid contains the tooltip label verbatim');
+
 const rowsMarkup = context.fieldRowsMarkup('ben-warner');
 assert.match(rowsMarkup, /10 rows · all time/);
 assert.equal((rowsMarkup.match(/not drawn on the field \(privacy guard\)/g) ?? []).length, 2, 'the guarded row is labelled on the row and counted in the header');
