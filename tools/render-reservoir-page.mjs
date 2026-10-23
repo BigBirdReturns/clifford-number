@@ -207,7 +207,9 @@ main { margin-top: 24px; gap: 24px; grid-template-columns: minmax(0, 5fr) minmax
 .row { padding: 15px 14px; }
 .row .q { font-weight: 600; line-height: 1.55; }
 .row[aria-current="true"] { box-shadow: inset 3px 0 var(--accent); }
-#detail { border-radius: 10px; padding: clamp(18px, 2vw, 28px); scroll-margin-top: 16px; top: 16px; max-height: calc(100dvh - 32px); }
+#detail { grid-template-columns: minmax(0, 1fr); overflow-wrap: anywhere; border-radius: 10px; padding: clamp(18px, 2vw, 28px); scroll-margin-top: 16px; top: 16px; max-height: calc(100dvh - 32px); }
+#detail > *, .block, .ex { min-width: 0; }
+.block, .ex { grid-template-columns: minmax(0, 1fr); }
 #detail:focus, #register:focus { outline: none; }
 .detail-tools { display: flex; justify-content: space-between; align-items: center; gap: 10px; border-bottom: 1px solid var(--line); padding-bottom: 14px; }
 .detail-tools a { font-size: 13px; }

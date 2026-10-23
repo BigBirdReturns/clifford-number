@@ -19,7 +19,10 @@ try {
     const page = await context.newPage();
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
-    const noOverflow = async () => assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, 'page must fit viewport');
+    const noOverflow = async () => {
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, 'page must fit viewport');
+      assert.equal(await page.locator('#detail').evaluate(el => el.scrollWidth > el.clientWidth + 1), false, 'inquiry content must fit its panel');
+    };
     await page.goto(url, { waitUntil: 'networkidle' });
     await page.locator('#q').waitFor();
     assert.equal(await page.evaluate(() => scrollY), 0, 'arrival must not jump into a record');
