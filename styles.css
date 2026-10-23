@@ -178,6 +178,13 @@ img, svg { display: block; max-width: 100%; }
   text-transform: uppercase;
 }
 .topbar-actions { display: flex; align-items: center; gap: 22px; }
+.mobile-site-nav { display: none; }
+@media (max-width: 1100px) {
+  .topbar-actions > a, .topbar-actions .release-status { display: none; }
+  .mobile-site-nav { display: flex; align-items: center; gap: 6px; overflow-x: auto; padding-block: 8px; border-bottom: 1px solid var(--line); scrollbar-width: thin; }
+  .mobile-site-nav a { display: inline-flex; align-items: center; flex-shrink: 0; min-height: 44px; padding: 8px 12px; color: var(--ink); border: 1px solid var(--line); border-radius: 6px; font-size: 13px; text-decoration: none; white-space: nowrap; }
+  .mobile-site-nav a:hover { background: var(--paper-raised, var(--paper)); border-color: var(--ink); }
+}
 .topbar-actions > a {
   color: rgba(255,248,233,.78);
   font-family: var(--font-condensed);

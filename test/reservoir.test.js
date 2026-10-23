@@ -31,6 +31,25 @@ const compiled = fs.readFileSync('build/reservoir/inquiries.compiled.jsonl', 'ut
 assert.equal(compiled.length, first.manifest.counts.total_inquiries);
 assert.equal(first.manifest.counts.total_inquiries, first.manifest.counts.canonical_inquiries + first.manifest.counts.retrospective_inquiries + first.manifest.counts.main_derived_inquiries + first.manifest.counts.view_inquiries);
 
+// Active locators must survive branch pruning, including nested explanation
+// evidence. Historical branch names in source prose remain verbatim.
+const releasePaths = new Set();
+function checkLocatorRefs(value) {
+  if (!value || typeof value !== 'object') return;
+  if (value.kind === 'git_path') {
+    assert.notEqual(value.ref, 'audit/clifford-operating-cut-20261012', 'active locator targets a deleted branch');
+    if (value.ref === 'v2.1.0' && (!value.repo || value.repo === 'BigBirdReturns/clifford-number')) releasePaths.add(value.path.replace(/\/$/u, ''));
+  }
+  Object.values(value).forEach(checkLocatorRefs);
+}
+checkLocatorRefs(compiled);
+assert.ok(releasePaths.size > 0);
+const objectChecks = execFileSync('git', ['cat-file', '--batch-check'], {
+  input: [...releasePaths].map(p => `v2.1.0:${p}`).join('\n') + '\n', encoding: 'utf8'
+}).trim().split('\n');
+assert.equal(objectChecks.length, releasePaths.size);
+assert.ok(objectChecks.every(line => /^[0-9a-f]{40} (blob|tree) \d+$/u.test(line)), 'release locators resolve to existing files or directories');
+
 // 2. The retrospective's 79 tiered trails circulate in, with provenance, and
 //    its ratings stay attributed judgments: no disposition, no review chore,
 //    no headline posing as the original prompt.

@@ -153,6 +153,21 @@ inquiry that relates to it, or correct the source record.
 
 ## Opening an inquiry
 
+The generated `build/reservoir/index.html` opens at search. Press `/` to focus
+search, filter by status, origin, collection or shared source hub, and use
+**Clear filters** to return to the full register. Opening an inquiry adds its
+ID to the URL; **Copy link** preserves the inquiry and current filters.
+Browser Back and Forward restore those views. **Back to results** returns
+keyboard focus to the selected row. The light/dark choice persists locally.
+
+The page remains a local research interface, outside the Pages publication
+allowlist. To check its real browser behavior after building and serving it,
+run `node tools/smoke-reservoir.mjs --url <local-reservoir-url>`; use `--chrome`
+for a system Chromium browser and `--output-dir` for screenshots and results.
+The smoke exercises desktop and phone layouts, search, filters, links,
+history and themes. With the local server, it also checks unsaved result
+drafts; it never submits a result.
+
 ```bash
 node tools/reservoir-open.mjs inq-desktop-relay-slowdown-2026-10-12
 node tools/reservoir-open.mjs retro-2026-10-12:23:arcadia-california-testing-a-chatbots-master-plan-against-records --json
