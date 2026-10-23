@@ -167,7 +167,7 @@ export function writeApertureState(snapshot, input = '') {
   const params = parameters(input);
   for (const key of APERTURE_QUERY_KEYS) params.delete(key);
 
-  const mode = enumValue(snapshot?.mode, MODES, 'timeline');
+  const mode = enumValue(snapshot?.mode, MODES, 'map');
   const overview = snapshot?.overview ?? {};
   const map = snapshot?.map ?? {};
   const route = snapshot?.route ?? {};

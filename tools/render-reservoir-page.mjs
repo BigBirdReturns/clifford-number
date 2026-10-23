@@ -60,24 +60,24 @@ const html = `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="v
 try { var saved = JSON.parse(localStorage.getItem('clifford-preferences') || '{}'); if (saved.theme === 'light' || saved.theme === 'dark') document.documentElement.dataset.theme = saved.theme; } catch (e) {}
 </script>
 <style>
-/* Layout: a header strip of counts and what moved, then two columns: the register of inquiries on the left (entry by search, hub, state, origin) and one opened inquiry on the right. Stacks on a phone. Shared typography and blue controls connect the public explorer and local inquiry workspace; status retains its semantic colour. */
+/* Layout: a header strip of counts and what moved, then two columns: the register of inquiries on the left (entry by search, hub, state, origin) and one opened inquiry on the right. Stacks on a phone. Shared typography and neutral controls connect the public explorer and local inquiry workspace; status retains its semantic colour. */
 :root {
-  --bg: #f6f8fa; --surface: #ffffff; --ink: #1f2937; --muted: #626e7e; --line: #dce1e7;
-  --accent: #2458a6; --accent-soft: #edf3fb;
+  --bg: #f5f5f4; --surface: #ffffff; --ink: #1f2937; --muted: #626e7e; --line: #dce1e7;
+  --accent: #34383e; --accent-soft: #eeefef;
   --held: #5f6965; --held-bg: #e9edeb;
   --open: #1d5aa0; --open-bg: #e4edf8;
   --narrowed: #8a5f00; --narrowed-bg: #f6eed9;
   --answered: #1c7340; --answered-bg: #e3f2e8;
   --disproved: #ad2a20; --disproved-bg: #f9e5e2;
   --human: #6b2d8f; --human-bg: #efe4f6;
-  --font-display: "Segoe UI", -apple-system, BlinkMacSystemFont, Arial, sans-serif;
-  --font-body: "Segoe UI", -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+  --font-display: Arial, Helvetica, sans-serif;
+  --font-body: Arial, Helvetica, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #101722; --surface: #192334; --ink: #e5ebf3; --muted: #9caabd; --line: #344156;
-    --accent: #98bffa; --accent-soft: #26364c;
+    --bg: #161719; --surface: #232528; --ink: #ededee; --muted: #9caabd; --line: #37393e;
+    --accent: #d2d8e0; --accent-soft: #2e3035;
     --held: #a2ada8; --held-bg: #1d2523; --open: #82b3ee; --open-bg: #142235;
     --narrowed: #e2b24d; --narrowed-bg: #2b2210; --answered: #63c98a; --answered-bg: #13281b;
     --disproved: #f08a80; --disproved-bg: #321715; --human: #c79be0; --human-bg: #2a1b33;
@@ -85,8 +85,8 @@ try { var saved = JSON.parse(localStorage.getItem('clifford-preferences') || '{}
   }
 }
 :root[data-theme="dark"] {
-  --bg: #101722; --surface: #192334; --ink: #e5ebf3; --muted: #9caabd; --line: #344156;
-  --accent: #98bffa; --accent-soft: #26364c;
+  --bg: #161719; --surface: #232528; --ink: #ededee; --muted: #9caabd; --line: #37393e;
+  --accent: #d2d8e0; --accent-soft: #2e3035;
   --held: #a2ada8; --held-bg: #1d2523; --open: #82b3ee; --open-bg: #142235;
   --narrowed: #e2b24d; --narrowed-bg: #2b2210; --answered: #63c98a; --answered-bg: #13281b;
   --disproved: #f08a80; --disproved-bg: #321715; --human: #c79be0; --human-bg: #2a1b33;

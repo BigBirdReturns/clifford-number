@@ -10,7 +10,7 @@ const state = {
   surfaces: new Map(),
   receipts: new Map(),
   legacyNodes: new Map(),
-  mode: 'timeline',
+  mode: 'map',
   sheetOpen: false,
   visibilityObserver: null,
   webgl: { renderer: null, model: null, events: null, eventApi: null, failed: false, rendered: false, cameraOwnsScale: false, lastFocusKey: null },
@@ -28,7 +28,7 @@ const state = {
   },
   selectedActorId: null,
   selectedSurfaceId: null,
-  // Ledger timeline (arrival mode). The window [from, to] is the shared cursor
+  // Ledger timeline (alternate view). The window [from, to] is the shared cursor
   // (SPEC fix e); model, layout and indexes are filled by part-2 and the timeline runtime.
   timeline: {
     by: 'actor',

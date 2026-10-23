@@ -136,7 +136,7 @@ const defaultParams = writeApertureState({ mode: 'timeline', timeline: timelineD
 for (const key of APERTURE_TIMELINE_QUERY_KEYS) assert.equal(defaultParams.has(key), false, `${key} must be omitted at its default`);
 assert.equal(defaultParams.get('ap_mode'), 'timeline');
 assert.deepEqual(readApertureState(defaultParams).timeline, timelineDefaults, 'a default timeline view reads back as its defaults');
-assert.equal(writeApertureState({}).get('ap_mode'), 'timeline', 'timeline is the fallback mode');
+assert.equal(writeApertureState({}).get('ap_mode'), 'map', 'the network is the fallback mode');
 for (const key of APERTURE_QUERY_KEYS.filter(item => !APERTURE_TIMELINE_QUERY_KEYS.includes(item))) assert.ok(defaultParams.has(key), `${key} keeps its always-serialized contract`);
 assert.equal(APERTURE_QUERY_KEYS.length, 32);
 

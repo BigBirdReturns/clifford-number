@@ -1,14 +1,14 @@
 function shellMarkup() {
   return `
     <div class="aperture-header">
-      <div><h2 id="network-title">Documented activity</h2><p>Select a mark to see its role, date and sources. Shared context does not establish coordination.</p></div>
+      <div><h2 id="network-title">Network explorer</h2><p>Explore the web of people, organizations and documented connections.</p></div>
       <details class="aperture-release"><summary>Dataset</summary><div class="aperture-live" aria-live="polite"><strong id="aperture-data-status">Compiled release</strong><span id="aperture-data-meta">Loading…</span></div></details>
     </div>
 
     <div class="aperture-commandbar">
       <div class="aperture-mode-switch" role="tablist" aria-label="Choose operating mode">
-        <button type="button" role="tab" class="aperture-mode-button is-active" data-ap-mode="timeline" aria-selected="true">Timeline</button>
-        <button type="button" role="tab" class="aperture-mode-button" data-ap-mode="map" aria-selected="false" tabindex="-1">Network</button>
+        <button type="button" role="tab" class="aperture-mode-button is-active" data-ap-mode="map" aria-selected="true">Network</button>
+        <button type="button" role="tab" class="aperture-mode-button" data-ap-mode="timeline" aria-selected="false" tabindex="-1">Timeline</button>
         <button type="button" role="tab" class="aperture-mode-button" data-ap-mode="route" aria-selected="false" tabindex="-1">Route</button>
         <button type="button" role="tab" class="aperture-mode-button" data-ap-mode="surface" aria-selected="false" tabindex="-1">Roster</button>
       </div>
@@ -26,7 +26,7 @@ function shellMarkup() {
     <div class="aperture-layout">
       <div class="aperture-stage-wrap">
         <div class="aperture-stage-guide" aria-hidden="true"><strong>Explore</strong><span>rotate background &middot; wheel = depth &middot; click = focus</span></div>
-        <div id="aperture-webgl" class="aperture-webgl" role="img" aria-label="Spherical social field. Node size and halo show the documented surface count for each object; arcs are sourced graph edges coloured by evidence class." hidden></div>
+        <div id="aperture-webgl" class="aperture-webgl" role="group" aria-label="Spherical social field. Node size and halo show the documented surface count for each object; arcs are sourced graph edges coloured by evidence class." hidden></div>
         <div id="aperture-timeline" class="aperture-timeline" aria-label="Ledger timeline: one mark per documented participation row" hidden></div>
         <svg id="aperture-stage" class="aperture-stage" viewBox="0 0 1200 720" role="img" aria-labelledby="aperture-stage-title aperture-stage-desc">
           <title id="aperture-stage-title">Clifford Number operating map</title>

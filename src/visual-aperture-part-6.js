@@ -36,7 +36,9 @@ function renderMapMode() {
   const fieldInspectorShown = state.map.level === 'machine' && state.map.selectedFieldNodeId
     ? inspectApertureFieldNode(state.map.selectedFieldNodeId, { select: false })
     : false;
-  if (!fieldInspectorShown) setInspector(state.map.level === 'corpus' ? cluster.label : state.map.level === 'machine' ? group?.label || cluster.label : state.map.selectedActorId ? actorLabel(state.map.selectedActorId) : surface.surface_label, mapInspector(cluster, group, surface));
+  if (state.map.level === 'corpus' && !state.map.hasExplicitFocus) {
+    setInspector('Explore the network', `<div class="network-welcome"><p class="aperture-kicker">Start exploring</p><h3>Follow a connection.</h3><p>Choose a name or click a node. Its connections and sources will appear here.</p><div class="network-starts">${['matt-clifford', 'ben-warner', 'electric-twin'].filter(id => state.legacyNodes.has(id)).map(id => `<button type="button" data-ap-action="network-start" data-node-id="${esc(id)}">${esc(state.legacyNodes.get(id).label)}<span aria-hidden="true">↗</span></button>`).join('')}</div><dl class="network-guide"><div><dt>Drag the background</dt><dd>Rotate the web</dd></div><div><dt>Scroll over the web</dt><dd>Zoom into a neighborhood</dd></div><div><dt>Select a connection</dt><dd>Read what its source supports</dd></div></dl><p class="network-note">A shared surface records co-presence. It does not establish coordination.</p></div>`);
+  } else if (!fieldInspectorShown) setInspector(state.map.level === 'corpus' ? cluster.label : state.map.level === 'machine' ? group?.label || cluster.label : state.map.selectedActorId ? actorLabel(state.map.selectedActorId) : surface.surface_label, mapInspector(cluster, group, surface));
   renderMapOverview(cluster, group, surface);
 }
 

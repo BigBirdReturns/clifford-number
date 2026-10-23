@@ -8,14 +8,22 @@ export const VIEWPORTS = Object.freeze([
   Object.freeze({ name: 'narrow', width: 320, height: 568 })
 ]);
 
-// Files the ledger timeline must never pull on arrival: the GPU field is loaded
-// only when the Network tab is chosen.
+// An explicitly requested Timeline view must not load the GPU network.
 export const WEBGL_PATH_PATTERN = /atlas-webgl\.js|social-field\.js|\/vendor\//;
 
 export const ROUTE_CASES = Object.freeze([
   Object.freeze({
+    id: 'network-default', route: 'explorer.html',
+    expected: Object.freeze(['Follow a connection.', 'Find in network']), field: true
+  }),
+  Object.freeze({
+    id: 'network-slow-renderer', route: 'explorer.html',
+    expected: Object.freeze(['Follow a connection.', 'Find in network']), field: true,
+    network: Object.freeze({ delay_field_ms: 500 })
+  }),
+  Object.freeze({
     id: 'timeline-default',
-    route: 'explorer.html',
+    route: 'explorer.html?ap_v=1&ap_mode=timeline',
     // The arrival card and the roster block read the same at every width; lane
     // labels are truncated at phone widths, so they are not text anchors here.
     expected: Object.freeze([
@@ -26,7 +34,7 @@ export const ROUTE_CASES = Object.freeze([
   }),
   Object.freeze({
     id: 'timeline-default-slow-data',
-    route: 'explorer.html',
+    route: 'explorer.html?ap_v=1&ap_mode=timeline',
     // Every JSON response is held for DELAYED_JSON_MS while the scripts arrive
     // at full speed, so the aperture's 24-file chain finishes before app.js
     // has its data. On a zero-latency server the handoff race never shows;
@@ -232,11 +240,11 @@ async function configureContext(browser, baseOrigin, viewport, timeoutMs, extern
   await context.route('**/*', async (route) => {
     const requestUrl = new URL(route.request().url());
     if (requestUrl.origin === baseOrigin) {
-      if (delayJsonMs > 0 && /\.json$/.test(requestUrl.pathname)) {
+      if ((delayJsonMs > 0 && /\.json$/.test(requestUrl.pathname)) || (network.delay_field_ms && /atlas-webgl|3d-force-graph/.test(requestUrl.pathname))) {
         // Serve the real body, late: the server answers now, the page sees it
         // after the delay, so script order versus data order is inverted.
         const response = await route.fetch();
-        await new Promise(resolve => setTimeout(resolve, delayJsonMs));
+        await new Promise(resolve => setTimeout(resolve, delayJsonMs || network.delay_field_ms));
         return route.fulfill({ response });
       }
       return route.continue();
@@ -254,7 +262,7 @@ export async function runSmoke(options) {
   const { chromium } = await import('playwright');
   const launchOptions = {
     headless: true,
-    args: ['--no-sandbox', '--disable-dev-shm-usage', '--disable-gpu']
+    args: ['--no-sandbox', '--disable-dev-shm-usage', '--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader']
   };
   if (options.chrome) launchOptions.executablePath = options.chrome;
   const browser = await chromium.launch(launchOptions);
@@ -289,6 +297,17 @@ export async function runSmoke(options) {
           { timeout: options.timeoutMs }
         );
         for (const expected of routeCase.expected) await waitForText(page, expected, options.timeoutMs);
+        let field = null;
+        if (routeCase.field) {
+          await page.waitForFunction(() => Number(document.querySelector('#aperture-webgl')?.dataset.networkNodes) >= 300, null, { timeout: options.timeoutMs });
+          field = await page.evaluate(() => {
+            const host = document.querySelector('#aperture-webgl');
+            const labels = [...host.querySelectorAll('[data-network-node]')].map(node => node.textContent);
+            return { nodes: Number(host.dataset.networkNodes), links: Number(host.dataset.networkLinks), canvases: host.querySelectorAll('canvas').length, labels, top: host.getBoundingClientRect().top, active: document.querySelector('[data-ap-mode="map"]')?.getAttribute('aria-selected') === 'true' };
+          });
+          if (!field.active || field.canvases !== 1 || field.links < 300 || !field.labels.length) throw new Error(`Network missing or empty: ${JSON.stringify(field)}`);
+          if (viewport.name === 'desktop' && field.top > 400) throw new Error('Network is buried below the first screen');
+        }
         let timeline = null;
         if (routeCase.timeline) {
           await page.waitForFunction(
@@ -379,6 +398,7 @@ export async function runSmoke(options) {
           network: routeCase.network ?? null,
           expected: routeCase.expected,
           metrics,
+          field,
           timeline: timeline ? { ...timeline, resources: timeline.resources.length, resource_list: timeline.resources } : null,
           focused,
           console_errors: consoleErrors,
@@ -401,6 +421,14 @@ export async function runSmoke(options) {
       { timeout: options.timeoutMs }
     );
     await waitForText(page, 'Explore the public record', options.timeoutMs);
+    await page.waitForFunction(() => Number(document.querySelector('#aperture-webgl')?.dataset.networkNodes) >= 300, null, { timeout: options.timeoutMs });
+    await page.locator('[data-network-node="ben-warner"]').press('Enter');
+    await page.waitForFunction(() => document.querySelector('#aperture-breadcrumbs')?.textContent.includes('Dr. Ben Warner'), null, { timeout: options.timeoutMs });
+    await page.locator('#aperture-inspector [data-open-receipt]').first().click();
+    await page.waitForFunction(() => document.querySelector('#evidence-dialog')?.open === true, null, { timeout: options.timeoutMs });
+    await page.locator('#evidence-dialog-close').click();
+    await page.locator('[data-ap-action="reset-map"]').click();
+    await page.locator('[data-ap-mode="timeline"]').click();
     await page.locator('#ap-time-year').selectOption('all');
     await page.waitForFunction(() => document.querySelector('#aperture-breadcrumbs')?.textContent.includes('2016-'), null, { timeout: options.timeoutMs });
     await page.locator('#ap-time-year').selectOption('2024');
@@ -426,6 +454,7 @@ export async function runSmoke(options) {
     report.navigation = {
       route: navigationCase.route,
       back_forward: 'PASS',
+      network_name_receipt_and_reset: 'PASS',
       date_range_and_mark_selection: 'PASS',
       final_url: page.url(),
       external_requests: navigationExternalRequests

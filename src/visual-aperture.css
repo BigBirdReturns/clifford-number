@@ -1,10 +1,10 @@
-@import url("./visual-aperture-layout.css?v=20261022-workspace1");
-@import url("./visual-aperture-svg.css?v=20261022-workspace1");
-@import url("./visual-aperture-responsive.css?v=20261022-workspace1");
-@import url("./visual-aperture-workspace.css?v=20261022-workspace1");
-@import url("./visual-aperture-export.css?v=20261022-workspace1");
-@import url("./visual-aperture-bounded.css?v=20261022-workspace1");
-@import url("./visual-aperture-timeline.css?v=20261022-workspace1");
+@import url("./visual-aperture-layout.css?v=20261023-network1");
+@import url("./visual-aperture-svg.css?v=20261023-network1");
+@import url("./visual-aperture-responsive.css?v=20261023-network1");
+@import url("./visual-aperture-workspace.css?v=20261023-network1");
+@import url("./visual-aperture-export.css?v=20261023-network1");
+@import url("./visual-aperture-bounded.css?v=20261023-network1");
+@import url("./visual-aperture-timeline.css?v=20261023-network1");
 
 .aperture-timeline { height: 530px; }
 .aperture-date-range { display: flex; align-items: center; gap: 8px; flex: 0 1 auto; min-width: 0; max-width: 250px; }
@@ -57,3 +57,78 @@
   .aperture-inspector h3 { font-size: 20px; }
   .aperture-overview-heading h3 { font-size: 17px; }
 }
+
+/* The network stays dark in either surrounding theme. */
+.network-atlas.aperture-deck { margin-top: 16px; }
+.aperture-header { padding: 10px 16px; }
+.aperture-header h2 { font-size: 14px; font-weight: 500; }
+.aperture-header p { display: none; }
+.aperture-mode-button { color: var(--ap-muted); font-size: 13px; }
+.aperture-mode-button.is-active { color: var(--ap-text); border-color: var(--ap-text); font-weight: 600; }
+.aperture-control input, .aperture-control select { min-height: 36px; height: 36px; padding: 8px 10px; font-size: 13px; }
+.aperture-control input[type="range"] { padding: 0; }
+.aperture-control > span strong { color: var(--ap-text); font-weight: 500; }
+.aperture-breadcrumbs, .aperture-stats span, .aperture-stats strong { font: 12px/1.5 var(--font-condensed); }
+.aperture-telemetry { min-height: 32px; padding: 6px 16px; }
+.aperture-metric-grid strong { color: var(--ap-text); font-size: 20px; font-weight: 500; }
+.aperture-metric-grid span { font: 11px/1.4 var(--font-condensed); text-transform: none; }
+.aperture-badge { font: 11px/1.2 var(--font-condensed); text-transform: none; letter-spacing: 0; border-radius: 3px; }
+.aperture-overview td small, .aperture-activity-list small, .aperture-receipt-buttons span { font: 12px/1.5 var(--font-condensed); }
+.aperture-activity-list span { font-size: 13px; line-height: 1.5; }
+.aperture-activity-list strong { color: var(--ap-text); font: 500 12px/1.5 var(--font-condensed); text-transform: none; }
+.aperture-overview tr.is-selected td { background: var(--ap-panel-3); box-shadow: none; }
+.aperture-table-link { text-decoration-color: var(--ap-line-strong); font-weight: 500; }
+.aperture-deck :focus-visible { outline-color: var(--focus); }
+.network-options { position: relative; margin-left: auto; flex: 0 0 auto; }
+.network-options > summary { cursor: pointer; font-size: 13px; padding: 9px 12px; border: 1px solid var(--ap-line); border-radius: 5px; list-style: none; }
+.network-options > summary::after { content: '⌄'; margin-left: 12px; }
+.network-options[open] > summary { background: var(--ap-panel-2); }
+.network-option-fields { position: absolute; z-index: 45; top: calc(100% + 8px); right: 0; width: 340px; max-width: calc(100vw - 40px); padding: 18px; display: grid; gap: 16px; border: 1px solid var(--ap-line); border-radius: 8px; background: var(--ap-panel); box-shadow: 0 10px 35px #0003; }
+.network-option-fields .aperture-control { max-width: 100%; min-width: 0; width: 100%; }
+.network-option-fields .aperture-ecology-toggle { justify-self: start; }
+.network-save-tools { display: flex; flex-wrap: wrap; gap: 8px; border-top: 1px solid var(--ap-line); padding-top: 16px; }
+.network-welcome h3 { margin: 10px 0; font-size: 22px; font-weight: 500; }
+.network-welcome > p { font-size: 14px; line-height: 1.6; }
+.network-starts { display: grid; margin: 22px 0 26px; border-top: 1px solid var(--ap-line); }
+.network-starts button { display: flex; justify-content: space-between; padding: 13px 0; border: 0; border-bottom: 1px solid var(--ap-line); background: none; text-align: left; font-size: 13px; }
+.network-starts button:hover { color: var(--ink-2); background: var(--ap-panel-2); }
+.network-starts span { color: var(--ap-muted); }
+.network-guide { display: grid; gap: 14px; font-size: 12px; }
+.network-guide dt { color: var(--ap-text); }
+.network-guide dd { margin: 3px 0 0; color: var(--ap-muted); }
+.network-welcome .network-note { border-top: 1px solid var(--ap-line); padding-top: 16px; margin-top: 24px; font-size: 12px; }
+[data-aperture-mode="map"] .aperture-header { display: none; }
+[data-aperture-mode="map"] .aperture-commandbar { border-radius: 8px 8px 0 0; }
+[data-aperture-mode="map"] .aperture-mode-controls { padding: 10px 16px; flex-wrap: nowrap; gap: 12px; }
+[data-aperture-mode="map"] .aperture-control--start { min-width: 120px; flex: 1 1 auto; max-width: 460px; }
+[data-aperture-mode="map"] .aperture-control--start > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+[data-aperture-mode="map"] .aperture-control-buttons { flex: 0 0 auto; }
+[data-aperture-mode="map"] .aperture-layout { min-height: 0; grid-template-columns: minmax(0, 1fr) 300px; }
+[data-aperture-mode="map"] .aperture-stage-wrap { --ap-bg: #11151b; --ap-text: #e6ebf2; --ap-muted: #adb8c8; --ap-muted-2: #8593a5; --ap-line: #2b3340; --ap-line-strong: #59677b; --ap-blue: #67b8ff; --ap-amber: #ffd061; background: #11151b; }
+[data-aperture-mode="map"] .aperture-webgl, [data-aperture-mode="map"] .aperture-stage { height: clamp(420px, calc(100dvh - 288px), 760px); min-height: 0; }
+[data-aperture-mode="map"] .aperture-inspector { max-height: clamp(460px, calc(100dvh - 240px), 810px); }
+[data-aperture-mode="map"] .aperture-stage-legend { background: #11151b; color: #adb8c8; font-size: 11px; line-height: 1.6; padding: 10px 16px; gap: 6px 16px; }
+@media (max-width: 1000px) {
+  [data-aperture-mode="map"] .aperture-layout { grid-template-columns: minmax(0, 1fr) 260px; }
+}
+@media (max-width: 760px) {
+  [data-aperture-mode="map"] .aperture-mode-controls { flex-wrap: wrap; padding: 10px; gap: 8px; }
+  [data-aperture-mode="map"] .aperture-control--start { flex: 1 1 100%; max-width: none; }
+  [data-aperture-mode="map"] .aperture-layout { display: block; }
+  [data-aperture-mode="map"] .aperture-webgl, [data-aperture-mode="map"] .aperture-stage { height: 420px; }
+  [data-aperture-mode="map"] .aperture-inspector { max-height: 72vh; }
+  [data-aperture-mode="map"] .aperture-inspector[data-empty="true"] { max-height: none; }
+  .network-welcome { display: grid; grid-template-columns: 1fr; }
+  .network-guide { display: none; }
+  .network-starts { margin-block: 10px; }
+  .network-options { position: static; }
+  .network-option-fields { top: 100%; right: 0; }
+}
+.network-node-labels { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.aperture-deck .network-node-label { position: absolute; pointer-events: auto; max-width: 176px; padding: 4px 6px; border: 0; border-radius: 3px; background: #11151be8; color: #dbe4ef; font: 12px/1.35 Arial, Helvetica, sans-serif; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; cursor: pointer; }
+.aperture-deck .network-node-label:hover, .aperture-deck .network-node-label:focus-visible { color: #fff; background: #303c4f; outline: 1px solid #879ab2; }
+.network-date-span { font-variant-numeric: tabular-nums; }
+.aperture-deck .aperture-inspector h4 { color: var(--ap-text); font: 600 14px/1.4 var(--font-condensed); }
+.aperture-metric-grid strong { overflow-wrap: normal; }
+[data-aperture-mode="map"] .aperture-stage-legend > span:last-child { flex-basis: 100%; color: #8e9bad; }
+.aperture-deck .aperture-secondary-button:hover, .aperture-deck .aperture-control-buttons button:hover, .aperture-deck .aperture-actions button:hover, .aperture-deck .aperture-receipt-buttons button:hover { color: var(--ap-text); border-color: var(--ap-line-strong); background: var(--ap-panel-2); }
