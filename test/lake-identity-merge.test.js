@@ -28,14 +28,30 @@ const BEFORE_RESEARCH_EDGES = Object.freeze({
   count: 392,
   sha256: 'e46a8132031fd2ae55ddab17b31d93fcd2f12fa3d9ebbbc2e8dd7714486de03e',
 });
+// Scope (narrowed 2026-10-23): BEFORE describes the merge base and still pins
+// it. The rule it protects is that the evidence-lake registry merge moved no
+// hop edge and no research-graph edge. Until 2026-10-23 "current graph ==
+// merge base" was an exact proxy for that; the 2026-10-23 promotion is a
+// deliberate admission that added edges, so the proxy no longer holds. The
+// rule is now checked directly: every merge-base edge survives byte-for-byte,
+// and no edge (old or new) touches a row the merge added (see the endpoint
+// check in section 3). The current edge set is pinned separately below.
+const CURRENT = Object.freeze({
+  edge_count: 133, // 2026-10-23 promotion: 93 -> 133 hop edges (Stratos, Traysar, Pallas team-page bases)
+  edge_id_sha256: '2626c63aa4dcc124af1b2cc198f1c2fd1eb53df57bb460e69458bc4bb0921660', // 2026-10-23 promotion
+  edges_sha256: '141b236b8463884fd17715ab3b142f5bcf28c47cc82b741527c9f84fb57d0027', // 2026-10-23 promotion
+  rejected_hop_surfaces: 836, // 2026-10-23 promotion: 35 -> 836 (single-person LinkedIn role surfaces create no hop)
+  rejected_hop_pairs: 0,
+  research_edges: 3216, // 2026-10-23 promotion: 392 -> 3216 research-graph edges
+});
 
 const hopGraph = readJson('build/hop-graph.json');
 const after = hopEdgeFingerprint(hopGraph);
-assert.equal(after.edge_count, BEFORE.edge_count, 'registry growth must not change the hop edge count');
-assert.equal(after.edge_id_sha256, BEFORE.edge_id_sha256, 'registry growth must not change the sorted hop edge ids');
-assert.equal(after.edges_sha256, BEFORE.edges_sha256, 'registry growth must not change any hop basis, role, window or receipt');
-assert.equal(hopGraph.rejected_hop_surfaces.length, BEFORE.rejected_hop_surfaces);
-assert.equal(hopGraph.rejected_hop_pairs.length, BEFORE.rejected_hop_pairs);
+assert.equal(after.edge_count, CURRENT.edge_count, 'hop edge count must match the last deliberate admission');
+assert.equal(after.edge_id_sha256, CURRENT.edge_id_sha256, 'sorted hop edge ids must match the last deliberate admission');
+assert.equal(after.edges_sha256, CURRENT.edges_sha256, 'hop bases, roles, windows and receipts must match the last deliberate admission');
+assert.equal(hopGraph.rejected_hop_surfaces.length, CURRENT.rejected_hop_surfaces);
+assert.equal(hopGraph.rejected_hop_pairs.length, CURRENT.rejected_hop_pairs);
 
 // The constants above really are the base commit's edge set, when its object is
 // available (a shallow checkout may not carry it).
@@ -50,15 +66,40 @@ if (baseHopGraph) {
   assert.equal(before.edge_count, BEFORE.edge_count);
   assert.equal(before.edge_id_sha256, BEFORE.edge_id_sha256);
   assert.equal(before.edges_sha256, BEFORE.edges_sha256);
-  assert.deepEqual(after, before, 'hop edge set before and after the merge must be identical');
-  assert.deepEqual(hopGraph.edges.map(edge => `${edge.actor_a}||${edge.actor_b}`).sort(),
-    baseHopGraph.edges.map(edge => `${edge.actor_a}||${edge.actor_b}`).sort());
+  // Narrowed 2026-10-23: was assert.deepEqual(after, before) (current == base).
+  // Now: every merge-base hop edge survives unchanged (same pair, bases, roles,
+  // windows, receipts); later admissions may only add edges.
+  const current = new Map(hopGraph.edges.map(edge => [`${edge.actor_a}||${edge.actor_b}`, JSON.stringify(edge)]));
+  for (const edge of baseHopGraph.edges) {
+    const key = `${edge.actor_a}||${edge.actor_b}`;
+    assert.ok(current.has(key), `merge-base hop edge ${key} must survive`);
+    assert.equal(current.get(key), JSON.stringify(edge), `merge-base hop edge ${key} must be unchanged`);
+  }
 }
 
 // The research graph gains overlay nodes for new registry rows but no edge.
+// Narrowed 2026-10-23: was research.edges.length === 392 with a fixed hash
+// (registry growth was the only change since the merge). Now: the 392
+// merge-era edges are all still present by id and unchanged,
+// and no research-graph edge touches a row the registry merge added.
 const research = readJson('graph.json');
-assert.equal(research.edges.length, BEFORE_RESEARCH_EDGES.count, 'registry growth must not add a research-graph edge');
-assert.equal(createHash('sha256').update(JSON.stringify(research.edges)).digest('hex'), BEFORE_RESEARCH_EDGES.sha256);
+assert.equal(research.edges.length, CURRENT.research_edges, 'research-graph edge count must match the last deliberate admission');
+{
+  const lakeAdded = (() => { const m = readJson('data/canonical/lake-identity-merge.json'); return new Set([...m.added.actors, ...m.added.organizations]); })();
+  assert.ok(research.edges.every(edge => !lakeAdded.has(edge.from) && !lakeAdded.has(edge.to)), 'registry growth must not add a research-graph edge');
+  let baseResearch = null;
+  try {
+    baseResearch = JSON.parse(execFileSync('git', ['show', `${BASE_COMMIT}:graph.json`], {
+      encoding: 'utf8', maxBuffer: 1 << 28, stdio: ['ignore', 'pipe', 'ignore'],
+    }));
+  } catch { /* base commit not present in this checkout */ }
+  if (baseResearch) {
+    assert.equal(baseResearch.edges.length, BEFORE_RESEARCH_EDGES.count);
+    assert.equal(createHash('sha256').update(JSON.stringify(baseResearch.edges)).digest('hex'), BEFORE_RESEARCH_EDGES.sha256);
+    const byId = new Map(research.edges.map(edge => [edge.id, JSON.stringify(edge)]));
+    for (const edge of baseResearch.edges) assert.equal(byId.get(edge.id), JSON.stringify(edge), `merge-base research edge ${edge.id} must survive unchanged`);
+  }
+}
 
 // ---------------------------------------------------------------------------
 // 2. The planner, on synthetic registries: main wins, nothing is lost, and the
@@ -315,4 +356,4 @@ assert.ok(errorsFor(s => { const index = s.archive.extensions.findIndex(row => r
 assert.ok(loadMain('.').legacyNodes.some(node => node.id === 'alex-karp'), 'main still bridges Alex Karp from the legacy graph');
 assert.ok(loadArchive('.').adjudications.length === 57);
 
-console.log('lake-identity-merge.test: OK (hop edge set unchanged: 93 edges, same ids and bases; main-wins planning; 15 resolution rows + 2 pending; 104 frontier mentions; tamper checks)');
+console.log('lake-identity-merge.test: OK (all 93 merge-base hop edges unchanged, 133 current; no edge touches a merged row; main-wins planning; 15 resolution rows + 2 pending; 104 frontier mentions; tamper checks)');

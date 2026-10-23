@@ -227,6 +227,11 @@ for (const surface of canonical.surfaces) {
   }
   for (const row of participants) {
     const participantId = row.participant_type === 'actor' ? row.actor_id : row.organization_id;
+    // 2026-10-23: one participant can hold two dated rows on one surface (a LinkedIn
+    // role surface folded from two role entries). addEdge keeps one topology edge per
+    // participant and surface, so count only edges actually added; the old per-row count
+    // overstated rendered_participation_edges (2,999 claimed, 2,993 rendered).
+    const edgesBefore = edgeKeys.size;
     if (!participantId || !nodeIds.has(participantId)) continue;
     const sourceIdsForRow = [];
     for (const receiptId of row.receipt_ids ?? []) {
@@ -254,7 +259,7 @@ for (const surface of canonical.surfaces) {
       ui_weight: 2,
       notes: 'Topology-only Research overlay. This actor-to-surface row creates no actor-to-actor edge and does not redefine the Clifford Number.',
     });
-    overlayEdges += 1;
+    if (edgeKeys.size > edgesBefore) overlayEdges += 1;
   }
 }
 const contextBaseAsOf = graph.corpus_as_of;

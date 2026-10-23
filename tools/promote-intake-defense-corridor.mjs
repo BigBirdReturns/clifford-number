@@ -182,7 +182,7 @@ const summary = {};
 const gaps = [];
 function tally(source, table) {
   const key = `${source}:${table}`;
-  summary[key] ??= { read: 0, promoted: 0, folded: 0, refused: 0, refusal_reasons: {} };
+  summary[key] ??= { read: 0, promoted_rows: 0, folded: 0, refused: 0, refusal_reasons: {} };
   return summary[key];
 }
 function refuse(source, table, rowKey, reason, detail = {}) {
@@ -199,14 +199,36 @@ const partKeys = new Set();
 const newOrgs = new Map();
 const newActors = new Map();
 
+// An id names one entity. A label that resolves to a person (canonical or
+// newly staged) is never minted as an organization: on 2026-10-23 a portfolio
+// listing turned the person joshua-baer into a company of the same id.
+function actorIdFor(label, extra = {}) {
+  const hit = canonActorByLabel.get(norm(label));
+  if (hit) return hit.id;
+  if (actorAlias.has(norm(label))) return actorAlias.get(norm(label));
+  const id = extra.id ?? kebab(label);
+  return canonActorById.has(id) || newActors.has(id) ? id : null;
+}
 function ensureOrg(label, kind, extra = {}) {
   const hit = canonOrgByLabel.get(norm(label));
   if (hit) return hit.id;
   if (orgAlias.has(norm(label))) return orgAlias.get(norm(label));
   const id = extra.id ?? kebab(label);
   if (canonOrgById.has(id)) return id;
+  if (canonActorById.has(id) || newActors.has(id)) {
+    throw new Error(`refusing to mint organization ${id}: the id already names an actor; route the row to the actor`);
+  }
   if (!newOrgs.has(id)) newOrgs.set(id, { id, label, kind, source: LANE, ...(extra.fields ?? {}) });
   return id;
+}
+// A listed name on a roster page: an organization that already exists keeps the
+// row; otherwise a name that is a person goes to the actor; otherwise mint.
+function listedParticipant(label, kind, actorRole, orgRole) {
+  const existingOrg = canonOrgByLabel.has(norm(label)) || orgAlias.has(norm(label)) || canonOrgById.has(kebab(label)) || newOrgs.has(kebab(label));
+  const actorId = existingOrg ? null : actorIdFor(label);
+  return actorId
+    ? { participant_type: 'actor', actor_id: actorId, role: actorRole }
+    : { participant_type: 'organization', organization_id: ensureOrg(label, kind), role: orgRole };
 }
 function ensureActor(label, extra = {}) {
   const hit = canonActorByLabel.get(norm(label));
@@ -258,7 +280,7 @@ function admit({ source, table, rowKey, receiptIds, build }) {
     refuse(source, table, rowKey, out.refuse, { candidate: out.candidate ?? null });
     return false;
   }
-  tally(source, table).promoted += 1;
+  tally(source, table).promoted_rows += 1;
   return true;
 }
 function fold(source, table, n = 1) {
@@ -519,7 +541,7 @@ for (const ev of readJsonl(`${C}/conversion_events.jsonl`)) {
 }
 for (const a of readJsonl(`${C}/actors.jsonl`)) {
   tally('C', 'actors').read += 1;
-  if (a.actor_id === 'A001') { tally('C', 'actors').promoted += 1; continue; } // SVDG: list operator org above
+  if (a.actor_id === 'A001') { tally('C', 'actors').promoted_rows += 1; continue; } // SVDG: list operator org above
   refuse('C', 'actors', a.actor_id, 'role_summary_is_analysis_not_a_dated_participation_row', { label: a.name });
 }
 
@@ -778,7 +800,7 @@ for (const [fundId, edges] of cfByFund) {
           evidence_class: ec, receipt_ids: ids, intake_source: B, notes: `${e.note} ${obsNote(date)}`,
         }, [
           { surface_id: sid, participant_type: 'organization', organization_id: bOrg(fundId), role: 'portfolio publisher', participation_type: 'portfolio_publisher', time_start: date, time_end: date, evidence_class: ec, receipt_ids: ids },
-          { surface_id: sid, participant_type: 'organization', organization_id: ensureOrg(e.company_name_as_listed, 'company'), role: 'listed', participation_type: 'listed_portfolio_company', time_start: date, time_end: date, evidence_class: ec, receipt_ids: ids },
+          { surface_id: sid, ...listedParticipant(e.company_name_as_listed, 'company', `listed on the ${fundLabel} portfolio page`, 'listed'), participation_type: 'listed_portfolio_company', time_start: date, time_end: date, evidence_class: ec, receipt_ids: ids },
         ]);
       },
     });

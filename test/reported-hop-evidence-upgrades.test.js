@@ -26,7 +26,7 @@ assert.deepEqual(actual.errors, []);
 // 198 / 62 / 135 after the archived defense-corridor A/B receipts (2026-10-23): 21 actors entered,
 // and three primary_public team pages (Stratos 9 people, Traysar 3, Pallas 2) add 40 bases.
 // The anchor components and the zero reported-basis count are unchanged.
-assert.equal(actual.global.canonical_actor_count, 198);
+assert.equal(actual.global.canonical_actor_count, 293); // 2026-10-23 promotion: 198 -> 293 actors (LinkedIn role-crossing people); hop figures below unchanged
 assert.equal(actual.global.accepted_edge_actor_count, 62);
 assert.equal(actual.global.basis_count, 135);
 assert.deepEqual(actual.global.evidence_counts, { official: 75, primary_public: 60 });
@@ -41,9 +41,19 @@ assert.equal(actual.anchor_components.reported_basis_count, 0);
 // 13 / 6 -> 39 / 17 after the archived A/B receipts (2026-10-23). Every reported surface stays
 // non-hop: the Texas Venture Partners roles (Times of Israel, reported) share a date but have no
 // upgrade disposition, so the promote tool keeps that surface non-hop.
-assert.equal(actual.reported_ledger_boundary.reported_participation_rows, 39);
-assert.equal(actual.reported_ledger_boundary.reported_surface_rows, 17);
-assert.deepEqual(actual.reported_ledger_boundary.non_hop_surface_ids, [
+// 2026-10-23 promotion: 39 / 17 -> 1,483 / 736 after the LinkedIn role crossings entered as
+// evidence class "reported", one single-person surface per role (719 surfaces). They stay
+// non-hop like every other reported surface; the exact lists below pin the non-LinkedIn
+// reported surfaces as before, and the LinkedIn role surfaces are pinned by count and shape.
+const isLinkedInRoleSurface = id => /-linkedin-\d{4}-(\d{4}|present)$/.test(id);
+const LINKEDIN_ROLE_SURFACES = 719; // 2026-10-23 promotion
+assert.equal(actual.reported_ledger_boundary.reported_participation_rows, 1483); // 2026-10-23 promotion: 39 -> 1,483
+assert.equal(actual.reported_ledger_boundary.reported_surface_rows, 736); // 2026-10-23 promotion: 17 -> 736
+for (const key of ['non_hop_surface_ids', 'reported_surface_ids', 'reported_evidence_surface_ids']) {
+  assert.equal(actual.reported_ledger_boundary[key].filter(isLinkedInRoleSurface).length, LINKEDIN_ROLE_SURFACES, `${key}: LinkedIn role surfaces`);
+}
+assert.deepEqual(actual.reported_ledger_boundary.accepted_reported_surface_ids, [], 'no reported surface is accepted as a hop basis');
+assert.deepEqual(actual.reported_ledger_boundary.non_hop_surface_ids.filter(id => !isLinkedInRoleSurface(id)), [
   'cap-table-as-reported-traysar',
   'dialog-leadership-role-observations-2026-06-16',
   'dialog-matt-clifford-invitation-nonattendance-2026-06-16',
@@ -63,7 +73,7 @@ assert.deepEqual(actual.reported_ledger_boundary.non_hop_surface_ids, [
   'us-air-force-fy2025-award-sierra-space',
   'vehicle-control-station-austin',
 ]);
-assert.deepEqual(actual.reported_ledger_boundary.reported_surface_ids, [
+assert.deepEqual(actual.reported_ledger_boundary.reported_surface_ids.filter(id => !isLinkedInRoleSurface(id)), [
   'cap-table-as-reported-traysar',
   'dialog-leadership-role-observations-2026-06-16',
   'dialog-matt-clifford-invitation-nonattendance-2026-06-16',

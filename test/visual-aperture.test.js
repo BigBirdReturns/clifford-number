@@ -220,15 +220,15 @@ function renderTimelineStage(layout, phone) {
   const svg = context.__svg;
   const count = needle => (svg.match(new RegExp(needle, 'g')) ?? []).length;
   const lineClasses = count('<line class="aperture-time-(?:axis-year|axis-month|axis-base|lane-rule|grid|ov-row|ov-hop|ov-dense)"') + count('<line x1="0" y1="0" x2="0" y2="4"');
-  return { marks: count('data-ap-time-mark="'), columns: count('data-ap-time-column="'), segments: count('aperture-time-column-segment'), blocks: count('data-ap-time-block="'), aggregates: count('data-ap-time-aggregate="'), lanes: count('data-ap-time-lane="'), lines: count('<line'), lineClasses, pair: count('data-ap-time-pair'), tabStops: count('tabindex="0"'), noStops: count('tabindex="-1"'), svg };
+  return { marks: count('data-ap-time-mark="'), columns: count('data-ap-time-column="'), segments: count('aperture-time-column-segment'), blocks: count('data-ap-time-block="'), aggregates: count('data-ap-time-aggregate="'), lanes: count('data-ap-time-lane="'), lines: count('<line[\\s>]'), lineClasses, pair: count('data-ap-time-pair'), tabStops: count('tabindex="0"'), noStops: count('tabindex="-1"'), svg };
 }
 const desktopRender = renderTimelineStage(layoutTimeline(realModel, { plotWidth: 690 }), false);
-assert.equal(desktopRender.marks, 79, 'desktop default: 79 marks');
+assert.equal(desktopRender.marks, 44, 'desktop default: 44 marks'); // 2026-10-23: hop-bearing lanes rank first (was 147 with row-count ranking) // 2026-10-23 owner decision: the 18-lane default People view (2.1.0: 79 on 15 lanes)
 assert.equal(desktopRender.blocks, 1, 'plus one roster block = 80 drawn objects');
-assert.equal(desktopRender.columns, 16);
-assert.equal(desktopRender.segments, 35, 'per-lane segments touch only involved lanes');
-assert.equal(desktopRender.aggregates, 0);
-assert.equal(desktopRender.lanes, 17);
+assert.equal(desktopRender.columns, 15, 'the default people share 15 drawn hop bases'); // 2026-10-23 hop-first ranking; 2.1.0: 16
+assert.ok(desktopRender.segments > 0, 'hop columns draw segments'); // 2026-10-23 hop-first ranking; 2.1.0: 35
+assert.equal(desktopRender.aggregates, 2, 'the default view folds clusters past two marks into +N'); // 2.1.0: 0 // 2026-10-23 hop-first default lanes: 12 -> 2
+assert.equal(desktopRender.lanes, 20, '18 named + strip + block'); // 2.1.0: 17
 assert.equal(desktopRender.pair, 0);
 // Roving focus: one Tab stop for the plot (the first mark), one for the lane
 // labels, two overview handles; every other mark, column, block and label is
@@ -238,12 +238,12 @@ assert.equal(desktopRender.noStops, desktopRender.marks + desktopRender.columns 
 assert.match(timelineRuntime, /function handleTimelineWheel\(event\) \{\n  if \(state\.mode !== 'timeline'\) return;\n(?:\s*\/\/.*\n)*\s*if \(!event\.ctrlKey && !event\.metaKey\) return;/, 'a plain wheel scrolls the page; only Ctrl/Cmd + wheel zooms the axis');
 assert.equal(desktopRender.lines, desktopRender.lineClasses, 'every line is an axis, grid, lane rule, overview tick or hatch stroke');
 assert.match(desktopRender.svg, /names listed/);
-assert.match(desktopRender.svg, /People documented on one surface/);
+assert.match(desktopRender.svg, /Other people \(153\)/); // 2026-10-23 owner decision: was "People documented on one surface"
 const phoneRender = renderTimelineStage(layoutTimeline(realModel, { plotWidth: 216, ...TIMELINE_PHONE_METRICS }), true);
-assert.equal(phoneRender.marks, 48, 'phone default: 48 marks');
+assert.equal(phoneRender.marks, 39, 'phone default: 39 marks'); // 2026-10-23 owner decision: 18-lane default (2.1.0: 48) // 2026-10-23 hop-first default lanes: 85 -> 39
 assert.equal(phoneRender.blocks, 1);
-assert.equal(phoneRender.columns, 10);
-assert.equal(phoneRender.segments, 20);
+assert.equal(phoneRender.columns, 13); // 2.1.0: 10 // 2026-10-23 hop-first default lanes: 0 -> 13
+assert.equal(phoneRender.segments, 28); // 2.1.0: 20 // 2026-10-23 hop-first default lanes: 0 -> 28
 assert.equal(phoneRender.pair, 0);
 assert.equal(phoneRender.lines, phoneRender.lineClasses);
 console.log(`visual-aperture.test.js: timeline render desktop ${desktopRender.marks} marks + ${desktopRender.blocks} block, ${desktopRender.columns} columns (${desktopRender.segments} segments); phone ${phoneRender.marks} + ${phoneRender.blocks}, ${phoneRender.columns} columns (${phoneRender.segments} segments)`);

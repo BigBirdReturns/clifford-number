@@ -320,15 +320,16 @@ const realModel = buildResearchNetworkModel(realGraph);
 const realLedger = buildFieldLedgerIndex(realSurfaceGraph, realModel);
 const realEvents = buildEcologyEventModel(realSurfaceGraph, realModel);
 const realField = buildSocialFieldModel(realModel, { ledger: realLedger });
-assert.equal(realLedger.counts.rows, 286);
-assert.equal(realLedger.counts.actor_rows, 200);
-assert.equal(realLedger.counts.organization_rows, 86);
-assert.equal(realLedger.counts.privacy_guard_rows, 4);
+assert.equal(realLedger.counts.rows, 3118); // 2026-10-23 promotion: 286 -> 3,118 rows
+assert.equal(realLedger.counts.actor_rows, 959); // 2026-10-23 promotion: 200 -> 959 (joshua-baer listing routed to the actor)
+assert.equal(realLedger.counts.organization_rows, 2159); // 2026-10-23 promotion: 86 -> 2,159
+assert.equal(realLedger.counts.privacy_guard_rows, 6); // 2026-10-23 promotion: 4 -> 6 (the Steven Hertzberg / Australian Medical Network role surface trips the "medical" guard token)
 assert.equal(realLedger.counts.dense_contained_rows, 113);
 assert.equal(realLedger.counts.unresolved_rows, 0);
-assert.equal(realLedger.counts.open_ended_rows, 1);
+assert.equal(realLedger.counts.open_ended_rows, 315); // 2026-10-23 promotion: 1 -> 315 (LinkedIn roles stated "Present" keep time_end open)
 assert.equal(realLedger.counts.undated_rows, 0, 'every row in this release is dated; the undated rule is latent');
-assert.equal(realEvents.events.filter(event => event.open_ended).length, 1, 'the detachment-201 / us-army row pulses open-ended');
+assert.equal(realEvents.events.filter(event => event.open_ended).length, 315, 'every open-ended row pulses open-ended'); // 2026-10-23 promotion: 1 -> 315
+assert.ok(realEvents.events.some(event => event.open_ended && event.surface_id === 'detachment-201-program-context-2025'), 'the detachment-201 / us-army row pulses open-ended');
 // A pulse is drawn exactly when its row is in the window: 0 disagreements over
 // every drawn participation row and every calendar year of the range.
 const eventByRowKey = new Map(realEvents.events.filter(event => event.event_kind === 'participation').map(event => [`${event.surface_id}::${event.participant_node_id}::${event.participation_type}`, event]));
@@ -342,15 +343,15 @@ for (let year = 2016; year <= 2026; year += 1) {
     if (rowInWindow(row, yearWindow) !== eventInWindow(event, yearWindow)) rowEventDisagreements += 1;
   }
 }
-assert.equal(rowEventPairs, 1716);
+assert.equal(rowEventPairs, 19184); // 2026-10-23 promotion: 1,716 -> 19,184 row-year pairs
 assert.equal(rowEventDisagreements, 0, 'the pulse is drawn only, and always, inside its row\'s window');
-assert.deepEqual(realLedger.rows.filter(row => row.off_field_reason === 'privacy_guard').map(row => row.node_id).sort(), ['ben-warner', 'dominic-cummings', 'imran-shafi', 'no-10']);
-assert.equal(realLedger.range.first_date, '2016-01-01');
-assert.equal(realLedger.range.last_date, '2026-08-12');
-assert.equal(realEvents.counts.events, 163);
-assert.equal(realField.metrics.node_count, 346);
-assert.equal(realField.metrics.link_count, 392);
-assert.equal(realField.links.filter(link => link.rows.length).length, 169, 'every canonical overlay arc carries its participation row');
+assert.deepEqual(realLedger.rows.filter(row => row.off_field_reason === 'privacy_guard').map(row => row.node_id).sort(), ['australian-medical-network', 'ben-warner', 'dominic-cummings', 'imran-shafi', 'no-10', 'steven-hertzberg']); // 2026-10-23 promotion: + Hertzberg / Australian Medical Network ("medical" token)
+assert.equal(realLedger.range.first_date, '1982-05-01'); // 2026-10-23 promotion: 2016-01-01 -> 1982-05-01 (earliest LinkedIn role)
+assert.equal(realLedger.range.last_date, '2026-10-23'); // 2026-10-23 promotion: 2026-08-12 -> 2026-10-23
+assert.equal(realEvents.counts.events, 1759); // 2026-10-23 promotion: 163 -> 1,759
+assert.equal(realField.metrics.node_count, 2752); // 2026-10-23 promotion: 346 -> 2,752
+assert.equal(realField.metrics.link_count, 3216); // 2026-10-23 promotion: 392 -> 3,216
+assert.equal(realField.links.filter(link => link.rows.length).length, 2993, 'every canonical overlay arc carries its participation row'); // 2026-10-23 promotion: 169 -> 2,993
 // Size, halo and tooltip count come from the ledger and agree with the inspector
 // (nodeLedgerSummary) for every node on the field.
 const realNode = id => realField.nodeById.get(id);
@@ -359,10 +360,11 @@ assert.equal(realNode('ben-warner').size_count, 10, 'Ben Warner: 10 documented s
 assert.equal(realNode('electric-twin').size_count, 18);
 assert.equal(realNode('surface-dialog-public-directory-exposure-2026-06-16').size_count, 113, 'the Dialog roster surface is sized by its 113 ledger rows, not by its arcs');
 assert.equal(realNode('surface-dialog-public-directory-exposure-2026-06-16').arc_participant_count, 0, 'the field draws no arc into the contained roster, so an arc count would size it as empty');
-assert.equal(realField.metrics.max_size_count, 113, 'the largest documented count is the Dialog roster surface with 113 participation rows');
+assert.equal(realField.metrics.max_size_count, 833, 'the largest documented count is the Capital Factory portfolio-page block with 833 participation rows'); // 2026-10-23 promotion: 113 (Dialog) -> 833 (Capital Factory portfolio page)
+assert.equal(realNode('surface-capital-factory-portfolio-page-2026-10-23').size_count, 833, 'the Capital Factory portfolio page is one dense block sized by its 833 ledger rows');
 assert.equal(nodeCountLabel(realNode('matt-clifford')), '9 documented surfaces');
 assert.equal(nodeCountLabel(realNode('surface-dialog-public-directory-exposure-2026-06-16')), '113 documented participants');
-assert.equal(nodeCountLabel(realNode('joe-lonsdale')), '1 documented surface', 'a Dialog roster actor has a ledger row and the tooltip says so');
+assert.equal(nodeCountLabel(realNode('joe-lonsdale')), '3 documented surfaces', 'a Dialog roster actor has a ledger row and the tooltip says so'); // 2026-10-23 promotion: 1 -> 3 (8VC and Cicero rows)
 assert.equal(nodeCountLabel(realNode('alex-karp')), '0 documented surfaces · research context · no ledger rows', 'only a node with no ledger row is called research context');
 let tooltipInspectorDisagreements = 0;
 let nodesWithoutLedgerRows = 0;
@@ -374,10 +376,10 @@ for (const node of realField.nodes) {
   assert.equal(nodeCountLabel(node).includes('no ledger rows'), summary.rows.length === 0, `${node.id}: "no ledger rows" is said only when the ledger has none`);
 }
 assert.equal(tooltipInspectorDisagreements, 0, 'the tooltip count and the inspector count agree on every node');
-assert.equal(nodesWithoutLedgerRows, 103, '103 of 346 field nodes carry no ledger row (research context only)');
+assert.equal(nodesWithoutLedgerRows, 96, '96 of 2,752 field nodes carry no ledger row (research context only)'); // 2026-10-23 promotion: 103 of 346 -> 96 of 2,752
 const window2025 = normalizeEcologyWindow(realLedger.range, { fromDay: ecologyDay('2025-01-01'), toDay: ecologyDay('2025-12-31') });
 const realFactors = fieldWindowFactors(realLedger, window2025);
-assert.equal(realFactors.rows_in_window, 63);
+assert.equal(realFactors.rows_in_window, 539); // 2026-10-23 promotion: 63 -> 539
 const benWarner = nodeLedgerSummary(realLedger, 'ben-warner', window2025);
 assert.equal(benWarner.rows.length, 10);
 assert.equal(benWarner.rows_in_window, 4);
@@ -387,7 +389,7 @@ assert.equal(dayIso(benWarner.first_day), '2018-01-24');
 assert.equal(dayIso(benWarner.last_day), '2026-08-11');
 assert.equal(benWarner.receipt_ids.length, 14);
 assert.equal(activeEcologyEvents(realEvents, null).length, 0);
-assert.equal(activeEcologyEvents(realEvents, window2025).length, 60);
+assert.equal(activeEcologyEvents(realEvents, window2025).length, 494); // 2026-10-23 promotion: 60 -> 494
 console.log('field ledger real-data pins: PASS');
 
 // Heat on the real field at the end of record: every surface's heat and every
@@ -418,7 +420,7 @@ assert.ok(realNode('ben-warner').heat_value < heatBefore, 'earlier t, less resid
 assert.equal(realNode('ben-warner').heat.at_date, '2020-01-01');
 applyFieldHeat(realField, realLedger, endOfRecord);
 assert.equal(realNode('ben-warner').heat_value, heatBefore);
-assert.match(heatBreakdownText(realNode('ben-warner').heat, { noun: 'residue' }), /^residue \d+(\.\d+)? = \d+ touches at 2026-08-12: /);
+assert.match(heatBreakdownText(realNode('ben-warner').heat, { noun: 'residue' }), /^residue \d+(\.\d+)? = \d+ touches at 2026-10-23: /); // 2026-10-23 promotion: end of record 2026-08-12 -> 2026-10-23
 console.log('heat real-data pins: PASS');
 
 const rendererSource = readFileSync('src/atlas-webgl.js', 'utf8');
@@ -493,10 +495,16 @@ assert.match(inspector.html, /data-open-receipt="companies-house-electric-twin-i
 assert.match(inspector.html, /data-ap-action="open-record" data-actor-id="ben-warner"/);
 assert.match(inspector.html, /data-ap-surface="electric-twin-incorporation-2023-09-28"/);
 assert.doesNotMatch(inspector.html, /not drawn on the field/, 'a drawn arc has no off-field note');
-// Every receipt on a row is a button: no "+N more" stub on the five rows that carry four.
+// Every receipt on a row is a button: no "+N more" stub on the rows that carry four or more.
 const fourReceiptRows = realLedger.rows.filter(row => row.receipt_ids.length > 3);
-assert.equal(fourReceiptRows.length, 5);
-assert.ok(fourReceiptRows.every(row => row.receipt_ids.length === 4));
+assert.equal(fourReceiptRows.length, 50); // 2026-10-23 promotion: 5 -> 50 rows with more than three receipts
+for (const row of fourReceiptRows) {
+  const item = context.fieldRowItem(row, context.ecologyWindow());
+  assert.equal((item.match(/data-open-receipt=/g) ?? []).length, row.receipt_ids.length, `every receipt on ${row.surface_id} is a button`);
+  assert.doesNotMatch(item, /\+\d+ more/);
+}
+fourReceiptRows.sort((a, b) => a.receipt_ids.length - b.receipt_ids.length); // 2026-10-23 promotion: the four-receipt probe below picks a row with exactly four
+assert.equal(fourReceiptRows[0].receipt_ids.length, 4);
 const fourReceiptItem = context.fieldRowItem(fourReceiptRows[0], context.ecologyWindow());
 assert.equal((fourReceiptItem.match(/data-open-receipt=/g) ?? []).length, 4, 'all four receipts are buttons');
 assert.doesNotMatch(fourReceiptItem, /\+\d+ more/);
@@ -524,8 +532,8 @@ assert.match(inspector.html, /Documented topology edge · undated · not a hop/)
 
 // The inspector's fact grid names the same count with the same noun as the tooltip.
 const factGrid = id => context.fieldFactGrid(realField.nodeById.get(id), nodeLedgerSummary(realLedger, id));
-assert.match(factGrid('joe-lonsdale'), /<strong>1<\/strong><span>documented surface<\/span>/);
-assert.match(factGrid('joe-lonsdale'), /<strong>1<\/strong><span>participation row<\/span>/);
+assert.match(factGrid('joe-lonsdale'), /<strong>3<\/strong><span>documented surfaces<\/span>/); // 2026-10-23 promotion: 1 -> 3
+assert.match(factGrid('joe-lonsdale'), /<strong>3<\/strong><span>participation rows<\/span>/); // 2026-10-23 promotion: 1 -> 3
 assert.match(factGrid('matt-clifford'), /<strong>9<\/strong><span>documented surfaces<\/span>/);
 assert.match(factGrid('ben-warner'), /<strong>10<\/strong><span>documented surfaces<\/span>/);
 assert.match(factGrid('surface-dialog-public-directory-exposure-2026-06-16'), /<strong>113<\/strong><span>documented participants<\/span>/);
@@ -541,10 +549,10 @@ runtimeState.ecology.toDay = ecologyDay('2025-12-31');
 const windowedMarkup = context.fieldRowsMarkup('ben-warner');
 assert.match(windowedMarkup, /4 of 10 rows in window/);
 assert.equal((windowedMarkup.match(/is-outside/g) ?? []).length, 6, 'out-of-window rows dim and stay listed');
-assert.match(context.ecologyClockLabel(), /^2025-01-01 → 2025-12-31 · 63 of 286 rows in window$/);
+assert.match(context.ecologyClockLabel(), /^2025-01-01 → 2025-12-31 · 539 of 3118 rows in window$/); // 2026-10-23 promotion: 63 of 286 -> 539 of 3,118
 runtimeState.ecology.fromDay = null;
 runtimeState.ecology.toDay = null;
-assert.match(context.ecologyClockLabel(), /· all time · 286 rows$/);
+assert.match(context.ecologyClockLabel(), /· all time · 3118 rows$/); // 2026-10-23 promotion: 286 -> 3,118
 
 // A node with more than APERTURE_FIELD_ROW_LIMIT rows: every row is rendered
 // (the later ones inside a details element), nothing is "not shown here", and
@@ -627,9 +635,9 @@ for (const [name, colour] of Object.entries(HEAT_CLASS_COLORS)) {
 assert.ok(legendMarkup.includes(HEAT_FORMULA));
 assert.ok(vm.runInContext('APERTURE_HEAT_CONTROL_LEGEND', context).includes(HEAT_FORMULA), 'the controls carry the formula');
 const rosterHeat = context.fieldHeatInspectorMarkup('surface-dialog-public-directory-exposure-2026-06-16');
-assert.match(rosterHeat, /data-ap-heat-sum>heat \d+(\.\d+)? = \d+ touches at 2026-08-12: appointment 1 × 0\.8\^/, 'the surface inspector prints its heat denominator');
+assert.match(rosterHeat, /data-ap-heat-sum>heat \d+(\.\d+)? = \d+ touches at 2026-10-23: appointment 1 × 0\.8\^/, 'the surface inspector prints its heat denominator'); // 2026-10-23 promotion: end of record 2026-10-23
 const benHeat = context.fieldHeatInspectorMarkup('ben-warner');
-assert.match(benHeat, /<h4>Residue at 2026-08-12<\/h4>/);
+assert.match(benHeat, /<h4>Residue at 2026-10-23<\/h4>/); // 2026-10-23 promotion: end of record 2026-10-23
 assert.match(benHeat, /data-ap-heat-class="capital"/);
 assert.equal(context.fieldHeatInspectorMarkup('alex-karp'), '', 'no ledger row, no printed heat');
 assert.match(factGrid('ben-warner'), /data-ap-heat="ben-warner"/, 'a person\'s inspector prints its residue');

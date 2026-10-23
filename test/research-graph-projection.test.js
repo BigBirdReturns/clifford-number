@@ -36,8 +36,8 @@ assert.equal(overlayEdges.length, graph.canonical_surface_overlay.rendered_parti
 assert.ok(overlayEdges.every(edge => edge.topology === true && edge.type === 'topology'));
 assert.ok(overlayEdges.every(edge => String(edge.to).startsWith('surface-')));
 assert.equal(graph.canonical_surface_overlay.dense_surface_count, 1);
-assert.equal(graph.canonical_surface_overlay.latest_observed_surface_date, '2026-08-12');
-assert.equal(graph.canonical_surface_overlay.latest_receipt_retrieved_at, '2026-08-15');
+assert.equal(graph.canonical_surface_overlay.latest_observed_surface_date, '2026-10-23'); // 2026-10-23 promotion: 2026-08-12 -> 2026-10-23
+assert.equal(graph.canonical_surface_overlay.latest_receipt_retrieved_at, '2026-10-23'); // 2026-10-23 promotion: 2026-08-15 -> 2026-10-23
 assert.equal(graph.canonical_surface_overlay.recency_observations_do_not_prove_complete_coverage, true);
 assert.equal(surfaceGraph.organizations.some(org => String(org.id).startsWith('surface-')), false);
 assert.ok(graph.canonical_surface_overlay.dense_participation_rows_contained > 100);

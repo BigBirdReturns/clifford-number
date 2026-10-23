@@ -2428,13 +2428,13 @@ Refs: `advisory-trae-stephens-anduril-industries`, `advisory-trae-stephens-flexp
 
 **Observed**
 
-Joshua Baer has 2 surfaces and secondary types surface_factory_capital_layer. Governance replacement score: 0.
+Joshua Baer has 3 surfaces and secondary types surface_factory_capital_layer. Governance replacement score: 0.
 
 **Required action**
 
 Check for additional venues where the same surface type recurs. Do not convert recurrence into a hop unless there is a bounded co-participation surface.
 
-Refs: `vehicle-control-capital-factory`, `vehicle-control-station-austin`
+Refs: `vehicle-control-capital-factory`, `vehicle-control-station-austin`, `capital-factory-portfolio-page-2026-10-23`
 
 ---
 
@@ -4840,13 +4840,13 @@ Refs: `advisory-trae-stephens-anduril-industries`, `advisory-trae-stephens-flexp
 
 **Observed**
 
-Joshua Baer participates in 2 surface(s), but no valid shared-surface path to Matt Clifford exists.
+Joshua Baer participates in 3 surface(s), but no valid shared-surface path to Matt Clifford exists.
 
 **Required action**
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `vehicle-control-capital-factory`, `vehicle-control-station-austin`
+Refs: `vehicle-control-capital-factory`, `vehicle-control-station-austin`, `capital-factory-portfolio-page-2026-10-23`
 
 ---
 

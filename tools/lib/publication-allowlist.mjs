@@ -26,7 +26,11 @@ export function isSafePublicationPath(value) {
 export function matchesHeldRule(relativePath, rule) {
   if (!rule || typeof rule.value !== 'string') return false;
   if (rule.kind === 'exact') return relativePath === rule.value;
-  if (rule.kind === 'prefix') return relativePath.startsWith(rule.value);
+  if (rule.kind === 'prefix') {
+    // A prefix rule may name subtrees released by an explicit policy change (policy_changes).
+    if (Array.isArray(rule.except_prefixes) && rule.except_prefixes.some(prefix => typeof prefix === 'string' && prefix.startsWith(rule.value) && relativePath.startsWith(prefix))) return false;
+    return relativePath.startsWith(rule.value);
+  }
   if (rule.kind === 'substring') return relativePath.toLowerCase().includes(rule.value.toLowerCase());
   throw new Error(`unsupported publication held rule ${JSON.stringify(rule.kind)}`);
 }
@@ -66,6 +70,10 @@ export function validatePublicationPolicy(policy) {
   const budgets = policy.performance_budgets;
   for (const key of ['max_files', 'max_total_bytes', 'max_single_file_bytes', 'max_initial_shell_bytes', 'max_standalone_bytes']) {
     if (!Number.isSafeInteger(budgets?.[key]) || budgets[key] <= 0) throw new Error(`invalid publication budget ${key}`);
+  }
+  for (const [relativePath, limit] of Object.entries(budgets.max_path_bytes ?? {})) {
+    if (!policy.paths.includes(relativePath)) throw new Error(`per-path budget names an unlisted path ${relativePath}`);
+    if (!Number.isSafeInteger(limit) || limit <= 0) throw new Error(`invalid per-path budget for ${relativePath}`);
   }
   if (!Array.isArray(budgets.initial_shell_paths) || budgets.initial_shell_paths.length === 0) {
     throw new Error('publication budget initial_shell_paths must be nonempty');
@@ -146,7 +154,14 @@ function enforceBudgets(policy, entries) {
     if (!entry) throw new Error(`initial-shell budget path is missing: ${relativePath}`);
     return sum + entry.bytes;
   }, 0);
-  const standaloneBytes = entries.filter(entry => /(?:^|\/)Clifford-.*-standalone\.html$/u.test(entry.path) || entry.path === 'Clifford-Number-standalone.html')
+  // A path with its own budget (max_path_bytes) is held to that budget; every
+  // other standalone page stays under max_standalone_bytes.
+  const pathBudgets = budgets.max_path_bytes ?? {};
+  for (const [relativePath, limit] of Object.entries(pathBudgets)) {
+    const entry = byPath.get(relativePath);
+    if (entry && entry.bytes > limit) throw new Error(`per-path budget exceeded by ${relativePath}: ${entry.bytes} > ${limit}`);
+  }
+  const standaloneBytes = entries.filter(entry => !Object.hasOwn(pathBudgets, entry.path) && (/(?:^|\/)Clifford-.*-standalone\.html$/u.test(entry.path) || entry.path === 'Clifford-Number-standalone.html'))
     .reduce((max, entry) => Math.max(max, entry.bytes), 0);
   if (entries.length > budgets.max_files) throw new Error(`publication file budget exceeded: ${entries.length} > ${budgets.max_files}`);
   if (totalBytes > budgets.max_total_bytes) throw new Error(`publication byte budget exceeded: ${totalBytes} > ${budgets.max_total_bytes}`);
