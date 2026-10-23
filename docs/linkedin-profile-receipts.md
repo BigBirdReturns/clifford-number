@@ -22,7 +22,7 @@ The PDFs and manifest were copied unchanged on 2026-10-23 from the owner's
 preserved private layer:
 `W:\Incoming\DataArray\Projects\Products\Clifford-Number\recovery\2026-07-17-pre-sync-clean\private\linkedin-data-local\`.
 The full machine-extracted role claims (4,122) and crossing candidates (2,257)
-from the same layer are in `data/intake/linkedin-targeted-review/full/`.
+from the same layer are in `receipts/linkedin-profile-captures/derived/`.
 
 ## Owner decision (2026-10-23)
 

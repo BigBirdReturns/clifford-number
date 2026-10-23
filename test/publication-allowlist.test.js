@@ -47,8 +47,8 @@ for (const prefix of ['archive/', 'retrospective/']) {
 assert.doesNotThrow(() => validatePublicationPolicy(realPolicy));
 // Owner decision 2026-10-23: one intake subtree is released from the data/intake/ hold; the rest stays held.
 const intakeRule = realPolicy.held_rules.find(candidate => candidate.kind === 'prefix' && candidate.value === 'data/intake/');
-assert.deepEqual(intakeRule.except_prefixes, ['data/intake/linkedin-targeted-review/full/']);
-assert.equal(matchesHeldRule('data/intake/linkedin-targeted-review/full/linkedin-role-crossing-summary.json', intakeRule), false);
+assert.equal(intakeRule.except_prefixes, undefined, 'data/intake stays fully held (derived LinkedIn files moved under receipts/, 2026-10-23)');
+assert.equal(matchesHeldRule('receipts/linkedin-profile-captures/derived/linkedin-role-crossing-summary.json', intakeRule), false);
 assert.equal(matchesHeldRule('data/intake/linkedin-targeted-review/other.json', intakeRule), true);
 assert.equal(matchesHeldRule('data/intake/defense-corridor/x.json', intakeRule), true);
 assert.ok(realPolicy.policy_changes.every(change => change.date && change.decided_by && change.reason), 'every policy change says when, who and why');

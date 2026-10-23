@@ -7,7 +7,7 @@
  * It does NOT merge into data/ledger.
  *
  * Inputs, in order of preference:
- *   - FULL set: data/intake/linkedin-targeted-review/full/linkedin-role-crossing-candidates.jsonl
+ *   - FULL set: receipts/linkedin-profile-captures/derived/linkedin-role-crossing-candidates.jsonl
  *     and .../full/linkedin-profile-role-claims.jsonl, with capture rows from
  *     receipts/linkedin-profile-captures/captures.jsonl (the in-repo PDF receipts).
  *   - Fallback: the 430-row review projection in data/intake/linkedin-targeted-review/.

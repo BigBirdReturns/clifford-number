@@ -1014,9 +1014,6 @@
     "data/gametrails/legacy-seed-map.jsonl",
     "data/gametrails/methodology.json",
     "data/import-queues/master-v4.import-queue.json",
-    "data/intake/linkedin-targeted-review/full/linkedin-profile-role-claims.jsonl",
-    "data/intake/linkedin-targeted-review/full/linkedin-role-crossing-candidates.jsonl",
-    "data/intake/linkedin-targeted-review/full/linkedin-role-crossing-summary.json",
     "data/ledger/chains.jsonl",
     "data/ledger/claims.jsonl",
     "data/ledger/participation.jsonl",
@@ -2343,6 +2340,9 @@
     "receipts/exhaust/indexes/dentsu_global_news_sitemap/f9e6653359499364a406f6b5cccd5688a3f27eb5b4a35245a6a4dea6df584477.json",
     "receipts/exhaust/indexes/dentsu_global_news_sitemap/fa0e76eda751f18e98fb5d6f7769d6b5ea7f9840c078e49dead32ea2effef7b5.json",
     "receipts/linkedin-profile-captures/captures.jsonl",
+    "receipts/linkedin-profile-captures/derived/linkedin-profile-role-claims.jsonl",
+    "receipts/linkedin-profile-captures/derived/linkedin-role-crossing-candidates.jsonl",
+    "receipts/linkedin-profile-captures/derived/linkedin-role-crossing-summary.json",
     "receipts/linkedin-profile-captures/raw/liprof_01bda3ea89579d964ac4e0d0.pdf",
     "receipts/linkedin-profile-captures/raw/liprof_01dbe478a99fe1a98f2652ac.pdf",
     "receipts/linkedin-profile-captures/raw/liprof_02ccfd86593e382b0380aef7.pdf",
@@ -3146,10 +3146,7 @@
       "kind": "prefix",
       "value": "data/intake/",
       "state": "repository_only",
-      "reason": "intake is not canonical publication truth",
-      "except_prefixes": [
-        "data/intake/linkedin-targeted-review/full/"
-      ]
+      "reason": "intake is not canonical publication truth"
     },
     {
       "kind": "prefix",
@@ -3210,17 +3207,17 @@
       "decided_by": "owner",
       "kind": "paths_added",
       "paths": [
+        "data/ledger/staging/",
+        "docs/linkedin-profile-receipts.md",
         "receipts/defense-corridor/",
         "receipts/linkedin-profile-captures/",
-        "data/ledger/staging/",
-        "data/intake/linkedin-targeted-review/full/",
-        "docs/linkedin-profile-receipts.md",
+        "receipts/linkedin-profile-captures/derived/",
         "tools/archive-intake-receipts.mjs",
         "tools/merge-staging.mjs",
         "tools/promote-intake-defense-corridor.mjs",
         "tools/promote-intake-linkedin-crossings.mjs"
       ],
-      "reason": "Intake promotion: 136 ledger receipts point at in-repo copies under receipts/defense-corridor/ and receipts/linkedin-profile-captures/, so the published site carries them. The owner ruled captured LinkedIn profiles public record on 2026-10-23. The data/ledger/staging/ gaps files are the research frontier and are meant to be seen. data/intake/linkedin-targeted-review/full/ is released from the data/intake/ hold by except_prefixes on that rule; every other intake subtree stays repository-only."
+      "reason": "Intake promotion: 136 ledger receipts point at in-repo copies under receipts/defense-corridor/ and receipts/linkedin-profile-captures/, so the published site carries them. The owner ruled captured LinkedIn profiles public record on 2026-10-23. The data/ledger/staging/ gaps files are the research frontier and are meant to be seen. The derived LinkedIn crossing files live under receipts/linkedin-profile-captures/derived/; data/intake/ stays repository-only."
     },
     {
       "date": "2026-10-23",
