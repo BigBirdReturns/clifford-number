@@ -23,26 +23,64 @@ const actual = evaluateReportedHopEvidenceUpgrades({
 assert.deepEqual(actual.errors, []);
 // 170 on the base; 177 after the evidence-lake registry merge (WP4). The seven
 // added actors hold no participation row, so every figure below is unchanged.
-assert.equal(actual.global.canonical_actor_count, 177);
-assert.equal(actual.global.accepted_edge_actor_count, 48);
-assert.equal(actual.global.basis_count, 95);
-assert.deepEqual(actual.global.evidence_counts, { official: 75, primary_public: 20 });
+// 198 / 62 / 135 after the archived defense-corridor A/B receipts (2026-10-23): 21 actors entered,
+// and three primary_public team pages (Stratos 9 people, Traysar 3, Pallas 2) add 40 bases.
+// The anchor components and the zero reported-basis count are unchanged.
+assert.equal(actual.global.canonical_actor_count, 198);
+assert.equal(actual.global.accepted_edge_actor_count, 62);
+assert.equal(actual.global.basis_count, 135);
+assert.deepEqual(actual.global.evidence_counts, { official: 75, primary_public: 60 });
 assert.equal(actual.global.reported_basis_count, 0);
 assert.equal(actual.global.disposition_count, 0);
 assert.equal(actual.anchor_components.actor_count, 33);
 assert.equal(actual.anchor_components.edge_count, 70);
 assert.equal(actual.anchor_components.basis_count, 72);
 assert.equal(actual.anchor_components.reported_basis_count, 0);
-assert.equal(actual.reported_ledger_boundary.reported_participation_rows, 5);
-assert.equal(actual.reported_ledger_boundary.reported_surface_rows, 2);
+// 5 / 2 before the defense-corridor staging merge (2026-10-23); the four FY2025 Air Force
+// award line items are trade-press reported, organization-only and non-hop (+8 rows, +4 surfaces).
+// 13 / 6 -> 39 / 17 after the archived A/B receipts (2026-10-23). Every reported surface stays
+// non-hop: the Texas Venture Partners roles (Times of Israel, reported) share a date but have no
+// upgrade disposition, so the promote tool keeps that surface non-hop.
+assert.equal(actual.reported_ledger_boundary.reported_participation_rows, 39);
+assert.equal(actual.reported_ledger_boundary.reported_surface_rows, 17);
 assert.deepEqual(actual.reported_ledger_boundary.non_hop_surface_ids, [
+  'cap-table-as-reported-traysar',
   'dialog-leadership-role-observations-2026-06-16',
   'dialog-matt-clifford-invitation-nonattendance-2026-06-16',
   'dialog-public-directory-exposure-2026-06-16',
+  'funding-round-traysar-seed',
+  'partnership-claim-stratos-ventures-israeli-mod',
+  'partnership-claim-stratos-ventures-nato-diana',
+  'partnership-claim-stratos-ventures-u-s-centcom-port-of-miami-via-the-lab-miami',
+  'partnership-claim-stratos-ventures-u-s-dod',
+  'procurement-award-ussocom-idiq-reported',
+  'silent-ventures-team-page-2026-10-23',
+  'stratos-ventures-portfolio-page-2026-10-23',
+  'texas-venture-partners-team-page-2026-04-06',
+  'us-air-force-fy2025-award-castelion',
+  'us-air-force-fy2025-award-dataminr',
+  'us-air-force-fy2025-award-jetzero',
+  'us-air-force-fy2025-award-sierra-space',
+  'vehicle-control-station-austin',
 ]);
 assert.deepEqual(actual.reported_ledger_boundary.reported_surface_ids, [
+  'cap-table-as-reported-traysar',
   'dialog-leadership-role-observations-2026-06-16',
   'dialog-matt-clifford-invitation-nonattendance-2026-06-16',
+  'funding-round-traysar-seed',
+  'partnership-claim-stratos-ventures-israeli-mod',
+  'partnership-claim-stratos-ventures-nato-diana',
+  'partnership-claim-stratos-ventures-u-s-centcom-port-of-miami-via-the-lab-miami',
+  'partnership-claim-stratos-ventures-u-s-dod',
+  'procurement-award-ussocom-idiq-reported',
+  'silent-ventures-team-page-2026-10-23',
+  'stratos-ventures-portfolio-page-2026-10-23',
+  'texas-venture-partners-team-page-2026-04-06',
+  'us-air-force-fy2025-award-castelion',
+  'us-air-force-fy2025-award-dataminr',
+  'us-air-force-fy2025-award-jetzero',
+  'us-air-force-fy2025-award-sierra-space',
+  'vehicle-control-station-austin',
 ]);
 assert.deepEqual(
   actual.reported_ledger_boundary.reported_evidence_surface_ids,

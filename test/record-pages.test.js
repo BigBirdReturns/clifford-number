@@ -58,7 +58,7 @@ const model = timeline.buildTimelineModel(surfaceGraph, hopGraph);
 const warner = context.actorRecordModel(model, hopGraph, scores.actors.find(item => item.actor_id === 'ben-warner'), 'ben-warner');
 assert.equal(warner.row_count, 10);
 assert.equal(warner.surface_count, 10);
-assert.equal(warner.surface_total, 54);
+assert.equal(warner.surface_total, 139);
 assert.equal(warner.type_count, 6);
 assert.equal(warner.organization_count, 8);
 assert.equal(warner.hop_partner_count, 12);
@@ -67,7 +67,7 @@ assert.equal(warner.receipt_ids.length, 14);
 assert.equal(warner.rows[0].time_start, '2018-01-24', 'rows are date-sorted');
 assert.equal(warner.rows.at(-1).time_start, '2026-07-08');
 same(warner.facts.map(fact => fact.text), [
-  '10 documented surfaces of 54',
+  '10 documented surfaces of 139',
   'across 6 surface types',
   'with 8 organizations on those surfaces',
   '2018-01-24 → 2026-08-11 · 5 active years',
@@ -91,7 +91,7 @@ same(marc.hop_partners.find(partner => partner.actor_id === 'saul-klein').bases.
 // Zero-row and legacy-only people are honest records, not blank pages.
 const hogarth = context.actorRecordModel(model, hopGraph, scores.actors.find(item => item.actor_id === 'ian-hogarth'), 'ian-hogarth');
 assert.equal(hogarth.row_count, 0);
-same(hogarth.facts.map(fact => fact.text), ['0 documented surfaces of 54', 'Clifford Number N/A']);
+same(hogarth.facts.map(fact => fact.text), ['0 documented surfaces of 139', 'Clifford Number N/A']);
 assert.equal(hogarth.machine_sentence, 'No participation row in this release.');
 
 // --- Electric Twin: 18 surfaces, 15 people, declared surface factory; MoD: broad institution
@@ -102,7 +102,7 @@ assert.equal(twin.people_count, 15);
 assert.equal(twin.type_count, 6);
 assert.equal(twin.declared.surface_factory, true);
 assert.equal(twin.declared.broad_institution, false);
-assert.equal(twin.facts[0].text, '18 documented surfaces of 54');
+assert.equal(twin.facts[0].text, '18 documented surfaces of 139');
 assert.equal(twin.facts[2].text, '15 people documented on them');
 assert.equal(twin.rows[0].time_start, '2023-09-28');
 assert.equal(twin.summary.last_day, '2026-08-12');
@@ -115,21 +115,22 @@ const dialogOrg = context.organizationRecordModel(model, surfaceGraph.organizati
 same(dialogOrg.dense_lines.map(line => line.listed_count), [112], 'the roster is one contained line, never 112 names in the people count');
 assert.equal(dialogOrg.people_count, 0);
 
-// --- Dialog surface: 112 listed, 2 elsewhere (matt-clifford 8, dan-driscoll 1), sorted by that column
+// --- Dialog surface: 112 listed, 3 elsewhere (matt-clifford 8, joe-lonsdale 2, dan-driscoll 1), sorted by that column.
+// joe-lonsdale joined the count with the archived defense-corridor receipts (2026-10-23): 8VC and Cicero Institute control rows.
 const dialogSurface = surfaceGraph.surfaces.find(item => item.surface_id === 'dialog-public-directory-exposure-2026-06-16');
 const dialog = context.surfaceRecordModel(model, hopGraph, receiptGraph, dialogSurface);
 assert.equal(dialog.dense, true);
 assert.equal(dialog.participant_count, 112);
-assert.equal(dialog.elsewhere_count, 2);
-assert.equal(dialog.nowhere_else_count, 110);
-same(dialog.participants.slice(0, 2).map(entry => [entry.row.entity_id, entry.elsewhere]), [['matt-clifford', 8], ['dan-driscoll', 1]]);
-assert.ok(dialog.participants.slice(2).every(entry => entry.elsewhere === 0));
+assert.equal(dialog.elsewhere_count, 3);
+assert.equal(dialog.nowhere_else_count, 109);
+same(dialog.participants.slice(0, 3).map(entry => [entry.row.entity_id, entry.elsewhere]), [['matt-clifford', 8], ['joe-lonsdale', 2], ['dan-driscoll', 1]]);
+assert.ok(dialog.participants.slice(3).every(entry => entry.elsewhere === 0));
 assert.equal(dialog.basis_count, 0);
 assert.equal(dialog.hop_status, 'Context only · reason: dense_directory_listing_not_shared_participation');
 assert.equal(dialog.window_text, '2026-06-16');
 assert.equal(dialog.organization_rows.length, 1);
 same(dialog.evidence_counts, { primary_public: 112, reported: 1 });
-assert.ok(dialog.facts.some(fact => fact.text === '2 of 112 listed people appear on any other documented surface'));
+assert.ok(dialog.facts.some(fact => fact.text === '3 of 112 listed people appear on any other documented surface'));
 // Every Dialog row carries exactly the surface's 3 receipts, so the page
 // renders them once and each row points at that panel instead of repeating
 // 3 cards inside 113 closed details elements.
@@ -166,17 +167,20 @@ assert.equal(yearPrecision.window_text, '2016 · year precision');
 
 // --- type and year pages
 const employment = context.typeRecordModel(model, 'employment_investment_surface');
-assert.equal(employment.surfaces.length, 8);
-assert.equal(employment.rows.length, 32);
-assert.equal(employment.actor_rows.length, 15);
-assert.equal(employment.organization_rows.length, 17);
-assert.equal(employment.facts[0].text, '8 surfaces of 54');
+// Counts updated for the defense-corridor staging merge (2026-10-23): +19 NatSec100 capital-exit
+// surfaces (organization-only) and +29 surfaces overall; actor rows are unchanged. Then, with the archived
+// A/B receipts: 27 -> 38 surfaces, 59 -> 133 rows, 15 -> 16 actor rows, 44 -> 117 organization rows (139 overall).
+assert.equal(employment.surfaces.length, 38);
+assert.equal(employment.rows.length, 133);
+assert.equal(employment.actor_rows.length, 16);
+assert.equal(employment.organization_rows.length, 117);
+assert.equal(employment.facts[0].text, '38 surfaces of 139');
 assert.equal(context.typeRecordModel(model, 'no_such_type'), null);
 const year2025 = context.yearRecordModel(model, '2025', receiptGraph.receipts);
-assert.equal(year2025.surfaces_started, 12);
+assert.equal(year2025.surfaces_started, 23);
 assert.equal(year2025.hop_bases, 28, 'bases dated in the year are counted by basis day (28), never by edge envelope');
-assert.equal(year2025.rows_active.length, 63);
-assert.equal(year2025.rows_started, 50);
+assert.equal(year2025.rows_active.length, 129);
+assert.equal(year2025.rows_started, 108);
 assert.ok(year2025.rows_active.every(entry => entry.row.start_day != null));
 assert.equal(context.yearRecordModel(model, '2019', receiptGraph.receipts), null, 'no row touches 2019: the envelope years are not pages');
 assert.equal(context.yearRecordModel(model, 'abcd', receiptGraph.receipts), null);
@@ -189,7 +193,7 @@ assert.equal(context.recordStatusText(official, warner.rows.length), 'Showing 7 
 assert.equal(context.recordStatusText(context.recordFloorPartition(warner.rows, 'open'), warner.rows.length), 'Showing 10 of 10 rows · nothing hidden by a filter');
 const text = context.ledgerText(warner, warner.rows);
 const lines = text.split('\n');
-assert.equal(lines[0].startsWith('Dr. Ben Warner — 10 documented surfaces of 54'), true);
+assert.equal(lines[0].startsWith('Dr. Ben Warner — 10 documented surfaces of 139'), true);
 assert.equal(lines.filter(line => /^\d{2}\. /.test(line)).length, 10);
 assert.match(lines[2], /^01\. 2018-01-24 · Faculty Science officer \/ employee overlap, 24 January 2018 · Commercial Principal/);
 assert.equal(lines.at(-1), 'Documented participation on bounded public surfaces only. Shared context does not establish contact, influence, coordination, agreement, or wrongdoing.');
@@ -225,7 +229,8 @@ for (const name of ['renderActor', 'renderOrg', 'renderSurface', 'renderType', '
 // --- the hero eyebrow: app.js writes it from the loaded graphs; the aperture
 // later writes the same two strings from the same artifacts.
 same(context.heroCountsText(surfaceGraph, hopGraph), { nodes: `${surfaceGraph.actors.length} actors · ${surfaceGraph.surfaces.length} surfaces`, edges: `${hopGraph.edges.length} admitted hops` });
-assert.equal(context.heroCountsText(surfaceGraph, hopGraph).edges, '93 admitted hops');
+// 93 -> 133 with the archived defense-corridor A/B receipts (Stratos 36, Traysar 3, Pallas 1 team-page pairs).
+assert.equal(context.heroCountsText(surfaceGraph, hopGraph).edges, '133 admitted hops');
 same(context.heroCountsText(null, null), { nodes: '0 actors · 0 surfaces', edges: '0 admitted hops' });
 const part2Source = fs.readFileSync('src/visual-aperture-part-2.js', 'utf8');
 for (const template of ['`${actorCount} actors · ${surfaceCount} surfaces`', '`${hopCount} admitted hops`']) {

@@ -10,6 +10,7 @@
     "release:check": "npm run ensure:release-history && npm run check",
     "ensure:release-history": "node tools/ensure-release-history.mjs",
     "compile": "node tools/compile.mjs",
+    "promote:intake": "node tools/promote-intake-defense-corridor.mjs && node tools/merge-staging.mjs",
     "compile:denominator": "node tools/compile-vendor-denominator.mjs",
     "validate:denominator": "node tools/validate-vendor-denominator.mjs",
     "compile:case-packets": "node tools/compile-thesis-case-packets.mjs",
