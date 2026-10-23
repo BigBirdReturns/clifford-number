@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Home : Altimeter</title>
+<link href="/css/common.css" rel="stylesheet" type="text/css" />
+<link href="/css/select_css.css" rel="stylesheet" type="text/css" />
+<link rel="icon" href="/media/favicon.svg" type="image/svg+xml" />
+<link rel="icon" href="/media/favicon-32.png" sizes="32x32" type="image/png" />
+<link rel="apple-touch-icon" href="/media/apple-touch-icon.png" />
+</head>
+<body class=" private_page overview home home_page pre-login-state">
+<header role="header">
+	<nav role="navigation">
+		<div class="logo">
+			<a href="/">
+				<img src="/media/logo.svg" alt="Altimeter">
+      </a>
+		</div><ul class="main_nav"><li>
+				<a href="#about">About</a>
+			</li>
+			<li>
+				<a href="#contact_us">Contact Us</a>
+			</li>
+			<li>
+				<a href="https://www.sscfundservices.com/login.aspx" target="_blank">Investor Login</a>
+			</li></ul>
+		<section class="mobile_navigation"><ul>
+				<li>
+					<a href="https://www.sscfundservices.com/login.aspx" target="_blank">Investor Login</a>
+				</li>
+			</ul></section>
+	</nav>
+</header>
+    <div class="main_fullpage">
+        <div class="wrapper" data-anchor="Main">
+            <section class="main_container" id="main_container" role="main">
+                <section class="banner" role="banner">
+                    <div></div>
+                </section>
+                <section class="title_page">
+                    <h1>Home</h1>
+                </section>
+                <article><div class="content_holder home_sub_pages">
+  <div id="about">
+    <p>
+      <p>Altimeter is a technology-focused investment firm built by a founder for founders. Altimeter’s mission is to help visionary entrepreneurs build iconic companies, disrupt markets and improve lives through all stages of growth. Altimeter manages a variety of funds that invest in the public and private markets and seeks to serve as an expert long-term partner to companies as they enter the public markets.</p>
+
+    </p>
+  </div>
+  <div id="contact_us">
+    <address>
+      <ul>
+          
+              <li>
+               <p><strong>Silicon Valley</strong><br />2550 Sand Hill Road,&nbsp;<br />Suite 150<br />Menlo Park, CA 94025<br /><a href="https://goo.gl/maps/9B5wMDxmr132" target="_blank">Map &raquo;</a></p>
+              </li>
+           
+              <li>
+               <p><strong>Boston</strong><br />One International Place,<br />Suite 4610<br />Boston, MA 02110<br /><a href="https://goo.gl/maps/CwDzqeVGFUK2" target="_blank">Map &raquo;</a></p>
+              </li>
+         
+
+
+      </ul>
+      <p>For more information, please call (617) 310-6180 or email <a href="mailto:ir@altimeter.com">IR@altimeter.com</a>.</p><p>For media inquiries, please contact <a href="mailto:press@altimeter.com">press@altimeter.com</a>.</p>
+		</address>
+  </div>
+</div></article>
+            </section>
+        </div>
+    </div>
+<footer>
+            <div class="container">
+                <p><meta charset="utf-8"></p><p style="line-height:1.3900000000000001;margin-bottom:8pt;margin-top:0pt;text-align:justify;" dir="ltr"><meta charset="utf-8"><span style="background-color:transparent;color:#000000;font-size:11pt;"><span style="font-family:Montserrat,sans-serif;font-style:normal;font-variant:normal;font-weight:400;text-decoration:none;vertical-align:baseline;white-space:pre-wrap;">Altimeter Capital Management, LP (“Altimeter”) is an SEC-registered investment adviser.&nbsp; Altimeter maintains the website www.altimeter.com.&nbsp; Altimeter does not solicit, offer, or sell securities via the Internet, or otherwise investment advisory services via the Internet.</span></span></p><p><a href="/terms">Terms &amp; Conditions</a><span style="background-color:rgb(255,255,255);color:rgb(24,24,24);font-size:14px;"><span style="-webkit-text-stroke-width:0px;display:inline !important;float:none;font-family:Montserrat, sans-serif;font-style:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-weight:400;letter-spacing:normal;orphans:2;text-align:center;text-decoration-color:initial;text-decoration-style:initial;text-decoration-thickness:initial;text-indent:0px;text-transform:none;white-space:normal;widows:2;word-spacing:0px;"> • </span></span><a href="/privacy">Privacy Policy</a><span style="background-color:rgb(255,255,255);color:rgb(24,24,24);font-size:14px;"><span style="-webkit-text-stroke-width:0px;display:inline !important;float:none;font-family:Montserrat, sans-serif;font-style:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-weight:400;letter-spacing:normal;orphans:2;text-align:center;text-decoration-color:initial;text-decoration-style:initial;text-decoration-thickness:initial;text-indent:0px;text-transform:none;white-space:normal;widows:2;word-spacing:0px;"> • </span></span><a href="/docs/altimeter-sfdr-article-3-5.pdf" target="_blank" rel="noopener">SFDR Disclosures</a></p><p>Copyright © 2026 Altimeter Capital. All rights reserved.</p>
+            </div>
+            
+        </footer>
+<script>
+    // Vanilla-JS replacement for the old script.js jQuery tab toggle (jQuery itself
+    // is not shipped — see MIGRATION-PLAN.md 3.3). #about and #contact_us are
+    // display:none by default per common.css; this is the only thing that reveals
+    // either of them, on both the old site and this one. Matches the original
+    // jQuery exactly: $(".home_sub_pages div").fadeOut(300); $(s_page).delay(300).fadeIn(300);
+    // and binds every .main_nav li a (not just the "#"-anchor ones), since the
+    // original also toggled .active on Investor Login and .main_nav > li > a.active
+    // is a visible rule in common.css (colour, weight, bottom border).
+    (function () {
+      var FADE = 300;
+      function fadeOut(el) {
+        if (el.style.display === 'none') { return; }
+        el.style.transition = 'opacity ' + FADE + 'ms linear';
+        el.style.opacity = '0';
+        setTimeout(function () { el.style.display = 'none'; }, FADE);
+      }
+      function fadeIn(el) {
+        el.style.display = 'block';
+        el.style.opacity = '0';
+        el.style.transition = 'opacity ' + FADE + 'ms linear';
+        requestAnimationFrame(function () { el.style.opacity = '1'; });
+      }
+      document.querySelectorAll('.main_nav li a').forEach(function (link) {
+        link.addEventListener('click', function () {
+          document.querySelectorAll('.main_nav li a').forEach(function (a) { a.classList.remove('active'); });
+          link.classList.add('active');
+          var href = link.getAttribute('href') || '';
+          if (href.indexOf('#') === -1) { return; }
+          var target = document.querySelector(href);
+          document.querySelectorAll('.home_sub_pages div').forEach(fadeOut);
+          if (target) { setTimeout(function () { fadeIn(target); }, FADE); }
+        });
+      });
+    })();
+    </script>
+</body>
+</html>

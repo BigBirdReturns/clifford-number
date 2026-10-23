@@ -14,7 +14,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildTimestamp } from './lib/build-clock.mjs';
 import { loadAll } from './lib/ledger.mjs';
-import { BANNED_PRIVATE_FIELDS } from '../src/evidence.js';
+import { privateDataHit } from '../src/evidence.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(here, '..');
@@ -176,9 +176,22 @@ for (const row of canonical.participation) {
   if (!participationBySurface.has(row.surface_id)) participationBySurface.set(row.surface_id, []);
   participationBySurface.get(row.surface_id).push(row);
 }
-const containsPrivateGuardToken = value => {
-  const text = String(value ?? '').toLowerCase();
-  return BANNED_PRIVATE_FIELDS.some(token => text.includes(token));
+// Privacy guard (scope changed 2026-10-23, owner decision; see src/evidence.js).
+// Old: a surface was suppressed when any BANNED_PRIVATE_FIELDS word appeared as a
+// substring of its id, its label, a participation type or a receipt id. That held
+// back eight public surfaces whose labels merely describe a document or name a
+// company ("email", "address", "medical", "emergency").
+// New: a surface is suppressed when the surface record or any of its participation
+// rows carries contact data: an email address, a phone number or a street address
+// in any field value, or a field whose NAME is a private-field word (an "email" or
+// "phone" field). A street address counts on an actor's row and on a surface that
+// names a person; an organization's row or an organization-only surface may carry
+// the organization's published or registered address, which is institutional.
+const surfacePrivacyGuardHit = (surface, participants) => {
+  const namesPerson = participants.some(row => row.participant_type === 'actor');
+  return privateDataHit(surface, { streetAddress: namesPerson })
+    ?? participants.map(row => privateDataHit(row, { streetAddress: row.participant_type === 'actor' })).find(Boolean)
+    ?? null;
 };
 for (const actor of canonical.actors) {
   addNode({ id: actor.id, label: actor.label, type: 'person', description: 'Canonical public actor admitted through the bounded-surface ledger.', projection_layer: 'canonical_surface_overlay' });
@@ -195,10 +208,7 @@ for (const surface of canonical.surfaces) {
   const actorCount = participants.filter(row => row.participant_type === 'actor').length;
   const orgCount = participants.filter(row => row.participant_type === 'organization').length;
   const dense = actorCount > canonical.densityPolicy.max_hop_actor_count;
-  const unsafe = containsPrivateGuardToken(surface.surface_id)
-    || containsPrivateGuardToken(surface.surface_label)
-    || participants.some(row => containsPrivateGuardToken(row.participation_type)
-      || (row.receipt_ids ?? []).some(containsPrivateGuardToken));
+  const unsafe = surfacePrivacyGuardHit(surface, participants) !== null;
   if (unsafe) {
     privacyGuardSuppressedSurfaces += 1;
     continue;

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
+import { assertPublicOnly, contactDataPatternHit, privateDataHit, privateFieldNameHit } from '../src/evidence.js';
 import * as core from '../src/visual-aperture-core.mjs';
 import * as social from '../src/social-field.js';
 import {
@@ -320,15 +321,15 @@ const realModel = buildResearchNetworkModel(realGraph);
 const realLedger = buildFieldLedgerIndex(realSurfaceGraph, realModel);
 const realEvents = buildEcologyEventModel(realSurfaceGraph, realModel);
 const realField = buildSocialFieldModel(realModel, { ledger: realLedger });
-assert.equal(realLedger.counts.rows, 3118); // 2026-10-23 promotion: 286 -> 3,118 rows
-assert.equal(realLedger.counts.actor_rows, 959); // 2026-10-23 promotion: 200 -> 959 (joshua-baer listing routed to the actor)
-assert.equal(realLedger.counts.organization_rows, 2159); // 2026-10-23 promotion: 86 -> 2,159
-assert.equal(realLedger.counts.privacy_guard_rows, 6); // 2026-10-23 promotion: 4 -> 6 (the Steven Hertzberg / Australian Medical Network role surface trips the "medical" guard token)
-assert.equal(realLedger.counts.dense_contained_rows, 113);
+assert.equal(realLedger.counts.rows, 4411); // 2026-10-23 final re-pin: 4451 -> 4411. 2026-10-23 five-lane merge: 3,118 -> 4,451. 2026-10-23 promotion: 286 -> 3,118 rows
+assert.equal(realLedger.counts.actor_rows, 1300); // 2026-10-23 final re-pin: 1340 -> 1300. 2026-10-23 five-lane merge: 959 -> 1,340. 2026-10-23 promotion: 200 -> 959 (joshua-baer listing routed to the actor)
+assert.equal(realLedger.counts.organization_rows, 3111); // 2026-10-23 five-lane merge: 2,159 -> 3,111. 2026-10-23 promotion: 86 -> 2,159
+assert.equal(realLedger.counts.privacy_guard_rows, 0); // 2026-10-23 final re-pin: 22 -> 0 (privacy guard scope fix, owner decision: the eight surfaces held back only because a label or a role type contained "email", "address", "medical" or "emergency" are drawn; contact-data patterns find nothing in this release). 2026-10-23 five-lane merge: 6 -> 22 (six more surfaces trip guard tokens: two Contracts Finder Faculty awards, two SEC Form D filings for Yourself Online, the Army Applications Laboratory address row and the NHS commissioning-support award). 2026-10-23 promotion: 4 -> 6 (the Steven Hertzberg / Australian Medical Network role surface trips the "medical" guard token)
+assert.equal(realLedger.counts.dense_contained_rows, 142); // 2026-10-23 five-lane merge: 113 -> 142 (rndf-2023-programme-roster is now dense)
 assert.equal(realLedger.counts.unresolved_rows, 0);
-assert.equal(realLedger.counts.open_ended_rows, 315); // 2026-10-23 promotion: 1 -> 315 (LinkedIn roles stated "Present" keep time_end open)
+assert.equal(realLedger.counts.open_ended_rows, 314); // 2026-10-23 final re-pin: 315 -> 314. 2026-10-23 promotion: 1 -> 315 (LinkedIn roles stated "Present" keep time_end open)
 assert.equal(realLedger.counts.undated_rows, 0, 'every row in this release is dated; the undated rule is latent');
-assert.equal(realEvents.events.filter(event => event.open_ended).length, 315, 'every open-ended row pulses open-ended'); // 2026-10-23 promotion: 1 -> 315
+assert.equal(realEvents.events.filter(event => event.open_ended).length, 314, 'every open-ended row pulses open-ended'); // 2026-10-23 final re-pin: 315 -> 314. 2026-10-23 promotion: 1 -> 315
 assert.ok(realEvents.events.some(event => event.open_ended && event.surface_id === 'detachment-201-program-context-2025'), 'the detachment-201 / us-army row pulses open-ended');
 // A pulse is drawn exactly when its row is in the window: 0 disagreements over
 // every drawn participation row and every calendar year of the range.
@@ -343,28 +344,57 @@ for (let year = 2016; year <= 2026; year += 1) {
     if (rowInWindow(row, yearWindow) !== eventInWindow(event, yearWindow)) rowEventDisagreements += 1;
   }
 }
-assert.equal(rowEventPairs, 19184); // 2026-10-23 promotion: 1,716 -> 19,184 row-year pairs
+assert.equal(rowEventPairs, 29161); // 2026-10-23 final re-pin: 29359 -> 29161. 2026-10-23 five-lane merge: 19,184 -> 29,359. 2026-10-23 promotion: 1,716 -> 19,184 row-year pairs
 assert.equal(rowEventDisagreements, 0, 'the pulse is drawn only, and always, inside its row\'s window');
-assert.deepEqual(realLedger.rows.filter(row => row.off_field_reason === 'privacy_guard').map(row => row.node_id).sort(), ['australian-medical-network', 'ben-warner', 'dominic-cummings', 'imran-shafi', 'no-10', 'steven-hertzberg']); // 2026-10-23 promotion: + Hertzberg / Australian Medical Network ("medical" token)
+assert.deepEqual(realLedger.rows.filter(row => row.off_field_reason === 'privacy_guard').map(row => row.node_id).sort(), []); // 2026-10-23 final re-pin: was the 22 rows of the eight word-matched surfaces (ben-warner-cummings-shafi-contain-delay-email-2020-03-08, steven-hertzberg-australian-medical-network-founder-linkedin-1995-1997, sec-form-d-0001797630-19-000001, sec-form-d-0001797630-21-000001, army-applications-laboratory-address-capital-factory-2026-10-23, cf-award-cabinet-office-faculty-2019-10-14-8e4b2d57, cf-award-nhs-supply-chain-faculty-2020-12-01-d1e0d017, cf-award-nhs-south-central-and-west-commissioning-support-unit-faculty-2023-03-01-2e2da92d). Earlier: 2026-10-23 five-lane merge: was the six nodes of the Warner email and Hertzberg rows; the guard now also holds back cf-award-cabinet-office-faculty-2019-10-14, cf-award-nhs-supply-chain-faculty-2020-12-01, cf-award-nhs-south-central-and-west-commissioning-support-unit-faculty-2023-03-01, sec-form-d-0001797630-19-000001, sec-form-d-0001797630-21-000001 and army-applications-laboratory-address-capital-factory-2026-10-23. 2026-10-23 promotion: + Hertzberg / Australian Medical Network ("medical" token)
+// Privacy guard scope, pinned 2026-10-23 (owner decision; src/evidence.js, tools/build-graph.mjs).
+// Old behaviour: any BANNED_PRIVATE_FIELDS word anywhere in a surface's id, label, participation types or
+// receipt ids (or in a whole serialized record) suppressed it, so a label that described a document or named
+// a company was held back. New behaviour: contact-data PATTERNS (email address, phone number, street address)
+// in every field value; the bare word list only in field NAMES (fields that hold contact or private data).
+for (const label of [
+  'Ben Warner email to Imran Shafi and Dominic Cummings on contain-to-delay triggers, 8 March 2020',
+  'Cabinet Office award to FACULTY SCIENCE LIMITED: Filing and Sorting Emails (Alpha), 2019-10-14',
+  'NHS Supply Chain award to FACULTY SCIENCE LIMITED: Medical IT, 2020-12-01',
+  'Steven Hertzberg: Australian Medical Network role observation (LinkedIn), 1995–1997'
+]) {
+  assert.equal(privateDataHit({ surface_label: label, notes: label, role: label }), null, `a descriptive word is not contact data: ${label}`);
+}
+assert.equal(privateDataHit({ participation_type: 'issuer_address_care_of', role: 'address-only link' }), null, 'a role type that says "address" is not an address');
+assert.equal(privateDataHit({ notes: 'Supplier registered office 54 Welbeck Street, London' }, { streetAddress: false }), null, 'an organization-only record may carry its registered office');
+assert.equal(contactDataPatternHit('write to jane.doe@example.org'), 'email');
+assert.equal(contactDataPatternHit('call (512) 555-0100'), 'phone');
+assert.equal(contactDataPatternHit('+44 20 7946 0000'), 'phone');
+assert.equal(contactDataPatternHit('020 7946 0000'), 'phone');
+assert.equal(contactDataPatternHit('lives at 12 Acacia Avenue'), 'street_address');
+assert.equal(contactDataPatternHit('sec-form-d-0001797630-19-000001'), null, 'an SEC accession is not a phone number');
+assert.equal(contactDataPatternHit('2019-10-14 to 2020-12-01'), null, 'dates are not phone numbers');
+assert.equal(privateDataHit({ surface_label: 'Board minutes', notes: 'contact jane.doe@example.org' }).kind, 'email', 'an email address is hidden in any field');
+assert.equal(privateDataHit({ receipt_ids: ['call 512-555-0100'] }).kind, 'phone', 'a phone number is hidden in any field, arrays included');
+assert.equal(privateDataHit({ role: 'Adviser', personal_email: 'redacted' }).kind, 'field:email', 'a contact-data field is hidden by its name');
+assert.equal(privateFieldNameHit('surface_label'), null);
+assert.equal(privateFieldNameHit('home_address'), 'address');
+assert.throws(() => assertPublicOnly({ label: 'x', phone: '0' }), /Private or sensitive field rejected: field:phone/);
+assert.doesNotThrow(() => assertPublicOnly({ label: 'Ben Warner email to Imran Shafi' }));
 assert.equal(realLedger.range.first_date, '1982-05-01'); // 2026-10-23 promotion: 2016-01-01 -> 1982-05-01 (earliest LinkedIn role)
 assert.equal(realLedger.range.last_date, '2026-10-23'); // 2026-10-23 promotion: 2026-08-12 -> 2026-10-23
-assert.equal(realEvents.counts.events, 1759); // 2026-10-23 promotion: 163 -> 1,759
-assert.equal(realField.metrics.node_count, 2752); // 2026-10-23 promotion: 346 -> 2,752
-assert.equal(realField.metrics.link_count, 3216); // 2026-10-23 promotion: 392 -> 3,216
-assert.equal(realField.links.filter(link => link.rows.length).length, 2993, 'every canonical overlay arc carries its participation row'); // 2026-10-23 promotion: 169 -> 2,993
+assert.equal(realEvents.counts.events, 2688); // 2026-10-23 final re-pin: 2706 -> 2688. 2026-10-23 five-lane merge: 1,759 -> 2,706. 2026-10-23 promotion: 163 -> 1,759
+assert.equal(realField.metrics.node_count, 3341); // 2026-10-23 final re-pin: 3333 -> 3341. 2026-10-23 five-lane merge: 2,752 -> 3,333. 2026-10-23 promotion: 346 -> 2,752
+assert.equal(realField.metrics.link_count, 4487); // 2026-10-23 final re-pin: 4467 -> 4487. 2026-10-23 five-lane merge: 3,216 -> 4,467. 2026-10-23 promotion: 392 -> 3,216
+assert.equal(realField.links.filter(link => link.rows.length).length, 4264, 'every canonical overlay arc carries its participation row'); // 2026-10-23 final re-pin: 4244 -> 4264. 2026-10-23 five-lane merge: 2,993 -> 4,244. 2026-10-23 promotion: 169 -> 2,993
 // Size, halo and tooltip count come from the ledger and agree with the inspector
 // (nodeLedgerSummary) for every node on the field.
 const realNode = id => realField.nodeById.get(id);
-assert.equal(realNode('matt-clifford').size_count, 9, 'Matt Clifford: 9 documented surfaces (the Dialog roster row counts)');
-assert.equal(realNode('ben-warner').size_count, 10, 'Ben Warner: 10 documented surfaces (the privacy-guarded row counts)');
-assert.equal(realNode('electric-twin').size_count, 18);
+assert.equal(realNode('matt-clifford').size_count, 13, 'Matt Clifford: 13 documented surfaces (the Dialog roster row counts)'); // 2026-10-23 five-lane merge: 9 -> 13
+assert.equal(realNode('ben-warner').size_count, 12, 'Ben Warner: 12 documented surfaces (the 2020-03-08 email row, drawn since the 2026-10-23 guard fix, counts)'); // 2026-10-23 five-lane merge: 10 -> 12
+assert.equal(realNode('electric-twin').size_count, 22); // 2026-10-23 five-lane merge: 18 -> 22
 assert.equal(realNode('surface-dialog-public-directory-exposure-2026-06-16').size_count, 113, 'the Dialog roster surface is sized by its 113 ledger rows, not by its arcs');
 assert.equal(realNode('surface-dialog-public-directory-exposure-2026-06-16').arc_participant_count, 0, 'the field draws no arc into the contained roster, so an arc count would size it as empty');
 assert.equal(realField.metrics.max_size_count, 833, 'the largest documented count is the Capital Factory portfolio-page block with 833 participation rows'); // 2026-10-23 promotion: 113 (Dialog) -> 833 (Capital Factory portfolio page)
 assert.equal(realNode('surface-capital-factory-portfolio-page-2026-10-23').size_count, 833, 'the Capital Factory portfolio page is one dense block sized by its 833 ledger rows');
-assert.equal(nodeCountLabel(realNode('matt-clifford')), '9 documented surfaces');
+assert.equal(nodeCountLabel(realNode('matt-clifford')), '13 documented surfaces'); // 2026-10-23 five-lane merge: 9 -> 13
 assert.equal(nodeCountLabel(realNode('surface-dialog-public-directory-exposure-2026-06-16')), '113 documented participants');
-assert.equal(nodeCountLabel(realNode('joe-lonsdale')), '3 documented surfaces', 'a Dialog roster actor has a ledger row and the tooltip says so'); // 2026-10-23 promotion: 1 -> 3 (8VC and Cicero rows)
+assert.equal(nodeCountLabel(realNode('joe-lonsdale')), '10 documented surfaces', 'a Dialog roster actor has a ledger row and the tooltip says so'); // 2026-10-23 five-lane merge: 3 -> 10. 2026-10-23 promotion: 1 -> 3 (8VC and Cicero rows)
 assert.equal(nodeCountLabel(realNode('alex-karp')), '0 documented surfaces · research context · no ledger rows', 'only a node with no ledger row is called research context');
 let tooltipInspectorDisagreements = 0;
 let nodesWithoutLedgerRows = 0;
@@ -376,20 +406,20 @@ for (const node of realField.nodes) {
   assert.equal(nodeCountLabel(node).includes('no ledger rows'), summary.rows.length === 0, `${node.id}: "no ledger rows" is said only when the ledger has none`);
 }
 assert.equal(tooltipInspectorDisagreements, 0, 'the tooltip count and the inspector count agree on every node');
-assert.equal(nodesWithoutLedgerRows, 96, '96 of 2,752 field nodes carry no ledger row (research context only)'); // 2026-10-23 promotion: 103 of 346 -> 96 of 2,752
+assert.equal(nodesWithoutLedgerRows, 92, '92 of 3,333 field nodes carry no ledger row (research context only)'); // 2026-10-23 five-lane merge: 96 of 2,752 -> 92 of 3,333. 2026-10-23 promotion: 103 of 346 -> 96 of 2,752
 const window2025 = normalizeEcologyWindow(realLedger.range, { fromDay: ecologyDay('2025-01-01'), toDay: ecologyDay('2025-12-31') });
 const realFactors = fieldWindowFactors(realLedger, window2025);
-assert.equal(realFactors.rows_in_window, 539); // 2026-10-23 promotion: 63 -> 539
+assert.equal(realFactors.rows_in_window, 761); // 2026-10-23 final re-pin: 768 -> 761. 2026-10-23 five-lane merge: 539 -> 768. 2026-10-23 promotion: 63 -> 539
 const benWarner = nodeLedgerSummary(realLedger, 'ben-warner', window2025);
-assert.equal(benWarner.rows.length, 10);
-assert.equal(benWarner.rows_in_window, 4);
-assert.equal(benWarner.surface_count, 10);
-assert.equal(benWarner.off_field_rows, 1);
+assert.equal(benWarner.rows.length, 12); // 2026-10-23 five-lane merge: 10 -> 12
+assert.equal(benWarner.rows_in_window, 5); // 2026-10-23 five-lane merge: 4 -> 5 (the 2025-07-07 synthetic-voters row)
+assert.equal(benWarner.surface_count, 12); // 2026-10-23 five-lane merge: 10 -> 12
+assert.equal(benWarner.off_field_rows, 0); // 2026-10-23 final re-pin: 1 -> 0 (his 2020-03-08 email surface is no longer privacy-guarded)
 assert.equal(dayIso(benWarner.first_day), '2018-01-24');
 assert.equal(dayIso(benWarner.last_day), '2026-08-11');
-assert.equal(benWarner.receipt_ids.length, 14);
+assert.equal(benWarner.receipt_ids.length, 17); // 2026-10-23 five-lane merge: 14 -> 17
 assert.equal(activeEcologyEvents(realEvents, null).length, 0);
-assert.equal(activeEcologyEvents(realEvents, window2025).length, 494); // 2026-10-23 promotion: 60 -> 494
+assert.equal(activeEcologyEvents(realEvents, window2025).length, 676); // 2026-10-23 final re-pin: 683 -> 676. 2026-10-23 five-lane merge: 494 -> 683. 2026-10-23 promotion: 60 -> 494
 console.log('field ledger real-data pins: PASS');
 
 // Heat on the real field at the end of record: every surface's heat and every
@@ -497,7 +527,7 @@ assert.match(inspector.html, /data-ap-surface="electric-twin-incorporation-2023-
 assert.doesNotMatch(inspector.html, /not drawn on the field/, 'a drawn arc has no off-field note');
 // Every receipt on a row is a button: no "+N more" stub on the rows that carry four or more.
 const fourReceiptRows = realLedger.rows.filter(row => row.receipt_ids.length > 3);
-assert.equal(fourReceiptRows.length, 50); // 2026-10-23 promotion: 5 -> 50 rows with more than three receipts
+assert.equal(fourReceiptRows.length, 95); // 2026-10-23 five-lane merge: 50 -> 95. 2026-10-23 promotion: 5 -> 50 rows with more than three receipts
 for (const row of fourReceiptRows) {
   const item = context.fieldRowItem(row, context.ecologyWindow());
   assert.equal((item.match(/data-open-receipt=/g) ?? []).length, row.receipt_ids.length, `every receipt on ${row.surface_id} is a button`);
@@ -532,43 +562,59 @@ assert.match(inspector.html, /Documented topology edge · undated · not a hop/)
 
 // The inspector's fact grid names the same count with the same noun as the tooltip.
 const factGrid = id => context.fieldFactGrid(realField.nodeById.get(id), nodeLedgerSummary(realLedger, id));
-assert.match(factGrid('joe-lonsdale'), /<strong>3<\/strong><span>documented surfaces<\/span>/); // 2026-10-23 promotion: 1 -> 3
-assert.match(factGrid('joe-lonsdale'), /<strong>3<\/strong><span>participation rows<\/span>/); // 2026-10-23 promotion: 1 -> 3
-assert.match(factGrid('matt-clifford'), /<strong>9<\/strong><span>documented surfaces<\/span>/);
-assert.match(factGrid('ben-warner'), /<strong>10<\/strong><span>documented surfaces<\/span>/);
+assert.match(factGrid('joe-lonsdale'), /<strong>10<\/strong><span>documented surfaces<\/span>/); // 2026-10-23 five-lane merge: 3 -> 10. 2026-10-23 promotion: 1 -> 3
+assert.match(factGrid('joe-lonsdale'), /<strong>10<\/strong><span>participation rows<\/span>/); // 2026-10-23 five-lane merge: 3 -> 10. 2026-10-23 promotion: 1 -> 3
+assert.match(factGrid('matt-clifford'), /<strong>13<\/strong><span>documented surfaces<\/span>/); // 2026-10-23 five-lane merge: 9 -> 13
+assert.match(factGrid('ben-warner'), /<strong>12<\/strong><span>documented surfaces<\/span>/); // 2026-10-23 five-lane merge: 10 -> 12
 assert.match(factGrid('surface-dialog-public-directory-exposure-2026-06-16'), /<strong>113<\/strong><span>documented participants<\/span>/);
 assert.equal(factGrid('matt-clifford').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').includes(nodeCountLabel(realField.nodeById.get('matt-clifford'))), true, 'the fact grid contains the tooltip label verbatim');
 
 const rowsMarkup = context.fieldRowsMarkup('ben-warner');
-assert.match(rowsMarkup, /10 rows · all time/);
-assert.equal((rowsMarkup.match(/not drawn on the field \(privacy guard\)/g) ?? []).length, 2, 'the guarded row is labelled on the row and counted in the header');
-assert.equal((rowsMarkup.match(/data-ap-off-field="privacy_guard"/g) ?? []).length, 1);
-assert.equal((rowsMarkup.match(/data-ap-row=/g) ?? []).length, 10);
+assert.match(rowsMarkup, /12 rows · all time/); // 2026-10-23 five-lane merge: 10 -> 12
+// Narrowed 2026-10-23 final re-pin (privacy guard scope). Old: Ben Warner's real rows carried one guarded row,
+// labelled on the row and counted in the header (2 labels, 1 off-field marker). His email surface is no longer
+// guarded, so his real rows carry none; the labelling rule is now checked on the fixture ledger, whose 'guarded'
+// surface has no research-graph node.
+assert.equal((rowsMarkup.match(/not drawn on the field \(privacy guard\)/g) ?? []).length, 0, 'no guarded row on the real Ben Warner rows (2026-10-23 final re-pin: 2 -> 0)');
+assert.equal((rowsMarkup.match(/data-ap-off-field="privacy_guard"/g) ?? []).length, 0); // 2026-10-23 final re-pin: 1 -> 0
+{
+  const realRuntimeLedger = runtimeState.webgl.ledger;
+  runtimeState.webgl.ledger = ledger;
+  const fixtureRowsMarkup = context.fieldRowsMarkup('a');
+  runtimeState.webgl.ledger = realRuntimeLedger;
+  assert.equal((fixtureRowsMarkup.match(/not drawn on the field \(privacy guard\)/g) ?? []).length, 2, 'the guarded row is labelled on the row and counted in the header');
+  assert.equal((fixtureRowsMarkup.match(/data-ap-off-field="privacy_guard"/g) ?? []).length, 1);
+}
+assert.equal((rowsMarkup.match(/data-ap-row=/g) ?? []).length, 12); // 2026-10-23 five-lane merge: 10 -> 12
 runtimeState.ecology.fromDay = ecologyDay('2025-01-01');
 runtimeState.ecology.toDay = ecologyDay('2025-12-31');
 const windowedMarkup = context.fieldRowsMarkup('ben-warner');
-assert.match(windowedMarkup, /4 of 10 rows in window/);
-assert.equal((windowedMarkup.match(/is-outside/g) ?? []).length, 6, 'out-of-window rows dim and stay listed');
-assert.match(context.ecologyClockLabel(), /^2025-01-01 → 2025-12-31 · 539 of 3118 rows in window$/); // 2026-10-23 promotion: 63 of 286 -> 539 of 3,118
+assert.match(windowedMarkup, /5 of 12 rows in window/); // 2026-10-23 five-lane merge: 4 of 10 -> 5 of 12
+assert.equal((windowedMarkup.match(/is-outside/g) ?? []).length, 7, 'out-of-window rows dim and stay listed'); // 2026-10-23 five-lane merge: 6 -> 7
+assert.match(context.ecologyClockLabel(), /^2025-01-01 → 2025-12-31 · 761 of 4411 rows in window$/); // 2026-10-23 final re-pin: 768 of 4,451 -> 761 of 4,411. 2026-10-23 five-lane merge: 539 of 3,118 -> 768 of 4,451. 2026-10-23 promotion: 63 of 286 -> 539 of 3,118
 runtimeState.ecology.fromDay = null;
 runtimeState.ecology.toDay = null;
-assert.match(context.ecologyClockLabel(), /· all time · 3118 rows$/); // 2026-10-23 promotion: 286 -> 3,118
+assert.match(context.ecologyClockLabel(), /· all time · 4411 rows$/); // 2026-10-23 final re-pin: 4,451 -> 4,411. 2026-10-23 five-lane merge: 3,118 -> 4,451. 2026-10-23 promotion: 286 -> 3,118
 
 // A node with more than APERTURE_FIELD_ROW_LIMIT rows: every row is rendered
 // (the later ones inside a details element), nothing is "not shown here", and
 // the header's denominator is the ledger's whatever the window.
 const electricTwinMarkup = context.fieldRowsMarkup('electric-twin');
-assert.equal((electricTwinMarkup.match(/data-ap-row=/g) ?? []).length, 18, 'all 18 Electric Twin rows are rendered');
-assert.match(electricTwinMarkup, /<span data-ap-window-count data-ap-node="electric-twin">18 rows · all time<\/span>/);
-assert.match(electricTwinMarkup, /<details class="aperture-field-rows-more"><summary>Show the 8 later rows \(the list continues oldest first\)<\/summary>/);
+assert.equal((electricTwinMarkup.match(/data-ap-row=/g) ?? []).length, 22, 'all 22 Electric Twin rows are rendered'); // 2026-10-23 five-lane merge: 18 -> 22
+assert.match(electricTwinMarkup, /<span data-ap-window-count data-ap-node="electric-twin">22 rows · all time<\/span>/); // 2026-10-23 five-lane merge: 18 -> 22
+assert.match(electricTwinMarkup, /<details class="aperture-field-rows-more"><summary>Show the 12 later rows \(the list continues oldest first\)<\/summary>/); // 2026-10-23 five-lane merge: 8 -> 12 later rows
 assert.doesNotMatch(electricTwinMarkup, /not shown here|earlier-listed/, 'no row is cut from the list');
-assert.equal((context.fieldRowsMarkup('ben-warner').match(/<details/g) ?? []).length, 0, 'ten rows or fewer need no details element');
+// Narrowed 2026-10-23 five-lane merge: the fixture was ben-warner, who now has 12 rows, so he is no longer a
+// ten-rows-or-fewer node. The rule is unchanged and now runs on joe-lonsdale (exactly 10 rows). Old:
+// fieldRowsMarkup('ben-warner') has 0 <details>. New: fieldRowsMarkup('joe-lonsdale') has 0 <details>.
+assert.equal((context.fieldRowsMarkup('joe-lonsdale').match(/data-ap-row=/g) ?? []).length, 10, 'the fixture has exactly ten rows');
+assert.equal((context.fieldRowsMarkup('joe-lonsdale').match(/<details/g) ?? []).length, 0, 'ten rows or fewer need no details element');
 runtimeState.ecology.fromDay = ecologyDay('2025-06-01');
 runtimeState.ecology.toDay = null;
 const electricTwinWindowed = context.fieldRowsMarkup('electric-twin');
-assert.match(electricTwinWindowed, /17 of 18 rows in window/);
-assert.equal((electricTwinWindowed.match(/is-outside/g) ?? []).length, 1, 'the one 2023 single-day row dims; the 17 later or still-open rows do not');
-assert.match(context.fieldRowsMarkup('mod'), /6 of 13 rows in window/);
+assert.match(electricTwinWindowed, /21 of 22 rows in window/); // 2026-10-23 five-lane merge: 17 of 18 -> 21 of 22
+assert.equal((electricTwinWindowed.match(/is-outside/g) ?? []).length, 1, 'the one 2023 single-day row dims; the 21 later or still-open rows do not'); // 2026-10-23 five-lane merge: 17 -> 21
+assert.match(context.fieldRowsMarkup('mod'), /7 of 14 rows in window/); // 2026-10-23 five-lane merge: 6 of 13 -> 7 of 14
 // syncInspectorWindowMarks recomputes the header from the ledger summary of the
 // node it names, not from the rows it can see in the DOM.
 const windowHeader = { dataset: { apNode: 'electric-twin' }, textContent: 'stale' };
@@ -585,7 +631,7 @@ runtimeState.root = {
   querySelectorAll: selector => (selector === '[data-ap-row]' ? [visibleRow, undatedItem] : [])
 };
 context.syncInspectorWindowMarks();
-assert.equal(windowHeader.textContent, '17 of 18 rows in window', 'two visible items do not become the denominator');
+assert.equal(windowHeader.textContent, '21 of 22 rows in window', 'two visible items do not become the denominator'); // 2026-10-23 five-lane merge: 17 of 18 -> 21 of 22
 assert.deepEqual(visibleRow.classList.toggles, [['is-outside', true]]);
 assert.equal(visibleRow.style.opacity, '.45');
 assert.deepEqual(undatedItem.classList.toggles, [['is-outside', false]], 'an undated list row never dims');
@@ -593,7 +639,7 @@ assert.equal(undatedItem.style.opacity, '');
 runtimeState.ecology.fromDay = null;
 runtimeState.ecology.toDay = null;
 context.syncInspectorWindowMarks();
-assert.equal(windowHeader.textContent, '18 rows · all time');
+assert.equal(windowHeader.textContent, '22 rows · all time'); // 2026-10-23 five-lane merge: 18 -> 22
 assert.equal(visibleRow.style.opacity, '');
 runtimeState.root = previousRoot;
 

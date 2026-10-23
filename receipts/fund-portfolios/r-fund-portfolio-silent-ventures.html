@@ -1,0 +1,2505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-MPLGD4S8DP"></script>
+<script>
+window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}
+gtag('js',new Date());
+gtag('config','G-MPLGD4S8DP',{allow_google_signals:false,allow_ad_personalization_signals:false});
+</script>
+
+<meta charset="UTF-8">
+<script>
+/* Legacy hand-off: the previous site used #privacy and #legal anchors on one page. Send those visitors to the matching page. (#news has its own section again.) */
+(function(){
+  var h=(location.hash||'').replace('#','').toLowerCase();
+  if(h==='privacy'||h==='legal'){ location.replace('/'+h+'.html'); }
+})();
+</script>
+<script>
+/* Remember which page the visitor is on, so a refresh on the portfolio page stays there */
+(function(){
+  try{
+    var nav=(performance.getEntriesByType&&performance.getEntriesByType('navigation')[0])||{};
+    var pg='';
+    try{ var v=sessionStorage.getItem('sv_page'); if(v==='portfolio'||v==='legal'||v==='privacy') pg=v; }catch(e){}
+    try{ var l=JSON.parse(localStorage.getItem('sv_page')||'null'); if(l && (l.p==='portfolio'||l.p==='legal'||l.p==='privacy') && Date.now()-l.t<900000) pg=pg||l.p; }catch(e){}
+    if(pg && nav.type!=='back_forward' && !/[?&]to=/.test(location.search) && !location.hash){ location.replace(pg+'.html'); return; }
+    try{ sessionStorage.setItem('sv_page','home'); }catch(e){}
+    try{ localStorage.setItem('sv_page',JSON.stringify({p:'home',t:Date.now()})); }catch(e){}
+  }catch(e){}
+})();
+</script>
+<script>
+/* Reload always starts at the landing page: stop the browser restoring the old scroll position */
+try{ if('scrollRestoration' in history) history.scrollRestoration='manual'; }catch(e){}
+window.__svTo=null;
+try{ var _n=(performance.getEntriesByType('navigation')[0]||{}).type; var _h=(location.hash.match(/^#(\w+)$/)||[])[1]; if(_h && _n!=='reload' && _n!=='back_forward') window.__svTo=_h; }catch(e){}
+try{ if(location.hash) history.replaceState(null,'',location.pathname+location.search); }catch(e){}
+/* Arriving for a section (e.g. /#team from another page): keep the page blank until it is already sitting on that section, so the top of the home page never flashes first */
+if(window.__svTo||/[?&]to=\w+/.test(location.search)){ document.documentElement.classList.add('sv-jump'); setTimeout(function(){ document.documentElement.classList.remove('sv-jump'); },2500); }
+/* Startup guard: until the visitor actually scrolls, any restored/smooth scroll is snapped back to the top instantly */
+(function(){
+  var de=document.documentElement, touched=/[?&]to=\w+/.test(location.search)||!!window.__svTo, t0=Date.now();
+  de.classList.add('sv-boot');
+  ['wheel','touchstart','keydown','mousedown'].forEach(function(ev){ window.addEventListener(ev,function(){touched=true;},{passive:true,capture:true}); });
+  function snap(){ if(!touched && (window.pageYOffset||de.scrollTop)){ window.scrollTo(0,0); } }
+  window.addEventListener('scroll',snap,{passive:true});
+  (function tick(){ snap(); if(!touched && Date.now()-t0<3000){ requestAnimationFrame(tick); } else { de.classList.remove('sv-boot'); } })();
+})();
+</script>
+<style>html.sv-boot{scroll-behavior:auto !important}html.sv-jump{background:#060606}html.sv-jump body{opacity:0}body { font-variant-emoji: text; }
+/* Skip link: hidden until a keyboard user tabs to it */
+.skip-link { position: absolute; left: 16px; top: -100px; z-index: 10000; padding: 10px 16px; background: #060606; color: #fff; border: 1px solid #B8A882; font-size: 13px; letter-spacing: 0.08em; text-decoration: none; }
+.skip-link:focus { top: 12px; }
+main:focus { outline: none; }
+</style>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Silent Ventures | Early Stage Defense &amp; Deep Tech Fund</title>
+<!--SEO-->
+<meta name="description" content="Silent Ventures is a pre-seed fund investing in founders building defense and deep tech companies. Founded by Jackson Moses. Building in Dallas, TX.">
+<meta name="theme-color" content="#060606">
+<meta name="color-scheme" content="dark">
+<link rel="manifest" href="/site.webmanifest">
+<link rel="preload" as="image" href="/assets/hero-1869-transcontinental-railroad.jpg" fetchpriority="high">
+<meta name="robots" content="noai, noimageai">
+<meta name="tdm-reservation" content="1">
+<meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
+<link rel="canonical" href="https://www.silentvc.com/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Silent Ventures">
+<meta property="og:locale" content="en_US">
+<meta property="og:title" content="Silent Ventures | Early Stage Defense &amp; Deep Tech Fund">
+<meta property="og:description" content="Silent Ventures is a pre-seed fund investing in founders building defense and deep tech companies. Founded by Jackson Moses. Building in Dallas, TX.">
+<meta property="og:url" content="https://www.silentvc.com/">
+<meta property="og:image" content="https://www.silentvc.com/assets/og.jpg?v=2">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Silent Ventures logo over a World War II aircraft assembly line">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@SilentVentures">
+<meta name="twitter:title" content="Silent Ventures | Early Stage Defense &amp; Deep Tech Fund">
+<meta name="twitter:description" content="Silent Ventures is a pre-seed fund investing in founders building defense and deep tech companies. Founded by Jackson Moses. Building in Dallas, TX.">
+<meta name="twitter:image" content="https://www.silentvc.com/assets/og.jpg?v=2">
+<meta name="twitter:image:alt" content="Silent Ventures logo over a World War II aircraft assembly line">
+<script type="application/ld+json">{
+ "@context": "https://schema.org",
+ "@graph": [
+  {
+   "@type": "Organization",
+   "@id": "https://www.silentvc.com/#org",
+   "name": "Silent Ventures",
+   "legalName": "Silent Ventures Management, LLC",
+   "url": "https://www.silentvc.com/",
+   "slogan": "Backing founders who build for Western prosperity.",
+   "description": "Silent Ventures is a pre-seed fund investing in founders building defense and deep tech companies. Founded by Jackson Moses. Building in Dallas, TX.",
+   "logo": {
+    "@type": "ImageObject",
+    "@id": "https://www.silentvc.com/#logo",
+    "url": "https://www.silentvc.com/assets/logo.png",
+    "contentUrl": "https://www.silentvc.com/assets/logo.png",
+    "width": 512,
+    "height": 512,
+    "caption": "Silent Ventures logo"
+   },
+   "image": "https://www.silentvc.com/assets/og.jpg?v=2",
+   "founder": {
+    "@id": "https://www.silentvc.com/#jackson-moses"
+   },
+   "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "East Quarters",
+    "addressLocality": "Dallas",
+    "addressRegion": "TX",
+    "postalCode": "75201",
+    "addressCountry": "US"
+   },
+   "knowsAbout": [
+    "Venture capital",
+    "Early-stage investing",
+    "Pre-seed and seed investing",
+    "Defense technology",
+    "Deep technology",
+    "National security",
+    "Aerospace",
+    "Industrial technology",
+    "Energy technology"
+   ],
+   "sameAs": [
+    "https://x.com/SilentVentures",
+    "https://www.linkedin.com/company/silentventures",
+    "https://www.youtube.com/@Silent.Ventures",
+    "https://silentventures.substack.com",
+    "https://wellfound.com/company/silentventures",
+    "https://www.facebook.com/silentvc",
+    "https://www.instagram.com/silent_ventures",
+    "https://silentventures.medium.com",
+    "https://www.crunchbase.com/organization/silent-ventures",
+    "https://pitchbook.com/profiles/investor/537783-94",
+    "https://www.cbinsights.com/investor/silent-ventures",
+    "https://www.vcsheet.com/fund/silent-ventures",
+    "https://www.blackflag.vc/fund/silent-ventures"
+   ]
+  },
+  {
+   "@type": "Person",
+   "@id": "https://www.silentvc.com/#jackson-moses",
+   "name": "Jackson Moses",
+   "jobTitle": "Founder & Managing Partner",
+   "worksFor": {
+    "@id": "https://www.silentvc.com/#org"
+   },
+   "image": {
+    "@type": "ImageObject",
+    "url": "https://www.silentvc.com/assets/jackson-moses.jpg",
+    "contentUrl": "https://www.silentvc.com/assets/jackson-moses.jpg",
+    "width": 848,
+    "height": 1132,
+    "caption": "Jackson Moses, Founder & Managing Partner of Silent Ventures"
+   },
+   "url": "https://www.jacksonmoses.com",
+   "sameAs": [
+    "https://x.com/jamoses92",
+    "https://www.jacksonmoses.com"
+   ]
+  },
+  {
+   "@type": "WebSite",
+   "@id": "https://www.silentvc.com/#website",
+   "url": "https://www.silentvc.com/",
+   "name": "Silent Ventures",
+   "description": "Early-stage defense and deep tech venture capital.",
+   "inLanguage": "en-US",
+   "publisher": {
+    "@id": "https://www.silentvc.com/#org"
+   }
+  },
+  {
+   "@type": "WebPage",
+   "@id": "https://www.silentvc.com/#webpage",
+   "url": "https://www.silentvc.com/",
+   "name": "Silent Ventures | Early Stage Defense & Deep Tech Fund",
+   "description": "Silent Ventures is a pre-seed fund investing in founders building defense and deep tech companies. Founded by Jackson Moses. Building in Dallas, TX.",
+   "inLanguage": "en-US",
+   "isPartOf": {
+    "@id": "https://www.silentvc.com/#website"
+   },
+   "about": {
+    "@id": "https://www.silentvc.com/#org"
+   },
+   "primaryImageOfPage": {
+    "@type": "ImageObject",
+    "url": "https://www.silentvc.com/assets/og.jpg?v=2",
+    "width": 1200,
+    "height": 630
+   },
+   "mainEntity": {
+    "@id": "https://www.silentvc.com/#org"
+   }
+  },
+  {
+   "@type": "ItemList",
+   "@id": "https://www.silentvc.com/#sections",
+   "name": "Silent Ventures site sections",
+   "itemListElement": [
+    {
+     "@type": "SiteNavigationElement",
+     "position": 1,
+     "name": "Thesis",
+     "url": "https://www.silentvc.com/#thesis"
+    },
+    {
+     "@type": "SiteNavigationElement",
+     "position": 2,
+     "name": "Focus",
+     "url": "https://www.silentvc.com/#focus"
+    },
+    {
+     "@type": "SiteNavigationElement",
+     "position": 3,
+     "name": "Portfolio",
+     "url": "https://www.silentvc.com/#portfolio"
+    },
+    {
+     "@type": "SiteNavigationElement",
+     "position": 4,
+     "name": "Team",
+     "url": "https://www.silentvc.com/#team"
+    },
+    {
+     "@type": "SiteNavigationElement",
+     "position": 5,
+     "name": "Research",
+     "url": "https://www.silentvc.com/#research"
+    },
+    {
+     "@type": "SiteNavigationElement",
+     "position": 6,
+     "name": "News",
+     "url": "https://www.silentvc.com/#news"
+    },
+    {
+     "@type": "SiteNavigationElement",
+     "position": 7,
+     "name": "Silent Capital Syndicate",
+     "url": "https://silentcapital.vc"
+    }
+   ]
+  },
+  {
+   "@type": "ItemList",
+   "@id": "https://www.silentvc.com/#portfolio-companies",
+   "name": "Silent Ventures portfolio companies",
+   "itemListElement": [
+    {
+     "@type": "ListItem",
+     "position": 1,
+     "item": {
+      "@type": "Organization",
+      "name": "Castelion",
+      "url": "https://www.castelion.com",
+      "description": "Rapidly manufacturing future military systems at scale."
+     }
+    },
+    {
+     "@type": "ListItem",
+     "position": 2,
+     "item": {
+      "@type": "Organization",
+      "name": "Saronic",
+      "url": "https://www.saronic.com",
+      "description": "Superior autonomous vessels for the maritime domain."
+     }
+    },
+    {
+     "@type": "ListItem",
+     "position": 3,
+     "item": {
+      "@type": "Organization",
+      "name": "Impulse Space",
+      "url": "https://www.impulsespace.com",
+      "description": "In-space mobility for moving payloads between orbits."
+     }
+    },
+    {
+     "@type": "ListItem",
+     "position": 4,
+     "item": {
+      "@type": "Organization",
+      "name": "CHAOS Industries",
+      "url": "https://chaosinc.com",
+      "description": "Redefining the future of sensing, detection, and effects."
+     }
+    },
+    {
+     "@type": "ListItem",
+     "position": 5,
+     "item": {
+      "@type": "Organization",
+      "name": "Erebor",
+      "url": "https://erebor.bank",
+      "description": "A nationally chartered bank built for modern America."
+     }
+    },
+    {
+     "@type": "ListItem",
+     "position": 6,
+     "item": {
+      "@type": "Organization",
+      "name": "Base Power",
+      "url": "https://www.basepowercompany.com",
+      "description": "The future of American power, starting in Texas."
+     }
+    },
+    {
+     "@type": "ListItem",
+     "position": 7,
+     "item": {
+      "@type": "Organization",
+      "name": "Hadrian",
+      "url": "https://hadrian.co",
+      "description": "Autonomous factories to reindustrialize America."
+     }
+    },
+    {
+     "@type": "ListItem",
+     "position": 8,
+     "item": {
+      "@type": "Organization",
+      "name": "Amca",
+      "url": "https://amca.com",
+      "description": "America's new industrial engineering company."
+     }
+    },
+    {
+     "@type": "ListItem",
+     "position": 9,
+     "item": {
+      "@type": "Organization",
+      "name": "Armada AI",
+      "url": "https://www.armada.ai",
+      "description": "Portable data centers for megawatt-scale AI."
+     }
+    },
+    {
+     "@type": "ListItem",
+     "position": 10,
+     "item": {
+      "@type": "Organization",
+      "name": "Firestorm",
+      "url": "https://www.launchfirestorm.com",
+      "description": "Expeditionary manufacturing of critical platforms."
+     }
+    },
+    {
+     "@type": "ListItem",
+     "position": 11,
+     "item": {
+      "@type": "Organization",
+      "name": "Dominion Dynamics",
+      "url": "https://www.defendthedominion.com",
+      "description": "Next-gen defense systems for Arctic operations."
+     }
+    },
+    {
+     "@type": "ListItem",
+     "position": 12,
+     "item": {
+      "@type": "Organization",
+      "name": "Terra Industries",
+      "url": "https://www.terraindustries.co",
+      "description": "Autonomous systems to protect critical infrastructure."
+     }
+    },
+    {
+     "@type": "ListItem",
+     "position": 13,
+     "item": {
+      "@type": "Organization",
+      "name": "Furientis",
+      "url": "https://furientis.com",
+      "description": "Cost-effective missile interceptors built at scale."
+     }
+    },
+    {
+     "@type": "ListItem",
+     "position": 14,
+     "item": {
+      "@type": "Organization",
+      "name": "Gallatin AI",
+      "url": "https://www.gallatin.ai",
+      "description": "The leading logistics platform for military supply chains."
+     }
+    },
+    {
+     "@type": "ListItem",
+     "position": 15,
+     "item": {
+      "@type": "Organization",
+      "name": "American Supercritical",
+      "url": "https://americansupercritical.com",
+      "description": "Better steam technology for increased power yield."
+     }
+    }
+   ]
+  }
+ ]
+}</script>
+<!--/SEO-->
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --g: max(56px, calc((100vw - 1600px) / 2 + 56px));  /* page gutter: 56px, grows on wide screens so content caps at 1600px */
+  --bg: #060606;
+  --surface: #0f0f0f;
+  --surface2: #161616;
+  --border: rgba(255,255,255,0.06);
+  --border-med: rgba(255,255,255,0.10);
+  --border-strong: rgba(255,255,255,0.15);
+  --text-primary: #EDEAE4;
+  --text-secondary: #94918A;
+  --text-muted: #7A7870;
+  --accent: #B8A882;
+  --accent-dim: rgba(184,168,130,0.10);
+  --accent-glow: rgba(184,168,130,0.04);
+  --font-display: 'Space Grotesk', sans-serif;
+  --font-serif: 'EB Garamond', serif;
+  --font-body: 'Inter', sans-serif;
+}
+html { scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--text-primary); font-family: var(--font-body); font-weight: 300; line-height: 1.7; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+
+/* ── NAV ── */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 var(--g);
+  height: 64px;                         /* fixed, so it never overlaps the ticker that starts at 64px */
+  background: rgba(6,6,6,0.90);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.4s;
+}
+nav.scrolled { border-bottom-color: var(--border); }
+.nav-logo img { height: 20px; width: auto; display: block; }
+.nav-links { display: flex; align-items: center; gap: 30px; list-style: none; }
+.nav-links a { font-size: 12px; font-weight: 400; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-secondary); text-decoration: none; transition: color 0.2s; }
+.nav-links a:hover { color: var(--text-primary); }
+.sr-only { position:absolute; width:1px; height:1px; margin:-1px; padding:0; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+.nav-links a.is-current { color: var(--text-primary); }
+.nav-cta { color: var(--accent) !important; border: 1px solid rgba(184,168,130,0.25); padding: 6px 16px; border-radius: 1px !important; transition: background 0.2s !important; }
+.nav-cta:hover { background: var(--accent-dim) !important; }
+
+/* ── TICKER ── */
+.ticker-wrap {
+  padding-left: var(--g);               /* aligns the first label with the logo / page gutter */
+  margin-top: 64px; /* nav height offset */
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  overflow: hidden;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  line-height: 1;
+}
+.ticker-track {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  gap: 0;
+  animation: ticker 40s linear 1s infinite;
+  white-space: nowrap;
+}
+.ticker-item {
+  font-size: 11.5px;
+  line-height: 1;
+  letter-spacing: 0.20em;
+  text-transform: uppercase;
+  color: #8A877E;
+  font-weight: 400;
+  padding: 0 32px 0 0;               /* space after the dot; none before the text */
+  display: flex;
+  align-items: center;
+  gap: calc(32px - 0.20em);          /* minus the trailing letter-spacing, so both sides of the dot are visually equal */
+}
+.ticker-item::after {
+  content: '';
+  display: inline-block;
+  width: 3px; height: 3px;
+  border-radius: 50%;
+  background: #8A877E;
+  opacity: 0.85;
+}
+.ticker-label {
+  font-size: 11.5px;
+  line-height: 1;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+  padding: 0 32px 0 0;
+  display: flex;
+  align-items: center;
+  gap: calc(32px - 0.22em);
+  font-weight: 500;
+}
+.ticker-label::after {
+  content: '';
+  display: inline-block;
+  width: 3px; height: 3px;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0.9;
+}
+/* ticker optical centering: JS sets --tk-shift from the real font metrics */
+.tk-v { margin-left: 0.7em; color: var(--accent); opacity: 0.85; font-weight: 400; }
+.ticker-item, .ticker-label { position: relative; top: var(--tk-shift, 0px); }
+.ticker-item::after, .ticker-label::after { position: relative; top: calc(-1 * var(--tk-shift, 0px)); }
+/* Modern browsers: trim the line box to the cap height so flex centering centres the capitals exactly */
+@supports (text-box: trim-both cap alphabetic) {
+  .tk-t { display: block; text-box: trim-both cap alphabetic; }
+  .ticker-item, .ticker-label { top: 0; }
+  .ticker-item::after, .ticker-label::after { top: 0; }
+}
+@keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+
+/* ── HERO ── */
+.hero {
+  min-height: calc(100vh - 100px);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-bottom: 1px solid var(--border);
+}
+.hero-left {
+  padding: 72px 56px 72px var(--g);
+  gap: 48px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border-right: 1px solid var(--border);
+}
+.hero-eyebrow {
+  font-size: 11.5px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 0;
+}
+.hero-eyebrow::before {
+  content: '';
+  display: inline-block;
+  width: 24px; height: 1px;
+  background: var(--accent);
+  opacity: 0.5;
+}
+.hero-headline {
+  font-family: var(--font-display);
+  font-size: clamp(40px, 4.6vw, 80px);
+  font-weight: 300;
+  line-height: 1.04;
+  letter-spacing: -0.025em;
+  color: var(--text-primary);
+  margin: 0;
+}
+.hero-headline .dim { color: var(--text-secondary); }
+.hero-headline .serif {
+  display: inline-block;
+  margin-left: -0.12em;   /* optical alignment: pulls the italic W's ink flush with the lines above */
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 400;
+  color: var(--accent);
+  letter-spacing: -0.01em;
+}
+.hero-sub {
+  font-size: 14px;
+  line-height: 1.8;
+  color: var(--text-secondary);
+  max-width: none;
+  font-weight: 300;
+  border-top: 1px solid var(--border);
+  padding-top: 28px;
+}
+
+.hero-sub .hl { color: var(--accent); font-weight: 400; }
+.hero-right {
+  display: flex;
+  flex-direction: column;
+}
+.hero-right-top {
+  flex: 1;
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  min-height: 400px;
+}
+.hero-grid-overlay {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(var(--border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: 60px 60px;
+  opacity: 0.5;
+}
+.hero-timeline {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  overflow: hidden;
+}
+.tl-slide {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 1.3s ease;
+}
+.tl-slide.active { opacity: 1; }
+/* photos never take a press: no save/copy/open menu on a long-press or right-click; taps reach the slideshow itself */
+.tl-slide { pointer-events: none; }
+.tl-slide img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  filter: saturate(0.9) contrast(1.02) brightness(0.96);
+  transform: scale(1.05);
+  z-index: 0;
+}
+.tl-slide.active img { animation: tl-kenburns 2600ms ease-out both; }
+@keyframes tl-kenburns {
+  from { transform: scale(1.0); }
+  to   { transform: scale(1.05); }
+}
+.tl-scrim {
+  position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background: linear-gradient(to top, rgba(6,6,6,0.94) 0%, rgba(6,6,6,0.55) 26%, rgba(6,6,6,0.05) 52%, rgba(6,6,6,0.10) 80%, rgba(6,6,6,0.45) 100%);
+}
+.tl-caption {
+  position: absolute; left: 34px; right: 34px; bottom: 96px; z-index: 2;
+}
+.tl-slide.active .tl-caption { animation: tl-capin 0.9s ease 0.15s both; }
+@keyframes tl-capin {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: none; }
+}
+.tl-year {
+  font-family: var(--font-display);
+  font-size: 50px; font-weight: 300; line-height: 1;
+  letter-spacing: -0.025em; color: var(--text-primary);
+  margin-bottom: 12px;
+}
+.tl-title {
+  font-size: 12px; letter-spacing: 0.22em; text-transform: uppercase;
+  color: var(--accent); margin-bottom: 10px;
+}
+.tl-text {
+  font-size: clamp(9px, 0.85vw, 12px); line-height: 1.6; color: var(--text-secondary);
+  white-space: nowrap; font-weight: 300;
+}
+/* instrument framing */
+.tl-scan {
+  position: absolute; inset: 0; z-index: 6; pointer-events: none;
+  background-image: repeating-linear-gradient(to bottom, rgba(0,0,0,0) 0px, rgba(0,0,0,0) 2px, rgba(0,0,0,0.05) 3px);
+  mix-blend-mode: multiply;
+}
+.tl-corner {
+  position: absolute; width: 14px; height: 14px; z-index: 8;
+  border-color: rgba(184,168,130,0.45);
+}
+.tl-corner.tl-tl { top: 22px; left: 22px; border-top: 1px solid; border-left: 1px solid; }
+.tl-corner.tl-tr { top: 22px; right: 22px; border-top: 1px solid; border-right: 1px solid; }
+.tl-corner.tl-bl { bottom: 22px; left: 22px; border-bottom: 1px solid; border-left: 1px solid; }
+.tl-corner.tl-br { bottom: 22px; right: 22px; border-bottom: 1px solid; border-right: 1px solid; }
+.tl-top {
+  position: absolute; top: 26px; left: 34px; right: 34px; z-index: 9;   /* right edge = page gutter, flush with the Contact button */
+  display: flex; justify-content: space-between; align-items: center;
+}
+.tl-eyebrow {
+  font-size: 11px; letter-spacing: 0.24em; text-transform: uppercase;
+  color: var(--accent); opacity: 0.9;
+  display: flex; align-items: center; gap: 10px;
+}
+.tl-eyebrow::before {
+  content: ''; width: 16px; height: 1px; background: var(--accent); opacity: 0.6;
+}
+.tl-index {
+  font-family: var(--font-display);
+  font-size: 11.5px; letter-spacing: 0.14em; color: var(--text-secondary);
+}
+.tl-track { position: absolute; left: 34px; right: 34px; bottom: 34px; z-index: 9; }
+.tl-line { position: relative; height: 1px; background: rgba(255,255,255,0.13); }
+.tl-progress { position: absolute; left: 0; top: 0; height: 1px; width: 0%; background: var(--accent); }
+.tl-ticks { position: absolute; left: 0; right: 0; top: -3px; display: flex; justify-content: space-between; }
+.tl-tick {
+  width: 1px; height: 7px; background: rgba(255,255,255,0.22);
+  cursor: pointer; position: relative; transition: background 0.3s, height 0.3s, top 0.3s; top: 0;
+}
+.tl-tick::after { content: ''; position: absolute; inset: -9px -7px; }
+.tl-tick.done { background: rgba(184,168,130,0.5); }
+.tl-tick.active { background: var(--accent); height: 12px; top: -2px; }
+.tl-ends { display: flex; justify-content: space-between; margin-top: 9px; }
+.tl-ends span { font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-muted); }
+@media (hover: none) and (pointer: coarse) {
+  /* cursor:pointer makes iOS Safari treat the photo as tappable and send the click to the slideshow script */
+  .hero-timeline { cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+  /* a tap is a slide change, not a request to select, drag or save the photo */
+  .hero-timeline img { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; -webkit-user-drag: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tl-slide.active img { animation: none; }
+  .tl-slide.active .tl-caption { animation: none; }
+}
+.hero-right-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.3fr;   /* extra room so the third label stays on one line */
+  border-top: 1px solid var(--border);
+}
+.hero-stat {
+  padding: 28px 24px 28px 32px;
+  border-right: 1px solid var(--border);
+}
+.hero-stat:last-child { border-right: none; }
+.hero-stat-num {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 300;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+.hero-stat-label {
+  text-wrap: balance;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* ── PULL QUOTE / MANIFESTO (GC style) ── */
+.manifesto {
+  padding: 100px var(--g);
+  border-bottom: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 0;
+  align-items: start;
+}
+.manifesto-label {
+  font-size: 11.5px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding-top: 8px;
+}
+.manifesto-quote {
+  font-family: var(--font-serif);
+  font-size: clamp(28px, 3.2vw, 52px);
+  font-weight: 400;
+  line-height: 1.25;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+.manifesto-quote em {
+  font-style: italic;
+  color: var(--accent);
+}
+
+/* ── SPEC BAND (CHAOS style) ── */
+.spec-band {
+  border-bottom: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+}
+.spec-item {
+  padding: 48px 40px;
+  border-right: 1px solid var(--border);
+  position: relative;
+}
+.spec-item:last-child { border-right: none; }
+.spec-item:first-child { padding-left: var(--g); }   /* keep the first stat on the 56px page gutter */
+.spec-item::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent) 0%, transparent 70%);
+  opacity: 0.5;
+}
+.spec-num {
+  font-family: var(--font-display);
+  font-size: clamp(36px, 3.5vw, 56px);
+  font-weight: 300;
+  color: var(--text-primary);
+  letter-spacing: -0.03em;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.spec-band { --spec-big: clamp(36px, 3.5vw, 56px); --spec-small: clamp(22px, 2.1vw, 32px); --spec-region: calc(2.24 * var(--spec-small)); }
+.spec-num:not(.txt) { padding-top: calc(var(--spec-region) - var(--spec-big)); }
+.spec-num.txt {
+  font-size: var(--spec-small);
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+  min-height: var(--spec-region);
+  display: flex; align-items: flex-end;
+}
+.spec-band { --spec-one: clamp(22px, 1.9vw, 30px); }
+.spec-num, .spec-num.txt { font-size: var(--spec-one); line-height: 1.15; letter-spacing: -0.02em; padding-top: 0 !important; min-height: 0; display: block; white-space: nowrap; }
+@media (max-width: 1280px) { .spec-num, .spec-num.txt { white-space: normal; } }
+.spec-num sup { line-height: 0; }
+@media (min-width: 1001px) and (max-width: 1280px) { .spec-num, .spec-num.txt { min-height: 2.3em; display: flex; align-items: flex-end; } }
+@media (min-width: 1001px) { .team-bio-col .team-bio:first-child { margin-top: -7px; } }
+.spec-num sup {
+  font-size: 0.45em;
+  vertical-align: super;
+  letter-spacing: 0;
+  color: var(--accent);
+}
+.spec-label {
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  font-weight: 300;
+}
+
+/* ── THESIS ── */
+.thesis {
+  padding: 100px var(--g);
+  border-bottom: 1px solid var(--border);
+}
+.section-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  border-top: 1px solid var(--border);
+  padding-top: 20px;
+  margin-bottom: 72px;
+}
+.section-eyebrow {
+  font-size: 11.5px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.section-index {
+  font-family: var(--font-display);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+.section-heading {
+  font-family: var(--font-display);
+  font-size: clamp(26px, 3vw, 44px);
+  font-weight: 300;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+  margin-bottom: 28px;
+}
+
+/* ── THESIS (airy layout) ── */
+.th-top { display: grid; grid-template-columns: 1.25fr 1fr; gap: 96px; align-items: end; margin-bottom: 88px; }
+.th-top .section-heading { margin-bottom: 0; text-wrap: balance; }
+.th-lede .hl { color: var(--accent); font-weight: 400; }
+.th-lede { font-size: 15px; line-height: 1.85; color: var(--text-secondary); font-weight: 300; max-width: 460px; }
+.th-lede a { color: var(--text-primary); text-decoration: none; border-bottom: 1px solid rgba(184,168,130,.35); transition: color .2s, border-color .2s; }
+.th-lede a:hover { color: var(--accent); border-bottom-color: var(--accent); }
+.th-pillars { display: grid; grid-template-columns: repeat(3, 1fr); }
+.th-pillar { padding: 40px 40px 48px; border-top: 1px solid var(--border); border-left: 1px solid var(--border); }
+.th-pillar:nth-child(3n+1) { border-left: none; padding-left: 0; }
+.th-pillar:nth-child(3n) { padding-right: 0; }
+.th-num { font-size: 11.5px; letter-spacing: 0.1em; color: var(--accent); opacity: 0.7; margin-bottom: 20px; }
+.th-title { font-family: var(--font-display); font-size: 13px; font-weight: 500; color: var(--text-primary); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+.th-desc { font-size: 13px; line-height: 1.75; color: var(--text-secondary); font-weight: 300; max-width: 320px; }
+.th-statement { border-top: 1px solid var(--border); padding: 88px 0 80px; }
+.port-statement { margin-top: 72px; border-top: 1px solid var(--border); padding: 72px 0 0; }
+.th-big { font-family: var(--font-display); font-size: clamp(22px, 2.3vw, 36px); font-weight: 300; line-height: 1.35; letter-spacing: -0.01em; color: var(--text-primary); max-width: 1000px; margin-bottom: 28px; }
+.th-big em { font-family: var(--font-serif); font-style: italic; font-weight: 400; color: var(--accent); }
+.th-small { font-size: 15px; line-height: 1.8; color: var(--text-secondary); font-weight: 300; }
+.th-track { border-top: 1px solid var(--border); padding-top: 36px; display: grid; grid-template-columns: 1fr 2fr; gap: 96px; }
+.focus-intro { margin: 56px 0 64px; }
+.focus-lede em { line-height: 0; font-family: var(--font-serif); font-style: italic; font-weight: 400; font-size: 1.12em; color: var(--accent); }
+.focus-lede { font-family: var(--font-display); font-size: clamp(17px, 1.55vw, 23px); font-weight: 300; line-height: 1.55; letter-spacing: -0.005em; color: #9a978d; max-width: 1000px; text-wrap: pretty; }
+.th-track-label { font-size: 11.5px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--accent); }
+.th-track-body { font-size: 15px; line-height: 1.85; color: var(--text-secondary); font-weight: 300; max-width: 720px; }
+.thesis-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+}
+.thesis-left {
+  padding-right: 72px;
+  border-right: 1px solid var(--border);
+}
+.thesis-right { padding-left: 72px; }
+.thesis-body {
+  font-size: 15px;
+  line-height: 1.85;
+  color: var(--text-secondary);
+  font-weight: 300;
+  margin-bottom: 22px;
+}
+.pillar {
+  padding: 24px 0;
+  border-top: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  gap: 0;
+}
+.pillar-num {
+  font-size: 11.5px;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  padding-top: 3px;
+}
+.pillar-title {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  letter-spacing: 0.03em;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.pillar-desc {
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text-secondary);
+  font-weight: 300;
+}
+
+/* ── FOCUS AREAS ── */
+.focus { padding: 100px var(--g) 100px; border-bottom: 1px solid var(--border); }
+.focus-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+  border: 1px solid var(--border);
+}
+.focus-card {
+  padding: 48px 36px 40px;
+  border-right: 1px solid var(--border);
+  position: relative;
+  transition: background 0.25s;
+}
+.focus-card:last-child { border-right: none; }
+.focus-card:hover { background: var(--surface); }
+.focus-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 36px;
+}
+.focus-tag {
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+  opacity: 0.7;
+  border: 1px solid rgba(184,168,130,0.2);
+  padding: 4px 9px;
+  border-radius: 1px;
+}
+.focus-idx {
+  font-family: var(--font-display);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+.focus-title {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 400;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+/* focus: image cards */
+.focus-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; border: 0; }
+.focus-card { position: relative; aspect-ratio: 4/5; overflow: hidden; padding: 0; border: 0; background: #000; }
+.focus-card:last-child { border: 0; }
+.focus-card:hover { background: #000; }
+.focus-card img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: saturate(0.9) contrast(1.02) brightness(0.96); transition: transform 0.9s cubic-bezier(.2,.6,.2,1); }
+.focus-card:hover img { transform: scale(1.045); }
+.focus-scrim { position: absolute; inset: 0; background: linear-gradient(to top, rgba(6,6,6,0.88) 0%, rgba(6,6,6,0.45) 30%, rgba(6,6,6,0) 58%); }
+.focus-cap { position: absolute; left: 28px; right: 28px; bottom: 28px; }
+.focus-cap .focus-tag { opacity: 1; background: rgba(6,6,6,0.45); border-color: rgba(184,168,130,0.45); }
+.focus-cap .focus-title { margin: 18px 0 8px; font-size: 24px; }
+.focus-cap .focus-body { font-size: 14px; line-height: 1.5; color: #9a978d; }
+.focus-body {
+  font-size: 13px;
+  line-height: 1.75;
+  color: var(--text-secondary);
+  font-weight: 300;
+}
+
+/* ── PORTFOLIO ── */
+.portfolio { padding: 100px var(--g); border-bottom: 1px solid var(--border); }
+.portfolio-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  margin-top: 56px;
+  border-top: 1px solid var(--border);
+  border-left: 1px solid var(--border);
+}
+.port-item {
+  padding: 28px 28px 24px;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  transition: background 0.2s;
+  cursor: pointer;
+  position: relative;
+}
+a.port-item { display: block; color: inherit; text-decoration: none; }
+.port-item:hover { background: var(--surface); }
+.plogo { display: block; height: var(--lh, 34px); background: currentColor; color: #fff; opacity: 0.4; -webkit-mask: var(--logo) left center / contain no-repeat; mask: var(--logo) left center / contain no-repeat; transition: opacity 0.25s, color 0.25s; }
+.port-item:hover .plogo { opacity: 1; color: var(--accent); }
+.port-name:has(.plogo) { line-height: 0; height: 32px; display: flex; align-items: center; }
+/* 15 cards + View Full Portfolio = 4 full rows at 4 columns; at 3 columns drop American Supercritical to keep 5 full rows */
+@media (max-width: 1599px) { .port-item[href*="americansupercritical.com"] { display: none; } }
+.port-item:hover .port-arrow { opacity: 1; transform: translate(0,0); }
+.port-cta { background: var(--accent-glow); display: flex; flex-direction: column; }
+.port-cta .port-top { align-items: center; height: 32px; margin-bottom: 12px; }
+.port-cta .port-name { color: var(--accent); font-size: 14px; letter-spacing: 0.04em; }
+.port-cta-arrow { color: var(--accent); font-size: 18px; transition: transform 0.25s; }
+.port-cta:hover .port-cta-arrow { transform: translateX(5px); }
+.port-cta:hover { background: var(--accent-dim); }
+.port-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+.port-name {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  letter-spacing: 0.02em;
+}
+.port-arrow {
+  font-size: 13px;
+  color: var(--accent);
+  opacity: 0;
+  transform: translate(-3px, 3px);
+  transition: opacity 0.2s, transform 0.2s;
+}
+@media (max-width: 1599px) { .portfolio-grid { grid-template-columns: repeat(3, 1fr); } }
+.port-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  font-weight: 300;
+  margin-bottom: 16px;
+}
+.port-stage {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #7A7870;
+  white-space: nowrap;
+}
+
+/* ── CONTENT CARDS (GC style) ── */
+.editorial { padding: 100px var(--g); border-bottom: 1px solid var(--border); }
+.editorial-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0;
+  margin-top: 56px;
+  border: 1px solid var(--border);
+}
+.ed-card {
+  padding: 36px 32px;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  transition: background 0.2s;
+  cursor: pointer;
+}
+.ed-card:last-child { border-right: none; }
+a.ed-card { color: inherit; text-decoration: none; }
+.ed-card:hover .ed-title { color: var(--accent); }
+.ed-title { transition: color .2s; }
+.ed-card:hover .ed-link { transform: translate(2px,-2px); }
+.ed-link { transition: transform .2s; }
+.ed-card:hover { background: var(--surface); }
+.ed-category {
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.ed-title {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 400;
+  color: var(--text-primary);
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  margin-bottom: 16px;
+  flex: 1;
+}
+.ed-sub {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.65;
+  font-weight: 300;
+  margin-bottom: 24px;
+}
+.ed-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid var(--border);
+  padding-top: 20px;
+  margin-top: auto;
+  min-height: 26px;
+  box-sizing: content-box;
+}
+.ed-logo { display:block; background:currentColor; color:#fff; opacity:.4; -webkit-mask:var(--lg) left center / contain no-repeat; mask:var(--lg) left center / contain no-repeat; transition:opacity .25s, color .25s; }
+.ed-card:hover .ed-logo { opacity:1; color:var(--accent); }
+.ed-date { font-size: 11.5px; letter-spacing: 0.1em; color: var(--text-muted); text-transform: uppercase; }
+.ed-link { font-size: 12px; color: var(--accent); display:inline-flex; align-items:center; gap:8px; white-space:nowrap; }
+.ed-act { font-size:11.5px; letter-spacing:.16em; text-transform:uppercase; }
+
+/* ── TEAM ── */
+.team { padding: 100px var(--g); border-bottom: 1px solid var(--border); }
+.team-layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 0;
+  margin-top: 56px;
+}
+.team-image-col {
+  padding-right: 48px;
+  position: sticky;
+  top: 104px;
+  align-self: start;
+}
+.team-img-frame img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; filter: saturate(0.9) contrast(1.02) brightness(0.96); transition: transform 0.9s cubic-bezier(.2,.6,.2,1); }
+.team-img-frame:hover img { transform: scale(1.045); }
+.team-img-frame {
+  position: relative;
+  background: var(--surface);
+  aspect-ratio: 4/5;
+  overflow: hidden;
+  clip-path: polygon(0 0, 100% 0, 100% 88%, 88% 100%, 0 100%);
+  margin-bottom: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.team-img-label {
+  position: absolute;
+  bottom: 28px; left: 28px;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.team-monogram {
+  font-family: var(--font-display);
+  font-size: 80px;
+  font-weight: 200;
+  color: var(--text-muted);
+  letter-spacing: -0.05em;
+  opacity: 0.4;
+}
+.team-name-block { margin-top: 8px; }
+.team-name {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 400;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+.team-role {
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-top: 6px;
+  opacity: 0.75;
+}
+
+/* Team: conviction band */
+.tm-creed { position: relative; margin-top: 88px; border-top: 1px solid var(--border); display: grid; grid-template-columns: 280px 1fr; overflow: hidden; }
+.tm-creed::before { content:''; position:absolute; inset:0; background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px); background-size: 60px 60px; opacity:.55; -webkit-mask-image: radial-gradient(ellipse 70% 120% at 85% 50%, #000 0%, transparent 70%); mask-image: radial-gradient(ellipse 70% 120% at 85% 50%, #000 0%, transparent 70%); pointer-events:none; }
+.tm-creed-label { position:relative; padding: 64px 48px 0 0; font-size: 11.5px; letter-spacing: .22em; text-transform: uppercase; color: var(--accent); display:flex; align-items:flex-start; gap:12px; border-right: 1px solid var(--border); }
+.tm-creed-label::before { content:''; width:24px; height:1px; background: var(--accent); opacity:.5; margin-top:7px; flex:none; }
+.tm-creed-body { position:relative; padding: 56px 0 8px 56px; }
+.tm-creed-big { font-family: var(--font-display); font-weight: 300; font-size: clamp(26px, 2.8vw, 42px); line-height: 1.22; letter-spacing: -0.02em; color: var(--text-primary); max-width: 1020px; text-wrap: balance; }
+.tm-creed-big em { font-family: var(--font-serif); font-style: italic; font-weight: 400; color: var(--accent); letter-spacing: -0.01em; }
+.tm-creed-small { margin-top: 36px; padding-top: 24px; border-top: 1px solid var(--border); width: fit-content; max-width: 100%; font-size: 14px; line-height: 1.8; color: var(--text-secondary); white-space: nowrap; }
+.tm-creed-small b { color: var(--accent); font-weight: 400; }
+.team-bio a { color: var(--text-primary); text-decoration: none; border-bottom: 1px solid rgba(184,168,130,.35); transition: color .2s, border-color .2s; }
+.team-bio a:hover { color: var(--accent); border-bottom-color: var(--accent); }
+.team-bio-col { padding-left: 56px; display: block; max-width: 900px; border-left: 1px solid var(--border); }
+.team-bio-col .team-bio:last-child { margin-bottom: 0; }
+.team-bio {
+  font-size: 15px;
+  line-height: 1.85;
+  color: var(--text-secondary);
+  font-weight: 300;
+  margin-bottom: 20px;
+}
+.credentials { margin-top: 48px; }
+.cred {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 16px;
+  padding: 16px 0;
+  border-top: 1px solid var(--border);
+}
+.cred-label {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding-top: 2px;
+}
+.cred-value {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 300;
+  line-height: 1.6;
+}
+
+/* ── CONTACT ── */
+.contact { padding: 0 var(--g); border-bottom: 1px solid var(--border); }
+.contact-inner {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+}
+.contact-left {
+  padding: 100px 72px 100px 0;
+  border-right: 1px solid var(--border);
+}
+.contact-right { padding: 100px 0 100px 72px; }
+.contact-heading {
+  font-family: var(--font-display);
+  font-size: clamp(30px, 3vw, 46px);
+  font-weight: 300;
+  line-height: 1.12;
+  letter-spacing: -0.015em;
+  margin-bottom: 24px;
+}
+.contact-body {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.8;
+  font-weight: 300;
+  margin-bottom: 40px;
+  max-width: 360px;
+}
+.cta-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--bg);
+  background: var(--accent);
+  padding: 12px 24px;
+  text-decoration: none;
+  border-radius: 1px;
+  transition: opacity 0.2s;
+}
+.cta-btn { transition: background .2s, opacity .2s; }
+.cta-btn:hover { background: #CDBF9B; }
+.sc2 { padding:110px 0 64px; }
+.sc2-top { display:grid; grid-template-columns:1.3fr 1fr; gap:96px; align-items:end; padding-bottom:64px; }
+.sc2-heading { font-family:var(--font-display); font-weight:300; font-size:clamp(38px,4.4vw,68px); line-height:1.06; letter-spacing:-.025em; }
+.sc2-heading em { font-family:'EB Garamond',serif; font-style:italic; font-weight:400; color:var(--accent); letter-spacing:0; }
+.sc2-side { padding-bottom:6px; }
+.sc2-body { font-size:15px; line-height:1.8; color:var(--text-secondary); font-weight:300; margin-bottom:36px; max-width:440px; }
+.sc2-consent{margin:18px 0 0;max-width:420px;font-size:12px;line-height:1.65;color:var(--text-muted)}
+.sc2-consent a{color:var(--text-secondary);text-decoration:none;border-bottom:1px solid rgba(184,168,130,.35);transition:color .2s,border-color .2s}
+.sc2-consent a:hover{color:var(--accent);border-bottom-color:var(--accent)}
+.sc2-note a { color:inherit; text-decoration:none; border-bottom:1px solid rgba(184,168,130,.35); transition:color .2s,border-color .2s; }
+.sc2-note a:hover { color:var(--accent); border-bottom-color:var(--accent); }
+.sc2-steps { display:grid; grid-template-columns:repeat(3,1fr); border-top:1px solid var(--border-med); margin-bottom:36px; }
+.sc2-step { padding:28px 32px 28px 0; border-right:1px solid var(--border); margin-right:32px; }
+.sc2-step:last-child { border-right:0; margin-right:0; }
+.sc2-step b { display:block; font-family:var(--font-display); font-weight:300; font-size:13px; letter-spacing:.2em; color:var(--accent); margin-bottom:14px; }
+.sc2-step span { display:block; font-family:var(--font-display); font-weight:300; font-size:22px; letter-spacing:-.01em; margin-bottom:6px; color:var(--text-primary); }
+.sc2-step p { font-size:13px; color:var(--text-secondary); line-height:1.7; font-weight:300; }
+.sc2-note { border-top:1px solid var(--border); padding-top:26px; font-size:12px; line-height:1.8; color:#7A7870; font-weight:300; }
+@media(max-width: 1000px){.sc2{padding:72px 0 48px}.sc2-top{grid-template-columns:1fr;gap:32px}.sc2-steps{grid-template-columns:1fr}.sc2-step{border-right:0;margin-right:0;border-bottom:1px solid var(--border)}}
+.contact-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 22px 0;
+  border-top: 1px solid var(--border);
+  text-decoration: none;
+  color: inherit;
+  transition: opacity 0.2s;
+}
+.contact-row:hover { opacity: 0.6; }
+.cr-label { font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-muted); }
+.cr-value { font-size: 13px; color: var(--text-secondary); font-weight: 300; }
+.cr-arrow { font-size: 13px; color: var(--text-muted); }
+
+/* ── FOOTER ── */
+footer {
+  padding: 28px var(--g);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 20px 40px;
+}
+.fl-mark { display:block; height:15px; aspect-ratio:3114/200; background:currentColor; color:#fff; opacity:.25; -webkit-mask:var(--lg) left center / contain no-repeat; mask:var(--lg) left center / contain no-repeat; transition:opacity .25s, color .25s; }
+.footer-links { display: flex; gap: 32px; list-style: none; justify-content: center; }
+.footer-links a { font-size: 11.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted); text-decoration: none; transition: color 0.2s; }
+.footer-links a:hover { color: var(--accent); }
+.footer-logo { grid-column:1; grid-row:1 / span 2; }
+.footer-social { grid-column:2; grid-row:1; display:flex; gap:22px; justify-content:flex-end; align-items:center; }
+.footer-legal { grid-column:2; grid-row:2; }
+.footer-social a { display:flex; color:var(--text-primary); opacity:.5; transition:opacity .2s, color .2s; }
+.footer-social a:hover { opacity:1; color:var(--accent); }
+.footer-social svg { width:15px; height:15px; fill:currentColor; }
+.footer-legal { white-space: nowrap; text-align: right; justify-self: end; }
+.footer-legal a { color: inherit; text-decoration: none; padding-bottom: 1px; background: linear-gradient(rgba(184,168,130,.35),rgba(184,168,130,.35)) no-repeat 1px 100% / calc(100% - 2px) 1px; transition: color .2s; }
+.footer-legal a:hover { color: var(--accent); background-image: linear-gradient(var(--accent),var(--accent)); }
+.footer-legal { font-size: 11.5px; color: var(--text-muted); text-align: right; line-height: 1.6; }
+
+/* ── ANIMS ── */
+.fade-up { opacity: 0; transform: translateY(24px); transition: opacity 0.8s ease, transform 0.8s ease; }
+.fade-up.vis { opacity: 1; transform: translateY(0); }
+.fade-up-d1 { transition-delay: 0.1s; }
+.fade-up-d2 { transition-delay: 0.2s; }
+.fade-up-d3 { transition-delay: 0.3s; }
+</style>
+<link rel="preload" href="/fonts/space-grotesk-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="/fonts/inter-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin><style>@font-face{font-family:'Space Grotesk';font-style:normal;font-weight:300;font-display:swap;src:url('/fonts/space-grotesk-latin-300-normal.woff2') format('woff2')}@font-face{font-family:'Space Grotesk';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/space-grotesk-latin-400-normal.woff2') format('woff2')}@font-face{font-family:'Space Grotesk';font-style:normal;font-weight:500;font-display:swap;src:url('/fonts/space-grotesk-latin-500-normal.woff2') format('woff2')}@font-face{font-family:'Space Grotesk';font-style:normal;font-weight:600;font-display:swap;src:url('/fonts/space-grotesk-latin-600-normal.woff2') format('woff2')}@font-face{font-family:'Inter';font-style:normal;font-weight:300;font-display:swap;src:url('/fonts/inter-latin-300-normal.woff2') format('woff2')}@font-face{font-family:'Inter';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/inter-latin-400-normal.woff2') format('woff2')}@font-face{font-family:'Inter';font-style:normal;font-weight:500;font-display:swap;src:url('/fonts/inter-latin-500-normal.woff2') format('woff2')}@font-face{font-family:'EB Garamond';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/eb-garamond-latin-400-normal.woff2') format('woff2')}@font-face{font-family:'EB Garamond';font-style:normal;font-weight:500;font-display:swap;src:url('/fonts/eb-garamond-latin-500-normal.woff2') format('woff2')}@font-face{font-family:'EB Garamond';font-style:italic;font-weight:400;font-display:swap;src:url('/fonts/eb-garamond-latin-400-italic.woff2') format('woff2')}/* ── MOBILE / TABLET: nav + hero (max-width 900px) ── */
+.nav-toggle { display: none; }
+@media (max-width: 1000px) {
+  :root { --g: 20px; }
+  html.nav-open { overflow: hidden; }
+  nav { padding: 0 var(--g); height: 64px; }
+  nav.open { background: #060606; border-bottom-color: var(--border); -webkit-backdrop-filter: none; backdrop-filter: none; }
+  .nav-logo img { height: 16px; }
+  .ticker-wrap { margin-top: 64px; }
+  .nav-toggle {
+    display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 6px;
+    width: 44px; height: 44px; margin-right: -12px; padding: 0;
+    background: none; border: 0; cursor: pointer; -webkit-tap-highlight-color: transparent;
+  }
+  .nav-toggle span { display: block; width: 22px; height: 1px; background: var(--text-primary); transition: transform .25s, opacity .2s; }
+  nav.open .nav-toggle span:nth-child(1) { transform: translateY(3.5px) rotate(45deg); }
+  nav.open .nav-toggle span:nth-child(2) { transform: translateY(-3.5px) rotate(-45deg); }
+  .nav-links {
+    display: none; position: fixed; top: 64px; bottom: 0; left: 0; right: 0;
+    flex-direction: column; align-items: stretch; gap: 0;
+    padding: 4px var(--g) 28px;
+    background: #060606;
+    overflow-y: auto; -webkit-overflow-scrolling: touch;
+    border-bottom: 1px solid var(--border);
+  }
+  nav.open .nav-links { display: flex; }
+  .nav-links li { border-bottom: 1px solid var(--border); }
+  .nav-links li:last-child { border-bottom: 0; margin-top: auto; }
+  .nav-links a { display: block; padding: 17px 0; font-size: 13px; letter-spacing: 0.18em; }
+  .nav-links a.nav-cta { margin-top: 22px; padding: 16px; text-align: center; }
+
+  .hero { min-height: 0; grid-template-columns: 1fr; }
+  .hero-left { padding: 44px var(--g) 40px; gap: 36px; border-right: 0; border-bottom: 1px solid var(--border); }
+  .hero-sub { font-size: 15px; padding-top: 22px; }
+  .hero-right-top { flex: none; min-height: 0; height: min(118vw, 560px, max(300px, calc(100vh - 120px))); height: min(118vw, 560px, max(300px, calc(100svh - 120px))); }
+  .tl-caption { left: var(--g); right: var(--g); bottom: 66px; }
+  .tl-year { font-size: 38px; margin-bottom: 10px; }
+  .tl-title { font-size: 11px; letter-spacing: 0.18em; }
+  .tl-text { white-space: normal; font-size: 13px; line-height: 1.55; }
+  .tl-top { left: var(--g); right: var(--g); top: 28px; }
+  .tl-eyebrow { font-size: 9.5px; letter-spacing: 0.15em; gap: 0; }
+  .tl-eyebrow::before { display: none; }
+  .tl-corner.tl-tl { top: 12px; left: 12px; }
+  .tl-corner.tl-tr { top: 12px; right: 12px; }
+  .tl-corner.tl-bl { bottom: 12px; left: 12px; }
+  .tl-corner.tl-br { bottom: 12px; right: 12px; }
+  .tl-track { left: var(--g); right: var(--g); bottom: 24px; }
+  .tl-tick::after { inset: -18px -4px; }
+  .hero-stat { padding: 22px 10px 22px 14px; }
+  .hero-stat:first-child { padding-left: var(--g); }
+  .hero-right-stats { grid-template-columns: 1fr 1fr 1fr; }
+  .hero-stat-num { font-size: 26px; }
+  .hero-stat-label { font-size: 9.5px; letter-spacing: 0.1em; }
+}
+/* ── MOBILE / TABLET: sections (max-width 900px) ── */
+@media (max-width: 1000px) {
+  .manifesto { grid-template-columns: 1fr; gap: 14px; padding: 64px var(--g); }
+  .spec-band { grid-template-columns: 1fr 1fr; }
+  .spec-item { padding: 30px 16px 30px 20px; border-right: 0; border-bottom: 1px solid var(--border); }
+  .spec-item:nth-child(odd) { padding-left: var(--g); border-right: 1px solid var(--border); }
+  .spec-item:nth-last-child(-n+2) { border-bottom: 0; }
+  .thesis, .focus, .portfolio, .editorial, .team { padding: 64px var(--g); }
+  .section-header { margin-bottom: 40px; }
+  .th-top { grid-template-columns: 1fr; gap: 22px; margin-bottom: 44px; }
+  .th-pillars { grid-template-columns: 1fr; }
+  .th-pillar, .th-pillar:nth-child(3n+1), .th-pillar:nth-child(3n) { padding: 28px 0 30px; border-left: 0; }
+  .th-desc { max-width: none; }
+  .th-statement { padding: 56px 0; }
+  .port-statement { margin-top: 48px; padding-top: 48px; }
+  .th-track { grid-template-columns: 1fr; gap: 14px; }
+  .focus-intro { margin: 36px 0 36px; }
+  .focus-grid { grid-template-columns: 1fr; gap: 12px; }
+  .focus-card { aspect-ratio: 5 / 5.4; }
+  .focus-cap { left: 20px; right: 20px; bottom: 20px; }
+  .portfolio-grid { grid-template-columns: 1fr 1fr; margin-top: 36px; }
+  .port-item { padding: 22px 20px 20px; min-width: 0; }
+  .port-stage { white-space: normal; line-height: 1.7; }
+  .port-item[href*="terraindustries.co"], .port-item[href*="furientis.com"], .port-item[href*="launchfirestorm.com"], .port-item[href*="gallatin.ai"] { display: none; }
+  .editorial-grid { grid-template-columns: 1fr; margin-top: 36px; }
+  .ed-card { border-right: 0; border-bottom: 1px solid var(--border); padding: 28px 20px; }
+  .team-layout { grid-template-columns: 1fr; gap: 32px; }
+  .team-image-col { padding-right: 0; position: static; top: auto; }
+  .team-bio-col { padding-left: 0; border-left: 0; }
+  .tm-creed { grid-template-columns: 1fr; margin-top: 56px; }
+  .tm-creed-label { border-right: 0; padding: 32px 0 0; }
+  .tm-creed-body { padding: 18px 0 0; }
+  .tm-creed-small { white-space: normal; }
+  .sc2-top { gap: 28px; padding-bottom: 40px; }
+  .sc2-steps { display: none; }
+  footer { grid-template-columns: 1fr; gap: 22px; padding: 32px var(--g); }
+  .footer-logo, .footer-social, .footer-legal { grid-column: 1; grid-row: auto; }
+  .footer-social { justify-content: flex-start; }
+  .footer-legal { white-space: normal; text-align: left; justify-self: start; }
+}
+@media (max-width: 560px) {
+  .portfolio-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 1180px) { .ed-logo[aria-label="Silent Ventures"] { height: 10px !important; } }
+@media (max-width: 1000px) { .ed-logo[aria-label="YouTube"], .ed-logo[aria-label="Spotify"] { height: 20px !important; } .ed-logo[aria-label="Silent Ventures"] { height: 11px !important; } }
+/* team bio expand / collapse (mobile) */
+.team-more { display: none; }
+@media (max-width: 1000px) {
+  .team-bio-col { scroll-margin-top: 88px; }
+  .team-name-block { scroll-margin-top: 92px; }
+  .team-bio-more { display: none; }
+  .team-bio-col.open .team-bio-more { display: block; }
+  .team-bio-col > .team-bio:first-child { margin-bottom: 8px; }
+  .team-more {
+    display: flex; align-items: center; gap: 12px; width: 100%; margin-top: 6px; padding: 14px 0;
+    background: none; border: 0; cursor: pointer; font: inherit; font-size: 12px; font-weight: 400;
+    letter-spacing: 0.18em; text-transform: uppercase; color: var(--accent); text-align: left;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .team-more::before { content: ''; order: -1; flex: 1; height: 1px; background: var(--border); }
+  .team-more::after {
+    content: ''; order: 1; width: 8px; height: 8px; margin: -4px 4px 0 0;
+    border-right: 1px solid var(--accent); border-bottom: 1px solid var(--accent); transform: rotate(45deg); transition: transform .25s;
+  }
+  .team-bio-col.open .team-more::after { transform: translateY(4px) rotate(-135deg); margin-top: 0; }
+}
+/* ── FOOTER (redesign) ── */
+footer { display: block; padding: 80px var(--g) 36px; }
+.footer-top { display: flex; justify-content: space-between; align-items: center; gap: 40px; }
+.footer-logo { grid-column: auto; grid-row: auto; }
+.footer-logo .fl-mark { height: 17px; opacity: .5; }
+.footer-tag { margin-top: 18px; font-size: 13px; line-height: 1.7; color: var(--text-secondary); font-weight: 300; }
+.footer-tag a { color: var(--text-primary); text-decoration: none; padding-bottom: 1px; background: linear-gradient(rgba(184,168,130,.35),rgba(184,168,130,.35)) no-repeat 1px 100% / calc(100% - 2px) 1px; transition: color .2s; }
+.footer-tag a:hover { color: var(--accent); background-image: linear-gradient(var(--accent),var(--accent)); }
+footer .footer-social { grid-column: auto; grid-row: auto; gap: 6px; justify-content: flex-end; }
+footer .footer-social a { width: 40px; height: 40px; align-items: center; justify-content: center; border: 1px solid var(--border); }
+.footer-bottom { margin-top: 64px; padding-top: 26px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; gap: 24px; font-size: 12px; line-height: 1.6; color: var(--text-muted); }
+.footer-nav a { color: var(--text-secondary); text-decoration: none; margin-left: 28px; transition: color .2s; white-space: nowrap; }
+.footer-nav a:first-child { margin-left: 0; }
+.footer-nav a:hover { color: var(--accent); }
+@media (max-width: 1000px) {
+  footer { display: block; padding: 56px 20px 32px; }
+  .footer-top { flex-direction: column; align-items: flex-start; gap: 30px; }
+  footer .footer-social { justify-content: flex-start; }
+  .footer-logo .fl-mark { height: 16px; }
+  footer .footer-social a { width: 44px; height: 44px; }
+  .footer-bottom { flex-direction: column-reverse; align-items: flex-start; gap: 18px; margin-top: 44px; }
+}
+</style><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="icon" href="/favicon.ico" sizes="48x48"><link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32"><link rel="icon" href="/favicon-192.png" type="image/png" sizes="192x192"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><style>
+@media (min-width: 1001px) and (max-width: 1180px) { .nav-logo img { height: 16px; } .nav-links { gap: 18px; } }
+@media (min-width: 1001px) and (max-width: 1180px) { .tl-eyebrow { font-size: 9.5px; letter-spacing: 0.15em; gap: 0; } .tl-eyebrow::before { display: none; } }
+</style>
+<style>
+@media (min-width: 1001px) and (max-width: 1100px) { .tm-creed-small { white-space: normal; } }
+</style>
+<style id="tap-targets">
+@media (max-width: 1000px) {
+  .nav-logo { padding: 16px 0; margin: -16px 0; }
+  .footer-nav a { padding: 14px 0; }
+  .lg-back, .pf-back { padding: 10px 0; margin-top: -10px; margin-bottom: 14px; }
+  .pf-jump a { padding: 8px 0; }
+  .pf-jump { margin-top: 18px; gap: 0 24px; }
+  .pf-sort button { padding: 9px 0; }
+  .chip { padding: 10px 13px; }
+}
+</style>
+<style id="footer-fluid">
+@media (max-width: 1000px) {
+  footer { padding: 44px 20px 28px; }
+  footer .footer-top { flex-direction: row; align-items: center; justify-content: space-between; flex-wrap: nowrap; gap: 14px; }
+  footer .footer-brand { min-width: 0; }
+  footer .footer-logo .fl-mark { height: clamp(7px, 2.45vw, 16px); }
+  footer .footer-social { gap: clamp(3px, 0.9vw, 6px); flex: none; }
+  footer .footer-social a { width: clamp(29px, 8.4vw, 40px); height: clamp(29px, 8.4vw, 40px); }
+  footer .footer-social svg { width: clamp(12px, 3.5vw, 15px); height: clamp(12px, 3.5vw, 15px); }
+  footer .footer-bottom { margin-top: 28px; padding-top: 18px; gap: 6px; }
+}
+@media (min-width: 761px) and (max-width: 1000px) {
+  footer .footer-bottom { flex-direction: row; align-items: center; justify-content: space-between; gap: 24px; }
+}
+@media (max-width: 359px) {
+  footer .footer-top { flex-direction: column; align-items: flex-start; gap: 20px; }
+  footer .footer-logo .fl-mark { height: 16px; }
+  footer .footer-social { gap: 6px; }
+  footer .footer-social a { width: 40px; height: 40px; }
+  footer .footer-social svg { width: 15px; height: 15px; }
+}
+</style>
+<style id="tablet-polish">
+@media (min-width: 721px) and (max-width: 1000px) {
+  .focus-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .focus-card { aspect-ratio: 3 / 4.4; }
+  .focus-cap { left: 16px; right: 16px; bottom: 16px; height: 160px; display: flex; flex-direction: column; justify-content: flex-start; align-items: flex-start; }
+}
+@media (min-width: 721px) and (max-width: 780px) { .focus-cap { height: 202px; } }
+@media (min-width: 781px) and (max-width: 880px) { .focus-cap { height: 176px; } }
+@media (min-width: 721px) and (max-width: 1000px) {
+  .team-layout { grid-template-columns: 240px minmax(0, 1fr); gap: 0; }
+  .team-image-col { padding-right: 36px; position: sticky; top: 96px; align-self: start; }
+  .team-bio-col { padding-left: 40px; border-left: 1px solid var(--border); }
+  .team-bio-more { display: block !important; }
+  .team-more { display: none !important; }
+  .team-bio-col > .team-bio:first-child { margin-bottom: 20px; }
+}
+</style>
+<style id="cta-label">
+.nav-cta .cta-m { display: none; }
+@media (max-width: 1000px) { .nav-cta .cta-d { display: none; } .nav-cta .cta-m { display: inline; } }
+</style>
+<style id="uniform-grid">.portfolio-grid{grid-template-columns:repeat(4,minmax(0,1fr))}@media (max-width:1599px){.portfolio-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}@media (max-width:1000px){.portfolio-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media (max-width:560px){.portfolio-grid{grid-template-columns:minmax(0,1fr)}}.port-stage{white-space:normal;line-height:1.7}@media (max-width:1180px){.tl-text{font-size:10px}}.tl-eyebrow,.hero-stat-label{font-size:max(10px,var(--minfs,0px))}@media (max-width:1000px){.hero-stat-label{font-size:10px!important}.tl-eyebrow{font-size:10px!important}}@media (min-width:1001px) and (max-width:1180px){.tl-eyebrow{font-size:10px!important}}</style><style id="landscape-phone">@media (max-width:720px) and (orientation:landscape){.focus-card{aspect-ratio:21/9}.focus-cap{left:20px;right:20px;bottom:16px}.team-image-col{max-width:240px}}</style><style id="responsive-fixes">
+/* Focus cards: 3-up from 561px so small tablets / phone landscape match the tablet layout */
+@media (min-width: 561px) and (max-width: 720px) {
+  .focus-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+  .focus-card { aspect-ratio: 3 / 5.2; }
+  .focus-cap { left: 12px; right: 12px; bottom: 14px; height: 226px; display: flex; flex-direction: column; justify-content: flex-start; align-items: flex-start; }
+}
+/* Hero slideshow: keep the top caption legible over bright photos on small screens */
+@media (max-width: 1000px) {
+  .tl-scrim { background: linear-gradient(to bottom, rgba(6,6,6,0.62) 0%, rgba(6,6,6,0) 24%), linear-gradient(to top, rgba(6,6,6,0.94) 0%, rgba(6,6,6,0.55) 26%, rgba(6,6,6,0.05) 52%, rgba(6,6,6,0.10) 80%, rgba(6,6,6,0.45) 100%); }
+  .tl-index { white-space: nowrap; flex-shrink: 0; margin-left: 12px; }
+}
+@media (max-width: 400px) {
+  .tl-eyebrow { font-size: 8px; letter-spacing: 0.06em; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+  .tl-top { left: 20px; right: 20px; }
+}
+@media (max-width: 380px) {
+  .hero-eyebrow { letter-spacing: 0.14em; font-size: 10px; }
+}
+</style>
+<style id="tl-short-label">.tl-eyebrow .tl-short{display:none}@media (max-width:359px){.tl-eyebrow .tl-long{display:none}.tl-eyebrow .tl-short{display:inline}}</style>
+<style id="ipadpro-portrait">
+/* iPad Pro (and similar 1001–1100px portrait screens): stack the hero like the other tablets */
+@media (min-width: 1001px) and (max-width: 1100px) and (orientation: portrait) {
+  .hero { min-height: 0; grid-template-columns: 1fr; }
+  .hero-left { padding: 56px var(--g) 48px; gap: 40px; border-right: 0; border-bottom: 1px solid var(--border); }
+  .hero-headline { font-size: 64px; }
+  .hero-sub { font-size: 16px; padding-top: 24px; }
+  .hero-right-top { flex: none; min-height: 0; height: 620px; }
+  .tl-scrim { background: linear-gradient(to bottom, rgba(6,6,6,0.62) 0%, rgba(6,6,6,0) 24%), linear-gradient(to top, rgba(6,6,6,0.94) 0%, rgba(6,6,6,0.55) 26%, rgba(6,6,6,0.05) 52%, rgba(6,6,6,0.10) 80%, rgba(6,6,6,0.45) 100%); }
+}
+</style>
+<style id="footer-wrap">@media (max-width:520px){.footer-nav{display:flex;flex-wrap:wrap;gap:0 16px}.footer-nav a{margin-left:0}}</style><style id="short-landscape">
+/* Phones in landscape (and other short screens): keep the founder photo pinned beside the bio, sized to the visible screen height so photo, name and role stay fully in view.
+   dvh tracks the screen as Safari's toolbars hide, so the photo is as large as the screen allows. 188px = header offset + gaps + name and role. */
+@media (min-width: 721px) and (max-height: 620px) {
+  .team-image-col { top: 72px; }
+  .team-img-frame { margin-bottom: 12px; width: min(100%, calc((100vh - 188px) * 0.8)); }
+  @supports (height: 100dvh) { .team-img-frame { width: min(100%, calc((100dvh - 188px) * 0.8)); } }
+}
+/* Phones in landscape: copyright and footer links share one row, as on tablet and desktop */
+@media (max-width: 760px) and (orientation: landscape) {
+  footer .footer-bottom { flex-direction: row; align-items: center; justify-content: space-between; gap: 24px; }
+  .footer-nav { display: block; flex: none; }
+  .footer-nav a { margin-left: 22px; }
+  .footer-nav a:first-child { margin-left: 0; }
+}
+</style><style id="news-cards">.nw-co{color:var(--text-muted)}
+/* NEWS: newest articles first (7 above 1280px = two rows of 4 with the link-out card; 5 at 561-1280px; 3 on portrait phones), same grid language as Portfolio/Perspectives.
+   Rules between cards are the 1px grid gap showing the border colour, so they stay right at any column count. */
+.news{padding:100px var(--g);border-bottom:1px solid var(--border)}
+.news-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--border);margin-top:56px;border:1px solid var(--border)}
+a.nw-card{color:inherit;text-decoration:none}
+.nw-card{padding:34px 30px 30px;background:var(--bg);display:flex;flex-direction:column;min-height:240px;transition:background .2s}
+.nw-card:hover{background:var(--surface)}
+.nw-eb{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);opacity:.85}
+.nw-title{font-family:var(--font-display);font-size:18px;font-weight:400;color:var(--text-primary);line-height:1.3;letter-spacing:-.01em;margin:20px 0 0;flex:1;transition:color .2s}
+.nw-card:hover .nw-title{color:var(--accent)}
+.nw-meta{display:flex;align-items:center;justify-content:space-between;gap:16px;border-top:1px solid var(--border);padding-top:18px;margin-top:24px;min-height:26px}
+.nw-src{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--text-muted);transition:color .2s}
+.nw-card:hover .nw-src{color:var(--text-secondary)}
+.nw-go{font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);white-space:nowrap;display:inline-block;transition:transform .2s}
+.nw-card:hover .nw-go{transform:translate(2px,-2px)}
+.nw-cta{background:linear-gradient(var(--accent-glow),var(--accent-glow)),var(--bg)}
+.nw-cta:hover{background:linear-gradient(var(--accent-dim),var(--accent-dim)),var(--bg)}
+.nw-cta .nw-title{display:flex;justify-content:space-between;align-items:center;margin:0;flex:0 0 auto;font-size:14px;letter-spacing:.04em;color:var(--accent)}
+.nw-cta .nw-sub{font-size:12.5px;line-height:1.65;color:var(--text-secondary);margin-top:12px}
+.nw-cta .nw-arrow{font-size:18px;transition:transform .25s}
+.nw-cta:hover .nw-arrow{transform:translateX(5px)}
+/* landscape tablets and small laptops: four columns get cramped, so 5 articles + View All News in two rows of three */
+@media (min-width:1001px) and (max-width:1280px){
+  .news-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .nw-more:nth-child(n+6){display:none}
+}
+@media (max-width:1000px){
+  .news-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .nw-more{display:none}
+  .news{padding:64px var(--g)}
+  .news-grid{margin-top:36px}
+  .nw-card{padding:28px 20px;min-height:0}
+}
+@media (max-width:560px){
+  .news-grid{grid-template-columns:minmax(0,1fr)}
+}
+/* two-column widths (portrait tablets, phones held sideways): 5 articles + View All News = three rows of two */
+@media (min-width:561px) and (max-width:1000px){
+  .nw-more:nth-child(-n+5){display:flex}
+}
+/* View Full Portfolio and View All News share one card design: one grid cell, same padding, type and spacing at every width */
+.port-cta,.nw-cta{padding:28px 28px 24px;min-height:0}
+.port-cta .port-top,.nw-cta .nw-title{display:flex;justify-content:space-between;align-items:center;height:32px;margin:0 0 12px;flex:0 0 auto}
+.port-cta .port-name,.nw-cta .nw-title{font-family:var(--font-display);font-size:14px;font-weight:500;line-height:1.3;letter-spacing:.04em;color:var(--accent)}
+.port-cta-arrow,.nw-cta .nw-arrow{font-size:18px;font-weight:400;color:var(--accent)}
+.port-cta .port-desc,.nw-cta .nw-sub{font-size:12.5px;line-height:1.65;font-weight:300;color:var(--text-secondary);margin:0}
+@media (max-width:1000px){.port-cta,.nw-cta{padding:22px 20px 20px}}
+/* with View Full Portfolio in its own cell, two-column widths show Firestorm again so 11 companies + the card fill six rows */
+@media (min-width:561px) and (max-width:1000px){.port-item[href*="launchfirestorm.com"]{display:block}}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<!-- NAV -->
+<header>
+<nav id="main-nav" aria-label="Primary">
+  <a class="nav-logo" href="/"><img src="/assets/silent-ventures-wordmark.svg" width="3114" height="200" alt="Silent Ventures"></a>
+  <button class="nav-toggle" id="nav-toggle" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="nav-menu"><span></span><span></span></button>
+  <ul class="nav-links" id="nav-menu">
+    <li><a href="#home" id="nav-home" class="is-current">Home</a></li>
+    <li><a href="#thesis">Thesis</a></li>
+    <li><a href="#focus">Focus</a></li>
+    <li><a href="#portfolio">Portfolio</a></li>
+    <li><a href="#team">Team</a></li>
+    <li><a href="#research">Research</a></li>
+    <li><a href="#news">News</a></li>
+    <li><a href="https://silentcapital.vc" class="nav-cta" target="_blank" rel="noopener noreferrer"><span class="cta-d">Syndicate</span><span class="cta-m">Join Syndicate</span></a></li>
+  </ul>
+</nav>
+</header>
+<main id="main" tabindex="-1">
+
+<!-- SILENT VENTURES UNICORN TICKER -->
+<div class="ticker-wrap" role="region" aria-label="Unicorn Ticker">
+  <div class="ticker-track" id="ticker">
+    <span class="ticker-label"><span class="tk-t">Unicorn Ticker (16)</span></span>
+    <span class="ticker-item"><span class="tk-t">Allen Control Systems<span class="tk-v">($2.2B)</span></span></span>
+    <span class="ticker-item"><span class="tk-t">Amca<span class="tk-v">($1.2B)</span></span></span>
+    <span class="ticker-item"><span class="tk-t">Anduril<span class="tk-v">($61B)</span></span></span>
+    <span class="ticker-item"><span class="tk-t">Armada AI<span class="tk-v">($2.2B)</span></span></span>
+    <span class="ticker-item"><span class="tk-t">Axiom Space<span class="tk-v">($2.5B)</span></span></span>
+    <span aria-hidden="true" class="ticker-label"><span class="tk-t">Unicorn Ticker (16)</span></span>
+    <span class="ticker-item"><span class="tk-t">Base Power<span class="tk-v">($13B)</span></span></span>
+    <span class="ticker-item"><span class="tk-t">Castelion<span class="tk-v">($13B)</span></span></span>
+    <span class="ticker-item"><span class="tk-t">CHAOS Industries<span class="tk-v">($4.5B)</span></span></span>
+    <span class="ticker-item"><span class="tk-t">Erebor<span class="tk-v">($9.5B)</span></span></span>
+    <span class="ticker-item"><span class="tk-t">Firehawk Aerospace</span></span>
+    <span aria-hidden="true" class="ticker-label"><span class="tk-t">Unicorn Ticker (16)</span></span>
+    <span class="ticker-item"><span class="tk-t">Hadrian<span class="tk-v">($7.9B)</span></span></span>
+    <span class="ticker-item"><span class="tk-t">Harbinger<span class="tk-v">($2B)</span></span></span>
+    <span class="ticker-item"><span class="tk-t">Impulse Space<span class="tk-v">($5.4B)</span></span></span>
+    <span class="ticker-item"><span class="tk-t">Kela Technologies<span class="tk-v">($1.2B)</span></span></span>
+    <span class="ticker-item"><span class="tk-t">Saronic<span class="tk-v">($9.25B)</span></span></span>
+    <span class="ticker-item"><span class="tk-t">Voyager Technologies<span class="tk-v">(NYSE: VOYG)</span></span></span>
+    <span aria-hidden="true" class="ticker-label"><span class="tk-t">Unicorn Ticker (16)</span></span>
+    <span aria-hidden="true" class="ticker-item"><span class="tk-t">Allen Control Systems<span class="tk-v">($2.2B)</span></span></span>
+    <span aria-hidden="true" class="ticker-item"><span class="tk-t">Amca<span class="tk-v">($1.2B)</span></span></span>
+    <span aria-hidden="true" class="ticker-item"><span class="tk-t">Anduril<span class="tk-v">($61B)</span></span></span>
+    <span aria-hidden="true" class="ticker-item"><span class="tk-t">Armada AI<span class="tk-v">($2.2B)</span></span></span>
+    <span aria-hidden="true" class="ticker-item"><span class="tk-t">Axiom Space<span class="tk-v">($2.5B)</span></span></span>
+    <span aria-hidden="true" class="ticker-label"><span class="tk-t">Unicorn Ticker (16)</span></span>
+    <span aria-hidden="true" class="ticker-item"><span class="tk-t">Base Power<span class="tk-v">($13B)</span></span></span>
+    <span aria-hidden="true" class="ticker-item"><span class="tk-t">Castelion<span class="tk-v">($13B)</span></span></span>
+    <span aria-hidden="true" class="ticker-item"><span class="tk-t">CHAOS Industries<span class="tk-v">($4.5B)</span></span></span>
+    <span aria-hidden="true" class="ticker-item"><span class="tk-t">Erebor<span class="tk-v">($9.5B)</span></span></span>
+    <span aria-hidden="true" class="ticker-item"><span class="tk-t">Firehawk Aerospace</span></span>
+    <span aria-hidden="true" class="ticker-label"><span class="tk-t">Unicorn Ticker (16)</span></span>
+    <span aria-hidden="true" class="ticker-item"><span class="tk-t">Hadrian<span class="tk-v">($7.9B)</span></span></span>
+    <span aria-hidden="true" class="ticker-item"><span class="tk-t">Harbinger<span class="tk-v">($2B)</span></span></span>
+    <span aria-hidden="true" class="ticker-item"><span class="tk-t">Impulse Space<span class="tk-v">($5.4B)</span></span></span>
+    <span aria-hidden="true" class="ticker-item"><span class="tk-t">Kela Technologies<span class="tk-v">($1.2B)</span></span></span>
+    <span aria-hidden="true" class="ticker-item"><span class="tk-t">Saronic<span class="tk-v">($9.25B)</span></span></span>
+    <span aria-hidden="true" class="ticker-item"><span class="tk-t">Voyager Technologies<span class="tk-v">(NYSE: VOYG)</span></span></span>
+  </div>
+</div>
+
+<!-- HERO -->
+<section class="hero" id="home" aria-labelledby="h-home">
+  <div class="hero-left">
+    <div class="hero-eyebrow">Early-Stage Defense &amp; Deep Tech</div>
+    <h1 class="hero-headline" id="h-home">
+      Backing founders<br>
+      who build for<br>
+      <span class="serif">Western prosperity.</span>
+    </h1>
+    <p class="hero-sub">
+      Silent Ventures is an early-stage fund that invests in exceptional founders building unrivaled <strong class="hl">defense and deep tech</strong> companies from day zero — long before non-consensus graduates to mainstream.
+    </p>
+  </div>
+  <div class="hero-right">
+    <div class="hero-right-top">
+      <div class="hero-grid-overlay"></div>
+      <div class="hero-timeline" id="timeline">
+        <div class="tl-slide active">
+          <img width="820" height="515" fetchpriority="high" src="/assets/hero-1869-transcontinental-railroad.jpg" alt="1869: The Transcontinental Railroad. A steam locomotive and passenger cars on the American frontier">
+          <div class="tl-scrim"></div>
+          <div class="tl-caption">
+            <div class="tl-year">1869</div>
+            <div class="tl-title">The Transcontinental Railroad</div>
+            <div class="tl-text">Steam and steel bind a continent into a single nation.</div>
+          </div>
+        </div>
+        <div class="tl-slide">
+          <img width="820" height="547" fetchpriority="low" decoding="async" src="/assets/hero-1901-age-of-steel.jpg" alt="1901: The Age of Steel. Molten steel pouring inside an American steel mill">
+          <div class="tl-scrim"></div>
+          <div class="tl-caption">
+            <div class="tl-year">1901</div>
+            <div class="tl-title">The Age of Steel</div>
+            <div class="tl-text">American mills forge the backbone of a growing industrial superpower.</div>
+          </div>
+        </div>
+        <div class="tl-slide">
+          <img width="820" height="456" fetchpriority="low" decoding="async" src="/assets/hero-1908-assembly-line.jpg" alt="1913: The Assembly Line. Workers building automobiles on an early moving assembly line">
+          <div class="tl-scrim"></div>
+          <div class="tl-caption">
+            <div class="tl-year">1913</div>
+            <div class="tl-title">The Assembly Line</div>
+            <div class="tl-text">Ford’s new assembly line puts a bustling nation on wheels.</div>
+          </div>
+        </div>
+        <div class="tl-slide">
+          <img width="820" height="644" fetchpriority="low" decoding="async" src="/assets/hero-1932-building-skyward.jpg" alt="1932: Building Skyward. Ironworkers seated on a steel beam high above a city skyline">
+          <div class="tl-scrim"></div>
+          <div class="tl-caption">
+            <div class="tl-year">1932</div>
+            <div class="tl-title">Building Skyward</div>
+            <div class="tl-text">Skilled ironworkers craft the skyline of a rising global power.</div>
+          </div>
+        </div>
+        <div class="tl-slide">
+          <img width="820" height="591" fetchpriority="low" decoding="async" src="/assets/hero-1942-manhattan-project.jpg" alt="1942: The Manhattan Project. A vast industrial hall built for American nuclear research">
+          <div class="tl-scrim"></div>
+          <div class="tl-caption">
+            <div class="tl-year">1942</div>
+            <div class="tl-title">The Manhattan Project</div>
+            <div class="tl-text">American nuclear scientists and industry unite to unlock the atom.</div>
+          </div>
+        </div>
+        <div class="tl-slide">
+          <img width="820" height="524" fetchpriority="low" decoding="async" src="/assets/hero-1943-arsenal-of-democracy.jpg" alt="1943: Arsenal of Democracy. Rows of bomber fuselages under assembly in a wartime aircraft factory">
+          <div class="tl-scrim"></div>
+          <div class="tl-caption">
+            <div class="tl-year">1943</div>
+            <div class="tl-title">Arsenal of Democracy</div>
+            <div class="tl-text">U.S. mobilization proves American factories can out-produce the world.</div>
+          </div>
+        </div>
+        <div class="tl-slide">
+          <img width="820" height="597" fetchpriority="low" decoding="async" src="/assets/hero-1945-victory-in-sight.jpg" alt="1945: Victory in Sight. U.S. Marines raising the American flag on a battlefield summit">
+          <div class="tl-scrim"></div>
+          <div class="tl-caption">
+            <div class="tl-year">1945</div>
+            <div class="tl-title">Victory in Sight</div>
+            <div class="tl-text">Marines raise the American flag over Iwo Jima.</div>
+          </div>
+        </div>
+        <div class="tl-slide">
+          <img width="820" height="564" fetchpriority="low" decoding="async" src="/assets/hero-1964-blackbird.jpg" alt="1964: The Blackbird. A Lockheed SR-71 Blackbird reconnaissance aircraft in flight">
+          <div class="tl-scrim"></div>
+          <div class="tl-caption">
+            <div class="tl-year">1964</div>
+            <div class="tl-title">The Blackbird</div>
+            <div class="tl-text">The SR-71 outflies every adversarial threat at three times the speed of sound.</div>
+          </div>
+        </div>
+        <div class="tl-slide">
+          <img width="820" height="547" fetchpriority="low" decoding="async" src="/assets/hero-1969-one-giant-leap.jpg" alt="1969: One Giant Leap. An astronaut standing beside the American flag on the surface of the Moon">
+          <div class="tl-scrim"></div>
+          <div class="tl-caption">
+            <div class="tl-year">1969</div>
+            <div class="tl-title">One Giant Leap</div>
+            <div class="tl-text">Apollo 11 lands the first humans on the Moon — America wins the space race.</div>
+          </div>
+        </div>
+        <div class="tl-slide">
+          <img width="820" height="547" fetchpriority="low" decoding="async" src="/assets/hero-1981-space-shuttle.jpg" alt="1981: The Space Shuttle. A Space Shuttle lifting off from its launch pad">
+          <div class="tl-scrim"></div>
+          <div class="tl-caption">
+            <div class="tl-year">1981</div>
+            <div class="tl-title">The Space Shuttle</div>
+            <div class="tl-text">NASA’s reusable spacecraft catalyze a new era of orbital science.</div>
+          </div>
+        </div>
+        <div class="tl-slide">
+          <img width="820" height="547" fetchpriority="low" decoding="async" src="/assets/hero-1999-first-gpu.jpg" alt="1999: The First GPU. An early graphics processing unit circuit board">
+          <div class="tl-scrim"></div>
+          <div class="tl-caption">
+            <div class="tl-year">1999</div>
+            <div class="tl-title">The First GPU</div>
+            <div class="tl-text">NVIDIA’s GeForce 256 ushers in the era of parallel computing that underpins modern AI.</div>
+          </div>
+        </div>
+        <div class="tl-slide">
+          <img width="820" height="547" fetchpriority="low" decoding="async" src="/assets/hero-2006-cloud-infrastructure.jpg" alt="2006: Cloud Infrastructure. Rows of server racks inside a data center">
+          <div class="tl-scrim"></div>
+          <div class="tl-caption">
+            <div class="tl-year">2006</div>
+            <div class="tl-title">Cloud Infrastructure</div>
+            <div class="tl-text">Amazon Web Services launches, making global compute available on demand.</div>
+          </div>
+        </div>
+        <div class="tl-slide">
+          <img width="820" height="461" fetchpriority="low" decoding="async" src="/assets/hero-2012-editing-life.jpg" alt="2012: Editing Life. A strand of DNA, representing gene-editing technology">
+          <div class="tl-scrim"></div>
+          <div class="tl-caption">
+            <div class="tl-year">2012</div>
+            <div class="tl-title">Editing Life</div>
+            <div class="tl-text">CRISPR-Cas9 enables the programmable genome, marking a revolutionary moment in biotechnology.</div>
+          </div>
+        </div>
+        <div class="tl-slide">
+          <img width="820" height="547" fetchpriority="low" decoding="async" src="/assets/hero-2015-age-of-ai.jpg" alt="2015: The Age of AI. A humanoid robot standing in a dark studio">
+          <div class="tl-scrim"></div>
+          <div class="tl-caption">
+            <div class="tl-year">2015</div>
+            <div class="tl-title">The Age of AI</div>
+            <div class="tl-text">OpenAI is incorporated and foundational model research begins.</div>
+          </div>
+        </div>
+        <div class="tl-slide">
+          <img width="820" height="406" fetchpriority="low" decoding="async" src="/assets/hero-today-autonomous-age-saronic-marauder.jpg" alt="Today: The Autonomous Age. A Saronic Marauder uncrewed surface vessel at sea">
+          <div class="tl-scrim"></div>
+          <div class="tl-caption">
+            <div class="tl-year">Today</div>
+            <div class="tl-title">The Autonomous Age</div>
+            <div class="tl-text">Saronic’s Marauder ASV showcases a generational shift to intelligent platforms.</div>
+          </div>
+        </div>
+        <div class="tl-scan"></div>
+        <div class="tl-corner tl-tl"></div>
+        <div class="tl-corner tl-tr"></div>
+        <div class="tl-corner tl-bl"></div>
+        <div class="tl-corner tl-br"></div>
+        <div class="tl-top">
+          <span class="tl-eyebrow"><span class="tl-long">Innovation is a uniquely American quality</span><span class="tl-short">Innovation is uniquely American</span></span>
+          <span class="tl-index" id="tl-index">01 / 15</span>
+        </div>
+        <div class="tl-track">
+          <div class="tl-line"><div class="tl-progress" id="tl-progress"></div></div>
+          <div class="tl-ticks" id="tl-ticks"></div>
+          <div class="tl-ends"><span>1869</span><span>Present</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="hero-right-stats">
+      <div class="hero-stat">
+        <div class="hero-stat-num">16</div>
+        <div class="hero-stat-label">Unicorns backed</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-num">$225M+</div>
+        <div class="hero-stat-label">AUM</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-num">10</div>
+        <div class="hero-stat-label">Years in defense &amp; deep tech</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MANIFESTO (GC editorial pull-quote) -->
+<section class="manifesto fade-up" aria-label="Investment mission">
+  <div class="manifesto-label">Investing In<br>America</div>
+  <p class="manifesto-quote">
+    The security of free nations is determined by those who field <em>the most capable technologies</em> — and the most capable technologies are built by the most capable founders.
+  </p>
+</section>
+
+<!-- SPEC BAND (CHAOS-style) -->
+<div class="spec-band">
+  <div class="spec-item fade-up">
+    <div class="spec-num"><span>Pre<sup>Seed</sup></span></div>
+    <div class="spec-label">Investment Stage</div>
+  </div>
+  <div class="spec-item fade-up fade-up-d1">
+    <div class="spec-num"><span>$2–5M</span></div>
+    <div class="spec-label">Check size</div>
+  </div>
+  <div class="spec-item fade-up fade-up-d2">
+    <div class="spec-num txt"><span>Lead or <span style="white-space:nowrap">Co-Lead</span></span></div>
+    <div class="spec-label">Deal structure</div>
+  </div>
+  <div class="spec-item fade-up fade-up-d3">
+    <div class="spec-num txt"><span>Defense &amp; Deep Tech</span></div>
+    <div class="spec-label">Sector focus</div>
+  </div>
+</div>
+
+<!-- THESIS -->
+<section class="thesis" id="thesis" aria-labelledby="h-thesis">
+  <h2 class="sr-only" id="h-thesis">Investment Thesis</h2>
+  <div class="section-header">
+    <span class="section-eyebrow">Investment Thesis</span>
+  </div>
+  <div class="th-wrap fade-up">
+    <div class="th-top">
+      <h2 class="section-heading">Software stopped eating the world. The 21st century is defined by audacious builders who produce superior hardware at scale.</h2>
+      <p class="th-lede">Silent Ventures <strong class="hl">only invests as a first check at pre-seed</strong>. We lead early-stage rounds with $2&ndash;5M investments. The fund doubles down in its portfolio companies at seed, either by leading or co-leading. With the support of its <a href="https://www.tectonicdefense.com/exclusive-brian-singermans-gpx-backs-silent-ventures-85m-fund-ii" target="_blank" rel="noopener noreferrer">limited partners</a>, Silent Ventures maintains the ability to materially follow on from Series A to pre-IPO, supporting its founders from inception to exit.</p>
+    </div>
+    <div class="th-pillars">
+      <div class="th-pillar"><div class="th-num">01</div><div class="th-title">Atoms, Not Bits</div><div class="th-desc">The SaaS era is over. We invest in the physical &mdash; critical systems and infrastructure &mdash; which will underpin America&rsquo;s prosperous future.</div></div>
+      <div class="th-pillar"><div class="th-num">02</div><div class="th-title">Founding Team Emphasis</div><div class="th-desc">We index almost entirely on founding teams, their differentiated expertise, ability to attract excellent talent, and sales acumen.</div></div>
+      <div class="th-pillar"><div class="th-num">03</div><div class="th-title">Technologies of Consequence</div><div class="th-desc">We invest in substance and things that matter. We underwrite physical moats and only take calls with those building plausible science fiction.</div></div>
+      <div class="th-pillar"><div class="th-num">04</div><div class="th-title">Day Zero Conviction</div><div class="th-desc">We invest in people, move quickly, take nothing for granted, and earn the right to be on your cap table. We punch way above our weight.</div></div>
+      <div class="th-pillar"><div class="th-num">05</div><div class="th-title">Unapologetically Patriotic</div><div class="th-desc">We believe in Western Exceptionalism and the values that define our democratic republic. Our founders develop technologies to protect them.</div></div>
+      <div class="th-pillar"><div class="th-num">06</div><div class="th-title">The National Interest</div><div class="th-desc">Every company we back strengthens the United States and her allies. A new Monroe Doctrine &mdash; powered by patriots and atoms &mdash; is now in effect.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- FOCUS AREAS -->
+<section class="focus" id="focus" aria-labelledby="h-focus">
+  <h2 class="sr-only" id="h-focus">Focus Areas</h2>
+  <div class="section-header">
+    <span class="section-eyebrow">Focus Areas</span>
+  </div>
+  <div class="focus-intro fade-up">
+    <p class="focus-lede">We&rsquo;ve invested in defense, deep tech, and critical systems for over a decade, long before it was cool &mdash; years before it was trendy. As we specialized, the generalist venture ecosystem first labeled us <em>idiots</em>; then <em>non-consensus</em>; then <em>contrarian</em>. We did the heavy lifting and helped stand up what is now considered mainstream. Choose the best partner for your journey. Our track record speaks for itself.</p>
+  </div>
+  <div class="focus-grid fade-up">
+    <div class="focus-card">
+      <img width="700" height="875" loading="lazy" decoding="async" src="/assets/focus-defense.jpg?v=3" alt="Defense: a missile launching from a military truck launcher">
+      <div class="focus-scrim"></div>
+      <div class="focus-cap">
+        <span class="focus-tag">Hardware</span>
+        <div class="focus-title">Defense</div>
+        <div class="focus-body">Hypersonics, kinetics, space platforms, directed energy, propulsion, and unmanned systems.</div>
+      </div>
+    </div>
+    <div class="focus-card">
+      <img width="700" height="875" loading="lazy" decoding="async" src="/assets/focus-national-security.jpg?v=3" alt="National Security: patrol boats moving across coastal waters">
+      <div class="focus-scrim"></div>
+      <div class="focus-cap">
+        <span class="focus-tag">Software</span>
+        <div class="focus-title">National Security</div>
+        <div class="focus-body">Autonomy, AI, command &amp; control, electronic warfare, OSINT, HUMINT, SIGINT, and cyber.</div>
+      </div>
+    </div>
+    <div class="focus-card">
+      <img width="700" height="875" loading="lazy" decoding="async" src="/assets/focus-deep-technology.jpg?v=3" alt="Deep Tech: a dark industrial structure and container in a wooded setting">
+      <div class="focus-scrim"></div>
+      <div class="focus-cap">
+        <span class="focus-tag">Hybrid</span>
+        <div class="focus-title">Deep Tech</div>
+        <div class="focus-body">Energy, industrials, manufacturing, supply chain, robotics, compute, and big data.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PORTFOLIO -->
+<section class="portfolio" id="portfolio" aria-labelledby="h-portfolio">
+  <h2 class="sr-only" id="h-portfolio">Portfolio</h2>
+  <div class="section-header">
+    <span class="section-eyebrow">Portfolio</span>
+  </div>
+  <div class="portfolio-grid fade-up">
+    <a class="port-item" href="https://www.castelion.com" target="_blank" rel="noopener noreferrer">
+      <div class="port-top"><div class="port-name"><span class="plogo" role="img" aria-label="Castelion" style="--logo:url(/assets/logo-castelion.png);--lh:32px;aspect-ratio:313/140"></span></div><div class="port-arrow" aria-hidden="true">&#8599;&#xFE0E;</div></div>
+      <div class="port-desc">Rapidly manufacturing future military systems at scale.</div>
+      <div class="port-stage">Pre-Seed &middot; Seed &middot; Series&nbsp;A &middot; Series&nbsp;B</div>
+    </a>
+    <a class="port-item" href="https://www.saronic.com" target="_blank" rel="noopener noreferrer">
+      <div class="port-top"><div class="port-name"><span class="plogo" role="img" aria-label="Saronic" style="--logo:url(/assets/logo-saronic.png);--lh:25.9px;aspect-ratio:500/100"></span></div><div class="port-arrow" aria-hidden="true">&#8599;&#xFE0E;</div></div>
+      <div class="port-desc">Superior autonomous vessels for the maritime domain.</div>
+      <div class="port-stage">Seed &middot; Series&nbsp;A &middot; Series&nbsp;B &middot; Series&nbsp;C &middot; Series&nbsp;D</div>
+    </a>
+    <a class="port-item" href="https://www.impulsespace.com" target="_blank" rel="noopener noreferrer">
+      <div class="port-top"><div class="port-name"><span class="plogo" role="img" aria-label="Impulse Space" style="--logo:url(/assets/logo-impulse-space.png);--lh:25px;aspect-ratio:515/100"></span></div><div class="port-arrow" aria-hidden="true">&#8599;&#xFE0E;</div></div>
+      <div class="port-desc">In-space mobility for moving payloads between orbits.</div>
+      <div class="port-stage">Series&nbsp;B &middot; Series&nbsp;C &middot; Series&nbsp;D</div>
+    </a>
+    <a class="port-item" href="https://chaosinc.com" target="_blank" rel="noopener noreferrer">
+      <div class="port-top"><div class="port-name"><span class="plogo" role="img" aria-label="CHAOS Industries" style="--logo:url(/assets/logo-chaos-industries.png);--lh:18.5px;aspect-ratio:361/60"></span></div><div class="port-arrow" aria-hidden="true">&#8599;&#xFE0E;</div></div>
+      <div class="port-desc">Redefining the future of sensing, detection, and effects.</div>
+      <div class="port-stage">Series&nbsp;A &middot; Series&nbsp;B</div>
+    </a>
+    <a class="port-item" href="https://erebor.bank" target="_blank" rel="noopener noreferrer">
+      <div class="port-top"><div class="port-name"><span class="plogo" role="img" aria-label="Erebor" style="--logo:url(/assets/logo-erebor.png);--lh:21.5px;aspect-ratio:619/100"></span></div><div class="port-arrow" aria-hidden="true">&#8599;&#xFE0E;</div></div>
+      <div class="port-desc">A nationally chartered bank built for modern America.</div>
+      <div class="port-stage">Series&nbsp;A &middot; Series&nbsp;B &middot; Series&nbsp;C</div>
+    </a>
+    <a class="port-item" href="https://www.basepowercompany.com" target="_blank" rel="noopener noreferrer">
+      <div class="port-top"><div class="port-name"><span class="plogo" role="img" aria-label="Base Power" style="--logo:url(/assets/logo-base-power.png);--lh:28.3px;aspect-ratio:272/100"></span></div><div class="port-arrow" aria-hidden="true">&#8599;&#xFE0E;</div></div>
+      <div class="port-desc">The future of American power, starting in Texas.</div>
+      <div class="port-stage">Series&nbsp;B &middot; Series&nbsp;C</div>
+    </a>
+    <a class="port-item" href="https://hadrian.co" target="_blank" rel="noopener noreferrer">
+      <div class="port-top"><div class="port-name"><span class="plogo" role="img" aria-label="Hadrian" style="--logo:url(/assets/logo-hadrian.png);--lh:16px;aspect-ratio:479/60"></span></div><div class="port-arrow" aria-hidden="true">&#8599;&#xFE0E;</div></div>
+      <div class="port-desc">Autonomous factories to reindustrialize America.</div>
+      <div class="port-stage">Pre-Seed &middot; Series&nbsp;B</div>
+    </a>
+    <a class="port-item" href="https://amca.com" target="_blank" rel="noopener noreferrer">
+      <div class="port-top"><div class="port-name"><span class="plogo" role="img" aria-label="Amca" style="--logo:url(/assets/logo-amca.png);--lh:21.1px;aspect-ratio:520/100"></span></div><div class="port-arrow" aria-hidden="true">&#8599;&#xFE0E;</div></div>
+      <div class="port-desc">America&rsquo;s new industrial engineering company.</div>
+      <div class="port-stage">Seed &middot; Series&nbsp;B</div>
+    </a>
+    <a class="port-item" href="https://www.armada.ai" target="_blank" rel="noopener noreferrer">
+      <div class="port-top"><div class="port-name"><span class="plogo" role="img" aria-label="Armada AI" style="--logo:url(/assets/logo-armada-ai.png);--lh:25.8px;aspect-ratio:511/100"></span></div><div class="port-arrow" aria-hidden="true">&#8599;&#xFE0E;</div></div>
+      <div class="port-desc">Portable data centers for megawatt-scale AI.</div>
+      <div class="port-stage">Series&nbsp;A &middot; Series&nbsp;B</div>
+    </a>
+    <a class="port-item" href="https://www.launchfirestorm.com" target="_blank" rel="noopener noreferrer">
+      <div class="port-top"><div class="port-name"><span class="plogo" role="img" aria-label="Firestorm" style="--logo:url(/assets/logo-firestorm.png);--lh:32px;aspect-ratio:834/200"></span></div><div class="port-arrow" aria-hidden="true">&#8599;&#xFE0E;</div></div>
+      <div class="port-desc">Expeditionary manufacturing of critical platforms.</div>
+      <div class="port-stage">Pre-Seed &middot; Seed</div>
+    </a>
+    <a class="port-item" href="https://www.defendthedominion.com" target="_blank" rel="noopener noreferrer">
+      <div class="port-top"><div class="port-name"><span class="plogo" role="img" aria-label="Dominion Dynamics" style="--logo:url(/assets/logo-dominion-dynamics.png);--lh:31px;aspect-ratio:800/228"></span></div><div class="port-arrow" aria-hidden="true">&#8599;&#xFE0E;</div></div>
+      <div class="port-desc">Next-gen defense systems for Arctic operations.</div>
+      <div class="port-stage">Pre-Seed &middot; Seed &middot; Series&nbsp;A</div>
+    </a>
+    <a class="port-item" href="https://www.terraindustries.co" target="_blank" rel="noopener noreferrer">
+      <div class="port-top"><div class="port-name"><span class="plogo" role="img" aria-label="Terra Industries" style="--logo:url(/assets/logo-terra-industries.png);--lh:27.4px;aspect-ratio:800/206"></span></div><div class="port-arrow" aria-hidden="true">&#8599;&#xFE0E;</div></div>
+      <div class="port-desc">Autonomous systems to protect critical infrastructure.</div>
+      <div class="port-stage">Pre-Seed &middot; Seed</div>
+    </a>
+    <a class="port-item" href="https://furientis.com" target="_blank" rel="noopener noreferrer">
+      <div class="port-top"><div class="port-name"><span class="plogo" role="img" aria-label="Furientis" style="--logo:url(/assets/logo-furientis.png);--lh:14.9px;aspect-ratio:885/90"></span></div><div class="port-arrow" aria-hidden="true">&#8599;&#xFE0E;</div></div>
+      <div class="port-desc">Cost-effective missile interceptors built at scale.</div>
+      <div class="port-stage">Pre-Seed &middot; Seed</div>
+    </a>
+    <a class="port-item" href="https://www.gallatin.ai" target="_blank" rel="noopener noreferrer">
+      <div class="port-top"><div class="port-name"><span class="plogo" role="img" aria-label="Gallatin AI" style="--logo:url(/assets/logo-gallatin-ai.png);--lh:28.5px;aspect-ratio:802/200"></span></div><div class="port-arrow" aria-hidden="true">&#8599;&#xFE0E;</div></div>
+      <div class="port-desc">The leading logistics platform for military supply chains.</div>
+      <div class="port-stage">Pre-Seed &middot; Seed &middot; Series&nbsp;A</div>
+    </a>
+    <a class="port-item" href="https://americansupercritical.com" target="_blank" rel="noopener noreferrer">
+      <div class="port-top"><div class="port-name"><span class="plogo" role="img" aria-label="American Supercritical" style="--logo:url(/assets/logo-american-supercritical.png);--lh:23.5px;aspect-ratio:770/100"></span></div><div class="port-arrow" aria-hidden="true">&#8599;&#xFE0E;</div></div>
+      <div class="port-desc">Better steam technology for increased power yield.</div>
+      <div class="port-stage">Pre-Seed</div>
+    </a>
+    <a class='port-item port-cta' href='/portfolio' rel='nofollow'>
+      <div class="port-top"><div class="port-name">View Full Portfolio</div><div class="port-cta-arrow" aria-hidden="true">&rarr;&#xFE0E;</div></div>
+      <div class="port-desc">Explore all of our investments.</div>
+    </a>
+  </div>
+  </div>
+  </div>
+</section>
+
+<section class="team" id="team" aria-labelledby="h-team">
+  <h2 class="sr-only" id="h-team">Team</h2>
+  <div class="section-header">
+    <span class="section-eyebrow">Team</span>
+  </div>
+  <div class="team-layout fade-up">
+    <div class="team-image-col">
+      <div class="team-img-frame">
+        <img width="480" height="600" loading="lazy" decoding="async" src="/assets/team-jackson-moses.jpg" alt="Jackson Moses, Founder &amp; Managing Partner of Silent Ventures">
+      </div>
+      <div class="team-name-block">
+        <div class="team-name">Jackson Moses</div>
+        <div class="team-role">Founder &amp; Managing Partner</div>
+      </div>
+    </div>
+    <div class="team-bio-col">
+      <p class="team-bio">A twice-exited serial entrepreneur and early defense and hard tech investor, Jackson Moses currently serves as the Founder and Managing Partner of Silent Ventures, an early-stage venture firm that invests in exceptional founders building unrivaled aerospace, defense, and deep tech startups. He also founded and manages Silent Capital, a private syndicate that provides its members exclusive access to leading multi-stage defense and deep tech deals. Additionally, Jackson serves as a Senior Advisor to the founding teams of Castelion, Privateer, Long Wall, and Thor Dynamics. To date, and from inception, he and his funds have invested in 16 defense and deep tech unicorns.</p>
+      <div class="team-bio-more" id="team-bio-more">
+      <p class="team-bio">Prior to founding Silent Ventures, Jackson founded and served as VP of Partnerships at MainStreet (<a href="https://techcrunch.com/2025/05/05/employer-com-scoops-up-another-fintech-in-purchase-of-mainstreet-com" target="_blank" rel="noopener noreferrer">acquired by Employer.com</a>) &mdash; the first tech company to make R&amp;D tax credits accessible to startups and SMBs via industry-leading workflows and integrations. As a founding executive, he was responsible for developing go-to-market strategies, building a world-class sales organization, managing business development initiatives, and scaling annual revenue to over $30M. Prior to its acquisition, MainStreet employed hundreds of people and helped 2,000+ startups claim over $150M in tax savings.</p>
+      <p class="team-bio">Prior to founding MainStreet, Jackson founded and served as Chairman &amp; CEO of Spectrum AI, which was <a href="https://techcrunch.com/2023/09/07/activefence-snaps-up-spectrum-labs-last-valued-at-137m-to-help-fight-the-harmful-content-creep" target="_blank" rel="noopener noreferrer">acquired by ActiveFence</a> after last being valued at $137M. Spectrum AI pioneered multimodal LLMs, specifically a series of proprietary GPT foundation models, to create synthetic training data for Fortune 500 customers, marketers, influencers, and their users. Its customer base spanned gaming, dating, and social media, and included Tencent (OTC: TCEHY), Pinterest (NYSE: PINS), Grindr (NYSE: GRND), Yik Yak, Wildlife Studios, and The Meet Group, among others.</p>
+      <p class="team-bio">Prior to founding Spectrum AI, Jackson worked in sales (Lynda.com), customer operations, and executive recruiting at LinkedIn (acquired by Microsoft). Prior to this, he worked as a Market Research Analyst at Cisco, where he evaluated industry trends, new investment opportunities, and emerging threats to Cisco&rsquo;s core business lines.</p>
+      <p class="team-bio">Having raised $120M+ across his two companies, Jackson actively advises startups, venture firms, and family offices on private sector defense and deep tech trends, investment opportunities, and capital allocation strategies. He serves as a Venture Partner to several large firms and has sourced deals for 8VC, Founders Fund, a16z, Bessemer, Lightspeed, NEA, family offices, defense primes, and university endowments.</p>
+      <p class="team-bio">Jackson holds two B.A. degrees from the University of California, Berkeley, where he studied Economics, with a concentration in monetary policy, and Political Science, with a concentration in game theory.</p>
+      </div>
+      <button type="button" class="team-more" id="team-more" aria-expanded="false" aria-controls="team-bio-more">Read more</button>
+    </div>
+  </div>
+  <div class="tm-creed fade-up">
+    <div class="tm-creed-label">Our Conviction</div>
+    <div class="tm-creed-body">
+      <p class="tm-creed-big">We invest in <em>American prosperity</em> &mdash; the enduring conviction that the United States, through the ingenuity of its founders and the force of its free markets, is the world&rsquo;s only indispensable superpower.</p>
+      <p class="tm-creed-small"><b>Western Exceptionalism is not a relic of history.</b> It is the competitive advantage we bet on every day.</p>
+    </div>
+  </div>
+</section>
+
+<!-- EDITORIAL CARDS (GC-style) -->
+<section class="editorial" id="research" aria-labelledby="h-research">
+  <h2 class="sr-only" id="h-research">Perspectives</h2>
+  <div class="section-header">
+    <span class="section-eyebrow">Perspectives</span>
+  </div>
+  <div class="editorial-grid fade-up">
+    <a class="ed-card" href="https://www.youtube.com/@Silent.Ventures" target="_blank" rel="noopener noreferrer">
+      <div class="ed-category">Interviews</div>
+      <div class="ed-title">Venture Capital &amp; The Emergence of Defense Tech</div>
+      <div class="ed-sub">Expert market analysis and sector insights on how venture capital is evolving to fund technologies that secure American sovereignty.</div>
+      <div class="ed-meta">
+        <span class="ed-logo" role="img" aria-label="YouTube" style="--lg:url(/assets/logo-youtube.png);height:22px;aspect-ratio:4.4833"></span>
+        <span class="ed-link"><span class="ed-act">Watch</span> &#8599;&#xFE0E;</span>
+      </div>
+    </a>
+    <a class="ed-card" href="https://open.spotify.com/playlist/11WOenCNYcFhPDCbeLCd1O" target="_blank" rel="noopener noreferrer">
+      <div class="ed-category">Podcasts</div>
+      <div class="ed-title">Building The New Defense Industrial Base</div>
+      <div class="ed-sub">Conversations among founders, investors, and operators about American production capabilities and the value of limitless capacity.</div>
+      <div class="ed-meta">
+        <span class="ed-logo" role="img" aria-label="Spotify" style="--lg:url(/assets/logo-spotify.png);height:25px;aspect-ratio:3.6500"></span>
+        <span class="ed-link"><span class="ed-act">Listen</span> &#8599;&#xFE0E;</span>
+      </div>
+    </a>
+    <a class="ed-card" href="https://silentventures.docsend.com/view/s/sst3ixm3gkc9gny5/" target="_blank" rel="noopener noreferrer">
+      <div class="ed-category">Research</div>
+      <div class="ed-title">Fund Research &amp; LP Reports</div>
+      <div class="ed-sub">Research, reports, and write-ups from Silent Ventures on defense, national security, and deep tech.</div>
+      <div class="ed-meta">
+        <span class="ed-logo" role="img" aria-label="Silent Ventures" style="--lg:url(/assets/silent-ventures-wordmark.svg);height:13px;aspect-ratio:15.5700"></span>
+        <span class="ed-link"><span class="ed-act">Read</span> &#8599;&#xFE0E;</span>
+      </div>
+    </a>
+  </div>
+</section>
+
+<!-- NEWS -->
+<section class="news" id="news" aria-labelledby="h-news">
+  <h2 class="sr-only" id="h-news">News</h2>
+  <div class="section-header">
+    <span class="section-eyebrow">News</span>
+  </div>
+  <div class="news-grid fade-up">
+    <a class="nw-card nw-feat" href="https://www.tectonicdefense.com/exclusive-brian-singermans-gpx-backs-silent-ventures-85m-fund-ii/" target="_blank" rel="noopener noreferrer">
+      <span class="nw-eb"><span class="nw-pill">Featured</span>Aug 19, 2026<span class="nw-co"> &middot; Fund</span></span>
+      <span class="nw-title">Brian Singerman&rsquo;s GPx Backs Silent Ventures&rsquo; $85M Fund II for Defense &amp; Deep Tech Exposure</span>
+      <span class="nw-meta"><span class="nw-src">Tectonic</span><span class="nw-go">Read &#8599;&#xFE0E;</span></span>
+    </a>
+    <a class="nw-card" href="https://finance.yahoo.com/technology/ai/articles/robinhood-ventures-fund-invests-30m-152800493.html" target="_blank" rel="noopener noreferrer">
+      <span class="nw-eb">Oct 21, 2026<span class="nw-co"> &middot; Erebor</span></span>
+      <span class="nw-title">Robinhood Ventures Fund Invests $30M in Erebor</span>
+      <span class="nw-meta"><span class="nw-src">Yahoo Finance</span><span class="nw-go">Read &#8599;&#xFE0E;</span></span>
+    </a>
+    <a class="nw-card" href="https://www.armada.ai/blog/armada-superintelligence-factory-NVIDIA-DSX-POD" target="_blank" rel="noopener noreferrer">
+      <span class="nw-eb">Oct 20, 2026<span class="nw-co"> &middot; Armada AI</span></span>
+      <span class="nw-title">Armada AI Unveils Superintelligence Factories Built Within NVIDIA DSX POD, Deployable in Months, Not Years</span>
+      <span class="nw-meta"><span class="nw-src">Armada AI</span><span class="nw-go">Read &#8599;&#xFE0E;</span></span>
+    </a>
+    <a class="nw-card" href="https://www.cnbc.com/2026/10/19/jpmorgan-security-defense-investments.html" target="_blank" rel="noopener noreferrer">
+      <span class="nw-eb">Oct 19, 2026<span class="nw-co"> &middot; Castelion</span></span>
+      <span class="nw-title">Robot Factories &amp; Hypersonic Missiles: JPMorgan Chase&rsquo;s First $5B of Defense Investments</span>
+      <span class="nw-meta"><span class="nw-src">CNBC</span><span class="nw-go">Read &#8599;&#xFE0E;</span></span>
+    </a>
+    <a class="nw-card" href="https://www.tectonicdefense.com/canadas-dominion-dynamics-and-ukraines-tencore-team-up-for-ugvs/" target="_blank" rel="noopener noreferrer">
+      <span class="nw-eb">Oct 14, 2026<span class="nw-co"> &middot; Dominion Dynamics</span></span>
+      <span class="nw-title">Canada&rsquo;s Dominion Dynamics &amp; Ukraine&rsquo;s TENCORE Team Up for UGVs</span>
+      <span class="nw-meta"><span class="nw-src">Tectonic</span><span class="nw-go">Read &#8599;&#xFE0E;</span></span>
+    </a>
+    <a class="nw-card" href="https://breakingdefense.com/2026/10/chaos-industries-joins-low-cost-interceptor-parade-with-vespid-design/" target="_blank" rel="noopener noreferrer">
+      <span class="nw-eb">Oct 12, 2026<span class="nw-co"> &middot; CHAOS Industries</span></span>
+      <span class="nw-title">CHAOS Industries Joins Low-Cost Interceptor Parade with VESPID Design</span>
+      <span class="nw-meta"><span class="nw-src">Breaking Defense</span><span class="nw-go">Read &#8599;&#xFE0E;</span></span>
+    </a>
+    <a class="nw-card" href="https://www.axios.com/2026/10/08/gallatin-seriesa-8vc-contested-logistics-army" target="_blank" rel="noopener noreferrer">
+      <span class="nw-eb">Oct 8, 2026<span class="nw-co"> &middot; Gallatin AI</span></span>
+      <span class="nw-title">Gallatin AI Raises $50M Series A from 8VC &amp; Silent Ventures for Futuristic Military Logistics</span>
+      <span class="nw-meta"><span class="nw-src">Axios</span><span class="nw-go">Read &#8599;&#xFE0E;</span></span>
+    </a>
+    <a class='nw-card nw-cta' href='/news' rel='nofollow'>
+      <span class="nw-title">View All News<span class="nw-arrow">&rarr;&#xFE0E;</span></span>
+      <span class="nw-sub">Fund and company updates.</span>
+    </a>
+  </div>
+</section>
+
+<!-- TEAM -->
+
+<!-- CONTACT -->
+<section class="contact" id="syndicate" aria-labelledby="h-syndicate">
+  <div class="sc2">
+    <div class="section-header">
+      <span class="section-eyebrow">Join Syndicate</span>
+    </div>
+    <div class="sc2-top">
+      <div>
+      <h2 class="sc2-heading" id="h-syndicate">Invest alongside <em>Silent Ventures.</em></h2>
+      </div>
+      <div class="sc2-side">
+        <p class="sc2-body">Silent Capital is a private syndicate that gives its members access to leading multi-stage defense and deep tech deals.</p>
+        <a href="https://forms.gle/dn6GFg7qiNuLB2Ub6" target="_blank" rel="noopener noreferrer" class="cta-btn">Apply Now &rarr;&#xFE0E;</a>
+        <p class="sc2-consent">By clicking, you agree to our <a href='/legal' rel='nofollow'>Terms of Use</a> and <a href='/privacy' rel='nofollow'>Privacy Policy</a>.</p>
+      </div>
+    </div>
+    <div class="sc2-steps">
+      <div class="sc2-step"><b>01</b><span>Learn More</span><p>Submit a short form to request to join the syndicate.</p></div>
+      <div class="sc2-step"><b>02</b><span>Review</span><p>Requests are reviewed against many factors for admission.</p></div>
+      <div class="sc2-step"><b>03</b><span>Invest</span><p>Admitted members receive proprietary deal flow.</p></div>
+    </div>
+    <p class="sc2-note">Silent Capital is not a public or generally solicited syndicate. It is not advertised. The syndicate adheres to <a href="https://www.sec.gov/education/smallbusiness/exemptofferings/rule506b" target="_blank" rel="noopener noreferrer">SEC Section 4(a)(2) and Rule 506(b)</a>. Admission is based on many factors and is not guaranteed. All requests to join are purely exploratory.</p>
+  </div>
+</section>
+
+<!-- FOOTER -->
+</main>
+<footer>
+  <div class="footer-top">
+    <div class="footer-brand">
+      <div class="footer-logo"><span class="fl-mark" role="img" aria-label="Silent Ventures" style="--lg:url(/assets/silent-ventures-wordmark.svg)"></span></div>
+    </div>
+    <div class="footer-social" role="navigation" aria-label="Silent Ventures on social media"><a href="https://x.com/SilentVentures" target="_blank" rel="noopener noreferrer" aria-label="X"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a><a href="https://www.linkedin.com/company/silentventures" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452z"/></svg></a><a href="https://www.youtube.com/@Silent.Ventures" target="_blank" rel="noopener noreferrer" aria-label="YouTube"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg></a><a href="https://open.spotify.com/playlist/11WOenCNYcFhPDCbeLCd1O" target="_blank" rel="noopener noreferrer" aria-label="Spotify"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg></a><a href="https://silentventures.substack.com" target="_blank" rel="noopener noreferrer" aria-label="Substack"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22.539 8.242H1.46V5.406h21.08v2.836zM1.46 10.812V24L12 18.11 22.54 24V10.812H1.46zM22.54 0H1.46v2.836h21.08V0z"/></svg></a></div>
+  </div>
+  <div class="footer-bottom">
+    <span class="footer-copy">&copy; 2026 Silent Ventures. All Rights Reserved. <span style="white-space:nowrap">Building in Dallas, TX.</span></span>
+    <div class="footer-nav" role="navigation" aria-label="Legal"><a href="https://www.jacksonmoses.com" target="_blank" rel="noopener noreferrer">About Founder</a><a href="https://login.app.carta.com/credentials/login" target="_blank" rel="noopener noreferrer nofollow">LP Portal</a><a href='/legal' rel='nofollow'>Terms of Use</a><a href='/privacy' rel='nofollow'>Privacy Policy</a></div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var col=document.querySelector('.team-bio-col'), btn=document.getElementById('team-more');
+  if(!col||!btn) return;
+  window.svResetUI=function(){
+    if(window.svRestartSlides) window.svRestartSlides();
+    var tk=document.getElementById('ticker'); if(tk){ tk.style.animation='none'; void tk.offsetWidth; tk.style.animation=''; }
+    if(col.classList.contains('open')){ col.classList.remove('open'); btn.setAttribute('aria-expanded','false'); btn.firstChild.nodeValue='Read more'; }
+    var nv=document.getElementById('main-nav'), tg=document.getElementById('nav-toggle');
+    if(nv&&nv.classList.contains('open')){ nv.classList.remove('open'); document.documentElement.classList.remove('nav-open'); if(tg){ tg.setAttribute('aria-expanded','false'); tg.setAttribute('aria-label','Open menu'); } }
+  };
+  window.addEventListener('pageshow',function(e){ if(e.persisted) window.svResetUI(); });
+  btn.addEventListener('click',function(){
+    var o=!col.classList.contains('open');
+    col.classList.toggle('open',o);
+    btn.setAttribute('aria-expanded',o?'true':'false');
+    btn.firstChild.nodeValue=o?'Show less':'Read more';
+    if(!o){ var nb=document.querySelector('.team-name-block'); if(nb && nb.getBoundingClientRect().top<70) nb.scrollIntoView({block:'start'}); }
+  });
+})();
+const nav = document.getElementById('main-nav');
+window.addEventListener('scroll', () => { nav.classList.toggle('scrolled', window.scrollY > 40); });
+(function(){
+  var btn=document.getElementById('nav-toggle'), nv=document.getElementById('main-nav');
+  if(!btn||!nv) return;
+  function set(o){ nv.classList.toggle('open',o); document.documentElement.classList.toggle('nav-open',o); btn.setAttribute('aria-expanded',o?'true':'false'); btn.setAttribute('aria-label',o?'Close menu':'Open menu'); }
+  btn.addEventListener('click',function(){ set(!nv.classList.contains('open')); });
+  nv.querySelectorAll('.nav-links a').forEach(function(a){ a.addEventListener('click',function(){ set(false); }); });
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape') set(false); });
+  window.addEventListener('resize',function(){ if(window.innerWidth>1000) set(false); });
+})();
+const io = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('vis'); });
+}, { threshold: 0.07 });
+document.querySelectorAll('.fade-up').forEach(el => io.observe(el));
+
+// Hero innovation timeline
+(function () {
+  const tl = document.getElementById('timeline');
+  if (!tl) return;
+  const slides = Array.prototype.slice.call(tl.querySelectorAll('.tl-slide'));
+  const idxEl = document.getElementById('tl-index');
+  const prog = document.getElementById('tl-progress');
+  const ticksWrap = document.getElementById('tl-ticks');
+  const N = slides.length;
+  const SLIDE_MS = 3000;
+  let cur = 0, timer = null, paused = false, tapped = false;
+
+  slides.forEach(function (_, i) {
+    const t = document.createElement('div');
+    t.className = 'tl-tick';
+    t.addEventListener('click', function () { go(i); });
+    ticksWrap.appendChild(t);
+  });
+  const ticks = Array.prototype.slice.call(ticksWrap.children);
+
+  function render() {
+    slides.forEach(function (s, i) {
+      const img = s.querySelector('img');
+      if (i === cur) {
+        img.style.transform = '';
+      } else if (tapped && s.classList.contains('active')) {
+        /* tapped mid-zoom: hold the outgoing photo where it is while it fades, instead of letting it jump to full zoom */
+        img.style.transform = getComputedStyle(img).transform;
+      }
+      s.classList.toggle('active', i === cur);
+    });
+    tapped = false;
+    ticks.forEach(function (t, i) {
+      t.classList.toggle('active', i === cur);
+      t.classList.toggle('done', i < cur);
+    });
+    idxEl.textContent = String(cur + 1).padStart(2, '0') + ' / ' + String(N).padStart(2, '0');
+    prog.style.transition = 'none';
+    prog.style.width = '0%';
+    void prog.offsetWidth;
+    if (!paused) {
+      prog.style.transition = 'width ' + SLIDE_MS + 'ms linear';
+      prog.style.width = '100%';
+    }
+  }
+  function go(i) {
+    cur = (i + N) % N;
+    render();
+    schedule();
+  }
+  function schedule() {
+    clearTimeout(timer);
+    if (paused) return;
+    timer = setTimeout(function () { go(cur + 1); }, SLIDE_MS);
+  }
+  window.svRestartSlides = function () { go(0); };
+  /* Touch screens (phones, tablets): tapping the photo skips to the next slide. Ticks keep their own jump. */
+  const touchMQ = window.matchMedia('(hover: none) and (pointer: coarse)');
+  tl.addEventListener('click', function (e) {
+    if (!touchMQ.matches || e.target.closest('.tl-track')) return;
+    tapped = true;
+    go(cur + 1);
+  });
+  render();
+  schedule();
+})();
+</script>
+<script>
+/* Center ticker caps exactly between top edge and bottom rule, whatever the font metrics */
+(function(){
+  function centerTicker(){
+    var wrap=document.querySelector('.ticker-wrap'), it=document.querySelector('.ticker-item');
+    if(!wrap||!it) return;
+    if(window.CSS&&CSS.supports&&CSS.supports('text-box','trim-both cap alphabetic')) return;
+    try{
+      var cs=getComputedStyle(it), fs=parseFloat(cs.fontSize), K=400;
+      /* cap height from the real font (measured large, scaled down to avoid integer rounding) */
+      var ctx=document.createElement('canvas').getContext('2d');
+      ctx.font=cs.fontWeight+' '+K+'px '+cs.fontFamily;
+      var cap=ctx.measureText('HEIT').actualBoundingBoxAscent*fs/K;
+      if(!cap) return;
+      /* where the browser actually puts the baseline inside a line box of the same style */
+      var probe=document.createElement('div');
+      probe.style.cssText='position:absolute;visibility:hidden;white-space:nowrap;left:0;top:0;'+
+        'font:'+cs.font+';line-height:'+cs.lineHeight+';letter-spacing:'+cs.letterSpacing;
+      probe.innerHTML='H<span style="display:inline-block;width:0;height:0"></span>';
+      wrap.appendChild(probe);
+      var base=probe.lastChild.getBoundingClientRect().top-probe.getBoundingClientRect().top;
+      var line=probe.getBoundingClientRect().height;
+      wrap.removeChild(probe);
+      var off=(base-cap/2)-line/2;               /* how far below centre the caps currently sit */
+      wrap.style.setProperty('--tk-shift',(-off).toFixed(2)+'px');
+    }catch(e){}
+  }
+  if(document.fonts&&document.fonts.ready){document.fonts.ready.then(centerTicker);}
+  window.addEventListener('load',centerTicker);
+})();
+</script>
+<script>
+/* Always land at the top of the home page on refresh; logo returns to the top */
+(function(){
+  try{ if('scrollRestoration' in history) history.scrollRestoration='manual'; }catch(e){}
+  function clearHash(){
+    try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){}
+  }
+  function toTop(){
+    var de=document.documentElement, prev=de.style.scrollBehavior;
+    de.style.scrollBehavior='auto';            /* instant, not the smooth page-wide scroll */
+    window.scrollTo(0,0);
+    de.style.scrollBehavior=prev;
+  }
+  var TO=(location.search.match(/[?&]to=(\w+)/)||[])[1]||window.__svTo;
+  if(location.hash){ clearHash(); }
+  if(TO){
+    /* Jump as soon as the section exists (not after every photo has loaded), then reveal the page.
+       Re-align once fonts and images settle, unless the visitor has started scrolling. */
+    var de=document.documentElement, moved=false;
+    ['wheel','touchstart','keydown','mousedown'].forEach(function(ev){ window.addEventListener(ev,function(){ moved=true; },{passive:true,capture:true}); });
+    var jump=function(){
+      var el=document.getElementById(TO); if(!el||moved) return;
+      var prev=de.style.scrollBehavior; de.style.scrollBehavior='auto';
+      el.scrollIntoView(); de.style.scrollBehavior=prev;
+    };
+    var reveal=function(){ jump(); de.classList.remove('sv-jump'); };
+    jump();
+    if(document.fonts&&document.fonts.ready){ Promise.race([document.fonts.ready,new Promise(function(r){ setTimeout(r,400); })]).then(reveal); } else { reveal(); }
+    window.addEventListener('load',function(){
+      reveal();
+      try{ history.replaceState(null,'',location.pathname); }catch(e){}
+    });
+  } else {
+  toTop();
+  window.addEventListener('load',function(){ toTop(); setTimeout(toTop,60); });
+  }
+  window.addEventListener('pageshow',function(e){ if(e.persisted) toTop(); });
+  function goHome(ev){
+    ev.preventDefault(); clearHash();
+    if(window.svResetUI) window.svResetUI();
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+  /* current-section highlight in the header */
+  (function(){
+    var ids=['home','thesis','focus','portfolio','team','research','news','syndicate'];
+    var links={}; ids.forEach(function(id){ var a=document.querySelector('.nav-links a[href="#'+id+'"]'); if(a) links[id]=a; });
+    var els=ids.map(function(id){ return document.getElementById(id); });
+    var ticking=false;
+    function update(){
+      ticking=false;
+      var cur='home';
+      for(var i=0;i<els.length;i++){ if(els[i] && els[i].getBoundingClientRect().top<=140) cur=ids[i]; }
+      if(window.scrollY<10) cur='home';
+      Object.keys(links).forEach(function(id){ links[id].classList.toggle('is-current', id===cur); });
+    }
+    function req(){ if(!ticking){ ticking=true; requestAnimationFrame(update); } }
+    window.addEventListener('scroll',req,{passive:true});
+    window.addEventListener('resize',req);
+    window.addEventListener('load',update);
+    window.addEventListener('pageshow',update);
+    update();
+  })();
+  var navLogo=document.querySelector('.nav-logo'); if(navLogo) navLogo.addEventListener('click',goHome);
+  var navHome=document.getElementById('nav-home'); if(navHome) navHome.addEventListener('click',goHome);
+  var fl=document.querySelector('.footer-logo');
+  if(fl){ fl.style.cursor='pointer'; fl.addEventListener('click',goHome); }
+})();
+</script>
+<script>
+(function(){try{var ids=['home','thesis','focus','portfolio','team','research','news','syndicate'],seen=null;
+if(!('IntersectionObserver' in window))return;
+var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting&&seen!==e.target.id){seen=e.target.id;
+if(window.gtag)gtag('event','page_view',{page_title:document.title+' | '+seen,page_location:location.origin+'/#'+seen});}});},{rootMargin:'-45% 0px -50% 0px'});
+ids.forEach(function(i){var el=document.getElementById(i);if(el)io.observe(el);});}catch(e){}})();
+</script>
+<style id="news-feat">
+.nw-pill{display:inline-block;font-size:10px;letter-spacing:.16em;color:var(--accent);border:1px solid rgba(184,168,130,.45);background:var(--accent-dim);padding:3px 8px 2px;margin-right:12px;opacity:1}
+.news-grid .nw-card.nw-feat{grid-column:span 2;background:linear-gradient(var(--accent-glow),var(--accent-glow)),var(--bg);box-shadow:inset 0 2px 0 var(--accent)}
+.news-grid .nw-feat .nw-title{font-size:26px;line-height:1.22;max-width:34ch}
+.news-grid>.nw-card:not(.nw-cta){display:flex}
+.news-grid>.nw-card:nth-child(n+7):not(.nw-cta){display:none}
+@media (max-width:1280px){.news-grid>.nw-card:nth-child(n+5):not(.nw-cta){display:none}}
+@media (max-width:1000px){.news-grid .nw-feat .nw-title{font-size:22px}}
+@media (max-width:560px){.news-grid .nw-card.nw-feat{grid-column:auto}.news-grid>.nw-card:nth-child(n+4):not(.nw-cta){display:none}.news-grid .nw-feat .nw-title{font-size:21px}}
+</style>
+<style id="consistency">
+/* One look for look-alike parts (audit, Oct 2026) */
+/* the three home card grids share one inset; View Full Portfolio / View All News follow it */
+.portfolio-grid .port-item,.news-grid .nw-card,.editorial-grid .ed-card{padding:32px 30px 30px}
+@media (max-width:1000px){.portfolio-grid .port-item,.news-grid .nw-card,.editorial-grid .ed-card{padding:24px 20px 22px}}
+/* portfolio cards show their arrow on touch screens, like READ/WATCH on news and perspectives cards */
+@media (hover:none){.port-arrow{opacity:1;transform:none;color:var(--text-muted)}}
+/* Featured pill matches the Unicorn badge on the Portfolio page */
+.nw-pill{font-size:11px;font-weight:300;letter-spacing:.14em;border-color:rgba(184,168,130,.4);padding:3px 8px}
+/* news metadata tracked like the News page and Portfolio page rows */
+.nw-eb,.nw-src{letter-spacing:.14em}
+/* Team opens the same distance below its eyebrow as every other section */
+.team-layout{margin-top:0}
+/* Join Syndicate gets the same header (rule + eyebrow) and top spacing as the other sections */
+.sc2{padding-top:100px}
+@media (max-width:1000px){.sc2{padding-top:64px}}
+.sc2-top{align-items:start}
+</style>
+<style id="right-edge">
+/* Nothing on the page may run past the nav's right edge (the page gutter --g, where the Syndicate button ends) */
+@media (min-width:1001px){
+  /* spec band: inset the grid so the outer stats sit on both gutters and all four columns get the same room */
+  .spec-band{padding:0 calc(var(--g) - 40px);--spec-one:clamp(22px,1.8vw,30px)}
+  .spec-item:first-child{padding-left:40px}
+  .spec-item:first-child::before{left:calc(40px - var(--g))}
+  /* hero photo keeps its original framing (owner's call): brackets in the photo corners, text 34px in from both
+     edges, so on wide screens the counter and timeline sit past the nav's right edge. Long captions wrap. */
+  .tl-text{white-space:normal}
+  .hero-right-stats{padding-right:calc(var(--g) - 24px)}
+}
+@media (max-width:1000px){.spec-item:nth-child(even){padding-right:var(--g)}}
+</style>
+<script src="/assets/drone-cursor.js" defer></script>
+</body>
+</html><script async id="netlify-rum-container" src="/.netlify/scripts/rum" data-netlify-rum-site-id="b2b03849-a338-4d1c-b5bb-ddadbc12b310" data-netlify-deploy-branch="main" data-netlify-deploy-context="production" data-netlify-cwv-token="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzaXRlX2lkIjoiYjJiMDM4NDktYTMzOC00ZDFjLWI1YmItZGRhZGJjMTJiMzEwIiwiYWNjb3VudF9pZCI6IjZhYjFjNTE0YmEzNGFlM2VlYWQzN2ZhZCIsImRlcGxveV9pZCI6IjZhZDhmZTIwOTZhYjI0ZWVkZjIzZGQzMyIsImlzcyI6Im5ldGxpZnkifQ.9UUOB86rOTtRc4ZjzCnKenJQeAWCfkeMOXTiCn3qlq8"></script>

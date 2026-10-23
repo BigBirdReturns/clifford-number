@@ -26,15 +26,15 @@ assert.deepEqual(actual.errors, []);
 // 198 / 62 / 135 after the archived defense-corridor A/B receipts (2026-10-23): 21 actors entered,
 // and three primary_public team pages (Stratos 9 people, Traysar 3, Pallas 2) add 40 bases.
 // The anchor components and the zero reported-basis count are unchanged.
-assert.equal(actual.global.canonical_actor_count, 293); // 2026-10-23 promotion: 198 -> 293 actors (LinkedIn role-crossing people); hop figures below unchanged
-assert.equal(actual.global.accepted_edge_actor_count, 62);
-assert.equal(actual.global.basis_count, 135);
-assert.deepEqual(actual.global.evidence_counts, { official: 75, primary_public: 60 });
+assert.equal(actual.global.canonical_actor_count, 404); // 2026-10-23 final re-pin: 293 -> 404 (the five 2026-10-23 research-dig lanes; this test was last re-pinned before them because DUPLICATE_BASIS_KEY stopped it).  2026-10-23 promotion: 198 -> 293 actors (LinkedIn role-crossing people); hop figures below unchanged
+assert.equal(actual.global.accepted_edge_actor_count, 134); // 2026-10-23 final re-pin: 62 -> 134
+assert.equal(actual.global.basis_count, 300); // 2026-10-23 final re-pin: 135 -> 300 (after the Form D person-row merge and the year-only a16z 2022 sessions leaving the hop set)
+assert.deepEqual(actual.global.evidence_counts, { official: 123, primary_public: 177 }); // 2026-10-23 final re-pin: { official: 75, primary_public: 60 } -> this
 assert.equal(actual.global.reported_basis_count, 0);
 assert.equal(actual.global.disposition_count, 0);
-assert.equal(actual.anchor_components.actor_count, 33);
-assert.equal(actual.anchor_components.edge_count, 70);
-assert.equal(actual.anchor_components.basis_count, 72);
+assert.equal(actual.anchor_components.actor_count, 35); // 2026-10-23 final re-pin: 33 -> 35
+assert.equal(actual.anchor_components.edge_count, 72); // 2026-10-23 final re-pin: 70 -> 72
+assert.equal(actual.anchor_components.basis_count, 74); // 2026-10-23 final re-pin: 72 -> 74
 assert.equal(actual.anchor_components.reported_basis_count, 0);
 // 5 / 2 before the defense-corridor staging merge (2026-10-23); the four FY2025 Air Force
 // award line items are trade-press reported, organization-only and non-hop (+8 rows, +4 surfaces).
@@ -47,50 +47,116 @@ assert.equal(actual.anchor_components.reported_basis_count, 0);
 // reported surfaces as before, and the LinkedIn role surfaces are pinned by count and shape.
 const isLinkedInRoleSurface = id => /-linkedin-\d{4}-(\d{4}|present)$/.test(id);
 const LINKEDIN_ROLE_SURFACES = 719; // 2026-10-23 promotion
-assert.equal(actual.reported_ledger_boundary.reported_participation_rows, 1483); // 2026-10-23 promotion: 39 -> 1,483
-assert.equal(actual.reported_ledger_boundary.reported_surface_rows, 736); // 2026-10-23 promotion: 17 -> 736
+assert.equal(actual.reported_ledger_boundary.reported_participation_rows, 1615); // 2026-10-23 final re-pin: 1,483 -> 1615.  2026-10-23 promotion: 39 -> 1,483
+assert.equal(actual.reported_ledger_boundary.reported_surface_rows, 768); // 2026-10-23 final re-pin: 736 -> 768.  2026-10-23 promotion: 17 -> 736
 for (const key of ['non_hop_surface_ids', 'reported_surface_ids', 'reported_evidence_surface_ids']) {
   assert.equal(actual.reported_ledger_boundary[key].filter(isLinkedInRoleSurface).length, LINKEDIN_ROLE_SURFACES, `${key}: LinkedIn role surfaces`);
 }
 assert.deepEqual(actual.reported_ledger_boundary.accepted_reported_surface_ids, [], 'no reported surface is accepted as a hop basis');
+// 2026-10-23 final re-pin: 18 -> 50 non-LinkedIn reported surfaces (+32 from the research-dig lanes). Every one stays non-hop.
 assert.deepEqual(actual.reported_ledger_boundary.non_hop_surface_ids.filter(id => !isLinkedInRoleSurface(id)), [
+  'afwerx-austin-hub-at-capital-factory-2018-06-27',
+  'argentina-capital-humano-social-digital-twin-announcement-2026-05-27',
+  'army-futures-command-austin-selection-2018-07-12',
+  'army-futures-command-hq-news-conference-2018-07-13',
+  'army-futures-command-ribbon-cutting-press-2018-08-24',
+  'axios-published-aaru-simulated-statistic-reported-2026-05-05',
   'cap-table-as-reported-traysar',
+  'capital-factory-center-for-defense-innovation-2019',
+  'capital-factory-fed-supernova-2021-09-28',
+  'capital-factory-fed-supernova-2022-09-27',
+  'capital-factory-fed-supernova-2025-08-19',
+  'capital-factory-founding-2009',
+  'capital-factory-leadership-as-reported-2026-06-17',
+  'capital-factory-station-dc-2024-07',
+  'capital-factory-team-page-2026-10-23',
   'dialog-leadership-role-observations-2026-06-16',
   'dialog-matt-clifford-invitation-nonattendance-2026-06-16',
   'dialog-public-directory-exposure-2026-06-16',
+  'diux-austin-roll-out-press-2016-09-14',
   'funding-round-traysar-seed',
+  'gartner-synthetic-population-vendor-race-self-report-arima-2026-05-29',
+  'gartner-synthetic-population-vendor-race-self-report-bluepill-2026-05-12',
+  'gartner-synthetic-population-vendor-race-self-report-qloo-2026-09-15',
+  'gartner-synthetic-population-vendor-race-self-report-stravito-2026-04-30',
+  'gartner-synthetic-population-vendor-race-self-report-verve-2026-10-23',
+  'joshua-baer-death-2026-06-16',
+  'news-uk-times-podcast-name-synthetic-panel-decision-2025-11-04',
+  'nightdragon-capital-factory-partnership-2025-08-18',
+  'no10-synthetic-voters-experiment-reported-2025-07-07',
   'partnership-claim-stratos-ventures-israeli-mod',
   'partnership-claim-stratos-ventures-nato-diana',
   'partnership-claim-stratos-ventures-u-s-centcom-port-of-miami-via-the-lab-miami',
   'partnership-claim-stratos-ventures-u-s-dod',
   'procurement-award-ussocom-idiq-reported',
+  'qloo-vendor-reported-clients-2026-09-15',
+  'republican-strategists-mirofish-simulated-voters-reported-2026-04-14',
   'silent-ventures-team-page-2026-10-23',
+  'station-austin-launch-2026-03-10',
+  'station-nwa-walton-family-foundation-grant-2026-01-13',
+  'station-texas-founding-executive-director-2025-05-20',
   'stratos-ventures-portfolio-page-2026-10-23',
   'texas-venture-partners-team-page-2026-04-06',
+  'uk-politicians-synthetic-focus-groups-reported-2026-10-22',
+  'undp-culturepulse-israel-palestine-simulation-contract-2023-08',
   'us-air-force-fy2025-award-castelion',
   'us-air-force-fy2025-award-dataminr',
   'us-air-force-fy2025-award-jetzero',
   'us-air-force-fy2025-award-sierra-space',
   'vehicle-control-station-austin',
+  'venturebeat-synthetic-audience-vendors-named-2026-04-26',
 ]);
+// 2026-10-23 final re-pin: 17 -> 49 non-LinkedIn reported surfaces (+32 from the research-dig lanes). Every one stays non-hop.
 assert.deepEqual(actual.reported_ledger_boundary.reported_surface_ids.filter(id => !isLinkedInRoleSurface(id)), [
+  'afwerx-austin-hub-at-capital-factory-2018-06-27',
+  'argentina-capital-humano-social-digital-twin-announcement-2026-05-27',
+  'army-futures-command-austin-selection-2018-07-12',
+  'army-futures-command-hq-news-conference-2018-07-13',
+  'army-futures-command-ribbon-cutting-press-2018-08-24',
+  'axios-published-aaru-simulated-statistic-reported-2026-05-05',
   'cap-table-as-reported-traysar',
+  'capital-factory-center-for-defense-innovation-2019',
+  'capital-factory-fed-supernova-2021-09-28',
+  'capital-factory-fed-supernova-2022-09-27',
+  'capital-factory-fed-supernova-2025-08-19',
+  'capital-factory-founding-2009',
+  'capital-factory-leadership-as-reported-2026-06-17',
+  'capital-factory-station-dc-2024-07',
+  'capital-factory-team-page-2026-10-23',
   'dialog-leadership-role-observations-2026-06-16',
   'dialog-matt-clifford-invitation-nonattendance-2026-06-16',
+  'diux-austin-roll-out-press-2016-09-14',
   'funding-round-traysar-seed',
+  'gartner-synthetic-population-vendor-race-self-report-arima-2026-05-29',
+  'gartner-synthetic-population-vendor-race-self-report-bluepill-2026-05-12',
+  'gartner-synthetic-population-vendor-race-self-report-qloo-2026-09-15',
+  'gartner-synthetic-population-vendor-race-self-report-stravito-2026-04-30',
+  'gartner-synthetic-population-vendor-race-self-report-verve-2026-10-23',
+  'joshua-baer-death-2026-06-16',
+  'news-uk-times-podcast-name-synthetic-panel-decision-2025-11-04',
+  'nightdragon-capital-factory-partnership-2025-08-18',
+  'no10-synthetic-voters-experiment-reported-2025-07-07',
   'partnership-claim-stratos-ventures-israeli-mod',
   'partnership-claim-stratos-ventures-nato-diana',
   'partnership-claim-stratos-ventures-u-s-centcom-port-of-miami-via-the-lab-miami',
   'partnership-claim-stratos-ventures-u-s-dod',
   'procurement-award-ussocom-idiq-reported',
+  'qloo-vendor-reported-clients-2026-09-15',
+  'republican-strategists-mirofish-simulated-voters-reported-2026-04-14',
   'silent-ventures-team-page-2026-10-23',
+  'station-austin-launch-2026-03-10',
+  'station-nwa-walton-family-foundation-grant-2026-01-13',
+  'station-texas-founding-executive-director-2025-05-20',
   'stratos-ventures-portfolio-page-2026-10-23',
   'texas-venture-partners-team-page-2026-04-06',
+  'uk-politicians-synthetic-focus-groups-reported-2026-10-22',
+  'undp-culturepulse-israel-palestine-simulation-contract-2023-08',
   'us-air-force-fy2025-award-castelion',
   'us-air-force-fy2025-award-dataminr',
   'us-air-force-fy2025-award-jetzero',
   'us-air-force-fy2025-award-sierra-space',
   'vehicle-control-station-austin',
+  'venturebeat-synthetic-audience-vendors-named-2026-04-26',
 ]);
 assert.deepEqual(
   actual.reported_ledger_boundary.reported_evidence_surface_ids,

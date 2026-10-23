@@ -53,7 +53,10 @@ assert.equal(matchesHeldRule('data/intake/linkedin-targeted-review/other.json', 
 assert.equal(matchesHeldRule('data/intake/defense-corridor/x.json', intakeRule), true);
 assert.ok(realPolicy.policy_changes.every(change => change.date && change.decided_by && change.reason), 'every policy change says when, who and why');
 // Per-path budgets must name allowlisted paths; the explorer standalone and the endpoint carry their own.
-assert.deepEqual(realPolicy.performance_budgets.max_path_bytes, { 'Clifford-Number-endpoint.html': 10000000, 'Clifford-Number-explorer-standalone.html': 16000000 });
-assert.equal(realPolicy.performance_budgets.max_standalone_bytes, 5000000, 'the main standalone budget is unchanged');
+// 2026-10-23 final re-pin (owner decision, research digs): endpoint 10,000,000 -> 12,000,000, main standalone
+// 5,000,000 -> 8,000,000, max_files 3,200 -> 4,000. The budgets guard accidental growth, not the size of the record.
+assert.deepEqual(realPolicy.performance_budgets.max_path_bytes, { 'Clifford-Number-endpoint.html': 12000000, 'Clifford-Number-explorer-standalone.html': 16000000 });
+assert.equal(realPolicy.performance_budgets.max_standalone_bytes, 8000000, 'the main standalone budget (raised 2026-10-23 from 5,000,000)');
+assert.equal(realPolicy.performance_budgets.max_files, 4000, 'the file-count budget (raised 2026-10-23 from 3,200)');
 assert.throws(() => validatePublicationPolicy({ ...base, performance_budgets: { ...base.performance_budgets, max_path_bytes: { 'nope.html': 1 } } }), /unlisted path/u);
 console.log('publication-allowlist.test: OK (safe paths, holds, exact set and deterministic digest)');

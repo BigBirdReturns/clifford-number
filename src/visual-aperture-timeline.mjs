@@ -43,6 +43,13 @@ export const TIMELINE_DESKTOP_METRICS = Object.freeze({
 export const TIMELINE_PHONE_METRICS = Object.freeze({
   labelWidth: 72, laneHeight: 24, markHeight: 8, markWidth: 3, slotOffset: 3, clusterGap: 4, blockHeight: 28, padding: 4
 });
+// Default-view stage height budgets (SPEC (j)), the lane area inside the stage.
+// Raised 2026-10-23 (owner decision): desktop 574px (650 - 36 - 40) -> 640px,
+// phone 446px (510 - 30 - 34) -> 520px. The record now has two dense roster
+// blocks (Dialog and the Reagan National Defense Forum 2023 programme), each a
+// contained block lane, and that is correct; 18 entity lanes plus the strip and
+// two block lanes are 596px on desktop and 512px on phone.
+export const TIMELINE_STAGE_BUDGETS = Object.freeze({ desktop: 640, phone: 520 });
 
 const STRIP_LABELS = Object.freeze({
   actor: 'Other people',
@@ -755,15 +762,52 @@ export function layoutTimeline(model, options = {}) {
     // Marks stack when they share a day or would otherwise sit closer than the
     // cluster gap once the same-day surface offset is applied (so a +5px second
     // surface never overlaps a tick a few days later at phone widths).
+    //
+    // Fixed 2026-10-23 (final repair round). Old behaviour: a row joined the
+    // current cluster when its drawn x sat within the cluster gap of that
+    // cluster's LAST x only. A same-day surface offset can draw an earlier day
+    // to the right of a later one, so a later row could join the current
+    // cluster while sitting 1.93px from a mark of the PREVIOUS cluster (two
+    // Capital Factory ticks in the Organizations view, 2026-05-08 at +5px and
+    // 2026-06-17). New behaviour: each cluster keeps its full drawn x extent
+    // [minX, maxX]; a row joins when it shares the cluster's last day or falls
+    // within the gap of that extent, and any two clusters whose extents come
+    // within the gap are folded into one (with every cluster between them, so
+    // the rows stay in day order). Marks within the fold threshold therefore
+    // always share one cluster: they stack, and past the slots fold into one +N.
     for (const row of sorted) {
       const drawnX = x(row.start_day) + surfaceOffset(row.start_day, row.surface_id);
       const current = laneClusters[laneClusters.length - 1];
-      if (current && (row.start_day === current.day_to || drawnX - current.lastX < clusterGap)) {
+      if (current && (row.start_day === current.day_to || (drawnX > current.minX - clusterGap && drawnX < current.maxX + clusterGap))) {
         current.rows.push(row);
         current.lastX = Math.max(current.lastX, drawnX);
+        current.minX = Math.min(current.minX, drawnX);
+        current.maxX = Math.max(current.maxX, drawnX);
         current.day_to = row.start_day;
       } else {
-        laneClusters.push({ rows: [row], firstX: drawnX, lastX: drawnX, day_from: row.start_day, day_to: row.start_day });
+        laneClusters.push({ rows: [row], firstX: drawnX, lastX: drawnX, minX: drawnX, maxX: drawnX, day_from: row.start_day, day_to: row.start_day });
+      }
+    }
+    for (let merged = true; merged;) {
+      merged = false;
+      outer: for (let i = 0; i < laneClusters.length; i += 1) {
+        for (let j = laneClusters.length - 1; j > i; j -= 1) {
+          const a = laneClusters[i], b = laneClusters[j];
+          if (b.minX < a.maxX + clusterGap && a.minX < b.maxX + clusterGap) {
+            const span = laneClusters.slice(i, j + 1);
+            laneClusters.splice(i, j - i + 1, {
+              rows: span.flatMap(cluster => cluster.rows),
+              firstX: a.firstX,
+              lastX: Math.max(...span.map(cluster => cluster.lastX)),
+              minX: Math.min(...span.map(cluster => cluster.minX)),
+              maxX: Math.max(...span.map(cluster => cluster.maxX)),
+              day_from: a.day_from,
+              day_to: span[span.length - 1].day_to
+            });
+            merged = true;
+            break outer;
+          }
+        }
       }
     }
     const stack = laneClusters.reduce((max, cluster) => Math.max(max, Math.min(cluster.rows.length, maxSlots)), 0);

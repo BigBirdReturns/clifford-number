@@ -8,6 +8,7 @@ import {
   TIMELINE_MAX_LANES,
   TIMELINE_MODEL_SCHEMA,
   TIMELINE_PHONE_METRICS,
+  TIMELINE_STAGE_BUDGETS,
   buildTimelineModel,
   defaultTimelineDomain,
   defaultTimelineLanes,
@@ -58,21 +59,21 @@ assert.equal(DENSE_ACTOR_ROWS, 20);
 assert.equal(TIMELINE_MAX_LANES, 18, 'the named-lane cap, default and pinned (owner decision 2026-10-23)');
 assert.equal(TIMELINE_CLUSTER_SLOTS, 6);
 
-assert.equal(model.counts.rows, 3118); // 2026-10-23 promotion: 286 -> 3,118
-assert.equal(model.counts.actor_rows, 959); // 2026-10-23 promotion: 200 -> 959 (958 + the Capital Factory listing of joshua-baer, routed to the actor)
-assert.equal(model.counts.organization_rows, 2159); // 2026-10-23 promotion: 86 -> 2,159
-assert.deepEqual(model.counts.kinds, { day: 1643, span: 1158, year: 2, open: 315, undated: 0 }); // 2026-10-23 promotion
-assert.deepEqual(model.counts.actor_kinds, { day: 225, span: 576, year: 1, open: 157, undated: 0 }); // 2026-10-23 promotion
-assert.deepEqual(model.counts.organization_kinds, { day: 1418, span: 582, year: 1, open: 158, undated: 0 }); // 2026-10-23 promotion
-assert.equal(model.counts.hop_bases, 135); // 2026-10-23 promotion: 95 -> 135
-assert.equal(model.hopBases.length, 135); // 2026-10-23 promotion
-assert.equal(model.counts.hop_day_surfaces, 22, '135 bases group into 22 (day, surface) objects'); // 2026-10-23 promotion: 19 -> 22
-assert.equal(model.hopDays.size, 22); // 2026-10-23 promotion
-assert.equal(model.counts.hop_days, 19, 'over 19 distinct days'); // 2026-10-23 promotion: 18 -> 19
-assert.equal(model.counts.hop_bases_by_year['2025'], 28, 'fix (d): 28 bases dated 2025');
-assert.equal(model.counts.dense_surfaces, 1);
-assert.equal(model.counts.dense_rows, 113);
-assert.equal(model.counts.refusal_reasons, 836); // 2026-10-23 promotion: 35 -> 836
+assert.equal(model.counts.rows, 4411); // 2026-10-23 final re-pin: 4451 -> 4411. 2026-10-23 five-lane merge: 3,118 -> 4,451. 2026-10-23 promotion: 286 -> 3,118
+assert.equal(model.counts.actor_rows, 1300); // 2026-10-23 final re-pin: 1340 -> 1300. 2026-10-23 five-lane merge: 959 -> 1,340. 2026-10-23 promotion: 200 -> 959 (958 + the Capital Factory listing of joshua-baer, routed to the actor)
+assert.equal(model.counts.organization_rows, 3111); // 2026-10-23 five-lane merge: 2,159 -> 3,111. 2026-10-23 promotion: 86 -> 2,159
+assert.deepEqual(model.counts.kinds, { day: 2762, span: 1333, year: 2, open: 314, undated: 0 }); // 2026-10-23 final re-pin: day 2,799 -> 2,762, span 1,335 -> 1,333, open 315 -> 314 (40 merged Form D person rows).  2026-10-23 five-lane merge: day 1,643 -> 2,799, span 1,158 -> 1,335. 2026-10-23 promotion
+assert.deepEqual(model.counts.actor_kinds, { day: 473, span: 670, year: 1, open: 156, undated: 0 }); // 2026-10-23 final re-pin: day 510 -> 473, span 672 -> 670, open 157 -> 156.  2026-10-23 five-lane merge: day 225 -> 510, span 576 -> 672. 2026-10-23 promotion
+assert.deepEqual(model.counts.organization_kinds, { day: 2289, span: 663, year: 1, open: 158, undated: 0 }); // 2026-10-23 five-lane merge: day 1,418 -> 2,289, span 582 -> 663. 2026-10-23 promotion
+assert.equal(model.counts.hop_bases, 300); // 2026-10-23 final re-pin: 339 -> 300. 2026-10-23 five-lane merge: 135 -> 339. 2026-10-23 promotion: 95 -> 135
+assert.equal(model.hopBases.length, 300); // 2026-10-23 final re-pin: 339 -> 300. 2026-10-23 five-lane merge: 135 -> 339. 2026-10-23 promotion
+assert.equal(model.counts.hop_day_surfaces, 59, '300 bases group into 59 (day, surface) objects'); // 2026-10-23 final re-pin: 64 -> 59. 2026-10-23 five-lane merge: 22 -> 64. 2026-10-23 promotion: 19 -> 22
+assert.equal(model.hopDays.size, 59); // 2026-10-23 final re-pin: 64 -> 59. 2026-10-23 five-lane merge: 22 -> 64. 2026-10-23 promotion
+assert.equal(model.counts.hop_days, 41, 'over 41 distinct days'); // 2026-10-23 final re-pin: 42 -> 41. 2026-10-23 five-lane merge: 19 -> 42. 2026-10-23 promotion: 18 -> 19
+assert.equal(model.counts.hop_bases_by_year['2025'], 61, 'fix (d): 61 bases dated 2025'); // 2026-10-23 final re-pin: 66 -> 61. 2026-10-23 five-lane merge: 28 -> 66
+assert.equal(model.counts.dense_surfaces, 2); // 2026-10-23 five-lane merge: 1 -> 2 (rndf-2023-programme-roster)
+assert.equal(model.counts.dense_rows, 142); // 2026-10-23 five-lane merge: 113 -> 142 (+29 rndf-2023 roster rows)
+assert.equal(model.counts.refusal_reasons, 1096); // 2026-10-23 final re-pin: 1091 -> 1096. 2026-10-23 five-lane merge: 836 -> 1,091. 2026-10-23 promotion: 35 -> 836
 assert.equal(model.counts.refusal_reasons_unrecorded, 5);
 assert.equal(model.counts.surfaces_without_evidence_class, 10);
 // 2026-10-23 promotion: three LinkedIn role surfaces were folded from two role entries
@@ -80,32 +81,40 @@ assert.equal(model.counts.surfaces_without_evidence_class, 10);
 // model already disambiguates such rows with a ::2 suffix (see buildTimelineModel); the
 // rule kept is that every row has a unique key, and every key is the base key or the base
 // key plus that suffix. Old assertion: duplicate_keys === 0 and every key is the base key.
+// 2026-10-23 five-lane merge: the list grows from the three folded LinkedIn role surfaces to 42 surfaces. The
+// capital-factory lane records a Form D related person who also signed the filing as two rows (related person,
+// signer) on the same SEC Form D surface, and the conventions lane lists two people twice on the 2024 and 2025
+// a16z American Dynamism programme rosters. The kept rule is unchanged: every key is the base key or base::2.
+// 2026-10-23 final re-pin: the list shrinks from 42 to 5 surfaces. The 37 SEC Form D surfaces are gone: the ledger now
+// holds one row per person per surface (related-person and signer roles merged, 2026-10-23). The rule is unchanged.
 const FOLDED_ROLE_SURFACES = [
+  'a16z-american-dynamism-summit-2024-programme-roster',
+  'a16z-american-dynamism-summit-2025-programme-roster',
   'jason-schwab-conklin-and-de-decker-president-jssi-advisory-services-linkedin-2018-2019',
   'quay-barnett-anduril-industries-general-manager-warfighter-systems-linkedin-2024-present',
   'seth-price-hotelquickly-ltd-head-of-nodejs-development-linkedin-2015-2015',
 ];
-assert.equal(model.counts.duplicate_keys, 6); // 2026-10-23 promotion: 0 -> 6 (one actor and one organization row on each folded surface)
-assert.equal(model.rowsByKey.size, 3118, 'row key surface_id::participant_type::entity_id[::n] is unique'); // 2026-10-23 promotion: 286 -> 3,118
+assert.equal(model.counts.duplicate_keys, 5); // 2026-10-23 final re-pin: 45 -> 5. 2026-10-23 five-lane merge: 6 -> 45 (see FOLDED_ROLE_SURFACES). 2026-10-23 promotion: 0 -> 6 (one actor and one organization row on each folded surface)
+assert.equal(model.rowsByKey.size, 4411, 'row key surface_id::participant_type::entity_id[::n] is unique'); // 2026-10-23 final re-pin: 4451 -> 4411. 2026-10-23 five-lane merge: 3,118 -> 4,451. 2026-10-23 promotion: 286 -> 3,118
 const baseRowKey = row => `${row.surface_id}::${row.participant_type}::${row.entity_id}`;
 assert.ok(model.rows.every(row => row.key === baseRowKey(row) || row.key === `${baseRowKey(row)}::2`));
 assert.deepEqual([...new Set(model.rows.filter(row => row.key !== baseRowKey(row)).map(row => row.surface_id))].sort(), FOLDED_ROLE_SURFACES,
-  'only the three folded role surfaces carry a suffixed key');
+  'only the listed surfaces carry a suffixed key'); // 2026-10-23 five-lane merge: was 'only the three folded role surfaces'
 assert.ok(model.rows.every(row => Array.isArray(row.receipt_ids) && row.receipt_ids.length > 0), 'every row keeps its receipts');
 assert.ok(model.rows.every(row => typeof row.evidence_class === 'string'), 'every row keeps its evidence class');
 assert.ok(model.hopBases.every(basis => basis.day != null && basis.end_day === basis.day), 'every basis is a dated single day');
 assert.deepEqual(model.range, { // 2026-10-23 promotion: range 2016-01-01..2026-08-12 -> 1982-05-01..2026-10-23
   first_day: '1982-05-01', last_day: '2026-10-23',
   first_day_index: dayIndex('1982-05-01'), last_day_index: dayIndex('2026-10-23'),
-  distinct_start_days: 339,
+  distinct_start_days: 534, // 2026-10-23 five-lane merge: 339 -> 534
   years_with_rows: ['1982', '1983', '1984', '1986', '1988', '1989', '1990', '1992', '1993', '1994', '1995', '1996', '1997', '1998', '1999',
     '2000', '2001', '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013', '2014', '2015',
     '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024', '2025', '2026']
 });
-assert.equal(model.lanes.actor.size, 279); // 2026-10-23 promotion: 163 -> 279
-assert.equal(model.lanes.organization.size, 1521); // 2026-10-23 promotion: 27 -> 1,521
-assert.equal(model.lanes.type.size, 14);
-assert.equal(model.lanes.surface.size, 858); // 2026-10-23 promotion: 54 -> 858
+assert.equal(model.lanes.actor.size, 391); // 2026-10-23 five-lane merge: 279 -> 391. 2026-10-23 promotion: 163 -> 279
+assert.equal(model.lanes.organization.size, 1703); // 2026-10-23 five-lane merge: 1,521 -> 1,703. 2026-10-23 promotion: 27 -> 1,521
+assert.equal(model.lanes.type.size, 16); // 2026-10-23 five-lane merge: 14 -> 16 surface types
+assert.equal(model.lanes.surface.size, 1155); // 2026-10-23 five-lane merge: 858 -> 1,155. 2026-10-23 promotion: 54 -> 858
 
 // Year precision and the one open-ended row are handled as the design says.
 const yearRows = model.rows.filter(row => row.kind === 'year');
@@ -118,7 +127,7 @@ for (const row of yearRows) {
 // 2026-10-23 promotion: 315 open-ended rows (LinkedIn roles stated "Present"); the
 // detachment-201 / us-army row is still the first and is checked as before.
 const openRow = model.rows.find(row => row.kind === 'open');
-assert.equal(model.rows.filter(row => row.kind === 'open').length, 315); // 2026-10-23 promotion
+assert.equal(model.rows.filter(row => row.kind === 'open').length, 314); // 2026-10-23 final re-pin: 315 -> 314. 2026-10-23 promotion
 assert.ok(model.rows.filter(row => row.kind === 'open').every(row => row.end_day === null && row.precision === 'open'));
 assert.equal(openRow.key, 'detachment-201-program-context-2025::organization::us-army');
 assert.equal(openRow.precision, 'open');
@@ -134,32 +143,38 @@ assert.equal(unrecordedRow.surface_hop_eligible, false);
 assert.equal(unrecordedRow.kind, 'span');
 
 // Ben Warner lane (fix d: electric-twin 6; 7 official and 3 primary_public).
+// 2026-10-23 five-lane merge: two synthetic-constituency rows (2025-07-07 reported, 2026-07-29 primary public):
+// 10 -> 12 rows, electric-twin 6 -> 7, no-10 2 -> 3, day kinds 8 -> 10.
 const benWarner = model.lanes.actor.get('ben-warner');
-assert.equal(benWarner.row_count, 10);
-assert.equal(benWarner.surface_count, 10);
+assert.equal(benWarner.row_count, 12); // 2026-10-23 five-lane merge: 10 -> 12
+assert.equal(benWarner.surface_count, 12); // 2026-10-23 five-lane merge: 10 -> 12
 assert.equal(benWarner.hop_eligible_surface_count, 6);
 assert.equal(benWarner.first_day, '2018-01-24');
 assert.equal(benWarner.last_day, '2026-08-11');
-assert.deepEqual(benWarner.evidence_counts, { official: 7, primary_public: 3 });
-assert.equal(benWarner.co_organization_counts['electric-twin'], 6);
-assert.equal(benWarner.co_organization_counts['no-10'], 2);
+assert.deepEqual(benWarner.evidence_counts, { official: 7, primary_public: 4, reported: 1 }); // 2026-10-23 five-lane merge: was { official: 7, primary_public: 3 }
+assert.equal(benWarner.co_organization_counts['electric-twin'], 7); // 2026-10-23 five-lane merge: 6 -> 7
+assert.equal(benWarner.co_organization_counts['no-10'], 3); // 2026-10-23 five-lane merge: 2 -> 3
 assert.equal(benWarner.hop_basis_count, 12);
-assert.deepEqual(benWarner.kind_counts, { day: 8, span: 2 });
+assert.deepEqual(benWarner.kind_counts, { day: 10, span: 2 }); // 2026-10-23 five-lane merge: day 8 -> 10
 assert.deepEqual(
   benWarner.rows.map(row => `${row.kind}:${row.time_start}..${row.time_end}`),
   ['day:2018-01-24..2018-01-24', 'day:2020-03-08..2020-03-08', 'span:2020-03-13..2021-05-13', 'span:2023-09-28..2026-08-11',
-    'day:2023-09-28..2023-09-28', 'day:2025-08-05..2025-08-05', 'day:2025-09-12..2025-09-12', 'day:2025-09-27..2025-09-27',
-    'day:2026-02-11..2026-02-11', 'day:2026-07-08..2026-07-08']
-);
+    'day:2023-09-28..2023-09-28', 'day:2025-07-07..2025-07-07', 'day:2025-08-05..2025-08-05', 'day:2025-09-12..2025-09-12', 'day:2025-09-27..2025-09-27',
+    'day:2026-02-11..2026-02-11', 'day:2026-07-08..2026-07-08', 'day:2026-07-29..2026-07-29']
+); // 2026-10-23 five-lane merge: + day:2025-07-07 and day:2026-07-29
 const electricTwin = model.lanes.organization.get('electric-twin');
-assert.equal(electricTwin.row_count, 18);
+assert.equal(electricTwin.row_count, 22); // 2026-10-23 five-lane merge: 18 -> 22
 assert.equal(electricTwin.kind_counts.span, 5, 'fix (d): electric-twin 5 spans');
 assert.equal(electricTwin.first_day, '2023-09-28');
 assert.equal(electricTwin.last_day, '2026-08-12');
 
 // The Dialog roster: exactly one dense object, 112 listed names, 2 documented elsewhere.
-assert.equal(model.dense.length, 1);
-const dialog = model.dense[0];
+// Narrowed 2026-10-23 five-lane merge: the Reagan National Defense Forum 2023 programme roster (22 listed,
+// 29 rows) is now a second dense object and sorts first. Old: model.dense.length === 1 and dialog = model.dense[0].
+// New: model.dense.length === 2 and the Dialog block is found by its surface id; the Dialog assertions below are unchanged in scope.
+assert.equal(model.dense.length, 2);
+assert.deepEqual(model.dense.map(block => block.surface_id), ['rndf-2023-programme-roster', 'dialog-public-directory-exposure-2026-06-16']);
+const dialog = model.dense.find(block => block.surface_id === 'dialog-public-directory-exposure-2026-06-16');
 assert.equal(dialog.surface_id, 'dialog-public-directory-exposure-2026-06-16');
 assert.equal(dialog.listed_count, 112);
 assert.equal(dialog.row_count, 113);
@@ -169,8 +184,8 @@ assert.deepEqual(dialog.evidence_counts, { primary_public: 112, reported: 1 });
 assert.equal(dialog.refusal_reason, 'dense_directory_listing_not_shared_participation');
 assert.equal(dialog.hop_eligible, false);
 assert.equal(dialog.receipt_ids.length, 3);
-assert.deepEqual(dialog.elsewhere.map(entry => [entry.actor_id, entry.other_surface_count]), [['matt-clifford', 8], ['jim-himes', 3], ['joe-lonsdale', 2], ['dan-driscoll', 1]]); // 2026-10-23 promotion: + jim-himes, joe-lonsdale
-assert.equal(dialog.nowhere_else_count, 108); // 2026-10-23 promotion: 110 -> 108
+assert.deepEqual(dialog.elsewhere.map(entry => [entry.actor_id, entry.other_surface_count]), [['matt-clifford', 12], ['joe-lonsdale', 9], ['jim-himes', 3], ['tyler-cowen', 2], ['wes-moore', 2], ['dan-driscoll', 1]]); // 2026-10-23 five-lane merge: was [['matt-clifford', 8], ['jim-himes', 3], ['joe-lonsdale', 2], ['dan-driscoll', 1]]. 2026-10-23 promotion: + jim-himes, joe-lonsdale
+assert.equal(dialog.nowhere_else_count, 106); // 2026-10-23 five-lane merge: 108 -> 106. 2026-10-23 promotion: 110 -> 108
 
 // --- default lanes (owner decision 2026-10-23: the 18 with the most dated rows; shown by first day then label)
 const actorLanes = defaultTimelineLanes(model, 'actor');
@@ -192,45 +207,45 @@ for (let index = 1; index < actorLanes.lanes.length; index += 1) {
 }
 const ORIGINAL_DEFAULT_LANES = ['dominic-cummings', 'ben-warner', 'marc-warner', 'saul-klein', 'matt-clifford', 'simon-case', 'alex-cooper',
   'fiona-hill', 'george-robertson', 'john-healey', 'keir-starmer', 'richard-barrons', 'rich-drake', 'michael-muthukrishna', 'dan-driscoll'];
-assert.equal(actorLanes.lanes.reduce((sum, lane) => sum + lane.row_count, 0), 40, '40 rows on the 18 named lanes'); // 2026-10-23: hop-first ranking (row-count ranking gave 236; 2.1.0: 52 rows on 15)
-assert.equal(actorLanes.strip.row_count, 808, 'every other actor row outside the Dialog block'); // 2.1.0: 38 single-surface rows // 2026-10-23 hop-first default lanes: 611 -> 808
-assert.equal(actorLanes.strip.entity_count, 153);
-assert.equal(actorLanes.strip.label, 'Other people (153)');
+assert.equal(actorLanes.lanes.reduce((sum, lane) => sum + lane.row_count, 0), 159, '159 rows on the 18 named lanes'); // 2026-10-23 final re-pin: 198 -> 159. 2026-10-23 five-lane merge: 40 -> 198 // 2026-10-23: hop-first ranking (row-count ranking gave 236; 2.1.0: 52 rows on 15)
+assert.equal(actorLanes.strip.row_count, 1014, 'every other actor row outside the dense blocks'); // 2026-10-23 final re-pin: 1017 -> 1014. 2026-10-23 five-lane merge: 808 -> 1,017 // 2.1.0: 38 single-surface rows // 2026-10-23 hop-first default lanes: 611 -> 808
+assert.equal(actorLanes.strip.entity_count, 267); // 2026-10-23 five-lane merge: 153 -> 267
+assert.equal(actorLanes.strip.label, 'Other people (267)'); // 2026-10-23 five-lane merge: 153 -> 267
 assert.equal(actorLanes.strip.single_surface_only, false);
-assert.equal(actorLanes.blocks.length, 1);
+assert.equal(actorLanes.blocks.length, 2); // 2026-10-23 five-lane merge: 1 -> 2
 const organizationLanes = defaultTimelineLanes(model, 'organization');
 // Owner decision 2026-10-23: the same 18-lane cap and dated-row ranking for Organizations.
 assert.equal(organizationLanes.lanes.length, 18); // 2.1.0: 14 multi-surface organizations
 assert.deepEqual(organizationLanes.lanes.map(lane => lane.id).sort(), topByDatedRows(model.lanes.organization));
-assert.equal(organizationLanes.lanes.reduce((sum, lane) => sum + lane.row_count, 0), 197); // 2.1.0: 73 // 2026-10-23 hop-first default lanes: 274 -> 197
-assert.equal(organizationLanes.strip.row_count, 1962, 'every other organization row'); // 2.1.0: 13 single-surface rows // 2026-10-23 hop-first default lanes: 1885 -> 1962
+assert.equal(organizationLanes.lanes.reduce((sum, lane) => sum + lane.row_count, 0), 413); // 2026-10-23 five-lane merge: 197 -> 413 // 2.1.0: 73 // 2026-10-23 hop-first default lanes: 274 -> 197
+assert.equal(organizationLanes.strip.row_count, 2698, 'every other organization row'); // 2026-10-23 five-lane merge: 1,962 -> 2,698 // 2.1.0: 13 single-surface rows // 2026-10-23 hop-first default lanes: 1885 -> 1962
 assert.equal(organizationLanes.strip.label, `Other organizations (${organizationLanes.strip.entity_count})`);
-assert.equal(organizationLanes.strip.entity_count, 1503);
+assert.equal(organizationLanes.strip.entity_count, 1685); // 2026-10-23 five-lane merge: 1,503 -> 1,685
 assert.equal(organizationLanes.blocks.length, 0);
-assert.equal(defaultTimelineLanes(model, 'organization', { order: 'surface_count' }).lanes[0].id, 'anduril-industries'); // 2026-10-23 promotion: electric-twin -> anduril-industries (39 surfaces)
+assert.equal(defaultTimelineLanes(model, 'organization', { order: 'surface_count' }).lanes[0].id, 'capital-factory'); // 2026-10-23 five-lane merge: anduril-industries -> capital-factory. 2026-10-23 promotion: electric-twin -> anduril-industries (39 surfaces)
 const typeLanes = defaultTimelineLanes(model, 'type');
-assert.equal(typeLanes.lanes.length, 14, 'all 14 surface types fit under the 18-lane cap');
-assert.equal(typeLanes.lanes.reduce((sum, lane) => sum + lane.row_count, 0), 858, 'type lanes hold surfaces, not participation rows'); // 2026-10-23 promotion: 54 -> 858
+assert.equal(typeLanes.lanes.length, 16, 'all 16 surface types fit under the 18-lane cap'); // 2026-10-23 five-lane merge: 14 -> 16
+assert.equal(typeLanes.lanes.reduce((sum, lane) => sum + lane.row_count, 0), 1155, 'type lanes hold surfaces, not participation rows'); // 2026-10-23 five-lane merge: 858 -> 1,155. 2026-10-23 promotion: 54 -> 858
 assert.equal(typeLanes.strip.row_count, 0);
 const pinnedLanes = defaultTimelineLanes(model, 'actor', { laneIds: ['ben-warner', 'nobody', 'marc-warner', 'ben-warner'] });
 assert.deepEqual(pinnedLanes.lanes.map(lane => lane.id), ['ben-warner', 'marc-warner']);
 assert.equal(pinnedLanes.pinned, true);
-assert.equal(pinnedLanes.strip.row_count, 959 - 10 - 2 - 112, 'the strip holds every other actor row; dense rows stay in the block unless the actor has a lane'); // 2026-10-23 promotion: 200 -> 959 actor rows
+assert.equal(pinnedLanes.strip.row_count, 1300 - 12 - 2 - 112 - 23, 'the strip holds every other actor row; dense rows stay in the block unless the actor has a lane'); // 2026-10-23 final re-pin: 1,340 -> 1,300 actor rows (40 merged Form D person rows).  2026-10-23 five-lane merge: 959 - 10 - 2 - 112 -> 1,340 - 12 - 2 - 112 - 23 (Ben Warner 12 rows; the rndf-2023 block holds 23 actor rows). 2026-10-23 promotion: 200 -> 959 actor rows
 assert.equal(defaultTimelineLanes(model, 'actor', { laneIds: [...model.lanes.actor.keys()].slice(0, 20) }).lanes.length, 18, 'at most 18 named lanes');
 // 2026-10-23 promotion: the default list is no longer 15, so the "one more drops none" check
 // runs on the original 15 defaults it was written for.
 assert.equal(defaultTimelineLanes(model, 'actor', { laneIds: ['auren-hoffman', ...ORIGINAL_DEFAULT_LANES] }).lanes.length, 16, 'adding one lane to the 15 defaults drops none of them');
 
 // --- default domain by row share
-assert.deepEqual(defaultTimelineDomain(model, 690), { from: '2013-01-01', to: '2026-11-22', from_day: dayIndex('2013-01-01'), to_day: dayIndex('2026-11-22'), auto: true, share: 0.858, threshold: 0.85 }); // 2026-10-23 promotion: 2023-01-01..2026-09-11 -> 2013-01-01..2026-11-22
-assert.equal(defaultTimelineDomain(model, 880).from, '2013-01-01'); // 2026-10-23 promotion
-assert.deepEqual(defaultTimelineDomain(model, 216), { from: '2020-01-01', to: '2026-11-22', from_day: dayIndex('2020-01-01'), to_day: dayIndex('2026-11-22'), auto: true, share: 0.729, threshold: 0.7 }); // 2026-10-23 promotion: 2025-01-01 -> 2020-01-01
+assert.deepEqual(defaultTimelineDomain(model, 690), { from: '2016-01-01', to: '2026-11-22', from_day: dayIndex('2016-01-01'), to_day: dayIndex('2026-11-22'), auto: true, share: 0.863, threshold: 0.85 }); // 2026-10-23 five-lane merge: 2013-01-01 (share 0.858) -> 2016-01-01 (share 0.863). 2026-10-23 promotion: 2023-01-01..2026-09-11 -> 2013-01-01..2026-11-22
+assert.equal(defaultTimelineDomain(model, 880).from, '2016-01-01'); // 2026-10-23 five-lane merge: 2013 -> 2016. 2026-10-23 promotion
+assert.deepEqual(defaultTimelineDomain(model, 216), { from: '2022-01-01', to: '2026-11-22', from_day: dayIndex('2022-01-01'), to_day: dayIndex('2026-11-22'), auto: true, share: 0.715, threshold: 0.7 }); // 2026-10-23 five-lane merge: 2020-01-01 (share 0.729) -> 2022-01-01 (share 0.715). 2026-10-23 promotion: 2025-01-01 -> 2020-01-01
 
 // --- filters
-assert.equal(filterTimelineRows(model.rows, { hop: 'hop' }).length + filterTimelineRows(model.rows, { hop: 'context' }).length, 3118); // 2026-10-23 promotion
+assert.equal(filterTimelineRows(model.rows, { hop: 'hop' }).length + filterTimelineRows(model.rows, { hop: 'context' }).length, 4411); // 2026-10-23 final re-pin: 4451 -> 4411. 2026-10-23 five-lane merge: 3,118 -> 4,451. 2026-10-23 promotion
 assert.ok(filterTimelineRows(model.rows, { hop: 'hop' }).every(row => row.surface_hop_eligible));
 assert.ok(filterTimelineRows(model.rows, { evidenceFloor: 'official' }).every(row => row.evidence_class === 'official'));
-assert.equal(filterTimelineRows(model.rows, { evidenceFloor: 'official' }).length, 542); // 2026-10-23 promotion: 136 -> 542
+assert.equal(filterTimelineRows(model.rows, { evidenceFloor: 'official' }).length, 1207); // 2026-10-23 final re-pin: 1244 -> 1207. 2026-10-23 five-lane merge: 542 -> 1,244. 2026-10-23 promotion: 136 -> 542
 
 // --- layout: desktop (690 and 880 plot widths) and phone (216)
 function checkColumns(layout) {
@@ -335,30 +350,30 @@ function checkAccounting(layout, sourceModel = model) {
 // folds the rest into the +N aggregate. Today none of the 18 shares a hop surface on a
 // drawn mark, so the default view draws no column; the column, SDR and Warner rules are
 // checked on the 2.1.0 default lanes pinned (ORIGINAL_DEFAULT_LANES), which keep six slots.
-const DEFAULT_DESKTOP = { 690: { marks: 44, aggregates: 2 }, 880: { marks: 55, aggregates: 7 } }; // 2026-10-23 hop-first default lanes: 690 147/12, 880 169/18
+const DEFAULT_DESKTOP = { 690: { marks: 112, aggregates: 9 }, 880: { marks: 117, aggregates: 10 } }; // 2026-10-23 final re-pin: 690 134/13 -> 112/9, 880 140/14 -> 117/10 (merged Form D rows, year-only a16z 2022 sessions now non-hop, overlapping-tick clusters folded).  2026-10-23 five-lane merge: 690 44/2 -> 134/13, 880 55/7 -> 140/14 // 2026-10-23 hop-first default lanes: 690 147/12, 880 169/18
 for (const plotWidth of [690, 880]) {
   const layout = layoutTimeline(model, { plotWidth });
   assert.equal(layout.by, 'actor');
-  assert.equal(layout.domain.from, '2013-01-01'); // 2026-10-23 promotion: 2023-01-01 -> 2013-01-01
+  assert.equal(layout.domain.from, '2016-01-01'); // 2026-10-23 five-lane merge: 2013-01-01 -> 2016-01-01. 2026-10-23 promotion: 2023-01-01 -> 2013-01-01
   assert.equal(layout.domain.to, '2026-11-22'); // 2026-10-23 promotion: 2026-09-11 -> 2026-11-22
   assert.equal(layout.domain.auto, true);
   assert.equal(layout.counts.named_lanes, 18); // 2.1.0: 15
-  assert.equal(layout.counts.strip_rows, 808); // 2.1.0: 38 // 2026-10-23 hop-first default lanes: 611 -> 808
+  assert.equal(layout.counts.strip_rows, 1014); // 2026-10-23 final re-pin: 1017 -> 1014. 2026-10-23 five-lane merge: 808 -> 1,017 // 2.1.0: 38 // 2026-10-23 hop-first default lanes: 611 -> 808
   assert.equal(layout.counts.marks, DEFAULT_DESKTOP[plotWidth].marks, 'desktop: lane + strip marks');
-  assert.equal(layout.counts.blocks, 1);
+  assert.equal(layout.counts.blocks, 2); // 2026-10-23 five-lane merge: 1 -> 2 (rndf-2023 roster block)
   assert.equal(layout.counts.aggregates, DEFAULT_DESKTOP[plotWidth].aggregates);
-  assert.equal(layout.counts.drawn, DEFAULT_DESKTOP[plotWidth].marks + 1 + DEFAULT_DESKTOP[plotWidth].aggregates, `marks + block + aggregates at plot width ${plotWidth}`);
+  assert.equal(layout.counts.drawn, DEFAULT_DESKTOP[plotWidth].marks + 2 + DEFAULT_DESKTOP[plotWidth].aggregates, `marks + blocks + aggregates at plot width ${plotWidth}`); // 2026-10-23 five-lane merge: + 1 block -> + 2 blocks
   assert.ok(layout.counts.columns > 0, 'the default people share drawn hop bases (hop-first ranking, 2026-10-23)');
-  assert.equal(layout.counts.pre_domain, 221); // 2026-10-23 promotion: 11 -> 221
+  assert.equal(layout.counts.pre_domain, 305); // 2026-10-23 final re-pin: 310 -> 305. 2026-10-23 five-lane merge: 221 -> 310. 2026-10-23 promotion: 11 -> 221
   assert.equal(layout.counts.post_domain, 0);
   assert.equal(layout.counts.undated, 0);
   assert.equal(layout.counts.filtered, 0);
-  assert.equal(layout.counts.total_rows, 3118); // 2026-10-23 promotion: 286 -> 3,118
-  assert.equal(layout.counts.candidate_rows, 960, '959 actor rows plus the Dialog organization row carried by the block'); // 2026-10-23 promotion: 201 -> 960
-  assert.equal(layout.counts.rows_outside_grouping, 2158, 'the other organization rows are not part of a People view'); // 2026-10-23 promotion: 85 -> 2,158
-  assert.equal(layout.counts.rows_in_view, 739, 'marks + aggregated rows + 113 block members, each row counted once'); // 2026-10-23 promotion: 190 -> 739
-  assert.equal(layout.counts.in_window, 739);
-  assert.equal(layout.counts.block_visible_rows, 113);
+  assert.equal(layout.counts.total_rows, 4411); // 2026-10-23 final re-pin: 4451 -> 4411. 2026-10-23 five-lane merge: 3,118 -> 4,451. 2026-10-23 promotion: 286 -> 3,118
+  assert.equal(layout.counts.candidate_rows, 1308, '1,300 actor rows plus the organization rows carried by the two blocks'); // 2026-10-23 final re-pin: 1348 -> 1308. 2026-10-23 five-lane merge: 960 -> 1,348 (Dialog 1 + rndf-2023 7 organization rows). 2026-10-23 promotion: 201 -> 960
+  assert.equal(layout.counts.rows_outside_grouping, 3103, 'the other organization rows are not part of a People view'); // 2026-10-23 five-lane merge: 2,158 -> 3,103. 2026-10-23 promotion: 85 -> 2,158
+  assert.equal(layout.counts.rows_in_view, 1003, 'marks + aggregated rows + 142 block members, each row counted once'); // 2026-10-23 final re-pin: 1038 -> 1003. 2026-10-23 five-lane merge: 739 -> 1,038. 2026-10-23 promotion: 190 -> 739
+  assert.equal(layout.counts.in_window, 1003); // 2026-10-23 final re-pin: 1038 -> 1003. 2026-10-23 five-lane merge: 739 -> 1,038
+  assert.equal(layout.counts.block_visible_rows, 142); // 2026-10-23 five-lane merge: 113 -> 142
   // Narrowed 2026-10-23: was an exact one-key list (Simon Case's 2020-2024 tenure). With the
   // domain now starting 2013-01-01 that tenure is inside the domain; the rule is checked on
   // every flagged key instead: it began before the domain and is still active inside it.
@@ -367,21 +382,27 @@ for (const plotWidth of [690, 880]) {
     assert.ok(row.start_day < layout.domain.from_day && (row.end_day == null || row.end_day >= layout.domain.from_day),
       `${key}: a tenure span that began before the domain and is active inside it is flagged, not called pre-domain`);
   }
-  assert.equal(layout.counts.pre_domain_overlapping, 71); // 2026-10-23 promotion: 1 -> 71
+  assert.equal(layout.counts.pre_domain_overlapping, 78); // 2026-10-23 five-lane merge: 71 -> 78. 2026-10-23 promotion: 1 -> 71
   assert.equal(layout.counts.max_named_stack, 2, 'the default view never grows a lane');
   assert.equal(layout.counts.max_strip_stack, 2);
   checkAccounting(layout);
-  assert.equal(layout.lanes.length, 20, '18 named + strip + block');
+  assert.equal(layout.lanes.length, 21, '18 named + strip + two blocks'); // 2026-10-23 five-lane merge: 20 -> 21
   assert.equal(layout.lanes.find(lane => lane.kind === 'strip').height, 28);
-  assert.equal(layout.lanes.find(lane => lane.kind === 'strip').label, 'Other people (153)');
+  assert.equal(layout.lanes.find(lane => lane.kind === 'strip').label, 'Other people (267)'); // 2026-10-23 five-lane merge: 153 -> 267
   assert.equal(layout.lanes.find(lane => lane.kind === 'block').height, 32);
   assert.ok(layout.lanes.filter(lane => lane.kind === 'entity').every(lane => lane.height === 28), 'every entity lane is 28px');
-  assert.equal(layout.height, 18 * 28 + 28 + 32);
-  assert.ok(layout.height <= 650 - 36 - 40, 'the default desktop stage fits the 650px budget');
-  assert.deepEqual(layout.axisTicks.filter(tick => tick.kind === 'year').map(tick => tick.label), Array.from({ length: 14 }, (_, index) => String(2013 + index)));
+  assert.equal(layout.height, 18 * 28 + 28 + 32 + 32); // 2026-10-23 five-lane merge: + a second 32px block lane (596px; was 564px)
+  // 2026-10-23 final repair round: the desktop stage budget was raised 574px (650 - 36 - 40) -> 640px by owner
+  // decision (two dense roster blocks, Dialog and the rndf-2023 programme, are correct). 596px fits.
+  assert.equal(TIMELINE_STAGE_BUDGETS.desktop, 640);
+  assert.ok(layout.height <= TIMELINE_STAGE_BUDGETS.desktop, 'the default desktop stage fits the 640px budget');
+  assert.deepEqual(layout.axisTicks.filter(tick => tick.kind === 'year').map(tick => tick.label), Array.from({ length: 11 }, (_, index) => String(2016 + index))); // 2026-10-23 five-lane merge: 2013..2026 (14) -> 2016..2026 (11)
   checkMarks(layout, 4);
   checkColumns(layout);
-  const block = layout.blocks[0];
+  // Narrowed 2026-10-23 five-lane merge: was layout.blocks[0]; the rndf-2023 roster block now sorts first, so the
+  // Dialog block is found by its surface id. The Dialog block assertions are unchanged in scope.
+  assert.deepEqual(layout.blocks.map(entry => entry.surface_id), ['rndf-2023-programme-roster', dialog.surface_id]);
+  const block = layout.blocks.find(entry => entry.surface_id === dialog.surface_id);
   assert.equal(block.listed_count, 112);
   assert.equal(block.surface_id, dialog.surface_id);
   assert.equal(block.member_keys.length, 113);
@@ -389,36 +410,38 @@ for (const plotWidth of [690, 880]) {
   assert.equal(block.visible_listed_count, 112);
   assert.equal(block.filtered_count, 0);
   assert.equal(block.hop_eligible, false);
-  assert.equal(layout.lanes.find(lane => lane.kind === 'block').visible_row_count, 113);
-  assert.deepEqual(block.elsewhere.map(entry => entry.actor_id), ['matt-clifford', 'jim-himes', 'joe-lonsdale', 'dan-driscoll']);
-  assert.equal(layout.marks.filter(mark => mark.surface_id === dialog.surface_id).length, 1, 'of the four documented-elsewhere names only matt-clifford has a default lane, so one personal Dialog mark'); // 2026-10-23 hop-first default lanes: 0 -> 1
-  assert.equal(layout.overview.ticks.filter(tick => tick.kind === 'row').length, 3118);
-  assert.equal(layout.overview.ticks.filter(tick => tick.kind === 'hop').length, 22);
-  assert.equal(layout.overview.ticks.filter(tick => tick.kind === 'dense').length, 1);
+  assert.equal(layout.lanes.find(lane => lane.id === `block:${dialog.surface_id}`).visible_row_count, 113); // 2026-10-23 five-lane merge: the Dialog block lane by id (was the first block lane)
+  assert.deepEqual(block.elsewhere.map(entry => entry.actor_id), ['matt-clifford', 'joe-lonsdale', 'jim-himes', 'tyler-cowen', 'wes-moore', 'dan-driscoll']); // 2026-10-23 five-lane merge: was ['matt-clifford', 'jim-himes', 'joe-lonsdale', 'dan-driscoll']
+  assert.equal(layout.marks.filter(mark => mark.surface_id === dialog.surface_id).length, 2, 'of the six documented-elsewhere names only matt-clifford and joe-lonsdale have default lanes, so two personal Dialog marks'); // 2026-10-23 five-lane merge: 1 -> 2 (joe-lonsdale now has a default lane). 2026-10-23 hop-first default lanes: 0 -> 1
+  assert.equal(layout.overview.ticks.filter(tick => tick.kind === 'row').length, 4411); // 2026-10-23 final re-pin: 4451 -> 4411. 2026-10-23 five-lane merge: 3,118 -> 4,451
+  assert.equal(layout.overview.ticks.filter(tick => tick.kind === 'hop').length, 59); // 2026-10-23 final re-pin: 64 -> 59. 2026-10-23 five-lane merge: 22 -> 64
+  assert.equal(layout.overview.ticks.filter(tick => tick.kind === 'dense').length, 2); // 2026-10-23 five-lane merge: 1 -> 2
   assert.equal(layout.overview.from, '1982-05-01');
   assert.equal(layout.overview.to, '2026-11-22');
 
   // The 2.1.0 default lanes, pinned: six slots, columns, the SDR column and the Warner day.
   const original = layoutTimeline(model, { plotWidth, laneIds: ORIGINAL_DEFAULT_LANES });
   assert.equal(original.counts.named_lanes, 15);
-  assert.equal(original.counts.columns, 16, `16 columns on the 15 pinned lanes at plot width ${plotWidth}`);
-  assert.equal(original.counts.candidate_rows, 960);
-  assert.equal(original.counts.rows_in_view, 739);
+  const ORIGINAL_COLUMNS = { 690: 18, 880: 19 }; // 2026-10-23 five-lane merge: 16 at both widths -> 18 / 19 (London Tech Week 2026-06-08 and 2026-06-09; at 880 the rndf-2023 panel 2 column on 2023-12-02 is also drawn)
+  assert.equal(original.counts.columns, ORIGINAL_COLUMNS[plotWidth], `${ORIGINAL_COLUMNS[plotWidth]} columns on the 15 pinned lanes at plot width ${plotWidth}`);
+  assert.equal(original.counts.candidate_rows, 1308); // 2026-10-23 final re-pin: 1348 -> 1308. 2026-10-23 five-lane merge: 960 -> 1,348
+  assert.equal(original.counts.rows_in_view, 1003); // 2026-10-23 final re-pin: 1038 -> 1003. 2026-10-23 five-lane merge: 739 -> 1,038
   checkAccounting(original);
   checkMarks(original, 4);
   checkColumns(original);
-  assert.equal(original.height, 14 * 28 + 38 + 68 + 32, 'one 15-lane stack reaches three marks (38px); the strip keeps six slots');
-  assert.ok(original.height <= 650 - 36 - 40, 'the 15 pinned lanes still fit the 650px budget');
+  assert.equal(original.height, 14 * 28 + 38 + 68 + 32 + 32, 'one 15-lane stack reaches three marks (38px); the strip keeps six slots; two block lanes'); // 2026-10-23 five-lane merge: + a second 32px block lane (530 -> 562px)
+  assert.ok(original.height <= TIMELINE_STAGE_BUDGETS.desktop, 'the 15 pinned lanes still fit the desktop budget'); // 2026-10-23 final repair round: 574 -> 640px (owner decision)
   assert.deepEqual(original.columns.map(column => column.iso_day), [
-    '2018-01-24', '2018-07-05', '2020-03-08', '2023-09-07', '2023-09-28', '2024-07-17', '2024-07-31', '2024-10-10',
-    '2025-01-13', '2025-03-06', '2025-08-05', '2025-12-08', '2026-02-11', '2026-04-27', '2026-06-10', '2026-07-08'
-  ]);
+    '2018-01-24', '2018-07-05', '2020-03-08', '2023-09-07', '2023-09-28', ...(plotWidth === 880 ? ['2023-12-02'] : []), '2024-07-17', '2024-07-31', '2024-10-10',
+    '2025-01-13', '2025-03-06', '2025-08-05', '2025-12-08', '2026-02-11', '2026-04-27', '2026-06-08', '2026-06-09', '2026-06-10', '2026-07-08'
+  ]); // 2026-10-23 five-lane merge: + 2026-06-08 and 2026-06-09 (London Tech Week sessions); + 2023-12-02 at 880
   const sdr = original.columns.find(column => column.iso_day === '2024-07-17');
   assert.equal(sdr.surface_id, 'strategic-defence-review-2024-2025');
   assert.equal(sdr.basis_count, 10);
   assert.deepEqual(sdr.actor_ids, ['fiona-hill', 'george-robertson', 'john-healey', 'keir-starmer', 'richard-barrons']);
   assert.deepEqual(sdr.segments.map(segment => segment.laneId), ['fiona-hill', 'george-robertson', 'john-healey', 'keir-starmer', 'richard-barrons'], 'per-lane segments (fix b)');
-  assert.deepEqual(original.blocks[0].elsewhere.map(entry => entry.actor_id), ['matt-clifford', 'jim-himes', 'joe-lonsdale', 'dan-driscoll']);
+  // Narrowed 2026-10-23 five-lane merge: was original.blocks[0]; the Dialog block is found by surface id (rndf-2023 now sorts first).
+  assert.deepEqual(original.blocks.find(entry => entry.surface_id === dialog.surface_id).elsewhere.map(entry => entry.actor_id), ['matt-clifford', 'joe-lonsdale', 'jim-himes', 'tyler-cowen', 'wes-moore', 'dan-driscoll']); // 2026-10-23 five-lane merge: was ['matt-clifford', 'jim-himes', 'joe-lonsdale', 'dan-driscoll']
   assert.equal(original.marks.filter(mark => mark.surface_id === dialog.surface_id).length, 2, 'only the two cross-referenced people with lanes get personal Dialog marks');
   assert.ok(original.marks.filter(mark => mark.surface_id === dialog.surface_id).every(mark => ['matt-clifford', 'dan-driscoll'].includes(mark.entity_id)));
   // Same-day different-surface marks shift by the slot offset so each column stays over its own marks.
@@ -430,30 +453,31 @@ for (const plotWidth of [690, 880]) {
 }
 
 const phone = layoutTimeline(model, { plotWidth: 216, ...TIMELINE_PHONE_METRICS });
-assert.equal(phone.domain.from, '2020-01-01'); // 2026-10-23 promotion: 2025-01-01 -> 2020-01-01
+assert.equal(phone.domain.from, '2022-01-01'); // 2026-10-23 five-lane merge: 2020-01-01 -> 2022-01-01. 2026-10-23 promotion: 2025-01-01 -> 2020-01-01
 assert.equal(phone.domain.to, '2026-11-22');
 assert.equal(phone.counts.named_lanes, 18);
-assert.equal(phone.counts.marks, 39); // 2026-10-23 hop-first default lanes: 85 -> 39
-assert.equal(phone.counts.blocks, 1);
-assert.equal(phone.counts.aggregates, 1); // 2026-10-23 hop-first default lanes: 9 -> 1
-assert.equal(phone.counts.drawn, 41, 'SPEC (j): 39 marks + 1 block + 1 aggregate on phone'); // 2026-10-23 hop-first default lanes: 95 -> 41
-assert.equal(phone.counts.columns, 13); // 2026-10-23 hop-first default lanes: 0 -> 13
-assert.equal(phone.counts.pre_domain, 424);
-assert.equal(phone.counts.pre_domain_overlapping, 99);
-assert.equal(phone.counts.rows_in_view, 536);
-assert.equal(phone.counts.candidate_rows, 960);
+assert.equal(phone.counts.marks, 75); // 2026-10-23 final re-pin: 92 -> 75. 2026-10-23 five-lane merge: 39 -> 92 // 2026-10-23 hop-first default lanes: 85 -> 39
+assert.equal(phone.counts.blocks, 2); // 2026-10-23 five-lane merge: 1 -> 2
+assert.equal(phone.counts.aggregates, 9); // 2026-10-23 final re-pin: 12 -> 9. 2026-10-23 five-lane merge: 1 -> 12 // 2026-10-23 hop-first default lanes: 9 -> 1
+assert.equal(phone.counts.drawn, 86, 'SPEC (j): 92 marks + 2 blocks + 12 aggregates on phone'); // 2026-10-23 final re-pin: 106 -> 86. 2026-10-23 five-lane merge: 41 -> 106 // 2026-10-23 hop-first default lanes: 95 -> 41
+assert.equal(phone.counts.columns, 23); // 2026-10-23 final re-pin: 29 -> 23. 2026-10-23 five-lane merge: 13 -> 29 // 2026-10-23 hop-first default lanes: 0 -> 13
+assert.equal(phone.counts.pre_domain, 575); // 2026-10-23 final re-pin: 589 -> 575. 2026-10-23 five-lane merge: 424 -> 589
+assert.equal(phone.counts.pre_domain_overlapping, 115); // 2026-10-23 five-lane merge: 99 -> 115
+assert.equal(phone.counts.rows_in_view, 733); // 2026-10-23 final re-pin: 759 -> 733. 2026-10-23 five-lane merge: 536 -> 759
+assert.equal(phone.counts.candidate_rows, 1308); // 2026-10-23 final re-pin: 1348 -> 1308. 2026-10-23 five-lane merge: 960 -> 1,348
 checkAccounting(phone);
 assert.ok(phone.lanes.filter(lane => lane.kind !== 'block').every(lane => lane.height === 24), 'phone lanes never grow in the default view');
 assert.equal(phone.lanes.find(lane => lane.kind === 'block').height, 28);
-assert.equal(phone.height, 18 * 24 + 24 + 28);
-// NOT met since 2026-10-23: the phone stage budget (510 - 30 - 34 = 446px) cannot hold 18
-// lanes at 24px (432px) plus the strip and the block; the default phone stage is 484px and
-// scrolls inside by 38px. Recorded as an owner decision to take, not relaxed silently.
-assert.equal(phone.height - (510 - 30 - 34), 38, 'the default phone stage exceeds its budget by 38px (owner decision pending)');
+assert.equal(phone.height, 18 * 24 + 24 + 28 + 28); // 2026-10-23 five-lane merge: + a second 28px block lane (484 -> 512px)
+// 2026-10-23 final repair round (owner decision): the phone stage budget was raised from 446px
+// (510 - 30 - 34), which could not hold 18 lanes at 24px plus the strip and two block lanes
+// (512px, 66px over), to 520px. The default phone stage now fits without inner scrolling.
+assert.equal(TIMELINE_STAGE_BUDGETS.phone, 520);
+assert.ok(phone.height <= TIMELINE_STAGE_BUDGETS.phone, 'the default phone stage fits the 520px budget');
 checkMarks(phone, 3);
 checkColumns(phone);
 const phoneOriginal = layoutTimeline(model, { plotWidth: 216, laneIds: ORIGINAL_DEFAULT_LANES, ...TIMELINE_PHONE_METRICS });
-assert.equal(phoneOriginal.counts.columns, 14);
+assert.equal(phoneOriginal.counts.columns, 15); // 2026-10-23 final re-pin: 17 -> 15. 2026-10-23 five-lane merge: 14 -> 17
 checkAccounting(phoneOriginal);
 checkMarks(phoneOriginal, 3);
 checkColumns(phoneOriginal);
@@ -475,31 +499,47 @@ for (let index = 1; index < driscollJune.length; index += 1) {
 // Re-pinned 2026-10-23 to the promoted ledger and the 18-lane default (owner decision).
 const organizationLayout = layoutTimeline(model, { by: 'organization', plotWidth: 690 });
 assert.equal(organizationLayout.counts.named_lanes, 18); // 2.1.0: 14
-assert.equal(organizationLayout.counts.strip_rows, 1962); // 2.1.0: 13 // 2026-10-23 hop-first default lanes: 1885 -> 1962
+assert.equal(organizationLayout.counts.strip_rows, 2698); // 2026-10-23 five-lane merge: 1,962 -> 2,698 // 2.1.0: 13 // 2026-10-23 hop-first default lanes: 1885 -> 1962
 assert.equal(organizationLayout.counts.columns, 0);
 assert.equal(organizationLayout.counts.blocks, 0);
-assert.equal(organizationLayout.counts.marks + organizationLayout.counts.aggregated_rows + organizationLayout.counts.pre_domain, 2159); // 2.1.0: 86
-assert.equal(organizationLayout.counts.candidate_rows, 2159);
-assert.equal(organizationLayout.counts.rows_outside_grouping, 959, 'actor rows are not part of an Organizations view'); // 2.1.0: 200
+assert.equal(organizationLayout.counts.marks + organizationLayout.counts.aggregated_rows + organizationLayout.counts.pre_domain, 3111); // 2026-10-23 five-lane merge: 2,159 -> 3,111. 2.1.0: 86
+assert.equal(organizationLayout.counts.candidate_rows, 3111); // 2026-10-23 five-lane merge: 2,159 -> 3,111
+assert.equal(organizationLayout.counts.rows_outside_grouping, 1300, 'actor rows are not part of an Organizations view'); // 2026-10-23 final re-pin: 1340 -> 1300. 2026-10-23 five-lane merge: 959 -> 1,340. 2.1.0: 200
 // Narrowed 2026-10-23: was the exact one-key list (Simon Case at the Cabinet Office); the rule is checked per key.
-assert.equal(organizationLayout.hidden.pre_domain_overlapping.length, 71);
+assert.equal(organizationLayout.hidden.pre_domain_overlapping.length, 78); // 2026-10-23 five-lane merge: 71 -> 78
 for (const key of organizationLayout.hidden.pre_domain_overlapping) {
   const row = model.rowsByKey.get(key);
   assert.ok(row.start_day < organizationLayout.domain.from_day && (row.end_day == null || row.end_day >= organizationLayout.domain.from_day));
 }
 assert.ok(organizationLayout.lanes.every(lane => lane.height === 28), 'the default Organizations view never grows a lane');
-assert.ok(organizationLayout.height <= 650 - 36 - 40, 'the default Organizations stage fits the 650px budget');
+assert.ok(organizationLayout.height <= TIMELINE_STAGE_BUDGETS.desktop, 'the default Organizations stage fits the desktop budget'); // 2026-10-23 final repair round: 574 -> 640px (owner decision)
 checkMarks(organizationLayout, 4);
 checkAccounting(organizationLayout);
+// 2026-10-23 final repair round: overlapping-tick clustering fix. The 2026-05-08 Form D tick (drawn +5px by the
+// same-day surface offset) and the 2026-06-17 leadership tick sat 1.93px apart in two clusters, because a row was
+// only compared with the last x of the current cluster. Marks within the fold threshold now share one cluster.
+{
+  const cfKeys = ['sec-form-d-0002117419-26-000002::organization::capital-factory', 'capital-factory-leadership-as-reported-2026-06-17::organization::capital-factory'];
+  const cfClusters = organizationLayout.clusters.filter(cluster => cfKeys.some(key => cluster.mark_keys.includes(key) || cluster.hidden_keys.includes(key)));
+  assert.equal(cfClusters.length, 1, 'the two Capital Factory rows 1.93px apart fold into one cluster');
+  for (const cluster of organizationLayout.clusters) {
+    const xs = organizationLayout.marks.filter(mark => mark.clusterId === cluster.id).map(mark => mark.x);
+    for (const other of organizationLayout.clusters) {
+      if (other === cluster || other.laneId !== cluster.laneId) continue;
+      const otherXs = organizationLayout.marks.filter(mark => mark.clusterId === other.id && mark.kind === 'day').map(mark => mark.x);
+      for (const x of xs) for (const y of otherXs) assert.ok(Math.abs(x - y) >= organizationLayout.metrics.clusterGap || organizationLayout.marks.find(mark => mark.x === x && mark.clusterId === cluster.id).kind !== 'day', `${cluster.id} / ${other.id}: no two clusters within the fold threshold`);
+    }
+  }
+}
 const typeLayout = layoutTimeline(model, { by: 'type', plotWidth: 690, domainFrom: '2016-01-01', domainTo: '2026-09-11' });
-assert.equal(typeLayout.counts.named_lanes, 14);
-assert.equal(typeLayout.counts.marks, 147); // 2.1.0: 54
-assert.equal(typeLayout.counts.total_rows, 858, 'the surface-type view counts surfaces'); // 2.1.0: 54
-assert.equal(typeLayout.counts.rows_in_view, 516);
+assert.equal(typeLayout.counts.named_lanes, 16); // 2026-10-23 five-lane merge: 14 -> 16
+assert.equal(typeLayout.counts.marks, 212); // 2026-10-23 final re-pin: 214 -> 212. 2026-10-23 five-lane merge: 147 -> 214. 2.1.0: 54
+assert.equal(typeLayout.counts.total_rows, 1155, 'the surface-type view counts surfaces'); // 2026-10-23 five-lane merge: 858 -> 1,155. 2.1.0: 54
+assert.equal(typeLayout.counts.rows_in_view, 772); // 2026-10-23 five-lane merge: 516 -> 772
 assert.equal(typeLayout.counts.marks + typeLayout.counts.aggregated_rows, typeLayout.counts.rows_in_view);
 checkAccounting(typeLayout);
 assert.equal(typeLayout.counts.columns, 0);
-assert.equal(typeLayout.marks.filter(mark => !mark.evidence_recorded).length, 3); // 2.1.0: 10 (the rest now sit in +N aggregates)
+assert.equal(typeLayout.marks.filter(mark => !mark.evidence_recorded).length, 1); // 2026-10-23 five-lane merge: 3 -> 1 (the rest now sit in +N aggregates). 2.1.0: 10
 assert.ok(typeLayout.marks.filter(mark => !mark.evidence_recorded).every(mark => mark.evidence_class === null));
 assert.ok(typeLayout.marks.every(mark => mark.key.startsWith('surface::')));
 
@@ -508,8 +548,8 @@ assert.ok(typeLayout.marks.every(mark => mark.key.startsWith('surface::')));
 const pinnedOriginal = extra => layoutTimeline(model, { plotWidth: 690, laneIds: ORIGINAL_DEFAULT_LANES, ...extra });
 // Full range: the marc-warner|saul-klein edge yields two columns and nothing spans the gap between them.
 const fullRange = pinnedOriginal({ domainFrom: '2016-01-01', domainTo: '2026-09-11' });
-assert.equal(fullRange.counts.columns, 16); // 2.1.0: 19
-assert.equal(fullRange.counts.pre_domain, 289); // 2.1.0: 0 (LinkedIn rows start from 1982)
+assert.equal(fullRange.counts.columns, 18); // 2026-10-23 five-lane merge: 16 -> 18. 2.1.0: 19
+assert.equal(fullRange.counts.pre_domain, 305); // 2026-10-23 final re-pin: 310 -> 305. 2026-10-23 five-lane merge: 289 -> 310. 2.1.0: 0 (LinkedIn rows start from 1982)
 const faculty = fullRange.columns.filter(column => column.actor_ids.includes('marc-warner') && column.actor_ids.includes('saul-klein'));
 assert.deepEqual(faculty.map(column => column.iso_day), ['2018-01-24', '2024-10-10']);
 assert.ok(fullRange.marks.filter(mark => ['marc-warner', 'saul-klein'].includes(mark.entity_id)).every(mark => mark.kind === 'day'), 'no mark spans 2019-2023 for them');
@@ -520,8 +560,12 @@ assert.equal(yearMark.iso_end, '2016-12-31');
 assert.ok(yearMark.w > 60, 'a year-precision row is a bar across the whole year, not a tick');
 const openMarks = organizationLayout.marks.filter(mark => mark.kind === 'open');
 assert.ok(openMarks.length >= 1);
-const openMark = openMarks[0];
-assert.equal(openMark.entity_id, 'united-states-army'); // 2.1.0: us-army
+// Narrowed 2026-10-23 five-lane merge: was openMarks[0] with entity 'united-states-army'. The United States Army
+// no longer has a default Organizations lane (its open row sits in the strip), and the first open mark is now a
+// Booz Allen Hamilton role from 2025-08-01 (62.9px). The rule (an open-ended row runs to the domain edge) is
+// checked on the open mark that starts earliest: Anduril Industries from 2017-06-01.
+const openMark = [...openMarks].sort((a, b) => (a.iso_start < b.iso_start ? -1 : a.iso_start > b.iso_start ? 1 : 0))[0];
+assert.equal(openMark.entity_id, 'anduril-industries'); // 2026-10-23 five-lane merge: united-states-army -> anduril-industries (earliest open mark). 2.1.0: us-army
 assert.equal(openMark.clipped_end, true);
 assert.ok(openMark.w > 100, 'the open-ended row runs to the domain edge');
 for (const mark of [...openMarks, ...layoutTimeline(model, { plotWidth: 690 }).marks.filter(item => item.kind === 'open')]) {
@@ -529,20 +573,20 @@ for (const mark of [...openMarks, ...layoutTimeline(model, { plotWidth: 690 }).m
     `open-ended ${mark.key} is clamped to the axis end`);
 }
 assert.ok(fullRange.counts.aggregates >= 1, 'at 0.18 px/day the strip clusters past six slots and collapses into +N');
-assert.equal(fullRange.counts.marks + fullRange.counts.aggregated_rows, 526, 'collapsed rows are still counted'); // 2.1.0: 52 + 38
-assert.equal(fullRange.counts.rows_in_view, 637); // 2.1.0: 201
+assert.equal(fullRange.counts.marks + fullRange.counts.aggregated_rows, 814, 'collapsed rows are still counted'); // 2026-10-23 final re-pin: 845 -> 814. 2026-10-23 five-lane merge: 526 -> 845. 2.1.0: 52 + 38
+assert.equal(fullRange.counts.rows_in_view, 954); // 2026-10-23 final re-pin: 985 -> 954. 2026-10-23 five-lane merge: 637 -> 985. 2.1.0: 201
 assert.equal(fullRange.counts.pre_domain_overlapping, 78); // 2.1.0: 0
 checkAccounting(fullRange);
 
 // Window (fix e): out-of-window marks are dimmed, never removed; status counts name the denominator.
 const windowed = pinnedOriginal({ windowFrom: '2025-01-01', windowTo: '2025-12-31' });
 assert.equal(windowed.window.active, true);
-assert.equal(windowed.counts.marks, 67, 'the window removes nothing'); // 2.1.0: 79
+assert.equal(windowed.counts.marks, 77, 'the window removes nothing'); // 2026-10-23 five-lane merge: 67 -> 77. 2.1.0: 79
 assert.equal(windowed.counts.marks, pinnedOriginal({}).counts.marks);
-assert.equal(windowed.marks.filter(mark => mark.in_window).length, 23);
-assert.equal(windowed.marks.filter(mark => !mark.in_window).length, 44);
-assert.equal(windowed.counts.in_window, 233);
-assert.equal(windowed.counts.rows_in_view, 739);
+assert.equal(windowed.marks.filter(mark => mark.in_window).length, 27); // 2026-10-23 five-lane merge: 23 -> 27
+assert.equal(windowed.marks.filter(mark => !mark.in_window).length, 50); // 2026-10-23 five-lane merge: 44 -> 50
+assert.equal(windowed.counts.in_window, 296); // 2026-10-23 final re-pin: 303 -> 296. 2026-10-23 five-lane merge: 233 -> 303
+assert.equal(windowed.counts.rows_in_view, 1003); // 2026-10-23 final re-pin: 1038 -> 1003. 2026-10-23 five-lane merge: 739 -> 1,038
 assert.equal(windowed.blocks[0].in_window, false);
 assert.equal(windowed.blocks[0].in_window_count, 0);
 checkAccounting(windowed);
@@ -554,53 +598,61 @@ assert.equal(layoutTimeline(model, { plotWidth: 690 }).window.active, false);
 const dialogMemberKeys = [...dialog.member_keys].sort();
 const hopOnly = pinnedOriginal({ hop: 'hop' });
 assert.ok(hopOnly.marks.every(mark => mark.hop_eligible));
-assert.equal(hopOnly.counts.columns, 21);
+assert.equal(hopOnly.counts.columns, 34); // 2026-10-23 final re-pin: 35 -> 34. 2026-10-23 five-lane merge: 21 -> 35
 assert.equal(hopOnly.counts.blocks, 0, 'the Dialog roster is context-only');
-assert.equal(hopOnly.counts.marks, 69);
-assert.equal(hopOnly.counts.rows_in_view, 78);
-assert.equal(hopOnly.counts.filtered, 882);
-assert.equal(hopOnly.counts.pre_domain, 0);
+assert.equal(hopOnly.counts.marks, 92); // 2026-10-23 final re-pin: 99 -> 92. 2026-10-23 five-lane merge: 69 -> 99
+assert.equal(hopOnly.counts.rows_in_view, 178); // 2026-10-23 final re-pin: 202 -> 178. 2026-10-23 five-lane merge: 78 -> 202
+assert.equal(hopOnly.counts.filtered, 1114); // 2026-10-23 final re-pin: 1126 -> 1114. 2026-10-23 five-lane merge: 882 -> 1,126
+assert.equal(hopOnly.counts.pre_domain, 16); // 2026-10-23 final re-pin: 20 -> 16. 2026-10-23 five-lane merge: 0 -> 20 (hop-eligible rows before the 2016 domain start)
 assert.ok(dialogMemberKeys.every(key => hopOnly.hidden.filtered.includes(key)), 'every roster member the hop filter hides is listed');
 checkAccounting(hopOnly);
 const contextOnly = pinnedOriginal({ hop: 'context' });
 assert.ok(contextOnly.marks.every(mark => !mark.hop_eligible));
 assert.equal(contextOnly.counts.columns, 0);
-assert.equal(contextOnly.counts.blocks, 1);
-assert.equal(contextOnly.counts.marks, 37);
-assert.equal(contextOnly.counts.rows_in_view, 661);
-assert.equal(contextOnly.counts.filtered, 78);
+assert.equal(contextOnly.counts.blocks, 2); // 2026-10-23 five-lane merge: 1 -> 2
+assert.equal(contextOnly.counts.marks, 45); // 2026-10-23 five-lane merge: 37 -> 45
+assert.equal(contextOnly.counts.rows_in_view, 825); // 2026-10-23 final re-pin: 836 -> 825. 2026-10-23 five-lane merge: 661 -> 836
+assert.equal(contextOnly.counts.filtered, 194); // 2026-10-23 final re-pin: 222 -> 194. 2026-10-23 five-lane merge: 78 -> 222
 checkAccounting(contextOnly);
-assert.equal(hopOnly.counts.filtered + contextOnly.counts.filtered, 960, 'hop and context filters partition the People view');
+assert.equal(hopOnly.counts.filtered + contextOnly.counts.filtered, 1308, 'hop and context filters partition the People view'); // 2026-10-23 final re-pin: 1348 -> 1308. 2026-10-23 five-lane merge: 960 -> 1,348
 const officialOnly = pinnedOriginal({ evidenceFloor: 'official' });
 assert.ok(officialOnly.marks.every(mark => mark.evidence_class === 'official'));
-assert.ok(officialOnly.counts.columns < pinnedOriginal({}).counts.columns, 'primary_public bases drop below the official floor');
-assert.equal(officialOnly.counts.columns, 14);
+// Narrowed 2026-10-23 five-lane merge. Old: officialOnly.counts.columns < pinnedOriginal({}).counts.columns. With
+// the merged rows the unfiltered strip folds many same-day marks into +N, which hides their columns (18 drawn), while
+// the official floor empties the strip enough to draw 22, so the drawn-column count is no longer a proxy for the rule.
+// New: the rule is checked on the bases themselves: the hop-only view draws non-official bases, and the official floor
+// draws fewer bases than the hop-only view (91 < 200 today), every one of them official (checked below).
+const drawnBases = layout => layout.columns.reduce((sum, column) => sum + column.basis_count, 0);
+assert.ok(hopOnly.columns.some(column => column.pairs.some(pair => pair.evidence_class !== 'official')) && drawnBases(officialOnly) < drawnBases(hopOnly), 'primary_public bases drop below the official floor');
+assert.equal(officialOnly.counts.columns, 23); // 2026-10-23 final re-pin: 22 -> 23. 2026-10-23 five-lane merge: 14 -> 22
 assert.equal(officialOnly.counts.blocks, 0, 'no Dialog row is official (112 primary_public, 1 reported), so the block is not drawn');
-assert.equal(officialOnly.counts.marks, 69);
-assert.equal(officialOnly.counts.rows_in_view, 69);
-assert.equal(officialOnly.counts.filtered, 891);
-assert.equal(officialOnly.counts.pre_domain, 0);
+assert.equal(officialOnly.counts.marks, 143); // 2026-10-23 final re-pin: 162 -> 143. 2026-10-23 five-lane merge: 69 -> 162
+assert.equal(officialOnly.counts.rows_in_view, 174); // 2026-10-23 final re-pin: 207 -> 174. 2026-10-23 five-lane merge: 69 -> 207
+assert.equal(officialOnly.counts.filtered, 1118); // 2026-10-23 final re-pin: 1121 -> 1118. 2026-10-23 five-lane merge: 891 -> 1,121
+assert.equal(officialOnly.counts.pre_domain, 16); // 2026-10-23 final re-pin: 20 -> 16. 2026-10-23 five-lane merge: 0 -> 20
 assert.ok(dialogMemberKeys.every(key => officialOnly.hidden.filtered.includes(key)), 'every roster member below the floor is listed');
 assert.ok(!officialOnly.marks.some(mark => mark.surface_id === dialog.surface_id));
 checkAccounting(officialOnly);
 for (const column of officialOnly.columns) assert.ok(column.pairs.every(pair => pair.evidence_class === 'official'));
 const primaryPublic = pinnedOriginal({ evidenceFloor: 'primary_public' });
-assert.equal(primaryPublic.counts.blocks, 1);
-assert.equal(primaryPublic.blocks[0].visible_row_count, 112, 'the one reported row drops below the primary_public floor');
-assert.equal(primaryPublic.blocks[0].visible_listed_count, 111, 'that row is a listed name; the organization row is primary_public');
-assert.equal(primaryPublic.blocks[0].filtered_count, 1);
-assert.deepEqual(primaryPublic.blocks[0].filtered_member_keys, [`${dialog.surface_id}::actor::alexus-grynkewich`]);
+assert.equal(primaryPublic.counts.blocks, 2); // 2026-10-23 five-lane merge: 1 -> 2
+// Narrowed 2026-10-23 five-lane merge: was primaryPublic.blocks[0]; the Dialog block is now found by surface id (rndf-2023 sorts first).
+const primaryDialog = primaryPublic.blocks.find(entry => entry.surface_id === dialog.surface_id);
+assert.equal(primaryDialog.visible_row_count, 112, 'the one reported row drops below the primary_public floor');
+assert.equal(primaryDialog.visible_listed_count, 111, 'that row is a listed name; the organization row is primary_public');
+assert.equal(primaryDialog.filtered_count, 1);
+assert.deepEqual(primaryDialog.filtered_member_keys, [`${dialog.surface_id}::actor::alexus-grynkewich`]);
 assert.ok(primaryPublic.hidden.filtered.includes(`${dialog.surface_id}::actor::alexus-grynkewich`));
-assert.equal(primaryPublic.counts.filtered, 731);
-assert.equal(primaryPublic.counts.rows_in_view, 229);
+assert.equal(primaryPublic.counts.filtered, 784); // 2026-10-23 final re-pin: 787 -> 784. 2026-10-23 five-lane merge: 731 -> 787
+assert.equal(primaryPublic.counts.rows_in_view, 508); // 2026-10-23 final re-pin: 541 -> 508. 2026-10-23 five-lane merge: 229 -> 541
 checkAccounting(primaryPublic);
 // A year chip puts the roster day outside the domain: its rows are listed as post-domain, not lost.
 const year2024 = pinnedOriginal({ domainFrom: '2024-01-01', domainTo: '2024-12-31' });
 assert.equal(year2024.counts.blocks, 0);
-assert.equal(year2024.counts.marks, 54);
-assert.equal(year2024.counts.columns, 3);
-assert.equal(year2024.counts.pre_domain, 625);
-assert.equal(year2024.counts.post_domain, 281);
+assert.equal(year2024.counts.marks, 70); // 2026-10-23 final re-pin: 73 -> 70. 2026-10-23 five-lane merge: 54 -> 73
+assert.equal(year2024.counts.columns, 7); // 2026-10-23 five-lane merge: 3 -> 7
+assert.equal(year2024.counts.pre_domain, 794); // 2026-10-23 final re-pin: 811 -> 794. 2026-10-23 five-lane merge: 625 -> 811
+assert.equal(year2024.counts.post_domain, 393); // 2026-10-23 final re-pin: 409 -> 393. 2026-10-23 five-lane merge: 281 -> 409
 assert.ok(dialogMemberKeys.every(key => year2024.hidden.post_domain.includes(key)));
 assert.equal(year2024.hidden.pre_domain_overlapping.length, 140);
 assert.deepEqual(year2024.hidden.pre_domain_overlapping.filter(key => ORIGINAL_DEFAULT_LANES.some(id => key.endsWith(`::actor::${id}`))), [
@@ -611,37 +663,37 @@ assert.deepEqual(year2024.hidden.pre_domain_overlapping.filter(key => ORIGINAL_D
 ], 'spans of the named lanes active in 2024 that began earlier are flagged for the status text');
 checkAccounting(year2024);
 const pinnedLayout = layoutTimeline(model, { plotWidth: 690, laneIds: ['ben-warner'], hop: 'hop', evidenceFloor: 'official' });
-assert.equal(pinnedLayout.counts.candidate_rows, 960, 'pinned lanes: the strip carries every other actor row, the block its roster');
+assert.equal(pinnedLayout.counts.candidate_rows, 1308, 'pinned lanes: the strip carries every other actor row, the blocks their rosters'); // 2026-10-23 final re-pin: 1348 -> 1308. 2026-10-23 five-lane merge: 960 -> 1,348
 checkAccounting(pinnedLayout);
 
 // --- entity summaries and the single-lane layout the entity pages reuse
 const summary = entityTimelineSummary(model, 'actor', 'ben-warner');
-assert.equal(summary.row_count, 10);
-assert.equal(summary.surface_count, 10);
+assert.equal(summary.row_count, 12); // 2026-10-23 five-lane merge: 10 -> 12
+assert.equal(summary.surface_count, 12); // 2026-10-23 five-lane merge: 10 -> 12
 assert.equal(summary.hop_eligible_surface_count, 6);
-assert.equal(summary.context_surface_count, 4);
+assert.equal(summary.context_surface_count, 6); // 2026-10-23 five-lane merge: 4 -> 6
 assert.equal(summary.rows[0].time_start, '2018-01-24');
-assert.equal(summary.rows.at(-1).time_start, '2026-07-08', 'rows are date-sorted, not ledger-ordered');
-assert.equal(summary.receipt_ids.length, 14);
+assert.equal(summary.rows.at(-1).time_start, '2026-07-29', 'rows are date-sorted, not ledger-ordered'); // 2026-10-23 five-lane merge: 2026-07-08 -> 2026-07-29
+assert.equal(summary.receipt_ids.length, 17); // 2026-10-23 five-lane merge: 14 -> 17
 assert.equal(entityTimelineSummary(model, 'actor', 'nobody'), null);
 assert.equal(entityTimelineSummary(model, 'organization', 'electric-twin').kind_counts.span, 5);
 assert.equal(entityTimelineSummary(model, 'surface', dialog.surface_id).row_count, 113);
 const lane = entityLaneLayout(model, 'actor', 'ben-warner', { plotWidth: 600 });
 assert.equal(lane.lanes.length, 1);
-assert.equal(lane.counts.marks, 10);
+assert.equal(lane.counts.marks, 12); // 2026-10-23 five-lane merge: 10 -> 12
 assert.equal(lane.counts.columns, 0);
 assert.equal(lane.counts.blocks, 0);
 assert.equal(lane.domain.from, '1982-05-01'); // 2026-10-23 promotion: the record now starts 1982-05-01 (was 2016-01-01)
 assert.equal(lane.domain.to, '2026-11-22'); // 2026-10-23 promotion: was 2026-09-11
-assert.equal(lane.height, 38, 'over the 44-year record the Warner 2023 rows stack three high'); // 2026-10-23 promotion: was 28
+assert.equal(lane.height, 48, 'over the 44-year record the Warner rows stack higher'); // 2026-10-23 five-lane merge: 38 -> 48 (was 'stack three high'). 2026-10-23 promotion: was 28
 checkAccounting(lane);
-assert.equal(lane.counts.candidate_rows, 10, 'a single-lane layout considers that lane only');
+assert.equal(lane.counts.candidate_rows, 12, 'a single-lane layout considers that lane only'); // 2026-10-23 five-lane merge: 10 -> 12
 const orgLane = entityLaneLayout(model, 'organization', 'electric-twin', { plotWidth: 600 });
-assert.equal(orgLane.counts.marks + orgLane.counts.aggregated_rows, 18, 'at 0.15 px/day the 2026 rows chain past six slots into a +N aggregate');
-assert.equal(orgLane.counts.rows_in_view, 18);
+assert.equal(orgLane.counts.marks + orgLane.counts.aggregated_rows, 22, 'at 0.15 px/day the 2026 rows chain past six slots into a +N aggregate'); // 2026-10-23 five-lane merge: 18 -> 22
+assert.equal(orgLane.counts.rows_in_view, 22); // 2026-10-23 five-lane merge: 18 -> 22
 checkAccounting(orgLane);
-assert.equal(orgLane.marks.filter(mark => mark.kind === 'span').length, 5);
-assert.equal(entityLaneLayout(model, 'organization', 'electric-twin', { plotWidth: 1400, domainFrom: '2023-01-01' }).counts.marks, 18, 'wide enough, every row is its own mark'); // 2026-10-23: the full record now starts 1982, so the domain is set to 2023
+assert.equal(orgLane.marks.filter(mark => mark.kind === 'span').length, 4); // 2026-10-23 five-lane merge: 5 -> 4 (one of the five spans now sits in the +N aggregate)
+assert.equal(entityLaneLayout(model, 'organization', 'electric-twin', { plotWidth: 1400, domainFrom: '2023-01-01' }).counts.marks, 22, 'wide enough, every row is its own mark'); // 2026-10-23 five-lane merge: 18 -> 22 // 2026-10-23: the full record now starts 1982, so the domain is set to 2023
 const dialogLane = entityLaneLayout(model, 'surface', dialog.surface_id, { plotWidth: 600 });
 assert.equal(dialogLane.lanes.length, 1);
 assert.equal(dialogLane.counts.marks, TIMELINE_CLUSTER_SLOTS - 1, '113 rows on one day: five drawn, the rest collapse into +N');
@@ -756,7 +808,7 @@ assert.doesNotMatch(bundle, /^import\s/m, 'no import statement survives into the
 assert.doesNotThrow(() => new Function(bundle));
 const context = vm.createContext({});
 vm.runInContext(`${bundle}\nglobalThis.__result = (() => { const m = buildTimelineModel(SURFACE_GRAPH, HOP_GRAPH); const l = layoutTimeline(m, { plotWidth: 690 }); return { rows: m.counts.rows, drawn: l.counts.drawn, columns: l.counts.columns }; })();`.replace('SURFACE_GRAPH', JSON.stringify(surfaceGraph)).replace('HOP_GRAPH', JSON.stringify(hopGraph)), context);
-assert.deepEqual(JSON.parse(JSON.stringify(context.__result)), { rows: 3118, drawn: 47, columns: 15 }, 'the flattened module works from globalThis like the live page'); // 2026-10-23: 18-lane default // 2026-10-23 hop-first default lanes: drawn 160 -> 47, columns 0 -> 15
+assert.deepEqual(JSON.parse(JSON.stringify(context.__result)), { rows: 4411, drawn: 123, columns: 28 }, 'the flattened module works from globalThis like the live page'); // 2026-10-23 final re-pin: { rows: 4451, drawn: 149, columns: 35 } -> { rows: 4411, drawn: 123, columns: 28 }.  2026-10-23 five-lane merge: { rows: 3118, drawn: 47, columns: 15 } -> { rows: 4451, drawn: 149, columns: 35 } // 2026-10-23: 18-lane default // 2026-10-23 hop-first default lanes: drawn 160 -> 47, columns 0 -> 15
 
 // --- registration
 const allowlist = JSON.parse(readFileSync('data/project/publication-allowlist.json', 'utf8'));

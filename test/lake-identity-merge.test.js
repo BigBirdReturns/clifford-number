@@ -37,12 +37,12 @@ const BEFORE_RESEARCH_EDGES = Object.freeze({
 // and no edge (old or new) touches a row the merge added (see the endpoint
 // check in section 3). The current edge set is pinned separately below.
 const CURRENT = Object.freeze({
-  edge_count: 133, // 2026-10-23 promotion: 93 -> 133 hop edges (Stratos, Traysar, Pallas team-page bases)
-  edge_id_sha256: '2626c63aa4dcc124af1b2cc198f1c2fd1eb53df57bb460e69458bc4bb0921660', // 2026-10-23 promotion
-  edges_sha256: '141b236b8463884fd17715ab3b142f5bcf28c47cc82b741527c9f84fb57d0027', // 2026-10-23 promotion
-  rejected_hop_surfaces: 836, // 2026-10-23 promotion: 35 -> 836 (single-person LinkedIn role surfaces create no hop)
+  edge_count: 280, // 2026-10-23 final re-pin: 299 -> 280 (five year-only a16z American Dynamism 2022 session surfaces set hop_eligible false, reason year_precision_only; the Form D person-row merge removes duplicate bases, not edges). 2026-10-23 five-lane merge: 133 -> 299 (fund-portfolios, conventions, capital-factory, uk-public-money, synthetic-constituency). 2026-10-23 promotion: 93 -> 133 hop edges (Stratos, Traysar, Pallas team-page bases)
+  edge_id_sha256: '94660c2d246e399cb0c18d42c3f35da49b6e08bfcca4dc1d4ef4d5765a0b975a', // 2026-10-23 final re-pin (was bf7e8fa2…).  2026-10-23 five-lane merge (was 2626c63a… after the 2026-10-23 promotion)
+  edges_sha256: 'c428a4b3341601f0663af0162f3e920cbc6ccfc8b71f84f945024cb176b051e2', // 2026-10-23 final re-pin (was 50589dd4…).  2026-10-23 five-lane merge (was 141b236b… after the 2026-10-23 promotion)
+  rejected_hop_surfaces: 1096, // 2026-10-23 final re-pin: 1091 -> 1096 (the five year-only a16z 2022 surfaces). 2026-10-23 five-lane merge: 836 -> 1091. 2026-10-23 promotion: 35 -> 836 (single-person LinkedIn role surfaces create no hop)
   rejected_hop_pairs: 0,
-  research_edges: 3216, // 2026-10-23 promotion: 392 -> 3216 research-graph edges
+  research_edges: 4487, // 2026-10-23 final re-pin: 4467 -> 4487 (the eight surfaces the privacy guard no longer holds back add topology edges). 2026-10-23 five-lane merge: 3216 -> 4467. 2026-10-23 promotion: 392 -> 3216 research-graph edges
 });
 
 const hopGraph = readJson('build/hop-graph.json');
@@ -356,4 +356,4 @@ assert.ok(errorsFor(s => { const index = s.archive.extensions.findIndex(row => r
 assert.ok(loadMain('.').legacyNodes.some(node => node.id === 'alex-karp'), 'main still bridges Alex Karp from the legacy graph');
 assert.ok(loadArchive('.').adjudications.length === 57);
 
-console.log('lake-identity-merge.test: OK (all 93 merge-base hop edges unchanged, 133 current; no edge touches a merged row; main-wins planning; 15 resolution rows + 2 pending; 104 frontier mentions; tamper checks)');
+console.log(`lake-identity-merge.test: OK (all 93 merge-base hop edges unchanged, ${CURRENT.edge_count} current; no edge touches a merged row; main-wins planning; 15 resolution rows + 2 pending; 104 frontier mentions; tamper checks)`);
