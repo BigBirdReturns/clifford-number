@@ -1,29 +1,16 @@
 function shellMarkup() {
   return `
     <div class="aperture-header">
-      <div>
-        <p class="section-kicker">Evidence-backed relationship map</p>
-        <h2 id="network-title">Pick a person. Follow the public record.</h2>
-        <p>Clifford Number shows where people and organizations appear together on documented public surfaces: companies, boards, programs, cohorts, events, and roles. Start with a name, follow the named surface, then open the receipts. A route is actor → bounded surface → actor; co-presence never becomes coordination, and the visualizer creates no pairwise lines from shared context.</p>
-      </div>
-      <div class="aperture-live" aria-live="polite">
-        <span class="aperture-live-dot" aria-hidden="true"></span>
-        <strong id="aperture-data-status">Compiled release</strong>
-        <span id="aperture-data-meta">Loading the operating view…</span>
-      </div>
-    </div>
-
-    <div class="aperture-how" aria-label="How Clifford Number works">
-      <span><b>1</b> Find a person or organization</span><i aria-hidden="true">&rarr;</i><span><b>2</b> Follow the named surface</span><i aria-hidden="true">&rarr;</i><span><b>3</b> Open the receipts</span>
-      <small>Timeline: one mark per documented row, columns are shared surfaces on one day &middot; Explore: drag to rotate, scroll to drill, click a node to focus.</small>
+      <div><h2 id="network-title">Documented activity</h2><p>Select a mark to see its role, date and sources. Shared context does not establish coordination.</p></div>
+      <details class="aperture-release"><summary>Dataset</summary><div class="aperture-live" aria-live="polite"><strong id="aperture-data-status">Compiled release</strong><span id="aperture-data-meta">Loading…</span></div></details>
     </div>
 
     <div class="aperture-commandbar">
       <div class="aperture-mode-switch" role="tablist" aria-label="Choose operating mode">
-        <button type="button" role="tab" class="aperture-mode-button is-active" data-ap-mode="timeline" aria-selected="true"><span>01</span> Timeline</button>
-        <button type="button" role="tab" class="aperture-mode-button" data-ap-mode="map" aria-selected="false" tabindex="-1"><span>02</span> Explore</button>
-        <button type="button" role="tab" class="aperture-mode-button" data-ap-mode="route" aria-selected="false" tabindex="-1"><span>03</span> Route</button>
-        <button type="button" role="tab" class="aperture-mode-button" data-ap-mode="surface" aria-selected="false" tabindex="-1"><span>04</span> Roster</button>
+        <button type="button" role="tab" class="aperture-mode-button is-active" data-ap-mode="timeline" aria-selected="true">Timeline</button>
+        <button type="button" role="tab" class="aperture-mode-button" data-ap-mode="map" aria-selected="false" tabindex="-1">Network</button>
+        <button type="button" role="tab" class="aperture-mode-button" data-ap-mode="route" aria-selected="false" tabindex="-1">Route</button>
+        <button type="button" role="tab" class="aperture-mode-button" data-ap-mode="surface" aria-selected="false" tabindex="-1">Roster</button>
       </div>
       <div id="aperture-mode-controls" class="aperture-mode-controls"></div>
     </div>
@@ -65,7 +52,7 @@ function shellMarkup() {
 
     <section class="aperture-overview" aria-labelledby="aperture-overview-title">
       <div class="aperture-overview-heading">
-        <div><p class="section-kicker">Evidence overview</p><h3 id="aperture-overview-title">Stable rows for the visible field.</h3></div>
+        <div><h3 id="aperture-overview-title">Records in this view</h3></div>
         <p id="aperture-overview-status"></p>
       </div>
       <div class="aperture-table-scroll">
@@ -76,7 +63,7 @@ function shellMarkup() {
       </div>
     </section>
 
-    <p class="aperture-boundary"><strong>Visual prominence is not an allegation.</strong> A corridor is not a hop. A hop is not coordination. The interface preserves evidence class, temporal limits, compiler refusals, and receipt IDs at the point of use.</p>`;
+    <p class="aperture-boundary"><strong>Visual prominence is not an allegation.</strong> Routes read actor → bounded surface → actor; no pairwise lines are created from shared context. A hop does not establish coordination. Evidence class, temporal limits and sources remain attached to each record.</p>`;
 }
 
 function initializeIndexes() {

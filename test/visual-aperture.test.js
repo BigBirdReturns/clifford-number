@@ -163,8 +163,8 @@ const core = readFileSync('src/visual-aperture-core.mjs', 'utf8');
 
 assert.match(uiEntry, /visual-aperture-part-\$\{index \+ 1\}\.js/);
 // Timeline mode: first tab, runtime between part-10 and the social-field runtime, no pair line anywhere.
-assert.match(ui, /data-ap-mode="timeline"[^>]*><span>01<\/span> Timeline/);
-assert.match(ui, /data-ap-mode="map"[^>]*><span>02<\/span> Explore/);
+assert.match(ui, /data-ap-mode="timeline"[^>]*>Timeline/);
+assert.match(ui, /data-ap-mode="map"[^>]*>Network/);
 assert.match(ui, /id="aperture-timeline"/);
 assert.match(uiEntry, /from '\.\/visual-aperture-timeline\.mjs'/);
 const loaderIndex = name => uiEntry.indexOf(`./visual-aperture-${name}.js`);

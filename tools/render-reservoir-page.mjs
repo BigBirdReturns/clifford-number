@@ -59,28 +59,25 @@ const html = `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="v
 <script>
 try { var saved = JSON.parse(localStorage.getItem('clifford-preferences') || '{}'); if (saved.theme === 'light' || saved.theme === 'dark') document.documentElement.dataset.theme = saved.theme; } catch (e) {}
 </script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,500..800&family=IBM+Plex+Mono:wght@400;500&family=Public+Sans:ital,wght@0,400;0,600;0,700;1,400&display=swap">
 <style>
-/* Layout: a header strip of counts and what moved, then two columns: the register of inquiries on the left (entry by search, hub, state, origin) and one opened inquiry on the right. Stacks on a phone. Same faces and accent as the trail map; state carries semantic colour, teal is the only accent. */
+/* Layout: a header strip of counts and what moved, then two columns: the register of inquiries on the left (entry by search, hub, state, origin) and one opened inquiry on the right. Stacks on a phone. Shared typography and blue controls connect the public explorer and local inquiry workspace; status retains its semantic colour. */
 :root {
-  --bg: #f2f5f4; --surface: #ffffff; --ink: #14201d; --muted: #56645f; --line: #d3dbd8;
-  --accent: #0d5c63; --accent-soft: #e1eeee;
+  --bg: #f6f8fa; --surface: #ffffff; --ink: #1f2937; --muted: #626e7e; --line: #dce1e7;
+  --accent: #2458a6; --accent-soft: #edf3fb;
   --held: #5f6965; --held-bg: #e9edeb;
   --open: #1d5aa0; --open-bg: #e4edf8;
   --narrowed: #8a5f00; --narrowed-bg: #f6eed9;
   --answered: #1c7340; --answered-bg: #e3f2e8;
   --disproved: #ad2a20; --disproved-bg: #f9e5e2;
   --human: #6b2d8f; --human-bg: #efe4f6;
-  --font-display: "Archivo", "Arial Narrow", system-ui, sans-serif;
-  --font-body: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Segoe UI", -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+  --font-body: "Segoe UI", -apple-system, BlinkMacSystemFont, Arial, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0e1413; --surface: #151e1d; --ink: #e3ebe8; --muted: #93a29d; --line: #293533;
-    --accent: #63b9bf; --accent-soft: #16302f;
+    --bg: #101722; --surface: #192334; --ink: #e5ebf3; --muted: #9caabd; --line: #344156;
+    --accent: #98bffa; --accent-soft: #26364c;
     --held: #a2ada8; --held-bg: #1d2523; --open: #82b3ee; --open-bg: #142235;
     --narrowed: #e2b24d; --narrowed-bg: #2b2210; --answered: #63c98a; --answered-bg: #13281b;
     --disproved: #f08a80; --disproved-bg: #321715; --human: #c79be0; --human-bg: #2a1b33;
@@ -88,8 +85,8 @@ try { var saved = JSON.parse(localStorage.getItem('clifford-preferences') || '{}
   }
 }
 :root[data-theme="dark"] {
-  --bg: #0e1413; --surface: #151e1d; --ink: #e3ebe8; --muted: #93a29d; --line: #293533;
-  --accent: #63b9bf; --accent-soft: #16302f;
+  --bg: #101722; --surface: #192334; --ink: #e5ebf3; --muted: #9caabd; --line: #344156;
+  --accent: #98bffa; --accent-soft: #26364c;
   --held: #a2ada8; --held-bg: #1d2523; --open: #82b3ee; --open-bg: #142235;
   --narrowed: #e2b24d; --narrowed-bg: #2b2210; --answered: #63c98a; --answered-bg: #13281b;
   --disproved: #f08a80; --disproved-bg: #321715; --human: #c79be0; --human-bg: #2a1b33;
@@ -240,6 +237,53 @@ main { margin-top: 24px; gap: 24px; grid-template-columns: minmax(0, 5fr) minmax
   .hist li { grid-template-columns: auto 1fr; }
   .hist li > :last-child { grid-column: 1 / -1; }
 }
+
+/* Match the public research workspace while keeping local inquiry controls. */
+body { padding-inline: 32px; }
+.wrap { max-width: 1440px; }
+.workspace-nav { min-height: 64px; }
+.workspace-nav > a { color: var(--ink); font-size: 17px; letter-spacing: -.02em; }
+.workspace-nav > a::before { content: 'CN'; display: inline-grid; place-items: center; width: 30px; height: 30px; margin-right: 10px; background: var(--accent); color: var(--surface); border-radius: 6px; font-size: 11px; vertical-align: middle; }
+header.top { padding-block: 24px 16px; gap: 8px; }
+h1 { font-size: 28px; font-weight: 650; letter-spacing: -.025em; }
+.lede { font-size: 14px; line-height: 1.6; }
+.eyebrow { font-family: var(--font-body); text-transform: none; letter-spacing: .01em; }
+.counts { display: flex; flex-wrap: wrap; gap: 12px 28px; margin-top: 8px; }
+.counts > div { display: flex; align-items: baseline; gap: 8px; padding: 0; border: 0; background: none; border-radius: 0; }
+.counts b { font-size: 18px; font-weight: 650; }
+.counts span { font-size: 12px; }
+.coverage { font-size: 12px; }
+main { margin-top: 8px; grid-template-columns: minmax(320px, 5fr) minmax(0, 7fr); align-items: start; }
+.register { gap: 12px; }
+.register-controls { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; gap: 8px; }
+.register-controls > * { min-width: 0; }
+.register-controls > details[open], .register-controls > .hubs:has(details[open]) { grid-column: 1 / -1; }
+.register-controls #native-estate, .register-controls .filter-panel { padding: 4px 10px; }
+.register-controls #native-estate > summary, .register-controls .filter-panel > summary, .register-controls .hubs summary { min-height: 40px; padding: 7px 0; font-size: 12px; line-height: 1.5; align-content: center; }
+.register-controls .hubs summary { padding-inline: 10px; }
+.register-controls .hubs p { padding-inline: 12px; font-size: 12px; color: var(--muted); }
+.search { padding: 0; border: 0; border-radius: 0; background: none; gap: 7px; }
+.search label { font-size: 13px; font-weight: 600; }
+.search input { background: var(--surface); min-height: 44px; font-size: 15px; }
+.filter-panel { border-radius: 6px; padding: 4px 12px; }
+.filter-panel > summary { min-height: 36px; font-size: 13px; }
+.quiet-button { min-height: 36px; padding: 6px 10px; border-radius: 5px; font-size: 12px; }
+.list, #detail { border-radius: 7px; }
+.row { padding: 14px; }
+.row .q { font-size: 14px; font-weight: 500; }
+.welcome { padding: 12px 0; }
+.welcome h2 { font-size: 23px; font-weight: 650; }
+.welcome ol { padding-top: 12px; border-top: 1px solid var(--line); font-size: 14px; color: var(--muted); }
+#detail { min-height: 340px; }
+@media (max-width: 860px) {
+  body { padding-inline: 16px; }
+  main { grid-template-columns: minmax(0, 1fr); }
+  .workspace-nav > a { font-size: 15px; }
+  .counts { gap: 10px 20px; }
+  .counts > div { padding: 0; }
+  header.top { padding-top: 20px; }
+  #detail { min-height: 0; }
+}
 </style>
 <div class="wrap">
 <nav class="workspace-nav" aria-label="Reservoir navigation">
@@ -247,9 +291,9 @@ main { margin-top: 24px; gap: 24px; grid-template-columns: minmax(0, 5fr) minmax
   <div><a href="https://bigbirdreturns.github.io/clifford-number/explorer.html">Public explorer ↗</a><button class="quiet-button" id="reservoir-theme" type="button" aria-label="Switch color theme">Theme</button></div>
 </nav>
 <header class="top">
-  <div class="eyebrow">Retained questions · sources · history</div>
-  <h1>Clifford Reservoir</h1>
-  <p class="lede">Return to a question, compare explanations, and follow its sources. Retained attention is a starting point for inquiry, not a finding.</p>
+  <div class="eyebrow">Research workspace</div>
+  <h1>Reservoir</h1>
+  <p class="lede">Questions, working explanations and the sources behind them. A retained question is a starting point, not a finding.</p>
   <div class="counts" id="counts"></div>
   <details class="coverage"><summary>Coverage and provenance</summary><div class="coverage-grid" id="coverage-counts"></div><p>These records do not create claims, hops or graph edges. Retrospective assessments remain attributed judgments.</p><details class="moved" id="moved" hidden></details></details>
 </header>
@@ -260,12 +304,14 @@ main { margin-top: 24px; gap: 24px; grid-template-columns: minmax(0, 5fr) minmax
       <input id="q" type="search" placeholder="Question, actor, path or mechanism…" autocomplete="off" aria-describedby="search-hint">
       <p class="search-hint" id="search-hint">Search titles, source paths and explanations. Press / to start.</p>
     </div>
+    <div class="register-controls">
     <details class="filter-panel" id="filters"><summary>Filter inquiries <span id="filter-count"></span></summary>
       <div class="filter-group"><span class="eyebrow">Status</span><div class="chips" id="states" aria-label="State"></div></div>
       <div class="filter-group"><span class="eyebrow">Origin</span><div class="chips" id="origins" aria-label="Origin of the question"></div></div>
       <div class="filter-group"><span class="eyebrow">Collection</span><div class="chips" id="sources" aria-label="Source"></div></div>
     </details>
     <div class="hubs" id="hubs"></div>
+    </div>
     <div class="results-toolbar"><div class="eyebrow" id="summary" role="status" aria-live="polite"></div><button class="quiet-button" id="reset-filters" type="button">Clear filters</button></div>
     <div class="list" id="list"></div>
   </section>
@@ -370,7 +416,7 @@ main { margin-top: 24px; gap: 24px; grid-template-columns: minmax(0, 5fr) minmax
 
   // Hubs
   var hubsEl = document.getElementById('hubs');
-  hubsEl.innerHTML = '<details><summary>Where attention pooled: ' + D.hubs.length + ' hubs, each a path cited by more than ' + D.hub_limit + ' records</summary>' +
+  hubsEl.innerHTML = '<details><summary>Shared sources (' + D.hubs.length + ')</summary><p>Each source path is cited by more than ' + D.hub_limit + ' inquiries. Select a source to show its inquiries.</p>' +
     D.hubs.slice().sort(function (a, b) { return b.inquiries.length - a.inquiries.length; }).map(function (h) {
       var p = h.path.slice(h.path.indexOf('|') + 1);
       return '<button class="hub" type="button" data-hub="' + esc(h.path) + '" aria-pressed="false"><span>' + esc(p) + '</span><b>' + h.inquiries.length + '</b></button>';
@@ -541,7 +587,7 @@ main { margin-top: 24px; gap: 24px; grid-template-columns: minmax(0, 5fr) minmax
     else {
       render();
       document.getElementById('detail').dataset.inquiryId = '';
-      document.getElementById('detail').innerHTML = '<div class="welcome"><span class="eyebrow">Follow a question</span><h2>Start with what caught your attention.</h2><p>Choose an inquiry to see its history, competing explanations and source records.</p><ol><li>Search for a question, actor or source path.</li><li>Narrow the results by status, origin or collection.</li><li>Open a record and follow the evidence.</li></ol>' +
+      document.getElementById('detail').innerHTML = '<div class="welcome"><span class="eyebrow">Inquiry details</span><h2>Choose an inquiry</h2><p>Choose an inquiry to see its history, competing explanations and source records.</p><ol><li>Search for a question, actor or source path.</li><li>Narrow the results by status, origin or collection.</li><li>Open a record and follow the evidence.</li></ol>' +
         (requested ? '<p role="status">That inquiry could not be found in this build. Try searching for its title or source.</p>' : '') + '</div>';
       window.dispatchEvent(new CustomEvent('reservoir:select', { detail: { id: '' } }));
     }

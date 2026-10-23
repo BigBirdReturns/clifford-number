@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Search public actors, organizations, and bounded surfaces. Inspect an actor → surface → actor route, run the connection checker, and open every receipt behind every edge.">
-  <meta name="theme-color" content="#faf6ec">
+  <meta name="theme-color" content="#f6f8fa">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="The Clifford Number">
   <meta property="og:title" content="The Clifford Number — Topology explorer">
@@ -18,7 +18,7 @@
   <meta name="twitter:card" content="summary_large_image">
   <link rel="canonical" href="https://bigbirdreturns.github.io/clifford-number/explorer.html">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-  <title>Topology explorer — The Clifford Number</title>
+  <title>Explore — The Clifford Number</title>
   <script>
     (() => {
       try {
@@ -37,10 +37,7 @@
       } catch {}
     })();
   </script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bitter:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20261022-polish2">
+  <link rel="stylesheet" href="styles.css?v=20261022-workspace1">
 </head>
 <body>
   <a class="skip-link" href="#main-content" data-i18n="skip">Skip to the explorer</a>
@@ -52,15 +49,6 @@
         <span class="brand-name">The Clifford Number</span>
       </a>
       <div class="topbar-actions">
-        <span class="release-status"><span class="status-pulse" aria-hidden="true"></span><span data-i18n="status">Public research instrument</span></span>
-        <a class="home-link" href="index.html">← Causal homepage</a>
-        <a href="#research-tracks">Research</a>
-        <a href="estates/">Estates</a>
-        <a href="gametrails/">Game trails</a>
-        <a href="#explorer">Explore</a>
-        <a href="#desk">Check a connection</a>
-        <a href="#method/overview" data-i18n="method">Method</a>
-        <a href="#receipts/all">Evidence</a>
         <details class="preferences-menu" id="preferences-menu">
           <summary><span aria-hidden="true">Aa</span><span data-i18n="view">View</span></summary>
           <div class="preferences-panel" role="group" aria-labelledby="preferences-title">
@@ -103,69 +91,43 @@
     </div>
 
     <nav class="mobile-site-nav shell-wide" aria-label="Main navigation">
-      <a href="index.html">Home</a>
-      <a href="#network-atlas">Timeline</a>
-      <a href="#desk">Check a connection</a>
-      <a href="estates/">Estates</a>
-      <a href="gametrails/">Game trails</a>
-      <a href="#method/overview">Method</a>
-      <a href="#receipts/all">Evidence</a>
+      <a href="index.html">Overview</a>
+      <a href="#network-atlas" data-nav="explore">Explore</a>
+      <a href="#desk" id="hero-check" data-nav="desk">Check a connection</a>
+      <a href="#receipts/all" data-nav="receipts">Evidence</a>
+      <details class="more-nav"><summary>More</summary><div>
+        <a href="#method/overview">Method</a>
+        <a href="#research-tracks">Research queue</a>
+        <a href="estates/">Estates</a>
+        <a href="gametrails/">Game trails</a>
+      </div></details>
     </nav>
 
-    <div class="hero hero--civic shell-wide">
+    <div class="hero hero--workspace shell-wide">
       <div class="hero-copy">
-        <p class="eyebrow"><span id="hero-node-count">Public research network</span><span class="eyebrow-rule" aria-hidden="true"></span><span id="hero-edge-count">Sourced topology</span></p>
-        <h1>The machine is already in the records.<br><em>Read it in date order.</em></h1>
-        <p class="hero-dek">Every documented participation row sits on one dated timeline: who was on which bounded surface, in which role, on which day. Open a person, an organization or a surface to read its ledger, then open the receipts under each row.</p>
-
+        <div class="workspace-intro">
+          <h1>Explore the public record</h1>
+          <p>Find a person or organization. Follow their documented roles and open the sources.</p>
+        </div>
         <section class="search-card search-card--hero civic-search" aria-labelledby="search-label">
           <div class="search-label-row">
-            <label id="search-label" for="search" data-i18n="searchLabel">Search person, organization, surface, or case</label>
+            <label id="search-label" for="search" data-i18n="searchLabel">Search the public record</label>
             <span class="key-hint" aria-hidden="true" data-i18n="pressFocus">Press / to focus</span>
           </div>
           <div class="search-input-wrap">
             <span class="search-icon" aria-hidden="true">⌕</span>
-            <input id="search" type="search" role="combobox" placeholder="Try a person, organization, surface, surface type, year, case or receipt…" autocomplete="off" aria-controls="results" aria-autocomplete="list" aria-expanded="false" aria-describedby="search-help">
+            <input id="search" type="search" role="combobox" placeholder="Search a person, organization or source…" autocomplete="off" aria-controls="results" aria-autocomplete="list" aria-expanded="false" aria-describedby="search-help">
             <span class="search-shortcut" aria-hidden="true">/</span>
           </div>
           <p class="try-row" id="search-help"><span data-i18n="startWith">Start with:</span> <span id="try-examples"></span> <button id="browse-all" type="button" data-i18n="browseIndex">Browse index</button></p>
           <div id="results" class="results search-results" role="listbox" aria-label="Search results" aria-live="polite"></div>
         </section>
 
-        <div class="hero-actions">
-          <a class="primary-action" href="#network-atlas">Open the timeline <span aria-hidden="true">→</span></a>
-          <button class="text-action" id="hero-check" type="button"><span data-i18n="checkConnection">Check a connection</span> <span aria-hidden="true">→</span></button>
-          <a class="text-action" href="estates/">Open Estate Aperture <span aria-hidden="true">→</span></a>
-          <a class="text-action" href="gametrails/">Open Game-Trail Aperture <span aria-hidden="true">→</span></a>
-        </div>
-        <p class="inference-boundary"><strong data-i18n="boundaryStrong">A timeline is not a causal verdict.</strong> <span data-i18n="boundaryText">The instrument distinguishes source-explicit causation from attribution, temporal association, and causation not established.</span></p>
       </div>
-
-      <aside class="hero-hotspots hero-records" aria-labelledby="hotspots-title">
-        <p class="section-kicker">Start with a record</p>
-        <h2 id="hotspots-title">Three ledgers, read row by row.</h2>
-        <button class="hotspot-jump" type="button" data-kind="actor" data-id="ben-warner"><strong>Dr. Ben Warner</strong><span data-record-fact="actor:ben-warner">Documented person</span></button>
-        <button class="hotspot-jump" type="button" data-kind="organization" data-id="electric-twin"><strong>Electric Twin</strong><span data-record-fact="organization:electric-twin">Documented organization</span></button>
-        <button class="hotspot-jump" type="button" data-kind="surface" data-id="dialog-public-directory-exposure-2026-06-16"><strong>Dialog roster</strong><span data-record-fact="surface:dialog-public-directory-exposure-2026-06-16">One contained roster</span></button>
-        <p class="hotspot-boundary"><strong>A row ≠ an allegation.</strong> Every count names its denominator; every row keeps its evidence class and receipts.</p>
-        <div class="release-strip" id="release-strip">Loading the current public release…</div>
-      </aside>
     </div>
   </header>
 
   <main id="main-content" class="shell-wide">
-    <section class="public-data-boundary" id="public-data-boundary" aria-labelledby="public-data-boundary-title">
-      <div>
-        <p class="section-kicker" id="public-data-boundary-title">Projection boundaries</p>
-        <p><strong>Research network context:</strong> <span id="public-boundary-research">Loading…</span></p>
-      </div>
-      <div>
-        <p><strong>Bounded surfaces:</strong> <span id="public-boundary-surfaces">Loading…</span></p>
-        <p><strong>Verified hops:</strong> <span id="public-boundary-hops">Loading…</span></p>
-      </div>
-      <p class="public-data-boundary-contract" id="public-boundary-contract">Projection timestamps identify deterministic artifacts; source dates remain in their owning receipts.</p>
-    </section>
-
     <section class="network-atlas" id="network-atlas" aria-labelledby="network-title">
       <!-- The Visual Aperture (src/aperture-bootstrap.js) mounts into this section once #app-status is ready and owns everything rendered inside it. -->
     </section>
@@ -173,66 +135,37 @@
     <details class="track-directory research-queue" id="research-tracks">
       <summary>
         <span><strong>Research queue</strong> · declared tracks and visible coverage gaps</span>
-        <span>Open the unfinished work →</span>
+        <span>View tracks</span>
       </summary>
       <div class="section-heading section-heading--tracks">
         <div>
           <p class="section-kicker">Exploratory by default</p>
-          <h2>Questions still being wired.</h2>
+          <h2>Research in progress</h2>
         </div>
         <p>These are research commitments, not flagship examples and not findings. Their missing coverage is shown deliberately.</p>
       </div>
       <div id="track-directory-list" class="track-grid" aria-live="polite"></div>
     </details>
 
-    <section class="purpose-map" aria-labelledby="purpose-title">
-      <div class="purpose-heading">
-        <p class="section-kicker" data-i18n="purposeKicker">What this instrument traces</p>
-        <h2 id="purpose-title" data-i18n="purposeTitle">From a public decision to its later consequences.</h2>
-      </div>
-      <div class="purpose-steps">
-        <article><span>01</span><h3 data-i18n="purposeSurfaceTitle">Decision surfaces</h3><p data-i18n="purposeSurfaceText">Who authored, commissioned, accepted, funded, advised, or joined a bounded public process.</p></article>
-        <article><span>02</span><h3 data-i18n="purposeFlowTitle">Programs and flows</h3><p data-i18n="purposeFlowText">How commitments, contracts, capital, public roles, and claimed capabilities move across time.</p></article>
-        <article><span>03</span><h3 data-i18n="purposeOutcomeTitle">Later outcomes</h3><p data-i18n="purposeOutcomeText">What happened later, which receipts support it, and whether a causal link is established or merely temporal.</p></article>
-      </div>
-    </section>
     <div id="app-status" class="app-status" role="status">
       <span class="loading-mark" aria-hidden="true"></span>
       <span data-i18n="compiling">Compiling the public view…</span>
     </div>
 
     <section class="explorer" id="explorer" aria-labelledby="explorer-title">
-      <div class="section-heading">
-        <div>
-          <p class="section-kicker" data-i18n="interrogate">Interrogate the corpus</p>
-          <h2 id="explorer-title" data-i18n="followEvidence">Follow the evidence.</h2>
-        </div>
-        <p data-i18n="explorerIntro">Search people, organizations, bounded surfaces, and compiled cases—or verify a two-person connection as of a specific date.</p>
-      </div>
-
-      <nav class="view-nav" aria-label="Explorer views">
-        <div class="tabs" role="tablist" aria-label="Choose a view">
-          <button class="tab active" id="tab-map" data-view="map" role="tab" aria-selected="true" aria-controls="view-map" tabindex="0">
-            <span class="tab-index" aria-hidden="true">01</span><span data-i18n="topologyExplorer">Topology explorer</span>
-          </button>
-          <button class="tab" id="tab-desk" data-view="desk" role="tab" aria-selected="false" aria-controls="view-desk" tabindex="-1">
-            <span class="tab-index" aria-hidden="true">02</span><span data-i18n="connectionChecker">Connection checker</span>
-          </button>
-        </div>
-      </nav>
-
+      <h2 id="explorer-title" class="sr-only">Records and connection checker</h2>
       <div id="view-status" class="sr-only" role="status" aria-live="polite"></div>
-      <div id="view-map" role="tabpanel" aria-labelledby="tab-map">
+      <div id="view-map" role="region" aria-label="Public records">
         <section id="summary" class="summary-grid" aria-label="Corpus summary"></section>
         <section id="detail" class="detail"></section>
       </div>
 
-      <div id="view-desk" role="tabpanel" aria-labelledby="tab-desk" hidden>
+      <div id="view-desk" role="region" aria-label="Connection checker" hidden>
         <section class="search-card desk-card" aria-labelledby="desk-title">
           <div class="desk-intro">
             <div>
-              <p class="section-kicker" data-i18n="newsroomMode">Newsroom mode</p>
-              <h1 id="desk-title" data-i18n="deskTitle">Check a connection before it prints.</h1>
+              <p class="section-kicker" data-i18n="newsroomMode">Connection checker</p>
+              <h1 id="desk-title" data-i18n="deskTitle">Check a connection</h1>
             </div>
             <span class="desk-rule" data-i18n="deskRule">Every step must carry a receipt.</span>
           </div>
@@ -268,6 +201,24 @@
         <section id="desk-out" class="detail"></section>
       </div>
     </section>
+    <details class="release-details">
+      <summary>About this dataset and release</summary>
+      <p class="inference-boundary"><strong>A timeline is not a causal verdict.</strong> Shared context does not establish contact, influence, coordination, intent or wrongdoing.</p>
+      <p><span id="hero-node-count"></span> · <span id="hero-edge-count"></span></p>
+      <div id="release-strip"></div>
+    <div class="public-data-boundary" id="public-data-boundary" aria-labelledby="public-data-boundary-title">
+      <div>
+        <p class="section-kicker" id="public-data-boundary-title">Projection boundaries</p>
+        <p><strong>Research network context:</strong> <span id="public-boundary-research">Loading…</span></p>
+      </div>
+      <div>
+        <p><strong>Bounded surfaces:</strong> <span id="public-boundary-surfaces">Loading…</span></p>
+        <p><strong>Verified hops:</strong> <span id="public-boundary-hops">Loading…</span></p>
+      </div>
+      <p class="public-data-boundary-contract" id="public-boundary-contract">Projection timestamps identify deterministic artifacts; source dates remain in their owning receipts.</p>
+    </div>
+
+    </details>
   </main>
 
   <dialog id="evidence-dialog" class="evidence-dialog" aria-labelledby="evidence-dialog-title">
@@ -313,7 +264,7 @@
     </div>
   </footer>
 
-  <script src="app.js?v=20261022-explorer1" type="module"></script>
-  <script src="src/aperture-bootstrap.js?v=20261022-explorer1" type="module"></script>
+  <script src="app.js?v=20261022-workspace1" type="module"></script>
+  <script src="src/aperture-bootstrap.js?v=20261022-workspace1" type="module"></script>
 </body>
 </html>

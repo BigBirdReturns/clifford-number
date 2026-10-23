@@ -7,7 +7,7 @@
 // one contained block. No line is ever drawn between two people; the reserved
 // pair selector must never match anything in this stage.
 
-const TIMELINE_MODE_LABELS = Object.freeze({ timeline: 'Timeline', map: 'Explore', route: 'Route', surface: 'Roster' });
+const TIMELINE_MODE_LABELS = Object.freeze({ timeline: 'Timeline', map: 'Network', route: 'Route', surface: 'Roster' });
 const TIMELINE_BY_LABELS = Object.freeze({ actor: 'People', organization: 'Organizations', type: 'Surface types' });
 const TIMELINE_KIND_LABELS = Object.freeze({ actor: 'Person', organization: 'Organization', type: 'Surface type' });
 const TIMELINE_HOP_LABELS = Object.freeze({ all: 'Hop and context surfaces', hop: 'Hop surfaces only', context: 'Context surfaces only' });
@@ -822,15 +822,15 @@ function timelineDefaultCard(layout) {
     const drawn = layout.by === 'actor' && layout.columns.some(column => column.key === suggestion.key);
     const text = drawn
       ? `Try the amber column on ${suggestion.iso_day}: ${suggestion.actor_count} people on <em>${esc(suggestion.surface_label)}</em>, ${suggestion.basis_count} admitted bases, one surface.`
-      : `The axis currently starts after ${suggestion.iso_day}. Tap the ${suggestion.year} chip, then the amber column on ${suggestion.iso_day}: ${suggestion.actor_count} people on <em>${esc(suggestion.surface_label)}</em>.`;
+      : `The axis currently starts after ${suggestion.iso_day}. Choose ${suggestion.year} in Date range, then the amber column on ${suggestion.iso_day}: ${suggestion.actor_count} people on <em>${esc(suggestion.surface_label)}</em>.`;
     tryMarkup = `<h4>Try first</h4><p>${text}</p><div class="aperture-actions"><button type="button" data-ap-action="timeline-try" data-key="${esc(suggestion.key)}" data-year="${esc(suggestion.year)}">${drawn ? `Select the ${esc(suggestion.iso_day)} column` : `Show ${esc(suggestion.year)} and select it`}</button></div>`;
   }
-  return `<p class="aperture-kicker">How to read this</p><h3>Every mark is one ledger row.</h3>
+  return `<p class="aperture-kicker">Record details</p><h3>Select a mark</h3><p>See the documented role, dates and source records here.</p><details class="aperture-reading-help"><summary>How to read the timeline</summary>
     <p>Lanes are ${esc(TIMELINE_BY_LABELS[layout.by].toLowerCase())}; the axis is the documented day. A tick is one documented day and a bar is an observed span, filled with the row’s evidence class and outlined amber when its surface is hop-eligible.</p>
     <p>An amber column is a surface that two or more people share on one day. The surface is the column, so a route reads actor → surface → actor; no line is ever drawn between two people, and a dense roster stays one block with its count.</p>
-    <p>Click a mark to read its role, window, evidence class and receipts. Lane labels, columns and the roster block have their own cards; a column sits under its marks, so each mark card on it also offers “Select the column”. Year chips, the strip under the axis and Ctrl + wheel move the axis; the marked window dims rows outside it and never removes them. Tab reaches one mark, then the arrow keys walk the days and lanes.</p>
+    <p>Click a mark to read its role, window, evidence class and receipts. Lane labels, columns and the roster block have their own cards; a column sits under its marks, so each mark card on it also offers “Select the column”. Date range, the strip under the axis and Ctrl + wheel move the axis; the marked window dims rows outside it and never removes them. Tab reaches one mark, then the arrow keys walk the days and lanes.</p>
     <ul class="aperture-time-legend-list"><li><i class="aperture-time-key aperture-time-key--day"></i> one documented day</li><li><i class="aperture-time-key aperture-time-key--span"></i> observed span (dotted: year precision)</li><li><i class="aperture-time-key aperture-time-key--hop"></i> amber outline: hop-eligible surface · grey: context-only</li><li><i class="aperture-time-key aperture-time-key--column"></i> shared surface on one day</li><li><i class="aperture-time-key aperture-time-key--official"></i> official <i class="aperture-time-key aperture-time-key--primary_public"></i> primary public <i class="aperture-time-key aperture-time-key--reported"></i> reported <i class="aperture-time-key aperture-time-key--open"></i> derived or judgment</li><li><i class="aperture-time-key aperture-time-key--block"></i> dense roster, one contained object</li></ul>
-    ${tryMarkup}`;
+    </details>${tryMarkup}`;
 }
 
 // --- overview table -------------------------------------------------------------------------
@@ -916,6 +916,8 @@ function timelineYearChipDomain(year) {
 function timelineActiveYear() {
   const t = state.timeline;
   if (!t.from && !t.to) return '';
+  const range = timelineModel()?.range;
+  if (range && t.from === range.first_day && t.to === isoFromDayIndex(range.last_day_index + TIMELINE_DOMAIN_PADDING_DAYS)) return 'all';
   for (const year of timelineModel()?.range.years_with_rows ?? []) {
     const chip = timelineYearChipDomain(year);
     if (chip && chip.from === t.from && chip.to === t.to) return year;
@@ -929,13 +931,13 @@ function timelineControlsMarkup() {
   const activeYear = timelineActiveYear();
   const windowActive = timelineWindowActive();
   return `<div class="aperture-time-by" role="group" aria-label="Lane grouping"><span class="aperture-time-control-label">Lanes</span>${TIMELINE_BY.map(by => `<button type="button" data-ap-action="timeline-by" data-by="${by}" aria-pressed="${String(t.by === by)}">${esc(TIMELINE_BY_LABELS[by])}</button>`).join('')}</div>
-    <div class="aperture-time-year-chips" role="group" aria-label="Years with documented rows">${years.map(year => `<button type="button" data-ap-action="timeline-year" data-year="${esc(year)}" aria-pressed="${String(activeYear === year)}">${esc(year)}</button>`).join('')}<button type="button" data-ap-action="timeline-year" data-year="" aria-pressed="${String(activeYear === '')}">All</button></div>
-    <label class="aperture-control aperture-control--wide aperture-time-add"><span>Add a lane</span><input id="ap-time-lane" type="search" list="ap-time-lane-options" placeholder="Person, organization or surface type" autocomplete="off"><datalist id="ap-time-lane-options">${timelineSearchOptions()}</datalist></label>
+    <label class="aperture-control aperture-date-range"><span>Date range</span><select id="ap-time-year"><option value=""${activeYear === '' ? ' selected' : ''}>Recent activity</option><option value="all"${activeYear === 'all' ? ' selected' : ''}>Full record</option>${years.map(year => `<option value="${esc(year)}"${activeYear === year ? ' selected' : ''}>${esc(year)}</option>`).join('')}${activeYear === null ? '<option value="custom" selected disabled>Custom range</option>' : ''}</select></label>
+    <details class="aperture-filters"><summary>Filters &amp; tools</summary><div class="aperture-filter-fields"><label class="aperture-control aperture-control--wide aperture-time-add"><span>Add a lane</span><input id="ap-time-lane" type="search" list="ap-time-lane-options" placeholder="Person, organization or surface type" autocomplete="off"><datalist id="ap-time-lane-options">${timelineSearchOptions()}</datalist></label>
     <label class="aperture-control"><span>Surfaces</span><select id="ap-time-hop">${TIMELINE_HOP_FILTERS.map(value => `<option value="${value}"${value === t.hop ? ' selected' : ''}>${esc(TIMELINE_HOP_LABELS[value])}</option>`).join('')}</select></label>
     <label class="aperture-control"><span>Evidence floor</span><select id="ap-time-evidence">${evidenceOptions(t.evidenceFloor)}</select></label>
     <button type="button" class="aperture-secondary-button aperture-time-window-toggle" data-ap-action="timeline-window-toggle" aria-pressed="${String(windowActive)}">${windowActive ? 'Window on' : 'Mark a window'}</button>
     <button type="button" class="aperture-secondary-button" data-ap-action="timeline-reset">Reset</button>
-    ${addressActionMarkup()}`;
+    ${addressActionMarkup()}</div></details>`;
 }
 
 // --- state mutations -------------------------------------------------------------------------
@@ -981,6 +983,11 @@ function setTimelineDomain(from, to, { history = 'push' } = {}) {
 
 function setTimelineYear(year) {
   if (!year) { setTimelineDomain('', ''); return; }
+  if (year === 'all') {
+    const range = timelineModel()?.range;
+    if (range) setTimelineDomain(range.first_day, isoFromDayIndex(range.last_day_index + TIMELINE_DOMAIN_PADDING_DAYS));
+    return;
+  }
   const chip = timelineYearChipDomain(year);
   if (chip) setTimelineDomain(chip.from, chip.to);
 }
@@ -1275,6 +1282,7 @@ function handleTimelineChange(event) {
     return true;
   }
   if (state.mode !== 'timeline') return false;
+  if (target.id === 'ap-time-year') { setTimelineYear(target.value); return true; }
   if (target.id === 'ap-time-hop') { state.timeline.hop = TIMELINE_HOP_FILTERS.includes(target.value) ? target.value : 'all'; commitTimelineView({ controls: false }); return true; }
   if (target.id === 'ap-time-evidence') { state.timeline.evidenceFloor = TIMELINE_EVIDENCE_FLOORS.has(target.value) ? target.value : 'open'; commitTimelineView({ controls: false }); return true; }
   return false;

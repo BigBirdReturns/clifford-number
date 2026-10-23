@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#07090e">
+  <meta name="theme-color" content="#f6f8fa">
   <meta name="description" content="Clifford Number maps documented public relationships through bounded surfaces and receipts. Search a person, trace an evidence-backed route, and inspect every source.">
   <meta property="og:title" content="The Clifford Number — public relationship ecology">
   <meta property="og:description" content="Explore documented people, organizations, bounded surfaces, dated activity, defensible routes, and the receipts behind them.">
@@ -11,9 +11,9 @@
   <meta property="og:image" content="assets/social-card.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <title>The Clifford Number — Public Relationship Ecology</title>
+  <title>The Clifford Number — Public records, connected</title>
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="home.css?v=20261022-polish2">
+  <link rel="stylesheet" href="home.css?v=20261022-workspace1">
 </head>
 <body>
   <a class="skip-link" href="#causal-route-summary">Skip to the causal route summary</a>
@@ -23,9 +23,8 @@
       <span class="brand-mark" aria-hidden="true">CN</span>
       <span>The Clifford Number</span>
     </a>
-    <p class="record-boundary"><strong>Public records only.</strong> Edge ≠ allegation.</p>
     <nav class="site-nav" aria-label="Main navigation">
-      <a href="explorer.html#method/overview">Method</a>
+      <a href="explorer.html#receipts/all">Evidence</a><a href="explorer.html#method/overview">Method</a>
       <a class="explorer-link" href="explorer.html">Explore <span aria-hidden="true">→</span></a>
     </nav>
   </header>
@@ -33,35 +32,21 @@
   <main>
     <section class="hero" id="home" aria-labelledby="hero-title">
       <div class="hero-copy">
-        <p class="eyebrow">Evidence-backed public relationship ecology</p>
-        <h1 id="hero-title">Follow the system.<br><em>Then open the receipts.</em></h1>
-        <p class="hero-dek">Start with a person or organization. Clifford maps documented shared surfaces — companies, boards, programs, events, policy work, procurement — and calculates routes only when bounded evidence permits them. The four-lane view below is one lens over the same corpus.</p>
+        <p class="eyebrow">The public record, connected</p>
+        <h1 id="hero-title">People. Institutions.<br><em>The records between them.</em></h1>
+        <p class="hero-dek">Explore documented roles across companies, boards, programs and public decisions. Follow a connection to the dates and sources that support it.</p>
       </div>
 
       <div class="hero-actions" aria-label="Primary actions">
-        <a class="hero-primary" href="explorer.html">Explore people, surfaces, and routes</a>
-        <a class="hero-secondary" href="#causal-route-summary">Inspect the causal lens below</a>
+        <a class="hero-primary" href="explorer.html">Explore the public record →</a>
+        <a class="hero-secondary" href="#causal-route-summary">Read the research lens ↓</a>
       </div>
       <p id="causal-route-summary" class="causal-route-summary">
-        <strong>Research lens.</strong> Read left to right: who produced the policy or model machinery, who or what was admitted into the government
+        <strong>One research lens</strong><br>Read left to right: who produced the policy or model machinery, who or what was admitted into the government
         workflow, where public spend or infrastructure was activated, and what was measured afterward.
         <strong>An Edge is not an allegation</strong> — it is a typed, sourced record, and every mark below opens the
         exact receipts behind its count.<span id="causal-live-stats"></span>
       </p>
-
-      <section class="data-boundary" id="data-boundary" aria-labelledby="data-boundary-title">
-        <div class="data-boundary-head">
-          <p class="eyebrow" id="data-boundary-title">Projection boundaries</p>
-          <span>Build identity, not source freshness</span>
-        </div>
-        <div class="data-boundary-grid">
-          <div><span>Research network context</span><strong id="boundary-research-value">Loading…</strong><small>Legacy contextual projection; it does not compute Clifford Numbers.</small></div>
-          <div><span>Bounded surfaces</span><strong id="boundary-bounded-value">Loading…</strong><small>Canonical source for surface eligibility and participation.</small></div>
-          <div><span>Verified surface hops</span><strong id="boundary-hop-value">Loading…</strong><small>Canonical source for Clifford Number routes.</small></div>
-          <div><span>Receipt graph</span><strong id="boundary-receipt-value">Loading…</strong><small>Source metadata, extracts, dates, and archival custody.</small></div>
-        </div>
-        <p class="data-boundary-contract" id="boundary-contract">Projection timestamps identify deterministic artifacts; source dates remain in their owning receipts.</p>
-      </section>
 
       <figure class="causal-map-figure">
         <svg id="causal-map" class="causal-map" viewBox="0 0 1080 600" role="img"
@@ -74,9 +59,7 @@
           <g class="causal-lane" data-lane="measurement-feedback" id="lane-measurement-feedback"></g>
         </svg>
         <figcaption id="causal-map-legend" class="causal-map-legend">
-          Face-on lanes, left to right: model production, workflow admission, activation spend, measurement feedback.
-          Circle size and the number inside it are the documented record count for that theme. Select any mark to open
-          its receipts.
+          Read from left to right. Each circle counts documented records for a theme. Select a circle to inspect its sources.
         </figcaption>
       </figure>
 
@@ -94,6 +77,20 @@
         <button class="causal-detail-close" id="causal-detail-close" type="button" aria-label="Close receipt detail">×</button>
         <div id="causal-detail-content"></div>
       </aside>
+
+      <details class="data-boundary" id="data-boundary" aria-labelledby="data-boundary-title">
+        <summary class="data-boundary-head">
+          <p class="eyebrow" id="data-boundary-title">About this dataset</p>
+          <span>Build identity, not source freshness</span>
+        </summary>
+        <div class="data-boundary-grid">
+          <div><span>Research network context</span><strong id="boundary-research-value">Loading…</strong><small>Legacy contextual projection; it does not compute Clifford Numbers.</small></div>
+          <div><span>Bounded surfaces</span><strong id="boundary-bounded-value">Loading…</strong><small>Canonical source for surface eligibility and participation.</small></div>
+          <div><span>Verified surface hops</span><strong id="boundary-hop-value">Loading…</strong><small>Canonical source for Clifford Number routes.</small></div>
+          <div><span>Receipt graph</span><strong id="boundary-receipt-value">Loading…</strong><small>Source metadata, extracts, dates, and archival custody.</small></div>
+        </div>
+        <p class="data-boundary-contract" id="boundary-contract">Projection timestamps identify deterministic artifacts; source dates remain in their owning receipts.</p>
+      </details>
 
       <div class="load-status" id="load-status" role="status">
         <span class="load-mark" aria-hidden="true"></span>

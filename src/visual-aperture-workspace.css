@@ -1,7 +1,7 @@
 .aperture-workspace {
   padding: clamp(18px, 2.5vw, 28px);
   border-bottom: 1px solid var(--ap-line);
-  background: #0a0d13;
+  background: var(--ap-panel);
   color: var(--ap-text);
 }
 .aperture-workspace[hidden] { display: none !important; }
@@ -12,7 +12,7 @@
   gap: 24px;
   margin-bottom: 8px;
 }
-.aperture-workspace-heading h3 { margin: 5px 0 8px; color: #fff4df; font-size: clamp(23px, 2.7vw, 34px); }
+.aperture-workspace-heading h3 { margin: 5px 0 8px; color: var(--ap-text); font-size: clamp(23px, 2.7vw, 34px); }
 .aperture-workspace-heading p:not(.section-kicker) { max-width: 78ch; margin: 0; color: var(--ap-muted); font-size: 13px; line-height: 1.55; }
 .aperture-workspace-status { min-height: 20px; margin: 0 0 12px; color: var(--ap-amber); font: 10px/1.4 var(--font-mono); }
 .aperture-workspace-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, .92fr) minmax(0, 1.25fr); gap: 10px; }
@@ -29,7 +29,7 @@
   gap: 10px;
   padding: 10px;
   border: 1px solid var(--ap-line);
-  background: #0a0d13;
+  background: var(--ap-panel);
 }
 .aperture-workspace-row.is-unavailable { border-color: color-mix(in srgb, var(--ap-red) 50%, var(--ap-line)); }
 .aperture-workspace-row strong { display: block; min-width: 0; overflow: hidden; color: var(--ap-text); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
@@ -49,9 +49,9 @@
 .aperture-workspace-row-actions button:disabled { opacity: .45; cursor: not-allowed; }
 .aperture-compare-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
 .aperture-compare-grid > .aperture-muted { grid-column: 1 / -1; }
-.aperture-compare-card { min-width: 0; padding: 13px; border: 1px solid var(--ap-line); background: #0a0d13; }
+.aperture-compare-card { min-width: 0; padding: 13px; border: 1px solid var(--ap-line); background: var(--ap-panel); }
 .aperture-compare-card.is-unavailable { border-color: color-mix(in srgb, var(--ap-red) 50%, var(--ap-line)); }
-.aperture-compare-card h5 { margin: 5px 0 12px; color: #fff4df; font-size: 17px; line-height: 1.18; }
+.aperture-compare-card h5 { margin: 5px 0 12px; color: var(--ap-text); font-size: 17px; line-height: 1.18; }
 .aperture-compare-card dl { display: grid; gap: 0; margin: 0 0 12px; border: 1px solid var(--ap-line); }
 .aperture-compare-card dl > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; padding: 7px 8px; border-bottom: 1px solid var(--ap-line); }
 .aperture-compare-card dl > div:last-child { border-bottom: 0; }

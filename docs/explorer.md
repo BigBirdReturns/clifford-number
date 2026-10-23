@@ -19,7 +19,7 @@ Every view below obeys the same rules. They are stated here and not repeated.
 
 ## The four aperture modes
 
-The Visual Aperture is the panel headed "Pick a person. Follow the public record." It has four tabs. A URL with no `ap_` parameters opens the first.
+The workspace starts with search and the panel headed "Documented activity". Its four tabs sit directly above the view. A URL with no `ap_` parameters opens Timeline. Search remains available on record pages; opening a record or the connection checker replaces the visualization, and Explore returns to it. Method, Research queue, Estates and Game trails are in More. Dataset build dates and release metadata are under "About this dataset and release".
 
 ### 01 Timeline (arrival)
 
@@ -29,12 +29,12 @@ A ledger timeline: rows on lanes against a date axis.
 - **A mark** is one participation row at its documented date. Fill is evidence class; outline says whether the surface is hop-eligible. A row with an end date is a span; a year or month row is widened to the period it names; an open-ended row runs to the edge of the axis; rows within a few pixels fold into one "+N" object that still counts each row.
 - **A column** is one hop basis: a surface that two or more people share on one day, drawn as segments that touch only the lanes of that surface's participants. The 95 hop bases in the release form 19 such surface-day objects on 18 days.
 - **The roster block** is the Dialog directory, drawn once with its count (rule 3). Its card lists the names also documented elsewhere and says how many appear on no other surface.
-- **Controls:** year chips and All; the Surfaces filter (all, hop-eligible only, context only); the evidence floor; "Mark a window" to dim rows outside a [from, to] window without removing them; Reset. Ctrl (or Cmd) + wheel zooms the axis; a plain wheel scrolls the page. The overview strip under the plot carries the axis handles.
+- **Controls:** Date range offers Recent activity (the responsive default), individual years and Full record (the entire documented range). Filters & tools contains Add a lane, the Surfaces filter (all, hop-eligible only, context only); the evidence floor; "Mark a window" to dim rows outside a [from, to] window without removing them; Reset. Ctrl (or Cmd) + wheel zooms the axis; a plain wheel scrolls the page. The overview strip under the plot carries the axis handles.
 - **Keyboard:** Tab reaches one mark, then the arrow keys, Home and End walk the days and lanes; the lane labels are a second stop.
-- **Cards:** every mark, lane, column, block and fold has an inspector card with its role, window, evidence class, receipt buttons and actions (open the record, add lanes, route from here, open the roster view). The first card, "Every mark is one ledger row.", explains the view.
+- **Cards:** every mark, lane, column, block and fold has an inspector card with its role, window, evidence class, receipt buttons and actions (open the record, add lanes, route from here, open the roster view). The first card, "Select a mark", offers a reading guide and an example. On phones it stays below the chart until a selection opens the detail sheet.
 - **URL keys:** `ap_time_by`, `ap_time_from`, `ap_time_to`, `ap_time_cursor`, `ap_time_lanes`, `ap_time_sel`, `ap_time_evidence`, `ap_time_hop`, written only when they differ from their defaults.
 
-### 02 Explore
+### 02 Network
 
 The research network as a spherical field, rendered with WebGL when the browser has it and as SVG scenes otherwise.
 
@@ -56,8 +56,8 @@ The shortest admitted route between two actors as actor → bounded surface → 
 
 One bounded surface as a roster container, for surfaces with two or more actors.
 
-- **Controls:** the surface; "Find actor or role"; "Active during"; the evidence floor; the bracket budget (6 to 36 actors shown at once, 18 by default); Clear pins.
-- Participants render as fixed-size brackets with their recorded role, dates, evidence class and receipts. Participants beyond the budget are an honest count ("+N eligible actors held by budget"), never omitted silently, and no participant-to-participant line is drawn. Pinned actors stay visible.
+- **Controls:** the surface; "Find actor or role"; "Active during"; the evidence floor; "People shown" (6 to 36 actors shown at once, 18 by default); Clear pins.
+- Participants appear in an aligned grid within one source container. Selecting a person opens their recorded role, dates, evidence class and receipts. A count identifies the additional people available through search or a higher display limit. No participant-to-participant line is drawn, and pinned actors stay visible.
 
 ### Shared by every mode
 
@@ -68,7 +68,7 @@ One bounded surface as a roster container, for surfaces with two or more actors.
 
 ## The connection checker
 
-The second tab of the lower explorer ("Check a connection before it prints") takes two actors and an optional date and answers from `build/hop-graph.json`:
+The main navigation’s "Check a connection" opens a dedicated view. It takes two actors and an optional date and answers from `build/hop-graph.json`:
 
 - the Clifford route (minimum hops) first, always, and labelled canonical;
 - optionally a secondary projection (strongest evidence, best dated, official only), clearly labelled as secondary and shown as an explicit absence when none exists;

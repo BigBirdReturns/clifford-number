@@ -257,7 +257,7 @@ if (!apertureBootstrap.includes("import('./visual-aperture.js")
   || !apertureEntry.includes('visual-aperture-workspace-runtime.js')
   || !apertureEntry.includes('visual-aperture-export-runtime.js')
   || !apertureEntry.includes('visual-aperture-part-${index + 1}.js')
-  || !(aperture.includes('Map the system. Keep the receipt attached.') || aperture.includes('Pick a person. Follow the public record.'))) {
+  || !aperture.includes('<h2 id="network-title">Documented activity</h2>')) {
   console.error('validate-pages failed: integrated visual aperture is not wired into the public runtime');
   process.exit(1);
 }
@@ -399,7 +399,7 @@ if (!standalone.includes('data-portable-release="true"') || !standalone.includes
 }
 if (!explorerStandalone.includes('globalThis.__CLIFFORD_APERTURE_BUNDLED__ = true')
   || !explorerStandalone.includes('clifford-public-data-boundary@1')
-  || !(explorerStandalone.includes('Map the system. Keep the receipt attached.') || explorerStandalone.includes('Pick a person. Follow the public record.'))
+  || !explorerStandalone.includes('<h2 id="network-title">Documented activity</h2>')
   || !explorerStandalone.includes("APERTURE_STATE_VERSION = '1'")
   || !explorerStandalone.includes("APERTURE_WORKSPACE_VERSION = '1'")
   || !explorerStandalone.includes("APERTURE_EXPORT_SCHEMA_VERSION = 'clifford-aperture-export@1'")

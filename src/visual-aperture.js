@@ -12,7 +12,7 @@ globalThis.loadCliffordSocialField = async () => {
   return { ...renderer, buildResearchNetworkModel: social.buildResearchNetworkModel, buildEcologyEventModel: social.buildEcologyEventModel, ecologyEventsForNode: social.ecologyEventsForNode, activeEcologyEvents: social.activeEcologyEvents, ecologyPlayheadLabel: social.ecologyPlayheadLabel };
 };
 
-const RUNTIME_VERSION = '20261022-explorer1';
+const RUNTIME_VERSION = '20261022-workspace1';
 const runtimeUrls = [
   `./visual-aperture-workspace-runtime.js?v=${RUNTIME_VERSION}`,
   `./visual-aperture-export-runtime.js?v=${RUNTIME_VERSION}`,
