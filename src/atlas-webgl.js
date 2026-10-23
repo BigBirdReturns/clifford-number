@@ -259,6 +259,8 @@ export async function createWebGlAtlasRenderer({ host, onNodeSelect, onLinkSelec
   let ecologyModel = null;
   let animationRunning = true;
   const ecologyPulses = [];
+  let labelLayer = null;
+  const labelButtons = new Map();
   const graph = new ForceGraph3D(host, {
     controlType: 'orbit',
     rendererConfig: { antialias: true, alpha: true, powerPreference: 'high-performance' }
@@ -298,6 +300,52 @@ export async function createWebGlAtlasRenderer({ host, onNodeSelect, onLinkSelec
   ecologyLayer.userData.cliffordEcology = true;
   graph.scene().add(shell);
   graph.scene().add(ecologyLayer);
+
+  // A few screen-space names make the web readable before hover. They are
+  // labels for existing nodes, never new edges or a score. Suppress overlaps.
+  function updateLabels() {
+    if (!field || !labelLayer) return;
+    const width = host.clientWidth, height = host.clientHeight;
+    const camera = graph.camera();
+    camera.updateMatrixWorld();
+    const focus = selectedId ? socialFieldNeighbors(field, selectedId) : null;
+    const candidates = field.nodes.filter(node => node.id === selectedId ||
+      (node.size_count > 0 && (!focus || focus.has(node.id))))
+      .sort((a, b) => Number(b.id === selectedId) - Number(a.id === selectedId) || b.size_count - a.size_count || a.label.localeCompare(b.label));
+    const boxes = [];
+    const visibleIds = new Set();
+    for (const node of candidates) {
+      const point = new THREE.Vector3(node.x, node.y, node.z).project(camera);
+      if (point.z < -1 || point.z > 1) continue;
+      const x = (point.x + 1) * width / 2 + 9, y = (1 - point.y) * height / 2 - 10;
+      const labelWidth = Math.min(176, 14 + node.label.length * 6.3);
+      if (x < 8 || x + labelWidth > width - 8 || y < 8 || y > height - 30) continue;
+      const box = { x, y, right: x + labelWidth, bottom: y + 24 };
+      if (boxes.some(b => box.x < b.right + 12 && box.right + 12 > b.x && box.y < b.bottom + 8 && box.bottom + 8 > b.y)) continue;
+      boxes.push(box);
+      let button = labelButtons.get(node.id);
+      if (!button) {
+        button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'network-node-label';
+        button.textContent = node.label;
+        button.title = node.label;
+        button.dataset.networkNode = node.id;
+        button.addEventListener('click', () => selectNode(node));
+        labelButtons.set(node.id, button);
+        labelLayer.append(button);
+      }
+      button.style.left = `${x}px`; button.style.top = `${y}px`;
+      visibleIds.add(node.id);
+      if (boxes.length >= 7) break;
+    }
+    for (const [id, button] of labelButtons) button.hidden = !visibleIds.has(id);
+  }
+
+  labelLayer = document.createElement('div');
+  labelLayer.className = 'network-node-labels';
+  labelLayer.setAttribute('aria-label', 'Named network nodes');
+  host.append(labelLayer);
 
   function semanticNodeFactor(id) {
     const focus = semanticView.focusIds;
@@ -428,12 +476,12 @@ export async function createWebGlAtlasRenderer({ host, onNodeSelect, onLinkSelec
   }
   function distanceForScale(value) {
     const scale = Math.max(1, Math.min(5.4, Number(value) || 1));
-    const far = SOCIAL_FIELD_RADIUS * 3.55, near = SOCIAL_FIELD_RADIUS * 1.24;
+    const far = SOCIAL_FIELD_RADIUS * 3.05, near = SOCIAL_FIELD_RADIUS * 1.24;
     const t = (scale - 1) / 4.4;
     return far + (near - far) * t;
   }
   function scaleForDistance(distance) {
-    const far = SOCIAL_FIELD_RADIUS * 3.55, near = SOCIAL_FIELD_RADIUS * 1.24;
+    const far = SOCIAL_FIELD_RADIUS * 3.05, near = SOCIAL_FIELD_RADIUS * 1.24;
     const t = Math.max(0, Math.min(1, (far - distance) / Math.max(1, far - near)));
     return 1 + t * 4.4;
   }
@@ -464,14 +512,16 @@ export async function createWebGlAtlasRenderer({ host, onNodeSelect, onLinkSelec
     host.style.cursor = node ? 'pointer' : 'grab';
     applyHighlight(node?.id || selectedId);
   });
-  graph.onNodeClick(node => {
+  function selectNode(node) {
     selectedId = node.id;
     selectedLinkId = null;
     applyHighlight(selectedId);
     focus(selectedId);
     onInteraction?.('select');
     onNodeSelect?.(selectedId);
-  });
+    updateLabels();
+  }
+  graph.onNodeClick(selectNode);
   // A click on an arc hands the whole field link (graph edge fields plus its
   // ledger rows) to the runtime, which opens the participation row or the claim.
   graph.onLinkClick(link => {
@@ -485,8 +535,14 @@ export async function createWebGlAtlasRenderer({ host, onNodeSelect, onLinkSelec
   // graphData(), which cannot happen while the stage is off-screen and paused.
   // The engine stops on that same tick (cooldownTicks 0), so this is the first
   // moment every arc factor can actually be written.
-  graph.onEngineStop(() => applyHighlight(selectedId));
+  graph.onEngineStop(() => {
+    applyHighlight(selectedId);
+    host.dataset.networkNodes = String(field?.nodes.filter(node => node.__threeObj).length ?? 0);
+    host.dataset.networkLinks = String(field?.links.filter(link => link.__lineObj).length ?? 0);
+    updateLabels();
+  });
   controls.addEventListener('change', () => {
+    updateLabels();
     const distance = cameraDistance();
     const distanceChanged = lastCameraDistance == null || Math.abs(distance - lastCameraDistance) > .35;
     lastCameraDistance = distance;
@@ -498,6 +554,7 @@ export async function createWebGlAtlasRenderer({ host, onNodeSelect, onLinkSelec
     const width = Math.max(320, Math.floor(host.clientWidth || 900));
     const height = Math.max(420, Math.floor(host.clientHeight || 650));
     graph.width(width).height(height);
+    updateLabels();
   }
   const resizeObserver = new ResizeObserver(resize);
   resizeObserver.observe(host);
@@ -515,9 +572,9 @@ export async function createWebGlAtlasRenderer({ host, onNodeSelect, onLinkSelec
       lastMode = model.mode;
       const duration = initialPlacement || reducedMotion ? 0 : 520;
       programmaticCameraUntil = performance.now() + duration + 80;
-      lastCameraDistance = field.radius * 3.55;
+      lastCameraDistance = field.radius * 3.05;
       graph.cameraPosition(
-        { x: 0, y: 0, z: field.radius * 3.55 },
+        { x: 0, y: 0, z: field.radius * 3.05 },
         { x: 0, y: 0, z: 0 },
         duration
       );
@@ -535,6 +592,7 @@ export async function createWebGlAtlasRenderer({ host, onNodeSelect, onLinkSelec
       fade: Number.isFinite(view.fade) ? Math.max(.012, Math.min(1, view.fade)) : (view.level === 'corpus' ? .2 : view.level === 'machine' ? .065 : .025)
     };
     applyHighlight(selectedId);
+    updateLabels();
     updateEcologyPulses();
   }
   function home(scale = 1, duration = reducedMotion ? 0 : 420) {
@@ -548,6 +606,7 @@ export async function createWebGlAtlasRenderer({ host, onNodeSelect, onLinkSelec
     selectedId = nodeId && field?.nodeById.has(nodeId) ? nodeId : null;
     if (nodeId) selectedLinkId = null;
     applyHighlight(selectedId);
+    updateLabels();
   }
   function selectLink(linkId) {
     selectedLinkId = linkId && field?.linkById.has(linkId) ? linkId : null;
@@ -560,7 +619,7 @@ export async function createWebGlAtlasRenderer({ host, onNodeSelect, onLinkSelec
 
   function zoom(action) {
     if (action === 'reset') {
-      graph.cameraPosition({ x: 0, y: 0, z: SOCIAL_FIELD_RADIUS * 3.55 }, { x: 0, y: 0, z: 0 }, reducedMotion ? 0 : 420);
+      graph.cameraPosition({ x: 0, y: 0, z: SOCIAL_FIELD_RADIUS * 3.05 }, { x: 0, y: 0, z: 0 }, reducedMotion ? 0 : 420);
       return;
     }
     const camera = graph.cameraPosition();

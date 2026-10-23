@@ -5,6 +5,8 @@ assert.deepEqual(VIEWPORTS.map(({ width, height }) => `${width},${height}`), ['1
 assert.deepEqual(ROUTE_CASES.map(({ route }) => route), [
   'explorer.html',
   'explorer.html',
+  'explorer.html?ap_v=1&ap_mode=timeline',
+  'explorer.html?ap_v=1&ap_mode=timeline',
   'explorer.html?ap_v=1&ap_mode=timeline&ap_time_lanes=ben-warner,marc-warner,saul-klein&ap_time_from=2018-01-01&ap_time_to=2018-12-31&ap_time_sel=faculty-science-officer-employee-overlap-2018-01-24::actor::ben-warner',
   'explorer.html?ap_v=1&ap_mode=surface',
   'explorer.html#desk/keir-starmer/matt-clifford/2025',
@@ -70,7 +72,7 @@ assert.match(smokeSource, /querySelectorAll\('#aperture-timeline \[data-ap-time-
 assert.match(smokeSource, /if \(metrics\.label_overlaps\.length\) throw new Error/, 'any chrome-over-label intersection fails the timeline case');
 assert.match(smokeSource, /\[data-ap-mode="timeline"\]\.is-active/);
 assert.match(smokeSource, /delay_json_ms/);
-assert.match(smokeSource, /const response = await route\.fetch\(\);[\s\S]*?setTimeout\(resolve, delayJsonMs\)[\s\S]*?route\.fulfill\(\{ response \}\)/, 'delayed JSON is the real body served late, not a stub');
+assert.match(smokeSource, /const response = await route\.fetch\(\);[\s\S]*?setTimeout\(resolve, delayJsonMs \|\| network\.delay_field_ms\)[\s\S]*?route\.fulfill\(\{ response \}\)/, 'delayed JSON is the real body served late, not a stub');
 assert.match(smokeSource, /configureContext\(browser, baseOrigin, viewport, options\.timeoutMs, externalRequests, routeCase\.network\)/, 'each case carries its own network shaping');
 const part11Source = fs.readFileSync('src/visual-aperture-part-11.js', 'utf8');
 assert.match(part11Source, /await waitForPublicApp\(\);\s*\n\s*const \[surfaceGraph, hopGraph, receiptGraph, legacyGraph\] = await Promise\.all\(\[\s*\n\s*readData\('build\/surface-graph\.json'\)/, 'the mount waits for the app.js handoff before it reads any artifact');

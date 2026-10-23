@@ -1,11 +1,10 @@
 const APERTURE_FIELD_LEGEND = `
-  <span><i class="aperture-key aperture-key--actor"></i> actor (sphere)</span>
-  <span><i class="aperture-key"></i> organization (box)</span>
-  <span><i class="aperture-key aperture-key--surface"></i> bounded surface (octahedron)</span>
-  <span><i class="aperture-key aperture-key--selection"></i> size and halo = documented surfaces for that object (a count; participants for a surface)</span>
-  <span><i class="aperture-key aperture-key--corridor"></i> arc colour = evidence class (official amber, primary public blue, reported violet, research context grey)</span>
-  <span><i class="aperture-key aperture-key--activity"></i> pulse = participation row inside the time window</span>
-  <span>faded = no documented row inside the window; undated research context is never faded</span>`;
+  <span><i class="aperture-key aperture-key--actor"></i> People</span>
+  <span><i class="aperture-key"></i> Organizations</span>
+  <span><i class="aperture-key aperture-key--surface"></i> Named surfaces</span>
+  <span>Size = documented surfaces (participants for a surface)</span>
+  <span>Lines: official · primary public · reported · context</span>
+  <span>Time filter: dated rows outside the window fade; undated context stays visible.</span>`;
 const APERTURE_FIELD_PLAY_SPAN_DAYS = 365;
 const APERTURE_FIELD_ROW_LIMIT = 10;
 const APERTURE_FIELD_HOST_LABEL = 'Spherical social field. Node size and halo show the documented surface count for each object; arcs are sourced graph edges coloured by evidence class.';
@@ -432,10 +431,9 @@ function fieldFactGrid(node, summary) {
   return `<div class="aperture-metric-grid">
     <div><strong>${count}</strong><span>${countNoun}${count === 1 ? '' : 's'}</span></div>
     <div><strong>${summary.rows.length}</strong><span>participation row${summary.rows.length === 1 ? '' : 's'}</span></div>
-    <div><strong>${esc(first)}</strong><span>first documented day</span></div>
-    <div><strong>${esc(last)}</strong><span>${summary.open_ended ? 'latest documented day · no end recorded' : 'last documented day'}</span></div>
   </div>
-  <p class="aperture-muted">${summary.receipt_ids.length} distinct receipt${summary.receipt_ids.length === 1 ? '' : 's'} across these rows. Node size and halo show the documented ${isSurface ? 'participant' : 'surface'} count: a count, not a score. It creates no actor-to-actor edge, hop, or causal claim.</p>`;
+  <p class="network-date-span">${esc(first)} → ${esc(last)}${summary.open_ended ? ' · no end recorded' : ''}<br>${summary.receipt_ids.length} sources across these records</p>
+  <details class="aperture-reading-help"><summary>How this is counted</summary><p>Node size and halo show the documented ${isSurface ? 'participant' : 'surface'} count: a count, not a score. It creates no actor-to-actor edge, hop, or causal claim.</p></details>`;
 }
 // An arc is one of two documented objects, read in place without changing the
 // map scope or the address. A canonical overlay (topology) arc carries its
@@ -554,12 +552,13 @@ function inspectApertureFieldNode(id, { select = true } = {}) {
   }
   const api = state.webgl?.eventApi;
   const summary = api?.nodeLedgerSummary && state.webgl?.ledger ? api.nodeLedgerSummary(state.webgl.ledger, id, ecologyWindow()) : null;
-  const description = actor?.description || node.description || 'Public topology object in the Research projection.';
+  const description = node.description || actor?.description || 'Public object in the research network.';
   const kicker = node.ontology === 'person' ? 'Public actor' : node.ontology === 'organization' ? 'Public organization' : 'Selected public object';
   const actions = actor ? `<div class="aperture-actions">
     <button type="button" data-ap-action="open-record" data-actor-id="${esc(id)}">Open public record</button>
     ${routeActorIds().includes(id) ? `<button type="button" data-ap-action="route-from-selection" data-actor-id="${esc(id)}">Find route from here</button>` : ''}
   </div>` : '';
+  setTelemetry(['Network', node.label], [{ value: summary?.surface_count ?? 0, label: 'documented surfaces' }, { value: summary?.receipt_ids?.length ?? 0, label: 'sources' }]);
   setInspector(node.label, `<p class="aperture-kicker">${kicker}</p><h3>${esc(node.label)}</h3>
     <p>${esc(description)}</p>
     ${fieldFactGrid(node, summary)}${fieldRowsMarkup(id)}${actions}`, { openOnMobile: true });
@@ -567,9 +566,14 @@ function inspectApertureFieldNode(id, { select = true } = {}) {
 }
 async function renderApertureSocialField() {
   if (!state.root || state.mode !== 'map' || state.webgl?.failed) return;
+  // Resize and initial routing can request the field while its vendor is still
+  // loading. A second renderer replaces the canvas but inherits rendered=true,
+  // leaving only an empty shell. Finish one initialization before another draw.
+  if (state.webgl.loading) return;
   if (typeof globalThis.loadCliffordSocialField !== 'function') return;
   const host = $('#aperture-webgl', state.root);
   if (!host) return;
+  state.webgl.loading = true;
   try {
     if (!state.webgl) state.webgl = { renderer: null, model: null, failed: false, rendered: false };
     if (!state.webgl.renderer) {
@@ -621,9 +625,16 @@ async function renderApertureSocialField() {
       state.webgl.renderer.setScale(state.map.scale, { duration: 0 });
     }
     state.webgl.lastFocusKey = focusKey;
+    if (state.map.level === 'corpus' && !state.map.hasExplicitFocus) {
+      setTelemetry(['Network', 'Whole network'], [{ value: state.webgl.model.nodes.length, label: 'objects' }, { value: state.webgl.model.edges.length, label: 'connections' }]);
+    } else if (state.map.level === 'machine' && state.map.selectedFieldNodeId) {
+      inspectApertureFieldNode(state.map.selectedFieldNodeId, { select: false });
+    }
   } catch (error) {
     state.webgl.failed = true;
     setApertureFieldActive(false);
     console.warn('GPU social field unavailable; retaining semantic SVG map.', error);
+  } finally {
+    state.webgl.loading = false;
   }
 }

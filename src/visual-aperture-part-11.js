@@ -122,6 +122,7 @@ function applyApertureSnapshot(snapshot) {
 
 function reflectApertureMode() {
   state.root.dataset.apertureMode = state.mode;
+  $('#network-title', state.root).textContent = { map: 'Network explorer', timeline: 'Activity over time', route: 'Trace a connection', surface: 'Explore a roster' }[state.mode];
   for (const button of $$('[data-ap-mode]', state.root)) {
     const active = button.dataset.apMode === state.mode;
     button.classList.toggle('is-active', active);

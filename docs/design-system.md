@@ -9,14 +9,14 @@
 > should not be used to overwrite the shipped type, shape, or evidence hierarchy
 > without a reviewed design change.
 >
-> **Fonts, corrected 2026-10-22.** An earlier version of this note said the
-> shipped interface used Lora and Barlow Condensed. It does not. The explorer
-> (the `--font-serif`, `--font-condensed` and `--font-mono` custom properties at the top of `styles.css`, and the Google Fonts link in `explorer.html`)
-> uses **Bitter** (`--font-serif`), **Atkinson Hyperlegible** (`--font-condensed`)
-> and **IBM Plex Mono** (`--font-mono`); the aperture stylesheets under `src/`
-> use the same three tokens. The homepage (`home.css`) uses **Inter** with system
-> fallbacks (`--sans`) and IBM Plex Mono (`--mono`) and loads no web font. The
-> Inter recommendation under Typography below applies to the homepage only.
+> **Current interface, 23 October 2026.** The owner selected quiet, neutral
+> controls around a dark network canvas. Network is the explorer's default;
+> Timeline remains an alternate view. The current interface uses Arial with
+> Helvetica and system sans-serif fallbacks, regular-weight headings and
+> restrained selection indicators. Evidence colors belong to evidence and
+> graph objects, not decorative highlights. The network is always dark while
+> surrounding panels respect the chosen light or dark theme. The palette and
+> typography tables below describe the original proposal, not the current UI.
 
 A professional, accessible design system aligned with AXM house style standards for the clifford-number topology project.
 

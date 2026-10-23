@@ -1,6 +1,6 @@
 # The explorer
 
-Status: current (2026-10-22, release line 2.1.0). This page explains what a reader sees on [`explorer.html`](../explorer.html) and how to read it. The rules of the evidence model are in [`methodology.md`](methodology.md); the vocabulary is in [`definitions.md`](definitions.md); what each release changed is in [`releases/`](releases/2.1.0.md).
+Status: current (2026-10-23, release line 2.1.0). This page explains what a reader sees on [`explorer.html`](../explorer.html) and how to read it. The rules of the evidence model are in [`methodology.md`](methodology.md); the vocabulary is in [`definitions.md`](definitions.md); what each release changed is in [`releases/`](releases/2.1.0.md).
 
 The explorer is a static page over compiled artifacts. The aperture reads four: `build/surface-graph.json` (actors, organizations, bounded surfaces and their participation rows), `build/hop-graph.json` (the admitted hop bases and shortest routes), `build/receipt-graph.json` (the receipts) and `graph.json` (the older research-network context). `app.js` loads three more for the rest of the page: `build/scores.json` (the entity pages' numbers), `build/public-catalog.json` (the case, track, claim and receipt catalogue) and `build/public-data-boundary.json` (the data-boundary notice). Everything on the page is derived from those seven files in the browser. Nothing on the page is a fact that is not in them, and the page never writes anything back.
 
@@ -10,7 +10,7 @@ Every view below obeys the same rules. They are stated here and not repeated.
 
 1. **Every mark is one ledger row.** A dot, bar or node stands for one participation row or one surface row, never for a score or a summary of rows.
 2. **A hop is a surface, never a line between two people.** Where two people share a bounded surface on a documented day, the display shows the surface (a column, a diamond, a step card). No view draws a person-to-person line, and shared context never becomes an arc between two people.
-3. **A dense roster is one object.** The Dialog public directory (112 listed names) is drawn as one block or one roster container with its count, and no line joins any two of its names. A name documented on no other surface (110 of the 112) gets no mark anywhere. A name that is also documented elsewhere (2 today: Matt Clifford and Dan Driscoll) keeps its own lane, and its Dialog row is drawn as one mark on that lane and counted once; the block's card names them.
+3. **A dense roster is one object.** The Dialog public directory (112 listed names) is drawn as one block or one roster container with its count, and no line joins any two of its names. In Timeline, a name documented on no other surface (110 of the 112) gets no separate mark. A name that is also documented elsewhere (2 today: Matt Clifford and Dan Driscoll) keeps its own lane, and its Dialog row is drawn as one mark on that lane and counted once; the block's card names them.
 4. **Undated rows are never time-sliced.** A row with no documented date is listed, never placed on an axis, and never dimmed or counted as inside or outside a time window.
 5. **Evidence class and receipts stay attached.** Every mark, column, step and row carries its evidence class (official, primary public, reported) and opens its receipts.
 6. **No composite score drives a channel.** Size, colour and prominence come from documented counts and evidence classes. There is no heat, factory or machine score behind any visual.
@@ -19,9 +19,9 @@ Every view below obeys the same rules. They are stated here and not repeated.
 
 ## The four aperture modes
 
-The workspace starts with search and the panel headed "Documented activity". Its four tabs sit directly above the view. A URL with no `ap_` parameters opens Timeline. Search remains available on record pages; opening a record or the connection checker replaces the visualization, and Explore returns to it. Method, Research queue, Estates and Game trails are in More. Dataset build dates and release metadata are under "About this dataset and release".
+The workspace starts with the network web. Its four tabs sit directly above the view. A URL with no `ap_` parameters opens Network; existing links to Timeline still open their saved date range. Find in network focuses a node; the separate page search opens a full record. Search remains available on record pages; opening a record or the connection checker replaces the visualization, and Explore returns to it. Method, Research queue, Estates and Game trails are in More. Dataset build dates and release metadata are under "About this dataset and release".
 
-### 01 Timeline (arrival)
+### Timeline
 
 A ledger timeline: rows on lanes against a date axis.
 
@@ -34,15 +34,15 @@ A ledger timeline: rows on lanes against a date axis.
 - **Cards:** every mark, lane, column, block and fold has an inspector card with its role, window, evidence class, receipt buttons and actions (open the record, add lanes, route from here, open the roster view). The first card, "Select a mark", offers a reading guide and an example. On phones it stays below the chart until a selection opens the detail sheet.
 - **URL keys:** `ap_time_by`, `ap_time_from`, `ap_time_to`, `ap_time_cursor`, `ap_time_lanes`, `ap_time_sel`, `ap_time_evidence`, `ap_time_hop`, written only when they differ from their defaults.
 
-### 02 Network
+### Network (arrival)
 
-The research network as a spherical field, rendered with WebGL when the browser has it and as SVG scenes otherwise.
+The default view is the research network as a spherical web on a dark canvas, with neutral surrounding controls. Named labels identify a small set of existing nodes without overlapping; selecting a name or a node focuses its neighborhood and opens its source records. It uses WebGL when available and SVG scenes otherwise. Initialization is shared across concurrent requests so a second empty renderer cannot replace the populated canvas.
 
 - **Nodes** are actors, organizations and surfaces. Size and halo are the documented surface count for that object (participants, for a surface), as the legend says. **Arcs** are the sourced edges of `graph.json`, one for one, coloured by evidence class; the canonical overlay arcs run from a participant to a surface.
-- **Controls:** "Start with a person or organization" (a name search); **Depth**, a slider whose stops are Whole network, Neighborhood, Bounded surface and Evidence; **Evidence time**, a [from, to] window with two handles and an "All time" button. Out-of-window arcs and pulses dim and are never removed; the header reads "N of M rows in window". Play advances the window over 52 seconds; it is off by default and never starts under a reduced-motion preference.
+- **Controls:** Find in network, zoom and Reset view are always visible. **Options** contains **Depth**, a slider whose stops are Whole network, Neighborhood, Bounded surface and Evidence; **Evidence time**, a [from, to] window with two handles and an "All time" button. Out-of-window arcs and pulses dim and are never removed; the header reads "N of M rows in window". Play advances the window over 52 seconds; it is off by default and never starts under a reduced-motion preference.
 - **Selecting an arc** opens what it is: a participation row (surface, role, window, evidence class, receipts, "Open public record") for an overlay arc, or the claim with its receipts for a research arc.
 - **The inspector** lists every ledger row of the selected object, oldest first. A row the field cannot draw is still listed and says why: "not drawn on the field (privacy guard)" or "drawn as one contained roster object, not as an arc".
-- The field pauses when the stage is off-screen or the tab is hidden. "Jump to a bounded surface" picks a surface family and surface directly.
+- The field pauses when the stage is off-screen or the tab is hidden. Options includes selectors for a surface family and named surface.
 
 ### 03 Route
 

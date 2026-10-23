@@ -3,6 +3,7 @@ function handleAction(button) {
   if (handleExportAction(button)) return;
   if (handleWorkspaceAction(button)) return;
   const action = button.dataset.apAction;
+  if (action === 'network-start') { openMapSearch(button.dataset.nodeId); return; }
   if (action === 'sheet-toggle') {
     state.sheetOpen = !state.sheetOpen;
     syncInspectorSheet();

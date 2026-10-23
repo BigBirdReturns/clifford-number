@@ -8,11 +8,11 @@ import * as timelineModel from './visual-aperture-timeline.mjs';
 Object.assign(globalThis, core, addressState, workspaceModel, exportModel, windowingModel, timelineModel);
 
 globalThis.loadCliffordSocialField = async () => {
-  const [renderer, social] = await Promise.all([import('./atlas-webgl.js'), import('./social-field.js')]);
+  const [renderer, social] = await Promise.all([import('./atlas-webgl.js?v=20261023-network1'), import('./social-field.js')]);
   return { ...renderer, buildResearchNetworkModel: social.buildResearchNetworkModel, buildEcologyEventModel: social.buildEcologyEventModel, ecologyEventsForNode: social.ecologyEventsForNode, activeEcologyEvents: social.activeEcologyEvents, ecologyPlayheadLabel: social.ecologyPlayheadLabel };
 };
 
-const RUNTIME_VERSION = '20261022-workspace1';
+const RUNTIME_VERSION = '20261023-network1';
 const runtimeUrls = [
   `./visual-aperture-workspace-runtime.js?v=${RUNTIME_VERSION}`,
   `./visual-aperture-export-runtime.js?v=${RUNTIME_VERSION}`,
