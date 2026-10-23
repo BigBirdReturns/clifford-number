@@ -45,7 +45,7 @@ assert.equal(rowPrecision('2025-06-13', '2025-06-13'), 'day');
 assert.doesNotMatch(source, /\b(?:document|window|globalThis|navigator|localStorage)\.[A-Za-z_$]|\bfetch\s*\(|\bimport\s*\(/, 'no DOM, no fetch, no dynamic import');
 assert.equal((source.match(/^import\s/gm) ?? []).length, 1, 'exactly one import statement, on one line, for the flattener');
 assert.doesNotMatch(source, /\.temporal_envelope/, 'hop columns come from bases, never from the edge envelope');
-assert.doesNotMatch(source, /machine_score|factory_score|deniability|laundry_score|recurrence_score|heat/);
+assert.doesNotMatch(source, /machine_score|factory_score|deniability|laundry_score|recurrence_score|Structural context index|Factory Score/);
 assert.doesNotMatch(source, /data-ap-time-pair/);
 
 // --- real-data model (SPEC j, fix d)

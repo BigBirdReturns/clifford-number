@@ -371,6 +371,27 @@ if (!app.includes("from './src/visual-aperture-timeline.mjs'")
   console.error('validate-pages failed: the explorer record pages do not read the ledger timeline model, or a score survives on them');
   process.exit(1);
 }
+// The network field may carry one accumulation, heat, and only as printed:
+// the runtime shows the formula beside the field, the field module computes
+// that exact sum from ledger rows, and no hidden composite (machine, factory
+// or recurrence score, deniability, laundry score, the 1.3.0 "Structural
+// context index" or "Factory Score") reaches any field source. The word heat
+// is allowed; an unprinted heat is not.
+const HEAT_FORMULA_TEXT = 'heat = Σ touches weight(class) × 0.8^years; policy 1 · appointment 1 · procurement 2 · capital 2';
+const fieldSources = ['social-field.js', 'atlas-webgl.js', 'visual-aperture-social-field-runtime.js']
+  .map(file => [file, fs.readFileSync(path.join(destination, 'src', file), 'utf8')]);
+const fieldSource = Object.fromEntries(fieldSources);
+const HIDDEN_COMPOSITE = /machine_score|factory_score|recurrence_score|deniability|laundry_score|Structural context index|Factory Score/;
+const compositeHits = fieldSources.filter(([, text]) => HIDDEN_COMPOSITE.test(text)).map(([file]) => file);
+if (!fieldSource['visual-aperture-social-field-runtime.js'].includes(HEAT_FORMULA_TEXT)
+  || !fieldSource['social-field.js'].includes(`HEAT_FORMULA = '${HEAT_FORMULA_TEXT}'`)
+  || !fieldSource['social-field.js'].includes('export function heat(rows, at)')
+  || !fieldSource['atlas-webgl.js'].includes('applyFieldHeat')
+  || compositeHits.length
+  || HIDDEN_COMPOSITE.test(apertureTimelineRuntime) || HIDDEN_COMPOSITE.test(apertureTimelineModel)) {
+  console.error(`validate-pages failed: the field heat is not printed and ledger-derived, or a hidden composite survives${compositeHits.length ? ` (${compositeHits.join(', ')})` : ''}`);
+  process.exit(1);
+}
 if (atlasProjection.scheme?.schema_version !== 'atlas-projection@1'
   || !String(atlasProjection.scheme?.disposability_notice ?? '').includes('never canonical truth')
   || !Array.isArray(atlasProjection.regions) || !Array.isArray(atlasProjection.machines)) {

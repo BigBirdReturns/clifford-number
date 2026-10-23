@@ -25,7 +25,7 @@ profile is shown as unfinished, never papered over.
   "kind": "person",
   "plain": {
     "who": "One sentence of who this is, written by a human, receipt-supported.",
-    "why_here": "One sentence on why they appear in this case.",
+    "why_here": "One or two sentences on what this person's documented record shows, in date order.",
     "receipt_ids": ["uk-covid-inquiry-ben-warner-decision-forward-planning-2020-03-13-16", "gov-sage-89-ben-warner-no10-2021-05-13"]
   }
 }
@@ -33,6 +33,13 @@ profile is shown as unfinished, never papered over.
 
 Discipline: if the `who` sentence cannot be written from receipts already in
 the ledger, the actor probably is not ready to be canonical.
+
+`why_here` states what the record shows, in order, with real names and no
+hedging clause. It uses only facts already in that actor's `who`, their
+participation rows, and the surface labels. Owner direction, 2026-10-23:
+"Take the blinders off. The incentives do all the work and nobody is
+steering. The data has filled up and the gut instinct is undeniable. Show
+capital, conviction and attention flow, with real names, with receipts."
 
 The narration test resolves every `plain.receipt_ids` entry and walks the
 compiled hop graph from its declared anchor. The anchor and every actor at
@@ -63,6 +70,7 @@ Every hop sentence carries inline flags so legibility never costs honesty:
 
 ## Not in scope
 
-No adjectives, no motive language, no inferred relationships. The closing
-disclaimer is emitted on every narration: shared surface means documented
-co-presence, nothing more.
+No adjectives and no motive language. Each narration ends with a single
+method note; pages carry one method statement each rather than repeating it
+on every card: every mark is a documented public record with a receipt, and
+the reader draws the conclusion.

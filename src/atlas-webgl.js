@@ -1,5 +1,5 @@
 import * as THREE from '../vendor/three-0.186.0.module.js';
-import { buildSocialFieldModel, eventInWindow, nodeCountLabel, normalizeEcologyWindow, SOCIAL_FIELD_RADIUS, socialFieldNeighbors, isSurfaceNode } from './social-field.js';
+import { applyFieldHeat, buildSocialFieldModel, eventInWindow, heatTimeForWindow, nodeCountLabel, nodeHeatLabel, normalizeEcologyWindow, SOCIAL_FIELD_RADIUS, socialFieldNeighbors, isSurfaceNode } from './social-field.js';
 // The field runtime reads the whole social-field model API (ledger index,
 // window helpers, day formatting) through the renderer module, so the loader
 // in visual-aperture.js needs no edit when this API grows. The two modules
@@ -97,9 +97,11 @@ function makeCoreGeometry(node, size) {
   return new THREE.BoxGeometry(size * 1.65, size * 1.65, size * 1.65);
 }
 
-// Node size and halo derive from one documented count (size_count: the number
-// of surfaces a person or organization is documented on, or the number of
-// documented participants for a surface). The legend names this count.
+// Node size and halo. With a ledger they come from the node's printed
+// accumulation (heat_value: heat for a surface, residue for a person or an
+// organization; social-field.js HEAT_FORMULA). Without a ledger they fall back
+// to the one documented count (size_count) the tooltip names. No degree or
+// other hidden composite enters either.
 export function nodeSizeForCount(count) {
   return 2.3 + Math.log2(1 + Math.max(0, Number(count) || 0)) * 1.15;
 }
@@ -107,39 +109,69 @@ export function haloSizeForCount(count) {
   const safe = Math.max(0, Number(count) || 0);
   return safe > 0 ? 10 + Math.log2(1 + safe) * 8 : 0;
 }
+export function nodeSizeForHeat(value) {
+  return 2.3 + Math.log2(1 + Math.max(0, Number(value) || 0)) * 1.6;
+}
+export function haloSizeForHeat(value) {
+  const safe = Math.max(0, Number(value) || 0);
+  return safe > 0.01 ? 9 + Math.log2(1 + safe) * 11 : 0;
+}
+function haloOpacityForHeat(value) {
+  const safe = Math.max(0, Number(value) || 0);
+  return safe > 0.01 ? Math.min(.55, .12 + Math.log2(1 + safe) * .09) : 0;
+}
+function nodeChannelValues(node) {
+  if (node.heat) {
+    return { core: nodeSizeForHeat(node.heat_value), halo: haloSizeForHeat(node.heat_value), haloOpacity: haloOpacityForHeat(node.heat_value) };
+  }
+  const count = node.size_count ?? 0;
+  return { core: nodeSizeForCount(count), halo: haloSizeForCount(count), haloOpacity: count > 0 ? Math.min(.4, .1 + Math.log2(1 + count) * .07) : 0 };
+}
 
+// Geometry is built at unit size; the accumulation channels are written as
+// child scales and colours, so moving t (the window end) restyles the node in
+// place without rebuilding it.
 function makeNodeObject(node) {
   const group = new THREE.Group();
-  const count = node.size_count ?? 0;
-  const size = nodeSizeForCount(count);
   const coreMaterial = new THREE.MeshLambertMaterial({
     color: new THREE.Color(node.color || '#b8c0cf'),
     transparent: true,
-    opacity: .84
+    opacity: .86
   });
   coreMaterial.userData.baseOpacity = coreMaterial.opacity;
-  const core = new THREE.Mesh(makeCoreGeometry(node, size), coreMaterial);
+  const core = new THREE.Mesh(makeCoreGeometry(node, 1), coreMaterial);
   core.userData.role = 'core';
   group.add(core);
-
-  const haloSize = haloSizeForCount(count);
-  if (haloSize > 0) {
-    const haloMaterial = new THREE.SpriteMaterial({
-      map: radialHaloTexture(),
-      color: new THREE.Color(node.color || '#b8c0cf'),
-      transparent: true,
-      opacity: Math.min(.4, .1 + Math.log2(1 + count) * .07),
-      depthWrite: false,
-      blending: THREE.AdditiveBlending
-    });
-    haloMaterial.userData.baseOpacity = haloMaterial.opacity;
-    const halo = new THREE.Sprite(haloMaterial);
-    halo.scale.set(haloSize, haloSize, 1);
-    halo.userData.role = 'count-halo';
-    group.add(halo);
-  }
+  const haloMaterial = new THREE.SpriteMaterial({
+    map: radialHaloTexture(),
+    color: new THREE.Color(node.color || '#b8c0cf'),
+    transparent: true,
+    opacity: 0,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending
+  });
+  haloMaterial.userData.baseOpacity = 0;
+  const halo = new THREE.Sprite(haloMaterial);
+  halo.userData.role = 'heat-halo';
+  group.add(halo);
   group.userData.nodeId = node.id;
+  styleNodeObject(group, node);
   return group;
+}
+function styleNodeObject(group, node) {
+  if (!group) return;
+  const values = nodeChannelValues(node);
+  for (const child of group.children) {
+    if (child.userData.role === 'core') {
+      if (child.scale.x !== values.core) child.scale.setScalar(values.core);
+      child.material.color.set(node.color || '#b8c0cf');
+    } else if (child.userData.role === 'heat-halo') {
+      child.visible = values.halo > 0;
+      child.scale.set(values.halo || 1, values.halo || 1, 1);
+      child.material.color.set(node.color || '#b8c0cf');
+      child.material.userData.baseOpacity = values.haloOpacity;
+    }
+  }
 }
 function makeLinkObject(link) {
   const group = new THREE.Group();
@@ -229,7 +261,8 @@ function setObjectStrength(object, factor, { selected = false, emphasis = false 
 // buildSocialFieldModel); it never prints a count the inspector would contradict.
 function tooltipForNode(node) {
   const kind = node.ontology === 'surface' ? 'bounded surface' : node.ontology === 'person' ? 'actor' : 'organization';
-  return `<div class="atlas-3d-tooltip"><strong>${escapeHtml(node.label)}</strong><br><span>${escapeHtml(kind)} · ${escapeHtml(nodeCountLabel(node))}</span></div>`;
+  const heatLine = nodeHeatLabel(node);
+  return `<div class="atlas-3d-tooltip"><strong>${escapeHtml(node.label)}</strong><br><span>${escapeHtml(kind)} · ${escapeHtml(nodeCountLabel(node))}</span>${heatLine ? `<br><small>${escapeHtml(heatLine)}</small>` : ''}</div>`;
 }
 
 function tooltipForLink(link) {
@@ -257,6 +290,8 @@ export async function createWebGlAtlasRenderer({ host, onNodeSelect, onLinkSelec
   let programmaticCameraUntil = 0;
   let lastCameraDistance = null;
   let ecologyModel = null;
+  let fieldLedger = null;
+  let heatDay = null;
   let animationRunning = true;
   const ecologyPulses = [];
   let labelLayer = null;
@@ -311,7 +346,7 @@ export async function createWebGlAtlasRenderer({ host, onNodeSelect, onLinkSelec
     const focus = selectedId ? socialFieldNeighbors(field, selectedId) : null;
     const candidates = field.nodes.filter(node => node.id === selectedId ||
       (node.size_count > 0 && (!focus || focus.has(node.id))))
-      .sort((a, b) => Number(b.id === selectedId) - Number(a.id === selectedId) || b.size_count - a.size_count || a.label.localeCompare(b.label));
+      .sort((a, b) => Number(b.id === selectedId) - Number(a.id === selectedId) || (b.heat_value || 0) - (a.heat_value || 0) || b.size_count - a.size_count || a.label.localeCompare(b.label));
     const boxes = [];
     const visibleIds = new Set();
     for (const node of candidates) {
@@ -467,8 +502,18 @@ export async function createWebGlAtlasRenderer({ host, onNodeSelect, onLinkSelec
       inWindowNodeIds: view.inWindowNodeIds instanceof Set ? view.inWindowNodeIds : new Set(view.inWindowNodeIds || []),
       inWindowLinkKeys: view.inWindowLinkKeys instanceof Set ? view.inWindowLinkKeys : new Set(view.inWindowLinkKeys || [])
     };
+    applyHeatAt(heatTimeForWindow(fieldLedger?.range ?? ecologyModel?.range, window));
     applyHighlight(selectedId);
     updateEcologyPulses();
+  }
+  // t is the window end (end of record with no window). The accumulation is
+  // recomputed only when t moves by a whole day, then written into each node.
+  function applyHeatAt(day) {
+    if (!field || !fieldLedger || day == null || day === heatDay) return;
+    heatDay = day;
+    applyFieldHeat(field, fieldLedger, day);
+    for (const node of field.nodes) styleNodeObject(node.__threeObj, node);
+    updateLabels();
   }
   function cameraDistance() {
     const camera = graph.camera(), target = controls.target;
@@ -561,7 +606,9 @@ export async function createWebGlAtlasRenderer({ host, onNodeSelect, onLinkSelec
   resize();
   let lastMode = null;
   function render(model, { selectedNodeId = null, ledger = null } = {}) {
-    field = buildSocialFieldModel(model, { ledger });
+    fieldLedger = ledger || null;
+    heatDay = ledger ? heatTimeForWindow(ledger.range, timeView.window) : null;
+    field = buildSocialFieldModel(model, { ledger, atDay: heatDay });
     field.linkById = new Map(field.links.map(link => [link.id, link]));
     graph.graphData({ nodes: field.nodes, links: field.links });
     selectedId = selectedNodeId && field.nodeById.has(selectedNodeId) ? selectedNodeId : null;
@@ -673,6 +720,7 @@ export async function createWebGlAtlasRenderer({ host, onNodeSelect, onLinkSelec
     field: () => field,
     ecology: () => ecologyModel,
     timeView: () => timeView,
+    heatDay: () => heatDay,
     graph: () => graph
   };
 }

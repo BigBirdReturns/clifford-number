@@ -8,7 +8,8 @@ import {
   activeEcologyEvents, ecologyEventsForNode, ecologyPlayheadLabel, isSurfaceNode, socialFieldNeighbors,
   normalizeEcologyWindow, rowInWindow, eventInWindow, fieldWindowFactors, nodeLedgerSummary, ecologyWindowLabel, ecologyDay, dayIso,
   nodeCountLabel, ledgerCountsForNode, windowCountPhrase,
-  ONTOLOGY_COLORS
+  ONTOLOGY_COLORS, heat, heatClassForSurfaceType, heatMixColor, heatBreakdownText, heatTimeForWindow, applyFieldHeat,
+  HEAT_FORMULA, HEAT_CLASS_COLORS, HEAT_WEIGHTS, HEAT_NONE_COLOR
 } from '../src/social-field.js';
 
 const nodes = [
@@ -65,11 +66,52 @@ assert.equal(orgX.size_count, 1);
 assert.equal(nodeCountLabel(a), '2 documented surfaces');
 assert.equal(nodeCountLabel(surfaceOne), '3 documented participants');
 assert.equal(nodeCountLabel(first.nodes.find(node => node.id === 'surface-open')), '1 documented participant');
+// Heat is a sum of ledger rows and nothing else: without a ledger no node
+// carries it, and no hidden composite (degree, clustering, repeat) stands in.
 for (const node of first.nodes) {
-  assert.equal('heat' in node, false, `node ${node.id} must not carry a composite heat score`);
+  assert.equal('heat' in node, false, `node ${node.id} carries no heat without a ledger`);
   assert.equal('heat_color' in node, false);
+  for (const banned of ['machine_score', 'factory_score', 'recurrence_score', 'composite_score']) assert.equal(banned in node, false);
 }
 assert.equal('hottest' in first, false, 'no heat ranking is published');
+assert.equal(first.heat_formula, HEAT_FORMULA);
+
+// heat() on a two-row fixture: one capital touch on 2025-09-27 and one policy
+// touch on 2020-01-01, evaluated at 2026-01-01: 2 x 0.8^0.26 + 1 x 0.8^6.0.
+// Two more rows (one undated, one after t) must add nothing.
+const heatFixture = [
+  { row_id: 'r-capital', surface_type: 'employment_investment_surface', time_start: '2025-09-27', start_day: ecologyDay('2025-09-27') },
+  { row_id: 'r-policy', surface_type: 'policy_document_surface', time_start: '2020-01-01', start_day: ecologyDay('2020-01-01') },
+  { row_id: 'r-undated', surface_type: 'procurement_contract_surface', time_start: null, start_day: null },
+  { row_id: 'r-later', surface_type: 'procurement_contract_surface', time_start: '2026-03-01', start_day: ecologyDay('2026-03-01') }
+];
+const heatAt2026 = heat(heatFixture, '2026-01-01');
+const capitalYears = (ecologyDay('2026-01-01') - ecologyDay('2025-09-27')) / 365.25;
+const policyYears = (ecologyDay('2026-01-01') - ecologyDay('2020-01-01')) / 365.25;
+assert.ok(Math.abs(capitalYears - 0.26) < 0.005 && Math.abs(policyYears - 6.0) < 0.005, 'the fixture is 0.26 and 6.0 years before t');
+assert.ok(Math.abs(heatAt2026.total - (2 * 0.8 ** capitalYears + 1 * 0.8 ** policyYears)) < 1e-6, `heat = 2x0.8^0.26 + 1x0.8^6.0, got ${heatAt2026.total}`);
+assert.ok(Math.abs(heatAt2026.total - (2 * 0.8 ** 0.26 + 0.8 ** 6.0)) < 2e-3, 'and agrees with the rounded exponents (0.26 is 96 days)');
+assert.equal(heat(heatFixture, ecologyDay('2026-01-01')).total, heatAt2026.total, 't may be a day integer or an ISO date');
+assert.equal(heat(heatFixture.slice(0, 2).map(({ start_day, ...row }) => row), '2026-01-01').total, heatAt2026.total, 'a row without start_day is dated from time_start');
+assert.ok(Math.abs(heatAt2026.by_class.capital - 2 * 0.8 ** capitalYears) < 1e-9);
+assert.ok(Math.abs(heatAt2026.by_class.policy - 0.8 ** policyYears) < 1e-9);
+assert.equal(heatAt2026.by_class.procurement, 0, 'an undated row and a row after t add nothing');
+assert.deepEqual(heatAt2026.undated.map(row => row.row_id), ['r-undated'], 'the undated row is listed as such');
+assert.deepEqual(heatAt2026.later.map(row => row.row_id), ['r-later']);
+assert.deepEqual(heatAt2026.touches.map(touch => [touch.row_id, touch.heat_class, touch.weight]), [['r-capital', 'capital', 2], ['r-policy', 'policy', 1]]);
+assert.equal(heat([], '2026-01-01').total, 0);
+assert.equal(heatBreakdownText(heatAt2026), 'heat 2.15 = 2 touches at 2026-01-01: capital 2 × 0.8^0.26 = 1.89 (2025-09-27) + policy 1 × 0.8^6.00 = 0.26 (2020-01-01) · 1 undated row contributes nothing · 1 row dated after t not yet counted');
+assert.deepEqual({ ...HEAT_WEIGHTS }, { policy: 1, appointment: 1, procurement: 2, capital: 2 });
+assert.equal(heatClassForSurfaceType('board_advisory_surface'), 'appointment');
+assert.equal(heatClassForSurfaceType('directory_roster_surface'), 'appointment');
+assert.equal(heatClassForSurfaceType('defence_industrial_surface'), 'procurement');
+assert.equal(heatClassForSurfaceType('laundering_chain_connector'), 'capital');
+assert.equal(heatClassForSurfaceType('something_new_surface'), 'policy', 'an unknown type is policy');
+assert.equal(heatMixColor({ policy: 0, appointment: 0, procurement: 0, capital: 3 }), HEAT_CLASS_COLORS.capital);
+assert.equal(heatMixColor({ policy: 1, appointment: 0, procurement: 0, capital: 1 }), '#2993ab', 'an even mix of policy and capital');
+assert.equal(heatMixColor({}), HEAT_NONE_COLOR);
+assert.equal(HEAT_FORMULA, 'heat = Σ touches weight(class) × 0.8^years; policy 1 · appointment 1 · procurement 2 · capital 2');
+console.log('heat accumulation: PASS');
 assert.equal(a.ontology, 'person'); assert.equal(orgX.ontology, 'organization'); assert.equal(surfaceOne.ontology, 'surface');
 assert.equal(a.color, ONTOLOGY_COLORS.person);
 assert.equal(orgX.color, ONTOLOGY_COLORS.organization);
@@ -348,12 +390,46 @@ assert.equal(activeEcologyEvents(realEvents, null).length, 0);
 assert.equal(activeEcologyEvents(realEvents, window2025).length, 60);
 console.log('field ledger real-data pins: PASS');
 
+// Heat on the real field at the end of record: every surface's heat and every
+// object's residue is heat() of its own ledger rows; nothing else enters.
+const endOfRecord = realLedger.range.last_day;
+assert.equal(heatTimeForWindow(realLedger.range, null), endOfRecord, 'with no window, t is the end of record');
+assert.equal(heatTimeForWindow(realLedger.range, window2025), ecologyDay('2025-12-31'), 'with a window, t is its end');
+let heatDisagreements = 0, colourDisagreements = 0;
+for (const node of realField.nodes) {
+  const surfaceNode = node.id.startsWith('surface-');
+  const rows = surfaceNode ? (realLedger.rowsBySurfaceNode.get(node.id) ?? []) : (realLedger.rowsByNode.get(node.id) ?? []);
+  if (!rows.length) { if (node.heat !== null || node.heat_value !== 0) heatDisagreements += 1; continue; }
+  if (Math.abs(node.heat_value - heat(rows, endOfRecord).total) > 1e-9) heatDisagreements += 1;
+  const expected = surfaceNode ? HEAT_CLASS_COLORS[heatClassForSurfaceType(rows[0].surface_type)]
+    : node.ontology === 'person' ? heatMixColor(node.heat.by_class) : ONTOLOGY_COLORS[node.ontology];
+  if (node.color !== expected) colourDisagreements += 1;
+}
+assert.equal(heatDisagreements, 0, 'every node\'s heat is heat() of its own ledger rows');
+assert.equal(colourDisagreements, 0, 'canonical surface = its class colour; person = class mix; anything else keeps its ontology fill');
+const roster = realNode('surface-dialog-public-directory-exposure-2026-06-16');
+assert.equal(roster.heat_class, 'appointment');
+assert.equal(roster.heat.touches.length + roster.heat.undated.length + roster.heat.later.length, 113, 'the roster is one block: its 113 rows sum on one node');
+assert.equal(realField.nodes.filter(node => node.id.includes('dialog-public-directory')).length, 1);
+// Moving t restyles in place and is reversible.
+const heatBefore = realNode('ben-warner').heat_value;
+applyFieldHeat(realField, realLedger, ecologyDay('2020-01-01'));
+assert.ok(realNode('ben-warner').heat_value < heatBefore, 'earlier t, less residue');
+assert.equal(realNode('ben-warner').heat.at_date, '2020-01-01');
+applyFieldHeat(realField, realLedger, endOfRecord);
+assert.equal(realNode('ben-warner').heat_value, heatBefore);
+assert.match(heatBreakdownText(realNode('ben-warner').heat, { noun: 'residue' }), /^residue \d+(\.\d+)? = \d+ touches at 2026-08-12: /);
+console.log('heat real-data pins: PASS');
+
 const rendererSource = readFileSync('src/atlas-webgl.js', 'utf8');
 assert.match(rendererSource, /enableNodeDrag\?\.|enableNodeDrag/);
 assert.match(rendererSource, /enableNodeDrag\(false\)/, 'individual field nodes must not advertise meaningless drag agency');
 assert.doesNotMatch(rendererSource, /particleCount|updateParticles/, 'ambient particles without dated evidence must not animate links');
-assert.doesNotMatch(rendererSource, /node\.heat|heat_color|reinforcement heat|strongest_repeat/, 'no composite heat score may drive a visual channel or a tooltip');
-assert.match(rendererSource, /size_count/, 'node size and halo derive from the documented count');
+assert.doesNotMatch(rendererSource, /heat_color|reinforcement heat|strongest_repeat|documented_degree|clustering|machine_score|factory_score|recurrence_score/, 'no hidden composite (degree, clustering, repeat, machine or factory score) drives a visual channel or a tooltip');
+assert.match(rendererSource, /nodeSizeForHeat\(node\.heat_value\)/, 'core size derives from the printed heat or residue');
+assert.match(rendererSource, /applyFieldHeat\(field, fieldLedger, day\)/, 'moving t re-applies the printed accumulation');
+assert.match(rendererSource, /heatTimeForWindow/, 't is the window end');
+assert.match(rendererSource, /size_count/, 'without a ledger, size falls back to the documented count');
 assert.match(rendererSource, /escapeHtml\(nodeCountLabel\(node\)\)/, 'the tooltip prints the shared ledger count label');
 assert.doesNotMatch(rendererSource, /no ledger rows/, 'the renderer does not word the count itself: social-field owns the one label');
 assert.match(rendererSource, /setTimeWindow/);
@@ -540,7 +616,23 @@ assert.match(runtimeSource, /addEventListener\('visibilitychange'/);
 assert.match(runtimeSource, /prefers-reduced-motion: reduce/);
 assert.match(runtimeSource, /rows in window/);
 assert.doesNotMatch(runtimeSource, /level !== 'corpus'/, 'the field stays active at all four map levels');
-assert.doesNotMatch(runtimeSource, /reinforcement heat|node\.heat/, 'no heat channel survives in the runtime');
+assert.doesNotMatch(runtimeSource, /reinforcement heat|strongest_repeat|machine_score|factory_score|recurrence_score/, 'no hidden composite survives in the runtime');
+// The formula is printed beside the field and in its controls, verbatim.
+assert.ok(runtimeSource.includes("'heat = Σ touches weight(class) × 0.8^years; policy 1 · appointment 1 · procurement 2 · capital 2'"), 'the runtime prints the heat formula');
+assert.equal(vm.runInContext('APERTURE_HEAT_FORMULA', context), HEAT_FORMULA, 'the printed formula is the computed one');
+const legendMarkup = vm.runInContext('APERTURE_FIELD_LEGEND', context);
+for (const [name, colour] of Object.entries(HEAT_CLASS_COLORS)) {
+  assert.ok(legendMarkup.includes(`data-ap-heat-class="${name}"><i class="aperture-key aperture-key--heat" style="background:${colour}"`), `the legend keys ${name}`);
+}
+assert.ok(legendMarkup.includes(HEAT_FORMULA));
+assert.ok(vm.runInContext('APERTURE_HEAT_CONTROL_LEGEND', context).includes(HEAT_FORMULA), 'the controls carry the formula');
+const rosterHeat = context.fieldHeatInspectorMarkup('surface-dialog-public-directory-exposure-2026-06-16');
+assert.match(rosterHeat, /data-ap-heat-sum>heat \d+(\.\d+)? = \d+ touches at 2026-08-12: appointment 1 × 0\.8\^/, 'the surface inspector prints its heat denominator');
+const benHeat = context.fieldHeatInspectorMarkup('ben-warner');
+assert.match(benHeat, /<h4>Residue at 2026-08-12<\/h4>/);
+assert.match(benHeat, /data-ap-heat-class="capital"/);
+assert.equal(context.fieldHeatInspectorMarkup('alex-karp'), '', 'no ledger row, no printed heat');
+assert.match(factGrid('ben-warner'), /data-ap-heat="ben-warner"/, 'a person\'s inspector prints its residue');
 assert.match(partOneSource, /ecology: \{ fromDay: null, toDay: null, [^}]*playing: false/, 'playing defaults to false');
 assert.match(partTenSource, /ap-ecology-time-to/);
 assert.match(partTenSource, /ecology-all-time/);

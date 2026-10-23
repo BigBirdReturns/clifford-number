@@ -26,7 +26,7 @@ function shellMarkup() {
     <div class="aperture-layout">
       <div class="aperture-stage-wrap">
         <div class="aperture-stage-guide" aria-hidden="true"><strong>Explore</strong><span>rotate background &middot; wheel = depth &middot; click = focus</span></div>
-        <div id="aperture-webgl" class="aperture-webgl" role="group" aria-label="Spherical social field. Node size and halo show the documented surface count for each object; arcs are sourced graph edges coloured by evidence class." hidden></div>
+        <div id="aperture-webgl" class="aperture-webgl" role="group" aria-label="Spherical social field. Surface size and halo show heat, a sum of its dated participation rows, each weighted by class (policy 1, appointment 1, procurement 2, capital 2) and decayed by 0.8 per year to the window end; a person is coloured by the classes it touched and sized by the same sum over its own rows. Arcs are sourced graph edges coloured by evidence class." hidden></div>
         <div id="aperture-timeline" class="aperture-timeline" aria-label="Ledger timeline: one mark per documented participation row" hidden></div>
         <svg id="aperture-stage" class="aperture-stage" viewBox="0 0 1200 720" role="img" aria-labelledby="aperture-stage-title aperture-stage-desc">
           <title id="aperture-stage-title">Clifford Number operating map</title>
@@ -63,7 +63,7 @@ function shellMarkup() {
       </div>
     </section>
 
-    <p class="aperture-boundary"><strong>Visual prominence is not an allegation.</strong> Routes read actor → bounded surface → actor; no pairwise lines are created from shared context. A hop does not establish coordination. Evidence class, temporal limits and sources remain attached to each record.</p>`;
+    <p class="aperture-boundary">Routes read actor → bounded surface → actor. Evidence class, temporal limits and sources remain attached to each record.</p>`;
 }
 
 function initializeIndexes() {

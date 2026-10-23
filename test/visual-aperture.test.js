@@ -1,6 +1,13 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync as readFileSyncRaw } from 'node:fs';
 import vm from 'node:vm';
+// Source-shape regexes below are written against LF. A Windows checkout with
+// core.autocrlf has CRLF in the working tree; read text as LF so the contract,
+// not the line ending, is what is tested.
+const readFileSync = (path, encoding) => {
+  const value = readFileSyncRaw(path, encoding);
+  return typeof value === 'string' ? value.replace(/\r\n/g, '\n') : value;
+};
 import {
   computeCorridors,
   dayIndex,
@@ -176,9 +183,19 @@ assert.match(timelineRuntime, /data-ap-time-column/);
 assert.match(timelineRuntime, /data-ap-time-block/);
 assert.doesNotMatch(timelineRuntime, /data-ap-time-pair/, 'the reserved pair selector is never written by the runtime');
 assert.doesNotMatch(timelineRuntime, /<line[^>]*(?:data-ap-time|data-lane|actor)/, 'no line element carries a row, lane or actor identity');
-assert.doesNotMatch(timelineRuntime, /machine_score|factory_score|deniability|laundry_score|recurrence_score|heat/, 'no composite score drives a visual channel');
+assert.doesNotMatch(timelineRuntime, /machine_score|factory_score|deniability|laundry_score|recurrence_score|Structural context index|Factory Score/, 'no composite score drives a visual channel');
 assert.match(readFileSync('src/visual-aperture-part-9.js', 'utf8'), /if \(state\.mode !== 'map'\) deactivateApertureSocialField\(\);[\s\S]*if \(state\.mode === 'timeline'\) renderTimelineMode\(\);/, 'the GPU field is deactivated in timeline mode');
-assert.match(readFileSync('src/visual-aperture-part-10.js', 'utf8'), /function handleAction\(button\) \{\n  if \(handleTimelineAction\(button\)\) return;/);
+assert.match(readFileSync('src/visual-aperture-part-10.js', 'utf8'), /function handleAction\(button\) \{\r?\n  if \(handleTimelineAction\(button\)\) return;/);
+// Heat is allowed only as the printed, ledger-derived accumulation: the field
+// runtime prints its formula, and the field module computes exactly that sum.
+const fieldRuntimeSource = readFileSync('src/visual-aperture-social-field-runtime.js', 'utf8');
+const fieldModuleSource = readFileSync('src/social-field.js', 'utf8');
+const printedHeatFormula = 'heat = Σ touches weight(class) × 0.8^years; policy 1 · appointment 1 · procurement 2 · capital 2';
+assert.ok(fieldRuntimeSource.includes(printedHeatFormula), 'the field runtime prints the heat formula beside the field');
+assert.ok(fieldModuleSource.includes(`HEAT_FORMULA = '${printedHeatFormula}'`), 'the field module carries the same formula it computes');
+for (const source of [fieldRuntimeSource, fieldModuleSource]) {
+  assert.doesNotMatch(source, /machine_score|factory_score|deniability|laundry_score|recurrence_score|Structural context index|Factory Score|reinforcement heat/, 'no hidden composite drives a field channel');
+}
 assert.match(readFileSync('src/visual-aperture-part-3.js', 'utf8'), /publishApertureOrigin\(label\)/, 'the origin hook publishes on every selection change');
 assert.match(readFileSync('src/visual-aperture-part-1.js', 'utf8'), /globalThis\.__cliffordPublicData/, 'readData uses the app.js handoff before fetching');
 

@@ -1,13 +1,27 @@
+// The heat formula, printed beside the field and in its controls. It is the
+// same string as HEAT_FORMULA in src/social-field.js (a test pins the two).
+const APERTURE_HEAT_FORMULA = 'heat = Σ touches weight(class) × 0.8^years; policy 1 · appointment 1 · procurement 2 · capital 2';
+const APERTURE_HEAT_CLASS_KEYS = [
+  ['policy', 'Policy', '#3987e5'],
+  ['appointment', 'Appointment', '#c98500'],
+  ['procurement', 'Procurement', '#d95926'],
+  ['capital', 'Capital', '#199e70']
+];
+const APERTURE_HEAT_KEYS_MARKUP = APERTURE_HEAT_CLASS_KEYS
+  .map(([id, label, color]) => `<span data-ap-heat-class="${id}"><i class="aperture-key aperture-key--heat" style="background:${color}"></i> ${label}</span>`).join('');
 const APERTURE_FIELD_LEGEND = `
-  <span><i class="aperture-key aperture-key--actor"></i> People</span>
-  <span><i class="aperture-key"></i> Organizations</span>
-  <span><i class="aperture-key aperture-key--surface"></i> Named surfaces</span>
-  <span>Size = documented surfaces (participants for a surface)</span>
+  ${APERTURE_HEAT_KEYS_MARKUP}
+  <span>Surface: colour = its class, size and halo = heat · Person: colour = mix of classes touched, size = residue · Organization: grey, size = residue</span>
   <span>Lines: official · primary public · reported · context</span>
-  <span>Time filter: dated rows outside the window fade; undated context stays visible.</span>`;
+  <span class="aperture-heat-formula" data-ap-heat-formula>${APERTURE_HEAT_FORMULA}; years from each dated row to t, the window end (end of record with no window); undated rows add nothing. Rows outside the window fade.</span>`;
+// The same key, small, inside the field's time controls.
+const APERTURE_HEAT_CONTROL_LEGEND = `<div class="aperture-heat-legend" data-ap-heat-legend role="note" aria-label="How heat is computed">
+  <div class="aperture-heat-legend__keys">${APERTURE_HEAT_KEYS_MARKUP}</div>
+  <p class="aperture-heat-legend__formula">${APERTURE_HEAT_FORMULA}</p>
+</div>`;
 const APERTURE_FIELD_PLAY_SPAN_DAYS = 365;
 const APERTURE_FIELD_ROW_LIMIT = 10;
-const APERTURE_FIELD_HOST_LABEL = 'Spherical social field. Node size and halo show the documented surface count for each object; arcs are sourced graph edges coloured by evidence class.';
+const APERTURE_FIELD_HOST_LABEL = 'Spherical social field. Surface size and halo show heat, a sum of its dated participation rows, each weighted by class (policy 1, appointment 1, procurement 2, capital 2) and decayed by 0.8 per year to the window end; a person is coloured by the classes it touched and sized by the same sum over its own rows. Arcs are sourced graph edges coloured by evidence class.';
 
 function fieldReducedMotion() {
   if (state.webgl && typeof state.webgl.reducedMotion === 'boolean') return state.webgl.reducedMotion;
@@ -104,6 +118,9 @@ function ensureEcologyWindowControls() {
     button.textContent = 'All time';
     toggle.after(button);
   }
+  // The heat key sits directly under the time controls, since t is the window end.
+  const anchor = $('[data-ap-action="ecology-all-time"]', state.root) ?? toggle ?? from.closest('label');
+  if (anchor && !$('[data-ap-heat-legend]', state.root)) anchor.insertAdjacentHTML('afterend', APERTURE_HEAT_CONTROL_LEGEND);
   return { from, to };
 }
 function syncEcologyClockControls() {
@@ -173,6 +190,21 @@ function applyEcologyWindow({ sync = true } = {}) {
   if (renderer?.setTimeWindow && factors) renderer.setTimeWindow(factors);
   if (sync) syncEcologyClockControls();
   syncInspectorWindowMarks();
+  syncInspectorHeat();
+}
+// The inspector's printed heat follows t: rewritten only when t moves a day.
+function syncInspectorHeat() {
+  if (!state.root) return;
+  const api = state.webgl?.eventApi;
+  const ledger = state.webgl?.ledger;
+  if (!api?.heatTimeForWindow || !ledger) return;
+  const atDay = api.heatTimeForWindow(ledger.range, ecologyWindow());
+  for (const holder of $$('[data-ap-heat]', state.root)) {
+    if (holder.dataset.apHeatDay === String(atDay)) continue;
+    const markup = fieldHeatInspectorMarkup(holder.dataset.apHeat);
+    if (!markup) continue;
+    holder.outerHTML = markup;
+  }
 }
 function setEcologyWindow(fromDay, toDay, { pause = false } = {}) {
   const api = state.webgl?.eventApi;
@@ -416,6 +448,32 @@ function fieldRowsMarkup(id) {
     : '';
   return `<h4>Documented rows</h4><p class="aperture-muted">${header} · ${esc(api.ecologyWindowLabel(ledger.range, window))}. Rows outside the window dim and stay listed; they are never removed.${guardNote}</p><ul class="aperture-activity-list">${lead.map(row => fieldRowItem(row, window)).join('')}</ul>${restMarkup}`;
 }
+// The printed denominator of a node's heat or residue at t: every counted
+// touch with its class, weight, decay and date; undated rows named apart. The
+// surface inspector (visual-aperture-part-5.js mapInspector) calls this too.
+function fieldHeatInspectorMarkup(nodeId) {
+  const api = state.webgl?.eventApi;
+  const ledger = state.webgl?.ledger;
+  if (!api?.heat || !ledger || !nodeId) return '';
+  const isSurface = String(nodeId).startsWith('surface-');
+  const rows = isSurface ? (ledger.rowsBySurfaceNode.get(nodeId) ?? []) : (ledger.rowsByNode.get(nodeId) ?? []);
+  if (!rows.length) return '';
+  const atDay = api.heatTimeForWindow(ledger.range, ecologyWindow());
+  const result = api.heat(rows, atDay);
+  const noun = isSurface ? 'heat' : 'residue';
+  const shares = APERTURE_HEAT_CLASS_KEYS
+    .filter(([id]) => result.by_class[id] > 0)
+    .map(([id, label, color]) => `<span class="aperture-badge" data-ap-heat-class="${id}"><i class="aperture-key aperture-key--heat" style="background:${color}"></i> ${label} ${result.by_class[id].toFixed(2)}</span>`).join('');
+  const undated = result.undated.length
+    ? `<p class="aperture-muted">Undated, contributes nothing: ${result.undated.map(row => esc(row.surface_label || row.surface_id)).join(' · ')}</p>`
+    : '';
+  return `<div class="aperture-heat-breakdown" data-ap-heat-day="${result.at_day ?? ''}" data-ap-heat="${esc(nodeId)}">
+    <h4>${isSurface ? 'Heat' : 'Residue'} at ${esc(result.at_date || 'end of record')}</h4>
+    <p class="aperture-heat-breakdown__sum" data-ap-heat-sum>${esc(api.heatBreakdownText(result, { noun }))}</p>
+    ${shares ? `<div class="aperture-badge-row">${shares}</div>` : ''}${undated}
+    <p class="aperture-muted aperture-heat-breakdown__formula">${APERTURE_HEAT_FORMULA}. t is the window end; years = days / 365.25 from the row's documented start.</p>
+  </div>`;
+}
 function fieldFactGrid(node, summary) {
   const api = state.webgl?.eventApi;
   if (!summary?.rows.length) {
@@ -433,7 +491,8 @@ function fieldFactGrid(node, summary) {
     <div><strong>${summary.rows.length}</strong><span>participation row${summary.rows.length === 1 ? '' : 's'}</span></div>
   </div>
   <p class="network-date-span">${esc(first)} → ${esc(last)}${summary.open_ended ? ' · no end recorded' : ''}<br>${summary.receipt_ids.length} sources across these records</p>
-  <details class="aperture-reading-help"><summary>How this is counted</summary><p>Node size and halo show the documented ${isSurface ? 'participant' : 'surface'} count: a count, not a score. It creates no actor-to-actor edge, hop, or causal claim.</p></details>`;
+  ${fieldHeatInspectorMarkup(node.id)}
+  <details class="aperture-reading-help"><summary>How this is counted</summary><p>Node size and halo show the ${isSurface ? 'heat' : 'residue'} printed above: ${APERTURE_HEAT_FORMULA}, summed over this object's own dated rows up to the window end. Every term is a documented row. It creates no actor-to-actor edge, hop, or causal claim.</p></details>`;
 }
 // An arc is one of two documented objects, read in place without changing the
 // map scope or the address. A canonical overlay (topology) arc carries its
