@@ -154,7 +154,7 @@ inquiry that relates to it, or correct the source record.
 ## Opening an inquiry
 
 The generated `build/reservoir/index.html` opens at search. Press `/` to focus
-search, filter by status, origin, collection or shared source hub, and use
+search. The compact toolbar groups Filter inquiries (status, origin and collection), Shared sources (paths cited by several inquiries), and Project files on the local server. Use
 **Clear filters** to return to the full register. Opening an inquiry adds its
 ID to the URL; **Copy link** preserves the inquiry and current filters.
 Browser Back and Forward restore those views. **Back to results** returns

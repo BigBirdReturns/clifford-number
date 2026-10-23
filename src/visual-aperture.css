@@ -1,7 +1,59 @@
-@import url("./visual-aperture-layout.css?v=20261022-explorer1");
-@import url("./visual-aperture-svg.css?v=20261022-explorer1");
-@import url("./visual-aperture-responsive.css?v=20261022-explorer1");
-@import url("./visual-aperture-workspace.css?v=20261022-explorer1");
-@import url("./visual-aperture-export.css?v=20261022-explorer1");
-@import url("./visual-aperture-bounded.css?v=20261022-explorer1");
-@import url("./visual-aperture-timeline.css?v=20261022-explorer1");
+@import url("./visual-aperture-layout.css?v=20261022-workspace1");
+@import url("./visual-aperture-svg.css?v=20261022-workspace1");
+@import url("./visual-aperture-responsive.css?v=20261022-workspace1");
+@import url("./visual-aperture-workspace.css?v=20261022-workspace1");
+@import url("./visual-aperture-export.css?v=20261022-workspace1");
+@import url("./visual-aperture-bounded.css?v=20261022-workspace1");
+@import url("./visual-aperture-timeline.css?v=20261022-workspace1");
+
+.aperture-timeline { height: 530px; }
+.aperture-date-range { display: flex; align-items: center; gap: 8px; flex: 0 1 auto; min-width: 0; max-width: 250px; }
+.aperture-date-range > span { white-space: nowrap; }
+.aperture-date-range select { width: 145px; }
+.aperture-time-by button, .aperture-time-year-chips button { font-family: var(--font-condensed); font-size: 12px; }
+.aperture-time-control-label { font-family: var(--font-condensed); font-size: 10px; text-transform: none; }
+.aperture-time-lane-bg.is-alt { fill: var(--ap-panel-2); }
+.aperture-time-lane-rule { stroke: var(--ap-line); }
+.aperture-time-grid { stroke: var(--ap-line); opacity: .55; }
+.aperture-time-mark:hover, .aperture-time-mark:focus-visible, .aperture-time-mark.is-selected { stroke: var(--ap-text); filter: none; }
+.aperture-time-column.is-selected .aperture-time-column-segment { stroke: var(--ap-text); }
+.aperture-time-by button[aria-pressed="true"], .aperture-time-year-chips button[aria-pressed="true"] { background: var(--wash-strong); color: var(--ink-2); }
+@media (max-width: 1080px) {
+  .aperture-commandbar { grid-template-columns: 1fr; }
+  .aperture-layout { grid-template-columns: minmax(0, 1fr) 260px; }
+}
+@media (max-width: 860px) {
+  .aperture-layout { grid-template-columns: 1fr; }
+  .aperture-inspector { max-height: none; }
+}
+@media (max-width: 760px) {
+  .network-atlas.aperture-deck { width: auto; margin: 16px 0; }
+  .aperture-header { padding: 16px; display: block; }
+  .aperture-header h2 { font-size: 18px; }
+  .aperture-header p:not(.section-kicker) { font-size: 12px; }
+  .aperture-release { margin-top: 10px; }
+  .aperture-live { left: 0; right: auto; }
+  .aperture-commandbar { position: relative; padding: 0; gap: 0; }
+  .aperture-mode-switch { display: flex; width: 100%; gap: 0; padding: 0 8px; }
+  .aperture-mode-button { flex: 1; min-height: 44px; padding: 8px; font-size: 12px; }
+  .aperture-mode-controls { padding: 10px; flex-wrap: wrap; overflow: visible; gap: 8px; }
+  .aperture-time-by, .aperture-time-year-chips { flex-wrap: wrap; min-width: 0; max-width: 100%; }
+  .aperture-time-by button, .aperture-time-year-chips button { min-height: 36px; font-size: 11px; }
+  .aperture-control, .aperture-control--wide, .aperture-control--start, .aperture-control--scale, .aperture-control--timeline { min-width: 0; max-width: none; flex: 1 1 100%; }
+  .aperture-date-range { flex: 0 1 auto; }
+  .aperture-jump { min-width: 0; }
+  .aperture-jump-controls { min-width: 0; flex-wrap: wrap; }
+  .aperture-telemetry { padding: 10px; }
+  .aperture-breadcrumbs { font-size: 10px; }
+  .aperture-stats { gap: 8px; }
+  .aperture-layout { min-height: 0; }
+  .aperture-timeline, .aperture-stage, .aperture-webgl { height: 470px; min-height: 0; }
+  .aperture-stage-guide, .aperture-renderer-badge { display: none; }
+  .aperture-stage-legend { padding: 10px; font-size: 10px; }
+  .aperture-inspector { max-height: min(72vh, 640px); border-radius: 10px; background: var(--ap-panel); box-shadow: 0 -4px 24px rgba(0,0,0,.12); }
+  .aperture-deck.aperture-is-visible .aperture-inspector[data-empty="true"] { position: static; transform: none; max-height: none; box-shadow: none; border: 0; border-top: 1px solid var(--ap-line); border-radius: 0; }
+  .aperture-inspector[data-empty="true"] .aperture-sheet-toggle { display: none; }
+  .aperture-sheet-toggle { background: var(--ap-panel); }
+  .aperture-inspector h3 { font-size: 20px; }
+  .aperture-overview-heading h3 { font-size: 17px; }
+}

@@ -6,6 +6,7 @@ assert.deepEqual(ROUTE_CASES.map(({ route }) => route), [
   'explorer.html',
   'explorer.html',
   'explorer.html?ap_v=1&ap_mode=timeline&ap_time_lanes=ben-warner,marc-warner,saul-klein&ap_time_from=2018-01-01&ap_time_to=2018-12-31&ap_time_sel=faculty-science-officer-employee-overlap-2018-01-24::actor::ben-warner',
+  'explorer.html?ap_v=1&ap_mode=surface',
   'explorer.html#desk/keir-starmer/matt-clifford/2025',
   'explorer.html#desk/demet-mutlu/matt-clifford',
   'explorer.html#desk/keir-starmer/matt-clifford/2020',

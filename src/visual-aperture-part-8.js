@@ -1,19 +1,16 @@
 function renderDenseScene(surface, selection) {
-  const groups = groupDenseSurface(surface).slice(0, 10);
-  const groupMarkup = groups.map((group, index) => {
-    const point = stableRingPosition(index, groups.length, 600, 360, 472, 282, -Math.PI / 2);
-    const radius = Math.max(30, Math.min(58, 24 + Math.sqrt(group.count) * 6));
-    return `<g class="aperture-role-group" transform="translate(${point.x} ${point.y})"><circle class="${group.count >= 8 ? 'is-large' : ''}" r="${radius}"/><text class="aperture-role-count" y="-3" text-anchor="middle">${group.count}</text><text class="aperture-node-meta" y="19" text-anchor="middle">${esc(shortLabel(group.label, 20))}</text></g>`;
-  }).join('');
   const visible = selection.visible;
+  // A roster is a list within one source, so keep the people in reading order.
+  // The grid leaves room for every name and role without implying pairwise ties.
+  const columns = Math.max(4, Math.ceil(visible.length / 5));
+  const cellWidth = 1040 / columns;
+  const labelMax = Math.min(30, Math.max(10, Math.floor(cellWidth / 8) - 2));
   const brackets = visible.map((participant, index) => {
-    const ring = index % 2;
-    const slot = Math.floor(index / 2);
-    const count = Math.ceil(visible.length / 2);
-    const point = stableRingPosition(slot, count, 600, 378, ring ? 292 : 180, ring ? 172 : 106, ring ? -Math.PI / 2 + .18 : -Math.PI / 2);
-    return actorBracket(participant, point.x, point.y, { selected: participant.actor_id === state.surface.selectedActorId, pinned: state.surface.pinned.has(participant.actor_id), dataAttribute: 'data-ap-surface-actor', labelMax: 22 });
+    const x = 80 + cellWidth * ((index % columns) + .5);
+    const y = 196 + Math.floor(index / columns) * 96;
+    return actorBracket(participant, x, y, { selected: participant.actor_id === state.surface.selectedActorId, pinned: state.surface.pinned.has(participant.actor_id), dataAttribute: 'data-ap-surface-actor', labelMax });
   }).join('');
-  return `<g class="aperture-scene aperture-scene--dense"><rect class="aperture-surface-container" x="142" y="66" width="916" height="590" rx="48"/><text class="aperture-node-label" x="600" y="106" text-anchor="middle">${esc(shortLabel(surface.surface_label, 64))}</text><text class="aperture-node-meta" x="600" y="132" text-anchor="middle">${selection.totalActors} documented actors · ${surface.hop_eligible ? 'hop-eligible' : 'context-only'} · no pairwise lines</text>${groupMarkup}${brackets}<g class="aperture-surface-node is-selected" transform="translate(600 378)"><rect class="aperture-surface-diamond" x="-35" y="-35" width="70" height="70" rx="5" transform="rotate(45)"/><text class="aperture-surface-count" y="6" text-anchor="middle">${selection.visible.length}</text><text class="aperture-node-meta" y="67" text-anchor="middle">visible brackets</text></g>${selection.hiddenByBudget ? `<g class="aperture-aggregate" transform="translate(600 575)"><circle r="31"/><text class="aperture-node-label" y="5" text-anchor="middle">+${selection.hiddenByBudget}</text><text class="aperture-node-meta" y="48" text-anchor="middle">eligible actors held by budget</text></g>` : ''}</g>`;
+  return `<g class="aperture-scene aperture-scene--dense"><rect class="aperture-surface-container" x="64" y="48" width="1072" height="640" rx="12"/><text class="aperture-node-label" x="600" y="92" text-anchor="middle">${esc(shortLabel(surface.surface_label, 80))}</text><text class="aperture-node-meta" x="600" y="120" text-anchor="middle">${selection.totalActors} documented actors · ${surface.hop_eligible ? 'hop-eligible' : 'context-only'} · no pairwise lines</text>${brackets}<text class="aperture-node-meta" x="600" y="660" text-anchor="middle">${selection.visible.length} people shown${selection.hiddenByBudget ? ` · ${selection.hiddenByBudget} more available using the display limit or search` : ''}</text></g>`;
 }
 
 function surfaceInspector(surface, selection, validDate) {
@@ -58,7 +55,7 @@ function renderSurfaceMode() {
     labels
   });
   state.surface.selection = selection;
-  setStage(renderDenseScene(surface, selection), { title: `Surface · ${surface.surface_label}`, description: 'A bounded roster container with grouped roles, a fixed actor-bracket budget, and no participant-to-participant lines.' });
+  setStage(renderDenseScene(surface, selection), { title: `Surface · ${surface.surface_label}`, description: 'An aligned roster within one source, with a visible display limit and no participant-to-participant lines.', minWidth: 720 });
   setTelemetry(['Surface', surface.surface_label], [
     { value: selection.visible.length, label: 'visible brackets' },
     { value: selection.hiddenByBudget, label: 'budget-held' },

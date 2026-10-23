@@ -9,7 +9,7 @@ export const VIEWPORTS = Object.freeze([
 ]);
 
 // Files the ledger timeline must never pull on arrival: the GPU field is loaded
-// only when the Explore tab is chosen.
+// only when the Network tab is chosen.
 export const WEBGL_PATH_PATTERN = /atlas-webgl\.js|social-field\.js|\/vendor\//;
 
 export const ROUTE_CASES = Object.freeze([
@@ -19,7 +19,7 @@ export const ROUTE_CASES = Object.freeze([
     // The arrival card and the roster block read the same at every width; lane
     // labels are truncated at phone widths, so they are not text anchors here.
     expected: Object.freeze([
-      'Every mark is one ledger row.',
+      'Select a mark',
       'names listed'
     ]),
     timeline: Object.freeze({ min_marks: 48, blocks: 1, block_text: '112', no_webgl: true, single_fetch: true })
@@ -33,7 +33,7 @@ export const ROUTE_CASES = Object.freeze([
     // here single_fetch fails unless the mount waits for app.js first.
     network: Object.freeze({ delay_json_ms: 500 }),
     expected: Object.freeze([
-      'Every mark is one ledger row.',
+      'Select a mark',
       'names listed'
     ]),
     timeline: Object.freeze({ min_marks: 48, blocks: 1, block_text: '112', no_webgl: true, single_fetch: true })
@@ -46,6 +46,11 @@ export const ROUTE_CASES = Object.freeze([
       'Commercial Principal, ASI Data Science'
     ]),
     timeline: Object.freeze({ min_marks: 3, blocks: 0, selected: 'faculty-science-officer-employee-overlap-2018-01-24::actor::ben-warner', no_webgl: true, single_fetch: true })
+  }),
+  Object.freeze({
+    id: 'roster-grid',
+    route: 'explorer.html?ap_v=1&ap_mode=surface',
+    expected: Object.freeze(['18 people shown', '94 more available using the display limit or search'])
   }),
   Object.freeze({
     id: 'dated-connection',
@@ -395,7 +400,14 @@ export async function runSmoke(options) {
       null,
       { timeout: options.timeoutMs }
     );
-    await waitForText(page, 'The machine is already in the records.', options.timeoutMs);
+    await waitForText(page, 'Explore the public record', options.timeoutMs);
+    await page.locator('#ap-time-year').selectOption('all');
+    await page.waitForFunction(() => document.querySelector('#aperture-breadcrumbs')?.textContent.includes('2016-'), null, { timeout: options.timeoutMs });
+    await page.locator('#ap-time-year').selectOption('2024');
+    await page.waitForFunction(() => document.querySelector('#aperture-breadcrumbs')?.textContent.includes('2023-12-17 → 2025-01-15'), null, { timeout: options.timeoutMs });
+    await page.locator('#ap-time-year').selectOption('');
+    await page.locator('[data-ap-time-mark]').first().click();
+    await page.waitForFunction(() => document.querySelector('#aperture-inspector')?.dataset.empty === 'false', null, { timeout: options.timeoutMs });
     // Back/Forward is exercised on the first hash route (the desk), not on the
     // query-less arrival page, so the history step is a real route change.
     const navigationCase = ROUTE_CASES.find(routeCase => routeCase.route.includes('#'));
@@ -404,7 +416,7 @@ export async function runSmoke(options) {
     await waitForText(page, navigationCase.expected[0], options.timeoutMs);
     await page.goBack();
     await page.waitForFunction(() => location.hash === '', null, { timeout: options.timeoutMs });
-    await waitForText(page, 'The machine is already in the records.', options.timeoutMs);
+    await waitForText(page, 'Explore the public record', options.timeoutMs);
     await page.goForward();
     await page.waitForFunction((route) => location.hash === route, navigationHash, { timeout: options.timeoutMs });
     await waitForText(page, navigationCase.expected[0], options.timeoutMs);
@@ -414,6 +426,7 @@ export async function runSmoke(options) {
     report.navigation = {
       route: navigationCase.route,
       back_forward: 'PASS',
+      date_range_and_mark_selection: 'PASS',
       final_url: page.url(),
       external_requests: navigationExternalRequests
     };

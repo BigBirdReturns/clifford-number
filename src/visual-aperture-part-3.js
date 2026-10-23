@@ -62,7 +62,7 @@ function renderModeControls() {
     <label class="aperture-control aperture-control--wide"><span>Find actor or role</span><input id="ap-surface-query" type="search" placeholder="Search this surface" value="${esc(state.surface.query)}"></label>
     <label class="aperture-control"><span>Active during</span><input id="ap-surface-asof" type="text" inputmode="numeric" placeholder="Optional date" value="${esc(state.surface.asOf)}"></label>
     <label class="aperture-control"><span>Evidence floor</span><select id="ap-surface-evidence">${evidenceOptions(state.surface.evidenceFloor)}</select></label>
-    <label class="aperture-control aperture-control--scale"><span>Bracket budget · <strong id="ap-surface-budget-output">${state.surface.budget}</strong></span><input id="ap-surface-budget" type="range" min="6" max="36" step="1" value="${state.surface.budget}"></label>
+    <label class="aperture-control aperture-control--scale"><span>People shown · <strong id="ap-surface-budget-output">${state.surface.budget}</strong></span><input id="ap-surface-budget" type="range" min="6" max="36" step="1" value="${state.surface.budget}"></label>
     <button type="button" class="aperture-secondary-button" data-ap-action="surface-clear-pins">Clear pins</button>
     ${addressActionMarkup()}`;
 }
@@ -110,6 +110,7 @@ function isMobile() {
 }
 
 function setInspector(label, html, { openOnMobile = false } = {}) {
+  $('#aperture-inspector', state.root).dataset.empty = String(state.mode === 'timeline' && !state.timeline.selectedKey);
   $('#aperture-sheet-label', state.root).textContent = shortLabel(label, 34);
   $('#aperture-inspector-body', state.root).innerHTML = html;
   if (openOnMobile && isMobile()) state.sheetOpen = true;

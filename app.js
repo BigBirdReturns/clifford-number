@@ -551,7 +551,7 @@ function labelOrg(id) { return state.orgs.get(id)?.label || id; }
 function surface(id) { return state.surfaces.get(id); }
 function esc(s) { return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function shortLabel(s, max = 26) { const value = String(s ?? ''); return value.length > max ? `${value.slice(0, max - 1)}…` : value; }
-function setDocumentTitle(label) { document.title = label ? `${label} — The Clifford Number` : 'Topology explorer — The Clifford Number'; }
+function setDocumentTitle(label) { document.title = label ? `${label} — The Clifford Number` : 'Explore — The Clifford Number'; }
 function announce(message) { const status = $('#view-status'); if (status) status.textContent = message; }
 
 async function init() {
@@ -648,7 +648,7 @@ async function init() {
   initDesk();
 
   document.addEventListener('keydown', e => {
-    if (e.key === '/' && !$('#view-desk').hidden) return;
+    if (e.key === '/' && (document.activeElement?.matches('input, textarea, select') || !$('#view-desk').hidden)) return;
     if (e.key === '/' && document.activeElement !== $('#search')) {
       e.preventDefault();
       $('#search').focus();
@@ -680,7 +680,7 @@ function go(kind, id) {
   if (location.hash === target) renderEntity(kind, id);
   else location.hash = target;
   clearSearchResults();
-  setTimeout(() => $('#explorer')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
+  setTimeout(() => window.scrollTo({ top: 0, behavior: 'instant' }), 0);
 }
 
 window.copyLink = copyLink;
@@ -700,6 +700,12 @@ function showView(view) {
 
 async function route() {
   const hash = location.hash.replace(/^#/, '');
+  const section = hash.startsWith('desk') ? 'desk' : hash.startsWith('receipts/') ? 'receipts' : hash.startsWith('method/') ? 'method' : 'explore';
+  for (const link of document.querySelectorAll('[data-nav]')) {
+    if (link.dataset.nav === section) link.setAttribute('aria-current', 'page');
+    else link.removeAttribute('aria-current');
+  }
+  document.querySelector('.more-nav')?.removeAttribute('open');
   if (hash === 'desk' || hash.startsWith('desk/')) {
     document.body.dataset.page = 'desk';
     showView('desk');
@@ -764,13 +770,8 @@ function renderHomeV2() {
   const rejectionRecords = state.hopGraph.rejected_hop_pairs ?? [];
   const verifiedRefusals = rejectionRecords.filter(item => item.publication_status === 'verified').length;
   const reviewRefusals = rejectionRecords.length - verifiedRefusals;
-  const rejected = rejectionRecords.length;
   const denseContext = state.surfaceGraph.surfaces.filter(surfaceItem => !surfaceItem.hop_eligible && (surfaceItem.participants ?? []).filter(participant => participant.participant_type === 'actor').length >= 20).length;
-  $('#summary').innerHTML = `
-    <div class="panel"><div class="metric">${state.tracks.size}</div><div class="metric-label">research tracks · exploratory labeled</div></div>
-    <div class="panel"><div class="metric">${state.catalogCounts.cases ?? state.caseIndex.size}</div><div class="metric-label">compiled case files</div></div>
-    <div class="panel"><div class="metric">${state.catalogCounts.claims ?? state.claimCatalog.size}</div><div class="metric-label">public-indexed claims</div></div>
-    <div class="panel"><div class="metric">${rejected}</div><div class="metric-label">${verifiedRefusals} verified · ${reviewRefusals} review-required refusals</div></div>`;
+  $('#summary').innerHTML = '';
   const preferred = ['fiona-hill', 'ben-warner', 'simon-case', 'dominic-cummings', 'keir-starmer'];
   const documentedSurfaces = actorId => state.timeline?.lanes.actor.get(actorId)?.surface_count ?? 0;
   const fallback = [...state.actorScores.values()]
@@ -785,37 +786,12 @@ function renderHomeV2() {
     return `<button class="result" data-kind="actor" data-id="${esc(id)}"><span class="kind-glyph">A</span><span class="result-label">${esc(labelActor(id))}<small>Clifford Number ${score.clifford_number} · ${documentedSurfaces(id)} documented surface${documentedSurfaces(id) === 1 ? '' : 's'} of ${state.timeline.counts.surfaces}</small></span></button>`;
   }).join('');
   const caseList = [...state.caseIndex.values()].map(item => `<button class="result" data-kind="case" data-id="${esc(item.case_id)}"><span class="kind-glyph">F</span><span class="result-label">${esc(item.title)}<small>${esc(item.tracking_id)} · ${esc(humanLabel(item.status))} · ${item.counts.events} typed events · ${item.claim_status_counts.verified} verified claims</small></span></button>`).join('');
-  const sampleId = routeIds[0];
-  const samplePath = sampleId ? state.hopGraph.shortest_paths[sampleId] : null;
-  const featuredCase = [...state.caseIndex.values()].sort((a, b) =>
-    (b.featured_priority ?? 0) - (a.featured_priority ?? 0)
-    || (b.claim_status_counts.verified ?? 0) - (a.claim_status_counts.verified ?? 0)
-  )[0];
-  const featuredClaim = featuredCase?.featured_claim ?? null;
   $('#detail').innerHTML = `
-    <div class="home-grid home-grid--evidence">
-      <article class="panel featured-case">
-        <span class="panel-label">Representative compiled case · ${esc(humanLabel(featuredCase?.status || 'unavailable'))}</span>
-        <h2>${esc(featuredCase?.title || 'No compiled case is available')}</h2>
-        <p>${esc(featuredCase?.subtitle || 'This release does not yet contain a compiled case.')}</p>
-        ${featuredClaim ? `<div class="featured-claim"><div class="claim-status-line"><span class="badge">Verified</span><span>${esc(humanLabel(featuredClaim.evidence_class || featuredClaim.evidence_state))} evidence</span></div><p>${esc(featuredClaim.plain)}</p><button class="claim-open" type="button" data-open-claim="${esc(featuredClaim.key)}">Open the claim and ${featuredClaim.receipt_count ?? 0} supporting receipt${featuredClaim.receipt_count === 1 ? '' : 's'} →</button></div>` : '<p class="evidence-note">No verified claim has been promoted in this case.</p>'}
-        ${featuredCase ? `<button class="result result--case" data-kind="case" data-id="${esc(featuredCase.case_id)}"><span class="kind-glyph">F</span><span class="result-label">Read the case ladder<small>${featuredCase.counts.events} typed events · ${featuredCase.counts.claims} claims</small></span></button>` : ''}
-      </article>
-      <aside class="panel evidence-standard">
-        <span class="panel-label">How Clifford Number decides</span>
-        <h2>Records first. Limits in plain language.</h2>
-        <div class="home-principles">
-          <div class="principle"><span class="principle-index">01</span><p><strong>Bounded, not broad.</strong> A named taskforce, board, authorship group, or small cohort can qualify. “Same institution” cannot.</p></div>
-          <div class="principle"><span class="principle-index">02</span><p><strong>Overlapping, not timeless.</strong> Dated roles must overlap. Unknown dates remain unknown.</p></div>
-          <div class="principle"><span class="principle-index">03</span><p><strong>Receipted, not inferred.</strong> Shared context does not establish contact, influence, coordination, intent, or wrongdoing.</p></div>
-        </div>
-      </aside>
+    <div class="record-directory">
+      <section><h2>Browse people</h2><p class="meta">Open a record for dated roles, shared surfaces and sources.</p><div class="results">${routeList}</div></section>
+      <section><h2>Case files</h2><p class="meta">Claims and evidence, with unresolved questions kept visible.</p><div class="results">${caseList || '<p class="meta">No compiled cases in this release.</p>'}</div></section>
     </div>
-    <div class="home-grid">
-      <div class="panel why-no-hop"><span class="panel-label">${verifiedRefusals ? 'Checked negative findings' : 'Refusal evidence under review'}</span><h3>No documented connection can be a result</h3><p>${verifiedRefusals} refusal${verifiedRefusals === 1 ? '' : 's'} currently meet the public evidence standard; ${reviewRefusals} compiler rejection${reviewRefusals === 1 ? ' is' : 's are'} preserved as review-required because decisive window receipts are not publicly re-verifiable. ${denseContext} large roster surface${denseContext === 1 ? ' is' : 's are'} preserved as context without manufacturing thousands of person-to-person hops.</p><button class="result" data-kind="desk" data-id=""><span class="kind-glyph">×</span><span class="result-label">Open the connection checker<small>Every accepted step carries receipts; every refusal exposes its publication status and evidence limit.</small></span></button></div>
-      <div class="panel case-entry"><span class="panel-label">Compiled case files</span><h3>Follow decisions to later outcomes</h3><p>Cases keep verified, review-required, unresolved, disputed, and rejected claims visibly distinct.</p><div class="results">${caseList || '<p class="meta">No compiled case files in this release.</p>'}</div></div>
-    </div>
-    ${samplePath ? `<details class="panel advanced-record"><summary>Advanced research view: inspect one documented route</summary><div class="advanced-record-body"><h3>${esc(labelActor(sampleId))} → ${esc(labelActor(state.hopGraph.anchor_actor_id))}</h3>${renderTopologyMap(samplePath)}<p class="evidence-note">The diagram is optional. The actor page carries the readable route, roles, overlap windows, and receipts.</p><div class="results">${routeList}</div></div></details>` : ''}`;
+    <p class="directory-boundary">${verifiedRefusals} verified refusals · ${reviewRefusals} under review · ${denseContext} large rosters kept as context. <a href="#method/overview">Read the evidence rules →</a></p>`;
   bindResults();
   announce(`Public record loaded: ${state.catalogCounts.tracks ?? state.tracks.size} research tracks, ${state.catalogCounts.cases ?? state.caseIndex.size} cases, ${state.catalogCounts.claims ?? state.claimCatalog.size} public-indexed claims, and ${publicReceiptCount()} unique receipt records.`);
 }

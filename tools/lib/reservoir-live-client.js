@@ -6,8 +6,8 @@
   const node = (tag, text) => { const n = document.createElement(tag); if(text != null) n.textContent=text; return n; };
   const style=node('style');style.textContent=`
 section.moved code{overflow-wrap:anywhere;word-break:break-word}
-#native-estate{margin:0;min-width:0;width:100%;padding:18px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
-#native-estate>summary{font-weight:600;cursor:pointer;min-height:28px}#native-estate[open]>summary{margin-bottom:14px}#native-estate .bar{font-size:13px}
+#native-estate{margin:0;min-width:0;width:100%;padding:8px 12px;background:var(--surface);border:1px solid var(--line);border-radius:6px}
+#native-estate>summary{font-size:13px;font-weight:600;cursor:pointer;min-height:28px;align-content:center}#native-estate[open]>summary{margin-bottom:14px}#native-estate .bar{font-size:13px}
 #native-estate .bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
 #native-estate input{flex:1;min-width:0;width:100%}#native-estate input,#native-estate select,#native-estate button,#return-result button,#return-result select{font:inherit;padding:8px 10px;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:5px}
 #native-estate select{max-width:100%;min-width:0}#native-estate button,#return-result button{cursor:pointer}#native-results{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:8px;max-height:300px;overflow:auto}
@@ -15,7 +15,7 @@ section.moved code{overflow-wrap:anywhere;word-break:break-word}
 #native-source{width:min(1000px,96vw);max-height:90vh;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:20px}#native-source::backdrop{background:#0008}#native-source pre{white-space:pre-wrap;overflow-wrap:anywhere;font:12px/1.65 var(--font-mono);max-height:62vh;overflow:auto}
 #native-source small{display:block;overflow-wrap:anywhere}#return-result{display:grid;grid-template-columns:minmax(0,1fr);gap:9px;margin:18px 0;padding:14px;border:1px solid var(--accent);border-radius:6px}#return-result>*{min-width:0;max-width:100%}#return-result textarea{font:inherit;padding:10px;min-height:100px;width:100%;resize:vertical;background:var(--surface);color:var(--ink);border:1px solid var(--line)}.source-record{white-space:pre-wrap;overflow-wrap:anywhere;max-height:350px;overflow:auto;font-size:13px}
 `;document.head.append(style);
-  const panel=node('details');panel.id='native-estate';panel.append(node('summary','Search native project files'));
+  const panel=node('details');panel.id='native-estate';panel.append(node('summary','Project files'));
   const bar=node('div');bar.className='bar';
   const status=node('span','Reading native collections…');status.style.flex='1';bar.append(status);
   const refresh=node('button','Read changed sources');refresh.type='button';bar.append(refresh);panel.append(bar);
@@ -23,7 +23,7 @@ section.moved code{overflow-wrap:anywhere;word-break:break-word}
   const input=node('input');input.id='native-q';input.type='search';input.placeholder='Search across projects: actor, question, mechanism, code or path';input.setAttribute('aria-label','Search native estate');
   const project=node('select');project.id='native-project';project.setAttribute('aria-label','Project');project.append(new Option('All connected projects',''));searchBar.append(input,project);panel.append(searchBar);
   const summary=node('p');summary.id='native-summary';panel.append(summary);
-  const list=node('div');list.id='native-results';panel.append(list);document.querySelector('#register .search').after(panel);
+  const list=node('div');list.id='native-results';panel.append(list);document.querySelector('.register-controls').prepend(panel);
   const modal=node('dialog');modal.id='native-source';document.body.append(modal);
   let offset=0,epoch=0,selectedSources=[],inquiry='',seen=config.fingerprint;
   const drafts=new Map();
