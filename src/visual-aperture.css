@@ -132,3 +132,11 @@
 .aperture-metric-grid strong { overflow-wrap: normal; }
 [data-aperture-mode="map"] .aperture-stage-legend > span:last-child { flex-basis: 100%; color: #8e9bad; }
 .aperture-deck .aperture-secondary-button:hover, .aperture-deck .aperture-control-buttons button:hover, .aperture-deck .aperture-actions button:hover, .aperture-deck .aperture-receipt-buttons button:hover { color: var(--ap-text); border-color: var(--ap-line-strong); background: var(--ap-panel-2); }
+/* Keep the options usable on short screens, with neutral range controls. */
+.aperture-deck .aperture-control input[type="range"] { accent-color: var(--ap-text); }
+.network-option-fields { max-height: min(480px, 50dvh); overflow-y: auto; overscroll-behavior: contain; }
+@media (max-width: 760px) {
+  .network-options[open] { flex-basis: 100%; }
+  .network-options[open] > summary { width: fit-content; margin-left: auto; }
+  .network-option-fields { position: static; width: 100%; max-width: none; margin-top: 8px; box-shadow: none; }
+}
