@@ -28,8 +28,15 @@ def atomic(path, data):
     tmp = path.with_name(path.name + '.pending')
     tmp.write_bytes(data)
     os.replace(tmp, path)
+def io_path(path):
+    """Use Windows extended paths for I/O; keep display paths and IDs unchanged."""
+    path = Path(path)
+    if os.name != 'nt': return path
+    name = os.path.abspath(path)
+    if name.startswith('\\\\?\\'): return Path(name)
+    return Path('\\\\?\\UNC\\' + name[2:] if name.startswith('\\\\') else '\\\\?\\' + name)
 def inside(path, base):
-    try: path.resolve().relative_to(base.resolve()); return True
+    try: io_path(path).resolve().relative_to(io_path(base).resolve()); return True
     except ValueError: return False
 
 def git(root, *args):
@@ -136,7 +143,7 @@ CREATE TABLE IF NOT EXISTS passes(id INTEGER PRIMARY KEY, at TEXT, body TEXT);
                 folders[:] = [x for x in folders if x not in SKIP and not (Path(directory)/x).is_symlink() and not (getattr(Path(directory)/x,'is_junction',lambda:False)())]
                 for name in files:
                     if Path(name).suffix.lower() in TEXT: paths.add(Path(directory)/name)
-        return sorted(p for p in paths if not set(p.parts).intersection(SKIP) and not SENSITIVE.search(str(p)) and not p.is_symlink())
+        return sorted(p for p in paths if not set(p.parts).intersection(SKIP) and not SENSITIVE.search(str(p)) and not io_path(p).is_symlink())
     def scan(self):
         started = time.monotonic(); changes = []; errors = []; summaries = []
         self.projects = discover(self.estate)
@@ -151,8 +158,9 @@ CREATE TABLE IF NOT EXISTS passes(id INTEGER PRIMARY KEY, at TEXT, body TEXT);
                     for p in paths:
                         if p.is_relative_to(self.state): continue
                         try:
-                            stat = p.stat()
-                            if not p.is_file(): continue
+                            native = io_path(p)
+                            stat = native.stat()
+                            if not native.is_file(): continue
                             name = str(p); seen.add(name); total += 1
                             if total % 500 == 0:
                                 self.status.update(reading_files=total, files=sum(p.get('files',0) for p in self.projects)+total)
@@ -162,7 +170,7 @@ CREATE TABLE IF NOT EXISTS passes(id INTEGER PRIMARY KEY, at TEXT, body TEXT);
                                 content += int(bool(prev['body'])); continue
                             text = ''; scope = 'path_only'
                             if p.suffix.lower() in TEXT and inside(p, Path(project['home'])):
-                                with p.open('rb') as f: data = f.read(PREFIX)
+                                with native.open('rb') as f: data = f.read(PREFIX)
                                 if b'\0' not in data:
                                     text = data.decode('utf-8', 'replace')
                                     scope = 'full_text' if stat.st_size <= PREFIX else 'first_16_KiB'
@@ -179,7 +187,7 @@ CREATE TABLE IF NOT EXISTS passes(id INTEGER PRIMARY KEY, at TEXT, body TEXT);
                         except (OSError, ValueError) as exc:
                             errors.append({'project': label, 'path': str(p), 'error': str(exc)[:180]})
                     for name, prev in old.items():
-                        if name not in seen and prev['available'] and not Path(name).exists():
+                        if name not in seen and prev['available'] and not io_path(name).exists():
                             db.execute('UPDATE documents SET available=0,observed_at=? WHERE id=?', (now(),prev['id']))
                             db.execute('INSERT INTO revisions VALUES(?,?,?,?,?,?,?)', (prev['id'],now(),prev['prefix_sha256'],None,prev['body'],None,0))
                             changed += 1
@@ -246,7 +254,7 @@ CREATE TABLE IF NOT EXISTS passes(id INTEGER PRIMARY KEY, at TEXT, body TEXT);
         h=hashlib.sha256()
         for name in paths:
             try:
-                stat=Path(name).stat(); h.update((name+str(stat.st_mtime_ns)+str(stat.st_size)).encode())
+                stat=io_path(name).stat(); h.update((name+str(stat.st_mtime_ns)+str(stat.st_size)).encode())
             except OSError: h.update((name+'missing').encode())
         return h.hexdigest()
     def scan_worker(self):
@@ -295,10 +303,11 @@ CREATE TABLE IF NOT EXISTS passes(id INTEGER PRIMARY KEY, at TEXT, body TEXT);
             result['revisions']=[dict(x) for x in db.execute('SELECT at,old_digest,new_digest,available FROM revisions WHERE id=? ORDER BY rowid DESC LIMIT 20',(sid,))]
         p=Path(result['path'])
         owners=[Path(x['home']) for x in self.projects if x['project']==result['project']]
-        if not any(inside(p,x) for x in owners) or p.is_symlink():raise ValueError('Source no longer lies inside its project home')
-        if p.is_file():
-            with p.open('rb') as f: data=f.read(262144)
-            result.update(text=data.decode('utf-8','replace') if b'\0' not in data else '[Binary source retained at the displayed native path]', displayed_bytes=len(data),displayed_sha256=digest(data),truncated=p.stat().st_size>len(data),current=True)
+        native=io_path(p)
+        if not any(inside(p,x) for x in owners) or native.is_symlink():raise ValueError('Source no longer lies inside its project home')
+        if native.is_file():
+            with native.open('rb') as f: data=f.read(262144)
+            result.update(text=data.decode('utf-8','replace') if b'\0' not in data else '[Binary source retained at the displayed native path]', displayed_bytes=len(data),displayed_sha256=digest(data),truncated=native.stat().st_size>len(data),current=True)
         else:result.update(text=result['body'],current=False,truncated=result['text_scope']!='full_text')
         result.pop('body',None);return result
     def add_return(self, body):
