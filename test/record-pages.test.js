@@ -231,7 +231,7 @@ const part2Source = fs.readFileSync('src/visual-aperture-part-2.js', 'utf8');
 for (const template of ['`${actorCount} actors · ${surfaceCount} surfaces`', '`${hopCount} admitted hops`']) {
   assert.ok(source.includes(template) && part2Source.includes(template), `app.js and the aperture share the hero template ${template}`);
 }
-assert.match(source, /\n  renderHeroCounts\(\);\n/, 'init writes the hero counts as soon as the data is loaded');
+assert.match(source, /\r?\n  renderHeroCounts\(\);\r?\n/, 'init writes the hero counts as soon as the data is loaded');
 
 // --- the browse index: one section per kind, capped, every kind represented
 const browseKinds = ['actor', 'organization', 'surface', 'type', 'year', 'case', 'track', 'chain', 'claim', 'receipt', 'candidate'];
@@ -249,6 +249,62 @@ const opened = context.browseIndexModel(browseItems, { cap: 8, expanded: new Set
 same([opened.sections[0].items.length, opened.sections[0].hidden, opened.sections[0].expanded], [12, 0, true], 'Show all opens one section past its cap');
 assert.equal(opened.sections[0].items[0].label, 'Person 00', 'without the row signal a section is alphabetical');
 same(context.browseIndexModel([]).sections, [], 'no records, no sections');
+
+// --- the trajectory strip: dated steps in date order under the name, coloured by surface class
+for (const name of ['recordTrajectoryModel', 'recordTrajectoryMarkup', 'trajectoryClass', 'trajectoryAmountText', 'trajectoryAmountLookup']) {
+  assert.equal(typeof context[name], 'function', `app.js exposes ${name} as a top-level function`);
+}
+same(['policy_document_surface', 'government_advisory_surface', 'campaign_surface', 'model_governance_surface', 'category_formation_surface', 'board_advisory_surface', 'directory_roster_surface', 'procurement_contract_surface', 'customer_vendor_surface', 'defence_industrial_surface', 'employment_investment_surface', 'founder_officer_surface', 'public_private_fund_surface', 'laundering_chain_connector', 'no_such_type', null].map(type => context.trajectoryClass(type)),
+  ['policy', 'policy', 'policy', 'policy', 'policy', 'appointment', 'appointment', 'procurement', 'procurement', 'procurement', 'capital', 'capital', 'capital', 'capital', 'policy', 'policy'], 'surface type to class, unknown falls back to policy');
+assert.equal(context.trajectoryAmountText(200000000), '£200,000,000');
+assert.equal(context.trajectoryAmountText(950), '£950');
+assert.equal(context.trajectoryAmountText(null), null);
+const surfaceById = new Map(surfaceGraph.surfaces.map(item => [item.surface_id, item]));
+const amountFor = context.trajectoryAmountLookup(surfaceId => surfaceById.get(surfaceId));
+const warnerTrajectory = context.recordTrajectoryModel(warner.rows, { amountFor });
+assert.equal(warnerTrajectory.dated.length, 10);
+assert.equal(warnerTrajectory.undated.length, 0);
+same(warnerTrajectory.dated.map(step => step.time_start), JSON.parse(JSON.stringify(warner.rows.map(row => row.time_start))), 'steps follow the date-sorted ledger rows');
+same(warnerTrajectory.dated.map(step => step.class), ['capital', 'policy', 'policy', 'appointment', 'capital', 'capital', 'capital', 'capital', 'policy', 'procurement']);
+assert.equal(warnerTrajectory.line, 'First documented 2018-01-24 as employee role observation; latest 2026-07-08 as speaker. Classes touched: capital, policy, appointment, procurement.');
+const warnerStrip = context.recordTrajectoryMarkup(warnerTrajectory);
+assert.match(warnerStrip, /^<section class="record-trajectory" id="record-trajectory"/);
+assert.match(warnerStrip, /<span class="panel-label" id="record-trajectory-title">Trajectory<\/span>/);
+assert.equal((warnerStrip.match(/<li class="trajectory-step trajectory-step--/g) ?? []).length, 10);
+assert.match(warnerStrip, /data-record-mark="[^"]+"[^>]*>2018-01-24<\/button><span class="trajectory-class"><span class="trajectory-dot" aria-hidden="true"><\/span>capital<\/span><a class="trajectory-surface" href="#surface\//, 'a step is date, class dot and name, surface link, role');
+assert.doesNotMatch(warnerStrip, /Undated/, 'no undated heading without undated rows');
+// Organization pages: the strip is built from the organization's own rows, with amounts.
+const ukGov = context.organizationRecordModel(model, surfaceGraph.organizations.find(item => item.id === 'uk-government'), 'uk-government');
+const ukGovTrajectory = context.recordTrajectoryModel(ukGov.rows, { amountFor });
+const barrowStep = ukGovTrajectory.steps.find(step => step.surface_id === 'team-barrow-public-private-fund-2026');
+assert.equal(barrowStep.amount_text, '£200,000,000', 'a row carrying funding_amount_gbp shows the amount');
+assert.equal(barrowStep.class, 'capital');
+assert.match(context.recordTrajectoryMarkup(ukGovTrajectory), /<span class="trajectory-amount">£200,000,000<\/span>/);
+const twinTrajectory = context.recordTrajectoryModel(twin.rows, { amountFor });
+assert.equal(twinTrajectory.steps.length, twin.rows.length);
+assert.equal(twinTrajectory.dated[0].time_start, '2023-09-28');
+// Undated rows follow the dated ones under "Undated".
+const synthetic = context.recordTrajectoryModel([
+  { key: 'u', surface_id: 's-u', surface_label: 'Undated surface', surface_type: 'procurement_contract_surface', role: 'supplier', participation_type: 'supplier', precision: 'undated', start_day: null, time_start: null },
+  { key: 'b', surface_id: 's-b', surface_label: 'Later', surface_type: 'founder_officer_surface', role: 'Founder', participation_type: 'founder_officer', precision: 'day', kind: 'day', start_day: 20, time_start: '2024-01-02' },
+  { key: 'a', surface_id: 's-a', surface_label: 'Earlier', surface_type: 'government_advisory_surface', role: 'Adviser', participation_type: 'special_adviser', precision: 'day', kind: 'day', start_day: 10, time_start: '2020-01-01' }
+]);
+same(synthetic.dated.map(step => step.key), ['a', 'b']);
+same(synthetic.undated.map(step => step.key), ['u']);
+assert.equal(synthetic.line, 'First documented 2020-01-01 as special adviser; latest 2024-01-02 as founder officer. Classes touched: policy, capital, procurement. 1 undated row listed after.');
+const syntheticStrip = context.recordTrajectoryMarkup(synthetic);
+assert.ok(syntheticStrip.indexOf('Earlier') < syntheticStrip.indexOf('Later') && syntheticStrip.indexOf('Later') < syntheticStrip.indexOf('<h4 class="trajectory-undated-head">Undated</h4>') && syntheticStrip.indexOf('Undated</h4>') < syntheticStrip.indexOf('Undated surface'), 'dated in order, then the Undated heading, then the undated rows');
+assert.equal(context.recordTrajectoryMarkup(context.recordTrajectoryModel([])), '', 'no rows, no strip');
+// Page order: the strip comes directly after the heading, before who/why, the stats block and the profile receipts.
+for (const name of ['renderActor', 'renderOrg']) {
+  const start = source.indexOf(`\nfunction ${name}(`);
+  const body = source.slice(start, source.indexOf('\nfunction ', start + 1));
+  assert.match(body, /recordHeading\([^\n]*\)\}\$\{recordTrajectoryMarkup\(trajectory\)\}<div class="badge-row record-kind-line">/, `${name}: the trajectory strip sits directly under the name`);
+  assert.match(body, /recordTrajectoryModel\(record\.rows, \{ amountFor: trajectoryAmountLookup\(surface\) \}\)/, `${name}: the strip is built from the page's own rows`);
+}
+const actorStart = source.indexOf('\nfunction renderActor(');
+const actorBody = source.slice(actorStart, source.indexOf('\nfunction ', actorStart + 1));
+assert.match(actorBody, /\$\{recordTrajectoryMarkup\(trajectory\)\}<div class="badge-row record-kind-line">\$\{badges\}<\/div>\$\{profileHtml\}\$\{recordFacts\(record\.facts\)\}\$\{profileReceipts\}<aside class="profile-boundary"><strong>What this entry supports:<\/strong> documented participation on named public-role surfaces\. <strong>What it does not support:<\/strong> claims about motive, agreement, influence, coordination, character, or wrongdoing\.<\/aside>/, 'actor head: strip, who/why, stats, receipts, then the unchanged supports / does-not-support pair');
 
 // --- registration
 assert.match(JSON.parse(fs.readFileSync('package.json', 'utf8')).scripts.test, /node test\/record-pages\.test\.js/);

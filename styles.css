@@ -1921,3 +1921,34 @@ body { background: var(--paper); font-family: var(--font-condensed); font-size: 
   .topbar .mobile-site-nav { gap: 12px; }
   .topbar .mobile-site-nav > a, .topbar .more-nav > summary { font-size: 10px; }
 }
+
+/* Trajectory strip: the first block under a record's name. One step per
+   participation row, coloured by surface class. */
+:root {
+  --class-policy: #3987e5;
+  --class-appointment: #c98500;
+  --class-procurement: #d95926;
+  --class-capital: #199e70;
+}
+.record-trajectory { margin: 16px 0 4px; }
+.record-trajectory-line { margin: 6px 0 10px; font-size: 17px; color: var(--ink); }
+.trajectory-steps { list-style: none; margin: 0; padding: 0 0 0 14px; border-left: 2px solid var(--line); display: grid; gap: 6px; }
+.trajectory-step { --step-color: var(--class-policy); position: relative; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; font-size: 14px; line-height: 1.4; }
+.trajectory-step::before { content: ""; position: absolute; left: -20px; top: .45em; width: 10px; height: 10px; border-radius: 50%; background: var(--step-color); border: 2px solid var(--panel); }
+.trajectory-step--policy { --step-color: var(--class-policy); }
+.trajectory-step--appointment { --step-color: var(--class-appointment); }
+.trajectory-step--procurement { --step-color: var(--class-procurement); }
+.trajectory-step--capital { --step-color: var(--class-capital); }
+.trajectory-date { font: inherit; font-family: var(--font-mono); font-size: 13px; color: var(--ink); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
+.trajectory-date:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.trajectory-class { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--step-color); font-weight: 700; }
+.trajectory-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--step-color); }
+.trajectory-surface { color: var(--ink); font-weight: 600; }
+.trajectory-role { color: var(--muted); }
+.trajectory-amount { font-family: var(--font-mono); font-weight: 700; color: var(--class-capital); }
+.trajectory-undated-head { margin: 12px 0 6px; font-size: 13px; color: var(--muted-strong); }
+.trajectory-steps--undated { border-left-style: dashed; }
+@media (max-width: 600px) {
+  .record-trajectory-line { font-size: 15px; }
+  .trajectory-step { font-size: 13px; }
+}
