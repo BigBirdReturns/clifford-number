@@ -24,6 +24,22 @@ let html = read('index.html')
   .replace(/  <script src="home\.js(?:\?[^\"]*)?" type="module"><\/script>/, () => `  <script>\n${inlineApp}\n  </script>`)
   .replace('<body>', '<body data-portable-release="true">');
 
+// The public visitor front end travels with the standalone without a runtime fetch.
+// Film playback remains an explicit network action; evidence inspection stays offline.
+const visitorData = readJson('experience/evidence.json');
+const visitorProof = readJson('experience/execution-proof.json');
+const visitorScript = escapeScript(`globalThis.CLIFFORD_PORTABLE_MODE=true;\nglobalThis.CLIFFORD_VISITOR_DATA=${JSON.stringify(visitorData)};\nglobalThis.CLIFFORD_VISITOR_PROOF=${JSON.stringify(visitorProof)};\n(function(){\n${read('experience/experience.js')}\n})();`);
+html = html
+  .replace(/  <link rel="stylesheet" href="experience\/interface\.css(?:\?[^\"]*)?">/, () => `<style>\n${read('experience/interface.css')}\n</style>`)
+  .replace(/  <script src="experience\/experience\.js(?:\?[^\"]*)?" type="module"><\/script>/, () => `<script>\n${visitorScript}\n</script>`);
+for (const poster of ['cantos-poster.webp', 'library-poster.webp']) {
+  const relative = `experience/assets/${poster}`;
+  const data = 'data:image/webp;base64,' + fs.readFileSync(path.join(root, relative)).toString('base64');
+  html = html.split(relative).join(data);
+}
+html = html.replace(/data-src="experience\/assets\//g, 'data-src="https://bigbirdreturns.github.io/clifford-number/experience/assets/')
+  .replace(/src="experience\/assets\/cantos-en\.vtt"/g, 'src="https://bigbirdreturns.github.io/clifford-number/experience/assets/cantos-en.vtt"');
+
 const output = path.join(root, 'dist', 'Clifford-Number-standalone.html');
 fs.mkdirSync(path.dirname(output), { recursive: true });
 fs.writeFileSync(output, html);
