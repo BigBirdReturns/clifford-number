@@ -14,9 +14,10 @@ import ecology_sources as sources
 FEC='https://www.fec.gov/files/bulk-downloads/1992/'
 S3='cg-519a459a-0ea3-42c2-b7bc-fa1143481f74.s3-us-gov-west-1.amazonaws.com'
 KIND={'committee':('cm92.zip','cm.txt',15),'transaction':('oth92.zip','itoth.txt',21)}
-SUPPORTED_CYCLES={1992,1994}
+SUPPORTED_CYCLES={1992,1994,1996}
 EXPECTED_SOURCE_ROWS={1992:{'committee':10759,'transaction':273009},
-                      1994:{'committee':10815,'transaction':272852}}
+                      1994:{'committee':10815,'transaction':272852},
+                      1996:{'committee':11075,'transaction':312193}}
 def source_spec(kind,year):
  if year not in SUPPORTED_CYCLES or kind not in KIND:raise ValueError('Unsupported cycle or FEC source kind')
  original,member,width=KIND[kind]
