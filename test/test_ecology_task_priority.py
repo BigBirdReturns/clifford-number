@@ -14,6 +14,7 @@ import sys
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'tools'))
 import ecology_task_priority as opt
+import ecology_backlog as native
 
 SCHEMA="""CREATE TABLE tasks(id TEXT PRIMARY KEY,lane TEXT,kind TEXT,spec TEXT,estates TEXT,
  status TEXT DEFAULT 'ready',cursor INTEGER DEFAULT 1,pages INTEGER DEFAULT 0,
@@ -58,6 +59,12 @@ class Priority(unittest.TestCase):
   with sqlite3.connect(self.db) as c:self.assertEqual(list(c.execute('SELECT * FROM tasks ORDER BY id')),before)
   self.assertEqual(opt.apply(self.root,self.root/'UNUSED.json')['status'],'already_installed')
   self.assertFalse((self.root/'UNUSED.json').exists())
+ def test_native_connect_bootstrap_uses_same_ordered_index(self):
+  with native.connect(self.root) as c:
+   self.assertEqual(opt.verify(c)['task_index_integrity'],'PASS')
+   selected=[c.execute(opt.SELECTION,(lane,)).fetchone() for lane in opt.LANES]
+  self.assertEqual([x[0] if x else None for x in selected],['oldest','award',None])
+  self.assertFalse(self.receipt.exists())
  def test_lock_contention_refuses_write(self):
   with self.lock.open('a+') as handle:
    fcntl.flock(handle,fcntl.LOCK_EX|fcntl.LOCK_NB)

@@ -56,6 +56,7 @@ def connect(state):
     CREATE TABLE IF NOT EXISTS files(path TEXT PRIMARY KEY,sha256 TEXT,bytes INTEGER,rows INTEGER,status TEXT,error TEXT,at TEXT);
     CREATE TABLE IF NOT EXISTS runlog(id TEXT PRIMARY KEY,started TEXT,ended TEXT,status TEXT,summary TEXT);
     CREATE INDEX IF NOT EXISTS task_ready ON tasks(lane,status,updated,id);
+    CREATE INDEX IF NOT EXISTS tasks_ready_priority_v1 ON tasks(lane,pages,COALESCE(json_extract(spec,'$.start'),json_extract(spec,'$.record_date'),json_extract(spec,'$.date'),'0000'),updated,id) WHERE status IN ('ready','partial');
     CREATE INDEX IF NOT EXISTS doc_origin ON documents(origin);
     CREATE INDEX IF NOT EXISTS commit_due ON commitments(due);
     CREATE VIRTUAL TABLE IF NOT EXISTS search USING fts5(id UNINDEXED,title,body,tokenize='unicode61');
