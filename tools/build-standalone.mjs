@@ -38,7 +38,8 @@ for (const poster of ['cantos-poster.webp', 'library-poster.webp']) {
   html = html.split(relative).join(data);
 }
 html = html.replace(/data-src="experience\/assets\//g, 'data-src="https://bigbirdreturns.github.io/clifford-number/experience/assets/')
-  .replace(/src="experience\/assets\/cantos-en\.vtt"/g, 'src="https://bigbirdreturns.github.io/clifford-number/experience/assets/cantos-en.vtt"');
+  .replace(/src="experience\/assets\/cantos-en\.vtt"/g, 'src="https://bigbirdreturns.github.io/clifford-number/experience/assets/cantos-en.vtt"')
+  .replace(/href="meetings\//g, 'href="https://bigbirdreturns.github.io/clifford-number/meetings/');
 
 const output = path.join(root, 'dist', 'Clifford-Number-standalone.html');
 fs.mkdirSync(path.dirname(output), { recursive: true });
