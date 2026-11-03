@@ -14,10 +14,11 @@ import ecology_sources as sources
 FEC='https://www.fec.gov/files/bulk-downloads/1992/'
 S3='cg-519a459a-0ea3-42c2-b7bc-fa1143481f74.s3-us-gov-west-1.amazonaws.com'
 KIND={'committee':('cm92.zip','cm.txt',15),'transaction':('oth92.zip','itoth.txt',21)}
-SUPPORTED_CYCLES={1992,1994,1996}
+SUPPORTED_CYCLES={1992,1994,1996,1998}
 EXPECTED_SOURCE_ROWS={1992:{'committee':10759,'transaction':273009},
                       1994:{'committee':10815,'transaction':272852},
-                      1996:{'committee':11075,'transaction':312193}}
+                      1996:{'committee':11075,'transaction':312193},
+                      1998:{'committee':9976,'transaction':291205}}
 def source_spec(kind,year):
  if year not in SUPPORTED_CYCLES or kind not in KIND:raise ValueError('Unsupported cycle or FEC source kind')
  original,member,width=KIND[kind]
@@ -41,6 +42,8 @@ def read_zip(capture,receipt,kind,year=1992):
  p=pathlib.Path(capture);r=json.loads(pathlib.Path(receipt).read_text())
  raw=p.read_bytes()
  url=f'https://www.fec.gov/files/bulk-downloads/{year}/'+filename;declared=r.get('source',r.get('url'))
+ if 'source' in r and 'url' in r and r['source']!=r['url']:
+  raise ValueError('conflicting source and url fields in FEC original capture receipt')
  if declared!=url or r.get('http_status')!=200 or len(raw)!=r.get('bytes') or sha(raw)!=r.get('sha256'):
   raise ValueError('official FEC capture/route/status/hash mismatch')
  final=urllib.parse.urlsplit(r.get('final_url',''))

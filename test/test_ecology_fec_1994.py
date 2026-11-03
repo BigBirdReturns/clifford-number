@@ -66,6 +66,8 @@ class RealOfficialFEC1994(unittest.TestCase):
  def test_year_identity_not_silently_merged(self):
   self.assertNotEqual(fec.source_spec('committee',1992)[0],fec.source_spec('committee',1994)[0])
   self.assertEqual(fec.source_spec('committee',1996)[0],'cm96.zip')
-  with self.assertRaises(ValueError):fec.source_spec('committee',1998)
+  self.assertEqual(fec.source_spec('committee',1998)[0],'cm98.zip')
+  self.assertNotEqual(fec.source_spec('committee',1996)[0],fec.source_spec('committee',1998)[0])
+  with self.assertRaises(ValueError):fec.source_spec('committee',2000)
   with self.assertRaises(ValueError):fec.source_spec('people',1994)
 if __name__=='__main__':unittest.main(verbosity=2)

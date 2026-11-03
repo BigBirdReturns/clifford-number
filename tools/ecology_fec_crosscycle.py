@@ -10,11 +10,14 @@ import argparse,collections,hashlib,json,pathlib
 import ecology_fec as fec
 
 CYCLES=(1992,1994,1996)
-def derive(state,out):
+def derive(state,out,cycles=CYCLES):
+ cycles=tuple(cycles)
+ if not cycles or cycles!=tuple(sorted(set(cycles))) or any(y not in fec.SUPPORTED_CYCLES for y in cycles):
+  raise ValueError('Crosscycle input years must be sorted, supported, unique official FEC cycles')
  state=pathlib.Path(state);out=pathlib.Path(out)
  out.mkdir(parents=True,exist_ok=True)
  records=collections.defaultdict(list);source_summaries=[]
- for year in CYCLES:
+ for year in cycles:
   cap=state/'expansion-canary'/f'fec-{year}'
   archive=cap/fec.source_spec('committee',year)[0]
   receipt=cap/'SOURCE-RECEIPT.json'
@@ -58,7 +61,7 @@ def derive(state,out):
     'graph_effect':'none','independent_review':False,'public_release':False,
     'interpretation_contract':'Repeated FEC committee identifier across official masters; organization control, amended transactions, beneficial ownership and money flows remain separate evidence questions.'
   })
- path=out/'FEC-1992-1996-COMMITTEE-CONTINUITIES.jsonl'
+ path=out/f'FEC-{min(cycles)}-{max(cycles)}-COMMITTEE-CONTINUITIES.jsonl'
  with path.open('w') as f:
   for row in rows:f.write(json.dumps(row,sort_keys=True,ensure_ascii=False)+'\n')
  summary={
@@ -71,8 +74,9 @@ def derive(state,out):
  'source_rights':fec.SOURCE_RIGHTS,
  'reported_names_only_not_legal_entity_join':True,'public_release':False
  }
- (out/'FEC-1992-1996-CONTINUITY-SUMMARY.json').write_text(json.dumps(summary,indent=2)+'\n')
+ (out/f'FEC-{min(cycles)}-{max(cycles)}-CONTINUITY-SUMMARY.json').write_text(json.dumps(summary,indent=2)+'\n')
  return summary
 if __name__=='__main__':
  p=argparse.ArgumentParser();p.add_argument('--state',required=True);p.add_argument('--out',required=True)
- a=p.parse_args();print(json.dumps(derive(a.state,a.out),indent=2))
+ p.add_argument('--through',type=int,choices=(1996,1998),default=1996)
+ a=p.parse_args();print(json.dumps(derive(a.state,a.out,cycles=tuple(y for y in sorted(fec.SUPPORTED_CYCLES) if y<=a.through)),indent=2))
