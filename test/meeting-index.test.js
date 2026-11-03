@@ -27,6 +27,13 @@ function validate(x){
   const official=e.sources.some(s=>s.class.startsWith('official'));assert.equal(e.evidence_tier,official?'official_record':'first_party_report');
   for(const p of e.participants){assert.ok(p.name&&roles.includes(p.role));assert.ok(refs.has(p.source_id));assert.ok(['official_record','organizer_report','announced','participant_recollection'].includes(p.basis));if(p.role.startsWith('announced'))assert.equal(p.basis,'announced');participantCount++}
   for(const f of e.financial_evidence){assert.ok(moneyKinds.includes(f.kind));assert.ok(f.summary&&refs.has(f.source_id));assert.ok(['USD','GBP','EUR'].includes(f.currency));assert.ok(f.amount===null||(Number.isFinite(f.amount)&&f.amount>=0));assert.equal(f.award_identifier,null,'this edition admits no verified award-ID joins');assert.equal(f.independently_reconciled,false);if(f.kind.startsWith('reported_event')||f.kind==='reported_named_event_award'){assert.ok(official);assert.notEqual(e.state,'announced')}}
+  if(e.award_followthrough){
+   const a=e.award_followthrough;assert.equal(a.schema,'clifford-meeting-award-followthrough@1');assert.equal(a.event_identifier_join,'not_established_by_explicit_source_identifier');assert.equal(a.later_awards_are_event_awards,false);assert.equal(a.money_total_for_event,null);assert.ok(a.interpretation.includes('not an accepted event-to-award join'));assert.equal(a.selection.independent_selection_review,'pending');assert.ok(a.selection.unit&&a.selection.comparators&&a.selection.exclusions);assert.equal(a.selection.returned_awards,a.records.length);assert.equal(a.selection.pagination_complete,true);assert.deepEqual(a.selection.query_date_window,['2019-01-01','2019-12-31']);
+   const awardIds=new Set();for(const r of a.records){
+    assert.match(r.award_id,/^[A-Z0-9]{10,20}$/);assert.ok(!awardIds.has(r.award_id));awardIds.add(r.award_id);assert.ok(refs.has(r.source_id));const s=register.get(r.source_id);assert.equal(s.status,'captured');assert.equal(s.review_route,'native_captured_official_json');assert.equal(new URL(s.url).hostname,'api.usaspending.gov');assert.equal(r.generated_award_id,'CONT_AWD_'+r.award_id+'_9700_-NONE-_-NONE-');assert.ok(s.url.endsWith('/'+r.generated_award_id+'/'));assert.equal(r.source_sha256,s.sha256);assert.equal(r.source_retrieved_at,s.retrieved_at);assert.match(r.recipient_uei,/^[A-Z0-9]{12}$/);assert.ok(a.selection.source_recipient_ueis.includes(r.recipient_uei));assert.ok(r.recipient_name&&r.description&&r.boundary);assert.equal(r.awarding_subagency,'Department of the Air Force');dateValid(r.signed_date,'day');assert.ok(r.signed_date>=a.selection.query_date_window[0]&&r.signed_date<=a.selection.query_date_window[1]);assert.ok(Number.isFinite(r.total_obligation)&&r.total_obligation>=0);assert.equal(r.currency,'USD');assert.equal(r.outlay_state,'not_reported_in_award_field');assert.equal(r.total_outlay,null,'account-level zero cannot become paid or unpaid money');assert.equal(r.event_award_identifier_verified,false);assert.equal(r.graph_effect,'none');assert.ok(['Y','N'].includes(r.purchase_card_indicator));assert.ok(r.competition.extent_competed_description&&r.competition.number_of_offers_received);
+    if(r.event_link_state==='candidate_name_date_amount_match'){assert.ok(r.signed_date>=e.start&&r.signed_date<=(e.end||e.start));assert.match(r.boundary,/candidate/)}else{assert.equal(r.event_link_state,'later_same_uei_no_event_attribution');assert.ok(r.signed_date>(e.end||e.start));assert.match(r.boundary,/excluded from event financial totals/)}
+   }
+  }
   const financial=e.financial_evidence.some(f=>['reported_event_contracts','reported_named_event_award'].includes(f.kind))?'reported_event_awards':e.financial_evidence.length?'other_financial_context':'not_established';assert.equal(e.financial_state,financial);
   if(!families.has(e.family))families.set(e.family,[]);families.get(e.family).push(e);
  }
@@ -53,7 +60,24 @@ assert.equal(byId.get('air-force-pitch-day-2019').financial_evidence[0].amount,8
 assert.match(byId.get('air-force-pitch-day-2019').unknown,/reconcile/);
 assert.equal(byId.get('fed-supernova-2021').financial_evidence[0].kind,'offered_investment_prize');
 assert.equal(byId.get('nato-defence-industry-forum-2026').financial_evidence.length,0,'do not promote group historical capital to an event award');
+const follow=byId.get('air-force-pitch-day-2019').award_followthrough;
+assert.equal(follow.records.length,4);assert.equal(byId.get('air-force-teo-pitch-day-2019').award_followthrough,undefined,'do not relocate later same-recipient awards into the TEO event');
+assert.deepEqual(follow.records.map(r=>[r.award_id,r.total_obligation,r.signed_date]),[['FA865219P0216',158000,'2019-03-06'],['FA864919PA304',50000,'2019-08-13'],['FA862920C5014',749863.92,'2019-11-04'],['FA862920C5028',750000,'2019-11-13']]);
+assert.ok(follow.records.every(r=>r.recipient_uei==='SXMRSSM781C7'&&r.total_outlay===null));assert.equal(follow.records[0].purchase_card_indicator,'Y');assert.equal(d.summary.official_award_followthrough_records,4);assert.equal(d.summary.verified_event_award_identifier_joins,0);
+const mutateFollow=x=>x.events.find(e=>e.id==='air-force-pitch-day-2019').award_followthrough;
 const mutations=[
+ ['event total laundering',x=>{mutateFollow(x).money_total_for_event=1707863.92}],
+ ['false explicit event-ID join',x=>{mutateFollow(x).event_identifier_join='verified'}],
+ ['later award attributed to meeting',x=>{mutateFollow(x).records[1].event_link_state='candidate_name_date_amount_match'}],
+ ['missing outlay coerced to zero',x=>{mutateFollow(x).records[0].total_outlay=0}],
+ ['source hash mismatch',x=>{mutateFollow(x).records[0].source_sha256='0'.repeat(64)}],
+ ['award field graph promotion',x=>{mutateFollow(x).records[0].graph_effect='verified'}],
+ ['wrong source recipient',x=>{mutateFollow(x).records[0].recipient_uei='AAAAAAAAAAAA'}],
+ ['source URL award mismatch',x=>{mutateFollow(x).records[0].generated_award_id='CONT_AWD_OTHER_9700_-NONE-_-NONE-'}],
+ ['independent selection review fabricated',x=>{mutateFollow(x).selection.independent_selection_review='passed'}],
+ ['later set promoted',x=>{mutateFollow(x).later_awards_are_event_awards=true}],
+ ['award source missing',x=>{mutateFollow(x).records[0].source_id='src-absent'}],
+ ['award identifier misattributed',x=>{mutateFollow(x).records[0].event_award_identifier_verified=true}],
  ['future held',x=>{const e=x.events.find(e=>e.id==='new-north-summit-2027');e.state='reported_held';e.lifecycle='reported_held'}],
  ['impossible date',x=>{x.events[0].start='2026-02-31'}],
  ['wrong precision',x=>{x.events[0].date_precision='year'}],
