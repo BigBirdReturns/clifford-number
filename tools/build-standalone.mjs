@@ -115,13 +115,20 @@ const apertureRuntime = [
   ...Array.from({ length: 10 }, (_, index) => read(`src/visual-aperture-part-${index + 1}.js`)),
   read('src/visual-aperture-timeline-runtime.js'),
   read('src/visual-aperture-social-field-runtime.js'),
+  read('src/visual-aperture-field-runtime.js'),
   read('src/visual-aperture-bounded-runtime.js'),
   read('src/visual-aperture-export-preview-runtime.js'),
   read('src/visual-aperture-part-11.js'),
   read('src/visual-aperture-bounded-address-runtime.js')
 ].join('\n\n');
 const apertureBundle = `(function visualApertureBundle() {\n${apertureModules}\n(function visualApertureRuntime() {\nconst { ${apertureNames.join(', ')} } = globalThis;\n${apertureRuntime}\n})();\n})();`;
-const inlineExplorerApp = escapeScript(`globalThis.__CLIFFORD_APERTURE_BUNDLED__ = true;\nconst EMBEDDED_DATA = ${JSON.stringify(explorerEmbedded)};\n${explorerHelpers}\n${explorerApp}\n${apertureBundle}`);
+// The Field runtime reads the pure social-field API through
+// globalThis.cliffordSocialField (src/visual-aperture.js sets it on the hosted
+// page); the standalone inlines the module under the same name. The WebGL
+// renderer (src/atlas-webgl.js, an ES module over the vendored three.js) is
+// not bundled, so the standalone's Field tab carries the counts, the heat
+// terms, the tiles and the rows without the live canvas.
+const inlineExplorerApp = escapeScript(`globalThis.__CLIFFORD_APERTURE_BUNDLED__ = true;\nconst EMBEDDED_DATA = ${JSON.stringify(explorerEmbedded)};\nglobalThis.cliffordSocialField = ${isolateModule(read('src/social-field.js'))};\n${explorerHelpers}\n${explorerApp}\n${apertureBundle}`);
 const inlineExplorerCss = [
   read('styles.css'),
   read('src/visual-aperture-layout.css'),
@@ -130,7 +137,8 @@ const inlineExplorerCss = [
   read('src/visual-aperture-workspace.css'),
   read('src/visual-aperture-export.css'),
   read('src/visual-aperture-bounded.css'),
-  read('src/visual-aperture-timeline.css')
+  read('src/visual-aperture-timeline.css'),
+  read('src/visual-aperture-field.css')
 ].join('\n\n');
 
 let explorerHtml = read('explorer.html')

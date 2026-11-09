@@ -7,6 +7,7 @@ function shellMarkup() {
 
     <div class="aperture-commandbar">
       <div class="aperture-mode-switch" role="tablist" aria-label="Choose operating mode">
+        <button type="button" role="tab" class="aperture-mode-button" data-ap-mode="field" aria-selected="false" tabindex="-1">Field</button>
         <button type="button" role="tab" class="aperture-mode-button is-active" data-ap-mode="map" aria-selected="true">Network</button>
         <button type="button" role="tab" class="aperture-mode-button" data-ap-mode="timeline" aria-selected="false" tabindex="-1">Timeline</button>
         <button type="button" role="tab" class="aperture-mode-button" data-ap-mode="route" aria-selected="false" tabindex="-1">Route</button>
@@ -26,6 +27,12 @@ function shellMarkup() {
     <div class="aperture-layout">
       <div class="aperture-stage-wrap">
         <div class="aperture-stage-guide" aria-hidden="true"><strong>Explore</strong><span>rotate background &middot; wheel = depth &middot; click = focus</span></div>
+        <!-- Field (arrival): the whole ledger as a force-directed field. The field runtime (src/visual-aperture-field-runtime.js) fills the chrome strip, mounts the GPU renderer into the stage and docks the inspector beside the selected node. -->
+        <div id="aperture-field" class="aperture-field" hidden>
+          <div id="aperture-field-chrome" class="aperture-field-chrome" aria-label="Ledger counts"></div>
+          <div id="aperture-field-stage" class="aperture-field-stage" role="group" aria-label="The ledger field: every actor, organization and bounded surface is a node and every participation row is a link. Node size, halo and colour are the printed heat; nothing else sizes or colours a node, and no line joins two people."><i id="aperture-field-leader" class="aperture-field-leader" hidden aria-hidden="true"></i></div>
+          <p id="aperture-field-fallback" class="aperture-field-fallback" role="status" hidden></p>
+        </div>
         <div id="aperture-webgl" class="aperture-webgl" role="group" aria-label="Spherical social field. Surface size and halo show heat, a sum of its dated participation rows, each weighted by class (policy 1, appointment 1, procurement 2, capital 2) and decayed by 0.8 per year to the window end; a person is coloured by the classes it touched and sized by the same sum over its own rows. Arcs are sourced graph edges coloured by evidence class." hidden></div>
         <div id="aperture-timeline" class="aperture-timeline" aria-label="Ledger timeline: one mark per documented participation row" hidden></div>
         <svg id="aperture-stage" class="aperture-stage" viewBox="0 0 1200 720" role="img" aria-labelledby="aperture-stage-title aperture-stage-desc">
@@ -49,6 +56,8 @@ function shellMarkup() {
         <div id="aperture-inspector-body" class="aperture-inspector-body"></div>
       </aside>
     </div>
+
+    <section id="aperture-field-tiles" class="aperture-field-tiles" aria-label="Ledger instruments: one fact each, with its denominator" hidden></section>
 
     <section class="aperture-overview" aria-labelledby="aperture-overview-title">
       <div class="aperture-overview-heading">

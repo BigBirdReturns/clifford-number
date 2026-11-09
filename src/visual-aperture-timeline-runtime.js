@@ -7,7 +7,7 @@
 // one contained block. No line is ever drawn between two people; the reserved
 // pair selector must never match anything in this stage.
 
-const TIMELINE_MODE_LABELS = Object.freeze({ timeline: 'Timeline', map: 'Network', route: 'Route', surface: 'Roster' });
+const TIMELINE_MODE_LABELS = Object.freeze({ field: 'Field', timeline: 'Timeline', map: 'Network', route: 'Route', surface: 'Roster' });
 const TIMELINE_BY_LABELS = Object.freeze({ actor: 'People', organization: 'Organizations', type: 'Surface types' });
 const TIMELINE_KIND_LABELS = Object.freeze({ actor: 'Person', organization: 'Organization', type: 'Surface type' });
 const TIMELINE_HOP_LABELS = Object.freeze({ all: 'Hop and context surfaces', hop: 'Hop surfaces only', context: 'Context surfaces only' });

@@ -8,7 +8,7 @@ export const APERTURE_EXPORT_SOURCE_ARTIFACTS = Object.freeze([
   'build/receipt-graph.json'
 ]);
 
-const MODES = new Set(['timeline', 'map', 'route', 'surface']);
+const MODES = new Set(['field', 'timeline', 'map', 'route', 'surface']);
 const LEVELS = new Set(['corpus', 'machine', 'surface', 'evidence']);
 const TIMELINE_BY = new Set(['actor', 'organization', 'type']);
 const TIMELINE_HOP = new Set(['all', 'hop', 'context']);
@@ -470,26 +470,124 @@ function surfaceView(input) {
   };
 }
 
+// The field: the whole ledger as nodes and participation-row links, with the
+// selected node's printed heat (every term a dated row) and every row of the
+// current scope. No position, degree or layout fact enters the packet.
+function fieldRow(value) {
+  return {
+    row_id: clean(value?.row_id, 400),
+    time_start: nullable(value?.time_start, 20),
+    time_end: nullable(value?.time_end, 20),
+    time_label: clean(value?.time_label || 'undated', 80),
+    precision: clean(value?.precision || 'none', 10),
+    surface_id: clean(value?.surface_id, 200),
+    surface_label: clean(value?.surface_label || value?.surface_id, 300),
+    surface_type: nullable(value?.surface_type, 100),
+    participant_type: clean(value?.participant_type || 'actor', 20),
+    participant_id: clean(value?.participant_id, 200),
+    participant_label: clean(value?.participant_label || value?.participant_id, 300),
+    role: clean(value?.role || 'Recorded participant', 300),
+    evidence_class: clean(value?.evidence_class || 'open', 40),
+    receipt_ids: strings(value?.receipt_ids, 200)
+  };
+}
+
+function fieldHeat(value) {
+  if (!value) return null;
+  const byClass = {};
+  for (const key of ['policy', 'appointment', 'procurement', 'capital']) byClass[key] = number(value?.by_class?.[key], 0);
+  return {
+    noun: clean(value.noun || 'heat', 10),
+    at_date: nullable(value.at_date, 10),
+    total: number(value.total, 0),
+    by_class: byClass,
+    touches: (Array.isArray(value.touches) ? value.touches : []).map(touch => ({
+      date: nullable(touch?.date, 10),
+      heat_class: clean(touch?.heat_class || 'policy', 20),
+      weight: number(touch?.weight, 1),
+      years: number(touch?.years, 0),
+      contribution: number(touch?.contribution, 0),
+      surface_id: clean(touch?.surface_id, 200)
+    })),
+    undated_rows: integer(value.undated_rows)
+  };
+}
+
+function fieldView(input) {
+  const counts = input?.counts ?? {};
+  const rows = (Array.isArray(input?.rows) ? input.rows : []).map(fieldRow);
+  const selected = input?.selected ? {
+    node_id: clean(input.selected.node_id, 200),
+    label: clean(input.selected.label || input.selected.node_id, 300),
+    kind: clean(input.selected.kind || 'person', 20),
+    documented_count: integer(input.selected.documented_count),
+    count_kind: clean(input.selected.count_kind || 'surfaces', 20),
+    rows_total: integer(input.selected.rows_total),
+    rows_undated: integer(input.selected.rows_undated),
+    heat: fieldHeat(input.selected.heat)
+  } : null;
+  return {
+    counts: {
+      nodes: integer(counts.nodes),
+      actors: integer(counts.actors),
+      organizations: integer(counts.organizations),
+      surfaces: integer(counts.surfaces),
+      rows: integer(counts.rows),
+      actor_rows: integer(counts.actor_rows),
+      organization_rows: integer(counts.organization_rows),
+      undated_rows: integer(counts.undated_rows),
+      receipts: integer(counts.receipts),
+      hops: integer(counts.hops),
+      first_date: nullable(counts.first_date, 10),
+      last_date: nullable(counts.last_date, 10)
+    },
+    heat_formula: clean(input?.heat_formula, 200),
+    heat_at: nullable(input?.heat_at, 10),
+    selected,
+    rows,
+    display: displayMetadata(input?.display, rows.length),
+    table: {
+      columns: ['Documented', 'Bounded surface', 'Participant', 'Recorded role', 'Evidence', 'Receipt IDs'],
+      rows: rows.map(row => [row.time_label, row.surface_label, row.participant_label, row.role, row.evidence_class, row.receipt_ids.join(', ')])
+    }
+  };
+}
+
+function fieldCaption(view) {
+  const counts = view.counts;
+  const heat = view.selected?.heat;
+  const selected = view.selected
+    ? ` Selected: ${view.selected.label} (${view.selected.kind}), ${view.selected.rows_total} participation row${view.selected.rows_total === 1 ? '' : 's'}${heat ? `, ${heat.noun} ${heat.total.toFixed(2)} at ${heat.at_date} over ${heat.touches.length} dated touch${heat.touches.length === 1 ? '' : 'es'}` : ''}.`
+    : ' No node is selected.';
+  return `This exact Clifford Number field shows ${counts.nodes} nodes (${counts.actors} actors, ${counts.organizations} organizations, ${counts.surfaces} bounded surfaces) joined by ${counts.rows} participation rows, one link per row, documented ${counts.first_date ?? '…'} to ${counts.last_date ?? '…'}. Node size, halo and colour are the printed heat at ${view.heat_at ?? 'the end of record'} (${view.heat_formula}); every term is a dated ledger row and layout position carries no meaning.${selected} The field draws no person-to-person line and creates no hop.${displaySentence(view.display)}`;
+}
+
 export function buildApertureExportPacket(input) {
   const mode = clean(input?.mode, 20);
-  if (!MODES.has(mode)) throw new Error('mode must be timeline, map, route, or surface');
+  if (!MODES.has(mode)) throw new Error('mode must be field, timeline, map, route, or surface');
   const url = exactUrl(input?.exactViewUrl);
-  const view = mode === 'timeline'
+  const view = mode === 'field'
+    ? fieldView(input?.view)
+    : mode === 'timeline'
     ? timelineView(input?.view)
     : mode === 'map'
       ? mapView(input?.view)
       : mode === 'route'
         ? routeView(input?.view)
         : surfaceView(input?.view);
-  const baseCaption = mode === 'timeline' ? timelineCaption(view) : mode === 'map' ? mapCaption(view) : mode === 'route' ? routeCaption(view) : surfaceCaption(view);
-  const receiptIds = mode === 'timeline'
+  const baseCaption = mode === 'field' ? fieldCaption(view) : mode === 'timeline' ? timelineCaption(view) : mode === 'map' ? mapCaption(view) : mode === 'route' ? routeCaption(view) : surfaceCaption(view);
+  const receiptIds = mode === 'field'
+    ? strings(view.rows.flatMap(item => item.receipt_ids), 200)
+    : mode === 'timeline'
     ? strings([...view.rows.flatMap(item => item.receipt_ids), ...view.dense.flatMap(item => item.receipt_ids)], 200)
     : mode === 'map'
       ? strings([...(view.surface?.receipt_ids ?? []), ...view.participants.flatMap(item => item.receipt_ids)], 200)
       : mode === 'route'
         ? strings(view.path?.hops.flatMap(hop => hop.surface.receipt_ids) ?? [], 200)
         : strings([...(view.surface.receipt_ids ?? []), ...view.visible_participants.flatMap(item => item.receipt_ids)], 200);
-  const title = mode === 'timeline'
+  const title = mode === 'field'
+    ? `Clifford Number field · ${view.selected?.label ?? 'whole ledger'}`
+    : mode === 'timeline'
     ? `Clifford Number timeline · ${TIMELINE_BY_LABELS[view.by]} · ${view.domain.from ?? '…'} → ${view.domain.to ?? '…'}`
     : mode === 'map'
       ? `Clifford Number map · ${view.level}`
@@ -512,7 +610,9 @@ export function buildApertureExportPacket(input) {
 
 export function apertureExportFilename(packet) {
   const mode = clean(packet?.mode, 20) || 'view';
-  const subject = mode === 'timeline'
+  const subject = mode === 'field'
+    ? packet?.view?.selected?.label || 'whole-ledger'
+    : mode === 'timeline'
     ? `${packet?.view?.by || 'actor'}-${packet?.view?.domain?.from || 'start'}-${packet?.view?.domain?.to || 'end'}`
     : mode === 'route'
       ? `${packet?.view?.from?.actor_label || 'from'}-to-${packet?.view?.to?.actor_label || 'to'}`

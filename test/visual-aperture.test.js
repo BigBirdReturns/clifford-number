@@ -197,6 +197,16 @@ for (const source of [fieldRuntimeSource, fieldModuleSource]) {
   assert.doesNotMatch(source, /machine_score|factory_score|deniability|laundry_score|recurrence_score|Structural context index|Factory Score|reinforcement heat/, 'no hidden composite drives a field channel');
 }
 assert.match(readFileSync('src/visual-aperture-part-3.js', 'utf8'), /publishApertureOrigin\(label\)/, 'the origin hook publishes on every selection change');
+// The Field tab (arrival, docs/explorer.md "Field"): first tab, its runtime loads
+// after the social field and before the bounded runtime and the mount, it prints
+// the same heat formula, and no hidden composite reaches it.
+const fieldTabRuntime = readFileSync('src/visual-aperture-field-runtime.js', 'utf8');
+assert.match(ui, /data-ap-mode="field"[^>]*>Field<\/button>\s*<button[^>]*data-ap-mode="map"/, 'Field is the first tab');
+assert.ok(loaderIndex('field-runtime') > loaderIndex('social-field-runtime') && loaderIndex('field-runtime') < loaderIndex('bounded-runtime') && loaderIndex('field-runtime') < loaderIndex('part-11'), 'the field runtime loads after the social field and before the bounded runtime and the mount');
+assert.match(uiEntry, /globalThis\.cliffordSocialField = social/, 'the pure field module is exposed under one name');
+assert.ok(fieldTabRuntime.includes(printedHeatFormula), 'the field runtime prints the heat formula');
+assert.doesNotMatch(fieldTabRuntime, /machine_score|factory_score|deniability|laundry_score|recurrence_score|Structural context index|Factory Score|reinforcement heat|documented_degree/, 'no hidden composite drives a field channel');
+assert.match(readFileSync('src/visual-aperture-part-9.js', 'utf8'), /if \(state\.mode !== 'field'\) deactivateFieldStage\(\);[\s\S]*else if \(state\.mode === 'field'\) renderFieldMode\(\);/, 'the field stage is deactivated outside its mode');
 assert.match(readFileSync('src/visual-aperture-part-1.js', 'utf8'), /globalThis\.__cliffordPublicData/, 'readData uses the app.js handoff before fetching');
 
 // vm render of the runtime against the real artifacts: the SVG the page draws on
@@ -266,7 +276,7 @@ for (const breakpoint of ['860px', '760px', '430px', '340px']) assert.match(time
 assert.match(timelineCss, /@media print/);
 assert.match(timelineCss, /\.aperture-time-mark--hop \{ stroke: var\(--ap-amber\)/);
 assert.match(timelineCss, /\.aperture-time-column-segment/);
-assert.match(timelineCss, /repeat\(4, minmax\(0, 1fr\)\)/, 'four mode tabs fit a phone');
+assert.match(timelineCss, /repeat\(5, minmax\(0, 1fr\)\)/, 'five mode tabs fit a phone');
 assert.match(readFileSync('src/visual-aperture.css', 'utf8'), /visual-aperture-timeline\.css/);
 
 console.log('visual-aperture.test.js: OK');

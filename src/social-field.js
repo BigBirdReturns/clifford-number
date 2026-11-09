@@ -265,14 +265,17 @@ function buildSurfaceMemberships(model) {
 // Documented recurrence counts. memberCount is the number of distinct surfaces
 // a node is a documented member of; pairCount is a count of shared named
 // surfaces per pair. Pair counts are never drawn as a line: they feed only the
-// per-node strongest_repeat count, which is displayed as a number.
-function buildReinforcement(model) {
+// per-node strongest_repeat count, which is displayed as a number. The ledger
+// field (buildLedgerFieldModel) passes pairs=false: a roster of 800 names
+// would otherwise build 320,000 pair keys that no channel of that view reads.
+function buildReinforcement(model, { pairs = true } = {}) {
   const membersBySurface = buildSurfaceMemberships(model);
   const pairCount = new Map();
   const memberCount = new Map();
   for (const members of membersBySurface.values()) {
     const unique = [...new Set(members)].sort();
     for (const id of unique) memberCount.set(id, (memberCount.get(id) ?? 0) + 1);
+    if (!pairs) continue;
     for (let i = 0; i < unique.length; i += 1) {
       for (let j = i + 1; j < unique.length; j += 1) {
         const key = `${unique[i]}||${unique[j]}`;
@@ -331,10 +334,10 @@ export function nodeCountLabel(node) {
   return `${count} documented ${kind}${count === 1 ? '' : 's'}${noRows ? ' · research context · no ledger rows' : ''}`;
 }
 
-export function buildSocialFieldModel(model, { radius = SOCIAL_FIELD_RADIUS, ledger = null, atDay = null } = {}) {
+export function buildSocialFieldModel(model, { radius = SOCIAL_FIELD_RADIUS, ledger = null, atDay = null, reinforcement: withPairs = true } = {}) {
   if (!model?.nodes || !model?.edges || !model?.nodeById) throw new TypeError('social field requires a network model');
   const adjacency = buildAdjacency(model);
-  const reinforcement = buildReinforcement(model);
+  const reinforcement = buildReinforcement(model, { pairs: withPairs });
 
   const nodes = model.nodes.map(node => {
     const position = seededPoint(node, radius);
@@ -431,6 +434,103 @@ export function socialFieldClusterForNode(node) {
   if (text.includes('capital') || text.includes('fund') || text.includes('venture') || text.includes('invest')) return 'capital';
   if (text.includes('company') || text.includes('technology') || text.includes('frontier-ai') || text.includes('data')) return 'technology';
   return 'other';
+}
+
+// The ledger field (the explorer's Field tab, docs/explorer.md "Field").
+// Every actor, organization and bounded surface of build/surface-graph.json
+// is a node, and every participation row is one edge from its participant to
+// its surface: one mark per ledger row (rule 1). No edge joins two people or
+// two organizations (rule 2); a roster's rows are its spokes to the one
+// roster node, so no line joins two of its names (rule 3). graph.json plays
+// no part in this model, and the model carries no score of any kind.
+export const LEDGER_FIELD_SCHEMA = 'clifford-ledger-field@1';
+export function buildLedgerFieldModel(surfaceGraph) {
+  if (!surfaceGraph?.surfaces) throw new TypeError('ledger field requires a surface graph');
+  const nodes = [];
+  const nodeById = new Map();
+  const add = node => {
+    if (nodeById.has(node.id)) return nodeById.get(node.id);
+    nodeById.set(node.id, node);
+    nodes.push(node);
+    return node;
+  };
+  for (const actor of surfaceGraph.actors ?? []) {
+    add({ id: actor.id, label: actor.label || actor.id, type: 'person', kind: actor.kind || 'person', ledger_kind: 'actor', anchor: actor.anchor === true, listed: true });
+  }
+  for (const organization of surfaceGraph.organizations ?? []) {
+    add({ id: organization.id, label: organization.label || organization.id, type: 'organization', kind: organization.kind || 'organization', ledger_kind: 'organization', listed: true });
+  }
+  for (const surface of surfaceGraph.surfaces) {
+    add({
+      id: `surface-${surface.surface_id}`,
+      label: surface.surface_label || surface.surface_id,
+      type: 'surface',
+      kind: surface.surface_type || 'surface',
+      ledger_kind: 'surface',
+      surface_id: surface.surface_id,
+      surface_type: surface.surface_type || null,
+      hop_eligible: surface.hop_eligible === true,
+      participant_count: (surface.participants ?? []).length,
+      listed: true
+    });
+  }
+  const edges = [];
+  const counts = {
+    actors: (surfaceGraph.actors ?? []).length,
+    organizations: (surfaceGraph.organizations ?? []).length,
+    surfaces: surfaceGraph.surfaces.length,
+    rows: 0,
+    actor_rows: 0,
+    organization_rows: 0,
+    // A row whose participant is not in the actors or organizations list still
+    // gets a node (labelled by its id and flagged unlisted) so the row is drawn.
+    unlisted_participants: 0,
+    rows_without_participant: 0
+  };
+  // The ordinal counts every participant row in artifact order, the same
+  // order buildFieldLedgerIndex uses for its row_id suffix, so edge row-N is
+  // ledger row ::N.
+  let ordinal = 0;
+  for (const surface of surfaceGraph.surfaces) {
+    const surfaceNodeId = `surface-${surface.surface_id}`;
+    for (const participant of surface.participants ?? []) {
+      const rowOrdinal = ordinal;
+      ordinal += 1;
+      counts.rows += 1;
+      const participantId = participant.actor_id || participant.organization_id || null;
+      if (!participantId) { counts.rows_without_participant += 1; continue; }
+      const participantType = participant.participant_type || (participant.actor_id ? 'actor' : 'organization');
+      if (!nodeById.has(participantId)) {
+        counts.unlisted_participants += 1;
+        add({ id: participantId, label: participantId, type: participantType === 'actor' ? 'person' : 'organization', kind: participantType === 'actor' ? 'person' : 'organization', ledger_kind: participantType, listed: false });
+      }
+      if (participantType === 'actor') counts.actor_rows += 1; else counts.organization_rows += 1;
+      edges.push({
+        id: `row-${rowOrdinal}`,
+        from: participantId,
+        to: surfaceNodeId,
+        type: 'topology',
+        topology: true,
+        projection_layer: 'ledger_participation',
+        evidence_class: participant.evidence_class || surface.evidence_class || 'open',
+        participant_type: participantType,
+        surface_id: surface.surface_id,
+        row_ordinal: rowOrdinal
+      });
+    }
+  }
+  return {
+    schema_version: LEDGER_FIELD_SCHEMA,
+    mode: 'ledger',
+    derived: true,
+    visualization_only: true,
+    graph_effect: 'none',
+    nodes,
+    edges,
+    nodeById,
+    defaultNode: null,
+    counts
+  };
 }
 
 export function buildResearchNetworkModel(graph) {

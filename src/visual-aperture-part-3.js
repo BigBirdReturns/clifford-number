@@ -24,6 +24,10 @@ function findMapSearchNode(value) {
 
 function renderModeControls() {
   const controls = $('#aperture-mode-controls', state.root);
+  if (state.mode === 'field') {
+    controls.innerHTML = fieldControlsMarkup();
+    return;
+  }
   if (state.mode === 'timeline') {
     controls.innerHTML = timelineControlsMarkup();
     return;
@@ -72,10 +76,10 @@ function renderModeControls() {
 }
 
 function setMode(mode, { renderControls = true, history = 'push' } = {}) {
-  if (!['timeline', 'map', 'route', 'surface'].includes(mode)) return;
+  if (!['field', 'timeline', 'map', 'route', 'surface'].includes(mode)) return;
   state.mode = mode;
   state.root.dataset.apertureMode = mode;
-  $('#network-title', state.root).textContent = { map: 'Network explorer', timeline: 'Activity over time', route: 'Trace a connection', surface: 'Explore a roster' }[mode];
+  $('#network-title', state.root).textContent = { field: 'The ledger field', map: 'Network explorer', timeline: 'Activity over time', route: 'Trace a connection', surface: 'Explore a roster' }[mode];
   for (const button of $$('[data-ap-mode]', state.root)) {
     const active = button.dataset.apMode === mode;
     button.classList.toggle('is-active', active);
@@ -118,7 +122,7 @@ function setInspector(label, html, { openOnMobile = false } = {}) {
   const inspector = $('#aperture-inspector', state.root);
   if (inspector.dataset.selectionLabel !== label) inspector.scrollTop = 0;
   inspector.dataset.selectionLabel = label;
-  inspector.dataset.empty = String((state.mode === 'timeline' && !state.timeline.selectedKey) || (state.mode === 'map' && !state.map.hasExplicitFocus));
+  inspector.dataset.empty = String((state.mode === 'timeline' && !state.timeline.selectedKey) || (state.mode === 'map' && !state.map.hasExplicitFocus) || (state.mode === 'field' && !state.field?.selectedId));
   $('#aperture-sheet-label', state.root).textContent = shortLabel(label, 34);
   $('#aperture-inspector-body', state.root).innerHTML = html;
   if (openOnMobile && isMobile()) state.sheetOpen = true;

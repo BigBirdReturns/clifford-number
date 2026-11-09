@@ -28,6 +28,9 @@ const state = {
   },
   selectedActorId: null,
   selectedSurfaceId: null,
+  // The ledger field (arrival view); the field runtime fills these in.
+  field: { selectedId: null, query: '' },
+  galaxy: null,
   // Ledger timeline (alternate view). The window [from, to] is the shared cursor
   // (SPEC fix e); model, layout and indexes are filled by part-2 and the timeline runtime.
   timeline: {

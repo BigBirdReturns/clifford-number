@@ -44,6 +44,7 @@ const snapshot = {
     pins: ['actor-c', 'actor-a', 'actor-c'],
     actorId: 'actor-a'
   },
+  field: { selectedId: 'matt-clifford' },
   timeline: {
     by: 'organization',
     from: '2024-01-01',
@@ -104,6 +105,7 @@ assert.deepEqual(decoded, {
     pins: ['actor-a', 'actor-c'],
     actorId: 'actor-a'
   },
+  field: { selectedId: 'matt-clifford' },
   timeline: {
     by: 'organization',
     from: '2024-01-01',
@@ -119,6 +121,9 @@ assert.deepEqual(decoded, {
 assert.equal(readApertureState('?ap_v=2&ap_mode=map'), null, 'unknown URL-state versions must be declined');
 assert.equal(readApertureState('?ap_v=1&ap_mode=unknown'), null, 'unknown modes must be declined');
 assert.equal(readApertureState('?ap_v=1&ap_mode=timeline').mode, 'timeline', 'timeline is a mode');
+assert.equal(readApertureState('?ap_v=1&ap_mode=field').mode, 'field', 'the ledger field is a mode');
+assert.equal(readApertureState('?ap_v=1&ap_mode=field&ap_field_sel=surface-dialog').field.selectedId, 'surface-dialog', 'the field selection travels in the URL');
+assert.equal(readApertureState('?ap_v=1&ap_mode=field').field.selectedId, null, 'no selection reads as null');
 
 const clamped = readApertureState('?ap_v=1&ap_mode=surface&ap_overview_page=0&ap_overview_size=73&ap_map_scale=99&ap_map_level=surface&ap_route_step=9999999&ap_route_window=-2&ap_route_evidence=bogus&ap_surface_budget=2&ap_surface_pins=b,a,b');
 assert.equal(clamped.overview.page, 1);
@@ -138,7 +143,7 @@ assert.equal(defaultParams.get('ap_mode'), 'timeline');
 assert.deepEqual(readApertureState(defaultParams).timeline, timelineDefaults, 'a default timeline view reads back as its defaults');
 assert.equal(writeApertureState({}).get('ap_mode'), 'map', 'the network is the fallback mode');
 for (const key of APERTURE_QUERY_KEYS.filter(item => !APERTURE_TIMELINE_QUERY_KEYS.includes(item))) assert.ok(defaultParams.has(key), `${key} keeps its always-serialized contract`);
-assert.equal(APERTURE_QUERY_KEYS.length, 32);
+assert.equal(APERTURE_QUERY_KEYS.length, 33);
 
 const twentyLanes = Array.from({ length: 20 }, (_, index) => `lane-${String(index).padStart(2, '0')}`);
 const timelineClamped = readApertureState(`?ap_v=1&ap_mode=timeline&ap_time_by=bogus&ap_time_from=2024-13-40&ap_time_to=2024-02-30&ap_time_cursor=2025-12-31..2025-01-01&ap_time_lanes=${twentyLanes.join(',')}&ap_time_evidence=bogus&ap_time_hop=bogus&ap_time_sel=${'x'.repeat(500)}`);
@@ -177,7 +182,7 @@ assert.equal(serialized.getAll('ap_time_by').length, 1);
 for (const key of APERTURE_QUERY_KEYS) assert.ok(serialized.has(key), `${key} must have a deterministic serialized value when it is not at its default`);
 
 // --- the exact standalone shape: six flattened modules (the timeline model goes through
-// isolateModule because it imports core.mjs) and the eighteen runtime files in loader order.
+// isolateModule because it imports core.mjs) and the nineteen runtime files in loader order.
 function isolateModule(moduleSource) {
   const exportedNames = [...moduleSource.matchAll(/^export\s+(?:function|const|class)\s+([A-Za-z0-9_$]+)/gm)].map(match => match[1]);
   const body = moduleSource.replace(/^import .*?;\r?\n/gm, '').replace(/^export\s+/gm, '');
@@ -205,12 +210,13 @@ const runtimeFiles = [
   ...Array.from({ length: 10 }, (_, index) => `src/visual-aperture-part-${index + 1}.js`),
   'src/visual-aperture-timeline-runtime.js',
   'src/visual-aperture-social-field-runtime.js',
+  'src/visual-aperture-field-runtime.js',
   'src/visual-aperture-bounded-runtime.js',
   'src/visual-aperture-export-preview-runtime.js',
   'src/visual-aperture-part-11.js',
   'src/visual-aperture-bounded-address-runtime.js'
 ];
-assert.equal(runtimeFiles.length, 18);
+assert.equal(runtimeFiles.length, 19);
 // Parts 1-10 come from one template entry in the loader; every other file is listed literally.
 const loader = readFileSync('src/visual-aperture.js', 'utf8');
 const loaderToken = file => (/part-(?:[1-9]|10)\.js$/.test(file) ? 'visual-aperture-part-${index + 1}.js' : file.replace('src/', ''));

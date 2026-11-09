@@ -1,5 +1,5 @@
 import * as THREE from '../vendor/three-0.186.0.module.js';
-import { applyFieldHeat, buildSocialFieldModel, eventInWindow, heatTimeForWindow, nodeCountLabel, nodeHeatLabel, normalizeEcologyWindow, SOCIAL_FIELD_RADIUS, socialFieldNeighbors, isSurfaceNode } from './social-field.js';
+import { applyFieldHeat, buildSocialFieldModel, eventInWindow, heatTimeForWindow, nodeCountLabel, nodeHeatLabel, normalizeEcologyWindow, ONTOLOGY_COLORS, SOCIAL_FIELD_RADIUS, socialFieldNeighbors, isSurfaceNode } from './social-field.js';
 // The field runtime reads the whole social-field model API (ledger index,
 // window helpers, day formatting) through the renderer module, so the loader
 // in visual-aperture.js needs no edit when this API grows. The two modules
@@ -721,6 +721,612 @@ export async function createWebGlAtlasRenderer({ host, onNodeSelect, onLinkSelec
     ecology: () => ecologyModel,
     timeView: () => timeView,
     heatDay: () => heatDay,
+    graph: () => graph
+  };
+}
+
+// --- The ledger field (the Field tab) ----------------------------------------
+// The whole ledger as a force-directed field on the same engine: the library
+// runs the d3 layout, the camera, the controls and the render loop; the field
+// draws its own objects so a ledger of several thousand rows stays a handful
+// of draw calls (one instanced mesh per node kind, one Points draw for every
+// halo, one LineSegments for every participation row). Size, halo and colour
+// are the printed heat of social-field.js (nodeSizeForHeat, haloSizeForHeat,
+// node.color written by applyFieldHeat); nothing else sizes or colours a node,
+// and a link is one ledger row. Layout position carries no meaning and no
+// channel reads it.
+const GALAXY_BACKGROUND = new THREE.Color('#07090d');
+const GALAXY_CORE_SCALE = 1.25;
+const GALAXY_DIM = Object.freeze({ node: .8, halo: .1, link: .07, selectedScale: 1.4 });
+const GALAXY_LINK_LEVEL = .62;
+const GALAXY_LABEL_LIMITS = Object.freeze({ phone: 9, desktop: 26 });
+const GALAXY_CLICK_SLOP_PX = 6;
+const GALAXY_SHAPES = Object.freeze({
+  person: () => new THREE.SphereGeometry(1, 10, 8),
+  organization: () => new THREE.BoxGeometry(1.5, 1.5, 1.5),
+  surface: () => new THREE.OctahedronGeometry(1.25, 0)
+});
+
+function galaxyStableHash(value) {
+  let hash = 2166136261;
+  for (const ch of String(value)) {
+    hash ^= ch.charCodeAt(0);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0) / 0xffffffff;
+}
+// Deterministic starting positions for the layout: surfaces on a disc, each
+// participant at the mean of its surfaces plus a small offset. The forces take
+// it from here; the seed only makes the arrival reproducible.
+function galaxySeedPositions(field) {
+  const radius = 40 + Math.sqrt(field.nodes.length) * 7;
+  const surfacePosition = new Map();
+  for (const node of field.nodes) {
+    if (node.ontology !== 'surface') continue;
+    const angle = galaxyStableHash(`${node.id}:a`) * Math.PI * 2;
+    const r = Math.sqrt(galaxyStableHash(`${node.id}:r`)) * radius;
+    node.x = Math.cos(angle) * r;
+    node.y = Math.sin(angle) * r;
+    node.z = 0;
+    surfacePosition.set(node.id, node);
+  }
+  const sums = new Map();
+  for (const link of field.links) {
+    const source = endpointId(link.source), target = endpointId(link.target);
+    const surface = surfacePosition.get(target) ?? surfacePosition.get(source);
+    const member = surface && surface.id === target ? source : target;
+    if (!surface || member === surface.id) continue;
+    const sum = sums.get(member) ?? { x: 0, y: 0, n: 0 };
+    sum.x += surface.x; sum.y += surface.y; sum.n += 1;
+    sums.set(member, sum);
+  }
+  for (const node of field.nodes) {
+    if (node.ontology === 'surface') continue;
+    const sum = sums.get(node.id);
+    const angle = galaxyStableHash(`${node.id}:a`) * Math.PI * 2;
+    const jitter = 6 + galaxyStableHash(`${node.id}:j`) * 10;
+    if (sum) {
+      node.x = sum.x / sum.n + Math.cos(angle) * jitter;
+      node.y = sum.y / sum.n + Math.sin(angle) * jitter;
+    } else {
+      const r = radius * (1.05 + galaxyStableHash(`${node.id}:r`) * .15);
+      node.x = Math.cos(angle) * r;
+      node.y = Math.sin(angle) * r;
+    }
+    node.z = 0;
+  }
+}
+function galaxyHaloMaterial(scale) {
+  return new THREE.ShaderMaterial({
+    uniforms: { map: { value: radialHaloTexture() }, scale: { value: scale } },
+    vertexShader: `attribute vec3 haloColor; attribute float haloSize; attribute float haloAlpha;
+      uniform float scale; varying vec3 vColor; varying float vAlpha;
+      void main() {
+        vColor = haloColor; vAlpha = haloAlpha;
+        vec4 mv = modelViewMatrix * vec4(position, 1.0);
+        gl_PointSize = haloSize * scale / max(1.0, -mv.z);
+        gl_Position = projectionMatrix * mv;
+      }`,
+    fragmentShader: `uniform sampler2D map; varying vec3 vColor; varying float vAlpha;
+      void main() { vec4 tex = texture2D(map, gl_PointCoord); gl_FragColor = vec4(vColor, vAlpha * tex.a); }`,
+    transparent: true,
+    depthWrite: false,
+    depthTest: false,
+    blending: THREE.AdditiveBlending
+  });
+}
+
+export async function createGalaxyFieldRenderer({ host, onNodeSelect, onNodeHover, onViewChange, reducedMotion = false } = {}) {
+  if (!host || !supportsWebGlAtlas()) throw new Error('WebGL field is unavailable');
+  const ForceGraph3D = await loadForceGraphVendor();
+  let field = null, selectedId = null, highlight = null, settled = false, animationRunning = true, tick = 0, fitDistance = 600, cameraTaken = false;
+  let nodeIndex = new Map(), linkEnds = null, cores = [], coreSlots = null, scales = null, screen = null, screenDirty = true;
+  let halos = null, haloGeometry = null, lines = null, lineGeometry = null, ring = null, outerRing = null, labelOrder = [];
+  let pulseFrame = 0, viewSyncFrame = 0, hoverFrame = 0, pointerDown = null, hoveredId = null;
+  const labelButtons = new Map();
+  const scratchMatrix = new THREE.Matrix4(), scratchPosition = new THREE.Vector3(), scratchScale = new THREE.Vector3(), scratchColor = new THREE.Color();
+  const identityQuaternion = new THREE.Quaternion();
+  const graph = new ForceGraph3D(host, {
+    controlType: 'orbit',
+    rendererConfig: { antialias: true, alpha: true, powerPreference: 'high-performance' }
+  });
+  graph
+    .numDimensions(2)
+    .backgroundColor('rgba(0,0,0,0)')
+    .showNavInfo(false)
+    .enablePointerInteraction(false)
+    .nodeVisibility(false)
+    .linkVisibility(false)
+    // A short synchronous warm-up shapes the field before the first paint; the
+    // cooldown then settles it on screen (the layout is computation, not
+    // decoration, so it runs under reduced motion too, but there it completes
+    // before the first paint and the camera never animates).
+    .warmupTicks(reducedMotion ? 160 : 24)
+    .cooldownTicks(reducedMotion ? 0 : 220)
+    .d3AlphaDecay(.032)
+    .d3VelocityDecay(.32)
+    .onEngineTick(() => {
+      tick += 1;
+      syncPositions();
+      if (tick % 8 === 0) updateLabels();
+      // While the layout grows, keep the whole field in frame until the
+      // visitor takes the camera.
+      if (!cameraTaken && tick % 40 === 0) fit(reducedMotion ? 0 : 400);
+      onViewChange?.({ type: 'tick', settled: false });
+    })
+    .onEngineStop(() => {
+      syncPositions();
+      const first = !settled;
+      settled = true;
+      if (first) fit(reducedMotion ? 0 : 700);
+      updateLabels();
+      host.dataset.fieldLayout = 'settled';
+      onViewChange?.({ type: 'settled', settled: true, first });
+    });
+  if (typeof graph.enableNodeDrag === 'function') graph.enableNodeDrag(false);
+  // Compact forces: a ledger of a few thousand rows should read as one field,
+  // not a sparse cloud, so hot nodes keep their pixels at the fitted distance.
+  graph.d3Force('charge').strength(-9).distanceMax(160);
+  graph.d3Force('link').distance(link => link.topology_only ? 8 : 14).strength(.7);
+  graph.renderer().setPixelRatio(Math.min(1.7, window.devicePixelRatio || 1));
+
+  // A flat field: left drag and one finger pan, wheel and pinch zoom, no orbit.
+  const controls = graph.controls();
+  controls.enableRotate = false;
+  controls.screenSpacePanning = true;
+  controls.enableDamping = true;
+  controls.dampingFactor = .09;
+  controls.zoomSpeed = .9;
+  controls.panSpeed = .9;
+  controls.minDistance = 14;
+  controls.maxDistance = 4000;
+  controls.mouseButtons = { LEFT: THREE.MOUSE.PAN, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN };
+  controls.touches = { ONE: THREE.TOUCH.PAN, TWO: THREE.TOUCH.DOLLY_PAN };
+
+  const labelLayer = document.createElement('div');
+  labelLayer.className = 'network-node-labels aperture-field-labels';
+  labelLayer.setAttribute('aria-label', 'Named field nodes');
+  host.append(labelLayer);
+  const tooltip = document.createElement('div');
+  tooltip.className = 'aperture-field-tooltip';
+  tooltip.hidden = true;
+  host.append(tooltip);
+
+  function haloScale() {
+    const camera = graph.camera();
+    return (host.clientHeight / 2) / Math.tan(THREE.MathUtils.degToRad(camera.fov || 75) / 2);
+  }
+  function disposeObjects() {
+    for (const mesh of cores) { graph.scene().remove(mesh); mesh.geometry.dispose(); mesh.material.dispose(); }
+    cores = [];
+    for (const object of [halos, lines, ring, outerRing]) {
+      if (!object) continue;
+      graph.scene().remove(object);
+      object.geometry.dispose();
+      object.material.dispose();
+    }
+    halos = lines = ring = outerRing = null;
+  }
+  function buildObjects() {
+    disposeObjects();
+    const count = field.nodes.length;
+    // Built once per render, never per frame: every per-frame path reads it.
+    nodeIndex = new Map();
+    field.nodes.forEach((node, index) => nodeIndex.set(node.id, index));
+    coreSlots = new Int32Array(count * 2);
+    scales = new Float32Array(count);
+    screen = new Float32Array(count * 2);
+    const groups = { person: [], organization: [], surface: [] };
+    field.nodes.forEach((node, index) => (groups[node.ontology] ?? groups.organization).push(index));
+    cores = Object.entries(groups).filter(([, indices]) => indices.length).map(([ontology, indices], meshIndex) => {
+      const mesh = new THREE.InstancedMesh(GALAXY_SHAPES[ontology](), new THREE.MeshBasicMaterial({ transparent: true, opacity: .97, depthWrite: false }), indices.length);
+      mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+      mesh.frustumCulled = false;
+      mesh.userData.ontology = ontology;
+      mesh.userData.indices = indices;
+      indices.forEach((nodeIdx, instance) => { coreSlots[nodeIdx * 2] = meshIndex; coreSlots[nodeIdx * 2 + 1] = instance; });
+      mesh.setColorAt(0, scratchColor.set('#ffffff'));
+      graph.scene().add(mesh);
+      return mesh;
+    });
+    haloGeometry = new THREE.BufferGeometry();
+    haloGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(count * 3), 3).setUsage(THREE.DynamicDrawUsage));
+    haloGeometry.setAttribute('haloColor', new THREE.BufferAttribute(new Float32Array(count * 3), 3));
+    haloGeometry.setAttribute('haloSize', new THREE.BufferAttribute(new Float32Array(count), 1));
+    haloGeometry.setAttribute('haloAlpha', new THREE.BufferAttribute(new Float32Array(count), 1));
+    halos = new THREE.Points(haloGeometry, galaxyHaloMaterial(haloScale()));
+    halos.frustumCulled = false;
+    halos.renderOrder = -1;
+    graph.scene().add(halos);
+    const linkCount = field.links.length;
+    linkEnds = new Int32Array(linkCount * 2);
+    field.links.forEach((link, index) => {
+      linkEnds[index * 2] = nodeIndex.get(endpointId(link.source)) ?? -1;
+      linkEnds[index * 2 + 1] = nodeIndex.get(endpointId(link.target)) ?? -1;
+    });
+    lineGeometry = new THREE.BufferGeometry();
+    lineGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(linkCount * 6), 3).setUsage(THREE.DynamicDrawUsage));
+    lineGeometry.setAttribute('color', new THREE.BufferAttribute(new Float32Array(linkCount * 6), 3));
+    lines = new THREE.LineSegments(lineGeometry, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: .9, depthWrite: false, blending: THREE.AdditiveBlending }));
+    lines.frustumCulled = false;
+    lines.renderOrder = -2;
+    graph.scene().add(lines);
+    ring = new THREE.Mesh(new THREE.RingGeometry(1, 1.1, 64), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: .92, side: THREE.DoubleSide, depthTest: false, depthWrite: false }));
+    outerRing = new THREE.Mesh(new THREE.RingGeometry(1, 1.04, 64), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: .3, side: THREE.DoubleSide, depthTest: false, depthWrite: false }));
+    ring.visible = outerRing.visible = false;
+    ring.renderOrder = outerRing.renderOrder = 5;
+    graph.scene().add(ring);
+    graph.scene().add(outerRing);
+    labelOrder = field.nodes.map((node, index) => index).sort((a, b) => {
+      const na = field.nodes[a], nb = field.nodes[b];
+      return (nb.heat_value || 0) - (na.heat_value || 0) || (nb.size_count || 0) - (na.size_count || 0) || String(na.label).localeCompare(String(nb.label));
+    });
+  }
+  function nodeChannels(node) {
+    if (node.heat) return { core: nodeSizeForHeat(node.heat_value), halo: haloSizeForHeat(node.heat_value), alpha: haloOpacityForHeat(node.heat_value) };
+    const count = node.size_count ?? 0;
+    return { core: nodeSizeForCount(count), halo: haloSizeForCount(count), alpha: count > 0 ? Math.min(.4, .1 + Math.log2(1 + count) * .07) : 0 };
+  }
+  // Writes colour, scale and halo for every node from its printed heat and the
+  // current highlight. A node outside the highlight is drawn toward the
+  // background; it is never removed.
+  function restyle() {
+    if (!field || !cores.length) return;
+    const haloColor = haloGeometry.attributes.haloColor, haloSize = haloGeometry.attributes.haloSize, haloAlpha = haloGeometry.attributes.haloAlpha;
+    field.nodes.forEach((node, index) => {
+      const channels = nodeChannels(node);
+      const inFocus = !highlight || highlight.has(node.id);
+      const selected = node.id === selectedId;
+      scratchColor.set(node.color || ONTOLOGY_COLORS[node.ontology] || '#b8c0cf');
+      if (!inFocus) scratchColor.lerp(GALAXY_BACKGROUND, GALAXY_DIM.node);
+      let core = Math.max(1.6, channels.core) * GALAXY_CORE_SCALE;
+      let halo = channels.halo, alpha = channels.alpha;
+      if (!inFocus) { core *= .9; alpha *= GALAXY_DIM.halo; }
+      if (selected) { core *= GALAXY_DIM.selectedScale; halo = Math.max(halo, 26); alpha = Math.max(alpha, .55); }
+      scales[index] = core;
+      const mesh = cores[coreSlots[index * 2]];
+      mesh.setColorAt(coreSlots[index * 2 + 1], scratchColor);
+      haloColor.setXYZ(index, scratchColor.r, scratchColor.g, scratchColor.b);
+      haloSize.setX(index, halo);
+      haloAlpha.setX(index, alpha);
+    });
+    for (const mesh of cores) if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    haloColor.needsUpdate = haloSize.needsUpdate = haloAlpha.needsUpdate = true;
+    const lineColor = lineGeometry.attributes.color;
+    field.links.forEach((link, index) => {
+      const source = endpointId(link.source), target = endpointId(link.target);
+      const incident = selectedId && (source === selectedId || target === selectedId);
+      scratchColor.set(EVIDENCE_COLORS[link.evidence_class] ?? EVIDENCE_COLORS.context);
+      scratchColor.multiplyScalar(incident ? 1 : highlight ? GALAXY_DIM.link : GALAXY_LINK_LEVEL);
+      lineColor.setXYZ(index * 2, scratchColor.r, scratchColor.g, scratchColor.b);
+      lineColor.setXYZ(index * 2 + 1, scratchColor.r, scratchColor.g, scratchColor.b);
+    });
+    lineColor.needsUpdate = true;
+    syncPositions();
+  }
+  // Positions follow the layout: instance matrices, halo points, line ends and
+  // the selection ring are rewritten from node.x/y on every engine tick.
+  function syncPositions() {
+    if (!field || !cores.length) return;
+    const haloPosition = haloGeometry.attributes.position;
+    field.nodes.forEach((node, index) => {
+      const x = node.x || 0, y = node.y || 0, z = node.z || 0;
+      scratchPosition.set(x, y, z);
+      const size = scales[index] || 1;
+      scratchScale.set(size, size, size);
+      scratchMatrix.compose(scratchPosition, identityQuaternion, scratchScale);
+      cores[coreSlots[index * 2]].setMatrixAt(coreSlots[index * 2 + 1], scratchMatrix);
+      haloPosition.setXYZ(index, x, y, z);
+    });
+    for (const mesh of cores) mesh.instanceMatrix.needsUpdate = true;
+    haloPosition.needsUpdate = true;
+    const linePosition = lineGeometry.attributes.position;
+    for (let index = 0; index < field.links.length; index += 1) {
+      const a = field.nodes[linkEnds[index * 2]], b = field.nodes[linkEnds[index * 2 + 1]];
+      if (!a || !b) continue;
+      linePosition.setXYZ(index * 2, a.x || 0, a.y || 0, a.z || 0);
+      linePosition.setXYZ(index * 2 + 1, b.x || 0, b.y || 0, b.z || 0);
+    }
+    linePosition.needsUpdate = true;
+    placeRing();
+    screenDirty = true;
+  }
+  function placeRing() {
+    const node = selectedId ? field?.nodeById.get(selectedId) : null;
+    if (!node || !ring) { if (ring) ring.visible = outerRing.visible = false; return; }
+    const size = scales[nodeIndex.get(node.id)] || 2;
+    ring.position.set(node.x || 0, node.y || 0, (node.z || 0) + .5);
+    outerRing.position.copy(ring.position);
+    ring.scale.setScalar(size * 2.1);
+    outerRing.scale.setScalar(size * 3.4);
+    ring.visible = outerRing.visible = true;
+  }
+  function pulse(timestamp) {
+    pulseFrame = 0;
+    if (!animationRunning) return;
+    if (ring?.visible && !reducedMotion) {
+      const node = field.nodeById.get(selectedId);
+      const size = scales[nodeIndex.get(node.id)] || 2;
+      const phase = (Math.sin(timestamp / 900) + 1) / 2;
+      outerRing.scale.setScalar(size * (3.2 + phase * .9));
+      outerRing.material.opacity = .14 + (1 - phase) * .3;
+    }
+    pulseFrame = requestAnimationFrame(pulse);
+  }
+  function refreshScreen() {
+    if (!field || !screenDirty) return;
+    const camera = graph.camera();
+    camera.updateMatrixWorld();
+    const width = host.clientWidth, height = host.clientHeight;
+    field.nodes.forEach((node, index) => {
+      scratchPosition.set(node.x || 0, node.y || 0, node.z || 0).project(camera);
+      screen[index * 2] = (scratchPosition.x + 1) * width / 2;
+      screen[index * 2 + 1] = (1 - scratchPosition.y) * height / 2;
+    });
+    screenDirty = false;
+  }
+  function pixelsPerUnit() {
+    const camera = graph.camera();
+    const distance = Math.max(1, Math.abs(camera.position.z - (controls.target?.z ?? 0)));
+    return (host.clientHeight / 2) / (distance * Math.tan(THREE.MathUtils.degToRad(camera.fov || 75) / 2));
+  }
+  function screenPosition(id) {
+    const index = nodeIndex.get(id);
+    if (index === undefined) return null;
+    refreshScreen();
+    const x = screen[index * 2], y = screen[index * 2 + 1];
+    const radius = (scales[index] || 1) * pixelsPerUnit();
+    return { x, y, radius, visible: x >= 0 && y >= 0 && x <= host.clientWidth && y <= host.clientHeight };
+  }
+  function nodeAt(px, py) {
+    if (!field) return null;
+    refreshScreen();
+    const perUnit = pixelsPerUnit();
+    let best = null, bestDistance = Infinity;
+    for (let index = 0; index < field.nodes.length; index += 1) {
+      const dx = screen[index * 2] - px, dy = screen[index * 2 + 1] - py;
+      const radius = Math.max(5, (scales[index] || 1) * perUnit) + 3;
+      const distance = Math.hypot(dx, dy);
+      if (distance > radius || distance >= bestDistance) continue;
+      best = field.nodes[index];
+      bestDistance = distance;
+    }
+    return best;
+  }
+  // A few names make the field readable before hover: the selected node, its
+  // neighbours, then nodes in order of printed heat, without overlaps.
+  function updateLabels() {
+    if (!field) return;
+    refreshScreen();
+    const width = host.clientWidth, height = host.clientHeight;
+    const limit = width < 700 ? GALAXY_LABEL_LIMITS.phone : GALAXY_LABEL_LIMITS.desktop;
+    const seen = new Set();
+    const candidates = [];
+    const push = index => { if (index !== undefined && !seen.has(index)) { seen.add(index); candidates.push(index); } };
+    if (selectedId) push(nodeIndex.get(selectedId));
+    if (highlight) {
+      [...highlight].map(id => nodeIndex.get(id)).filter(index => index !== undefined)
+        .sort((a, b) => (field.nodes[b].heat_value || 0) - (field.nodes[a].heat_value || 0)).forEach(push);
+    }
+    labelOrder.forEach(push);
+    const boxes = [];
+    const visibleIds = new Set();
+    for (const index of candidates) {
+      if (boxes.length >= limit) break;
+      const node = field.nodes[index];
+      if (highlight && !highlight.has(node.id) && node.id !== selectedId) continue;
+      const x = screen[index * 2] + 8, y = screen[index * 2 + 1] - 9;
+      const labelWidth = Math.min(180, 12 + String(node.label).length * 6.4);
+      if (x < 4 || x + labelWidth > width - 4 || y < 4 || y > height - 24) continue;
+      const box = { x, y, right: x + labelWidth, bottom: y + 20 };
+      if (boxes.some(b => box.x < b.right + 10 && box.right + 10 > b.x && box.y < b.bottom + 6 && box.bottom + 6 > b.y)) continue;
+      boxes.push(box);
+      let button = labelButtons.get(node.id);
+      if (!button) {
+        button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'network-node-label aperture-field-label';
+        button.textContent = node.label;
+        button.title = node.label;
+        button.dataset.networkNode = node.id;
+        button.addEventListener('click', event => { event.stopPropagation(); onNodeSelect?.(node.id, node); });
+        labelButtons.set(node.id, button);
+        labelLayer.append(button);
+      }
+      button.style.left = `${x}px`;
+      button.style.top = `${y}px`;
+      button.classList.toggle('is-selected', node.id === selectedId);
+      visibleIds.add(node.id);
+    }
+    for (const [id, button] of labelButtons) button.hidden = !visibleIds.has(id);
+  }
+  function scheduleViewSync() {
+    if (viewSyncFrame) return;
+    viewSyncFrame = requestAnimationFrame(() => {
+      viewSyncFrame = 0;
+      screenDirty = true;
+      updateLabels();
+      onViewChange?.({ type: 'camera', settled });
+    });
+  }
+  controls.addEventListener('change', scheduleViewSync);
+
+  function tooltipMarkup(node) {
+    const kind = node.ontology === 'surface' ? 'bounded surface' : node.ontology === 'person' ? 'actor' : 'organization';
+    const heatLine = nodeHeatLabel(node);
+    return `<strong>${escapeHtml(node.label)}</strong><span>${escapeHtml(kind)} · ${escapeHtml(nodeCountLabel(node))}</span>${heatLine ? `<small>${escapeHtml(heatLine)}</small>` : ''}`;
+  }
+  function setHover(node, px, py) {
+    const id = node?.id ?? null;
+    if (id !== hoveredId) {
+      hoveredId = id;
+      host.style.cursor = node ? 'pointer' : 'grab';
+      onNodeHover?.(node);
+    }
+    if (!node) { tooltip.hidden = true; return; }
+    tooltip.innerHTML = tooltipMarkup(node);
+    tooltip.hidden = false;
+    const width = host.clientWidth;
+    tooltip.style.left = `${Math.min(width - 260, px + 14)}px`;
+    tooltip.style.top = `${py + 14}px`;
+  }
+  function pointerPosition(event) {
+    const rect = host.getBoundingClientRect();
+    return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+  }
+  host.addEventListener('pointermove', event => {
+    if (hoverFrame || !field) return;
+    hoverFrame = requestAnimationFrame(() => {
+      hoverFrame = 0;
+      const { x, y } = pointerPosition(event);
+      setHover(nodeAt(x, y), x, y);
+    });
+  });
+  host.addEventListener('pointerleave', () => setHover(null));
+  host.addEventListener('pointerdown', event => {
+    cameraTaken = true;
+    if (event.button !== 0 && event.pointerType === 'mouse') return;
+    const { x, y } = pointerPosition(event);
+    pointerDown = { x, y, time: performance.now() };
+  });
+  host.addEventListener('wheel', () => { cameraTaken = true; }, { passive: true });
+  host.addEventListener('pointerup', event => {
+    if (!pointerDown || !field) return;
+    const { x, y } = pointerPosition(event);
+    const moved = Math.hypot(x - pointerDown.x, y - pointerDown.y) > GALAXY_CLICK_SLOP_PX;
+    const slow = performance.now() - pointerDown.time > 600;
+    pointerDown = null;
+    if (moved || slow) return;
+    if (event.target instanceof Element && event.target.closest('.aperture-field-label')) return;
+    const node = nodeAt(x, y);
+    onNodeSelect?.(node?.id ?? null, node ?? null);
+  });
+  host.addEventListener('pointercancel', () => { pointerDown = null; });
+
+  function bounds() {
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const node of field?.nodes ?? []) {
+      const x = node.x || 0, y = node.y || 0;
+      if (x < minX) minX = x; if (x > maxX) maxX = x; if (y < minY) minY = y; if (y > maxY) maxY = y;
+    }
+    if (!Number.isFinite(minX)) return { cx: 0, cy: 0, width: 200, height: 200 };
+    return { cx: (minX + maxX) / 2, cy: (minY + maxY) / 2, width: Math.max(40, maxX - minX), height: Math.max(40, maxY - minY) };
+  }
+  function distanceFor(width, height) {
+    const camera = graph.camera();
+    const vertical = Math.tan(THREE.MathUtils.degToRad(camera.fov || 75) / 2);
+    const aspect = Math.max(.2, host.clientWidth / Math.max(1, host.clientHeight));
+    return Math.max(height / (2 * vertical), width / (2 * vertical * aspect)) * 1.12 + 10;
+  }
+  function moveCamera(position, target, duration) {
+    graph.cameraPosition(position, target, duration);
+    if (duration === 0) scheduleViewSync();
+  }
+  function fit(duration = reducedMotion ? 0 : 500) {
+    const box = bounds();
+    fitDistance = distanceFor(box.width, box.height);
+    controls.maxDistance = fitDistance * 2.6;
+    moveCamera({ x: box.cx, y: box.cy, z: fitDistance }, { x: box.cx, y: box.cy, z: 0 }, duration);
+  }
+  function cameraDistance() {
+    const camera = graph.camera();
+    return Math.abs(camera.position.z - (controls.target?.z ?? 0)) || fitDistance;
+  }
+  function focus(id, duration = reducedMotion ? 0 : 520) {
+    const node = field?.nodeById.get(id);
+    if (!node) return false;
+    cameraTaken = true;
+    const z = Math.min(cameraDistance(), Math.max(controls.minDistance * 3, fitDistance * .42));
+    moveCamera({ x: node.x || 0, y: node.y || 0, z }, { x: node.x || 0, y: node.y || 0, z: 0 }, duration);
+    return true;
+  }
+  function zoom(action, duration = reducedMotion ? 0 : 260) {
+    if (action === 'fit' || action === 'reset') { fit(duration); return; }
+    const camera = graph.camera(), target = controls.target;
+    const factor = action === 'in' ? .7 : 1.42;
+    const z = Math.max(controls.minDistance, Math.min(controls.maxDistance, cameraDistance() * factor));
+    moveCamera({ x: camera.position.x, y: camera.position.y, z: target.z + z }, { x: target.x, y: target.y, z: target.z }, duration);
+  }
+  function resize() {
+    const width = Math.max(300, Math.floor(host.clientWidth || 900));
+    const height = Math.max(360, Math.floor(host.clientHeight || 600));
+    graph.width(width).height(height);
+    if (halos) halos.material.uniforms.scale.value = haloScale();
+    scheduleViewSync();
+  }
+  const resizeObserver = new ResizeObserver(resize);
+  resizeObserver.observe(host);
+  resize();
+
+  function render(nextField) {
+    field = nextField;
+    field.linkById = new Map(field.links.map(link => [link.id, link]));
+    settled = false;
+    cameraTaken = false;
+    tick = 0;
+    delete host.dataset.fieldLayout;
+    galaxySeedPositions(field);
+    buildObjects();
+    restyle();
+    const box = bounds();
+    fitDistance = distanceFor(box.width, box.height);
+    controls.maxDistance = fitDistance * 2.6;
+    moveCamera({ x: box.cx, y: box.cy, z: fitDistance }, { x: box.cx, y: box.cy, z: 0 }, 0);
+    graph.graphData({ nodes: field.nodes, links: field.links });
+    host.dataset.atlasEngine = 'force3d-galaxy';
+    host.dataset.fieldNodes = String(field.nodes.length);
+    host.dataset.fieldLinks = String(field.links.length);
+    if (!pulseFrame && animationRunning) pulseFrame = requestAnimationFrame(pulse);
+    return field;
+  }
+  function select(id) {
+    selectedId = id && field?.nodeById.has(id) ? id : null;
+    highlight = selectedId ? socialFieldNeighbors(field, selectedId) : null;
+    restyle();
+    updateLabels();
+    return selectedId;
+  }
+  function pause() {
+    if (!animationRunning) return;
+    animationRunning = false;
+    graph.pauseAnimation();
+    if (pulseFrame) cancelAnimationFrame(pulseFrame);
+    pulseFrame = 0;
+  }
+  function resume() {
+    if (animationRunning) return;
+    animationRunning = true;
+    graph.resumeAnimation();
+    if (!pulseFrame) pulseFrame = requestAnimationFrame(pulse);
+  }
+  function destroy() {
+    resizeObserver.disconnect();
+    controls.removeEventListener('change', scheduleViewSync);
+    pause();
+    disposeObjects();
+    labelLayer.remove();
+    tooltip.remove();
+    host.replaceChildren();
+    delete host.dataset.atlasEngine;
+  }
+
+  return {
+    engine: 'force3d-galaxy',
+    render,
+    select,
+    focus,
+    fit,
+    zoom,
+    resize,
+    pause,
+    resume,
+    destroy,
+    screenPosition,
+    nodeAt,
+    isRunning: () => animationRunning,
+    settled: () => settled,
+    selectedId: () => selectedId,
+    field: () => field,
     graph: () => graph
   };
 }
