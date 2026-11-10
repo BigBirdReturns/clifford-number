@@ -58,6 +58,13 @@
 [data-aperture-mode="field"] .aperture-control-buttons button:hover,
 [data-aperture-mode="field"] .aperture-secondary-button:hover { color: #ffd061; border-color: #ffd061; background: #11161f; }
 [data-aperture-mode="field"] .aperture-control-buttons button:disabled { opacity: .4; cursor: default; }
+[data-aperture-mode="field"] .aperture-field-lenses { margin-left: 4px; }
+[data-aperture-mode="field"] .aperture-field-lenses button { letter-spacing: .04em; }
+[data-aperture-mode="field"] .aperture-field-lenses button[aria-pressed="true"] { color: #07090d; background: #ffd061; border-color: #ffd061; font-weight: 700; }
+[data-aperture-mode="field"] .aperture-field-lenses button[aria-pressed="true"]:hover { color: #07090d; background: #ffd98a; }
+.aperture-field-lens-line { flex-basis: 100%; color: #d7dee9; }
+.aperture-field-lens-line strong { color: #ffd061; letter-spacing: .06em; text-transform: uppercase; }
+[data-aperture-mode="field"] .aperture-key--hollow { background: transparent; border: 1.5px solid #d7dee9; border-radius: 1px; transform: rotate(45deg) scale(.85); }
 [data-aperture-mode="field"] .network-option-fields { background: #0b0e14; border-color: #36425a; color: #98a4b8; font-size: 12px; line-height: 1.55; }
 [data-aperture-mode="field"] .aperture-layout { display: block; position: relative; min-height: 0; border-bottom: 1px solid #1d2531; }
 [data-aperture-mode="field"] .aperture-stage-wrap { overflow: visible; background: #07090d; }
@@ -165,7 +172,7 @@
 /* Instrument tiles: one ledger fact each, with its denominator. */
 .aperture-field-tiles {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
   gap: 1px;
   border-top: 1px solid #1d2531;
   background: #1d2531;

@@ -739,6 +739,9 @@ const GALAXY_BACKGROUND = new THREE.Color('#07090d');
 const GALAXY_SELECTION = new THREE.Color('#ffd061');
 const GALAXY_CORE_SCALE = 1.1;
 const GALAXY_DIM = Object.freeze({ node: .72, alpha: .22, halo: .12, link: .05, selectedScale: 1.5 });
+// Outside a lens the field goes darker than outside a selection: a lens lights
+// hundreds of nodes, so the rest must recede further for the lit set to read.
+const GALAXY_LENS_DIM = Object.freeze({ node: .82, alpha: .1, halo: .04, link: .01, muted: .45 });
 const GALAXY_LINK_LEVEL = .26;
 // The camera fits the body of the field: the span between these quantiles of
 // node x and y, so a few far specks do not shrink everything else.
@@ -752,6 +755,9 @@ const GALAXY_CLICK_SLOP_PX = 6;
 // The sprite shader draws the kind as a shape: disc for a person, square for
 // an organization, diamond for a surface.
 const GALAXY_SHAPE_KIND = Object.freeze({ person: 0, organization: 1, surface: 2 });
+// A surface with this many participants or more is a dense roster: its rows
+// get a short rest length in the layout so the roster stays one object.
+const GALAXY_DENSE_ROSTER = 40;
 
 function galaxyStableHash(value) {
   let hash = 2166136261;
@@ -809,11 +815,11 @@ function galaxySeedPositions(field) {
 function galaxyNodeMaterial(scale) {
   return new THREE.ShaderMaterial({
     uniforms: { scale: { value: scale } },
-    vertexShader: `attribute vec3 nodeColor; attribute float coreSize; attribute float haloSize; attribute float haloAlpha; attribute float nodeAlpha; attribute float shapeKind;
+    vertexShader: `attribute vec3 nodeColor; attribute float coreSize; attribute float haloSize; attribute float haloAlpha; attribute float nodeAlpha; attribute float shapeKind; attribute float nodeStyle;
       uniform float scale;
-      varying vec3 vColor; varying float vCore; varying float vGlow; varying float vAlpha; varying float vShape; varying float vPx;
+      varying vec3 vColor; varying float vCore; varying float vGlow; varying float vAlpha; varying float vShape; varying float vPx; varying float vStyle;
       void main() {
-        vColor = nodeColor; vGlow = haloAlpha; vAlpha = nodeAlpha; vShape = shapeKind;
+        vColor = nodeColor; vGlow = haloAlpha; vAlpha = nodeAlpha; vShape = shapeKind; vStyle = nodeStyle;
         vec4 mv = modelViewMatrix * vec4(position, 1.0);
         float depth = max(1.0, -mv.z);
         float outer = max(haloSize, coreSize * 2.0);
@@ -824,7 +830,7 @@ function galaxyNodeMaterial(scale) {
         gl_PointSize = px;
         gl_Position = projectionMatrix * mv;
       }`,
-    fragmentShader: `varying vec3 vColor; varying float vCore; varying float vGlow; varying float vAlpha; varying float vShape; varying float vPx;
+    fragmentShader: `varying vec3 vColor; varying float vCore; varying float vGlow; varying float vAlpha; varying float vShape; varying float vPx; varying float vStyle;
       float shapeDistance(vec2 p, float kind) {
         if (kind < 0.5) return length(p);
         if (kind < 1.5) return max(abs(p.x), abs(p.y)) * 1.12;
@@ -838,6 +844,8 @@ function galaxyNodeMaterial(scale) {
         float d = shapeDistance(p, vShape) / vCore;
         float edge = 1.6 / max(1.0, vPx * vCore);
         float core = 1.0 - smoothstep(1.0 - edge, 1.0 + edge, d);
+        // A hollow node (a lens marks it) keeps its outline and opens its centre.
+        if (vStyle > 0.5) core *= smoothstep(0.5 - edge, 0.5 + edge, d);
         vec3 coreColor = mix(vColor, vec3(1.0), 0.5 * (1.0 - clamp(d, 0.0, 1.0)));
         vec3 color = coreColor * core + vColor * glow;
         float alpha = (core + glow) * vAlpha;
@@ -857,6 +865,7 @@ export async function createGalaxyFieldRenderer({ host, onNodeSelect, onNodeHove
   let field = null, selectedId = null, highlight = null, settled = false, animationRunning = true, tick = 0, fitDistance = 600, cameraTaken = false;
   let nodeIndex = new Map(), linkEnds = null, scales = null, screen = null, screenDirty = true;
   let points = null, pointGeometry = null, lines = null, lineGeometry = null, ring = null, outerRing = null, labelOrder = [];
+  let lens = null, denseSurfaceIds = new Set();
   let pulseFrame = 0, viewSyncFrame = 0, hoverFrame = 0, pointerDown = null, hoveredId = null;
   const labelButtons = new Map();
   const scratchPosition = new THREE.Vector3(), scratchColor = new THREE.Color();
@@ -898,10 +907,13 @@ export async function createGalaxyFieldRenderer({ host, onNodeSelect, onNodeHove
       onViewChange?.({ type: 'settled', settled: true, first });
     });
   if (typeof graph.enableNodeDrag === 'function') graph.enableNodeDrag(false);
-  // The forces open the field enough for its structure to show, with rosters
-  // pulled tight around their one node, while the whole stays one body.
+  // The forces open the field enough for its structure to show while the whole
+  // stays one body. Every participation row is one link; a row into a dense
+  // roster (GALAXY_DENSE_ROSTER participants or more) has a short rest length so
+  // the roster stays one object with its spokes.
+  const denseLink = link => denseSurfaceIds.has(endpointId(link.target));
   graph.d3Force('charge').strength(-18).distanceMax(260);
-  graph.d3Force('link').distance(link => link.topology_only ? 6 : 22).strength(link => link.topology_only ? .9 : .5);
+  graph.d3Force('link').distance(link => denseLink(link) ? 6 : 22).strength(link => denseLink(link) ? .9 : .5);
   graph.renderer().setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
 
   // A flat field: left drag and one finger pan, wheel and pinch zoom, no orbit.
@@ -956,6 +968,7 @@ export async function createGalaxyFieldRenderer({ host, onNodeSelect, onNodeHove
     pointGeometry.setAttribute('haloSize', new THREE.BufferAttribute(new Float32Array(count), 1));
     pointGeometry.setAttribute('haloAlpha', new THREE.BufferAttribute(new Float32Array(count), 1));
     pointGeometry.setAttribute('nodeAlpha', new THREE.BufferAttribute(new Float32Array(count), 1));
+    pointGeometry.setAttribute('nodeStyle', new THREE.BufferAttribute(new Float32Array(count), 1));
     const shapeKind = new Float32Array(count);
     field.nodes.forEach((node, index) => { shapeKind[index] = GALAXY_SHAPE_KIND[node.ontology] ?? GALAXY_SHAPE_KIND.organization; });
     pointGeometry.setAttribute('shapeKind', new THREE.BufferAttribute(shapeKind, 1));
@@ -997,20 +1010,28 @@ export async function createGalaxyFieldRenderer({ host, onNodeSelect, onNodeHove
   // background; it is never removed.
   function restyle() {
     if (!field || !points) return;
-    const { nodeColor, coreSize, haloSize, haloAlpha, nodeAlpha } = pointGeometry.attributes;
+    const { nodeColor, coreSize, haloSize, haloAlpha, nodeAlpha, nodeStyle } = pointGeometry.attributes;
+    // A lens (set by the runtime from one recorded field) keeps its nodes and
+    // rows lit and dims the rest; it may recolour a node by a recorded value
+    // and draw it hollow. Nothing is removed.
+    const lensNodes = lens?.nodes ?? null, lensLinks = lens?.links ?? null, lensColors = lens?.colors ?? null, lensHollow = lens?.hollow ?? null, lensMuted = lens?.muted ?? null;
+    const lensLinkLevel = GALAXY_LINK_LEVEL * (lens?.linkLevel ?? 1);
     field.nodes.forEach((node, index) => {
       const channels = nodeChannels(node);
-      const inFocus = !highlight || highlight.has(node.id);
+      const inLens = !lensNodes || lensNodes.has(node.id);
+      const inFocus = inLens && (!highlight || highlight.has(node.id));
       const selected = node.id === selectedId;
-      scratchColor.set(node.color || ONTOLOGY_COLORS[node.ontology] || '#b8c0cf');
-      if (!inFocus) scratchColor.lerp(GALAXY_BACKGROUND, GALAXY_DIM.node);
+      scratchColor.set(lensColors?.get(node.id) || node.color || ONTOLOGY_COLORS[node.ontology] || '#b8c0cf');
+      if (!inFocus) scratchColor.lerp(GALAXY_BACKGROUND, inLens ? GALAXY_DIM.node : GALAXY_LENS_DIM.node);
       // scales[] holds the core diameter in world units; picking, the ring and
       // the labels read it.
       let core = Math.max(1.6, channels.core) * GALAXY_CORE_SCALE;
       let halo = Math.max(channels.halo, core * GALAXY_GLOW_FLOOR.sizeFactor);
       let glow = Math.max(channels.alpha, GALAXY_GLOW_FLOOR.alpha);
       let alpha = 1;
-      if (!inFocus) { core *= .9; glow *= GALAXY_DIM.halo; alpha = GALAXY_DIM.alpha; }
+      if (!inLens) { core *= .85; glow *= GALAXY_LENS_DIM.halo; alpha = GALAXY_LENS_DIM.alpha; }
+      else if (!inFocus) { core *= .9; glow *= GALAXY_DIM.halo; alpha = GALAXY_DIM.alpha; }
+      else if (lensMuted?.has(node.id) && !selected) { glow *= GALAXY_LENS_DIM.muted; alpha = GALAXY_LENS_DIM.muted; }
       if (selected) { core *= GALAXY_DIM.selectedScale; halo = Math.max(halo, 30); glow = Math.max(glow, .6); }
       scales[index] = core;
       nodeColor.setXYZ(index, scratchColor.r, scratchColor.g, scratchColor.b);
@@ -1018,14 +1039,16 @@ export async function createGalaxyFieldRenderer({ host, onNodeSelect, onNodeHove
       haloSize.setX(index, halo);
       haloAlpha.setX(index, glow);
       nodeAlpha.setX(index, alpha);
+      nodeStyle.setX(index, lensHollow?.has(node.id) ? 1 : 0);
     });
-    nodeColor.needsUpdate = coreSize.needsUpdate = haloSize.needsUpdate = haloAlpha.needsUpdate = nodeAlpha.needsUpdate = true;
+    nodeColor.needsUpdate = coreSize.needsUpdate = haloSize.needsUpdate = haloAlpha.needsUpdate = nodeAlpha.needsUpdate = nodeStyle.needsUpdate = true;
     const lineColor = lineGeometry.attributes.color;
     field.links.forEach((link, index) => {
       const source = endpointId(link.source), target = endpointId(link.target);
-      const incident = selectedId && (source === selectedId || target === selectedId);
+      const inLens = !lensLinks || lensLinks.has(link.id);
+      const incident = inLens && selectedId && (source === selectedId || target === selectedId);
       scratchColor.set(EVIDENCE_COLORS[link.evidence_class] ?? EVIDENCE_COLORS.context);
-      scratchColor.multiplyScalar(incident ? 1 : highlight ? GALAXY_DIM.link : GALAXY_LINK_LEVEL);
+      scratchColor.multiplyScalar(incident ? 1 : !inLens ? GALAXY_LENS_DIM.link : highlight ? GALAXY_DIM.link : lensLinkLevel);
       lineColor.setXYZ(index * 2, scratchColor.r, scratchColor.g, scratchColor.b);
       lineColor.setXYZ(index * 2 + 1, scratchColor.r, scratchColor.g, scratchColor.b);
     });
@@ -1135,6 +1158,7 @@ export async function createGalaxyFieldRenderer({ host, onNodeSelect, onNodeHove
       if (boxes.length >= limit) break;
       const node = field.nodes[index];
       if (highlight && !highlight.has(node.id) && node.id !== selectedId) continue;
+      if (lens?.nodes && !lens.nodes.has(node.id) && node.id !== selectedId) continue;
       const radius = (scales[index] || 1) * perUnit / 2;
       const x = screen[index * 2] + radius + 5, y = screen[index * 2 + 1] - 8;
       const labelWidth = Math.min(170, 4 + String(node.label).length * 6.2);
@@ -1289,6 +1313,7 @@ export async function createGalaxyFieldRenderer({ host, onNodeSelect, onNodeHove
     tick = 0;
     delete host.dataset.fieldLayout;
     galaxySeedPositions(field);
+    denseSurfaceIds = new Set(field.nodes.filter(node => node.ontology === 'surface' && (node.participant_count ?? 0) >= GALAXY_DENSE_ROSTER).map(node => node.id));
     buildObjects();
     restyle();
     const box = bounds();
@@ -1308,6 +1333,16 @@ export async function createGalaxyFieldRenderer({ host, onNodeSelect, onNodeHove
     restyle();
     updateLabels();
     return selectedId;
+  }
+  // spec: { nodes: Set<id>, links: Set<linkId>, colors: Map<id, css colour>,
+  // hollow: Set<id>, muted: Set<id>, linkLevel: number } or null. The runtime
+  // builds it from one recorded field.
+  function setLens(spec) {
+    lens = spec && (spec.nodes || spec.links || spec.colors || spec.hollow) ? spec : null;
+    if (!field || !points) return lens;
+    restyle();
+    updateLabels();
+    return lens;
   }
   function pause() {
     if (!animationRunning) return;
@@ -1337,6 +1372,7 @@ export async function createGalaxyFieldRenderer({ host, onNodeSelect, onNodeHove
     engine: 'force3d-galaxy',
     render,
     select,
+    setLens,
     focus,
     fit,
     zoom,
@@ -1349,6 +1385,7 @@ export async function createGalaxyFieldRenderer({ host, onNodeSelect, onNodeHove
     isRunning: () => animationRunning,
     settled: () => settled,
     selectedId: () => selectedId,
+    lens: () => lens,
     field: () => field,
     graph: () => graph
   };

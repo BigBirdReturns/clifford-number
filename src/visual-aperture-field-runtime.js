@@ -52,9 +52,9 @@ function fieldAnchorId() {
   return id && state.actors.has(id) ? id : null;
 }
 function initializeFieldDefaults() {
-  state.field = { selectedId: fieldAnchorId(), query: '' };
+  state.field = { selectedId: fieldAnchorId(), query: '', lens: FIELD_LENS_DEFAULT };
   state.galaxy = {
-    api: null, renderer: null, model: null, ledger: null, field: null, facts: null, searchOptions: null,
+    api: null, renderer: null, model: null, ledger: null, field: null, facts: null, searchOptions: null, surfaceById: null, lensCache: new Map(),
     loading: false, failed: false, rendered: false, active: false, intersecting: true, lifecycleBound: false, observer: null
   };
   if (fieldArrivalAvailable()) state.mode = 'field';
@@ -69,6 +69,7 @@ function ensureFieldModel() {
   if (!api?.buildLedgerFieldModel || !state.data?.surfaceGraph) return null;
   galaxy.model = api.buildLedgerFieldModel(state.data.surfaceGraph);
   galaxy.ledger = api.buildFieldLedgerIndex(state.data.surfaceGraph, galaxy.model);
+  galaxy.surfaceById = new Map((state.data.surfaceGraph.surfaces ?? []).map(surface => [surface.surface_id, surface]));
   galaxy.field = api.buildSocialFieldModel(galaxy.model, { ledger: galaxy.ledger, atDay: galaxy.ledger.range?.last_day ?? null, reinforcement: false });
   return galaxy.field;
 }
@@ -172,6 +173,204 @@ function fieldFacts() {
   return galaxy.facts;
 }
 
+// --- lenses: one recorded field each ------------------------------------------------------------------
+// A lens keeps the nodes and rows that satisfy one recorded field of the
+// compiled artifacts and dims everything else without removing it. It adds no
+// accumulation and no rank: Decisions reads a surface's `status`, Hunt reads
+// `hop_eligible` and `hop_refusal_reason`, In force reads each row's end date
+// against t. Every lens prints its definition and its counts with their
+// denominators on the legend and in its tile; `ap_field_lens` carries it in
+// exact-view links.
+const FIELD_LENS_DEFAULT = 'all';
+const FIELD_LENS_ORDER = ['all', 'decisions', 'hunt', 'inforce'];
+const FIELD_LENSES = {
+  all: { label: 'All', title: 'Whole field', definition: 'every node and every participation row' },
+  decisions: { label: 'Decisions', title: 'Official instruments', definition: 'surfaces whose recorded status begins official_ (an award, contract, appointment, filing, register or payment record) and the rows that name them' },
+  hunt: { label: 'Hunt', title: 'Refused as a hop base', definition: 'surfaces recorded hop_eligible false, drawn hollow and coloured by their recorded hop_refusal_reason, with the rows that name them' },
+  inforce: { label: 'In force', title: 'In force at t', definition: 'rows with no end date or an end date on or after t, and the nodes they join' }
+};
+// Refusal reasons grouped for colour only; the tile lists every reason as recorded.
+const FIELD_HUNT_FAMILIES = [
+  ['pending', 'self-reported role, pending review', '#ffd061', /^single_actor_self_reported_role_observation$/],
+  ['organization_only', 'organization only, no named person', '#69b7ff', /^(organization_only|issuer_only|registered_shareholder)/],
+  ['upgrade', 'evidence or date precision to upgrade', '#e36f6f', /without_upgrade|year_precision_only|reference_conflict/],
+  ['dense', 'dense roster or directory, drawn once', '#7dccbf', /dense_roster|dense_directory/],
+  ['context', 'single actor or context only, no shared participation', '#9aa4b5', /single_actor|context|not_shared|not_bounded|invitation_without|rights_not_exercised|roundtable|lane/],
+  ['other', 'other or unstated reason', '#b48eff', /.*/]
+];
+function fieldHuntFamily(reason) {
+  const value = String(reason || '');
+  return FIELD_HUNT_FAMILIES.find(([, , , test]) => test.test(value)) ?? FIELD_HUNT_FAMILIES[FIELD_HUNT_FAMILIES.length - 1];
+}
+function fieldEndpointId(value) { return typeof value === 'object' && value ? value.id : value; }
+function fieldRowOrdinal(row) { return Number(String(row?.row_id ?? '').split('::').pop()); }
+// The surface row of build/surface-graph.json behind a field node.
+function fieldSurfaceRecord(node) {
+  return node?.ontology === 'surface' ? (state.galaxy?.surfaceById?.get(node.surface_id) ?? null) : null;
+}
+function fieldLensKey(key = state.field?.lens) { return FIELD_LENSES[key] ? key : FIELD_LENS_DEFAULT; }
+function fieldSurfaceTotal(field) { return field.nodes.reduce((sum, node) => sum + (node.ontology === 'surface' ? 1 : 0), 0); }
+function fieldSortedCounts(map) {
+  return [...map.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([id, count]) => ({ id, label: humanLabel(id), count }));
+}
+// Lit links are the rows that pass `keep`; their two ends are lit nodes.
+function fieldLensCollectRows(field, spec, keep) {
+  for (const link of field.links) {
+    if (!keep(link)) continue;
+    spec.links.add(link.id);
+    spec.rowOrdinals.add(link.row_ordinal);
+    spec.nodes.add(fieldEndpointId(link.source));
+    spec.nodes.add(fieldEndpointId(link.target));
+  }
+}
+function fieldLensEmpty() { return { nodes: new Set(), links: new Set(), rowOrdinals: new Set(), colors: null, hollow: null, muted: null, linkLevel: 1, counts: {} }; }
+function computeDecisionsLens(field) {
+  const spec = fieldLensEmpty();
+  const lit = new Set(), statuses = new Map();
+  for (const node of field.nodes) {
+    const record = fieldSurfaceRecord(node);
+    const status = String(record?.status || '');
+    if (!record || !/^official_/.test(status)) continue;
+    lit.add(node.id);
+    spec.nodes.add(node.id);
+    statuses.set(status, (statuses.get(status) ?? 0) + 1);
+  }
+  fieldLensCollectRows(field, spec, link => lit.has(fieldEndpointId(link.target)));
+  spec.counts = { surfaces: lit.size, surfaces_total: fieldSurfaceTotal(field), rows: spec.links.size, rows_total: field.links.length, statuses: fieldSortedCounts(statuses) };
+  return spec;
+}
+function computeHuntLens(field) {
+  const spec = { ...fieldLensEmpty(), colors: new Map(), hollow: new Set() };
+  const refused = new Set(), families = new Map(), reasons = new Map();
+  for (const node of field.nodes) {
+    const record = fieldSurfaceRecord(node);
+    if (!record || record.hop_eligible === true) continue;
+    const reason = String(record.hop_refusal_reason || 'unstated');
+    const family = fieldHuntFamily(reason);
+    refused.add(node.id);
+    spec.nodes.add(node.id);
+    spec.hollow.add(node.id);
+    spec.colors.set(node.id, family[2]);
+    families.set(family[0], (families.get(family[0]) ?? 0) + 1);
+    reasons.set(reason, (reasons.get(reason) ?? 0) + 1);
+  }
+  fieldLensCollectRows(field, spec, link => refused.has(fieldEndpointId(link.target)));
+  // The holes are the point of this lens: their participants and rows stay
+  // lit but recede, so the hollow, reason-coloured surfaces read first.
+  spec.muted = new Set([...spec.nodes].filter(id => !refused.has(id)));
+  spec.linkLevel = .3;
+  spec.counts = {
+    surfaces: refused.size, surfaces_total: fieldSurfaceTotal(field), rows: spec.links.size, rows_total: field.links.length,
+    families: FIELD_HUNT_FAMILIES.map(([id, label, color]) => ({ id, label, color, count: families.get(id) ?? 0 })).filter(family => family.count > 0),
+    reasons: fieldSortedCounts(reasons)
+  };
+  return spec;
+}
+function computeInForceLens(field, ledger) {
+  const spec = fieldLensEmpty();
+  const lastDay = ledger.range?.last_day ?? null;
+  const byOrdinal = new Map(ledger.rows.map(row => [fieldRowOrdinal(row), row]));
+  const api = fieldApi();
+  const byClass = new Map(FIELD_CLASS_KEYS.map(([id]) => [id, 0]));
+  fieldLensCollectRows(field, spec, link => {
+    const row = byOrdinal.get(link.row_ordinal);
+    if (!row?.dated || lastDay == null) return false;
+    if (row.end_day != null && row.end_day < lastDay) return false;
+    const heatClass = api?.heatClassForSurfaceType ? api.heatClassForSurfaceType(row.surface_type) : 'policy';
+    byClass.set(heatClass, (byClass.get(heatClass) ?? 0) + 1);
+    return true;
+  });
+  let surfaces = 0;
+  for (const id of spec.nodes) if (String(id).startsWith('surface-')) surfaces += 1;
+  spec.counts = {
+    rows: spec.links.size, rows_total: field.links.length, surfaces, surfaces_total: fieldSurfaceTotal(field), t: ledger.range?.last_date ?? null,
+    by_class: FIELD_CLASS_KEYS.map(([id, label, color]) => ({ id, label, color, count: byClass.get(id) ?? 0 }))
+  };
+  return spec;
+}
+// The spec the renderer applies and the legend and tile print, built once per
+// lens per visit (the model does not change while the page is open).
+function fieldLensSpec(key = state.field?.lens) {
+  const lens = fieldLensKey(key);
+  if (lens === FIELD_LENS_DEFAULT) return null;
+  const galaxy = state.galaxy;
+  if (galaxy.lensCache.has(lens)) return galaxy.lensCache.get(lens);
+  const field = ensureFieldModel();
+  if (!field || !galaxy.ledger) return null;
+  const spec = lens === 'decisions' ? computeDecisionsLens(field) : lens === 'hunt' ? computeHuntLens(field) : computeInForceLens(field, galaxy.ledger);
+  Object.assign(spec, { key: lens, label: FIELD_LENSES[lens].label, title: FIELD_LENSES[lens].title, definition: FIELD_LENSES[lens].definition });
+  galaxy.lensCache.set(lens, spec);
+  return spec;
+}
+function fieldLensCountsLine(spec) {
+  const c = spec.counts;
+  if (spec.key === 'inforce') return `${fieldCount(c.rows)} of ${fieldCount(c.rows_total)} rows · ${fieldCount(c.surfaces)} of ${fieldCount(c.surfaces_total)} surfaces · t = ${esc(c.t ?? 'end of record')}`;
+  return `${fieldCount(c.surfaces)} of ${fieldCount(c.surfaces_total)} surfaces · ${fieldCount(c.rows)} of ${fieldCount(c.rows_total)} rows`;
+}
+function fieldLensLegendMarkup() {
+  const spec = fieldLensSpec();
+  if (!spec) return '';
+  const keys = spec.key === 'hunt'
+    ? spec.counts.families.map(family => `<span><i class="aperture-key aperture-key--hollow" style="border-color:${family.color}"></i> ${esc(family.label)} ${fieldCount(family.count)}</span>`).join('')
+    : '';
+  return `<span class="aperture-field-lens-line" data-ap-field-lens="${esc(spec.key)}"><strong>${esc(spec.label)} lens</strong> · ${esc(spec.definition)} · ${fieldLensCountsLine(spec)} · everything else dimmed, nothing removed</span>${keys}`;
+}
+function fieldLensTileMarkup(facts) {
+  const key = fieldLensKey();
+  if (key === FIELD_LENS_DEFAULT) {
+    const decisions = fieldLensSpec('decisions'), hunt = fieldLensSpec('hunt'), inforce = fieldLensSpec('inforce');
+    return fieldTileMarkup({
+      id: 'lens', title: 'Lenses',
+      figure: `${FIELD_LENS_ORDER.length - 1} <small>lenses</small>`,
+      denominator: 'each keeps one recorded field and dims the rest · nothing is weighed or ranked',
+      body: fieldBarsMarkup([
+        { label: 'Decisions · status official_', count: decisions?.counts.surfaces ?? 0 },
+        { label: 'Hunt · refused as hop base', count: hunt?.counts.surfaces ?? 0 },
+        { label: 'In force · rows open at t', count: inforce?.counts.rows ?? 0 }
+      ]) + `<p class="aperture-field-denominator">of ${fieldCount(facts.surfaces)} surfaces (Decisions, Hunt) · of ${fieldCount(facts.rows)} rows (In force)</p>`
+    });
+  }
+  const spec = fieldLensSpec(key);
+  if (!spec) return '';
+  const c = spec.counts;
+  if (key === 'decisions') {
+    const shown = c.statuses.slice(0, 6), rest = c.statuses.slice(6);
+    return fieldTileMarkup({
+      id: 'lens', title: 'Lens · Decisions',
+      figure: `${fieldCount(c.surfaces)} <small>surfaces</small>`,
+      denominator: `of ${fieldCount(c.surfaces_total)} surfaces with a recorded status beginning official_ · ${fieldCount(c.rows)} of ${fieldCount(c.rows_total)} rows`,
+      body: fieldBarsMarkup(shown) + (rest.length ? `<p class="aperture-field-denominator">${fieldCount(rest.reduce((sum, item) => sum + item.count, 0))} surfaces under ${rest.length} other official_ statuses</p>` : '')
+    });
+  }
+  if (key === 'hunt') {
+    const shown = c.reasons.slice(0, 5);
+    return fieldTileMarkup({
+      id: 'lens', title: 'Lens · Hunt',
+      figure: `${fieldCount(c.surfaces)} <small>surfaces</small>`,
+      denominator: `of ${fieldCount(c.surfaces_total)} surfaces refused as a hop base · colour by reason family · ${fieldCount(c.rows)} of ${fieldCount(c.rows_total)} rows`,
+      body: fieldBarsMarkup(c.families) + `<p class="aperture-field-denominator">as recorded: ${shown.map(reason => `${esc(reason.label)} ${fieldCount(reason.count)}`).join(' · ')}${c.reasons.length > shown.length ? ` · ${c.reasons.length - shown.length} more reasons` : ''}</p>`
+    });
+  }
+  return fieldTileMarkup({
+    id: 'lens', title: 'Lens · In force',
+    figure: `${fieldCount(c.rows)} <small>rows</small>`,
+    denominator: `of ${fieldCount(c.rows_total)} rows with no end date or an end on or after t = ${esc(c.t ?? 'end of record')} · ${fieldCount(c.surfaces)} of ${fieldCount(c.surfaces_total)} surfaces`,
+    body: fieldBarsMarkup(c.by_class)
+  });
+}
+function fieldLensExport() {
+  const spec = fieldLensSpec();
+  return spec ? { key: spec.key, label: spec.label, definition: spec.definition, counts: spec.counts } : { key: FIELD_LENS_DEFAULT, label: FIELD_LENSES.all.label, definition: FIELD_LENSES.all.definition };
+}
+function setFieldLens(key, { history = 'push' } = {}) {
+  const next = fieldLensKey(key);
+  if (!state.field || next === state.field.lens) return;
+  state.field.lens = next;
+  if (state.overview) state.overview.page = 1;
+  renderFieldMode();
+  commitApertureAddress(history);
+}
+
 // --- chrome: header strip, legend, tiles ------------------------------------------------------------
 
 function fieldCount(value) {
@@ -187,14 +386,15 @@ function fieldCountersMarkup(facts, selectedId) {
     ['documented', `${facts.first_date ?? '…'} → ${facts.last_date ?? '…'}`, `${fieldCount(facts.dated_rows)} dated rows · ${fieldCount(facts.undated_rows)} undated, never placed`],
     ['t', facts.last_date ?? 'end of record', 'end of record · heat is summed to this day']
   ];
-  return `<div class="aperture-field-brand"><span class="aperture-field-brand__mark">CN</span><span>CLIFFORD NUMBER · FIELD</span><span class="aperture-field-brand__rule">${node ? `selected · ${esc(node.label)}` : 'every mark is one ledger row'}</span></div>
+  return `<div class="aperture-field-brand"><span class="aperture-field-brand__mark">CN</span><span>CLIFFORD NUMBER · FIELD</span><span class="aperture-field-brand__rule">${node ? `selected · ${esc(node.label)}` : fieldLensKey() !== FIELD_LENS_DEFAULT ? `lens · ${esc(FIELD_LENSES[fieldLensKey()].label)}` : 'every mark is one ledger row'}</span></div>
     <dl class="aperture-field-counters">${items.map(([term, value, note]) => `<div><dt>${esc(term)}</dt><dd>${esc(value)}</dd><small>${esc(note)}</small></div>`).join('')}</dl>`;
 }
 function fieldLegendMarkup() {
   const facts = fieldFacts();
   return `${FIELD_CLASS_KEYS.map(([id, label, color]) => `<span data-ap-heat-class="${id}"><i class="aperture-key aperture-key--heat" style="background:${color}"></i> ${label}</span>`).join('')}
     <span><i class="aperture-key aperture-key--actor"></i> actor · <i class="aperture-key aperture-key--organization"></i> organization · <i class="aperture-key aperture-key--surface"></i> surface · one link = one participation row (colour = evidence class)</span>
-    <span class="aperture-heat-formula" data-ap-heat-formula>${FIELD_HEAT_FORMULA}; t = end of record${facts?.last_date ? ` (${esc(facts.last_date)})` : ''}; undated rows add nothing. Surface colour is its class; a person is the mix of classes touched; an organization stays grey.</span>`;
+    <span class="aperture-heat-formula" data-ap-heat-formula>${FIELD_HEAT_FORMULA}; t = end of record${facts?.last_date ? ` (${esc(facts.last_date)})` : ''}; undated rows add nothing. Surface colour is its class; a person is the mix of classes touched; an organization stays grey.</span>
+    ${fieldLensLegendMarkup()}`;
 }
 function fieldBarsMarkup(items) {
   const max = Math.max(1, ...items.map(item => item.count));
@@ -272,7 +472,8 @@ function fieldTilesMarkup(facts, selectedId) {
       figure: node ? `${fieldCount(fieldNodeRows(node.id).length)} <small>rows</small>` : '<small>no node selected</small>',
       denominator: node ? `${esc(fieldNodeKind(node).toLowerCase())} · rows oldest first` : 'select a node to list its dated rows in order',
       body: node ? fieldTrajectoryMarkup(node.id) : ''
-    })
+    }),
+    fieldLensTileMarkup(facts)
   ].join('');
 }
 
@@ -339,6 +540,7 @@ function fieldWelcomeMarkup(facts) {
   return `<div class="network-welcome"><p class="aperture-kicker">The field</p><h3>Every mark is one ledger row.</h3>
     <p>${fieldCount(facts.nodes)} nodes (${fieldCount(facts.actors)} actors, ${fieldCount(facts.organizations)} organizations, ${fieldCount(facts.surfaces)} bounded surfaces) joined by ${fieldCount(facts.links)} participation rows, one link each. Node size, halo and colour are the printed heat at ${esc(facts.last_date ?? 'the end of record')}; nothing else sizes or colours a node.</p>
     <p class="aperture-muted">${FIELD_HEAT_FORMULA}.</p>
+    <p class="aperture-muted">Lenses keep one recorded field each and dim the rest: Decisions, the surfaces an official record establishes; Hunt, the surfaces refused as hop bases with the recorded reason; In force, the rows still open at t. Each prints its definition and counts.</p>
     ${starts.length ? `<div class="network-starts">${starts.map(id => `<button type="button" data-ap-action="field-select" data-node-id="${esc(id)}">${esc(fieldLabelFor(id))}<span aria-hidden="true">↗</span></button>`).join('')}</div>` : ''}
     <dl class="network-guide"><div><dt>Click a node or a name</dt><dd>Highlight its rows and read every heat term</dd></div><div><dt>Drag the field</dt><dd>Pan</dd></div><div><dt>Wheel or pinch</dt><dd>Zoom</dd></div></dl>
     <p class="network-note aperture-muted">Co-presence is never coordination. The field shows documented shared context and nothing more.</p></div>`;
@@ -353,12 +555,13 @@ function renderFieldOverview(facts, selectedId) {
   const ledger = state.galaxy.ledger;
   if (!api || !ledger) return;
   const node = selectedId ? fieldNode(selectedId) : null;
-  const rows = node ? api.nodeLedgerSummary(ledger, node.id).rows : ledger.rows;
+  const lens = node ? null : fieldLensSpec();
+  const rows = node ? api.nodeLedgerSummary(ledger, node.id).rows : lens ? ledger.rows.filter(row => lens.rowOrdinals.has(fieldRowOrdinal(row))) : ledger.rows;
   setOverview({
-    title: node ? `Participation rows of ${node.label}.` : 'Every participation row on the field.',
-    status: `${fieldCount(rows.length)} row${rows.length === 1 ? '' : 's'}, oldest first, undated rows last. ${node ? 'Each row is one link at this node.' : 'Each row is one link on the field.'}`,
+    title: node ? `Participation rows of ${node.label}.` : lens ? `Participation rows in the ${lens.label} lens.` : 'Every participation row on the field.',
+    status: `${fieldCount(rows.length)} row${rows.length === 1 ? '' : 's'}${lens ? ` of ${fieldCount(ledger.rows.length)}` : ''}, oldest first, undated rows last. ${node ? 'Each row is one link at this node.' : lens ? `Each row is one lit link: ${lens.definition}.` : 'Each row is one link on the field.'}`,
     headers: ['Documented', 'Bounded surface', 'Participant', 'Recorded role', 'Evidence', 'Receipts'],
-    pageKey: `field:${node?.id ?? 'all'}`,
+    pageKey: `field:${node?.id ?? (lens ? `lens-${lens.key}` : 'all')}`,
     rows: rows.map(row => fieldOverviewRow(row, node?.id ?? null))
   });
 }
@@ -482,6 +685,7 @@ async function renderGalaxy({ focus = false } = {}) {
     }
     hideFieldFallback();
     galaxy.renderer.select(state.field.selectedId);
+    galaxy.renderer.setLens?.(fieldLensSpec());
     if (focus && state.field.selectedId) galaxy.renderer.focus(state.field.selectedId);
     syncGalaxyAnimation();
     dockFieldCallout();
@@ -598,6 +802,7 @@ function openFieldSearch(value) {
 function fieldControlsMarkup() {
   return `<label class="aperture-control aperture-control--start"><span>Find in field</span><input id="ap-field-search" type="search" list="ap-field-search-options" placeholder="Find a person, organization or surface…" autocomplete="off"><datalist id="ap-field-search-options">${fieldSearchOptions()}</datalist></label>
     <div class="aperture-control-buttons" aria-label="Field view controls"><button type="button" data-ap-action="field-zoom-out" aria-label="Zoom out">−</button><button type="button" data-ap-action="field-zoom-in" aria-label="Zoom in">+</button><button type="button" data-ap-action="field-fit">Fit</button><button type="button" data-ap-action="field-clear"${state.field?.selectedId ? '' : ' disabled'}>Clear</button></div>
+    <div class="aperture-control-buttons aperture-field-lenses" role="group" aria-label="Lens">${FIELD_LENS_ORDER.map(key => `<button type="button" data-ap-action="field-lens" data-lens="${key}" aria-pressed="${fieldLensKey() === key}" title="${esc(FIELD_LENSES[key].definition)}">${esc(FIELD_LENSES[key].label)}</button>`).join('')}</div>
     <details class="network-options"><summary>Options</summary><div class="network-option-fields">
       <p class="aperture-muted">${FIELD_HEAT_FORMULA}; t = end of record. Node size, halo and colour carry nothing else. A link is one participation row, coloured by its evidence class; no line joins two people. Layout position carries no meaning.</p>
       <div class="network-save-tools">${addressActionMarkup()}</div>
@@ -631,6 +836,7 @@ function handleFieldAction(button) {
   if (action === 'field-zoom-out') { renderer?.zoom('out'); return true; }
   if (action === 'field-fit') { renderer?.fit(); return true; }
   if (action === 'field-clear') { selectFieldNode(null); return true; }
+  if (action === 'field-lens') { setFieldLens(button.dataset.lens); return true; }
   if (action === 'field-select') { selectFieldNode(button.dataset.nodeId, { focus: true }); return true; }
   if (action === 'field-open-record') { openFieldRecord(button.dataset.nodeId); return true; }
   if (action === 'field-open-network') { openFieldNodeInNetwork(button.dataset.nodeId); return true; }
@@ -646,12 +852,13 @@ function handleFieldAction(button) {
   return false;
 }
 function fieldSnapshot() {
-  return { selectedId: state.field?.selectedId ?? null };
+  return { selectedId: state.field?.selectedId ?? null, lens: fieldLensKey() };
 }
 function applyFieldSnapshot(snapshot) {
   if (!state.field || snapshot === undefined) return;
   const id = snapshot?.selectedId ?? null;
   state.field.selectedId = id && fieldNode(id) ? fieldNode(id).id : null;
+  state.field.lens = fieldLensKey(snapshot?.lens);
 }
 
 // --- export view: the field as a publication packet ---------------------------------------------------
@@ -690,6 +897,7 @@ function currentFieldExportView() {
     },
     heat_formula: FIELD_HEAT_FORMULA,
     heat_at: facts.last_date,
+    lens: fieldLensExport(),
     selected: node ? {
       node_id: node.id,
       label: node.label,
@@ -746,6 +954,7 @@ function renderFieldMode(options = {}) {
   renderFieldOverview(facts, id);
   const clear = $('[data-ap-action="field-clear"]', state.root);
   if (clear) clear.disabled = !id;
+  for (const button of state.root.querySelectorAll('[data-ap-action="field-lens"]')) button.setAttribute('aria-pressed', String(button.dataset.lens === fieldLensKey()));
   queueMicrotask(() => renderGalaxy(options));
   dockFieldCallout();
 }

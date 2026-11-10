@@ -141,8 +141,9 @@ for (const needle of [api.fieldCount(facts.nodes), api.fieldCount(facts.links), 
 }
 assert.ok(api.fieldLegendMarkup().includes(HEAT_FORMULA), 'the legend prints the formula');
 const tiles = api.fieldTilesMarkup(facts, state.field.selectedId);
-assert.equal((tiles.match(/class="aperture-field-tile"/g) ?? []).length, 6, 'six instrument tiles');
-assert.ok((tiles.match(/aperture-field-denominator/g) ?? []).length >= 6, 'every tile names a denominator');
+assert.equal((tiles.match(/class="aperture-field-tile"/g) ?? []).length, 7, 'seven instrument tiles (six ledger facts and the lens tile)');
+assert.ok((tiles.match(/aperture-field-denominator/g) ?? []).length >= 7, 'every tile names a denominator');
+assert.ok(tiles.includes('data-ap-field-tile="lens"'), 'the lens tile is present');
 assert.ok(tiles.includes(`of ${api.fieldCount(totalRows)} participation rows`));
 assert.ok(tiles.includes(`of ${api.fieldCount(surfaceGraph.surfaces.length)} bounded surfaces`));
 assert.ok(tiles.includes(`of ${api.fieldCount(receiptGraph.receipts.length)} receipts`));
@@ -186,6 +187,14 @@ assert.equal(packet.view.table.rows.length, view.rows.length);
 assert.ok(APERTURE_QUERY_KEYS.includes('ap_field_sel'));
 assert.equal(readApertureState('?ap_v=1&ap_mode=field&ap_field_sel=matt-clifford').field.selectedId, 'matt-clifford');
 assert.equal(readApertureState(writeApertureState({ mode: 'field', field: { selectedId: 'surface-x' } })).field.selectedId, 'surface-x');
+assert.ok(APERTURE_QUERY_KEYS.includes('ap_field_lens'));
+assert.equal(readApertureState('?ap_v=1&ap_mode=field&ap_field_lens=hunt').field.lens, 'hunt', 'the lens travels in the URL');
+assert.equal(readApertureState('?ap_v=1&ap_mode=field').field.lens, 'all', 'no lens reads as all');
+assert.equal(readApertureState('?ap_v=1&ap_mode=field&ap_field_lens=bogus').field.lens, 'all', 'an unknown lens reads as all');
+assert.equal(writeApertureState({ mode: 'field', field: { selectedId: null, lens: 'all' } }).get('ap_field_lens'), 'all', 'the lens key is always written, all at the default');
+assert.equal(writeApertureState({ mode: 'field', field: { selectedId: null, lens: 'inforce' } }).get('ap_field_lens'), 'inforce');
+assert.match(runtime, /function computeDecisionsLens[\s\S]*\/\^official_\/[\s\S]*function computeHuntLens[\s\S]*hop_eligible === true[\s\S]*hop_refusal_reason[\s\S]*function computeInForceLens[\s\S]*end_day/, 'each lens reads one recorded field');
+assert.match(runtime, /function fieldLensLegendMarkup[\s\S]*everything else dimmed, nothing removed/, 'the legend prints the lens definition');
 
 // --- source shape ------------------------------------------------------------------------------------------------------
 const part2 = readFileSync('src/visual-aperture-part-2.js', 'utf8');

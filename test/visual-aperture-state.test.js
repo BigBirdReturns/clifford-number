@@ -105,7 +105,7 @@ assert.deepEqual(decoded, {
     pins: ['actor-a', 'actor-c'],
     actorId: 'actor-a'
   },
-  field: { selectedId: 'matt-clifford' },
+  field: { selectedId: 'matt-clifford', lens: 'all' },
   timeline: {
     by: 'organization',
     from: '2024-01-01',
@@ -143,7 +143,7 @@ assert.equal(defaultParams.get('ap_mode'), 'timeline');
 assert.deepEqual(readApertureState(defaultParams).timeline, timelineDefaults, 'a default timeline view reads back as its defaults');
 assert.equal(writeApertureState({}).get('ap_mode'), 'map', 'the network is the fallback mode');
 for (const key of APERTURE_QUERY_KEYS.filter(item => !APERTURE_TIMELINE_QUERY_KEYS.includes(item))) assert.ok(defaultParams.has(key), `${key} keeps its always-serialized contract`);
-assert.equal(APERTURE_QUERY_KEYS.length, 33);
+assert.equal(APERTURE_QUERY_KEYS.length, 34);
 
 const twentyLanes = Array.from({ length: 20 }, (_, index) => `lane-${String(index).padStart(2, '0')}`);
 const timelineClamped = readApertureState(`?ap_v=1&ap_mode=timeline&ap_time_by=bogus&ap_time_from=2024-13-40&ap_time_to=2024-02-30&ap_time_cursor=2025-12-31..2025-01-01&ap_time_lanes=${twentyLanes.join(',')}&ap_time_evidence=bogus&ap_time_hop=bogus&ap_time_sel=${'x'.repeat(500)}`);
