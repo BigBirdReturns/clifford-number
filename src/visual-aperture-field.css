@@ -216,7 +216,7 @@
 /* Instrument tiles: one ledger fact each, with its denominator. */
 .aperture-field-tiles {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 1px;
   border-top: 1px solid var(--f-line);
   background: var(--f-line);
@@ -235,6 +235,10 @@
 .aperture-field-bar-track { height: 4px; background: var(--f-panel-2); border: 0; }
 .aperture-field-bar-track i { display: block; height: 100%; background: #69b7ff; }
 .aperture-field-bar-count { color: var(--f-text-strong); font-variant-numeric: tabular-nums; }
+.aperture-field-bars--stacked .aperture-field-bars li { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "label count" "track track"; row-gap: 3px; }
+.aperture-field-bars--stacked .aperture-field-bar-label { grid-area: label; white-space: normal; }
+.aperture-field-bars--stacked .aperture-field-bar-count { grid-area: count; }
+.aperture-field-bars--stacked .aperture-field-bar-track { grid-area: track; }
 .aperture-field-years { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(11, minmax(0, 1fr)); gap: 3px; align-items: end; height: 84px; }
 .aperture-field-years li { display: grid; grid-template-rows: auto 1fr auto; align-items: end; justify-items: center; height: 100%; min-width: 0; }
 .aperture-field-years i { display: block; width: 100%; height: var(--h, 0%); min-height: 1px; background: linear-gradient(180deg, var(--f-accent), #d95926); align-self: end; }

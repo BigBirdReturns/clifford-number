@@ -141,8 +141,10 @@ for (const needle of [api.fieldCount(facts.nodes), api.fieldCount(facts.links), 
 }
 assert.ok(api.fieldLegendMarkup().includes(HEAT_FORMULA), 'the legend prints the formula');
 const tiles = api.fieldTilesMarkup(facts, state.field.selectedId);
-assert.equal((tiles.match(/class="aperture-field-tile"/g) ?? []).length, 7, 'seven instrument tiles (six ledger facts and the lens tile)');
-assert.ok((tiles.match(/aperture-field-denominator/g) ?? []).length >= 7, 'every tile names a denominator');
+assert.equal((tiles.match(/class="aperture-field-tile"/g) ?? []).length, 8, 'eight instrument tiles (six ledger facts, the heat source and the lens tile)');
+assert.ok((tiles.match(/aperture-field-denominator/g) ?? []).length >= 8, 'every tile names a denominator');
+assert.ok(tiles.includes('Where the heat comes from'), 'the heat-source split is a tile');
+assert.ok(facts.heat_by_status && Math.abs(facts.heat_by_status.families.reduce((sum, family) => sum + family.heat, 0) - facts.heat_by_status.total) < 1e-6, 'the status split sums to the total heat');
 assert.ok(tiles.includes('data-ap-field-tile="lens"'), 'the lens tile is present');
 assert.ok(tiles.includes(`of ${api.fieldCount(totalRows)} participation rows`));
 assert.ok(tiles.includes(`of ${api.fieldCount(surfaceGraph.surfaces.length)} bounded surfaces`));
@@ -189,6 +191,7 @@ assert.equal(readApertureState('?ap_v=1&ap_mode=field&ap_field_sel=matt-clifford
 assert.equal(readApertureState(writeApertureState({ mode: 'field', field: { selectedId: 'surface-x' } })).field.selectedId, 'surface-x');
 assert.ok(APERTURE_QUERY_KEYS.includes('ap_field_lens'));
 assert.equal(readApertureState('?ap_v=1&ap_mode=field&ap_field_lens=hunt').field.lens, 'hunt', 'the lens travels in the URL');
+assert.equal(readApertureState('?ap_v=1&ap_mode=field&ap_field_lens=queue').field.lens, 'queue', 'the queue lens travels in the URL');
 assert.equal(readApertureState('?ap_v=1&ap_mode=field').field.lens, 'all', 'no lens reads as all');
 assert.equal(readApertureState('?ap_v=1&ap_mode=field&ap_field_lens=bogus').field.lens, 'all', 'an unknown lens reads as all');
 assert.equal(writeApertureState({ mode: 'field', field: { selectedId: null, lens: 'all' } }).get('ap_field_lens'), 'all', 'the lens key is always written, all at the default');

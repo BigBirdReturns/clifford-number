@@ -18,7 +18,7 @@ export const APERTURE_QUERY_KEYS = Object.freeze([
 ]);
 
 const MODES = new Set(['field', 'timeline', 'map', 'route', 'surface']);
-const FIELD_LENSES = new Set(['all', 'decisions', 'hunt', 'inforce']);
+const FIELD_LENSES = new Set(['all', 'decisions', 'hunt', 'inforce', 'queue']);
 const MAP_LEVELS = new Set(['corpus', 'machine', 'surface', 'evidence']);
 const EVIDENCE_FLOORS = new Set(['open', 'reported', 'primary_public', 'official']);
 const OVERVIEW_PAGE_SIZES = new Set([25, 50, 100]);

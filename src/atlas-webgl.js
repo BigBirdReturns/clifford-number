@@ -1,5 +1,8 @@
 import * as THREE from '../vendor/three-0.186.0.module.js';
 import { applyFieldHeat, buildSocialFieldModel, eventInWindow, heatTimeForWindow, nodeCountLabel, nodeHeatLabel, normalizeEcologyWindow, ONTOLOGY_COLORS, SOCIAL_FIELD_RADIUS, socialFieldNeighbors, isSurfaceNode } from './social-field.js';
+// The Field's layout contract (forces, seed, dense-roster rule) has one owner,
+// shared with tools/build-field-layout.mjs, which runs it offline.
+import { FIELD_FORCES, seedFieldPositions, denseSurfaceIds as fieldDenseSurfaceIds } from './field-layout.js';
 // The field runtime reads the whole social-field model API (ledger index,
 // window helpers, day formatting) through the renderer module, so the loader
 // in visual-aperture.js needs no edit when this API grows. The two modules
@@ -924,59 +927,7 @@ const GALAXY_CLICK_SLOP_PX = 8;
 // The sprite shader draws the kind as a shape: disc for a person, square for
 // an organization, diamond for a surface.
 const GALAXY_SHAPE_KIND = Object.freeze({ person: 0, organization: 1, surface: 2 });
-// A surface with this many participants or more is a dense roster: its rows
-// get a short rest length in the layout so the roster stays one object.
-const GALAXY_DENSE_ROSTER = 40;
 
-function galaxyStableHash(value) {
-  let hash = 2166136261;
-  for (const ch of String(value)) {
-    hash ^= ch.charCodeAt(0);
-    hash = Math.imul(hash, 16777619);
-  }
-  return (hash >>> 0) / 0xffffffff;
-}
-// Deterministic starting positions for the layout: surfaces on a disc, each
-// participant at the mean of its surfaces plus a small offset. The forces take
-// it from here; the seed only makes the arrival reproducible.
-function galaxySeedPositions(field) {
-  const radius = 40 + Math.sqrt(field.nodes.length) * 7;
-  const surfacePosition = new Map();
-  for (const node of field.nodes) {
-    if (node.ontology !== 'surface') continue;
-    const angle = galaxyStableHash(`${node.id}:a`) * Math.PI * 2;
-    const r = Math.sqrt(galaxyStableHash(`${node.id}:r`)) * radius;
-    node.x = Math.cos(angle) * r;
-    node.y = Math.sin(angle) * r;
-    node.z = 0;
-    surfacePosition.set(node.id, node);
-  }
-  const sums = new Map();
-  for (const link of field.links) {
-    const source = endpointId(link.source), target = endpointId(link.target);
-    const surface = surfacePosition.get(target) ?? surfacePosition.get(source);
-    const member = surface && surface.id === target ? source : target;
-    if (!surface || member === surface.id) continue;
-    const sum = sums.get(member) ?? { x: 0, y: 0, n: 0 };
-    sum.x += surface.x; sum.y += surface.y; sum.n += 1;
-    sums.set(member, sum);
-  }
-  for (const node of field.nodes) {
-    if (node.ontology === 'surface') continue;
-    const sum = sums.get(node.id);
-    const angle = galaxyStableHash(`${node.id}:a`) * Math.PI * 2;
-    const jitter = 6 + galaxyStableHash(`${node.id}:j`) * 10;
-    if (sum) {
-      node.x = sum.x / sum.n + Math.cos(angle) * jitter;
-      node.y = sum.y / sum.n + Math.sin(angle) * jitter;
-    } else {
-      const r = radius * (1.05 + galaxyStableHash(`${node.id}:r`) * .15);
-      node.x = Math.cos(angle) * r;
-      node.y = Math.sin(angle) * r;
-    }
-    node.z = 0;
-  }
-}
 // One sprite per node, one draw for the whole field: the core is the kind's
 // shape at the node's heat size with a hot centre, the glow around it is the
 // heat halo. Sizes arrive in world units and become pixels by the camera's
@@ -1060,9 +1011,9 @@ export async function createGalaxyFieldRenderer({ host, onNodeSelect, onNodeHove
     // decoration, so it runs under reduced motion too, but there it completes
     // before the first paint and the camera never animates).
     .warmupTicks(reducedMotion ? 200 : 30)
-    .cooldownTicks(reducedMotion ? 0 : 280)
-    .d3AlphaDecay(.026)
-    .d3VelocityDecay(.3)
+    .cooldownTicks(reducedMotion ? 0 : FIELD_FORCES.maxTicks)
+    .d3AlphaDecay(FIELD_FORCES.alphaDecay)
+    .d3VelocityDecay(FIELD_FORCES.velocityDecay)
     .onEngineTick(() => {
       tick += 1;
       syncPositions();
@@ -1084,11 +1035,14 @@ export async function createGalaxyFieldRenderer({ host, onNodeSelect, onNodeHove
   if (typeof graph.enableNodeDrag === 'function') graph.enableNodeDrag(false);
   // The forces open the field enough for its structure to show while the whole
   // stays one body. Every participation row is one link; a row into a dense
-  // roster (GALAXY_DENSE_ROSTER participants or more) has a short rest length so
-  // the roster stays one object with its spokes.
+  // roster (FIELD_FORCES.denseRoster participants or more) has a short rest
+  // length so the roster stays one object with its spokes. The numbers live in
+  // src/field-layout.js, the one copy the offline build shares.
   const denseLink = link => denseSurfaceIds.has(endpointId(link.target));
-  graph.d3Force('charge').strength(-18).distanceMax(260);
-  graph.d3Force('link').distance(link => denseLink(link) ? 6 : 22).strength(link => denseLink(link) ? .9 : .5);
+  graph.d3Force('charge').strength(FIELD_FORCES.charge.strength).distanceMax(FIELD_FORCES.charge.distanceMax);
+  graph.d3Force('link')
+    .distance(link => denseLink(link) ? FIELD_FORCES.link.denseDistance : FIELD_FORCES.link.distance)
+    .strength(link => denseLink(link) ? FIELD_FORCES.link.denseStrength : FIELD_FORCES.link.strength);
   graph.renderer().setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
 
   // A flat field: left drag and one finger pan, wheel and pinch zoom, no orbit.
@@ -1559,15 +1513,34 @@ export async function createGalaxyFieldRenderer({ host, onNodeSelect, onNodeHove
   resizeObserver.observe(host);
   resize();
 
-  function render(nextField) {
+  // layout: the precomputed positions of build/field-layout.json ({ nodes:
+  // { id: [x, y] } }) when the runtime could load them. A node the file lacks
+  // keeps its seeded place. With enough of the field placed, the engine stops
+  // on its first tick and the arrival costs no layout; otherwise the live
+  // layout runs as before.
+  function render(nextField, { layout = null } = {}) {
     field = nextField;
     field.linkById = new Map(field.links.map(link => [link.id, link]));
     settled = false;
     cameraTaken = false;
     tick = 0;
     delete host.dataset.fieldLayout;
-    galaxySeedPositions(field);
-    denseSurfaceIds = new Set(field.nodes.filter(node => node.ontology === 'surface' && (node.participant_count ?? 0) >= GALAXY_DENSE_ROSTER).map(node => node.id));
+    seedFieldPositions(field);
+    let placed = 0;
+    const positions = layout?.nodes && typeof layout.nodes === 'object' ? layout.nodes : null;
+    if (positions) {
+      for (const node of field.nodes) {
+        const point = positions[node.id];
+        if (!Array.isArray(point) || !Number.isFinite(point[0]) || !Number.isFinite(point[1])) continue;
+        node.x = point[0]; node.y = point[1]; node.z = 0;
+        placed += 1;
+      }
+    }
+    const precomputed = placed >= field.nodes.length * .95;
+    graph.warmupTicks(precomputed ? 0 : reducedMotion ? 200 : 30).cooldownTicks(precomputed ? 0 : reducedMotion ? 0 : FIELD_FORCES.maxTicks);
+    host.dataset.fieldLayoutSource = precomputed ? 'precomputed' : 'live';
+    host.dataset.fieldLayoutPlaced = String(placed);
+    denseSurfaceIds = fieldDenseSurfaceIds(field);
     buildObjects();
     restyle();
     const box = bounds();

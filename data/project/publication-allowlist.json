@@ -581,6 +581,7 @@
     "build/estate-game-trails/source-routes/source-route-venture-capital-corporate-control-estate-state-registries.json",
     "build/estate-game-trails/unresolved.json",
     "build/estates/index.json",
+    "build/field-layout.json",
     "build/hop-graph.json",
     "build/migrated-claims.jsonl",
     "build/migration-review.md",
@@ -3378,6 +3379,7 @@
     "src/estate-aperture.css",
     "src/evidence-rank.js",
     "src/evidence.js",
+    "src/field-layout.js",
     "src/gametrail-aperture-runtime.js",
     "src/gametrail-aperture-template.html",
     "src/gametrail-aperture.css",
@@ -3672,6 +3674,16 @@
         "src/visual-aperture-field.css"
       ],
       "reason": "The Field arrival view (owner request, 2026-11-08: the whole ledger as a force-directed field in terminal chrome, heat kept as the printed rule-6 formula). The runtime and stylesheet are loaded by the explorer page, so the published site must carry them; the standalone inlines both."
+    },
+    {
+      "date": "2026-11-10",
+      "decided_by": "owner",
+      "kind": "paths_added",
+      "paths": [
+        "build/field-layout.json",
+        "src/field-layout.js"
+      ],
+      "reason": "The Field arrival view reads its force layout instead of computing it (src/field-layout.js holds the one copy of the seed and the force constants, imported by the renderer and by the build tool): tools/build-field-layout.mjs runs the renderer's forces once, offline, over the same node and link model the explorer builds, so arrival costs no CPU and the geography is the same on every visit. The explorer page fetches the file, so the published site must carry it; it is derived from build/surface-graph.json and regenerates with the pages build."
     }
   ],
   "interpretation_contract": {

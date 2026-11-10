@@ -44,6 +44,21 @@ function fieldWebGlAvailable() {
 function fieldArrivalAvailable() {
   return typeof globalThis.loadCliffordSocialField === 'function' && fieldWebGlAvailable();
 }
+// The precomputed layout (tools/build-field-layout.mjs writes
+// build/field-layout.json from the same model) is fetched once per visit on
+// the hosted page; the standalone has none and runs the live layout.
+async function ensureFieldLayout() {
+  const galaxy = state.galaxy;
+  if (!galaxy) return null;
+  if (galaxy.layout !== undefined) return galaxy.layout;
+  try {
+    const response = typeof fetch === 'function' ? await fetch('build/field-layout.json', { cache: 'no-cache' }) : null;
+    galaxy.layout = response?.ok ? await response.json() : null;
+  } catch {
+    galaxy.layout = null;
+  }
+  return galaxy.layout;
+}
 // On arrival the anchor actor of build/hop-graph.json (the actor every
 // Clifford Number counts hops to) is selected, so the first screen already
 // shows a highlighted node with its callout. Clear returns to the whole field.
@@ -52,9 +67,9 @@ function fieldAnchorId() {
   return id && state.actors.has(id) ? id : null;
 }
 function initializeFieldDefaults() {
-  state.field = { selectedId: fieldAnchorId(), query: '', lens: FIELD_LENS_DEFAULT };
+  state.field = { selectedId: fieldAnchorId(), query: '', lens: FIELD_LENS_ARRIVAL };
   state.galaxy = {
-    api: null, renderer: null, model: null, ledger: null, field: null, facts: null, searchOptions: null, surfaceById: null, lensCache: new Map(), dockedId: null,
+    api: null, renderer: null, model: null, ledger: null, field: null, facts: null, searchOptions: null, surfaceById: null, lensCache: new Map(), dockedId: null, scout: null, scoutLoading: false, frontier: null,
     loading: false, failed: false, rendered: false, active: false, intersecting: true, lifecycleBound: false, observer: null
   };
   if (fieldArrivalAvailable()) state.mode = 'field';
@@ -168,9 +183,55 @@ function fieldFacts() {
     rows_by_evidence: rowsByEvidence,
     surfaces_by_class: surfacesByClass,
     receipts_by_archive: receiptsByArchive,
-    rows_by_year: { years: rowsByYear, before, after, undated: rows.length - dated, in_range: rowsByYear.reduce((sum, item) => sum + item.count, 0), first: FIELD_YEAR_FIRST, last: FIELD_YEAR_LAST }
+    rows_by_year: { years: rowsByYear, before, after, undated: rows.length - dated, in_range: rowsByYear.reduce((sum, item) => sum + item.count, 0), first: FIELD_YEAR_FIRST, last: FIELD_YEAR_LAST },
+    heat_by_status: fieldHeatByStatus(api, ledger, rows)
   };
   return galaxy.facts;
+}
+// A surface's recorded status, grouped by who establishes it. The grouping is
+// for the split only; the status text itself is printed wherever a surface is.
+const FIELD_STATUS_FAMILIES = [
+  ['official', 'official instrument', '#ffd061', /^official_/],
+  ['primary_public', 'first-party record', '#69b7ff', /^primary_public|first_party|source_native|rebounded_to|source_resolved|from_official_record|from_named_commissioning/],
+  ['self_or_observed', 'self-report or observation', '#e36f6f', /self_reported|self_claimed|self_represented|vendor_|pending_review|observ/],
+  ['listing', 'portfolio, roster or directory', '#f0a66f', /portfolio_listing|ranked_list|roster|directory|represented_roles|list_methodology/],
+  ['reported_or_published', 'press or programme', '#b48eff', /reported|announced|published|scheduled|academic|industry|pollster/],
+  ['other', 'other status', '#9aa4b5', /.*/]
+];
+function fieldStatusFamily(status) {
+  const value = String(status || '');
+  return FIELD_STATUS_FAMILIES.find(([, , , test]) => test.test(value)) ?? FIELD_STATUS_FAMILIES[FIELD_STATUS_FAMILIES.length - 1];
+}
+// Where the heat comes from: the one printed formula over every dated row at
+// t, each term assigned to the recorded status family of its surface. Every
+// term is a row; nothing is weighed beyond the formula already on the legend.
+function fieldHeatByStatus(api, ledger, rows) {
+  if (!api?.heat || !ledger) return null;
+  const result = api.heat(rows, ledger.range?.last_day ?? null);
+  const sums = new Map(FIELD_STATUS_FAMILIES.map(([id]) => [id, { heat: 0, rows: 0 }]));
+  for (const touch of result.touches) {
+    const surface = state.galaxy?.surfaceById?.get(touch.row?.surface_id);
+    const sum = sums.get(fieldStatusFamily(surface?.status)[0]);
+    sum.heat += touch.contribution;
+    sum.rows += 1;
+  }
+  return {
+    total: result.total, counted_rows: result.touches.length, undated: result.undated.length, later: (result.later ?? []).length,
+    families: FIELD_STATUS_FAMILIES.map(([id, label, color]) => ({ id, label, color, heat: sums.get(id).heat, rows: sums.get(id).rows, share: result.total > 0 ? sums.get(id).heat / result.total : 0 }))
+  };
+}
+function fieldHeatSourceTileMarkup(facts) {
+  const split = facts.heat_by_status;
+  if (!split) return '';
+  const total = Math.round(split.total);
+  const items = split.families.filter(family => family.rows > 0).map(family => ({ label: `${family.label} · ${(family.share * 100).toFixed(0)}% of ${fieldCount(total)}`, color: family.color, count: Math.round(family.heat) }));
+  const official = split.families.find(family => family.id === 'official');
+  return fieldTileMarkup({
+    id: 'heat-source', title: 'Where the heat comes from',
+    figure: `${fieldCount(Math.round(split.total))} <small>total heat</small>`,
+    denominator: `the one printed formula summed over ${fieldCount(split.counted_rows)} dated rows of ${fieldCount(facts.rows)} at t · each term assigned to its surface's recorded status`,
+    body: `<div class="aperture-field-bars--stacked">${fieldBarsMarkup(items)}</div><p class="aperture-field-denominator">each bar is that family's heat (rounded) of the ${fieldCount(total)} total · ${fieldCount(official?.rows ?? 0)} of ${fieldCount(split.counted_rows)} counted rows sit on an official instrument${split.undated ? ` · ${fieldCount(split.undated)} undated rows add nothing` : ''}</p>`
+  });
 }
 
 // --- lenses: one recorded field each ------------------------------------------------------------------
@@ -182,13 +243,77 @@ function fieldFacts() {
 // denominators on the legend and in its tile; `ap_field_lens` carries it in
 // exact-view links.
 const FIELD_LENS_DEFAULT = 'all';
-const FIELD_LENS_ORDER = ['all', 'decisions', 'hunt', 'inforce'];
+// The arrival lens: a cold visitor sees the official instruments first and the
+// presence cloud one click away (owner decision 2026-11-10).
+const FIELD_LENS_ARRIVAL = 'decisions';
+const FIELD_LENS_ORDER = ['all', 'decisions', 'hunt', 'inforce', 'queue'];
 const FIELD_LENSES = {
   all: { label: 'All', title: 'Whole field', definition: 'every node and every participation row' },
   decisions: { label: 'Decisions', title: 'Official instruments', definition: 'surfaces whose recorded status begins official_ (an award, contract, appointment, filing, register or payment record) and the rows that name them' },
   hunt: { label: 'Hunt', title: 'Refused as a hop base', definition: 'surfaces recorded hop_eligible false, drawn hollow and coloured by their recorded hop_refusal_reason, with the rows that name them' },
-  inforce: { label: 'In force', title: 'In force at t', definition: 'rows with no end date or an end date on or after t, and the nodes they join' }
+  inforce: { label: 'In force', title: 'In force at t', definition: 'rows with no end date or an end date on or after t, and the nodes they join' },
+  queue: { label: 'Queue', title: 'Under an open finding', definition: 'surfaces referenced by an open finding of the scout report (build/scout-report.json), drawn hollow and coloured by the finding type, with the rows that name them' }
 };
+// Finding types of the scout report, grouped for colour only; the tile lists
+// the counts by type and priority as recorded.
+const FIELD_QUEUE_TYPES = [
+  ['island_with_surfaces', 'island with surfaces', '#ffd061'],
+  ['surface_factory', 'surface factory', '#69b7ff'],
+  ['surface_type_recurrence', 'surface-type recurrence', '#b48eff'],
+  ['broad_institution_guard', 'broad-institution guard', '#e36f6f'],
+  ['laundering_chain', 'laundering chain', '#7dccbf'],
+  ['migration_queue', 'migration queue', '#9aa4b5']
+];
+// The scout report and the report frontier are loaded on demand on the hosted
+// page (the standalone bundles neither); the Queue lens renders once they land.
+function ensureScoutReport() {
+  const galaxy = state.galaxy;
+  if (!galaxy || galaxy.scout || galaxy.scoutLoading) return galaxy?.scout ?? null;
+  galaxy.scoutLoading = true;
+  const read = path => (typeof fetch === 'function' ? fetch(path, { cache: 'no-cache' }).then(response => response.ok ? response.json() : null) : Promise.resolve(null)).catch(() => null);
+  Promise.all([read('build/scout-report.json'), read('build/report-frontier.json')]).then(([report, frontier]) => {
+    galaxy.scout = report && Array.isArray(report.findings) ? { ok: true, report } : { ok: false };
+    galaxy.frontier = frontier?.totals ?? null;
+    galaxy.scoutLoading = false;
+    galaxy.lensCache.delete('queue');
+    if (state.mode === 'field' && state.root) renderFieldMode();
+  });
+  return null;
+}
+function computeQueueLens(field) {
+  const spec = { ...fieldLensEmpty(), colors: new Map(), hollow: new Set(), ready: false };
+  const scout = state.galaxy.scout;
+  if (!scout) { ensureScoutReport(); spec.counts = { pending: true, surfaces_total: fieldSurfaceTotal(field) }; return spec; }
+  spec.ready = true;
+  if (!scout.ok) { spec.counts = { unavailable: true, surfaces_total: fieldSurfaceTotal(field) }; return spec; }
+  const findings = scout.report.findings ?? [];
+  const lit = new Set(), types = new Map(), priorities = new Map();
+  let refs = 0, unresolved = 0;
+  for (const finding of findings) {
+    types.set(String(finding.type), (types.get(String(finding.type)) ?? 0) + 1);
+    priorities.set(String(finding.priority), (priorities.get(String(finding.priority)) ?? 0) + 1);
+    const color = (FIELD_QUEUE_TYPES.find(([id]) => id === finding.type) ?? FIELD_QUEUE_TYPES[FIELD_QUEUE_TYPES.length - 1])[2];
+    for (const ref of finding.refs ?? []) {
+      refs += 1;
+      const id = field.nodeById.has(`surface-${ref}`) ? `surface-${ref}` : field.nodeById.has(ref) ? ref : null;
+      if (!id) { unresolved += 1; continue; }
+      lit.add(id);
+      spec.nodes.add(id);
+      spec.hollow.add(id);
+      if (!spec.colors.has(id)) spec.colors.set(id, color);
+    }
+  }
+  fieldLensCollectRows(field, spec, link => lit.has(fieldEndpointId(link.target)));
+  spec.muted = new Set([...spec.nodes].filter(id => !lit.has(id)));
+  spec.linkLevel = .3;
+  spec.counts = {
+    findings: findings.length, surfaces: lit.size, surfaces_total: fieldSurfaceTotal(field), rows: spec.links.size, rows_total: field.links.length, refs, unresolved,
+    types: FIELD_QUEUE_TYPES.map(([id, label, color]) => ({ id, label, color, count: types.get(id) ?? 0 })).filter(type => type.count > 0),
+    priorities: fieldSortedCounts(priorities),
+    frontier: state.galaxy.frontier
+  };
+  return spec;
+}
 // Refusal reasons grouped for colour only; the tile lists every reason as recorded.
 const FIELD_HUNT_FAMILIES = [
   ['pending', 'self-reported role, pending review', '#ffd061', /^single_actor_self_reported_role_observation$/],
@@ -297,28 +422,32 @@ function fieldLensSpec(key = state.field?.lens) {
   if (galaxy.lensCache.has(lens)) return galaxy.lensCache.get(lens);
   const field = ensureFieldModel();
   if (!field || !galaxy.ledger) return null;
-  const spec = lens === 'decisions' ? computeDecisionsLens(field) : lens === 'hunt' ? computeHuntLens(field) : computeInForceLens(field, galaxy.ledger);
+  const spec = lens === 'decisions' ? computeDecisionsLens(field) : lens === 'hunt' ? computeHuntLens(field) : lens === 'queue' ? computeQueueLens(field) : computeInForceLens(field, galaxy.ledger);
   Object.assign(spec, { key: lens, label: FIELD_LENSES[lens].label, title: FIELD_LENSES[lens].title, definition: FIELD_LENSES[lens].definition });
-  galaxy.lensCache.set(lens, spec);
+  if (spec.ready !== false) galaxy.lensCache.set(lens, spec);
   return spec;
 }
 function fieldLensCountsLine(spec) {
   const c = spec.counts;
+  if (spec.key === 'queue') {
+    if (c.pending) return 'loading the scout report…';
+    if (c.unavailable) return 'the scout report is not bundled in this file';
+    return `${fieldCount(c.findings)} open findings · ${fieldCount(c.surfaces)} of ${fieldCount(c.surfaces_total)} surfaces under one · ${fieldCount(c.rows)} of ${fieldCount(c.rows_total)} rows`;
+  }
   if (spec.key === 'inforce') return `${fieldCount(c.rows)} of ${fieldCount(c.rows_total)} rows · ${fieldCount(c.surfaces)} of ${fieldCount(c.surfaces_total)} surfaces · t = ${esc(c.t ?? 'end of record')}`;
   return `${fieldCount(c.surfaces)} of ${fieldCount(c.surfaces_total)} surfaces · ${fieldCount(c.rows)} of ${fieldCount(c.rows_total)} rows`;
 }
 function fieldLensLegendMarkup() {
   const spec = fieldLensSpec();
   if (!spec) return '';
-  const keys = spec.key === 'hunt'
-    ? spec.counts.families.map(family => `<span><i class="aperture-key aperture-key--hollow" style="border-color:${family.color}"></i> ${esc(family.label)} ${fieldCount(family.count)}</span>`).join('')
-    : '';
+  const keyed = spec.key === 'hunt' ? spec.counts.families : spec.key === 'queue' ? (spec.counts.types ?? []) : [];
+  const keys = keyed.map(family => `<span><i class="aperture-key aperture-key--hollow" style="border-color:${family.color}"></i> ${esc(family.label)} ${fieldCount(family.count)}</span>`).join('');
   return `<span class="aperture-field-lens-line" data-ap-field-lens="${esc(spec.key)}"><strong>${esc(spec.label)} lens</strong> · ${esc(spec.definition)} · ${fieldLensCountsLine(spec)} · everything else dimmed, nothing removed</span>${keys}`;
 }
 function fieldLensTileMarkup(facts) {
   const key = fieldLensKey();
   if (key === FIELD_LENS_DEFAULT) {
-    const decisions = fieldLensSpec('decisions'), hunt = fieldLensSpec('hunt'), inforce = fieldLensSpec('inforce');
+    const decisions = fieldLensSpec('decisions'), hunt = fieldLensSpec('hunt'), inforce = fieldLensSpec('inforce'), queue = fieldLensSpec('queue');
     return fieldTileMarkup({
       id: 'lens', title: 'Lenses',
       figure: `${FIELD_LENS_ORDER.length - 1} <small>lenses</small>`,
@@ -326,8 +455,9 @@ function fieldLensTileMarkup(facts) {
       body: fieldBarsMarkup([
         { label: 'Decisions · status official_', count: decisions?.counts.surfaces ?? 0 },
         { label: 'Hunt · refused as hop base', count: hunt?.counts.surfaces ?? 0 },
-        { label: 'In force · rows open at t', count: inforce?.counts.rows ?? 0 }
-      ]) + `<p class="aperture-field-denominator">of ${fieldCount(facts.surfaces)} surfaces (Decisions, Hunt) · of ${fieldCount(facts.rows)} rows (In force)</p>`
+        { label: 'In force · rows open at t', count: inforce?.counts.rows ?? 0 },
+        { label: queue?.counts.pending ? 'Queue · scout report loading' : queue?.counts.unavailable ? 'Queue · scout report not bundled' : 'Queue · under an open finding', count: queue?.counts.surfaces ?? 0 }
+      ]) + `<p class="aperture-field-denominator">of ${fieldCount(facts.surfaces)} surfaces (Decisions, Hunt, Queue) · of ${fieldCount(facts.rows)} rows (In force)</p>`
     });
   }
   const spec = fieldLensSpec(key);
@@ -349,6 +479,18 @@ function fieldLensTileMarkup(facts) {
       figure: `${fieldCount(c.surfaces)} <small>surfaces</small>`,
       denominator: `of ${fieldCount(c.surfaces_total)} surfaces refused as a hop base · colour by reason family · ${fieldCount(c.rows)} of ${fieldCount(c.rows_total)} rows`,
       body: fieldBarsMarkup(c.families) + `<p class="aperture-field-denominator">as recorded: ${shown.map(reason => `${esc(reason.label)} ${fieldCount(reason.count)}`).join(' · ')}${c.reasons.length > shown.length ? ` · ${c.reasons.length - shown.length} more reasons` : ''}</p>`
+    });
+  }
+  if (key === 'queue') {
+    if (c.pending || c.unavailable) {
+      return fieldTileMarkup({ id: 'lens', title: 'Lens · Queue', figure: '<small>scout report</small>', denominator: c.pending ? 'loading build/scout-report.json…' : 'not bundled in this file · open the hosted explorer for the queue', body: '' });
+    }
+    const frontier = c.frontier;
+    return fieldTileMarkup({
+      id: 'lens', title: 'Lens · Queue',
+      figure: `${fieldCount(c.surfaces)} <small>surfaces</small>`,
+      denominator: `of ${fieldCount(c.surfaces_total)} surfaces referenced by ${fieldCount(c.findings)} open scout findings · ${fieldCount(c.unresolved)} of ${fieldCount(c.refs)} references name no field node · ${fieldCount(c.rows)} of ${fieldCount(c.rows_total)} rows`,
+      body: fieldBarsMarkup(c.types) + `<p class="aperture-field-denominator">findings by priority: ${c.priorities.map(item => `${esc(item.label)} ${fieldCount(item.count)}`).join(' · ')}${frontier ? ` · report frontier: ${fieldCount(frontier.cases)} cases, ${fieldCount(frontier.structured_reports)} structured reports, ${fieldCount(frontier.reports_awaiting_independent_review)} awaiting independent review, ${fieldCount(frontier.approved_publications)} approved publications` : ''}</p>`
     });
   }
   return fieldTileMarkup({
@@ -473,6 +615,7 @@ function fieldTilesMarkup(facts, selectedId) {
       denominator: node ? `${esc(fieldNodeKind(node).toLowerCase())} · rows oldest first` : 'select a node to list its dated rows in order',
       body: node ? fieldTrajectoryMarkup(node.id) : ''
     }),
+    fieldHeatSourceTileMarkup(facts),
     fieldLensTileMarkup(facts)
   ].join('');
 }
@@ -544,7 +687,7 @@ function fieldWelcomeMarkup(facts) {
   return `<div class="network-welcome"><p class="aperture-kicker">The field</p><h3>Every mark is one ledger row.</h3>
     <p>${fieldCount(facts.nodes)} nodes (${fieldCount(facts.actors)} actors, ${fieldCount(facts.organizations)} organizations, ${fieldCount(facts.surfaces)} bounded surfaces) joined by ${fieldCount(facts.links)} participation rows, one link each. Node size, halo and colour are the printed heat at ${esc(facts.last_date ?? 'the end of record')}; nothing else sizes or colours a node.</p>
     <p class="aperture-muted">${FIELD_HEAT_FORMULA}.</p>
-    <p class="aperture-muted">Lenses keep one recorded field each and dim the rest: Decisions, the surfaces an official record establishes; Hunt, the surfaces refused as hop bases with the recorded reason; In force, the rows still open at t. Each prints its definition and counts.</p>
+    <p class="aperture-muted">You arrive on the Decisions lens: the surfaces an official record establishes, everything else dimmed. All shows every row. Hunt keeps the surfaces refused as hop bases with the recorded reason; In force the rows still open at t; Queue the surfaces under an open scout finding. Each prints its definition and counts.</p>
     ${starts.length ? `<div class="network-starts">${starts.map(id => `<button type="button" data-ap-action="field-select" data-node-id="${esc(id)}">${esc(fieldLabelFor(id))}<span aria-hidden="true">↗</span></button>`).join('')}</div>` : ''}
     <dl class="network-guide"><div><dt>Click a node or a name</dt><dd>Highlight its rows and read every heat term</dd></div><div><dt>Drag the field</dt><dd>Pan</dd></div><div><dt>Wheel or pinch</dt><dd>Zoom</dd></div></dl>
     <p class="network-note aperture-muted">Co-presence is never coordination. The field shows documented shared context and nothing more.</p></div>`;
@@ -688,7 +831,7 @@ async function renderGalaxy({ focus = false } = {}) {
     }
     if (state.mode !== 'field') return;
     if (!galaxy.rendered) {
-      galaxy.renderer.render(ensureFieldModel());
+      galaxy.renderer.render(ensureFieldModel(), { layout: await ensureFieldLayout() });
       galaxy.rendered = true;
     }
     hideFieldFallback();
