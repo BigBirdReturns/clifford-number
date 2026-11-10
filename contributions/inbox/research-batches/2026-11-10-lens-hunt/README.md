@@ -38,7 +38,7 @@ Astra and Sol were asked separately and named the same five.
 1. **Jonathan Black with Matt Clifford, 10 August 2023.** GOV.UK names both as the Prime Minister's Representatives for the AI Safety Summit. This is the participation row the ledger's appointment surface lacks. Ref `D-03.1`.
 2. **Feryal Clark with Matt Clifford, 30 April 2025.** GOV.UK: the AI Minister and the Prime Minister's AI Adviser jointly open the AI Growth Zones qualifying process. Ref `F-05.2`.
 3. **Ben Warner in SAGE minutes 17, 63, 71 and 75**, listed as a No. 10 attendee. Refs under packet `R-17`.
-4. **Ben Warner on the Challenge Panel of the 2023 independent review of the UK Statistics Authority.** Packet `R-17`.
+4. **Ben Warner on the Challenge Panel of the 2023 independent review of the UK Statistics Authority.** The GOV.UK announcement lists the whole panel: Guy Goodwin, Guy Nason, Rebecca Riley, Alice Sullivan, Ben Warner and John Curtice. Packet `R-17`.
 5. **DIUx Austin opening at Capital Factory, 14 September 2016.** The Texas Governor's release names Ash Carter and William McRaven. Packet `R-25`.
 
 Also worth a reviewer's time:
