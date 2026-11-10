@@ -104,7 +104,7 @@ assert.equal(research.edges.length, CURRENT.research_edges, 'research-graph edge
     assert.equal(baseResearch.edges.length, BEFORE_RESEARCH_EDGES.count);
     assert.equal(createHash('sha256').update(JSON.stringify(baseResearch.edges)).digest('hex'), BEFORE_RESEARCH_EDGES.sha256);
     const byId = new Map(research.edges.map(edge => [edge.id, edge]));
-    // 2026-11-10 lens-hunt promotion (owner decision): the AI Safety Summit appointment surface was
+    // 2026-11-10 lens-hunt promotion (on the owner's go-ahead of that day): the AI Safety Summit appointment surface was
     // re-admitted as a two-person joint appointment, so its topology rows carry the new surface label in
     // their derived claim and cite the archived GOV.UK page beside the original extract. On that surface
     // only, the claim may change and source_ids may grow; every other field and every original receipt holds.

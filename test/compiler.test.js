@@ -1822,7 +1822,7 @@ const cliffordSummitAppointment = surf('ai-safety-summit-representative-appointm
 const andurilSummitRoundtable = surf('dsit-techuk-anduril-ai-safety-roundtable-2023-10-17');
 const cliffordInvestorRoundtable = surf('dsit-matt-clifford-ai-investor-roundtable-2023-10-25');
 const andurilTalosObservation = surf('anduril-talos-phase-3-contract-observation-2023-11-02');
-// 2026-11-10 lens-hunt promotion (owner decision): the summit appointment is now the two-person joint
+// 2026-11-10 lens-hunt promotion (on the owner's go-ahead of that day): the summit appointment is now the two-person joint
 // appointment of Matt Clifford and Jonathan Black. It is hop-eligible, but its only basis is that pair:
 // it still names no Anduril person or organization, so the Clifford-Anduril boundary below is unchanged.
 assert.ok(cliffordSummitAppointment, 'the summit appointment surface must compile');
