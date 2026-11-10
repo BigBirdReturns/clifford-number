@@ -195,6 +195,10 @@ assert.equal(writeApertureState({ mode: 'field', field: { selectedId: null, lens
 assert.equal(writeApertureState({ mode: 'field', field: { selectedId: null, lens: 'inforce' } }).get('ap_field_lens'), 'inforce');
 assert.match(runtime, /function computeDecisionsLens[\s\S]*\/\^official_\/[\s\S]*function computeHuntLens[\s\S]*hop_eligible === true[\s\S]*hop_refusal_reason[\s\S]*function computeInForceLens[\s\S]*end_day/, 'each lens reads one recorded field');
 assert.match(runtime, /function fieldLensLegendMarkup[\s\S]*everything else dimmed, nothing removed/, 'the legend prints the lens definition');
+assert.match(runtime, /aperture-field-crumbs[\s\S]*data-ap-action="field-clear">Field<\/button>/, 'the callout opens with a breadcrumb back to the field');
+assert.match(readFileSync('src/atlas-webgl.js', 'utf8'), /controls\.zoomToCursor = true/, 'wheel zoom is cursor-anchored');
+assert.match(readFileSync('src/atlas-webgl.js', 'utf8'), /function applyLocality[\s\S]*rows lead off-screen at both ends/, 'edge locality fades through-traffic and names the count');
+assert.match(readFileSync('src/atlas-webgl.js', 'utf8'), /zoomScale/, 'ink never magnifies: the sprite size cancels the camera distance');
 
 // --- source shape ------------------------------------------------------------------------------------------------------
 const part2 = readFileSync('src/visual-aperture-part-2.js', 'utf8');

@@ -153,6 +153,9 @@ function createSpriteStore(scene) {
     setScale(scale) {
       for (const object of [this.points, this.glows]) if (object) object.material.uniforms.scale.value = scale;
     },
+    setZoom(value) {
+      for (const object of [this.points, this.glows]) if (object) object.material.uniforms.zoomScale.value = value;
+    },
     dispose() {
       if (!this.points) return;
       for (const object of [this.points, this.glows]) {
@@ -745,6 +748,7 @@ export async function createWebGlAtlasRenderer({ host, onNodeSelect, onLinkSelec
   controls.addEventListener('change', () => {
     updateLabels();
     const distance = cameraDistance();
+    nodeStore.setZoom(distance / ((field?.radius || SOCIAL_FIELD_RADIUS) * 3.05));
     const distanceChanged = lastCameraDistance == null || Math.abs(distance - lastCameraDistance) > .35;
     lastCameraDistance = distance;
     if (distanceChanged && performance.now() > programmaticCameraUntil) onInteraction?.({ type: 'scale', scale: scaleForDistance(distance) });
@@ -912,6 +916,10 @@ const GALAXY_FIT_QUANTILES = Object.freeze({ low: .01, high: .99, pad: 1.12 });
 // are the heat halo.
 const GALAXY_GLOW_FLOOR = Object.freeze({ alpha: .09, sizeFactor: 3.2 });
 const GALAXY_LABEL_LIMITS = Object.freeze({ phone: 5, desktop: 14 });
+// Edge locality (atlas interaction contract, close range): nearer than this
+// share of the fitted distance, a row whose two ends are both off-screen is
+// faded out, and a chip on the stage names how many rows that is.
+const GALAXY_LOCALITY = Object.freeze({ zoom: .55, margin: 48 });
 const GALAXY_CLICK_SLOP_PX = 8;
 // The sprite shader draws the kind as a shape: disc for a person, square for
 // an organization, diamond for a surface.
@@ -975,14 +983,16 @@ function galaxySeedPositions(field) {
 // perspective factor, so a node keeps its size relative to the field.
 function galaxyNodeMaterial(scale, layer = 0) {
   return new THREE.ShaderMaterial({
-    uniforms: { scale: { value: scale }, layer: { value: layer } },
+    uniforms: { scale: { value: scale }, layer: { value: layer }, zoomScale: { value: 1 } },
     vertexShader: `attribute vec3 nodeColor; attribute float coreSize; attribute float haloSize; attribute float haloAlpha; attribute float nodeAlpha; attribute float shapeKind; attribute float nodeStyle;
-      uniform float scale;
+      uniform float scale; uniform float zoomScale;
       varying vec3 vColor; varying float vCore; varying float vGlow; varying float vAlpha; varying float vShape; varying float vPx; varying float vStyle;
       void main() {
         vColor = nodeColor; vGlow = haloAlpha; vAlpha = nodeAlpha; vShape = shapeKind; vStyle = nodeStyle;
         vec4 mv = modelViewMatrix * vec4(position, 1.0);
-        float depth = max(1.0, -mv.z);
+        // Ink never magnifies: the camera's distance to its reference view
+        // cancels out of the pixel size, so zoom changes spacing, not glyphs.
+        float depth = max(1.0, -mv.z) / max(0.05, zoomScale);
         float outer = max(haloSize, coreSize * 2.0);
         float px = clamp(outer * scale / depth, 2.0, 300.0);
         float corePx = max(1.7, coreSize * scale / depth);
@@ -1030,7 +1040,7 @@ export async function createGalaxyFieldRenderer({ host, onNodeSelect, onNodeHove
   let field = null, selectedId = null, highlight = null, settled = false, animationRunning = true, tick = 0, fitDistance = 600, cameraTaken = false;
   let nodeIndex = new Map(), linkEnds = null, scales = null, screen = null, screenDirty = true;
   let points = null, pointGeometry = null, lines = null, lineGeometry = null, ring = null, outerRing = null, hoverRing = null, ringRadius = 1, labelOrder = [];
-  let lens = null, denseSurfaceIds = new Set();
+  let lens = null, denseSurfaceIds = new Set(), localityMask = null, localityChip = null;
   let pulseFrame = 0, viewSyncFrame = 0, hoverFrame = 0, pointerDown = null, hoveredId = null;
   const labelButtons = new Map();
   const scratchPosition = new THREE.Vector3(), scratchColor = new THREE.Color();
@@ -1091,6 +1101,9 @@ export async function createGalaxyFieldRenderer({ host, onNodeSelect, onNodeHove
   controls.panSpeed = .9;
   controls.minDistance = 14;
   controls.maxDistance = 4000;
+  // Wheel and pinch zoom toward the pointer (the world point under the cursor
+  // stays under it); the +/− buttons zoom toward the view centre.
+  controls.zoomToCursor = true;
   controls.mouseButtons = { LEFT: THREE.MOUSE.PAN, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN };
   controls.touches = { ONE: THREE.TOUCH.PAN, TWO: THREE.TOUCH.DOLLY_PAN };
 
@@ -1102,6 +1115,10 @@ export async function createGalaxyFieldRenderer({ host, onNodeSelect, onNodeHove
   tooltip.className = 'aperture-field-tooltip';
   tooltip.hidden = true;
   host.append(tooltip);
+  localityChip = document.createElement('p');
+  localityChip.className = 'aperture-field-locality';
+  localityChip.hidden = true;
+  host.append(localityChip);
 
   // World units to device pixels at depth 1: the sprite shader divides by depth.
   function spriteScale() {
@@ -1209,18 +1226,68 @@ export async function createGalaxyFieldRenderer({ host, onNodeSelect, onNodeHove
       nodeStyle.setX(index, lensHollow?.has(node.id) ? 1 : 0);
     });
     nodeColor.needsUpdate = coreSize.needsUpdate = haloSize.needsUpdate = haloAlpha.needsUpdate = nodeAlpha.needsUpdate = nodeStyle.needsUpdate = true;
+    restyleLinks();
+    syncPositions();
+  }
+  // Every row's colour level: the selection, the lens and, at close range,
+  // locality (a row with both ends off-screen is faded to nothing until the
+  // camera brings one end back).
+  function restyleLinks() {
+    if (!field || !lines) return;
+    const lensLinks = lens?.links ?? null;
+    const lensLinkLevel = GALAXY_LINK_LEVEL * (lens?.linkLevel ?? 1);
     const lineColor = lineGeometry.attributes.color;
     field.links.forEach((link, index) => {
       const source = endpointId(link.source), target = endpointId(link.target);
       const inLens = !lensLinks || lensLinks.has(link.id);
       const incident = inLens && selectedId && (source === selectedId || target === selectedId);
       scratchColor.set(EVIDENCE_COLORS[link.evidence_class] ?? EVIDENCE_COLORS.context);
-      scratchColor.multiplyScalar(incident ? 1 : !inLens ? GALAXY_LENS_DIM.link : highlight ? GALAXY_DIM.link : lensLinkLevel);
+      scratchColor.multiplyScalar(localityMask?.[index] ? 0 : incident ? 1 : !inLens ? GALAXY_LENS_DIM.link : highlight ? GALAXY_DIM.link : lensLinkLevel);
       lineColor.setXYZ(index * 2, scratchColor.r, scratchColor.g, scratchColor.b);
       lineColor.setXYZ(index * 2 + 1, scratchColor.r, scratchColor.g, scratchColor.b);
     });
     lineColor.needsUpdate = true;
-    syncPositions();
+  }
+  function applyLocality() {
+    if (!field || !lines) return;
+    const close = cameraDistance() < fitDistance * GALAXY_LOCALITY.zoom;
+    if (!close) {
+      if (!localityMask) return;
+      localityMask = null;
+      restyleLinks();
+      updateLocalityChip(0);
+      return;
+    }
+    refreshScreen();
+    const margin = GALAXY_LOCALITY.margin, width = host.clientWidth + margin, height = host.clientHeight + margin;
+    const onScreen = index => index >= 0 && screen[index * 2] >= -margin && screen[index * 2] <= width && screen[index * 2 + 1] >= -margin && screen[index * 2 + 1] <= height;
+    if (!localityMask || localityMask.length !== field.links.length) localityMask = new Uint8Array(field.links.length);
+    let faded = 0;
+    for (let index = 0; index < field.links.length; index += 1) {
+      const hidden = !(onScreen(linkEnds[index * 2]) || onScreen(linkEnds[index * 2 + 1]));
+      localityMask[index] = hidden ? 1 : 0;
+      if (hidden) faded += 1;
+    }
+    restyleLinks();
+    updateLocalityChip(faded);
+  }
+  function updateLocalityChip(faded) {
+    if (!localityChip) return;
+    localityChip.hidden = faded === 0;
+    if (faded) localityChip.textContent = `${faded.toLocaleString('en-GB')} of ${field.links.length.toLocaleString('en-GB')} rows lead off-screen at both ends · faded until you pan`;
+  }
+  // Ink never magnifies: a node's on-screen radius is fixed at its size in the
+  // fitted view, whatever the camera distance now.
+  function fitPixelsPerUnit() {
+    const camera = graph.camera();
+    return (host.clientHeight / 2) / (Math.max(1, fitDistance) * Math.tan(THREE.MathUtils.degToRad(camera.fov || 75) / 2));
+  }
+  function nodeRadiusPx(index) {
+    return (scales[index] || 1) / 2 * fitPixelsPerUnit();
+  }
+  function syncZoomScale() {
+    if (!points) return;
+    points.material.uniforms.zoomScale.value = cameraDistance() / Math.max(1, fitDistance);
   }
   // Positions follow the layout: instance matrices, halo points, line ends and
   // the selection ring are rewritten from node.x/y on every engine tick.
@@ -1245,9 +1312,8 @@ export async function createGalaxyFieldRenderer({ host, onNodeSelect, onNodeHove
   function placeRing() {
     const node = selectedId ? field?.nodeById.get(selectedId) : null;
     if (!node || !ring) { if (ring) ring.visible = outerRing.visible = false; return; }
-    const size = scales[nodeIndex.get(node.id)] || 2;
     const perUnit = pixelsPerUnit();
-    ringRadius = Math.max(14 / perUnit, size / 2 + 6 / perUnit);
+    ringRadius = Math.max(14, nodeRadiusPx(nodeIndex.get(node.id)) + 6) / perUnit;
     ring.position.set(node.x || 0, node.y || 0, (node.z || 0) + .5);
     outerRing.position.copy(ring.position);
     ring.scale.setScalar(ringRadius);
@@ -1258,10 +1324,9 @@ export async function createGalaxyFieldRenderer({ host, onNodeSelect, onNodeHove
     if (!hoverRing) return;
     const node = hoveredId && hoveredId !== selectedId ? field?.nodeById.get(hoveredId) : null;
     if (!node) { hoverRing.visible = false; return; }
-    const size = scales[nodeIndex.get(node.id)] || 2;
     const perUnit = pixelsPerUnit();
     hoverRing.position.set(node.x || 0, node.y || 0, (node.z || 0) + .4);
-    hoverRing.scale.setScalar(Math.max(11 / perUnit, size / 2 + 5 / perUnit));
+    hoverRing.scale.setScalar(Math.max(11, nodeRadiusPx(nodeIndex.get(node.id)) + 5) / perUnit);
     hoverRing.visible = true;
   }
   function pulse(timestamp) {
@@ -1296,17 +1361,16 @@ export async function createGalaxyFieldRenderer({ host, onNodeSelect, onNodeHove
     if (index === undefined) return null;
     refreshScreen();
     const x = screen[index * 2], y = screen[index * 2 + 1];
-    const radius = (scales[index] || 1) * pixelsPerUnit() / 2;
+    const radius = nodeRadiusPx(index);
     return { x, y, radius, visible: x >= 0 && y >= 0 && x <= host.clientWidth && y <= host.clientHeight };
   }
   function nodeAt(px, py) {
     if (!field) return null;
     refreshScreen();
-    const perUnit = pixelsPerUnit();
     let best = null, bestDistance = Infinity;
     for (let index = 0; index < field.nodes.length; index += 1) {
       const dx = screen[index * 2] - px, dy = screen[index * 2 + 1] - py;
-      const radius = Math.max(10, (scales[index] || 1) * perUnit * .6) + 4;
+      const radius = Math.max(10, nodeRadiusPx(index) * 1.2) + 4;
       const distance = Math.hypot(dx, dy);
       if (distance > radius || distance >= bestDistance) continue;
       best = field.nodes[index];
@@ -1321,7 +1385,6 @@ export async function createGalaxyFieldRenderer({ host, onNodeSelect, onNodeHove
     refreshScreen();
     const width = host.clientWidth, height = host.clientHeight;
     const limit = width < 700 ? GALAXY_LABEL_LIMITS.phone : GALAXY_LABEL_LIMITS.desktop;
-    const perUnit = pixelsPerUnit();
     const seen = new Set();
     const candidates = [];
     const push = index => { if (index !== undefined && !seen.has(index)) { seen.add(index); candidates.push(index); } };
@@ -1340,7 +1403,7 @@ export async function createGalaxyFieldRenderer({ host, onNodeSelect, onNodeHove
       const pinned = node.id === selectedId || node.id === hoveredId;
       if (highlight && !highlight.has(node.id) && !pinned) continue;
       if (lens?.nodes && !lens.nodes.has(node.id) && !pinned) continue;
-      const radius = (scales[index] || 1) * perUnit / 2;
+      const radius = nodeRadiusPx(index);
       const x = screen[index * 2] + radius + 5, y = screen[index * 2 + 1] - 8;
       const labelWidth = Math.min(170, 4 + String(node.label).length * 6.2);
       if (x < 4 || x + labelWidth > width - 4 || y < 4 || y > height - 24) continue;
@@ -1371,8 +1434,10 @@ export async function createGalaxyFieldRenderer({ host, onNodeSelect, onNodeHove
     viewSyncFrame = requestAnimationFrame(() => {
       viewSyncFrame = 0;
       screenDirty = true;
+      syncZoomScale();
       placeRing();
       placeHoverRing();
+      applyLocality();
       updateLabels();
       onViewChange?.({ type: 'camera', settled });
     });
@@ -1461,6 +1526,7 @@ export async function createGalaxyFieldRenderer({ host, onNodeSelect, onNodeHove
     fitDistance = distanceFor(box.width, box.height);
     controls.maxDistance = fitDistance * 2.6;
     moveCamera({ x: box.cx, y: box.cy, z: fitDistance }, { x: box.cx, y: box.cy, z: 0 }, duration);
+    syncZoomScale();
   }
   function cameraDistance() {
     const camera = graph.camera();
@@ -1486,6 +1552,7 @@ export async function createGalaxyFieldRenderer({ host, onNodeSelect, onNodeHove
     const height = Math.max(360, Math.floor(host.clientHeight || 600));
     graph.width(width).height(height);
     if (points) points.material.uniforms.scale.value = spriteScale();
+    syncZoomScale();
     scheduleViewSync();
   }
   const resizeObserver = new ResizeObserver(resize);
@@ -1551,6 +1618,7 @@ export async function createGalaxyFieldRenderer({ host, onNodeSelect, onNodeHove
     disposeObjects();
     labelLayer.remove();
     tooltip.remove();
+    localityChip?.remove();
     host.replaceChildren();
     delete host.dataset.atlasEngine;
   }

@@ -54,7 +54,7 @@ function fieldAnchorId() {
 function initializeFieldDefaults() {
   state.field = { selectedId: fieldAnchorId(), query: '', lens: FIELD_LENS_DEFAULT };
   state.galaxy = {
-    api: null, renderer: null, model: null, ledger: null, field: null, facts: null, searchOptions: null, surfaceById: null, lensCache: new Map(),
+    api: null, renderer: null, model: null, ledger: null, field: null, facts: null, searchOptions: null, surfaceById: null, lensCache: new Map(), dockedId: null,
     loading: false, failed: false, rendered: false, active: false, intersecting: true, lifecycleBound: false, observer: null
   };
   if (fieldArrivalAvailable()) state.mode = 'field';
@@ -524,7 +524,11 @@ function fieldInspectorMarkup(id) {
   const kicker = `${fieldNodeKind(node)}${isSurface && node.surface_type ? ` · ${humanLabel(node.surface_type)}` : ''}${isSurface ? (node.hop_eligible ? ' · hop-eligible' : ' · context-only') : ''}${node.listed === false ? ' · named by rows, not in the list' : ''}`;
   const route = node.ontology === 'person' && routeActorIds().includes(node.id)
     ? `<button type="button" data-ap-action="field-route" data-node-id="${esc(node.id)}">Find route from here</button>` : '';
-  return `<p class="aperture-kicker">${esc(kicker)}</p><h3>${esc(node.label)}</h3>
+  // Breadcrumb provenance (atlas interaction contract): the path that opened
+  // this card, each crumb returning to the whole field with the lens kept.
+  const lensKey = fieldLensKey();
+  const crumbs = `<nav class="aperture-field-crumbs" aria-label="How this card opened"><button type="button" data-ap-action="field-clear">Field</button>${lensKey !== FIELD_LENS_DEFAULT ? `<span aria-hidden="true">›</span><button type="button" data-ap-action="field-clear">${esc(FIELD_LENSES[lensKey].label)} lens</button>` : ''}<span aria-hidden="true">›</span><span>${esc(fieldNodeKind(node))}</span><span aria-hidden="true">›</span><strong>${esc(shortLabel(node.label, 36))}</strong></nav>`;
+  return `${crumbs}<p class="aperture-kicker">${esc(kicker)}</p><h3>${esc(node.label)}</h3>
     <div class="aperture-metric-grid"><div><strong>${fieldCount(count)}</strong><span>${countNoun}${count === 1 ? '' : 's'}</span></div><div><strong>${fieldCount(summary.rows_total)}</strong><span>participation row${summary.rows_total === 1 ? '' : 's'}</span></div></div>
     ${summary.rows_total
       ? `<p class="network-date-span">${esc(first ?? '…')} → ${esc(last ?? '…')}${summary.open_ended ? ' · no end recorded' : ''}${summary.rows_undated ? ` · ${summary.rows_undated} undated row${summary.rows_undated === 1 ? '' : 's'}` : ''}<br>${summary.receipt_ids.length} receipt${summary.receipt_ids.length === 1 ? '' : 's'} across these rows</p>`
@@ -707,9 +711,10 @@ function undockFieldCallout() {
   const inspector = $('#aperture-inspector', state.root);
   const leader = $('#aperture-field-leader', state.root);
   if (inspector) {
-    inspector.classList.remove('is-docked');
-    inspector.style.left = inspector.style.top = inspector.style.width = '';
+    inspector.classList.remove('is-docked', 'is-arriving');
+    inspector.style.left = inspector.style.top = inspector.style.width = inspector.style.transformOrigin = '';
     delete inspector.dataset.dockSide;
+    if (state.galaxy) state.galaxy.dockedId = null;
     // On desktop the corner card hangs just inside the stage, under the
     // header strip whatever its height; on a phone the sheet keeps its CSS.
     const host = $('#aperture-field-stage', state.root);
@@ -742,6 +747,15 @@ function dockFieldCallout() {
   const top = Math.max(12, Math.min(Math.max(12, hostRect.height - cardHeight - 12), point.y - 48));
   inspector.classList.add('is-docked');
   inspector.dataset.dockSide = side;
+  if (state.galaxy.dockedId !== id) {
+    state.galaxy.dockedId = id;
+    inspector.classList.remove('is-arriving');
+    if (!fieldReducedMotion()) {
+      void inspector.offsetWidth;
+      inspector.style.transformOrigin = side === 'right' ? 'left center' : 'right center';
+      inspector.classList.add('is-arriving');
+    }
+  }
   inspector.style.left = `${Math.round(offsetX + left)}px`;
   inspector.style.top = `${Math.round(offsetY + top)}px`;
   inspector.style.width = `${Math.round(width)}px`;
