@@ -12,10 +12,10 @@ if (typeof document !== 'undefined'
     const link = document.createElement('link');
     link.id = 'clifford-visual-aperture-css';
     link.rel = 'stylesheet';
-    link.href = 'src/visual-aperture.css?v=20261108-field1';
+    link.href = 'src/visual-aperture.css?v=20261109-field2';
     document.head.append(link);
   }
-  import('./visual-aperture.js?v=20261108-field1').catch(error => {
+  import('./visual-aperture.js?v=20261109-field2').catch(error => {
     console.error('Could not load the visual aperture.', error);
   });
 }

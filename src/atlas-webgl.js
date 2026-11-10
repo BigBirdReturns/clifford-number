@@ -736,16 +736,22 @@ export async function createWebGlAtlasRenderer({ host, onNodeSelect, onLinkSelec
 // and a link is one ledger row. Layout position carries no meaning and no
 // channel reads it.
 const GALAXY_BACKGROUND = new THREE.Color('#07090d');
-const GALAXY_CORE_SCALE = 1.25;
-const GALAXY_DIM = Object.freeze({ node: .8, halo: .1, link: .07, selectedScale: 1.4 });
-const GALAXY_LINK_LEVEL = .62;
-const GALAXY_LABEL_LIMITS = Object.freeze({ phone: 9, desktop: 26 });
+const GALAXY_SELECTION = new THREE.Color('#ffd061');
+const GALAXY_CORE_SCALE = 1.1;
+const GALAXY_DIM = Object.freeze({ node: .72, alpha: .22, halo: .12, link: .05, selectedScale: 1.5 });
+const GALAXY_LINK_LEVEL = .26;
+// The camera fits the body of the field: the span between these quantiles of
+// node x and y, so a few far specks do not shrink everything else.
+const GALAXY_FIT_QUANTILES = Object.freeze({ low: .01, high: .99, pad: 1.12 });
+// Every node glows a little so the field reads as one body; the floor is the
+// same for all of them and encodes nothing. Above it, glow size and strength
+// are the heat halo.
+const GALAXY_GLOW_FLOOR = Object.freeze({ alpha: .09, sizeFactor: 3.2 });
+const GALAXY_LABEL_LIMITS = Object.freeze({ phone: 5, desktop: 14 });
 const GALAXY_CLICK_SLOP_PX = 6;
-const GALAXY_SHAPES = Object.freeze({
-  person: () => new THREE.SphereGeometry(1, 10, 8),
-  organization: () => new THREE.BoxGeometry(1.5, 1.5, 1.5),
-  surface: () => new THREE.OctahedronGeometry(1.25, 0)
-});
+// The sprite shader draws the kind as a shape: disc for a person, square for
+// an organization, diamond for a surface.
+const GALAXY_SHAPE_KIND = Object.freeze({ person: 0, organization: 1, surface: 2 });
 
 function galaxyStableHash(value) {
   let hash = 2166136261;
@@ -796,19 +802,48 @@ function galaxySeedPositions(field) {
     node.z = 0;
   }
 }
-function galaxyHaloMaterial(scale) {
+// One sprite per node, one draw for the whole field: the core is the kind's
+// shape at the node's heat size with a hot centre, the glow around it is the
+// heat halo. Sizes arrive in world units and become pixels by the camera's
+// perspective factor, so a node keeps its size relative to the field.
+function galaxyNodeMaterial(scale) {
   return new THREE.ShaderMaterial({
-    uniforms: { map: { value: radialHaloTexture() }, scale: { value: scale } },
-    vertexShader: `attribute vec3 haloColor; attribute float haloSize; attribute float haloAlpha;
-      uniform float scale; varying vec3 vColor; varying float vAlpha;
+    uniforms: { scale: { value: scale } },
+    vertexShader: `attribute vec3 nodeColor; attribute float coreSize; attribute float haloSize; attribute float haloAlpha; attribute float nodeAlpha; attribute float shapeKind;
+      uniform float scale;
+      varying vec3 vColor; varying float vCore; varying float vGlow; varying float vAlpha; varying float vShape; varying float vPx;
       void main() {
-        vColor = haloColor; vAlpha = haloAlpha;
+        vColor = nodeColor; vGlow = haloAlpha; vAlpha = nodeAlpha; vShape = shapeKind;
         vec4 mv = modelViewMatrix * vec4(position, 1.0);
-        gl_PointSize = haloSize * scale / max(1.0, -mv.z);
+        float depth = max(1.0, -mv.z);
+        float outer = max(haloSize, coreSize * 2.0);
+        float px = clamp(outer * scale / depth, 2.0, 300.0);
+        float corePx = max(1.7, coreSize * scale / depth);
+        vCore = min(0.98, corePx / px);
+        vPx = px;
+        gl_PointSize = px;
         gl_Position = projectionMatrix * mv;
       }`,
-    fragmentShader: `uniform sampler2D map; varying vec3 vColor; varying float vAlpha;
-      void main() { vec4 tex = texture2D(map, gl_PointCoord); gl_FragColor = vec4(vColor, vAlpha * tex.a); }`,
+    fragmentShader: `varying vec3 vColor; varying float vCore; varying float vGlow; varying float vAlpha; varying float vShape; varying float vPx;
+      float shapeDistance(vec2 p, float kind) {
+        if (kind < 0.5) return length(p);
+        if (kind < 1.5) return max(abs(p.x), abs(p.y)) * 1.12;
+        return (abs(p.x) + abs(p.y)) * 0.86;
+      }
+      void main() {
+        vec2 p = gl_PointCoord * 2.0 - 1.0;
+        float r = length(p);
+        if (r > 1.0) discard;
+        float glow = pow(1.0 - r, 2.4) * vGlow;
+        float d = shapeDistance(p, vShape) / vCore;
+        float edge = 1.6 / max(1.0, vPx * vCore);
+        float core = 1.0 - smoothstep(1.0 - edge, 1.0 + edge, d);
+        vec3 coreColor = mix(vColor, vec3(1.0), 0.5 * (1.0 - clamp(d, 0.0, 1.0)));
+        vec3 color = coreColor * core + vColor * glow;
+        float alpha = (core + glow) * vAlpha;
+        if (alpha < 0.004) discard;
+        gl_FragColor = vec4(color, alpha);
+      }`,
     transparent: true,
     depthWrite: false,
     depthTest: false,
@@ -820,12 +855,11 @@ export async function createGalaxyFieldRenderer({ host, onNodeSelect, onNodeHove
   if (!host || !supportsWebGlAtlas()) throw new Error('WebGL field is unavailable');
   const ForceGraph3D = await loadForceGraphVendor();
   let field = null, selectedId = null, highlight = null, settled = false, animationRunning = true, tick = 0, fitDistance = 600, cameraTaken = false;
-  let nodeIndex = new Map(), linkEnds = null, cores = [], coreSlots = null, scales = null, screen = null, screenDirty = true;
-  let halos = null, haloGeometry = null, lines = null, lineGeometry = null, ring = null, outerRing = null, labelOrder = [];
+  let nodeIndex = new Map(), linkEnds = null, scales = null, screen = null, screenDirty = true;
+  let points = null, pointGeometry = null, lines = null, lineGeometry = null, ring = null, outerRing = null, labelOrder = [];
   let pulseFrame = 0, viewSyncFrame = 0, hoverFrame = 0, pointerDown = null, hoveredId = null;
   const labelButtons = new Map();
-  const scratchMatrix = new THREE.Matrix4(), scratchPosition = new THREE.Vector3(), scratchScale = new THREE.Vector3(), scratchColor = new THREE.Color();
-  const identityQuaternion = new THREE.Quaternion();
+  const scratchPosition = new THREE.Vector3(), scratchColor = new THREE.Color();
   const graph = new ForceGraph3D(host, {
     controlType: 'orbit',
     rendererConfig: { antialias: true, alpha: true, powerPreference: 'high-performance' }
@@ -841,10 +875,10 @@ export async function createGalaxyFieldRenderer({ host, onNodeSelect, onNodeHove
     // cooldown then settles it on screen (the layout is computation, not
     // decoration, so it runs under reduced motion too, but there it completes
     // before the first paint and the camera never animates).
-    .warmupTicks(reducedMotion ? 160 : 24)
-    .cooldownTicks(reducedMotion ? 0 : 220)
-    .d3AlphaDecay(.032)
-    .d3VelocityDecay(.32)
+    .warmupTicks(reducedMotion ? 200 : 30)
+    .cooldownTicks(reducedMotion ? 0 : 280)
+    .d3AlphaDecay(.026)
+    .d3VelocityDecay(.3)
     .onEngineTick(() => {
       tick += 1;
       syncPositions();
@@ -864,11 +898,11 @@ export async function createGalaxyFieldRenderer({ host, onNodeSelect, onNodeHove
       onViewChange?.({ type: 'settled', settled: true, first });
     });
   if (typeof graph.enableNodeDrag === 'function') graph.enableNodeDrag(false);
-  // Compact forces: a ledger of a few thousand rows should read as one field,
-  // not a sparse cloud, so hot nodes keep their pixels at the fitted distance.
-  graph.d3Force('charge').strength(-9).distanceMax(160);
-  graph.d3Force('link').distance(link => link.topology_only ? 8 : 14).strength(.7);
-  graph.renderer().setPixelRatio(Math.min(1.7, window.devicePixelRatio || 1));
+  // The forces open the field enough for its structure to show, with rosters
+  // pulled tight around their one node, while the whole stays one body.
+  graph.d3Force('charge').strength(-18).distanceMax(260);
+  graph.d3Force('link').distance(link => link.topology_only ? 6 : 22).strength(link => link.topology_only ? .9 : .5);
+  graph.renderer().setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
 
   // A flat field: left drag and one finger pan, wheel and pinch zoom, no orbit.
   const controls = graph.controls();
@@ -892,20 +926,20 @@ export async function createGalaxyFieldRenderer({ host, onNodeSelect, onNodeHove
   tooltip.hidden = true;
   host.append(tooltip);
 
-  function haloScale() {
+  // World units to device pixels at depth 1: the sprite shader divides by depth.
+  function spriteScale() {
     const camera = graph.camera();
-    return (host.clientHeight / 2) / Math.tan(THREE.MathUtils.degToRad(camera.fov || 75) / 2);
+    return ((host.clientHeight / 2) / Math.tan(THREE.MathUtils.degToRad(camera.fov || 75) / 2)) * graph.renderer().getPixelRatio();
   }
   function disposeObjects() {
-    for (const mesh of cores) { graph.scene().remove(mesh); mesh.geometry.dispose(); mesh.material.dispose(); }
-    cores = [];
-    for (const object of [halos, lines, ring, outerRing]) {
+    for (const object of [points, lines, ring, outerRing]) {
       if (!object) continue;
       graph.scene().remove(object);
       object.geometry.dispose();
       object.material.dispose();
     }
-    halos = lines = ring = outerRing = null;
+    points = lines = ring = outerRing = null;
+    pointGeometry = lineGeometry = null;
   }
   function buildObjects() {
     disposeObjects();
@@ -913,31 +947,22 @@ export async function createGalaxyFieldRenderer({ host, onNodeSelect, onNodeHove
     // Built once per render, never per frame: every per-frame path reads it.
     nodeIndex = new Map();
     field.nodes.forEach((node, index) => nodeIndex.set(node.id, index));
-    coreSlots = new Int32Array(count * 2);
     scales = new Float32Array(count);
     screen = new Float32Array(count * 2);
-    const groups = { person: [], organization: [], surface: [] };
-    field.nodes.forEach((node, index) => (groups[node.ontology] ?? groups.organization).push(index));
-    cores = Object.entries(groups).filter(([, indices]) => indices.length).map(([ontology, indices], meshIndex) => {
-      const mesh = new THREE.InstancedMesh(GALAXY_SHAPES[ontology](), new THREE.MeshBasicMaterial({ transparent: true, opacity: .97, depthWrite: false }), indices.length);
-      mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-      mesh.frustumCulled = false;
-      mesh.userData.ontology = ontology;
-      mesh.userData.indices = indices;
-      indices.forEach((nodeIdx, instance) => { coreSlots[nodeIdx * 2] = meshIndex; coreSlots[nodeIdx * 2 + 1] = instance; });
-      mesh.setColorAt(0, scratchColor.set('#ffffff'));
-      graph.scene().add(mesh);
-      return mesh;
-    });
-    haloGeometry = new THREE.BufferGeometry();
-    haloGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(count * 3), 3).setUsage(THREE.DynamicDrawUsage));
-    haloGeometry.setAttribute('haloColor', new THREE.BufferAttribute(new Float32Array(count * 3), 3));
-    haloGeometry.setAttribute('haloSize', new THREE.BufferAttribute(new Float32Array(count), 1));
-    haloGeometry.setAttribute('haloAlpha', new THREE.BufferAttribute(new Float32Array(count), 1));
-    halos = new THREE.Points(haloGeometry, galaxyHaloMaterial(haloScale()));
-    halos.frustumCulled = false;
-    halos.renderOrder = -1;
-    graph.scene().add(halos);
+    pointGeometry = new THREE.BufferGeometry();
+    pointGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(count * 3), 3).setUsage(THREE.DynamicDrawUsage));
+    pointGeometry.setAttribute('nodeColor', new THREE.BufferAttribute(new Float32Array(count * 3), 3));
+    pointGeometry.setAttribute('coreSize', new THREE.BufferAttribute(new Float32Array(count), 1));
+    pointGeometry.setAttribute('haloSize', new THREE.BufferAttribute(new Float32Array(count), 1));
+    pointGeometry.setAttribute('haloAlpha', new THREE.BufferAttribute(new Float32Array(count), 1));
+    pointGeometry.setAttribute('nodeAlpha', new THREE.BufferAttribute(new Float32Array(count), 1));
+    const shapeKind = new Float32Array(count);
+    field.nodes.forEach((node, index) => { shapeKind[index] = GALAXY_SHAPE_KIND[node.ontology] ?? GALAXY_SHAPE_KIND.organization; });
+    pointGeometry.setAttribute('shapeKind', new THREE.BufferAttribute(shapeKind, 1));
+    points = new THREE.Points(pointGeometry, galaxyNodeMaterial(spriteScale()));
+    points.frustumCulled = false;
+    points.renderOrder = -1;
+    graph.scene().add(points);
     const linkCount = field.links.length;
     linkEnds = new Int32Array(linkCount * 2);
     field.links.forEach((link, index) => {
@@ -947,12 +972,12 @@ export async function createGalaxyFieldRenderer({ host, onNodeSelect, onNodeHove
     lineGeometry = new THREE.BufferGeometry();
     lineGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(linkCount * 6), 3).setUsage(THREE.DynamicDrawUsage));
     lineGeometry.setAttribute('color', new THREE.BufferAttribute(new Float32Array(linkCount * 6), 3));
-    lines = new THREE.LineSegments(lineGeometry, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: .9, depthWrite: false, blending: THREE.AdditiveBlending }));
+    lines = new THREE.LineSegments(lineGeometry, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: .85, depthWrite: false, blending: THREE.AdditiveBlending }));
     lines.frustumCulled = false;
     lines.renderOrder = -2;
     graph.scene().add(lines);
-    ring = new THREE.Mesh(new THREE.RingGeometry(1, 1.1, 64), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: .92, side: THREE.DoubleSide, depthTest: false, depthWrite: false }));
-    outerRing = new THREE.Mesh(new THREE.RingGeometry(1, 1.04, 64), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: .3, side: THREE.DoubleSide, depthTest: false, depthWrite: false }));
+    ring = new THREE.Mesh(new THREE.RingGeometry(1, 1.08, 64), new THREE.MeshBasicMaterial({ color: GALAXY_SELECTION, transparent: true, opacity: .95, side: THREE.DoubleSide, depthTest: false, depthWrite: false }));
+    outerRing = new THREE.Mesh(new THREE.RingGeometry(1, 1.03, 64), new THREE.MeshBasicMaterial({ color: GALAXY_SELECTION, transparent: true, opacity: .3, side: THREE.DoubleSide, depthTest: false, depthWrite: false }));
     ring.visible = outerRing.visible = false;
     ring.renderOrder = outerRing.renderOrder = 5;
     graph.scene().add(ring);
@@ -971,27 +996,30 @@ export async function createGalaxyFieldRenderer({ host, onNodeSelect, onNodeHove
   // current highlight. A node outside the highlight is drawn toward the
   // background; it is never removed.
   function restyle() {
-    if (!field || !cores.length) return;
-    const haloColor = haloGeometry.attributes.haloColor, haloSize = haloGeometry.attributes.haloSize, haloAlpha = haloGeometry.attributes.haloAlpha;
+    if (!field || !points) return;
+    const { nodeColor, coreSize, haloSize, haloAlpha, nodeAlpha } = pointGeometry.attributes;
     field.nodes.forEach((node, index) => {
       const channels = nodeChannels(node);
       const inFocus = !highlight || highlight.has(node.id);
       const selected = node.id === selectedId;
       scratchColor.set(node.color || ONTOLOGY_COLORS[node.ontology] || '#b8c0cf');
       if (!inFocus) scratchColor.lerp(GALAXY_BACKGROUND, GALAXY_DIM.node);
+      // scales[] holds the core diameter in world units; picking, the ring and
+      // the labels read it.
       let core = Math.max(1.6, channels.core) * GALAXY_CORE_SCALE;
-      let halo = channels.halo, alpha = channels.alpha;
-      if (!inFocus) { core *= .9; alpha *= GALAXY_DIM.halo; }
-      if (selected) { core *= GALAXY_DIM.selectedScale; halo = Math.max(halo, 26); alpha = Math.max(alpha, .55); }
+      let halo = Math.max(channels.halo, core * GALAXY_GLOW_FLOOR.sizeFactor);
+      let glow = Math.max(channels.alpha, GALAXY_GLOW_FLOOR.alpha);
+      let alpha = 1;
+      if (!inFocus) { core *= .9; glow *= GALAXY_DIM.halo; alpha = GALAXY_DIM.alpha; }
+      if (selected) { core *= GALAXY_DIM.selectedScale; halo = Math.max(halo, 30); glow = Math.max(glow, .6); }
       scales[index] = core;
-      const mesh = cores[coreSlots[index * 2]];
-      mesh.setColorAt(coreSlots[index * 2 + 1], scratchColor);
-      haloColor.setXYZ(index, scratchColor.r, scratchColor.g, scratchColor.b);
+      nodeColor.setXYZ(index, scratchColor.r, scratchColor.g, scratchColor.b);
+      coreSize.setX(index, core);
       haloSize.setX(index, halo);
-      haloAlpha.setX(index, alpha);
+      haloAlpha.setX(index, glow);
+      nodeAlpha.setX(index, alpha);
     });
-    for (const mesh of cores) if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
-    haloColor.needsUpdate = haloSize.needsUpdate = haloAlpha.needsUpdate = true;
+    nodeColor.needsUpdate = coreSize.needsUpdate = haloSize.needsUpdate = haloAlpha.needsUpdate = nodeAlpha.needsUpdate = true;
     const lineColor = lineGeometry.attributes.color;
     field.links.forEach((link, index) => {
       const source = endpointId(link.source), target = endpointId(link.target);
@@ -1007,19 +1035,10 @@ export async function createGalaxyFieldRenderer({ host, onNodeSelect, onNodeHove
   // Positions follow the layout: instance matrices, halo points, line ends and
   // the selection ring are rewritten from node.x/y on every engine tick.
   function syncPositions() {
-    if (!field || !cores.length) return;
-    const haloPosition = haloGeometry.attributes.position;
-    field.nodes.forEach((node, index) => {
-      const x = node.x || 0, y = node.y || 0, z = node.z || 0;
-      scratchPosition.set(x, y, z);
-      const size = scales[index] || 1;
-      scratchScale.set(size, size, size);
-      scratchMatrix.compose(scratchPosition, identityQuaternion, scratchScale);
-      cores[coreSlots[index * 2]].setMatrixAt(coreSlots[index * 2 + 1], scratchMatrix);
-      haloPosition.setXYZ(index, x, y, z);
-    });
-    for (const mesh of cores) mesh.instanceMatrix.needsUpdate = true;
-    haloPosition.needsUpdate = true;
+    if (!field || !points) return;
+    const position = pointGeometry.attributes.position;
+    field.nodes.forEach((node, index) => position.setXYZ(index, node.x || 0, node.y || 0, node.z || 0));
+    position.needsUpdate = true;
     const linePosition = lineGeometry.attributes.position;
     for (let index = 0; index < field.links.length; index += 1) {
       const a = field.nodes[linkEnds[index * 2]], b = field.nodes[linkEnds[index * 2 + 1]];
@@ -1037,8 +1056,8 @@ export async function createGalaxyFieldRenderer({ host, onNodeSelect, onNodeHove
     const size = scales[nodeIndex.get(node.id)] || 2;
     ring.position.set(node.x || 0, node.y || 0, (node.z || 0) + .5);
     outerRing.position.copy(ring.position);
-    ring.scale.setScalar(size * 2.1);
-    outerRing.scale.setScalar(size * 3.4);
+    ring.scale.setScalar(size * .95);
+    outerRing.scale.setScalar(size * 1.5);
     ring.visible = outerRing.visible = true;
   }
   function pulse(timestamp) {
@@ -1048,7 +1067,7 @@ export async function createGalaxyFieldRenderer({ host, onNodeSelect, onNodeHove
       const node = field.nodeById.get(selectedId);
       const size = scales[nodeIndex.get(node.id)] || 2;
       const phase = (Math.sin(timestamp / 900) + 1) / 2;
-      outerRing.scale.setScalar(size * (3.2 + phase * .9));
+      outerRing.scale.setScalar(size * (1.4 + phase * .5));
       outerRing.material.opacity = .14 + (1 - phase) * .3;
     }
     pulseFrame = requestAnimationFrame(pulse);
@@ -1075,7 +1094,7 @@ export async function createGalaxyFieldRenderer({ host, onNodeSelect, onNodeHove
     if (index === undefined) return null;
     refreshScreen();
     const x = screen[index * 2], y = screen[index * 2 + 1];
-    const radius = (scales[index] || 1) * pixelsPerUnit();
+    const radius = (scales[index] || 1) * pixelsPerUnit() / 2;
     return { x, y, radius, visible: x >= 0 && y >= 0 && x <= host.clientWidth && y <= host.clientHeight };
   }
   function nodeAt(px, py) {
@@ -1085,7 +1104,7 @@ export async function createGalaxyFieldRenderer({ host, onNodeSelect, onNodeHove
     let best = null, bestDistance = Infinity;
     for (let index = 0; index < field.nodes.length; index += 1) {
       const dx = screen[index * 2] - px, dy = screen[index * 2 + 1] - py;
-      const radius = Math.max(5, (scales[index] || 1) * perUnit) + 3;
+      const radius = Math.max(6, (scales[index] || 1) * perUnit * .6) + 3;
       const distance = Math.hypot(dx, dy);
       if (distance > radius || distance >= bestDistance) continue;
       best = field.nodes[index];
@@ -1100,6 +1119,7 @@ export async function createGalaxyFieldRenderer({ host, onNodeSelect, onNodeHove
     refreshScreen();
     const width = host.clientWidth, height = host.clientHeight;
     const limit = width < 700 ? GALAXY_LABEL_LIMITS.phone : GALAXY_LABEL_LIMITS.desktop;
+    const perUnit = pixelsPerUnit();
     const seen = new Set();
     const candidates = [];
     const push = index => { if (index !== undefined && !seen.has(index)) { seen.add(index); candidates.push(index); } };
@@ -1115,8 +1135,9 @@ export async function createGalaxyFieldRenderer({ host, onNodeSelect, onNodeHove
       if (boxes.length >= limit) break;
       const node = field.nodes[index];
       if (highlight && !highlight.has(node.id) && node.id !== selectedId) continue;
-      const x = screen[index * 2] + 8, y = screen[index * 2 + 1] - 9;
-      const labelWidth = Math.min(180, 12 + String(node.label).length * 6.4);
+      const radius = (scales[index] || 1) * perUnit / 2;
+      const x = screen[index * 2] + radius + 5, y = screen[index * 2 + 1] - 8;
+      const labelWidth = Math.min(170, 4 + String(node.label).length * 6.2);
       if (x < 4 || x + labelWidth > width - 4 || y < 4 || y > height - 24) continue;
       const box = { x, y, right: x + labelWidth, bottom: y + 20 };
       if (boxes.some(b => box.x < b.right + 10 && box.right + 10 > b.x && box.y < b.bottom + 6 && box.bottom + 6 > b.y)) continue;
@@ -1204,13 +1225,15 @@ export async function createGalaxyFieldRenderer({ host, onNodeSelect, onNodeHove
   host.addEventListener('pointercancel', () => { pointerDown = null; });
 
   function bounds() {
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-    for (const node of field?.nodes ?? []) {
-      const x = node.x || 0, y = node.y || 0;
-      if (x < minX) minX = x; if (x > maxX) maxX = x; if (y < minY) minY = y; if (y > maxY) maxY = y;
-    }
-    if (!Number.isFinite(minX)) return { cx: 0, cy: 0, width: 200, height: 200 };
-    return { cx: (minX + maxX) / 2, cy: (minY + maxY) / 2, width: Math.max(40, maxX - minX), height: Math.max(40, maxY - minY) };
+    const nodes = field?.nodes ?? [];
+    if (!nodes.length) return { cx: 0, cy: 0, width: 200, height: 200 };
+    const xs = Float64Array.from(nodes, node => node.x || 0).sort();
+    const ys = Float64Array.from(nodes, node => node.y || 0).sort();
+    const at = (sorted, q) => sorted[Math.min(sorted.length - 1, Math.max(0, Math.round(q * (sorted.length - 1))))];
+    const minX = at(xs, GALAXY_FIT_QUANTILES.low), maxX = at(xs, GALAXY_FIT_QUANTILES.high);
+    const minY = at(ys, GALAXY_FIT_QUANTILES.low), maxY = at(ys, GALAXY_FIT_QUANTILES.high);
+    const pad = GALAXY_FIT_QUANTILES.pad;
+    return { cx: (minX + maxX) / 2, cy: (minY + maxY) / 2, width: Math.max(40, (maxX - minX) * pad), height: Math.max(40, (maxY - minY) * pad) };
   }
   function distanceFor(width, height) {
     const camera = graph.camera();
@@ -1251,7 +1274,7 @@ export async function createGalaxyFieldRenderer({ host, onNodeSelect, onNodeHove
     const width = Math.max(300, Math.floor(host.clientWidth || 900));
     const height = Math.max(360, Math.floor(host.clientHeight || 600));
     graph.width(width).height(height);
-    if (halos) halos.material.uniforms.scale.value = haloScale();
+    if (points) points.material.uniforms.scale.value = spriteScale();
     scheduleViewSync();
   }
   const resizeObserver = new ResizeObserver(resize);

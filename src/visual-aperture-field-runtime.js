@@ -502,6 +502,13 @@ function undockFieldCallout() {
     inspector.classList.remove('is-docked');
     inspector.style.left = inspector.style.top = inspector.style.width = '';
     delete inspector.dataset.dockSide;
+    // On desktop the corner card hangs just inside the stage, under the
+    // header strip whatever its height; on a phone the sheet keeps its CSS.
+    const host = $('#aperture-field-stage', state.root);
+    const layout = inspector.parentElement;
+    if (host && layout && state.mode === 'field' && !isMobile()) {
+      inspector.style.top = `${Math.round(host.getBoundingClientRect().top - layout.getBoundingClientRect().top + 12)}px`;
+    }
   }
   if (leader) leader.hidden = true;
 }
