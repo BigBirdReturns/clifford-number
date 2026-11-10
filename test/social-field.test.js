@@ -698,4 +698,22 @@ if (renderer) {
     assert.equal(typeof renderer[name], 'function', `${name} reaches the runtime through the renderer module`);
   }
 }
+// --- decision heat (2026-11-10, on the owner's go-ahead of that day): the same sum over official_ rows, nothing reweighted
+assert.equal(social.DECISION_HEAT_VERSION, 'decision-heat@1');
+assert.deepEqual([...social.HEAT_BASES], ['all', 'decisions']);
+assert.match(social.DECISION_HEAT_FORMULA, /^decision heat = the same sum over the rows on surfaces whose recorded status begins official_/);
+assert.equal(social.isDecisionRow({ surface_status: 'official_award_notice' }), true);
+assert.equal(social.isDecisionRow({ surface_status: 'reported_event' }), false);
+assert.equal(social.isDecisionRow({ surface_status: 'unofficial_note' }), false, 'official_ is a prefix, not a substring');
+assert.equal(social.isDecisionRow({}), false, 'a row with no recorded status is not a decision row');
+const realStatus = new Map(realSurfaceGraph.surfaces.map(surface => [surface.surface_id, surface.status ?? null]));
+for (const row of realLedger.rows) assert.equal(row.surface_status, realStatus.get(row.surface_id), 'every ledger row carries its surface status as recorded');
+const realDecisionRows = social.heatBasisRows(realLedger.rows, 'decisions');
+const realAllHeat = heat(realLedger.rows, realLedger.range.last_day);
+const realDecisionHeat = heat(realDecisionRows, realLedger.range.last_day);
+assert.ok(realDecisionRows.length > 0 && realDecisionRows.length < realLedger.rows.length, 'some rows are on official instruments and some are not');
+assert.ok(realDecisionHeat.total > 0 && realDecisionHeat.total < realAllHeat.total);
+const realHeatTermByRow = new Map(realAllHeat.touches.map(touch => [touch.row.row_id, touch.contribution]));
+for (const touch of realDecisionHeat.touches) assert.equal(touch.contribution, realHeatTermByRow.get(touch.row.row_id), 'a decision term is the heat term of the same row, unchanged');
+assert.equal(realField.heat_basis, 'all', 'a field is summed over all rows unless a basis is named');
 console.log('field runtime contract: PASS');

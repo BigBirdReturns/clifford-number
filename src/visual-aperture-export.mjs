@@ -497,7 +497,7 @@ function fieldHeat(value) {
   const byClass = {};
   for (const key of ['policy', 'appointment', 'procurement', 'capital']) byClass[key] = number(value?.by_class?.[key], 0);
   return {
-    noun: clean(value.noun || 'heat', 10),
+    noun: clean(value.noun || 'heat', 20),
     at_date: nullable(value.at_date, 10),
     total: number(value.total, 0),
     by_class: byClass,
@@ -541,7 +541,8 @@ function fieldView(input) {
       first_date: nullable(counts.first_date, 10),
       last_date: nullable(counts.last_date, 10)
     },
-    heat_formula: clean(input?.heat_formula, 200),
+    heat_formula: clean(input?.heat_formula, 320),
+    heat_basis: input?.heat_basis === 'decisions' ? 'decisions' : 'all',
     heat_at: nullable(input?.heat_at, 10),
     selected,
     rows,

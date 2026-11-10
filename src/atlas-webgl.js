@@ -1133,6 +1133,10 @@ export async function createGalaxyFieldRenderer({ host, onNodeSelect, onNodeHove
     graph.scene().add(ring);
     graph.scene().add(outerRing);
     graph.scene().add(hoverRing);
+    orderLabels();
+  }
+  // Names go to the hottest nodes first, under whichever basis the heat was summed.
+  function orderLabels() {
     labelOrder = field.nodes.map((node, index) => index).sort((a, b) => {
       const na = field.nodes[a], nb = field.nodes[b];
       return (nb.heat_value || 0) - (na.heat_value || 0) || (nb.size_count || 0) - (na.size_count || 0) || String(na.label).localeCompare(String(nb.label));
@@ -1571,6 +1575,14 @@ export async function createGalaxyFieldRenderer({ host, onNodeSelect, onNodeHove
     updateLabels();
     return lens;
   }
+  // The runtime re-summed the heat on these same nodes (another basis): redraw
+  // size, halo and colour and re-rank the names. No position moves.
+  function reheat() {
+    if (!field || !points) return;
+    orderLabels();
+    restyle();
+    updateLabels();
+  }
   function pause() {
     if (!animationRunning) return;
     animationRunning = false;
@@ -1601,6 +1613,7 @@ export async function createGalaxyFieldRenderer({ host, onNodeSelect, onNodeHove
     render,
     select,
     setLens,
+    reheat,
     focus,
     fit,
     zoom,

@@ -171,6 +171,64 @@ assert.equal(state.field.selectedId, `surface-${surfaceGraph.surfaces[0].surface
 assert.equal(api.fieldSnapshot().selectedId, `surface-${surfaceGraph.surfaces[0].surface_id}`);
 api.applyFieldSnapshot({ selectedId: anchor.id });
 
+// --- decision heat: the same printed sum over official_ rows only, beside heat ----------------------------------
+// 2026-11-10, on the owner's go-ahead of that day ("Add a decisions-only heat beside the current one?" "Yes, add it").
+const DECISION_FORMULA = socialField.DECISION_HEAT_FORMULA;
+assert.ok(runtime.includes(`const FIELD_DECISION_HEAT_FORMULA = '${DECISION_FORMULA}'`), 'the runtime prints the decision heat formula of the field module');
+const statusBySurface = new Map(surfaceGraph.surfaces.map(surface => [surface.surface_id, String(surface.status || '')]));
+const officialRows = ledger.rows.filter(row => /^official_/.test(statusBySurface.get(row.surface_id)));
+assert.deepEqual(socialField.heatBasisRows(ledger.rows, 'decisions'), officialRows, 'a decision row is a row on an official_ surface, read from the row itself');
+assert.equal(socialField.heatBasisRows(ledger.rows, 'all'), ledger.rows, 'all rows is every row');
+const decisionTotal = heat(officialRows, ledger.range.last_day).total;
+const officialFamily = facts.heat_by_status.families.find(family => family.id === 'official');
+assert.ok(Math.abs(officialFamily.heat - decisionTotal) < 1e-6, 'decision heat is the official instrument share of heat, term for term');
+assert.equal(officialFamily.rows, officialRows.filter(row => row.dated).length);
+assert.equal(api.fieldSnapshot().heat, 'all', 'all heat is the default');
+assert.ok(!api.fieldLegendMarkup().includes('data-ap-heat-basis'), 'the legend names no second basis at the default');
+assert.ok(callout.includes(esc(heatBreakdownText(heat(socialField.heatBasisRows(ledger.rowsByNode.get(anchor.id), 'decisions'), ledger.range.last_day), { noun: 'decision residue', limit: 0 }))), 'at the default the callout prints the decision sum as one line beside the heat');
+state.field.heat = 'decisions';
+assert.equal(api.fieldSnapshot().heat, 'decisions');
+const anchorDecision = heat(socialField.heatBasisRows(ledger.rowsByNode.get(anchor.id), 'decisions'), ledger.range.last_day);
+assert.ok(anchorDecision.touches.length > 0 && anchorDecision.touches.length < anchorHeat.touches.length, 'the anchor has rows on and off official instruments');
+const decisionCallout = api.fieldInspectorMarkup(anchor.id);
+assert.ok(decisionCallout.includes(esc(heatBreakdownText(anchorDecision, { noun: 'decision residue', limit: Number.MAX_SAFE_INTEGER }))), 'under decision heat the callout prints every decision term');
+assert.ok(decisionCallout.includes(esc(heatBreakdownText(anchorHeat, { noun: 'residue', limit: 0 }))), 'and the all-rows sum as one line beside it');
+assert.ok(decisionCallout.includes(DECISION_FORMULA));
+const decisionLegend = api.fieldLegendMarkup();
+assert.ok(decisionLegend.includes(DECISION_FORMULA), 'the legend prints the decision formula while it sizes the nodes');
+assert.ok(decisionLegend.includes(`${api.fieldCount(officialFamily.rows)} of ${api.fieldCount(facts.heat_by_status.counted_rows)} dated rows counted`), 'with its denominator');
+const decisionView = api.currentFieldExportView();
+assert.equal(decisionView.heat_basis, 'decisions');
+assert.equal(decisionView.selected.heat.touches.length, anchorDecision.touches.length);
+const decisionPacket = buildApertureExportPacket({ mode: 'field', generatedAt: '2026-11-10T12:00:00Z', exactViewUrl: 'https://example.test/explorer.html?ap_v=1&ap_mode=field&ap_field_heat=decisions', view: decisionView });
+assert.equal(decisionPacket.view.heat_basis, 'decisions');
+assert.equal(decisionPacket.view.selected.heat.noun, 'decision residue', 'the packet names the sum it carries');
+assert.ok(decisionPacket.caption.includes(DECISION_FORMULA) && decisionPacket.caption.includes(HEAT_FORMULA));
+// The model re-sums in place: only official_ rows are terms, no term is reweighted, and switching back is exact.
+socialField.applyFieldHeat(field, ledger, ledger.range.last_day, 'decisions');
+assert.equal(field.heat_basis, 'decisions');
+assert.equal(field.nodeById.get(anchor.id).heat_kind, 'decision residue');
+assert.equal(field.nodeById.get(anchor.id).heat_value, anchorDecision.total);
+const heatTermByRow = new Map(heat(ledger.rows, ledger.range.last_day).touches.map(touch => [touch.row.row_id, touch.contribution]));
+for (const node of field.nodes) {
+  if (!node.heat) continue;
+  for (const touch of node.heat.touches) {
+    assert.ok(/^official_/.test(statusBySurface.get(touch.row.surface_id)), 'only official_ rows are decision terms');
+    assert.equal(touch.contribution, heatTermByRow.get(touch.row.row_id), 'a decision term is the heat term of the same row');
+  }
+  if (node.ontology === 'surface' && !/^official_/.test(statusBySurface.get(node.surface_id))) assert.equal(node.heat_value, 0, 'a surface that is not an official instrument carries no decision heat');
+}
+socialField.applyFieldHeat(field, ledger, ledger.range.last_day);
+assert.equal(field.heat_basis, 'all');
+assert.equal(field.nodeById.get(anchor.id).heat_kind, 'residue');
+assert.equal(field.nodeById.get(anchor.id).heat_value, anchorHeat.total, 'switching back restores the printed heat exactly');
+api.applyFieldSnapshot({ selectedId: anchor.id, heat: 'decisions' });
+assert.equal(state.field.heat, 'decisions', 'the basis is restored from a snapshot');
+api.applyFieldSnapshot({ selectedId: anchor.id });
+assert.equal(state.field.heat, 'decisions', 'a snapshot that names no basis keeps the current one, as it keeps the lens');
+api.applyFieldSnapshot({ selectedId: anchor.id, heat: 'bogus' });
+assert.equal(state.field.heat, 'all', 'and an unknown basis is all heat');
+
 // --- the field packet -----------------------------------------------------------------------------------------------
 const view = api.currentFieldExportView();
 assert.equal(view.rows.length, anchorSummary.rows_total, 'the packet carries every row of the selected node');
@@ -196,6 +254,14 @@ assert.equal(readApertureState('?ap_v=1&ap_mode=field').field.lens, 'all', 'no l
 assert.equal(readApertureState('?ap_v=1&ap_mode=field&ap_field_lens=bogus').field.lens, 'all', 'an unknown lens reads as all');
 assert.equal(writeApertureState({ mode: 'field', field: { selectedId: null, lens: 'all' } }).get('ap_field_lens'), 'all', 'the lens key is always written, all at the default');
 assert.equal(writeApertureState({ mode: 'field', field: { selectedId: null, lens: 'inforce' } }).get('ap_field_lens'), 'inforce');
+assert.ok(APERTURE_QUERY_KEYS.includes('ap_field_heat'));
+assert.equal(readApertureState('?ap_v=1&ap_mode=field&ap_field_heat=decisions').field.heat, 'decisions', 'the heat basis travels in the URL');
+assert.equal(readApertureState('?ap_v=1&ap_mode=field').field.heat, 'all', 'no basis reads as all heat');
+assert.equal(readApertureState('?ap_v=1&ap_mode=field&ap_field_heat=bogus').field.heat, 'all', 'an unknown basis reads as all heat');
+assert.equal(writeApertureState({ mode: 'field', field: { selectedId: null, lens: 'all', heat: 'decisions' } }).get('ap_field_heat'), 'decisions');
+assert.equal(writeApertureState({ mode: 'field', field: { selectedId: null, lens: 'all' } }).get('ap_field_heat'), 'all', 'the basis key is always written, all at the default');
+assert.match(runtime, /data-ap-action="field-heat" data-heat="\$\{key\}"/, 'the Heat buttons are on the controls');
+assert.match(runtime, /function syncFieldHeatBasis[\s\S]*api\.applyFieldHeat\(field, galaxy\.ledger, [^)]*, basis\)[\s\S]*renderer\?\.reheat\?\.\(\)/, 'switching the basis re-sums the same model and redraws in place');
 assert.match(runtime, /function computeDecisionsLens[\s\S]*\/\^official_\/[\s\S]*function computeHuntLens[\s\S]*hop_eligible === true[\s\S]*hop_refusal_reason[\s\S]*function computeInForceLens[\s\S]*end_day/, 'each lens reads one recorded field');
 assert.match(runtime, /function fieldLensLegendMarkup[\s\S]*everything else dimmed, nothing removed/, 'the legend prints the lens definition');
 assert.match(runtime, /aperture-field-crumbs[\s\S]*data-ap-action="field-clear">Field<\/button>/, 'the callout opens with a breadcrumb back to the field');
@@ -218,6 +284,7 @@ assert.ok(runtime.includes(HEAT_FORMULA));
 assert.doesNotMatch(runtime, /machine_score|factory_score|deniability|laundry_score|recurrence_score|Structural context index|Factory Score|documented_degree/, 'no hidden composite drives a field channel');
 assert.match(runtime, /function galaxyAnimationAllowed[\s\S]*intersecting === false[\s\S]*visibilityState === 'hidden'/, 'the field pauses off-screen and when the tab is hidden');
 assert.match(renderer, /export async function createGalaxyFieldRenderer/);
+assert.match(renderer, /function reheat\(\) \{[\s\S]*?orderLabels\(\);[\s\S]*?restyle\(\);[\s\S]*?updateLabels\(\);/, 'a new heat basis redraws size, halo, colour and names without a new layout');
 assert.match(renderer, /nodeSizeForHeat\(node\.heat_value\)[\s\S]*haloSizeForHeat\(node\.heat_value\)/, 'the renderer sizes and haloes by the printed heat');
 assert.doesNotMatch(renderer.slice(renderer.indexOf('createGalaxyFieldRenderer')), /documented_degree|strongest_repeat|size_count \*|degree \*/, 'the galaxy renderer reads no degree');
 assert.match(css, /@media \(max-width: 760px\)/);

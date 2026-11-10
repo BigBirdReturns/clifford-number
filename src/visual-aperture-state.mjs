@@ -14,11 +14,13 @@ export const APERTURE_QUERY_KEYS = Object.freeze([
   'ap_surface_id', 'ap_surface_query', 'ap_surface_asof', 'ap_surface_evidence', 'ap_surface_budget', 'ap_surface_pins', 'ap_surface_actor',
   'ap_field_sel',
   'ap_field_lens',
+  'ap_field_heat',
   ...APERTURE_TIMELINE_QUERY_KEYS
 ]);
 
 const MODES = new Set(['field', 'timeline', 'map', 'route', 'surface']);
 const FIELD_LENSES = new Set(['all', 'decisions', 'hunt', 'inforce', 'queue']);
+const FIELD_HEATS = new Set(['all', 'decisions']);
 const MAP_LEVELS = new Set(['corpus', 'machine', 'surface', 'evidence']);
 const EVIDENCE_FLOORS = new Set(['open', 'reported', 'primary_public', 'official']);
 const OVERVIEW_PAGE_SIZES = new Set([25, 50, 100]);
@@ -155,7 +157,8 @@ export function readApertureState(input = '') {
     },
     field: {
       selectedId: token(params.get('ap_field_sel')),
-      lens: enumValue(params.get('ap_field_lens'), FIELD_LENSES, 'all')
+      lens: enumValue(params.get('ap_field_lens'), FIELD_LENSES, 'all'),
+      heat: enumValue(params.get('ap_field_heat'), FIELD_HEATS, 'all')
     },
     timeline: {
       by: enumValue(params.get('ap_time_by'), TIME_BY, 'actor'),
@@ -211,6 +214,7 @@ export function writeApertureState(snapshot, input = '') {
 
   set(params, 'ap_field_sel', token(field.selectedId) ?? '');
   set(params, 'ap_field_lens', enumValue(field.lens, FIELD_LENSES, 'all'));
+  set(params, 'ap_field_heat', enumValue(field.heat, FIELD_HEATS, 'all'));
 
   setWhenNotDefault(params, 'ap_time_by', enumValue(timeline.by, TIME_BY, 'actor'), 'actor');
   setWhenNotDefault(params, 'ap_time_from', isoDay(timeline.from), '');

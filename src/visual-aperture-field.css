@@ -285,6 +285,10 @@ details.aperture-field-rows-more[open] > summary { border-color: var(--f-accent)
 [data-aperture-mode="field"] .aperture-workspace, [data-aperture-mode="field"] .aperture-export { background: var(--f-panel); color: var(--f-text); border-color: var(--f-line); }
 [data-aperture-mode="field"] .aperture-deck :focus-visible, [data-aperture-mode="field"] :focus-visible { outline-color: var(--f-accent); }
 
+/* The Heat buttons made the control row wider than a 1024px window: below this width the row wraps, so Options stays on the page. */
+@media (max-width: 1180px) {
+  [data-aperture-mode="field"] .aperture-mode-controls { flex-wrap: wrap; row-gap: 8px; }
+}
 @media (max-width: 1100px) {
   .aperture-field-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .aperture-field-counters small { white-space: normal; }

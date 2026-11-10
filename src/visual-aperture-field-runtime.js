@@ -14,6 +14,15 @@
 // standalone builder), so the counts, the heat terms and the tiles work even
 // where the WebGL field cannot start.
 const FIELD_HEAT_FORMULA = 'heat = Σ touches weight(class) × 0.8^years; policy 1 · appointment 1 · procurement 2 · capital 2';
+// Decision heat (docs/explorer.md rule 6, on the owner's go-ahead of 10
+// November 2026): the same formula counted over the rows on official_ surfaces
+// alone. A second printed sum beside heat; the Heat buttons choose which one
+// sizes and colours the nodes. All heat is the default.
+const FIELD_DECISION_HEAT_FORMULA = 'decision heat = the same sum over the rows on surfaces whose recorded status begins official_; every other row adds 0';
+const FIELD_HEAT_BASES = {
+  all: { label: 'All heat', definition: 'every dated row counts' },
+  decisions: { label: 'Decision heat', definition: 'only the rows on a surface whose recorded status begins official_ count; every other row adds 0' }
+};
 const FIELD_CLASS_KEYS = [
   ['policy', 'Policy', '#3987e5'],
   ['appointment', 'Appointment', '#c98500'],
@@ -67,7 +76,7 @@ function fieldAnchorId() {
   return id && state.actors.has(id) ? id : null;
 }
 function initializeFieldDefaults() {
-  state.field = { selectedId: fieldAnchorId(), query: '', lens: FIELD_LENS_ARRIVAL };
+  state.field = { selectedId: fieldAnchorId(), query: '', lens: FIELD_LENS_ARRIVAL, heat: 'all' };
   state.galaxy = {
     api: null, renderer: null, model: null, ledger: null, field: null, facts: null, searchOptions: null, surfaceById: null, lensCache: new Map(), dockedId: null, scout: null, scoutLoading: false, frontier: null,
     loading: false, failed: false, rendered: false, active: false, intersecting: true, lifecycleBound: false, observer: null
@@ -103,6 +112,35 @@ function fieldNodeRows(id) {
   const ledger = state.galaxy.ledger;
   if (!ledger) return [];
   return String(id).startsWith('surface-') ? (ledger.rowsBySurfaceNode.get(id) ?? []) : (ledger.rowsByNode.get(id) ?? []);
+}
+
+// --- heat basis: which printed sum sizes the nodes ------------------------------------------------
+
+function fieldHeatBasis(key = state.field?.heat) { return FIELD_HEAT_BASES[key] ? key : 'all'; }
+function fieldBasisRows(rows, basis = fieldHeatBasis()) {
+  const api = fieldApi();
+  return api?.heatBasisRows ? api.heatBasisRows(rows, basis) : rows;
+}
+function fieldHeatFormulaLine() {
+  return fieldHeatBasis() === 'decisions' ? `${FIELD_HEAT_FORMULA}; ${FIELD_DECISION_HEAT_FORMULA}` : FIELD_HEAT_FORMULA;
+}
+// The nodes carry one sum at a time. When the basis in the state differs from
+// the one on the nodes, re-sum in place and have the renderer redraw.
+function syncFieldHeatBasis() {
+  const galaxy = state.galaxy, api = fieldApi();
+  const field = galaxy?.field;
+  if (!field || !galaxy.ledger || !api?.applyFieldHeat) return;
+  const basis = fieldHeatBasis();
+  if ((field.heat_basis ?? 'all') === basis) return;
+  api.applyFieldHeat(field, galaxy.ledger, galaxy.ledger.range?.last_day ?? null, basis);
+  galaxy.renderer?.reheat?.();
+}
+function setFieldHeatBasis(key, { history = 'push' } = {}) {
+  const next = fieldHeatBasis(key);
+  if (!state.field || next === fieldHeatBasis()) return;
+  state.field.heat = next;
+  renderFieldMode();
+  commitApertureAddress(history);
 }
 
 // --- facts: plain counts from the compiled artifacts, each with its denominator ------------------
@@ -230,7 +268,7 @@ function fieldHeatSourceTileMarkup(facts) {
     id: 'heat-source', title: 'Where the heat comes from',
     figure: `${fieldCount(Math.round(split.total))} <small>total heat</small>`,
     denominator: `the one printed formula summed over ${fieldCount(split.counted_rows)} dated rows of ${fieldCount(facts.rows)} at t · each term assigned to its surface's recorded status`,
-    body: `<div class="aperture-field-bars--stacked">${fieldBarsMarkup(items)}</div><p class="aperture-field-denominator">each bar is that family's heat (rounded) of the ${fieldCount(total)} total · ${fieldCount(official?.rows ?? 0)} of ${fieldCount(split.counted_rows)} counted rows sit on an official instrument${split.undated ? ` · ${fieldCount(split.undated)} undated rows add nothing` : ''}</p>`
+    body: `<div class="aperture-field-bars--stacked">${fieldBarsMarkup(items)}</div><p class="aperture-field-denominator">each bar is that family's heat (rounded) of the ${fieldCount(total)} total · ${fieldCount(official?.rows ?? 0)} of ${fieldCount(split.counted_rows)} counted rows sit on an official instrument${split.undated ? ` · ${fieldCount(split.undated)} undated rows add nothing` : ''}${official ? ` · decision heat is the official instrument bar alone, ${fieldCount(Math.round(official.heat))} of ${fieldCount(total)}` : ''}</p>`
   });
 }
 
@@ -536,7 +574,15 @@ function fieldLegendMarkup() {
   return `${FIELD_CLASS_KEYS.map(([id, label, color]) => `<span data-ap-heat-class="${id}"><i class="aperture-key aperture-key--heat" style="background:${color}"></i> ${label}</span>`).join('')}
     <span><i class="aperture-key aperture-key--actor"></i> actor · <i class="aperture-key aperture-key--organization"></i> organization · <i class="aperture-key aperture-key--surface"></i> surface · one link = one participation row (colour = evidence class)</span>
     <span class="aperture-heat-formula" data-ap-heat-formula>${FIELD_HEAT_FORMULA}; t = end of record${facts?.last_date ? ` (${esc(facts.last_date)})` : ''}; undated rows add nothing. Surface colour is its class; a person is the mix of classes touched; an organization stays grey.</span>
-    ${fieldLensLegendMarkup()}`;
+    ${fieldHeatBasisLegendMarkup(facts)}${fieldLensLegendMarkup()}`;
+}
+// While decision heat sizes the nodes the legend prints its formula, the rows
+// it counts of the dated rows, and its total of the whole.
+function fieldHeatBasisLegendMarkup(facts) {
+  if (fieldHeatBasis() !== 'decisions') return '';
+  const split = facts?.heat_by_status;
+  const official = split?.families.find(family => family.id === 'official');
+  return `<span class="aperture-heat-formula" data-ap-heat-basis="decisions"><strong>Decision heat</strong> · ${FIELD_DECISION_HEAT_FORMULA}${official ? ` · ${fieldCount(official.rows)} of ${fieldCount(split.counted_rows)} dated rows counted · ${fieldCount(Math.round(official.heat))} of ${fieldCount(Math.round(split.total))} heat` : ''} · a node with no such row is drawn grey at the smallest size, never removed</span>`;
 }
 function fieldBarsMarkup(items) {
   const max = Math.max(1, ...items.map(item => item.count));
@@ -630,19 +676,28 @@ function fieldHeatMarkup(id) {
   const rows = fieldNodeRows(id);
   if (!api?.heat || !ledger || !rows.length) return '';
   const isSurface = String(id).startsWith('surface-');
-  const result = api.heat(rows, ledger.range?.last_day ?? null);
-  const noun = isSurface ? 'heat' : 'residue';
+  const t = ledger.range?.last_day ?? null;
+  // The sum that sizes the node prints every term; the other sum prints as one
+  // line beside it, and the Heat buttons swap them.
+  const basis = fieldHeatBasis();
+  const decisions = basis === 'decisions';
+  const result = api.heat(fieldBasisRows(rows, basis), t);
+  const beside = api.heat(fieldBasisRows(rows, decisions ? 'all' : 'decisions'), t);
+  const base = isSurface ? 'heat' : 'residue';
+  const noun = decisions ? `decision ${base}` : base;
+  const besideNoun = decisions ? base : `decision ${base}`;
   const shares = FIELD_CLASS_KEYS
     .filter(([key]) => result.by_class[key] > 0)
     .map(([key, label, color]) => `<span class="aperture-badge" data-ap-heat-class="${key}"><i class="aperture-key aperture-key--heat" style="background:${color}"></i> ${label} ${result.by_class[key].toFixed(2)}</span>`).join('');
   const undated = result.undated.length
     ? `<p class="aperture-muted">Undated, contributes nothing: ${result.undated.map(row => esc(row.surface_label || row.surface_id)).join(' · ')}</p>`
     : '';
-  return `<div class="aperture-heat-breakdown" data-ap-field-heat="${esc(id)}" data-ap-heat-day="${result.at_day ?? ''}">
-    <h4>${isSurface ? 'Heat' : 'Residue'} at ${esc(result.at_date || 'end of record')}</h4>
+  return `<div class="aperture-heat-breakdown" data-ap-field-heat="${esc(id)}" data-ap-heat-day="${result.at_day ?? ''}" data-ap-heat-basis="${basis}">
+    <h4>${decisions ? `Decision ${base}` : isSurface ? 'Heat' : 'Residue'} at ${esc(result.at_date || 'end of record')}</h4>
     <p class="aperture-heat-breakdown__sum" data-ap-heat-sum>${esc(api.heatBreakdownText(result, { noun, limit: Number.MAX_SAFE_INTEGER }))}</p>
     ${shares ? `<div class="aperture-badge-row">${shares}</div>` : ''}${undated}
-    <p class="aperture-muted aperture-heat-breakdown__formula">${FIELD_HEAT_FORMULA}. t is the end of record; years = days / 365.25 from the row's documented start. Every term is one listed row.</p>
+    <p class="aperture-heat-breakdown__sum" data-ap-heat-beside>${esc(api.heatBreakdownText(beside, { noun: besideNoun, limit: 0 }))} · ${decisions ? 'every dated row' : 'the rows on official_ surfaces only'}</p>
+    <p class="aperture-muted aperture-heat-breakdown__formula">${FIELD_HEAT_FORMULA}; ${FIELD_DECISION_HEAT_FORMULA}. t is the end of record; years = days / 365.25 from the row's documented start. Every term is one listed row.</p>
   </div>`;
 }
 function fieldReceiptLinks(ids) {
@@ -687,7 +742,7 @@ function fieldWelcomeMarkup(facts) {
   return `<div class="network-welcome"><p class="aperture-kicker">The field</p><h3>Every mark is one ledger row.</h3>
     <p>${fieldCount(facts.nodes)} nodes (${fieldCount(facts.actors)} actors, ${fieldCount(facts.organizations)} organizations, ${fieldCount(facts.surfaces)} bounded surfaces) joined by ${fieldCount(facts.links)} participation rows, one link each. Node size, halo and colour are the printed heat at ${esc(facts.last_date ?? 'the end of record')}; nothing else sizes or colours a node.</p>
     <p class="aperture-muted">${FIELD_HEAT_FORMULA}.</p>
-    <p class="aperture-muted">You arrive on the Decisions lens: the surfaces an official record establishes, everything else dimmed. All shows every row. Hunt keeps the surfaces refused as hop bases with the recorded reason; In force the rows still open at t; Queue the surfaces under an open scout finding. Each prints its definition and counts.</p>
+    <p class="aperture-muted">You arrive on the Decisions lens: the surfaces an official record establishes, everything else dimmed. All shows every row. Hunt keeps the surfaces refused as hop bases with the recorded reason; In force the rows still open at t; Queue the surfaces under an open scout finding. Each prints its definition and counts. Decision heat re-sums the printed formula over the official instruments alone and redraws the sizes; All heat is the default.</p>
     ${starts.length ? `<div class="network-starts">${starts.map(id => `<button type="button" data-ap-action="field-select" data-node-id="${esc(id)}">${esc(fieldLabelFor(id))}<span aria-hidden="true">↗</span></button>`).join('')}</div>` : ''}
     <dl class="network-guide"><div><dt>Click a node or a name</dt><dd>Highlight its rows and read every heat term</dd></div><div><dt>Drag the field</dt><dd>Pan</dd></div><div><dt>Wheel or pinch</dt><dd>Zoom</dd></div></dl>
     <p class="network-note aperture-muted">Co-presence is never coordination. The field shows documented shared context and nothing more.</p></div>`;
@@ -964,8 +1019,9 @@ function fieldControlsMarkup() {
   return `<label class="aperture-control aperture-control--start"><span>Find in field</span><input id="ap-field-search" type="search" list="ap-field-search-options" placeholder="Find a person, organization or surface…" autocomplete="off"><datalist id="ap-field-search-options">${fieldSearchOptions()}</datalist></label>
     <div class="aperture-control-buttons" aria-label="Field view controls"><button type="button" data-ap-action="field-zoom-out" aria-label="Zoom out">−</button><button type="button" data-ap-action="field-zoom-in" aria-label="Zoom in">+</button><button type="button" data-ap-action="field-fit">Fit</button><button type="button" data-ap-action="field-clear"${state.field?.selectedId ? '' : ' disabled'}>Clear</button></div>
     <div class="aperture-control-buttons aperture-field-lenses" role="group" aria-label="Lens">${FIELD_LENS_ORDER.map(key => `<button type="button" data-ap-action="field-lens" data-lens="${key}" aria-pressed="${fieldLensKey() === key}" title="${esc(FIELD_LENSES[key].definition)}">${esc(FIELD_LENSES[key].label)}</button>`).join('')}</div>
+    <div class="aperture-control-buttons aperture-field-lenses aperture-field-heat-basis" role="group" aria-label="Which rows the heat counts">${Object.keys(FIELD_HEAT_BASES).map(key => `<button type="button" data-ap-action="field-heat" data-heat="${key}" aria-pressed="${fieldHeatBasis() === key}" title="${esc(FIELD_HEAT_BASES[key].definition)}">${esc(FIELD_HEAT_BASES[key].label)}</button>`).join('')}</div>
     <details class="network-options"><summary>Options</summary><div class="network-option-fields">
-      <p class="aperture-muted">${FIELD_HEAT_FORMULA}; t = end of record. Node size, halo and colour carry nothing else. A link is one participation row, coloured by its evidence class; no line joins two people. Layout position carries no meaning.</p>
+      <p class="aperture-muted">${FIELD_HEAT_FORMULA}; t = end of record. ${FIELD_DECISION_HEAT_FORMULA}. Node size, halo and colour carry nothing else. A link is one participation row, coloured by its evidence class; no line joins two people. Layout position carries no meaning.</p>
       <div class="network-save-tools">${addressActionMarkup()}</div>
     </div></details>`;
 }
@@ -998,6 +1054,7 @@ function handleFieldAction(button) {
   if (action === 'field-fit') { renderer?.fit(); return true; }
   if (action === 'field-clear') { selectFieldNode(null); return true; }
   if (action === 'field-lens') { setFieldLens(button.dataset.lens); return true; }
+  if (action === 'field-heat') { setFieldHeatBasis(button.dataset.heat); return true; }
   if (action === 'field-select') { selectFieldNode(button.dataset.nodeId, { focus: true }); return true; }
   if (action === 'field-open-record') { openFieldRecord(button.dataset.nodeId); return true; }
   if (action === 'field-open-network') { openFieldNodeInNetwork(button.dataset.nodeId); return true; }
@@ -1013,13 +1070,14 @@ function handleFieldAction(button) {
   return false;
 }
 function fieldSnapshot() {
-  return { selectedId: state.field?.selectedId ?? null, lens: fieldLensKey() };
+  return { selectedId: state.field?.selectedId ?? null, lens: fieldLensKey(), heat: fieldHeatBasis() };
 }
 function applyFieldSnapshot(snapshot) {
   if (!state.field || snapshot === undefined) return;
   const id = snapshot?.selectedId ?? null;
   state.field.selectedId = id && fieldNode(id) ? fieldNode(id).id : null;
   state.field.lens = fieldLensKey(snapshot?.lens);
+  state.field.heat = fieldHeatBasis(snapshot?.heat);
 }
 
 // --- export view: the field as a publication packet ---------------------------------------------------
@@ -1047,8 +1105,9 @@ function currentFieldExportView() {
     evidence_class: row.evidence_class,
     receipt_ids: row.receipt_ids
   }));
+  const basis = fieldHeatBasis();
   const heatRows = node ? fieldNodeRows(node.id) : [];
-  const heatResult = heatRows.length ? api.heat(heatRows, ledger.range?.last_day ?? null) : null;
+  const heatResult = heatRows.length ? api.heat(fieldBasisRows(heatRows, basis), ledger.range?.last_day ?? null) : null;
   const isSurface = node?.ontology === 'surface';
   return {
     counts: {
@@ -1056,7 +1115,8 @@ function currentFieldExportView() {
       rows: facts.rows, actor_rows: facts.actor_rows, organization_rows: facts.organization_rows, undated_rows: facts.undated_rows,
       receipts: facts.receipts, hops: facts.hops, first_date: facts.first_date, last_date: facts.last_date
     },
-    heat_formula: FIELD_HEAT_FORMULA,
+    heat_formula: fieldHeatFormulaLine(),
+    heat_basis: basis,
     heat_at: facts.last_date,
     lens: fieldLensExport(),
     selected: node ? {
@@ -1068,7 +1128,7 @@ function currentFieldExportView() {
       rows_total: summary.rows_total,
       rows_undated: summary.rows_undated,
       heat: heatResult ? {
-        noun: isSurface ? 'heat' : 'residue',
+        noun: `${basis === 'decisions' ? 'decision ' : ''}${isSurface ? 'heat' : 'residue'}`,
         at_date: heatResult.at_date,
         total: heatResult.total,
         by_class: heatResult.by_class,
@@ -1099,6 +1159,7 @@ function renderFieldMode(options = {}) {
     setInspector('The field', '<p class="aperture-kicker">The field</p><h3>Field module unavailable.</h3><p>Open Network for the SVG map of the same ledger.</p>');
     return;
   }
+  syncFieldHeatBasis();
   const id = state.field.selectedId && fieldNode(state.field.selectedId) ? state.field.selectedId : null;
   state.field.selectedId = id;
   const node = id ? fieldNode(id) : null;
@@ -1116,6 +1177,7 @@ function renderFieldMode(options = {}) {
   const clear = $('[data-ap-action="field-clear"]', state.root);
   if (clear) clear.disabled = !id;
   for (const button of state.root.querySelectorAll('[data-ap-action="field-lens"]')) button.setAttribute('aria-pressed', String(button.dataset.lens === fieldLensKey()));
+  for (const button of state.root.querySelectorAll('[data-ap-action="field-heat"]')) button.setAttribute('aria-pressed', String(button.dataset.heat === fieldHeatBasis()));
   queueMicrotask(() => renderGalaxy(options));
   dockFieldCallout();
 }

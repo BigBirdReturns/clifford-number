@@ -48,6 +48,21 @@ export const HEAT_CLASS_COLORS = Object.freeze({
 // A node whose rows give it no accumulation at t (all undated, or all later).
 export const HEAT_NONE_COLOR = '#5b6577';
 export const HEAT_FORMULA = 'heat = Σ touches weight(class) × 0.8^years; policy 1 · appointment 1 · procurement 2 · capital 2';
+// Decision heat, beside heat (on the owner's go-ahead of 10 November 2026;
+// docs/explorer.md rule 6). The same accumulation, counted only over the rows
+// on a surface whose recorded status begins official_ (the Decisions lens).
+// Weights, decay and t are unchanged; every other row adds 0 and stays listed.
+// It is a second printed sum, not a correction of the first.
+export const DECISION_HEAT_VERSION = 'decision-heat@1';
+export const DECISION_HEAT_FORMULA = 'decision heat = the same sum over the rows on surfaces whose recorded status begins official_; every other row adds 0';
+export const HEAT_BASES = Object.freeze(['all', 'decisions']);
+export function isDecisionRow(row) {
+  return /^official_/.test(String(row?.surface_status ?? ''));
+}
+// The rows a basis counts: every row, or the decision rows alone.
+export function heatBasisRows(rows, basis = 'all') {
+  return basis === 'decisions' ? (rows ?? []).filter(isDecisionRow) : (rows ?? []);
+}
 export const HEAT_CLASS_BY_SURFACE_TYPE = Object.freeze({
   policy_document_surface: 'policy',
   government_advisory_surface: 'policy',
@@ -154,10 +169,13 @@ export function heatTimeForWindow(range, window = null) {
 // Writes the accumulation channels onto the field's nodes at t. A canonical
 // surface node carries heat (its own participation rows); every other node
 // with ledger rows carries residue (its own rows), split per class. Nodes with
-// no ledger row carry neither and keep their ontology fill.
-export function applyFieldHeat(field, ledger, at) {
+// no ledger row carry neither and keep their ontology fill. basis 'decisions'
+// counts the decision rows alone (heatBasisRows): a node whose rows are all
+// outside it carries a sum of 0 and the no-accumulation colour.
+export function applyFieldHeat(field, ledger, at, basis = 'all') {
   if (!field?.nodes || !ledger?.rowsByNode) return field;
   const atDay = heatAtDay(at) ?? ledger.range?.last_day ?? null;
+  const decisions = basis === 'decisions';
   for (const node of field.nodes) {
     const surfaceNode = String(node.id).startsWith('surface-');
     const rows = surfaceNode ? (ledger.rowsBySurfaceNode.get(node.id) ?? []) : (ledger.rowsByNode.get(node.id) ?? []);
@@ -168,13 +186,14 @@ export function applyFieldHeat(field, ledger, at) {
       node.color = ONTOLOGY_COLORS[node.ontology];
       continue;
     }
-    const result = heat(rows, atDay);
+    const counted = decisions ? heatBasisRows(rows, basis) : rows;
+    const result = heat(counted, atDay);
     node.heat = result;
-    node.heat_kind = surfaceNode ? 'heat' : 'residue';
+    node.heat_kind = `${decisions ? 'decision ' : ''}${surfaceNode ? 'heat' : 'residue'}`;
     node.heat_value = result.total;
     if (surfaceNode) {
       node.heat_class = heatClassForSurfaceType(rows[0].surface_type);
-      node.color = HEAT_CLASS_COLORS[node.heat_class];
+      node.color = decisions && !counted.length ? HEAT_NONE_COLOR : HEAT_CLASS_COLORS[node.heat_class];
     } else if (node.ontology === 'person') {
       node.color = heatMixColor(result.by_class);
     } else {
@@ -182,6 +201,7 @@ export function applyFieldHeat(field, ledger, at) {
     }
   }
   field.heat_at_day = atDay;
+  field.heat_basis = decisions ? 'decisions' : 'all';
   field.metrics.max_heat_value = Math.max(0, ...field.nodes.map(node => node.heat_value || 0));
   return field;
 }
@@ -786,6 +806,7 @@ export function buildFieldLedgerIndex(surfaceGraph, networkModel) {
         surface_id: surface.surface_id,
         surface_label: surface.surface_label,
         surface_type: surface.surface_type,
+        surface_status: surface.status ?? null,
         hop_eligible: !!surface.hop_eligible,
         surface_node_id: surfaceNodeId,
         participant_type: participantType,
