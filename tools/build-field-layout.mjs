@@ -92,7 +92,9 @@ function buildFieldModelLikeRuntime(surfaceGraph) {
 }
 
 // The same field with its nodes and links repeated `factor` times (ids
-// suffixed), for timing how the layout scales. Never written.
+// suffixed), for timing how the layout scales. Never written. Timings are
+// printed only: the artifact is tracked and rebuilt by the gate, so every
+// byte in it must be the same on every host (positions are; clocks are not).
 function syntheticField(field, factor) {
   const nodes = [], links = [];
   for (let copy = 0; copy < factor; copy += 1) {
@@ -132,8 +134,7 @@ const header = JSON.stringify({
   link_count: field.links.length,
   ticks: result.ticks,
   alpha: Number(result.alpha.toPrecision(4)),
-  forces: FIELD_FORCES,
-  timing_ms: { model: round2(modelMs), layout: round2(layoutMs) }
+  forces: FIELD_FORCES
 }, null, 2);
 const targetPath = path.join(root, ...TARGET.split('/'));
 fs.mkdirSync(path.dirname(targetPath), { recursive: true });

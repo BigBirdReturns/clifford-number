@@ -155,13 +155,12 @@ const build = extrapolate => {
 };
 const first = build(2);
 const second = build(0);
-// Only the measured timings may differ between runs; every other byte is the same.
-const withoutTimings = text => text.replace(/\n  "timing_ms": \{[^}]*\},/u, '');
-assert.equal(withoutTimings(first), withoutTimings(second), 'two runs write identical artifacts apart from the measured timings');
+// Every byte is the same between runs: the gate rebuilds this tracked artifact.
+assert.equal(first, second, 'two runs write byte-identical artifacts');
 const layout = JSON.parse(first);
 assert.ok(JSON.stringify(layout.nodes) === JSON.stringify(JSON.parse(second).nodes), 'two runs give byte-identical node maps');
 
-assert.deepEqual(Object.keys(layout), ['generated', 'source', 'source_sha256', 'node_count', 'link_count', 'ticks', 'alpha', 'forces', 'timing_ms', 'nodes'], 'the artifact has exactly the agreed keys, in order');
+assert.deepEqual(Object.keys(layout), ['generated', 'source', 'source_sha256', 'node_count', 'link_count', 'ticks', 'alpha', 'forces', 'nodes'], 'the artifact has exactly the agreed keys, in order');
 assert.equal(new Date(layout.generated).toISOString(), layout.generated, 'generated is an ISO timestamp');
 assert.equal(layout.source, SOURCE);
 assert.equal(layout.source_sha256, crypto.createHash('sha256').update(readFileSync(path.join(root, ...SOURCE.split('/')))).digest('hex'), 'source_sha256 is the SHA-256 of the source file');
@@ -171,8 +170,7 @@ assert.ok(Number.isInteger(layout.ticks) && layout.ticks >= 1 && layout.ticks <=
 assert.ok(Number.isFinite(layout.alpha) && layout.alpha >= 0 && layout.alpha < 1, 'alpha is a finite fraction');
 assert.ok(layout.alpha < FIELD_FORCES.alphaMin || layout.ticks === FIELD_FORCES.maxTicks, 'the layout ran to rest or to the tick cap');
 assert.deepEqual(layout.forces, JSON.parse(JSON.stringify(FIELD_FORCES)), 'the artifact records the forces it ran');
-assert.ok(Number.isFinite(layout.timing_ms.model) && layout.timing_ms.model >= 0, 'model timing');
-assert.ok(Number.isFinite(layout.timing_ms.layout) && layout.timing_ms.layout >= 0, 'layout timing');
+assert.ok(!('timing_ms' in layout), 'timings stay on stdout, never in the tracked artifact');
 
 const ids = Object.keys(layout.nodes);
 assert.equal(ids.length, field.nodes.length, 'one position per node');
