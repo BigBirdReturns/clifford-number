@@ -54,37 +54,38 @@ const receiptGraph = JSON.parse(fs.readFileSync('build/receipt-graph.json', 'utf
 const scores = JSON.parse(fs.readFileSync('build/scores.json', 'utf8'));
 const model = timeline.buildTimelineModel(surfaceGraph, hopGraph);
 
-// --- Ben Warner: 12 rows, 6 types, 9 organizations, 12 hop partners, Clifford Number 2
+// --- Ben Warner: 17 rows, 6 types, 12 organizations, 17 hop partners, Clifford Number 2
+// 2026-11-10 lens-hunt promotion: four SAGE attendee-list surfaces (2020-03-18, 2020-10-22, 2020-12-03, 2021-01-07) and the UKSA review Challenge Panel (2023-06-09) add five rows: 12 -> 17 rows, 9 -> 12 organizations (SAGE, Cabinet Office, UKSA), 12 -> 17 hop partners (the five other panel members), 17 -> 24 receipts.
 // 2026-10-23 five-lane merge: the synthetic-constituency lane adds two Ben Warner rows (Electric Twin seven-panels comparison co-author, 2026-07-29; named in the No 10 synthetic-voters column, 2025-07-07): 10 -> 12 rows, 8 -> 9 organizations, 14 -> 17 receipts.
 const warner = context.actorRecordModel(model, hopGraph, scores.actors.find(item => item.actor_id === 'ben-warner'), 'ben-warner');
-assert.equal(warner.row_count, 12); // 2026-10-23 five-lane merge: 10 -> 12
-assert.equal(warner.surface_count, 12); // 2026-10-23 five-lane merge: 10 -> 12
-assert.equal(warner.surface_total, 1155); // 2026-10-23 five-lane merge: 858 -> 1155. 2026-10-23 promotion: 139 -> 858 surfaces
+assert.equal(warner.row_count, 17); // 2026-11-10 lens-hunt promotion: 12 -> 17. 2026-10-23 five-lane merge: 10 -> 12
+assert.equal(warner.surface_count, 17); // 2026-11-10 lens-hunt promotion: 12 -> 17. 2026-10-23 five-lane merge: 10 -> 12
+assert.equal(warner.surface_total, 1160); // 2026-11-10 lens-hunt promotion: 1155 -> 1160. 2026-10-23 five-lane merge: 858 -> 1155. 2026-10-23 promotion: 139 -> 858 surfaces
 assert.equal(warner.type_count, 6);
-assert.equal(warner.organization_count, 9); // 2026-10-23 five-lane merge: 8 -> 9
-assert.equal(warner.hop_partner_count, 12);
+assert.equal(warner.organization_count, 12); // 2026-11-10 lens-hunt promotion: 9 -> 12. 2026-10-23 five-lane merge: 8 -> 9
+assert.equal(warner.hop_partner_count, 17); // 2026-11-10 lens-hunt promotion: 12 -> 17.
 assert.equal(warner.clifford.number, 2);
-assert.equal(warner.receipt_ids.length, 17); // 2026-10-23 five-lane merge: 14 -> 17
+assert.equal(warner.receipt_ids.length, 24); // 2026-11-10 lens-hunt promotion: 17 -> 24. 2026-10-23 five-lane merge: 14 -> 17
 assert.equal(warner.rows[0].time_start, '2018-01-24', 'rows are date-sorted');
 assert.equal(warner.rows.at(-1).time_start, '2026-07-29'); // 2026-10-23 five-lane merge: 2026-07-08 -> 2026-07-29
 same(warner.facts.map(fact => fact.text), [
-  '12 documented surfaces of 1155', // 2026-10-23 five-lane merge: '10 documented surfaces of 858' -> 12 of 1155
+  '17 documented surfaces of 1160', // 2026-11-10 lens-hunt promotion: 12 of 1155 -> 17 of 1160. 2026-10-23 five-lane merge: '10 documented surfaces of 858' -> 12 of 1155
   'across 6 surface types',
-  'with 9 organizations on those surfaces', // 2026-10-23 five-lane merge: 8 -> 9
-  '2018-01-24 → 2026-08-11 · 5 active years',
-  '6 hop-eligible · 6 context-only', // 2026-10-23 five-lane merge: 4 -> 6 context-only
-  '17 receipts on 12 rows: 7 official · 4 primary public · 1 reported', // 2026-10-23 five-lane merge: was '14 receipts on 10 rows: 7 official · 3 primary public'
+  'with 12 organizations on those surfaces', // 2026-11-10 lens-hunt promotion: 9 -> 12. 2026-10-23 five-lane merge: 8 -> 9
+  '2018-01-24 → 2026-08-11 · 6 active years', // 2026-11-10 lens-hunt promotion: 5 -> 6 active years (2021, SAGE 75)
+  '8 hop-eligible · 9 context-only', // 2026-11-10 lens-hunt promotion: 6 -> 8 hop-eligible (SAGE 17, UKSA panel), 6 -> 9 context-only (SAGE 63, 71, 75). 2026-10-23 five-lane merge: 4 -> 6 context-only
+  '24 receipts on 17 rows: 12 official · 4 primary public · 1 reported', // 2026-11-10 lens-hunt promotion: was '17 receipts on 12 rows: 7 official · 4 primary public · 1 reported'. 2026-10-23 five-lane merge: was '14 receipts on 10 rows: 7 official · 3 primary public'
   'Clifford Number 2'
 ], 'every fact names its noun and, where it is a share, its denominator');
 // 2026-10-23 five-lane merge: 6 -> 7 (the seven-panels comparison is an Electric Twin surface); the judge fix (count surfaces, not rows) is unchanged.
-assert.equal(warner.organization_counts.find(entry => entry.id === 'electric-twin').count, 7, 'Electric Twin on 7 of the 12 surfaces');
-same(warner.recurring.map(entry => [entry.actor_id, entry.surface_ids.length]), [['alex-cooper', 3], ['dominic-cummings', 2], ['michael-muthukrishna', 2]], 'counted co-presence on non-dense surfaces only'); // 2026-10-23 five-lane merge: was [['alex-cooper', 3]]
+assert.equal(warner.organization_counts.find(entry => entry.id === 'electric-twin').count, 7, 'Electric Twin on 7 of the 17 surfaces');
+same(warner.recurring.map(entry => [entry.actor_id, entry.surface_ids.length]), [['alex-cooper', 3], ['dominic-cummings', 2], ['marc-warner', 2], ['michael-muthukrishna', 2]], 'counted co-presence on non-dense surfaces only'); // 2026-11-10 lens-hunt promotion: + marc-warner (SAGE 17).  2026-10-23 five-lane merge: was [['alex-cooper', 3]]
 same(warner.recurring[0].dates, ['2023-09-28', '2025-09-12', '2025-09-27']);
 same(warner.dense_memberships, [], 'Ben Warner is on no dense roster');
 const marcWarner = warner.hop_partners.find(partner => partner.actor_id === 'marc-warner');
-same(marcWarner.bases.map(basis => basis.day), ['2018-01-24'], 'a basis names its day; no envelope is read');
+same(marcWarner.bases.map(basis => basis.day), ['2018-01-24', '2020-03-18'], 'a basis names its day; no envelope is read'); // 2026-11-10 lens-hunt promotion: + 2020-03-18 (SAGE 17)
 assert.ok(warner.hop_partners.every(partner => partner.bases.every(basis => basis.surface_id && basis.day && basis.evidence_class)));
-assert.equal(warner.machine_sentence, 'Documented on 12 surfaces of 6 types between 2018-01-24 and 2026-08-11, beside 9 organizations.'); // 2026-10-23 five-lane merge: 10 surfaces / 8 organizations -> 12 / 9
+assert.equal(warner.machine_sentence, 'Documented on 17 surfaces of 6 types between 2018-01-24 and 2026-08-11, beside 12 organizations.'); // 2026-11-10 lens-hunt promotion: Documented on 12 surfaces of 6 types between 2018-01-24 and 2026-08-11, beside 9 organizations. -> Documented on 17 surfaces of 6 types between 2018-01-24 and 2026-08-11, beside 12 organizations.. 2026-10-23 five-lane merge: 10 surfaces / 8 organizations -> 12 / 9
 
 // Marc Warner / Saul Klein: two single-day bases, nothing between them.
 const marc = context.actorRecordModel(model, hopGraph, null, 'marc-warner');
@@ -97,7 +98,7 @@ same(marc.hop_partners.find(partner => partner.actor_id === 'saul-klein').bases.
 // ['0 documented surfaces of 858', 'Clifford Number N/A']. New: the same assertions on jade-leung, 1155 surfaces.
 const hogarth = context.actorRecordModel(model, hopGraph, scores.actors.find(item => item.actor_id === 'jade-leung'), 'jade-leung');
 assert.equal(hogarth.row_count, 0);
-same(hogarth.facts.map(fact => fact.text), ['0 documented surfaces of 1155', 'Clifford Number N/A']); // 2026-10-23 five-lane merge: 858 -> 1155 surfaces
+same(hogarth.facts.map(fact => fact.text), ['0 documented surfaces of 1160', 'Clifford Number N/A']); // 2026-11-10 lens-hunt promotion: 1155 -> 1160 surfaces.  2026-10-23 five-lane merge: 858 -> 1155 surfaces
 assert.equal(hogarth.machine_sentence, 'No participation row in this release.');
 
 // --- Electric Twin: 22 surfaces, 16 people, declared surface factory; MoD: broad institution
@@ -109,7 +110,7 @@ assert.equal(twin.people_count, 16); // 2026-10-23 five-lane merge: 15 -> 16
 assert.equal(twin.type_count, 6);
 assert.equal(twin.declared.surface_factory, true);
 assert.equal(twin.declared.broad_institution, false);
-assert.equal(twin.facts[0].text, '22 documented surfaces of 1155'); // 2026-10-23 five-lane merge: '18 documented surfaces of 858' -> 22 of 1155
+assert.equal(twin.facts[0].text, '22 documented surfaces of 1160'); // 2026-11-10 lens-hunt promotion: 22 documented surfaces of 1155 -> 22 documented surfaces of 1160. 2026-10-23 five-lane merge: '18 documented surfaces of 858' -> 22 of 1155
 assert.equal(twin.facts[2].text, '16 people documented on them'); // 2026-10-23 five-lane merge: 15 -> 16
 assert.equal(twin.rows[0].time_start, '2023-09-28');
 assert.equal(twin.summary.last_day, '2026-08-12');
@@ -181,13 +182,13 @@ assert.equal(employment.surfaces.length, 510); // 2026-10-23 five-lane merge: 42
 assert.equal(employment.rows.length, 1300); // 2026-10-23 final re-pin: 1339 -> 1300. 2026-10-23 five-lane merge: 919 -> 1339. 2026-10-23 promotion: 133 -> 919
 assert.equal(employment.actor_rows.length, 507); // 2026-10-23 final re-pin: 546 -> 507. 2026-10-23 five-lane merge: 409 -> 546. 2026-10-23 promotion: 16 -> 409
 assert.equal(employment.organization_rows.length, 793); // 2026-10-23 five-lane merge: 510 -> 793. 2026-10-23 promotion: 117 -> 510
-assert.equal(employment.facts[0].text, '510 surfaces of 1155'); // 2026-10-23 five-lane merge: '429 surfaces of 858' -> 510 of 1155
+assert.equal(employment.facts[0].text, '510 surfaces of 1160'); // 2026-11-10 lens-hunt promotion: 510 surfaces of 1155 -> 510 surfaces of 1160. 2026-10-23 five-lane merge: '429 surfaces of 858' -> 510 of 1155
 assert.equal(context.typeRecordModel(model, 'no_such_type'), null);
 const year2025 = context.yearRecordModel(model, '2025', receiptGraph.receipts);
-assert.equal(year2025.surfaces_started, 148); // 2026-10-23 five-lane merge: 92 -> 148. 2026-10-23 promotion: 23 -> 92
-assert.equal(year2025.hop_bases, 61, 'bases dated in the year are counted by basis day (61), never by edge envelope'); // 2026-10-23 final re-pin: 66 -> 61 (duplicate Form D bases removed by the one-row-per-person merge). 2026-10-23 five-lane merge: 28 -> 66
-assert.equal(year2025.rows_active.length, 761); // 2026-10-23 final re-pin: 768 -> 761. 2026-10-23 five-lane merge: 539 -> 768. 2026-10-23 promotion: 129 -> 539
-assert.equal(year2025.rows_started, 468); // 2026-10-23 final re-pin: 474 -> 468. 2026-10-23 five-lane merge: 246 -> 474. 2026-10-23 promotion: 108 -> 246
+assert.equal(year2025.surfaces_started, 150); // 2026-11-10 lens-hunt promotion: 148 -> 150. 2026-10-23 five-lane merge: 92 -> 148. 2026-10-23 promotion: 23 -> 92
+assert.equal(year2025.hop_bases, 62, 'bases dated in the year are counted by basis day (62), never by edge envelope'); // 2026-11-10 lens-hunt promotion: 61 -> 62. 2026-10-23 final re-pin: 66 -> 61 (duplicate Form D bases removed by the one-row-per-person merge). 2026-10-23 five-lane merge: 28 -> 66
+assert.equal(year2025.rows_active.length, 764); // 2026-11-10 lens-hunt promotion: 761 -> 764. 2026-10-23 final re-pin: 768 -> 761. 2026-10-23 five-lane merge: 539 -> 768. 2026-10-23 promotion: 129 -> 539
+assert.equal(year2025.rows_started, 471); // 2026-11-10 lens-hunt promotion: 468 -> 471. 2026-10-23 final re-pin: 474 -> 468. 2026-10-23 five-lane merge: 246 -> 474. 2026-10-23 promotion: 108 -> 246
 assert.ok(year2025.rows_active.every(entry => entry.row.start_day != null));
 // 2026-10-23 promotion: LinkedIn role rows now touch every year from 1982 on, so 2019 has rows
 // and is a page. The rule (a year no row touches is not a page) is checked on 1950 instead.
@@ -197,14 +198,14 @@ assert.equal(context.yearRecordModel(model, 'abcd', receiptGraph.receipts), null
 
 // --- the evidence floor is never silent
 const official = context.recordFloorPartition(warner.rows, 'official');
-assert.equal(official.shown.length, 7);
+assert.equal(official.shown.length, 12); // 2026-11-10 lens-hunt promotion: 7 -> 12.
 assert.equal(official.hidden_by_floor, 5); // 2026-10-23 five-lane merge: 3 -> 5
-assert.equal(context.recordStatusText(official, warner.rows.length), 'Showing 7 of 12 rows · 5 hidden by the evidence floor (Official only)'); // 2026-10-23 five-lane merge: 7 of 10 · 3 hidden -> 7 of 12 · 5 hidden
-assert.equal(context.recordStatusText(context.recordFloorPartition(warner.rows, 'open'), warner.rows.length), 'Showing 12 of 12 rows · nothing hidden by a filter'); // 2026-10-23 five-lane merge: 10 -> 12
+assert.equal(context.recordStatusText(official, warner.rows.length), 'Showing 12 of 17 rows · 5 hidden by the evidence floor (Official only)'); // 2026-11-10 lens-hunt promotion: Showing 7 of 12 rows · 5 hidden by the evidence floor (Official only) -> Showing 12 of 17 rows · 5 hidden by the evidence floor (Official only). 2026-10-23 five-lane merge: 7 of 10 · 3 hidden -> 7 of 12 · 5 hidden
+assert.equal(context.recordStatusText(context.recordFloorPartition(warner.rows, 'open'), warner.rows.length), 'Showing 17 of 17 rows · nothing hidden by a filter'); // 2026-11-10 lens-hunt promotion: Showing 12 of 12 rows · nothing hidden by a filter -> Showing 17 of 17 rows · nothing hidden by a filter. 2026-10-23 five-lane merge: 10 -> 12
 const text = context.ledgerText(warner, warner.rows);
 const lines = text.split('\n');
-assert.equal(lines[0].startsWith('Dr. Ben Warner — 12 documented surfaces of 1155'), true); // 2026-10-23 five-lane merge: '10 documented surfaces of 858' -> 12 of 1155
-assert.equal(lines.filter(line => /^\d{2}\. /.test(line)).length, 12); // 2026-10-23 five-lane merge: 10 -> 12
+assert.equal(lines[0].startsWith('Dr. Ben Warner — 17 documented surfaces of 1160'), true); // 2026-11-10 lens-hunt promotion: 12 of 1155 -> 17 of 1160.  2026-10-23 five-lane merge: '10 documented surfaces of 858' -> 12 of 1155
+assert.equal(lines.filter(line => /^\d{2}\. /.test(line)).length, 17); // 2026-11-10 lens-hunt promotion: 12 -> 17. 2026-10-23 five-lane merge: 10 -> 12
 assert.match(lines[2], /^01\. 2018-01-24 · Faculty Science officer \/ employee overlap, 24 January 2018 · Commercial Principal/);
 assert.equal(lines.at(-1), 'Documented participation on bounded public surfaces only. Shared context does not establish contact, influence, coordination, agreement, or wrongdoing.');
 
@@ -240,7 +241,7 @@ for (const name of ['renderActor', 'renderOrg', 'renderSurface', 'renderType', '
 // later writes the same two strings from the same artifacts.
 same(context.heroCountsText(surfaceGraph, hopGraph), { nodes: `${surfaceGraph.actors.length} actors · ${surfaceGraph.surfaces.length} surfaces`, edges: `${hopGraph.edges.length} admitted hops` });
 // 93 -> 133 with the archived defense-corridor A/B receipts (Stratos 36, Traysar 3, Pallas 1 team-page pairs).
-assert.equal(context.heroCountsText(surfaceGraph, hopGraph).edges, '280 admitted hops'); // 2026-10-23 final re-pin: 299 -> 280 (the five year-only a16z 2022 sessions are hop_eligible false, year_precision_only). 2026-10-23 five-lane merge: 133 -> 299
+assert.equal(context.heroCountsText(surfaceGraph, hopGraph).edges, '297 admitted hops'); // 2026-11-10 lens-hunt promotion: 280 admitted hops -> 297 admitted hops. 2026-10-23 final re-pin: 299 -> 280 (the five year-only a16z 2022 sessions are hop_eligible false, year_precision_only). 2026-10-23 five-lane merge: 133 -> 299
 same(context.heroCountsText(null, null), { nodes: '0 actors · 0 surfaces', edges: '0 admitted hops' });
 const part2Source = fs.readFileSync('src/visual-aperture-part-2.js', 'utf8');
 for (const template of ['`${actorCount} actors · ${surfaceCount} surfaces`', '`${hopCount} admitted hops`']) {
@@ -277,15 +278,15 @@ assert.equal(context.trajectoryAmountText(null), null);
 const surfaceById = new Map(surfaceGraph.surfaces.map(item => [item.surface_id, item]));
 const amountFor = context.trajectoryAmountLookup(surfaceId => surfaceById.get(surfaceId));
 const warnerTrajectory = context.recordTrajectoryModel(warner.rows, { amountFor });
-assert.equal(warnerTrajectory.dated.length, 12); // 2026-10-23 five-lane merge: 10 -> 12
+assert.equal(warnerTrajectory.dated.length, 17); // 2026-11-10 lens-hunt promotion: 12 -> 17. 2026-10-23 five-lane merge: 10 -> 12
 assert.equal(warnerTrajectory.undated.length, 0);
 same(warnerTrajectory.dated.map(step => step.time_start), JSON.parse(JSON.stringify(warner.rows.map(row => row.time_start))), 'steps follow the date-sorted ledger rows');
-same(warnerTrajectory.dated.map(step => step.class), ['capital', 'policy', 'policy', 'appointment', 'capital', 'policy', 'capital', 'capital', 'capital', 'policy', 'procurement', 'policy']); // 2026-10-23 five-lane merge: two policy steps added (2025-07-07, 2026-07-29)
+same(warnerTrajectory.dated.map(step => step.class), ['capital', 'policy', 'policy', 'policy', 'policy', 'policy', 'policy', 'appointment', 'appointment', 'capital', 'policy', 'capital', 'capital', 'capital', 'policy', 'procurement', 'policy']); // 2026-11-10 lens-hunt promotion: + four SAGE policy steps (2020-03-18 to 2021-01-07) and the 2023-06-09 UKSA panel appointment.  2026-10-23 five-lane merge: two policy steps added (2025-07-07, 2026-07-29)
 assert.equal(warnerTrajectory.line, 'First documented 2018-01-24 as employee role observation; latest 2026-07-29 as co author. Classes touched: capital, policy, appointment, procurement.'); // 2026-10-23 five-lane merge: latest 2026-07-08 as speaker -> 2026-07-29 as co author
 const warnerStrip = context.recordTrajectoryMarkup(warnerTrajectory);
 assert.match(warnerStrip, /^<section class="record-trajectory" id="record-trajectory"/);
 assert.match(warnerStrip, /<span class="panel-label" id="record-trajectory-title">Trajectory<\/span>/);
-assert.equal((warnerStrip.match(/<li class="trajectory-step trajectory-step--/g) ?? []).length, 12); // 2026-10-23 five-lane merge: 10 -> 12
+assert.equal((warnerStrip.match(/<li class="trajectory-step trajectory-step--/g) ?? []).length, 17); // 2026-11-10 lens-hunt promotion: 12 -> 17. 2026-10-23 five-lane merge: 10 -> 12
 assert.match(warnerStrip, /data-record-mark="[^"]+"[^>]*>2018-01-24<\/button><span class="trajectory-class"><span class="trajectory-dot" aria-hidden="true"><\/span>capital<\/span><a class="trajectory-surface" href="#surface\//, 'a step is date, class dot and name, surface link, role');
 assert.doesNotMatch(warnerStrip, /Undated/, 'no undated heading without undated rows');
 // Organization pages: the strip is built from the organization's own rows, with amounts.

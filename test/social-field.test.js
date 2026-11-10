@@ -321,9 +321,9 @@ const realModel = buildResearchNetworkModel(realGraph);
 const realLedger = buildFieldLedgerIndex(realSurfaceGraph, realModel);
 const realEvents = buildEcologyEventModel(realSurfaceGraph, realModel);
 const realField = buildSocialFieldModel(realModel, { ledger: realLedger });
-assert.equal(realLedger.counts.rows, 4411); // 2026-10-23 final re-pin: 4451 -> 4411. 2026-10-23 five-lane merge: 3,118 -> 4,451. 2026-10-23 promotion: 286 -> 3,118 rows
-assert.equal(realLedger.counts.actor_rows, 1300); // 2026-10-23 final re-pin: 1340 -> 1300. 2026-10-23 five-lane merge: 959 -> 1,340. 2026-10-23 promotion: 200 -> 959 (joshua-baer listing routed to the actor)
-assert.equal(realLedger.counts.organization_rows, 3111); // 2026-10-23 five-lane merge: 2,159 -> 3,111. 2026-10-23 promotion: 86 -> 2,159
+assert.equal(realLedger.counts.rows, 4430); // 2026-11-10 lens-hunt promotion: 4411 -> 4430. 2026-10-23 final re-pin: 4451 -> 4411. 2026-10-23 five-lane merge: 3,118 -> 4,451. 2026-10-23 promotion: 286 -> 3,118 rows
+assert.equal(realLedger.counts.actor_rows, 1313); // 2026-11-10 lens-hunt promotion: 1300 -> 1313. 2026-10-23 final re-pin: 1340 -> 1300. 2026-10-23 five-lane merge: 959 -> 1,340. 2026-10-23 promotion: 200 -> 959 (joshua-baer listing routed to the actor)
+assert.equal(realLedger.counts.organization_rows, 3117); // 2026-11-10 lens-hunt promotion: 3111 -> 3117. 2026-10-23 five-lane merge: 2,159 -> 3,111. 2026-10-23 promotion: 86 -> 2,159
 assert.equal(realLedger.counts.privacy_guard_rows, 0); // 2026-10-23 final re-pin: 22 -> 0 (privacy guard scope fix, owner decision: the eight surfaces held back only because a label or a role type contained "email", "address", "medical" or "emergency" are drawn; contact-data patterns find nothing in this release). 2026-10-23 five-lane merge: 6 -> 22 (six more surfaces trip guard tokens: two Contracts Finder Faculty awards, two SEC Form D filings for Yourself Online, the Army Applications Laboratory address row and the NHS commissioning-support award). 2026-10-23 promotion: 4 -> 6 (the Steven Hertzberg / Australian Medical Network role surface trips the "medical" guard token)
 assert.equal(realLedger.counts.dense_contained_rows, 142); // 2026-10-23 five-lane merge: 113 -> 142 (rndf-2023-programme-roster is now dense)
 assert.equal(realLedger.counts.unresolved_rows, 0);
@@ -344,7 +344,7 @@ for (let year = 2016; year <= 2026; year += 1) {
     if (rowInWindow(row, yearWindow) !== eventInWindow(event, yearWindow)) rowEventDisagreements += 1;
   }
 }
-assert.equal(rowEventPairs, 29161); // 2026-10-23 final re-pin: 29359 -> 29161. 2026-10-23 five-lane merge: 19,184 -> 29,359. 2026-10-23 promotion: 1,716 -> 19,184 row-year pairs
+assert.equal(rowEventPairs, 29370); // 2026-11-10 lens-hunt promotion: 29161 -> 29370. 2026-10-23 final re-pin: 29359 -> 29161. 2026-10-23 five-lane merge: 19,184 -> 29,359. 2026-10-23 promotion: 1,716 -> 19,184 row-year pairs
 assert.equal(rowEventDisagreements, 0, 'the pulse is drawn only, and always, inside its row\'s window');
 assert.deepEqual(realLedger.rows.filter(row => row.off_field_reason === 'privacy_guard').map(row => row.node_id).sort(), []); // 2026-10-23 final re-pin: was the 22 rows of the eight word-matched surfaces (ben-warner-cummings-shafi-contain-delay-email-2020-03-08, steven-hertzberg-australian-medical-network-founder-linkedin-1995-1997, sec-form-d-0001797630-19-000001, sec-form-d-0001797630-21-000001, army-applications-laboratory-address-capital-factory-2026-10-23, cf-award-cabinet-office-faculty-2019-10-14-8e4b2d57, cf-award-nhs-supply-chain-faculty-2020-12-01-d1e0d017, cf-award-nhs-south-central-and-west-commissioning-support-unit-faculty-2023-03-01-2e2da92d). Earlier: 2026-10-23 five-lane merge: was the six nodes of the Warner email and Hertzberg rows; the guard now also holds back cf-award-cabinet-office-faculty-2019-10-14, cf-award-nhs-supply-chain-faculty-2020-12-01, cf-award-nhs-south-central-and-west-commissioning-support-unit-faculty-2023-03-01, sec-form-d-0001797630-19-000001, sec-form-d-0001797630-21-000001 and army-applications-laboratory-address-capital-factory-2026-10-23. 2026-10-23 promotion: + Hertzberg / Australian Medical Network ("medical" token)
 // Privacy guard scope, pinned 2026-10-23 (owner decision; src/evidence.js, tools/build-graph.mjs).
@@ -378,15 +378,15 @@ assert.throws(() => assertPublicOnly({ label: 'x', phone: '0' }), /Private or se
 assert.doesNotThrow(() => assertPublicOnly({ label: 'Ben Warner email to Imran Shafi' }));
 assert.equal(realLedger.range.first_date, '1982-05-01'); // 2026-10-23 promotion: 2016-01-01 -> 1982-05-01 (earliest LinkedIn role)
 assert.equal(realLedger.range.last_date, '2026-10-23'); // 2026-10-23 promotion: 2026-08-12 -> 2026-10-23
-assert.equal(realEvents.counts.events, 2688); // 2026-10-23 final re-pin: 2706 -> 2688. 2026-10-23 five-lane merge: 1,759 -> 2,706. 2026-10-23 promotion: 163 -> 1,759
-assert.equal(realField.metrics.node_count, 3341); // 2026-10-23 final re-pin: 3333 -> 3341. 2026-10-23 five-lane merge: 2,752 -> 3,333. 2026-10-23 promotion: 346 -> 2,752
-assert.equal(realField.metrics.link_count, 4487); // 2026-10-23 final re-pin: 4467 -> 4487. 2026-10-23 five-lane merge: 3,216 -> 4,467. 2026-10-23 promotion: 392 -> 3,216
-assert.equal(realField.links.filter(link => link.rows.length).length, 4264, 'every canonical overlay arc carries its participation row'); // 2026-10-23 final re-pin: 4244 -> 4264. 2026-10-23 five-lane merge: 2,993 -> 4,244. 2026-10-23 promotion: 169 -> 2,993
+assert.equal(realEvents.counts.events, 2707); // 2026-11-10 lens-hunt promotion: 2688 -> 2707. 2026-10-23 final re-pin: 2706 -> 2688. 2026-10-23 five-lane merge: 1,759 -> 2,706. 2026-10-23 promotion: 163 -> 1,759
+assert.equal(realField.metrics.node_count, 3355); // 2026-11-10 lens-hunt promotion: 3341 -> 3355. 2026-10-23 final re-pin: 3333 -> 3341. 2026-10-23 five-lane merge: 2,752 -> 3,333. 2026-10-23 promotion: 346 -> 2,752
+assert.equal(realField.metrics.link_count, 4506); // 2026-11-10 lens-hunt promotion: 4487 -> 4506. 2026-10-23 final re-pin: 4467 -> 4487. 2026-10-23 five-lane merge: 3,216 -> 4,467. 2026-10-23 promotion: 392 -> 3,216
+assert.equal(realField.links.filter(link => link.rows.length).length, 4283, 'every canonical overlay arc carries its participation row'); // 2026-11-10 lens-hunt promotion: 4264 -> 4283. 2026-10-23 final re-pin: 4244 -> 4264. 2026-10-23 five-lane merge: 2,993 -> 4,244. 2026-10-23 promotion: 169 -> 2,993
 // Size, halo and tooltip count come from the ledger and agree with the inspector
 // (nodeLedgerSummary) for every node on the field.
 const realNode = id => realField.nodeById.get(id);
 assert.equal(realNode('matt-clifford').size_count, 13, 'Matt Clifford: 13 documented surfaces (the Dialog roster row counts)'); // 2026-10-23 five-lane merge: 9 -> 13
-assert.equal(realNode('ben-warner').size_count, 12, 'Ben Warner: 12 documented surfaces (the 2020-03-08 email row, drawn since the 2026-10-23 guard fix, counts)'); // 2026-10-23 five-lane merge: 10 -> 12
+assert.equal(realNode('ben-warner').size_count, 17, 'Ben Warner: 17 documented surfaces (the 2020-03-08 email row, drawn since the 2026-10-23 guard fix, counts; four SAGE meetings and the UKSA Challenge Panel added 2026-11-10)'); // 2026-11-10 lens-hunt promotion: 12 -> 17. 2026-10-23 five-lane merge: 10 -> 12
 assert.equal(realNode('electric-twin').size_count, 22); // 2026-10-23 five-lane merge: 18 -> 22
 assert.equal(realNode('surface-dialog-public-directory-exposure-2026-06-16').size_count, 113, 'the Dialog roster surface is sized by its 113 ledger rows, not by its arcs');
 assert.equal(realNode('surface-dialog-public-directory-exposure-2026-06-16').arc_participant_count, 0, 'the field draws no arc into the contained roster, so an arc count would size it as empty');
@@ -406,20 +406,20 @@ for (const node of realField.nodes) {
   assert.equal(nodeCountLabel(node).includes('no ledger rows'), summary.rows.length === 0, `${node.id}: "no ledger rows" is said only when the ledger has none`);
 }
 assert.equal(tooltipInspectorDisagreements, 0, 'the tooltip count and the inspector count agree on every node');
-assert.equal(nodesWithoutLedgerRows, 92, '92 of 3,333 field nodes carry no ledger row (research context only)'); // 2026-10-23 five-lane merge: 96 of 2,752 -> 92 of 3,333. 2026-10-23 promotion: 103 of 346 -> 96 of 2,752
+assert.equal(nodesWithoutLedgerRows, 92, '92 of 3,355 field nodes carry no ledger row (research context only)'); // 2026-10-23 five-lane merge: 96 of 2,752 -> 92 of 3,333. 2026-10-23 promotion: 103 of 346 -> 96 of 2,752
 const window2025 = normalizeEcologyWindow(realLedger.range, { fromDay: ecologyDay('2025-01-01'), toDay: ecologyDay('2025-12-31') });
 const realFactors = fieldWindowFactors(realLedger, window2025);
-assert.equal(realFactors.rows_in_window, 761); // 2026-10-23 final re-pin: 768 -> 761. 2026-10-23 five-lane merge: 539 -> 768. 2026-10-23 promotion: 63 -> 539
+assert.equal(realFactors.rows_in_window, 764); // 2026-11-10 lens-hunt promotion: 761 -> 764. 2026-10-23 final re-pin: 768 -> 761. 2026-10-23 five-lane merge: 539 -> 768. 2026-10-23 promotion: 63 -> 539
 const benWarner = nodeLedgerSummary(realLedger, 'ben-warner', window2025);
-assert.equal(benWarner.rows.length, 12); // 2026-10-23 five-lane merge: 10 -> 12
+assert.equal(benWarner.rows.length, 17); // 2026-11-10 lens-hunt promotion: 12 -> 17. 2026-10-23 five-lane merge: 10 -> 12
 assert.equal(benWarner.rows_in_window, 5); // 2026-10-23 five-lane merge: 4 -> 5 (the 2025-07-07 synthetic-voters row)
-assert.equal(benWarner.surface_count, 12); // 2026-10-23 five-lane merge: 10 -> 12
+assert.equal(benWarner.surface_count, 17); // 2026-11-10 lens-hunt promotion: 12 -> 17. 2026-10-23 five-lane merge: 10 -> 12
 assert.equal(benWarner.off_field_rows, 0); // 2026-10-23 final re-pin: 1 -> 0 (his 2020-03-08 email surface is no longer privacy-guarded)
 assert.equal(dayIso(benWarner.first_day), '2018-01-24');
 assert.equal(dayIso(benWarner.last_day), '2026-08-11');
-assert.equal(benWarner.receipt_ids.length, 17); // 2026-10-23 five-lane merge: 14 -> 17
+assert.equal(benWarner.receipt_ids.length, 24); // 2026-11-10 lens-hunt promotion: 17 -> 24. 2026-10-23 five-lane merge: 14 -> 17
 assert.equal(activeEcologyEvents(realEvents, null).length, 0);
-assert.equal(activeEcologyEvents(realEvents, window2025).length, 676); // 2026-10-23 final re-pin: 683 -> 676. 2026-10-23 five-lane merge: 494 -> 683. 2026-10-23 promotion: 60 -> 494
+assert.equal(activeEcologyEvents(realEvents, window2025).length, 679); // 2026-11-10 lens-hunt promotion: 676 -> 679. 2026-10-23 final re-pin: 683 -> 676. 2026-10-23 five-lane merge: 494 -> 683. 2026-10-23 promotion: 60 -> 494
 console.log('field ledger real-data pins: PASS');
 
 // Heat on the real field at the end of record: every surface's heat and every
@@ -527,7 +527,7 @@ assert.match(inspector.html, /data-ap-surface="electric-twin-incorporation-2023-
 assert.doesNotMatch(inspector.html, /not drawn on the field/, 'a drawn arc has no off-field note');
 // Every receipt on a row is a button: no "+N more" stub on the rows that carry four or more.
 const fourReceiptRows = realLedger.rows.filter(row => row.receipt_ids.length > 3);
-assert.equal(fourReceiptRows.length, 95); // 2026-10-23 five-lane merge: 50 -> 95. 2026-10-23 promotion: 5 -> 50 rows with more than three receipts
+assert.equal(fourReceiptRows.length, 102); // 2026-11-10 lens-hunt promotion: 95 -> 102. 2026-10-23 five-lane merge: 50 -> 95. 2026-10-23 promotion: 5 -> 50 rows with more than three receipts
 for (const row of fourReceiptRows) {
   const item = context.fieldRowItem(row, context.ecologyWindow());
   assert.equal((item.match(/data-open-receipt=/g) ?? []).length, row.receipt_ids.length, `every receipt on ${row.surface_id} is a button`);
@@ -565,12 +565,12 @@ const factGrid = id => context.fieldFactGrid(realField.nodeById.get(id), nodeLed
 assert.match(factGrid('joe-lonsdale'), /<strong>10<\/strong><span>documented surfaces<\/span>/); // 2026-10-23 five-lane merge: 3 -> 10. 2026-10-23 promotion: 1 -> 3
 assert.match(factGrid('joe-lonsdale'), /<strong>10<\/strong><span>participation rows<\/span>/); // 2026-10-23 five-lane merge: 3 -> 10. 2026-10-23 promotion: 1 -> 3
 assert.match(factGrid('matt-clifford'), /<strong>13<\/strong><span>documented surfaces<\/span>/); // 2026-10-23 five-lane merge: 9 -> 13
-assert.match(factGrid('ben-warner'), /<strong>12<\/strong><span>documented surfaces<\/span>/); // 2026-10-23 five-lane merge: 10 -> 12
+assert.match(factGrid('ben-warner'), /<strong>17<\/strong><span>documented surfaces<\/span>/); // 2026-11-10 lens-hunt promotion: 12 -> 17. 2026-10-23 five-lane merge: 10 -> 12
 assert.match(factGrid('surface-dialog-public-directory-exposure-2026-06-16'), /<strong>113<\/strong><span>documented participants<\/span>/);
 assert.equal(factGrid('matt-clifford').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').includes(nodeCountLabel(realField.nodeById.get('matt-clifford'))), true, 'the fact grid contains the tooltip label verbatim');
 
 const rowsMarkup = context.fieldRowsMarkup('ben-warner');
-assert.match(rowsMarkup, /12 rows · all time/); // 2026-10-23 five-lane merge: 10 -> 12
+assert.match(rowsMarkup, /17 rows · all time/); // 2026-11-10 lens-hunt promotion: 12 -> 17. 2026-10-23 five-lane merge: 10 -> 12
 // Narrowed 2026-10-23 final re-pin (privacy guard scope). Old: Ben Warner's real rows carried one guarded row,
 // labelled on the row and counted in the header (2 labels, 1 off-field marker). His email surface is no longer
 // guarded, so his real rows carry none; the labelling rule is now checked on the fixture ledger, whose 'guarded'
@@ -585,16 +585,16 @@ assert.equal((rowsMarkup.match(/data-ap-off-field="privacy_guard"/g) ?? []).leng
   assert.equal((fixtureRowsMarkup.match(/not drawn on the field \(privacy guard\)/g) ?? []).length, 2, 'the guarded row is labelled on the row and counted in the header');
   assert.equal((fixtureRowsMarkup.match(/data-ap-off-field="privacy_guard"/g) ?? []).length, 1);
 }
-assert.equal((rowsMarkup.match(/data-ap-row=/g) ?? []).length, 12); // 2026-10-23 five-lane merge: 10 -> 12
+assert.equal((rowsMarkup.match(/data-ap-row=/g) ?? []).length, 17); // 2026-11-10 lens-hunt promotion: 12 -> 17. 2026-10-23 five-lane merge: 10 -> 12
 runtimeState.ecology.fromDay = ecologyDay('2025-01-01');
 runtimeState.ecology.toDay = ecologyDay('2025-12-31');
 const windowedMarkup = context.fieldRowsMarkup('ben-warner');
-assert.match(windowedMarkup, /5 of 12 rows in window/); // 2026-10-23 five-lane merge: 4 of 10 -> 5 of 12
-assert.equal((windowedMarkup.match(/is-outside/g) ?? []).length, 7, 'out-of-window rows dim and stay listed'); // 2026-10-23 five-lane merge: 6 -> 7
-assert.match(context.ecologyClockLabel(), /^2025-01-01 → 2025-12-31 · 761 of 4411 rows in window$/); // 2026-10-23 final re-pin: 768 of 4,451 -> 761 of 4,411. 2026-10-23 five-lane merge: 539 of 3,118 -> 768 of 4,451. 2026-10-23 promotion: 63 of 286 -> 539 of 3,118
+assert.match(windowedMarkup, /5 of 17 rows in window/); // 2026-11-10 lens-hunt promotion: 5 of 12 -> 5 of 17. 2026-10-23 five-lane merge: 4 of 10 -> 5 of 12
+assert.equal((windowedMarkup.match(/is-outside/g) ?? []).length, 12, 'out-of-window rows dim and stay listed'); // 2026-11-10 lens-hunt promotion: 7 -> 12. 2026-10-23 five-lane merge: 6 -> 7
+assert.match(context.ecologyClockLabel(), /^2025-01-01 → 2025-12-31 · 764 of 4430 rows in window$/); // 2026-11-10 lens-hunt promotion: 761 of 4,411 -> 764 of 4,430. 2026-10-23 final re-pin: 768 of 4,451 -> 761 of 4,411. 2026-10-23 five-lane merge: 539 of 3,118 -> 768 of 4,451. 2026-10-23 promotion: 63 of 286 -> 539 of 3,118
 runtimeState.ecology.fromDay = null;
 runtimeState.ecology.toDay = null;
-assert.match(context.ecologyClockLabel(), /· all time · 4411 rows$/); // 2026-10-23 final re-pin: 4,451 -> 4,411. 2026-10-23 five-lane merge: 3,118 -> 4,451. 2026-10-23 promotion: 286 -> 3,118
+assert.match(context.ecologyClockLabel(), /· all time · 4430 rows$/); // 2026-11-10 lens-hunt promotion: 4,411 -> 4,430. 2026-10-23 final re-pin: 4,451 -> 4,411. 2026-10-23 five-lane merge: 3,118 -> 4,451. 2026-10-23 promotion: 286 -> 3,118
 
 // A node with more than APERTURE_FIELD_ROW_LIMIT rows: every row is rendered
 // (the later ones inside a details element), nothing is "not shown here", and

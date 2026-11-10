@@ -26,15 +26,15 @@ assert.deepEqual(actual.errors, []);
 // 198 / 62 / 135 after the archived defense-corridor A/B receipts (2026-10-23): 21 actors entered,
 // and three primary_public team pages (Stratos 9 people, Traysar 3, Pallas 2) add 40 bases.
 // The anchor components and the zero reported-basis count are unchanged.
-assert.equal(actual.global.canonical_actor_count, 404); // 2026-10-23 final re-pin: 293 -> 404 (the five 2026-10-23 research-dig lanes; this test was last re-pinned before them because DUPLICATE_BASIS_KEY stopped it).  2026-10-23 promotion: 198 -> 293 actors (LinkedIn role-crossing people); hop figures below unchanged
-assert.equal(actual.global.accepted_edge_actor_count, 134); // 2026-10-23 final re-pin: 62 -> 134
-assert.equal(actual.global.basis_count, 300); // 2026-10-23 final re-pin: 135 -> 300 (after the Form D person-row merge and the year-only a16z 2022 sessions leaving the hop set)
-assert.deepEqual(actual.global.evidence_counts, { official: 123, primary_public: 177 }); // 2026-10-23 final re-pin: { official: 75, primary_public: 60 } -> this
+assert.equal(actual.global.canonical_actor_count, 411); // 2026-11-10 lens-hunt promotion: 404 -> 411 (Jonathan Black, Feryal Clark and five UKSA Challenge Panel members).  2026-10-23 final re-pin: 293 -> 404 (the five 2026-10-23 research-dig lanes; this test was last re-pinned before them because DUPLICATE_BASIS_KEY stopped it).  2026-10-23 promotion: 198 -> 293 actors (LinkedIn role-crossing people); hop figures below unchanged
+assert.equal(actual.global.accepted_edge_actor_count, 141); // 2026-11-10 lens-hunt promotion: 134 -> 141.  2026-10-23 final re-pin: 62 -> 134
+assert.equal(actual.global.basis_count, 318); // 2026-11-10 lens-hunt promotion: 300 -> 318 (summit and AI Growth Zones pairs, SAGE 17, the 15 UKSA panel pairs).  2026-10-23 final re-pin: 135 -> 300 (after the Form D person-row merge and the year-only a16z 2022 sessions leaving the hop set)
+assert.deepEqual(actual.global.evidence_counts, { official: 141, primary_public: 177 }); // 2026-11-10 lens-hunt promotion: official 123 -> 141.  2026-10-23 final re-pin: { official: 75, primary_public: 60 } -> this
 assert.equal(actual.global.reported_basis_count, 0);
 assert.equal(actual.global.disposition_count, 0);
-assert.equal(actual.anchor_components.actor_count, 35); // 2026-10-23 final re-pin: 33 -> 35
-assert.equal(actual.anchor_components.edge_count, 72); // 2026-10-23 final re-pin: 70 -> 72
-assert.equal(actual.anchor_components.basis_count, 74); // 2026-10-23 final re-pin: 72 -> 74
+assert.equal(actual.anchor_components.actor_count, 42); // 2026-11-10 lens-hunt promotion: 35 -> 42.  2026-10-23 final re-pin: 33 -> 35
+assert.equal(actual.anchor_components.edge_count, 89); // 2026-11-10 lens-hunt promotion: 72 -> 89.  2026-10-23 final re-pin: 70 -> 72
+assert.equal(actual.anchor_components.basis_count, 92); // 2026-11-10 lens-hunt promotion: 74 -> 92.  2026-10-23 final re-pin: 72 -> 74
 assert.equal(actual.anchor_components.reported_basis_count, 0);
 // 5 / 2 before the defense-corridor staging merge (2026-10-23); the four FY2025 Air Force
 // award line items are trade-press reported, organization-only and non-hop (+8 rows, +4 surfaces).

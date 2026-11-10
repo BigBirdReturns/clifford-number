@@ -37,12 +37,12 @@ const BEFORE_RESEARCH_EDGES = Object.freeze({
 // and no edge (old or new) touches a row the merge added (see the endpoint
 // check in section 3). The current edge set is pinned separately below.
 const CURRENT = Object.freeze({
-  edge_count: 280, // 2026-10-23 final re-pin: 299 -> 280 (five year-only a16z American Dynamism 2022 session surfaces set hop_eligible false, reason year_precision_only; the Form D person-row merge removes duplicate bases, not edges). 2026-10-23 five-lane merge: 133 -> 299 (fund-portfolios, conventions, capital-factory, uk-public-money, synthetic-constituency). 2026-10-23 promotion: 93 -> 133 hop edges (Stratos, Traysar, Pallas team-page bases)
-  edge_id_sha256: '94660c2d246e399cb0c18d42c3f35da49b6e08bfcca4dc1d4ef4d5765a0b975a', // 2026-10-23 final re-pin (was bf7e8fa2…).  2026-10-23 five-lane merge (was 2626c63a… after the 2026-10-23 promotion)
-  edges_sha256: 'c428a4b3341601f0663af0162f3e920cbc6ccfc8b71f84f945024cb176b051e2', // 2026-10-23 final re-pin (was 50589dd4…).  2026-10-23 five-lane merge (was 141b236b… after the 2026-10-23 promotion)
-  rejected_hop_surfaces: 1096, // 2026-10-23 final re-pin: 1091 -> 1096 (the five year-only a16z 2022 surfaces). 2026-10-23 five-lane merge: 836 -> 1091. 2026-10-23 promotion: 35 -> 836 (single-person LinkedIn role surfaces create no hop)
+  edge_count: 297, // 2026-11-10 lens-hunt promotion: 280 -> 297 (Black-Clifford, Clark-Clifford, the 15 UKSA Challenge Panel pairs; SAGE 17 adds a basis to the existing Ben Warner-Marc Warner edge). 2026-10-23 final re-pin: 299 -> 280 (five year-only a16z American Dynamism 2022 session surfaces set hop_eligible false, reason year_precision_only; the Form D person-row merge removes duplicate bases, not edges). 2026-10-23 five-lane merge: 133 -> 299 (fund-portfolios, conventions, capital-factory, uk-public-money, synthetic-constituency). 2026-10-23 promotion: 93 -> 133 hop edges (Stratos, Traysar, Pallas team-page bases)
+  edge_id_sha256: '75d1b9f0bce840dbd3e4ee34eed9cda789060ec5f240040ba657255077d583f2', // 2026-11-10 lens-hunt promotion (was 94660c2d…). 2026-10-23 final re-pin (was bf7e8fa2…).  2026-10-23 five-lane merge (was 2626c63a… after the 2026-10-23 promotion)
+  edges_sha256: 'bd30fd4e9379a7570d4a210280394391a59f05446a1fd445b200bb47fc9ab342', // 2026-11-10 lens-hunt promotion (was c428a4b3…). 2026-10-23 final re-pin (was 50589dd4…).  2026-10-23 five-lane merge (was 141b236b… after the 2026-10-23 promotion)
+  rejected_hop_surfaces: 1097, // 2026-11-10 lens-hunt promotion: 1096 -> 1097 (four SAGE surfaces added, three single-actor; the summit and AI Growth Zones surfaces leave the refused set). 2026-10-23 final re-pin: 1091 -> 1096 (the five year-only a16z 2022 surfaces). 2026-10-23 five-lane merge: 836 -> 1091. 2026-10-23 promotion: 35 -> 836 (single-person LinkedIn role surfaces create no hop)
   rejected_hop_pairs: 0,
-  research_edges: 4487, // 2026-10-23 final re-pin: 4467 -> 4487 (the eight surfaces the privacy guard no longer holds back add topology edges). 2026-10-23 five-lane merge: 3216 -> 4467. 2026-10-23 promotion: 392 -> 3216 research-graph edges
+  research_edges: 4506, // 2026-11-10 lens-hunt promotion: 4487 -> 4506. 2026-10-23 final re-pin: 4467 -> 4487 (the eight surfaces the privacy guard no longer holds back add topology edges). 2026-10-23 five-lane merge: 3216 -> 4467. 2026-10-23 promotion: 392 -> 3216 research-graph edges
 });
 
 const hopGraph = readJson('build/hop-graph.json');
@@ -67,13 +67,20 @@ if (baseHopGraph) {
   assert.equal(before.edge_id_sha256, BEFORE.edge_id_sha256);
   assert.equal(before.edges_sha256, BEFORE.edges_sha256);
   // Narrowed 2026-10-23: was assert.deepEqual(after, before) (current == base).
-  // Now: every merge-base hop edge survives unchanged (same pair, bases, roles,
-  // windows, receipts); later admissions may only add edges.
-  const current = new Map(hopGraph.edges.map(edge => [`${edge.actor_a}||${edge.actor_b}`, JSON.stringify(edge)]));
+  // Now: every merge-base hop edge survives with every one of its bases unchanged
+  // (same pair, bases, roles, windows, receipts); later admissions may only add
+  // edges or add bases to an edge. Narrowed again 2026-11-10: the SAGE 17
+  // attendee list adds a second basis to the merge-base Ben Warner-Marc Warner
+  // edge, which moves that edge's derived surface_count, evidence_weight and
+  // temporal envelope but removes or alters no merge-base basis.
+  const current = new Map(hopGraph.edges.map(edge => [`${edge.actor_a}||${edge.actor_b}`, edge]));
   for (const edge of baseHopGraph.edges) {
     const key = `${edge.actor_a}||${edge.actor_b}`;
     assert.ok(current.has(key), `merge-base hop edge ${key} must survive`);
-    assert.equal(current.get(key), JSON.stringify(edge), `merge-base hop edge ${key} must be unchanged`);
+    const now = current.get(key);
+    const nowBases = new Set(now.surfaces.map(basis => JSON.stringify(basis)));
+    for (const basis of edge.surfaces) assert.ok(nowBases.has(JSON.stringify(basis)), `merge-base hop edge ${key} basis ${basis.surface_id} must be unchanged`);
+    if (now.surfaces.length === edge.surfaces.length) assert.equal(JSON.stringify(now), JSON.stringify(edge), `merge-base hop edge ${key} must be unchanged`);
   }
 }
 
@@ -96,8 +103,23 @@ assert.equal(research.edges.length, CURRENT.research_edges, 'research-graph edge
   if (baseResearch) {
     assert.equal(baseResearch.edges.length, BEFORE_RESEARCH_EDGES.count);
     assert.equal(createHash('sha256').update(JSON.stringify(baseResearch.edges)).digest('hex'), BEFORE_RESEARCH_EDGES.sha256);
-    const byId = new Map(research.edges.map(edge => [edge.id, JSON.stringify(edge)]));
-    for (const edge of baseResearch.edges) assert.equal(byId.get(edge.id), JSON.stringify(edge), `merge-base research edge ${edge.id} must survive unchanged`);
+    const byId = new Map(research.edges.map(edge => [edge.id, edge]));
+    // 2026-11-10 lens-hunt promotion (owner decision): the AI Safety Summit appointment surface was
+    // re-admitted as a two-person joint appointment, so its topology rows carry the new surface label in
+    // their derived claim and cite the archived GOV.UK page beside the original extract. On that surface
+    // only, the claim may change and source_ids may grow; every other field and every original receipt holds.
+    const READMITTED = new Set(['ai-safety-summit-representative-appointment-2023-08-10']);
+    for (const edge of baseResearch.edges) {
+      const now = byId.get(edge.id);
+      if (!READMITTED.has(edge.canonical_surface_id)) {
+        assert.equal(JSON.stringify(now), JSON.stringify(edge), `merge-base research edge ${edge.id} must survive unchanged`);
+        continue;
+      }
+      assert.ok(now, `merge-base research edge ${edge.id} must survive`);
+      const strip = ({ claim, source_ids, ...rest }) => JSON.stringify(rest);
+      assert.equal(strip(now), strip(edge), `merge-base research edge ${edge.id} may change only its claim and add receipts`);
+      for (const id of edge.source_ids) assert.ok(now.source_ids.includes(id), `merge-base research edge ${edge.id} must keep receipt ${id}`);
+    }
   }
 }
 
@@ -356,4 +378,4 @@ assert.ok(errorsFor(s => { const index = s.archive.extensions.findIndex(row => r
 assert.ok(loadMain('.').legacyNodes.some(node => node.id === 'alex-karp'), 'main still bridges Alex Karp from the legacy graph');
 assert.ok(loadArchive('.').adjudications.length === 57);
 
-console.log(`lake-identity-merge.test: OK (all 93 merge-base hop edges unchanged, ${CURRENT.edge_count} current; no edge touches a merged row; main-wins planning; 15 resolution rows + 2 pending; 104 frontier mentions; tamper checks)`);
+console.log(`lake-identity-merge.test: OK (all 93 merge-base hop edges keep their bases unchanged, ${CURRENT.edge_count} current; no edge touches a merged row; main-wins planning; 15 resolution rows + 2 pending; 104 frontier mentions; tamper checks)`);

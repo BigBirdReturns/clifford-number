@@ -233,11 +233,11 @@ function renderTimelineStage(layout, phone) {
   return { marks: count('data-ap-time-mark="'), columns: count('data-ap-time-column="'), segments: count('aperture-time-column-segment'), blocks: count('data-ap-time-block="'), aggregates: count('data-ap-time-aggregate="'), lanes: count('data-ap-time-lane="'), lines: count('<line[\\s>]'), lineClasses, pair: count('data-ap-time-pair'), tabStops: count('tabindex="0"'), noStops: count('tabindex="-1"'), svg };
 }
 const desktopRender = renderTimelineStage(layoutTimeline(realModel, { plotWidth: 690 }), false);
-assert.equal(desktopRender.marks, 112, 'desktop default: 112 marks'); // 2026-10-23 final re-pin: 134 -> 112. 2026-10-23 five-lane merge: 44 -> 134 (the hop-first default now ranks the Capital Factory Form D people, Sean O'Brien and Stephen Brotman into the 18 lanes) // 2026-10-23: hop-bearing lanes rank first (was 147 with row-count ranking) // 2026-10-23 owner decision: the 18-lane default People view (2.1.0: 79 on 15 lanes)
+assert.equal(desktopRender.marks, 115, 'desktop default: 115 marks'); // 2026-11-10 lens-hunt promotion: 112 -> 115. 2026-10-23 final re-pin: 134 -> 112. 2026-10-23 five-lane merge: 44 -> 134 (the hop-first default now ranks the Capital Factory Form D people, Sean O'Brien and Stephen Brotman into the 18 lanes) // 2026-10-23: hop-bearing lanes rank first (was 147 with row-count ranking) // 2026-10-23 owner decision: the 18-lane default People view (2.1.0: 79 on 15 lanes)
 assert.equal(desktopRender.blocks, 2, 'plus two roster blocks'); // 2026-10-23 five-lane merge: 1 -> 2 (the Reagan National Defense Forum 2023 programme roster is dense, beside Dialog)
-assert.equal(desktopRender.columns, 28, 'the default people share 28 drawn hop bases'); // 2026-10-23 final re-pin: 35 -> 28. 2026-10-23 five-lane merge: 15 -> 35 // 2026-10-23 hop-first ranking; 2.1.0: 16
+assert.equal(desktopRender.columns, 31, 'the default people share 31 drawn hop bases'); // 2026-11-10 lens-hunt promotion: 28 -> 31. 2026-10-23 final re-pin: 35 -> 28. 2026-10-23 five-lane merge: 15 -> 35 // 2026-10-23 hop-first ranking; 2.1.0: 16
 assert.ok(desktopRender.segments > 0, 'hop columns draw segments'); // 2026-10-23 hop-first ranking; 2.1.0: 35
-assert.equal(desktopRender.aggregates, 9, 'the default view folds clusters past two marks into +N'); // 2026-10-23 final re-pin: 13 -> 9. 2026-10-23 five-lane merge: 2 -> 13 // 2.1.0: 0 // 2026-10-23 hop-first default lanes: 12 -> 2
+assert.equal(desktopRender.aggregates, 10, 'the default view folds clusters past two marks into +N'); // 2026-11-10 lens-hunt promotion: 9 -> 10. 2026-10-23 final re-pin: 13 -> 9. 2026-10-23 five-lane merge: 2 -> 13 // 2.1.0: 0 // 2026-10-23 hop-first default lanes: 12 -> 2
 assert.equal(desktopRender.lanes, 21, '18 named + strip + two blocks'); // 2026-10-23 five-lane merge: 20 -> 21 (second roster block) // 2.1.0: 17
 assert.equal(desktopRender.pair, 0);
 // Roving focus: one Tab stop for the plot (the first mark), one for the lane
@@ -248,12 +248,12 @@ assert.equal(desktopRender.noStops, desktopRender.marks + desktopRender.columns 
 assert.match(timelineRuntime, /function handleTimelineWheel\(event\) \{\n  if \(state\.mode !== 'timeline'\) return;\n(?:\s*\/\/.*\n)*\s*if \(!event\.ctrlKey && !event\.metaKey\) return;/, 'a plain wheel scrolls the page; only Ctrl/Cmd + wheel zooms the axis');
 assert.equal(desktopRender.lines, desktopRender.lineClasses, 'every line is an axis, grid, lane rule, overview tick or hatch stroke');
 assert.match(desktopRender.svg, /names listed/);
-assert.match(desktopRender.svg, /Other people \(267\)/); // 2026-10-23 five-lane merge: 153 -> 267 // 2026-10-23 owner decision: was "People documented on one surface"
+assert.match(desktopRender.svg, /Other people \(274\)/); // 2026-11-10 lens-hunt promotion: 267 -> 274 (seven new people). 2026-10-23 five-lane merge: 153 -> 267 // 2026-10-23 owner decision: was "People documented on one surface"
 const phoneRender = renderTimelineStage(layoutTimeline(realModel, { plotWidth: 216, ...TIMELINE_PHONE_METRICS }), true);
-assert.equal(phoneRender.marks, 75, 'phone default: 75 marks'); // 2026-10-23 final re-pin: 92 -> 75. 2026-10-23 five-lane merge: 39 -> 92 // 2026-10-23 owner decision: 18-lane default (2.1.0: 48) // 2026-10-23 hop-first default lanes: 85 -> 39
+assert.equal(phoneRender.marks, 76, 'phone default: 76 marks'); // 2026-11-10 lens-hunt promotion: 75 -> 76. 2026-10-23 final re-pin: 92 -> 75. 2026-10-23 five-lane merge: 39 -> 92 // 2026-10-23 owner decision: 18-lane default (2.1.0: 48) // 2026-10-23 hop-first default lanes: 85 -> 39
 assert.equal(phoneRender.blocks, 2); // 2026-10-23 five-lane merge: 1 -> 2
-assert.equal(phoneRender.columns, 23); // 2026-10-23 final re-pin: 29 -> 23. 2026-10-23 five-lane merge: 13 -> 29 // 2.1.0: 10 // 2026-10-23 hop-first default lanes: 0 -> 13
-assert.equal(phoneRender.segments, 30); // 2026-10-23 final re-pin: 40 -> 30. 2026-10-23 five-lane merge: 28 -> 40 // 2.1.0: 20 // 2026-10-23 hop-first default lanes: 0 -> 28
+assert.equal(phoneRender.columns, 26); // 2026-11-10 lens-hunt promotion: 23 -> 26. 2026-10-23 final re-pin: 29 -> 23. 2026-10-23 five-lane merge: 13 -> 29 // 2.1.0: 10 // 2026-10-23 hop-first default lanes: 0 -> 13
+assert.equal(phoneRender.segments, 33); // 2026-11-10 lens-hunt promotion: 30 -> 33. 2026-10-23 final re-pin: 40 -> 30. 2026-10-23 five-lane merge: 28 -> 40 // 2.1.0: 20 // 2026-10-23 hop-first default lanes: 0 -> 28
 assert.equal(phoneRender.pair, 0);
 assert.equal(phoneRender.lines, phoneRender.lineClasses);
 console.log(`visual-aperture.test.js: timeline render desktop ${desktopRender.marks} marks + ${desktopRender.blocks} block, ${desktopRender.columns} columns (${desktopRender.segments} segments); phone ${phoneRender.marks} + ${phoneRender.blocks}, ${phoneRender.columns} columns (${phoneRender.segments} segments)`);
