@@ -40,7 +40,6 @@ export const TIME_FACTORS = Object.freeze({ inWindow: 1, outOfWindow: .18, undat
 const OPACITY_EPSILON = .002;
 
 let vendorPromise = null;
-let haloTexture = null;
 
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
@@ -69,32 +68,176 @@ function loadForceGraphVendor() {
   return vendorPromise;
 }
 
-function radialHaloTexture() {
-  if (haloTexture) return haloTexture;
-  const canvas = document.createElement('canvas');
-  canvas.width = 128; canvas.height = 128;
-  const ctx = canvas.getContext('2d');
-  const gradient = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
-  gradient.addColorStop(0, 'rgba(255,255,255,.95)');
-  gradient.addColorStop(.18, 'rgba(255,255,255,.5)');
-  gradient.addColorStop(.52, 'rgba(255,255,255,.12)');
-  gradient.addColorStop(1, 'rgba(255,255,255,0)');
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, 128, 128);
-  haloTexture = new THREE.CanvasTexture(canvas);
-  return haloTexture;
-}
-
 function nodeShape(node) {
   if (node.type === 'person') return NODE_SHAPES.person;
   if (isSurfaceNode(node)) return NODE_SHAPES.surface;
   return 'box';
 }
-function makeCoreGeometry(node, size) {
+function spriteShapeKind(node) {
   const shape = nodeShape(node);
-  if (shape === 'sphere') return new THREE.SphereGeometry(size, 12, 9);
-  if (shape === 'octahedron') return new THREE.OctahedronGeometry(size * 1.2, 0);
-  return new THREE.BoxGeometry(size * 1.65, size * 1.65, size * 1.65);
+  return shape === 'sphere' ? 0 : shape === 'octahedron' ? 2 : 1;
+}
+// World units to device pixels at depth 1 for a sprite shader, which divides by depth.
+function perspectiveSpriteScale(host, graph) {
+  const camera = graph.camera();
+  return ((host.clientHeight / 2) / Math.tan(THREE.MathUtils.degToRad(camera.fov || 75) / 2)) * graph.renderer().getPixelRatio();
+}
+const spriteColor = new THREE.Color();
+// One Points draw for every node of a field. style() writes a slot's
+// accumulation channels (size, glow, colour from the printed heat); strength()
+// writes the view factor (semantic focus, time window, hover) and the selected
+// scale that setObjectStrength used to write per object.
+function createSpriteStore(scene) {
+  return {
+    geometry: null, points: null, glows: null, slots: new Map(), baseCore: null, baseGlow: null,
+    slotOf(id) { return this.slots.get(id) ?? -1; },
+    allocate(nodes, scale) {
+      this.dispose();
+      const count = nodes.length;
+      this.slots = new Map();
+      nodes.forEach((node, index) => this.slots.set(node.id, index));
+      this.baseCore = new Float32Array(count);
+      this.baseGlow = new Float32Array(count);
+      const geometry = new THREE.BufferGeometry();
+      const attribute = (size, dynamic) => {
+        const buffer = new THREE.BufferAttribute(new Float32Array(count * size), size);
+        if (dynamic) buffer.setUsage(THREE.DynamicDrawUsage);
+        return buffer;
+      };
+      geometry.setAttribute('position', attribute(3));
+      geometry.setAttribute('nodeColor', attribute(3, true));
+      geometry.setAttribute('coreSize', attribute(1, true));
+      geometry.setAttribute('haloSize', attribute(1, true));
+      geometry.setAttribute('haloAlpha', attribute(1, true));
+      geometry.setAttribute('nodeAlpha', attribute(1, true));
+      geometry.setAttribute('shapeKind', attribute(1));
+      geometry.setAttribute('nodeStyle', attribute(1));
+      nodes.forEach((node, index) => {
+        geometry.attributes.position.setXYZ(index, node.x || 0, node.y || 0, node.z || 0);
+        geometry.attributes.shapeKind.setX(index, spriteShapeKind(node));
+        geometry.attributes.nodeAlpha.setX(index, .86);
+      });
+      this.geometry = geometry;
+      // Cores blend normally (thousands of additive discs on a sphere sum to
+      // white); glows add. The library's hover raycast must find the pick
+      // proxies, not these clouds.
+      this.points = new THREE.Points(geometry, galaxyNodeMaterial(scale, 1));
+      this.glows = new THREE.Points(geometry, galaxyNodeMaterial(scale, 2));
+      for (const [object, order] of [[this.glows, -1], [this.points, 0]]) {
+        object.frustumCulled = false;
+        object.renderOrder = order;
+        object.raycast = () => {};
+        scene.add(object);
+      }
+    },
+    style(slot, node, values) {
+      if (slot < 0 || !this.geometry) return;
+      const { nodeColor, coreSize, haloSize, haloAlpha } = this.geometry.attributes;
+      this.baseCore[slot] = values.core;
+      this.baseGlow[slot] = values.haloOpacity;
+      spriteColor.set(node.color || '#b8c0cf');
+      nodeColor.setXYZ(slot, spriteColor.r, spriteColor.g, spriteColor.b);
+      coreSize.setX(slot, values.core);
+      haloSize.setX(slot, values.halo > 0 ? values.halo : values.core * 2.2);
+      haloAlpha.setX(slot, values.haloOpacity);
+      nodeColor.needsUpdate = coreSize.needsUpdate = haloSize.needsUpdate = haloAlpha.needsUpdate = true;
+    },
+    strength(slot, factor, selected) {
+      if (slot < 0 || !this.geometry) return;
+      const { coreSize, haloAlpha, nodeAlpha } = this.geometry.attributes;
+      coreSize.setX(slot, this.baseCore[slot] * (selected ? 1.42 : 1));
+      haloAlpha.setX(slot, this.baseGlow[slot] * factor);
+      nodeAlpha.setX(slot, Math.max(.012, .86 * factor));
+      coreSize.needsUpdate = haloAlpha.needsUpdate = nodeAlpha.needsUpdate = true;
+    },
+    setScale(scale) {
+      for (const object of [this.points, this.glows]) if (object) object.material.uniforms.scale.value = scale;
+    },
+    dispose() {
+      if (!this.points) return;
+      for (const object of [this.points, this.glows]) {
+        scene.remove(object);
+        object.material.dispose();
+      }
+      this.geometry.dispose();
+      this.points = this.glows = this.geometry = null;
+    }
+  };
+}
+// One LineSegments draw for every arc of a field: LINK_SEGMENTS points per
+// slot, written by rebuildArc. With additive blending the colour level stands
+// in for opacity, so strength() writes colour × level into the slot's vertices.
+const ARC_VERTICES = (LINK_SEGMENTS - 1) * 2;
+function createArcStore(scene) {
+  return {
+    geometry: null, lines: null, slots: new Map(), base: null, level: null, rgb: null, samples: null,
+    slotOf(id) { return this.slots.get(id) ?? -1; },
+    allocate(links) {
+      this.dispose();
+      const count = links.length;
+      this.slots = new Map();
+      links.forEach((link, index) => this.slots.set(link.id, index));
+      this.base = new Float32Array(count);
+      this.level = new Float32Array(count);
+      this.rgb = new Float32Array(count * 3);
+      this.samples = new Float32Array(count * LINK_SEGMENTS * 3);
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(count * ARC_VERTICES * 3), 3).setUsage(THREE.DynamicDrawUsage));
+      geometry.setAttribute('color', new THREE.BufferAttribute(new Float32Array(count * ARC_VERTICES * 3), 3).setUsage(THREE.DynamicDrawUsage));
+      this.geometry = geometry;
+      links.forEach((link, index) => {
+        spriteColor.set(EVIDENCE_COLORS[link.evidence_class] ?? EVIDENCE_COLORS.context);
+        this.rgb[index * 3] = spriteColor.r; this.rgb[index * 3 + 1] = spriteColor.g; this.rgb[index * 3 + 2] = spriteColor.b;
+        this.base[index] = link.topology_only ? .16 + link.evidence_weight * .12 : .14 + link.evidence_weight * .2;
+        this.paint(index, this.base[index]);
+      });
+      geometry.attributes.color.needsUpdate = true;
+      this.lines = new THREE.LineSegments(geometry, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 1, depthWrite: false, blending: THREE.AdditiveBlending }));
+      this.lines.frustumCulled = false;
+      this.lines.renderOrder = -2;
+      this.lines.raycast = () => {};
+      scene.add(this.lines);
+    },
+    // points: LINK_SEGMENTS * 3 floats along the arc, start to end.
+    write(slot, points) {
+      if (slot < 0 || !this.geometry) return;
+      this.samples.set(points, slot * LINK_SEGMENTS * 3);
+      const position = this.geometry.attributes.position.array;
+      let offset = slot * ARC_VERTICES * 3;
+      for (let index = 0; index < LINK_SEGMENTS - 1; index += 1) {
+        const a = index * 3, b = a + 3;
+        position[offset] = points[a]; position[offset + 1] = points[a + 1]; position[offset + 2] = points[a + 2];
+        position[offset + 3] = points[b]; position[offset + 4] = points[b + 1]; position[offset + 5] = points[b + 2];
+        offset += 6;
+      }
+    },
+    paint(slot, level) {
+      this.level[slot] = level;
+      const color = this.geometry.attributes.color.array;
+      const r = this.rgb[slot * 3] * level, g = this.rgb[slot * 3 + 1] * level, b = this.rgb[slot * 3 + 2] * level;
+      let offset = slot * ARC_VERTICES * 3;
+      for (let index = 0; index < ARC_VERTICES; index += 1) { color[offset] = r; color[offset + 1] = g; color[offset + 2] = b; offset += 3; }
+    },
+    strength(slot, factor, emphasis) {
+      if (slot < 0 || !this.geometry) return;
+      const base = this.base[slot];
+      const level = emphasis ? Math.min(1, Math.max(base, .92) * factor) : Math.max(.012, base * factor);
+      if (Math.abs(this.level[slot] - level) < OPACITY_EPSILON) return;
+      this.paint(slot, level);
+      this.geometry.attributes.color.needsUpdate = true;
+    },
+    sample(slot, pointIndex, out) {
+      const offset = (slot * LINK_SEGMENTS + pointIndex) * 3;
+      return out.set(this.samples[offset], this.samples[offset + 1], this.samples[offset + 2]);
+    },
+    dispose() {
+      if (!this.lines) return;
+      scene.remove(this.lines);
+      this.lines.geometry.dispose();
+      this.lines.material.dispose();
+      this.lines = this.geometry = null;
+    }
+  };
 }
 
 // Node size and halo. With a ledger they come from the node's printed
@@ -128,67 +271,43 @@ function nodeChannelValues(node) {
   return { core: nodeSizeForCount(count), halo: haloSizeForCount(count), haloOpacity: count > 0 ? Math.min(.4, .1 + Math.log2(1 + count) * .07) : 0 };
 }
 
-// Geometry is built at unit size; the accumulation channels are written as
-// child scales and colours, so moving t (the window end) restyles the node in
-// place without rebuilding it.
-function makeNodeObject(node) {
+// Every node is one sprite in the shared Points draw (createSpriteStore): the
+// kind as the shape, the printed accumulation as size and glow. The Group the
+// library binds to the node carries only an invisible pick proxy, so hover and
+// click keep working through the library while the node costs no draw call.
+const PICK_PROXY_GEOMETRY = new THREE.SphereGeometry(1, 8, 6);
+function makeNodeObject(node, store) {
   const group = new THREE.Group();
-  const coreMaterial = new THREE.MeshLambertMaterial({
-    color: new THREE.Color(node.color || '#b8c0cf'),
-    transparent: true,
-    opacity: .86
-  });
-  coreMaterial.userData.baseOpacity = coreMaterial.opacity;
-  const core = new THREE.Mesh(makeCoreGeometry(node, 1), coreMaterial);
+  const pickMaterial = new THREE.MeshBasicMaterial({ transparent: true, opacity: .86 });
+  pickMaterial.userData.baseOpacity = pickMaterial.opacity;
+  const core = new THREE.Mesh(PICK_PROXY_GEOMETRY, pickMaterial);
+  core.visible = false;
   core.userData.role = 'core';
   group.add(core);
-  const haloMaterial = new THREE.SpriteMaterial({
-    map: radialHaloTexture(),
-    color: new THREE.Color(node.color || '#b8c0cf'),
-    transparent: true,
-    opacity: 0,
-    depthWrite: false,
-    blending: THREE.AdditiveBlending
-  });
-  haloMaterial.userData.baseOpacity = 0;
-  const halo = new THREE.Sprite(haloMaterial);
-  halo.userData.role = 'heat-halo';
-  group.add(halo);
   group.userData.nodeId = node.id;
+  group.userData.store = store;
+  group.userData.slot = store ? store.slotOf(node.id) : -1;
   styleNodeObject(group, node);
   return group;
 }
+// Moving t (the window end) restyles a node in place: its heat channels are
+// rewritten into its sprite slot and the pick proxy takes the core size.
 function styleNodeObject(group, node) {
   if (!group) return;
   const values = nodeChannelValues(node);
   for (const child of group.children) {
-    if (child.userData.role === 'core') {
-      if (child.scale.x !== values.core) child.scale.setScalar(values.core);
-      child.material.color.set(node.color || '#b8c0cf');
-    } else if (child.userData.role === 'heat-halo') {
-      child.visible = values.halo > 0;
-      child.scale.set(values.halo || 1, values.halo || 1, 1);
-      child.material.color.set(node.color || '#b8c0cf');
-      child.material.userData.baseOpacity = values.haloOpacity;
-    }
+    if (child.userData.role === 'core' && child.scale.x !== values.core) child.scale.setScalar(values.core);
   }
+  group.userData.store?.style(group.userData.slot, node, values);
 }
-function makeLinkObject(link) {
+// Every arc is a slot in the shared LineSegments draw (createArcStore): the
+// Group the library binds to the link carries no geometry of its own.
+function makeLinkObject(link, store) {
   const group = new THREE.Group();
-  const color = EVIDENCE_COLORS[link.evidence_class] ?? EVIDENCE_COLORS.context;
-  const opacity = link.topology_only ? .16 + link.evidence_weight * .12 : .14 + link.evidence_weight * .2;
-  const positions = new Float32Array(LINK_SEGMENTS * 3);
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-  const material = new THREE.LineBasicMaterial({ color, transparent: true, opacity, depthWrite: false });
-  material.userData.baseOpacity = opacity;
-  const line = new THREE.Line(geometry, material);
-  line.userData.role = 'line';
-  group.add(line);
-
-  group.userData.positions = positions;
   group.userData.lastEndpoints = null;
   group.userData.linkId = link.id;
+  group.userData.arcs = store;
+  group.userData.slot = store ? store.slotOf(link.id) : -1;
   return group;
 }
 
@@ -197,8 +316,11 @@ function vectorChanged(previous, start, end) {
   return Math.abs(previous[0] - start.x) > .03 || Math.abs(previous[1] - start.y) > .03 || Math.abs(previous[2] - start.z) > .03 ||
     Math.abs(previous[3] - end.x) > .03 || Math.abs(previous[4] - end.y) > .03 || Math.abs(previous[5] - end.z) > .03;
 }
+const arcScratch = new Float32Array(LINK_SEGMENTS * 3);
 function rebuildArc(group, start, end, link) {
-  const positions = group.userData.positions;
+  const store = group.userData.arcs;
+  if (!store || group.userData.slot < 0) return;
+  const positions = arcScratch;
   const a = new THREE.Vector3(start.x, start.y, start.z);
   const b = new THREE.Vector3(end.x, end.y, end.z);
   const ra = Math.max(1, a.length()), rb = Math.max(1, b.length());
@@ -221,8 +343,8 @@ function rebuildArc(group, start, end, link) {
     const offset = index * 3;
     positions[offset] = point.x; positions[offset + 1] = point.y; positions[offset + 2] = point.z;
   }
-  const line = group.children.find(child => child.userData.role === 'line');
-  if (line) line.geometry.attributes.position.needsUpdate = true;
+  store.write(group.userData.slot, positions);
+  store.geometry.attributes.position.needsUpdate = true;
   group.userData.lastEndpoints = [start.x, start.y, start.z, end.x, end.y, end.z];
 }
 
@@ -242,6 +364,9 @@ function setObjectStrength(object, factor, { selected = false, emphasis = false 
   if (!object) return;
   const scale = selected ? 1.42 : 1;
   if (object.scale.x !== scale) object.scale.setScalar(scale);
+  // A node sprite or an arc slot in a shared draw takes its factor directly.
+  if (object.userData.store) object.userData.store.strength(object.userData.slot, factor, selected);
+  if (object.userData.arcs) { object.userData.arcs.strength(object.userData.slot, factor, emphasis); return; }
   object.traverse(child => {
     const materials = child.material ? (Array.isArray(child.material) ? child.material : [child.material]) : [];
     for (const material of materials) {
@@ -300,6 +425,8 @@ export async function createWebGlAtlasRenderer({ host, onNodeSelect, onLinkSelec
     controlType: 'orbit',
     rendererConfig: { antialias: true, alpha: true, powerPreference: 'high-performance' }
   });
+  const nodeStore = createSpriteStore(graph.scene());
+  const arcStore = createArcStore(graph.scene());
   // The social-field projection already owns deterministic spherical positions.
   // Disable the library's layout tick: the adapter uses it as a GPU renderer,
   // camera/picking surface, and animation host rather than as a fact-producing layout engine.
@@ -307,9 +434,9 @@ export async function createWebGlAtlasRenderer({ host, onNodeSelect, onLinkSelec
     .backgroundColor('rgba(0,0,0,0)')
     .showNavInfo(false)
     .nodeLabel(tooltipForNode)
-    .nodeThreeObject(node => makeNodeObject(node))
+    .nodeThreeObject(node => makeNodeObject(node, nodeStore))
     .linkLabel(tooltipForLink)
-    .linkThreeObject(link => makeLinkObject(link))
+    .linkThreeObject(link => makeLinkObject(link, arcStore))
     .linkPositionUpdate((object, { start, end }, link) => {
       if (vectorChanged(object.userData.lastEndpoints, start, end)) rebuildArc(object, start, end, link);
       return true;
@@ -423,6 +550,7 @@ export async function createWebGlAtlasRenderer({ host, onNodeSelect, onLinkSelec
       const emphasis = link.id === selectedLinkId;
       setObjectStrength(link.__lineObj, emphasis ? 1 : semanticLinkFactor(link) * hoverFactor * timeLinkFactor(link), { emphasis });
     }
+    host.dataset.atlasDrawCalls = String(graph.renderer().info.render.calls);
   }
   function clearEcologyLayer() {
     for (const pulse of ecologyPulses) pulse.material?.dispose?.();
@@ -569,13 +697,41 @@ export async function createWebGlAtlasRenderer({ host, onNodeSelect, onLinkSelec
   graph.onNodeClick(selectNode);
   // A click on an arc hands the whole field link (graph edge fields plus its
   // ledger rows) to the runtime, which opens the participation row or the claim.
-  graph.onLinkClick(link => {
-    selectedLinkId = link.id;
+  // Arcs share one draw, so the arc nearest the click (within 9 px of one of
+  // its sampled points) is found in screen space on a background click.
+  const pickVector = new THREE.Vector3();
+  function linkAt(clientX, clientY) {
+    if (!field || !arcStore.geometry) return null;
+    const rect = host.getBoundingClientRect();
+    const px = clientX - rect.left, py = clientY - rect.top;
+    const camera = graph.camera();
+    camera.updateMatrixWorld();
+    const width = host.clientWidth, height = host.clientHeight;
+    const samples = [Math.round(LINK_SEGMENTS * .25), Math.round(LINK_SEGMENTS * .5), Math.round(LINK_SEGMENTS * .75)];
+    let best = null, bestDistance = 81;
+    for (let slot = 0; slot < field.links.length; slot += 1) {
+      if (arcStore.level[slot] < .05) continue;
+      for (const pointIndex of samples) {
+        arcStore.sample(slot, pointIndex, pickVector).project(camera);
+        if (pickVector.z > 1) continue;
+        const dx = (pickVector.x + 1) * width / 2 - px, dy = (1 - pickVector.y) * height / 2 - py;
+        const distance = dx * dx + dy * dy;
+        if (distance < bestDistance) { bestDistance = distance; best = field.links[slot]; }
+      }
+    }
+    return best;
+  }
+  graph.onBackgroundClick(event => {
+    const link = event ? linkAt(event.clientX, event.clientY) : null;
+    if (link) {
+      selectedLinkId = link.id;
+      applyHighlight(selectedId);
+      onInteraction?.('select');
+      onLinkSelect?.(link);
+      return;
+    }
     applyHighlight(selectedId);
-    onInteraction?.('select');
-    onLinkSelect?.(link);
   });
-  graph.onBackgroundClick(() => applyHighlight(selectedId));
   // The library builds node and link objects on its first tick after
   // graphData(), which cannot happen while the stage is off-screen and paused.
   // The engine stops on that same tick (cooldownTicks 0), so this is the first
@@ -599,6 +755,7 @@ export async function createWebGlAtlasRenderer({ host, onNodeSelect, onLinkSelec
     const width = Math.max(320, Math.floor(host.clientWidth || 900));
     const height = Math.max(420, Math.floor(host.clientHeight || 650));
     graph.width(width).height(height);
+    nodeStore.setScale(perspectiveSpriteScale(host, graph));
     updateLabels();
   }
   const resizeObserver = new ResizeObserver(resize);
@@ -610,6 +767,8 @@ export async function createWebGlAtlasRenderer({ host, onNodeSelect, onLinkSelec
     heatDay = ledger ? heatTimeForWindow(ledger.range, timeView.window) : null;
     field = buildSocialFieldModel(model, { ledger, atDay: heatDay });
     field.linkById = new Map(field.links.map(link => [link.id, link]));
+    nodeStore.allocate(field.nodes, perspectiveSpriteScale(host, graph));
+    arcStore.allocate(field.links);
     graph.graphData({ nodes: field.nodes, links: field.links });
     selectedId = selectedNodeId && field.nodeById.has(selectedNodeId) ? selectedNodeId : null;
     selectedLinkId = null;
@@ -695,6 +854,8 @@ export async function createWebGlAtlasRenderer({ host, onNodeSelect, onLinkSelec
     animationRunning = false;
     graph.scene().remove(ecologyLayer);
     graph.scene().remove(shell);
+    nodeStore.dispose();
+    arcStore.dispose();
     host.replaceChildren();
     delete host.dataset.atlasEngine;
   }
@@ -751,7 +912,7 @@ const GALAXY_FIT_QUANTILES = Object.freeze({ low: .01, high: .99, pad: 1.12 });
 // are the heat halo.
 const GALAXY_GLOW_FLOOR = Object.freeze({ alpha: .09, sizeFactor: 3.2 });
 const GALAXY_LABEL_LIMITS = Object.freeze({ phone: 5, desktop: 14 });
-const GALAXY_CLICK_SLOP_PX = 6;
+const GALAXY_CLICK_SLOP_PX = 8;
 // The sprite shader draws the kind as a shape: disc for a person, square for
 // an organization, diamond for a surface.
 const GALAXY_SHAPE_KIND = Object.freeze({ person: 0, organization: 1, surface: 2 });
@@ -812,9 +973,9 @@ function galaxySeedPositions(field) {
 // shape at the node's heat size with a hot centre, the glow around it is the
 // heat halo. Sizes arrive in world units and become pixels by the camera's
 // perspective factor, so a node keeps its size relative to the field.
-function galaxyNodeMaterial(scale) {
+function galaxyNodeMaterial(scale, layer = 0) {
   return new THREE.ShaderMaterial({
-    uniforms: { scale: { value: scale } },
+    uniforms: { scale: { value: scale }, layer: { value: layer } },
     vertexShader: `attribute vec3 nodeColor; attribute float coreSize; attribute float haloSize; attribute float haloAlpha; attribute float nodeAlpha; attribute float shapeKind; attribute float nodeStyle;
       uniform float scale;
       varying vec3 vColor; varying float vCore; varying float vGlow; varying float vAlpha; varying float vShape; varying float vPx; varying float vStyle;
@@ -830,7 +991,8 @@ function galaxyNodeMaterial(scale) {
         gl_PointSize = px;
         gl_Position = projectionMatrix * mv;
       }`,
-    fragmentShader: `varying vec3 vColor; varying float vCore; varying float vGlow; varying float vAlpha; varying float vShape; varying float vPx; varying float vStyle;
+    fragmentShader: `uniform float layer;
+      varying vec3 vColor; varying float vCore; varying float vGlow; varying float vAlpha; varying float vShape; varying float vPx; varying float vStyle;
       float shapeDistance(vec2 p, float kind) {
         if (kind < 0.5) return length(p);
         if (kind < 1.5) return max(abs(p.x), abs(p.y)) * 1.12;
@@ -846,6 +1008,9 @@ function galaxyNodeMaterial(scale) {
         float core = 1.0 - smoothstep(1.0 - edge, 1.0 + edge, d);
         // A hollow node (a lens marks it) keeps its outline and opens its centre.
         if (vStyle > 0.5) core *= smoothstep(0.5 - edge, 0.5 + edge, d);
+        // layer 0 draws core and glow together; 1 the cores alone; 2 the glows alone.
+        if (layer > 1.5) core = 0.0;
+        if (layer > 0.5 && layer < 1.5) glow = 0.0;
         vec3 coreColor = mix(vColor, vec3(1.0), 0.5 * (1.0 - clamp(d, 0.0, 1.0)));
         vec3 color = coreColor * core + vColor * glow;
         float alpha = (core + glow) * vAlpha;
@@ -855,7 +1020,7 @@ function galaxyNodeMaterial(scale) {
     transparent: true,
     depthWrite: false,
     depthTest: false,
-    blending: THREE.AdditiveBlending
+    blending: layer === 1 ? THREE.NormalBlending : THREE.AdditiveBlending
   });
 }
 
@@ -864,7 +1029,7 @@ export async function createGalaxyFieldRenderer({ host, onNodeSelect, onNodeHove
   const ForceGraph3D = await loadForceGraphVendor();
   let field = null, selectedId = null, highlight = null, settled = false, animationRunning = true, tick = 0, fitDistance = 600, cameraTaken = false;
   let nodeIndex = new Map(), linkEnds = null, scales = null, screen = null, screenDirty = true;
-  let points = null, pointGeometry = null, lines = null, lineGeometry = null, ring = null, outerRing = null, labelOrder = [];
+  let points = null, pointGeometry = null, lines = null, lineGeometry = null, ring = null, outerRing = null, hoverRing = null, ringRadius = 1, labelOrder = [];
   let lens = null, denseSurfaceIds = new Set();
   let pulseFrame = 0, viewSyncFrame = 0, hoverFrame = 0, pointerDown = null, hoveredId = null;
   const labelButtons = new Map();
@@ -944,13 +1109,13 @@ export async function createGalaxyFieldRenderer({ host, onNodeSelect, onNodeHove
     return ((host.clientHeight / 2) / Math.tan(THREE.MathUtils.degToRad(camera.fov || 75) / 2)) * graph.renderer().getPixelRatio();
   }
   function disposeObjects() {
-    for (const object of [points, lines, ring, outerRing]) {
+    for (const object of [points, lines, ring, outerRing, hoverRing]) {
       if (!object) continue;
       graph.scene().remove(object);
       object.geometry.dispose();
       object.material.dispose();
     }
-    points = lines = ring = outerRing = null;
+    points = lines = ring = outerRing = hoverRing = null;
     pointGeometry = lineGeometry = null;
   }
   function buildObjects() {
@@ -989,12 +1154,14 @@ export async function createGalaxyFieldRenderer({ host, onNodeSelect, onNodeHove
     lines.frustumCulled = false;
     lines.renderOrder = -2;
     graph.scene().add(lines);
-    ring = new THREE.Mesh(new THREE.RingGeometry(1, 1.08, 64), new THREE.MeshBasicMaterial({ color: GALAXY_SELECTION, transparent: true, opacity: .95, side: THREE.DoubleSide, depthTest: false, depthWrite: false }));
-    outerRing = new THREE.Mesh(new THREE.RingGeometry(1, 1.03, 64), new THREE.MeshBasicMaterial({ color: GALAXY_SELECTION, transparent: true, opacity: .3, side: THREE.DoubleSide, depthTest: false, depthWrite: false }));
-    ring.visible = outerRing.visible = false;
-    ring.renderOrder = outerRing.renderOrder = 5;
+    ring = new THREE.Mesh(new THREE.RingGeometry(1, 1.14, 64), new THREE.MeshBasicMaterial({ color: GALAXY_SELECTION, transparent: true, opacity: .95, side: THREE.DoubleSide, depthTest: false, depthWrite: false }));
+    outerRing = new THREE.Mesh(new THREE.RingGeometry(1, 1.05, 64), new THREE.MeshBasicMaterial({ color: GALAXY_SELECTION, transparent: true, opacity: .3, side: THREE.DoubleSide, depthTest: false, depthWrite: false }));
+    hoverRing = new THREE.Mesh(new THREE.RingGeometry(1, 1.1, 48), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: .55, side: THREE.DoubleSide, depthTest: false, depthWrite: false }));
+    ring.visible = outerRing.visible = hoverRing.visible = false;
+    ring.renderOrder = outerRing.renderOrder = hoverRing.renderOrder = 5;
     graph.scene().add(ring);
     graph.scene().add(outerRing);
+    graph.scene().add(hoverRing);
     labelOrder = field.nodes.map((node, index) => index).sort((a, b) => {
       const na = field.nodes[a], nb = field.nodes[b];
       return (nb.heat_value || 0) - (na.heat_value || 0) || (nb.size_count || 0) - (na.size_count || 0) || String(na.label).localeCompare(String(nb.label));
@@ -1073,24 +1240,36 @@ export async function createGalaxyFieldRenderer({ host, onNodeSelect, onNodeHove
     placeRing();
     screenDirty = true;
   }
+  // The selection ring reads at any zoom: at least 14 px of radius, or the
+  // core plus 6 px. The hover ring says which node a click would take.
   function placeRing() {
     const node = selectedId ? field?.nodeById.get(selectedId) : null;
     if (!node || !ring) { if (ring) ring.visible = outerRing.visible = false; return; }
     const size = scales[nodeIndex.get(node.id)] || 2;
+    const perUnit = pixelsPerUnit();
+    ringRadius = Math.max(14 / perUnit, size / 2 + 6 / perUnit);
     ring.position.set(node.x || 0, node.y || 0, (node.z || 0) + .5);
     outerRing.position.copy(ring.position);
-    ring.scale.setScalar(size * .95);
-    outerRing.scale.setScalar(size * 1.5);
+    ring.scale.setScalar(ringRadius);
+    outerRing.scale.setScalar(ringRadius * 1.45);
     ring.visible = outerRing.visible = true;
+  }
+  function placeHoverRing() {
+    if (!hoverRing) return;
+    const node = hoveredId && hoveredId !== selectedId ? field?.nodeById.get(hoveredId) : null;
+    if (!node) { hoverRing.visible = false; return; }
+    const size = scales[nodeIndex.get(node.id)] || 2;
+    const perUnit = pixelsPerUnit();
+    hoverRing.position.set(node.x || 0, node.y || 0, (node.z || 0) + .4);
+    hoverRing.scale.setScalar(Math.max(11 / perUnit, size / 2 + 5 / perUnit));
+    hoverRing.visible = true;
   }
   function pulse(timestamp) {
     pulseFrame = 0;
     if (!animationRunning) return;
     if (ring?.visible && !reducedMotion) {
-      const node = field.nodeById.get(selectedId);
-      const size = scales[nodeIndex.get(node.id)] || 2;
       const phase = (Math.sin(timestamp / 900) + 1) / 2;
-      outerRing.scale.setScalar(size * (1.4 + phase * .5));
+      outerRing.scale.setScalar(ringRadius * (1.35 + phase * .45));
       outerRing.material.opacity = .14 + (1 - phase) * .3;
     }
     pulseFrame = requestAnimationFrame(pulse);
@@ -1127,7 +1306,7 @@ export async function createGalaxyFieldRenderer({ host, onNodeSelect, onNodeHove
     let best = null, bestDistance = Infinity;
     for (let index = 0; index < field.nodes.length; index += 1) {
       const dx = screen[index * 2] - px, dy = screen[index * 2 + 1] - py;
-      const radius = Math.max(6, (scales[index] || 1) * perUnit * .6) + 3;
+      const radius = Math.max(10, (scales[index] || 1) * perUnit * .6) + 4;
       const distance = Math.hypot(dx, dy);
       if (distance > radius || distance >= bestDistance) continue;
       best = field.nodes[index];
@@ -1147,6 +1326,7 @@ export async function createGalaxyFieldRenderer({ host, onNodeSelect, onNodeHove
     const candidates = [];
     const push = index => { if (index !== undefined && !seen.has(index)) { seen.add(index); candidates.push(index); } };
     if (selectedId) push(nodeIndex.get(selectedId));
+    if (hoveredId) push(nodeIndex.get(hoveredId));
     if (highlight) {
       [...highlight].map(id => nodeIndex.get(id)).filter(index => index !== undefined)
         .sort((a, b) => (field.nodes[b].heat_value || 0) - (field.nodes[a].heat_value || 0)).forEach(push);
@@ -1157,8 +1337,9 @@ export async function createGalaxyFieldRenderer({ host, onNodeSelect, onNodeHove
     for (const index of candidates) {
       if (boxes.length >= limit) break;
       const node = field.nodes[index];
-      if (highlight && !highlight.has(node.id) && node.id !== selectedId) continue;
-      if (lens?.nodes && !lens.nodes.has(node.id) && node.id !== selectedId) continue;
+      const pinned = node.id === selectedId || node.id === hoveredId;
+      if (highlight && !highlight.has(node.id) && !pinned) continue;
+      if (lens?.nodes && !lens.nodes.has(node.id) && !pinned) continue;
       const radius = (scales[index] || 1) * perUnit / 2;
       const x = screen[index * 2] + radius + 5, y = screen[index * 2 + 1] - 8;
       const labelWidth = Math.min(170, 4 + String(node.label).length * 6.2);
@@ -1190,6 +1371,8 @@ export async function createGalaxyFieldRenderer({ host, onNodeSelect, onNodeHove
     viewSyncFrame = requestAnimationFrame(() => {
       viewSyncFrame = 0;
       screenDirty = true;
+      placeRing();
+      placeHoverRing();
       updateLabels();
       onViewChange?.({ type: 'camera', settled });
     });
@@ -1207,6 +1390,8 @@ export async function createGalaxyFieldRenderer({ host, onNodeSelect, onNodeHove
       hoveredId = id;
       host.style.cursor = node ? 'pointer' : 'grab';
       onNodeHover?.(node);
+      placeHoverRing();
+      updateLabels();
     }
     if (!node) { tooltip.hidden = true; return; }
     tooltip.innerHTML = tooltipMarkup(node);
@@ -1239,9 +1424,8 @@ export async function createGalaxyFieldRenderer({ host, onNodeSelect, onNodeHove
     if (!pointerDown || !field) return;
     const { x, y } = pointerPosition(event);
     const moved = Math.hypot(x - pointerDown.x, y - pointerDown.y) > GALAXY_CLICK_SLOP_PX;
-    const slow = performance.now() - pointerDown.time > 600;
     pointerDown = null;
-    if (moved || slow) return;
+    if (moved) return;
     if (event.target instanceof Element && event.target.closest('.aperture-field-label')) return;
     const node = nodeAt(x, y);
     onNodeSelect?.(node?.id ?? null, node ?? null);
@@ -1267,7 +1451,10 @@ export async function createGalaxyFieldRenderer({ host, onNodeSelect, onNodeHove
   }
   function moveCamera(position, target, duration) {
     graph.cameraPosition(position, target, duration);
-    if (duration === 0) scheduleViewSync();
+    if (duration === 0) { scheduleViewSync(); return; }
+    // The controls report the tween frame by frame; one more sync after it
+    // ends leaves the rings, the labels and the callout on the final frame.
+    setTimeout(() => { screenDirty = true; scheduleViewSync(); }, duration + 80);
   }
   function fit(duration = reducedMotion ? 0 : 500) {
     const box = bounds();
@@ -1283,7 +1470,7 @@ export async function createGalaxyFieldRenderer({ host, onNodeSelect, onNodeHove
     const node = field?.nodeById.get(id);
     if (!node) return false;
     cameraTaken = true;
-    const z = Math.min(cameraDistance(), Math.max(controls.minDistance * 3, fitDistance * .42));
+    const z = Math.min(cameraDistance(), Math.max(controls.minDistance * 3, fitDistance * .55));
     moveCamera({ x: node.x || 0, y: node.y || 0, z }, { x: node.x || 0, y: node.y || 0, z: 0 }, duration);
     return true;
   }

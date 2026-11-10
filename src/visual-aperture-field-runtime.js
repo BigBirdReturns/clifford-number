@@ -649,6 +649,10 @@ function bindGalaxyLifecycle(host) {
     galaxy.observer.observe(host);
   }
   document.addEventListener('visibilitychange', syncGalaxyAnimation);
+  // Escape clears the selection, as Clear does.
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && state.mode === 'field' && state.field?.selectedId && !event.defaultPrevented) selectFieldNode(null);
+  });
 }
 function handleGalaxyViewChange(event) {
   if (event?.type === 'settled' && state.root) state.root.dataset.apertureFieldLayout = 'settled';
