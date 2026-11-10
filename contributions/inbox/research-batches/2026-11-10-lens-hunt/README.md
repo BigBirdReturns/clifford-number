@@ -99,3 +99,19 @@ Round two told the models that Groq and Voyager were new contradictions. The led
 - `asks/`: both briefs and the four answers.
 - `lane-A-not-searched.json`: actor ids.
 - Run folder on W01, with every brief, raw result and script: `S:/Scratch/Runs/Clifford-Lens-Research-20261110`.
+
+## Promoted on 10 November 2026
+
+Jonathan approved the five first leads and the exit-date fixes ("Yes, promote them"). Every row below rests on a page archived under `receipts/lens-hunt/` and read before the row was written.
+
+Entered the ledger:
+
+1. **Jonathan Black with Matt Clifford, 10 August 2023.** `ai-safety-summit-representative-appointment-2023-08-10` is now a two-person joint appointment and a hop. New actor `jonathan-black`. The GOV.UK page itself is archived beside the existing extract; both are cited.
+2. **Feryal Clark with Matt Clifford, 30 April 2025.** The archived DSIT release says "Minister Clark and Matt Clifford are leading a series of engagements today with leading investors and MPs". `ai-growth-zones-qualifying-process-2025-04-30` is a hop. New actor `feryal-clark`.
+3. **Ben Warner in SAGE 17, 63, 71 and 75.** One surface per meeting, each a slice of the attendee list. SAGE 17 also lists Marc Warner (NHSX); GO-Science's participant list names "Dr Marc Warner, Faculty, on behalf of NHSx", so he is the ledger's Faculty director and SAGE 17 is a hop. SAGE 63, 71 and 75 list no other ledger person and stay single-actor. Dominic Cummings is not listed at any of the four. New organisation `scientific-advisory-group-for-emergencies`.
+4. **UKSA review Challenge Panel, announced 9 June 2023.** `uksa-independent-review-challenge-panel-2023-06-09`, six members, a hop. New actors `guy-goodwin`, `guy-nason`, `rebecca-riley`, `alice-sullivan`, `john-curtice`; new organisation `uk-statistics-authority`. The announcement gives no affiliations, so Ben Warner's row rests on name and title. Cabinet Office is the sponsor and reporting line; GOV.UK attributes the page to the UKSA. The review's final report (Annex B) later lists a seventh panel member, Tim Leunig; the surface keeps the 9 June 2023 announcement roster.
+5. **DIUx Austin, 14 September 2016.** The Texas Governor's release was already archived and already backs the official hop surface `diux-austin-outpost-at-capital-factory-2016-09-14` (Carter, McRaven, Abbott). The press surface `diux-austin-roll-out-press-2016-09-14` now cites that release and names its counterpart; its press rows are not duplicated as official rows, so the event does not heat twice.
+
+Exit dates fixed from first-party pages: Voyager (2025-06-11, Voyager's closing release), MainStreet (2025-05-05, Employer.com's announcement on the Bench blog), Spectrum Labs (2023-09-07, ActiveFence's release), GameOn (2020-09-18, Victory Square's release: an asset and IP purchase by V2 Games), Capiche (2021-04-15, the publication date in the metadata of Vendr's own post). The two Voyager surfaces name each other.
+
+Did not enter: Daylight's date. No first-party or official record dates it or confirms "Atlas"; its note says so. Nothing else from this batch is in the ledger.
