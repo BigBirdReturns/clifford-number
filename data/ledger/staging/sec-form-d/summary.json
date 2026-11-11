@@ -2,19 +2,34 @@
   "lane": "sec-form-d",
   "tool": "tools/promote-intake-sec-form-d.mjs",
   "intake": "data/intake/sec-form-d/sec-form-d-targets.json",
-  "decision": {
-    "date": "2026-11-10",
-    "decided_by": "owner",
-    "words": "Yes, one pass"
-  },
+  "intake_data_set_names": "data/intake/sec-form-d/sec-form-d-data-set-names.json",
+  "decision": [
+    {
+      "date": "2026-11-10",
+      "decided_by": "owner",
+      "words": "Yes, one pass",
+      "applies_to": "data/intake/sec-form-d/sec-form-d-targets.json"
+    },
+    {
+      "date": "2026-11-10",
+      "decided_by": "owner",
+      "question": "Fetch the SEC's quarterly Form D files to find every filing that names a Field person?",
+      "words": "Yes, fetch them",
+      "applies_to": "data/intake/sec-form-d/sec-form-d-data-set-names.json"
+    }
+  ],
   "sources": {
     "manifest": "data/ledger/staging/sec-form-d/archived-receipts.jsonl",
     "store": "receipts/sec-form-d",
-    "targets": 123,
-    "archived": 123,
+    "targets": 565,
+    "targets_first_intake": 123,
+    "targets_data_set_names": 442,
+    "held_additions": 17,
+    "archived": 565,
     "failed": []
   },
   "admission_rule": "A filing is entered only when its archived primary_doc.xml satisfies the live receipt contract (public source URL, in-repo archived copy whose SHA-256 matches, limits). Rows go to the issuer (on the ledger organisation when the match is exact; on the issuer itself, with a name-based link row on the ledger organisation, when the match is family) and to each targeted ledger person only when the archived XML lists that person as a related person. Nobody else gets a row. Every surface is hop_eligible false pending a reader.",
+  "admission_rule_data_set_names": "A data-set filing is entered only when at least one targeted ledger person takes a row: a canonical ledger actor whom the archived XML lists as a related person. The person is the reason for entry; otherwise the filing goes to gaps whole. With no ledger organisation the issuer is its own entity (resolved or minted by name) with one issuer row and no link row. Each person's tie (a ledger organisation beside them, two Field names on one filing, or the same name at the same address, issuer or management team as a tied filing) is mechanical and waits for a reader. Held additions are related-person rows on this lane's existing surfaces, admitted by the same check; existing rows are not rewritten.",
   "counts": {
     "filings_read": 123,
     "filings_entered": 123,
@@ -25,15 +40,36 @@
     "ledger_people_read": 30,
     "ledger_people_not_shown": 0
   },
+  "counts_data_set_names": {
+    "filings_read": 442,
+    "filings_entered": 438,
+    "filings_refused": 4,
+    "issuer_rows": 438,
+    "issuer_rows_on_ledger_organisation": 106,
+    "issuer_rows_with_name_link": 127,
+    "issuer_rows_own_entity_no_link": 205,
+    "name_link_rows": 127,
+    "ledger_person_rows": 698,
+    "ledger_people_read": 724,
+    "ledger_people_not_shown": 0,
+    "ledger_people_without_canonical_actor": 23
+  },
+  "counts_held_additions": {
+    "filings": 17,
+    "ledger_people_read": 42,
+    "ledger_person_rows": 33,
+    "ledger_people_not_shown": 0,
+    "ledger_people_without_canonical_actor": 9
+  },
   "staged": {
-    "surfaces": 123,
-    "participation": 171,
-    "receipts": 123,
+    "surfaces": 561,
+    "participation": 1467,
+    "receipts": 561,
     "new_actors": 0,
-    "new_organizations": 14,
-    "gaps": 0,
+    "new_organizations": 293,
+    "gaps": 34,
     "hop_eligible_surfaces": 0,
-    "funding_amount_usd_total": 8559830707
+    "funding_amount_usd_total": 64765616855
   },
   "hop_refusal_reason": "entered_2026_11_10_pending_hop_review"
 }
