@@ -49,6 +49,13 @@
 //     data-set filings the latest per new issuer carries it.
 // held_additions: related-person rows on this lane's existing surfaces, admitted by the same check;
 // merge-staging appends them and never rewrites the existing surface rows.
+//
+// Third intake, data/intake/sec-form-d/sec-form-d-data-set-names-judged.json (owner answer 2026-11-10,
+// "All 527", to "Enter the 527 filings the hands tied to 29 more people?"): basis
+// ledger_person_named_identity_judged, handled exactly as the tied basis, except that each tie is a
+// research hand's judgement from public knowledge, read by the supervisor and carried as an identity
+// verdict; the surface note quotes it and does not call it mechanical. Its held additions may extend
+// filings of either earlier intake. An issuer an earlier intake holds keeps its funding figure.
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -73,14 +80,22 @@ const INTAKE_NAMES = 'data/intake/sec-form-d/sec-form-d-data-set-names.json';
 const NAMES_BASIS = 'ledger_person_named_identity_tied';
 const NAMES_QUESTION = 'Fetch the SEC\'s quarterly Form D files to find every filing that names a Field person?';
 const NAMES_WORDS = 'Yes, fetch them';
+const INTAKE_JUDGED = 'data/intake/sec-form-d/sec-form-d-data-set-names-judged.json';
+const JUDGED_BASIS = 'ledger_person_named_identity_judged';
+const JUDGED_QUESTION = 'Enter the 527 filings the hands tied to 29 more people?';
+const JUDGED_WORDS = 'All 527';
 
 const byFiled = (a, b) => a.filed.localeCompare(b.filed) || a.accession.localeCompare(b.accession);
 const intake = readJson(INTAKE);
 const namesIntake = fs.existsSync(path.join(root, INTAKE_NAMES)) ? readJson(INTAKE_NAMES) : null;
+const judgedIntake = fs.existsSync(path.join(root, INTAKE_JUDGED)) ? readJson(INTAKE_JUDGED) : null;
 const firstTargets = [...intake.filings].sort(byFiled);
 const namesTargets = [...(namesIntake?.filings ?? [])].sort(byFiled);
+const judgedTargets = [...(judgedIntake?.filings ?? [])].sort(byFiled);
 const heldAdditions = namesIntake?.held_additions ?? [];
+const judgedHeldAdditions = judgedIntake?.held_additions ?? [];
 const NAMES = new Set();
+const JUDGED = new Set();
 {
   const firstAcc = new Set(firstTargets.map(t => t.accession));
   const refused = namesIntake?.rulings?.refused_actors ?? {};
@@ -92,8 +107,26 @@ const NAMES = new Set();
   }
   for (const h of heldAdditions) if (!firstAcc.has(h.accession)) throw new Error(`held addition ${h.accession} is not a filing of ${INTAKE}`);
   for (const p of [...namesTargets, ...heldAdditions].flatMap(t => t.ledger_people)) if (Object.hasOwn(refused, p.ledger_id)) throw new Error(`${p.ledger_id} is refused by the rulings`);
+  // Third intake: the hand-judged filings. Each named person must carry the identity verdict that
+  // judged this filing the same person.
+  const refusedJudged = judgedIntake?.rulings?.refused_actors ?? {};
+  const verdictAcc = new Set((judgedIntake?.identity_verdicts ?? []).flatMap(v => v.adsh.map(a => `${v.actor}|${a}`)));
+  for (const t of judgedTargets) {
+    if (firstAcc.has(t.accession) || NAMES.has(t.accession)) throw new Error(`accession ${t.accession} is in ${INTAKE_JUDGED} and an earlier intake`);
+    if (JUDGED.has(t.accession)) throw new Error(`accession ${t.accession} is listed twice in ${INTAKE_JUDGED}`);
+    if (t.basis !== JUDGED_BASIS) throw new Error(`${t.accession}: unexpected basis ${t.basis}`);
+    JUDGED.add(t.accession);
+  }
+  for (const h of judgedHeldAdditions) if (!firstAcc.has(h.accession) && !NAMES.has(h.accession)) throw new Error(`held addition ${h.accession} is not a filing of an earlier intake`);
+  for (const t of [...judgedTargets, ...judgedHeldAdditions]) {
+    for (const p of t.ledger_people) {
+      if (Object.hasOwn(refusedJudged, p.ledger_id)) throw new Error(`${p.ledger_id} is refused by the rulings`);
+      if (!verdictAcc.has(`${p.ledger_id}|${t.accession}`)) throw new Error(`${t.accession}: no identity verdict judges ${p.ledger_id} the same person on this filing`);
+      if (!String(p.tie ?? '').trim()) throw new Error(`${t.accession}: ${p.ledger_id} has no tie sentence`);
+    }
+  }
 }
-const targets = [...firstTargets, ...namesTargets];
+const targets = [...firstTargets, ...namesTargets, ...judgedTargets];
 const receiptIdOf = t => `sec-form-d-${t.accession}`;
 const urlOf = t => `https://www.sec.gov/Archives/edgar/data/${String(Number(t.cik))}/${t.accession.replace(/-/g, '')}/primary_doc.xml`;
 const readManifest = () => new Map((fs.existsSync(path.join(root, MANIFEST)) ? readJsonl(MANIFEST) : []).map(r => [r.receipt_id, r]));
@@ -308,7 +341,9 @@ const namesCounts = {
   name_link_rows: 0, ledger_person_rows: 0, ledger_people_read: 0, ledger_people_not_shown: 0, ledger_people_without_canonical_actor: 0,
 };
 const heldCounts = { filings: 0, ledger_people_read: 0, ledger_person_rows: 0, ledger_people_not_shown: 0, ledger_people_without_canonical_actor: 0 };
-const refuse = (rowKey, reason, detail = {}) => gaps.push({ lane: LANE, table: 'form_d', row_key: rowKey, reason, ...detail });
+const judgedCounts = Object.fromEntries(Object.keys(namesCounts).map(k => [k, 0]));
+const judgedHeldCounts = Object.fromEntries(Object.keys(heldCounts).map(k => [k, 0]));
+const refuse =(rowKey, reason, detail = {}) => gaps.push({ lane: LANE, table: 'form_d', row_key: rowKey, reason, ...detail });
 const surfaces = [];
 const participation = [];
 const cited = new Map();
@@ -316,8 +351,8 @@ const findPerson = (persons, lp) => persons.find(r => [r.label, r.full].filter(B
 
 const parsed = [];
 for (const t of targets) {
-  const names = NAMES.has(t.accession);
-  const c = names ? namesCounts : counts;
+  const pass = NAMES.has(t.accession) ? 'names' : JUDGED.has(t.accession) ? 'judged' : 'first';
+  const c = { first: counts, names: namesCounts, judged: judgedCounts }[pass];
   c.filings_read += 1;
   const id = receiptIdOf(t);
   const st = receiptState.get(id);
@@ -330,10 +365,11 @@ for (const t of targets) {
   const xml = fs.readFileSync(path.join(root, st.candidate.path), 'utf8');
   const f = parseFormD(xml);
   if (String(Number(f.cik)) !== String(Number(t.cik))) throw new Error(`${id}: archived issuer CIK ${f.cik} is not the target's ${t.cik}`);
-  parsed.push({ t, f, id, names });
+  parsed.push({ t, f, id, pass });
 }
-const parsedFirst = parsed.filter(x => !x.names);
-const parsedNames = parsed.filter(x => x.names);
+const parsedFirst = parsed.filter(x => x.pass === 'first');
+const parsedNames = parsed.filter(x => x.pass === 'names');
+const parsedJudged = parsed.filter(x => x.pass === 'judged');
 // Amendments restate cumulative amounts sold; only the latest filing per issuer in this lane carries a
 // funding figure, so lane totals do not double count an offering.
 const latestByIssuer = new Map();
@@ -442,165 +478,188 @@ for (const { t, f, id } of parsedFirst) {
   counts.filings_entered += 1;
 }
 
-// ---------------------------------------------------------------- held additions (second intake)
-// Ledger people listed on filings the first intake entered, whom the first pass did not look for. The
-// rows are appended; the surface rows this lane already wrote stay as they are.
+// ---------------------------------------------------------------- held additions (second and third intakes)
+// Ledger people listed on filings an earlier intake entered, whom that pass did not enter. The rows
+// are appended; the surface rows this lane already wrote stay as they are.
 const personGap = (id, lp, reason) => gaps.push({ lane: LANE, table: 'form_d', row_key: `${id}:${lp.ledger_id}`, reason, receipts: [id], as_filed: lp.as_filed,
   ...(lp.tie ? { tie: lp.tie } : {}), candidate: { participant_type: 'actor', actor_id: lp.ledger_id, participation_type: 'form_d_related_person' } });
 const NO_ACTOR = 'ledger_person_not_in_canonical_actors';
 const NOT_SHOWN = 'ledger_person_not_a_related_person_in_archived_filing';
-const firstById = new Map(parsedFirst.map(x => [x.id, x]));
-const surfaceIds = new Set(surfaces.map(s => s.surface_id));
-for (const h of heldAdditions) {
-  const id = receiptIdOf(h);
-  const x = firstById.get(id);
-  if (!x || !surfaceIds.has(id)) throw new Error(`held addition ${id}: this lane holds no surface for it`);
-  heldCounts.filings += 1;
-  const persons = x.f.related.filter(r => !r.entity);
-  const row = makeRow(id, x.t.filed);
-  for (const lp of h.ledger_people) {
-    heldCounts.ledger_people_read += 1;
-    if (participation.some(p => p.surface_id === id && p.actor_id === lp.ledger_id)) throw new Error(`held addition ${id}: ${lp.ledger_id} already has a row`);
-    const actor = canonActorById.get(lp.ledger_id);
-    if (!actor) { heldCounts.ledger_people_without_canonical_actor += 1; personGap(id, lp, NO_ACTOR); continue; }
-    const hit = findPerson(persons, lp);
-    if (!hit) { heldCounts.ledger_people_not_shown += 1; personGap(id, lp, NOT_SHOWN); continue; }
-    const filedAs = hit.full ?? hit.label;
-    participation.push(row({ participant_type: 'actor', actor_id: actor.id, role: `related person: ${hit.relationships.join(', ')}${hit.clarification ? ` (${hit.clarification})` : ''}`, participation_type: 'form_d_related_person',
-      notes: `${filedAs !== actor.label ? `Filed as ${filedAs}. ` : ''}Added ${ENTERED} from the SEC's quarterly Form D data sets: the archived filing lists this ledger person, whom the first pass did not look for. Tie to the ledger's ${actor.label}: ${lp.tie}. The tie is mechanical and waits for a reader.` }));
-    heldCounts.ledger_person_rows += 1;
+const parsedById = new Map(parsed.map(x => [x.id, x]));
+// The tie words: a mechanical tie (second intake) or a research hand's judgement (third intake).
+const quoted = tie => `"${String(tie).trim()}${/[.!?]$/.test(String(tie).trim()) ? '' : '.'}"`;
+const judgedTie = (actor, lp) => `Tie to the ledger's ${actor.label}, a judgement made by a research hand from public knowledge and read by the supervisor, not a mechanical match: ${quoted(lp.tie)}`;
+function addHeld(list, c, judged) {
+  const surfaceIds = new Set(surfaces.map(s => s.surface_id));
+  for (const h of list) {
+    const id = receiptIdOf(h);
+    const x = parsedById.get(id);
+    if (!x || !surfaceIds.has(id)) throw new Error(`held addition ${id}: this lane holds no surface for it`);
+    c.filings += 1;
+    const persons = x.f.related.filter(r => !r.entity);
+    const row = makeRow(id, x.t.filed);
+    for (const lp of h.ledger_people) {
+      c.ledger_people_read += 1;
+      if (participation.some(p => p.surface_id === id && p.actor_id === lp.ledger_id)) throw new Error(`held addition ${id}: ${lp.ledger_id} already has a row`);
+      const actor = canonActorById.get(lp.ledger_id);
+      if (!actor) { c.ledger_people_without_canonical_actor += 1; personGap(id, lp, NO_ACTOR); continue; }
+      const hit = findPerson(persons, lp);
+      if (!hit) { c.ledger_people_not_shown += 1; personGap(id, lp, NOT_SHOWN); continue; }
+      const filedAs = hit.full ?? hit.label;
+      const tieWords = judged
+        ? `whom the earlier passes did not enter. ${judgedTie(actor, lp)} It waits for a reader.`
+        : `whom the first pass did not look for. Tie to the ledger's ${actor.label}: ${lp.tie}. The tie is mechanical and waits for a reader.`;
+      participation.push(row({ participant_type: 'actor', actor_id: actor.id, role: `related person: ${hit.relationships.join(', ')}${hit.clarification ? ` (${hit.clarification})` : ''}`, participation_type: 'form_d_related_person',
+        notes: `${filedAs !== actor.label ? `Filed as ${filedAs}. ` : ''}Added ${ENTERED} from the SEC's quarterly Form D data sets: the archived filing lists this ledger person, ${tieWords}` }));
+      c.ledger_person_rows += 1;
+    }
   }
 }
 
-// ---------------------------------------------------------------- data-set filings (second intake)
+// ---------------------------------------------------------------- data-set filings (second and third intakes)
 const orgById = id => canonOrgById.get(id) ?? newOrgs.get(id) ?? null;
 const cikOf = f => String(Number(f.cik));
 const listNames = xs => (xs.length <= 2 ? xs.join(' and ') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`);
-const namesReady = [];
-for (const x of parsedNames) {
-  const { t, f, id } = x;
-  if (ledgerSurfaceIds.has(id)) throw new Error(`surface id collides with ledger: ${id}`);
-  if (f.form !== t.form) throw new Error(`${id}: archived form ${f.form} is not the target's ${t.form}`);
-  if (t.organizations.length > 1) throw new Error(`${id}: expected at most one ledger organisation, got ${t.organizations.length}`);
-  const tie = t.organizations[0] ?? null;
-  if (tie && !['exact', 'family'].includes(tie.match)) throw new Error(`${id}: unknown organisation match ${tie.match}`);
-  const ledgerOrg = tie ? orgById(tie.ledger_id) : null;
-  const persons = f.related.filter(r => !r.entity);
-  const admitted = [];
-  const missed = [];
-  for (const lp of t.ledger_people) {
-    namesCounts.ledger_people_read += 1;
-    const actor = canonActorById.get(lp.ledger_id);
-    const hit = actor ? findPerson(persons, lp) : null;
-    if (!actor) { namesCounts.ledger_people_without_canonical_actor += 1; missed.push({ lp, reason: NO_ACTOR }); } else if (!hit) { namesCounts.ledger_people_not_shown += 1; missed.push({ lp, reason: NOT_SHOWN }); } else admitted.push({ lp, actor, hit });
+function enterDataSet({ parsedPass, c, judged, priorIssuers, words, notExact = [] }) {
+  const ready = [];
+  for (const x of parsedPass) {
+    const { t, f, id } = x;
+    if (ledgerSurfaceIds.has(id)) throw new Error(`surface id collides with ledger: ${id}`);
+    if (f.form !== t.form) throw new Error(`${id}: archived form ${f.form} is not the target's ${t.form}`);
+    if (t.organizations.length > 1) throw new Error(`${id}: expected at most one ledger organisation, got ${t.organizations.length}`);
+    const tie = t.organizations[0] ?? null;
+    if (tie && !['exact', 'family'].includes(tie.match)) throw new Error(`${id}: unknown organisation match ${tie.match}`);
+    const ledgerOrg = tie ? orgById(tie.ledger_id) : null;
+    const persons = f.related.filter(r => !r.entity);
+    const admitted = [];
+    const missed = [];
+    for (const lp of t.ledger_people) {
+      c.ledger_people_read += 1;
+      const actor = canonActorById.get(lp.ledger_id);
+      const hit = actor ? findPerson(persons, lp) : null;
+      if (!actor) { c.ledger_people_without_canonical_actor += 1; missed.push({ lp, reason: NO_ACTOR }); } else if (!hit) { c.ledger_people_not_shown += 1; missed.push({ lp, reason: NOT_SHOWN }); } else admitted.push({ lp, actor, hit });
+    }
+    const filingGap = reason => {
+      c.filings_refused += 1;
+      refuse(id, reason, { receipts: [id], candidate: { accession: t.accession, issuer: t.issuer, organizations: t.organizations, ledger_people: t.ledger_people },
+        people: t.ledger_people.map(lp => ({ ledger_id: lp.ledger_id, as_filed: lp.as_filed, tie: lp.tie, outcome: missed.find(m => m.lp === lp)?.reason ?? 'shown' })) });
+    };
+    // The person is the reason for entry: without a row for one, the filing makes no surface.
+    if (tie && !ledgerOrg) { filingGap('ledger_organisation_not_in_canonical_registry'); continue; }
+    if (!admitted.length) { filingGap('no_targeted_ledger_person_takes_a_row'); continue; }
+    for (const m of missed) personGap(id, m.lp, m.reason);
+    ready.push({ ...x, tie, ledgerOrg, admitted, missed });
   }
-  const filingGap = reason => {
-    namesCounts.filings_refused += 1;
-    refuse(id, reason, { receipts: [id], candidate: { accession: t.accession, issuer: t.issuer, organizations: t.organizations, ledger_people: t.ledger_people },
-      people: t.ledger_people.map(lp => ({ ledger_id: lp.ledger_id, as_filed: lp.as_filed, tie: lp.tie, outcome: missed.find(m => m.lp === lp)?.reason ?? 'shown' })) });
-  };
-  // The person is the reason for entry: without a row for one, the filing makes no surface.
-  if (tie && !ledgerOrg) { filingGap('ledger_organisation_not_in_canonical_registry'); continue; }
-  if (!admitted.length) { filingGap('no_targeted_ledger_person_takes_a_row'); continue; }
-  for (const m of missed) personGap(id, m.lp, m.reason);
-  namesReady.push({ ...x, tie, ledgerOrg, admitted, missed });
-}
-// An issuer the first intake holds keeps its funding figure where it is; among the data-set filings the
-// latest per new issuer carries it.
-const firstIssuers = new Set(parsedFirst.map(x => cikOf(x.f)));
-const latestNamesByIssuer = new Map();
-for (const { t, f } of namesReady) if (!firstIssuers.has(cikOf(f))) latestNamesByIssuer.set(cikOf(f), t.accession);
-// Labels stay unique across the lane and the ledger: a data-set label that repeats another gets its accession.
-const takenLabels = new Set([...ledgerSurfacesOther, ...surfaces].map(s => String(s.surface_label).toLowerCase()));
-const namesLabelCount = new Map();
-for (const x of namesReady) namesLabelCount.set(baseLabel(x).toLowerCase(), (namesLabelCount.get(baseLabel(x).toLowerCase()) ?? 0) + 1);
-const namesLabel = x => (namesLabelCount.get(baseLabel(x).toLowerCase()) > 1 || takenLabels.has(baseLabel(x).toLowerCase()) ? `${baseLabel(x)} (accession ${x.t.accession})` : baseLabel(x));
-const preexistingOrgIds = new Set(newOrgs.keys());
+  // An issuer an earlier intake holds keeps its funding figure where it is; among this intake's filings
+  // the latest per new issuer carries it.
+  const latestByNewIssuer = new Map();
+  for (const { t, f } of ready) if (!priorIssuers.has(cikOf(f))) latestByNewIssuer.set(cikOf(f), t.accession);
+  // Labels stay unique across the lane and the ledger: a data-set label that repeats another gets its accession.
+  const takenLabels = new Set([...ledgerSurfacesOther, ...surfaces].map(s => String(s.surface_label).toLowerCase()));
+  const passLabelCount = new Map();
+  for (const x of ready) passLabelCount.set(baseLabel(x).toLowerCase(), (passLabelCount.get(baseLabel(x).toLowerCase()) ?? 0) + 1);
+  const passLabel = x => (passLabelCount.get(baseLabel(x).toLowerCase()) > 1 || takenLabels.has(baseLabel(x).toLowerCase()) ? `${baseLabel(x)} (accession ${x.t.accession})` : baseLabel(x));
+  const preexistingOrgIds = new Set(newOrgs.keys());
 
-for (const x of namesReady) {
-  const { t, f, id, tie, ledgerOrg, admitted, missed } = x;
-  const isLatest = latestNamesByIssuer.get(cikOf(f)) === t.accession;
-  const kind = /pooled investment fund/i.test(f.industry) ? 'fund' : 'company';
-  const offered = /^\d+$/.test(f.offered) ? Number(f.offered) : null;
-  const details = [f.entityType, f.jurisdiction, f.industry, f.fundType].filter(Boolean).join('; ');
-  const funding = isLatest && f.sold != null
-    ? { funding_amount_usd: f.sold, notes: `Total amount sold as of this filing (latest Form D for the issuer in this lane): ${usd(f.sold)} of ${offered != null ? usd(offered) : f.offered} offered; ${f.investors ?? 'unreported'} investors.` }
-    : {};
-  const day = t.filed;
-  const row = makeRow(id, day);
-  const parts = [];
-  let tieNote;
-  if (!tie) {
-    const issuerId = ensureOrg(f.issuer, kind);
-    parts.push(row({ participant_type: 'organization', organization_id: issuerId, role: `issuer${details ? ` (${details})` : ''}`, participation_type: 'form_d_issuer', ...funding }));
-    namesCounts.issuer_rows_own_entity_no_link += 1;
-    tieNote = canonOrgById.has(issuerId)
-      ? `The issuer row is on ${canonOrgById.get(issuerId).label}, which the ledger already held under the filed name; there is no link row.`
-      : preexistingOrgIds.has(issuerId)
-        ? 'The issuer is its own entity, entered with this lane\'s earlier filings; there is no link row.'
-        : 'The issuer is its own entity; the ledger held no organisation of that name, so there is no link row.';
-  } else if (tie.match === 'exact') {
-    parts.push(row({ participant_type: 'organization', organization_id: ledgerOrg.id, role: `issuer, filed as ${f.issuer}${details ? ` (${details})` : ''}`, participation_type: 'form_d_issuer', ...funding }));
-    namesCounts.issuer_rows_on_ledger_organisation += 1;
-    tieNote = `The issuer row is on the ledger organisation ${ledgerOrg.label}.`;
-  } else {
-    if (!norm(f.issuer).includes(norm(ledgerOrg.label))) throw new Error(`${id}: family issuer ${f.issuer} does not carry the name ${ledgerOrg.label}`);
-    const issuerId = ensureOrg(f.issuer, kind);
-    if (issuerId === ledgerOrg.id) throw new Error(`${id}: family issuer ${f.issuer} resolves to the ledger organisation itself`);
-    parts.push(row({ participant_type: 'organization', organization_id: issuerId, role: `issuer${details ? ` (${details})` : ''}`, participation_type: 'form_d_issuer', ...funding }));
-    parts.push(row({ participant_type: 'organization', organization_id: ledgerOrg.id, role: `name-based link: the issuer carries the name '${ledgerOrg.label}'; the filing does not show ownership or control by ${ledgerOrg.label}`, participation_type: 'name_based_affiliation' }));
-    namesCounts.issuer_rows_with_name_link += 1;
-    namesCounts.name_link_rows += 1;
-    tieNote = `The issuer is its own entity; ${ledgerOrg.label} has a name-based link row only.`;
+  for (const x of ready) {
+    const { t, f, id, tie, ledgerOrg, admitted, missed } = x;
+    const isLatest = latestByNewIssuer.get(cikOf(f)) === t.accession;
+    const kind = /pooled investment fund/i.test(f.industry) ? 'fund' : 'company';
+    const offered = /^\d+$/.test(f.offered) ? Number(f.offered) : null;
+    const details = [f.entityType, f.jurisdiction, f.industry, f.fundType].filter(Boolean).join('; ');
+    const funding = isLatest && f.sold != null
+      ? { funding_amount_usd: f.sold, notes: `Total amount sold as of this filing (latest Form D for the issuer in this lane): ${usd(f.sold)} of ${offered != null ? usd(offered) : f.offered} offered; ${f.investors ?? 'unreported'} investors.` }
+      : {};
+    const day = t.filed;
+    const row = makeRow(id, day);
+    const parts = [];
+    let tieNote;
+    if (!tie) {
+      const issuerId = ensureOrg(f.issuer, kind);
+      // A ruling that this issuer is not the ledger organisation of a similar name holds: it stays its own entity.
+      if ((notExact.includes(f.issuer) || notExact.includes(t.issuer)) && canonOrgById.has(issuerId)) throw new Error(`${id}: ${f.issuer} is ruled not ${issuerId}`);
+      parts.push(row({ participant_type: 'organization', organization_id: issuerId, role: `issuer${details ? ` (${details})` : ''}`, participation_type: 'form_d_issuer', ...funding }));
+      c.issuer_rows_own_entity_no_link += 1;
+      tieNote = canonOrgById.has(issuerId)
+        ? `The issuer row is on ${canonOrgById.get(issuerId).label}, which the ledger already held under the filed name; there is no link row.`
+        : preexistingOrgIds.has(issuerId)
+          ? 'The issuer is its own entity, entered with this lane\'s earlier filings; there is no link row.'
+          : 'The issuer is its own entity; the ledger held no organisation of that name, so there is no link row.';
+    } else if (tie.match === 'exact') {
+      parts.push(row({ participant_type: 'organization', organization_id: ledgerOrg.id, role: `issuer, filed as ${f.issuer}${details ? ` (${details})` : ''}`, participation_type: 'form_d_issuer', ...funding }));
+      c.issuer_rows_on_ledger_organisation += 1;
+      tieNote = `The issuer row is on the ledger organisation ${ledgerOrg.label}.`;
+    } else {
+      if (!norm(f.issuer).includes(norm(ledgerOrg.label))) throw new Error(`${id}: family issuer ${f.issuer} does not carry the name ${ledgerOrg.label}`);
+      const issuerId = ensureOrg(f.issuer, kind);
+      if (issuerId === ledgerOrg.id) throw new Error(`${id}: family issuer ${f.issuer} resolves to the ledger organisation itself`);
+      parts.push(row({ participant_type: 'organization', organization_id: issuerId, role: `issuer${details ? ` (${details})` : ''}`, participation_type: 'form_d_issuer', ...funding }));
+      parts.push(row({ participant_type: 'organization', organization_id: ledgerOrg.id, role: `name-based link: the issuer carries the name '${ledgerOrg.label}'; the filing does not show ownership or control by ${ledgerOrg.label}`, participation_type: 'name_based_affiliation' }));
+      c.issuer_rows_with_name_link += 1;
+      c.name_link_rows += 1;
+      tieNote = `The issuer is its own entity; ${ledgerOrg.label} has a name-based link row only.`;
+    }
+    c.issuer_rows += 1;
+    for (const { actor, hit } of admitted) {
+      const filedAs = hit.full ?? hit.label;
+      parts.push(row({ participant_type: 'actor', actor_id: actor.id, role: `related person: ${hit.relationships.join(', ')}${hit.clarification ? ` (${hit.clarification})` : ''}`, participation_type: 'form_d_related_person',
+        ...(filedAs !== actor.label ? { notes: `Filed as ${filedAs}.` } : {}) }));
+      c.ledger_person_rows += 1;
+    }
+    const tieSentences = judged
+      ? admitted.map(({ lp, actor }) => judgedTie(actor, lp)).join(' ')
+      : admitted.map(({ lp, actor }) => `Tie to the ledger's ${actor.label}: ${lp.tie}.`).join(' ');
+    const tieClose = judged
+      ? `${admitted.length > 1 ? 'Each tie waits' : 'It waits'} for a reader.`
+      : `${admitted.length > 1 ? 'Each tie is' : 'The tie is'} mechanical and waits for a reader.`;
+    const missedSentences = missed.map(({ lp, reason }) => (reason === NO_ACTOR
+      ? ` ${lp.label} is also named but has no row: the ledger's actor registry does not hold that person.`
+      : ` ${lp.label} was looked for but is not listed as a related person, so has no row.`)).join('');
+    const basisNote = ` Entered because the filing names ${listNames(admitted.map(a => a.actor.label))}. ${tieSentences} ${tieClose}${missedSentences}`;
+    const signers = f.signers.map(s => `${s[0]} (${s[1]})`);
+    const surface = {
+      surface_id: id,
+      surface_label: passLabel(x),
+      surface_type: 'employment_investment_surface',
+      secondary_surface_types: ['surface_factory_capital_layer'],
+      hop_eligible: false,
+      hop_refusal_reason: HOP_REFUSAL,
+      scorable: true,
+      status: 'official_form_d_notice',
+      bounded_by: ['SEC Form D notice of exempt offering'],
+      time_start: day,
+      time_end: day,
+      evidence_class: 'official',
+      receipt_ids: [id],
+      notes: `Form ${f.form} (accession ${t.accession}) for ${f.issuer}, ${f.city || 'address not parsed'}. Offering ${offered != null ? usd(offered) : f.offered || 'not stated'}; sold ${usd(f.sold) ?? 'not stated'}; investors ${f.investors ?? 'not stated'}; first sale ${f.firstSale ?? 'not stated'}${f.minimum != null ? `; minimum investment ${usd(f.minimum)}` : ''}. Related persons: ${f.related.map(r => r.label).join('; ') || 'none'}; signed by ${signers.join(', ') || 'unknown'}. Dated by the SEC filing date. Rows were entered for the issuer and for people already in the ledger; the other related persons, related entities and signers are named in this note only. ${tieNote}${basisNote} A Form D is a notice, not a registration; amounts are cumulative for the offering and amendments restate them. Entered ${ENTERED} from the SEC's quarterly Form D data sets on the owner's answer "${words}" and kept out of hops until a reader reviews it.`,
+      date_basis: 'sec_filing_date',
+      sec_accession: t.accession,
+      issuer_cik: f.cik,
+      total_offering_amount_usd: offered,
+      total_amount_sold_usd: f.sold,
+      investors_count: f.investors,
+      date_of_first_sale: f.firstSale,
+      intake_basis: t.basis,
+      intake_source: LANE,
+      roster_entry_count: parts.length,
+    };
+    surfaces.push(surface);
+    participation.push(...parts);
+    cited.set(id, receiptState.get(id).candidate);
+    c.filings_entered += 1;
   }
-  namesCounts.issuer_rows += 1;
-  for (const { actor, hit } of admitted) {
-    const filedAs = hit.full ?? hit.label;
-    parts.push(row({ participant_type: 'actor', actor_id: actor.id, role: `related person: ${hit.relationships.join(', ')}${hit.clarification ? ` (${hit.clarification})` : ''}`, participation_type: 'form_d_related_person',
-      ...(filedAs !== actor.label ? { notes: `Filed as ${filedAs}.` } : {}) }));
-    namesCounts.ledger_person_rows += 1;
-  }
-  const tieSentences = admitted.map(({ lp, actor }) => `Tie to the ledger's ${actor.label}: ${lp.tie}.`).join(' ');
-  const missedSentences = missed.map(({ lp, reason }) => (reason === NO_ACTOR
-    ? ` ${lp.label} is also named but has no row: the ledger's actor registry does not hold that person.`
-    : ` ${lp.label} was looked for but is not listed as a related person, so has no row.`)).join('');
-  const basisNote = ` Entered because the filing names ${listNames(admitted.map(a => a.actor.label))}. ${tieSentences} ${admitted.length > 1 ? 'Each tie is' : 'The tie is'} mechanical and waits for a reader.${missedSentences}`;
-  const signers = f.signers.map(s => `${s[0]} (${s[1]})`);
-  const surface = {
-    surface_id: id,
-    surface_label: namesLabel(x),
-    surface_type: 'employment_investment_surface',
-    secondary_surface_types: ['surface_factory_capital_layer'],
-    hop_eligible: false,
-    hop_refusal_reason: HOP_REFUSAL,
-    scorable: true,
-    status: 'official_form_d_notice',
-    bounded_by: ['SEC Form D notice of exempt offering'],
-    time_start: day,
-    time_end: day,
-    evidence_class: 'official',
-    receipt_ids: [id],
-    notes: `Form ${f.form} (accession ${t.accession}) for ${f.issuer}, ${f.city || 'address not parsed'}. Offering ${offered != null ? usd(offered) : f.offered || 'not stated'}; sold ${usd(f.sold) ?? 'not stated'}; investors ${f.investors ?? 'not stated'}; first sale ${f.firstSale ?? 'not stated'}${f.minimum != null ? `; minimum investment ${usd(f.minimum)}` : ''}. Related persons: ${f.related.map(r => r.label).join('; ') || 'none'}; signed by ${signers.join(', ') || 'unknown'}. Dated by the SEC filing date. Rows were entered for the issuer and for people already in the ledger; the other related persons, related entities and signers are named in this note only. ${tieNote}${basisNote} A Form D is a notice, not a registration; amounts are cumulative for the offering and amendments restate them. Entered ${ENTERED} from the SEC's quarterly Form D data sets on the owner's answer "${NAMES_WORDS}" and kept out of hops until a reader reviews it.`,
-    date_basis: 'sec_filing_date',
-    sec_accession: t.accession,
-    issuer_cik: f.cik,
-    total_offering_amount_usd: offered,
-    total_amount_sold_usd: f.sold,
-    investors_count: f.investors,
-    date_of_first_sale: f.firstSale,
-    intake_basis: t.basis,
-    intake_source: LANE,
-    roster_entry_count: parts.length,
-  };
-  surfaces.push(surface);
-  participation.push(...parts);
-  cited.set(id, receiptState.get(id).candidate);
-  namesCounts.filings_entered += 1;
 }
+
+// Second intake (mechanical ties), then the third (hand-judged ties); each held list follows the filings it may extend.
+addHeld(heldAdditions, heldCounts, false);
+enterDataSet({ parsedPass: parsedNames, c: namesCounts, judged: false, priorIssuers: new Set(parsedFirst.map(x => cikOf(x.f))), words: NAMES_WORDS, notExact: namesIntake?.rulings?.not_exact ?? [] });
+addHeld(judgedHeldAdditions, judgedHeldCounts, true);
+enterDataSet({ parsedPass: parsedJudged, c: judgedCounts, judged: true, priorIssuers: new Set([...parsedFirst.map(x => cikOf(x.f)), ...surfaces.map(s => String(Number(s.issuer_cik)))]), words: JUDGED_WORDS, notExact: judgedIntake?.rulings?.not_exact ?? [] });
+
 // Nobody gets a row but the issuer, a linked ledger organisation and the ledger people the intakes name.
 {
   const named = new Map(targets.map(t => [receiptIdOf(t), new Set(t.ledger_people.map(p => p.ledger_id))]));
-  for (const h of heldAdditions) for (const p of h.ledger_people) named.get(receiptIdOf(h)).add(p.ledger_id);
+  for (const h of [...heldAdditions, ...judgedHeldAdditions]) for (const p of h.ledger_people) named.get(receiptIdOf(h)).add(p.ledger_id);
   for (const p of participation) if (p.actor_id && !named.get(p.surface_id)?.has(p.actor_id)) throw new Error(`${p.surface_id}: ${p.actor_id} is not a targeted ledger person`);
 }
 
@@ -627,16 +686,21 @@ writeJson(`${OUT}/summary.json`, {
   tool: TOOL,
   intake: INTAKE,
   intake_data_set_names: INTAKE_NAMES,
+  intake_data_set_names_judged: INTAKE_JUDGED,
   decision: [
     { date: ENTERED, decided_by: 'owner', words: 'Yes, one pass', applies_to: INTAKE },
     { date: ENTERED, decided_by: 'owner', question: NAMES_QUESTION, words: NAMES_WORDS, applies_to: INTAKE_NAMES },
+    { date: ENTERED, decided_by: 'owner', question: JUDGED_QUESTION, words: JUDGED_WORDS, applies_to: INTAKE_JUDGED },
   ],
-  sources: { manifest: MANIFEST, store: STORE, targets: targets.length, targets_first_intake: firstTargets.length, targets_data_set_names: namesTargets.length, held_additions: heldAdditions.length, archived: [...manifest.values()].filter(r => r.status === 'archived').length, failed: [...manifest.values()].filter(r => r.status === 'failed').map(r => ({ receipt_id: r.receipt_id, source_url: r.source_url, reason: r.reason })) },
+  sources: { manifest: MANIFEST, store: STORE, targets: targets.length, targets_first_intake: firstTargets.length, targets_data_set_names: namesTargets.length, held_additions: heldAdditions.length, targets_data_set_names_judged: judgedTargets.length, held_additions_judged: judgedHeldAdditions.length, archived: [...manifest.values()].filter(r => r.status === 'archived').length, failed: [...manifest.values()].filter(r => r.status === 'failed').map(r => ({ receipt_id: r.receipt_id, source_url: r.source_url, reason: r.reason })) },
   admission_rule: 'A filing is entered only when its archived primary_doc.xml satisfies the live receipt contract (public source URL, in-repo archived copy whose SHA-256 matches, limits). Rows go to the issuer (on the ledger organisation when the match is exact; on the issuer itself, with a name-based link row on the ledger organisation, when the match is family) and to each targeted ledger person only when the archived XML lists that person as a related person. Nobody else gets a row. Every surface is hop_eligible false pending a reader.',
   admission_rule_data_set_names: 'A data-set filing is entered only when at least one targeted ledger person takes a row: a canonical ledger actor whom the archived XML lists as a related person. The person is the reason for entry; otherwise the filing goes to gaps whole. With no ledger organisation the issuer is its own entity (resolved or minted by name) with one issuer row and no link row. Each person\'s tie (a ledger organisation beside them, two Field names on one filing, or the same name at the same address, issuer or management team as a tied filing) is mechanical and waits for a reader. Held additions are related-person rows on this lane\'s existing surfaces, admitted by the same check; existing rows are not rewritten.',
+  admission_rule_data_set_names_judged: 'The hand-judged data-set filings are admitted exactly as the mechanically tied ones: a filing enters only when a targeted ledger person takes a row, the issuer row follows the organisation match (exact, family or none) and held additions append rows. The difference is the tie: a research hand judged from public knowledge that the person on the filing is the ledger\'s person, the supervisor read each call, and every judged filing carries an identity verdict in the intake. The tie is a judgement, not a mechanical match, and waits for a reader.',
   counts,
   counts_data_set_names: namesCounts,
   counts_held_additions: heldCounts,
+  counts_data_set_names_judged: judgedCounts,
+  counts_held_additions_judged: judgedHeldCounts,
   staged: {
     surfaces: surfaces.length, participation: participation.length, receipts: receipts.length,
     new_actors: 0, new_organizations: orgsOut.length, gaps: gaps.length,
