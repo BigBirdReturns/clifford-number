@@ -62,10 +62,13 @@ assert.ok(realPolicy.policy_changes.every(change => change.date && change.decide
 // 2026-11-10 Form D data sets (owner answer "Yes, fetch them"): endpoint 14,000,000 -> 18,000,000, explorer standalone
 // and max_single_file_bytes 20,000,000 -> 24,000,000, main standalone 8,000,000 -> 11,000,000, max_files 4,000 -> 4,500,
 // max_total_bytes 400,000,000 -> 450,000,000 (measured 16,203,703, 21,359,240, 9,675,826, 4,054 files, 400,309,860 bytes).
-assert.deepEqual(realPolicy.performance_budgets.max_path_bytes, { 'Clifford-Number-endpoint.html': 18000000, 'Clifford-Number-explorer-standalone.html': 24000000 });
-assert.equal(realPolicy.performance_budgets.max_single_file_bytes, 24000000, 'the single-file budget (raised 2026-11-10 from 16,000,000, then from 20,000,000)');
-assert.equal(realPolicy.performance_budgets.max_standalone_bytes, 11000000, 'the main standalone budget (raised 2026-10-23 from 5,000,000, 2026-11-10 from 8,000,000)');
-assert.equal(realPolicy.performance_budgets.max_files, 4500, 'the file-count budget (raised 2026-10-23 from 3,200, 2026-11-10 from 4,000)');
+// 2026-11-10 hand-judged Form D filings (owner answer "All 527"): endpoint 18,000,000 -> 23,000,000, explorer standalone
+// and max_single_file_bytes 24,000,000 -> 28,000,000, main standalone 11,000,000 -> 13,000,000, max_files 4,500 -> 5,000
+// (measured 20,109,748, 25,449,761, 11,908,094 and 4,570 files; 431,501,726 bytes stays within max_total_bytes).
+assert.deepEqual(realPolicy.performance_budgets.max_path_bytes, { 'Clifford-Number-endpoint.html': 23000000, 'Clifford-Number-explorer-standalone.html': 28000000 });
+assert.equal(realPolicy.performance_budgets.max_single_file_bytes, 28000000, 'the single-file budget (raised 2026-11-10 from 16,000,000, then from 20,000,000 and 24,000,000)');
+assert.equal(realPolicy.performance_budgets.max_standalone_bytes, 13000000, 'the main standalone budget (raised 2026-10-23 from 5,000,000, 2026-11-10 from 8,000,000 and 11,000,000)');
+assert.equal(realPolicy.performance_budgets.max_files, 5000, 'the file-count budget (raised 2026-10-23 from 3,200, 2026-11-10 from 4,000 and 4,500)');
 assert.equal(realPolicy.performance_budgets.max_total_bytes, 450000000, 'the byte budget (raised 2026-11-10 from 400,000,000)');
 assert.throws(() => validatePublicationPolicy({ ...base, performance_budgets: { ...base.performance_budgets, max_path_bytes: { 'nope.html': 1 } } }), /unlisted path/u);
 // The forbidden-text scan covers every file within the single-file budget (2026-11-10 follow-up): the limit
