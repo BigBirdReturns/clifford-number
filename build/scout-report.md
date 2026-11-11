@@ -6,7 +6,7 @@ Generated: 2026-09-12T03:00:00.000Z
 
 Broad-institution reviews: 9
 
-Findings: 731
+Findings: 744
 
 ## finding-001: Electric Twin behaves as a surface factory
 
@@ -52,13 +52,13 @@ Refs: `electric-twin-newsuk-synthetic-audience`, `newsuk-times-exploraition-laun
 
 **Observed**
 
-Faculty / Faculty Science / ASI Data Science appears across 68 surface(s): faculty-science-officer-employee-overlap-2018-01-24, faculty-science-director-shareholder-overlap-2024-10-10, uk-ai-safety-summit-2023-confirmed-attendees-programme-roster, cf-award-government-digital-service-faculty-2019-08-23-48673633, cf-award-government-digital-service-faculty-2019-10-04-7af67d25, cf-award-cabinet-office-faculty-2019-10-14-8e4b2d57, cf-award-dhsc-faculty-2020-02-13-13bd9795, cf-award-defra-faculty-2020-03-04-4c1c07fa, cf-award-dcms-faculty-2020-03-19-fcb1f692, cf-award-beis-faculty-2020-03-20-268e82ad, nhsx-covid-19-data-store-faculty-2020-03-28, cf-award-dhsc-faculty-2020-04-01-bf42fc5f, cf-award-mhclg-faculty-2020-04-09-b7bbcaf0, cf-award-beis-faculty-2020-06-23-e316c7b2, cf-award-nhs-supply-chain-faculty-2020-12-01-d1e0d017, cf-award-home-office-border-force-faculty-2020-12-22-3296f318, cf-award-dcms-faculty-2021-01-11-8bf773ad, cf-award-british-business-bank-faculty-2021-02-26-fc9da582, cf-award-dhsc-faculty-2021-03-01-64bce243, cf-award-serious-fraud-office-faculty-2021-08-31-98fa8bef, cf-award-dcms-faculty-2022-01-13-6b9e5a87, cf-award-genomics-england-limited-faculty-2022-02-25-cfd9f98b, cf-award-dcms-faculty-2022-06-14-5dea9926, cf-award-fcdo-services-faculty-2022-06-29-0c5ae89d, cf-award-dfe-faculty-2022-07-07-a51ed249, cf-award-highways-england-faculty-2022-09-13-6af7a4b5, cf-award-fcdo-services-faculty-2022-12-06-6a4708d9, faculty-science-share-allotments-2023-01-13-2026-03-12, cf-award-nhs-england-faculty-2023-01-19-49f7b032, cf-award-ukhsa-faculty-2023-02-09-f632716f, cf-award-nhs-south-central-and-west-commissioning-support-unit-faculty-2023-03-01-2e2da92d, cf-award-centre-for-process-innovation-limited-faculty-2023-03-03-34736f47, cf-award-dfe-faculty-2023-05-19-03470d3c, cf-award-ukri-faculty-2023-07-07-87b2eade, cf-award-dfe-faculty-2023-09-07-5b269dd1, dfe-ai-hackathon-faculty-2023-10-09, frontier-ai-taskforce-faculty-contract-2023-10-18, cf-award-beis-faculty-2024-01-01-a887ffd6, cf-award-dsit-faculty-2024-02-20-3a57f9fd, dsit-payments-faculty-science-2024-02, dsit-payments-faculty-science-2024-03, cf-award-dhsc-faculty-2024-03-26-05ac339b, dsit-payments-faculty-science-2024-04, dsit-payments-faculty-science-2024-05, cf-award-care-quality-commission-faculty-2024-07-12-4b46d0ee, cf-award-dfe-faculty-2024-08-09-836909a1, cf-award-ons-faculty-2024-09-20-c3886a91, cf-award-arts-council-england-faculty-2024-09-24-70584733, dsit-payments-faculty-science-2024-10, cf-award-dsit-faculty-2024-10-16-d7f72045, dsit-payments-faculty-science-2024-12, dsit-payments-faculty-science-2025-01, cf-award-ons-faculty-2025-02-14-120e97d1, dsit-payments-faculty-science-2025-03, dsit-payments-faculty-science-2025-04, dsit-payments-faculty-science-2025-06, cf-award-police-digital-service-faculty-2025-07-27-681e30e7, dsit-payments-faculty-science-2025-07, cf-award-defra-faculty-2025-08-11-7d04374b, cf-award-home-office-border-force-faculty-2025-09-01-3fd991c0, dsit-payments-faculty-science-2025-09, dsit-payments-faculty-science-2025-10, dsit-payments-faculty-science-2025-12, cf-award-mhclg-faculty-2026-01-07-42988142, cf-award-mod-faculty-2026-01-09-7aafc1b3, faculty-science-control-change-accenture-2026-03-12, cf-award-police-digital-service-faculty-2026-07-10-c04981cd, cf-award-peabody-trust-faculty-2026-07-14-0780dcb4. Secondary types: defence_industrial_surface, founder_officer_surface, government_advisory_surface, model_governance_surface, public_private_ai_infrastructure, surface_factory_capital_layer.
+Faculty / Faculty Science / ASI Data Science appears across 69 surface(s): faculty-science-officer-employee-overlap-2018-01-24, faculty-science-director-shareholder-overlap-2024-10-10, uk-ai-safety-summit-2023-confirmed-attendees-programme-roster, cf-award-government-digital-service-faculty-2019-08-23-48673633, cf-award-government-digital-service-faculty-2019-10-04-7af67d25, cf-award-cabinet-office-faculty-2019-10-14-8e4b2d57, cf-award-dhsc-faculty-2020-02-13-13bd9795, cf-award-defra-faculty-2020-03-04-4c1c07fa, cf-award-dcms-faculty-2020-03-19-fcb1f692, cf-award-beis-faculty-2020-03-20-268e82ad, nhsx-covid-19-data-store-faculty-2020-03-28, cf-award-dhsc-faculty-2020-04-01-bf42fc5f, cf-award-mhclg-faculty-2020-04-09-b7bbcaf0, cf-award-beis-faculty-2020-06-23-e316c7b2, cf-award-nhs-supply-chain-faculty-2020-12-01-d1e0d017, cf-award-home-office-border-force-faculty-2020-12-22-3296f318, cf-award-dcms-faculty-2021-01-11-8bf773ad, cf-award-british-business-bank-faculty-2021-02-26-fc9da582, cf-award-dhsc-faculty-2021-03-01-64bce243, cf-award-serious-fraud-office-faculty-2021-08-31-98fa8bef, cf-award-dcms-faculty-2022-01-13-6b9e5a87, cf-award-genomics-england-limited-faculty-2022-02-25-cfd9f98b, cf-award-dcms-faculty-2022-06-14-5dea9926, cf-award-fcdo-services-faculty-2022-06-29-0c5ae89d, cf-award-dfe-faculty-2022-07-07-a51ed249, cf-award-highways-england-faculty-2022-09-13-6af7a4b5, cf-award-fcdo-services-faculty-2022-12-06-6a4708d9, faculty-science-share-allotments-2023-01-13-2026-03-12, cf-award-nhs-england-faculty-2023-01-19-49f7b032, cf-award-ukhsa-faculty-2023-02-09-f632716f, cf-award-nhs-south-central-and-west-commissioning-support-unit-faculty-2023-03-01-2e2da92d, cf-award-centre-for-process-innovation-limited-faculty-2023-03-03-34736f47, cf-award-dfe-faculty-2023-05-19-03470d3c, cf-award-ukri-faculty-2023-07-07-87b2eade, cf-award-dfe-faculty-2023-09-07-5b269dd1, dfe-ai-hackathon-faculty-2023-10-09, frontier-ai-taskforce-faculty-contract-2023-10-18, cf-award-beis-faculty-2024-01-01-a887ffd6, cf-award-dsit-faculty-2024-02-20-3a57f9fd, dsit-payments-faculty-science-2024-02, dsit-payments-faculty-science-2024-03, cf-award-dhsc-faculty-2024-03-26-05ac339b, dsit-payments-faculty-science-2024-04, dsit-payments-faculty-science-2024-05, cf-award-care-quality-commission-faculty-2024-07-12-4b46d0ee, cf-award-dfe-faculty-2024-08-09-836909a1, cf-award-ons-faculty-2024-09-20-c3886a91, cf-award-arts-council-england-faculty-2024-09-24-70584733, dsit-payments-faculty-science-2024-10, cf-award-dsit-faculty-2024-10-16-d7f72045, dsit-payments-faculty-science-2024-12, dsit-payments-faculty-science-2025-01, cf-award-ons-faculty-2025-02-14-120e97d1, dsit-payments-faculty-science-2025-03, dsit-payments-faculty-science-2025-04, dsit-payments-faculty-science-2025-06, cf-award-police-digital-service-faculty-2025-07-27-681e30e7, dsit-payments-faculty-science-2025-07, cf-award-defra-faculty-2025-08-11-7d04374b, cf-award-home-office-border-force-faculty-2025-09-01-3fd991c0, dsit-payments-faculty-science-2025-09, dsit-payments-faculty-science-2025-10, dsit-payments-faculty-science-2025-12, cf-award-mhclg-faculty-2026-01-07-42988142, cf-award-mod-faculty-2026-01-09-7aafc1b3, faculty-science-control-change-accenture-2026-03-12, cf-award-police-digital-service-faculty-2026-07-10-c04981cd, cf-award-peabody-trust-faculty-2026-07-14-0780dcb4, dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names. Secondary types: defence_industrial_surface, founder_officer_surface, government_advisory_surface, model_governance_surface, public_private_ai_infrastructure, surface_factory_capital_layer.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `faculty-science-officer-employee-overlap-2018-01-24`, `faculty-science-director-shareholder-overlap-2024-10-10`, `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `cf-award-government-digital-service-faculty-2019-08-23-48673633`, `cf-award-government-digital-service-faculty-2019-10-04-7af67d25`, `cf-award-cabinet-office-faculty-2019-10-14-8e4b2d57`, `cf-award-dhsc-faculty-2020-02-13-13bd9795`, `cf-award-defra-faculty-2020-03-04-4c1c07fa`, `cf-award-dcms-faculty-2020-03-19-fcb1f692`, `cf-award-beis-faculty-2020-03-20-268e82ad`, `nhsx-covid-19-data-store-faculty-2020-03-28`, `cf-award-dhsc-faculty-2020-04-01-bf42fc5f`, `cf-award-mhclg-faculty-2020-04-09-b7bbcaf0`, `cf-award-beis-faculty-2020-06-23-e316c7b2`, `cf-award-nhs-supply-chain-faculty-2020-12-01-d1e0d017`, `cf-award-home-office-border-force-faculty-2020-12-22-3296f318`, `cf-award-dcms-faculty-2021-01-11-8bf773ad`, `cf-award-british-business-bank-faculty-2021-02-26-fc9da582`, `cf-award-dhsc-faculty-2021-03-01-64bce243`, `cf-award-serious-fraud-office-faculty-2021-08-31-98fa8bef`, `cf-award-dcms-faculty-2022-01-13-6b9e5a87`, `cf-award-genomics-england-limited-faculty-2022-02-25-cfd9f98b`, `cf-award-dcms-faculty-2022-06-14-5dea9926`, `cf-award-fcdo-services-faculty-2022-06-29-0c5ae89d`, `cf-award-dfe-faculty-2022-07-07-a51ed249`, `cf-award-highways-england-faculty-2022-09-13-6af7a4b5`, `cf-award-fcdo-services-faculty-2022-12-06-6a4708d9`, `faculty-science-share-allotments-2023-01-13-2026-03-12`, `cf-award-nhs-england-faculty-2023-01-19-49f7b032`, `cf-award-ukhsa-faculty-2023-02-09-f632716f`, `cf-award-nhs-south-central-and-west-commissioning-support-unit-faculty-2023-03-01-2e2da92d`, `cf-award-centre-for-process-innovation-limited-faculty-2023-03-03-34736f47`, `cf-award-dfe-faculty-2023-05-19-03470d3c`, `cf-award-ukri-faculty-2023-07-07-87b2eade`, `cf-award-dfe-faculty-2023-09-07-5b269dd1`, `dfe-ai-hackathon-faculty-2023-10-09`, `frontier-ai-taskforce-faculty-contract-2023-10-18`, `cf-award-beis-faculty-2024-01-01-a887ffd6`, `cf-award-dsit-faculty-2024-02-20-3a57f9fd`, `dsit-payments-faculty-science-2024-02`, `dsit-payments-faculty-science-2024-03`, `cf-award-dhsc-faculty-2024-03-26-05ac339b`, `dsit-payments-faculty-science-2024-04`, `dsit-payments-faculty-science-2024-05`, `cf-award-care-quality-commission-faculty-2024-07-12-4b46d0ee`, `cf-award-dfe-faculty-2024-08-09-836909a1`, `cf-award-ons-faculty-2024-09-20-c3886a91`, `cf-award-arts-council-england-faculty-2024-09-24-70584733`, `dsit-payments-faculty-science-2024-10`, `cf-award-dsit-faculty-2024-10-16-d7f72045`, `dsit-payments-faculty-science-2024-12`, `dsit-payments-faculty-science-2025-01`, `cf-award-ons-faculty-2025-02-14-120e97d1`, `dsit-payments-faculty-science-2025-03`, `dsit-payments-faculty-science-2025-04`, `dsit-payments-faculty-science-2025-06`, `cf-award-police-digital-service-faculty-2025-07-27-681e30e7`, `dsit-payments-faculty-science-2025-07`, `cf-award-defra-faculty-2025-08-11-7d04374b`, `cf-award-home-office-border-force-faculty-2025-09-01-3fd991c0`, `dsit-payments-faculty-science-2025-09`, `dsit-payments-faculty-science-2025-10`, `dsit-payments-faculty-science-2025-12`, `cf-award-mhclg-faculty-2026-01-07-42988142`, `cf-award-mod-faculty-2026-01-09-7aafc1b3`, `faculty-science-control-change-accenture-2026-03-12`, `cf-award-police-digital-service-faculty-2026-07-10-c04981cd`, `cf-award-peabody-trust-faculty-2026-07-14-0780dcb4`
+Refs: `faculty-science-officer-employee-overlap-2018-01-24`, `faculty-science-director-shareholder-overlap-2024-10-10`, `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `cf-award-government-digital-service-faculty-2019-08-23-48673633`, `cf-award-government-digital-service-faculty-2019-10-04-7af67d25`, `cf-award-cabinet-office-faculty-2019-10-14-8e4b2d57`, `cf-award-dhsc-faculty-2020-02-13-13bd9795`, `cf-award-defra-faculty-2020-03-04-4c1c07fa`, `cf-award-dcms-faculty-2020-03-19-fcb1f692`, `cf-award-beis-faculty-2020-03-20-268e82ad`, `nhsx-covid-19-data-store-faculty-2020-03-28`, `cf-award-dhsc-faculty-2020-04-01-bf42fc5f`, `cf-award-mhclg-faculty-2020-04-09-b7bbcaf0`, `cf-award-beis-faculty-2020-06-23-e316c7b2`, `cf-award-nhs-supply-chain-faculty-2020-12-01-d1e0d017`, `cf-award-home-office-border-force-faculty-2020-12-22-3296f318`, `cf-award-dcms-faculty-2021-01-11-8bf773ad`, `cf-award-british-business-bank-faculty-2021-02-26-fc9da582`, `cf-award-dhsc-faculty-2021-03-01-64bce243`, `cf-award-serious-fraud-office-faculty-2021-08-31-98fa8bef`, `cf-award-dcms-faculty-2022-01-13-6b9e5a87`, `cf-award-genomics-england-limited-faculty-2022-02-25-cfd9f98b`, `cf-award-dcms-faculty-2022-06-14-5dea9926`, `cf-award-fcdo-services-faculty-2022-06-29-0c5ae89d`, `cf-award-dfe-faculty-2022-07-07-a51ed249`, `cf-award-highways-england-faculty-2022-09-13-6af7a4b5`, `cf-award-fcdo-services-faculty-2022-12-06-6a4708d9`, `faculty-science-share-allotments-2023-01-13-2026-03-12`, `cf-award-nhs-england-faculty-2023-01-19-49f7b032`, `cf-award-ukhsa-faculty-2023-02-09-f632716f`, `cf-award-nhs-south-central-and-west-commissioning-support-unit-faculty-2023-03-01-2e2da92d`, `cf-award-centre-for-process-innovation-limited-faculty-2023-03-03-34736f47`, `cf-award-dfe-faculty-2023-05-19-03470d3c`, `cf-award-ukri-faculty-2023-07-07-87b2eade`, `cf-award-dfe-faculty-2023-09-07-5b269dd1`, `dfe-ai-hackathon-faculty-2023-10-09`, `frontier-ai-taskforce-faculty-contract-2023-10-18`, `cf-award-beis-faculty-2024-01-01-a887ffd6`, `cf-award-dsit-faculty-2024-02-20-3a57f9fd`, `dsit-payments-faculty-science-2024-02`, `dsit-payments-faculty-science-2024-03`, `cf-award-dhsc-faculty-2024-03-26-05ac339b`, `dsit-payments-faculty-science-2024-04`, `dsit-payments-faculty-science-2024-05`, `cf-award-care-quality-commission-faculty-2024-07-12-4b46d0ee`, `cf-award-dfe-faculty-2024-08-09-836909a1`, `cf-award-ons-faculty-2024-09-20-c3886a91`, `cf-award-arts-council-england-faculty-2024-09-24-70584733`, `dsit-payments-faculty-science-2024-10`, `cf-award-dsit-faculty-2024-10-16-d7f72045`, `dsit-payments-faculty-science-2024-12`, `dsit-payments-faculty-science-2025-01`, `cf-award-ons-faculty-2025-02-14-120e97d1`, `dsit-payments-faculty-science-2025-03`, `dsit-payments-faculty-science-2025-04`, `dsit-payments-faculty-science-2025-06`, `cf-award-police-digital-service-faculty-2025-07-27-681e30e7`, `dsit-payments-faculty-science-2025-07`, `cf-award-defra-faculty-2025-08-11-7d04374b`, `cf-award-home-office-border-force-faculty-2025-09-01-3fd991c0`, `dsit-payments-faculty-science-2025-09`, `dsit-payments-faculty-science-2025-10`, `dsit-payments-faculty-science-2025-12`, `cf-award-mhclg-faculty-2026-01-07-42988142`, `cf-award-mod-faculty-2026-01-09-7aafc1b3`, `faculty-science-control-change-accenture-2026-03-12`, `cf-award-police-digital-service-faculty-2026-07-10-c04981cd`, `cf-award-peabody-trust-faculty-2026-07-14-0780dcb4`, `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`
 
 ---
 
@@ -232,13 +232,13 @@ Refs: `fund-portfolio-page-a16z-american-dynamism-2026-10-23`, `a16z-american-dy
 
 **Observed**
 
-BAE Systems appears across 3 surface(s): team-barrow-public-private-fund-2026, atlantic-bastion-launch-publication-2025-12-08, atlantic-bastion-industry-program-context-2025-12-08. Secondary types: defence_industrial_surface, governance_continuity_surface, government_advisory_surface, policy_to_procurement_surface.
+BAE Systems appears across 4 surface(s): team-barrow-public-private-fund-2026, atlantic-bastion-launch-publication-2025-12-08, atlantic-bastion-industry-program-context-2025-12-08, dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names. Secondary types: defence_industrial_surface, governance_continuity_surface, government_advisory_surface, policy_to_procurement_surface.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `team-barrow-public-private-fund-2026`, `atlantic-bastion-launch-publication-2025-12-08`, `atlantic-bastion-industry-program-context-2025-12-08`
+Refs: `team-barrow-public-private-fund-2026`, `atlantic-bastion-launch-publication-2025-12-08`, `atlantic-bastion-industry-program-context-2025-12-08`, `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`
 
 ---
 
@@ -322,13 +322,13 @@ Refs: `detachment-201-program-context-2025`, `detachment-201-commissioning-2025`
 
 **Observed**
 
-Palantir Technologies appears across 21 surface(s): greg-little-palantir-technologies-senior-counselor-linkedin-2023-present, trae-stephens-palantir-technologies-forward-deployed-engineer-linkedin-2008-2013, fund-portfolio-page-8vc-2026-10-23, fund-portfolio-page-founders-fund-2026-10-23, fund-portfolio-page-in-q-tel-2026-10-23, fund-portfolio-page-washington-harbour-partners-2026-10-23, rndf-2023-programme-roster, rndf-2024-programme-roster, rndf-2025-programme-roster, a16z-american-dynamism-summit-2025-mobilizing-industrial-base, a16z-american-dynamism-summit-2025-programme-roster, uk-ai-safety-summit-2023-confirmed-attendees-programme-roster, sec-form-d-0001321655-10-000001, sec-form-d-0001321655-13-000004, sec-form-d-0001321655-13-000005, sec-form-d-0001321655-14-000001, sec-form-d-0001321655-14-000002, sec-form-d-0001321655-14-000003, sec-form-d-0001321655-15-000002, sec-form-d-0001321655-15-000003, sec-form-d-0001321655-15-000004. Secondary types: defence_industrial_surface, employment_investment_surface, government_advisory_surface, surface_factory_capital_layer.
+Palantir Technologies appears across 22 surface(s): greg-little-palantir-technologies-senior-counselor-linkedin-2023-present, trae-stephens-palantir-technologies-forward-deployed-engineer-linkedin-2008-2013, fund-portfolio-page-8vc-2026-10-23, fund-portfolio-page-founders-fund-2026-10-23, fund-portfolio-page-in-q-tel-2026-10-23, fund-portfolio-page-washington-harbour-partners-2026-10-23, rndf-2023-programme-roster, rndf-2024-programme-roster, rndf-2025-programme-roster, a16z-american-dynamism-summit-2025-mobilizing-industrial-base, a16z-american-dynamism-summit-2025-programme-roster, uk-ai-safety-summit-2023-confirmed-attendees-programme-roster, dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, sec-form-d-0001321655-10-000001, sec-form-d-0001321655-13-000004, sec-form-d-0001321655-13-000005, sec-form-d-0001321655-14-000001, sec-form-d-0001321655-14-000002, sec-form-d-0001321655-14-000003, sec-form-d-0001321655-15-000002, sec-form-d-0001321655-15-000003, sec-form-d-0001321655-15-000004. Secondary types: defence_industrial_surface, employment_investment_surface, government_advisory_surface, surface_factory_capital_layer.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `greg-little-palantir-technologies-senior-counselor-linkedin-2023-present`, `trae-stephens-palantir-technologies-forward-deployed-engineer-linkedin-2008-2013`, `fund-portfolio-page-8vc-2026-10-23`, `fund-portfolio-page-founders-fund-2026-10-23`, `fund-portfolio-page-in-q-tel-2026-10-23`, `fund-portfolio-page-washington-harbour-partners-2026-10-23`, `rndf-2023-programme-roster`, `rndf-2024-programme-roster`, `rndf-2025-programme-roster`, `a16z-american-dynamism-summit-2025-mobilizing-industrial-base`, `a16z-american-dynamism-summit-2025-programme-roster`, `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `sec-form-d-0001321655-10-000001`, `sec-form-d-0001321655-13-000004`, `sec-form-d-0001321655-13-000005`, `sec-form-d-0001321655-14-000001`, `sec-form-d-0001321655-14-000002`, `sec-form-d-0001321655-14-000003`, `sec-form-d-0001321655-15-000002`, `sec-form-d-0001321655-15-000003`, `sec-form-d-0001321655-15-000004`
+Refs: `greg-little-palantir-technologies-senior-counselor-linkedin-2023-present`, `trae-stephens-palantir-technologies-forward-deployed-engineer-linkedin-2008-2013`, `fund-portfolio-page-8vc-2026-10-23`, `fund-portfolio-page-founders-fund-2026-10-23`, `fund-portfolio-page-in-q-tel-2026-10-23`, `fund-portfolio-page-washington-harbour-partners-2026-10-23`, `rndf-2023-programme-roster`, `rndf-2024-programme-roster`, `rndf-2025-programme-roster`, `a16z-american-dynamism-summit-2025-mobilizing-industrial-base`, `a16z-american-dynamism-summit-2025-programme-roster`, `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `sec-form-d-0001321655-10-000001`, `sec-form-d-0001321655-13-000004`, `sec-form-d-0001321655-13-000005`, `sec-form-d-0001321655-14-000001`, `sec-form-d-0001321655-14-000002`, `sec-form-d-0001321655-14-000003`, `sec-form-d-0001321655-15-000002`, `sec-form-d-0001321655-15-000003`, `sec-form-d-0001321655-15-000004`
 
 ---
 
@@ -340,13 +340,13 @@ Refs: `greg-little-palantir-technologies-senior-counselor-linkedin-2023-present`
 
 **Observed**
 
-OpenAI appears across 7 surface(s): natsec100-2026-list, jon-bal-openai-account-director-linkedin-2026-present, kevin-weil-openai-vp-openai-for-science-linkedin-2025-2026, ts-allen-openai-strategic-delivery-lead-openai-for-government-linkedin-2025-present, fund-portfolio-page-founders-fund-2026-10-23, fund-portfolio-page-washington-harbour-partners-2026-10-23, uk-ai-safety-summit-2023-confirmed-attendees-programme-roster. Secondary types: category_formation_surface, defence_industrial_surface, employment_investment_surface, government_advisory_surface, surface_factory_capital_layer.
+OpenAI appears across 8 surface(s): natsec100-2026-list, jon-bal-openai-account-director-linkedin-2026-present, kevin-weil-openai-vp-openai-for-science-linkedin-2025-2026, ts-allen-openai-strategic-delivery-lead-openai-for-government-linkedin-2025-present, fund-portfolio-page-founders-fund-2026-10-23, fund-portfolio-page-washington-harbour-partners-2026-10-23, uk-ai-safety-summit-2023-confirmed-attendees-programme-roster, dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names. Secondary types: category_formation_surface, defence_industrial_surface, employment_investment_surface, government_advisory_surface, surface_factory_capital_layer.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `natsec100-2026-list`, `jon-bal-openai-account-director-linkedin-2026-present`, `kevin-weil-openai-vp-openai-for-science-linkedin-2025-2026`, `ts-allen-openai-strategic-delivery-lead-openai-for-government-linkedin-2025-present`, `fund-portfolio-page-founders-fund-2026-10-23`, `fund-portfolio-page-washington-harbour-partners-2026-10-23`, `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`
+Refs: `natsec100-2026-list`, `jon-bal-openai-account-director-linkedin-2026-present`, `kevin-weil-openai-vp-openai-for-science-linkedin-2025-2026`, `ts-allen-openai-strategic-delivery-lead-openai-for-government-linkedin-2025-present`, `fund-portfolio-page-founders-fund-2026-10-23`, `fund-portfolio-page-washington-harbour-partners-2026-10-23`, `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`
 
 ---
 
@@ -628,13 +628,13 @@ Refs: `natsec100-2023-list`, `natsec100-2024-list`, `natsec100-2025-list`, `nats
 
 **Observed**
 
-Scale AI appears across 6 surface(s): natsec100-2023-list, natsec100-2024-list, natsec100-2025-list, natsec100-2026-list, christopher-kirchhoff-scale-ai-head-of-applied-ai-strategy-and-global-security-linkedin-2025-present, uk-ai-safety-summit-2023-confirmed-attendees-programme-roster. Secondary types: category_formation_surface, defence_industrial_surface, government_advisory_surface.
+Scale AI appears across 7 surface(s): natsec100-2023-list, natsec100-2024-list, natsec100-2025-list, natsec100-2026-list, christopher-kirchhoff-scale-ai-head-of-applied-ai-strategy-and-global-security-linkedin-2025-present, uk-ai-safety-summit-2023-confirmed-attendees-programme-roster, dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names. Secondary types: category_formation_surface, defence_industrial_surface, government_advisory_surface.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `natsec100-2023-list`, `natsec100-2024-list`, `natsec100-2025-list`, `natsec100-2026-list`, `christopher-kirchhoff-scale-ai-head-of-applied-ai-strategy-and-global-security-linkedin-2025-present`, `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`
+Refs: `natsec100-2023-list`, `natsec100-2024-list`, `natsec100-2025-list`, `natsec100-2026-list`, `christopher-kirchhoff-scale-ai-head-of-applied-ai-strategy-and-global-security-linkedin-2025-present`, `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`
 
 ---
 
@@ -2024,7 +2024,25 @@ Refs: `natsec100-2026-list`, `michael-a-brown-strider-technologies-board-member-
 
 ---
 
-## finding-113: U.S. Air Force behaves as a surface factory
+## finding-113: Nvidia behaves as a surface factory
+
+- Type: surface_factory
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+Nvidia appears across 3 surface(s): natsec100-exit-groq-nvidia-2025-12-24, uk-ai-safety-summit-2023-confirmed-attendees-programme-roster, dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names. Secondary types: defence_industrial_surface, government_advisory_surface.
+
+**Required action**
+
+Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
+
+Refs: `natsec100-exit-groq-nvidia-2025-12-24`, `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`
+
+---
+
+## finding-114: U.S. Air Force behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2042,7 +2060,7 @@ Refs: `us-air-force-fy2025-award-sierra-space`, `us-air-force-award-fa9300-25-c-
 
 ---
 
-## finding-114: NASA behaves as a surface factory
+## finding-115: NASA behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2060,7 +2078,7 @@ Refs: `procurement-award-80jsc023f0041`, `procurement-award-80jsc022fa103`, `dar
 
 ---
 
-## finding-115: DoD (Air Force) behaves as a surface factory
+## finding-116: DoD (Air Force) behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2078,7 +2096,7 @@ Refs: `procurement-award-fa930024c6022`, `procurement-award-fa861224cb010`, `pro
 
 ---
 
-## finding-116: USSOCOM behaves as a surface factory
+## finding-117: USSOCOM behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2096,7 +2114,7 @@ Refs: `procurement-award-ussocom-idiq-reported`, `a16z-american-dynamism-summit-
 
 ---
 
-## finding-117: 8VC behaves as a surface factory
+## finding-118: 8VC behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2114,7 +2132,7 @@ Refs: `funding-round-overland-ai-series-b`, `vehicle-control-8vc`, `fund-portfol
 
 ---
 
-## finding-118: Silent Ventures behaves as a surface factory
+## finding-119: Silent Ventures behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2132,7 +2150,7 @@ Refs: `funding-round-traysar-seed`, `vehicle-control-silent-ventures`, `fund-por
 
 ---
 
-## finding-119: Traysar behaves as a surface factory
+## finding-120: Traysar behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2150,7 +2168,7 @@ Refs: `cap-table-as-reported-traysar`, `funding-round-traysar-seed`, `fund-portf
 
 ---
 
-## finding-120: Long Wall behaves as a surface factory
+## finding-121: Long Wall behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2168,7 +2186,7 @@ Refs: `advisory-jackson-moses-long-wall`, `portfolio-as-represented-jackson-pers
 
 ---
 
-## finding-121: Thor Dynamics behaves as a surface factory
+## finding-122: Thor Dynamics behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2186,7 +2204,7 @@ Refs: `advisory-jackson-moses-thor-dynamics`, `portfolio-as-represented-jackson-
 
 ---
 
-## finding-122: Apex Space behaves as a surface factory
+## finding-123: Apex Space behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2204,7 +2222,7 @@ Refs: `natsec100-2024-list`, `natsec100-2026-list`, `advisory-katherine-boyle-ap
 
 ---
 
-## finding-123: Flexport behaves as a surface factory
+## finding-124: Flexport behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2222,7 +2240,7 @@ Refs: `advisory-trae-stephens-flexport`, `fund-portfolio-page-8vc-2026-10-23`, `
 
 ---
 
-## finding-124: STATION Austin behaves as a surface factory
+## finding-125: STATION Austin behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2240,7 +2258,7 @@ Refs: `vehicle-control-station-austin`, `texas-franchise-tax-32101276197`, `stat
 
 ---
 
-## finding-125: Terra Industries behaves as a surface factory
+## finding-126: Terra Industries behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2258,7 +2276,7 @@ Refs: `portfolio-as-represented-jackson-personal-investing-2026-07-14`, `fund-po
 
 ---
 
-## finding-126: Galadyne behaves as a surface factory
+## finding-127: Galadyne behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2276,7 +2294,7 @@ Refs: `portfolio-as-represented-jackson-personal-investing-2026-07-14`, `fund-po
 
 ---
 
-## finding-127: Erebor behaves as a surface factory
+## finding-128: Erebor behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2294,7 +2312,7 @@ Refs: `portfolio-as-represented-jackson-personal-investing-2026-07-14`, `fund-po
 
 ---
 
-## finding-128: Base Power behaves as a surface factory
+## finding-129: Base Power behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2312,7 +2330,7 @@ Refs: `portfolio-as-represented-jackson-personal-investing-2026-07-14`, `fund-po
 
 ---
 
-## finding-129: Allen Control Systems behaves as a surface factory
+## finding-130: Allen Control Systems behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2330,7 +2348,7 @@ Refs: `portfolio-as-represented-jackson-personal-investing-2026-07-14`, `capital
 
 ---
 
-## finding-130: Amca behaves as a surface factory
+## finding-131: Amca behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2348,7 +2366,7 @@ Refs: `portfolio-as-represented-jackson-personal-investing-2026-07-14`, `fund-po
 
 ---
 
-## finding-131: Gallatin AI behaves as a surface factory
+## finding-132: Gallatin AI behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2366,7 +2384,7 @@ Refs: `portfolio-as-represented-jackson-personal-investing-2026-07-14`, `fund-po
 
 ---
 
-## finding-132: Swan behaves as a surface factory
+## finding-133: Swan behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2384,7 +2402,7 @@ Refs: `portfolio-as-represented-jackson-personal-investing-2026-07-14`, `fund-po
 
 ---
 
-## finding-133: Proteus Space behaves as a surface factory
+## finding-134: Proteus Space behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2402,7 +2420,7 @@ Refs: `portfolio-as-represented-jackson-personal-investing-2026-07-14`, `capital
 
 ---
 
-## finding-134: Capital Factory behaves as a surface factory
+## finding-135: Capital Factory behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2420,7 +2438,7 @@ Refs: `capital-factory-portfolio-page-2026-10-23`, `diu-sxsw-2024-joint-innovati
 
 ---
 
-## finding-135: Arena Labs behaves as a surface factory
+## finding-136: Arena Labs behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2438,7 +2456,7 @@ Refs: `capital-factory-portfolio-page-2026-10-23`, `jason-schwab-arena-labs-chie
 
 ---
 
-## finding-136: Cart.com behaves as a surface factory
+## finding-137: Cart.com behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2456,7 +2474,7 @@ Refs: `capital-factory-portfolio-page-2026-10-23`, `sec-form-d-0001856459-22-000
 
 ---
 
-## finding-137: Cloud 9 behaves as a surface factory
+## finding-138: Cloud 9 behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2474,7 +2492,7 @@ Refs: `capital-factory-portfolio-page-2026-10-23`, `fund-portfolio-page-valor-eq
 
 ---
 
-## finding-138: Darkhive behaves as a surface factory
+## finding-139: Darkhive behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2492,7 +2510,7 @@ Refs: `capital-factory-portfolio-page-2026-10-23`, `john-goodson-darkhive-chief-
 
 ---
 
-## finding-139: Diligent Robotics behaves as a surface factory
+## finding-140: Diligent Robotics behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2510,7 +2528,7 @@ Refs: `capital-factory-portfolio-page-2026-10-23`, `sec-form-d-0001729559-24-000
 
 ---
 
-## finding-140: HiddenLayer behaves as a surface factory
+## finding-141: HiddenLayer behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2528,7 +2546,7 @@ Refs: `capital-factory-portfolio-page-2026-10-23`, `sec-form-d-0000947871-23-000
 
 ---
 
-## finding-141: LongFi Solutions behaves as a surface factory
+## finding-142: LongFi Solutions behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2546,7 +2564,7 @@ Refs: `capital-factory-portfolio-page-2026-10-23`, `sec-form-d-0001984072-23-000
 
 ---
 
-## finding-142: Odyssey behaves as a surface factory
+## finding-143: Odyssey behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2564,7 +2582,7 @@ Refs: `capital-factory-portfolio-page-2026-10-23`, `fund-portfolio-page-a16z-ame
 
 ---
 
-## finding-143: Paradromics Inc. behaves as a surface factory
+## finding-144: Paradromics Inc. behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2582,7 +2600,7 @@ Refs: `capital-factory-portfolio-page-2026-10-23`, `sec-form-d-0001668302-21-000
 
 ---
 
-## finding-144: Renu Robotics behaves as a surface factory
+## finding-145: Renu Robotics behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2600,7 +2618,7 @@ Refs: `capital-factory-portfolio-page-2026-10-23`, `sec-form-d-0001791223-19-000
 
 ---
 
-## finding-145: Saronic Technologies behaves as a surface factory
+## finding-146: Saronic Technologies behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2618,7 +2636,7 @@ Refs: `natsec100-2024-list`, `natsec100-2025-list`, `natsec100-2026-list`, `proc
 
 ---
 
-## finding-146: Senseye behaves as a surface factory
+## finding-147: Senseye behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2636,7 +2654,7 @@ Refs: `capital-factory-portfolio-page-2026-10-23`, `sec-form-d-0002075875-25-000
 
 ---
 
-## finding-147: Voyager Space Holdings behaves as a surface factory
+## finding-148: Voyager Space Holdings behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2654,7 +2672,7 @@ Refs: `capital-factory-portfolio-page-2026-10-23`, `sec-form-d-0001235110-22-000
 
 ---
 
-## finding-148: Wander.com behaves as a surface factory
+## finding-149: Wander.com behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2672,7 +2690,7 @@ Refs: `capital-factory-portfolio-page-2026-10-23`, `sec-form-d-0001874698-21-000
 
 ---
 
-## finding-149: Stratos Ventures behaves as a surface factory
+## finding-150: Stratos Ventures behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2690,7 +2708,7 @@ Refs: `stratos-ventures-portfolio-page-2026-10-23`, `partnership-claim-stratos-v
 
 ---
 
-## finding-150: Air Force Scientific Advisory Board behaves as a surface factory
+## finding-151: Air Force Scientific Advisory Board behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2708,7 +2726,7 @@ Refs: `heidi-shyu-air-force-scientific-advisory-board-board-member-linkedin-2000
 
 ---
 
-## finding-151: Air Force Special Operations Command behaves as a surface factory
+## finding-152: Air Force Special Operations Command behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2726,7 +2744,7 @@ Refs: `alex-frew-air-force-special-operations-command-airfield-operations-specia
 
 ---
 
-## finding-152: Anthropic behaves as a surface factory
+## finding-153: Anthropic behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2744,7 +2762,7 @@ Refs: `christopher-kirchhoff-anthropic-special-projects-policy-residency-linkedi
 
 ---
 
-## finding-153: Apple behaves as a surface factory
+## finding-154: Apple behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2762,7 +2780,7 @@ Refs: `doug-beck-apple-vice-president-americas-and-northeast-asia-linkedin-2015-
 
 ---
 
-## finding-154: Arm behaves as a surface factory
+## finding-155: Arm behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2770,17 +2788,17 @@ Refs: `doug-beck-apple-vice-president-americas-and-northeast-asia-linkedin-2015-
 
 **Observed**
 
-Arm appears across 3 surface(s): brandon-boesch-arm-iot-applications-engineer-intern-linkedin-2017-2017, brandon-boesch-arm-verification-engineer-intern-linkedin-2016-2016, uk-ai-safety-summit-2023-confirmed-attendees-programme-roster. Secondary types: government_advisory_surface.
+Arm appears across 4 surface(s): brandon-boesch-arm-iot-applications-engineer-intern-linkedin-2017-2017, brandon-boesch-arm-verification-engineer-intern-linkedin-2016-2016, uk-ai-safety-summit-2023-confirmed-attendees-programme-roster, dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names. Secondary types: government_advisory_surface.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `brandon-boesch-arm-iot-applications-engineer-intern-linkedin-2017-2017`, `brandon-boesch-arm-verification-engineer-intern-linkedin-2016-2016`, `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`
+Refs: `brandon-boesch-arm-iot-applications-engineer-intern-linkedin-2017-2017`, `brandon-boesch-arm-verification-engineer-intern-linkedin-2016-2016`, `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`
 
 ---
 
-## finding-155: AV behaves as a surface factory
+## finding-156: AV behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2798,7 +2816,7 @@ Refs: `blake-souter-av-vice-president-head-of-washington-operations-linkedin-202
 
 ---
 
-## finding-156: Booz Allen Hamilton behaves as a surface factory
+## finding-157: Booz Allen Hamilton behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2816,7 +2834,7 @@ Refs: `andrew-koch-booz-allen-hamilton-senior-consultant-linkedin-2006-2010`, `j
 
 ---
 
-## finding-157: Center for a New American Security (CNAS) behaves as a surface factory
+## finding-158: Center for a New American Security (CNAS) behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2834,7 +2852,7 @@ Refs: `doug-beck-center-for-a-new-american-security-cnas-board-member-linkedin-2
 
 ---
 
-## finding-158: Charles Schwab behaves as a surface factory
+## finding-159: Charles Schwab behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2852,7 +2870,7 @@ Refs: `doug-beck-charles-schwab-svp-and-chief-strategy-officer-linkedin-2008-200
 
 ---
 
-## finding-159: Council on Foreign Relations behaves as a surface factory
+## finding-160: Council on Foreign Relations behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2870,7 +2888,7 @@ Refs: `christian-brose-council-on-foreign-relations-term-member-linkedin-2011-20
 
 ---
 
-## finding-160: DARPA behaves as a surface factory
+## finding-161: DARPA behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2888,7 +2906,7 @@ Refs: `andrew-nuss-darpa-program-manager-linkedin-2017-2023`, `christopher-kirch
 
 ---
 
-## finding-161: Founders Fund behaves as a surface factory
+## finding-162: Founders Fund behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2906,7 +2924,7 @@ Refs: `trae-stephens-founders-fund-partner-linkedin-2014-present`, `fund-portfol
 
 ---
 
-## finding-162: GE Aerospace behaves as a surface factory
+## finding-163: GE Aerospace behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2924,7 +2942,7 @@ Refs: `darin-ditommaso-ge-aerospace-vice-president-of-engineering-ge-aerospace-d
 
 ---
 
-## finding-163: GE Aviation behaves as a surface factory
+## finding-164: GE Aviation behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2942,7 +2960,7 @@ Refs: `darin-ditommaso-ge-aviation-engineering-leader-linkedin-1988-2005`, `dari
 
 ---
 
-## finding-164: General Atomics Aeronautical Systems behaves as a surface factory
+## finding-165: General Atomics Aeronautical Systems behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2960,7 +2978,7 @@ Refs: `barry-walkenbach-general-atomics-aeronautical-systems-senior-program-mana
 
 ---
 
-## finding-165: IBM behaves as a surface factory
+## finding-166: Goldman Sachs behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2968,17 +2986,35 @@ Refs: `barry-walkenbach-general-atomics-aeronautical-systems-senior-program-mana
 
 **Observed**
 
-IBM appears across 3 surface(s): greg-little-ibm-consultant-linkedin-2007-2009, uk-ai-safety-summit-2023-confirmed-attendees-programme-roster, capital-factory-fed-supernova-2022-09-27. Secondary types: defence_industrial_surface, government_advisory_surface.
+Goldman Sachs appears across 3 surface(s): jason-schwab-goldman-sachs-investment-management-linkedin-2015-2018, thomas-j-kehoe-jr-goldman-sachs-investment-management-division-linkedin-2012-2017, dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names. Secondary types: none.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `greg-little-ibm-consultant-linkedin-2007-2009`, `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `capital-factory-fed-supernova-2022-09-27`
+Refs: `jason-schwab-goldman-sachs-investment-management-linkedin-2015-2018`, `thomas-j-kehoe-jr-goldman-sachs-investment-management-division-linkedin-2012-2017`, `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`
 
 ---
 
-## finding-166: Insitu Inc. behaves as a surface factory
+## finding-167: IBM behaves as a surface factory
+
+- Type: surface_factory
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+IBM appears across 4 surface(s): greg-little-ibm-consultant-linkedin-2007-2009, uk-ai-safety-summit-2023-confirmed-attendees-programme-roster, capital-factory-fed-supernova-2022-09-27, dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names. Secondary types: defence_industrial_surface, government_advisory_surface.
+
+**Required action**
+
+Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
+
+Refs: `greg-little-ibm-consultant-linkedin-2007-2009`, `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `capital-factory-fed-supernova-2022-09-27`, `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`
+
+---
+
+## finding-168: Insitu Inc. behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2996,7 +3032,7 @@ Refs: `jonathan-jacobs-insitu-inc-uas-pilot-instructor-rq-21a-scaneagle-linkedin
 
 ---
 
-## finding-167: Knowledge Point behaves as a surface factory
+## finding-169: Knowledge Point behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3014,7 +3050,7 @@ Refs: `michael-maddry-knowledge-point-director-course-design-land-forces-institu
 
 ---
 
-## finding-168: Lockheed Martin Corporation behaves as a surface factory
+## finding-170: Lockheed Martin Corporation behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3032,7 +3068,7 @@ Refs: `bill-greenwalt-lockheed-martin-corporation-director-federal-acquisition-p
 
 ---
 
-## finding-169: Maxar Technologies behaves as a surface factory
+## finding-171: Maxar Technologies behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3050,7 +3086,7 @@ Refs: `collin-weeks-maxar-technologies-program-manager-linkedin-2019-2022`, `dyl
 
 ---
 
-## finding-170: McKinsey & Company behaves as a surface factory
+## finding-172: McKinsey & Company behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3068,7 +3104,7 @@ Refs: `doug-beck-mckinsey-and-company-partner-linkedin-1994-2005`, `doug-beck-mc
 
 ---
 
-## finding-171: Microsoft behaves as a surface factory
+## finding-173: Meta behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3076,17 +3112,35 @@ Refs: `doug-beck-mckinsey-and-company-partner-linkedin-1994-2005`, `doug-beck-mc
 
 **Observed**
 
-Microsoft appears across 6 surface(s): janel-timoney-brown-microsoft-director-joint-dod-account-executive-linkedin-2022-2025, janel-timoney-brown-microsoft-director-microsoft-federal-consulting-services-linkedin-2021-2022, rndf-2023-panel-2, rndf-2023-programme-roster, rndf-2024-programme-roster, uk-ai-safety-summit-2023-confirmed-attendees-programme-roster. Secondary types: defence_industrial_surface, government_advisory_surface.
+Meta appears across 3 surface(s): kevin-weil-meta-vp-of-product-novi-co-creator-diem-fka-libra-linkedin-2018-2021, uk-ai-safety-summit-2023-confirmed-attendees-programme-roster, dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names. Secondary types: government_advisory_surface.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `janel-timoney-brown-microsoft-director-joint-dod-account-executive-linkedin-2022-2025`, `janel-timoney-brown-microsoft-director-microsoft-federal-consulting-services-linkedin-2021-2022`, `rndf-2023-panel-2`, `rndf-2023-programme-roster`, `rndf-2024-programme-roster`, `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`
+Refs: `kevin-weil-meta-vp-of-product-novi-co-creator-diem-fka-libra-linkedin-2018-2021`, `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`
 
 ---
 
-## finding-172: Northrop Grumman behaves as a surface factory
+## finding-174: Microsoft behaves as a surface factory
+
+- Type: surface_factory
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+Microsoft appears across 7 surface(s): janel-timoney-brown-microsoft-director-joint-dod-account-executive-linkedin-2022-2025, janel-timoney-brown-microsoft-director-microsoft-federal-consulting-services-linkedin-2021-2022, rndf-2023-panel-2, rndf-2023-programme-roster, rndf-2024-programme-roster, uk-ai-safety-summit-2023-confirmed-attendees-programme-roster, dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names. Secondary types: defence_industrial_surface, government_advisory_surface.
+
+**Required action**
+
+Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
+
+Refs: `janel-timoney-brown-microsoft-director-joint-dod-account-executive-linkedin-2022-2025`, `janel-timoney-brown-microsoft-director-microsoft-federal-consulting-services-linkedin-2021-2022`, `rndf-2023-panel-2`, `rndf-2023-programme-roster`, `rndf-2024-programme-roster`, `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`
+
+---
+
+## finding-175: Northrop Grumman behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3104,7 +3158,7 @@ Refs: `james-storer-northrop-grumman-director-socom-and-global-sof-customer-rela
 
 ---
 
-## finding-173: Office of the Secretary of Defense behaves as a surface factory
+## finding-176: Office of the Secretary of Defense behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3122,7 +3176,7 @@ Refs: `jim-caggy-office-of-the-secretary-of-defense-advisor-strategic-capabiliti
 
 ---
 
-## finding-174: Optum behaves as a surface factory
+## finding-177: Optum behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3130,17 +3184,17 @@ Refs: `jim-caggy-office-of-the-secretary-of-defense-advisor-strategic-capabiliti
 
 **Observed**
 
-Optum appears across 3 surface(s): jason-schwab-optum-director-of-product-linkedin-2023-2024, zack-hoyt-optum-director-strategy-and-market-analysis-optum-serv-linkedin-2024-2025, zack-hoyt-optum-strategy-optum-serve-linkedin-2023-2024. Secondary types: none.
+Optum appears across 4 surface(s): jason-schwab-optum-director-of-product-linkedin-2023-2024, zack-hoyt-optum-director-strategy-and-market-analysis-optum-serv-linkedin-2024-2025, zack-hoyt-optum-strategy-optum-serve-linkedin-2023-2024, dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names. Secondary types: none.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `jason-schwab-optum-director-of-product-linkedin-2023-2024`, `zack-hoyt-optum-director-strategy-and-market-analysis-optum-serv-linkedin-2024-2025`, `zack-hoyt-optum-strategy-optum-serve-linkedin-2023-2024`
+Refs: `jason-schwab-optum-director-of-product-linkedin-2023-2024`, `zack-hoyt-optum-director-strategy-and-market-analysis-optum-serv-linkedin-2024-2025`, `zack-hoyt-optum-strategy-optum-serve-linkedin-2023-2024`, `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`
 
 ---
 
-## finding-175: Planet behaves as a surface factory
+## finding-178: Planet behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3158,7 +3212,7 @@ Refs: `kevin-weil-planet-board-member-planet-federal-linkedin-2024-2025`, `kevin
 
 ---
 
-## finding-176: Raytheon behaves as a surface factory
+## finding-179: Raytheon behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3176,7 +3230,7 @@ Refs: `heidi-shyu-raytheon-vice-president-of-technology-strategy-space-and-linke
 
 ---
 
-## finding-177: SAIC behaves as a surface factory
+## finding-180: SAIC behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3194,7 +3248,7 @@ Refs: `gabe-camarillo-saic-senior-vice-president-army-business-unit-linkedin-202
 
 ---
 
-## finding-178: Snap Inc. behaves as a surface factory
+## finding-181: Snap Inc. behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3212,7 +3266,7 @@ Refs: `sofia-rose-haft-snap-inc-head-of-policy-partnerships-linkedin-2021-2022`,
 
 ---
 
-## finding-179: Striveworks behaves as a surface factory
+## finding-182: Striveworks behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3230,7 +3284,7 @@ Refs: `quay-barnett-striveworks-chief-revenue-officer-cro-linkedin-2023-2024`, `
 
 ---
 
-## finding-180: Symantec behaves as a surface factory
+## finding-183: Symantec behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3248,7 +3302,7 @@ Refs: `michael-a-brown-symantec-board-member-linkedin-2011-2014`, `michael-a-bro
 
 ---
 
-## finding-181: The Honor Foundation behaves as a surface factory
+## finding-184: The Honor Foundation behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3266,7 +3320,7 @@ Refs: `bryan-claudio-the-honor-foundation-fellow-linkedin-2020-2020`, `eric-ball
 
 ---
 
-## finding-182: Unisys behaves as a surface factory
+## finding-185: Unisys behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3284,7 +3338,7 @@ Refs: `simon-price-unisys-head-of-advanced-analytics-linkedin-2021-2021`, `simon
 
 ---
 
-## finding-183: United States Air Force behaves as a surface factory
+## finding-186: United States Air Force behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3302,7 +3356,7 @@ Refs: `barry-walkenbach-united-states-air-force-e-3b-c-senior-surveillance-techn
 
 ---
 
-## finding-184: United States Army behaves as a surface factory
+## finding-187: United States Army behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3320,7 +3374,7 @@ Refs: `alan-t-dugger-united-states-army-assistant-professor-of-military-science-
 
 ---
 
-## finding-185: United States Army Reserve behaves as a surface factory
+## finding-188: United States Army Reserve behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3338,7 +3392,7 @@ Refs: `church-hutton-united-states-army-reserve-engineer-officer-linkedin-1998-2
 
 ---
 
-## finding-186: United States Army Special Operations Command behaves as a surface factory
+## finding-189: United States Army Special Operations Command behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3356,7 +3410,7 @@ Refs: `quay-barnett-united-states-army-special-operations-command-apex-director-
 
 ---
 
-## finding-187: United States Coast Guard behaves as a surface factory
+## finding-190: United States Coast Guard behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3374,7 +3428,7 @@ Refs: `tom-huntley-united-states-coast-guard-deployable-team-leader-msst-miami-l
 
 ---
 
-## finding-188: United States Marine Corps behaves as a surface factory
+## finding-191: United States Marine Corps behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3392,7 +3446,7 @@ Refs: `bryan-claudio-united-states-marine-corps-recruit-training-series-commande
 
 ---
 
-## finding-189: United States Navy behaves as a surface factory
+## finding-192: United States Navy behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3410,7 +3464,7 @@ Refs: `alec-webster-united-states-navy-aviation-rescue-swimmer-linkedin-2018-202
 
 ---
 
-## finding-190: United States Senate behaves as a surface factory
+## finding-193: United States Senate behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3428,7 +3482,7 @@ Refs: `blake-souter-united-states-senate-defense-military-legislative-intern-lin
 
 ---
 
-## finding-191: US Department of Defense behaves as a surface factory
+## finding-194: US Department of Defense behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3446,7 +3500,7 @@ Refs: `andrew-hunter-us-department-of-defense-director-joint-rapid-acquisition-c
 
 ---
 
-## finding-192: US Department of State behaves as a surface factory
+## finding-195: US Department of State behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3464,7 +3518,7 @@ Refs: `andrew-koch-us-department-of-state-us-consulate-hong-kong-linkedin-2020-2
 
 ---
 
-## finding-193: US Department of the Navy behaves as a surface factory
+## finding-196: US Department of the Navy behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3482,7 +3536,7 @@ Refs: `james-day-us-department-of-the-navy-portfolio-acquisition-executive-for-m
 
 ---
 
-## finding-194: U.S. House of Representatives behaves as a surface factory
+## finding-197: U.S. House of Representatives behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3500,7 +3554,7 @@ Refs: `jim-himes-us-house-of-representatives-representative-linkedin-2009-presen
 
 ---
 
-## finding-195: U.S. Marine Corps Forces Special Operations Command (MARSOC) behaves as a surface factory
+## finding-198: U.S. Marine Corps Forces Special Operations Command (MARSOC) behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3518,7 +3572,7 @@ Refs: `bryan-claudio-us-marine-corps-forces-special-operations-command-marsoc-sp
 
 ---
 
-## finding-196: US Senate Committee on Armed Services behaves as a surface factory
+## finding-199: US Senate Committee on Armed Services behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3536,7 +3590,7 @@ Refs: `bill-greenwalt-us-senate-armed-services-committee-professional-staff-memb
 
 ---
 
-## finding-197: AFWERX behaves as a surface factory
+## finding-200: AFWERX behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3554,7 +3608,7 @@ Refs: `afwerx-austin-hub-at-capital-factory-2018-06-27`, `army-news-afc-hq-capit
 
 ---
 
-## finding-198: Alpha Partners Management LLC behaves as a surface factory
+## finding-201: Alpha Partners Management LLC behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3572,7 +3626,7 @@ Refs: `sec-form-d-0002038739-24-000002`, `sec-form-d-0002050605-25-000001`, `sec
 
 ---
 
-## finding-199: Army Applications Laboratory behaves as a surface factory
+## finding-202: Army Applications Laboratory behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3590,7 +3644,7 @@ Refs: `army-futures-command-murray-at-capital-factory-2018-09-30`, `army-news-af
 
 ---
 
-## finding-200: U.S. Army Futures Command behaves as a surface factory
+## finding-203: U.S. Army Futures Command behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3608,7 +3662,7 @@ Refs: `army-futures-command-austin-selection-2018-07-12`, `army-futures-command-
 
 ---
 
-## finding-201: Belltower Fund Group, Ltd. behaves as a surface factory
+## finding-204: Belltower Fund Group, Ltd. behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3626,7 +3680,7 @@ Refs: `sec-form-d-0001842238-21-000002`, `sec-form-d-0001860355-21-000002`, `sec
 
 ---
 
-## finding-202: Capital Factory Fellowship Fund, L.P. behaves as a surface factory
+## finding-205: Capital Factory Fellowship Fund, L.P. behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3644,7 +3698,7 @@ Refs: `sec-form-d-0001958842-22-000001`, `texas-franchise-tax-32095561356`, `sec
 
 ---
 
-## finding-203: Capital Factory Fellowship Management, L.P behaves as a surface factory
+## finding-206: Capital Factory Fellowship Management, L.P behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3662,7 +3716,7 @@ Refs: `sec-form-d-0001958842-22-000001`, `texas-franchise-tax-32087998590`, `sec
 
 ---
 
-## finding-204: Capital Factory IV, L.P. behaves as a surface factory
+## finding-207: Capital Factory IV, L.P. behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3680,7 +3734,7 @@ Refs: `sec-form-d-0001592303-13-000001`, `sec-form-d-0001592303-14-000001`, `tex
 
 ---
 
-## finding-205: Capital Factory Management IV, LLC behaves as a surface factory
+## finding-208: Capital Factory Management IV, LLC behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3698,7 +3752,7 @@ Refs: `sec-form-d-0001592303-13-000001`, `sec-form-d-0001592303-14-000001`, `tex
 
 ---
 
-## finding-206: Capital Factory Management, L.L.C. behaves as a surface factory
+## finding-209: Capital Factory Management, L.L.C. behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3716,7 +3770,7 @@ Refs: `sec-form-d-0001703914-17-000001`, `texas-franchise-tax-32072787610`, `sec
 
 ---
 
-## finding-207: Capital Factory Management SPV 1, LLC behaves as a surface factory
+## finding-210: Capital Factory Management SPV 1, LLC behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3734,7 +3788,7 @@ Refs: `texas-franchise-tax-32101787649`, `sec-form-d-0002120654-26-000001`, `sec
 
 ---
 
-## finding-208: Capital Factory UGP, LLC behaves as a surface factory
+## finding-211: Capital Factory UGP, LLC behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3752,7 +3806,7 @@ Refs: `sec-form-d-0001958842-22-000001`, `texas-franchise-tax-32087998616`, `sec
 
 ---
 
-## finding-209: Capital Factory Ventures Management, LLC behaves as a surface factory
+## finding-212: Capital Factory Ventures Management, LLC behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3770,7 +3824,7 @@ Refs: `texas-franchise-tax-32079378694`, `sec-form-d-0002038739-24-000002`, `sec
 
 ---
 
-## finding-210: Defense Innovation Unit behaves as a surface factory
+## finding-213: Defense Innovation Unit behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3788,7 +3842,7 @@ Refs: `diux-austin-outpost-at-capital-factory-2016-09-14`, `diux-austin-roll-out
 
 ---
 
-## finding-211: Fed Supernova behaves as a surface factory
+## finding-214: Fed Supernova behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3806,7 +3860,7 @@ Refs: `capital-factory-fed-supernova-2021-09-28`, `capital-factory-fed-supernova
 
 ---
 
-## finding-212: Fund GP, LLC behaves as a surface factory
+## finding-215: Fund GP, LLC behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3824,7 +3878,7 @@ Refs: `sec-form-d-0001842238-21-000002`, `sec-form-d-0001860355-21-000002`, `sec
 
 ---
 
-## finding-213: NightDragon behaves as a surface factory
+## finding-216: NightDragon behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3842,7 +3896,7 @@ Refs: `nightdragon-capital-factory-partnership-2025-08-18`, `sec-form-d-00019337
 
 ---
 
-## finding-214: Department for Business, Energy and Industrial Strategy (BEIS) behaves as a surface factory
+## finding-217: Department for Business, Energy and Industrial Strategy (BEIS) behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3860,7 +3914,7 @@ Refs: `cf-award-beis-faculty-2020-03-20-268e82ad`, `cf-award-beis-faculty-2020-0
 
 ---
 
-## finding-215: Department for Digital, Culture, Media and Sport (DCMS) behaves as a surface factory
+## finding-218: Department for Digital, Culture, Media and Sport (DCMS) behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3878,7 +3932,7 @@ Refs: `cf-award-dcms-faculty-2020-03-19-fcb1f692`, `cf-award-dcms-faculty-2021-0
 
 ---
 
-## finding-216: Department for Education (DfE) behaves as a surface factory
+## finding-219: Department for Education (DfE) behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3896,7 +3950,7 @@ Refs: `cf-award-dfe-faculty-2022-07-07-a51ed249`, `cf-award-dfe-faculty-2023-05-
 
 ---
 
-## finding-217: Department of Health and Social Care (DHSC) behaves as a surface factory
+## finding-220: Department of Health and Social Care (DHSC) behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3914,7 +3968,7 @@ Refs: `cf-award-dhsc-faculty-2020-02-13-13bd9795`, `cf-award-dhsc-faculty-2020-0
 
 ---
 
-## finding-218: Aaru behaves as a surface factory
+## finding-221: Aaru behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3932,7 +3986,25 @@ Refs: `synthetic-population-vendor-claim-aaru-2026-10-23`, `aaru-ey-global-wealt
 
 ---
 
-## finding-219: Scientific Advisory Group for Emergencies (SAGE) behaves as a surface factory
+## finding-222: EY behaves as a surface factory
+
+- Type: surface_factory
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+EY appears across 3 surface(s): aaru-ey-global-wealth-study-blinded-simulation-2025-10-07, ey-aaru-behavioral-simulation-alliance-2026-09-30, dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names. Secondary types: category_formation_surface, democratic_input_replacement, model_governance_surface.
+
+**Required action**
+
+Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
+
+Refs: `aaru-ey-global-wealth-study-blinded-simulation-2025-10-07`, `ey-aaru-behavioral-simulation-alliance-2026-09-30`, `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`
+
+---
+
+## finding-223: Scientific Advisory Group for Emergencies (SAGE) behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3950,7 +4022,7 @@ Refs: `sage-17-ben-warner-marc-warner-attendees-2020-03-18`, `sage-63-ben-warner
 
 ---
 
-## finding-220: Booz Allen Hamilton Holding Corp behaves as a surface factory
+## finding-224: Booz Allen Hamilton Holding Corp behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3968,7 +4040,7 @@ Refs: `sec-form-d-0001181431-10-028931`, `sec-form-d-0001181431-10-028932`, `sec
 
 ---
 
-## finding-221: NightDragon Growth II, L.P. behaves as a surface factory
+## finding-225: NightDragon Growth II, L.P. behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3986,7 +4058,7 @@ Refs: `sec-form-d-0001933753-23-000001`, `sec-form-d-0001933753-24-000001`, `sec
 
 ---
 
-## finding-222: Matt Clifford shows recurring surface logic
+## finding-226: Matt Clifford shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -4004,7 +4076,7 @@ Refs: `faculty-science-director-shareholder-overlap-2024-10-10`, `ai-opportuniti
 
 ---
 
-## finding-223: Dr. Ben Warner shows recurring surface logic
+## finding-227: Dr. Ben Warner shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: high
@@ -4022,7 +4094,7 @@ Refs: `ben-warner-no10-digital-data-role-observation-2020-2021`, `faculty-scienc
 
 ---
 
-## finding-224: Dr. Marc Warner shows recurring surface logic
+## finding-228: Dr. Marc Warner shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -4040,7 +4112,7 @@ Refs: `faculty-science-officer-employee-overlap-2018-01-24`, `faculty-science-di
 
 ---
 
-## finding-225: Alex Cooper shows recurring surface logic
+## finding-229: Alex Cooper shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -4058,7 +4130,7 @@ Refs: `electric-twin-incorporation-2023-09-28`, `electric-twin-alex-cooper-direc
 
 ---
 
-## finding-226: Sir Simon Case / Lord Case shows recurring surface logic
+## finding-230: Sir Simon Case / Lord Case shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -4076,7 +4148,7 @@ Refs: `electric-twin-ethics-board-2026`, `simon-case-cabinet-secretary-2020-2024
 
 ---
 
-## finding-227: Dominic Cummings shows recurring surface logic
+## finding-231: Dominic Cummings shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -4094,7 +4166,7 @@ Refs: `vote-leave-data-science-2016`, `ben-warner-cummings-shafi-contain-delay-e
 
 ---
 
-## finding-228: Saul Klein shows recurring surface logic
+## finding-232: Saul Klein shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -4112,7 +4184,7 @@ Refs: `faculty-science-officer-employee-overlap-2018-01-24`, `faculty-science-di
 
 ---
 
-## finding-229: Marc Andreessen shows recurring surface logic
+## finding-233: Marc Andreessen shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -4130,7 +4202,7 @@ Refs: `electric-twin-seed-round-2026-02-11`, `a16z-american-dynamism-summit-2024
 
 ---
 
-## finding-230: Joe Lonsdale shows recurring surface logic
+## finding-234: Joe Lonsdale shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -4148,7 +4220,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `vehicle-control-8vc`, `veh
 
 ---
 
-## finding-231: Wes Moore shows recurring surface logic
+## finding-235: Wes Moore shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -4166,7 +4238,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `a16z-american-dynamism-sum
 
 ---
 
-## finding-232: Tyler Cowen shows recurring surface logic
+## finding-236: Tyler Cowen shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -4184,7 +4256,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `a16z-american-dynamism-sum
 
 ---
 
-## finding-233: John Healey shows recurring surface logic
+## finding-237: John Healey shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -4202,7 +4274,7 @@ Refs: `strategic-defence-review-development-2024-2025`, `strategic-defence-revie
 
 ---
 
-## finding-234: George Robertson shows recurring surface logic
+## finding-238: George Robertson shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -4220,7 +4292,7 @@ Refs: `strategic-defence-review-development-2024-2025`, `strategic-defence-revie
 
 ---
 
-## finding-235: Richard Barrons shows recurring surface logic
+## finding-239: Richard Barrons shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -4238,7 +4310,7 @@ Refs: `strategic-defence-review-development-2024-2025`, `strategic-defence-revie
 
 ---
 
-## finding-236: Dr Fiona Hill shows recurring surface logic
+## finding-240: Dr Fiona Hill shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -4256,7 +4328,7 @@ Refs: `strategic-defence-review-development-2024-2025`, `strategic-defence-revie
 
 ---
 
-## finding-237: Dr. Michael Muthukrishna shows recurring surface logic
+## finding-241: Dr. Michael Muthukrishna shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -4274,7 +4346,7 @@ Refs: `centre-human-progress-director-appointments-2025-08-05`, `electric-twin-m
 
 ---
 
-## finding-238: Shyam Sankar shows recurring surface logic
+## finding-242: Shyam Sankar shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -4292,7 +4364,7 @@ Refs: `detachment-201-commissioning-2025`, `a16z-american-dynamism-summit-2025-m
 
 ---
 
-## finding-239: Dr Rich Drake shows recurring surface logic
+## finding-243: Dr Rich Drake shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -4310,7 +4382,7 @@ Refs: `anduril-uk-co-director-appointments-2024-07-31`, `anduril-ukraine-drone-d
 
 ---
 
-## finding-240: Jackson Moses shows recurring surface logic
+## finding-244: Jackson Moses shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -4328,7 +4400,7 @@ Refs: `advisory-jackson-moses-castelion`, `advisory-jackson-moses-privateer`, `a
 
 ---
 
-## finding-241: Katherine Boyle shows recurring surface logic
+## finding-245: Katherine Boyle shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -4346,7 +4418,7 @@ Refs: `advisory-katherine-boyle-apex-space`, `advisory-katherine-boyle-hadrian`,
 
 ---
 
-## finding-242: Trae Stephens shows recurring surface logic
+## finding-246: Trae Stephens shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -4364,7 +4436,7 @@ Refs: `advisory-trae-stephens-anduril-industries`, `advisory-trae-stephens-flexp
 
 ---
 
-## finding-243: Joshua Baer shows recurring surface logic
+## finding-247: Joshua Baer shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -4382,7 +4454,7 @@ Refs: `vehicle-control-capital-factory`, `vehicle-control-station-austin`, `capi
 
 ---
 
-## finding-244: Brandon Tseng shows recurring surface logic
+## finding-248: Brandon Tseng shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -4400,7 +4472,7 @@ Refs: `brandon-tseng-shield-ai-co-founder-linkedin-2015-present`, `brandon-tseng
 
 ---
 
-## finding-245: Christian Brose shows recurring surface logic
+## finding-249: Christian Brose shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -4418,7 +4490,7 @@ Refs: `christian-brose-anduril-industries-chief-strategy-officer-linkedin-2018-2
 
 ---
 
-## finding-246: Doug Beck shows recurring surface logic
+## finding-250: Doug Beck shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -4436,7 +4508,7 @@ Refs: `doug-beck-apple-vice-president-americas-and-northeast-asia-linkedin-2015-
 
 ---
 
-## finding-247: Frank Kendall shows recurring surface logic
+## finding-251: Frank Kendall shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -4454,7 +4526,7 @@ Refs: `frank-kendall-amnesty-international-usa-member-board-of-directors-linkedi
 
 ---
 
-## finding-248: Gabe Camarillo shows recurring surface logic
+## finding-252: Gabe Camarillo shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -4472,7 +4544,7 @@ Refs: `gabe-camarillo-akin-gump-strauss-hauer-and-feld-llp-litigation-associate-
 
 ---
 
-## finding-249: Heidi Shyu shows recurring surface logic
+## finding-253: Heidi Shyu shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -4490,7 +4562,7 @@ Refs: `heidi-shyu-2i-ventures-strategic-advisory-board-linkedin-2025-present`, `
 
 ---
 
-## finding-250: Mike Gallagher shows recurring surface logic
+## finding-254: Mike Gallagher shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -4508,7 +4580,7 @@ Refs: `rndf-2023-panel-2`, `rndf-2023-programme-roster`, `a16z-american-dynamism
 
 ---
 
-## finding-251: Brian Schimpf shows recurring surface logic
+## finding-255: Brian Schimpf shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -4526,7 +4598,7 @@ Refs: `rndf-2023-panel-2`, `rndf-2023-programme-roster`, `a16z-american-dynamism
 
 ---
 
-## finding-252: Jason Zander shows recurring surface logic
+## finding-256: Jason Zander shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -4544,7 +4616,7 @@ Refs: `rndf-2023-panel-2`, `rndf-2023-programme-roster`
 
 ---
 
-## finding-253: Missy Ryan shows recurring surface logic
+## finding-257: Missy Ryan shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -4562,7 +4634,7 @@ Refs: `rndf-2023-panel-2`, `rndf-2023-programme-roster`
 
 ---
 
-## finding-254: Paul M. Nakasone shows recurring surface logic
+## finding-258: Paul M. Nakasone shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -4580,7 +4652,7 @@ Refs: `rndf-2023-panel-3`, `rndf-2023-programme-roster`
 
 ---
 
-## finding-255: Laura J. Richardson shows recurring surface logic
+## finding-259: Laura J. Richardson shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -4598,7 +4670,7 @@ Refs: `rndf-2023-panel-3`, `rndf-2023-programme-roster`
 
 ---
 
-## finding-256: Mike Waltz shows recurring surface logic
+## finding-260: Mike Waltz shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -4616,7 +4688,7 @@ Refs: `rndf-2023-panel-3`, `rndf-2023-programme-roster`
 
 ---
 
-## finding-257: Courtney Kube shows recurring surface logic
+## finding-261: Courtney Kube shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -4634,7 +4706,7 @@ Refs: `rndf-2023-panel-3`, `rndf-2023-programme-roster`
 
 ---
 
-## finding-258: Kevin Cramer shows recurring surface logic
+## finding-262: Kevin Cramer shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -4652,7 +4724,7 @@ Refs: `rndf-2023-panel-7`, `rndf-2023-programme-roster`
 
 ---
 
-## finding-259: Daniel R. Hokanson shows recurring surface logic
+## finding-263: Daniel R. Hokanson shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -4670,7 +4742,7 @@ Refs: `rndf-2023-panel-7`, `rndf-2023-programme-roster`
 
 ---
 
-## finding-260: Karl Rove shows recurring surface logic
+## finding-264: Karl Rove shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -4688,7 +4760,7 @@ Refs: `rndf-2023-panel-7`, `rndf-2023-programme-roster`
 
 ---
 
-## finding-261: Ben Kesling shows recurring surface logic
+## finding-265: Ben Kesling shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -4706,7 +4778,7 @@ Refs: `rndf-2023-panel-7`, `rndf-2023-programme-roster`
 
 ---
 
-## finding-262: John C. Aquilino shows recurring surface logic
+## finding-266: John C. Aquilino shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -4724,7 +4796,7 @@ Refs: `rndf-2023-panel-9`, `rndf-2023-programme-roster`
 
 ---
 
-## finding-263: Christopher J. Mahoney shows recurring surface logic
+## finding-267: Christopher J. Mahoney shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -4742,7 +4814,7 @@ Refs: `rndf-2023-panel-9`, `rndf-2023-programme-roster`
 
 ---
 
-## finding-264: Mike Rounds shows recurring surface logic
+## finding-268: Mike Rounds shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -4760,7 +4832,7 @@ Refs: `rndf-2023-panel-9`, `rndf-2023-programme-roster`
 
 ---
 
-## finding-265: Horacio Rozanski shows recurring surface logic
+## finding-269: Horacio Rozanski shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -4778,7 +4850,7 @@ Refs: `rndf-2023-panel-9`, `rndf-2023-programme-roster`, `rndf-2025-panel-2`, `r
 
 ---
 
-## finding-266: Jennifer Griffin shows recurring surface logic
+## finding-270: Jennifer Griffin shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -4796,7 +4868,7 @@ Refs: `rndf-2023-panel-9`, `rndf-2023-programme-roster`, `rndf-2025-panel-10`, `
 
 ---
 
-## finding-267: David W. Allvin shows recurring surface logic
+## finding-271: David W. Allvin shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -4814,7 +4886,7 @@ Refs: `rndf-2024-panel-4`, `rndf-2024-programme-roster`
 
 ---
 
-## finding-268: Toni Townes-Whitley shows recurring surface logic
+## finding-272: Toni Townes-Whitley shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -4832,7 +4904,7 @@ Refs: `rndf-2024-panel-4`, `rndf-2024-programme-roster`
 
 ---
 
-## finding-269: Todd Young shows recurring surface logic
+## finding-273: Todd Young shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -4850,7 +4922,7 @@ Refs: `rndf-2024-panel-4`, `rndf-2024-programme-roster`
 
 ---
 
-## finding-270: Sharon Weinberger shows recurring surface logic
+## finding-274: Sharon Weinberger shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -4868,7 +4940,7 @@ Refs: `rndf-2024-panel-4`, `rndf-2024-programme-roster`
 
 ---
 
-## finding-271: Chris Calio shows recurring surface logic
+## finding-275: Chris Calio shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -4886,7 +4958,7 @@ Refs: `rndf-2024-panel-9`, `rndf-2024-programme-roster`
 
 ---
 
-## finding-272: Randy A. George shows recurring surface logic
+## finding-276: Randy A. George shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -4904,7 +4976,7 @@ Refs: `rndf-2024-panel-9`, `rndf-2024-programme-roster`
 
 ---
 
-## finding-273: Dan Jablonsky shows recurring surface logic
+## finding-277: Dan Jablonsky shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -4922,7 +4994,7 @@ Refs: `rndf-2024-panel-9`, `rndf-2024-programme-roster`
 
 ---
 
-## finding-274: Angus King shows recurring surface logic
+## finding-278: Angus King shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -4940,7 +5012,7 @@ Refs: `rndf-2024-panel-9`, `rndf-2024-programme-roster`
 
 ---
 
-## finding-275: Aaron Mehta shows recurring surface logic
+## finding-279: Aaron Mehta shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -4958,7 +5030,7 @@ Refs: `rndf-2024-panel-9`, `rndf-2024-programme-roster`
 
 ---
 
-## finding-276: Stephen Ehikian shows recurring surface logic
+## finding-280: Stephen Ehikian shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -4976,7 +5048,7 @@ Refs: `rndf-2025-panel-2`, `rndf-2025-programme-roster`
 
 ---
 
-## finding-277: Emil Michael shows recurring surface logic
+## finding-281: Emil Michael shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -4994,7 +5066,7 @@ Refs: `rndf-2025-panel-2`, `rndf-2025-programme-roster`
 
 ---
 
-## finding-278: Samuel Paparo shows recurring surface logic
+## finding-282: Samuel Paparo shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -5012,7 +5084,7 @@ Refs: `rndf-2025-panel-2`, `rndf-2025-programme-roster`
 
 ---
 
-## finding-279: Gordon Lubold shows recurring surface logic
+## finding-283: Gordon Lubold shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -5030,7 +5102,7 @@ Refs: `rndf-2025-panel-2`, `rndf-2025-programme-roster`
 
 ---
 
-## finding-280: Ken Calvert shows recurring surface logic
+## finding-284: Ken Calvert shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -5048,7 +5120,7 @@ Refs: `rndf-2025-panel-10`, `rndf-2025-programme-roster`
 
 ---
 
-## finding-281: Pat Ryan shows recurring surface logic
+## finding-285: Pat Ryan shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -5066,7 +5138,7 @@ Refs: `rndf-2025-panel-10`, `rndf-2025-programme-roster`
 
 ---
 
-## finding-282: David Ulevitch shows recurring surface logic
+## finding-286: David Ulevitch shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -5084,7 +5156,7 @@ Refs: `a16z-american-dynamism-summit-2024-welcome`, `a16z-american-dynamism-summ
 
 ---
 
-## finding-283: Jake Auchincloss shows recurring surface logic
+## finding-287: Jake Auchincloss shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -5102,7 +5174,7 @@ Refs: `a16z-american-dynamism-summit-2024-china-threat`, `a16z-american-dynamism
 
 ---
 
-## finding-284: Jan Sramek shows recurring surface logic
+## finding-288: Jan Sramek shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -5120,7 +5192,7 @@ Refs: `a16z-american-dynamism-summit-2024-california-dream`, `a16z-american-dyna
 
 ---
 
-## finding-285: Ben Horowitz shows recurring surface logic
+## finding-289: Ben Horowitz shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -5138,7 +5210,7 @@ Refs: `a16z-american-dynamism-summit-2024-next-generation-leadership`, `a16z-ame
 
 ---
 
-## finding-286: JD Vance shows recurring surface logic
+## finding-290: JD Vance shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -5156,7 +5228,7 @@ Refs: `a16z-american-dynamism-summit-2025-opening-keynote`, `a16z-american-dynam
 
 ---
 
-## finding-287: Gwynne Shotwell shows recurring surface logic
+## finding-291: Gwynne Shotwell shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -5174,7 +5246,7 @@ Refs: `a16z-american-dynamism-summit-2025-mars-but-first-dc`, `a16z-american-dyn
 
 ---
 
-## finding-288: Bryan P. Fenton shows recurring surface logic
+## finding-292: Bryan P. Fenton shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -5192,7 +5264,7 @@ Refs: `a16z-american-dynamism-summit-2025-science-fiction-or-socom`, `a16z-ameri
 
 ---
 
-## finding-289: David Ignatius shows recurring surface logic
+## finding-293: David Ignatius shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -5210,7 +5282,7 @@ Refs: `a16z-american-dynamism-summit-2025-mobilizing-industrial-base`, `a16z-ame
 
 ---
 
-## finding-290: Adam Bry shows recurring surface logic
+## finding-294: Adam Bry shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -5228,7 +5300,7 @@ Refs: `a16z-american-dynamism-summit-2022-ai-future-of-modern-warfare`, `a16z-am
 
 ---
 
-## finding-291: Roger Zakheim shows recurring surface logic
+## finding-295: Roger Zakheim shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -5246,7 +5318,7 @@ Refs: `a16z-american-dynamism-summit-2022-ai-future-of-modern-warfare`, `a16z-am
 
 ---
 
-## finding-292: Jacob Helberg shows recurring surface logic
+## finding-296: Jacob Helberg shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -5264,7 +5336,7 @@ Refs: `a16z-american-dynamism-summit-2022-autonomy-defense-policy`, `a16z-americ
 
 ---
 
-## finding-293: Bari Weiss shows recurring surface logic
+## finding-297: Bari Weiss shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -5282,7 +5354,7 @@ Refs: `a16z-american-dynamism-summit-2022-fourth-estate`, `a16z-american-dynamis
 
 ---
 
-## finding-294: Chris Best shows recurring surface logic
+## finding-298: Chris Best shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -5300,7 +5372,7 @@ Refs: `a16z-american-dynamism-summit-2022-fourth-estate`, `a16z-american-dynamis
 
 ---
 
-## finding-295: Jim VandeHei shows recurring surface logic
+## finding-299: Jim VandeHei shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -5318,7 +5390,7 @@ Refs: `a16z-american-dynamism-summit-2022-fourth-estate`, `a16z-american-dynamis
 
 ---
 
-## finding-296: Adena Hefets shows recurring surface logic
+## finding-300: Adena Hefets shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -5336,7 +5408,7 @@ Refs: `a16z-american-dynamism-summit-2022-housing-crisis`, `a16z-american-dynami
 
 ---
 
-## finding-297: Adam Neumann shows recurring surface logic
+## finding-301: Adam Neumann shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -5354,7 +5426,7 @@ Refs: `a16z-american-dynamism-summit-2022-largest-asset-class`, `a16z-american-d
 
 ---
 
-## finding-298: Abraham Wilson shows recurring surface logic
+## finding-302: Abraham Wilson shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -5372,7 +5444,7 @@ Refs: `sec-form-d-0001981844-23-000003`, `sec-form-d-0001992181-23-000002`, `sec
 
 ---
 
-## finding-299: Andrew Busey shows recurring surface logic
+## finding-303: Andrew Busey shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -5390,7 +5462,7 @@ Refs: `sec-form-d-0001592303-13-000001`, `sec-form-d-0001592303-14-000001`
 
 ---
 
-## finding-300: Ash Carter shows recurring surface logic
+## finding-304: Ash Carter shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -5408,7 +5480,7 @@ Refs: `diux-austin-outpost-at-capital-factory-2016-09-14`, `diux-austin-roll-out
 
 ---
 
-## finding-301: Cathy Bui shows recurring surface logic
+## finding-305: Cathy Bui shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -5426,7 +5498,7 @@ Refs: `sec-form-d-0001929925-22-000002`, `sec-form-d-0001935512-22-000002`, `sec
 
 ---
 
-## finding-302: Dave DeWalt shows recurring surface logic
+## finding-306: Dave DeWalt shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -5444,7 +5516,7 @@ Refs: `nightdragon-capital-factory-partnership-2025-08-18`, `sec-form-d-00019337
 
 ---
 
-## finding-303: Eric Wesley shows recurring surface logic
+## finding-307: Eric Wesley shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -5462,7 +5534,7 @@ Refs: `army-futures-command-hq-news-conference-2018-07-13`, `army-futures-comman
 
 ---
 
-## finding-304: Gordon Daugherty shows recurring surface logic
+## finding-308: Gordon Daugherty shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -5480,7 +5552,7 @@ Refs: `sec-form-d-0001592303-13-000001`, `sec-form-d-0001592303-14-000001`, `cap
 
 ---
 
-## finding-305: Greg Abbott shows recurring surface logic
+## finding-309: Greg Abbott shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -5498,7 +5570,7 @@ Refs: `diux-austin-outpost-at-capital-factory-2016-09-14`, `army-futures-command
 
 ---
 
-## finding-306: James Chance shows recurring surface logic
+## finding-310: James Chance shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -5516,7 +5588,7 @@ Refs: `sec-form-d-0001797630-19-000001`, `sec-form-d-0001797630-21-000001`
 
 ---
 
-## finding-307: Jamie Serio shows recurring surface logic
+## finding-311: Jamie Serio shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -5534,7 +5606,7 @@ Refs: `sec-form-d-0002045139-24-000002`, `sec-form-d-0002088504-25-000001`, `sec
 
 ---
 
-## finding-308: John Murray shows recurring surface logic
+## finding-312: John Murray shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -5552,7 +5624,7 @@ Refs: `army-futures-command-murray-at-capital-factory-2018-09-30`, `army-news-af
 
 ---
 
-## finding-309: Lawton Cummings shows recurring surface logic
+## finding-313: Lawton Cummings shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -5570,7 +5642,7 @@ Refs: `sec-form-d-0001958842-22-000001`, `sec-form-d-0001958842-24-000001`
 
 ---
 
-## finding-310: Melinda Price shows recurring surface logic
+## finding-314: Melinda Price shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -5588,7 +5660,7 @@ Refs: `sec-form-d-0001592303-13-000001`, `sec-form-d-0001592303-14-000001`
 
 ---
 
-## finding-311: Michael Trafton shows recurring surface logic
+## finding-315: Michael Trafton shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -5606,7 +5678,7 @@ Refs: `sec-form-d-0001592303-13-000001`, `sec-form-d-0001592303-14-000001`
 
 ---
 
-## finding-312: Olayiwola Ali-Ajibode shows recurring surface logic
+## finding-316: Olayiwola Ali-Ajibode shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -5624,7 +5696,7 @@ Refs: `sec-form-d-0001860355-21-000002`, `sec-form-d-0001873643-21-000002`, `sec
 
 ---
 
-## finding-313: Sean O'Brien shows recurring surface logic
+## finding-317: Sean O'Brien shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -5642,7 +5714,7 @@ Refs: `sec-form-d-0002038739-24-000002`, `sec-form-d-0002050605-25-000001`, `sec
 
 ---
 
-## finding-314: Stephen Brotman shows recurring surface logic
+## finding-318: Stephen Brotman shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -5660,7 +5732,7 @@ Refs: `sec-form-d-0002038739-24-000002`, `sec-form-d-0002050605-25-000001`, `sec
 
 ---
 
-## finding-315: Tracy Yaverbaun shows recurring surface logic
+## finding-319: Tracy Yaverbaun shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -5678,7 +5750,7 @@ Refs: `news-uk-times-podcast-name-synthetic-panel-decision-2025-11-04`
 
 ---
 
-## finding-316: F. LeRon Shults shows recurring surface logic
+## finding-320: F. LeRon Shults shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -5696,7 +5768,7 @@ Refs: `undp-culturepulse-israel-palestine-simulation-contract-2023-08`
 
 ---
 
-## finding-317: Justin Lane shows recurring surface logic
+## finding-321: Justin Lane shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -5714,7 +5786,7 @@ Refs: `undp-culturepulse-israel-palestine-simulation-contract-2023-08`
 
 ---
 
-## finding-318: Kanishka Narayan shows recurring surface logic
+## finding-322: Kanishka Narayan shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -5732,7 +5804,7 @@ Refs: `uk-politicians-synthetic-focus-groups-reported-2026-10-22`
 
 ---
 
-## finding-319: Darren Jones shows recurring surface logic
+## finding-323: Darren Jones shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -5750,7 +5822,7 @@ Refs: `uk-politicians-synthetic-focus-groups-reported-2026-10-22`
 
 ---
 
-## finding-320: Morgan McSweeney shows recurring surface logic
+## finding-324: Morgan McSweeney shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -5768,7 +5840,7 @@ Refs: `no10-synthetic-voters-experiment-reported-2025-07-07`
 
 ---
 
-## finding-321: Sir Simon Case / Lord Case has surfaces but no Clifford path
+## finding-325: Sir Simon Case / Lord Case has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -5786,7 +5858,7 @@ Refs: `electric-twin-ethics-board-2026`, `simon-case-cabinet-secretary-2020-2024
 
 ---
 
-## finding-322: Ian Hogarth has surfaces but no Clifford path
+## finding-326: Ian Hogarth has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -5804,7 +5876,7 @@ Refs: `frontier-ai-taskforce-faculty-contract-2023-10-18`
 
 ---
 
-## finding-323: Louis Mosley has surfaces but no Clifford path
+## finding-327: Louis Mosley has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -5822,7 +5894,7 @@ Refs: `electric-twin-seed-round-2026-02-11`
 
 ---
 
-## finding-324: Marc Andreessen has surfaces but no Clifford path
+## finding-328: Marc Andreessen has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -5840,7 +5912,7 @@ Refs: `electric-twin-seed-round-2026-02-11`, `a16z-american-dynamism-summit-2024
 
 ---
 
-## finding-325: Cal Henderson has surfaces but no Clifford path
+## finding-329: Cal Henderson has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -5858,7 +5930,7 @@ Refs: `electric-twin-seed-round-2026-02-11`
 
 ---
 
-## finding-326: Tom Shinner has surfaces but no Clifford path
+## finding-330: Tom Shinner has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -5876,7 +5948,7 @@ Refs: `electric-twin-seed-round-2026-02-11`
 
 ---
 
-## finding-327: Peter Thiel has surfaces but no Clifford path
+## finding-331: Peter Thiel has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -5894,7 +5966,7 @@ Refs: `dialog-leadership-role-observations-2026-06-16`
 
 ---
 
-## finding-328: Auren Hoffman has surfaces but no Clifford path
+## finding-332: Auren Hoffman has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -5912,7 +5984,7 @@ Refs: `dialog-leadership-role-observations-2026-06-16`
 
 ---
 
-## finding-329: Raffi Grinberg has surfaces but no Clifford path
+## finding-333: Raffi Grinberg has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -5930,7 +6002,7 @@ Refs: `dialog-leadership-role-observations-2026-06-16`
 
 ---
 
-## finding-330: Joe Lonsdale has surfaces but no Clifford path
+## finding-334: Joe Lonsdale has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -5948,7 +6020,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `vehicle-control-8vc`, `veh
 
 ---
 
-## finding-331: Ted Cruz has surfaces but no Clifford path
+## finding-335: Ted Cruz has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -5966,7 +6038,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-332: Jim Himes has surfaces but no Clifford path
+## finding-336: Jim Himes has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -5984,7 +6056,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `jim-himes-enterprise-commu
 
 ---
 
-## finding-333: Dan Driscoll has surfaces but no Clifford path
+## finding-337: Dan Driscoll has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -6002,7 +6074,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `detachment-201-second-coho
 
 ---
 
-## finding-334: Alexus Grynkewich has surfaces but no Clifford path
+## finding-338: Alexus Grynkewich has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -6020,7 +6092,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-335: Randy Kroszner has surfaces but no Clifford path
+## finding-339: Randy Kroszner has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -6038,7 +6110,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-336: Scott Bessent has surfaces but no Clifford path
+## finding-340: Scott Bessent has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -6056,7 +6128,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-337: Cory Booker has surfaces but no Clifford path
+## finding-341: Cory Booker has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -6074,7 +6146,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-338: Elon Musk has surfaces but no Clifford path
+## finding-342: Elon Musk has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -6092,7 +6164,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-339: Joseph Gordon-Levitt has surfaces but no Clifford path
+## finding-343: Joseph Gordon-Levitt has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -6110,7 +6182,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-340: Sophia Bush has surfaces but no Clifford path
+## finding-344: Sophia Bush has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -6128,7 +6200,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-341: Ezra Klein has surfaces but no Clifford path
+## finding-345: Ezra Klein has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -6146,7 +6218,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-342: Jonathan Levin has surfaces but no Clifford path
+## finding-346: Jonathan Levin has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -6164,7 +6236,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-343: Sam Harris has surfaces but no Clifford path
+## finding-347: Sam Harris has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -6182,7 +6254,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-344: Bryan Johnson has surfaces but no Clifford path
+## finding-348: Bryan Johnson has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -6200,7 +6272,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-345: Sarah Bond has surfaces but no Clifford path
+## finding-349: Sarah Bond has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -6218,7 +6290,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-346: Scott Cook has surfaces but no Clifford path
+## finding-350: Scott Cook has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -6236,7 +6308,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-347: Lisa Gevelber has surfaces but no Clifford path
+## finding-351: Lisa Gevelber has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -6254,7 +6326,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-348: Shmuel Abramzon has surfaces but no Clifford path
+## finding-352: Shmuel Abramzon has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -6272,7 +6344,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-349: Josh Brolin has surfaces but no Clifford path
+## finding-353: Josh Brolin has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -6290,7 +6362,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-350: Reid Hoffman has surfaces but no Clifford path
+## finding-354: Reid Hoffman has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -6308,7 +6380,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-351: Wes Moore has surfaces but no Clifford path
+## finding-355: Wes Moore has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -6326,7 +6398,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `a16z-american-dynamism-sum
 
 ---
 
-## finding-352: Jared Polis has surfaces but no Clifford path
+## finding-356: Jared Polis has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -6344,7 +6416,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-353: Lisa Monaco has surfaces but no Clifford path
+## finding-357: Lisa Monaco has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -6362,7 +6434,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-354: Robert Hur has surfaces but no Clifford path
+## finding-358: Robert Hur has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -6380,7 +6452,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-355: Preet Bharara has surfaces but no Clifford path
+## finding-359: Preet Bharara has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -6398,7 +6470,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-356: Rachel Brand has surfaces but no Clifford path
+## finding-360: Rachel Brand has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -6416,7 +6488,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-357: Mitch Daniels has surfaces but no Clifford path
+## finding-361: Mitch Daniels has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -6434,7 +6506,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-358: Julian Castro has surfaces but no Clifford path
+## finding-362: Julian Castro has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -6452,7 +6524,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-359: Peggy Hamburg has surfaces but no Clifford path
+## finding-363: Peggy Hamburg has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -6470,7 +6542,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-360: Reema Al-Saud has surfaces but no Clifford path
+## finding-364: Reema Al-Saud has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -6488,7 +6560,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-361: Turki Al Faisal Al Saud has surfaces but no Clifford path
+## finding-365: Turki Al Faisal Al Saud has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -6506,7 +6578,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-362: Sheikh Nawaf Saud Nasir Al-Sabah has surfaces but no Clifford path
+## finding-366: Sheikh Nawaf Saud Nasir Al-Sabah has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -6524,7 +6596,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-363: Kaja Kallas has surfaces but no Clifford path
+## finding-367: Kaja Kallas has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -6542,7 +6614,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-364: Tarō Kōno has surfaces but no Clifford path
+## finding-368: Tarō Kōno has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -6560,7 +6632,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-365: Jens Spahn has surfaces but no Clifford path
+## finding-369: Jens Spahn has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -6578,7 +6650,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-366: Tom Tugendhat has surfaces but no Clifford path
+## finding-370: Tom Tugendhat has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -6596,7 +6668,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-367: Shahid Khaqan Abbasi has surfaces but no Clifford path
+## finding-371: Shahid Khaqan Abbasi has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -6614,7 +6686,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-368: Ali Jehangir Siddiqui has surfaces but no Clifford path
+## finding-372: Ali Jehangir Siddiqui has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -6632,7 +6704,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-369: Shivon Zilis has surfaces but no Clifford path
+## finding-373: Shivon Zilis has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -6650,7 +6722,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-370: Stan McChrystal has surfaces but no Clifford path
+## finding-374: Stan McChrystal has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -6668,7 +6740,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-371: Jonathan Ross has surfaces but no Clifford path
+## finding-375: Jonathan Ross has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -6686,7 +6758,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-372: Pete Shadbolt has surfaces but no Clifford path
+## finding-376: Pete Shadbolt has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -6704,7 +6776,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-373: Scott Stephenson has surfaces but no Clifford path
+## finding-377: Scott Stephenson has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -6722,7 +6794,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-374: Barry Silbert has surfaces but no Clifford path
+## finding-378: Barry Silbert has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -6740,7 +6812,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-375: Charlie Songhurst has surfaces but no Clifford path
+## finding-379: Charlie Songhurst has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -6758,7 +6830,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-376: Tom Lue has surfaces but no Clifford path
+## finding-380: Tom Lue has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -6776,7 +6848,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-377: Fatima Kardar has surfaces but no Clifford path
+## finding-381: Fatima Kardar has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -6794,7 +6866,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-378: Neal Mohan has surfaces but no Clifford path
+## finding-382: Neal Mohan has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -6812,7 +6884,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-379: Greg Brockman has surfaces but no Clifford path
+## finding-383: Greg Brockman has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -6830,7 +6902,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-380: Jason Kwon has surfaces but no Clifford path
+## finding-384: Jason Kwon has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -6848,7 +6920,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-381: Adam D'Angelo has surfaces but no Clifford path
+## finding-385: Adam D'Angelo has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -6866,7 +6938,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-382: Manuel Bronstein has surfaces but no Clifford path
+## finding-386: Manuel Bronstein has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -6884,7 +6956,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-383: Severin Hacker has surfaces but no Clifford path
+## finding-387: Severin Hacker has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -6902,7 +6974,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-384: Wences Casares has surfaces but no Clifford path
+## finding-388: Wences Casares has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -6920,7 +6992,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-385: Immad Akhund has surfaces but no Clifford path
+## finding-389: Immad Akhund has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -6938,7 +7010,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-386: Henry Kravis has surfaces but no Clifford path
+## finding-390: Henry Kravis has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -6956,7 +7028,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-387: Pete Briger has surfaces but no Clifford path
+## finding-391: Pete Briger has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -6974,7 +7046,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-388: Peter Brown has surfaces but no Clifford path
+## finding-392: Peter Brown has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -6992,7 +7064,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-389: Karen Karniol-Tambour has surfaces but no Clifford path
+## finding-393: Karen Karniol-Tambour has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -7010,7 +7082,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-390: Mike Novogratz has surfaces but no Clifford path
+## finding-394: Mike Novogratz has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -7028,7 +7100,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-391: Bob Jain has surfaces but no Clifford path
+## finding-395: Bob Jain has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -7046,7 +7118,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-392: Gaurva Kapadia has surfaces but no Clifford path
+## finding-396: Gaurva Kapadia has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -7064,7 +7136,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-393: Micky Malka has surfaces but no Clifford path
+## finding-397: Micky Malka has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -7082,7 +7154,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-394: Chamath Palihapitiya has surfaces but no Clifford path
+## finding-398: Chamath Palihapitiya has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -7100,7 +7172,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-395: Jared Kushner has surfaces but no Clifford path
+## finding-399: Jared Kushner has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -7118,7 +7190,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-396: John Arnold has surfaces but no Clifford path
+## finding-400: John Arnold has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -7136,7 +7208,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-397: Robert Rubin has surfaces but no Clifford path
+## finding-401: Robert Rubin has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -7154,7 +7226,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-398: Lawrence Summers has surfaces but no Clifford path
+## finding-402: Lawrence Summers has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -7172,7 +7244,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-399: Eric Schmidt has surfaces but no Clifford path
+## finding-403: Eric Schmidt has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -7190,7 +7262,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-400: Susan Athey has surfaces but no Clifford path
+## finding-404: Susan Athey has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -7208,7 +7280,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-401: Steven Pinker has surfaces but no Clifford path
+## finding-405: Steven Pinker has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -7226,7 +7298,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-402: Tyler Cowen has surfaces but no Clifford path
+## finding-406: Tyler Cowen has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -7244,7 +7316,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `a16z-american-dynamism-sum
 
 ---
 
-## finding-403: Adam Grant has surfaces but no Clifford path
+## finding-407: Adam Grant has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -7262,7 +7334,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-404: Jonathan Haidt has surfaces but no Clifford path
+## finding-408: Jonathan Haidt has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -7280,7 +7352,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-405: Anne-Marie Slaughter has surfaces but no Clifford path
+## finding-409: Anne-Marie Slaughter has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -7298,7 +7370,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-406: Leonard Leo has surfaces but no Clifford path
+## finding-410: Leonard Leo has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -7316,7 +7388,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-407: Grover Norquist has surfaces but no Clifford path
+## finding-411: Grover Norquist has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -7334,7 +7406,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-408: Nick Thompson has surfaces but no Clifford path
+## finding-412: Nick Thompson has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -7352,7 +7424,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-409: Bret Stephens has surfaces but no Clifford path
+## finding-413: Bret Stephens has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -7370,7 +7442,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-410: Tim Ferriss has surfaces but no Clifford path
+## finding-414: Tim Ferriss has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -7388,7 +7460,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-411: Mike Cannon-Brookes has surfaces but no Clifford path
+## finding-415: Mike Cannon-Brookes has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -7406,7 +7478,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-412: Marcos Galperin has surfaces but no Clifford path
+## finding-416: Marcos Galperin has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -7424,7 +7496,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-413: Demet Mutlu has surfaces but no Clifford path
+## finding-417: Demet Mutlu has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -7442,7 +7514,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-414: Cesar Carvalho has surfaces but no Clifford path
+## finding-418: Cesar Carvalho has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -7460,7 +7532,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-415: Howie Liu has surfaces but no Clifford path
+## finding-419: Howie Liu has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -7478,7 +7550,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-416: Scott Belsky has surfaces but no Clifford path
+## finding-420: Scott Belsky has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -7496,7 +7568,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-417: Steve Ells has surfaces but no Clifford path
+## finding-421: Steve Ells has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -7514,7 +7586,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-418: Nicolas Berggruen has surfaces but no Clifford path
+## finding-422: Nicolas Berggruen has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -7532,7 +7604,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-419: Matt Cohler has surfaces but no Clifford path
+## finding-423: Matt Cohler has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -7550,7 +7622,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-420: Will Scharf has surfaces but no Clifford path
+## finding-424: Will Scharf has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -7568,7 +7640,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-421: Mario Schlosser has surfaces but no Clifford path
+## finding-425: Mario Schlosser has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -7586,7 +7658,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-422: Astro Teller has surfaces but no Clifford path
+## finding-426: Astro Teller has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -7604,7 +7676,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-423: Strauss Zelnick has surfaces but no Clifford path
+## finding-427: Strauss Zelnick has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -7622,7 +7694,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-424: Benj Pasek has surfaces but no Clifford path
+## finding-428: Benj Pasek has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -7640,7 +7712,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-425: Drew Scott has surfaces but no Clifford path
+## finding-429: Drew Scott has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -7658,7 +7730,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-426: Kim Scott has surfaces but no Clifford path
+## finding-430: Kim Scott has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -7676,7 +7748,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-427: Rick Warren has surfaces but no Clifford path
+## finding-431: Rick Warren has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -7694,7 +7766,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-428: Gretchen Rubin has surfaces but no Clifford path
+## finding-432: Gretchen Rubin has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -7712,7 +7784,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-429: Charles Duhigg has surfaces but no Clifford path
+## finding-433: Charles Duhigg has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -7730,7 +7802,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-430: Daniel Pink has surfaces but no Clifford path
+## finding-434: Daniel Pink has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -7748,7 +7820,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-431: Tom Goldstein has surfaces but no Clifford path
+## finding-435: Tom Goldstein has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -7766,7 +7838,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-432: Neal Katyal has surfaces but no Clifford path
+## finding-436: Neal Katyal has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -7784,7 +7856,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-433: Garry Kasparov has surfaces but no Clifford path
+## finding-437: Garry Kasparov has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -7802,7 +7874,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-434: Atul Gawande has surfaces but no Clifford path
+## finding-438: Atul Gawande has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -7820,7 +7892,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-435: Bob Cialdini has surfaces but no Clifford path
+## finding-439: Bob Cialdini has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -7838,7 +7910,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-436: John Townsend has surfaces but no Clifford path
+## finding-440: John Townsend has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -7856,7 +7928,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-437: Tim Urban has surfaces but no Clifford path
+## finding-441: Tim Urban has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -7874,7 +7946,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-438: Thasunda Brown Duckett has surfaces but no Clifford path
+## finding-442: Thasunda Brown Duckett has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -7892,7 +7964,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-439: Vas Narasimhan has surfaces but no Clifford path
+## finding-443: Vas Narasimhan has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -7910,7 +7982,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-440: Elizabeth Blackburn has surfaces but no Clifford path
+## finding-444: Elizabeth Blackburn has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -7928,7 +8000,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-441: Eric Salama has surfaces but no Clifford path
+## finding-445: Eric Salama has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -7946,7 +8018,7 @@ Refs: `electric-twin-seed-round-2026-02-11`
 
 ---
 
-## finding-442: Ben Blume has surfaces but no Clifford path
+## finding-446: Ben Blume has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -7964,7 +8036,7 @@ Refs: `electric-twin-ben-blume-director-appointment-2025-09-12`
 
 ---
 
-## finding-443: Shyam Sankar has surfaces but no Clifford path
+## finding-447: Shyam Sankar has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -7982,7 +8054,7 @@ Refs: `detachment-201-commissioning-2025`, `a16z-american-dynamism-summit-2025-m
 
 ---
 
-## finding-444: Andrew “Boz” Bosworth has surfaces but no Clifford path
+## finding-448: Andrew “Boz” Bosworth has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -8000,7 +8072,7 @@ Refs: `detachment-201-commissioning-2025`
 
 ---
 
-## finding-445: Kevin Weil has surfaces but no Clifford path
+## finding-449: Kevin Weil has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -8018,7 +8090,7 @@ Refs: `detachment-201-commissioning-2025`, `kevin-weil-black-product-managers-ne
 
 ---
 
-## finding-446: Bob McGrew has surfaces but no Clifford path
+## finding-450: Bob McGrew has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -8036,7 +8108,7 @@ Refs: `detachment-201-commissioning-2025`
 
 ---
 
-## finding-447: Lieutenant Colonel Dan Sawyers has surfaces but no Clifford path
+## finding-451: Lieutenant Colonel Dan Sawyers has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -8054,7 +8126,7 @@ Refs: `anduril-talos-phase-3-named-principals-2023-11-02`
 
 ---
 
-## finding-448: Greg Kausner has surfaces but no Clifford path
+## finding-452: Greg Kausner has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -8072,7 +8144,7 @@ Refs: `anduril-talos-phase-3-named-principals-2023-11-02`
 
 ---
 
-## finding-449: Dane Knecht has surfaces but no Clifford path
+## finding-453: Dane Knecht has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -8090,7 +8162,7 @@ Refs: `detachment-201-second-cohort-commissioning-2026-06-10`
 
 ---
 
-## finding-450: Sam Pullara has surfaces but no Clifford path
+## finding-454: Sam Pullara has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -8108,7 +8180,7 @@ Refs: `detachment-201-second-cohort-commissioning-2026-06-10`
 
 ---
 
-## finding-451: Serkan Piantino has surfaces but no Clifford path
+## finding-455: Serkan Piantino has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -8126,7 +8198,7 @@ Refs: `detachment-201-second-cohort-commissioning-2026-06-10`
 
 ---
 
-## finding-452: Jackson Moses has surfaces but no Clifford path
+## finding-456: Jackson Moses has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -8144,7 +8216,7 @@ Refs: `advisory-jackson-moses-castelion`, `advisory-jackson-moses-privateer`, `a
 
 ---
 
-## finding-453: Katherine Boyle has surfaces but no Clifford path
+## finding-457: Katherine Boyle has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -8162,7 +8234,7 @@ Refs: `advisory-katherine-boyle-apex-space`, `advisory-katherine-boyle-hadrian`,
 
 ---
 
-## finding-454: Trae Stephens has surfaces but no Clifford path
+## finding-458: Trae Stephens has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -8180,7 +8252,7 @@ Refs: `advisory-trae-stephens-anduril-industries`, `advisory-trae-stephens-flexp
 
 ---
 
-## finding-455: Joshua Baer has surfaces but no Clifford path
+## finding-459: Joshua Baer has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -8198,7 +8270,7 @@ Refs: `vehicle-control-capital-factory`, `vehicle-control-station-austin`, `capi
 
 ---
 
-## finding-456: Sally Donnelly has surfaces but no Clifford path
+## finding-460: Sally Donnelly has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -8216,7 +8288,7 @@ Refs: `pallas-advisors-team-page-2026-10-23`
 
 ---
 
-## finding-457: Tony DeMartino has surfaces but no Clifford path
+## finding-461: Tony DeMartino has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -8234,7 +8306,7 @@ Refs: `pallas-advisors-team-page-2026-10-23`
 
 ---
 
-## finding-458: Tal Shmueli has surfaces but no Clifford path
+## finding-462: Tal Shmueli has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -8252,7 +8324,7 @@ Refs: `texas-venture-partners-team-page-2026-04-06`
 
 ---
 
-## finding-459: Rotem (Yehuda) Kakon has surfaces but no Clifford path
+## finding-463: Rotem (Yehuda) Kakon has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -8270,7 +8342,7 @@ Refs: `stratos-ventures-team-page-2026-10-23`
 
 ---
 
-## finding-460: Aviad Grinfeld has surfaces but no Clifford path
+## finding-464: Aviad Grinfeld has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -8288,7 +8360,7 @@ Refs: `stratos-ventures-team-page-2026-10-23`
 
 ---
 
-## finding-461: Daniel Fouzailov has surfaces but no Clifford path
+## finding-465: Daniel Fouzailov has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -8306,7 +8378,7 @@ Refs: `stratos-ventures-team-page-2026-10-23`
 
 ---
 
-## finding-462: LTG (Ret.) Michael Barbero has surfaces but no Clifford path
+## finding-466: LTG (Ret.) Michael Barbero has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -8324,7 +8396,7 @@ Refs: `stratos-ventures-team-page-2026-10-23`
 
 ---
 
-## finding-463: Steve Braverman has surfaces but no Clifford path
+## finding-467: Steve Braverman has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -8342,7 +8414,7 @@ Refs: `stratos-ventures-team-page-2026-10-23`
 
 ---
 
-## finding-464: David Braverman has surfaces but no Clifford path
+## finding-468: David Braverman has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -8360,7 +8432,7 @@ Refs: `stratos-ventures-team-page-2026-10-23`
 
 ---
 
-## finding-465: Theo Williams has surfaces but no Clifford path
+## finding-469: Theo Williams has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -8378,7 +8450,7 @@ Refs: `stratos-ventures-team-page-2026-10-23`
 
 ---
 
-## finding-466: Israel Biran has surfaces but no Clifford path
+## finding-470: Israel Biran has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -8396,7 +8468,7 @@ Refs: `stratos-ventures-team-page-2026-10-23`
 
 ---
 
-## finding-467: Doron Landau has surfaces but no Clifford path
+## finding-471: Doron Landau has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -8414,7 +8486,7 @@ Refs: `stratos-ventures-team-page-2026-10-23`
 
 ---
 
-## finding-468: Richard Spencer has surfaces but no Clifford path
+## finding-472: Richard Spencer has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -8432,7 +8504,7 @@ Refs: `pallas-ventures-team-page-2026-10-23`
 
 ---
 
-## finding-469: Lorne Abony has surfaces but no Clifford path
+## finding-473: Lorne Abony has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -8450,7 +8522,7 @@ Refs: `texas-venture-partners-team-page-2026-04-06`
 
 ---
 
-## finding-470: Yadin Soffer has surfaces but no Clifford path
+## finding-474: Yadin Soffer has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -8468,7 +8540,7 @@ Refs: `traysar-team-page-2026-10-23`
 
 ---
 
-## finding-471: Asher Katz has surfaces but no Clifford path
+## finding-475: Asher Katz has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -8486,7 +8558,7 @@ Refs: `traysar-team-page-2026-10-23`
 
 ---
 
-## finding-472: Gilad Adin has surfaces but no Clifford path
+## finding-476: Gilad Adin has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -8504,7 +8576,7 @@ Refs: `traysar-team-page-2026-10-23`
 
 ---
 
-## finding-473: Alan T. Dugger has surfaces but no Clifford path
+## finding-477: Alan T. Dugger has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -8522,7 +8594,7 @@ Refs: `alan-t-dugger-astrobiticacom-publisher-linkedin-2024-present`, `alan-t-du
 
 ---
 
-## finding-474: Alec Webster has surfaces but no Clifford path
+## finding-478: Alec Webster has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -8540,7 +8612,7 @@ Refs: `alec-webster-anduril-industries-program-manager-linkedin-2025-present`, `
 
 ---
 
-## finding-475: Alex Bilay has surfaces but no Clifford path
+## finding-479: Alex Bilay has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -8558,7 +8630,7 @@ Refs: `alex-bilay-blackstone-summer-associate-linkedin-2025-2025`, `alex-bilay-l
 
 ---
 
-## finding-476: Alex Frew has surfaces but no Clifford path
+## finding-480: Alex Frew has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -8576,7 +8648,7 @@ Refs: `alex-frew-air-force-special-operations-command-airfield-operations-specia
 
 ---
 
-## finding-477: Allen Collinsworth has surfaces but no Clifford path
+## finding-481: Allen Collinsworth has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -8594,7 +8666,7 @@ Refs: `allen-collinsworth-corridor39-anchor-and-founder-linkedin-2010-2011`, `al
 
 ---
 
-## finding-478: Andrew Hunter has surfaces but no Clifford path
+## finding-482: Andrew Hunter has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -8612,7 +8684,7 @@ Refs: `andrew-hunter-pax-per-consortia-strategies-llc-founder-and-principal-link
 
 ---
 
-## finding-479: Andrew Koch has surfaces but no Clifford path
+## finding-483: Andrew Koch has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -8630,7 +8702,7 @@ Refs: `andrew-koch-booz-allen-hamilton-senior-consultant-linkedin-2006-2010`, `a
 
 ---
 
-## finding-480: Andrew Nuss has surfaces but no Clifford path
+## finding-484: Andrew Nuss has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -8648,7 +8720,7 @@ Refs: `andrew-nuss-anduril-industries-director-maritime-linkedin-2023-2025`, `an
 
 ---
 
-## finding-481: Barry Walkenbach has surfaces but no Clifford path
+## finding-485: Barry Walkenbach has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -8666,7 +8738,7 @@ Refs: `barry-walkenbach-general-atomics-aeronautical-systems-senior-program-mana
 
 ---
 
-## finding-482: Bill Greenwalt has surfaces but no Clifford path
+## finding-486: Bill Greenwalt has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -8684,7 +8756,7 @@ Refs: `bill-greenwalt-aerospace-industries-association-vice-president-acquisitio
 
 ---
 
-## finding-483: Blake Souter has surfaces but no Clifford path
+## finding-487: Blake Souter has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -8702,7 +8774,7 @@ Refs: `blake-souter-av-vice-president-head-of-washington-operations-linkedin-202
 
 ---
 
-## finding-484: Brandon Boesch has surfaces but no Clifford path
+## finding-488: Brandon Boesch has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -8720,7 +8792,7 @@ Refs: `brandon-boesch-arm-iot-applications-engineer-intern-linkedin-2017-2017`, 
 
 ---
 
-## finding-485: Brandon Tseng has surfaces but no Clifford path
+## finding-489: Brandon Tseng has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -8738,7 +8810,7 @@ Refs: `brandon-tseng-shield-ai-co-founder-linkedin-2015-present`, `brandon-tseng
 
 ---
 
-## finding-486: Bryan Claudio has surfaces but no Clifford path
+## finding-490: Bryan Claudio has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -8756,7 +8828,7 @@ Refs: `bryan-claudio-action-behavior-centers-aba-therapy-for-autism-operations-p
 
 ---
 
-## finding-487: Christian Brose has surfaces but no Clifford path
+## finding-491: Christian Brose has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -8774,7 +8846,7 @@ Refs: `christian-brose-anduril-industries-chief-strategy-officer-linkedin-2018-2
 
 ---
 
-## finding-488: Christopher Brooks has surfaces but no Clifford path
+## finding-492: Christopher Brooks has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -8792,7 +8864,7 @@ Refs: `christopher-brooks-crew-training-international-capture-manager-socom-fell
 
 ---
 
-## finding-489: Christopher Kirchhoff has surfaces but no Clifford path
+## finding-493: Christopher Kirchhoff has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -8810,7 +8882,7 @@ Refs: `christopher-kirchhoff-aeolus-labs-advisor-linkedin-2025-present`, `christ
 
 ---
 
-## finding-490: Christopher Knapp has surfaces but no Clifford path
+## finding-494: Christopher Knapp has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -8828,7 +8900,7 @@ Refs: `christopher-knapp-air-force-special-operations-command-isr-operations-dir
 
 ---
 
-## finding-491: Church Hutton has surfaces but no Clifford path
+## finding-495: Church Hutton has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -8846,7 +8918,7 @@ Refs: `church-hutton-av-chief-growth-officer-linkedin-2025-present`, `church-hut
 
 ---
 
-## finding-492: Colin Carroll has surfaces but no Clifford path
+## finding-496: Colin Carroll has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -8864,7 +8936,7 @@ Refs: `colin-carroll-anduril-industries-strategy-and-growth-linkedin-2023-2025`,
 
 ---
 
-## finding-493: Collin Weeks has surfaces but no Clifford path
+## finding-497: Collin Weeks has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -8882,7 +8954,7 @@ Refs: `collin-weeks-digitalglobe-product-manager-linkedin-2017-2018`, `collin-we
 
 ---
 
-## finding-494: Dan "Animal" Javorsek has surfaces but no Clifford path
+## finding-498: Dan "Animal" Javorsek has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -8900,7 +8972,7 @@ Refs: `dan-animal-javorsek-aces-and-eights-foundation-president-linkedin-2022-pr
 
 ---
 
-## finding-495: Darin DiTommaso has surfaces but no Clifford path
+## finding-499: Darin DiTommaso has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -8918,7 +8990,7 @@ Refs: `darin-ditommaso-ge-aerospace-vice-president-of-engineering-ge-aerospace-d
 
 ---
 
-## finding-496: David Norquist has surfaces but no Clifford path
+## finding-500: David Norquist has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -8936,7 +9008,7 @@ Refs: `david-norquist-kearney-and-company-partner-linkedin-2008-2017`, `david-no
 
 ---
 
-## finding-497: Devan Plantamura has surfaces but no Clifford path
+## finding-501: Devan Plantamura has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -8954,7 +9026,7 @@ Refs: `devan-plantamura-ares-industries-advisor-linkedin-2025-2025`, `devan-plan
 
 ---
 
-## finding-498: Doug Beck has surfaces but no Clifford path
+## finding-502: Doug Beck has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -8972,7 +9044,7 @@ Refs: `doug-beck-apple-vice-president-americas-and-northeast-asia-linkedin-2015-
 
 ---
 
-## finding-499: Dylan Morelle has surfaces but no Clifford path
+## finding-503: Dylan Morelle has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -8990,7 +9062,7 @@ Refs: `dylan-morelle-aechelon-technology-inc-director-of-isr-sales-linkedin-2025
 
 ---
 
-## finding-500: Eddie Ybarra has surfaces but no Clifford path
+## finding-504: Eddie Ybarra has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -9008,7 +9080,7 @@ Refs: `eddie-ybarra-air-force-special-operations-command-organizational-manager-
 
 ---
 
-## finding-501: Ellen Lord has surfaces but no Clifford path
+## finding-505: Ellen Lord has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -9026,7 +9098,7 @@ Refs: `ellen-lord-aai-corporation-senior-vice-president-and-general-manager-link
 
 ---
 
-## finding-502: Emilio Menendez Baker has surfaces but no Clifford path
+## finding-506: Emilio Menendez Baker has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -9044,7 +9116,7 @@ Refs: `emilio-menendez-baker-anduril-industries-emerging-capabilities-manager-ai
 
 ---
 
-## finding-503: Eric Ballester has surfaces but no Clifford path
+## finding-507: Eric Ballester has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -9062,7 +9134,7 @@ Refs: `eric-ballester-shields-and-stripes-director-of-public-relations-linkedin-
 
 ---
 
-## finding-504: Eric Chewning has surfaces but no Clifford path
+## finding-508: Eric Chewning has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -9080,7 +9152,7 @@ Refs: `eric-chewning-booz-and-company-principal-linkedin-2012-2013`, `eric-chewn
 
 ---
 
-## finding-505: Ernesto Cortez has surfaces but no Clifford path
+## finding-509: Ernesto Cortez has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -9098,7 +9170,7 @@ Refs: `ernesto-cortez-aevex-aerospace-vice-president-of-business-development-lin
 
 ---
 
-## finding-506: Frank Kendall has surfaces but no Clifford path
+## finding-510: Frank Kendall has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -9116,7 +9188,7 @@ Refs: `frank-kendall-amnesty-international-usa-member-board-of-directors-linkedi
 
 ---
 
-## finding-507: Gabe Arrington has surfaces but no Clifford path
+## finding-511: Gabe Arrington has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -9134,7 +9206,7 @@ Refs: `gabe-arrington-baker-institute-center-for-energy-studies-ces-non-resident
 
 ---
 
-## finding-508: Gabe Camarillo has surfaces but no Clifford path
+## finding-512: Gabe Camarillo has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -9152,7 +9224,7 @@ Refs: `gabe-camarillo-akin-gump-strauss-hauer-and-feld-llp-litigation-associate-
 
 ---
 
-## finding-509: Greg Little has surfaces but no Clifford path
+## finding-513: Greg Little has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -9170,7 +9242,7 @@ Refs: `greg-little-ibm-consultant-linkedin-2007-2009`, `greg-little-palantir-tec
 
 ---
 
-## finding-510: Heidi Shyu has surfaces but no Clifford path
+## finding-514: Heidi Shyu has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -9188,7 +9260,7 @@ Refs: `heidi-shyu-2i-ventures-strategic-advisory-board-linkedin-2025-present`, `
 
 ---
 
-## finding-511: James Day has surfaces but no Clifford path
+## finding-515: James Day has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -9206,7 +9278,7 @@ Refs: `james-day-acquisition-ship-programs-director-for-above-water-sensors-ew-a
 
 ---
 
-## finding-512: James Ratliff has surfaces but no Clifford path
+## finding-516: James Ratliff has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -9224,7 +9296,7 @@ Refs: `james-ratliff-bravura-information-technology-systems-inc-bits-project-man
 
 ---
 
-## finding-513: James Sampson has surfaces but no Clifford path
+## finding-517: James Sampson has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -9242,7 +9314,7 @@ Refs: `james-sampson-anduril-industries-integration-technician-linkedin-2025-202
 
 ---
 
-## finding-514: James Storer has surfaces but no Clifford path
+## finding-518: James Storer has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -9260,7 +9332,7 @@ Refs: `james-storer-a-t-solutions-team-lead-master-instructor-linkedin-2011-2015
 
 ---
 
-## finding-515: Jamie Morin has surfaces but no Clifford path
+## finding-519: Jamie Morin has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -9278,7 +9350,7 @@ Refs: `jamie-morin-center-for-strategic-and-budgetary-assessments-visiting-fello
 
 ---
 
-## finding-516: Janel Timoney Brown has surfaces but no Clifford path
+## finding-520: Janel Timoney Brown has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -9296,7 +9368,7 @@ Refs: `janel-timoney-brown-maxar-technologies-director-dod-account-executive-lin
 
 ---
 
-## finding-517: Jason Dickinson has surfaces but no Clifford path
+## finding-521: Jason Dickinson has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -9314,7 +9386,7 @@ Refs: `jason-dickinson-5th-special-forces-group-airborne-us-army-special-forces-
 
 ---
 
-## finding-518: Jason Metcalfe has surfaces but no Clifford path
+## finding-522: Jason Metcalfe has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -9332,7 +9404,7 @@ Refs: `jason-metcalfe-dcs-corporation-applied-researcher-and-systems-scientist-l
 
 ---
 
-## finding-519: Jason Schwab has surfaces but no Clifford path
+## finding-523: Jason Schwab has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -9350,7 +9422,7 @@ Refs: `jason-schwab-arena-labs-chief-growth-officer-linkedin-2024-2025`, `jason-
 
 ---
 
-## finding-520: Jeff Wright has surfaces but no Clifford path
+## finding-524: Jeff Wright has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -9368,7 +9440,7 @@ Refs: `jeff-wright-ameritel-llc-it-technician-linkedin-1997-2002`, `jeff-wright-
 
 ---
 
-## finding-521: Jeremy Flint has surfaces but no Clifford path
+## finding-525: Jeremy Flint has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -9386,7 +9458,7 @@ Refs: `jeremy-flint-investorplace-investment-insights-writer-linkedin-2023-2024`
 
 ---
 
-## finding-522: Jim Caggy has surfaces but no Clifford path
+## finding-526: Jim Caggy has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -9404,7 +9476,7 @@ Refs: `jim-caggy-office-of-the-secretary-of-defense-advisor-strategic-capabiliti
 
 ---
 
-## finding-523: Jim Carlson has surfaces but no Clifford path
+## finding-527: Jim Carlson has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -9422,7 +9494,7 @@ Refs: `jim-carlson-bitrip-product-linkedin-2020-2020`, `jim-carlson-cyberbranch-
 
 ---
 
-## finding-524: Joanna Guy has surfaces but no Clifford path
+## finding-528: Joanna Guy has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -9440,7 +9512,7 @@ Refs: `joanna-guy-booz-allen-hamilton-marketing-and-growth-lead-linkedin-2023-20
 
 ---
 
-## finding-525: John Goodson has surfaces but no Clifford path
+## finding-529: John Goodson has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -9458,7 +9530,7 @@ Refs: `john-goodson-cti-director-of-business-linkedin-2017-2021`, `john-goodson-
 
 ---
 
-## finding-526: Jon Bal has surfaces but no Clifford path
+## finding-530: Jon Bal has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -9476,7 +9548,7 @@ Refs: `jon-bal-air-force-special-operations-command-senior-program-manager-linke
 
 ---
 
-## finding-527: Jonathan Bowler has surfaces but no Clifford path
+## finding-531: Jonathan Bowler has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -9494,7 +9566,7 @@ Refs: `jonathan-bowler-negative-split-event-timing-head-timer-linkedin-2022-2025
 
 ---
 
-## finding-528: Jonathan Jacobs has surfaces but no Clifford path
+## finding-532: Jonathan Jacobs has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -9512,7 +9584,7 @@ Refs: `jonathan-jacobs-clear-channel-broadcasting-promotions-coordinator-linkedi
 
 ---
 
-## finding-529: Justin Fanelli has surfaces but no Clifford path
+## finding-533: Justin Fanelli has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -9530,7 +9602,7 @@ Refs: `justin-fanelli-ai-in-gov-board-member-linkedin-2024-present`, `justin-fan
 
 ---
 
-## finding-530: Juzar Ghadyali has surfaces but no Clifford path
+## finding-534: Juzar Ghadyali has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -9548,7 +9620,7 @@ Refs: `juzar-ghadyali-naval-sea-systems-command-navsea-contracts-negotiator-link
 
 ---
 
-## finding-531: Kevin Holland has surfaces but no Clifford path
+## finding-535: Kevin Holland has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -9566,7 +9638,7 @@ Refs: `kevin-holland-dcs-corporation-senior-acquisition-specialist-linkedin-2006
 
 ---
 
-## finding-532: Kyle Briggs has surfaces but no Clifford path
+## finding-536: Kyle Briggs has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -9584,7 +9656,7 @@ Refs: `kyle-briggs-defense-tech-signals-founder-linkedin-2025-present`, `kyle-br
 
 ---
 
-## finding-533: Lauren Knausenberger has surfaces but no Clifford path
+## finding-537: Lauren Knausenberger has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -9602,7 +9674,7 @@ Refs: `lauren-knausenberger-accellint-inc-president-and-ceo-linkedin-2014-2018`,
 
 ---
 
-## finding-534: Lee Washburn has surfaces but no Clifford path
+## finding-538: Lee Washburn has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -9620,7 +9692,7 @@ Refs: `lee-washburn-harris-boats-district-business-manager-linkedin-2022-2023`, 
 
 ---
 
-## finding-535: Lily Hinz has surfaces but no Clifford path
+## finding-539: Lily Hinz has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -9638,7 +9710,7 @@ Refs: `lily-hinz-general-atomics-aeronautical-systems-communications-specialist-
 
 ---
 
-## finding-536: Mark Daniel has surfaces but no Clifford path
+## finding-540: Mark Daniel has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -9656,7 +9728,7 @@ Refs: `mark-daniel-draper-program-manager-strategic-systems-linkedin-2015-2019`,
 
 ---
 
-## finding-537: Matt Mande has surfaces but no Clifford path
+## finding-541: Matt Mande has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -9674,7 +9746,7 @@ Refs: `matt-mande-center-for-strategic-and-international-studies-csis-research-a
 
 ---
 
-## finding-538: Matt Way has surfaces but no Clifford path
+## finding-542: Matt Way has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -9692,7 +9764,7 @@ Refs: `matt-way-prism-pointe-technologies-program-manager-linkedin-2007-2008`, `
 
 ---
 
-## finding-539: Michael A. Brown has surfaces but no Clifford path
+## finding-543: Michael A. Brown has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -9710,7 +9782,7 @@ Refs: `michael-a-brown-asimily-board-member-and-investor-linkedin-2017-present`,
 
 ---
 
-## finding-540: Michael Maddry has surfaces but no Clifford path
+## finding-544: Michael Maddry has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -9728,7 +9800,7 @@ Refs: `michael-maddry-anduril-industries-mission-operations-linkedin-2022-2025`,
 
 ---
 
-## finding-541: Mike Smith has surfaces but no Clifford path
+## finding-545: Mike Smith has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -9746,7 +9818,7 @@ Refs: `mike-smith-black-rifle-coffee-company-media-producer-skillbridge-internsh
 
 ---
 
-## finding-542: Mike Wilson has surfaces but no Clifford path
+## finding-546: Mike Wilson has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -9764,7 +9836,7 @@ Refs: `mike-wilson-granicus-director-business-development-and-alliances-linkedin
 
 ---
 
-## finding-543: Mitchell Chahalis has surfaces but no Clifford path
+## finding-547: Mitchell Chahalis has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -9782,7 +9854,7 @@ Refs: `mitchell-chahalis-101st-airborne-divison-us-army-intelligence-team-leader
 
 ---
 
-## finding-544: Quay Barnett has surfaces but no Clifford path
+## finding-548: Quay Barnett has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -9800,7 +9872,7 @@ Refs: `quay-barnett-anduril-industries-general-manager-warfighter-systems-linked
 
 ---
 
-## finding-545: R Dana Thompson has surfaces but no Clifford path
+## finding-549: R Dana Thompson has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -9818,7 +9890,7 @@ Refs: `r-dana-thompson-aviation-service-company-asco-amt-a-and-p-mechanic-assist
 
 ---
 
-## finding-546: Randall Parkes has surfaces but no Clifford path
+## finding-550: Randall Parkes has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -9836,7 +9908,7 @@ Refs: `randall-parkes-anduril-industries-mission-operations-lead-linkedin-2023-p
 
 ---
 
-## finding-547: Richard Clarke has surfaces but no Clifford path
+## finding-551: Richard Clarke has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -9854,7 +9926,7 @@ Refs: `richard-clarke-general-dynamics-independent-director-linkedin-2023-presen
 
 ---
 
-## finding-548: Richard "Wally" Wannall has surfaces but no Clifford path
+## finding-552: Richard "Wally" Wannall has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -9872,7 +9944,7 @@ Refs: `richard-wally-wannall-anduril-industries-mission-operations-engineer-link
 
 ---
 
-## finding-549: Rick Mullen has surfaces but no Clifford path
+## finding-553: Rick Mullen has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -9890,7 +9962,7 @@ Refs: `rick-mullen-bell-flight-military-development-program-project-manager-link
 
 ---
 
-## finding-550: Ryan Eskandary has surfaces but no Clifford path
+## finding-554: Ryan Eskandary has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -9908,7 +9980,7 @@ Refs: `ryan-eskandary-camo-llc-pm-sof-lethality-lno-requirements-analyst-linkedi
 
 ---
 
-## finding-551: Ryan Evans has surfaces but no Clifford path
+## finding-555: Ryan Evans has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -9926,7 +9998,7 @@ Refs: `ryan-evans-bedrock-knowledge-inc-chief-executive-officer-linkedin-2022-pr
 
 ---
 
-## finding-552: Sarah English has surfaces but no Clifford path
+## finding-556: Sarah English has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -9944,7 +10016,7 @@ Refs: `sarah-english-allergan-aesthetics-an-abbvie-company-program-manager-linke
 
 ---
 
-## finding-553: Scott Shilvock has surfaces but no Clifford path
+## finding-557: Scott Shilvock has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -9962,7 +10034,7 @@ Refs: `scott-shilvock-edge-autonomy-training-manager-linkedin-2023-present`, `sc
 
 ---
 
-## finding-554: Sean Warren has surfaces but no Clifford path
+## finding-558: Sean Warren has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -9980,7 +10052,7 @@ Refs: `sean-warren-charter-communications-residential-connectivity-sales-special
 
 ---
 
-## finding-555: Seth Price has surfaces but no Clifford path
+## finding-559: Seth Price has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -9998,7 +10070,7 @@ Refs: `seth-price-d-lux-productions-full-time-hacker-linkedin-2006-2007`, `seth-
 
 ---
 
-## finding-556: Simon Price has surfaces but no Clifford path
+## finding-560: Simon Price has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10016,7 +10088,7 @@ Refs: `simon-price-capgemini-data-scientist-linkedin-2017-2018`, `simon-price-ju
 
 ---
 
-## finding-557: Sofia Rose Haft has surfaces but no Clifford path
+## finding-561: Sofia Rose Haft has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10034,7 +10106,7 @@ Refs: `sofia-rose-haft-anduril-industries-director-of-communications-and-externa
 
 ---
 
-## finding-558: Stephen Fujiwara has surfaces but no Clifford path
+## finding-562: Stephen Fujiwara has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10052,7 +10124,7 @@ Refs: `stephen-fujiwara-advanced-navigation-senior-director-of-business-developm
 
 ---
 
-## finding-559: Steven Hertzberg has surfaces but no Clifford path
+## finding-563: Steven Hertzberg has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10070,7 +10142,7 @@ Refs: `steven-hertzberg-amniventure-llc-founder-linkedin-1999-2001`, `steven-her
 
 ---
 
-## finding-560: Thomas J. Kehoe, Jr. has surfaces but no Clifford path
+## finding-564: Thomas J. Kehoe, Jr. has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10088,7 +10160,7 @@ Refs: `thomas-j-kehoe-jr-caseys-krunch-co-founder-linkedin-2016-2020`, `thomas-j
 
 ---
 
-## finding-561: Tim ‘Beef’ Curry has surfaces but no Clifford path
+## finding-565: Tim ‘Beef’ Curry has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10106,7 +10178,7 @@ Refs: `tim-beef-curry-auterion-vice-president-linkedin-2024-2024`, `tim-beef-cur
 
 ---
 
-## finding-562: Tim Sheehy has surfaces but no Clifford path
+## finding-566: Tim Sheehy has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10124,7 +10196,7 @@ Refs: `tim-sheehy-ascent-vision-technologies-avt-ceo-and-founder-linkedin-2015-2
 
 ---
 
-## finding-563: Tom Huntley has surfaces but no Clifford path
+## finding-567: Tom Huntley has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10142,7 +10214,7 @@ Refs: `tom-huntley-presidential-leadership-scholars-presidential-leadership-scho
 
 ---
 
-## finding-564: T.S. Allen has surfaces but no Clifford path
+## finding-568: T.S. Allen has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10160,7 +10232,7 @@ Refs: `ts-allen-openai-strategic-delivery-lead-openai-for-government-linkedin-20
 
 ---
 
-## finding-565: Tyler Henry has surfaces but no Clifford path
+## finding-569: Tyler Henry has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10178,7 +10250,7 @@ Refs: `tyler-henry-anduril-industries-radar-software-engineer-linkedin-2025-pres
 
 ---
 
-## finding-566: Will Roper has surfaces but no Clifford path
+## finding-570: Will Roper has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10196,7 +10268,7 @@ Refs: `will-roper-beta-technologies-board-member-linkedin-2021-2024`, `will-rope
 
 ---
 
-## finding-567: Zack Hoyt has surfaces but no Clifford path
+## finding-571: Zack Hoyt has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10214,7 +10286,7 @@ Refs: `zack-hoyt-acquisitioncom-managing-director-portfolio-operations-linkedin-
 
 ---
 
-## finding-568: Mike Gallagher has surfaces but no Clifford path
+## finding-572: Mike Gallagher has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10232,7 +10304,7 @@ Refs: `rndf-2023-panel-2`, `rndf-2023-programme-roster`, `a16z-american-dynamism
 
 ---
 
-## finding-569: Brian Schimpf has surfaces but no Clifford path
+## finding-573: Brian Schimpf has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10250,7 +10322,7 @@ Refs: `rndf-2023-panel-2`, `rndf-2023-programme-roster`, `a16z-american-dynamism
 
 ---
 
-## finding-570: Jason Zander has surfaces but no Clifford path
+## finding-574: Jason Zander has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10268,7 +10340,7 @@ Refs: `rndf-2023-panel-2`, `rndf-2023-programme-roster`
 
 ---
 
-## finding-571: Missy Ryan has surfaces but no Clifford path
+## finding-575: Missy Ryan has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10286,7 +10358,7 @@ Refs: `rndf-2023-panel-2`, `rndf-2023-programme-roster`
 
 ---
 
-## finding-572: Paul M. Nakasone has surfaces but no Clifford path
+## finding-576: Paul M. Nakasone has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10304,7 +10376,7 @@ Refs: `rndf-2023-panel-3`, `rndf-2023-programme-roster`
 
 ---
 
-## finding-573: Laura J. Richardson has surfaces but no Clifford path
+## finding-577: Laura J. Richardson has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10322,7 +10394,7 @@ Refs: `rndf-2023-panel-3`, `rndf-2023-programme-roster`
 
 ---
 
-## finding-574: Mike Waltz has surfaces but no Clifford path
+## finding-578: Mike Waltz has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10340,7 +10412,7 @@ Refs: `rndf-2023-panel-3`, `rndf-2023-programme-roster`
 
 ---
 
-## finding-575: Courtney Kube has surfaces but no Clifford path
+## finding-579: Courtney Kube has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10358,7 +10430,7 @@ Refs: `rndf-2023-panel-3`, `rndf-2023-programme-roster`
 
 ---
 
-## finding-576: Kevin Cramer has surfaces but no Clifford path
+## finding-580: Kevin Cramer has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10376,7 +10448,7 @@ Refs: `rndf-2023-panel-7`, `rndf-2023-programme-roster`
 
 ---
 
-## finding-577: Daniel R. Hokanson has surfaces but no Clifford path
+## finding-581: Daniel R. Hokanson has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10394,7 +10466,7 @@ Refs: `rndf-2023-panel-7`, `rndf-2023-programme-roster`
 
 ---
 
-## finding-578: Karl Rove has surfaces but no Clifford path
+## finding-582: Karl Rove has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10412,7 +10484,7 @@ Refs: `rndf-2023-panel-7`, `rndf-2023-programme-roster`
 
 ---
 
-## finding-579: Ben Kesling has surfaces but no Clifford path
+## finding-583: Ben Kesling has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10430,7 +10502,7 @@ Refs: `rndf-2023-panel-7`, `rndf-2023-programme-roster`
 
 ---
 
-## finding-580: John C. Aquilino has surfaces but no Clifford path
+## finding-584: John C. Aquilino has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10448,7 +10520,7 @@ Refs: `rndf-2023-panel-9`, `rndf-2023-programme-roster`
 
 ---
 
-## finding-581: Christopher J. Mahoney has surfaces but no Clifford path
+## finding-585: Christopher J. Mahoney has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10466,7 +10538,7 @@ Refs: `rndf-2023-panel-9`, `rndf-2023-programme-roster`
 
 ---
 
-## finding-582: Mike Rounds has surfaces but no Clifford path
+## finding-586: Mike Rounds has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10484,7 +10556,7 @@ Refs: `rndf-2023-panel-9`, `rndf-2023-programme-roster`
 
 ---
 
-## finding-583: Horacio Rozanski has surfaces but no Clifford path
+## finding-587: Horacio Rozanski has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10502,7 +10574,7 @@ Refs: `rndf-2023-panel-9`, `rndf-2023-programme-roster`, `rndf-2025-panel-2`, `r
 
 ---
 
-## finding-584: Jennifer Griffin has surfaces but no Clifford path
+## finding-588: Jennifer Griffin has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10520,7 +10592,7 @@ Refs: `rndf-2023-panel-9`, `rndf-2023-programme-roster`, `rndf-2025-panel-10`, `
 
 ---
 
-## finding-585: David W. Allvin has surfaces but no Clifford path
+## finding-589: David W. Allvin has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10538,7 +10610,7 @@ Refs: `rndf-2024-panel-4`, `rndf-2024-programme-roster`
 
 ---
 
-## finding-586: Toni Townes-Whitley has surfaces but no Clifford path
+## finding-590: Toni Townes-Whitley has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10556,7 +10628,7 @@ Refs: `rndf-2024-panel-4`, `rndf-2024-programme-roster`
 
 ---
 
-## finding-587: Todd Young has surfaces but no Clifford path
+## finding-591: Todd Young has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10574,7 +10646,7 @@ Refs: `rndf-2024-panel-4`, `rndf-2024-programme-roster`
 
 ---
 
-## finding-588: Sharon Weinberger has surfaces but no Clifford path
+## finding-592: Sharon Weinberger has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10592,7 +10664,7 @@ Refs: `rndf-2024-panel-4`, `rndf-2024-programme-roster`
 
 ---
 
-## finding-589: Chris Calio has surfaces but no Clifford path
+## finding-593: Chris Calio has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10610,7 +10682,7 @@ Refs: `rndf-2024-panel-9`, `rndf-2024-programme-roster`
 
 ---
 
-## finding-590: Randy A. George has surfaces but no Clifford path
+## finding-594: Randy A. George has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10628,7 +10700,7 @@ Refs: `rndf-2024-panel-9`, `rndf-2024-programme-roster`
 
 ---
 
-## finding-591: Dan Jablonsky has surfaces but no Clifford path
+## finding-595: Dan Jablonsky has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10646,7 +10718,7 @@ Refs: `rndf-2024-panel-9`, `rndf-2024-programme-roster`
 
 ---
 
-## finding-592: Angus King has surfaces but no Clifford path
+## finding-596: Angus King has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10664,7 +10736,7 @@ Refs: `rndf-2024-panel-9`, `rndf-2024-programme-roster`
 
 ---
 
-## finding-593: Aaron Mehta has surfaces but no Clifford path
+## finding-597: Aaron Mehta has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10682,7 +10754,7 @@ Refs: `rndf-2024-panel-9`, `rndf-2024-programme-roster`
 
 ---
 
-## finding-594: Stephen Ehikian has surfaces but no Clifford path
+## finding-598: Stephen Ehikian has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10700,7 +10772,7 @@ Refs: `rndf-2025-panel-2`, `rndf-2025-programme-roster`
 
 ---
 
-## finding-595: Emil Michael has surfaces but no Clifford path
+## finding-599: Emil Michael has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10718,7 +10790,7 @@ Refs: `rndf-2025-panel-2`, `rndf-2025-programme-roster`
 
 ---
 
-## finding-596: Samuel Paparo has surfaces but no Clifford path
+## finding-600: Samuel Paparo has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10736,7 +10808,7 @@ Refs: `rndf-2025-panel-2`, `rndf-2025-programme-roster`
 
 ---
 
-## finding-597: Gordon Lubold has surfaces but no Clifford path
+## finding-601: Gordon Lubold has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10754,7 +10826,7 @@ Refs: `rndf-2025-panel-2`, `rndf-2025-programme-roster`
 
 ---
 
-## finding-598: Ken Calvert has surfaces but no Clifford path
+## finding-602: Ken Calvert has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10772,7 +10844,7 @@ Refs: `rndf-2025-panel-10`, `rndf-2025-programme-roster`
 
 ---
 
-## finding-599: Pat Ryan has surfaces but no Clifford path
+## finding-603: Pat Ryan has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10790,7 +10862,7 @@ Refs: `rndf-2025-panel-10`, `rndf-2025-programme-roster`
 
 ---
 
-## finding-600: David Ulevitch has surfaces but no Clifford path
+## finding-604: David Ulevitch has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10808,7 +10880,7 @@ Refs: `a16z-american-dynamism-summit-2024-welcome`, `a16z-american-dynamism-summ
 
 ---
 
-## finding-601: Jake Auchincloss has surfaces but no Clifford path
+## finding-605: Jake Auchincloss has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10826,7 +10898,7 @@ Refs: `a16z-american-dynamism-summit-2024-china-threat`, `a16z-american-dynamism
 
 ---
 
-## finding-602: Jan Sramek has surfaces but no Clifford path
+## finding-606: Jan Sramek has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10844,7 +10916,7 @@ Refs: `a16z-american-dynamism-summit-2024-california-dream`, `a16z-american-dyna
 
 ---
 
-## finding-603: Ben Horowitz has surfaces but no Clifford path
+## finding-607: Ben Horowitz has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10862,7 +10934,7 @@ Refs: `a16z-american-dynamism-summit-2024-next-generation-leadership`, `a16z-ame
 
 ---
 
-## finding-604: JD Vance has surfaces but no Clifford path
+## finding-608: JD Vance has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10880,7 +10952,7 @@ Refs: `a16z-american-dynamism-summit-2025-opening-keynote`, `a16z-american-dynam
 
 ---
 
-## finding-605: Gwynne Shotwell has surfaces but no Clifford path
+## finding-609: Gwynne Shotwell has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10898,7 +10970,7 @@ Refs: `a16z-american-dynamism-summit-2025-mars-but-first-dc`, `a16z-american-dyn
 
 ---
 
-## finding-606: Bryan P. Fenton has surfaces but no Clifford path
+## finding-610: Bryan P. Fenton has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10916,7 +10988,7 @@ Refs: `a16z-american-dynamism-summit-2025-science-fiction-or-socom`, `a16z-ameri
 
 ---
 
-## finding-607: David Ignatius has surfaces but no Clifford path
+## finding-611: David Ignatius has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10934,7 +11006,7 @@ Refs: `a16z-american-dynamism-summit-2025-mobilizing-industrial-base`, `a16z-ame
 
 ---
 
-## finding-608: Adam Bry has surfaces but no Clifford path
+## finding-612: Adam Bry has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10952,7 +11024,7 @@ Refs: `a16z-american-dynamism-summit-2022-ai-future-of-modern-warfare`, `a16z-am
 
 ---
 
-## finding-609: Roger Zakheim has surfaces but no Clifford path
+## finding-613: Roger Zakheim has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10970,7 +11042,7 @@ Refs: `a16z-american-dynamism-summit-2022-ai-future-of-modern-warfare`, `a16z-am
 
 ---
 
-## finding-610: Jacob Helberg has surfaces but no Clifford path
+## finding-614: Jacob Helberg has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10988,7 +11060,7 @@ Refs: `a16z-american-dynamism-summit-2022-autonomy-defense-policy`, `a16z-americ
 
 ---
 
-## finding-611: Bari Weiss has surfaces but no Clifford path
+## finding-615: Bari Weiss has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11006,7 +11078,7 @@ Refs: `a16z-american-dynamism-summit-2022-fourth-estate`, `a16z-american-dynamis
 
 ---
 
-## finding-612: Chris Best has surfaces but no Clifford path
+## finding-616: Chris Best has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11024,7 +11096,7 @@ Refs: `a16z-american-dynamism-summit-2022-fourth-estate`, `a16z-american-dynamis
 
 ---
 
-## finding-613: Jim VandeHei has surfaces but no Clifford path
+## finding-617: Jim VandeHei has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11042,7 +11114,7 @@ Refs: `a16z-american-dynamism-summit-2022-fourth-estate`, `a16z-american-dynamis
 
 ---
 
-## finding-614: Adena Hefets has surfaces but no Clifford path
+## finding-618: Adena Hefets has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11060,7 +11132,7 @@ Refs: `a16z-american-dynamism-summit-2022-housing-crisis`, `a16z-american-dynami
 
 ---
 
-## finding-615: Adam Neumann has surfaces but no Clifford path
+## finding-619: Adam Neumann has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11078,7 +11150,7 @@ Refs: `a16z-american-dynamism-summit-2022-largest-asset-class`, `a16z-american-d
 
 ---
 
-## finding-616: Elliott J. Leigh has surfaces but no Clifford path
+## finding-620: Elliott J. Leigh has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11096,7 +11168,7 @@ Refs: `diu-sxsw-2024-joint-innovation-space-ribbon-cutting`
 
 ---
 
-## finding-617: Aaron Swain has surfaces but no Clifford path
+## finding-621: Aaron Swain has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11114,7 +11186,7 @@ Refs: `capital-factory-fed-supernova-2021-09-28`
 
 ---
 
-## finding-618: Abraham Wilson has surfaces but no Clifford path
+## finding-622: Abraham Wilson has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11132,7 +11204,7 @@ Refs: `sec-form-d-0001981844-23-000003`, `sec-form-d-0001992181-23-000002`, `sec
 
 ---
 
-## finding-619: Alice Treviño has surfaces but no Clifford path
+## finding-623: Alice Treviño has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11150,7 +11222,7 @@ Refs: `capital-factory-fed-supernova-2022-09-27`
 
 ---
 
-## finding-620: Andrew Busey has surfaces but no Clifford path
+## finding-624: Andrew Busey has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11168,7 +11240,7 @@ Refs: `sec-form-d-0001592303-13-000001`, `sec-form-d-0001592303-14-000001`
 
 ---
 
-## finding-621: Ash Carter has surfaces but no Clifford path
+## finding-625: Ash Carter has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11186,7 +11258,7 @@ Refs: `diux-austin-outpost-at-capital-factory-2016-09-14`, `diux-austin-roll-out
 
 ---
 
-## finding-622: Brian Spross has surfaces but no Clifford path
+## finding-626: Brian Spross has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11204,7 +11276,7 @@ Refs: `sec-form-d-0001475481-09-000003`
 
 ---
 
-## finding-623: Bryan Chambers has surfaces but no Clifford path
+## finding-627: Bryan Chambers has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11222,7 +11294,7 @@ Refs: `station-texas-founding-executive-director-2025-05-20`, `capital-factory-l
 
 ---
 
-## finding-624: Cathy Bui has surfaces but no Clifford path
+## finding-628: Cathy Bui has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11240,7 +11312,7 @@ Refs: `sec-form-d-0001929925-22-000002`, `sec-form-d-0001935512-22-000002`, `sec
 
 ---
 
-## finding-625: Charisse Bodisch has surfaces but no Clifford path
+## finding-629: Charisse Bodisch has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11258,7 +11330,7 @@ Refs: `army-futures-command-hq-news-conference-2018-07-13`
 
 ---
 
-## finding-626: Christine Abizaid has surfaces but no Clifford path
+## finding-630: Christine Abizaid has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11276,7 +11348,7 @@ Refs: `diux-austin-roll-out-press-2016-09-14`
 
 ---
 
-## finding-627: Dave DeWalt has surfaces but no Clifford path
+## finding-631: Dave DeWalt has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11294,7 +11366,7 @@ Refs: `nightdragon-capital-factory-partnership-2025-08-18`, `sec-form-d-00019337
 
 ---
 
-## finding-628: Elliott Leigh has surfaces but no Clifford path
+## finding-632: Elliott Leigh has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11312,7 +11384,7 @@ Refs: `diu-afwerx-navalx-joint-workspace-capital-factory-2024-03-08`
 
 ---
 
-## finding-629: Eric Wesley has surfaces but no Clifford path
+## finding-633: Eric Wesley has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11330,7 +11402,7 @@ Refs: `army-futures-command-hq-news-conference-2018-07-13`, `army-futures-comman
 
 ---
 
-## finding-630: Gordon Daugherty has surfaces but no Clifford path
+## finding-634: Gordon Daugherty has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11348,7 +11420,7 @@ Refs: `sec-form-d-0001592303-13-000001`, `sec-form-d-0001592303-14-000001`, `cap
 
 ---
 
-## finding-631: Greg Abbott has surfaces but no Clifford path
+## finding-635: Greg Abbott has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11366,7 +11438,7 @@ Refs: `diux-austin-outpost-at-capital-factory-2016-09-14`, `army-futures-command
 
 ---
 
-## finding-632: Heather Wilson has surfaces but no Clifford path
+## finding-636: Heather Wilson has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11384,7 +11456,7 @@ Refs: `afwerx-austin-hub-at-capital-factory-2018-06-27`
 
 ---
 
-## finding-633: Isaiah Deporto-Plick has surfaces but no Clifford path
+## finding-637: Isaiah Deporto-Plick has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11402,7 +11474,7 @@ Refs: `sec-form-d-0001842238-21-000002`
 
 ---
 
-## finding-634: James Chance has surfaces but no Clifford path
+## finding-638: James Chance has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11420,7 +11492,7 @@ Refs: `sec-form-d-0001797630-19-000001`, `sec-form-d-0001797630-21-000001`
 
 ---
 
-## finding-635: Jamie Serio has surfaces but no Clifford path
+## finding-639: Jamie Serio has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11438,7 +11510,7 @@ Refs: `sec-form-d-0002045139-24-000002`, `sec-form-d-0002088504-25-000001`, `sec
 
 ---
 
-## finding-636: Jan Ryan has surfaces but no Clifford path
+## finding-640: Jan Ryan has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11456,7 +11528,7 @@ Refs: `capital-factory-leadership-as-reported-2026-06-17`
 
 ---
 
-## finding-637: John Murray has surfaces but no Clifford path
+## finding-641: John Murray has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11474,7 +11546,7 @@ Refs: `army-futures-command-murray-at-capital-factory-2018-09-30`, `army-news-af
 
 ---
 
-## finding-638: Kip McClanahan has surfaces but no Clifford path
+## finding-642: Kip McClanahan has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11492,7 +11564,7 @@ Refs: `sec-form-d-0001596160-14-000002`
 
 ---
 
-## finding-639: Kirk Watson has surfaces but no Clifford path
+## finding-643: Kirk Watson has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11510,7 +11582,7 @@ Refs: `station-austin-launch-2026-03-10`, `diux-austin-welcome-event-ut-system-r
 
 ---
 
-## finding-640: Lawton Cummings has surfaces but no Clifford path
+## finding-644: Lawton Cummings has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11528,7 +11600,7 @@ Refs: `sec-form-d-0001958842-22-000001`, `sec-form-d-0001958842-24-000001`
 
 ---
 
-## finding-641: Luis Martinez has surfaces but no Clifford path
+## finding-645: Luis Martinez has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11546,7 +11618,7 @@ Refs: `capital-factory-team-page-2026-10-23`
 
 ---
 
-## finding-642: Mark Esper has surfaces but no Clifford path
+## finding-646: Mark Esper has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11564,7 +11636,7 @@ Refs: `army-futures-command-ribbon-cutting-press-2018-08-24`
 
 ---
 
-## finding-643: Mark Milley has surfaces but no Clifford path
+## finding-647: Mark Milley has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11582,7 +11654,7 @@ Refs: `army-futures-command-activation-ceremony-2018-08-24`
 
 ---
 
-## finding-644: Martin Salinas has surfaces but no Clifford path
+## finding-648: Martin Salinas has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11600,7 +11672,7 @@ Refs: `capital-factory-fed-supernova-2022-09-27`
 
 ---
 
-## finding-645: Melinda Price has surfaces but no Clifford path
+## finding-649: Melinda Price has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11618,7 +11690,7 @@ Refs: `sec-form-d-0001592303-13-000001`, `sec-form-d-0001592303-14-000001`
 
 ---
 
-## finding-646: Michael Crosby has surfaces but no Clifford path
+## finding-650: Michael Crosby has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11636,7 +11708,7 @@ Refs: `army-futures-command-activation-ceremony-2018-08-24`
 
 ---
 
-## finding-647: Michael Trafton has surfaces but no Clifford path
+## finding-651: Michael Trafton has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11654,7 +11726,7 @@ Refs: `sec-form-d-0001592303-13-000001`, `sec-form-d-0001592303-14-000001`
 
 ---
 
-## finding-648: Morgan Odell has surfaces but no Clifford path
+## finding-652: Morgan Odell has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11672,7 +11744,7 @@ Refs: `capital-factory-team-page-2026-10-23`
 
 ---
 
-## finding-649: Nick Spiller has surfaces but no Clifford path
+## finding-653: Nick Spiller has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11690,7 +11762,7 @@ Refs: `capital-factory-team-page-2026-10-23`
 
 ---
 
-## finding-650: Nina Shelat has surfaces but no Clifford path
+## finding-654: Nina Shelat has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11708,7 +11780,7 @@ Refs: `capital-factory-team-page-2026-10-23`
 
 ---
 
-## finding-651: Olayiwola Ali-Ajibode has surfaces but no Clifford path
+## finding-655: Olayiwola Ali-Ajibode has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11726,7 +11798,7 @@ Refs: `sec-form-d-0001860355-21-000002`, `sec-form-d-0001873643-21-000002`, `sec
 
 ---
 
-## finding-652: Patrick Vogt has surfaces but no Clifford path
+## finding-656: Patrick Vogt has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11744,7 +11816,7 @@ Refs: `sec-form-d-0001475481-09-000003`
 
 ---
 
-## finding-653: Richard Benson has surfaces but no Clifford path
+## finding-657: Richard Benson has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11762,7 +11834,7 @@ Refs: `capital-factory-fed-supernova-2021-09-28`
 
 ---
 
-## finding-654: Riffat Manasia has surfaces but no Clifford path
+## finding-658: Riffat Manasia has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11780,7 +11852,7 @@ Refs: `station-texas-founding-executive-director-2025-05-20`
 
 ---
 
-## finding-655: Ryan McCarthy has surfaces but no Clifford path
+## finding-659: Ryan McCarthy has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11798,7 +11870,7 @@ Refs: `army-futures-command-ribbon-cutting-press-2018-08-24`
 
 ---
 
-## finding-656: Samantha Snabes has surfaces but no Clifford path
+## finding-660: Samantha Snabes has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11816,7 +11888,7 @@ Refs: `diux-austin-roll-out-press-2016-09-14`
 
 ---
 
-## finding-657: Sean O'Brien has surfaces but no Clifford path
+## finding-661: Sean O'Brien has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11834,7 +11906,7 @@ Refs: `sec-form-d-0002038739-24-000002`, `sec-form-d-0002050605-25-000001`, `sec
 
 ---
 
-## finding-658: ShaChelle Manning has surfaces but no Clifford path
+## finding-662: ShaChelle Manning has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11852,7 +11924,7 @@ Refs: `capital-factory-fed-supernova-2022-09-27`
 
 ---
 
-## finding-659: Stephanie Ahern has surfaces but no Clifford path
+## finding-663: Stephanie Ahern has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11870,7 +11942,7 @@ Refs: `capital-factory-fed-supernova-2021-09-28`
 
 ---
 
-## finding-660: Stephen Brotman has surfaces but no Clifford path
+## finding-664: Stephen Brotman has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11888,7 +11960,7 @@ Refs: `sec-form-d-0002038739-24-000002`, `sec-form-d-0002050605-25-000001`, `sec
 
 ---
 
-## finding-661: Stephen Plew has surfaces but no Clifford path
+## finding-665: Stephen Plew has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11906,7 +11978,7 @@ Refs: `diu-afwerx-navalx-joint-workspace-capital-factory-2024-03-08`
 
 ---
 
-## finding-662: Steven Butow has surfaces but no Clifford path
+## finding-666: Steven Butow has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11924,7 +11996,7 @@ Refs: `capital-factory-fed-supernova-2022-09-27`
 
 ---
 
-## finding-663: Thomas Todd has surfaces but no Clifford path
+## finding-667: Thomas Todd has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11942,7 +12014,7 @@ Refs: `capital-factory-fed-supernova-2022-09-27`
 
 ---
 
-## finding-664: Tom Walton has surfaces but no Clifford path
+## finding-668: Tom Walton has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11960,7 +12032,7 @@ Refs: `station-nwa-walton-family-foundation-grant-2026-01-13`
 
 ---
 
-## finding-665: William Boebel has surfaces but no Clifford path
+## finding-669: William Boebel has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11978,7 +12050,7 @@ Refs: `sec-form-d-0001596160-14-000002`
 
 ---
 
-## finding-666: William McRaven has surfaces but no Clifford path
+## finding-670: William McRaven has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11996,7 +12068,7 @@ Refs: `diux-austin-outpost-at-capital-factory-2016-09-14`
 
 ---
 
-## finding-667: William Roth has surfaces but no Clifford path
+## finding-671: William Roth has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12014,7 +12086,7 @@ Refs: `army-futures-command-demonstration-at-capital-factory-2019-04-11`
 
 ---
 
-## finding-668: Young Bang has surfaces but no Clifford path
+## finding-672: Young Bang has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12032,7 +12104,7 @@ Refs: `capital-factory-fed-supernova-2022-09-27`
 
 ---
 
-## finding-669: Tracy Yaverbaun has surfaces but no Clifford path
+## finding-673: Tracy Yaverbaun has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12050,7 +12122,7 @@ Refs: `news-uk-times-podcast-name-synthetic-panel-decision-2025-11-04`
 
 ---
 
-## finding-670: F. LeRon Shults has surfaces but no Clifford path
+## finding-674: F. LeRon Shults has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12068,7 +12140,7 @@ Refs: `undp-culturepulse-israel-palestine-simulation-contract-2023-08`
 
 ---
 
-## finding-671: Justin Lane has surfaces but no Clifford path
+## finding-675: Justin Lane has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12086,7 +12158,7 @@ Refs: `undp-culturepulse-israel-palestine-simulation-contract-2023-08`
 
 ---
 
-## finding-672: Kanishka Narayan has surfaces but no Clifford path
+## finding-676: Kanishka Narayan has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12104,7 +12176,7 @@ Refs: `uk-politicians-synthetic-focus-groups-reported-2026-10-22`
 
 ---
 
-## finding-673: Darren Jones has surfaces but no Clifford path
+## finding-677: Darren Jones has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12122,7 +12194,7 @@ Refs: `uk-politicians-synthetic-focus-groups-reported-2026-10-22`
 
 ---
 
-## finding-674: Morgan McSweeney has surfaces but no Clifford path
+## finding-678: Morgan McSweeney has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12140,7 +12212,7 @@ Refs: `no10-synthetic-voters-experiment-reported-2025-07-07`
 
 ---
 
-## finding-675: Richard Whittle has surfaces but no Clifford path
+## finding-679: Richard Whittle has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12158,7 +12230,7 @@ Refs: `salford-makerfield-synthetic-electorate-experiment-2026-06-19`
 
 ---
 
-## finding-676: James Ransom has surfaces but no Clifford path
+## finding-680: James Ransom has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12176,7 +12248,7 @@ Refs: `salford-makerfield-synthetic-electorate-experiment-2026-06-19`
 
 ---
 
-## finding-677: Aidan Joseph Cowhig has surfaces but no Clifford path
+## finding-681: Aidan Joseph Cowhig has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12194,7 +12266,7 @@ Refs: `faculty-science-control-change-accenture-2026-03-12-further-names`
 
 ---
 
-## finding-678: Allyson Satin has surfaces but no Clifford path
+## finding-682: Allyson Satin has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12212,7 +12284,7 @@ Refs: `x-energy-ipo-registration-statement-2026-04-23`
 
 ---
 
-## finding-679: Andrew Sterland Brookes has surfaces but no Clifford path
+## finding-683: Andrew Sterland Brookes has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12230,7 +12302,7 @@ Refs: `faculty-science-control-change-accenture-2026-03-12-further-names`
 
 ---
 
-## finding-680: Arvind Nithrakashyap has surfaces but no Clifford path
+## finding-684: Arvind Nithrakashyap has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12248,7 +12320,7 @@ Refs: `rubrik-ipo-prospectus-2024-04-24`
 
 ---
 
-## finding-681: Asheem Chandna has surfaces but no Clifford path
+## finding-685: Asheem Chandna has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12266,7 +12338,7 @@ Refs: `rubrik-ipo-prospectus-2024-04-24`
 
 ---
 
-## finding-682: Bipul Sinha has surfaces but no Clifford path
+## finding-686: Bipul Sinha has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12284,7 +12356,7 @@ Refs: `rubrik-ipo-prospectus-2024-04-24`
 
 ---
 
-## finding-683: Brian Dunkiel has surfaces but no Clifford path
+## finding-687: Brian Dunkiel has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12302,7 +12374,7 @@ Refs: `beta-technologies-ipo-closing-2025-11-05`
 
 ---
 
-## finding-684: Brian McCarthy has surfaces but no Clifford path
+## finding-688: Brian McCarthy has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12320,7 +12392,7 @@ Refs: `rubrik-ipo-prospectus-2024-04-24`
 
 ---
 
-## finding-685: Christopher F. Ginther has surfaces but no Clifford path
+## finding-689: Christopher F. Ginther has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12338,7 +12410,7 @@ Refs: `x-energy-ipo-registration-statement-2026-04-23`
 
 ---
 
-## finding-686: Daniel Gross has surfaces but no Clifford path
+## finding-690: Daniel Gross has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12356,7 +12428,7 @@ Refs: `x-energy-ipo-registration-statement-2026-04-23`
 
 ---
 
-## finding-687: David B. Kaplan has surfaces but no Clifford path
+## finding-691: David B. Kaplan has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12374,7 +12446,7 @@ Refs: `x-energy-ipo-registration-statement-2026-04-23`
 
 ---
 
-## finding-688: Derek Tournear has surfaces but no Clifford path
+## finding-692: Derek Tournear has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12392,7 +12464,7 @@ Refs: `sierra-space-tranche-2-tracking-award-announcement-2024-01-16`
 
 ---
 
-## finding-689: Edward Sonnenschein has surfaces but no Clifford path
+## finding-693: Edward Sonnenschein has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12410,7 +12482,7 @@ Refs: `x-energy-ipo-registration-statement-2026-04-23`
 
 ---
 
-## finding-690: Enrique Salem has surfaces but no Clifford path
+## finding-694: Enrique Salem has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12428,7 +12500,7 @@ Refs: `rubrik-ipo-prospectus-2024-04-24`
 
 ---
 
-## finding-691: Greg Fenves has surfaces but no Clifford path
+## finding-695: Greg Fenves has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12446,7 +12518,7 @@ Refs: `diux-austin-welcome-event-ut-system-remarks-2016-09-14`
 
 ---
 
-## finding-692: Gregory Goff has surfaces but no Clifford path
+## finding-696: Gregory Goff has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12464,7 +12536,7 @@ Refs: `x-energy-ipo-registration-statement-2026-04-23`
 
 ---
 
-## finding-693: Herman Cueto has surfaces but no Clifford path
+## finding-697: Herman Cueto has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12482,7 +12554,7 @@ Refs: `beta-technologies-ipo-closing-2025-11-05`
 
 ---
 
-## finding-694: Ilan Hart has surfaces but no Clifford path
+## finding-698: Ilan Hart has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12500,7 +12572,7 @@ Refs: `infleqtion-business-combination-closing-form-8-k-2026-02-13`
 
 ---
 
-## finding-695: J. Clay Sell has surfaces but no Clifford path
+## finding-699: J. Clay Sell has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12518,7 +12590,7 @@ Refs: `x-energy-ipo-registration-statement-2026-04-23`
 
 ---
 
-## finding-696: Jason Kim has surfaces but no Clifford path
+## finding-700: Jason Kim has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12536,7 +12608,7 @@ Refs: `firefly-aerospace-ipo-closing-form-8-k-2025-08-08`
 
 ---
 
-## finding-697: Jay Taragin has surfaces but no Clifford path
+## finding-701: Jay Taragin has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12554,7 +12626,7 @@ Refs: `infleqtion-business-combination-closing-form-8-k-2026-02-13`
 
 ---
 
-## finding-698: John Serafini has surfaces but no Clifford path
+## finding-702: John Serafini has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12572,7 +12644,7 @@ Refs: `hawkeye-360-ipo-closing-8-k-2026-05-08`
 
 ---
 
-## finding-699: John W. Thompson has surfaces but no Clifford path
+## finding-703: John W. Thompson has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12590,7 +12662,7 @@ Refs: `rubrik-ipo-prospectus-2024-04-24`
 
 ---
 
-## finding-700: Jon Lusczakoski has surfaces but no Clifford path
+## finding-704: Jon Lusczakoski has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12608,7 +12680,7 @@ Refs: `firefly-aerospace-ipo-closing-form-8-k-2025-08-08`
 
 ---
 
-## finding-701: Jonathan Berry has surfaces but no Clifford path
+## finding-705: Jonathan Berry has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12626,7 +12698,7 @@ Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`
 
 ---
 
-## finding-702: Kamal Ghaffarian has surfaces but no Clifford path
+## finding-706: Kamal Ghaffarian has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12644,7 +12716,7 @@ Refs: `x-energy-ipo-registration-statement-2026-04-23`
 
 ---
 
-## finding-703: Kathleen W. Hyle has surfaces but no Clifford path
+## finding-707: Kathleen W. Hyle has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12662,7 +12734,7 @@ Refs: `x-energy-ipo-registration-statement-2026-04-23`
 
 ---
 
-## finding-704: Kevin McAllister has surfaces but no Clifford path
+## finding-708: Kevin McAllister has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12680,7 +12752,7 @@ Refs: `firefly-aerospace-ipo-closing-form-8-k-2025-08-08`
 
 ---
 
-## finding-705: Kiran Choudary has surfaces but no Clifford path
+## finding-709: Kiran Choudary has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12698,7 +12770,7 @@ Refs: `rubrik-ipo-prospectus-2024-04-24`
 
 ---
 
-## finding-706: Kirsty McNeill has surfaces but no Clifford path
+## finding-710: Kirsty McNeill has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12716,7 +12788,7 @@ Refs: `lanarkshire-ai-growth-zone-designation-2026-01-29-further-names`
 
 ---
 
-## finding-707: Kyle Clark has surfaces but no Clifford path
+## finding-711: Kyle Clark has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12734,7 +12806,7 @@ Refs: `beta-technologies-ipo-closing-2025-11-05`
 
 ---
 
-## finding-708: Laura Garcia has surfaces but no Clifford path
+## finding-712: Laura Garcia has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12752,7 +12824,7 @@ Refs: `x-energy-ipo-registration-statement-2026-04-23`
 
 ---
 
-## finding-709: Liz Kendall has surfaces but no Clifford path
+## finding-713: Liz Kendall has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12770,7 +12842,7 @@ Refs: `lanarkshire-ai-growth-zone-designation-2026-01-29-further-names`
 
 ---
 
-## finding-710: Mark D. McLaughlin has surfaces but no Clifford path
+## finding-714: Mark D. McLaughlin has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12788,7 +12860,7 @@ Refs: `rubrik-ipo-prospectus-2024-04-24`
 
 ---
 
-## finding-711: Mark John Selwyn Beith has surfaces but no Clifford path
+## finding-715: Mark John Selwyn Beith has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12806,7 +12878,7 @@ Refs: `faculty-science-control-change-accenture-2026-03-12-further-names`
 
 ---
 
-## finding-712: Matt George has surfaces but no Clifford path
+## finding-716: Matt George has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12824,7 +12896,7 @@ Refs: `merlin-labs-business-combination-filing-2026-03-20`
 
 ---
 
-## finding-713: Michael J. Wallace has surfaces but no Clifford path
+## finding-717: Michael J. Wallace has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12842,7 +12914,7 @@ Refs: `x-energy-ipo-registration-statement-2026-04-23`
 
 ---
 
-## finding-714: Michael Klein has surfaces but no Clifford path
+## finding-718: Michael Klein has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12860,7 +12932,7 @@ Refs: `infleqtion-business-combination-closing-form-8-k-2026-02-13`
 
 ---
 
-## finding-715: Pamela Braden has surfaces but no Clifford path
+## finding-719: Pamela Braden has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12878,7 +12950,7 @@ Refs: `firefly-aerospace-ipo-closing-form-8-k-2025-08-08`
 
 ---
 
-## finding-716: Patrick Brian Francis Rowe has surfaces but no Clifford path
+## finding-720: Patrick Brian Francis Rowe has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12896,7 +12968,7 @@ Refs: `faculty-science-control-change-accenture-2026-03-12-further-names`
 
 ---
 
-## finding-717: R. Scott Herren has surfaces but no Clifford path
+## finding-721: R. Scott Herren has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12914,7 +12986,7 @@ Refs: `rubrik-ipo-prospectus-2024-04-24`
 
 ---
 
-## finding-718: Rachel Reeves has surfaces but no Clifford path
+## finding-722: Rachel Reeves has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12932,7 +13004,7 @@ Refs: `lanarkshire-ai-growth-zone-designation-2026-01-29-further-names`
 
 ---
 
-## finding-719: Ravi Mhatre has surfaces but no Clifford path
+## finding-723: Ravi Mhatre has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12950,7 +13022,7 @@ Refs: `rubrik-ipo-prospectus-2024-04-24`
 
 ---
 
-## finding-720: Ryan Boland has surfaces but no Clifford path
+## finding-724: Ryan Boland has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12968,7 +13040,7 @@ Refs: `firefly-aerospace-ipo-closing-form-8-k-2025-08-08`
 
 ---
 
-## finding-721: Se Miao Angie Ma has surfaces but no Clifford path
+## finding-725: Se Miao Angie Ma has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12986,7 +13058,7 @@ Refs: `faculty-science-control-change-accenture-2026-03-12-further-names`
 
 ---
 
-## finding-722: Sean Donovan has surfaces but no Clifford path
+## finding-726: Sean Donovan has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -13004,7 +13076,7 @@ Refs: `beta-technologies-ipo-closing-2025-11-05`
 
 ---
 
-## finding-723: Thomas Kramer has surfaces but no Clifford path
+## finding-727: Thomas Kramer has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -13022,7 +13094,7 @@ Refs: `capella-space-ionq-acquisition-completed-2025-07-11`
 
 ---
 
-## finding-724: Yvonne Wassenaar has surfaces but no Clifford path
+## finding-728: Yvonne Wassenaar has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -13040,7 +13112,169 @@ Refs: `rubrik-ipo-prospectus-2024-04-24`
 
 ---
 
-## finding-725: Matt Clifford and Jonathan Black joint AI Safety Summit representative appointment, 10 August 2023 contains broad institution context
+## finding-729: Alan Stern has surfaces but no Clifford path
+
+- Type: island_with_surfaces
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+Alan Stern participates in 1 surface(s), but no valid shared-surface path to Matt Clifford exists.
+
+**Required action**
+
+Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
+
+Refs: `voyager-technologies-ipo-registration-signatories-2025-06-10`
+
+---
+
+## finding-730: Cheryl Shavers has surfaces but no Clifford path
+
+- Type: island_with_surfaces
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+Cheryl Shavers participates in 1 surface(s), but no valid shared-surface path to Matt Clifford exists.
+
+**Required action**
+
+Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
+
+Refs: `voyager-technologies-ipo-registration-signatories-2025-06-10`
+
+---
+
+## finding-731: Dylan Taylor has surfaces but no Clifford path
+
+- Type: island_with_surfaces
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+Dylan Taylor participates in 1 surface(s), but no valid shared-surface path to Matt Clifford exists.
+
+**Required action**
+
+Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
+
+Refs: `voyager-technologies-ipo-registration-signatories-2025-06-10`
+
+---
+
+## finding-732: Filipe De Sousa has surfaces but no Clifford path
+
+- Type: island_with_surfaces
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+Filipe De Sousa participates in 1 surface(s), but no valid shared-surface path to Matt Clifford exists.
+
+**Required action**
+
+Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
+
+Refs: `voyager-technologies-ipo-registration-signatories-2025-06-10`
+
+---
+
+## finding-733: Gabe Finke has surfaces but no Clifford path
+
+- Type: island_with_surfaces
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+Gabe Finke participates in 1 surface(s), but no valid shared-surface path to Matt Clifford exists.
+
+**Required action**
+
+Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
+
+Refs: `voyager-technologies-ipo-registration-signatories-2025-06-10`
+
+---
+
+## finding-734: Lance Weber has surfaces but no Clifford path
+
+- Type: island_with_surfaces
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+Lance Weber participates in 1 surface(s), but no valid shared-surface path to Matt Clifford exists.
+
+**Required action**
+
+Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
+
+Refs: `voyager-technologies-ipo-registration-signatories-2025-06-10`
+
+---
+
+## finding-735: Marian Joh has surfaces but no Clifford path
+
+- Type: island_with_surfaces
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+Marian Joh participates in 1 surface(s), but no valid shared-surface path to Matt Clifford exists.
+
+**Required action**
+
+Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
+
+Refs: `voyager-technologies-ipo-registration-signatories-2025-06-10`
+
+---
+
+## finding-736: Matthew Kuta has surfaces but no Clifford path
+
+- Type: island_with_surfaces
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+Matthew Kuta participates in 1 surface(s), but no valid shared-surface path to Matt Clifford exists.
+
+**Required action**
+
+Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
+
+Refs: `voyager-technologies-ipo-registration-signatories-2025-06-10`
+
+---
+
+## finding-737: William Shelton has surfaces but no Clifford path
+
+- Type: island_with_surfaces
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+William Shelton participates in 1 surface(s), but no valid shared-surface path to Matt Clifford exists.
+
+**Required action**
+
+Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
+
+Refs: `voyager-technologies-ipo-registration-signatories-2025-06-10`
+
+---
+
+## finding-738: Matt Clifford and Jonathan Black joint AI Safety Summit representative appointment, 10 August 2023 contains broad institution context
 
 - Type: broad_institution_guard
 - Priority: high
@@ -13058,7 +13292,7 @@ Refs: `ai-safety-summit-representative-appointment-2023-08-10`
 
 ---
 
-## finding-726: London Tech Week 2026: The Future of Human-Technology Interaction (AI Arena), 2026-06-08 contains broad institution context
+## finding-739: London Tech Week 2026: The Future of Human-Technology Interaction (AI Arena), 2026-06-08 contains broad institution context
 
 - Type: broad_institution_guard
 - Priority: high
@@ -13076,7 +13310,7 @@ Refs: `london-tech-week-2026-future-human-technology-interaction`
 
 ---
 
-## finding-727: London Tech Week 2026: Discovery that delivers: Turning Britain's scientific edge into real-world impact (Deep Tech Stage), 2026-06-09 contains broad institution context
+## finding-740: London Tech Week 2026: Discovery that delivers: Turning Britain's scientific edge into real-world impact (Deep Tech Stage), 2026-06-09 contains broad institution context
 
 - Type: broad_institution_guard
 - Priority: high
@@ -13094,7 +13328,7 @@ Refs: `london-tech-week-2026-science-out-lab-economy`
 
 ---
 
-## finding-728: AI Growth Zones formal qualifying process launch, engagements led by Feryal Clark and Matt Clifford, 30 April 2025 contains broad institution context
+## finding-741: AI Growth Zones formal qualifying process launch, engagements led by Feryal Clark and Matt Clifford, 30 April 2025 contains broad institution context
 
 - Type: broad_institution_guard
 - Priority: high
@@ -13112,7 +13346,7 @@ Refs: `ai-growth-zones-qualifying-process-2025-04-30`
 
 ---
 
-## finding-729: Independent Review of the UK Statistics Authority Challenge Panel, announced 9 June 2023 contains broad institution context
+## finding-742: Independent Review of the UK Statistics Authority Challenge Panel, announced 9 June 2023 contains broad institution context
 
 - Type: broad_institution_guard
 - Priority: high
@@ -13130,7 +13364,7 @@ Refs: `uksa-independent-review-challenge-panel-2023-06-09`
 
 ---
 
-## finding-730: Policy creation → military advisory integration → personnel continuity → commercial deployment is a scored laundering chain with no Clifford hop
+## finding-743: Policy creation → military advisory integration → personnel continuity → commercial deployment is a scored laundering chain with no Clifford hop
 
 - Type: laundering_chain
 - Priority: high
@@ -13148,7 +13382,7 @@ Refs: `ai-opportunities-action-plan-2025`, `detachment-201-program-context-2025`
 
 ---
 
-## finding-731: Full master doc has been classified, not blindly migrated
+## finding-744: Full master doc has been classified, not blindly migrated
 
 - Type: migration_queue
 - Priority: high
