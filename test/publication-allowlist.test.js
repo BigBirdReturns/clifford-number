@@ -55,7 +55,10 @@ assert.ok(realPolicy.policy_changes.every(change => change.date && change.decide
 // Per-path budgets must name allowlisted paths; the explorer standalone and the endpoint carry their own.
 // 2026-10-23 final re-pin (owner decision, research digs): endpoint 10,000,000 -> 12,000,000, main standalone
 // 5,000,000 -> 8,000,000, max_files 3,200 -> 4,000. The budgets guard accidental growth, not the size of the record.
-assert.deepEqual(realPolicy.performance_budgets.max_path_bytes, { 'Clifford-Number-endpoint.html': 12000000, 'Clifford-Number-explorer-standalone.html': 16000000 });
+// 2026-11-10 one-pass entry of official records (owner decision, "Yes, one pass"): endpoint 12,000,000 -> 14,000,000,
+// explorer standalone 16,000,000 -> 20,000,000, max_single_file_bytes 16,000,000 -> 20,000,000 (measured 12,255,884 and 17,128,704).
+assert.deepEqual(realPolicy.performance_budgets.max_path_bytes, { 'Clifford-Number-endpoint.html': 14000000, 'Clifford-Number-explorer-standalone.html': 20000000 });
+assert.equal(realPolicy.performance_budgets.max_single_file_bytes, 20000000, 'the single-file budget (raised 2026-11-10 from 16,000,000)');
 assert.equal(realPolicy.performance_budgets.max_standalone_bytes, 8000000, 'the main standalone budget (raised 2026-10-23 from 5,000,000)');
 assert.equal(realPolicy.performance_budgets.max_files, 4000, 'the file-count budget (raised 2026-10-23 from 3,200)');
 assert.throws(() => validatePublicationPolicy({ ...base, performance_budgets: { ...base.performance_budgets, max_path_bytes: { 'nope.html': 1 } } }), /unlisted path/u);

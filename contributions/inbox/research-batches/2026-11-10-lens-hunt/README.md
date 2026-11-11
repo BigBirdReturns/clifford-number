@@ -115,3 +115,24 @@ Entered the ledger:
 Exit dates fixed from first-party pages: Voyager (2025-06-11, Voyager's closing release), MainStreet (2025-05-05, Employer.com's announcement on the Bench blog), Spectrum Labs (2023-09-07, ActiveFence's release), GameOn (2020-09-18, Victory Square's release: an asset and IP purchase by V2 Games), Capiche (2021-04-15, the publication date in the metadata of Vendr's own post). The two Voyager surfaces name each other.
 
 Did not enter: Daylight's date. No first-party or official record dates it or confirms "Atlas"; its note says so. Nothing else from this batch is in the ledger.
+
+## Entered in one pass on 10 November 2026
+
+Asked "Enter the 366 official leads and the 155 filings in one pass?", Jonathan answered "Yes, one pass". The rows are machine-drafted, admitted by the project's mechanical rule and kept out of Clifford numbers: every surface below is `hop_eligible: false` with `hop_refusal_reason: entered_2026_11_10_pending_hop_review` until a reader reviews it. No Clifford number moved; the 297 hop edges are unchanged. The intake is under `data/intake/lens-hunt-official/` and `data/intake/sec-form-d/`; the run folder holds the drafting and the supervisor's rulings.
+
+Entered the ledger:
+
+1. **SEC Form D filings, lane `sec-form-d`.** All 123 drafted filings, archived under `receipts/sec-form-d/` and entered as `sec-form-d-<accession>` surfaces (`official_form_d_notice`). 105 issuer rows sit on the ledger organisation the issuer is (60 organisations, among them Booz Allen Hamilton, Palantir, Databricks, Shield AI and Groq); 18 fund or holding-company issuers (8VC, Andreessen Horowitz, Founders Fund, NightDragon, Silent Ventures and Booz Allen Hamilton Holding Corp filings) are 14 new organisations, each with a name-based link row to the ledger firm. 30 related-person rows put eight ledger people on filings that list them: Horacio Rozanski, Joe Lonsdale, Marc Andreessen, Ben Horowitz, Dave DeWalt, Jackson Moses, Brandon Tseng and Trae Stephens. Other related persons and signers are named in the surface notes only.
+2. **Official and first-party records, lane `lens-hunt-official`.** 24 new surfaces (23 official, one first-party) with 68 rows: Senate, House, Congressional Record, White House, DoD and NASA records for Jamie Morin, David Norquist (two), Heidi Shyu, Darin DiTommaso, Tom Huntley and Tim Sheehy; the SDA award to Sierra Space; twelve SEC filings for the Rubrik, Firefly, Beta, X-energy and HawkEye 360 offerings and the Kodiak, Infleqtion, Merlin, Capella and Dedrone transactions; the UT System remarks at the DIUx Austin welcome; and three `-further-names` surfaces beside curated ones (Faculty Science's directors, the Lanarkshire AI Growth Zone and the DSIT techUK roundtable row), kept off the curated surfaces on purpose. 22 pages archived under `receipts/lens-hunt/` back them; three pages the ledger already held were reused, not archived again.
+3. **Organisation rows on two existing surfaces.** Eight investor firms on `dsit-matt-clifford-ai-investor-roundtable-2023-10-25` and 78 organisations on `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, from the archived DSIT register page and GOV.UK attendee list. Both surfaces keep their hop refusals.
+
+New entities: 48 people and 102 organisations.
+
+Went to gaps (`data/ledger/staging/lens-hunt-official/gaps.jsonl`; the Form D lane has none):
+
+- **131 techUK roundtable organisations.** The release contract pins `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17` to Anduril and DSIT (the Clifford-Anduril boundary), so the rest of the meeting's roster would change how that surface is treated.
+- **Six surfaces the ledger already holds as the same event.** Five Reagan National Defense Forum panels (2023 panels 2 and 9, 2024 panel 4, 2025 panels 2 and 10, each already a session surface entered by the conventions lane from the forum's own agendas) and the DVIDS story on the Joint Defense Innovation Space opening of 8 March 2024 (already entered from DIU's own release). Entering them again would heat those events twice.
+- **The JetZero selection, 16 August 2023.** af.mil refuses automated fetches and the Wayback Machine has no copy.
+- **Blake Souter's Senate gift-rule disclosure.** The PDF is a scan with no text layer, so its name could not be checked.
+- **Eleven names the archived pages do not show as drafted.** Nine Voyager registration signatories (the drafted words join table cells with "|"), Mark Esper on the Army article (the archived caption stops before his name) and Infleqtion's closing sentence. Two surfaces fall with them, Voyager's signatories and the Army further-names.
+- Palantir was already on the summit attendee list.
