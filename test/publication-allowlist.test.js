@@ -59,10 +59,14 @@ assert.ok(realPolicy.policy_changes.every(change => change.date && change.decide
 // 5,000,000 -> 8,000,000, max_files 3,200 -> 4,000. The budgets guard accidental growth, not the size of the record.
 // 2026-11-10 one-pass entry of official records (owner decision, "Yes, one pass"): endpoint 12,000,000 -> 14,000,000,
 // explorer standalone 16,000,000 -> 20,000,000, max_single_file_bytes 16,000,000 -> 20,000,000 (measured 12,255,884 and 17,128,704).
-assert.deepEqual(realPolicy.performance_budgets.max_path_bytes, { 'Clifford-Number-endpoint.html': 14000000, 'Clifford-Number-explorer-standalone.html': 20000000 });
-assert.equal(realPolicy.performance_budgets.max_single_file_bytes, 20000000, 'the single-file budget (raised 2026-11-10 from 16,000,000)');
-assert.equal(realPolicy.performance_budgets.max_standalone_bytes, 8000000, 'the main standalone budget (raised 2026-10-23 from 5,000,000)');
-assert.equal(realPolicy.performance_budgets.max_files, 4000, 'the file-count budget (raised 2026-10-23 from 3,200)');
+// 2026-11-10 Form D data sets (owner answer "Yes, fetch them"): endpoint 14,000,000 -> 18,000,000, explorer standalone
+// and max_single_file_bytes 20,000,000 -> 24,000,000, main standalone 8,000,000 -> 11,000,000, max_files 4,000 -> 4,500,
+// max_total_bytes 400,000,000 -> 450,000,000 (measured 16,203,703, 21,359,240, 9,675,826, 4,054 files, 400,309,860 bytes).
+assert.deepEqual(realPolicy.performance_budgets.max_path_bytes, { 'Clifford-Number-endpoint.html': 18000000, 'Clifford-Number-explorer-standalone.html': 24000000 });
+assert.equal(realPolicy.performance_budgets.max_single_file_bytes, 24000000, 'the single-file budget (raised 2026-11-10 from 16,000,000, then from 20,000,000)');
+assert.equal(realPolicy.performance_budgets.max_standalone_bytes, 11000000, 'the main standalone budget (raised 2026-10-23 from 5,000,000, 2026-11-10 from 8,000,000)');
+assert.equal(realPolicy.performance_budgets.max_files, 4500, 'the file-count budget (raised 2026-10-23 from 3,200, 2026-11-10 from 4,000)');
+assert.equal(realPolicy.performance_budgets.max_total_bytes, 450000000, 'the byte budget (raised 2026-11-10 from 400,000,000)');
 assert.throws(() => validatePublicationPolicy({ ...base, performance_budgets: { ...base.performance_budgets, max_path_bytes: { 'nope.html': 1 } } }), /unlisted path/u);
 // The forbidden-text scan covers every file within the single-file budget (2026-11-10 follow-up): the limit
 // is the policy's max_single_file_bytes, not a separate 16 MiB constant, so the explorer standalone, now
