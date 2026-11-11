@@ -1,0 +1,62 @@
+{
+  "lane": "lens-hunt-official",
+  "tool": "tools/promote-intake-lens-hunt-official.mjs",
+  "intake": "data/intake/lens-hunt-official/lens-hunt-official.json",
+  "decision": {
+    "date": "2026-11-10",
+    "decided_by": "owner",
+    "words": "Yes, one pass"
+  },
+  "sources": {
+    "manifest": "data/ledger/staging/lens-hunt-official/archived-receipts.jsonl",
+    "store": "receipts/lens-hunt",
+    "pages": 35,
+    "archived": 28,
+    "reused_ledger_receipts": [
+      "conv-gov-uk-ai-safety-summit-confirmed-attendees",
+      "ukpm-ch-faculty-officers",
+      "ukpm-govuk-lanarkshire-ai-growth-zone-2026-02-03"
+    ],
+    "failed": [
+      {
+        "receipt_id": "lens-af-mil-daf-selects-jetzero-to-develop-blended-wing-body-aircraft-prototype",
+        "source_url": "https://www.af.mil/News/Features/Article/3494520/daf-selects-jetzero-to-develop-blended-wing-body-aircraft-prototype/",
+        "reason": "http_403; no_wayback_snapshot"
+      }
+    ]
+  },
+  "admission_rule": "A participant is admitted only when the archived copy of a cited receipt shows its shown words (text compared with markup stripped, entities decoded, whitespace collapsed and curly quotes folded, ignoring letter case, as whole words); a surface only when its receipt satisfies the live receipt contract, at least one participant is admitted and it is not a second copy of an event the ledger already holds (every admitted person already on one ledger surface with the same dates). Roster rows are organisation rows appended to existing surfaces and are refused when they would change how the surface is treated. Every surface is hop_eligible false pending a reader. Everything refused goes to gaps.jsonl.",
+  "counts": {
+    "pages_read": 34,
+    "surfaces_read": 34,
+    "surfaces_entered": 24,
+    "surfaces_refused": 10,
+    "participants_read": 109,
+    "participants_admitted": 93,
+    "participants_refused": 12,
+    "roster_rows_read": 218,
+    "roster_rows_entered": 86,
+    "roster_rows_refused": 131,
+    "roster_rows_already_on_surface": 1
+  },
+  "gap_reasons": {
+    "participation:archived_copy_unread": 1,
+    "participation:shown_words_not_on_archived_page": 11,
+    "roster:existing_surface_organization_set_pinned_by_release_contract": 131,
+    "roster:organisation_already_on_surface": 1,
+    "surfaces:event_already_in_ledger": 6,
+    "surfaces:no_participant_admitted": 3,
+    "surfaces:receipt_archive_unresolved": 1
+  },
+  "staged": {
+    "surfaces": 24,
+    "participation": 154,
+    "receipts": 22,
+    "reused_receipts": 3,
+    "new_actors": 48,
+    "new_organizations": 88,
+    "gaps": 154,
+    "hop_eligible_surfaces": 0
+  },
+  "hop_refusal_reason": "entered_2026_11_10_pending_hop_review"
+}

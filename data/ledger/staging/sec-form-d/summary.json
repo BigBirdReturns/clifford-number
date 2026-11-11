@@ -1,0 +1,39 @@
+{
+  "lane": "sec-form-d",
+  "tool": "tools/promote-intake-sec-form-d.mjs",
+  "intake": "data/intake/sec-form-d/sec-form-d-targets.json",
+  "decision": {
+    "date": "2026-11-10",
+    "decided_by": "owner",
+    "words": "Yes, one pass"
+  },
+  "sources": {
+    "manifest": "data/ledger/staging/sec-form-d/archived-receipts.jsonl",
+    "store": "receipts/sec-form-d",
+    "targets": 123,
+    "archived": 123,
+    "failed": []
+  },
+  "admission_rule": "A filing is entered only when its archived primary_doc.xml satisfies the live receipt contract (public source URL, in-repo archived copy whose SHA-256 matches, limits). Rows go to the issuer (on the ledger organisation when the match is exact; on the issuer itself, with a name-based link row on the ledger organisation, when the match is family) and to each targeted ledger person only when the archived XML lists that person as a related person. Nobody else gets a row. Every surface is hop_eligible false pending a reader.",
+  "counts": {
+    "filings_read": 123,
+    "filings_entered": 123,
+    "filings_refused": 0,
+    "issuer_rows": 123,
+    "name_link_rows": 18,
+    "ledger_person_rows": 30,
+    "ledger_people_read": 30,
+    "ledger_people_not_shown": 0
+  },
+  "staged": {
+    "surfaces": 123,
+    "participation": 171,
+    "receipts": 123,
+    "new_actors": 0,
+    "new_organizations": 14,
+    "gaps": 0,
+    "hop_eligible_surfaces": 0,
+    "funding_amount_usd_total": 8559830707
+  },
+  "hop_refusal_reason": "entered_2026_11_10_pending_hop_review"
+}
