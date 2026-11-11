@@ -37,6 +37,8 @@
 // Roster blocks append organisation rows to existing ledger surfaces, in the shape of the
 // organisation rows those surfaces already hold; existing rows are never modified. A roster row
 // that would change how its existing surface is treated goes to gaps instead (see ROSTER below).
+// A block with `enter_on` names the surface its rows go on instead: an addendum surface this lane
+// creates from the same page (the techUK roundtable roster, whose curated surface is pinned).
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -71,6 +73,12 @@ const ROSTER = {
   'dsit-techuk-anduril-ai-safety-roundtable-2023-10-17': {
     refuse: 'existing_surface_organization_set_pinned_by_release_contract',
     refuse_detail: 'tools/validate-release.mjs and test/compiler.test.js pin this surface\'s organisation set to anduril-industries and dsit (the Clifford-Anduril boundary); further roster organisations would change how it is treated.',
+  },
+  // Follow-up 2026-11-10: the intake's techUK roster block enters on the addendum this lane creates from
+  // the same register page (enter_on), in the shape of the curated surface's organisation rows.
+  'dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names': {
+    role: 'named organization in the official techUK AI Safety Summit roundtable row', participation_type: 'organization_roster_entry',
+    note: () => 'The official row names the organization, not a natural-person representative.',
   },
   'uk-ai-safety-summit-2023-confirmed-attendees-programme-roster': {
     role: 'confirmed attending organisation', participation_type: 'listed_programme_organization',
@@ -198,6 +206,7 @@ function fetchMode(args) {
     const prev = manifest.get(src.id);
     if (!REFRESH && prev?.status === 'archived' && fs.existsSync(path.join(root, prev.path))
         && `sha256:${canonicalReceiptHash(path.join(root, prev.path))}` === prev.archive.ref) continue;
+    if (!REFRESH && prev?.status === 'not_archived') continue;
     if (!src.limits || src.limits.length < MIN_LIMITS_LENGTH) throw new Error(`limits too short for ${src.id}`);
     const at = new Date();
     const base = { receipt_id: src.id, source_url: src.url, attempted_at: isoUtc(at) };
@@ -242,6 +251,19 @@ function fetchMode(args) {
     if (ext === 'pdf') {
       const txt = `${STORE}/${name}.txt`;
       execFileSync('pdftotext', ['-layout', path.join(root, rel), path.join(root, txt)]);
+      // A scanned PDF with no text layer cannot be read offline, so nobody can check a name on it:
+      // it is not kept in the repository. The attempt is recorded and its rows go to gaps as unread.
+      if (!fs.readFileSync(path.join(root, txt), 'utf8').replace(/\s+/g, '')) {
+        fs.rmSync(path.join(root, rel));
+        fs.rmSync(path.join(root, txt));
+        manifest.set(src.id, {
+          ...base, fetch_url: fetchUrl, status: 'not_archived', reason: 'pdf_has_no_text_layer', retrieved_at: day, retrieved_at_utc: isoUtc(at),
+          http_status: res.status, final_url: res.finalUrl, content_type: res.contentType, content_bytes: res.bytes.length,
+          note: 'Fetched, but pdftotext finds no text layer (a scan), so no name on it can be checked offline; the body is not kept in the repository.',
+        });
+        console.log(`unread   ${src.id} ${res.bytes.length}B (pdf has no text layer; not kept)`);
+        continue;
+      }
       rec.text_extract = { path: txt, sha256: canonicalReceiptHash(path.join(root, txt)), tool: 'pdftotext -layout', note: 'Derived text of the archived PDF, kept so names can be checked offline; the PDF is the receipt.' };
     }
     manifest.set(src.id, rec);
@@ -373,6 +395,11 @@ for (const src of sources.values()) {
   }
   sourceReceiptIds.set(src.key, [src.id]);
   const arc = manifest.get(src.id);
+  // Fetched but unreadable (a scan with no text layer) and so not kept: its rows are refused as unread.
+  if (arc?.status === 'not_archived' && arc.reason === 'pdf_has_no_text_layer') {
+    receiptState.set(src.id, { candidate: null, reused: false, problems: [], text: null, unread: arc.reason });
+    continue;
+  }
   const problems = [];
   let candidate = null;
   if (!arc) problems.push('not_attempted');
@@ -540,14 +567,24 @@ function sectionOf(receiptId, shown) {
   }
   return null;
 }
+const stagedSurfaceById = new Map(surfaces.map(s => [s.surface_id, s]));
 for (const block of intake.roster) {
-  const sid = block.existing_surface_id;
+  if (!ledgerSurfaceById.has(block.existing_surface_id)) throw new Error(`roster surface ${block.existing_surface_id} is not in the ledger`);
+  // enter_on: the rows go on a surface this lane staged from the same page, not on the curated one.
+  const sid = block.enter_on ?? block.existing_surface_id;
   const shape = ROSTER[sid];
-  const existing = ledgerSurfaceById.get(sid);
-  if (!existing) throw new Error(`roster surface ${sid} is not in the ledger`);
   if (!shape) throw new Error(`no roster shape for ${sid}`);
+  const existing = block.enter_on ? stagedSurfaceById.get(sid) : ledgerSurfaceById.get(sid);
+  if (!existing) {
+    for (const r of block.rows) {
+      counts.roster_rows_read += 1;
+      counts.roster_rows_refused += 1;
+      gap('roster', `${sid}:${r.label}`, 'target_surface_not_admitted', { candidate: { surface_id: sid, participant_type: 'organization', ledger_id: r.ledger_id, label: r.label, shown: r.shown } });
+    }
+    continue;
+  }
   if (existing.hop_eligible !== false) throw new Error(`roster surface ${sid} is hop-eligible; organisation rows could change its treatment`);
-  const onSurface = new Set(ledgerParts.filter(p => p.surface_id === sid && p.participant_type === 'organization').map(p => p.organization_id));
+  const onSurface = new Set([...ledgerParts, ...participation].filter(p => p.surface_id === sid && p.participant_type === 'organization').map(p => p.organization_id));
   const ids = uniq(block.source_urls.flatMap(u => sourceReceiptIds.get(urlKey(u)) ?? []));
   const okIds = ids.filter(okReceipt);
   for (const r of block.rows) {
@@ -582,7 +619,7 @@ for (const block of intake.roster) {
 
 // =============================================================== write
 surfaces.sort((a, b) => a.time_start.localeCompare(b.time_start) || a.surface_id.localeCompare(b.surface_id));
-const order = new Map([...surfaces.map((s, i) => [s.surface_id, i]), ...intake.roster.map((b, i) => [b.existing_surface_id, surfaces.length + i])]);
+const order = new Map([...intake.roster.map((b, i) => [b.existing_surface_id, surfaces.length + i]), ...surfaces.map((s, i) => [s.surface_id, i])]);
 participation.sort((a, b) => order.get(a.surface_id) - order.get(b.surface_id));
 const usedReceiptIds = new Set(participation.flatMap(p => p.receipt_ids));
 const receipts = [...cited.entries()].filter(([id, st]) => usedReceiptIds.has(id) && !st.reused).map(([, st]) => st.candidate).sort((a, b) => a.receipt_id.localeCompare(b.receipt_id));
@@ -621,6 +658,7 @@ writeJson(`${OUT}/summary.json`, {
     archived: [...manifest.values()].filter(r => r.status === 'archived').length,
     reused_ledger_receipts: reusedReceipts,
     failed: [...manifest.values()].filter(r => r.status === 'failed').map(r => ({ receipt_id: r.receipt_id, source_url: r.source_url, reason: r.reason })),
+    not_archived: [...manifest.values()].filter(r => r.status === 'not_archived').map(r => ({ receipt_id: r.receipt_id, source_url: r.source_url, reason: r.reason })),
   },
   admission_rule: 'A participant is admitted only when the archived copy of a cited receipt shows its shown words (text compared with markup stripped, entities decoded, whitespace collapsed and curly quotes folded, ignoring letter case, as whole words); a surface only when its receipt satisfies the live receipt contract, at least one participant is admitted and it is not a second copy of an event the ledger already holds (every admitted person already on one ledger surface with the same dates). Roster rows are organisation rows appended to existing surfaces and are refused when they would change how the surface is treated. Every surface is hop_eligible false pending a reader. Everything refused goes to gaps.jsonl.',
   counts,
