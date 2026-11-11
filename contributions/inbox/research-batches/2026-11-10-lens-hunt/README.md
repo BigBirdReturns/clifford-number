@@ -136,3 +136,6 @@ Went to gaps (`data/ledger/staging/lens-hunt-official/gaps.jsonl`; the Form D la
 - **Blake Souter's Senate gift-rule disclosure.** The PDF is a scan with no text layer, so its name could not be checked.
 - **Eleven names the archived pages do not show as drafted.** Nine Voyager registration signatories (the drafted words join table cells with "|"), Mark Esper on the Army article (the archived caption stops before his name) and Infleqtion's closing sentence. Two surfaces fall with them, Voyager's signatories and the Army further-names.
 - Palantir was already on the summit attendee list.
+
+Follow-up the same day: the 130 techUK roundtable organisations the archived register page shows (techUK itself was already there) entered on the addendum surface `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, so the curated roundtable keeps its pinned organisation set, and the nine Voyager registration signatories entered once their shown words were their names as the filing prints them.
+A PDF with no text layer is no longer kept: the Senate gift-rule scan is recorded as fetched but not archived, and Blake Souter's row stays in gaps as unread.
