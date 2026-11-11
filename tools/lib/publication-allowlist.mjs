@@ -126,7 +126,11 @@ export function computePayloadDigest(entries) {
   return sha256(Buffer.from(inventory, 'utf8'));
 }
 
-function scanArtifactText(destination, entries) {
+// Every file within the single-file budget is scanned; the limit is the policy's own
+// max_single_file_bytes, so raising that budget never lets a published file escape the scan.
+// A file over the budget is not read here: enforceBudgets refuses it.
+export function scanArtifactText(destination, entries, maxBytes) {
+  if (!Number.isSafeInteger(maxBytes) || maxBytes <= 0) throw new Error('scanArtifactText needs the single-file budget');
   const forbidden = [
     ['Windows project path', /(?:^|[^A-Za-z0-9])(?:[A-Za-z]:[\\/]Projects[\\/])/u],
     ['Estate home path', /\/home\/octo(?:\/|\b)/u],
@@ -134,7 +138,7 @@ function scanArtifactText(destination, entries) {
     ['GitHub token', /(?:github_pat_|gh[pousr]_)[A-Za-z0-9_]{20,}/u]
   ];
   for (const entry of entries) {
-    if (entry.bytes > 16 * 1024 * 1024) continue;
+    if (entry.bytes > maxBytes) continue;
     const bytes = fs.readFileSync(path.join(destination, ...entry.path.split('/')));
     if (bytes.includes(0)) continue;
     const text = bytes.toString('utf8');
@@ -187,7 +191,7 @@ export function finalizePublicationArtifact({ root = defaultRoot, destination = 
   const actual = listArtifactFiles(destination);
   validateArtifactPathSet(policy, actual, { manifestMayBeMissing: true });
   const entries = computeArtifactEntries(destination, actual);
-  scanArtifactText(destination, entries);
+  scanArtifactText(destination, entries, policy.performance_budgets.max_single_file_bytes);
   const observedBudgets = enforceBudgets(policy, entries);
   const clock = readBuildClock({ root });
   const packageVersion = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8')).version;
@@ -232,7 +236,7 @@ export function validatePublicationArtifact({ root = defaultRoot, destination = 
   if (JSON.stringify(entries) !== JSON.stringify(manifest.files)) throw new Error('artifact manifest file inventory or digest drift');
   const totalBytes = entries.reduce((sum, entry) => sum + entry.bytes, 0);
   if (manifest.payload?.file_count !== entries.length || manifest.payload?.total_bytes !== totalBytes || manifest.payload?.sha256 !== computePayloadDigest(entries)) throw new Error('artifact manifest payload summary drift');
-  scanArtifactText(destination, entries);
+  scanArtifactText(destination, entries, policy.performance_budgets.max_single_file_bytes);
   const observedBudgets = enforceBudgets(policy, entries);
   if (JSON.stringify(observedBudgets) !== JSON.stringify(manifest.performance)) throw new Error('artifact manifest performance observation drift');
   return { manifest, policy, observedBudgets, manifest_sha256: sha256(fs.readFileSync(path.join(destination, ARTIFACT_MANIFEST_PATH))) };

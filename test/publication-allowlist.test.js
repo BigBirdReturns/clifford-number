@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { computePayloadDigest, isSafePublicationPath, matchesHeldRule, validateArtifactPathSet, validatePublicationPolicy } from '../tools/lib/publication-allowlist.mjs';
+import os from 'node:os';
+import path from 'node:path';
+import { computeArtifactEntries, computePayloadDigest, isSafePublicationPath, matchesHeldRule, scanArtifactText, validateArtifactPathSet, validatePublicationPolicy } from '../tools/lib/publication-allowlist.mjs';
 
 const base = {
   schema_version: 'clifford-publication-allowlist@1',
@@ -62,4 +64,26 @@ assert.equal(realPolicy.performance_budgets.max_single_file_bytes, 20000000, 'th
 assert.equal(realPolicy.performance_budgets.max_standalone_bytes, 8000000, 'the main standalone budget (raised 2026-10-23 from 5,000,000)');
 assert.equal(realPolicy.performance_budgets.max_files, 4000, 'the file-count budget (raised 2026-10-23 from 3,200)');
 assert.throws(() => validatePublicationPolicy({ ...base, performance_budgets: { ...base.performance_budgets, max_path_bytes: { 'nope.html': 1 } } }), /unlisted path/u);
-console.log('publication-allowlist.test: OK (safe paths, holds, exact set and deterministic digest)');
+// The forbidden-text scan covers every file within the single-file budget (2026-11-10 follow-up): the limit
+// is the policy's max_single_file_bytes, not a separate 16 MiB constant, so the explorer standalone, now
+// above 16 MiB and within the 20,000,000-byte budget, is still scanned. A file of 17 MiB that ends in key
+// material is refused under the real budget; the same bytes without it pass; nothing passes without a budget.
+{
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'publication-scan-'));
+  try {
+    const size = 17 * 1024 * 1024;
+    assert.ok(size > 16 * 1024 * 1024 && size <= realPolicy.performance_budgets.max_single_file_bytes, 'the probe sits between 16 MiB and the single-file budget');
+    const marker = Buffer.from('\n-----BEGIN ' + 'PRIVATE KEY-----\n');
+    const body = Buffer.alloc(size, 0x61);
+    marker.copy(body, size - marker.length);
+    fs.writeFileSync(path.join(dir, 'large.html'), body);
+    const entries = computeArtifactEntries(dir, ['large.html']);
+    assert.throws(() => scanArtifactText(dir, entries, realPolicy.performance_budgets.max_single_file_bytes), /private key material in large\.html/u);
+    fs.writeFileSync(path.join(dir, 'large.html'), Buffer.alloc(size, 0x61));
+    assert.doesNotThrow(() => scanArtifactText(dir, computeArtifactEntries(dir, ['large.html']), realPolicy.performance_budgets.max_single_file_bytes));
+    assert.throws(() => scanArtifactText(dir, entries), /single-file budget/u);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+}
+console.log('publication-allowlist.test: OK (safe paths, holds, exact set, deterministic digest, text scan up to the single-file budget)');
