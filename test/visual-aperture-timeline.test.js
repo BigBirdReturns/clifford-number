@@ -59,12 +59,12 @@ assert.equal(DENSE_ACTOR_ROWS, 20);
 assert.equal(TIMELINE_MAX_LANES, 18, 'the named-lane cap, default and pinned (owner decision 2026-10-23)');
 assert.equal(TIMELINE_CLUSTER_SLOTS, 6);
 
-assert.equal(model.counts.rows, 4755); // 2026-11-10 one-pass entry: 4430 -> 4755. 2026-11-10 lens-hunt promotion: 4411 -> 4430. 2026-10-23 final re-pin: 4451 -> 4411. 2026-10-23 five-lane merge: 3,118 -> 4,451. 2026-10-23 promotion: 286 -> 3,118
-assert.equal(model.counts.actor_rows, 1399); // 2026-11-10 one-pass entry: 1313 -> 1399. 2026-11-10 lens-hunt promotion: 1300 -> 1313. 2026-10-23 final re-pin: 1340 -> 1300. 2026-10-23 five-lane merge: 959 -> 1,340. 2026-10-23 promotion: 200 -> 959 (958 + the Capital Factory listing of joshua-baer, routed to the actor)
-assert.equal(model.counts.organization_rows, 3356); // 2026-11-10 one-pass entry: 3117 -> 3356. 2026-11-10 lens-hunt promotion: 3111 -> 3117. 2026-10-23 five-lane merge: 2,159 -> 3,111. 2026-10-23 promotion: 86 -> 2,159
-assert.deepEqual(model.counts.kinds, { day: 3028, span: 1411, year: 2, open: 314, undated: 0 }); // 2026-11-10 one-pass entry: day 2,781 -> 3,028, span 1,333 -> 1,411 (the 78 summit-roster rows span 1-2 November 2023). 2026-11-10 lens-hunt promotion: day 2,762 -> 2,781.  2026-10-23 final re-pin: day 2,799 -> 2,762, span 1,335 -> 1,333, open 315 -> 314 (40 merged Form D person rows).  2026-10-23 five-lane merge: day 1,643 -> 2,799, span 1,158 -> 1,335. 2026-10-23 promotion
-assert.deepEqual(model.counts.actor_kinds, { day: 572, span: 670, year: 1, open: 156, undated: 0 }); // 2026-11-10 one-pass entry: day 486 -> 572. 2026-11-10 lens-hunt promotion: day 473 -> 486.  2026-10-23 final re-pin: day 510 -> 473, span 672 -> 670, open 157 -> 156.  2026-10-23 five-lane merge: day 225 -> 510, span 576 -> 672. 2026-10-23 promotion
-assert.deepEqual(model.counts.organization_kinds, { day: 2456, span: 741, year: 1, open: 158, undated: 0 }); // 2026-11-10 one-pass entry: day 2,295 -> 2,456, span 663 -> 741. 2026-11-10 lens-hunt promotion: day 2,289 -> 2,295.  2026-10-23 five-lane merge: day 1,418 -> 2,289, span 582 -> 663. 2026-10-23 promotion
+assert.equal(model.counts.rows, 4894); // 2026-11-10 follow-up: 4755 -> 4894. 2026-11-10 one-pass entry: 4430 -> 4755. 2026-11-10 lens-hunt promotion: 4411 -> 4430. 2026-10-23 final re-pin: 4451 -> 4411. 2026-10-23 five-lane merge: 3,118 -> 4,451. 2026-10-23 promotion: 286 -> 3,118
+assert.equal(model.counts.actor_rows, 1408); // 2026-11-10 follow-up: 1399 -> 1408. 2026-11-10 one-pass entry: 1313 -> 1399. 2026-11-10 lens-hunt promotion: 1300 -> 1313. 2026-10-23 final re-pin: 1340 -> 1300. 2026-10-23 five-lane merge: 959 -> 1,340. 2026-10-23 promotion: 200 -> 959 (958 + the Capital Factory listing of joshua-baer, routed to the actor)
+assert.equal(model.counts.organization_rows, 3486); // 2026-11-10 follow-up: 3356 -> 3486. 2026-11-10 one-pass entry: 3117 -> 3356. 2026-11-10 lens-hunt promotion: 3111 -> 3117. 2026-10-23 five-lane merge: 2,159 -> 3,111. 2026-10-23 promotion: 86 -> 2,159
+assert.deepEqual(model.counts.kinds, { day: 3167, span: 1411, year: 2, open: 314, undated: 0 }); // 2026-11-10 follow-up: day 3,028 -> 3,167. 2026-11-10 one-pass entry: day 2,781 -> 3,028, span 1,333 -> 1,411 (the 78 summit-roster rows span 1-2 November 2023). 2026-11-10 lens-hunt promotion: day 2,762 -> 2,781.  2026-10-23 final re-pin: day 2,799 -> 2,762, span 1,335 -> 1,333, open 315 -> 314 (40 merged Form D person rows).  2026-10-23 five-lane merge: day 1,643 -> 2,799, span 1,158 -> 1,335. 2026-10-23 promotion
+assert.deepEqual(model.counts.actor_kinds, { day: 581, span: 670, year: 1, open: 156, undated: 0 }); // 2026-11-10 follow-up: day 572 -> 581. 2026-11-10 one-pass entry: day 486 -> 572. 2026-11-10 lens-hunt promotion: day 473 -> 486.  2026-10-23 final re-pin: day 510 -> 473, span 672 -> 670, open 157 -> 156.  2026-10-23 five-lane merge: day 225 -> 510, span 576 -> 672. 2026-10-23 promotion
+assert.deepEqual(model.counts.organization_kinds, { day: 2586, span: 741, year: 1, open: 158, undated: 0 }); // 2026-11-10 follow-up: day 2,456 -> 2,586. 2026-11-10 one-pass entry: day 2,295 -> 2,456, span 663 -> 741. 2026-11-10 lens-hunt promotion: day 2,289 -> 2,295.  2026-10-23 five-lane merge: day 1,418 -> 2,289, span 582 -> 663. 2026-10-23 promotion
 assert.equal(model.counts.hop_bases, 318); // 2026-11-10 lens-hunt promotion: 300 -> 318. 2026-10-23 final re-pin: 339 -> 300. 2026-10-23 five-lane merge: 135 -> 339. 2026-10-23 promotion: 95 -> 135
 assert.equal(model.hopBases.length, 318); // 2026-11-10 lens-hunt promotion: 300 -> 318. 2026-10-23 final re-pin: 339 -> 300. 2026-10-23 five-lane merge: 135 -> 339. 2026-10-23 promotion
 assert.equal(model.counts.hop_day_surfaces, 63, '318 bases group into 63 (day, surface) objects'); // 2026-11-10 lens-hunt promotion: 59 -> 63. 2026-10-23 final re-pin: 64 -> 59. 2026-10-23 five-lane merge: 22 -> 64. 2026-10-23 promotion: 19 -> 22
@@ -73,7 +73,7 @@ assert.equal(model.counts.hop_days, 45, 'over 45 distinct days'); // 2026-11-10 
 assert.equal(model.counts.hop_bases_by_year['2025'], 62, 'fix (d): 62 bases dated 2025'); // 2026-11-10 lens-hunt promotion: 61 -> 62. 2026-10-23 final re-pin: 66 -> 61. 2026-10-23 five-lane merge: 28 -> 66
 assert.equal(model.counts.dense_surfaces, 2); // 2026-10-23 five-lane merge: 1 -> 2 (rndf-2023-programme-roster)
 assert.equal(model.counts.dense_rows, 142); // 2026-10-23 five-lane merge: 113 -> 142 (+29 rndf-2023 roster rows)
-assert.equal(model.counts.refusal_reasons, 1244); // 2026-11-10 one-pass entry: 1097 -> 1244. 2026-11-10 lens-hunt promotion: 1096 -> 1097. 2026-10-23 final re-pin: 1091 -> 1096. 2026-10-23 five-lane merge: 836 -> 1,091. 2026-10-23 promotion: 35 -> 836
+assert.equal(model.counts.refusal_reasons, 1245); // 2026-11-10 follow-up: 1244 -> 1245. 2026-11-10 one-pass entry: 1097 -> 1244. 2026-11-10 lens-hunt promotion: 1096 -> 1097. 2026-10-23 final re-pin: 1091 -> 1096. 2026-10-23 five-lane merge: 836 -> 1,091. 2026-10-23 promotion: 35 -> 836
 assert.equal(model.counts.refusal_reasons_unrecorded, 5);
 assert.equal(model.counts.surfaces_without_evidence_class, 10);
 // 2026-10-23 promotion: three LinkedIn role surfaces were folded from two role entries
@@ -95,7 +95,7 @@ const FOLDED_ROLE_SURFACES = [
   'seth-price-hotelquickly-ltd-head-of-nodejs-development-linkedin-2015-2015',
 ];
 assert.equal(model.counts.duplicate_keys, 5); // 2026-10-23 final re-pin: 45 -> 5. 2026-10-23 five-lane merge: 6 -> 45 (see FOLDED_ROLE_SURFACES). 2026-10-23 promotion: 0 -> 6 (one actor and one organization row on each folded surface)
-assert.equal(model.rowsByKey.size, 4755, 'row key surface_id::participant_type::entity_id[::n] is unique'); // 2026-11-10 one-pass entry: 4430 -> 4755. 2026-11-10 lens-hunt promotion: 4411 -> 4430. 2026-10-23 final re-pin: 4451 -> 4411. 2026-10-23 five-lane merge: 3,118 -> 4,451. 2026-10-23 promotion: 286 -> 3,118
+assert.equal(model.rowsByKey.size, 4894, 'row key surface_id::participant_type::entity_id[::n] is unique'); // 2026-11-10 follow-up: 4755 -> 4894. 2026-11-10 one-pass entry: 4430 -> 4755. 2026-11-10 lens-hunt promotion: 4411 -> 4430. 2026-10-23 final re-pin: 4451 -> 4411. 2026-10-23 five-lane merge: 3,118 -> 4,451. 2026-10-23 promotion: 286 -> 3,118
 const baseRowKey = row => `${row.surface_id}::${row.participant_type}::${row.entity_id}`;
 assert.ok(model.rows.every(row => row.key === baseRowKey(row) || row.key === `${baseRowKey(row)}::2`));
 assert.deepEqual([...new Set(model.rows.filter(row => row.key !== baseRowKey(row)).map(row => row.surface_id))].sort(), FOLDED_ROLE_SURFACES,
@@ -106,15 +106,15 @@ assert.ok(model.hopBases.every(basis => basis.day != null && basis.end_day === b
 assert.deepEqual(model.range, { // 2026-10-23 promotion: range 2016-01-01..2026-08-12 -> 1982-05-01..2026-10-23
   first_day: '1982-05-01', last_day: '2026-10-23',
   first_day_index: dayIndex('1982-05-01'), last_day_index: dayIndex('2026-10-23'),
-  distinct_start_days: 661, // 2026-11-10 one-pass entry: 542 -> 661. 2026-11-10 lens-hunt promotion: 534 -> 542. 2026-10-23 five-lane merge: 339 -> 534
+  distinct_start_days: 662, // 2026-11-10 follow-up: 661 -> 662. 2026-11-10 one-pass entry: 542 -> 661. 2026-11-10 lens-hunt promotion: 534 -> 542. 2026-10-23 five-lane merge: 339 -> 534
   years_with_rows: ['1982', '1983', '1984', '1986', '1988', '1989', '1990', '1992', '1993', '1994', '1995', '1996', '1997', '1998', '1999',
     '2000', '2001', '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013', '2014', '2015',
     '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024', '2025', '2026']
 });
-assert.equal(model.lanes.actor.size, 446); // 2026-11-10 one-pass entry: 398 -> 446. 2026-11-10 lens-hunt promotion: 391 -> 398. 2026-10-23 five-lane merge: 279 -> 391. 2026-10-23 promotion: 163 -> 279
-assert.equal(model.lanes.organization.size, 1807); // 2026-11-10 one-pass entry: 1705 -> 1807. 2026-11-10 lens-hunt promotion: 1703 -> 1705. 2026-10-23 five-lane merge: 1,521 -> 1,703. 2026-10-23 promotion: 27 -> 1,521
+assert.equal(model.lanes.actor.size, 455); // 2026-11-10 follow-up: 446 -> 455. 2026-11-10 one-pass entry: 398 -> 446. 2026-11-10 lens-hunt promotion: 391 -> 398. 2026-10-23 five-lane merge: 279 -> 391. 2026-10-23 promotion: 163 -> 279
+assert.equal(model.lanes.organization.size, 1911); // 2026-11-10 follow-up: 1807 -> 1911. 2026-11-10 one-pass entry: 1705 -> 1807. 2026-11-10 lens-hunt promotion: 1703 -> 1705. 2026-10-23 five-lane merge: 1,521 -> 1,703. 2026-10-23 promotion: 27 -> 1,521
 assert.equal(model.lanes.type.size, 16); // 2026-10-23 five-lane merge: 14 -> 16 surface types
-assert.equal(model.lanes.surface.size, 1307); // 2026-11-10 one-pass entry: 1160 -> 1307. 2026-11-10 lens-hunt promotion: 1155 -> 1160. 2026-10-23 five-lane merge: 858 -> 1,155. 2026-10-23 promotion: 54 -> 858
+assert.equal(model.lanes.surface.size, 1308); // 2026-11-10 follow-up: 1307 -> 1308. 2026-11-10 one-pass entry: 1160 -> 1307. 2026-11-10 lens-hunt promotion: 1155 -> 1160. 2026-10-23 five-lane merge: 858 -> 1,155. 2026-10-23 promotion: 54 -> 858
 
 // Year precision and the one open-ended row are handled as the design says.
 const yearRows = model.rows.filter(row => row.kind === 'year');
@@ -209,44 +209,44 @@ for (let index = 1; index < actorLanes.lanes.length; index += 1) {
 const ORIGINAL_DEFAULT_LANES = ['dominic-cummings', 'ben-warner', 'marc-warner', 'saul-klein', 'matt-clifford', 'simon-case', 'alex-cooper',
   'fiona-hill', 'george-robertson', 'john-healey', 'keir-starmer', 'richard-barrons', 'rich-drake', 'michael-muthukrishna', 'dan-driscoll'];
 assert.equal(actorLanes.lanes.reduce((sum, lane) => sum + lane.row_count, 0), 177, '177 rows on the 18 named lanes'); // 2026-11-10 one-pass entry: 164 -> 177 (the same 18 people; Horacio Rozanski +8 Form D rows, Joe Lonsdale +4, Heidi Shyu +1). 2026-11-10 lens-hunt promotion: 159 -> 164. 2026-10-23 final re-pin: 198 -> 159. 2026-10-23 five-lane merge: 40 -> 198 // 2026-10-23: hop-first ranking (row-count ranking gave 236; 2.1.0: 52 rows on 15)
-assert.equal(actorLanes.strip.row_count, 1095, 'every other actor row outside the dense blocks'); // 2026-11-10 one-pass entry: 1022 -> 1095. 2026-11-10 lens-hunt promotion: 1014 -> 1022. 2026-10-23 final re-pin: 1017 -> 1014. 2026-10-23 five-lane merge: 808 -> 1,017 // 2.1.0: 38 single-surface rows // 2026-10-23 hop-first default lanes: 611 -> 808
-assert.equal(actorLanes.strip.entity_count, 322); // 2026-11-10 one-pass entry: 274 -> 322. 2026-11-10 lens-hunt promotion: 267 -> 274. 2026-10-23 five-lane merge: 153 -> 267
-assert.equal(actorLanes.strip.label, 'Other people (322)'); // 2026-11-10 one-pass entry: Other people (274) -> Other people (322). 2026-11-10 lens-hunt promotion: Other people (267) -> Other people (274). 2026-10-23 five-lane merge: 153 -> 267
+assert.equal(actorLanes.strip.row_count, 1104, 'every other actor row outside the dense blocks'); // 2026-11-10 follow-up: 1095 -> 1104. 2026-11-10 one-pass entry: 1022 -> 1095. 2026-11-10 lens-hunt promotion: 1014 -> 1022. 2026-10-23 final re-pin: 1017 -> 1014. 2026-10-23 five-lane merge: 808 -> 1,017 // 2.1.0: 38 single-surface rows // 2026-10-23 hop-first default lanes: 611 -> 808
+assert.equal(actorLanes.strip.entity_count, 331); // 2026-11-10 follow-up: 322 -> 331. 2026-11-10 one-pass entry: 274 -> 322. 2026-11-10 lens-hunt promotion: 267 -> 274. 2026-10-23 five-lane merge: 153 -> 267
+assert.equal(actorLanes.strip.label, 'Other people (331)'); // 2026-11-10 follow-up: Other people (322) -> Other people (331). 2026-11-10 one-pass entry: Other people (274) -> Other people (322). 2026-11-10 lens-hunt promotion: Other people (267) -> Other people (274). 2026-10-23 five-lane merge: 153 -> 267
 assert.equal(actorLanes.strip.single_surface_only, false);
 assert.equal(actorLanes.blocks.length, 2); // 2026-10-23 five-lane merge: 1 -> 2
 const organizationLanes = defaultTimelineLanes(model, 'organization');
 // Owner decision 2026-10-23: the same 18-lane cap and dated-row ranking for Organizations.
 assert.equal(organizationLanes.lanes.length, 18); // 2.1.0: 14 multi-surface organizations
 assert.deepEqual(organizationLanes.lanes.map(lane => lane.id).sort(), topByDatedRows(model.lanes.organization));
-assert.equal(organizationLanes.lanes.reduce((sum, lane) => sum + lane.row_count, 0), 430); // 2026-11-10 one-pass entry: 413 -> 430. 2026-10-23 five-lane merge: 197 -> 413 // 2.1.0: 73 // 2026-10-23 hop-first default lanes: 274 -> 197
-assert.equal(organizationLanes.strip.row_count, 2926, 'every other organization row'); // 2026-11-10 one-pass entry: 2704 -> 2926. 2026-11-10 lens-hunt promotion: 2698 -> 2704. 2026-10-23 five-lane merge: 1,962 -> 2,698 // 2.1.0: 13 single-surface rows // 2026-10-23 hop-first default lanes: 1885 -> 1962
+assert.equal(organizationLanes.lanes.reduce((sum, lane) => sum + lane.row_count, 0), 431); // 2026-11-10 follow-up: 430 -> 431. 2026-11-10 one-pass entry: 413 -> 430. 2026-10-23 five-lane merge: 197 -> 413 // 2.1.0: 73 // 2026-10-23 hop-first default lanes: 274 -> 197
+assert.equal(organizationLanes.strip.row_count, 3055, 'every other organization row'); // 2026-11-10 follow-up: 2926 -> 3055. 2026-11-10 one-pass entry: 2704 -> 2926. 2026-11-10 lens-hunt promotion: 2698 -> 2704. 2026-10-23 five-lane merge: 1,962 -> 2,698 // 2.1.0: 13 single-surface rows // 2026-10-23 hop-first default lanes: 1885 -> 1962
 assert.equal(organizationLanes.strip.label, `Other organizations (${organizationLanes.strip.entity_count})`);
-assert.equal(organizationLanes.strip.entity_count, 1789); // 2026-11-10 one-pass entry: 1687 -> 1789. 2026-11-10 lens-hunt promotion: 1685 -> 1687. 2026-10-23 five-lane merge: 1,503 -> 1,685
+assert.equal(organizationLanes.strip.entity_count, 1893); // 2026-11-10 follow-up: 1789 -> 1893. 2026-11-10 one-pass entry: 1687 -> 1789. 2026-11-10 lens-hunt promotion: 1685 -> 1687. 2026-10-23 five-lane merge: 1,503 -> 1,685
 assert.equal(organizationLanes.blocks.length, 0);
 assert.equal(defaultTimelineLanes(model, 'organization', { order: 'surface_count' }).lanes[0].id, 'capital-factory'); // 2026-10-23 five-lane merge: anduril-industries -> capital-factory. 2026-10-23 promotion: electric-twin -> anduril-industries (39 surfaces)
 const typeLanes = defaultTimelineLanes(model, 'type');
 assert.equal(typeLanes.lanes.length, 16, 'all 16 surface types fit under the 18-lane cap'); // 2026-10-23 five-lane merge: 14 -> 16
-assert.equal(typeLanes.lanes.reduce((sum, lane) => sum + lane.row_count, 0), 1307, 'type lanes hold surfaces, not participation rows'); // 2026-11-10 one-pass entry: 1160 -> 1307. 2026-11-10 lens-hunt promotion: 1155 -> 1160. 2026-10-23 five-lane merge: 858 -> 1,155. 2026-10-23 promotion: 54 -> 858
+assert.equal(typeLanes.lanes.reduce((sum, lane) => sum + lane.row_count, 0), 1308, 'type lanes hold surfaces, not participation rows'); // 2026-11-10 follow-up: 1307 -> 1308. 2026-11-10 one-pass entry: 1160 -> 1307. 2026-11-10 lens-hunt promotion: 1155 -> 1160. 2026-10-23 five-lane merge: 858 -> 1,155. 2026-10-23 promotion: 54 -> 858
 assert.equal(typeLanes.strip.row_count, 0);
 const pinnedLanes = defaultTimelineLanes(model, 'actor', { laneIds: ['ben-warner', 'nobody', 'marc-warner', 'ben-warner'] });
 assert.deepEqual(pinnedLanes.lanes.map(lane => lane.id), ['ben-warner', 'marc-warner']);
 assert.equal(pinnedLanes.pinned, true);
-assert.equal(pinnedLanes.strip.row_count, 1399 - 17 - 3 - 112 - 23, 'the strip holds every other actor row; dense rows stay in the block unless the actor has a lane'); // 2026-11-10 one-pass entry: 1,313 -> 1,399 actor rows. 2026-11-10 lens-hunt promotion: 1,300 -> 1,313 actor rows, Ben Warner 12 -> 17 rows, Marc Warner 2 -> 3 (SAGE 17).  2026-10-23 final re-pin: 1,340 -> 1,300 actor rows (40 merged Form D person rows).  2026-10-23 five-lane merge: 959 - 10 - 2 - 112 -> 1,340 - 12 - 2 - 112 - 23 (Ben Warner 12 rows; the rndf-2023 block holds 23 actor rows). 2026-10-23 promotion: 200 -> 959 actor rows
+assert.equal(pinnedLanes.strip.row_count, 1408 - 17 - 3 - 112 - 23, 'the strip holds every other actor row; dense rows stay in the block unless the actor has a lane'); // 2026-11-10 follow-up: 1,399 -> 1,408 actor rows. 2026-11-10 one-pass entry: 1,313 -> 1,399 actor rows. 2026-11-10 lens-hunt promotion: 1,300 -> 1,313 actor rows, Ben Warner 12 -> 17 rows, Marc Warner 2 -> 3 (SAGE 17).  2026-10-23 final re-pin: 1,340 -> 1,300 actor rows (40 merged Form D person rows).  2026-10-23 five-lane merge: 959 - 10 - 2 - 112 -> 1,340 - 12 - 2 - 112 - 23 (Ben Warner 12 rows; the rndf-2023 block holds 23 actor rows). 2026-10-23 promotion: 200 -> 959 actor rows
 assert.equal(defaultTimelineLanes(model, 'actor', { laneIds: [...model.lanes.actor.keys()].slice(0, 20) }).lanes.length, 18, 'at most 18 named lanes');
 // 2026-10-23 promotion: the default list is no longer 15, so the "one more drops none" check
 // runs on the original 15 defaults it was written for.
 assert.equal(defaultTimelineLanes(model, 'actor', { laneIds: ['auren-hoffman', ...ORIGINAL_DEFAULT_LANES] }).lanes.length, 16, 'adding one lane to the 15 defaults drops none of them');
 
 // --- default domain by row share
-assert.deepEqual(defaultTimelineDomain(model, 690), { from: '2016-01-01', to: '2026-11-22', from_day: dayIndex('2016-01-01'), to_day: dayIndex('2026-11-22'), auto: true, share: 0.863, threshold: 0.85 }); // 2026-10-23 five-lane merge: 2013-01-01 (share 0.858) -> 2016-01-01 (share 0.863). 2026-10-23 promotion: 2023-01-01..2026-09-11 -> 2013-01-01..2026-11-22
-assert.equal(defaultTimelineDomain(model, 880).from, '2016-01-01'); // 2026-10-23 five-lane merge: 2013 -> 2016. 2026-10-23 promotion
-assert.deepEqual(defaultTimelineDomain(model, 216), { from: '2022-01-01', to: '2026-11-22', from_day: dayIndex('2022-01-01'), to_day: dayIndex('2026-11-22'), auto: true, share: 0.712, threshold: 0.7 }); // 2026-11-10 one-pass entry: share 0.714 -> 0.712; the domain is unchanged. 2026-11-10 lens-hunt promotion: share 0.715 -> 0.714. 2026-10-23 five-lane merge: 2020-01-01 (share 0.729) -> 2022-01-01 (share 0.715). 2026-10-23 promotion: 2025-01-01 -> 2020-01-01
+assert.deepEqual(defaultTimelineDomain(model, 690), { from: '2017-01-01', to: '2026-11-22', from_day: dayIndex('2017-01-01'), to_day: dayIndex('2026-11-22'), auto: true, share: 0.85, threshold: 0.85 }); // 2026-11-10 follow-up: 2016-01-01 (share 0.863) -> 2017-01-01 (share 0.85): the 139 new rows, 130 of them on 17 October 2023, lift the share kept from 2017 to the 0.85 threshold, so the automatic domain opens a year later. 2026-10-23 five-lane merge: 2013-01-01 (share 0.858) -> 2016-01-01 (share 0.863). 2026-10-23 promotion: 2023-01-01..2026-09-11 -> 2013-01-01..2026-11-22
+assert.equal(defaultTimelineDomain(model, 880).from, '2017-01-01'); // 2026-11-10 follow-up: 2016 -> 2017 (the automatic domain, as at 690). 2026-10-23 five-lane merge: 2013 -> 2016. 2026-10-23 promotion
+assert.deepEqual(defaultTimelineDomain(model, 216), { from: '2022-01-01', to: '2026-11-22', from_day: dayIndex('2022-01-01'), to_day: dayIndex('2026-11-22'), auto: true, share: 0.72, threshold: 0.7 }); // 2026-11-10 follow-up: share 0.712 -> 0.72; the phone domain is unchanged. 2026-11-10 one-pass entry: share 0.714 -> 0.712; the domain is unchanged. 2026-11-10 lens-hunt promotion: share 0.715 -> 0.714. 2026-10-23 five-lane merge: 2020-01-01 (share 0.729) -> 2022-01-01 (share 0.715). 2026-10-23 promotion: 2025-01-01 -> 2020-01-01
 
 // --- filters
-assert.equal(filterTimelineRows(model.rows, { hop: 'hop' }).length + filterTimelineRows(model.rows, { hop: 'context' }).length, 4755); // 2026-11-10 one-pass entry: 4430 -> 4755. 2026-11-10 lens-hunt promotion: 4411 -> 4430. 2026-10-23 final re-pin: 4451 -> 4411. 2026-10-23 five-lane merge: 3,118 -> 4,451. 2026-10-23 promotion
+assert.equal(filterTimelineRows(model.rows, { hop: 'hop' }).length + filterTimelineRows(model.rows, { hop: 'context' }).length, 4894); // 2026-11-10 follow-up: 4755 -> 4894. 2026-11-10 one-pass entry: 4430 -> 4755. 2026-11-10 lens-hunt promotion: 4411 -> 4430. 2026-10-23 final re-pin: 4451 -> 4411. 2026-10-23 five-lane merge: 3,118 -> 4,451. 2026-10-23 promotion
 assert.ok(filterTimelineRows(model.rows, { hop: 'hop' }).every(row => row.surface_hop_eligible));
 assert.ok(filterTimelineRows(model.rows, { evidenceFloor: 'official' }).every(row => row.evidence_class === 'official'));
-assert.equal(filterTimelineRows(model.rows, { evidenceFloor: 'official' }).length, 1548); // 2026-11-10 one-pass entry: 1226 -> 1548. 2026-11-10 lens-hunt promotion: 1207 -> 1226. 2026-10-23 final re-pin: 1244 -> 1207. 2026-10-23 five-lane merge: 542 -> 1,244. 2026-10-23 promotion: 136 -> 542
+assert.equal(filterTimelineRows(model.rows, { evidenceFloor: 'official' }).length, 1687); // 2026-11-10 follow-up: 1548 -> 1687. 2026-11-10 one-pass entry: 1226 -> 1548. 2026-11-10 lens-hunt promotion: 1207 -> 1226. 2026-10-23 final re-pin: 1244 -> 1207. 2026-10-23 five-lane merge: 542 -> 1,244. 2026-10-23 promotion: 136 -> 542
 
 // --- layout: desktop (690 and 880 plot widths) and phone (216)
 function checkColumns(layout) {
@@ -351,29 +351,29 @@ function checkAccounting(layout, sourceModel = model) {
 // folds the rest into the +N aggregate. Today none of the 18 shares a hop surface on a
 // drawn mark, so the default view draws no column; the column, SDR and Warner rules are
 // checked on the 2.1.0 default lanes pinned (ORIGINAL_DEFAULT_LANES), which keep six slots.
-const DEFAULT_DESKTOP = { 690: { marks: 120, aggregates: 10 }, 880: { marks: 125, aggregates: 11 } }; // 2026-11-10 one-pass entry: 690 115 -> 120 marks, 880 120 -> 125 (new Form D rows on the default people). 2026-11-10 lens-hunt promotion: 690 112/9 -> 115/10, 880 117/10 -> 120/11.  2026-10-23 final re-pin: 690 134/13 -> 112/9, 880 140/14 -> 117/10 (merged Form D rows, year-only a16z 2022 sessions now non-hop, overlapping-tick clusters folded).  2026-10-23 five-lane merge: 690 44/2 -> 134/13, 880 55/7 -> 140/14 // 2026-10-23 hop-first default lanes: 690 147/12, 880 169/18
+const DEFAULT_DESKTOP = { 690: { marks: 113, aggregates: 10 }, 880: { marks: 119, aggregates: 12 } }; // 2026-11-10 follow-up: 690 120/10 -> 113/10, 880 125/11 -> 119/12 (the automatic domain now opens on 2017-01-01). 2026-11-10 one-pass entry: 690 115 -> 120 marks, 880 120 -> 125 (new Form D rows on the default people). 2026-11-10 lens-hunt promotion: 690 112/9 -> 115/10, 880 117/10 -> 120/11.  2026-10-23 final re-pin: 690 134/13 -> 112/9, 880 140/14 -> 117/10 (merged Form D rows, year-only a16z 2022 sessions now non-hop, overlapping-tick clusters folded).  2026-10-23 five-lane merge: 690 44/2 -> 134/13, 880 55/7 -> 140/14 // 2026-10-23 hop-first default lanes: 690 147/12, 880 169/18
 for (const plotWidth of [690, 880]) {
   const layout = layoutTimeline(model, { plotWidth });
   assert.equal(layout.by, 'actor');
-  assert.equal(layout.domain.from, '2016-01-01'); // 2026-10-23 five-lane merge: 2013-01-01 -> 2016-01-01. 2026-10-23 promotion: 2023-01-01 -> 2013-01-01
+  assert.equal(layout.domain.from, '2017-01-01'); // 2026-11-10 follow-up: 2016-01-01 -> 2017-01-01 (the automatic domain). 2026-10-23 five-lane merge: 2013-01-01 -> 2016-01-01. 2026-10-23 promotion: 2023-01-01 -> 2013-01-01
   assert.equal(layout.domain.to, '2026-11-22'); // 2026-10-23 promotion: 2026-09-11 -> 2026-11-22
   assert.equal(layout.domain.auto, true);
   assert.equal(layout.counts.named_lanes, 18); // 2.1.0: 15
-  assert.equal(layout.counts.strip_rows, 1095); // 2026-11-10 one-pass entry: 1022 -> 1095. 2026-11-10 lens-hunt promotion: 1014 -> 1022. 2026-10-23 final re-pin: 1017 -> 1014. 2026-10-23 five-lane merge: 808 -> 1,017 // 2.1.0: 38 // 2026-10-23 hop-first default lanes: 611 -> 808
+  assert.equal(layout.counts.strip_rows, 1104); // 2026-11-10 follow-up: 1095 -> 1104. 2026-11-10 one-pass entry: 1022 -> 1095. 2026-11-10 lens-hunt promotion: 1014 -> 1022. 2026-10-23 final re-pin: 1017 -> 1014. 2026-10-23 five-lane merge: 808 -> 1,017 // 2.1.0: 38 // 2026-10-23 hop-first default lanes: 611 -> 808
   assert.equal(layout.counts.marks, DEFAULT_DESKTOP[plotWidth].marks, 'desktop: lane + strip marks');
   assert.equal(layout.counts.blocks, 2); // 2026-10-23 five-lane merge: 1 -> 2 (rndf-2023 roster block)
   assert.equal(layout.counts.aggregates, DEFAULT_DESKTOP[plotWidth].aggregates);
   assert.equal(layout.counts.drawn, DEFAULT_DESKTOP[plotWidth].marks + 2 + DEFAULT_DESKTOP[plotWidth].aggregates, `marks + blocks + aggregates at plot width ${plotWidth}`); // 2026-10-23 five-lane merge: + 1 block -> + 2 blocks
   assert.ok(layout.counts.columns > 0, 'the default people share drawn hop bases (hop-first ranking, 2026-10-23)');
-  assert.equal(layout.counts.pre_domain, 315); // 2026-11-10 one-pass entry: 305 -> 315. 2026-10-23 final re-pin: 310 -> 305. 2026-10-23 five-lane merge: 221 -> 310. 2026-10-23 promotion: 11 -> 221
+  assert.equal(layout.counts.pre_domain, 357); // 2026-11-10 follow-up: 315 -> 357. 2026-11-10 one-pass entry: 305 -> 315. 2026-10-23 final re-pin: 310 -> 305. 2026-10-23 five-lane merge: 221 -> 310. 2026-10-23 promotion: 11 -> 221
   assert.equal(layout.counts.post_domain, 0);
   assert.equal(layout.counts.undated, 0);
   assert.equal(layout.counts.filtered, 0);
-  assert.equal(layout.counts.total_rows, 4755); // 2026-11-10 one-pass entry: 4430 -> 4755. 2026-11-10 lens-hunt promotion: 4411 -> 4430. 2026-10-23 final re-pin: 4451 -> 4411. 2026-10-23 five-lane merge: 3,118 -> 4,451. 2026-10-23 promotion: 286 -> 3,118
-  assert.equal(layout.counts.candidate_rows, 1407, '1,399 actor rows plus the organization rows carried by the two blocks'); // 2026-11-10 one-pass entry: 1321 -> 1407. 2026-11-10 lens-hunt promotion: 1308 -> 1321. 2026-10-23 final re-pin: 1348 -> 1308. 2026-10-23 five-lane merge: 960 -> 1,348 (Dialog 1 + rndf-2023 7 organization rows). 2026-10-23 promotion: 201 -> 960
-  assert.equal(layout.counts.rows_outside_grouping, 3348, 'the other organization rows are not part of a People view'); // 2026-11-10 one-pass entry: 3109 -> 3348. 2026-11-10 lens-hunt promotion: 3103 -> 3109. 2026-10-23 five-lane merge: 2,158 -> 3,103. 2026-10-23 promotion: 85 -> 2,158
-  assert.equal(layout.counts.rows_in_view, 1092, 'marks + aggregated rows + 142 block members, each row counted once'); // 2026-11-10 one-pass entry: 1016 -> 1092. 2026-11-10 lens-hunt promotion: 1003 -> 1016. 2026-10-23 final re-pin: 1038 -> 1003. 2026-10-23 five-lane merge: 739 -> 1,038. 2026-10-23 promotion: 190 -> 739
-  assert.equal(layout.counts.in_window, 1092); // 2026-11-10 one-pass entry: 1016 -> 1092. 2026-11-10 lens-hunt promotion: 1003 -> 1016. 2026-10-23 final re-pin: 1038 -> 1003. 2026-10-23 five-lane merge: 739 -> 1,038
+  assert.equal(layout.counts.total_rows, 4894); // 2026-11-10 follow-up: 4755 -> 4894. 2026-11-10 one-pass entry: 4430 -> 4755. 2026-11-10 lens-hunt promotion: 4411 -> 4430. 2026-10-23 final re-pin: 4451 -> 4411. 2026-10-23 five-lane merge: 3,118 -> 4,451. 2026-10-23 promotion: 286 -> 3,118
+  assert.equal(layout.counts.candidate_rows, 1416, '1,408 actor rows plus the organization rows carried by the two blocks'); // 2026-11-10 follow-up: 1407 -> 1416. 2026-11-10 one-pass entry: 1321 -> 1407. 2026-11-10 lens-hunt promotion: 1308 -> 1321. 2026-10-23 final re-pin: 1348 -> 1308. 2026-10-23 five-lane merge: 960 -> 1,348 (Dialog 1 + rndf-2023 7 organization rows). 2026-10-23 promotion: 201 -> 960
+  assert.equal(layout.counts.rows_outside_grouping, 3478, 'the other organization rows are not part of a People view'); // 2026-11-10 follow-up: 3348 -> 3478. 2026-11-10 one-pass entry: 3109 -> 3348. 2026-11-10 lens-hunt promotion: 3103 -> 3109. 2026-10-23 five-lane merge: 2,158 -> 3,103. 2026-10-23 promotion: 85 -> 2,158
+  assert.equal(layout.counts.rows_in_view, 1059, 'marks + aggregated rows + 142 block members, each row counted once'); // 2026-11-10 follow-up: 1092 -> 1059. 2026-11-10 one-pass entry: 1016 -> 1092. 2026-11-10 lens-hunt promotion: 1003 -> 1016. 2026-10-23 final re-pin: 1038 -> 1003. 2026-10-23 five-lane merge: 739 -> 1,038. 2026-10-23 promotion: 190 -> 739
+  assert.equal(layout.counts.in_window, 1059); // 2026-11-10 follow-up: 1092 -> 1059. 2026-11-10 one-pass entry: 1016 -> 1092. 2026-11-10 lens-hunt promotion: 1003 -> 1016. 2026-10-23 final re-pin: 1038 -> 1003. 2026-10-23 five-lane merge: 739 -> 1,038
   assert.equal(layout.counts.block_visible_rows, 142); // 2026-10-23 five-lane merge: 113 -> 142
   // Narrowed 2026-10-23: was an exact one-key list (Simon Case's 2020-2024 tenure). With the
   // domain now starting 2013-01-01 that tenure is inside the domain; the rule is checked on
@@ -383,13 +383,13 @@ for (const plotWidth of [690, 880]) {
     assert.ok(row.start_day < layout.domain.from_day && (row.end_day == null || row.end_day >= layout.domain.from_day),
       `${key}: a tenure span that began before the domain and is active inside it is flagged, not called pre-domain`);
   }
-  assert.equal(layout.counts.pre_domain_overlapping, 78); // 2026-10-23 five-lane merge: 71 -> 78. 2026-10-23 promotion: 1 -> 71
+  assert.equal(layout.counts.pre_domain_overlapping, 87); // 2026-11-10 follow-up: 78 -> 87. 2026-10-23 five-lane merge: 71 -> 78. 2026-10-23 promotion: 1 -> 71
   assert.equal(layout.counts.max_named_stack, 2, 'the default view never grows a lane');
   assert.equal(layout.counts.max_strip_stack, 2);
   checkAccounting(layout);
   assert.equal(layout.lanes.length, 21, '18 named + strip + two blocks'); // 2026-10-23 five-lane merge: 20 -> 21
   assert.equal(layout.lanes.find(lane => lane.kind === 'strip').height, 28);
-  assert.equal(layout.lanes.find(lane => lane.kind === 'strip').label, 'Other people (322)'); // 2026-11-10 one-pass entry: Other people (274) -> Other people (322). 2026-11-10 lens-hunt promotion: Other people (267) -> Other people (274). 2026-10-23 five-lane merge: 153 -> 267
+  assert.equal(layout.lanes.find(lane => lane.kind === 'strip').label, 'Other people (331)'); // 2026-11-10 follow-up: Other people (322) -> Other people (331). 2026-11-10 one-pass entry: Other people (274) -> Other people (322). 2026-11-10 lens-hunt promotion: Other people (267) -> Other people (274). 2026-10-23 five-lane merge: 153 -> 267
   assert.equal(layout.lanes.find(lane => lane.kind === 'block').height, 32);
   assert.ok(layout.lanes.filter(lane => lane.kind === 'entity').every(lane => lane.height === 28), 'every entity lane is 28px');
   assert.equal(layout.height, 18 * 28 + 28 + 32 + 32); // 2026-10-23 five-lane merge: + a second 32px block lane (596px; was 564px)
@@ -397,7 +397,7 @@ for (const plotWidth of [690, 880]) {
   // decision (two dense roster blocks, Dialog and the rndf-2023 programme, are correct). 596px fits.
   assert.equal(TIMELINE_STAGE_BUDGETS.desktop, 640);
   assert.ok(layout.height <= TIMELINE_STAGE_BUDGETS.desktop, 'the default desktop stage fits the 640px budget');
-  assert.deepEqual(layout.axisTicks.filter(tick => tick.kind === 'year').map(tick => tick.label), Array.from({ length: 11 }, (_, index) => String(2016 + index))); // 2026-10-23 five-lane merge: 2013..2026 (14) -> 2016..2026 (11)
+  assert.deepEqual(layout.axisTicks.filter(tick => tick.kind === 'year').map(tick => tick.label), Array.from({ length: 10 }, (_, index) => String(2017 + index))); // 2026-11-10 follow-up: 2016..2026 (11) -> 2017..2026 (10), the automatic domain. 2026-10-23 five-lane merge: 2013..2026 (14) -> 2016..2026 (11)
   checkMarks(layout, 4);
   checkColumns(layout);
   // Narrowed 2026-10-23 five-lane merge: was layout.blocks[0]; the rndf-2023 roster block now sorts first, so the
@@ -414,7 +414,7 @@ for (const plotWidth of [690, 880]) {
   assert.equal(layout.lanes.find(lane => lane.id === `block:${dialog.surface_id}`).visible_row_count, 113); // 2026-10-23 five-lane merge: the Dialog block lane by id (was the first block lane)
   assert.deepEqual(block.elsewhere.map(entry => entry.actor_id), ['joe-lonsdale', 'matt-clifford', 'jim-himes', 'tyler-cowen', 'wes-moore', 'dan-driscoll']); // 2026-11-10 one-pass entry: joe-lonsdale (13 other surfaces) now ahead of matt-clifford (12). 2026-10-23 five-lane merge: was ['matt-clifford', 'jim-himes', 'joe-lonsdale', 'dan-driscoll']
   assert.equal(layout.marks.filter(mark => mark.surface_id === dialog.surface_id).length, 2, 'of the six documented-elsewhere names only matt-clifford and joe-lonsdale have default lanes, so two personal Dialog marks'); // 2026-10-23 five-lane merge: 1 -> 2 (joe-lonsdale now has a default lane). 2026-10-23 hop-first default lanes: 0 -> 1
-  assert.equal(layout.overview.ticks.filter(tick => tick.kind === 'row').length, 4755); // 2026-11-10 one-pass entry: 4430 -> 4755. 2026-11-10 lens-hunt promotion: 4411 -> 4430. 2026-10-23 final re-pin: 4451 -> 4411. 2026-10-23 five-lane merge: 3,118 -> 4,451
+  assert.equal(layout.overview.ticks.filter(tick => tick.kind === 'row').length, 4894); // 2026-11-10 follow-up: 4755 -> 4894. 2026-11-10 one-pass entry: 4430 -> 4755. 2026-11-10 lens-hunt promotion: 4411 -> 4430. 2026-10-23 final re-pin: 4451 -> 4411. 2026-10-23 five-lane merge: 3,118 -> 4,451
   assert.equal(layout.overview.ticks.filter(tick => tick.kind === 'hop').length, 63); // 2026-11-10 lens-hunt promotion: 59 -> 63. 2026-10-23 final re-pin: 64 -> 59. 2026-10-23 five-lane merge: 22 -> 64
   assert.equal(layout.overview.ticks.filter(tick => tick.kind === 'dense').length, 2); // 2026-10-23 five-lane merge: 1 -> 2
   assert.equal(layout.overview.from, '1982-05-01');
@@ -425,8 +425,8 @@ for (const plotWidth of [690, 880]) {
   assert.equal(original.counts.named_lanes, 15);
   const ORIGINAL_COLUMNS = { 690: 22, 880: 23 }; // 2026-11-10 lens-hunt promotion: 18 / 19 -> 22 / 23 (SAGE 17 on 2020-03-18, the UKSA panel on 2023-06-09, the joint summit appointment on 2023-08-10, the AI Growth Zones launch on 2025-04-30).  2026-10-23 five-lane merge: 16 at both widths -> 18 / 19 (London Tech Week 2026-06-08 and 2026-06-09; at 880 the rndf-2023 panel 2 column on 2023-12-02 is also drawn)
   assert.equal(original.counts.columns, ORIGINAL_COLUMNS[plotWidth], `${ORIGINAL_COLUMNS[plotWidth]} columns on the 15 pinned lanes at plot width ${plotWidth}`);
-  assert.equal(original.counts.candidate_rows, 1407); // 2026-11-10 one-pass entry: 1321 -> 1407. 2026-11-10 lens-hunt promotion: 1308 -> 1321. 2026-10-23 final re-pin: 1348 -> 1308. 2026-10-23 five-lane merge: 960 -> 1,348
-  assert.equal(original.counts.rows_in_view, 1092); // 2026-11-10 one-pass entry: 1016 -> 1092. 2026-11-10 lens-hunt promotion: 1003 -> 1016. 2026-10-23 final re-pin: 1038 -> 1003. 2026-10-23 five-lane merge: 739 -> 1,038
+  assert.equal(original.counts.candidate_rows, 1416); // 2026-11-10 follow-up: 1407 -> 1416. 2026-11-10 one-pass entry: 1321 -> 1407. 2026-11-10 lens-hunt promotion: 1308 -> 1321. 2026-10-23 final re-pin: 1348 -> 1308. 2026-10-23 five-lane merge: 960 -> 1,348
+  assert.equal(original.counts.rows_in_view, 1059); // 2026-11-10 follow-up: 1092 -> 1059. 2026-11-10 one-pass entry: 1016 -> 1092. 2026-11-10 lens-hunt promotion: 1003 -> 1016. 2026-10-23 final re-pin: 1038 -> 1003. 2026-10-23 five-lane merge: 739 -> 1,038
   checkAccounting(original);
   checkMarks(original, 4);
   checkColumns(original);
@@ -464,8 +464,8 @@ assert.equal(phone.counts.drawn, 88, 'SPEC (j): 77 marks + 2 blocks + 9 aggregat
 assert.equal(phone.counts.columns, 26); // 2026-11-10 lens-hunt promotion: 23 -> 26. 2026-10-23 final re-pin: 29 -> 23. 2026-10-23 five-lane merge: 13 -> 29 // 2026-10-23 hop-first default lanes: 0 -> 13
 assert.equal(phone.counts.pre_domain, 605); // 2026-11-10 one-pass entry: 580 -> 605. 2026-11-10 lens-hunt promotion: 575 -> 580. 2026-10-23 final re-pin: 589 -> 575. 2026-10-23 five-lane merge: 424 -> 589
 assert.equal(phone.counts.pre_domain_overlapping, 115); // 2026-10-23 five-lane merge: 99 -> 115
-assert.equal(phone.counts.rows_in_view, 802); // 2026-11-10 one-pass entry: 741 -> 802. 2026-11-10 lens-hunt promotion: 733 -> 741. 2026-10-23 final re-pin: 759 -> 733. 2026-10-23 five-lane merge: 536 -> 759
-assert.equal(phone.counts.candidate_rows, 1407); // 2026-11-10 one-pass entry: 1321 -> 1407. 2026-11-10 lens-hunt promotion: 1308 -> 1321. 2026-10-23 final re-pin: 1348 -> 1308. 2026-10-23 five-lane merge: 960 -> 1,348
+assert.equal(phone.counts.rows_in_view, 811); // 2026-11-10 follow-up: 802 -> 811. 2026-11-10 one-pass entry: 741 -> 802. 2026-11-10 lens-hunt promotion: 733 -> 741. 2026-10-23 final re-pin: 759 -> 733. 2026-10-23 five-lane merge: 536 -> 759
+assert.equal(phone.counts.candidate_rows, 1416); // 2026-11-10 follow-up: 1407 -> 1416. 2026-11-10 one-pass entry: 1321 -> 1407. 2026-11-10 lens-hunt promotion: 1308 -> 1321. 2026-10-23 final re-pin: 1348 -> 1308. 2026-10-23 five-lane merge: 960 -> 1,348
 checkAccounting(phone);
 assert.ok(phone.lanes.filter(lane => lane.kind !== 'block').every(lane => lane.height === 24), 'phone lanes never grow in the default view');
 assert.equal(phone.lanes.find(lane => lane.kind === 'block').height, 28);
@@ -500,14 +500,14 @@ for (let index = 1; index < driscollJune.length; index += 1) {
 // Re-pinned 2026-10-23 to the promoted ledger and the 18-lane default (owner decision).
 const organizationLayout = layoutTimeline(model, { by: 'organization', plotWidth: 690 });
 assert.equal(organizationLayout.counts.named_lanes, 18); // 2.1.0: 14
-assert.equal(organizationLayout.counts.strip_rows, 2926); // 2026-11-10 one-pass entry: 2704 -> 2926. 2026-11-10 lens-hunt promotion: 2698 -> 2704. 2026-10-23 five-lane merge: 1,962 -> 2,698 // 2.1.0: 13 // 2026-10-23 hop-first default lanes: 1885 -> 1962
+assert.equal(organizationLayout.counts.strip_rows, 3055); // 2026-11-10 follow-up: 2926 -> 3055. 2026-11-10 one-pass entry: 2704 -> 2926. 2026-11-10 lens-hunt promotion: 2698 -> 2704. 2026-10-23 five-lane merge: 1,962 -> 2,698 // 2.1.0: 13 // 2026-10-23 hop-first default lanes: 1885 -> 1962
 assert.equal(organizationLayout.counts.columns, 0);
 assert.equal(organizationLayout.counts.blocks, 0);
-assert.equal(organizationLayout.counts.marks + organizationLayout.counts.aggregated_rows + organizationLayout.counts.pre_domain, 3356); // 2026-11-10 one-pass entry: 3117 -> 3356. 2026-11-10 lens-hunt promotion: 3111 -> 3117. 2026-10-23 five-lane merge: 2,159 -> 3,111. 2.1.0: 86
-assert.equal(organizationLayout.counts.candidate_rows, 3356); // 2026-11-10 one-pass entry: 3117 -> 3356. 2026-11-10 lens-hunt promotion: 3111 -> 3117. 2026-10-23 five-lane merge: 2,159 -> 3,111
-assert.equal(organizationLayout.counts.rows_outside_grouping, 1399, 'actor rows are not part of an Organizations view'); // 2026-11-10 one-pass entry: 1313 -> 1399. 2026-11-10 lens-hunt promotion: 1300 -> 1313. 2026-10-23 final re-pin: 1340 -> 1300. 2026-10-23 five-lane merge: 959 -> 1,340. 2.1.0: 200
+assert.equal(organizationLayout.counts.marks + organizationLayout.counts.aggregated_rows + organizationLayout.counts.pre_domain, 3486); // 2026-11-10 follow-up: 3356 -> 3486. 2026-11-10 one-pass entry: 3117 -> 3356. 2026-11-10 lens-hunt promotion: 3111 -> 3117. 2026-10-23 five-lane merge: 2,159 -> 3,111. 2.1.0: 86
+assert.equal(organizationLayout.counts.candidate_rows, 3486); // 2026-11-10 follow-up: 3356 -> 3486. 2026-11-10 one-pass entry: 3117 -> 3356. 2026-11-10 lens-hunt promotion: 3111 -> 3117. 2026-10-23 five-lane merge: 2,159 -> 3,111
+assert.equal(organizationLayout.counts.rows_outside_grouping, 1408, 'actor rows are not part of an Organizations view'); // 2026-11-10 follow-up: 1399 -> 1408. 2026-11-10 one-pass entry: 1313 -> 1399. 2026-11-10 lens-hunt promotion: 1300 -> 1313. 2026-10-23 final re-pin: 1340 -> 1300. 2026-10-23 five-lane merge: 959 -> 1,340. 2.1.0: 200
 // Narrowed 2026-10-23: was the exact one-key list (Simon Case at the Cabinet Office); the rule is checked per key.
-assert.equal(organizationLayout.hidden.pre_domain_overlapping.length, 78); // 2026-10-23 five-lane merge: 71 -> 78
+assert.equal(organizationLayout.hidden.pre_domain_overlapping.length, 87); // 2026-11-10 follow-up: 78 -> 87. 2026-10-23 five-lane merge: 71 -> 78
 for (const key of organizationLayout.hidden.pre_domain_overlapping) {
   const row = model.rowsByKey.get(key);
   assert.ok(row.start_day < organizationLayout.domain.from_day && (row.end_day == null || row.end_day >= organizationLayout.domain.from_day));
@@ -535,8 +535,8 @@ checkAccounting(organizationLayout);
 const typeLayout = layoutTimeline(model, { by: 'type', plotWidth: 690, domainFrom: '2016-01-01', domainTo: '2026-09-11' });
 assert.equal(typeLayout.counts.named_lanes, 16); // 2026-10-23 five-lane merge: 14 -> 16
 assert.equal(typeLayout.counts.marks, 195); // 2026-11-10 one-pass entry: 208 -> 195. 2026-11-10 lens-hunt promotion: 212 -> 208. 2026-10-23 final re-pin: 214 -> 212. 2026-10-23 five-lane merge: 147 -> 214. 2.1.0: 54
-assert.equal(typeLayout.counts.total_rows, 1307, 'the surface-type view counts surfaces'); // 2026-11-10 one-pass entry: 1160 -> 1307. 2026-11-10 lens-hunt promotion: 1155 -> 1160. 2026-10-23 five-lane merge: 858 -> 1,155. 2.1.0: 54
-assert.equal(typeLayout.counts.rows_in_view, 895); // 2026-11-10 one-pass entry: 782 -> 895. 2026-11-10 lens-hunt promotion: 772 -> 782. 2026-10-23 five-lane merge: 516 -> 772
+assert.equal(typeLayout.counts.total_rows, 1308, 'the surface-type view counts surfaces'); // 2026-11-10 follow-up: 1307 -> 1308. 2026-11-10 one-pass entry: 1160 -> 1307. 2026-11-10 lens-hunt promotion: 1155 -> 1160. 2026-10-23 five-lane merge: 858 -> 1,155. 2.1.0: 54
+assert.equal(typeLayout.counts.rows_in_view, 896); // 2026-11-10 follow-up: 895 -> 896. 2026-11-10 one-pass entry: 782 -> 895. 2026-11-10 lens-hunt promotion: 772 -> 782. 2026-10-23 five-lane merge: 516 -> 772
 assert.equal(typeLayout.counts.marks + typeLayout.counts.aggregated_rows, typeLayout.counts.rows_in_view);
 checkAccounting(typeLayout);
 assert.equal(typeLayout.counts.columns, 0);
@@ -574,20 +574,20 @@ for (const mark of [...openMarks, ...layoutTimeline(model, { plotWidth: 690 }).m
     `open-ended ${mark.key} is clamped to the axis end`);
 }
 assert.ok(fullRange.counts.aggregates >= 1, 'at 0.18 px/day the strip clusters past six slots and collapses into +N');
-assert.equal(fullRange.counts.marks + fullRange.counts.aggregated_rows, 903, 'collapsed rows are still counted'); // 2026-11-10 one-pass entry: 827 -> 903. 2026-11-10 lens-hunt promotion: 814 -> 827. 2026-10-23 final re-pin: 845 -> 814. 2026-10-23 five-lane merge: 526 -> 845. 2.1.0: 52 + 38
-assert.equal(fullRange.counts.rows_in_view, 1043); // 2026-11-10 one-pass entry: 967 -> 1043. 2026-11-10 lens-hunt promotion: 954 -> 967. 2026-10-23 final re-pin: 985 -> 954. 2026-10-23 five-lane merge: 637 -> 985. 2.1.0: 201
+assert.equal(fullRange.counts.marks + fullRange.counts.aggregated_rows, 912, 'collapsed rows are still counted'); // 2026-11-10 follow-up: 903 -> 912. 2026-11-10 one-pass entry: 827 -> 903. 2026-11-10 lens-hunt promotion: 814 -> 827. 2026-10-23 final re-pin: 845 -> 814. 2026-10-23 five-lane merge: 526 -> 845. 2.1.0: 52 + 38
+assert.equal(fullRange.counts.rows_in_view, 1052); // 2026-11-10 follow-up: 1043 -> 1052. 2026-11-10 one-pass entry: 967 -> 1043. 2026-11-10 lens-hunt promotion: 954 -> 967. 2026-10-23 final re-pin: 985 -> 954. 2026-10-23 five-lane merge: 637 -> 985. 2.1.0: 201
 assert.equal(fullRange.counts.pre_domain_overlapping, 78); // 2.1.0: 0
 checkAccounting(fullRange);
 
 // Window (fix e): out-of-window marks are dimmed, never removed; status counts name the denominator.
 const windowed = pinnedOriginal({ windowFrom: '2025-01-01', windowTo: '2025-12-31' });
 assert.equal(windowed.window.active, true);
-assert.equal(windowed.counts.marks, 83, 'the window removes nothing'); // 2026-11-10 lens-hunt promotion: 77 -> 83. 2026-10-23 five-lane merge: 67 -> 77. 2.1.0: 79
+assert.equal(windowed.counts.marks, 82, 'the window removes nothing'); // 2026-11-10 follow-up: 83 -> 82. 2026-11-10 lens-hunt promotion: 77 -> 83. 2026-10-23 five-lane merge: 67 -> 77. 2.1.0: 79
 assert.equal(windowed.counts.marks, pinnedOriginal({}).counts.marks);
 assert.equal(windowed.marks.filter(mark => mark.in_window).length, 27); // 2026-10-23 five-lane merge: 23 -> 27
-assert.equal(windowed.marks.filter(mark => !mark.in_window).length, 56); // 2026-11-10 lens-hunt promotion: 50 -> 56. 2026-10-23 five-lane merge: 44 -> 50
-assert.equal(windowed.counts.in_window, 310); // 2026-11-10 one-pass entry: 297 -> 310. 2026-11-10 lens-hunt promotion: 296 -> 297. 2026-10-23 final re-pin: 303 -> 296. 2026-10-23 five-lane merge: 233 -> 303
-assert.equal(windowed.counts.rows_in_view, 1092); // 2026-11-10 one-pass entry: 1016 -> 1092. 2026-11-10 lens-hunt promotion: 1003 -> 1016. 2026-10-23 final re-pin: 1038 -> 1003. 2026-10-23 five-lane merge: 739 -> 1,038
+assert.equal(windowed.marks.filter(mark => !mark.in_window).length, 55); // 2026-11-10 follow-up: 56 -> 55. 2026-11-10 lens-hunt promotion: 50 -> 56. 2026-10-23 five-lane merge: 44 -> 50
+assert.equal(windowed.counts.in_window, 317); // 2026-11-10 follow-up: 310 -> 317. 2026-11-10 one-pass entry: 297 -> 310. 2026-11-10 lens-hunt promotion: 296 -> 297. 2026-10-23 final re-pin: 303 -> 296. 2026-10-23 five-lane merge: 233 -> 303
+assert.equal(windowed.counts.rows_in_view, 1059); // 2026-11-10 follow-up: 1092 -> 1059. 2026-11-10 one-pass entry: 1016 -> 1092. 2026-11-10 lens-hunt promotion: 1003 -> 1016. 2026-10-23 final re-pin: 1038 -> 1003. 2026-10-23 five-lane merge: 739 -> 1,038
 assert.equal(windowed.blocks[0].in_window, false);
 assert.equal(windowed.blocks[0].in_window_count, 0);
 checkAccounting(windowed);
@@ -599,23 +599,23 @@ assert.equal(layoutTimeline(model, { plotWidth: 690 }).window.active, false);
 const dialogMemberKeys = [...dialog.member_keys].sort();
 const hopOnly = pinnedOriginal({ hop: 'hop' });
 assert.ok(hopOnly.marks.every(mark => mark.hop_eligible));
-assert.equal(hopOnly.counts.columns, 38); // 2026-11-10 lens-hunt promotion: 34 -> 38. 2026-10-23 final re-pin: 35 -> 34. 2026-10-23 five-lane merge: 21 -> 35
+assert.equal(hopOnly.counts.columns, 37); // 2026-11-10 follow-up: 38 -> 37. 2026-11-10 lens-hunt promotion: 34 -> 38. 2026-10-23 final re-pin: 35 -> 34. 2026-10-23 five-lane merge: 21 -> 35
 assert.equal(hopOnly.counts.blocks, 0, 'the Dialog roster is context-only');
-assert.equal(hopOnly.counts.marks, 101); // 2026-11-10 lens-hunt promotion: 92 -> 101. 2026-10-23 final re-pin: 99 -> 92. 2026-10-23 five-lane merge: 69 -> 99
-assert.equal(hopOnly.counts.rows_in_view, 190); // 2026-11-10 lens-hunt promotion: 178 -> 190. 2026-10-23 final re-pin: 202 -> 178. 2026-10-23 five-lane merge: 78 -> 202
-assert.equal(hopOnly.counts.filtered, 1201); // 2026-11-10 one-pass entry: 1115 -> 1201. 2026-11-10 lens-hunt promotion: 1114 -> 1115. 2026-10-23 final re-pin: 1126 -> 1114. 2026-10-23 five-lane merge: 882 -> 1,126
-assert.equal(hopOnly.counts.pre_domain, 16); // 2026-10-23 final re-pin: 20 -> 16. 2026-10-23 five-lane merge: 0 -> 20 (hop-eligible rows before the 2016 domain start)
+assert.equal(hopOnly.counts.marks, 102); // 2026-11-10 follow-up: 101 -> 102. 2026-11-10 lens-hunt promotion: 92 -> 101. 2026-10-23 final re-pin: 99 -> 92. 2026-10-23 five-lane merge: 69 -> 99
+assert.equal(hopOnly.counts.rows_in_view, 187); // 2026-11-10 follow-up: 190 -> 187. 2026-11-10 lens-hunt promotion: 178 -> 190. 2026-10-23 final re-pin: 202 -> 178. 2026-10-23 five-lane merge: 78 -> 202
+assert.equal(hopOnly.counts.filtered, 1210); // 2026-11-10 follow-up: 1201 -> 1210. 2026-11-10 one-pass entry: 1115 -> 1201. 2026-11-10 lens-hunt promotion: 1114 -> 1115. 2026-10-23 final re-pin: 1126 -> 1114. 2026-10-23 five-lane merge: 882 -> 1,126
+assert.equal(hopOnly.counts.pre_domain, 19); // 2026-11-10 follow-up: 16 -> 19. 2026-10-23 final re-pin: 20 -> 16. 2026-10-23 five-lane merge: 0 -> 20 (hop-eligible rows before the 2016 domain start)
 assert.ok(dialogMemberKeys.every(key => hopOnly.hidden.filtered.includes(key)), 'every roster member the hop filter hides is listed');
 checkAccounting(hopOnly);
 const contextOnly = pinnedOriginal({ hop: 'context' });
 assert.ok(contextOnly.marks.every(mark => !mark.hop_eligible));
 assert.equal(contextOnly.counts.columns, 0);
 assert.equal(contextOnly.counts.blocks, 2); // 2026-10-23 five-lane merge: 1 -> 2
-assert.equal(contextOnly.counts.marks, 46); // 2026-11-10 lens-hunt promotion: 45 -> 46. 2026-10-23 five-lane merge: 37 -> 45
-assert.equal(contextOnly.counts.rows_in_view, 902); // 2026-11-10 one-pass entry: 826 -> 902. 2026-11-10 lens-hunt promotion: 825 -> 826. 2026-10-23 final re-pin: 836 -> 825. 2026-10-23 five-lane merge: 661 -> 836
+assert.equal(contextOnly.counts.marks, 45); // 2026-11-10 follow-up: 46 -> 45. 2026-11-10 lens-hunt promotion: 45 -> 46. 2026-10-23 five-lane merge: 37 -> 45
+assert.equal(contextOnly.counts.rows_in_view, 872); // 2026-11-10 follow-up: 902 -> 872. 2026-11-10 one-pass entry: 826 -> 902. 2026-11-10 lens-hunt promotion: 825 -> 826. 2026-10-23 final re-pin: 836 -> 825. 2026-10-23 five-lane merge: 661 -> 836
 assert.equal(contextOnly.counts.filtered, 206); // 2026-11-10 lens-hunt promotion: 194 -> 206. 2026-10-23 final re-pin: 222 -> 194. 2026-10-23 five-lane merge: 78 -> 222
 checkAccounting(contextOnly);
-assert.equal(hopOnly.counts.filtered + contextOnly.counts.filtered, 1407, 'hop and context filters partition the People view'); // 2026-11-10 one-pass entry: 1321 -> 1407. 2026-11-10 lens-hunt promotion: 1308 -> 1321. 2026-10-23 final re-pin: 1348 -> 1308. 2026-10-23 five-lane merge: 960 -> 1,348
+assert.equal(hopOnly.counts.filtered + contextOnly.counts.filtered, 1416, 'hop and context filters partition the People view'); // 2026-11-10 follow-up: 1407 -> 1416. 2026-11-10 one-pass entry: 1321 -> 1407. 2026-11-10 lens-hunt promotion: 1308 -> 1321. 2026-10-23 final re-pin: 1348 -> 1308. 2026-10-23 five-lane merge: 960 -> 1,348
 const officialOnly = pinnedOriginal({ evidenceFloor: 'official' });
 assert.ok(officialOnly.marks.every(mark => mark.evidence_class === 'official'));
 // Narrowed 2026-10-23 five-lane merge. Old: officialOnly.counts.columns < pinnedOriginal({}).counts.columns. With
@@ -627,10 +627,10 @@ const drawnBases = layout => layout.columns.reduce((sum, column) => sum + column
 assert.ok(hopOnly.columns.some(column => column.pairs.some(pair => pair.evidence_class !== 'official')) && drawnBases(officialOnly) < drawnBases(hopOnly), 'primary_public bases drop below the official floor');
 assert.equal(officialOnly.counts.columns, 25); // 2026-11-10 lens-hunt promotion: 23 -> 25. 2026-10-23 final re-pin: 22 -> 23. 2026-10-23 five-lane merge: 14 -> 22
 assert.equal(officialOnly.counts.blocks, 0, 'no Dialog row is official (112 primary_public, 1 reported), so the block is not drawn');
-assert.equal(officialOnly.counts.marks, 162); // 2026-11-10 one-pass entry: 148 -> 162. 2026-11-10 lens-hunt promotion: 143 -> 148. 2026-10-23 final re-pin: 162 -> 143. 2026-10-23 five-lane merge: 69 -> 162
-assert.equal(officialOnly.counts.rows_in_view, 261); // 2026-11-10 one-pass entry: 187 -> 261. 2026-11-10 lens-hunt promotion: 174 -> 187. 2026-10-23 final re-pin: 207 -> 174. 2026-10-23 five-lane merge: 69 -> 207
+assert.equal(officialOnly.counts.marks, 163); // 2026-11-10 follow-up: 162 -> 163. 2026-11-10 one-pass entry: 148 -> 162. 2026-11-10 lens-hunt promotion: 143 -> 148. 2026-10-23 final re-pin: 162 -> 143. 2026-10-23 five-lane merge: 69 -> 162
+assert.equal(officialOnly.counts.rows_in_view, 266); // 2026-11-10 follow-up: 261 -> 266. 2026-11-10 one-pass entry: 187 -> 261. 2026-11-10 lens-hunt promotion: 174 -> 187. 2026-10-23 final re-pin: 207 -> 174. 2026-10-23 five-lane merge: 69 -> 207
 assert.equal(officialOnly.counts.filtered, 1120); // 2026-11-10 one-pass entry: 1118 -> 1120. 2026-10-23 final re-pin: 1121 -> 1118. 2026-10-23 five-lane merge: 891 -> 1,121
-assert.equal(officialOnly.counts.pre_domain, 26); // 2026-11-10 one-pass entry: 16 -> 26. 2026-10-23 final re-pin: 20 -> 16. 2026-10-23 five-lane merge: 0 -> 20
+assert.equal(officialOnly.counts.pre_domain, 30); // 2026-11-10 follow-up: 26 -> 30. 2026-11-10 one-pass entry: 16 -> 26. 2026-10-23 final re-pin: 20 -> 16. 2026-10-23 five-lane merge: 0 -> 20
 assert.ok(dialogMemberKeys.every(key => officialOnly.hidden.filtered.includes(key)), 'every roster member below the floor is listed');
 assert.ok(!officialOnly.marks.some(mark => mark.surface_id === dialog.surface_id));
 checkAccounting(officialOnly);
@@ -645,7 +645,7 @@ assert.equal(primaryDialog.filtered_count, 1);
 assert.deepEqual(primaryDialog.filtered_member_keys, [`${dialog.surface_id}::actor::alexus-grynkewich`]);
 assert.ok(primaryPublic.hidden.filtered.includes(`${dialog.surface_id}::actor::alexus-grynkewich`));
 assert.equal(primaryPublic.counts.filtered, 784); // 2026-10-23 final re-pin: 787 -> 784. 2026-10-23 five-lane merge: 731 -> 787
-assert.equal(primaryPublic.counts.rows_in_view, 597); // 2026-11-10 one-pass entry: 521 -> 597. 2026-11-10 lens-hunt promotion: 508 -> 521. 2026-10-23 final re-pin: 541 -> 508. 2026-10-23 five-lane merge: 229 -> 541
+assert.equal(primaryPublic.counts.rows_in_view, 600); // 2026-11-10 follow-up: 597 -> 600. 2026-11-10 one-pass entry: 521 -> 597. 2026-11-10 lens-hunt promotion: 508 -> 521. 2026-10-23 final re-pin: 541 -> 508. 2026-10-23 five-lane merge: 229 -> 541
 checkAccounting(primaryPublic);
 // A year chip puts the roster day outside the domain: its rows are listed as post-domain, not lost.
 const year2024 = pinnedOriginal({ domainFrom: '2024-01-01', domainTo: '2024-12-31' });
@@ -653,7 +653,7 @@ assert.equal(year2024.counts.blocks, 0);
 assert.equal(year2024.counts.marks, 78); // 2026-11-10 one-pass entry: 70 -> 78. 2026-10-23 final re-pin: 73 -> 70. 2026-10-23 five-lane merge: 54 -> 73
 assert.equal(year2024.counts.columns, 7); // 2026-10-23 five-lane merge: 3 -> 7
 assert.equal(year2024.counts.pre_domain, 840); // 2026-11-10 one-pass entry: 806 -> 840. 2026-11-10 lens-hunt promotion: 794 -> 806. 2026-10-23 final re-pin: 811 -> 794. 2026-10-23 five-lane merge: 625 -> 811
-assert.equal(year2024.counts.post_domain, 432); // 2026-11-10 one-pass entry: 394 -> 432. 2026-11-10 lens-hunt promotion: 393 -> 394. 2026-10-23 final re-pin: 409 -> 393. 2026-10-23 five-lane merge: 281 -> 409
+assert.equal(year2024.counts.post_domain, 441); // 2026-11-10 follow-up: 432 -> 441. 2026-11-10 one-pass entry: 394 -> 432. 2026-11-10 lens-hunt promotion: 393 -> 394. 2026-10-23 final re-pin: 409 -> 393. 2026-10-23 five-lane merge: 281 -> 409
 assert.ok(dialogMemberKeys.every(key => year2024.hidden.post_domain.includes(key)));
 assert.equal(year2024.hidden.pre_domain_overlapping.length, 140);
 assert.deepEqual(year2024.hidden.pre_domain_overlapping.filter(key => ORIGINAL_DEFAULT_LANES.some(id => key.endsWith(`::actor::${id}`))), [
@@ -664,7 +664,7 @@ assert.deepEqual(year2024.hidden.pre_domain_overlapping.filter(key => ORIGINAL_D
 ], 'spans of the named lanes active in 2024 that began earlier are flagged for the status text');
 checkAccounting(year2024);
 const pinnedLayout = layoutTimeline(model, { plotWidth: 690, laneIds: ['ben-warner'], hop: 'hop', evidenceFloor: 'official' });
-assert.equal(pinnedLayout.counts.candidate_rows, 1407, 'pinned lanes: the strip carries every other actor row, the blocks their rosters'); // 2026-11-10 one-pass entry: 1321 -> 1407. 2026-11-10 lens-hunt promotion: 1308 -> 1321. 2026-10-23 final re-pin: 1348 -> 1308. 2026-10-23 five-lane merge: 960 -> 1,348
+assert.equal(pinnedLayout.counts.candidate_rows, 1416, 'pinned lanes: the strip carries every other actor row, the blocks their rosters'); // 2026-11-10 follow-up: 1407 -> 1416. 2026-11-10 one-pass entry: 1321 -> 1407. 2026-11-10 lens-hunt promotion: 1308 -> 1321. 2026-10-23 final re-pin: 1348 -> 1308. 2026-10-23 five-lane merge: 960 -> 1,348
 checkAccounting(pinnedLayout);
 
 // --- entity summaries and the single-lane layout the entity pages reuse
@@ -809,7 +809,7 @@ assert.doesNotMatch(bundle, /^import\s/m, 'no import statement survives into the
 assert.doesNotThrow(() => new Function(bundle));
 const context = vm.createContext({});
 vm.runInContext(`${bundle}\nglobalThis.__result = (() => { const m = buildTimelineModel(SURFACE_GRAPH, HOP_GRAPH); const l = layoutTimeline(m, { plotWidth: 690 }); return { rows: m.counts.rows, drawn: l.counts.drawn, columns: l.counts.columns }; })();`.replace('SURFACE_GRAPH', JSON.stringify(surfaceGraph)).replace('HOP_GRAPH', JSON.stringify(hopGraph)), context);
-assert.deepEqual(JSON.parse(JSON.stringify(context.__result)), { rows: 4755, drawn: 132, columns: 31 }, 'the flattened module works from globalThis like the live page'); // 2026-11-10 one-pass entry: { rows: 4430, drawn: 127, columns: 31 } -> { rows: 4755, drawn: 132, columns: 31 }. 2026-11-10 lens-hunt promotion: { rows: 4411, drawn: 123, columns: 28 } -> { rows: 4430, drawn: 127, columns: 31 }.  2026-10-23 final re-pin: { rows: 4451, drawn: 149, columns: 35 } -> { rows: 4411, drawn: 123, columns: 28 }.  2026-10-23 five-lane merge: { rows: 3118, drawn: 47, columns: 15 } -> { rows: 4451, drawn: 149, columns: 35 } // 2026-10-23: 18-lane default // 2026-10-23 hop-first default lanes: drawn 160 -> 47, columns 0 -> 15
+assert.deepEqual(JSON.parse(JSON.stringify(context.__result)), { rows: 4894, drawn: 125, columns: 31 }, 'the flattened module works from globalThis like the live page'); // 2026-11-10 follow-up: { rows: 4755, drawn: 132, columns: 31 } -> { rows: 4894, drawn: 125, columns: 31 } (the automatic domain opens on 2017-01-01). 2026-11-10 one-pass entry: { rows: 4430, drawn: 127, columns: 31 } -> { rows: 4755, drawn: 132, columns: 31 }. 2026-11-10 lens-hunt promotion: { rows: 4411, drawn: 123, columns: 28 } -> { rows: 4430, drawn: 127, columns: 31 }.  2026-10-23 final re-pin: { rows: 4451, drawn: 149, columns: 35 } -> { rows: 4411, drawn: 123, columns: 28 }.  2026-10-23 five-lane merge: { rows: 3118, drawn: 47, columns: 15 } -> { rows: 4451, drawn: 149, columns: 35 } // 2026-10-23: 18-lane default // 2026-10-23 hop-first default lanes: drawn 160 -> 47, columns 0 -> 15
 
 // --- registration
 const allowlist = JSON.parse(readFileSync('data/project/publication-allowlist.json', 'utf8'));

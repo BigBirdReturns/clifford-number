@@ -321,9 +321,9 @@ const realModel = buildResearchNetworkModel(realGraph);
 const realLedger = buildFieldLedgerIndex(realSurfaceGraph, realModel);
 const realEvents = buildEcologyEventModel(realSurfaceGraph, realModel);
 const realField = buildSocialFieldModel(realModel, { ledger: realLedger });
-assert.equal(realLedger.counts.rows, 4755); // 2026-11-10 one-pass entry: 4430 -> 4755. 2026-11-10 lens-hunt promotion: 4411 -> 4430. 2026-10-23 final re-pin: 4451 -> 4411. 2026-10-23 five-lane merge: 3,118 -> 4,451. 2026-10-23 promotion: 286 -> 3,118 rows
-assert.equal(realLedger.counts.actor_rows, 1399); // 2026-11-10 one-pass entry: 1313 -> 1399. 2026-11-10 lens-hunt promotion: 1300 -> 1313. 2026-10-23 final re-pin: 1340 -> 1300. 2026-10-23 five-lane merge: 959 -> 1,340. 2026-10-23 promotion: 200 -> 959 (joshua-baer listing routed to the actor)
-assert.equal(realLedger.counts.organization_rows, 3356); // 2026-11-10 one-pass entry: 3117 -> 3356. 2026-11-10 lens-hunt promotion: 3111 -> 3117. 2026-10-23 five-lane merge: 2,159 -> 3,111. 2026-10-23 promotion: 86 -> 2,159
+assert.equal(realLedger.counts.rows, 4894); // 2026-11-10 follow-up: 4755 -> 4894. 2026-11-10 one-pass entry: 4430 -> 4755. 2026-11-10 lens-hunt promotion: 4411 -> 4430. 2026-10-23 final re-pin: 4451 -> 4411. 2026-10-23 five-lane merge: 3,118 -> 4,451. 2026-10-23 promotion: 286 -> 3,118 rows
+assert.equal(realLedger.counts.actor_rows, 1408); // 2026-11-10 follow-up: 1399 -> 1408. 2026-11-10 one-pass entry: 1313 -> 1399. 2026-11-10 lens-hunt promotion: 1300 -> 1313. 2026-10-23 final re-pin: 1340 -> 1300. 2026-10-23 five-lane merge: 959 -> 1,340. 2026-10-23 promotion: 200 -> 959 (joshua-baer listing routed to the actor)
+assert.equal(realLedger.counts.organization_rows, 3486); // 2026-11-10 follow-up: 3356 -> 3486. 2026-11-10 one-pass entry: 3117 -> 3356. 2026-11-10 lens-hunt promotion: 3111 -> 3117. 2026-10-23 five-lane merge: 2,159 -> 3,111. 2026-10-23 promotion: 86 -> 2,159
 assert.equal(realLedger.counts.privacy_guard_rows, 0); // 2026-10-23 final re-pin: 22 -> 0 (privacy guard scope fix, owner decision: the eight surfaces held back only because a label or a role type contained "email", "address", "medical" or "emergency" are drawn; contact-data patterns find nothing in this release). 2026-10-23 five-lane merge: 6 -> 22 (six more surfaces trip guard tokens: two Contracts Finder Faculty awards, two SEC Form D filings for Yourself Online, the Army Applications Laboratory address row and the NHS commissioning-support award). 2026-10-23 promotion: 4 -> 6 (the Steven Hertzberg / Australian Medical Network role surface trips the "medical" guard token)
 assert.equal(realLedger.counts.dense_contained_rows, 142); // 2026-10-23 five-lane merge: 113 -> 142 (rndf-2023-programme-roster is now dense)
 assert.equal(realLedger.counts.unresolved_rows, 0);
@@ -344,7 +344,7 @@ for (let year = 2016; year <= 2026; year += 1) {
     if (rowInWindow(row, yearWindow) !== eventInWindow(event, yearWindow)) rowEventDisagreements += 1;
   }
 }
-assert.equal(rowEventPairs, 31933); // 2026-11-10 one-pass entry: 29370 -> 31933. 2026-11-10 lens-hunt promotion: 29161 -> 29370. 2026-10-23 final re-pin: 29359 -> 29161. 2026-10-23 five-lane merge: 19,184 -> 29,359. 2026-10-23 promotion: 1,716 -> 19,184 row-year pairs
+assert.equal(rowEventPairs, 32032); // 2026-11-10 follow-up: 31933 -> 32032. 2026-11-10 one-pass entry: 29370 -> 31933. 2026-11-10 lens-hunt promotion: 29161 -> 29370. 2026-10-23 final re-pin: 29359 -> 29161. 2026-10-23 five-lane merge: 19,184 -> 29,359. 2026-10-23 promotion: 1,716 -> 19,184 row-year pairs
 assert.equal(rowEventDisagreements, 0, 'the pulse is drawn only, and always, inside its row\'s window');
 assert.deepEqual(realLedger.rows.filter(row => row.off_field_reason === 'privacy_guard').map(row => row.node_id).sort(), []); // 2026-10-23 final re-pin: was the 22 rows of the eight word-matched surfaces (ben-warner-cummings-shafi-contain-delay-email-2020-03-08, steven-hertzberg-australian-medical-network-founder-linkedin-1995-1997, sec-form-d-0001797630-19-000001, sec-form-d-0001797630-21-000001, army-applications-laboratory-address-capital-factory-2026-10-23, cf-award-cabinet-office-faculty-2019-10-14-8e4b2d57, cf-award-nhs-supply-chain-faculty-2020-12-01-d1e0d017, cf-award-nhs-south-central-and-west-commissioning-support-unit-faculty-2023-03-01-2e2da92d). Earlier: 2026-10-23 five-lane merge: was the six nodes of the Warner email and Hertzberg rows; the guard now also holds back cf-award-cabinet-office-faculty-2019-10-14, cf-award-nhs-supply-chain-faculty-2020-12-01, cf-award-nhs-south-central-and-west-commissioning-support-unit-faculty-2023-03-01, sec-form-d-0001797630-19-000001, sec-form-d-0001797630-21-000001 and army-applications-laboratory-address-capital-factory-2026-10-23. 2026-10-23 promotion: + Hertzberg / Australian Medical Network ("medical" token)
 // Privacy guard scope, pinned 2026-10-23 (owner decision; src/evidence.js, tools/build-graph.mjs).
@@ -378,10 +378,10 @@ assert.throws(() => assertPublicOnly({ label: 'x', phone: '0' }), /Private or se
 assert.doesNotThrow(() => assertPublicOnly({ label: 'Ben Warner email to Imran Shafi' }));
 assert.equal(realLedger.range.first_date, '1982-05-01'); // 2026-10-23 promotion: 2016-01-01 -> 1982-05-01 (earliest LinkedIn role)
 assert.equal(realLedger.range.last_date, '2026-10-23'); // 2026-10-23 promotion: 2026-08-12 -> 2026-10-23
-assert.equal(realEvents.counts.events, 2943); // 2026-11-10 one-pass entry: 2707 -> 2943. 2026-11-10 lens-hunt promotion: 2688 -> 2707. 2026-10-23 final re-pin: 2706 -> 2688. 2026-10-23 five-lane merge: 1,759 -> 2,706. 2026-10-23 promotion: 163 -> 1,759
-assert.equal(realField.metrics.node_count, 3650); // 2026-11-10 one-pass entry: 3355 -> 3650. 2026-11-10 lens-hunt promotion: 3341 -> 3355. 2026-10-23 final re-pin: 3333 -> 3341. 2026-10-23 five-lane merge: 2,752 -> 3,333. 2026-10-23 promotion: 346 -> 2,752
-assert.equal(realField.metrics.link_count, 4831); // 2026-11-10 one-pass entry: 4506 -> 4831. 2026-11-10 lens-hunt promotion: 4487 -> 4506. 2026-10-23 final re-pin: 4467 -> 4487. 2026-10-23 five-lane merge: 3,216 -> 4,467. 2026-10-23 promotion: 392 -> 3,216
-assert.equal(realField.links.filter(link => link.rows.length).length, 4608, 'every canonical overlay arc carries its participation row'); // 2026-11-10 one-pass entry: 4283 -> 4608. 2026-11-10 lens-hunt promotion: 4264 -> 4283. 2026-10-23 final re-pin: 4244 -> 4264. 2026-10-23 five-lane merge: 2,993 -> 4,244. 2026-10-23 promotion: 169 -> 2,993
+assert.equal(realEvents.counts.events, 2952); // 2026-11-10 follow-up: 2943 -> 2952. 2026-11-10 one-pass entry: 2707 -> 2943. 2026-11-10 lens-hunt promotion: 2688 -> 2707. 2026-10-23 final re-pin: 2706 -> 2688. 2026-10-23 five-lane merge: 1,759 -> 2,706. 2026-10-23 promotion: 163 -> 1,759
+assert.equal(realField.metrics.node_count, 3763); // 2026-11-10 follow-up: 3650 -> 3763. 2026-11-10 one-pass entry: 3355 -> 3650. 2026-11-10 lens-hunt promotion: 3341 -> 3355. 2026-10-23 final re-pin: 3333 -> 3341. 2026-10-23 five-lane merge: 2,752 -> 3,333. 2026-10-23 promotion: 346 -> 2,752
+assert.equal(realField.metrics.link_count, 4970); // 2026-11-10 follow-up: 4831 -> 4970. 2026-11-10 one-pass entry: 4506 -> 4831. 2026-11-10 lens-hunt promotion: 4487 -> 4506. 2026-10-23 final re-pin: 4467 -> 4487. 2026-10-23 five-lane merge: 3,216 -> 4,467. 2026-10-23 promotion: 392 -> 3,216
+assert.equal(realField.links.filter(link => link.rows.length).length, 4747, 'every canonical overlay arc carries its participation row'); // 2026-11-10 follow-up: 4608 -> 4747. 2026-11-10 one-pass entry: 4283 -> 4608. 2026-11-10 lens-hunt promotion: 4264 -> 4283. 2026-10-23 final re-pin: 4244 -> 4264. 2026-10-23 five-lane merge: 2,993 -> 4,244. 2026-10-23 promotion: 169 -> 2,993
 // Size, halo and tooltip count come from the ledger and agree with the inspector
 // (nodeLedgerSummary) for every node on the field.
 const realNode = id => realField.nodeById.get(id);
@@ -406,10 +406,10 @@ for (const node of realField.nodes) {
   assert.equal(nodeCountLabel(node).includes('no ledger rows'), summary.rows.length === 0, `${node.id}: "no ledger rows" is said only when the ledger has none`);
 }
 assert.equal(tooltipInspectorDisagreements, 0, 'the tooltip count and the inspector count agree on every node');
-assert.equal(nodesWithoutLedgerRows, 90, '90 of 3,650 field nodes carry no ledger row (research context only)'); // 2026-11-10 one-pass entry: 92 -> 90 (European Commission and Google DeepMind, research-graph nodes until now, carry ledger rows). 2026-10-23 five-lane merge: 96 of 2,752 -> 92 of 3,333. 2026-10-23 promotion: 103 of 346 -> 96 of 2,752
+assert.equal(nodesWithoutLedgerRows, 89, '89 of 3,763 field nodes carry no ledger row (research context only)'); // 2026-11-10 follow-up: 90 -> 89 (Wayve, a research-graph node until now, is on the techUK roundtable addendum). 2026-11-10 one-pass entry: 92 -> 90 (European Commission and Google DeepMind, research-graph nodes until now, carry ledger rows). 2026-10-23 five-lane merge: 96 of 2,752 -> 92 of 3,333. 2026-10-23 promotion: 103 of 346 -> 96 of 2,752
 const window2025 = normalizeEcologyWindow(realLedger.range, { fromDay: ecologyDay('2025-01-01'), toDay: ecologyDay('2025-12-31') });
 const realFactors = fieldWindowFactors(realLedger, window2025);
-assert.equal(realFactors.rows_in_window, 791); // 2026-11-10 one-pass entry: 764 -> 791. 2026-11-10 lens-hunt promotion: 761 -> 764. 2026-10-23 final re-pin: 768 -> 761. 2026-10-23 five-lane merge: 539 -> 768. 2026-10-23 promotion: 63 -> 539
+assert.equal(realFactors.rows_in_window, 800); // 2026-11-10 follow-up: 791 -> 800. 2026-11-10 one-pass entry: 764 -> 791. 2026-11-10 lens-hunt promotion: 761 -> 764. 2026-10-23 final re-pin: 768 -> 761. 2026-10-23 five-lane merge: 539 -> 768. 2026-10-23 promotion: 63 -> 539
 const benWarner = nodeLedgerSummary(realLedger, 'ben-warner', window2025);
 assert.equal(benWarner.rows.length, 17); // 2026-11-10 lens-hunt promotion: 12 -> 17. 2026-10-23 five-lane merge: 10 -> 12
 assert.equal(benWarner.rows_in_window, 5); // 2026-10-23 five-lane merge: 4 -> 5 (the 2025-07-07 synthetic-voters row)
@@ -419,7 +419,7 @@ assert.equal(dayIso(benWarner.first_day), '2018-01-24');
 assert.equal(dayIso(benWarner.last_day), '2026-08-11');
 assert.equal(benWarner.receipt_ids.length, 24); // 2026-11-10 lens-hunt promotion: 17 -> 24. 2026-10-23 five-lane merge: 14 -> 17
 assert.equal(activeEcologyEvents(realEvents, null).length, 0);
-assert.equal(activeEcologyEvents(realEvents, window2025).length, 706); // 2026-11-10 one-pass entry: 679 -> 706. 2026-11-10 lens-hunt promotion: 676 -> 679. 2026-10-23 final re-pin: 683 -> 676. 2026-10-23 five-lane merge: 494 -> 683. 2026-10-23 promotion: 60 -> 494
+assert.equal(activeEcologyEvents(realEvents, window2025).length, 715); // 2026-11-10 follow-up: 706 -> 715. 2026-11-10 one-pass entry: 679 -> 706. 2026-11-10 lens-hunt promotion: 676 -> 679. 2026-10-23 final re-pin: 683 -> 676. 2026-10-23 five-lane merge: 494 -> 683. 2026-10-23 promotion: 60 -> 494
 console.log('field ledger real-data pins: PASS');
 
 // Heat on the real field at the end of record: every surface's heat and every
@@ -591,10 +591,10 @@ runtimeState.ecology.toDay = ecologyDay('2025-12-31');
 const windowedMarkup = context.fieldRowsMarkup('ben-warner');
 assert.match(windowedMarkup, /5 of 17 rows in window/); // 2026-11-10 lens-hunt promotion: 5 of 12 -> 5 of 17. 2026-10-23 five-lane merge: 4 of 10 -> 5 of 12
 assert.equal((windowedMarkup.match(/is-outside/g) ?? []).length, 12, 'out-of-window rows dim and stay listed'); // 2026-11-10 lens-hunt promotion: 7 -> 12. 2026-10-23 five-lane merge: 6 -> 7
-assert.match(context.ecologyClockLabel(), /^2025-01-01 → 2025-12-31 · 791 of 4755 rows in window$/); // 2026-11-10 one-pass entry: 764 of 4,430 -> 791 of 4,755. 2026-11-10 lens-hunt promotion: 761 of 4,411 -> 764 of 4,430. 2026-10-23 final re-pin: 768 of 4,451 -> 761 of 4,411. 2026-10-23 five-lane merge: 539 of 3,118 -> 768 of 4,451. 2026-10-23 promotion: 63 of 286 -> 539 of 3,118
+assert.match(context.ecologyClockLabel(), /^2025-01-01 → 2025-12-31 · 800 of 4894 rows in window$/); // 2026-11-10 follow-up: 791 of 4,755 -> 800 of 4,894. 2026-11-10 one-pass entry: 764 of 4,430 -> 791 of 4,755. 2026-11-10 lens-hunt promotion: 761 of 4,411 -> 764 of 4,430. 2026-10-23 final re-pin: 768 of 4,451 -> 761 of 4,411. 2026-10-23 five-lane merge: 539 of 3,118 -> 768 of 4,451. 2026-10-23 promotion: 63 of 286 -> 539 of 3,118
 runtimeState.ecology.fromDay = null;
 runtimeState.ecology.toDay = null;
-assert.match(context.ecologyClockLabel(), /· all time · 4755 rows$/); // 2026-11-10 one-pass entry: 4,430 -> 4,755. 2026-11-10 lens-hunt promotion: 4,411 -> 4,430. 2026-10-23 final re-pin: 4,451 -> 4,411. 2026-10-23 five-lane merge: 3,118 -> 4,451. 2026-10-23 promotion: 286 -> 3,118
+assert.match(context.ecologyClockLabel(), /· all time · 4894 rows$/); // 2026-11-10 follow-up: 4,755 -> 4,894. 2026-11-10 one-pass entry: 4,430 -> 4,755. 2026-11-10 lens-hunt promotion: 4,411 -> 4,430. 2026-10-23 final re-pin: 4,451 -> 4,411. 2026-10-23 five-lane merge: 3,118 -> 4,451. 2026-10-23 promotion: 286 -> 3,118
 
 // A node with more than APERTURE_FIELD_ROW_LIMIT rows: every row is rendered
 // (the later ones inside a details element), nothing is "not shown here", and
