@@ -24,7 +24,8 @@
 // so no extract is kept. Retrieval days are the operator's local calendar day.
 //
 // Promote mode is offline and deterministic:
-//   - one surface per return, as drafted, dated by the drafted date and date_end;
+//   - one surface per return, as drafted, dated by the drafted date and date_end; its id is the drafted
+//     id with any run of hyphens collapsed, the form tools/build-graph.mjs gives surface node ids;
 //   - one participation row per participant entry, dated by that entry's own date, with the drafted
 //     role and participation type, evidence class official, citing the return's receipt;
 //   - an attendee or host row is admitted only when the archived CSV shows its `shown` words (the
@@ -265,10 +266,11 @@ const gaps = [];
 const TYPES = ['ministerial_meeting_attendee', 'ministerial_meeting_host', 'register_publisher'];
 const byType = () => Object.fromEntries(TYPES.map(t => [t, 0]));
 const counts = {
-  pages_read: pages.length, surfaces_read: 0, surfaces_entered: 0, surfaces_refused: 0,
+  pages_read: pages.length, surfaces_read: 0, surfaces_entered: 0, surfaces_refused: 0, surface_ids_normalised: 0,
   participants_read: 0, participants_admitted: 0, participants_refused: 0,
   read_by_type: byType(), admitted_by_type: byType(), refused_by_type: byType(),
 };
+const surfaceIdOf = s => String(s.surface_id).replace(/-{2,}/g, '-');
 const gap = (table, rowKey, reason, detail = {}) => gaps.push({ lane: LANE, table, row_key: rowKey, reason, ...detail });
 const surfaces = [];
 const participation = [];
@@ -278,25 +280,29 @@ for (const src of sources) {
   const { page } = src;
   if (page.surfaces.length !== 1) throw new Error(`${src.id}: one surface per return, got ${page.surfaces.length}`);
   const s = page.surfaces[0];
+  // The drafted id, with any run of hyphens collapsed as tools/build-graph.mjs slugs surface node ids, so the
+  // Field finds the surface node (one drafted id ends "july--679b77de").
+  const sid = surfaceIdOf(s);
+  if (sid !== s.surface_id) counts.surface_ids_normalised += 1;
   counts.surfaces_read += 1;
   counts.participants_read += s.participants.length;
   for (const p of s.participants) {
-    if (!TYPES.includes(p.participation_type)) throw new Error(`${s.surface_id}: unknown participation type ${p.participation_type}`);
+    if (!TYPES.includes(p.participation_type)) throw new Error(`${sid}: unknown participation type ${p.participation_type}`);
     counts.read_by_type[p.participation_type] += 1;
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(p.date)) || p.date < s.date || p.date > (s.date_end ?? s.date)) throw new Error(`${s.surface_id}: ${p.ledger_id} dated ${p.date} outside ${s.date}..${s.date_end}`);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(p.date)) || p.date < s.date || p.date > (s.date_end ?? s.date)) throw new Error(`${sid}: ${p.ledger_id} dated ${p.date} outside ${s.date}..${s.date_end}`);
     if (p.kind === 'actor' ? !canonActorIds.has(p.ledger_id) : p.kind === 'organization' ? !canonOrgIds.has(p.ledger_id) : true) {
-      throw new Error(`${s.surface_id}: ${p.kind} ${p.ledger_id} is not in the canonical registry (this lane mints nothing)`);
+      throw new Error(`${sid}: ${p.kind} ${p.ledger_id} is not in the canonical registry (this lane mints nothing)`);
     }
   }
-  const wouldBe = { surface: { surface_id: s.surface_id, surface_label: s.label, status: s.status, time_start: s.date, time_end: s.date_end }, participation: s.participants.map(p => ({ kind: p.kind, ledger_id: p.ledger_id, label: p.label, role: p.role, participation_type: p.participation_type, shown: p.shown, date: p.date })) };
+  const wouldBe = { surface: { surface_id: sid, surface_label: s.label, status: s.status, time_start: s.date, time_end: s.date_end }, participation: s.participants.map(p => ({ kind: p.kind, ledger_id: p.ledger_id, label: p.label, role: p.role, participation_type: p.participation_type, shown: p.shown, date: p.date })) };
   const refuseAll = (reason, detail) => {
     counts.surfaces_refused += 1;
     counts.participants_refused += s.participants.length;
     for (const p of s.participants) counts.refused_by_type[p.participation_type] += 1;
-    gap('surfaces', s.surface_id, reason, { ...detail, candidate: wouldBe });
+    gap('surfaces', sid, reason, { ...detail, candidate: wouldBe });
   };
   if (!surfaceTypes.has(s.surface_type)) throw new Error(`unknown surface_type ${s.surface_type}`);
-  if (ledgerSurfaceById.has(s.surface_id)) { refuseAll('surface_id_already_in_ledger', {}); continue; }
+  if (ledgerSurfaceById.has(sid)) { refuseAll('surface_id_already_in_ledger', {}); continue; }
   const st = receiptState.get(src.id);
   if (st.problems.length) {
     refuseAll(st.problems.some(x => x.startsWith('archive_attempt_failed') || x === 'not_attempted') ? 'receipt_archive_unresolved' : 'receipt_not_admissible',
@@ -308,7 +314,7 @@ for (const src of sources) {
   const seen = new Set();
   const publisherEntries = [];
   for (const p of s.participants) {
-    const rowKey = `${s.surface_id}:${p.ledger_id}:${p.participation_type}:${p.date}`;
+    const rowKey = `${sid}:${p.ledger_id}:${p.participation_type}:${p.date}`;
     if (p.participation_type === 'register_publisher') { publisherEntries.push({ p, rowKey }); continue; }
     if (!showsWords(st.text, p.shown)) {
       refused.push(p);
@@ -323,7 +329,7 @@ for (const src of sources) {
     }
     seen.add(key);
     rows.push({
-      surface_id: s.surface_id,
+      surface_id: sid,
       participant_type: p.kind,
       ...(p.kind === 'actor' ? { actor_id: p.ledger_id } : { organization_id: p.ledger_id }),
       role: p.role,
@@ -339,7 +345,7 @@ for (const src of sources) {
     counts.surfaces_refused += 1;
     counts.participants_refused += s.participants.length;
     for (const p of s.participants) counts.refused_by_type[p.participation_type] += 1;
-    gap('surfaces', s.surface_id, 'no_attendee_or_host_admitted', { receipts: [src.id], candidate: wouldBe });
+    gap('surfaces', sid, 'no_attendee_or_host_admitted', { receipts: [src.id], candidate: wouldBe });
     continue;
   }
   // The publisher row rests on the page itself: the organisation the rulings give for its publisher.
@@ -354,7 +360,7 @@ for (const src of sources) {
     if (seen.has(key)) { refused.push(p); gap('participation', rowKey, 'same_participant_same_type_same_day_twice_on_surface', { receipts: [src.id] }); continue; }
     seen.add(key);
     rows.push({
-      surface_id: s.surface_id,
+      surface_id: sid,
       participant_type: 'organization',
       organization_id: p.ledger_id,
       role: p.role,
@@ -373,7 +379,7 @@ for (const src of sources) {
   if (sameEvent.length) { refuseAll('event_already_in_ledger', { existing_surface_ids: sameEvent, receipts: [src.id] }); continue; }
   cited.set(src.id, st.candidate);
   surfaces.push({
-    surface_id: s.surface_id,
+    surface_id: sid,
     surface_label: s.label,
     surface_type: s.surface_type,
     secondary_surface_types: [],
