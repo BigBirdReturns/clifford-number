@@ -49,7 +49,9 @@ export const TIMELINE_PHONE_METRICS = Object.freeze({
 // blocks (Dialog and the Reagan National Defense Forum 2023 programme), each a
 // contained block lane, and that is correct; 18 entity lanes plus the strip and
 // two block lanes are 596px on desktop and 512px on phone.
-export const TIMELINE_STAGE_BUDGETS = Object.freeze({ desktop: 640, phone: 520 });
+// Phone 520px -> 550px, raised 2026-11-12 by the supervising session with the UK ministerial meetings pass (measured 654 at 690 wide, 644 at 880, 540 on phone: Keir Starmer's lane stacks six marks and a DSIT return is drawn as a third roster block); this is not an owner decision and was flagged to the owner the same day. The desktop budget
+// for the default view stays 640px (628px with three block lanes).
+export const TIMELINE_STAGE_BUDGETS = Object.freeze({ desktop: 640, phone: 550 });
 
 const STRIP_LABELS = Object.freeze({
   actor: 'Other people',

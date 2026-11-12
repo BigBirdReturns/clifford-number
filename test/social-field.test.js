@@ -333,12 +333,15 @@ assert.equal(realEvents.events.filter(event => event.open_ended).length, 314, 'e
 assert.ok(realEvents.events.some(event => event.open_ended && event.surface_id === 'detachment-201-program-context-2025'), 'the detachment-201 / us-army row pulses open-ended');
 // A pulse is drawn exactly when its row is in the window: 0 disagreements over
 // every drawn participation row and every calendar year of the range.
-const eventByRowKey = new Map(realEvents.events.filter(event => event.event_kind === 'participation').map(event => [`${event.surface_id}::${event.participant_node_id}::${event.participation_type}`, event]));
+// 2026-11-12 UK ministerial meetings (supervisor ruling): a ministers' meetings return holds several dated rows
+// for one entity (one per meeting), so each row is paired with its own pulse by its start day as well as
+// surface, node and type (was surface, node and type only, which paired such rows with one pulse). The rule stays 0.
+const eventByRowKey = new Map(realEvents.events.filter(event => event.event_kind === 'participation').map(event => [`${event.surface_id}::${event.participant_node_id}::${event.participation_type}::${event.start_day}`, event]));
 let rowEventPairs = 0, rowEventDisagreements = 0;
 for (let year = 2016; year <= 2026; year += 1) {
   const yearWindow = normalizeEcologyWindow(realLedger.range, { fromDay: ecologyDay(String(year)), toDay: ecologyDay(String(year), true) });
   for (const row of realLedger.rows) {
-    const event = row.on_field ? eventByRowKey.get(`${row.surface_id}::${row.node_id}::${row.participation_type}`) : null;
+    const event = row.on_field ? eventByRowKey.get(`${row.surface_id}::${row.node_id}::${row.participation_type}::${row.start_day}`) : null;
     if (!event) continue;
     rowEventPairs += 1;
     if (rowInWindow(row, yearWindow) !== eventInWindow(event, yearWindow)) rowEventDisagreements += 1;
