@@ -1,0 +1,55 @@
+{
+  "lane": "uk-ministerial-meetings",
+  "tool": "tools/promote-intake-uk-ministerial-meetings.mjs",
+  "intake": "data/intake/uk-ministerial-meetings/uk-ministerial-meetings.json",
+  "decision": {
+    "date": "2026-11-12",
+    "decided_by": "owner",
+    "question": "Hunt UK official records next, to balance the fund notices?",
+    "words": "Yes, hunt them"
+  },
+  "selection_rule": "A meeting row is entered when (a) the minister is a ledger person and the row names a ledger organisation or person, (b) the row names a ledger person as the one met, or (c) the row is in a Department for Science, Innovation and Technology return and names a ledger organisation. Names are entered only where a research hand judged the register string to be the ledger entity.",
+  "sources": {
+    "manifest": "data/ledger/staging/uk-ministerial-meetings/archived-receipts.jsonl",
+    "store": "receipts/uk-ministerial-meetings",
+    "returns": 78,
+    "archived": 78,
+    "failed": []
+  },
+  "admission_rule": "One surface per published return, dated by the drafted span; one row per participant entry, dated by its own meeting date. An attendee or host row is admitted only when the archived CSV shows its shown words (markup stripped, entities decoded, whitespace collapsed, curly quotes folded, letter case ignored, whole words); a register_publisher row is admitted when its organisation is the one the rulings give for the page publisher and the surface has another admitted row. A surface whose receipt fails the live receipt contract or with no admitted attendee or host row goes to gaps. Nothing is minted. Every surface is hop_eligible false pending a reader: a register lists meetings, not shared participation between the organisations listed.",
+  "counts": {
+    "pages_read": 78,
+    "surfaces_read": 78,
+    "surfaces_entered": 78,
+    "surfaces_refused": 0,
+    "participants_read": 1440,
+    "participants_admitted": 1440,
+    "participants_refused": 0,
+    "read_by_type": {
+      "ministerial_meeting_attendee": 1119,
+      "ministerial_meeting_host": 265,
+      "register_publisher": 56
+    },
+    "admitted_by_type": {
+      "ministerial_meeting_attendee": 1119,
+      "ministerial_meeting_host": 265,
+      "register_publisher": 56
+    },
+    "refused_by_type": {
+      "ministerial_meeting_attendee": 0,
+      "ministerial_meeting_host": 0,
+      "register_publisher": 0
+    }
+  },
+  "gap_reasons": {},
+  "staged": {
+    "surfaces": 78,
+    "participation": 1440,
+    "receipts": 78,
+    "new_actors": 0,
+    "new_organizations": 0,
+    "gaps": 0,
+    "hop_eligible_surfaces": 0
+  },
+  "hop_refusal_reason": "entered_2026_11_12_pending_hop_review"
+}
