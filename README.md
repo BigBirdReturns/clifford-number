@@ -2,6 +2,14 @@
 
 Current release line: **2.1.0** (the explorer release). See [the 2.1.0 release notes](docs/releases/2.1.0.md). Earlier releases: [2.0.0](docs/releases/2.0.0.md), [1.3.0](docs/releases/1.3.0.md), [1.2.0](docs/releases/1.2.0.md), [1.1.0](docs/releases/1.1.0.md), [1.0.0](docs/releases/1.0.0.md).
 
+## Open the instrument
+
+[![Clifford Number: the evidence behind the decision](assets/social-card.png)](https://bigbirdreturns.github.io/clifford-number/)
+
+[Open the public experience](https://bigbirdreturns.github.io/clifford-number/) · [Integrity.ai evaluation path](https://bigbirdreturns.github.io/clifford-number/for/integrity/) · [Network explorer](https://bigbirdreturns.github.io/clifford-number/explorer.html)
+
+The visitor experience pairs the original Cantos film with source-linked case inspection, structured review exports and a clearly labeled replay of checked local execution. The tailored evaluation path changes the introduction, not the underlying evidence or its status. [Release scope and media provenance](experience/README.md).
+
 ## What this is
 
 The Clifford Number is a compiler for public records. It reads a set of hand-checked source files and works out which public actors share a documented, bounded context. A bounded context is called a **surface**: a named advisory board, a company filing, a funding round, a taskforce roster, a policy report with named authors. Two actors are one hop apart when both held a documented role on the same surface during overlapping dates. A broad institution is never a hop. "Both worked in No. 10" creates nothing. A named roster inside No. 10 can.

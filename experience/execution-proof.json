@@ -1,0 +1,144 @@
+{
+  "schema_version": "clifford-execution-replay@1",
+  "observed_date": "2026-11-02",
+  "scope": "Retained owner-local software qualification replay. Clicking replay changes the visualization, not execution state. It is not a live API, ongoing monitor, independent human claim review or Integrity.ai integration.",
+  "component_commits": {
+    "clifford": "21d605de457b1e8f7c2727f2b4c318a5eea3a3af",
+    "cantos": "1083dd63235f03239ce08a340c01b2c7d0e19049",
+    "mary": "7cf4227fdacf1bc16fb54b571f4caccd121273fb"
+  },
+  "artifact_edition": "1a4d6df93f1759459b7405ce26c0daf42d00dcf345bb16ce58096a4f9eba8808",
+  "frames": [
+    {
+      "id": "cold",
+      "title": "First pass: execute three inspections",
+      "note": "The native runner executed three deterministic inspection tasks over retained evidence.",
+      "summary": {
+        "executed": 3,
+        "reused": 0,
+        "held": 0
+      },
+      "tasks": [
+        {
+          "id": "awards",
+          "label": "Procurement records",
+          "status": "executed",
+          "computation_key": "98177783132461d74d586dfd7be98f3ae7dee6e49d3559341c1ea7c40684f8e5",
+          "value_sha256": "572cca90e449fb55eef911dbee2a2d7c533ab1886dd23c63bb04401fa42ef045",
+          "model_calls": 0,
+          "gpu_runs": 0
+        },
+        {
+          "id": "capital",
+          "label": "Capital observations",
+          "status": "executed",
+          "computation_key": "af66f9c996c7789d42b1173b0cd40c53b35eebebba0d42e4625b833c5aa1ad6c",
+          "value_sha256": "b1249f4960d1c5cc9b971b6f22b97bd9015334fd2444742c9fba71597e2ab910",
+          "model_calls": 0,
+          "gpu_runs": 0
+        },
+        {
+          "id": "conflict",
+          "label": "Source reconciliation",
+          "status": "executed",
+          "computation_key": "86a7194862d4698a1361fb76b4507ab880c499fa9229992fb3fe22d88336f826",
+          "value_sha256": "4eb2b64f55e817ec430ec165aaaa29e71207f74805bffdf54bc3cb0d249c4b16",
+          "model_calls": 0,
+          "gpu_runs": 0
+        }
+      ],
+      "source_receipt_sha256": "46aaf7ccff25b8eaa82e953ba0e9d20cc79e35b60dc243ce6fdc8a9b062135d0"
+    },
+    {
+      "id": "warm",
+      "title": "Second pass: reuse all three results",
+      "note": "The runner checked the same declared inputs, code and runtime before reusing its retained results.",
+      "summary": {
+        "executed": 0,
+        "reused": 3,
+        "held": 0
+      },
+      "tasks": [
+        {
+          "id": "awards",
+          "label": "Procurement records",
+          "status": "reused",
+          "computation_key": "98177783132461d74d586dfd7be98f3ae7dee6e49d3559341c1ea7c40684f8e5",
+          "value_sha256": "572cca90e449fb55eef911dbee2a2d7c533ab1886dd23c63bb04401fa42ef045",
+          "model_calls": 0,
+          "gpu_runs": 0
+        },
+        {
+          "id": "capital",
+          "label": "Capital observations",
+          "status": "reused",
+          "computation_key": "af66f9c996c7789d42b1173b0cd40c53b35eebebba0d42e4625b833c5aa1ad6c",
+          "value_sha256": "b1249f4960d1c5cc9b971b6f22b97bd9015334fd2444742c9fba71597e2ab910",
+          "model_calls": 0,
+          "gpu_runs": 0
+        },
+        {
+          "id": "conflict",
+          "label": "Source reconciliation",
+          "status": "reused",
+          "computation_key": "86a7194862d4698a1361fb76b4507ab880c499fa9229992fb3fe22d88336f826",
+          "value_sha256": "4eb2b64f55e817ec430ec165aaaa29e71207f74805bffdf54bc3cb0d249c4b16",
+          "model_calls": 0,
+          "gpu_runs": 0
+        }
+      ],
+      "source_receipt_sha256": "7ad12a7a8e63ed9e460a7405b095ef813d20649731f1f0ded5a7d0871d977d33"
+    },
+    {
+      "id": "changed",
+      "title": "Changed request: recompute one inspection",
+      "note": "The first requested collection changed from Government awards to Portfolio listings. That task executed; the independent capital and reconciliation tasks reused their results.",
+      "summary": {
+        "executed": 1,
+        "reused": 2,
+        "held": 0
+      },
+      "tasks": [
+        {
+          "id": "awards",
+          "label": "Portfolio listings",
+          "status": "executed",
+          "computation_key": "ebf501053f367d9f01bbe3ab53b3ed0e94dd550d3cca53c988a4670004e3a719",
+          "value_sha256": "456830628641c4fe043e49af30eee29424cd01a97ae3442a8fd27135e50986bf",
+          "model_calls": 0,
+          "gpu_runs": 0
+        },
+        {
+          "id": "capital",
+          "label": "Capital observations",
+          "status": "reused",
+          "computation_key": "af66f9c996c7789d42b1173b0cd40c53b35eebebba0d42e4625b833c5aa1ad6c",
+          "value_sha256": "b1249f4960d1c5cc9b971b6f22b97bd9015334fd2444742c9fba71597e2ab910",
+          "model_calls": 0,
+          "gpu_runs": 0
+        },
+        {
+          "id": "conflict",
+          "label": "Source reconciliation",
+          "status": "reused",
+          "computation_key": "86a7194862d4698a1361fb76b4507ab880c499fa9229992fb3fe22d88336f826",
+          "value_sha256": "4eb2b64f55e817ec430ec165aaaa29e71207f74805bffdf54bc3cb0d249c4b16",
+          "model_calls": 0,
+          "gpu_runs": 0
+        }
+      ],
+      "source_receipt_sha256": "6e95f1de6712a8b4679fd470dce66ad3ca516026b28c9597757eff66587247cd"
+    }
+  ],
+  "software_checks": {
+    "passed": 32,
+    "total": 32
+  },
+  "browser_checks": {
+    "passed": 16,
+    "total": 16
+  },
+  "claim_review_granted": false,
+  "public_runtime_deployed": false,
+  "private_host_paths_removed": true
+}

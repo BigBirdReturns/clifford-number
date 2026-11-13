@@ -1,0 +1,17 @@
+# SEC EDGAR historical quarterly indexes: source selection and custody
+
+Reviewed 2026-11-03. Owner: Clifford Number whole-ecology acquisition, OCTO-W03. Scope: source-native public filing metadata across the existing 24 research estates. Official source: https://www.sec.gov/Archives/edgar/full-index/YEAR/QTRN/master.idx.
+
+Public-interest question: which issuer filings and institutional instruments exist, when were they filed, and which actual source-native CIK/accession references support subsequent research into corporate control, financing, securities disclosure or decision records? The index does not alone establish beneficial ownership, government procurement, wrongdoing, influence or causal effects.
+
+Neutral selection unit: one complete SEC EDGAR quarterly master index, without selecting companies, persons, ideologies or jurisdictions. The first independently replayed source quarter is 1994 Q1, chosen as a historical retrieval and format validation specimen. The authentic source contains 20,879 filing rows. Every row was retained, including irrelevant and countervailing records. Future runs apply the same parser and custody rules to other quarters. Earlier 1991–1993 material, older SEC records, subsequent quarters, direct filing bodies, historical amendments, submissions outside EDGAR and non-SEC issuers remain outside this quarter's acceptance.
+
+Preserved 1994 Q1 source body: 2,001,985 bytes, SHA256 c8c9bc2f3b12617d908c0c5460917769d6301771921e25ff57984672db0a9013, under the existing ecology/expansion-canary/ custody. Extracted rows carry the original source line, issuer CIK as reported, normalized CIK search key, company label as reported, form, filing date and exact source filing path. A CIK is a filing identifier and does not automatically establish historical parent ownership or beneficial ownership. The index supplies metadata, not filing full text, actual financing, payments, or independently reviewed findings. Individual filing-body retrieval remains unperformed.
+
+Selection and interpretation: source-complete within the exact 1994 Q1 quarterly index only. Additional quarters require their own retrieval, capture, SHA256, source-native row validation, and tests. Repeated filing paths are not new underlying filings. No accepted actor hops, CIK-to-UEI joins, moral scores, causal conclusions or legal-effect promotions follow. Relevance to any named estate must be shown through actual sources; a shared repository does not establish the relationship.
+
+Rights and access: ordinary public SEC EDGAR HTTPS, identified User-Agent, fair-access limits and source-access holds. One public request retrieved this quarter without authentication or challenge bypass. Original source bytes and hashes support independent reproduction. Raw sources remain owner-local, outside the public publishing allowlist.
+
+Privacy: public filer names and CIK identifiers only. No private account connection or identity-adjacent aggregation. Original company labels do not prove later legal identity.
+
+Review boundary: independent software checks and exact SEC source hash qualify the parser and one quarter; human factual review and cross-source legal-identity adjudication remain pending. Revisit source rights and selection invariants on 2027-11-03 or when original estate definitions change. The whole historical campaign has no calendar sunset.

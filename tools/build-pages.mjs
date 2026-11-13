@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
+import './build-visitor-experience.mjs';
 import path from 'node:path';
 import { root } from './lib/ledger.mjs';
 import { loadCliffordCrossCorpusPublicInterestMap, validateCliffordCrossCorpusPublicInterestMap } from './lib/clifford-cross-corpus-public-interest-map.mjs';
