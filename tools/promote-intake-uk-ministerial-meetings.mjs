@@ -41,6 +41,11 @@
 //     key would collide).
 // Every surface is hop_eligible false (entered_2026_11_12_pending_hop_review): a register lists
 // meetings; it is not shared participation between the organisations listed.
+//
+// A second intake, data/intake/uk-ministerial-meetings/uk-ministerial-meetings-2.json (owner answer
+// 2026-11-12, "Yes, enter them"), is read after the first with the same admission, dates and roles. Its
+// pages for returns the first intake archived carry a -further-meetings surface that cites the receipt
+// already made for that return; the file is archived once.
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -63,9 +68,17 @@ const HOP_REFUSAL = 'entered_2026_11_12_pending_hop_review';
 const DECISION = { date: ENTERED, decided_by: 'owner', question: 'Hunt UK official records next, to balance the fund notices?', words: 'Yes, hunt them' };
 const DRAFTED_SENTENCE = 'Drafted by machine from the UK ministers\' meetings returns on 12 November 2026, each register string judged against the ledger entity by a research hand, and admitted on the archived return showing the words, pending a reader.';
 const CONTENT_TYPE = 'text/csv';
+// Second intake (owner answer 2026-11-12, "Yes, enter them", to "Enter the five missing Anthropic meetings once the
+// worktree is back?"): the same rule applied again with shared names ruled and bracketed organisations read, plus
+// three meetings the owner named. Its pages for returns the first intake archived carry -further-meetings surfaces
+// that cite that return's receipt; the file is not archived twice.
+const INTAKE_2 = 'data/intake/uk-ministerial-meetings/uk-ministerial-meetings-2.json';
+const DECISION_2 = { date: ENTERED, decided_by: 'owner', question: 'Enter the five missing Anthropic meetings once the worktree is back?', words: 'Yes, enter them' };
 
 const intake = readJson(INTAKE);
+const intake2 = fs.existsSync(path.join(root, INTAKE_2)) ? readJson(INTAKE_2) : null;
 const pages = intake.pages.filter(p => (p.surfaces ?? []).length);
+const pages2 = (intake2?.pages ?? []).filter(p => (p.surfaces ?? []).length);
 const localDay = d => d.toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' });
 const isoUtc = d => d.toISOString().replace(/\.\d{3}Z$/, 'Z');
 
@@ -82,10 +95,14 @@ function sourceOf(page) {
     rel: `${STORE}/${`${segs[1]}-${stem}`.slice(0, 96).replace(/-+$/, '')}.csv`,
   };
 }
-const sources = pages.map(p => ({ page: p, ...sourceOf(p) }));
-{
-  const ids = sources.map(s => s.id);
-  if (new Set(ids).size !== ids.length) throw new Error('two returns derive the same receipt id');
+const sources = [...pages.map(p => ({ page: p, intakeNo: 1, ...sourceOf(p) })), ...pages2.map(p => ({ page: p, intakeNo: 2, ...sourceOf(p) }))];
+// One receipt per return. A second-intake page may name a return the first intake archived: its surface must be
+// that return's -further-meetings surface, and it shares the receipt. Any other repeat is an error.
+const receiptSources = new Map(); // receipt id -> the first page that names the return
+for (const src of sources) {
+  const first = receiptSources.get(src.id);
+  if (!first) { receiptSources.set(src.id, src); continue; }
+  if (src.intakeNo !== 2 || first.intakeNo !== 1 || first.url !== src.url || !src.page.surfaces[0].surface_id.endsWith('-further-meetings')) throw new Error(`two returns derive the same receipt id: ${src.id}`);
 }
 const readManifest = () => new Map((fs.existsSync(path.join(root, MANIFEST)) ? readJsonl(MANIFEST) : []).map(r => [r.receipt_id, r]));
 
@@ -120,7 +137,7 @@ function fetchMode(args) {
   const manifest = readManifest();
   fs.mkdirSync(path.join(root, STORE), { recursive: true });
   let fetched = 0; let cached = 0; let kept = 0;
-  for (const src of sources) {
+  for (const src of receiptSources.values()) {
     const limits = src.page.surfaces[0]?.limits;
     if (!limits || limits.length < MIN_LIMITS_LENGTH) throw new Error(`limits too short for ${src.id}`);
     const prev = manifest.get(src.id);
@@ -222,12 +239,15 @@ for (const p of ledgerParts) if (p.actor_id) {
   actorsBySurface.get(p.surface_id).add(p.actor_id);
 }
 const ledgerReceiptIds = new Set(readJsonl('data/ledger/receipts.jsonl').filter(r => r.intake_source !== LANE).map(r => r.receipt_id));
-const departmentOrg = intake.rulings?.department_org ?? {};
+const departmentOrgOf = n => (n === 2 ? intake2 : intake).rulings?.department_org ?? {};
 
 // ---------------------------------------------------------------- receipts
+// Departments publish returns in UTF-8 or in Windows-1252: a file that is not valid UTF-8 (read as UTF-8 it
+// yields replacement characters) is read as Windows-1252, so its dashes and quotes are the published ones.
+const readCsvText = file => { const bytes = fs.readFileSync(file); const utf8 = bytes.toString('utf8'); return utf8.includes('\ufffd') ? new TextDecoder('windows-1252').decode(bytes) : utf8; };
 const manifest = readManifest();
 const receiptState = new Map(); // receipt id -> { candidate, problems, text }
-for (const src of sources) {
+for (const src of receiptSources.values()) {
   const { page } = src;
   const surface = page.surfaces[0];
   const arc = manifest.get(src.id);
@@ -258,18 +278,19 @@ for (const src of sources) {
     for (const e of errors) problems.push(`receipt_contract_${e.check}: ${e.message}`);
     if (ledgerReceiptIds.has(src.id)) problems.push('receipt_id_collides_with_existing_ledger_receipt');
   }
-  receiptState.set(src.id, { candidate: problems.length ? null : candidate, problems, ...(problems.length ? {} : { text: plain(fs.readFileSync(path.join(root, candidate.path), 'utf8')) }) });
+  receiptState.set(src.id, { candidate: problems.length ? null : candidate, problems, ...(problems.length ? {} : { text: plain(readCsvText(path.join(root, candidate.path))) }) });
 }
 
 // ---------------------------------------------------------------- accounting and staging
 const gaps = [];
 const TYPES = ['ministerial_meeting_attendee', 'ministerial_meeting_host', 'register_publisher'];
 const byType = () => Object.fromEntries(TYPES.map(t => [t, 0]));
-const counts = {
-  pages_read: pages.length, surfaces_read: 0, surfaces_entered: 0, surfaces_refused: 0, surface_ids_normalised: 0,
+const newCounts = n => ({
+  pages_read: n, surfaces_read: 0, surfaces_entered: 0, surfaces_refused: 0, surface_ids_normalised: 0,
   participants_read: 0, participants_admitted: 0, participants_refused: 0,
   read_by_type: byType(), admitted_by_type: byType(), refused_by_type: byType(),
-};
+});
+const countsByIntake = { 1: newCounts(pages.length), 2: newCounts(pages2.length) };
 const surfaceIdOf = s => String(s.surface_id).replace(/-{2,}/g, '-');
 const gap = (table, rowKey, reason, detail = {}) => gaps.push({ lane: LANE, table, row_key: rowKey, reason, ...detail });
 const surfaces = [];
@@ -278,6 +299,7 @@ const cited = new Map();
 
 for (const src of sources) {
   const { page } = src;
+  const counts = countsByIntake[src.intakeNo];
   if (page.surfaces.length !== 1) throw new Error(`${src.id}: one surface per return, got ${page.surfaces.length}`);
   const s = page.surfaces[0];
   // The drafted id, with any run of hyphens collapsed as tools/build-graph.mjs slugs surface node ids, so the
@@ -350,7 +372,7 @@ for (const src of sources) {
   }
   // The publisher row rests on the page itself: the organisation the rulings give for its publisher.
   for (const { p, rowKey } of publisherEntries) {
-    const expected = departmentOrg[page.publisher];
+    const expected = departmentOrgOf(src.intakeNo)[page.publisher];
     if (p.kind !== 'organization' || p.ledger_id !== expected) {
       refused.push(p);
       gap('participation', rowKey, 'publisher_row_not_the_page_publisher', { receipts: [src.id], publisher: page.publisher, expected_organization_id: expected ?? null });
@@ -431,15 +453,18 @@ writeJson(`${OUT}/summary.json`, {
   lane: LANE,
   tool: TOOL,
   intake: INTAKE,
-  decision: DECISION,
+  intake_second: INTAKE_2,
+  decision: [{ ...DECISION, applies_to: INTAKE }, { ...DECISION_2, applies_to: INTAKE_2 }],
   selection_rule: intake.selection_rule,
+  selection_rule_second: intake2?.selection_rule ?? null,
   sources: {
-    manifest: MANIFEST, store: STORE, returns: sources.length,
+    manifest: MANIFEST, store: STORE, returns: receiptSources.size, pages_first: pages.length, pages_second: pages2.length,
     archived: [...manifest.values()].filter(r => r.status === 'archived').length,
     failed: [...manifest.values()].filter(r => r.status === 'failed').map(r => ({ receipt_id: r.receipt_id, source_url: r.source_url, reason: r.reason })),
   },
   admission_rule: 'One surface per published return, dated by the drafted span; one row per participant entry, dated by its own meeting date. An attendee or host row is admitted only when the archived CSV shows its shown words (markup stripped, entities decoded, whitespace collapsed, curly quotes folded, letter case ignored, whole words); a register_publisher row is admitted when its organisation is the one the rulings give for the page publisher and the surface has another admitted row. A surface whose receipt fails the live receipt contract or with no admitted attendee or host row goes to gaps. Nothing is minted. Every surface is hop_eligible false pending a reader: a register lists meetings, not shared participation between the organisations listed.',
-  counts,
+  counts: countsByIntake[1],
+  counts_second_intake: countsByIntake[2],
   gap_reasons: Object.fromEntries(Object.entries(reasons).sort(([a], [b]) => a.localeCompare(b))),
   staged: {
     surfaces: surfaces.length, participation: participation.length, receipts: receipts.length,

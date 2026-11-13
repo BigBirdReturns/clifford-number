@@ -2,18 +2,32 @@
   "lane": "uk-ministerial-meetings",
   "tool": "tools/promote-intake-uk-ministerial-meetings.mjs",
   "intake": "data/intake/uk-ministerial-meetings/uk-ministerial-meetings.json",
-  "decision": {
-    "date": "2026-11-12",
-    "decided_by": "owner",
-    "question": "Hunt UK official records next, to balance the fund notices?",
-    "words": "Yes, hunt them"
-  },
+  "intake_second": "data/intake/uk-ministerial-meetings/uk-ministerial-meetings-2.json",
+  "decision": [
+    {
+      "date": "2026-11-12",
+      "decided_by": "owner",
+      "question": "Hunt UK official records next, to balance the fund notices?",
+      "words": "Yes, hunt them",
+      "applies_to": "data/intake/uk-ministerial-meetings/uk-ministerial-meetings.json"
+    },
+    {
+      "date": "2026-11-12",
+      "decided_by": "owner",
+      "question": "Enter the five missing Anthropic meetings once the worktree is back?",
+      "words": "Yes, enter them",
+      "applies_to": "data/intake/uk-ministerial-meetings/uk-ministerial-meetings-2.json"
+    }
+  ],
   "selection_rule": "A meeting row is entered when (a) the minister is a ledger person and the row names a ledger organisation or person, (b) the row names a ledger person as the one met, or (c) the row is in a Department for Science, Innovation and Technology return and names a ledger organisation. Names are entered only where a research hand judged the register string to be the ledger entity.",
+  "selection_rule_second": "A meeting row is entered when (a) the minister is a ledger person and the row names a ledger organisation or person, (b) the row names a ledger person as the one met, or (c) the row is in a Department for Science, Innovation and Technology return and names a ledger organisation. Names are entered only where a research hand judged the register string to be the ledger entity. This second intake applies the same rule to the ledger at ebdee718, with the shared names ruled and organisations in brackets read, and enters only what the first intake did not; it adds three meetings the owner named on 2026-11-12 (Oliver Dowden 27 September and 2 November 2023, Andrew Western 25 November 2025).",
   "sources": {
     "manifest": "data/ledger/staging/uk-ministerial-meetings/archived-receipts.jsonl",
     "store": "receipts/uk-ministerial-meetings",
-    "returns": 78,
-    "archived": 78,
+    "returns": 111,
+    "pages_first": 78,
+    "pages_second": 71,
+    "archived": 111,
     "failed": []
   },
   "admission_rule": "One surface per published return, dated by the drafted span; one row per participant entry, dated by its own meeting date. An attendee or host row is admitted only when the archived CSV shows its shown words (markup stripped, entities decoded, whitespace collapsed, curly quotes folded, letter case ignored, whole words); a register_publisher row is admitted when its organisation is the one the rulings give for the page publisher and the surface has another admitted row. A surface whose receipt fails the live receipt contract or with no admitted attendee or host row goes to gaps. Nothing is minted. Every surface is hop_eligible false pending a reader: a register lists meetings, not shared participation between the organisations listed.",
@@ -42,11 +56,36 @@
       "register_publisher": 0
     }
   },
+  "counts_second_intake": {
+    "pages_read": 71,
+    "surfaces_read": 71,
+    "surfaces_entered": 71,
+    "surfaces_refused": 0,
+    "surface_ids_normalised": 1,
+    "participants_read": 579,
+    "participants_admitted": 579,
+    "participants_refused": 0,
+    "read_by_type": {
+      "ministerial_meeting_attendee": 359,
+      "ministerial_meeting_host": 200,
+      "register_publisher": 20
+    },
+    "admitted_by_type": {
+      "ministerial_meeting_attendee": 359,
+      "ministerial_meeting_host": 200,
+      "register_publisher": 20
+    },
+    "refused_by_type": {
+      "ministerial_meeting_attendee": 0,
+      "ministerial_meeting_host": 0,
+      "register_publisher": 0
+    }
+  },
   "gap_reasons": {},
   "staged": {
-    "surfaces": 78,
-    "participation": 1440,
-    "receipts": 78,
+    "surfaces": 149,
+    "participation": 2019,
+    "receipts": 111,
     "new_actors": 0,
     "new_organizations": 0,
     "gaps": 0,
