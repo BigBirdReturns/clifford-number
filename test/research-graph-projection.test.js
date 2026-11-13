@@ -36,7 +36,7 @@ assert.equal(overlayEdges.length, graph.canonical_surface_overlay.rendered_parti
 assert.ok(overlayEdges.every(edge => edge.topology === true && edge.type === 'topology'));
 assert.ok(overlayEdges.every(edge => String(edge.to).startsWith('surface-')));
 assert.equal(graph.canonical_surface_overlay.dense_surface_count, 3); // 2026-11-12 UK ministerial meetings: 2 -> 3 (the DSIT return for October to December 2025, 24 actor rows over the 19-actor density limit, joins as a contained roster). 2026-10-23 five-lane merge: 1 -> 2 (rndf-2023-programme-roster, 22 actors, joins the Dialog directory)
-assert.equal(graph.canonical_surface_overlay.latest_observed_surface_date, '2026-10-23'); // 2026-10-23 promotion: 2026-08-12 -> 2026-10-23
+assert.equal(graph.canonical_surface_overlay.latest_observed_surface_date, '2026-11-10'); // 2026-11-12 Bitter Struggle chain: 2026-10-23 -> 2026-11-10 (end of record 2026-10-23 -> 2026-11-10, the publication day of The Bitter Struggle, the latest surface). 2026-10-23 promotion: 2026-08-12 -> 2026-10-23
 assert.equal(graph.canonical_surface_overlay.latest_receipt_retrieved_at, '2026-11-12'); // 2026-11-12 UK ministerial meetings: '2026-11-10' -> '2026-11-12' (the returns were archived that day). 2026-11-10 lens-hunt promotion: '2026-10-23T20:04:50Z' -> '2026-11-10' (the lens-hunt receipts were archived that day).  2026-10-23 five-lane merge: '2026-10-23' -> '2026-10-23T20:04:50Z' (the uk-public-money receipts record retrieved_at as a full UTC timestamp). 2026-10-23 promotion: 2026-08-15 -> 2026-10-23
 assert.equal(graph.canonical_surface_overlay.recency_observations_do_not_prove_complete_coverage, true);
 assert.equal(surfaceGraph.organizations.some(org => String(org.id).startsWith('surface-')), false);
