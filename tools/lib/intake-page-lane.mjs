@@ -65,19 +65,24 @@ export function createPageArchiver({ tmpPrefix, timeoutS }) {
     lastHit.set(host, Date.now());
   };
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), tmpPrefix));
-  const curl = (url, ua, accept) => {
+  // A server that closes a compressed TLS response without close_notify makes Schannel curl fail (exit
+  // 56) although the body arrived; that one failure is retried once without --compressed (added
+  // 13 November 2026 for willdepue.net). Every other fetch runs exactly as before.
+  const curl = (url, ua, accept, compressed = true) => {
     pace(url);
     const body = path.join(tmp, 'body');
     if (fs.existsSync(body)) fs.rmSync(body);
     try {
       const meta = execFileSync('curl', ['-sS', '-L', '--max-redirs', '10', '--max-time', String(timeoutS), '-A', ua,
         '-H', `Accept: ${accept ?? 'text/html,application/xhtml+xml,application/xml;q=0.9,application/pdf,application/json;q=0.8,*/*;q=0.7'}`,
-        '-H', 'Accept-Language: en-US,en;q=0.9', '--compressed', '-o', body, '-w', '%{http_code}\t%{content_type}\t%{url_effective}', url],
+        '-H', 'Accept-Language: en-US,en;q=0.9', ...(compressed ? ['--compressed'] : []), '-o', body, '-w', '%{http_code}\t%{content_type}\t%{url_effective}', url],
       { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
       const [status, contentType, finalUrl] = meta.split('\t');
       return { ok: true, status: Number(status), contentType: (contentType || '').trim(), finalUrl, bytes: fs.existsSync(body) ? fs.readFileSync(body) : Buffer.alloc(0) };
     } catch (err) {
-      return { ok: false, error: String(err.stderr || err.message).trim().split('\n').pop().slice(0, 200) };
+      const error = String(err.stderr || err.message).trim().split('\n').pop().slice(0, 200);
+      if (compressed && /missing close_notify/.test(error)) return curl(url, ua, accept, false);
+      return { ok: false, error };
     }
   };
   const blocked = res => {

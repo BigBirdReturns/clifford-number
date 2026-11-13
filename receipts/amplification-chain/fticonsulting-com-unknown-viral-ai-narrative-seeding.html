@@ -1,0 +1,1452 @@
+
+
+<!doctype html>
+<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>         <html class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]><!-->
+
+<html class="no-js">
+
+<!--<![endif]-->
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    
+
+<title>From Unknown to Viral: AI Narrative Seeding | FTI Consulting</title>
+<meta name="description" content="The report examines how an AI researcher&#39;s resignation went viral through competing groups and why organizations must prepare for reputational risk.">
+
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<meta name="robots" content="index,follow" />
+
+
+
+<meta property="og:title" content="From Unknown to Viral: AI Narrative Seeding | FTI Consulting" />
+<meta property="og:description" content="The report examines how an AI researcher&#39;s resignation went viral through competing groups and why organizations must prepare for reputational risk." />
+<meta property="og:url" content="https://www.fticonsulting.com/insights/articles/unknown-viral-ai-narrative-seeding" />
+<meta property="og:image" content="https://www.fticonsulting.com/-/media/images/shared-content/insights/articles/2026/nov/unknown-viral-ai-narrative-seeding_1200x627_center.jpeg?rev=8cb41024aabe4fe1a487101c2e3ac617" />
+
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="From Unknown to Viral: AI Narrative Seeding | FTI Consulting" />
+<meta name="twitter:description" content="The report examines how an AI researcher&#39;s resignation went viral through competing groups and why organizations must prepare for reputational risk." />
+<meta name="twitter:image" content="https://www.fticonsulting.com/-/media/images/shared-content/insights/articles/2026/nov/unknown-viral-ai-narrative-seeding_1200x627_center.jpeg?rev=8cb41024aabe4fe1a487101c2e3ac617" />
+    
+    <script type="text/javascript" src="https://cdn-ukwest.onetrust.com/consent/bffd59be-fb57-46d4-bb99-ca71f4eb9d64/OtAutoBlock.js"></script>
+    <script type="text/javascript" data-ot-ignore data-cookieconsent="ignore">
+        function getTrackingConsent() {
+            const match = document.cookie.split(';').map(c => c.trim()).find(c => c.startsWith('SC_TRACKING_CONSENT='));
+            if (!match) return false;
+            try {
+                const raw = match.slice('SC_TRACKING_CONSENT='.length);
+                const base64 = raw.slice(0, -1);
+                const decoded = JSON.parse(atob(base64));
+                return Array.isArray(decoded) && decoded.some(e => e.IsConsentGiven === true);
+            } catch {
+                return false;
+            }
+        }
+
+        async function OptanonWrapper(forceSync, activeGroups) {
+            // Groups are passed in by CookieConsent.js so both act on the same
+            // state; OneTrust calls this with no arguments, hence the fallback
+            const groups = activeGroups || OnetrustActiveGroups;
+            const consent = groups.includes(",C0003,") && groups.includes(",C0002,");
+            const alreadyConsented = getTrackingConsent();
+
+            // A revocation always posts: an unreadable cookie reads as "no consent",
+            // so comparing would swallow it. Everything else compares as before, and
+            // a state already recorded costs no request.
+            if (forceSync || consent !== alreadyConsented) {
+                await fetch("/api/consent/AllowSitecoreAnalytics", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ consent }),
+                });
+            }
+        }
+    </script>
+    <script type="text/javascript" data-ot-ignore data-cookieconsent="ignore" src="/Content/Project/Global/js/modules/CookieConsent.js?v=202611050640"></script>
+    <script src="https://cdn-ukwest.onetrust.com/scripttemplates/otSDKStub.js" type="text/javascript" charset="UTF-8" data-domain-script="bffd59be-fb57-46d4-bb99-ca71f4eb9d64"></script>
+
+    
+
+    <link rel="stylesheet" href="/Content/Project/Global/css/fancybox/jquery.fancybox.css" />
+    <link rel="stylesheet" href="/Content/Project/Global/css/fancybox/helpers/jquery.fancybox-thumbs.css" />
+    <link rel="stylesheet" href="/Content/Project/Global/css/main-tbg.css?v=202611050641" />
+
+    <link rel="preconnect" href="https://www.ceros.com/powered-by-ceros/" />
+
+    <!--Canonical Links-->
+    <link rel="canonical" href="https://www.fticonsulting.com/insights/articles/unknown-viral-ai-narrative-seeding" />
+
+
+    <!-- print.css included as a separate file so it can be enabled with JS when pages are rendered by Folio web service -->
+    <!-- <link rel="stylesheet" href="/Content/Project/Global/css/print.css" media="print" id="print-css"> -->
+    <!--[if lt IE 8]><link rel="stylesheet" href="/Content/Project/Global/css/main-ie7.css?v=1"><![endif]-->
+
+    <script type="text/javascript" src="/Content/Project/Global/js/vendor/modernizr.js"></script>
+
+    <script type="text/javascript">
+        // Lets Brightcove players nested in iframes (e.g. inside Ceros) use this page's URL for Share.
+        // Must stay in <head> so it is registered before any iframe can ask.
+        (function () {
+            'use strict';
+            try {
+                window.addEventListener('message', function (event) {
+                    try {
+                        const data = event.data;
+                        if (event.origin !== 'https://players.brightcove.net' || !event.source ||
+                            !data || typeof data !== 'object' || data.type !== 'fti:share-url:request') {
+                            return;
+                        }
+                        event.source.postMessage({
+                            type: 'fti:share-url:response',
+                            url: window.location.origin + window.location.pathname
+                        }, event.origin);
+                    } catch (e) { }
+                });
+            } catch (e) { }
+        })();
+    </script>
+
+        <!-- Google Tag Manager -->
+        <script id="GoogleTagManager" type="text/javascript">
+                (function (w, d, s, l, i) {
+                    w[l] = w[l] || []; w[l].push({
+                        'gtm.start':
+                            new Date().getTime(), event: 'gtm.js'
+                    }); var f = d.getElementsByTagName(s)[0],
+                        j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : ''; j.async = true; j.src =
+                        'https://www.googletagmanager.com/gtm.js?id=' + i + dl; f.parentNode.insertBefore(j, f);
+                })(window, document, 'script', 'dataLayer', 'GTM-NXCWHR');
+        </script>
+        <!-- End Google Tag Manager -->
+    
+<script type="application/ld+json">
+{
+"@context": "http://schema.org",
+"@type": "WebSite",
+"url": "https://www.fticonsulting.com"
+}
+</script>
+
+    
+    
+<script type="application/ld+json">
+    {
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "From Unknown to Viral: AI Narrative Seeding",
+  "image": "https://www.fticonsulting.com/-/media/images/shared-content/insights/articles/2026/nov/unknown-viral-ai-narrative-seeding_900x471_center.jpeg?as=0&dmc=0&iar=0&thn=0&udi=0&rev=41d35733b41f47a29a4d7178ebeea3dc&hash=4E3EEA7F06E2F6CDA182727444E42D01",
+  "datePublished": "2026-11-09",
+  "dateModified": "2026-11-09",
+  "author": {
+    "@type": "Organization",
+    "name": "FTI Consulting",
+    "url": "https://www.fticonsulting.com"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "FTI Consulting",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://www.fticonsulting.com/-/media/project/global/demo/logo/logo-fti-dark.svg?rev=2bd2b7cf3ab04699bf815839338b0909",
+      "width": 139,
+      "height": 29
+    }
+  },
+  "mainEntityOfPage": "https://www.fticonsulting.com/insights/articles/unknown-viral-ai-narrative-seeding",
+  "description": "The report examines how an AI researcher's resignation went viral through competing groups and why organizations must prepare for reputational risk."
+}
+</script>
+
+</head>
+<!-- Body element occasionally has a class added, but only on templates that should require a new layout, such as the careers landing and home pages -->
+<body class=" lang-en" data-active="">
+    <div class="view-container">
+        <div class="mp-pusher mobile-push-nav" id="mp-pusher">
+            <div class="scroller">
+                <div class="scroller-inner">
+                    <div>
+                        
+                        <!-- Header -->
+                        <div class="overlay"></div>
+                        <header class="header  js-header" data-section="main_menu">
+                            <nav class="nav-utility">
+    <ul class="nav-utility__list">
+        <li class="nav-utility__item">
+    <nav class="nav-utility-dropdown">
+        <div class="nav-utility-dropdown__current nav-utility-dropdown__current--has-arrow">
+            <i class="nav-utility-dropdown__current-icon lazy-bg" data-bg="/-/media/project/global/icons/icon-blue-global.svg?rev=e1af0f7b20ea42668a2c3fb77c0fb9ae&amp;la=en&amp;h=50&amp;w=50&amp;hash=2D4C1D790F933CED423E9BA5CCD4FF81" style="background-image: none;"></i>
+            <span class="nav-utility-dropdown__current-text">
+                GLOBAL
+            </span>
+        </div>
+        <div class="nav-utility-dropdown__content">
+            <ul class="nav-utility-dropdown__nav">
+                        <li class="nav-utility-dropdown__nav-item">
+                            <a href="/" target="_self" class="nav-utility-dropdown__nav-link" data-region="Global" data-component="region_selector" data-event="click_nav">Global</a>
+                        </li>
+                        <li class="nav-utility-dropdown__nav-item">
+                            <a href="/australia" target="_self" class="nav-utility-dropdown__nav-link" data-region="Australia" data-component="region_selector" data-event="click_nav">Australia</a>
+                        </li>
+                        <li class="nav-utility-dropdown__nav-item">
+                            <a href="/en/canada" target="_self" class="nav-utility-dropdown__nav-link" data-region="Canada" data-component="region_selector" data-event="click_nav">Canada</a>
+                        </li>
+                        <li class="nav-utility-dropdown__nav-item">
+                            <a href="/en/china" target="_self" class="nav-utility-dropdown__nav-link" data-region="China" data-component="region_selector" data-event="click_nav">China</a>
+                        </li>
+                        <li class="nav-utility-dropdown__nav-item">
+                            <a href="/en/france" target="_self" class="nav-utility-dropdown__nav-link" data-region="France" data-component="region_selector" data-event="click_nav">France</a>
+                        </li>
+                        <li class="nav-utility-dropdown__nav-item">
+                            <a href="/en/germany" target="_self" class="nav-utility-dropdown__nav-link" data-region="Germany" data-component="region_selector" data-event="click_nav">Germany</a>
+                        </li>
+                        <li class="nav-utility-dropdown__nav-item">
+                            <a href="/en/japan" target="_self" class="nav-utility-dropdown__nav-link" data-region="Japan" data-component="region_selector" data-event="click_nav">Japan</a>
+                        </li>
+                        <li class="nav-utility-dropdown__nav-item">
+                            <a href="/netherlands" target="_self" class="nav-utility-dropdown__nav-link" data-region="Netherlands" data-component="region_selector" data-event="click_nav">Netherlands</a>
+                        </li>
+                        <li class="nav-utility-dropdown__nav-item">
+                            <a href="/saudi-arabia" target="_self" class="nav-utility-dropdown__nav-link" data-region="Saudi Arabia" data-component="region_selector" data-event="click_nav">Saudi Arabia</a>
+                        </li>
+                        <li class="nav-utility-dropdown__nav-item">
+                            <a href="/en/spain" target="_self" class="nav-utility-dropdown__nav-link" data-region="Spain" data-component="region_selector" data-event="click_nav">Spain</a>
+                        </li>
+                        <li class="nav-utility-dropdown__nav-item">
+                            <a href="/united-arab-emirates" target="_self" class="nav-utility-dropdown__nav-link" data-region="United Arab Emirates" data-component="region_selector" data-event="click_nav">United Arab Emirates</a>
+                        </li>
+                        <li class="nav-utility-dropdown__nav-item">
+                            <a href="/uk" target="_self" class="nav-utility-dropdown__nav-link" data-region="United Kingdom" data-component="region_selector" data-event="click_nav">United Kingdom</a>
+                        </li>
+            </ul>
+        </div>
+    </nav>
+</li>
+<li class="nav-utility__item" data-module="utility_nav_bar">
+    <a href="/about/contact-us" target="_self" class="nav-utility-contact" data-event="click_link" data-component="contact_link" data-variant="legacy_main_menu">
+        <i class="nav-utility-contact__icon lazy-bg" data-bg="/-/media/project/global/icons/icon-blue-envelope.svg?rev=bfd5f7c388054797ba3c4aa347c27ff2&amp;la=en&amp;h=42&amp;w=58&amp;hash=9B772CFD664B860ABE6967E65D817D08" style="background-image: none;"></i>
+        <span class="nav-utility-contact__text">Contact</span>
+    </a>
+</li>
+
+
+    </ul>
+</nav><div class="header-inner" data-module="main_menu_nav">
+    
+    <a href="/" class="main-logo " data-component="logo" data-event="click_link">
+        <img src="/-/media/project/global/demo/logo/logo-fti-dark.svg?rev=2bd2b7cf3ab04699bf815839338b0909" alt="FTI Consulting Logo" class="main-logo__image"  loading="lazy">
+    </a>
+
+
+
+    <button type="button" class="close-global-navegation" style="display:none;">
+        <svg alt="Clear" focusable="false" enable-background="new 0 0 13 13" viewBox="0 0 13 13" xmlns="http://www.w3.org/2000/svg" class="coveo-facet-header-eraser-svg"><g fill="currentColor"><path d="m7.881 6.501 4.834-4.834c.38-.38.38-1.001 0-1.381s-1.001-.38-1.381 0l-4.834 4.834-4.834-4.835c-.38-.38-1.001-.38-1.381 0s-.38 1.001 0 1.381l4.834 4.834-4.834 4.834c-.38.38-.38 1.001 0 1.381s1.001.38 1.381 0l4.834-4.834 4.834 4.834c.38.38 1.001.38 1.381 0s .38-1.001 0-1.381z"></path></g></svg>
+    </button>
+
+    <!-- BEGIN: MOCK MARKUP -->
+    <div class="header-toggles">
+        <button type="button" class="header-search-toggle" onclick="showSearch()">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path fill-rule="evenodd" clip-rule="evenodd"
+                      d="M4.50963 12.995C3.3288 11.8458 2.6788 10.3179 2.6788 8.6934C2.6788 7.06733 3.32963 5.5402 4.51046 4.39019C5.69129 3.24099 7.26128 2.6084 8.93127 2.6084C10.6013 2.6084 12.1704 3.24099 13.3521 4.39019C15.7896 6.7632 15.7896 10.6228 13.3521 12.995C10.9154 15.3664 6.94878 15.3664 4.50963 12.995ZM19.6075 16.9452L16.2425 13.6712C18.6808 10.2828 18.3542 5.57002 15.2467 2.54657C13.56 0.904276 11.3175 0 8.93167 0C6.54583 0 4.30333 0.904276 2.61667 2.54657C0.93 4.18806 0 6.37049 0 8.69241C0 11.0143 0.929167 13.1968 2.61583 14.8382C4.3575 16.5324 6.64417 17.3799 8.93083 17.3799C10.8633 17.3799 12.7908 16.7684 14.3942 15.5592L17.7133 18.7895C17.975 19.0441 18.3175 19.1715 18.66 19.1715C19.0033 19.1715 19.3458 19.0441 19.6075 18.7895C20.1308 18.2802 20.1308 17.4546 19.6075 16.9452Z"
+                      fill="#363636" />
+            </svg>
+        </button>
+        <button type="button" id="trigger"
+                class="header-nav-toggle icon-menu-toggle l-hidden-mq-large ir js-header-nav-toggle-btn">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+    </div>
+    <!-- END: MOCK MARKUP -->
+
+    
+
+    <div class="nav-wrap js-nav-wrap">
+        <div class="nav-container">
+
+                <a href="/" target="_self" class="main-logo" data-component="logo" data-event="click_link">
+        <img src="/-/media/project/global/demo/logo/logo-fti-dark.svg?rev=2bd2b7cf3ab04699bf815839338b0909&amp;la=en&amp;h=29&amp;w=139&amp;hash=1ED78EF9FDDFCCB330B4AF06DB50C207" class="main-logo__image" alt="FTI Consulting" />
+    </a>
+
+
+            <nav class="nav nav-primary js-nav-primary" data-variant="legacy_main_menu">
+                <ul class="nav-level1 nav-primary-level1 cf" data-module="main_menu_nav">
+                            <li class="nav-level1-item nav-level1-container nav-primary-level1-item extra-item nav-primary-services module-is-collapsed-mq-medium js-nav-expand-wrap">
+                                <div class="nav-level1-element">
+                                    
+                                    <a href="/services" target="_self" class="" data-event="click_link" data-component="main_menu_link">
+                                        SERVICES
+                                    </a>
+                                        <div class="menu-toggle-btn js-nav-menu-item-expand-toggle" role="button"></div>
+                                </div>
+
+                                    <div class="nav-level2 nav-level2-services nav-primary-level2 js-nav-expand-item cf" data-module="main_menu_nav_dropdown" data-meta1="SERVICES">
+
+                                            <div class="nav-level2__container">
+                                        <ul class="cf nav-services">
+                                                <li class="nav-primary-level2-item">
+                                                    <a href="/services/antitrust" target="_self" data-event="click_link" data-component="standard_link">
+                                                        Antitrust
+                                                    </a>
+                                                </li>
+                                                <li class="nav-primary-level2-item">
+                                                    <a href="/services/ai" target="_self" data-event="click_link" data-component="standard_link">
+                                                        Artificial Intelligence
+                                                    </a>
+                                                </li>
+                                                <li class="nav-primary-level2-item">
+                                                    <a href="/services/blockchain-and-digital-assets" target="_self" data-event="click_link" data-component="standard_link">
+                                                        Blockchain &amp; Digital Assets
+                                                    </a>
+                                                </li>
+                                                <li class="nav-primary-level2-item">
+                                                    <a href="/services/business-transformation-and-strategy" target="_self" data-event="click_link" data-component="standard_link">
+                                                        Business Transformation
+                                                    </a>
+                                                </li>
+                                                <li class="nav-primary-level2-item">
+                                                    <a href="/services/cybersecurity" target="_self" data-event="click_link" data-component="standard_link">
+                                                        Cybersecurity &amp; Privacy
+                                                    </a>
+                                                </li>
+                                                <li class="nav-primary-level2-item">
+                                                    <a href="/services/data-and-analytics" target="_self" data-event="click_link" data-component="standard_link">
+                                                        Data &amp; Analytics
+                                                    </a>
+                                                </li>
+                                                <li class="nav-primary-level2-item">
+                                                    <a href="/services/digital-forensics" target="_self" data-event="click_link" data-component="standard_link">
+                                                        Digital Forensics
+                                                    </a>
+                                                </li>
+                                                <li class="nav-primary-level2-item">
+                                                    <a href="/services/dispute-advisory-and-international-arbitration" target="_self" data-event="click_link" data-component="standard_link">
+                                                        Dispute Advisory &amp; International Arbitration
+                                                    </a>
+                                                </li>
+                                                <li class="nav-primary-level2-item">
+                                                    <a href="/services/e-discovery-and-managed-review" target="_self" data-event="click_link" data-component="standard_link">
+                                                        E-discovery &amp; Legal Analytics
+                                                    </a>
+                                                </li>
+                                                <li class="nav-primary-level2-item">
+                                                    <a href="/services/esg-and-sustainability" target="_self" data-event="click_link" data-component="standard_link">
+                                                        ESG &amp; Sustainability
+                                                    </a>
+                                                </li>
+                                                <li class="nav-primary-level2-item">
+                                                    <a href="/services/information-governance-privacy-and-security" target="_self" data-event="click_link" data-component="standard_link">
+                                                        Information Governance, Privacy &amp; Security
+                                                    </a>
+                                                </li>
+                                                <li class="nav-primary-level2-item">
+                                                    <a href="/services/investigations-and-monitorships" target="_self" data-event="click_link" data-component="standard_link">
+                                                        Investigations &amp; Monitorships
+                                                    </a>
+                                                </li>
+                                                <li class="nav-primary-level2-item">
+                                                    <a href="/services/policy-and-regulation" target="_self" data-event="click_link" data-component="standard_link">
+                                                        Policy &amp; Regulation
+                                                    </a>
+                                                </li>
+                                                <li class="nav-primary-level2-item">
+                                                    <a href="/services/risk-and-compliance" target="_self" data-event="click_link" data-component="standard_link">
+                                                        Risk &amp; Compliance
+                                                    </a>
+                                                </li>
+                                                <li class="nav-primary-level2-item">
+                                                    <a href="/services/strategic-communications" target="_self" data-event="click_link" data-component="standard_link">
+                                                        Strategic Communications
+                                                    </a>
+                                                </li>
+                                                <li class="nav-primary-level2-item">
+                                                    <a href="/services/strategy" target="_self" data-event="click_link" data-component="standard_link">
+                                                        Strategy
+                                                    </a>
+                                                </li>
+                                                <li class="nav-primary-level2-item">
+                                                    <a href="/services/tax" target="_self" data-event="click_link" data-component="standard_link">
+                                                        Tax
+                                                    </a>
+                                                </li>
+                                                <li class="nav-primary-level2-item">
+                                                    <a href="/services/transactions" target="_self" data-event="click_link" data-component="standard_link">
+                                                        Transactions
+                                                    </a>
+                                                </li>
+                                                <li class="nav-primary-level2-item">
+                                                    <a href="/services/turnaround-and-restructuring" target="_self" data-event="click_link" data-component="standard_link">
+                                                        Turnaround &amp; Restructuring
+                                                    </a>
+                                                </li>
+                                                <li class="nav-primary-level2-item">
+                                                    <a href="/services/valuation-and-damages" target="_self" data-event="click_link" data-component="standard_link">
+                                                        Valuation &amp; Damages
+                                                    </a>
+                                                </li>
+                                        </ul>
+
+                                        </div>
+                                    </div>
+                            </li>
+                            <li class="nav-level1-item nav-level1-container nav-primary-level1-item extra-item nav-primary-industries module-is-collapsed-mq-medium js-nav-expand-wrap">
+                                <div class="nav-level1-element">
+                                    
+                                    <a href="/industries" target="_self" class="" data-event="click_link" data-component="main_menu_link">
+                                        INDUSTRIES
+                                    </a>
+                                        <div class="menu-toggle-btn js-nav-menu-item-expand-toggle" role="button"></div>
+                                </div>
+
+                                    <div class="nav-level2 nav-level2-industries nav-primary-level2 js-nav-expand-item cf" data-module="main_menu_nav_dropdown" data-meta1="INDUSTRIES">
+
+                                            <div class="nav-level2__container">
+                                        <ul class="cf nav-industries">
+                                                <li class="nav-primary-level2-item">
+                                                    <a href="/industries/aerospace-and-defense" target="_self" data-event="click_link" data-component="standard_link">
+                                                        Aerospace &amp; Defense
+                                                    </a>
+                                                </li>
+                                                <li class="nav-primary-level2-item">
+                                                    <a href="/industries/airlines-and-aviation" target="_self" data-event="click_link" data-component="standard_link">
+                                                        Airlines &amp; Aviation
+                                                    </a>
+                                                </li>
+                                                <li class="nav-primary-level2-item">
+                                                    <a href="/industries/automotive" target="_self" data-event="click_link" data-component="standard_link">
+                                                        Automotive &amp; Industrial
+                                                    </a>
+                                                </li>
+                                                <li class="nav-primary-level2-item">
+                                                    <a href="/industries/construction-projects-and-assets" target="_self" data-event="click_link" data-component="standard_link">
+                                                        Construction, Projects &amp; Assets
+                                                    </a>
+                                                </li>
+                                                <li class="nav-primary-level2-item">
+                                                    <a href="/industries/energy-power-and-products" target="_self" data-event="click_link" data-component="standard_link">
+                                                        Energy, Power &amp; Products (EPP)
+                                                    </a>
+                                                </li>
+                                                <li class="nav-primary-level2-item">
+                                                    <a href="/industries/environmental" target="_self" data-event="click_link" data-component="standard_link">
+                                                        Environmental
+                                                    </a>
+                                                </li>
+                                                <li class="nav-primary-level2-item">
+                                                    <a href="/industries/financial-services" target="_self" data-event="click_link" data-component="standard_link">
+                                                        Financial Services
+                                                    </a>
+                                                </li>
+                                                <li class="nav-primary-level2-item">
+                                                    <a href="/industries/food-agribusiness" target="_self" data-event="click_link" data-component="standard_link">
+                                                        Food &amp; Agribusiness
+                                                    </a>
+                                                </li>
+                                                <li class="nav-primary-level2-item">
+                                                    <a href="/industries/healthcare" target="_self" data-event="click_link" data-component="standard_link">
+                                                        Healthcare
+                                                    </a>
+                                                </li>
+                                                <li class="nav-primary-level2-item">
+                                                    <a href="/industries/hospitality-gaming-and-leisure" target="_self" data-event="click_link" data-component="standard_link">
+                                                        Hospitality, Gaming &amp; Leisure
+                                                    </a>
+                                                </li>
+                                                <li class="nav-primary-level2-item">
+                                                    <a href="/industries/insurance" target="_self" data-event="click_link" data-component="standard_link">
+                                                        Insurance
+                                                    </a>
+                                                </li>
+                                                <li class="nav-primary-level2-item">
+                                                    <a href="/industries/mining" target="_self" data-event="click_link" data-component="standard_link">
+                                                        Mining
+                                                    </a>
+                                                </li>
+                                                <li class="nav-primary-level2-item">
+                                                    <a href="/industries/private-equity" target="_self" data-event="click_link" data-component="standard_link">
+                                                        Private Equity
+                                                    </a>
+                                                </li>
+                                                <li class="nav-primary-level2-item">
+                                                    <a href="/industries/public-sector" target="_self" data-event="click_link" data-component="standard_link">
+                                                        Public Sector &amp; Government Contracts
+                                                    </a>
+                                                </li>
+                                                <li class="nav-primary-level2-item">
+                                                    <a href="/industries/real-estate" target="_self" data-event="click_link" data-component="standard_link">
+                                                        Real Estate
+                                                    </a>
+                                                </li>
+                                                <li class="nav-primary-level2-item">
+                                                    <a href="/industries/retail-and-consumer-products" target="_self" data-event="click_link" data-component="standard_link">
+                                                        Retail &amp; Consumer Products
+                                                    </a>
+                                                </li>
+                                                <li class="nav-primary-level2-item">
+                                                    <a href="/industries/tmt" target="_self" data-event="click_link" data-component="standard_link">
+                                                        Telecom, Media &amp; Technology (TMT)
+                                                    </a>
+                                                </li>
+                                                <li class="nav-primary-level2-item">
+                                                    <a href="/industries/transportation" target="_self" data-event="click_link" data-component="standard_link">
+                                                        Transportation &amp; Logistics
+                                                    </a>
+                                                </li>
+                                        </ul>
+
+                                        </div>
+                                    </div>
+                            </li>
+                            <li class="nav-level1-item nav-level1-container nav-primary-level1-item extra-item nav-primary-digital module-is-collapsed-mq-medium js-nav-expand-wrap">
+                                <div class="nav-level1-element">
+                                    
+                                    <a href="/digital" target="_self" class="" data-event="click_link" data-component="main_menu_link">
+                                        DIGITAL
+                                    </a>
+                                </div>
+
+                            </li>
+                            <li class="nav-level1-item nav-level1-container nav-primary-level1-item extra-item nav-primary-insights module-is-collapsed-mq-medium js-nav-expand-wrap nav-primary-level1-item--current">
+                                <div class="nav-level1-element">
+                                    
+                                    <a href="/insights" target="_self" class="" data-event="click_link" data-component="main_menu_link">
+                                        INSIGHTS
+                                    </a>
+                                        <div class="menu-toggle-btn js-nav-menu-item-expand-toggle" role="button"></div>
+                                </div>
+
+                                    <div class="nav-level2 nav-level2-insights nav-primary-level2 js-nav-expand-item cf" data-module="main_menu_nav_dropdown" data-meta1="INSIGHTS">
+
+                                            <div class="nav-level2__container">
+                                        <ul class="cf nav-insights">
+                                                <li class="nav-primary-level2-item">
+                                                    <a href="/insights" target="_self" data-event="click_link" data-component="standard_link">
+                                                        Featured Insights
+                                                    </a>
+                                                </li>
+                                                <li class="nav-primary-level2-item">
+                                                    <a href="/insights/search-results#sort=@insightsz95xpublicationz95xdate descending&amp;f:insights-publication-type=[Article,Case Study,Success Story,Report,Whitepaper]&amp;f:insight-service=[AI]" target="_self" data-event="click_link" data-component="standard_link">
+                                                        AI Insights
+                                                    </a>
+                                                </li>
+                                                <li class="nav-primary-level2-item">
+                                                    <a href="/roles/general-counsel" target="_self" data-event="click_link" data-component="standard_link">
+                                                        For The General Counsel
+                                                    </a>
+                                                </li>
+                                                <li class="nav-primary-level2-item">
+                                                    <a href="/roles/cfo" target="_self" data-event="click_link" data-component="standard_link">
+                                                        For The Strategic CFO
+                                                    </a>
+                                                </li>
+                                                <li class="nav-primary-level2-item">
+                                                    <a href="/roles/private-equity" target="_self" data-event="click_link" data-component="standard_link">
+                                                        For The Private Equity Leader
+                                                    </a>
+                                                </li>
+                                                <li class="nav-primary-level2-item">
+                                                    <a href="/roles/board-of-directors" target="_self" data-event="click_link" data-component="standard_link">
+                                                        For The Board of Directors
+                                                    </a>
+                                                </li>
+                                                <li class="nav-primary-level2-item">
+                                                    <a href="/insights/search-results" target="_self" data-event="click_link" data-component="standard_link">
+                                                        Insights Library
+                                                    </a>
+                                                </li>
+                                        </ul>
+
+                                        </div>
+                                    </div>
+                            </li>
+                            <li class="nav-level1-item nav-level1-container nav-primary-level1-item extra-item nav-primary-our experts module-is-collapsed-mq-medium js-nav-expand-wrap">
+                                <div class="nav-level1-element">
+                                    
+                                    <a href="/experts#sort=relevancy&amp;numberOfResults=12" target="_self" class="" data-event="click_link" data-component="main_menu_link">
+                                        OUR EXPERTS 
+                                    </a>
+                                </div>
+
+                            </li>
+                            <li class="nav-level1-item nav-level1-container nav-primary-level1-item extra-item nav-primary-success-stories module-is-collapsed-mq-medium js-nav-expand-wrap">
+                                <div class="nav-level1-element">
+                                    
+                                    <a href="/our-impact" target="_self" class="" data-event="click_link" data-component="main_menu_link">
+                                        Our Impact
+                                    </a>
+                                </div>
+
+                            </li>
+                            <li class="nav-level1-item nav-level1-container nav-primary-level1-item extra-item nav-primary-careers module-is-collapsed-mq-medium js-nav-expand-wrap">
+                                <div class="nav-level1-element">
+                                    
+                                    <a href="/careers" target="_self" class="" data-event="click_link" data-component="main_menu_link">
+                                        CAREERS
+                                    </a>
+                                </div>
+
+                            </li>
+                            <li class="nav-level1-item nav-level1-container nav-primary-level1-item extra-item nav-primary-about module-is-collapsed-mq-medium js-nav-expand-wrap">
+                                <div class="nav-level1-element">
+                                    
+                                    <a href="/about" target="_self" class="" data-event="click_link" data-component="main_menu_link">
+                                        ABOUT FTI
+                                    </a>
+                                        <div class="menu-toggle-btn js-nav-menu-item-expand-toggle" role="button"></div>
+                                </div>
+
+                                    <div class="nav-level2 nav-level2-about nav-primary-level2 js-nav-expand-item cf" data-module="main_menu_nav_dropdown" data-meta1="ABOUT FTI">
+
+                                        <ul class="cf nav-about">
+                                                <li class="nav-primary-level2-item">
+                                                    <a href="/about/awards-and-recognition" target="_self" data-event="click_link" data-component="standard_link">
+                                                        Awards &amp; Recognition
+                                                    </a>
+                                                </li>
+                                                <li class="nav-primary-level2-item">
+                                                    <a href="/about/corporate-citizenship" target="_self" data-event="click_link" data-component="standard_link">
+                                                        Corporate Citizenship
+                                                    </a>
+                                                </li>
+                                                <li class="nav-primary-level2-item">
+                                                    <a href="/about/diversity-and-inclusion" target="_self" data-event="click_link" data-component="standard_link">
+                                                        Diversity, Inclusion &amp; Belonging
+                                                    </a>
+                                                </li>
+                                                <li class="nav-primary-level2-item">
+                                                    <a href="/about/governance" target="_self" data-event="click_link" data-component="standard_link">
+                                                        Governance
+                                                    </a>
+                                                </li>
+                                                <li class="nav-primary-level2-item">
+                                                    <a href="/about/our-history" target="_self" data-event="click_link" data-component="standard_link">
+                                                        History
+                                                    </a>
+                                                </li>
+                                                <li class="nav-primary-level2-item">
+                                                    <a href="/about/leadership/global-leadership" target="_self" data-event="click_link" data-component="standard_link">
+                                                        Leadership
+                                                    </a>
+                                                </li>
+                                                <li class="nav-primary-level2-item">
+                                                    <a href="/about/newsroom" target="_self" data-event="click_link" data-component="standard_link">
+                                                        News
+                                                    </a>
+                                                </li>
+                                                <li class="nav-primary-level2-item">
+                                                    <a href="https://ir.fticonsulting.com/" target="_blank" data-event="click_link" data-component="standard_link">
+                                                        Investor Relations
+                                                    </a>
+                                                </li>
+                                        </ul>
+
+                                    </div>
+                            </li>
+                </ul>
+
+                <ul class="nav-primary-location">
+
+                        <li class="nav-level1-item -is-expandable nav-primary-level1-item nav-primary-insights js-nav-expand-wrap only-mobile">
+                            <a href="#" class="js-nav-expand-toggle" aria-label="Insights" id="nav-expand-insights-btn" role="button" aria-expanded="false" aria-controls="nav-expand-insights">
+                                <span class="nav-utility-dropdown__current-text" style="margin-left: 23px;">
+                                    GLOBAL
+                                </span>
+                            </a>
+                            <div aria-labelledby="nav-expand-insights-btn" id="nav-expand-insights" role="region" class="nav-level2 nav-primary-level2 nav-level2-insights js-nav-expand-item cf" hidden="">
+
+                                <div class="nav-level2__container">
+                                    <ul class="cf">
+
+                                            <li class="nav-level2-item nav-primary-level2-item">
+                                                <a href="/" target="_self">Global</a>
+                                            </li>
+                                            <li class="nav-level2-item nav-primary-level2-item">
+                                                <a href="/australia" target="_self">Australia</a>
+                                            </li>
+                                            <li class="nav-level2-item nav-primary-level2-item">
+                                                <a href="/en/canada" target="_self">Canada</a>
+                                            </li>
+                                            <li class="nav-level2-item nav-primary-level2-item">
+                                                <a href="/en/china" target="_self">China</a>
+                                            </li>
+                                            <li class="nav-level2-item nav-primary-level2-item">
+                                                <a href="/en/france" target="_self">France</a>
+                                            </li>
+                                            <li class="nav-level2-item nav-primary-level2-item">
+                                                <a href="/en/germany" target="_self">Germany</a>
+                                            </li>
+                                            <li class="nav-level2-item nav-primary-level2-item">
+                                                <a href="/en/japan" target="_self">Japan</a>
+                                            </li>
+                                            <li class="nav-level2-item nav-primary-level2-item">
+                                                <a href="/netherlands" target="_self">Netherlands</a>
+                                            </li>
+                                            <li class="nav-level2-item nav-primary-level2-item">
+                                                <a href="/saudi-arabia" target="_self">Saudi Arabia</a>
+                                            </li>
+                                            <li class="nav-level2-item nav-primary-level2-item">
+                                                <a href="/en/spain" target="_self">Spain</a>
+                                            </li>
+                                            <li class="nav-level2-item nav-primary-level2-item">
+                                                <a href="/united-arab-emirates" target="_self">United Arab Emirates</a>
+                                            </li>
+                                            <li class="nav-level2-item nav-primary-level2-item">
+                                                <a href="/uk" target="_self">United Kingdom</a>
+                                            </li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <!-- .nav-primary-level2 -->
+                        </li>
+                    <li class="nav-level1-item e nav-primary-level1-item nav-primary-insights js-nav-expand-wrap only-mobile" data-module="utility_nav_bar">
+                        <a href="/about/contact-us" target="_self" class="js-nav-expand-toggle" id="nav-expand-insights-btn" role="button" data-event="click_link" data-component="contact_link">
+                            <span class="nav-utility-dropdown__current-text" style="margin-left: 23px;">
+
+                                Contact
+                            </span>
+                        </a>
+                    </li>
+                </ul>
+
+            </nav>
+        </div>
+    </div>
+
+
+
+    <div class="bh-wrapper global-search-wrapper" style="display: none;">
+        <div>
+    
+    
+
+        <div id="_1E86A9B8-363F-414F-90AE-C61F1C968BC0"
+                             data-search-interface-id='coveo5b19aeb1'
+>
+            
+<div class='coveo-search-section'>
+    
+
+
+
+<script>
+    document.addEventListener("CoveoSearchEndpointInitialized", function() {
+        var searchboxElement = document.getElementById("ade3b9b1-e77b-48ed-9dd9-711fb4dad130");
+        searchboxElement.addEventListener("CoveoComponentInitialized", function() {
+            CoveoForSitecore.initSearchboxIfStandalone(searchboxElement, "/search-results");
+        });
+    })
+</script>    <div id="ade3b9b1-e77b-48ed-9dd9-711fb4dad130_container" class="coveo-for-sitecore-search-box-container"
+                     data-prebind-maximum-age='currentMaximumAge'
+>
+        <div id="ade3b9b1-e77b-48ed-9dd9-711fb4dad130"
+             class="CoveoSearchbox"
+                             data-enable-omnibox='true'
+                 data-prebind-maximum-age='currentMaximumAge'
+                 data-placeholder='Search'
+                 data-clear-filters-on-new-query='false'
+>
+            
+            
+<script type="text/javascript">
+    document.addEventListener("CoveoSearchEndpointInitialized", function() {
+        var componentId = "ade3b9b1-e77b-48ed-9dd9-711fb4dad130";
+        var componentElement = document.getElementById(componentId);
+
+        function showError(error) {
+                console.error(error);
+        }
+
+        function areCoveoResourcesIncluded() {
+            return typeof (Coveo) !== "undefined";
+        }
+
+        if (areCoveoResourcesIncluded()) {
+            var event = document.createEvent("CustomEvent");
+            event.initEvent("CoveoComponentInitialized", false, true);
+            
+            setTimeout(function() {
+                componentElement.dispatchEvent(event);
+            }, 0);
+        } else {
+            componentElement.classList.add("invalid");
+            showError("The Coveo Resources component must be included in this page.");
+        }
+    });
+</script>
+            <div class="CoveoForSitecoreBindWithUserContext"></div>
+            <div class="CoveoForSitecoreExpressions"></div>
+            <div class="CoveoForSitecoreConfigureSearchHub" data-sc-search-hub="search-results"></div>
+        </div>
+        
+    </div>
+
+</div>
+        </div>
+</div>
+
+    <script type="text/javascript">
+        document.addEventListener("CoveoSearchEndpointInitialized", function() {
+            var externalComponentsSection = document.getElementById("_1E86A9B8-363F-414F-90AE-C61F1C968BC0");
+                 CoveoForSitecore.initExternalComponentsSection(externalComponentsSection);
+        });
+    </script>
+
+    </div>
+</div>
+                        </header>
+                        <!-- /Header -->
+                        <!-- Breadcrumbs-->
+                        
+
+<script type="application/ld+json">
+    {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Home",
+      "item": "https://www.fticonsulting.com/"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "Insights",
+      "item": "https://www.fticonsulting.com/insights"
+    },
+    {
+      "@type": "ListItem",
+      "position": 3,
+      "name": "Articles",
+      "item": "https://www.fticonsulting.com/insights/search-results#sort=relevancy&f:insights-publication-type=[Article]"
+    },
+    {
+      "@type": "ListItem",
+      "position": 4,
+      "name": "From Unknown to Viral: AI Narrative Seeding",
+      "item": "https://www.fticonsulting.com/insights/articles/unknown-viral-ai-narrative-seeding"
+    }
+  ]
+}
+</script>
+
+                        
+                        <!-- /Breadcrumbs -->
+                        <!-- START: BANNER -->
+                        
+                        <!-- END: BANNER -->
+                        <!-- MAIN CONTENTS PART -->
+                        <div id="main" class="cf content-full">
+                            
+
+<div class="only-tablet-above">
+    <nav class="breadcrumbs" data-section="header" data-module="breadcrumbs">
+        <div class="breadcrumbs__inner">
+            <ul class="breadcrumbs__list">
+                    <li class="breadcrumbs__item">
+
+                            <a href="/" class="breadcrumbs__link" data-event="click_link" data-component="breadcrumb_link">Home</a>
+                    </li>
+                    <li class="breadcrumbs__item">
+                            <span class="breadcrumbs__devider">/</span>
+
+                            <a href="/insights" class="breadcrumbs__link" data-event="click_link" data-component="breadcrumb_link">Insights</a>
+                    </li>
+                    <li class="breadcrumbs__item">
+                            <span class="breadcrumbs__devider">/</span>
+
+                            <a href="/insights/search-results#sort=relevancy&amp;f:insights-publication-type=[Article]" class="breadcrumbs__link" data-event="click_link" data-component="breadcrumb_link">Articles</a>
+                    </li>
+                    <li class="breadcrumbs__item">
+                            <span class="breadcrumbs__devider">/</span>
+
+                            <span class="breadcrumbs__link">From Unknown to Viral: AI Narrative Seeding</span>
+                    </li>
+            </ul>
+        </div>
+    </nav>
+</div>
+<div class="content-wrap">
+    <div class="content-sidebar content-sidebar--right">
+        <div class="content-sidebar__content">
+                <div class="component-wrap">
+            <h1 class="headline-main">From Unknown to Viral: AI Narrative Seeding</h1>
+
+            <p class="headline--small" style="margin-bottom: 25px;">Online Conversation on AI Risk and Regulation Remains Ripe for Manipulation</p>
+
+            <div class="insights-detail__main-img--mixed lazy-bg" data-bg="/-/media/images/shared-content/insights/articles/2026/nov/unknown-viral-ai-narrative-seeding_900x471_center.jpeg?rev=41d35733b41f47a29a4d7178ebeea3dc" style="background-image: none; margin-bottom: 25px;"></div>
+    </div>
+
+
+    <div class="location-article-toolbar nav-sticky">
+        <div class="content-wrap">
+            <ul>
+                <li>
+                    <p class="insights-rail__date">November 09, 2026</p>         
+                    <div></div>
+                </li>
+                <li>
+                    
+<article class="portlet portlet-social js-social-share is-consent-gated">
+    <div class="portlet-body">
+        <div class="portlet-social-container">   
+            <span class="portlet-body__title">Share</span>
+
+            <div class="a2a_kit">
+                <a class="a2a_button_email addtoany_button addtoany_button_mailto" aria-label="Email share" title="Email">
+                    <svg width="37" height="37" viewBox="0 0 37 37" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="18.9107" cy="18.7311" fill="#ffffff" r="17.9186"></circle>
+                        <path d="M19 17.9384L13.0576 14H24.9424L19 17.9384ZM12 24V15.0788L19 19.7192L26 15.0788V24H12Z" fill="#8dbfde"></path>
+                    </svg>
+                </a>
+                <a class="a2a_button_linkedin addtoany_button addtoany_button_linkedin" aria-label="Linkedin share" title="LinkedIn" >
+                    <svg width="37" height="37" viewBox="0 0 37 37" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="18.3561" cy="18.7311" r="17.9186" fill="#ffffff" />
+                        <path d="M15.0681 12.0641C15.0681 12.7813 14.4696 13.3625 13.7309 13.3625C12.9921 13.3625 12.3936 12.7813 12.3936 12.0641C12.3936 11.3473 12.9921 10.7656 13.7309 10.7656C14.4696 10.7656 15.0681 11.3473 15.0681 12.0641ZM15.0789 14.4013H12.3828V22.7113H15.0789V14.4013ZM19.3829 14.4013H16.7041V22.7113H19.3834V18.3491C19.3834 15.9236 22.6344 15.7252 22.6344 18.3491V22.7113H25.324V17.4495C25.324 13.3568 20.5131 13.5059 19.3829 15.5205V14.4013Z"
+                                fill="#8dbfde" />
+                    </svg>
+                </a>
+                <a class="a2a_button_twitter addtoany_button addtoany_button_twitter" aria-label="Twitter share" title="Twitter">
+                    <svg width="37" height="37" viewBox="0 0 37 37" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="18.6334" cy="18.7311" r="17.9186"  fill="#fff"/>
+                        <path d="M17.6693 20.0709L12.4562 26H13.6898L18.2185 20.8482L21.8346 26H26L20.5335 18.2185L26 12H24.7664L19.9843 17.433L16.1654 12H12L17.6693 20.0709ZM19.3675 18.1441L19.9252 18.9214L24.3271 25.0904H22.4261L18.869 20.1122L18.3114 19.3349L13.6898 12.8683H15.5908L19.3591 18.1441H19.3675Z" fill="#8dbfde"/>
+                    </svg>
+                </a>
+                <!-- <a class="a2a_button_twitter addtoany_button addtoany_button_twitter" aria-label="Twitter share" title="Twitter">
+                    <svg width="37" height="37" viewBox="0 0 37 37" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="18.6334" cy="18.7311" r="17.9186" fill="#ffffff" />
+                        <path d="M16.7205 23.7087C21.6071 23.7087 24.2791 19.8779 24.2791 16.5579C24.2791 16.4485 24.2791 16.339 24.2736 16.2348C24.7915 15.8804 25.2432 15.4374 25.6013 14.9318C25.1275 15.1299 24.6152 15.2654 24.0753 15.3279C24.6262 15.0152 25.0449 14.5253 25.2432 13.9363C24.7309 14.223 24.1634 14.4315 23.5574 14.5461C23.0726 14.0562 22.3839 13.7539 21.6182 13.7539C20.1527 13.7539 18.9627 14.8797 18.9627 16.266C18.9627 16.4641 18.9848 16.6569 19.0343 16.8394C16.8251 16.7351 14.8694 15.7344 13.5582 14.2126C13.3323 14.5826 13.2001 15.0152 13.2001 15.4738C13.2001 16.3442 13.6683 17.1156 14.3845 17.5638C13.9493 17.5534 13.5416 17.4387 13.1835 17.2511C13.1835 17.2615 13.1835 17.2719 13.1835 17.2824C13.1835 18.502 14.0981 19.5131 15.3156 19.7476C15.0952 19.8049 14.8583 19.8362 14.6159 19.8362C14.4451 19.8362 14.2799 19.8206 14.1146 19.7893C14.4507 20.79 15.4313 21.5144 16.5937 21.5353C15.6847 22.2076 14.5388 22.6089 13.2937 22.6089C13.0789 22.6089 12.8695 22.5985 12.6602 22.5725C13.8226 23.2917 15.2219 23.7087 16.7205 23.7087Z"
+                                fill="#8dbfde" />
+                    </svg>
+                </a> -->
+                <a class="a2a_button_twitter addtoany_button addtoany_button_facebook" aria-label="Facebook share" title="Facebook">
+                    <svg fill="none" height="37" viewBox="0 0 37 37" width="37" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="18.9107" cy="18.7311" fill="#ffffff" r="17.9186"></circle>
+                        <path d="m19.7878 26.8159v-7.7767h2.6607l.3987-3.0309h-3.0594v-1.9329c0-.8799.2454-1.4741 1.5335-1.4741h1.6333v-2.70753c-.2838-.0376-1.2575-.12033-2.3847-.12033-2.3616 0-3.9719 1.41396-3.9719 4.00116v2.2337h-2.6683v3.0309h2.6683v7.7767z" fill="#8dbfde"></path>
+                    </svg>
+                </a>
+                 <a href="https://www.addtoany.com/share" class="a2a_dd addtoany_button addtoany_button_share" aria-label="Share" title="Share">
+                    <svg width="37" height="37" viewBox="0 0 37 37" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="18.0826" cy="18.7311" r="17.9186" fill="#ffffff"></circle>
+                        <path fill-rule="evenodd" clip-rule="evenodd" d="M21.9625 21.8761C21.3925 21.8761 20.6325 22.0661 20.2525 22.6361L15.5025 19.9761V19.4061V18.8361L20.2525 16.1761C20.6325 16.5561 21.2025 16.9361 21.9625 16.9361C23.2925 16.9361 24.4325 15.7961 24.4325 14.4661C24.4325 13.1361 23.2925 11.9961 21.9625 11.9961C20.6325 11.9961 19.4925 13.1361 19.4925 14.4661V15.0361L14.7425 17.6961C14.3625 17.3161 13.7925 16.9361 13.0325 16.9361C11.7025 16.9361 10.5625 18.0761 10.5625 19.4061C10.5625 20.7361 11.7025 21.8761 13.0325 21.8761C13.6025 21.8761 14.3625 21.6861 14.7425 21.1161L19.4925 23.7761V24.3461C19.4925 25.6761 20.6325 26.8161 21.9625 26.8161C23.2925 26.8161 24.4325 25.6761 24.4325 24.3461C24.4325 23.0161 23.2925 21.8761 21.9625 21.8761Z" fill="#0067B1"></path>
+                    </svg>
+                </a>     
+            </div>
+        </div>
+    </div>
+</article>
+
+                    <div class="back-top-top" style="display: inline-block;">
+                        <img src="/Content/Project/Global/images/assets/back-to-top.svg" alt="Back to top" width="50" loading="lazy">
+                    </div>
+                </li>
+            </ul>
+        </div>
+
+    </div>
+<div class="component-wrap">
+        <div class="rte-wrapper">
+            <p><span class="rtf-intro">The events surrounding Jacob Coxon&rsquo;s resignation from Anthropic and near-instant virality demonstrate how an authentic source can participate &ndash; wittingly or not &ndash; in coordinated campaigns to seed narratives on highly contentious issues. In this case, a narrative about the threats from AI was quickly co-opted by all sides of the issue. Organizations should be aware that an authentic source does not automatically establish that their reach is organic, and the two must be assessed separately. A genuine employee statement can be pre-briefed to press, seeded by funded intermediaries, validated by insiders and routed into legislation within 24 hours. The exposure for any organization in a contested policy or market environment is the same: A single, credible insider voice can quickly be converted into a durable narrative asset by parties whose interests are in opposition to the original voice.</span></p>
+<p>Practical detection rests on a small number of signals: account-history versus reach mismatch, press timestamps relative to the originating post, identity and funding affiliation of first-hour amplifiers, latency of insider corroboration, automation and language-uniformity scoring and how quickly the narrative appears in policy or litigation vehicles. Monitoring these signals during or after a campaign, as well as on an ongoing basis, is critical to establishing a baseline and tracking an organization&rsquo;s exposure.</p>
+<p>FTI Consulting&rsquo;s analysis of the first hours and days of the Jacob Coxon resignation thread on X identified, with medium confidence, a distribution pattern consistent with coordinated amplification by aligned advocacy efforts, rather than purely organic spread. The author and the resignation appear genuine; however, the reach did not build from his own audience. It was accelerated through pre-positioned press, a first-minute cluster of amplification from AI-safety advocates and a same-evening validation cascade from current employees of the company he criticized. Every one of those steps occurred before the platform owner engaged with the post, and while Elon Musk&rsquo;s attention on a post can quickly lead to virality, in this instance his attention cannot explain the initial spike.</p>
+<h3>What Happened</h3>
+<p>On September 8, former Anthropic researcher Jacob Coxon used X to announce his resignation and criticize the pace at which major AI labs are developing increasingly capable systems, arguing that they pose a threat to humanity. He stated that he had worked in pretraining research at both Anthropic and OpenAI and argued that neither company was acting responsibly. In an interview with Fox News, Coxon denied third-party involvement in his announcement. However, he later said he &ldquo;misspoke&rdquo; and went on to acknowledge he worked with others to &ldquo;try to make this a bit viral.&rdquo;<sup>1, 2</sup> In other interviews, he confirmed that he collaborated with friends in the AI safety space, as well as participating in the initial interview with The Wall Street Journal (&ldquo;WSJ&rdquo;) ahead of his public posts, to enhance the odds of visibility.<sup>3</sup></p>
+<p>A review of posting patterns in the first 24 hours after Coxon&rsquo;s tweet revealed one company at the forefront of this coordination. Senior employees of the AI-safety advocacy group Encode interacted rapidly with Coxon&rsquo;s post within the first half-hour. FTI Consulting&rsquo;s analysis shows Encode&rsquo;s founder retweeted Coxon two minutes and 28 seconds after his announcement. Encode&rsquo;s general counsel quoted Coxon&rsquo;s post six minutes and 6 seconds afterward. And Encode&rsquo;s national security policy director retweeted the post eight minutes and 53 seconds after it went live.</p>
+<p>Weeks before Coxon resigned, Encode&rsquo;s founder posted publicly about the work the organization was doing to organize lab employees to speak out about safety concerns to influence lab leadership.</p>
+<p>While the WSJ has an X account with more than 22 million followers as of September 8, it was Coxon &ndash; an unknown figure in the AI ecosystem &ndash; that went super-viral. Within an hour, his resignation post took off, and within 24 hours it had generated hundreds of thousands of interactions.</p>
+<h3>Figure 1 - Time Series of Coxon and the WSJ Posts</h3>
+<p><img alt="Lines begin upon source publication. Responses include captured reposts, replies and quotes. " src="-/media/ed09803c3a874b3992b8291ce8a9a0e9.ashx" /></p>
+<div class="rtf-footnote">
+<p>Lines Begin Upon Source Publication. Responses Include Captured Reposts, Replies and Quotes. They Do Not Include Likes, Impressions or Unique Readers.<br />
+Source: FTI Consulting analysis</p>
+</div>
+<p>The thread quickly became a major news and social media event, reaching audiences well beyond the technical AI-safety community. It was amplified by journalists, researchers, influencers, policymakers and commentators with sharply different views about the future of AI.</p>
+<p>It did not take long for other prominent accounts to weigh in. FTI Consulting&rsquo;s collection shows a Polymarket bulletin flashed 64 minutes after Coxon&rsquo;s initial post. Evan Hubinger, Anthropic&rsquo;s Alignment Science Lead, echoed Coxon&rsquo;s concerns about AI and humanity 84 minutes after Coxon&rsquo;s original post, a clear accelerant to the conversation. But by the time they engaged, Coxon&rsquo;s posts were already primed for takeoff.</p>
+<p>Weeks later, amid the heightened interest, an AI safety author said that he introduced Coxon to a public relations firm, although the author said the introduction occurred after Coxon&rsquo;s post had already gone viral.<sup>4</sup></p>
+<h3>Figure 2 - Response Rate to Coxon&rsquo;s Post Within the First Two Hours</h3>
+<p><img alt="Response rate to Coxon's post within the first two hours. " src="-/media/fc4be67e65ca42a2a6604a6fe1f7c683.ashx" /></p>
+<div class="rtf-footnote">
+<p>Source: FTI Consulting analysis</p>
+</div>
+<h3>Why It Worked on Both Sides</h3>
+<p>FTI Consulting&rsquo;s assessment found that the campaign gained traction because the same content served otherwise opposing agendas in the AI ecosystem. Different networks, despite their conflicting views, had a reason to amplify the story. The overlap was particularly potent because AI safety has recently been at the forefront of the news and while it has created misgivings among the broader public, it is also not well understood. The post also landed in a primed environment: OpenAI agents had broken out of a test environment and hacked Hugging Face in July; OpenAI&rsquo;s chief scientist had publicly called for a slowdown two days earlier; and an NBC poll published the day before showed low public trust in AI from either political party.<sup>5</sup> All of this helped tip a niche resignation story into virality.</p>
+<table class="content-table" cellspacing="2" cellpadding="5" max-width="95%;">
+    <thead>
+        <tr class="telerik-reTableHeaderRow-4">
+            <th class="telerik-reTableHeaderOddCol-4" style="width: 91px; height: 36px;">
+            <span class="content-table">Group</span>
+            </th>
+            <th class="telerik-reTableHeaderOddCol-4" style="width: 100px; height: 36px;">
+            <span class="content-table">How They Used the Post</span>
+            </th>
+            <th class="telerik-reTableHeaderOddCol-4" style="width: 100px; height: 36px;">
+            <span class="content-table">What it Gets Them</span>
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr class="telerik-reTableOddRow-4">
+            <td class="telerik-reTableEvenCol-4" style="font-weight: bold; border-bottom: 1px solid #7f7f7f; background-color: #ffffff;">AI critics and safety advocates</td>
+            <td class="telerik-reTableEvenCol-4" style="font-weight: bold; border-bottom: 1px solid #7f7f7f; background-color: #ffffff;">As insider proof that voluntary safety commitments inside the labs are falling short. </td>
+            <td class="telerik-reTableEvenCol-4" style="font-weight: bold; border-bottom: 1px solid #7f7f7f; background-color: #ffffff;">Public support for binding evaluation, reporting and oversight requirements instead of self-policing.</td>
+        </tr>
+    </tbody>
+    <tbody>
+        <tr class="telerik-reTableOddRow-4">
+            <td class="telerik-reTableEvenCol-4" style="font-weight: bold; border-bottom: 1px solid #7f7f7f; background-color: #ffffff;">Leading AI companies</td>
+            <td class="telerik-reTableEvenCol-4" style="font-weight: bold; border-bottom: 1px solid #7f7f7f; background-color: #ffffff;">As evidence that frontier AI is powerful enough to warrant regulation, with AI companies outlining safeguards they view as acceptable. </td>
+            <td class="telerik-reTableEvenCol-4" style="font-weight: bold; border-bottom: 1px solid #7f7f7f; background-color: #ffffff;">A rulebook built around capabilities only they have. Evaluations, audits, legal teams and government-relations staff are fixed costs incumbents already carry, and smaller entrants may not be able to accommodate, potentially limiting future competition.</td>
+        </tr>
+    </tbody>
+    <tbody>
+        <tr class="telerik-reTableOddRow-4">
+            <td class="telerik-reTableEvenCol-4" style="font-weight: bold; border-bottom: 1px solid #7f7f7f; background-color: #ffffff;">Regulation skeptics</td>
+            <td class="telerik-reTableEvenCol-4" style="font-weight: bold; border-bottom: 1px solid #7f7f7f; background-color: #ffffff;">As evidence of a &ldquo;psyop&rdquo; or orchestrated campaign designed to scare U.S. lawmakers into action.</td>
+            <td class="telerik-reTableEvenCol-4" style="font-weight: bold; border-bottom: 1px solid #7f7f7f; background-color: #ffffff;">A way to discredit safety advocates and criticize calls for binding regulation, including those coming from AI labs.</td>
+        </tr>
+    </tbody>
+</table>
+<p>The conversation surrounding Coxon&rsquo;s resignation demonstrates how his announcement fueled narratives that ranged from debate about AI&rsquo;s risks to humanity to questioning the credibility of Coxon and other AI researchers focused on safety.</p>
+<h3>Figure 3 - One resignation, Several Different Disputes</h3>
+<p><img alt="Thousands responded to Coxon's resignation news, seizing on disparate narratives." src="-/media/8f23357a58ab44b4ba9f7d8ea9f091f8.ashx" /></p>
+<div class="rtf-footnote">
+<p>Thousands Responded to Coxon&rsquo;s Resignation News, Seizing on Disparate Narratives.<br />
+Source: FTI Consulting analysis</p>
+</div>
+<h3>State-Owned Media Participation</h3>
+<p>FTI Consulting&rsquo;s review identified several accounts operated by, funded by or institutionally linked to foreign governments that carried the AI story as news or republished Western copy. Their involvement was a real but narrow cohort: media entities with state ties to China, Russia, Turkey, Qatar and Saudi Arabia all picked up the story. China Global Television Network&rsquo;s coverage stood out. It used its coverage to argue that U.S. labs cannot be trusted to govern themselves and to cast China&rsquo;s framework as the better model.<sup>6</sup> The posts were neither primary drivers nor amplifiers in the Coxon conversation, instead serving as examples of opportunities foreign-aligned entities of varying degrees seized on to engage in a contentious U.S. political matter.</p>
+<h3>Figure 4 - Example Post of a State-Run News Outlet Using Coxon&rsquo;s Post to Further Its Own Agenda</h3>
+<p><img alt="Example post of a state-run news outlet using Coxon’s post to further its own agenda." src="-/media/dd6890020fef4a219178dd84fb0f0a9f.ashx" /></p>
+<h3>Figure 5 - Exemplar Post of a State-Run News Outlet Amplifying Coxon&rsquo;s AI Warning</h3>
+<p><img alt="Exemplar post of a state-run news outlet amplifying Coxon's AI warning." src="-/media/82e0dd7c880a4a88b0e3d758d86b2982.ashx" /></p>
+<h3>Why This Matters</h3>
+<p>Viral narratives rarely become consequential because of a single post. They gain traction when credible-looking voices, coordinated amplification and rapid validation create the appearance of widespread concern before an organization has time to assess what is happening.</p>
+<p>Limiting the impact of the coordinated launch of a narrative and its potential tailwinds requires the same preparation used to address other cyber-enabled threats: intelligence collection, data availability, detection logic, defined escalation paths, evidence preservation and rehearsed containment measures. Once a coordinated distribution effort begins, the decision window may be measured in minutes rather than days.</p>
+<p>What can organizations do?</p>
+<ul>
+    <li>Develop an understanding of the advocacy groups, coalitions, communications firms, funders, influencers and policy stakeholders that could elevate a narrative involving your sector. Document known relationships and aligned interests in advance to allow early attribution and assessment to happen in minutes rather than after days of reactive research.</li>
+    <li>Establish detection criteria for indicators that a narrative is being pushed artificially.</li>
+    <li>Develop pre-approved holding language, factual corrections, employee guidance, stakeholder outreach plans and escalation procedures for identified inauthentic narrative spread.</li>
+    <li>Create a process to investigate inauthentic and coordinated behavior, including assessing efforts to seed narrative campaigns, gauging narrative spread and preserving evidence of misleading or defamatory claims.</li>
+    <li>Support mitigation strategies, including crisis communications responses and litigation support.</li>
+</ul>
+<h3>Strategic Outlook</h3>
+<p>The broader conversation surrounding data centers and AI advancement is likely to remain combustible and ripe for manipulation well beyond the November midterm elections in the U.S.</p>
+<p>Americans have expressed reservations about rapid AI advancement and its implications for economic prosperity, national security, education, the environment and the fate of humanity. Politically, the issue remains a jump ball in the U.S., with recent polling showing that neither Republicans nor Democrats hold a clear advantage in public perceptions of which party is better equipped to address AI and data center issues. For instance, a September 2026 New York Times/Siena Poll showed 40% of voters believed Democrats would better handle AI issues, while 42% said Republicans would.<sup>7</sup></p>
+<p>Perceived risks associated with AI and ongoing efforts to shape the regulatory landscape are likely to contribute over the longer term to a narrative environment that is susceptible to domestic influence campaigns as well as nation-state attempts to exploit division.</p>
+<div class="rtf-footnote">
+<p>Footnotes:</p>
+<p>1: Coxon, Jacob (@hilbertspaess), &ldquo;<a rel="noopener noreferrer" href="https://x.com/hilbertspaess/status/2100950530759819437?s=20" target="_blank">Misspoke with Baier, but clarified with Cooper on CNN...</a>,&rdquo; X (Sept. 8, 2026).</p>
+<p>2: Coxon, Jacob, [Transcript] &ldquo;<a rel="noopener noreferrer" href="https://transcripts.cnn.com/show/acd/date/2026-09-09/segment/01" target="_blank">Anderson Cooper 360</a>,&rdquo; CNN (Sept. 9, 2026).</p>
+<p>3: Ramkumar, Amrith; Woo, Erin; Jin, Berber and Cohen, Ben, &ldquo;<a rel="noopener noreferrer" href="https://www.wsj.com/tech/ai/jacob-coxon-quit-anthropic-ai-safety-3f4e877c" target="_blank">The Anonymous Math Geek Who Quit Anthropic&mdash;and Became the Face of AI Safety</a>,&rdquo; The Wall Street Journal (Sept. 16, 2026).</p>
+<p>4: &ldquo;<a rel="noopener noreferrer" href="https://everything-pr.com/dey-jacob-coxon-whistleblower-pr" target="_blank">DEY. Comms Firm Tied to Coxon&rsquo;s AI Whistleblower Story</a>,&rdquo; Everything PR News (Sept. 26, 2026).</p>
+<p>5: Kamisar, Ben and Bowman, Bridget, &ldquo;<a rel="noopener noreferrer" href="https://www.nbcnews.com/politics/politics-news/poll-polarized-america-unites-deep-concerns-ai-rcna595525" target="_blank">Poll: A polarized America unites behind deep concerns about AI</a>,&rdquo; NBC News (Sept. 6, 2026).</p>
+<p>6: &ldquo;<a rel="noopener noreferrer" href="https://news.cgtn.com/news/2026-09-14/AI-safety-Silicon-Valley-s-fear-narrative-meets-its-governance-gap-1QqW4qrrwty/p.html" target="_blank">AI Safety Paradox: Silicon Valley&rsquo;s Fear Narrative Meets Its Governance Gap</a>,&rdquo; China Global Television Network (Sept. 14, 2026).</p>
+<p>7: Goldmacher, Shane; Igielnik, Ruth and June, Sophia, &ldquo;<a rel="noopener noreferrer" href="https://www.nytimes.com/2026/09/15/us/politics/trump-midterm-election-poll.html" target="_blank">Democrats Gain Edge as Trump Drags Down G.O.P, New Poll Finds</a>,&rdquo; The New York Times (Sept. 15, 2026).</p>
+</div>
+        </div>
+
+
+        <div class="rte-wrapper">
+            <p class="rtf-footnote">The views expressed herein are those of the author(s) and not necessarily the views of FTI Consulting, Inc., its management, its subsidiaries, its affiliates, or its other professionals.</p>
+        </div>
+</div>
+
+
+
+
+
+
+        <div class="component-wrap">
+                <h2 class="component-header">Related Insights</h2>
+            <div class="related-insights__3-col">
+                <ul class="related-insights__container">
+
+                        <li class="related-insights__list">
+                            <a href="/insights/articles/national-security-overlooked-business-risk" class="related-insights__link-wrapper">
+                                <span class="related-insights__img lazy-bg" data-bg="/-/media/images/shared-content/insights/articles/2026/jan/national-security-overlooked-business-riskv2_270x176_center.jpeg?rev=6db7c2f873a1410eb2420b58e4a81026" style="background-image: none;"></span>
+                                <span class="related-insights__text">
+                                    <span class="related-insights__title">
+                                        National Security: The Overlooked Business Risk
+                                    </span>
+
+                                    <span class="linkout-arrow">
+                                        Read Article<i class="read-more-arrow"></i>
+                                    </span>
+                                </span>
+                            </a>
+                        </li>
+                </ul>
+            </div>
+        </div>
+    <div class="component-wrap"> 
+            <h2 class="component-header">Related Information</h2>
+        <ul class="related-info">
+                    <li class="related-info__item">
+                        <a href="/services/cybersecurity" class="related-info__link">                           
+                            <span class="related-info__link-title">
+                                Cybersecurity Consulting &amp; Data Privacy Advisory
+                            </span>
+                        </a>
+                    </li>
+                    <li class="related-info__item">
+                        <a href="/services/cybersecurity/national-security" class="related-info__link">                           
+                            <span class="related-info__link-title">
+                                National Security
+                            </span>
+                        </a>
+                    </li>
+        </ul>
+    </div>
+
+        </div>
+        <div class="content-sidebar__content component-wrap--mobile">
+            
+<div class="insights-rail">
+    <div class="insights-rail__section-container">
+            <div class="insights-rail__section">
+                <h3 class="insights-rail__title insights-rail__title--date" title="Date">Published</h3>
+                <p class="insights-rail__date">November 09, 2026</p>
+            </div>
+        <div class="insights-rail__section--tablet2">
+
+                <div class="insights-rail__section">
+                    <h3 class="insights-rail__title" title="Key Contacts">
+                        <img class="insights-rail__contact-icon" src="/Content/Project/Global/images/assets/icon-contact.svg" alt="temp" loading="lazy">
+                        Key Contacts
+                    </h3>
+
+                            <div class="insights-rail__contact">
+                                <p class="insights-rail__contact-name">
+                                        <a href="/experts/sara-murray" class="insights-rail__contact-name">Sara Murray </a>
+                                </p>
+
+                                            <p class="insights-rail__contact-title">Managing Director</p>
+
+                            </div>
+                </div>
+
+        </div>
+
+
+    </div>
+
+
+
+</div>        
+        <div class="most-popular-insights">
+                <h3>Most Popular Insights</h3>
+
+
+            <ol>
+                    <li class="most-popular-insights__article">                       
+                            <a href="/insights/reports/private-equity-report">2026 Private Equity Value Creation Index</a>                     
+                    </li>
+                    <li class="most-popular-insights__article">                       
+                            <a href="/insights/articles/payment-firms-under-scrutiny">Payment Firms Under Scrutiny</a>                     
+                    </li>
+                    <li class="most-popular-insights__article">                       
+                            <a href="/insights/articles/global-consumers-avoiding-us-impacted-businesses-relief-2026">Many Global Consumers Are Avoiding the U.S.</a>                     
+                    </li>
+                    <li class="most-popular-insights__article">                       
+                            <a href="/insights/articles/why-more-concern-recession-risk">Why Isn’t There More Concern About Recession Risk?</a>                     
+                    </li>
+                    <li class="most-popular-insights__article">                       
+                            <a href="/insights/reports/corporate-sustainability-report">Corporate Sustainability Report</a>                     
+                    </li>
+            </ol>
+        </div>
+
+
+
+        </div>
+    </div>     
+</div>
+    <div class="full-banner full-banner--insights-subscribe">
+        <h3 class="full-banner__title">
+            Sign up to get access to FTI Consulting Insights
+        </h3>
+
+        <a href="https://preferencecenter.fticonsulting.com/" target="_blank" class="button tangerine">
+            <span class="button__text">Subscribe</span>
+            <span class="button__icon">
+                <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M7.1291 14.425L5.3791 12.45L9.1291 9.15H0.204102V6.25H9.1291L5.3791 2.95L7.1291 0.974999L14.0791 7.65V7.75L7.1291 14.425Z" fill="white" />
+                </svg>
+            </span>
+        </a>
+    </div>
+
+                            <div id="video-fti"></div>
+                        </div>
+                        <!-- MAIN CONTENTS PART__END -->
+                        <!-- START: FOOTER -->
+                        <footer class="footer">
+                            <div class="footer-section cf">
+    <p class="footer-paragraph">
+        
+    </p>
+</div>
+<div class="footer-section bottom cf">
+    <div class="content-wrap">
+        <div class="footer-section__container" data-section="footer_nav">
+            <div class="footer-section__row--outer-container">
+                <div class="footer-section__row-container" data-module="footer_menu_nav">
+                    <img class="footer-section__logo" src="/-/media/project/global/demo/logo/experts-with-impact.png?rev=8256c60a9b4b429ea53e48bee4d9b85d" alt="experts-with-impact" loading="lazy"/>
+                    <ul class="footer-lists">
+                            <div class="footer-section__row--inner-container">
+                                    <li>
+                                        <a href="/services"  data-event="click_link" data-component="footer_menu_link">
+                                            Services
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a href="/industries"  data-event="click_link" data-component="footer_menu_link">
+                                            Industries
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a href="/insights"  data-event="click_link" data-component="footer_menu_link">
+                                            Insights
+                                        </a>
+                                    </li>
+                            </div>
+                            <div class="footer-section__row--inner-container">
+                                    <li>
+                                        <a href="/experts#sort=relevancy&amp;numberOfResults=12"  data-event="click_link" data-component="footer_menu_link">
+                                            Our Experts
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a href="/locations"  data-event="click_link" data-component="footer_menu_link">
+                                            Locations
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a href="/careers"  data-event="click_link" data-component="footer_menu_link">
+                                            Careers
+                                        </a>
+                                    </li>
+                            </div>
+                            <div class="footer-section__row--inner-container">
+                                    <li>
+                                        <a href="/about"  data-event="click_link" data-component="footer_menu_link">
+                                            About FTI
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a href="/about/newsroom"  data-event="click_link" data-component="footer_menu_link">
+                                            News
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a href="https://ir.fticonsulting.com/" target=_blank data-event="click_link" data-component="footer_menu_link">
+                                            Investor Relations
+                                        </a>
+                                    </li>
+                            </div>
+                    </ul>
+                </div>
+                <p class="footer-paragraph">
+                    &#169; 2026 FTI Consulting, Inc., including its subsidiaries and affiliates, is a consulting firm and is not a certified public accounting firm or a law firm. All Rights Reserved.
+                </p>
+            </div>
+            <div class="footer-section__row--outer-container">
+                <div>
+                    <span class="footer-social__title-text">Stay Connected</span>
+                    <div class="footer-social">
+                            <a href="https://www.linkedin.com/company/fti-consulting?trk=tyah" target=_blank data-event="click_link" data-component="stay_connected_link">
+                                <img class="footer-social-icon" src="/-/media/project/global/icons/stay-connected/icon-linkedin-footer.svg?rev=84ebc4395b82412eacd142c52c7ea2da" alt="fti consulting linkedin" loading="lazy">
+                            </a>
+                            <a href="https://x.com/fticonsulting" target=_blank data-event="click_link" data-component="stay_connected_link">
+                                <img class="footer-social-icon" src="/-/media/project/global/icons/stay-connected/icon-x-footer.png?rev=9b766e4754474b1aadd3019fdf5d0d4d" alt="fti consulting twitter" loading="lazy">
+                            </a>
+                            <a href="https://www.facebook.com/FTIConsultingInc?fref=ts" target=_blank data-event="click_link" data-component="stay_connected_link">
+                                <img class="footer-social-icon" src="/-/media/project/global/icons/stay-connected/icon-facebook-footer.svg?rev=9af2bc0e724b440499f72a4d4cd46863" alt="fti consulting facebook" loading="lazy">
+                            </a>
+                            <a href="https://www.youtube.com/channel/UCn6s8J_ZibEH0R35WCC4QBw" target=_blank data-event="click_link" data-component="stay_connected_link">
+                                <img class="footer-social-icon" src="/-/media/project/global/icons/stay-connected/icon-youtube-footer.svg?rev=fa167ece9bf44bbe947bc8600594a97e" alt="fti consulting youtube" loading="lazy">
+                            </a>
+                            <a href="https://www.instagram.com/lifeatfti/?hl=en" target=_blank data-event="click_link" data-component="stay_connected_link">
+                                <img class="footer-social-icon" src="/-/media/project/global/icons/stay-connected/icon-instagram-footer.svg?rev=ced0b45de3ab42cab39672f13309f7ac" alt="fti consulting instagram" loading="lazy">
+                            </a>
+                    </div>
+                </div>
+                <div class="footer-legal-links">
+                    <ul>
+                            <li><a href="/about/legal"  data-event="click_link" data-component="privacy_link">Legal</a></li>
+                            <li><a href="/about/privacy-policy"  data-event="click_link" data-component="privacy_link">Privacy</a></li>
+                            <li><a href="/about/cookie-policy"  data-event="click_link" data-component="privacy_link">Cookie Policy</a></li>
+                            <li><a href="/about/accessibility-statement"  data-event="click_link" data-component="privacy_link">Accessibility</a></li>
+                            <li><a href="/about/sitemap"  data-event="click_link" data-component="privacy_link">Sitemap</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+                        </footer>
+                        <!-- END: FOOTER -->
+                    </div><!-- .content-max -->
+                </div><!-- .scroller-inner -->
+            </div><!-- .scroller -->
+        </div><!-- #mp-pusher -->
+    </div>
+
+    <div id="page-scripts">
+        <script type="text/javascript" data-cookieconsent="ignore" defer src="/Content/Project/Global/js/main-tbg.js?v=202611050641"></script>
+
+        <!-- ********************** -->
+        <!-- START - Legacy Scripts -->
+        <!-- ********************** -->
+
+            <!--Eloqua Tags for All Sites-->
+            <script type="text/javascript">
+                var _elqQ = _elqQ || [];
+                _elqQ.push(['elqSetSiteId', '2064197708']);
+                _elqQ.push(['elqTrackPageViewDisplayOptInBannerByCountry']);
+                (function () {
+                    function async_load() {
+                        var s = document.createElement('script');
+                        s.type = 'text/javascript';
+                        s.async = true; s.src = '//img.en25.com/i/elqCfg.min.js';
+                        var x = document.getElementsByTagName('script')[0];
+                        x.parentNode.insertBefore(s, x);
+                    }
+                    if (window.addEventListener) window.addEventListener('DOMContentLoaded', async_load, false);
+                    else if (window.attachEvent) window.attachEvent('onload', async_load);
+                })();
+                function elqVisitorTrackingOptIn() { _elqQ.push(['elqOptIn']); }
+                function elqVisitorTrackingOptOut() { _elqQ.push(['elqOptOut']); }
+            </script>
+
+            <script type="text/javascript">
+                /*<![CDATA[*/
+                (function () {
+                    var sz = document.createElement('script'); sz.type = 'text/javascript'; sz.async = true;
+                    sz.src = '//siteimproveanalytics.com/js/siteanalyze_63904.js';
+                    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(sz, s);
+                })();
+                                                        /*]]>*/
+            </script>
+            <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "FTI Consulting",
+      "url": "https://www.fticonsulting.com/",
+      "logo": "https://www.fticonsulting.com/-/media/project/global/demo/logo/logo-fti-dark.svg",
+      "sameAs": ["https://twitter.com/FTIConsulting",  "https://www.instagram.com/lifeatfti", "https://www.youtube.com/channel/UCn6s8J_ZibEH0R35WCC4QBw", "https://www.linkedin.com/company/fti-consulting" ],
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "telephone": "+1 202 312 9100",
+        "areaServed" : "US",
+        "url": "https://www.fticonsulting.com/about/contact-us"
+      }
+    }
+</script>
+
+
+        
+
+        <script type="text/javascript" src="/Content/Project/Common/js/modules/Brightcove.js?v=202508071114"></script>
+
+        <noscript>
+            <div style="display:inline;">
+                <img height="1" width="1" style="border-style:none;" alt="" src="//googleads.g.doubleclick.net/pagead/viewthroughconversion/960282763/?value=0&amp;guid=ON&amp;script=0" />
+            </div>
+        </noscript>
+
+
+        <!-- ******************** -->
+        <!-- END - Legacy Scripts -->
+        <!-- ******************** -->
+        <!-- Coveo Search Resources -->
+        <link rel="stylesheet" href="/Coveo/Hive/css/CoveoFullSearch.css?v=3.3" />
+<link rel="stylesheet" href="/Coveo/Hive/css/CoveoForSitecore.css?v=3.3" />
+<script class="coveo-script" type="text/javascript" src='/Coveo/Hive/js/CoveoJsSearch.Lazy.min.js?v=3.3'></script>
+<script class="coveo-for-sitecore-script" type="text/javascript" src='/Coveo/Hive/js/CoveoForSitecore.Lazy.min.js?v=3.3'></script>
+<script type="text/javascript" src="/Coveo/Hive/js/cultures/en.js"></script>
+
+<div>
+
+
+    
+    
+        <!-- Resources -->
+        <div id="coveo3a949f41"
+             class="CoveoForSitecoreContext"
+               data-sc-should-have-analytics-component='true'
+  data-sc-analytics-enabled='true'
+  data-sc-current-language='en'
+  data-prebind-sc-language-field-name='fieldTranslator'
+  data-sc-language-field-name='_language'
+  data-sc-labels='{&quot;Ascending&quot; : &quot;Ascending&quot; , &quot;Descending&quot; : &quot;Descending&quot; , &quot;If the problem persists contact the administrator.&quot; : &quot;If the problem persists contact the administrator.&quot; , &quot;Search is currently unavailable&quot; : &quot;Oops! Something went wrong on the server.&quot; , &quot;Created&quot; : &quot;Created&quot; , &quot;Creation Time&quot; : &quot;Creation time.&quot; , &quot;Last Time Modified&quot; : &quot;Last time modified.&quot; , &quot;Uniform resource identifier&quot; : &quot;URI&quot; , &quot;Created By&quot; : &quot;Created by&quot; , &quot;Language&quot; : &quot;Language&quot; , &quot;Template&quot; : &quot;Template&quot; , &quot;Updated By&quot; : &quot;Updated by&quot;}'
+  data-sc-maximum-age='900000'
+  data-sc-page-name='unknown-viral-ai-narrative-seeding'
+  data-sc-page-name-full-path='/sitecore/content/Shared/Content/Insights/articles/2026/11/unknown-viral-ai-narrative-seeding'
+  data-sc-index-source-name='Coveo_web_index - fticonsulting-prod'
+  data-sc-is-in-experience-editor='false'
+  data-sc-is-user-anonymous='true'
+  data-sc-item-uri='sitecore://web/{02836DE6-0DE3-40E1-8D85-93C37C085128}?lang=en&amp;ver=2'
+  data-sc-item-id='02836de6-0de3-40e1-8d85-93c37c085128'
+  data-prebind-sc-latest-version-field-name='fieldTranslator'
+  data-sc-latest-version-field-name='_latestversion'
+  data-sc-rest-endpoint-uri='/coveo/rest'
+  data-sc-analytics-endpoint-uri='/coveo/rest/ua'
+  data-sc-site-name='Global'
+  data-sc-field-prefix='f'
+  data-sc-field-suffix='44791'
+  data-sc-prefer-source-specific-fields='false'
+  data-sc-external-fields='[{&quot;fieldName&quot;:&quot;permanentid&quot;,&quot;shouldEscape&quot;:false}]'
+  data-sc-source-specific-fields='[{&quot;fieldName&quot;:&quot;attachmentparentid&quot;},{&quot;fieldName&quot;:&quot;author&quot;},{&quot;fieldName&quot;:&quot;clickableuri&quot;},{&quot;fieldName&quot;:&quot;collection&quot;},{&quot;fieldName&quot;:&quot;concepts&quot;},{&quot;fieldName&quot;:&quot;date&quot;},{&quot;fieldName&quot;:&quot;filetype&quot;},{&quot;fieldName&quot;:&quot;indexeddate&quot;},{&quot;fieldName&quot;:&quot;isattachment&quot;},{&quot;fieldName&quot;:&quot;language&quot;},{&quot;fieldName&quot;:&quot;printableuri&quot;},{&quot;fieldName&quot;:&quot;rowid&quot;},{&quot;fieldName&quot;:&quot;size&quot;},{&quot;fieldName&quot;:&quot;source&quot;},{&quot;fieldName&quot;:&quot;title&quot;},{&quot;fieldName&quot;:&quot;topparent&quot;},{&quot;fieldName&quot;:&quot;topparentid&quot;},{&quot;fieldName&quot;:&quot;transactionid&quot;},{&quot;fieldName&quot;:&quot;uri&quot;},{&quot;fieldName&quot;:&quot;urihash&quot;}]'
+>
+        </div>
+        <script type="text/javascript">
+        var endpointConfiguration = {
+            itemUri: "sitecore://web/{02836DE6-0DE3-40E1-8D85-93C37C085128}?lang=en&amp;ver=2",
+            siteName: "Global",
+            restEndpointUri: "/coveo/rest"
+        };
+        if (typeof (CoveoForSitecore) !== "undefined") {
+            CoveoForSitecore.SearchEndpoint.configureSitecoreEndpoint(endpointConfiguration);
+            CoveoForSitecore.version = "5.0.1368.1";
+            var context = document.getElementById("coveo3a949f41");
+            if (!!context) {
+                CoveoForSitecore.Context.configureContext(context);
+            }
+        }
+        </script>
+</div>
+        
+    <script>
+        Coveo.$$(document).on("afterComponentsInitialization", () => {
+            // Absent consent state means no consent yet, so analytics stay off
+            if (typeof OnetrustActiveGroups !== "string" || !OnetrustActiveGroups.includes("C0002")) {
+                Coveo.disableAnalytics();
+            }
+        });
+        window.addEventListener("OneTrustGroupsUpdated", async event => {
+            if (event.detail.includes("C0002")) {
+                Coveo.enableAnalytics();
+            } else {
+                Coveo.disableAnalytics();
+            }
+        });
+    </script>
+
+    </div>
+</body>
+</html>

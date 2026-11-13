@@ -1,0 +1,53 @@
+{
+  "lane": "amplification-chain",
+  "tool": "tools/promote-intake-amplification-chain.mjs",
+  "intake": "data/intake/amplification-chain/amplification-chain.json",
+  "research_batch": "contributions/inbox/research-batches/2026-11-13-amplification-chain/",
+  "decision": {
+    "date": "2026-11-13",
+    "decided_by": "owner",
+    "question": "Enter the 20 admission-ready lines into the ledger?",
+    "words": [
+      "do it?",
+      "Yes, enter them"
+    ],
+    "context": "\"do it?\" (2026-11-12): continue the proof on the DePue and Coxon amplification chain. \"Yes, enter them\" (2026-11-13): the answer to \"Enter the 20 admission-ready lines into the ledger?\""
+  },
+  "sources": {
+    "manifest": "data/ledger/staging/amplification-chain/archived-receipts.jsonl",
+    "store": "receipts/amplification-chain",
+    "pages": 20,
+    "archived": 20,
+    "via_wayback": [],
+    "reused_ledger_receipts": [],
+    "failed": [],
+    "not_archived": []
+  },
+  "admission_rule": "A participant is admitted only when the archived copy of its page shows its shown words (text compared with markup stripped, entities decoded, whitespace collapsed and curly quotes folded, ignoring letter case, as whole words); a surface only when the intake gives it a date (a page that states none where its date is to be taken is gapped, not guessed), its receipt satisfies the live receipt contract, at least one participant is admitted and it is not a second copy of an event the ledger already holds (every admitted person already on one ledger surface with the same dates). A participation row carries the dates the source states for the person's role when the intake gives them, otherwise the surface dates. There is no hop-bases ruling for this lane: every surface is hop_eligible false pending hop review. Everything refused goes to gaps.jsonl.",
+  "counts": {
+    "pages_read": 20,
+    "surfaces_read": 20,
+    "surfaces_entered": 18,
+    "surfaces_refused": 2,
+    "participants_read": 50,
+    "participants_admitted": 43,
+    "participants_refused": 1
+  },
+  "gap_reasons": {
+    "participation:shown_words_not_on_archived_page": 1,
+    "receipts:receipt_archived_not_cited": 2,
+    "surfaces:source_states_no_date": 2
+  },
+  "resolved_to_existing_records": [],
+  "staged": {
+    "surfaces": 18,
+    "participation": 43,
+    "receipts": 18,
+    "reused_receipts": 0,
+    "new_actors": 8,
+    "new_organizations": 9,
+    "gaps": 5,
+    "hop_eligible_surfaces": 0
+  },
+  "hop_refusal_reason": "entered_2026_11_13_pending_hop_review"
+}
