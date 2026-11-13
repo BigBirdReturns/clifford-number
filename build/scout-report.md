@@ -19330,13 +19330,13 @@ Refs: `nik-ns123abc-quote-post-of-will-depue-2026-11-13`
 
 **Observed**
 
-Sneha Revanur participates in 2 surface(s), but no valid shared-surface path to Matt Clifford exists.
+Sneha Revanur participates in 3 surface(s), but no valid shared-surface path to Matt Clifford exists.
 
 **Required action**
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `sb-1047-co-sponsor-encode-justice-sneha-revanur-2024-02-08`, `encode-ai-team-roster-2026-11-13`
+Refs: `sb-1047-co-sponsor-encode-justice-sneha-revanur-2024-02-08`, `sneha-revanur-repost-of-will-depue-2026-11-12`, `encode-ai-team-roster-2026-11-13`
 
 ---
 
