@@ -244,7 +244,7 @@ for (const name of ['renderActor', 'renderOrg', 'renderSurface', 'renderType', '
 // later writes the same two strings from the same artifacts.
 same(context.heroCountsText(surfaceGraph, hopGraph), { nodes: `${surfaceGraph.actors.length} actors · ${surfaceGraph.surfaces.length} surfaces`, edges: `${hopGraph.edges.length} admitted hops` });
 // 93 -> 133 with the archived defense-corridor A/B receipts (Stratos 36, Traysar 3, Pallas 1 team-page pairs).
-assert.equal(context.heroCountsText(surfaceGraph, hopGraph).edges, '297 admitted hops'); // 2026-11-10 lens-hunt promotion: 280 admitted hops -> 297 admitted hops. 2026-10-23 final re-pin: 299 -> 280 (the five year-only a16z 2022 sessions are hop_eligible false, year_precision_only). 2026-10-23 five-lane merge: 133 -> 299
+assert.equal(context.heroCountsText(surfaceGraph, hopGraph).edges, '308 admitted hops'); // 2026-11-12 owner ruling on hop bases ("Inherent and co-authorship"): 297 admitted hops -> 308 admitted hops. 2026-11-10 lens-hunt promotion: 280 admitted hops -> 297 admitted hops. 2026-10-23 final re-pin: 299 -> 280 (the five year-only a16z 2022 sessions are hop_eligible false, year_precision_only). 2026-10-23 five-lane merge: 133 -> 299
 same(context.heroCountsText(null, null), { nodes: '0 actors · 0 surfaces', edges: '0 admitted hops' });
 const part2Source = fs.readFileSync('src/visual-aperture-part-2.js', 'utf8');
 for (const template of ['`${actorCount} actors · ${surfaceCount} surfaces`', '`${hopCount} admitted hops`']) {
