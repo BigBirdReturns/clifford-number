@@ -6,7 +6,7 @@ Generated: 2026-09-12T03:00:00.000Z
 
 Broad-institution reviews: 9
 
-Findings: 1072
+Findings: 1067
 
 ## finding-001: Electric Twin behaves as a surface factory
 
@@ -18350,25 +18350,7 @@ Refs: `anthropic-ltbt-appoints-ben-bernanke-2026-07-09`
 
 ---
 
-## finding-1020: Ben Buchanan has surfaces but no Clifford path
-
-- Type: island_with_surfaces
-- Priority: medium
-- graph_effect: none
-
-**Observed**
-
-Ben Buchanan participates in 3 surface(s), but no valid shared-surface path to Matt Clifford exists.
-
-**Required action**
-
-Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
-
-Refs: `ostp-staff-list-ben-buchanan-2023-10-02`, `ben-buchanan-anthropic-advisory-affiliation-publisher-2026-11-10`, `bitter-struggle-co-authorship-2026-11-10`
-
----
-
-## finding-1021: Ben Rhodes has surfaces but no Clifford path
+## finding-1020: Ben Rhodes has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -18386,7 +18368,7 @@ Refs: `bitter-struggle-printed-endorsements-2026-11-10`
 
 ---
 
-## finding-1022: Bruce Reed has surfaces but no Clifford path
+## finding-1021: Bruce Reed has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -18404,7 +18386,7 @@ Refs: `white-house-meeting-ai-ceos-2023-05-04`
 
 ---
 
-## finding-1023: Chris Liddell has surfaces but no Clifford path
+## finding-1022: Chris Liddell has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -18422,7 +18404,7 @@ Refs: `anthropic-board-chris-liddell-2026-02-13`
 
 ---
 
-## finding-1024: Chris Miller has surfaces but no Clifford path
+## finding-1023: Chris Miller has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -18440,7 +18422,7 @@ Refs: `bitter-struggle-printed-endorsements-2026-11-10`
 
 ---
 
-## finding-1025: Christopher Fonzone has surfaces but no Clifford path
+## finding-1024: Christopher Fonzone has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -18458,7 +18440,7 @@ Refs: `anthropic-national-security-public-sector-advisory-council-2025-08-27`
 
 ---
 
-## finding-1026: Daisy McGregor has surfaces but no Clifford path
+## finding-1025: Daisy McGregor has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -18476,7 +18458,7 @@ Refs: `dsit-business-appointment-daisy-mcgregor-to-anthropic-2025-03-18`
 
 ---
 
-## finding-1027: Dario Amodei has surfaces but no Clifford path
+## finding-1026: Dario Amodei has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -18494,7 +18476,7 @@ Refs: `white-house-meeting-ai-ceos-2023-05-04`, `uk-anthropic-memorandum-of-unde
 
 ---
 
-## finding-1028: Dave Luber has surfaces but no Clifford path
+## finding-1027: Dave Luber has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -18512,7 +18494,7 @@ Refs: `anthropic-national-security-public-sector-advisory-council-2025-08-27`
 
 ---
 
-## finding-1029: David S. Cohen has surfaces but no Clifford path
+## finding-1028: David S. Cohen has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -18530,25 +18512,7 @@ Refs: `anthropic-national-security-public-sector-advisory-council-2025-08-27`
 
 ---
 
-## finding-1030: Edward Hughes has surfaces but no Clifford path
-
-- Type: island_with_surfaces
-- Priority: medium
-- graph_effect: none
-
-**Observed**
-
-Edward Hughes participates in 1 surface(s), but no valid shared-surface path to Matt Clifford exists.
-
-**Required action**
-
-Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
-
-Refs: `inherent-seed-round-founders-and-advisor-index-ventures-2026-05-31`
-
----
-
-## finding-1031: Elizabeth Kelly has surfaces but no Clifford path
+## finding-1029: Elizabeth Kelly has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -18566,7 +18530,7 @@ Refs: `us-aisi-memoranda-anthropic-openai-2024-08-29`
 
 ---
 
-## finding-1032: Gina Raimondo has surfaces but no Clifford path
+## finding-1030: Gina Raimondo has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -18584,7 +18548,7 @@ Refs: `white-house-meeting-ai-ceos-2023-05-04`
 
 ---
 
-## finding-1033: Graham Allison has surfaces but no Clifford path
+## finding-1031: Graham Allison has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -18602,7 +18566,7 @@ Refs: `bitter-struggle-printed-endorsements-2026-11-10`
 
 ---
 
-## finding-1034: Jake Sullivan has surfaces but no Clifford path
+## finding-1032: Jake Sullivan has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -18620,7 +18584,7 @@ Refs: `white-house-meeting-ai-ceos-2023-05-04`, `bitter-struggle-printed-endorse
 
 ---
 
-## finding-1035: James Lowe has surfaces but no Clifford path
+## finding-1033: James Lowe has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -18638,7 +18602,7 @@ Refs: `dsit-business-appointment-james-lowe-to-anthropic-2025-12-02`
 
 ---
 
-## finding-1036: Jason Matheny has surfaces but no Clifford path
+## finding-1034: Jason Matheny has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -18656,7 +18620,7 @@ Refs: `anthropic-long-term-benefit-trust-initial-trustees-2023-09-19`
 
 ---
 
-## finding-1037: Jeff Zients has surfaces but no Clifford path
+## finding-1035: Jeff Zients has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -18674,7 +18638,7 @@ Refs: `white-house-meeting-ai-ceos-2023-05-04`
 
 ---
 
-## finding-1038: Jill M. Hruby has surfaces but no Clifford path
+## finding-1036: Jill M. Hruby has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -18692,7 +18656,7 @@ Refs: `anthropic-national-security-public-sector-advisory-council-2025-08-27`
 
 ---
 
-## finding-1039: Jon Tester has surfaces but no Clifford path
+## finding-1037: Jon Tester has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -18710,7 +18674,7 @@ Refs: `anthropic-national-security-public-sector-advisory-council-2025-08-27`
 
 ---
 
-## finding-1040: Josh Hodges has surfaces but no Clifford path
+## finding-1038: Josh Hodges has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -18728,25 +18692,7 @@ Refs: `anthropic-national-security-public-sector-advisory-council-2025-08-27`
 
 ---
 
-## finding-1041: Kaloyan Aleksiev has surfaces but no Clifford path
-
-- Type: island_with_surfaces
-- Priority: medium
-- graph_effect: none
-
-**Observed**
-
-Kaloyan Aleksiev participates in 1 surface(s), but no valid shared-surface path to Matt Clifford exists.
-
-**Required action**
-
-Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
-
-Refs: `inherent-seed-round-founders-and-advisor-index-ventures-2026-05-31`
-
----
-
-## finding-1042: Kamala Harris has surfaces but no Clifford path
+## finding-1039: Kamala Harris has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -18764,7 +18710,7 @@ Refs: `white-house-meeting-ai-ceos-2023-05-04`
 
 ---
 
-## finding-1043: Kanika Bahl has surfaces but no Clifford path
+## finding-1040: Kanika Bahl has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -18782,7 +18728,7 @@ Refs: `anthropic-long-term-benefit-trust-initial-trustees-2023-09-19`
 
 ---
 
-## finding-1044: Lael Brainard has surfaces but no Clifford path
+## finding-1041: Lael Brainard has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -18800,7 +18746,7 @@ Refs: `white-house-meeting-ai-ceos-2023-05-04`
 
 ---
 
-## finding-1045: Liam Booth-Smith has surfaces but no Clifford path
+## finding-1042: Liam Booth-Smith has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -18818,7 +18764,7 @@ Refs: `acoba-advice-liam-booth-smith-anthropic-external-affairs-2025-06-24`
 
 ---
 
-## finding-1046: Lisa E. Gordon-Hagerty has surfaces but no Clifford path
+## finding-1043: Lisa E. Gordon-Hagerty has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -18836,25 +18782,7 @@ Refs: `anthropic-national-security-public-sector-advisory-council-2025-08-27`
 
 ---
 
-## finding-1047: Louis Kirsch has surfaces but no Clifford path
-
-- Type: island_with_surfaces
-- Priority: medium
-- graph_effect: none
-
-**Observed**
-
-Louis Kirsch participates in 1 surface(s), but no valid shared-surface path to Matt Clifford exists.
-
-**Required action**
-
-Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
-
-Refs: `inherent-seed-round-founders-and-advisor-index-ventures-2026-05-31`
-
----
-
-## finding-1048: Mariano-Florentino Cuellar has surfaces but no Clifford path
+## finding-1044: Mariano-Florentino Cuellar has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -18872,7 +18800,7 @@ Refs: `anthropic-ltbt-appoints-mariano-florentino-cuellar-2026-01-21`, `anthropi
 
 ---
 
-## finding-1049: Mike Donilon has surfaces but no Clifford path
+## finding-1045: Mike Donilon has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -18890,7 +18818,7 @@ Refs: `white-house-meeting-ai-ceos-2023-05-04`
 
 ---
 
-## finding-1050: Mike Kuiken has surfaces but no Clifford path
+## finding-1046: Mike Kuiken has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -18908,7 +18836,7 @@ Refs: `anthropic-national-security-public-sector-advisory-council-2025-08-27`
 
 ---
 
-## finding-1051: Neil Buddy Shah has surfaces but no Clifford path
+## finding-1047: Neil Buddy Shah has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -18926,7 +18854,7 @@ Refs: `anthropic-long-term-benefit-trust-initial-trustees-2023-09-19`, `anthropi
 
 ---
 
-## finding-1052: Patrick M. Shanahan has surfaces but no Clifford path
+## finding-1048: Patrick M. Shanahan has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -18944,7 +18872,7 @@ Refs: `anthropic-national-security-public-sector-advisory-council-2025-08-27`
 
 ---
 
-## finding-1053: Peter Kyle has surfaces but no Clifford path
+## finding-1049: Peter Kyle has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -18962,7 +18890,7 @@ Refs: `uk-anthropic-memorandum-of-understanding-ai-opportunities-2025-02-13`
 
 ---
 
-## finding-1054: Pip White has surfaces but no Clifford path
+## finding-1050: Pip White has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -18980,7 +18908,7 @@ Refs: `dsit-selects-anthropic-gov-uk-assistant-2026-01-27`
 
 ---
 
-## finding-1055: Richard Fontaine has surfaces but no Clifford path
+## finding-1051: Richard Fontaine has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -18998,7 +18926,7 @@ Refs: `anthropic-national-security-public-sector-advisory-council-2025-08-27`
 
 ---
 
-## finding-1056: Rishi Sunak has surfaces but no Clifford path
+## finding-1052: Rishi Sunak has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -19016,7 +18944,7 @@ Refs: `acoba-advice-rishi-sunak-anthropic-senior-advisor-2025-10-09`
 
 ---
 
-## finding-1057: Roy Blunt has surfaces but no Clifford path
+## finding-1053: Roy Blunt has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -19034,7 +18962,7 @@ Refs: `anthropic-national-security-public-sector-advisory-council-2025-08-27`
 
 ---
 
-## finding-1058: Sam Altman has surfaces but no Clifford path
+## finding-1054: Sam Altman has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -19052,7 +18980,7 @@ Refs: `white-house-meeting-ai-ceos-2023-05-04`
 
 ---
 
-## finding-1059: Satya Nadella has surfaces but no Clifford path
+## finding-1055: Satya Nadella has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -19070,7 +18998,7 @@ Refs: `white-house-meeting-ai-ceos-2023-05-04`
 
 ---
 
-## finding-1060: Stuart Delery has surfaces but no Clifford path
+## finding-1056: Stuart Delery has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -19088,7 +19016,7 @@ Refs: `white-house-meeting-ai-ceos-2023-05-04`
 
 ---
 
-## finding-1061: Sundar Pichai has surfaces but no Clifford path
+## finding-1057: Sundar Pichai has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -19106,7 +19034,7 @@ Refs: `white-house-meeting-ai-ceos-2023-05-04`
 
 ---
 
-## finding-1062: Susan Rice has surfaces but no Clifford path
+## finding-1058: Susan Rice has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -19124,25 +19052,7 @@ Refs: `white-house-meeting-ai-ceos-2023-05-04`, `bitter-struggle-printed-endorse
 
 ---
 
-## finding-1063: Tantum Collins has surfaces but no Clifford path
-
-- Type: island_with_surfaces
-- Priority: medium
-- graph_effect: none
-
-**Observed**
-
-Tantum Collins participates in 4 surface(s), but no valid shared-surface path to Matt Clifford exists.
-
-**Required action**
-
-Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
-
-Refs: `inherent-laboratories-ltd-director-tantum-collins-2026-01-16`, `inherent-laboratories-ltd-psc-tantum-collins-2026-01-16`, `inherent-seed-round-founders-and-advisor-index-ventures-2026-05-31`, `bitter-struggle-co-authorship-2026-11-10`
-
----
-
-## finding-1064: Tristan Harris has surfaces but no Clifford path
+## finding-1059: Tristan Harris has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -19160,7 +19070,7 @@ Refs: `bitter-struggle-printed-endorsements-2026-11-10`
 
 ---
 
-## finding-1065: Zach Robinson has surfaces but no Clifford path
+## finding-1060: Zach Robinson has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -19178,7 +19088,7 @@ Refs: `anthropic-long-term-benefit-trust-initial-trustees-2023-09-19`
 
 ---
 
-## finding-1066: Matt Clifford and Jonathan Black joint AI Safety Summit representative appointment, 10 August 2023 contains broad institution context
+## finding-1061: Matt Clifford and Jonathan Black joint AI Safety Summit representative appointment, 10 August 2023 contains broad institution context
 
 - Type: broad_institution_guard
 - Priority: high
@@ -19196,7 +19106,7 @@ Refs: `ai-safety-summit-representative-appointment-2023-08-10`
 
 ---
 
-## finding-1067: London Tech Week 2026: The Future of Human-Technology Interaction (AI Arena), 2026-06-08 contains broad institution context
+## finding-1062: London Tech Week 2026: The Future of Human-Technology Interaction (AI Arena), 2026-06-08 contains broad institution context
 
 - Type: broad_institution_guard
 - Priority: high
@@ -19214,7 +19124,7 @@ Refs: `london-tech-week-2026-future-human-technology-interaction`
 
 ---
 
-## finding-1068: London Tech Week 2026: Discovery that delivers: Turning Britain's scientific edge into real-world impact (Deep Tech Stage), 2026-06-09 contains broad institution context
+## finding-1063: London Tech Week 2026: Discovery that delivers: Turning Britain's scientific edge into real-world impact (Deep Tech Stage), 2026-06-09 contains broad institution context
 
 - Type: broad_institution_guard
 - Priority: high
@@ -19232,7 +19142,7 @@ Refs: `london-tech-week-2026-science-out-lab-economy`
 
 ---
 
-## finding-1069: AI Growth Zones formal qualifying process launch, engagements led by Feryal Clark and Matt Clifford, 30 April 2025 contains broad institution context
+## finding-1064: AI Growth Zones formal qualifying process launch, engagements led by Feryal Clark and Matt Clifford, 30 April 2025 contains broad institution context
 
 - Type: broad_institution_guard
 - Priority: high
@@ -19250,7 +19160,7 @@ Refs: `ai-growth-zones-qualifying-process-2025-04-30`
 
 ---
 
-## finding-1070: Independent Review of the UK Statistics Authority Challenge Panel, announced 9 June 2023 contains broad institution context
+## finding-1065: Independent Review of the UK Statistics Authority Challenge Panel, announced 9 June 2023 contains broad institution context
 
 - Type: broad_institution_guard
 - Priority: high
@@ -19268,7 +19178,7 @@ Refs: `uksa-independent-review-challenge-panel-2023-06-09`
 
 ---
 
-## finding-1071: Policy creation → military advisory integration → personnel continuity → commercial deployment is a scored laundering chain with no Clifford hop
+## finding-1066: Policy creation → military advisory integration → personnel continuity → commercial deployment is a scored laundering chain with no Clifford hop
 
 - Type: laundering_chain
 - Priority: high
@@ -19286,7 +19196,7 @@ Refs: `ai-opportunities-action-plan-2025`, `detachment-201-program-context-2025`
 
 ---
 
-## finding-1072: Full master doc has been classified, not blindly migrated
+## finding-1067: Full master doc has been classified, not blindly migrated
 
 - Type: migration_queue
 - Priority: high
