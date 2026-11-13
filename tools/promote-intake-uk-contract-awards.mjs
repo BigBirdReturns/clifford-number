@@ -148,10 +148,9 @@ for (const src of sources) {
   if (!arc) problems.push('not_attempted');
   else if (arc.status !== 'archived') problems.push(`archive_attempt_failed: ${arc.reason}`);
   else {
-    const buyer = s.participants.find(p => p.participation_type === 'buyer');
     candidate = {
       receipt_id: src.id,
-      label: `Contracts Finder award notice ${n.notice_id}${buyer ? ` (${buyer.shown})` : ''}`,
+      label: `Contracts Finder notice ${n.notice_id}`,
       source_type: 'official_contract_award_notice',
       evidence_class: 'official',
       publisher: n.publisher,
@@ -165,10 +164,11 @@ for (const src of sources) {
       content_type: arc.content_type,
       content_bytes: arc.content_bytes,
       notes: n.source_kind === 'fetched_release'
-        ? `Archived ${arc.retrieved_at} by ${TOOL} --fetch: the notice's published open-data release.`
-        : `Archived ${arc.retrieved_at} by ${TOOL} --fetch: the notice's release, rebuilt from row ${n.daily_file_row} of the Contracts Finder daily notice file ${n.daily_file} (the source URL); every value is kept as the CSV gives it, so amounts are strings.`,
+        ? `Archived ${arc.retrieved_at} by ${TOOL} --fetch.`
+        : `Archived ${arc.retrieved_at} by ${TOOL} --fetch; rebuilt from row ${n.daily_file_row} of daily file ${n.daily_file}, values kept as the CSV gives them.`,
       limits: s.limits,
-      archive: arc.archive,
+      // The archive shape of tools/promote-intake-uk-public-money.mjs receipts; the manifest keeps the full record.
+      archive: { method: arc.archive.method, ref: arc.archive.ref, captured: arc.archive.captured },
       intake_source: LANE,
     };
     const { errors } = checkReceiptContract([candidate], { root });
