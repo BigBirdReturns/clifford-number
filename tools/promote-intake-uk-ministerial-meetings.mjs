@@ -296,6 +296,13 @@ const gap = (table, rowKey, reason, detail = {}) => gaps.push({ lane: LANE, tabl
 const surfaces = [];
 const participation = [];
 const cited = new Map();
+// Surface labels derive the AXM entity id, so they must be unique. A second-intake label that repeats another
+// (two returns drafted under the same title) or a first-intake or ledger label carries its return's file name;
+// first-intake labels are unchanged.
+const labelCount2 = new Map();
+for (const p of pages2) labelCount2.set(p.surfaces[0].label.toLowerCase(), (labelCount2.get(p.surfaces[0].label.toLowerCase()) ?? 0) + 1);
+const takenLabels = new Set([...ledgerSurfaces.map(s => String(s.surface_label)), ...pages.map(p => p.surfaces[0].label)].map(l => l.toLowerCase()));
+const labelOf = (src, s) => (src.intakeNo === 2 && (labelCount2.get(s.label.toLowerCase()) > 1 || takenLabels.has(s.label.toLowerCase())) ? `${s.label} (${src.file})` : s.label);
 
 for (const src of sources) {
   const { page } = src;
@@ -402,7 +409,7 @@ for (const src of sources) {
   cited.set(src.id, st.candidate);
   surfaces.push({
     surface_id: sid,
-    surface_label: s.label,
+    surface_label: labelOf(src, s),
     surface_type: s.surface_type,
     secondary_surface_types: [],
     hop_eligible: false,
