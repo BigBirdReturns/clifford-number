@@ -67,13 +67,16 @@ assert.ok(realPolicy.policy_changes.every(change => change.date && change.decide
 // (measured 20,109,748, 25,449,761, 11,908,094 and 4,570 files; 431,501,726 bytes stays within max_total_bytes).
 // 2026-11-12 Bitter Struggle chain (owner words "Trace it"): explorer standalone and max_single_file_bytes 28,000,000 -> 30,000,000
 // (measured 28,332,476; the endpoint, 22,772,147, stays within its budget).
-assert.deepEqual(realPolicy.performance_budgets.max_path_bytes, { 'Clifford-Number-endpoint.html': 23000000, 'Clifford-Number-explorer-standalone.html': 30000000 });
-assert.equal(realPolicy.performance_budgets.max_single_file_bytes, 30000000, 'the single-file budget (raised 2026-11-10 from 16,000,000, then from 20,000,000 and 24,000,000, 2026-11-12 from 28,000,000)');
+// 2026-11-12 UK contract awards (owner answer "Yes, fetch them"): endpoint 23,000,000 -> 36,000,000, explorer standalone and
+// max_single_file_bytes 30,000,000 -> 42,000,000, main standalone 15,000,000 -> 22,000,000, max_files 5,000 -> 6,700,
+// max_total_bytes 500,000,000 -> 585,000,000 (measured 32,214,448, 37,923,416, 19,760,633, 6,090 files, 530,858,042 bytes).
+assert.deepEqual(realPolicy.performance_budgets.max_path_bytes, { 'Clifford-Number-endpoint.html': 36000000, 'Clifford-Number-explorer-standalone.html': 42000000 });
+assert.equal(realPolicy.performance_budgets.max_single_file_bytes, 42000000, 'the single-file budget (raised 2026-11-10 from 16,000,000, then from 20,000,000 and 24,000,000, 2026-11-12 from 28,000,000 and 30,000,000)');
 // 2026-11-12 UK ministerial meetings (owner answer "Yes, hunt them"): main standalone 13,000,000 -> 15,000,000 and max_total_bytes
 // 450,000,000 -> 500,000,000 (measured 13,275,026 and 454,064,931 bytes before finalization).
-assert.equal(realPolicy.performance_budgets.max_standalone_bytes, 15000000, 'the main standalone budget (raised 2026-10-23 from 5,000,000, 2026-11-10 from 8,000,000 and 11,000,000, 2026-11-12 from 13,000,000)');
-assert.equal(realPolicy.performance_budgets.max_files, 5000, 'the file-count budget (raised 2026-10-23 from 3,200, 2026-11-10 from 4,000 and 4,500)');
-assert.equal(realPolicy.performance_budgets.max_total_bytes, 500000000, 'the byte budget (raised 2026-11-10 from 400,000,000, 2026-11-12 from 450,000,000)');
+assert.equal(realPolicy.performance_budgets.max_standalone_bytes, 22000000, 'the main standalone budget (raised 2026-10-23 from 5,000,000, 2026-11-10 from 8,000,000 and 11,000,000, 2026-11-12 from 13,000,000 and 15,000,000)');
+assert.equal(realPolicy.performance_budgets.max_files, 6700, 'the file-count budget (raised 2026-10-23 from 3,200, 2026-11-10 from 4,000 and 4,500, 2026-11-12 from 5,000)');
+assert.equal(realPolicy.performance_budgets.max_total_bytes, 585000000, 'the byte budget (raised 2026-11-10 from 400,000,000, 2026-11-12 from 450,000,000 and 500,000,000)');
 assert.throws(() => validatePublicationPolicy({ ...base, performance_budgets: { ...base.performance_budgets, max_path_bytes: { 'nope.html': 1 } } }), /unlisted path/u);
 // The forbidden-text scan covers every file within the single-file budget (2026-11-10 follow-up): the limit
 // is the policy's max_single_file_bytes, not a separate 16 MiB constant, so the explorer standalone, now
