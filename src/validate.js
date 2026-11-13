@@ -18,7 +18,10 @@ for (const node of graph.nodes ?? []) {
   ids.add(node.id);
   if (!node.label) fail(`Node missing label: ${node.id}`);
   if (!node.type) fail(`Node missing type: ${node.id}`);
-  try { assertPublicOnly(node); } catch (error) { fail(`${node.id}: ${error.message}`); }
+  // 2026-10-23: contact-data patterns in every value, the private-field words in field names only
+  // (src/evidence.js). A street address is checked on person nodes; an organization or venue node may
+  // carry a public institutional address (10 Downing Street).
+  try { assertPublicOnly(node, { streetAddress: node.type === 'person' }); } catch (error) { fail(`${node.id}: ${error.message}`); }
 }
 
 for (const source of graph.sources ?? []) {
@@ -38,7 +41,7 @@ for (const edge of graph.edges ?? []) {
   for (const sourceId of edge.source_ids ?? []) {
     if (!sourceIds.has(sourceId)) fail(`Edge ${edge.id} references unknown source: ${sourceId}`);
   }
-  try { assertPublicOnly(edge); } catch (error) { fail(`${edge.id}: ${error.message}`); }
+  try { assertPublicOnly(edge, { streetAddress: false }); } catch (error) { fail(`${edge.id}: ${error.message}`); }
 }
 
 if (!ids.has(graph.target_node_id)) fail(`Unknown target_node_id: ${graph.target_node_id}`);

@@ -1,0 +1,84 @@
+{
+  "lane": "synthetic-constituency",
+  "tool": "tools/promote-intake-synthetic-constituency.mjs",
+  "sources": {
+    "intake": "data/ledger/staging/synthetic-constituency/intake.json",
+    "archive_records": "data/ledger/staging/synthetic-constituency/archived-receipts.jsonl"
+  },
+  "admission_rule": "A row is promoted only when at least one cited receipt has a public source URL and satisfies the live receipt contract (resolving archive reference plus limits), and every archive_must_show phrase appears in an in-repo capture it cites. Otherwise the row is written to gaps.jsonl.",
+  "tables": {
+    "gartner_vendor_race_self_reports": {
+      "read": 7,
+      "promoted_rows": 5,
+      "refused": 2,
+      "refusal_reasons": {
+        "receipt_archive_unresolved": 2
+      }
+    },
+    "vendor_simulation_claims": {
+      "read": 12,
+      "promoted_rows": 11,
+      "refused": 1,
+      "refusal_reasons": {
+        "claim_not_in_archived_copy": 1
+      }
+    },
+    "electric_twin_claims": {
+      "read": 2,
+      "promoted_rows": 2,
+      "refused": 0,
+      "refusal_reasons": {}
+    },
+    "decision_cases": {
+      "read": 7,
+      "promoted_rows": 7,
+      "refused": 0,
+      "refusal_reasons": {}
+    },
+    "customer_vendor": {
+      "read": 4,
+      "promoted_rows": 4,
+      "refused": 0,
+      "refusal_reasons": {}
+    },
+    "policy": {
+      "read": 4,
+      "promoted_rows": 4,
+      "refused": 0,
+      "refusal_reasons": {}
+    },
+    "category": {
+      "read": 1,
+      "promoted_rows": 1,
+      "refused": 0,
+      "refusal_reasons": {}
+    }
+  },
+  "intake_receipt_status": {
+    "receipt_archive_unresolved": 3,
+    "admissible": 40,
+    "receipt_refused_by_intake": 1
+  },
+  "staged": {
+    "surfaces": 34,
+    "participation": 73,
+    "receipts": 35,
+    "new_actors": 8,
+    "new_organizations": 35,
+    "gaps": 3,
+    "surfaces_by_type": {
+      "campaign_surface": 2,
+      "category_formation_surface": 6,
+      "customer_vendor_surface": 6,
+      "employment_investment_surface": 1,
+      "government_advisory_surface": 1,
+      "model_governance_surface": 14,
+      "policy_document_surface": 4
+    },
+    "surfaces_by_secondary_type": {
+      "category_formation_surface": 15,
+      "democratic_input_replacement": 25,
+      "model_governance_surface": 6
+    }
+  }
+}

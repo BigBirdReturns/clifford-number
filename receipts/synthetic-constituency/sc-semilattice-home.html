@@ -1,0 +1,3073 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Semilattice · The user simulation layer for agentic work</title>
+    <meta name="description" content="Semilattice gives you and your agents accurate user feedback in minutes, with state-of-the-art models built from real human data.">
+    <meta property="og:title" content="Semilattice · The user simulation layer for agentic work">
+    <meta property="og:description" content="Semilattice gives you and your agents accurate user feedback in minutes, with state-of-the-art models built from real human data.">
+    <meta property="og:image" content="https://semilattice.ai/static/og-image.png">
+    <meta property="og:url" content="https://semilattice.ai/">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Semilattice">
+    <meta property="og:locale" content="en_GB">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Semilattice · The user simulation layer for agentic work">
+    <meta name="twitter:description" content="Semilattice gives you and your agents accurate user feedback in minutes, with state-of-the-art models built from real human data.">
+    <meta name="twitter:image" content="https://semilattice.ai/static/og-image.png">
+    
+    <link rel="icon" href="/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="/static/styles.css?v=1792738543">
+    <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.8/dist/htmx.min.js" integrity="sha384-/TgkGk7p307TH7EXJDuUlgG3Ce1UVolAOFopFekQkkXihi5u/6OCvVKyz1W+idaz" crossorigin="anonymous"></script>
+    <script>
+      var darkScheme = window.matchMedia('(prefers-color-scheme: dark)');
+      document.documentElement.classList.toggle('dark', darkScheme.matches);
+      darkScheme.addEventListener('change', function (e) {
+        document.documentElement.classList.toggle('dark', e.matches);
+      });
+    </script>
+    <style>
+        html { scroll-behavior: smooth; }
+        h1, h2, h3 { letter-spacing: -0.03em; }
+    </style>
+    <script>
+(function () {
+  var WIDTH = 720, HEIGHT = 360, CELL = 6, DOT = 4, BROAD_STEP = 90, CLUMP_STEP = 30;
+  var MIN_DENSITY = 0.02, MAX_DENSITY = 0.7, CLUMPING = 2, CONTRAST = 2.2;
+  var DOTS = 'rgba(30, 32, 70, 0.15)';
+  var LIGHT_DOTS = 'rgba(255, 255, 255, 0.3)';
+  var SPARSE_WIDTH = 1440, SPARSE_HEIGHT = 720, SPARSE_BROAD = 360, SPARSE_CLUMP = 90, SPARSE_HUE = 480;
+  var SPARSE_MAX_DENSITY = 0.16, SPARSE_CLUMPING = 2.2, SPARSE_CONTRAST = 2;
+  var TINTS = ['rgba(75, 79, 207, 0.07)', 'rgba(138, 108, 240, 0.06)', 'rgba(244, 90, 168, 0.055)', 'rgba(20, 184, 166, 0.055)', 'rgba(30, 32, 70, 0.05)'];
+  var LIGHT_TINTS = ['rgba(138, 142, 255, 0.07)', 'rgba(169, 140, 255, 0.06)', 'rgba(244, 90, 168, 0.055)', 'rgba(45, 212, 191, 0.05)', 'rgba(255, 255, 255, 0.045)'];
+
+  var cells = randomCells();
+  var root = document.documentElement.style;
+  root.setProperty('--dither-dots', 'url(' + paint(cells, DOTS) + ')');
+  root.setProperty('--dither-dots-light', 'url(' + paint(cells, LIGHT_DOTS) + ')');
+  var sparse = sparseCells();
+  root.setProperty('--dither-dots-faint', 'url(' + paintTinted(sparse, TINTS) + ')');
+  root.setProperty('--dither-dots-faint-light', 'url(' + paintTinted(sparse, LIGHT_TINTS) + ')');
+
+  function randomCells() {
+    var broad = randomGrid(WIDTH / BROAD_STEP, HEIGHT / BROAD_STEP);
+    var clumps = randomGrid(WIDTH / CLUMP_STEP, HEIGHT / CLUMP_STEP);
+    var cells = [];
+    for (var y = 0; y < HEIGHT; y += CELL) {
+      for (var x = 0; x < WIDTH; x += CELL) {
+        var mix = 0.55 * smoothNoise(broad, x / BROAD_STEP, y / BROAD_STEP) + 0.45 * smoothNoise(clumps, x / CLUMP_STEP, y / CLUMP_STEP);
+        var stretched = Math.min(1, Math.max(0, (mix - 0.5) * CONTRAST + 0.5));
+        var density = MIN_DENSITY + (MAX_DENSITY - MIN_DENSITY) * Math.pow(stretched, CLUMPING);
+        if (Math.random() < density) cells.push([x, y]);
+      }
+    }
+    return cells;
+  }
+
+  function sparseCells() {
+    var broad = randomGrid(SPARSE_WIDTH / SPARSE_BROAD, SPARSE_HEIGHT / SPARSE_BROAD);
+    var clumps = randomGrid(SPARSE_WIDTH / SPARSE_CLUMP, SPARSE_HEIGHT / SPARSE_CLUMP);
+    var hues = randomGrid(SPARSE_WIDTH / SPARSE_HUE, SPARSE_HEIGHT / SPARSE_HUE);
+    var cells = [];
+    for (var y = 0; y < SPARSE_HEIGHT; y += CELL) {
+      for (var x = 0; x < SPARSE_WIDTH; x += CELL) {
+        var mix = 0.6 * smoothNoise(broad, x / SPARSE_BROAD, y / SPARSE_BROAD) + 0.4 * smoothNoise(clumps, x / SPARSE_CLUMP, y / SPARSE_CLUMP);
+        var stretched = Math.min(1, Math.max(0, (mix - 0.5) * SPARSE_CONTRAST + 0.5));
+        if (Math.random() < SPARSE_MAX_DENSITY * Math.pow(stretched, SPARSE_CLUMPING)) {
+          cells.push([x, y, smoothNoise(hues, x / SPARSE_HUE, y / SPARSE_HUE)]);
+        }
+      }
+    }
+    return cells;
+  }
+
+  function paintTinted(cells, tints) {
+    var canvas = document.createElement('canvas');
+    canvas.width = SPARSE_WIDTH;
+    canvas.height = SPARSE_HEIGHT;
+    var context = canvas.getContext('2d');
+    cells.forEach(function (cell) {
+      context.fillStyle = tints[Math.min(tints.length - 1, Math.floor(cell[2] * tints.length))];
+      context.fillRect(cell[0], cell[1], DOT, DOT);
+    });
+    return canvas.toDataURL('image/png');
+  }
+
+  function randomGrid(columns, rows) {
+    var grid = [];
+    for (var row = 0; row < rows; row++) {
+      grid.push([]);
+      for (var column = 0; column < columns; column++) grid[row].push(Math.random());
+    }
+    return grid;
+  }
+
+  function smoothNoise(grid, gx, gy) {
+    var rows = grid.length, columns = grid[0].length;
+    var x0 = Math.floor(gx), y0 = Math.floor(gy);
+    var tx = ease(gx - x0), ty = ease(gy - y0);
+    var at = function (x, y) { return grid[y % rows][x % columns]; };
+    var top = at(x0, y0) + (at(x0 + 1, y0) - at(x0, y0)) * tx;
+    var bottom = at(x0, y0 + 1) + (at(x0 + 1, y0 + 1) - at(x0, y0 + 1)) * tx;
+    return top + (bottom - top) * ty;
+  }
+
+  function ease(t) {
+    return t * t * (3 - 2 * t);
+  }
+
+  function paint(cells, colour) {
+    var canvas = document.createElement('canvas');
+    canvas.width = WIDTH;
+    canvas.height = HEIGHT;
+    var context = canvas.getContext('2d');
+    context.fillStyle = colour;
+    cells.forEach(function (cell) { context.fillRect(cell[0], cell[1], DOT, DOT); });
+    return canvas.toDataURL('image/png');
+  }
+})();
+</script>
+    
+</head>
+<body class="min-h-full bg-background font-sans text-foreground antialiased">
+    
+
+
+
+
+
+
+<header class="sticky top-0 z-30 backdrop-blur border-b border-border" style="background: color-mix(in srgb, var(--background) 85%, transparent);">
+  <div class="marketing-container h-16 flex items-center justify-between">
+    <a href="/" class="flex items-center">
+      <img src="/static/marketing/logo_light.svg" alt="Semilattice" class="h-[26px] w-auto dark:hidden">
+      <img src="/static/marketing/logo_dark.svg" alt="Semilattice" class="h-[26px] w-auto hidden dark:block">
+    </a>
+    <nav class="hidden lg:flex items-center gap-7 text-sm text-marketing-sub whitespace-nowrap">
+      <a href="/#user-models" class="hover:text-foreground">User models</a>
+      <a href="/#models" class="hover:text-foreground">Accuracy</a>
+      <a href="/#how" class="hover:text-foreground">How it works</a>
+      <a href="/#getstarted" class="hover:text-foreground">Pricing</a>
+      <div id="marketing-resources" class="group relative">
+        <button type="button" aria-haspopup="true" class="inline-flex items-center gap-1 group-hover:text-foreground group-focus-within:text-foreground">Resources 
+<span class="h-3.5 w-3.5" style="display: inline-flex; align-items: center; vertical-align: middle; flex-shrink: 0;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-full w-full">
+  <path d="m6 9 6 6 6-6" />
+</svg></span>
+</button>
+        <div class="invisible absolute left-0 top-full pt-3 opacity-0 transition-opacity group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
+          <div class="w-72 rounded-xl border border-border bg-card p-1.5 shadow-lg">
+            
+<a href="/blog" class="block rounded-md px-3 py-2 whitespace-normal hover:bg-muted">
+  <span class="flex items-center gap-1 text-sm font-medium text-foreground">Blog</span>
+  <span class="mt-0.5 block text-xs text-marketing-sub">Launches, research and worked examples</span>
+</a>
+<a href="/user-in-the-loop" class="block rounded-md px-3 py-2 whitespace-normal hover:bg-muted">
+  <span class="flex items-center gap-1 text-sm font-medium text-foreground">Guide</span>
+  <span class="mt-0.5 block text-xs text-marketing-sub">User-in-the-loop marketing and product work</span>
+</a>
+<a href="https://docs.semilattice.ai" target="_blank" rel="noopener" class="block rounded-md px-3 py-2 whitespace-normal hover:bg-muted">
+  <span class="flex items-center gap-1 text-sm font-medium text-foreground">Docs 
+<span class="h-3.5 w-3.5 text-marketing-sub" style="display: inline-flex; align-items: center; vertical-align: middle; flex-shrink: 0;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-full w-full">
+  <path d="M7 7h10v10" />
+  <path d="M7 17 17 7" />
+</svg></span>
+</span>
+  <span class="mt-0.5 block text-xs text-marketing-sub">Set up the MCP server and use the app</span>
+</a>
+<a href="/anacreon" class="block rounded-md px-3 py-2 whitespace-normal hover:bg-muted">
+  <span class="flex items-center gap-1 text-sm font-medium text-foreground">How Anacreon works</span>
+  <span class="mt-0.5 block text-xs text-marketing-sub">An interactive walk through the simulation engine</span>
+</a>
+<a href="/research/anacreon" class="block rounded-md px-3 py-2 whitespace-normal hover:bg-muted">
+  <span class="flex items-center gap-1 text-sm font-medium text-foreground">Research paper</span>
+  <span class="mt-0.5 block text-xs text-marketing-sub">Mind the Gaps: Mixture-of-Minds for Human Simulation</span>
+</a>
+          </div>
+        </div>
+      </div>
+    </nav>
+    <div class="flex items-center gap-5">
+      <a href="/auth/sign-in" class="hidden lg:block text-sm text-marketing-sub hover:text-foreground whitespace-nowrap">Sign in</a>
+      <div class="flex items-center gap-2">
+        <button type="button" id="marketing-menu-button" aria-label="Open menu" aria-expanded="false" aria-controls="marketing-menu-panel"
+          class="lg:hidden inline-flex items-center justify-center rounded-lg border border-border bg-card p-2 text-marketing-sub hover:text-foreground">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
+        </button>
+        <a href="/#getstarted" class="marketing-btn marketing-btn-sm whitespace-nowrap">Get started</a>
+      </div>
+    </div>
+  </div>
+
+  <div id="marketing-menu-panel" hidden class="lg:hidden absolute left-0 right-0 top-16 max-h-[calc(100dvh-4rem)] overflow-y-auto border-b border-border bg-card shadow-lg">
+    <nav class="marketing-container flex flex-col gap-1 py-4 text-sm">
+      <a href="/#user-models" class="marketing-menu-link rounded-lg px-3 py-2.5 text-marketing-sub hover:bg-muted hover:text-foreground">User models</a>
+      <a href="/#models" class="marketing-menu-link rounded-lg px-3 py-2.5 text-marketing-sub hover:bg-muted hover:text-foreground">Accuracy</a>
+      <a href="/#how" class="marketing-menu-link rounded-lg px-3 py-2.5 text-marketing-sub hover:bg-muted hover:text-foreground">How it works</a>
+      <a href="/#getstarted" class="marketing-menu-link rounded-lg px-3 py-2.5 text-marketing-sub hover:bg-muted hover:text-foreground">Pricing</a>
+      <div class="mt-3 px-3 pb-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-marketing-mute-soft">Resources</div>
+      <a href="/blog" class="marketing-menu-link flex items-center gap-1 rounded-lg px-3 py-2.5 text-marketing-sub hover:bg-muted hover:text-foreground">Blog</a>
+      <a href="/user-in-the-loop" class="marketing-menu-link flex items-center gap-1 rounded-lg px-3 py-2.5 text-marketing-sub hover:bg-muted hover:text-foreground">Guide</a>
+      <a href="https://docs.semilattice.ai" target="_blank" rel="noopener" class="marketing-menu-link flex items-center gap-1 rounded-lg px-3 py-2.5 text-marketing-sub hover:bg-muted hover:text-foreground">Docs 
+<span class="h-3.5 w-3.5" style="display: inline-flex; align-items: center; vertical-align: middle; flex-shrink: 0;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-full w-full">
+  <path d="M7 7h10v10" />
+  <path d="M7 17 17 7" />
+</svg></span>
+</a>
+      <a href="/anacreon" class="marketing-menu-link flex items-center gap-1 rounded-lg px-3 py-2.5 text-marketing-sub hover:bg-muted hover:text-foreground">How Anacreon works</a>
+      <a href="/research/anacreon" class="marketing-menu-link flex items-center gap-1 rounded-lg px-3 py-2.5 text-marketing-sub hover:bg-muted hover:text-foreground">Research paper</a>
+            <div class="my-2 border-t border-border"></div>
+      <a href="/auth/sign-in" class="marketing-menu-link marketing-btn-outline marketing-btn-md">Sign in</a>
+      <a href="/auth/sign-up?cta=nav" data-cta="nav" class="marketing-menu-link marketing-btn marketing-btn-md mt-2">Create account</a>
+    </nav>
+  </div>
+</header>
+
+<script>
+  (function () {
+    var button = document.getElementById("marketing-menu-button");
+    var panel = document.getElementById("marketing-menu-panel");
+    if (!button || !panel) return;
+
+    function isOpen() {
+      return button.getAttribute("aria-expanded") === "true";
+    }
+
+    function openMenu() {
+      panel.hidden = false;
+      button.setAttribute("aria-expanded", "true");
+    }
+
+    function closeMenu() {
+      panel.hidden = true;
+      button.setAttribute("aria-expanded", "false");
+    }
+
+    button.addEventListener("click", function (event) {
+      event.stopPropagation();
+      if (isOpen()) closeMenu(); else openMenu();
+    });
+
+    panel.querySelectorAll(".marketing-menu-link").forEach(function (link) {
+      link.addEventListener("click", closeMenu);
+    });
+
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "Escape" && isOpen()) closeMenu();
+    });
+
+    document.addEventListener("click", function (event) {
+      if (!isOpen()) return;
+      if (panel.contains(event.target) || button.contains(event.target)) return;
+      closeMenu();
+    });
+  })();
+
+  (function () {
+    var resources = document.getElementById("marketing-resources");
+    if (!resources) return;
+    resources.addEventListener("keydown", function (event) {
+      if (event.key === "Escape" && document.activeElement) document.activeElement.blur();
+    });
+  })();
+</script>
+    
+<main id="marketing-home" data-audience="agents">
+  
+
+
+<section class="relative rails overflow-hidden depth-dither">
+  <div class="marketing-container relative z-10 pt-20 pb-16">
+    <div class="max-w-3xl mx-auto text-center">
+      <a href="/blog/claude-skill" class="group mb-6 inline-flex max-w-full rounded-full p-[1.5px]" style="background:linear-gradient(120deg,#4B4FCF,#8a6cf0 45%,#F45AA8)">
+        <span class="inline-flex max-w-full items-center gap-2 rounded-full bg-card px-4 py-1.5 text-[13px] text-marketing-sub group-hover:text-foreground">
+          <span class="shrink-0 font-semibold text-accent">NEW</span>
+          <span class="h-3 w-px shrink-0 bg-border" aria-hidden="true"></span>
+          <span class="truncate min-[420px]:hidden">Our Claude skill</span>
+          <span class="hidden truncate min-[420px]:inline md:hidden">Introducing our Claude skill</span>
+          <span class="hidden truncate md:inline">Our Claude skill: put users in the loop, not a human</span>
+          
+<span class="h-3.5 w-3.5 shrink-0" style="display: inline-flex; align-items: center; vertical-align: middle; flex-shrink: 0;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-full w-full">
+  <path d="M5 12h14" />
+  <path d="m12 5 7 7-7 7" />
+</svg></span>
+
+        </span>
+      </a>
+      <h1 class="font-semibold text-foreground leading-[1.05] text-balance" style="font-size:clamp(1.5rem,min(calc(10.5vw - 4px),max(2.7rem,6.75vw)),4.5rem)">
+        <span class="sr-only">The user simulation layer for agentic marketing, product and design work</span>
+        <span aria-hidden="true">The user simulation layer for agentic <span class="block"><span class="hero-cycle" id="hero-cycle"><span class="hero-cycle-word is-active">marketing</span><span class="hero-cycle-word">product</span><span class="hero-cycle-word">design</span></span> work</span></span>
+      </h1>
+      <p class="mt-5 text-marketing-sub mx-auto max-w-2xl text-balance" style="font-size:clamp(1.05rem,1.8vw,1.2rem);line-height:1.6">
+        Semilattice gives you and your agents accurate user feedback in minutes,
+        with state-of-the-art models built from real human data. Fix slop and
+        optimise your work before users see it.
+      </p>
+      <div class="mt-7 flex items-center justify-center gap-3">
+        <a href="#getstarted" class="marketing-btn marketing-btn-md" data-cta="hero">Get started</a>
+        <a href="#how" class="marketing-btn-outline marketing-btn-md">See how it works</a>
+      </div>
+    </div>
+
+    
+<div id="hero-graphic" class="mt-12 max-w-6xl mx-auto">
+  <div class="hero-shot rounded-2xl overflow-hidden hero-backdrop">
+    <div id="hero-view-agents" class="hero-view" data-audience-view="agents">
+      
+<div class="hero-app hero-term-wrap" aria-hidden="true">
+  <div class="hero-crop">
+    <div class="hero-ide">
+    <div class="hero-ide-bar hero-dull"><span class="hero-ide-dots"><i></i><i></i><i></i></span>campaigns</div>
+    <div class="hero-ide-body">
+    <div class="hero-term">
+      <div class="hero-term-bar hero-dull"><span class="hero-term-star">✳</span> Claude Code</div>
+      <div class="hero-term-body">
+        <div class="hero-dull"><span class="hero-term-mute">&gt; </span>test upgrade-campaign-brief.md with premium subscribers before I send it</div>
+        
+        <div class="hero-dull hero-term-step">
+          <div><span class="hero-term-star">⏺</span> semilattice - create_simulation (MCP)<span class="hero-term-mute">(Premium subscribers)</span></div>
+          <div class="hero-term-mute">&nbsp;&nbsp;⎿ 6 claims to test, 752 simulated users</div>
+        </div>
+        
+        <div class="hero-term-step" data-hero-focus-from>
+          <div><span class="hero-term-star">⏺</span> semilattice - run_simulation (MCP)</div>
+          <div class="hero-term-mute">&nbsp;&nbsp;⎿ Done in 3m 12s</div>
+        </div>
+        
+        <div class="hero-term-step"><span class="hero-term-star">⏺</span> Main finding: 72% would upgrade at the limit.</div>
+        <div class="hero-term-results">
+          
+          <div class="hero-term-row verdict-ok is-selected" data-hero-focus>
+            <span class="hero-term-verdict">✓ Supported</span>
+            <span class="hero-term-stat">72%</span>
+            <span><span class="hero-term-frag">“Offer the next plan up when they hit the limit.”</span><br><span class="hero-term-mute">72% say they would upgrade if offered at the limit</span></span>
+          </div>
+          
+          <div class="hero-term-row verdict-mixed hero-dull">
+            <span class="hero-term-verdict">~ Mixed</span>
+            <span class="hero-term-stat">52%</span>
+            <span><span class="hero-term-frag">“an in-app banner a day later”</span><br><span class="hero-term-mute">52% say the banner makes no difference</span></span>
+          </div>
+          
+          <div class="hero-term-row verdict-fail hero-dull">
+            <span class="hero-term-verdict">× Not supported</span>
+            <span class="hero-term-stat">1 in 3</span>
+            <span><span class="hero-term-frag">“Pause usage until they upgrade.”</span><br><span class="hero-term-mute">1 in 3 say they would cancel rather than upgrade</span></span>
+          </div>
+          
+        </div>
+        <div class="hero-term-step hero-dull">Replace the pause with a reminder a week later, and test that line again?</div>
+        <div class="hero-term-step hero-dull"><span class="hero-term-mute">&gt; </span>yes<span class="animate-pulse">▍</span></div>
+      </div>
+    </div>
+    
+<div class="hero-preview hero-dull">
+  <div class="hero-preview-tabs">
+    <span class="hero-preview-tab">upgrade-campaign-brief.md</span>
+    <span class="hero-preview-tab is-active">Preview upgrade-campaign-brief.md</span>
+  </div>
+  <div class="hero-preview-body">
+    <div class="hero-preview-h1">Upgrade campaign</div>
+    <div class="hero-preview-h2">Audience</div>
+    <p>Premium subscribers who hit their monthly limit in two of the last three months.</p>
+    <div class="hero-preview-h2">Key messages</div>
+    
+    <div class="hero-editor-line">
+      <span class="hero-doc-n">1.</span>
+      <span>Offer the next plan up when they hit the limit.</span>
+    </div>
+    
+    <div class="hero-editor-line">
+      <span class="hero-doc-n">2.</span>
+      <span>Email first, then an in-app banner a day later.</span>
+    </div>
+    
+    <div class="hero-editor-line">
+      <span class="hero-doc-n">3.</span>
+      <span>Show the price difference in every message.</span>
+    </div>
+    
+    <div class="hero-editor-line is-removed">
+      <span class="hero-doc-n">−</span>
+      <span>Pause usage until they upgrade.</span>
+    </div>
+    
+    <div class="hero-editor-line is-added">
+      <span class="hero-doc-n">+</span>
+      <span>Remind them again a week later.</span>
+    </div>
+    
+    <div class="hero-editor-line">
+      <span class="hero-doc-n">5.</span>
+      <span>Campaign runs for two weeks from launch.</span>
+    </div>
+    
+    <div class="hero-preview-h2">Channels</div>
+    <ul class="hero-preview-list">
+      <li>Email on day one, sent from the account owner’s name.</li>
+      <li>In-app banner on day two, shown on the usage page only.</li>
+    </ul>
+    <div class="hero-preview-h2">Success metrics</div>
+    <ul class="hero-preview-list">
+      <li>Upgrade rate to the next plan (primary).</li>
+      <li>Email click-through within the first week.</li>
+    </ul>
+  </div>
+</div>
+
+    </div>
+    </div>
+  </div>
+</div>
+
+    </div>
+    <div id="hero-view-humans" class="hero-view" data-audience-view="humans">
+      
+<div class="hero-app hero-app-wide" aria-hidden="true">
+  <div class="hero-crop">
+    <div class="hero-app-frame">
+      
+<div class="hero-app-top hero-dull">
+  <img src="/static/marketing/semilattice_icon_dark.svg" alt="" class="hero-app-logo dark:hidden">
+  <img src="/static/marketing/semilattice_icon_light.svg" alt="" class="hero-app-logo hidden dark:block">
+  <span class="hero-app-crumb">Projects</span>
+  <span class="hero-app-crumb">›</span>
+  <span class="hero-app-crumb hero-app-crumb-current">Upgrade campaign</span>
+  <span class="hero-app-context">Context: Acme · Marketing</span>
+  <span class="hero-app-avatars">
+    <span style="background:#14B8A6">PR</span><span style="background:#F45AA8">SM</span>
+  </span>
+</div>
+
+      <div class="hero-app-body">
+        <div class="hero-app-canvas anno-layout">
+          
+<article class="hero-doc" data-anno-doc>
+  <div class="hero-doc-tab hero-dull">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>
+    <span>upgrade-campaign-brief.md</span>
+    <span class="hero-doc-version">v1</span>
+  </div>
+  <div class="hero-doc-body">
+    <div class="hero-dull">
+      <div class="hero-doc-title">Upgrade campaign</div>
+      <div class="hero-doc-meta">Brief · Lifecycle marketing · owner: you</div>
+    </div>
+    
+<div class="hero-doc-h hero-dull"><span>Context</span>
+</div>
+
+<div class="hero-doc-p hero-dull"><span><span class="hero-frag verdict-context" data-anno="a1">4 in 10 premium subscribers hit their usage limit</span> every month, but few upgrade on their own.</span>
+</div>
+
+<div class="hero-doc-p hero-dull"><span>They hold back because <span class="hero-frag verdict-ok" data-anno="a2">the next plan doesn’t look worth the price</span>.</span>
+</div>
+
+<div class="hero-doc-h hero-dull"><span>Key messages</span>
+</div>
+
+<div class="hero-doc-li"><span class="hero-doc-n">1.</span><span><span class="hero-frag verdict-ok is-selected" data-anno="a3">Offer the next plan up when they hit the limit.</span></span>
+</div>
+
+<div class="hero-doc-li hero-dull"><span class="hero-doc-n">2.</span><span>Email first, then <span class="hero-frag verdict-mixed" data-anno="a4">an in-app banner a day later</span>.</span>
+</div>
+
+<div class="hero-doc-li hero-dull"><span class="hero-doc-n">3.</span><span><span class="hero-frag verdict-ok">Show the price difference in every message.</span></span>
+</div>
+
+<div class="hero-doc-li hero-dull"><span class="hero-doc-n">4.</span><span><span class="hero-frag verdict-fail" data-anno="a5">Pause usage until they upgrade.</span></span>
+</div>
+
+<div class="hero-doc-li hero-dull"><span class="hero-doc-n">5.</span><span>Campaign runs for two weeks from launch.</span>
+</div>
+
+<div class="hero-doc-h hero-dull"><span>Success metrics</span>
+</div>
+
+<div class="hero-doc-li hero-dull"><span class="hero-doc-n">1.</span><span>Primary: upgrade rate to the next plan.</span>
+</div>
+
+<div class="hero-doc-li hero-dull"><span class="hero-doc-n">2.</span><span>We expect <span class="hero-frag verdict-depth" data-anno="a6">a 15% upgrade rate</span> within two weeks.</span>
+</div>
+
+  </div>
+</article>
+
+          
+<div class="hero-anno-col">
+  
+<div class="hero-anno verdict-context hero-dull" data-anno="a1">
+  <div class="hero-anno-frag">“4 in 10 premium subscribers hit their…”</div>
+  <div class="hero-anno-row">
+    <span class="hero-chip verdict-context">Context</span>
+    
+  </div>
+  <div class="hero-anno-headline">Kept as context</div>
+</div>
+
+<div class="hero-anno verdict-ok hero-dull" data-anno="a2">
+  <div class="hero-anno-frag">“the next plan doesn’t look worth the price”</div>
+  <div class="hero-anno-row">
+    <span class="hero-chip verdict-ok">Supported</span>
+    <span class="hero-anno-stat">68%</span>
+  </div>
+  <div class="hero-anno-headline">68% say the price gap is why they haven’t upgraded</div>
+</div>
+
+<div class="hero-anno verdict-ok is-selected" data-anno="a3" data-hero-focus="0.71" data-hero-centre-y>
+  <div class="hero-anno-frag">“Offer the next plan up when they hit…”</div>
+  <div class="hero-anno-row">
+    <span class="hero-chip verdict-ok">Supported</span>
+    <span class="hero-anno-stat">72%</span>
+  </div>
+  <div class="hero-anno-headline">72% say they would upgrade if offered at the limit</div>
+</div>
+
+<div class="hero-anno verdict-mixed hero-dull" data-anno="a4">
+  <div class="hero-anno-frag">“an in-app banner a day later”</div>
+  <div class="hero-anno-row">
+    <span class="hero-chip verdict-mixed">Mixed</span>
+    <span class="hero-anno-stat">52%</span>
+  </div>
+  <div class="hero-anno-headline">52% say the banner makes no difference</div>
+</div>
+
+<div class="hero-anno verdict-fail hero-dull" data-anno="a5">
+  <div class="hero-anno-frag">“Pause usage until they upgrade.”</div>
+  <div class="hero-anno-row">
+    <span class="hero-chip verdict-fail">Not supported</span>
+    <span class="hero-anno-stat">1 in 3</span>
+  </div>
+  <div class="hero-anno-headline">1 in 3 say they would cancel rather than upgrade</div>
+</div>
+
+<div class="hero-anno verdict-depth hero-dull" data-anno="a6">
+  <div class="hero-anno-frag">“a 15% upgrade rate”</div>
+  <div class="hero-anno-row">
+    <span class="hero-chip verdict-depth">Needs depth</span>
+    <span class="hero-anno-stat">15%</span>
+  </div>
+  <div class="hero-anno-headline">Supported for annual plans only</div>
+</div>
+
+</div>
+
+          <svg class="hero-links"></svg>
+        </div>
+        
+<aside class="hero-evidence hero-dull">
+  <div class="hero-evidence-back">‹ Back to chat</div>
+  <div class="hero-evidence-quote">
+    <span class="hero-chip verdict-ok">Supported</span>
+    <div>“Offer the next plan up when they hit the limit.”</div>
+  </div>
+  <div class="hero-evidence-stat verdict-ok">
+    <div><span class="hero-evidence-big">72%</span></div>
+    <div class="hero-evidence-headline">72% say they would upgrade if offered at the limit</div>
+  </div>
+  <div class="hero-label">Question</div>
+  <div class="hero-evidence-question">“Would you upgrade if we offered the next plan when you hit your limit?”</div>
+  <div class="hero-bars">
+    
+    <span class="hero-bar-label">Definitely</span>
+    <span class="hero-bar-track"><span class="hero-bar-fill is-lead" style="width:76%"></span></span>
+    <span class="hero-bar-pct">38%</span>
+    
+    <span class="hero-bar-label">Probably</span>
+    <span class="hero-bar-track"><span class="hero-bar-fill" style="width:68%"></span></span>
+    <span class="hero-bar-pct">34%</span>
+    
+    <span class="hero-bar-label">Unsure</span>
+    <span class="hero-bar-track"><span class="hero-bar-fill" style="width:36%"></span></span>
+    <span class="hero-bar-pct">18%</span>
+    
+    <span class="hero-bar-label">No</span>
+    <span class="hero-bar-track"><span class="hero-bar-fill" style="width:20%"></span></span>
+    <span class="hero-bar-pct">10%</span>
+    
+  </div>
+  <div class="hero-label">User models</div>
+  <span class="hero-model-chip">Premium subscribers <b>88%</b></span>
+  <div class="hero-evidence-reply">
+    <div class="hero-evidence-pills"><span>What would work instead?</span><span>Re-test this line</span></div>
+    <div class="hero-evidence-input">Reply in this thread…<span class="hero-evidence-send">↑</span></div>
+  </div>
+</aside>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+    </div>
+  </div>
+  <div class="flex justify-center items-center gap-2.5 mt-4">
+    
+<div class="hero-toggle" role="group" aria-label="Show the page for agents or for humans" data-audience-toggle>
+  <span class="hero-toggle-label" aria-hidden="true">For</span>
+  <button type="button" aria-pressed="true" data-audience-choice="agents" class="is-active">
+<span class="h-3.5 w-3.5" style="display: inline-flex; align-items: center; vertical-align: middle; flex-shrink: 0;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-full w-full">
+  <path d="M12 8V4H8" />
+  <rect width="16" height="12" x="4" y="8" rx="2" />
+  <path d="M2 14h2" />
+  <path d="M20 14h2" />
+  <path d="M15 13v2" />
+  <path d="M9 13v2" />
+</svg></span>
+agents</button>
+  <button type="button" aria-pressed="false" data-audience-choice="humans">
+<span class="h-3.5 w-3.5" style="display: inline-flex; align-items: center; vertical-align: middle; flex-shrink: 0;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-full w-full">
+  <circle cx="12" cy="8" r="5" />
+  <path d="M20 21a8 8 0 0 0-16 0" />
+</svg></span>
+humans</button>
+</div>
+  </div>
+</div>
+<script>
+(function () {
+  var crops = document.querySelectorAll('#hero-graphic .hero-crop');
+  var narrow = window.matchMedia('(max-width: 759px)');
+
+  function centreOnFocus(crop) {
+    var frame = crop.firstElementChild;
+    frame.style.left = '';
+    frame.style.top = '';
+    var target = crop.querySelector('[data-hero-focus]');
+    if (!target || !crop.offsetWidth) return;
+    if (!narrow.matches && !('heroCentreY' in target.dataset)) return;
+    var frameBox = frame.getBoundingClientRect();
+    var targetBox = target.getBoundingClientRect();
+    var from = narrow.matches && crop.querySelector('[data-hero-focus-from]');
+    var top = from ? from.getBoundingClientRect().top : targetBox.top;
+    var centreY = (top + targetBox.bottom) / 2 - frameBox.top;
+    frame.style.top = (crop.clientHeight / 2 - centreY) + 'px';
+    if (!narrow.matches) return;
+    var centreX = targetBox.left - frameBox.left + targetBox.width / 2;
+    frame.style.left = (crop.clientWidth * (parseFloat(target.dataset.heroFocus) || 0.5) - centreX) + 'px';
+  }
+
+  function centreAll() {
+    requestAnimationFrame(function () { crops.forEach(centreOnFocus); });
+  }
+
+  crops.forEach(function (crop) { new ResizeObserver(centreAll).observe(crop); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(centreAll);
+  centreAll();
+})();
+</script>
+<script>
+(function () {
+  var root = document.getElementById('hero-graphic');
+  if (!root) return;
+  var shot = root.querySelector('.hero-shot');
+  root.addEventListener('mouseenter', dim);
+  window.addEventListener('scroll', dim, { passive: true });
+
+  function dim() {
+    root.removeEventListener('mouseenter', dim);
+    window.removeEventListener('scroll', dim);
+    shot.classList.add('is-dimmed');
+  }
+})();
+</script>
+
+  </div>
+</section>
+<script>
+(function () {
+  var cycle = document.getElementById('hero-cycle');
+  if (!cycle) return;
+  var reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  var words = cycle.children;
+  var active = 0;
+  var timer = null;
+
+  function fitToActiveWord() {
+    cycle.style.width = words[active].offsetWidth + 'px';
+  }
+
+  function showWord(index) {
+    if (index === active) return;
+    var leaving = words[active];
+    active = index;
+    leaving.classList.remove('is-active');
+    leaving.classList.add('is-leaving');
+    setTimeout(function () { leaving.classList.remove('is-leaving'); }, 600);
+    words[active].classList.remove('is-leaving');
+    words[active].classList.add('is-active');
+    fitToActiveWord();
+  }
+
+  function followMotionPreference() {
+    clearInterval(timer);
+    timer = null;
+    if (reducedMotion.matches) return showWord(0);
+    timer = setInterval(function () { showWord((active + 1) % words.length); }, 2400);
+  }
+
+  fitToActiveWord();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitToActiveWord);
+  new ResizeObserver(fitToActiveWord).observe(cycle.parentElement);
+  reducedMotion.addEventListener('change', followMotionPreference);
+  followMotionPreference();
+})();
+</script>
+  
+
+
+
+
+<section class="relative rails border-t border-border bg-marketing-tint">
+  <div class="marketing-container relative z-10 py-16 md:py-20">
+    <div class="mx-auto flex max-w-3xl flex-col items-center text-center">
+      
+<span class="inline-flex items-center rounded-md px-3 py-2" style="background:#BBEE00">
+  
+  <img src="/static/marketing/customers/moneyme/logo.svg" alt="MONEYME logo" class="block h-5 w-auto">
+  
+</span>
+      <blockquote class="mt-8 font-medium text-foreground" style="font-size:clamp(1.05rem,1.8vw,1.25rem);line-height:1.5">&ldquo;Using Semilattice has been game changing when developing product features. We’ve been able to source early, frequent, and instant customer feedback that’s almost identical to real life customer survey responses. It’s been instrumental in helping us make the right product decisions at every stage of ideation and discovery.&rdquo;</blockquote>
+      <div class="mt-4 text-sm text-marketing-sub">Jem Corden · Head of Product, MONEYME</div>
+      <a href="/customers/moneyme" class="mt-8 inline-flex items-center gap-1.5 text-sm font-medium text-accent hover:text-accent-hover">Read the case study 
+<span class="h-4 w-4" style="display: inline-flex; align-items: center; vertical-align: middle; flex-shrink: 0;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-full w-full">
+  <path d="M5 12h14" />
+  <path d="m12 5 7 7-7 7" />
+</svg></span>
+</a>
+    </div>
+  </div>
+</section>
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<section id="user-models" class="relative rails border-t border-border overflow-hidden">
+  <div class="marketing-container relative z-10 py-24">
+    <div class="max-w-2xl">
+      <div class="mb-3 flex items-center gap-2.5">
+        <span class="text-xs font-medium uppercase tracking-[0.08em] text-accent">User models</span>
+        <span id="user-models-coming-soon" class="models-status">Coming soon</span>
+      </div>
+      <h2 class="font-semibold text-foreground text-balance" style="font-size:clamp(1.8rem,4vw,2.5rem)">User models for consumer finance, online shopping, and more.</h2>
+      <p class="mt-4 text-marketing-sub" style="font-size:1.1rem;line-height:1.6">
+        A user model simulates a specific target audience. Each one is a state-of-the-art
+        <a href="/blog/anacreon" class="text-accent hover:underline">Anacreon</a> model built with real human data
+        and tested against real human behaviour. It simulates hundreds of individual respondents, each modelled
+        on one real person, so you can segment and re-cut the results.
+      </p>
+    </div>
+
+    <div class="models-app mt-10 rounded-2xl border border-border bg-card overflow-hidden shot">
+      
+<div class="models-app-bar border-b border-border px-4 py-2.5">
+  <div class="models-app-bar-regions">
+
+<div class="ui-segmented models-regions" role="group" aria-label="Filter by region">
+  
+<button type="button" class="ui-segment is-active " aria-pressed="true" data-models-region="all">All</button>
+
+  
+  
+<button type="button" class="ui-segment " aria-pressed="false" title="United States" aria-label="United States" data-models-region="us"><span class="models-flag" aria-hidden="true">🇺🇸</span>US</button>
+
+  
+  
+<button type="button" class="ui-segment " aria-pressed="false" title="United Kingdom" aria-label="United Kingdom" data-models-region="uk"><span class="models-flag" aria-hidden="true">🇬🇧</span>UK</button>
+
+  
+</div></div>
+  <div class="models-app-bar-chips">
+<div class="ui-chips models-chips" role="group" aria-label="Filter by sector">
+  
+
+<button type="button" class="ui-chip is-active " aria-pressed="true" data-models-filter="all">All</button>
+
+  
+  
+
+<button type="button" class="ui-chip " aria-pressed="false" data-models-filter="finance">Finance</button>
+
+  
+  
+
+<button type="button" class="ui-chip " aria-pressed="false" data-models-filter="shopping">Shopping</button>
+
+  
+</div></div>
+</div>
+      <div class="models-app-body">
+        
+<div class="models-sidebar border-border">
+  <button type="button" data-models-step="-1"
+    class="inline-flex items-center justify-center rounded-lg p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors disabled:opacity-30 models-step">
+    
+<span class="h-5 w-5" style="display: inline-flex; align-items: center; vertical-align: middle; flex-shrink: 0;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-full w-full">
+  <path d="m15 18-6-6 6-6" />
+</svg></span>
+<span class="sr-only">Previous user model</span></button>
+  <nav class="models-list p-2" aria-label="Public user models">
+    
+
+<div class="models-market" data-market-group="us">
+  <div class="models-market-heading flex items-center gap-2 px-2 pb-1.5 pt-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-marketing-mute-soft">
+    <span>United States</span>
+    <span class="rounded bg-marketing-mute-line px-1.5 py-px tabular-nums text-marketing-sub">2</span>
+  </div>
+  <ul class="flex flex-col gap-0.5">
+    
+<li>
+  <button type="button" class="models-item" data-model="us-consumer-finance" data-market="us" data-segment="finance" data-location="[41.88, -87.63]">
+    
+
+<img src="/static/marketing/user-models/us-consumer-finance.jpg" alt="" class="h-9 w-9 shrink-0 rounded-lg object-cover" loading="lazy">
+
+    <span class="min-w-0 flex-1 text-left">
+      <span class="block truncate text-sm font-medium text-foreground">US Consumer Finance</span>
+      <span class="block truncate text-xs text-marketing-sub">Consumers · finance</span>
+    </span>
+    <span class="models-status">Soon</span>
+  </button>
+</li>
+<li>
+  <button type="button" class="models-item" data-model="us-online-shoppers" data-market="us" data-segment="shopping" data-location="[40.71, -74.0]">
+    
+
+<img src="/static/marketing/user-models/us-online-shoppers.jpg" alt="" class="h-9 w-9 shrink-0 rounded-lg object-cover" loading="lazy">
+
+    <span class="min-w-0 flex-1 text-left">
+      <span class="block truncate text-sm font-medium text-foreground">US Online Shoppers</span>
+      <span class="block truncate text-xs text-marketing-sub">Consumers · online shopping</span>
+    </span>
+    <span class="models-status">Soon</span>
+  </button>
+</li>
+  </ul>
+</div>
+
+<div class="models-market" data-market-group="uk">
+  <div class="models-market-heading flex items-center gap-2 px-2 pb-1.5 pt-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-marketing-mute-soft">
+    <span>United Kingdom</span>
+    <span class="rounded bg-marketing-mute-line px-1.5 py-px tabular-nums text-marketing-sub">2</span>
+  </div>
+  <ul class="flex flex-col gap-0.5">
+    
+<li>
+  <button type="button" class="models-item" data-model="uk-consumer-finance" data-market="uk" data-segment="finance" data-location="[52.48, -1.9]">
+    
+
+<img src="/static/marketing/user-models/uk-consumer-finance.jpg" alt="" class="h-9 w-9 shrink-0 rounded-lg object-cover" loading="lazy">
+
+    <span class="min-w-0 flex-1 text-left">
+      <span class="block truncate text-sm font-medium text-foreground">UK Consumer Finance</span>
+      <span class="block truncate text-xs text-marketing-sub">Consumers · finance</span>
+    </span>
+    <span class="models-status">Soon</span>
+  </button>
+</li>
+<li>
+  <button type="button" class="models-item" data-model="uk-online-shoppers" data-market="uk" data-segment="shopping" data-location="[53.48, -2.24]">
+    
+
+<img src="/static/marketing/user-models/uk-online-shoppers.jpg" alt="" class="h-9 w-9 shrink-0 rounded-lg object-cover" loading="lazy">
+
+    <span class="min-w-0 flex-1 text-left">
+      <span class="block truncate text-sm font-medium text-foreground">UK Online Shoppers</span>
+      <span class="block truncate text-xs text-marketing-sub">Consumers · online shopping</span>
+    </span>
+    <span class="models-status">Soon</span>
+  </button>
+</li>
+  </ul>
+</div>
+    <p class="models-empty px-3 py-6 text-center text-sm text-marketing-sub" hidden>No user models match these filters yet.</p>
+  </nav>
+  <button type="button" data-models-step="1"
+    class="inline-flex items-center justify-center rounded-lg p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors disabled:opacity-30 models-step">
+    
+<span class="h-5 w-5" style="display: inline-flex; align-items: center; vertical-align: middle; flex-shrink: 0;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-full w-full">
+  <path d="m9 18 6-6-6-6" />
+</svg></span>
+<span class="sr-only">Next user model</span></button>
+</div>
+        
+<div class="models-stage models-space">
+  <div class="models-globe-band">
+    <div class="models-globe">
+      <canvas class="models-globe-canvas" aria-hidden="true"></canvas>
+    </div>
+  </div>
+  <span class="models-callout-pin" aria-hidden="true"></span>
+  <div class="models-callout" aria-live="polite">
+    
+<article class="models-detail" data-model-detail="us-consumer-finance">
+  <div class="relative h-16 overflow-hidden lg:h-20">
+    
+
+<img src="/static/marketing/user-models/us-consumer-finance.jpg" alt="" class="h-full w-full object-cover" loading="lazy">
+
+    <span class="absolute right-3 top-3 rounded-full bg-card px-2.5 py-1 text-[11px] font-medium text-foreground shadow-sm">Coming soon</span>
+  </div>
+  <div class="px-4 py-3">
+    <h3 class="text-base font-semibold tracking-tight text-foreground">US Consumer Finance</h3>
+    <p class="mt-0.5 text-[12.5px] leading-snug text-marketing-sub">A user model of adults in the US, for testing consumer finance products and messaging.</p>
+    
+
+<dl class="mt-2 divide-y divide-border text-[12.5px]">
+  
+  <div class="grid grid-cols-[6rem_1fr] items-center gap-3 py-1">
+    <dt class="flex items-center gap-2 text-marketing-sub">
+<span class="h-3.5 w-3.5 shrink-0" style="display: inline-flex; align-items: center; vertical-align: middle; flex-shrink: 0;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-full w-full">
+  <path d="M18 21a8 8 0 0 0-16 0" />
+  <circle cx="10" cy="8" r="5" />
+  <path d="M22 20c0-3.37-2-6.5-4-8a5 5 0 0 0-.45-8.3" />
+</svg></span>
+Target</dt>
+    <dd class="text-foreground">Consumers · finance</dd>
+  </div>
+  
+  <div class="grid grid-cols-[6rem_1fr] items-center gap-3 py-1">
+    <dt class="flex items-center gap-2 text-marketing-sub">
+<span class="h-3.5 w-3.5 shrink-0" style="display: inline-flex; align-items: center; vertical-align: middle; flex-shrink: 0;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-full w-full">
+  <path d="M21.54 15H17a2 2 0 0 0-2 2v4.54" />
+  <path d="M7 3.34V5a3 3 0 0 0 3 3a2 2 0 0 1 2 2c0 1.1.9 2 2 2a2 2 0 0 0 2-2c0-1.1.9-2 2-2h3.17" />
+  <path d="M11 21.95V18a2 2 0 0 0-2-2a2 2 0 0 1-2-2v-1a2 2 0 0 0-2-2H2.05" />
+  <circle cx="12" cy="12" r="10" />
+</svg></span>
+Region</dt>
+    <dd class="text-foreground">United States</dd>
+  </div>
+  
+  <div class="grid grid-cols-[6rem_1fr] items-center gap-3 py-1">
+    <dt class="flex items-center gap-2 text-marketing-sub">
+<span class="h-3.5 w-3.5 shrink-0" style="display: inline-flex; align-items: center; vertical-align: middle; flex-shrink: 0;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-full w-full">
+  <path d="m5 8 6 6" />
+  <path d="m4 14 6-6 2-3" />
+  <path d="M2 5h12" />
+  <path d="M7 2h1" />
+  <path d="m22 22-5-10-5 10" />
+  <path d="M14 18h6" />
+</svg></span>
+Language</dt>
+    <dd class="text-foreground">English</dd>
+  </div>
+  
+  <div class="grid grid-cols-[6rem_1fr] items-center gap-3 py-1">
+    <dt class="flex items-center gap-2 text-marketing-sub">
+<span class="h-3.5 w-3.5 shrink-0" style="display: inline-flex; align-items: center; vertical-align: middle; flex-shrink: 0;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M7.58105 3.16016V4.64246C7.58105 5.35293 7.85211 6.03431 8.33459 6.53669C8.81706 7.03908 9.47144 7.32131 10.1538 7.32131C10.6087 7.32131 11.0449 7.50947 11.3666 7.84439C11.6882 8.17931 11.8689 8.63357 11.8689 9.10722C11.8689 10.0895 12.6407 10.8931 13.5841 10.8931C14.0389 10.8931 14.4752 10.705 14.7969 10.37C15.1185 10.0351 15.2992 9.58087 15.2992 9.10722C15.2992 8.12497 16.071 7.32131 17.0144 7.32131H20.2852" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M10.8952 21.9416V17.9566C10.8952 17.4215 10.6871 16.9082 10.3167 16.5298C9.94638 16.1514 9.44406 15.9389 8.92028 15.9389C8.39651 15.9389 7.89418 15.7263 7.52382 15.3479C7.15345 14.9695 6.94538 14.4563 6.94538 13.9211V12.9123C6.94538 12.3771 6.73732 11.8639 6.36695 11.4855C5.99658 11.1071 5.49426 10.8945 4.97049 10.8945H2.60986" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M21.9424 12.001C21.9424 6.50995 17.491 2.05859 12 2.05859C6.50897 2.05859 2.05762 6.50995 2.05762 12.001C2.05762 17.492 6.3985 21.9434 10.8953 21.9434" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M15 15.0155C14.9995 14.8358 15.0458 14.6592 15.1342 14.5039C15.2226 14.3485 15.3498 14.22 15.5029 14.1314C15.6561 14.0429 15.8295 13.9976 16.0054 14.0001C16.1814 14.0026 16.3535 14.0529 16.5041 14.1458L21.4585 17.18C21.606 17.2698 21.7282 17.3972 21.813 17.5496C21.8978 17.7021 21.9424 17.8744 21.9424 18.0497C21.9424 18.2251 21.8978 18.3974 21.813 18.5498C21.7282 18.7023 21.606 18.8296 21.4585 18.9194L16.5041 21.9536C16.3534 22.0466 16.1812 22.0969 16.0052 22.0993C15.8292 22.1018 15.6557 22.0564 15.5025 21.9678C15.3494 21.8791 15.2221 21.7504 15.1338 21.5949C15.0455 21.4394 14.9993 21.2627 15 21.083V15.0155Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg></span>
+Sim engine</dt>
+    <dd class="text-foreground font-mono text-[12px]">anacreon</dd>
+  </div>
+  
+</dl>
+  </div>
+</article>
+<article class="models-detail" data-model-detail="us-online-shoppers" hidden>
+  <div class="relative h-16 overflow-hidden lg:h-20">
+    
+
+<img src="/static/marketing/user-models/us-online-shoppers.jpg" alt="" class="h-full w-full object-cover" loading="lazy">
+
+    <span class="absolute right-3 top-3 rounded-full bg-card px-2.5 py-1 text-[11px] font-medium text-foreground shadow-sm">Coming soon</span>
+  </div>
+  <div class="px-4 py-3">
+    <h3 class="text-base font-semibold tracking-tight text-foreground">US Online Shoppers</h3>
+    <p class="mt-0.5 text-[12.5px] leading-snug text-marketing-sub">A user model of people in the US who shop online, for testing e-commerce products and messaging.</p>
+    
+
+<dl class="mt-2 divide-y divide-border text-[12.5px]">
+  
+  <div class="grid grid-cols-[6rem_1fr] items-center gap-3 py-1">
+    <dt class="flex items-center gap-2 text-marketing-sub">
+<span class="h-3.5 w-3.5 shrink-0" style="display: inline-flex; align-items: center; vertical-align: middle; flex-shrink: 0;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-full w-full">
+  <path d="M18 21a8 8 0 0 0-16 0" />
+  <circle cx="10" cy="8" r="5" />
+  <path d="M22 20c0-3.37-2-6.5-4-8a5 5 0 0 0-.45-8.3" />
+</svg></span>
+Target</dt>
+    <dd class="text-foreground">Consumers · online shopping</dd>
+  </div>
+  
+  <div class="grid grid-cols-[6rem_1fr] items-center gap-3 py-1">
+    <dt class="flex items-center gap-2 text-marketing-sub">
+<span class="h-3.5 w-3.5 shrink-0" style="display: inline-flex; align-items: center; vertical-align: middle; flex-shrink: 0;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-full w-full">
+  <path d="M21.54 15H17a2 2 0 0 0-2 2v4.54" />
+  <path d="M7 3.34V5a3 3 0 0 0 3 3a2 2 0 0 1 2 2c0 1.1.9 2 2 2a2 2 0 0 0 2-2c0-1.1.9-2 2-2h3.17" />
+  <path d="M11 21.95V18a2 2 0 0 0-2-2a2 2 0 0 1-2-2v-1a2 2 0 0 0-2-2H2.05" />
+  <circle cx="12" cy="12" r="10" />
+</svg></span>
+Region</dt>
+    <dd class="text-foreground">United States</dd>
+  </div>
+  
+  <div class="grid grid-cols-[6rem_1fr] items-center gap-3 py-1">
+    <dt class="flex items-center gap-2 text-marketing-sub">
+<span class="h-3.5 w-3.5 shrink-0" style="display: inline-flex; align-items: center; vertical-align: middle; flex-shrink: 0;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-full w-full">
+  <path d="m5 8 6 6" />
+  <path d="m4 14 6-6 2-3" />
+  <path d="M2 5h12" />
+  <path d="M7 2h1" />
+  <path d="m22 22-5-10-5 10" />
+  <path d="M14 18h6" />
+</svg></span>
+Language</dt>
+    <dd class="text-foreground">English</dd>
+  </div>
+  
+  <div class="grid grid-cols-[6rem_1fr] items-center gap-3 py-1">
+    <dt class="flex items-center gap-2 text-marketing-sub">
+<span class="h-3.5 w-3.5 shrink-0" style="display: inline-flex; align-items: center; vertical-align: middle; flex-shrink: 0;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M7.58105 3.16016V4.64246C7.58105 5.35293 7.85211 6.03431 8.33459 6.53669C8.81706 7.03908 9.47144 7.32131 10.1538 7.32131C10.6087 7.32131 11.0449 7.50947 11.3666 7.84439C11.6882 8.17931 11.8689 8.63357 11.8689 9.10722C11.8689 10.0895 12.6407 10.8931 13.5841 10.8931C14.0389 10.8931 14.4752 10.705 14.7969 10.37C15.1185 10.0351 15.2992 9.58087 15.2992 9.10722C15.2992 8.12497 16.071 7.32131 17.0144 7.32131H20.2852" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M10.8952 21.9416V17.9566C10.8952 17.4215 10.6871 16.9082 10.3167 16.5298C9.94638 16.1514 9.44406 15.9389 8.92028 15.9389C8.39651 15.9389 7.89418 15.7263 7.52382 15.3479C7.15345 14.9695 6.94538 14.4563 6.94538 13.9211V12.9123C6.94538 12.3771 6.73732 11.8639 6.36695 11.4855C5.99658 11.1071 5.49426 10.8945 4.97049 10.8945H2.60986" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M21.9424 12.001C21.9424 6.50995 17.491 2.05859 12 2.05859C6.50897 2.05859 2.05762 6.50995 2.05762 12.001C2.05762 17.492 6.3985 21.9434 10.8953 21.9434" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M15 15.0155C14.9995 14.8358 15.0458 14.6592 15.1342 14.5039C15.2226 14.3485 15.3498 14.22 15.5029 14.1314C15.6561 14.0429 15.8295 13.9976 16.0054 14.0001C16.1814 14.0026 16.3535 14.0529 16.5041 14.1458L21.4585 17.18C21.606 17.2698 21.7282 17.3972 21.813 17.5496C21.8978 17.7021 21.9424 17.8744 21.9424 18.0497C21.9424 18.2251 21.8978 18.3974 21.813 18.5498C21.7282 18.7023 21.606 18.8296 21.4585 18.9194L16.5041 21.9536C16.3534 22.0466 16.1812 22.0969 16.0052 22.0993C15.8292 22.1018 15.6557 22.0564 15.5025 21.9678C15.3494 21.8791 15.2221 21.7504 15.1338 21.5949C15.0455 21.4394 14.9993 21.2627 15 21.083V15.0155Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg></span>
+Sim engine</dt>
+    <dd class="text-foreground font-mono text-[12px]">anacreon</dd>
+  </div>
+  
+</dl>
+  </div>
+</article>
+<article class="models-detail" data-model-detail="uk-consumer-finance" hidden>
+  <div class="relative h-16 overflow-hidden lg:h-20">
+    
+
+<img src="/static/marketing/user-models/uk-consumer-finance.jpg" alt="" class="h-full w-full object-cover" loading="lazy">
+
+    <span class="absolute right-3 top-3 rounded-full bg-card px-2.5 py-1 text-[11px] font-medium text-foreground shadow-sm">Coming soon</span>
+  </div>
+  <div class="px-4 py-3">
+    <h3 class="text-base font-semibold tracking-tight text-foreground">UK Consumer Finance</h3>
+    <p class="mt-0.5 text-[12.5px] leading-snug text-marketing-sub">A user model of adults in the UK, for testing consumer finance products and messaging.</p>
+    
+
+<dl class="mt-2 divide-y divide-border text-[12.5px]">
+  
+  <div class="grid grid-cols-[6rem_1fr] items-center gap-3 py-1">
+    <dt class="flex items-center gap-2 text-marketing-sub">
+<span class="h-3.5 w-3.5 shrink-0" style="display: inline-flex; align-items: center; vertical-align: middle; flex-shrink: 0;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-full w-full">
+  <path d="M18 21a8 8 0 0 0-16 0" />
+  <circle cx="10" cy="8" r="5" />
+  <path d="M22 20c0-3.37-2-6.5-4-8a5 5 0 0 0-.45-8.3" />
+</svg></span>
+Target</dt>
+    <dd class="text-foreground">Consumers · finance</dd>
+  </div>
+  
+  <div class="grid grid-cols-[6rem_1fr] items-center gap-3 py-1">
+    <dt class="flex items-center gap-2 text-marketing-sub">
+<span class="h-3.5 w-3.5 shrink-0" style="display: inline-flex; align-items: center; vertical-align: middle; flex-shrink: 0;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-full w-full">
+  <path d="M21.54 15H17a2 2 0 0 0-2 2v4.54" />
+  <path d="M7 3.34V5a3 3 0 0 0 3 3a2 2 0 0 1 2 2c0 1.1.9 2 2 2a2 2 0 0 0 2-2c0-1.1.9-2 2-2h3.17" />
+  <path d="M11 21.95V18a2 2 0 0 0-2-2a2 2 0 0 1-2-2v-1a2 2 0 0 0-2-2H2.05" />
+  <circle cx="12" cy="12" r="10" />
+</svg></span>
+Region</dt>
+    <dd class="text-foreground">United Kingdom</dd>
+  </div>
+  
+  <div class="grid grid-cols-[6rem_1fr] items-center gap-3 py-1">
+    <dt class="flex items-center gap-2 text-marketing-sub">
+<span class="h-3.5 w-3.5 shrink-0" style="display: inline-flex; align-items: center; vertical-align: middle; flex-shrink: 0;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-full w-full">
+  <path d="m5 8 6 6" />
+  <path d="m4 14 6-6 2-3" />
+  <path d="M2 5h12" />
+  <path d="M7 2h1" />
+  <path d="m22 22-5-10-5 10" />
+  <path d="M14 18h6" />
+</svg></span>
+Language</dt>
+    <dd class="text-foreground">English</dd>
+  </div>
+  
+  <div class="grid grid-cols-[6rem_1fr] items-center gap-3 py-1">
+    <dt class="flex items-center gap-2 text-marketing-sub">
+<span class="h-3.5 w-3.5 shrink-0" style="display: inline-flex; align-items: center; vertical-align: middle; flex-shrink: 0;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M7.58105 3.16016V4.64246C7.58105 5.35293 7.85211 6.03431 8.33459 6.53669C8.81706 7.03908 9.47144 7.32131 10.1538 7.32131C10.6087 7.32131 11.0449 7.50947 11.3666 7.84439C11.6882 8.17931 11.8689 8.63357 11.8689 9.10722C11.8689 10.0895 12.6407 10.8931 13.5841 10.8931C14.0389 10.8931 14.4752 10.705 14.7969 10.37C15.1185 10.0351 15.2992 9.58087 15.2992 9.10722C15.2992 8.12497 16.071 7.32131 17.0144 7.32131H20.2852" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M10.8952 21.9416V17.9566C10.8952 17.4215 10.6871 16.9082 10.3167 16.5298C9.94638 16.1514 9.44406 15.9389 8.92028 15.9389C8.39651 15.9389 7.89418 15.7263 7.52382 15.3479C7.15345 14.9695 6.94538 14.4563 6.94538 13.9211V12.9123C6.94538 12.3771 6.73732 11.8639 6.36695 11.4855C5.99658 11.1071 5.49426 10.8945 4.97049 10.8945H2.60986" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M21.9424 12.001C21.9424 6.50995 17.491 2.05859 12 2.05859C6.50897 2.05859 2.05762 6.50995 2.05762 12.001C2.05762 17.492 6.3985 21.9434 10.8953 21.9434" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M15 15.0155C14.9995 14.8358 15.0458 14.6592 15.1342 14.5039C15.2226 14.3485 15.3498 14.22 15.5029 14.1314C15.6561 14.0429 15.8295 13.9976 16.0054 14.0001C16.1814 14.0026 16.3535 14.0529 16.5041 14.1458L21.4585 17.18C21.606 17.2698 21.7282 17.3972 21.813 17.5496C21.8978 17.7021 21.9424 17.8744 21.9424 18.0497C21.9424 18.2251 21.8978 18.3974 21.813 18.5498C21.7282 18.7023 21.606 18.8296 21.4585 18.9194L16.5041 21.9536C16.3534 22.0466 16.1812 22.0969 16.0052 22.0993C15.8292 22.1018 15.6557 22.0564 15.5025 21.9678C15.3494 21.8791 15.2221 21.7504 15.1338 21.5949C15.0455 21.4394 14.9993 21.2627 15 21.083V15.0155Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg></span>
+Sim engine</dt>
+    <dd class="text-foreground font-mono text-[12px]">anacreon</dd>
+  </div>
+  
+</dl>
+  </div>
+</article>
+<article class="models-detail" data-model-detail="uk-online-shoppers" hidden>
+  <div class="relative h-16 overflow-hidden lg:h-20">
+    
+
+<img src="/static/marketing/user-models/uk-online-shoppers.jpg" alt="" class="h-full w-full object-cover" loading="lazy">
+
+    <span class="absolute right-3 top-3 rounded-full bg-card px-2.5 py-1 text-[11px] font-medium text-foreground shadow-sm">Coming soon</span>
+  </div>
+  <div class="px-4 py-3">
+    <h3 class="text-base font-semibold tracking-tight text-foreground">UK Online Shoppers</h3>
+    <p class="mt-0.5 text-[12.5px] leading-snug text-marketing-sub">A user model of people in the UK who shop online, for testing e-commerce products and messaging.</p>
+    
+
+<dl class="mt-2 divide-y divide-border text-[12.5px]">
+  
+  <div class="grid grid-cols-[6rem_1fr] items-center gap-3 py-1">
+    <dt class="flex items-center gap-2 text-marketing-sub">
+<span class="h-3.5 w-3.5 shrink-0" style="display: inline-flex; align-items: center; vertical-align: middle; flex-shrink: 0;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-full w-full">
+  <path d="M18 21a8 8 0 0 0-16 0" />
+  <circle cx="10" cy="8" r="5" />
+  <path d="M22 20c0-3.37-2-6.5-4-8a5 5 0 0 0-.45-8.3" />
+</svg></span>
+Target</dt>
+    <dd class="text-foreground">Consumers · online shopping</dd>
+  </div>
+  
+  <div class="grid grid-cols-[6rem_1fr] items-center gap-3 py-1">
+    <dt class="flex items-center gap-2 text-marketing-sub">
+<span class="h-3.5 w-3.5 shrink-0" style="display: inline-flex; align-items: center; vertical-align: middle; flex-shrink: 0;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-full w-full">
+  <path d="M21.54 15H17a2 2 0 0 0-2 2v4.54" />
+  <path d="M7 3.34V5a3 3 0 0 0 3 3a2 2 0 0 1 2 2c0 1.1.9 2 2 2a2 2 0 0 0 2-2c0-1.1.9-2 2-2h3.17" />
+  <path d="M11 21.95V18a2 2 0 0 0-2-2a2 2 0 0 1-2-2v-1a2 2 0 0 0-2-2H2.05" />
+  <circle cx="12" cy="12" r="10" />
+</svg></span>
+Region</dt>
+    <dd class="text-foreground">United Kingdom</dd>
+  </div>
+  
+  <div class="grid grid-cols-[6rem_1fr] items-center gap-3 py-1">
+    <dt class="flex items-center gap-2 text-marketing-sub">
+<span class="h-3.5 w-3.5 shrink-0" style="display: inline-flex; align-items: center; vertical-align: middle; flex-shrink: 0;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-full w-full">
+  <path d="m5 8 6 6" />
+  <path d="m4 14 6-6 2-3" />
+  <path d="M2 5h12" />
+  <path d="M7 2h1" />
+  <path d="m22 22-5-10-5 10" />
+  <path d="M14 18h6" />
+</svg></span>
+Language</dt>
+    <dd class="text-foreground">English</dd>
+  </div>
+  
+  <div class="grid grid-cols-[6rem_1fr] items-center gap-3 py-1">
+    <dt class="flex items-center gap-2 text-marketing-sub">
+<span class="h-3.5 w-3.5 shrink-0" style="display: inline-flex; align-items: center; vertical-align: middle; flex-shrink: 0;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M7.58105 3.16016V4.64246C7.58105 5.35293 7.85211 6.03431 8.33459 6.53669C8.81706 7.03908 9.47144 7.32131 10.1538 7.32131C10.6087 7.32131 11.0449 7.50947 11.3666 7.84439C11.6882 8.17931 11.8689 8.63357 11.8689 9.10722C11.8689 10.0895 12.6407 10.8931 13.5841 10.8931C14.0389 10.8931 14.4752 10.705 14.7969 10.37C15.1185 10.0351 15.2992 9.58087 15.2992 9.10722C15.2992 8.12497 16.071 7.32131 17.0144 7.32131H20.2852" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M10.8952 21.9416V17.9566C10.8952 17.4215 10.6871 16.9082 10.3167 16.5298C9.94638 16.1514 9.44406 15.9389 8.92028 15.9389C8.39651 15.9389 7.89418 15.7263 7.52382 15.3479C7.15345 14.9695 6.94538 14.4563 6.94538 13.9211V12.9123C6.94538 12.3771 6.73732 11.8639 6.36695 11.4855C5.99658 11.1071 5.49426 10.8945 4.97049 10.8945H2.60986" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M21.9424 12.001C21.9424 6.50995 17.491 2.05859 12 2.05859C6.50897 2.05859 2.05762 6.50995 2.05762 12.001C2.05762 17.492 6.3985 21.9434 10.8953 21.9434" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M15 15.0155C14.9995 14.8358 15.0458 14.6592 15.1342 14.5039C15.2226 14.3485 15.3498 14.22 15.5029 14.1314C15.6561 14.0429 15.8295 13.9976 16.0054 14.0001C16.1814 14.0026 16.3535 14.0529 16.5041 14.1458L21.4585 17.18C21.606 17.2698 21.7282 17.3972 21.813 17.5496C21.8978 17.7021 21.9424 17.8744 21.9424 18.0497C21.9424 18.2251 21.8978 18.3974 21.813 18.5498C21.7282 18.7023 21.606 18.8296 21.4585 18.9194L16.5041 21.9536C16.3534 22.0466 16.1812 22.0969 16.0052 22.0993C15.8292 22.1018 15.6557 22.0564 15.5025 21.9678C15.3494 21.8791 15.2221 21.7504 15.1338 21.5949C15.0455 21.4394 14.9993 21.2627 15 21.083V15.0155Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg></span>
+Sim engine</dt>
+    <dd class="text-foreground font-mono text-[12px]">anacreon</dd>
+  </div>
+  
+</dl>
+  </div>
+</article>
+  </div>
+</div>
+      </div>
+    </div>
+
+    
+<div id="user-models-waitlist-card" class="mt-8 scroll-mt-24 rounded-2xl border border-[#3B3E8A] p-7 md:p-10 grid gap-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center" style="background:linear-gradient(160deg,#262968 0%,#1E2054 55%,#181A44 100%)">
+  <div class="max-w-xl">
+    <div class="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#A2A4D8]">Waitlist</div>
+    <h3 class="mt-2 font-semibold tracking-tight text-white text-balance" style="font-size:clamp(1.4rem,2.6vw,1.9rem);line-height:1.15">We’re building a catalogue of public user models.</h3>
+    <p class="mt-3 text-[#A2A4D8]">Join the waitlist and we’ll email you when each one launches.</p>
+  </div>
+  
+
+<form id="user-models-waitlist" hx-post="/waitlist/user-models" hx-target="this" hx-swap="outerHTML" class="waitlist-form flex w-full flex-col gap-2 lg:w-[28rem]">
+  <label for="user-models-waitlist-interest" class="sr-only">Which user model are you interested in?</label>
+  <div class="relative">
+    <select id="user-models-waitlist-interest" name="interest" data-waitlist-interest class="w-full min-w-0 rounded-lg border border-[#565CB8] bg-[#2E3178] px-3 py-2.5 text-sm text-white placeholder:text-[#A5A8E8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8a6cf0] appearance-none pr-9 cursor-pointer">
+      <option value="Any user model">Any user model</option>
+      
+      <optgroup label="United States">
+        <option value="US Consumer Finance">US Consumer Finance</option><option value="US Online Shoppers">US Online Shoppers</option>
+      </optgroup>
+      
+      <optgroup label="United Kingdom">
+        <option value="UK Consumer Finance">UK Consumer Finance</option><option value="UK Online Shoppers">UK Online Shoppers</option>
+      </optgroup>
+      
+      <option value="other">Something else…</option>
+    </select>
+    <svg class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#A5A8E8]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+  </div>
+  <div class="waitlist-other" data-waitlist-other hidden>
+    <label for="user-models-waitlist-other" class="sr-only">Which audience do you want a user model of?</label>
+    <input id="user-models-waitlist-other" type="text" name="other" maxlength="200" placeholder="Which audience? e.g. US nurses" class="w-full min-w-0 rounded-lg border border-[#565CB8] bg-[#2E3178] px-3 py-2.5 text-sm text-white placeholder:text-[#A5A8E8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8a6cf0]">
+  </div>
+  <div class="flex flex-col gap-2 sm:flex-row">
+    <label for="user-models-waitlist-email" class="sr-only">Work email</label>
+    <input id="user-models-waitlist-email" type="email" name="email" required placeholder="Work email" class="w-full min-w-0 rounded-lg border border-[#565CB8] bg-[#2E3178] px-3 py-2.5 text-sm text-white placeholder:text-[#A5A8E8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8a6cf0] sm:flex-1">
+    <button type="submit" class="marketing-btn-md inline-flex items-center justify-center whitespace-nowrap rounded-lg bg-white font-medium text-[#1E2054] transition-colors hover:bg-[#E8E9F8]">Join the waitlist</button>
+  </div>
+  
+</form>
+</div>
+  </div>
+</section>
+
+<script>
+document.addEventListener("change", function (event) {
+  if (!event.target.matches("[data-waitlist-interest]")) return;
+  var other = event.target.form.querySelector("[data-waitlist-other]");
+  other.hidden = event.target.value !== "other";
+  if (!other.hidden) other.querySelector("input").focus();
+});
+</script>
+<script type="module" src="/static/marketing/user-models-globe.js?v=1792738523"></script>
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<section id="models" class="relative bg-marketing-dark">
+  <div class="marketing-container relative z-10 py-24">
+    <div class="max-w-4xl">
+      <div class="text-xs font-medium uppercase tracking-[0.08em] mb-3 text-[#a9abe6]">Accuracy</div>
+      <h2 class="font-semibold text-white md:whitespace-nowrap" style="font-size:clamp(1.7rem,3.2vw,2.35rem)">Tested against real people, question by question.</h2>
+      <p class="mt-4 max-w-3xl text-[#b8bac2]" style="font-size:1.1rem;line-height:1.6">
+        Each user model is built from real human data. Accuracy is measured by comparing its predictions
+        with how real people answered. Every model’s test results are shown in the product.
+      </p>
+    </div>
+
+    <div class="mt-12 rounded-2xl p-[1.5px]" style="background:linear-gradient(120deg,#4B4FCF,#8a6cf0 45%,#F45AA8)">
+      <div class="rounded-[14.5px] p-5 sm:p-7 md:p-10" style="background:linear-gradient(160deg,#191A26,#14151E)">
+        <div class="max-w-3xl">
+          <div class="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#7a7a86]">Simulation engine</div>
+          <h3 class="mt-2 font-semibold tracking-tight text-[#F45AA8]" style="font-size:clamp(2rem,3.4vw,2.6rem);line-height:1.05">Anacreon</h3>
+          <p class="mt-5 text-[#b8bac2] leading-relaxed">
+            Anacreon is built from interviews, reviews and open-ended survey responses. It simulates hundreds of
+            individual respondents, each modelled on one real person, so you can segment and re-cut the results.
+            The first public user models built with it are <a href="#user-models" class="text-[#a9abe6] hover:text-white">coming soon</a>.
+            With Semilattice Custom, we build one from your own research.
+          </p>
+        </div>
+        <div class="mt-8 pt-8 border-t border-[#2a2c34] grid gap-8 lg:grid-cols-2 lg:gap-4">
+          <div class="lg:pr-6">
+            <div class="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#7a7a86]">Accuracy</div>
+            <div class="mt-2 text-2xl font-semibold tracking-tight text-white">State of the art</div>
+            <p class="mt-3 text-sm text-white font-medium leading-relaxed">On held-out questions it predicts a person’s exact answer 67.0% of the time, against 65.7% for the best published baseline.<span class="text-[#7a7a86]">*</span></p>
+          </div>
+          <div class="hidden lg:block">
+<div class="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#7a7a86]">Research</div>
+<div class="mt-3">
+<ol class="flex flex-col gap-3">
+  
+  <li class="text-base leading-snug">
+    <span class="block text-xs tabular-nums text-[#7a7a86]">Jul 2026</span>
+    <a href="/blog/anacreon" class="text-[#a9abe6] hover:text-white">Anacreon: state-of-the-art accuracy in simulating individuals&nbsp;→</a>
+  </li>
+  
+  <li class="text-base leading-snug">
+    <span class="block text-xs tabular-nums text-[#7a7a86]">Jul 2026</span>
+    <a href="/research/anacreon" class="text-[#a9abe6] hover:text-white">Mind the Gaps: Mixture-of-Minds for Human Simulation&nbsp;→</a>
+  </li>
+  
+</ol></div></div>
+        </div>
+        <div class="mt-8 grid gap-4 lg:grid-cols-2">
+          
+<div class="rounded-xl border p-4 sm:p-6 border-[#383B4A] bg-[#1D1F2B]">
+  <div class="text-[15px] font-medium text-white">Exact-answer accuracy</div>
+  <div class="mt-0.5 mb-5 text-xs text-[#7a7a86]">Held-out individual-level questions</div>
+  <div class="flex flex-col gap-3">
+    
+    <div class="flex items-center gap-2 sm:gap-3">
+      <div class="w-20 sm:w-24 shrink-0 whitespace-nowrap text-xs text-right text-white">anacreon</div>
+      <div class="flex-1 h-10 rounded overflow-hidden bg-[#2A2D3B]">
+        <div class="h-full rounded bg-[#7C80EA]" style="width:68.0%"></div>
+      </div>
+      <div class="w-11 sm:w-14 shrink-0 text-[13px] tabular-nums font-semibold text-white">67.0%</div>
+    </div>
+    
+    <div class="flex items-center gap-2 sm:gap-3">
+      <div class="w-20 sm:w-24 shrink-0 whitespace-nowrap text-xs text-right text-[#9a9aa3]">Park et al.</div>
+      <div class="flex-1 h-10 rounded overflow-hidden bg-[#2A2D3B]">
+        <div class="h-full rounded bg-[#3a3b44]" style="width:62.8%"></div>
+      </div>
+      <div class="w-11 sm:w-14 shrink-0 text-[13px] tabular-nums text-[#7a7a86]">65.7%</div>
+    </div>
+    
+  </div>
+</div>
+          
+<div class="rounded-xl border p-4 sm:p-6 border-[#383B4A] bg-[#1D1F2B]">
+  <div class="text-[15px] font-medium text-white">Closeness on scale questions</div>
+  <div class="mt-0.5 mb-5 text-xs text-[#7a7a86]">1.0 is a perfect match</div>
+  <div class="flex flex-col gap-3">
+    
+    <div class="flex items-center gap-2 sm:gap-3">
+      <div class="w-20 sm:w-24 shrink-0 whitespace-nowrap text-xs text-right text-white">anacreon</div>
+      <div class="flex-1 h-5 rounded overflow-hidden bg-[#2A2D3B]">
+        <div class="h-full rounded bg-[#7C80EA]" style="width:85.0%"></div>
+      </div>
+      <div class="w-11 sm:w-14 shrink-0 text-[13px] tabular-nums font-semibold text-white">0.77</div>
+    </div>
+    
+    <div class="flex items-center gap-2 sm:gap-3">
+      <div class="w-20 sm:w-24 shrink-0 whitespace-nowrap text-xs text-right text-[#9a9aa3]">Mega-Study</div>
+      <div class="flex-1 h-5 rounded overflow-hidden bg-[#2A2D3B]">
+        <div class="h-full rounded bg-[#3a3b44]" style="width:75.0%"></div>
+      </div>
+      <div class="w-11 sm:w-14 shrink-0 text-[13px] tabular-nums text-[#7a7a86]">0.75</div>
+    </div>
+    
+    <div class="flex items-center gap-2 sm:gap-3">
+      <div class="w-20 sm:w-24 shrink-0 whitespace-nowrap text-xs text-right text-[#9a9aa3]">Socrates</div>
+      <div class="flex-1 h-5 rounded overflow-hidden bg-[#2A2D3B]">
+        <div class="h-full rounded bg-[#3a3b44]" style="width:70.0%"></div>
+      </div>
+      <div class="w-11 sm:w-14 shrink-0 text-[13px] tabular-nums text-[#7a7a86]">0.74</div>
+    </div>
+    
+    <div class="flex items-center gap-2 sm:gap-3">
+      <div class="w-20 sm:w-24 shrink-0 whitespace-nowrap text-xs text-right text-[#9a9aa3]">Twin-2K-500</div>
+      <div class="flex-1 h-5 rounded overflow-hidden bg-[#2A2D3B]">
+        <div class="h-full rounded bg-[#3a3b44]" style="width:55.0%"></div>
+      </div>
+      <div class="w-11 sm:w-14 shrink-0 text-[13px] tabular-nums text-[#7a7a86]">0.71</div>
+    </div>
+    
+  </div>
+</div>
+        </div>
+        <div class="mt-4 text-[11px] leading-relaxed text-[#6b6b76]">*Benchmarked on held-out questions against published academic baselines: Park et al. (2024), arXiv:2411.10109 · Toubia et al. (2025), arXiv:2505.17479 · Peng et al. (2025), arXiv:2509.19088 · Kolluri et al. (2025), EMNLP 2025</div>
+        <div class="mt-8 lg:hidden">
+<div class="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#7a7a86]">Research</div>
+<div class="mt-3">
+<ol class="flex flex-col gap-3">
+  
+  <li class="text-base leading-snug">
+    <span class="block text-xs tabular-nums text-[#7a7a86]">Jul 2026</span>
+    <a href="/blog/anacreon" class="text-[#a9abe6] hover:text-white">Anacreon: state-of-the-art accuracy in simulating individuals&nbsp;→</a>
+  </li>
+  
+  <li class="text-base leading-snug">
+    <span class="block text-xs tabular-nums text-[#7a7a86]">Jul 2026</span>
+    <a href="/research/anacreon" class="text-[#a9abe6] hover:text-white">Mind the Gaps: Mixture-of-Minds for Human Simulation&nbsp;→</a>
+  </li>
+  
+</ol></div></div>
+        
+<a href="/anacreon" data-anacreon-modal-open class="anx-promo group mt-8 block overflow-hidden rounded-xl border border-white/[0.06]" style="background:#07071A">
+  <span class="relative grid md:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+    <span class="relative z-10 flex flex-col justify-center p-6 md:px-7 md:py-6">
+      <span class="block text-lg font-semibold tracking-tight text-white leading-snug">Watch a mixture of minds take shape</span>
+      <span class="mt-1.5 block max-w-lg text-sm text-[#A6A8C8] leading-relaxed">Scroll through the Anacreon pipeline: a corpus of real people becomes 420 clusters, one mind is trained for each, and the 400 that converge answer your questions.</span>
+      <span class="mt-4 inline-flex w-full justify-center md:w-fit md:justify-start items-center gap-2 rounded-lg border border-[#8A8EFF]/40 bg-[#4B4FCF]/25 px-3.5 py-2 text-[13px] font-medium text-[#C6C8FF] transition-colors group-hover:bg-[#4B4FCF]/45 group-hover:text-white">
+<span class="h-3.5 w-3.5" style="display: inline-flex; align-items: center; vertical-align: middle; flex-shrink: 0;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-full w-full">
+  <path d="m15 15 6 6" />
+  <path d="m15 9 6-6" />
+  <path d="M21 16v5h-5" />
+  <path d="M21 8V3h-5" />
+  <path d="M3 16v5h5" />
+  <path d="m3 21 6-6" />
+  <path d="M3 8V3h5" />
+  <path d="M9 9 3 3" />
+</svg></span>
+Explore how Anacreon works</span>
+    </span>
+    <span class="anx-promo-art relative block min-h-[150px] md:min-h-[190px]" aria-hidden="true">
+      <img src="/static/marketing/anacreon-minds.jpg" alt="" loading="lazy" class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-110">
+    </span>
+  </span>
+</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<dialog id="anacreon-modal" class="anx-modal" aria-label="How Anacreon works">
+  <button type="button" class="anx-modal-close" data-anacreon-modal-close aria-label="Close">
+<span class="h-4 w-4" style="display: inline-flex; align-items: center; vertical-align: middle; flex-shrink: 0;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-full w-full">
+  <path d="M18 6 6 18" />
+  <path d="m6 6 12 12" />
+</svg></span>
+</button>
+  <iframe title="How Anacreon works" data-src="/anacreon?embed=1" class="anx-modal-frame"></iframe>
+</dialog>
+<script>
+(function () {
+  var modal = document.getElementById("anacreon-modal");
+  if (!modal || !modal.showModal) return;
+  var frame = modal.querySelector("iframe");
+
+  document.querySelectorAll("[data-anacreon-modal-open]").forEach(function (link) {
+    link.addEventListener("click", function (event) {
+      event.preventDefault();
+      if (!frame.src) frame.src = frame.dataset.src;
+      modal.showModal();
+      document.documentElement.classList.add("anx-modal-open");
+    });
+  });
+
+  modal.querySelector("[data-anacreon-modal-close]").addEventListener("click", function () { modal.close(); });
+  modal.addEventListener("click", function (event) { if (event.target === modal) modal.close(); });
+  modal.addEventListener("close", function () { document.documentElement.classList.remove("anx-modal-open"); });
+})();
+</script>
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<section id="how" class="relative rails border-t border-border py-24 depth-dither">
+  <div class="marketing-container relative z-10">
+    <div class="max-w-2xl">
+      <div class="text-xs font-medium uppercase tracking-[0.08em] text-accent mb-3">How it works</div>
+      <h2 class="font-semibold text-foreground text-balance" style="font-size:clamp(1.8rem,4vw,2.5rem)"><span class="block">Give Semilattice your work.</span> See what to fix.</h2>
+      <p class="mt-4 text-marketing-sub" style="font-size:1.1rem;line-height:1.6">
+        Upload a plan, an ad, a landing page or a flow to the app, or have your agent send it. In minutes,
+        Semilattice shows how your users will react and what to change, for the decisions that would otherwise
+        be made on instinct because a research study takes weeks.
+      </p>
+    </div>
+    <div class="how-app mt-10 rounded-2xl border border-border bg-card overflow-hidden shot" data-how-app>
+      
+<div class="flex justify-center lg:justify-end border-b border-border px-4 py-2.5">
+<div class="how-tracker" role="group" aria-label="Steps">
+  
+  
+  <button type="button" class="how-pill is-active" data-how-step="0"><span class="how-pill-num">1</span>Plan</button>
+  
+  <span class="how-tracker-sep" aria-hidden="true">
+<span class="h-3.5 w-3.5" style="display: inline-flex; align-items: center; vertical-align: middle; flex-shrink: 0;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-full w-full">
+  <path d="m9 18 6-6-6-6" />
+</svg></span>
+</span>
+  <button type="button" class="how-pill" data-how-step="1"><span class="how-pill-num">2</span>Simulate</button>
+  
+  <span class="how-tracker-sep" aria-hidden="true">
+<span class="h-3.5 w-3.5" style="display: inline-flex; align-items: center; vertical-align: middle; flex-shrink: 0;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-full w-full">
+  <path d="m9 18 6-6-6-6" />
+</svg></span>
+</span>
+  <button type="button" class="how-pill" data-how-step="2"><span class="how-pill-num">3</span>Feedback</button>
+  
+</div></div>
+      <div class="how-app-body">
+        
+<div class="how-sidebar" role="tablist" aria-label="How it works">
+  
+  <button type="button" class="how-item is-active" role="tab" aria-selected="true" data-how-step="0">
+    <span class="how-item-num">1</span>
+    <span class="how-item-text">
+      <span class="block text-[15px] font-semibold leading-snug text-foreground">Ask your agent, or upload it to the app</span>
+      <span class="how-item-desc">Ask Claude, Claude Code, Cursor or any agent connected to Semilattice to test its work with users. Or drop a file into the app, paste a link, or say what you’re thinking of doing, and Semilattice asks before it starts if anything is unclear.</span>
+    </span>
+  </button>
+  
+  <button type="button" class="how-item" role="tab" aria-selected="false" data-how-step="1">
+    <span class="how-item-num">2</span>
+    <span class="how-item-text">
+      <span class="block text-[15px] font-semibold leading-snug text-foreground">Semilattice simulates user reactions</span>
+      <span class="how-item-desc">User models built from real human data predict how your users will react to every line, image and step. Results come back in minutes, to the app or to your agent.</span>
+    </span>
+  </button>
+  
+  <button type="button" class="how-item" role="tab" aria-selected="false" data-how-step="2">
+    <span class="how-item-num">3</span>
+    <span class="how-item-text">
+      <span class="block text-[15px] font-semibold leading-snug text-foreground">Fix what users push back on</span>
+      <span class="how-item-desc">Each line comes back marked: what users support, what they push back on, and what they expect that isn’t there. Make the change yourself in the app, or let your agent rewrite the line and test it again.</span>
+    </span>
+  </button>
+  
+</div>
+        
+<div class="how-stage-area mock-stage bg-[linear-gradient(135deg,#ECEEFA,#F5F1FA)] dark:bg-[linear-gradient(135deg,#1A1B2A,#231B2A)]">
+  
+<div class="how-pane" data-how-pane="0">
+  <div class="how-pane-canvas"><div class="relative" style="width:720px;height:540px">
+<div class="how-two-ways relative mx-auto h-full w-[720px]">
+  <div class="how-two-ways-agent absolute left-0 top-0 bottom-8 w-[400px] flex flex-col">
+    <div class="mb-2 inline-flex self-start rounded-full bg-card px-2.5 py-1 text-[10.5px] font-medium text-marketing-sub shadow-sm">From your agent</div>
+    <div class="flex-1 min-h-0">
+      
+<div class="w-full h-full shot rounded-xl overflow-hidden border border-white/10 bg-[#1F1E1B]">
+  <div class="flex items-center gap-2 px-4 py-2 border-b font-mono text-[11px] border-[#33312C] text-[#8A857C]">
+    <span class="text-[#D97757]">✳</span> Claude Code - ~/marketing
+  </div>
+  <div class="py-4 px-5 font-mono text-[11.5px] leading-relaxed text-[#D7D5CF]">
+        <div class="pr-16">
+          <div><span class="text-[#8A857C]">&gt; </span>test homepage-brief.md with UK adults before I review it</div>
+          
+<div class="mt-2.5">
+  <div><span class="text-[#4EBA65]">⏺</span> Read<span class="text-[#8A857C]">(homepage-brief.md)</span></div>
+  <div class="text-[#8A857C]">&nbsp;&nbsp;⎿ Read 64 lines</div>
+</div>
+          <div class="mt-2.5"><span class="text-[#D7D5CF]">⏺</span> The brief has three key messages and a sign-up change. I’ll test both with UK adults.</div>
+          
+<div class="mt-2.5">
+  <div class="flex items-center gap-1.5">
+    <span class="text-[#D97757]">⏺</span>
+    <img src="/static/marketing/favicon.png" class="w-[14px] h-[14px] rounded-full shrink-0" alt="">
+    <span>list_user_models (MCP)</span>
+  </div>
+  <div class="text-[#8A857C]">&nbsp;&nbsp;⎿ 32 models · using UK Adults 2026</div>
+</div>
+          
+<div class="mt-2.5">
+  <div class="flex items-center gap-1.5">
+    <span class="text-[#D97757]">⏺</span>
+    <img src="/static/marketing/favicon.png" class="w-[14px] h-[14px] rounded-full shrink-0" alt="">
+    <span>create_simulation (MCP)</span>
+  </div>
+  <div class="text-[#8A857C]">&nbsp;&nbsp;⎿ 3 simulations · 3 messages, 1 journey</div>
+</div>
+          
+<div class="mt-2.5">
+  <div class="flex items-center gap-1.5">
+    <span class="text-[#D97757]">⏺</span>
+    <img src="/static/marketing/favicon.png" class="w-[14px] h-[14px] rounded-full shrink-0" alt="">
+    <span>run_simulation (MCP)</span>
+  </div>
+  <div class="text-[#8A857C]">&nbsp;&nbsp;⎿ Running · results in about 4 min</div>
+</div>
+          <div class="mt-3 flex items-center gap-1.5 text-[#D97757]">✳ <span class="text-[#8A857C]">Waiting for Semilattice…</span></div>
+        </div>
+      </div>
+</div>
+    </div>
+  </div>
+  <div class="how-two-ways-app absolute left-[320px] top-4 w-[400px] flex flex-col">
+    <div class="mb-2 inline-flex self-start rounded-full bg-card px-2.5 py-1 text-[10.5px] font-medium text-marketing-sub shadow-sm">In the Semilattice app</div>
+    <div class="flex flex-col shot rounded-xl overflow-hidden bg-card border border-black/5 dark:border-white/10">
+      
+<div class="flex items-center gap-2 px-3.5 h-9 shrink-0 border-b bg-card border-marketing-mute-line whitespace-nowrap">
+  <span class="text-[11px] text-marketing-mute-faint shrink-0">Projects</span>
+  <span class="text-[11px] text-marketing-mute-faint shrink-0">/</span>
+  <span class="text-[12px] font-medium text-marketing-mute-soft truncate min-w-0">Homepage refresh</span>
+  <span class="ml-auto shrink-0 rounded-full px-2 py-0.5 text-[10px] bg-marketing-mute-skel text-marketing-sub">＋ New project</span>
+</div>
+      <div class="flex flex-col gap-2 bg-marketing-tint p-3">
+        
+
+<div class="flex items-start gap-1.5 flex-row-reverse">
+  <span class="mt-1 shrink-0">
+<span class="w-6 h-6 rounded-full shrink-0 flex items-center justify-center text-[10px] font-semibold bg-marketing-mute-skel text-marketing-sub">M</span></span>
+  <div class="max-w-[82%] rounded-2xl py-2 pr-3 text-[12.5px] pl-3 rounded-tr-sm bg-marketing-mute-skel text-foreground"><span class="inline-block rounded border bg-card px-1.5 py-0.5 text-[10px] mb-1 border-marketing-mute-line text-marketing-sub">⎘ homepage-brief.md</span><div>The free-trial message is the risky change.</div></div>
+</div>
+
+<div class="flex items-start gap-1.5 ">
+  <span class="mt-1 shrink-0">
+<img src="/static/marketing/planner-icon.svg" alt="" class="w-6 h-6 rounded-full shrink-0"/></span>
+  <div class="max-w-[82%] rounded-2xl py-2 pr-3 text-[12.5px] pl-3 rounded-tl-sm bg-accent-light text-accent-light-foreground">Who should I test it with? The brief says UK adults aged 25–54.</div>
+</div>
+
+<div class="flex items-start gap-1.5 flex-row-reverse">
+  <span class="mt-1 shrink-0">
+<span class="w-6 h-6 rounded-full shrink-0 flex items-center justify-center text-[10px] font-semibold bg-marketing-mute-skel text-marketing-sub">M</span></span>
+  <div class="max-w-[82%] rounded-2xl py-2 pr-3 text-[12.5px] pl-3 rounded-tr-sm bg-marketing-mute-skel text-foreground">Yes. Check the sign-up flow on staging too.</div>
+</div>
+
+<div class="flex items-start gap-1.5 ">
+  <span class="mt-1 shrink-0">
+<img src="/static/marketing/planner-icon.svg" alt="" class="w-6 h-6 rounded-full shrink-0"/></span>
+  <div class="max-w-[82%] rounded-2xl py-2 pr-3 text-[12.5px] pl-3 rounded-tl-sm bg-accent-light text-accent-light-foreground">Testing the homepage with them, then walking through sign-up on staging.</div>
+</div>
+        
+<div class="shrink-0 rounded-lg border bg-card border-marketing-mute-line">
+  <div class="flex items-center gap-1.5 px-2.5 pt-2 pb-1.5">
+    <span class="text-[10.5px] font-medium text-foreground">3 simulations planned</span>
+    <span class="ml-auto text-[9.5px] text-marketing-mute-faint">from homepage-brief.md</span>
+  </div>
+  
+  <div class="flex items-center gap-2 border-t px-2.5 py-1 border-marketing-mute-line">
+    
+
+<span class="h-[14px] w-[14px] shrink-0 text-[#2563eb] dark:text-[#5B8DEF]" style="display: inline-flex; align-items: center; vertical-align: middle; flex-shrink: 0;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M18 2H20C20.5304 2 21.0391 2.21071 21.4142 2.58579C21.7893 2.96086 22 3.46957 22 4V6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M2 6L2 4C2 3.46957 2.21071 2.96086 2.58579 2.58579C2.96086 2.21071 3.46957 2 4 2L6 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M22 18V20C22 20.5304 21.7893 21.0391 21.4142 21.4142C21.0391 21.7893 20.5304 22 20 22H18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M6 22H4C3.46957 22 2.96086 21.7893 2.58579 21.4142C2.21071 21.0391 2 20.5304 2 20V18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M7.12793 18.0896V14.4355" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M12 18.0903V5.91016" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M16.8721 18.0906V9.56445" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg></span>
+
+    <div class="flex-1 min-w-0">
+      <div class="text-[11px] font-medium truncate text-foreground">Free-trial appeal</div>
+      <div class="text-[9.5px] truncate text-marketing-mute-faint">UK Adults 2026 · 12 questions</div>
+    </div>
+    
+<span class="rounded-full px-2 py-0.5 text-[10px] shrink-0 bg-marketing-mute-skel text-marketing-sub">Discovery</span>
+  </div>
+  
+  <div class="flex items-center gap-2 border-t px-2.5 py-1 border-marketing-mute-line">
+    
+
+<span class="h-[14px] w-[14px] shrink-0 text-[#059669] dark:text-[#34D399]" style="display: inline-flex; align-items: center; vertical-align: middle; flex-shrink: 0;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M18 2H20C20.5304 2 21.0391 2.21071 21.4142 2.58579C21.7893 2.96086 22 3.46957 22 4V6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M2 6L2 4C2 3.46957 2.21071 2.96086 2.58579 2.58579C2.96086 2.21071 3.46957 2 4 2L6 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M22 18V20C22 20.5304 21.7893 21.0391 21.4142 21.4142C21.0391 21.7893 20.5304 22 20 22H18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M6 22H4C3.46957 22 2.96086 21.7893 2.58579 21.4142C2.21071 21.0391 2 20.5304 2 20V18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M14.0824 6.39844L12.9533 7.4588" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M6.81405 9.24244L5.18604 8.77734" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M7.32162 12.8145L6.30664 13.9155" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M8.8916 5.35742L9.39514 6.92857" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M10.1907 10.6771C10.1617 10.609 10.1538 10.5337 10.168 10.461C10.1821 10.3882 10.2176 10.3214 10.27 10.269C10.3224 10.2167 10.3892 10.1811 10.4619 10.167C10.5347 10.1529 10.6099 10.1608 10.6781 10.1897L18.889 13.5487C18.9621 13.5787 19.0238 13.6311 19.0652 13.6984C19.1066 13.7656 19.1256 13.8443 19.1195 13.923C19.1133 14.0018 19.0824 14.0766 19.031 14.1366C18.9797 14.1966 18.9106 14.2388 18.8338 14.2571L15.5875 15.0342C15.4535 15.0662 15.3309 15.1346 15.2335 15.232C15.136 15.3294 15.0673 15.4518 15.0351 15.5858L14.2588 18.8328C14.2407 18.9099 14.1986 18.9793 14.1385 19.0308C14.0784 19.0824 14.0034 19.1135 13.9245 19.1197C13.8455 19.1258 13.7666 19.1067 13.6993 19.065C13.6319 19.0234 13.5795 18.9614 13.5497 18.8881L10.1907 10.6771Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg></span>
+
+    <div class="flex-1 min-w-0">
+      <div class="text-[11px] font-medium truncate text-foreground">Homepage walkthrough</div>
+      <div class="text-[9.5px] truncate text-marketing-mute-faint">staging.folk.app · homepage to sign-up</div>
+    </div>
+    
+<span class="rounded-full px-2 py-0.5 text-[10px] shrink-0 bg-marketing-mute-skel text-marketing-sub">Conversion</span>
+  </div>
+  
+  <div class="flex items-center gap-2 border-t px-2.5 py-1 border-marketing-mute-line">
+    
+
+<span class="h-[14px] w-[14px] shrink-0 text-[#2563eb] dark:text-[#5B8DEF]" style="display: inline-flex; align-items: center; vertical-align: middle; flex-shrink: 0;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M18 2H20C20.5304 2 21.0391 2.21071 21.4142 2.58579C21.7893 2.96086 22 3.46957 22 4V6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M2 6L2 4C2 3.46957 2.21071 2.96086 2.58579 2.58579C2.96086 2.21071 3.46957 2 4 2L6 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M22 18V20C22 20.5304 21.7893 21.0391 21.4142 21.4142C21.0391 21.7893 20.5304 22 20 22H18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M6 22H4C3.46957 22 2.96086 21.7893 2.58579 21.4142C2.21071 21.0391 2 20.5304 2 20V18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M7.12793 18.0896V14.4355" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M12 18.0903V5.91016" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M16.8721 18.0906V9.56445" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg></span>
+
+    <div class="flex-1 min-w-0">
+      <div class="text-[11px] font-medium truncate text-foreground">Headline variants</div>
+      <div class="text-[9.5px] truncate text-marketing-mute-faint">UK Adults 25–34 · 9 questions</div>
+    </div>
+    
+<span class="rounded-full px-2 py-0.5 text-[10px] shrink-0 bg-marketing-mute-skel text-marketing-sub">Messaging</span>
+  </div>
+  
+</div>
+        <button type="button" class="how-run-btn" data-how-run>
+<span class="h-3.5 w-3.5" style="display: inline-flex; align-items: center; vertical-align: middle; flex-shrink: 0;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-full w-full">
+  <path d="M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z" />
+</svg></span>
+Run simulations</button>
+      </div>
+    </div>
+  </div>
+</div></div></div>
+</div>
+  
+<div class="how-pane" data-how-pane="1" hidden>
+  <div class="how-pane-canvas"><div class="relative" style="width:720px;height:460px">
+<div class="w-full h-full flex shot rounded-xl overflow-hidden bg-card border border-black/5 dark:border-white/10">
+  
+<div class="w-11 shrink-0 flex flex-col items-center py-3 gap-3 border-r bg-card border-marketing-mute-line">
+  
+<span class="h-5 w-5 text-marketing-mute-soft" style="display: inline-flex; align-items: center; vertical-align: middle; flex-shrink: 0;"><svg class="w-full h-full" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round">
+<path d="M12.0453 9.35894C9.90055 10.3041 8.07425 10.0292 6.62066 9.32934C6.56301 5.53823 9.41646 3.88944 10.2434 3.2899C13.1465 4.88961 12.6973 7.44489 12.0453 9.35894Z"/>
+<path d="M8.82967 12.1836C6.46488 13.4599 4.92436 12.2736 3.64509 11.7529C2.58354 7.27396 3.15539 4.98154 8.01953 2.9438C9.54639 4.05553 10.6701 6.10096 10.6701 6.10096C11.7731 9.17606 10.2887 10.5072 8.82967 12.1836Z"/>
+<path d="M4.9342 10.4549C4.83021 8.92987 4.38451 7.67283 5.3077 6.43061L9.07674 6.43061C9.28954 7.38296 9.5335 9.6914 7.93483 11.0617C6.61037 11.2528 5.40203 10.8608 4.9342 10.4549Z"/>
+<path d="M6.94 14.6528C4.28282 13.9113 2.45467 12.5339 2.16107 12.3197C-0.640049 4.72906 6.02644 0.513736 9.94269 1.53138C11.0914 2.15809 13.6572 3.83916 13.6572 3.83916L14.5831 7.99254C12.1608 12.7995 8.64665 14.6205 6.94 14.6528Z"/>
+</svg></span>
+
+  <div class="mt-1 flex flex-col items-center gap-3">
+    <span class="flex items-center justify-center w-7 h-7 rounded-md bg-accent-light text-accent">
+<span class="h-[17px] w-[17px]" style="display: inline-flex; align-items: center; vertical-align: middle; flex-shrink: 0;"><svg class="w-full h-full" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M10.638 20.0001H4C3.46957 20.0001 2.96086 19.7894 2.58579 19.4143C2.21071 19.0392 2 18.5305 2 18.0001V5.0001C2 4.46966 2.21071 3.96096 2.58579 3.58588C2.96086 3.21081 3.46957 3.0001 4 3.0001H7.9C8.23449 2.99682 8.56445 3.07748 8.8597 3.23472C9.15495 3.39195 9.40604 3.62072 9.59 3.9001L10.4 5.1001C10.5821 5.37663 10.83 5.60362 11.1215 5.7607C11.413 5.91778 11.7389 6.00004 12.07 6.0001H20C20.5304 6.0001 21.0391 6.21081 21.4142 6.58588C21.7893 6.96096 22 7.46966 22 8.0001V12.4171" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M15 15.0155C14.9995 14.8358 15.0458 14.6592 15.1342 14.5039C15.2226 14.3485 15.3498 14.22 15.5029 14.1314C15.6561 14.0429 15.8295 13.9976 16.0054 14.0001C16.1814 14.0026 16.3535 14.0529 16.5041 14.1458L21.4585 17.18C21.606 17.2698 21.7282 17.3972 21.813 17.5496C21.8978 17.7021 21.9424 17.8744 21.9424 18.0497C21.9424 18.2251 21.8978 18.3974 21.813 18.5498C21.7282 18.7023 21.606 18.8296 21.4585 18.9194L16.5041 21.9536C16.3534 22.0466 16.1812 22.0969 16.0052 22.0993C15.8292 22.1018 15.6557 22.0564 15.5025 21.9678C15.3494 21.8791 15.2221 21.7504 15.1338 21.5949C15.0455 21.4394 14.9993 21.2627 15 21.083V15.0155Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg></span>
+</span>
+    <span class="flex items-center justify-center w-7 h-7 text-marketing-mute-soft">
+<span class="h-[17px] w-[17px]" style="display: inline-flex; align-items: center; vertical-align: middle; flex-shrink: 0;"><svg class="w-full h-full" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M18 2H20C20.5304 2 21.0391 2.21071 21.4142 2.58579C21.7893 2.96086 22 3.46957 22 4V6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M2 6L2 4C2 3.46957 2.21071 2.96086 2.58579 2.58579C2.96086 2.21071 3.46957 2 4 2L6 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M22 18V20C22 20.5304 21.7893 21.0391 21.4142 21.4142C21.0391 21.7893 20.5304 22 20 22H18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M6 22H4C3.46957 22 2.96086 21.7893 2.58579 21.4142C2.21071 21.0391 2 20.5304 2 20V18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M8.00001 8.25377C7.99932 8.03193 8.05935 7.81392 8.17393 7.6221C8.28851 7.43029 8.45352 7.27158 8.65201 7.16228C8.8505 7.05297 9.07533 6.99701 9.30342 7.00012C9.5315 7.00324 9.75462 7.06533 9.94987 7.18002L16.3727 10.9263C16.5639 11.0371 16.7223 11.1943 16.8322 11.3825C16.9422 11.5708 17 11.7835 17 12C17 12.2165 16.9422 12.4292 16.8322 12.6175C16.7223 12.8057 16.5639 12.9629 16.3727 13.0737L9.94987 16.82C9.75453 16.9347 9.53129 16.9968 9.30309 16.9999C9.0749 17.0029 8.84998 16.9469 8.65145 16.8374C8.45291 16.728 8.28793 16.5691 8.17344 16.3771C8.05895 16.1851 7.99909 15.9669 8.00001 15.745V8.25377Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg></span>
+</span>
+    <span class="flex items-center justify-center w-7 h-7 text-marketing-mute-soft">
+<span class="h-[17px] w-[17px]" style="display: inline-flex; align-items: center; vertical-align: middle; flex-shrink: 0;"><svg class="w-full h-full" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M2.89997 13.8988C2.6228 14.0612 2.39338 14.2955 2.23536 14.5777C2.07733 14.8599 1.99642 15.1797 2.00097 15.5041V18.4594C1.99045 18.7842 2.06575 19.106 2.21905 19.3914C2.37236 19.6769 2.59811 19.9156 2.87297 20.083L5.59966 21.743C5.87565 21.9097 6.1906 21.9984 6.51183 22C6.83306 22.0016 7.14886 21.916 7.42645 21.7522L10.0992 20.1012C10.3765 19.939 10.6061 19.7047 10.7643 19.4225C10.9225 19.1403 11.0035 18.8204 10.999 18.4959V15.5406C11.0095 15.2157 10.934 14.8939 10.7806 14.6084C10.6271 14.323 10.4012 14.0843 10.1261 13.917L7.39946 12.257C7.12347 12.0903 6.80852 12.0016 6.48729 12C6.16606 11.9984 5.85025 12.084 5.57266 12.2478L2.89997 13.8988Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M11 14L6.5579 16.773M6.5579 16.773L6.50015 22M6.5579 16.773L2 14" stroke="currentColor" stroke-width="2"/>
+<path d="M18.1749 21.0004V19.1181C18.1749 18.1197 17.8066 17.1621 17.151 16.4561C16.4954 15.7501 15.6063 15.3535 14.6792 15.3535" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M20.5371 14.9297C20.7577 15.0787 20.9638 15.255 21.1508 15.4565C21.8064 16.1625 22.1747 17.12 22.1747 18.1184V19.6616" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M7.94529 8.44294C7.8927 8.14412 7.86929 7.83558 7.87801 7.52047C7.94781 5.00015 10.0475 3.01361 12.5678 3.08341C15.0881 3.15321 17.0747 5.25292 17.0049 7.77323C16.9466 9.87817 15.4724 11.6108 13.5197 12.084" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M20.4139 8.89794C20.771 8.26913 20.9835 7.5461 21.0049 6.77281C21.0493 5.17125 20.2633 3.73954 19.0376 2.89062" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg></span>
+</span>
+    <span class="flex items-center justify-center w-7 h-7 text-marketing-mute-soft">
+<span class="h-[17px] w-[17px]" style="display: inline-flex; align-items: center; vertical-align: middle; flex-shrink: 0;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-full w-full">
+  <circle cx="12" cy="12" r="10" />
+  <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
+  <path d="M2 12h20" />
+</svg></span>
+</span>
+  </div>
+  <span class="mt-auto flex items-center justify-center w-7 h-7 text-marketing-mute-soft">
+<span class="h-[17px] w-[17px]" style="display: inline-flex; align-items: center; vertical-align: middle; flex-shrink: 0;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-full w-full">
+  <path d="M10.268 21a2 2 0 0 0 3.464 0" />
+  <path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326" />
+</svg></span>
+</span>
+</div>
+  <div class="flex-1 min-w-0 flex flex-col bg-card">
+    
+<div class="flex items-center gap-2 px-3.5 h-9 shrink-0 border-b bg-card border-marketing-mute-line whitespace-nowrap">
+  <span class="text-[11px] text-marketing-mute-faint shrink-0">Projects</span>
+  <span class="text-[11px] text-marketing-mute-faint shrink-0">/</span>
+  <span class="text-[12px] font-medium text-marketing-mute-soft truncate min-w-0">Homepage refresh</span>
+  <span class="ml-auto shrink-0 rounded-full px-2 py-0.5 text-[10px] bg-marketing-mute-skel text-marketing-sub">＋ New project</span>
+</div>
+    <div class="how-sims flex-1 min-h-0 p-4 flex flex-col gap-3">
+      
+<div class="rounded-xl border p-2.5 flex flex-col gap-1.5 bg-marketing-tint border-marketing-mute-line">
+  <div class="flex items-center justify-between px-1 pb-0.5">
+    <div class="text-[9.5px] uppercase tracking-wide text-marketing-mute-faint">Simulations</div>
+    <span class="how-sims-status flex items-center gap-1.5 text-[10px] font-medium text-accent-hover"><span class="how-sims-running inline-flex items-center gap-1.5">
+<svg width="11" height="11" viewBox="0 0 24 24" class="shrink-0" style="color:currentColor">
+  <rect x="10.8" y="2" width="2.4" height="6" rx="1.2" fill="currentColor" transform="rotate(0 12 12)" style="animation:iosfade .9s linear infinite;animation-delay:-0.9s;opacity:.2"></rect><rect x="10.8" y="2" width="2.4" height="6" rx="1.2" fill="currentColor" transform="rotate(45 12 12)" style="animation:iosfade .9s linear infinite;animation-delay:-0.7875s;opacity:.2"></rect><rect x="10.8" y="2" width="2.4" height="6" rx="1.2" fill="currentColor" transform="rotate(90 12 12)" style="animation:iosfade .9s linear infinite;animation-delay:-0.675s;opacity:.2"></rect><rect x="10.8" y="2" width="2.4" height="6" rx="1.2" fill="currentColor" transform="rotate(135 12 12)" style="animation:iosfade .9s linear infinite;animation-delay:-0.5625s;opacity:.2"></rect><rect x="10.8" y="2" width="2.4" height="6" rx="1.2" fill="currentColor" transform="rotate(180 12 12)" style="animation:iosfade .9s linear infinite;animation-delay:-0.45s;opacity:.2"></rect><rect x="10.8" y="2" width="2.4" height="6" rx="1.2" fill="currentColor" transform="rotate(225 12 12)" style="animation:iosfade .9s linear infinite;animation-delay:-0.3375s;opacity:.2"></rect><rect x="10.8" y="2" width="2.4" height="6" rx="1.2" fill="currentColor" transform="rotate(270 12 12)" style="animation:iosfade .9s linear infinite;animation-delay:-0.225s;opacity:.2"></rect><rect x="10.8" y="2" width="2.4" height="6" rx="1.2" fill="currentColor" transform="rotate(315 12 12)" style="animation:iosfade .9s linear infinite;animation-delay:-0.1125s;opacity:.2"></rect>
+</svg>Running</span><span class="how-sims-done">✓ Done</span></span>
+  </div>
+  
+  <div class="rounded-lg border bg-card px-3 pt-2.5 pb-2 border-marketing-mute-line">
+    <div class="flex items-center gap-2.5">
+      
+
+<span class="h-[14px] w-[14px] shrink-0 text-[#2563eb] dark:text-[#5B8DEF]" style="display: inline-flex; align-items: center; vertical-align: middle; flex-shrink: 0;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M18 2H20C20.5304 2 21.0391 2.21071 21.4142 2.58579C21.7893 2.96086 22 3.46957 22 4V6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M2 6L2 4C2 3.46957 2.21071 2.96086 2.58579 2.58579C2.96086 2.21071 3.46957 2 4 2L6 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M22 18V20C22 20.5304 21.7893 21.0391 21.4142 21.4142C21.0391 21.7893 20.5304 22 20 22H18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M6 22H4C3.46957 22 2.96086 21.7893 2.58579 21.4142C2.21071 21.0391 2 20.5304 2 20V18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M7.12793 18.0896V14.4355" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M12 18.0903V5.91016" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M16.8721 18.0906V9.56445" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg></span>
+
+      <div class="flex-1 min-w-0">
+        <div class="text-[12.5px] font-medium truncate text-foreground">Free-trial appeal</div>
+        <div class="text-[10px] truncate text-marketing-mute-faint">UK Adults 2026 · 12 questions</div>
+      </div>
+      
+<span class="rounded-full px-2 py-0.5 text-[10px] shrink-0 bg-marketing-mute-skel text-marketing-sub">Discovery</span>
+      
+<span class="rounded-full px-2 py-0.5 text-[10px] font-medium shrink-0 bg-[#eff5ff] text-[#1d4ed8] dark:bg-[#141C30] dark:text-[#93B4F5]">User research</span>
+    </div>
+    <div class="mt-2 h-1 rounded-full overflow-hidden bg-marketing-mute-skel">
+      <div class="how-bar h-full rounded-full bg-accent" data-static="62%" style="width:62%"></div>
+    </div>
+  </div>
+  
+  <div class="rounded-lg border bg-card px-3 pt-2.5 pb-2 border-marketing-mute-line">
+    <div class="flex items-center gap-2.5">
+      
+
+<span class="h-[14px] w-[14px] shrink-0 text-[#059669] dark:text-[#34D399]" style="display: inline-flex; align-items: center; vertical-align: middle; flex-shrink: 0;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M18 2H20C20.5304 2 21.0391 2.21071 21.4142 2.58579C21.7893 2.96086 22 3.46957 22 4V6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M2 6L2 4C2 3.46957 2.21071 2.96086 2.58579 2.58579C2.96086 2.21071 3.46957 2 4 2L6 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M22 18V20C22 20.5304 21.7893 21.0391 21.4142 21.4142C21.0391 21.7893 20.5304 22 20 22H18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M6 22H4C3.46957 22 2.96086 21.7893 2.58579 21.4142C2.21071 21.0391 2 20.5304 2 20V18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M14.0824 6.39844L12.9533 7.4588" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M6.81405 9.24244L5.18604 8.77734" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M7.32162 12.8145L6.30664 13.9155" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M8.8916 5.35742L9.39514 6.92857" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M10.1907 10.6771C10.1617 10.609 10.1538 10.5337 10.168 10.461C10.1821 10.3882 10.2176 10.3214 10.27 10.269C10.3224 10.2167 10.3892 10.1811 10.4619 10.167C10.5347 10.1529 10.6099 10.1608 10.6781 10.1897L18.889 13.5487C18.9621 13.5787 19.0238 13.6311 19.0652 13.6984C19.1066 13.7656 19.1256 13.8443 19.1195 13.923C19.1133 14.0018 19.0824 14.0766 19.031 14.1366C18.9797 14.1966 18.9106 14.2388 18.8338 14.2571L15.5875 15.0342C15.4535 15.0662 15.3309 15.1346 15.2335 15.232C15.136 15.3294 15.0673 15.4518 15.0351 15.5858L14.2588 18.8328C14.2407 18.9099 14.1986 18.9793 14.1385 19.0308C14.0784 19.0824 14.0034 19.1135 13.9245 19.1197C13.8455 19.1258 13.7666 19.1067 13.6993 19.065C13.6319 19.0234 13.5795 18.9614 13.5497 18.8881L10.1907 10.6771Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg></span>
+
+      <div class="flex-1 min-w-0">
+        <div class="text-[12.5px] font-medium truncate text-foreground">Homepage walkthrough</div>
+        <div class="text-[10px] truncate text-marketing-mute-faint">staging.folk.app · homepage to sign-up</div>
+      </div>
+      
+<span class="rounded-full px-2 py-0.5 text-[10px] shrink-0 bg-marketing-mute-skel text-marketing-sub">Conversion</span>
+      
+<span class="rounded-full px-2 py-0.5 text-[10px] font-medium shrink-0 bg-[#ecfdf5] text-[#047857] dark:bg-[#0E241C] dark:text-[#5FBF9B]">User journey</span>
+    </div>
+    <div class="mt-2 h-1 rounded-full overflow-hidden bg-marketing-mute-skel">
+      <div class="how-bar h-full rounded-full bg-accent" data-static="71%" style="width:71%"></div>
+    </div>
+  </div>
+  
+  <div class="rounded-lg border bg-card px-3 pt-2.5 pb-2 border-marketing-mute-line">
+    <div class="flex items-center gap-2.5">
+      
+
+<span class="h-[14px] w-[14px] shrink-0 text-[#2563eb] dark:text-[#5B8DEF]" style="display: inline-flex; align-items: center; vertical-align: middle; flex-shrink: 0;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M18 2H20C20.5304 2 21.0391 2.21071 21.4142 2.58579C21.7893 2.96086 22 3.46957 22 4V6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M2 6L2 4C2 3.46957 2.21071 2.96086 2.58579 2.58579C2.96086 2.21071 3.46957 2 4 2L6 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M22 18V20C22 20.5304 21.7893 21.0391 21.4142 21.4142C21.0391 21.7893 20.5304 22 20 22H18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M6 22H4C3.46957 22 2.96086 21.7893 2.58579 21.4142C2.21071 21.0391 2 20.5304 2 20V18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M7.12793 18.0896V14.4355" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M12 18.0903V5.91016" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M16.8721 18.0906V9.56445" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg></span>
+
+      <div class="flex-1 min-w-0">
+        <div class="text-[12.5px] font-medium truncate text-foreground">Headline variants</div>
+        <div class="text-[10px] truncate text-marketing-mute-faint">UK Adults 25–34 · 9 questions</div>
+      </div>
+      
+<span class="rounded-full px-2 py-0.5 text-[10px] shrink-0 bg-marketing-mute-skel text-marketing-sub">Messaging</span>
+      
+<span class="rounded-full px-2 py-0.5 text-[10px] font-medium shrink-0 bg-[#eff5ff] text-[#1d4ed8] dark:bg-[#141C30] dark:text-[#93B4F5]">User research</span>
+    </div>
+    <div class="mt-2 h-1 rounded-full overflow-hidden bg-marketing-mute-skel">
+      <div class="how-bar h-full rounded-full bg-accent" data-static="38%" style="width:38%"></div>
+    </div>
+  </div>
+  
+</div>
+      
+<div class="rounded-xl border p-3 bg-card border-marketing-mute-line">
+  <div class="flex items-center justify-between px-0.5 pb-2">
+    <div class="text-[9.5px] uppercase tracking-wide text-marketing-mute-faint">Synthesis</div>
+    <span class="how-synth-pending flex items-center gap-1.5 text-[10px] font-medium text-marketing-mute-faint">
+<svg width="11" height="11" viewBox="0 0 24 24" class="shrink-0" style="color:currentColor">
+  <rect x="10.8" y="2" width="2.4" height="6" rx="1.2" fill="currentColor" transform="rotate(0 12 12)" style="animation:iosfade .9s linear infinite;animation-delay:-0.9s;opacity:.2"></rect><rect x="10.8" y="2" width="2.4" height="6" rx="1.2" fill="currentColor" transform="rotate(45 12 12)" style="animation:iosfade .9s linear infinite;animation-delay:-0.7875s;opacity:.2"></rect><rect x="10.8" y="2" width="2.4" height="6" rx="1.2" fill="currentColor" transform="rotate(90 12 12)" style="animation:iosfade .9s linear infinite;animation-delay:-0.675s;opacity:.2"></rect><rect x="10.8" y="2" width="2.4" height="6" rx="1.2" fill="currentColor" transform="rotate(135 12 12)" style="animation:iosfade .9s linear infinite;animation-delay:-0.5625s;opacity:.2"></rect><rect x="10.8" y="2" width="2.4" height="6" rx="1.2" fill="currentColor" transform="rotate(180 12 12)" style="animation:iosfade .9s linear infinite;animation-delay:-0.45s;opacity:.2"></rect><rect x="10.8" y="2" width="2.4" height="6" rx="1.2" fill="currentColor" transform="rotate(225 12 12)" style="animation:iosfade .9s linear infinite;animation-delay:-0.3375s;opacity:.2"></rect><rect x="10.8" y="2" width="2.4" height="6" rx="1.2" fill="currentColor" transform="rotate(270 12 12)" style="animation:iosfade .9s linear infinite;animation-delay:-0.225s;opacity:.2"></rect><rect x="10.8" y="2" width="2.4" height="6" rx="1.2" fill="currentColor" transform="rotate(315 12 12)" style="animation:iosfade .9s linear infinite;animation-delay:-0.1125s;opacity:.2"></rect>
+</svg>Generating after simulations</span>
+    <span class="how-synth-ready text-[10px] font-medium text-[#059669]">✓ Ready</span>
+  </div>
+  <div class="how-synth-pending flex flex-col gap-2 px-0.5 pb-1">
+    <div class="h-2 rounded-full bg-marketing-mute-skel w-[92%] animate-pulse"></div>
+    <div class="h-2 rounded-full bg-marketing-mute-skel w-[78%] animate-pulse [animation-delay:150ms]"></div>
+    <div class="h-2 rounded-full bg-marketing-mute-skel w-[64%] animate-pulse [animation-delay:300ms]"></div>
+  </div>
+  <div class="how-synth-ready px-0.5 text-[12px] leading-relaxed text-foreground">
+    Two of three key messages are supported. 72% of UK adults say they would try the free trial, but 4 in 5 miss the security page in the footer: link it from the hero.
+  </div>
+</div>
+    </div>
+  </div>
+</div></div></div>
+</div>
+  
+<div class="how-pane how-pane-bleed" data-how-pane="2" hidden>
+  <div class="how-pane-canvas"><div class="relative" style="width:720px;height:900px">
+<div class="how-doc paper-grain relative w-full h-full rounded-t-xl bg-card shot border border-black/5 dark:border-white/10">
+  
+<div class="anno-muted flex items-center gap-3 px-4 py-2.5 border-b border-marketing-mute-line">
+  <span class="flex items-center gap-1.5 text-[11px] text-marketing-mute-soft">
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h9l5 5v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v6h6"/></svg>
+    homepage-brief.md
+  </span>
+  <span class="rounded bg-marketing-mute-line px-1.5 py-0.5 text-[10px] text-marketing-mute-soft">v3</span>
+  <span class="ml-auto text-[10.5px] text-marketing-mute-faint">Shared with Marketing</span>
+  <span class="flex -space-x-1.5">
+    <span class="w-5 h-5 rounded-full ring-2 ring-card bg-[#14B8A6] text-[8px] font-semibold text-white flex items-center justify-center">MO</span>
+    <span class="w-5 h-5 rounded-full ring-2 ring-card bg-[#F45AA8] text-[8px] font-semibold text-white flex items-center justify-center">SK</span>
+  </span>
+</div>
+  <div class="px-10 py-6">
+    <div class="anno-muted">
+      <div class="text-[24px] font-bold tracking-tight text-marketing-mute-ink">Homepage refresh</div>
+      <div class="mt-2 flex items-center gap-2 text-[11px] text-marketing-mute-faint">
+        <span class="rounded bg-marketing-mute-line px-1.5 py-0.5 text-marketing-mute-soft">Draft 3</span>
+        <span>Maya Okafor</span><span>·</span><span>Marketing</span><span>·</span><span>Edited after user feedback</span>
+      </div>
+    </div>
+    <div class="anno-muted">
+      <div class="mt-4 text-[11px] font-semibold uppercase tracking-[0.1em] text-marketing-mute-soft">Goal</div>
+      <p class="mt-1.5 max-w-[420px] text-[12.5px] leading-relaxed text-marketing-mute-soft">Lift trial sign-ups from the homepage by 20% this quarter, without adding steps to the sign-up flow.</p>
+    </div>
+    <div class="anno-muted">
+      <div class="mt-4 text-[11px] font-semibold uppercase tracking-[0.1em] text-marketing-mute-soft">Audience</div>
+      <p class="mt-1.5 text-[12.5px] leading-relaxed text-marketing-mute-soft">UK adults aged 25–54 comparing project tools for a small team.</p>
+    </div>
+    <div class="mt-4 text-[11px] font-semibold uppercase tracking-[0.1em] text-marketing-mute-soft">Key messages</div>
+    <div class="mt-2 flex flex-col gap-2">
+      
+<p class="relative w-fit max-w-[400px] text-[12.5px] leading-relaxed text-marketing-mute-soft">
+  <span class="text-marketing-mute-faint mr-1.5">1.</span>Lead with the free trial: no card required to get started.
+  
+<span class="anno-tag anno-note">72% say they’d start a trial with no card</span>
+</p>
+<p class="relative w-fit max-w-[400px] text-[12.5px] leading-relaxed text-marketing-mute-soft">
+  <span class="text-marketing-mute-faint mr-1.5">2.</span>Put customer logos and a case study directly under the hero.
+  
+</p>
+<p class="relative w-fit max-w-[400px] text-[12.5px] leading-relaxed text-marketing-mute-soft">
+  <span class="text-marketing-mute-faint mr-1.5">3.</span><span class="line-through decoration-[#dc2626]/60 text-marketing-mute-faint">Security page stays as a link in the footer.</span>
+  
+<span class="anno-tag anno-note bad">4 in 5 don’t find the security page in the footer</span>
+</p>
+<p class="relative w-fit max-w-[400px] text-[12.5px] leading-relaxed text-marketing-mute-soft">
+  <span class="text-marketing-mute-faint mr-1.5">+</span><span class="rounded px-0.5 bg-accent-light text-marketing-mute-ink">Link the security page from the hero.</span>
+  
+</p>
+<p class="relative w-fit max-w-[400px] text-[12.5px] leading-relaxed text-marketing-mute-soft">
+  <span class="text-marketing-mute-faint mr-1.5">4.</span>Newsletter sign-up is optional, shown after the first visit.
+  
+<span class="anno-tag anno-note">61% prefer not to be asked on a first visit</span>
+</p>
+    </div>
+    <div class="anno-muted">
+      <div class="mt-4 text-[11px] font-semibold uppercase tracking-[0.1em] text-marketing-mute-soft">Success metrics</div>
+      <p class="mt-1.5 text-[12.5px] leading-relaxed text-marketing-mute-soft">Trial sign-up rate (primary) · new vs. returning visitors · time to first project.</p>
+      <div class="mt-4 text-[11px] font-semibold uppercase tracking-[0.1em] text-marketing-mute-soft">Timeline</div>
+      <p class="mt-1.5 text-[12.5px] leading-relaxed text-marketing-mute-soft">Copy freeze 4 Nov · design review 11 Nov · launch 18 Nov.</p>
+    </div>
+  </div>
+</div></div></div>
+</div>
+  <button type="button" class="how-again" data-how-again hidden>
+<span class="h-3.5 w-3.5" style="display: inline-flex; align-items: center; vertical-align: middle; flex-shrink: 0;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-full w-full">
+  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+  <path d="M3 3v5h5" />
+</svg></span>
+Run again</button>
+</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script src="/static/marketing/how-playground.js?v=1792738523" defer></script>
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+<section id="cases" class="relative rails border-t border-border">
+  <div class="marketing-container relative z-10 py-24">
+    <div class="max-w-2xl">
+      <div class="text-xs font-medium uppercase tracking-[0.08em] text-accent mb-3">Use cases</div>
+      <h2 class="font-semibold text-foreground" style="font-size:clamp(1.8rem,4vw,2.5rem)">Rapid user feedback on any message, asset, or flow.</h2>
+      <p class="mt-4 text-marketing-sub" style="font-size:1.1rem;line-height:1.6">
+        Check a plan before you commit budget, an ad before you pay for media, and a landing page before launch day.
+      </p>
+    </div>
+
+    <div class="mt-16 flex flex-col gap-20 md:gap-24">
+      
+
+<div class="grid xl:grid-cols-12 gap-8 xl:gap-14 items-center">
+  <div class="xl:col-span-5">
+    <div class="text-xs font-semibold uppercase tracking-[0.08em] text-accent mb-2.5">01 · Plans and documents</div>
+    <h3 class="text-[1.55rem] leading-snug font-semibold text-foreground">See which parts of a plan users support.</h3>
+    <p class="mt-3 text-marketing-sub leading-relaxed">Upload a campaign plan, a concept, a pitch or an insights report, or have your agent test the one it just wrote. Semilattice marks the lines users agree with, the ones they push back on, and what they expect that isn’t there.</p>
+  </div>
+  
+
+<div class="mock-stage-wrap xl:col-span-7">
+  <div class="mock-stage bg-[linear-gradient(135deg,#E9EDF8,#F3F0FA)] dark:bg-[linear-gradient(135deg,#1B1C29,#221C29)]" style="height:min(360px, 56.25cqw)">
+    <div class="mock-canvas" style="width:640px;height:360px;left:max(0px, calc((100cqw - 640px) / 2));transform:scale(min(1, calc(100cqw / 640px)))">
+      <div class="mock-window mock-anchor-center mock-crop-bottom">
+        <div class="relative h-full rounded-xl bg-card overflow-hidden shot border border-black/5 dark:border-white/10" style="width:560px">
+          <div class="anno-muted">
+          <div class="flex items-center gap-3 px-3.5 py-2.5 border-b border-marketing-mute-line">
+            <span class="flex items-center gap-1.5 text-[11px] text-marketing-mute-soft">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h9l5 5v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v6h6"/></svg>
+              Homepage refresh · Plan
+            </span>
+          </div>
+          <div class="px-10 py-7">
+            <div class="text-[24px] font-bold tracking-tight text-marketing-mute-ink">Homepage refresh</div>
+            <div class="mt-2.5 flex items-center gap-2 text-[11px] text-marketing-mute-faint">
+              <span class="rounded bg-marketing-mute-line px-1.5 py-0.5 text-marketing-mute-soft">Draft 2</span>
+              <span>Maya Okafor</span><span>·</span><span>Marketing</span>
+            </div>
+            <div class="mt-5 text-[13px] font-semibold text-marketing-mute-ink">Key messages</div>
+            <div class="mt-2.5 flex flex-col gap-2.5 text-[12.5px] leading-relaxed text-marketing-mute-soft">
+              <p><span class="text-marketing-mute-faint mr-1.5">1.</span>
+                <span class="rounded px-0.5 bg-accent-light text-marketing-mute-ink">Lead with the free trial: no card required to get started.</span>
+              </p>
+              <p><span class="text-marketing-mute-faint mr-1.5">2.</span>Put customer logos and a case study directly under the hero.</p>
+              <p><span class="text-marketing-mute-faint mr-1.5">3.</span>
+                <span class="squiggle">Security page stays as a link in the footer.</span>
+              </p>
+              <p><span class="text-marketing-mute-faint mr-1.5">4.</span>Newsletter sign-up is optional, shown after the first visit.</p>
+            </div>
+            <div class="mt-5 text-[13px] font-semibold text-marketing-mute-ink">Success metrics</div>
+            <div class="mt-2 text-[12.5px] text-marketing-mute-soft">Trial sign-up rate (primary) · new vs. returning visitors.</div>
+          </div>
+          </div>
+          
+<span class="anno-tag" style="top:150px;left:341px">72% of UK adults say they’d try it</span>
+          
+<span class="anno-tag bad" style="top:236px;left:332px">4 in 5 UK adults miss this</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+      
+
+<div class="grid xl:grid-cols-12 gap-8 xl:gap-14 items-center">
+  <div class="xl:col-span-5 xl:order-2">
+    <div class="text-xs font-semibold uppercase tracking-[0.08em] text-accent mb-2.5">02 · Ads and creative</div>
+    <h3 class="text-[1.55rem] leading-snug font-semibold text-foreground">Check ads, images and copy before you spend on them.</h3>
+    <p class="mt-3 text-marketing-sub leading-relaxed">Upload ad variants, social posts or emails, or have your agent test the ones it writes. See which headline people remember, which image they trust and which line puts them off, so the creative changes before any budget is spent on it.</p>
+  </div>
+  
+
+<div class="mock-stage-wrap xl:col-span-7 xl:order-1">
+  <div class="mock-stage bg-[linear-gradient(135deg,#F1ECFA,#FAF0F6)] dark:bg-[linear-gradient(135deg,#221C29,#291C24)]" style="height:min(360px, 56.25cqw)">
+    <div class="mock-canvas" style="width:640px;height:360px;left:max(0px, calc((100cqw - 640px) / 2));transform:scale(min(1, calc(100cqw / 640px)))">
+      <div class="mock-window mock-anchor-center mock-crop-bottom">
+        <div class="relative h-full rounded-xl bg-card overflow-hidden shot border border-black/5 dark:border-white/10" style="width:600px">
+          <div class="anno-muted flex items-center gap-3 px-3.5 py-2.5 border-b border-marketing-mute-line">
+            <span class="text-[11px] text-marketing-mute-soft">Upgrade campaign</span>
+            <span class="text-[11px] text-marketing-mute-faint">/</span>
+            <span class="text-[11px] font-medium text-marketing-mute-ink">Paid social</span>
+            <span class="ml-auto rounded-md bg-marketing-mute-line px-2.5 py-1 text-[10.5px] text-marketing-mute-soft">2 variants</span>
+          </div>
+          <div class="flex gap-4 p-5 bg-marketing-tint" style="height:350px">
+            
+<div class="relative flex-1 min-w-0 rounded-lg border border-marketing-mute-line bg-card overflow-visible">
+  <div class="ad-dull">
+    <div class="flex items-center gap-1.5 px-2.5 py-2">
+      <span class="w-5 h-5 rounded-full bg-[#1c1c24] text-[9px] font-bold text-white flex items-center justify-center shrink-0">A</span>
+      <span class="flex flex-col leading-tight">
+        <span class="text-[10.5px] font-semibold text-marketing-mute-ink">Acme</span>
+        <span class="text-[8.5px] text-marketing-mute-faint">Sponsored · acme.com</span>
+      </span>
+      <span class="ml-auto rounded px-1.5 py-0.5 text-[9px] font-medium bg-marketing-mute-line text-marketing-mute-soft">Variant A</span>
+    </div>
+    <div class="px-2.5 pb-2 text-[10.5px] leading-snug truncate text-marketing-mute-ink">Your team hit the free plan cap 3 times last month.</div>
+    <div class="relative h-[180px] overflow-hidden bg-[linear-gradient(135deg,#3F43C4,#7C5CF0_60%,#A78BFA)]">
+      <div class="absolute inset-0 opacity-25 bg-[linear-gradient(rgba(255,255,255,.35)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.35)_1px,transparent_1px)] bg-[size:18px_18px]"></div>
+      <div class="absolute -right-10 -top-10 w-36 h-36 rounded-full bg-white/15 blur-[2px]"></div>
+      <div class="absolute left-4 top-3.5 right-6 text-[17px] font-bold leading-tight text-white">Never hit your limit again</div>
+      
+<div class="absolute left-4 right-4 bottom-3 rounded-lg bg-white/95 px-3 py-2.5 shadow-[0_8px_20px_-6px_rgba(20,16,60,.45)]">
+  <div class="flex items-center justify-between text-[9px] font-medium text-[#6b6b76]"><span>Requests this month</span><span class="text-[#b45309]">98%</span></div>
+  <div class="mt-0.5 text-[13px] font-bold tabular-nums text-[#1c1c24]">9,840 <span class="text-[10px] font-medium text-[#8d8d96]">/ 10,000</span></div>
+  <div class="mt-1.5 h-1.5 rounded-full bg-[#ECECF0] overflow-hidden"><div class="h-full w-[98%] rounded-full bg-[linear-gradient(90deg,#F59E0B,#EF4444)]"></div></div>
+  <div class="mt-1.5 text-[9px] text-[#6b6b76]">Pro has no request cap</div>
+</div>
+    </div>
+    <div class="flex items-center gap-2 px-2.5 py-2 bg-marketing-tint">
+      <span class="flex flex-col min-w-0 leading-tight">
+        <span class="text-[8.5px] uppercase tracking-wide text-marketing-mute-faint">acme.com</span>
+        <span class="text-[10px] font-semibold truncate text-marketing-mute-ink">Pro plans from £12</span>
+      </span>
+      <span class="ml-auto shrink-0 rounded-md px-2.5 py-1 text-[10px] font-semibold bg-marketing-mute-line text-marketing-mute-ink">Upgrade</span>
+    </div>
+  </div>
+  
+              
+<span class="anno-tag" style="top:106px;left:12px">64% remember this headline</span>
+            
+</div>
+            
+<div class="relative flex-1 min-w-0 rounded-lg border border-marketing-mute-line bg-card overflow-visible">
+  <div class="ad-dull">
+    <div class="flex items-center gap-1.5 px-2.5 py-2">
+      <span class="w-5 h-5 rounded-full bg-[#1c1c24] text-[9px] font-bold text-white flex items-center justify-center shrink-0">A</span>
+      <span class="flex flex-col leading-tight">
+        <span class="text-[10.5px] font-semibold text-marketing-mute-ink">Acme</span>
+        <span class="text-[8.5px] text-marketing-mute-faint">Sponsored · acme.com</span>
+      </span>
+      <span class="ml-auto rounded px-1.5 py-0.5 text-[9px] font-medium bg-marketing-mute-line text-marketing-mute-soft">Variant B</span>
+    </div>
+    <div class="px-2.5 pb-2 text-[10.5px] leading-snug truncate text-marketing-mute-ink">Everything your team needs, on one plan.</div>
+    <div class="relative h-[180px] overflow-hidden bg-[linear-gradient(135deg,#E8458F,#F45AA8_45%,#F59E6B)]">
+      <div class="absolute inset-0 opacity-25 bg-[linear-gradient(rgba(255,255,255,.35)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.35)_1px,transparent_1px)] bg-[size:18px_18px]"></div>
+      <div class="absolute -right-10 -top-10 w-36 h-36 rounded-full bg-white/15 blur-[2px]"></div>
+      <div class="absolute left-4 top-3.5 right-6 text-[17px] font-bold leading-tight text-white">Upgrade to Pro today</div>
+      
+<div class="absolute left-4 right-4 bottom-3 rounded-lg bg-white/95 px-3 py-2.5 shadow-[0_8px_20px_-6px_rgba(80,20,40,.45)]">
+  <div class="flex items-center justify-between">
+    <span class="rounded bg-[#FDE7F1] px-1.5 py-0.5 text-[8.5px] font-semibold text-[#BE185D]">Acme Pro</span>
+    <span class="text-[13px] font-bold text-[#1c1c24]">£12<span class="text-[9px] font-medium text-[#8d8d96]"> / seat / month</span></span>
+  </div>
+  <div class="mt-1.5 grid grid-cols-2 gap-x-2 gap-y-0.5 text-[9px] text-[#55555e]">
+    <span>✓ Unlimited projects</span><span>✓ SSO</span><span>✓ Priority support</span><span>✓ Audit log</span>
+  </div>
+</div>
+    </div>
+    <div class="flex items-center gap-2 px-2.5 py-2 bg-marketing-tint">
+      <span class="flex flex-col min-w-0 leading-tight">
+        <span class="text-[8.5px] uppercase tracking-wide text-marketing-mute-faint">acme.com</span>
+        <span class="text-[10px] font-semibold truncate text-marketing-mute-ink">Pro plans from £12</span>
+      </span>
+      <span class="ml-auto shrink-0 rounded-md px-2.5 py-1 text-[10px] font-semibold bg-marketing-mute-line text-marketing-mute-ink">Upgrade now</span>
+    </div>
+  </div>
+  
+              
+<span class="anno-tag bad" style="top:106px;right:12px">2 in 5 read “today” as pressure</span>
+            
+</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+      
+
+<div class="grid xl:grid-cols-12 gap-8 xl:gap-14 items-center">
+  <div class="xl:col-span-5">
+    <div class="text-xs font-semibold uppercase tracking-[0.08em] text-accent mb-2.5">03 · Landing pages and conversion</div>
+    <h3 class="text-[1.55rem] leading-snug font-semibold text-foreground">Find out where visitors will drop off.</h3>
+    <p class="mt-3 text-marketing-sub leading-relaxed">Paste a landing page or an offer page, or give your agent the URL, live or on staging. Simulated users go through it and show where they hesitate, what reassures them and which version converts better, before launch day.</p>
+  </div>
+  
+
+<div class="mock-stage-wrap xl:col-span-7">
+  <div class="mock-stage bg-[linear-gradient(135deg,#F8EFE6,#FAE9E3)] dark:bg-[linear-gradient(135deg,#241E1A,#291B19)]" style="height:min(360px, 56.25cqw)">
+    <div class="mock-canvas" style="width:640px;height:360px;left:max(0px, calc((100cqw - 640px) / 2));transform:scale(min(1, calc(100cqw / 640px)))">
+      <div class="mock-window mock-anchor-center mock-crop-bottom">
+        <div class="relative h-full rounded-xl overflow-hidden shot border border-black/5 dark:border-white/10 bg-card" style="width:560px">
+          <div class="anno-muted flex items-center gap-3 px-3.5 py-2 bg-[#F1F0F4] dark:bg-[#1E1F25]">
+            <span class="flex-1 flex items-center justify-center gap-1.5 rounded-md bg-card px-3 py-1 text-[11px] text-marketing-sub">
+              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+              folk.app/autumn-offer
+            </span>
+            <span class="w-6"></span>
+          </div>
+          <div class="px-10 py-7 bg-[#FBF7F3] dark:bg-[#201D1A]">
+            <div class="max-w-sm mx-auto">
+              <div class="anno-muted flex items-center justify-between">
+                <div class="text-[19px] font-bold tracking-tight text-[#D9602B]" style="font-family:ui-serif,Georgia,serif">folk.</div>
+                <div class="flex gap-3 text-[9.5px] text-marketing-mute-soft"><span>Product</span><span>Pricing</span><span>Customers</span></div>
+              </div>
+              <div class="relative mt-6">
+                <div class="anno-muted text-[22px] font-bold leading-tight tracking-tight text-marketing-mute-ink" style="font-family:ui-serif,Georgia,serif">The CRM your team will actually keep up to date</div>
+                
+<span class="anno-tag" style="top:-36px;right:-6px">Headline B lifts clicks by 18%</span>
+              </div>
+              <div class="mt-4 flex flex-col gap-2.5">
+                <div class="relative rounded-md px-3 py-2 text-[11.5px] bg-[#E9F6F1] dark:bg-[#16241F] text-[#0A7A5C] dark:text-[#4E8A73]">
+                  <span class="anno-muted">Free for 30 days, no card needed</span>
+                  <span class="anno-ring" style="inset:-4px"></span>
+<span class="anno-tag" style="top:50%;right:-16px;transform:translateY(-50%)">Visitors find this reassuring</span>
+                </div>
+                <div class="relative mt-2 rounded-md border bg-card px-3 py-2 text-[12px] text-marketing-sub flex items-center justify-between border-[#EBE2DA] dark:border-[#2A2622]">
+                  <span class="anno-muted">Monthly · <span class="text-marketing-mute-faint">Annual, save 20%</span></span>
+                  <span class="anno-muted text-[12px] font-semibold text-marketing-mute-ink">$24 / seat</span>
+                  
+<span class="anno-tag bad" style="top:calc(100% - 6px);right:-44px">1 in 4 stall at the price</span>
+                </div>
+                <button class="anno-muted w-full rounded-md text-white py-2.5 text-[12.5px] font-semibold bg-[#D9602B]">Start free trial</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+    </div>
+  </div>
+</section>
+  
+
+
+
+
+
+
+<section id="tools" class="relative rails border-t border-border bg-marketing-tint">
+  <div class="marketing-container relative z-10 py-24">
+    <div class="max-w-2xl">
+      <div class="text-xs font-medium uppercase tracking-[0.08em] text-accent mb-3">Integrations</div>
+      <h2 class="font-semibold text-foreground text-balance" style="font-size:clamp(1.8rem,4vw,2.5rem)">Works with the agents you already use.</h2>
+      <p class="mt-4 text-marketing-sub" style="font-size:1.1rem;line-height:1.6">
+        Claude, Claude Code, Cursor and any other agent that supports MCP can test their work with simulated
+        users through the Semilattice MCP server, so the checks happen inside the tools your team already works in.
+      </p>
+    </div>
+
+    <div class="mt-10 grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
+      
+
+<div class="flex flex-col gap-4">
+  
+
+<div class="mock-stage-wrap w-full">
+  <div class="mock-stage bg-[linear-gradient(135deg,#F6E9DE,#FAF1E8)] dark:bg-[linear-gradient(135deg,#241E18,#2A2019)]" style="height:360px">
+    <div class="mock-window mock-crop-bottom" style="width:600px;left:max(24px, calc((100cqw - 600px) / 2))">
+        <div class="h-full rounded-xl overflow-hidden shot border border-black/5 dark:border-white/10 bg-[#FAF9F5] dark:bg-[#262624]" style="width:600px">
+          <div class="flex items-center gap-2 px-4 py-2.5 border-b border-[#EDEAE2] dark:border-[#3A3935]">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="#D97757"><path d="M12 2l1.8 6.2L20 6.5l-4.6 4.4 5.4 3.3-6.3.4L15.7 21 12 15.9 8.3 21l1.2-6.4-6.3-.4 5.4-3.3L4 6.5l6.2 1.7z"/></svg>
+            <span class="text-[12px] font-semibold text-[#3D3929] dark:text-[#E8E6DE]">Claude</span>
+            <span class="ml-auto text-[10px] text-[#A39E8E] dark:text-[#8F8B80]">Opus 5 ▾</span>
+          </div>
+          <div class="py-4 px-5">
+            <div class="flex justify-end mb-3">
+              <div class="rounded-2xl rounded-tr-sm px-3 py-2 max-w-[88%] text-[12px] leading-relaxed bg-[#F0EEE6] dark:bg-[#393937] text-[#3D3929] dark:text-[#E8E6DE]">
+                We're moving to usage-based pricing. How will free, pro, and enterprise customers react?
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5 text-[10.5px] mb-1 text-[#8A857C] dark:text-[#9A968C]">
+              <img src="/static/marketing/favicon.png" class="w-[15px] h-[15px] rounded-full shrink-0" alt="">
+              <span>Run simulation</span><span class="text-[#C1BBAD] dark:text-[#5E5B53]">·</span><span>Free tier</span>
+            </div>
+            <div class="flex items-center gap-1.5 text-[10.5px] mb-1 text-[#8A857C] dark:text-[#9A968C]">
+              <img src="/static/marketing/favicon.png" class="w-[15px] h-[15px] rounded-full shrink-0" alt="">
+              <span>Run simulation</span><span class="text-[#C1BBAD] dark:text-[#5E5B53]">·</span><span>Pro tier</span>
+            </div>
+            <div class="flex items-center gap-1.5 text-[10.5px] mb-2.5 text-[#8A857C] dark:text-[#9A968C]">
+              <img src="/static/marketing/favicon.png" class="w-[15px] h-[15px] rounded-full shrink-0" alt="">
+              <span>Run simulation</span><span class="text-[#C1BBAD] dark:text-[#5E5B53]">·</span><span>Enterprise</span>
+            </div>
+            <div class="text-[12.5px] leading-relaxed text-[#3D3929] dark:text-[#E8E6DE]" style="font-family:ui-serif,Georgia,serif">
+              Reactions split sharply by tier, so a single rollout will not land.
+              <ul class="mt-2 space-y-1.5">
+                <li class="flex gap-2"><span class="text-[#D97757] mt-px">•</span><span>Free users barely notice; lead with the lower entry price.</span></li>
+                <li class="flex gap-2"><span class="text-[#D97757] mt-px">•</span><span>Pro users fear runaway bills; ship a visible spend cap.</span></li>
+                <li class="flex gap-2"><span class="text-[#D97757] mt-px">•</span><span>Enterprise wants predictability; offer an annual commit.</span></li>
+              </ul>
+            </div>
+            <div class="mt-3 rounded-full border px-3.5 py-2.5 text-[11px] border-[#E4DFD3] dark:border-[#45433D] text-[#A39E8E] dark:text-[#8F8B80]">Reply to Claude…</div>
+            <div style="height:20px"></div>
+          </div>
+        </div>
+      </div>
+  </div>
+</div>
+
+  <div class="px-1">
+    <div class="text-[15px] font-semibold text-foreground">Claude</div>
+    <a href="https://claude.ai/directory/semilattice" target="_blank" rel="noopener" class="inline-block mt-2 text-sm font-medium text-accent-hover hover:underline">Add to Claude →</a>
+  </div>
+</div>
+
+      
+
+<div class="flex flex-col gap-4">
+  
+
+<div class="mock-stage-wrap w-full">
+  <div class="mock-stage bg-[linear-gradient(135deg,#37312B,#211D19)]" style="height:360px">
+    <div class="mock-window mock-crop-bottom" style="width:600px;left:max(24px, calc((100cqw - 600px) / 2))">
+        <div class="h-full rounded-xl overflow-hidden shot border border-white/10 bg-[#1F1E1B]" style="width:600px">
+          <div class="flex items-center gap-2 px-4 py-2 border-b font-mono text-[11px] border-[#33312C] text-[#8A857C]">
+            <span class="text-[#D97757]">✳</span> Claude Code - ~/app
+          </div>
+          <div class="py-4 px-5 font-mono text-[11.5px] leading-relaxed text-[#D7D5CF]">
+            <div><span class="text-[#8A857C]">&gt; </span>simulate the new onboarding</div>
+            <div class="mt-2.5 flex items-center gap-1.5">
+              <span class="text-[#D97757]">⏺</span>
+              <img src="/static/marketing/favicon.png" class="w-[14px] h-[14px] rounded-full shrink-0" alt="">
+              <span>Run simulation</span>
+            </div>
+            <div class="text-[#8A857C]">&nbsp;&nbsp;⎿ 200 simulated users</div>
+            <div class="mt-1.5 flex items-center gap-1.5">
+              <span class="text-[#D97757]">⏺</span>
+              <img src="/static/marketing/favicon.png" class="w-[14px] h-[14px] rounded-full shrink-0" alt="">
+              <span>Fetch results</span>
+            </div>
+            <div class="text-[#7FB069]">&nbsp;&nbsp;✓ completion 64% → 78%</div>
+            <div class="mt-3 text-[#D7D5CF]">The new flow lifts completion, but the phone step is where it leaks.</div>
+            <div class="mt-1.5 text-[#B7B4AD]"><span class="text-[#7FB069]">•</span> Move phone verification to the end; most drop-off is there.</div>
+            <div class="text-[#B7B4AD]"><span class="text-[#7FB069]">•</span> Keep the single-field email start; it tested well.</div>
+            <div class="text-[#B7B4AD]"><span class="text-[#7FB069]">•</span> Add a skip on the workspace step for solo users.</div>
+            <div class="mt-2.5 text-[#8A857C]">&gt; <span class="animate-pulse">▍</span></div>
+            <div style="height:16px"></div>
+          </div>
+        </div>
+      </div>
+  </div>
+</div>
+
+  <div class="px-1">
+    <div class="text-[15px] font-semibold text-foreground">Claude Code</div>
+    <a href="https://docs.semilattice.ai/mcp/connect" target="_blank" rel="noopener" class="inline-block mt-2 text-sm font-medium text-accent-hover hover:underline">Connect →</a>
+  </div>
+</div>
+
+      
+
+<div class="flex flex-col gap-4">
+  
+
+<div class="mock-stage-wrap w-full">
+  <div class="mock-stage bg-[linear-gradient(135deg,#EAEAEF,#DEDEE4)] dark:bg-[linear-gradient(135deg,#202127,#26272C)]" style="height:360px">
+    <div class="mock-window mock-crop-bottom" style="left:max(24px, calc((100cqw - 600px) / 2));right:-44px">
+        <div class="h-full rounded-xl overflow-hidden shot border border-black/5 dark:border-white/10 bg-[#FAF8F3] dark:bg-[#1E1E1E]" style="width:100%;min-width:600px">
+          <div class="flex items-center px-4 py-2 border-b border-[#EAE6DC] dark:border-[#333333]">
+            <span class="flex-1 text-center text-[11px] text-[#8B8578] dark:text-[#8F8F8F]">Cursor</span>
+            <span class="w-10"></span>
+          </div>
+          <div class="flex text-[11px]">
+            <div class="w-[324px] shrink-0 border-r p-3.5 border-[#EAE6DC] dark:border-[#333333]">
+              <div class="text-[12px] font-semibold mb-2 text-[#40392C] dark:text-[#E4E4E4]">Plan · annual billing toggle</div>
+              <div class="flex flex-col gap-1 mb-2 text-[#9C9484] dark:text-[#8A8A8A]">
+                <span>Thought 4s</span><span>Read pricing.tsx</span>
+                <span class="flex items-center gap-1.5"><img src="/static/marketing/favicon.png" class="w-[14px] h-[14px] rounded-full shrink-0" alt="">List simulations</span>
+                <span class="flex items-center gap-1.5"><img src="/static/marketing/favicon.png" class="w-[14px] h-[14px] rounded-full shrink-0" alt="">Fetch results</span>
+              </div>
+              <div class="text-[11px] leading-snug text-[#57503F] dark:text-[#C8C8C8]">
+                Checked what we already know: two past runs cover this.
+                <ul class="mt-1.5 space-y-1">
+                  <li class="flex gap-1.5"><span class="text-[#C4813D] dark:text-[#D9A05B] mt-px">•</span><span>71% prefer the monthly default; keep annual opt-in.</span></li>
+                  <li class="flex gap-1.5"><span class="text-[#C4813D] dark:text-[#D9A05B] mt-px">•</span><span>Show the saving inline; it doubled toggle intent.</span></li>
+                  <li class="flex gap-1.5"><span class="text-[#C4813D] dark:text-[#D9A05B] mt-px">•</span><span>No new run needed; wiring the toggle now.</span></li>
+                </ul>
+              </div>
+              <div class="mt-2.5 rounded-lg border px-2.5 py-2 border-[#EAE6DC] dark:border-[#333333] bg-[#FFFEFB] dark:bg-[#252525]">
+                <div class="text-[10.5px] text-[#B4AC9C] dark:text-[#6E6E6E]">Add follow-up…</div>
+                <div class="mt-1.5 flex items-center gap-1.5 text-[9px] text-[#B4AC9C] dark:text-[#6E6E6E]">
+                  <span class="rounded border px-1.5 py-0.5 font-medium border-[#EAE6DC] dark:border-[#333333] text-[#C4813D] dark:text-[#D9A05B]">Plan</span>
+                  <span>Composer 2.5</span>
+                </div>
+              </div>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="border-b pl-3 py-1.5 text-[10.5px] border-[#EAE6DC] dark:border-[#333333] text-[#8B8578] dark:text-[#8F8F8F]">pricing.tsx</div>
+              <div class="pl-3 py-3 pr-0 font-mono text-[10px] leading-relaxed whitespace-nowrap overflow-hidden">
+                <div><span class="mr-2 text-[#C8C2B4] dark:text-[#5A5A5A]">1</span><span class="text-[#A05AC8] dark:text-[#C586C0]">export function </span><span class="text-[#2A6FBF] dark:text-[#6CB6FF]">Pricing</span><span class="text-[#57564F] dark:text-[#D4D4D4]">() {</span></div>
+                <div><span class="mr-2 text-[#C8C2B4] dark:text-[#5A5A5A]">2</span><span class="text-[#A05AC8] dark:text-[#C586C0]">  const </span><span class="text-[#57564F] dark:text-[#D4D4D4]">[annual, setAnnual]</span><span class="text-[#57564F] dark:text-[#D4D4D4]"> = useState(</span><span class="text-[#C25E38]">false</span><span class="text-[#57564F] dark:text-[#D4D4D4]">)</span></div>
+                <div><span class="mr-2 text-[#C8C2B4] dark:text-[#5A5A5A]">3</span><span class="text-[#57564F] dark:text-[#D4D4D4]">  const price = annual</span></div>
+                <div><span class="mr-2 text-[#C8C2B4] dark:text-[#5A5A5A]">4</span><span class="text-[#57564F] dark:text-[#D4D4D4]">    ? plan.yearly</span></div>
+                <div><span class="mr-2 text-[#C8C2B4] dark:text-[#5A5A5A]">5</span><span class="text-[#57564F] dark:text-[#D4D4D4]">    : plan.monthly</span></div>
+                <div><span class="mr-2 text-[#C8C2B4] dark:text-[#5A5A5A]">6</span><span class="text-[#57564F] dark:text-[#D4D4D4]">  return (</span></div>
+                <div><span class="mr-2 text-[#C8C2B4] dark:text-[#5A5A5A]">7</span><span class="text-[#57564F] dark:text-[#D4D4D4]">    &lt;</span><span class="text-[#2A6FBF] dark:text-[#6CB6FF]">BillingToggle</span></div>
+                <div><span class="mr-2 text-[#C8C2B4] dark:text-[#5A5A5A]">8</span><span class="text-[#2A6FBF] dark:text-[#6CB6FF]">      annual</span><span class="text-[#57564F] dark:text-[#D4D4D4]">={annual}</span></div>
+                <div><span class="mr-2 text-[#C8C2B4] dark:text-[#5A5A5A]">9</span><span class="text-[#2A6FBF] dark:text-[#6CB6FF]">      onChange</span><span class="text-[#57564F] dark:text-[#D4D4D4]">={setAnnual}</span></div>
+                <div><span class="mr-2 text-[#C8C2B4] dark:text-[#5A5A5A]">10</span><span class="text-[#57564F] dark:text-[#D4D4D4]">      saving={plan.saving}</span></div>
+                <div><span class="mr-2 text-[#C8C2B4] dark:text-[#5A5A5A]">11</span><span class="text-[#57564F] dark:text-[#D4D4D4]">    /&gt;</span></div>
+                <div><span class="mr-2 text-[#C8C2B4] dark:text-[#5A5A5A]">12</span><span class="text-[#57564F] dark:text-[#D4D4D4]">    &lt;</span><span class="text-[#2A6FBF] dark:text-[#6CB6FF]">PriceLabel</span><span class="text-[#57564F] dark:text-[#D4D4D4]"> value={price} /&gt;</span></div>
+                <div><span class="mr-2 text-[#C8C2B4] dark:text-[#5A5A5A]">13</span><span class="text-[#57564F] dark:text-[#D4D4D4]">    {annual &amp;&amp; &lt;</span><span class="text-[#2A6FBF] dark:text-[#6CB6FF]">SaveBadge</span><span class="text-[#57564F] dark:text-[#D4D4D4]"> amount={plan.saving} /&gt;}</span></div>
+                <div><span class="mr-2 text-[#C8C2B4] dark:text-[#5A5A5A]">14</span><span class="text-[#57564F] dark:text-[#D4D4D4]">    &lt;</span><span class="text-[#2A6FBF] dark:text-[#6CB6FF]">PlanFeatures</span><span class="text-[#57564F] dark:text-[#D4D4D4]"> tier={plan.tier}</span></div>
+                <div><span class="mr-2 text-[#C8C2B4] dark:text-[#5A5A5A]">15</span><span class="text-[#A05AC8] dark:text-[#C586C0]">      compact</span></div>
+                <div><span class="mr-2 text-[#C8C2B4] dark:text-[#5A5A5A]">16</span><span class="text-[#57564F] dark:text-[#D4D4D4]">    /&gt;</span></div>
+                <div><span class="mr-2 text-[#C8C2B4] dark:text-[#5A5A5A]">17</span><span class="text-[#57564F] dark:text-[#D4D4D4]">  )</span></div>
+                <div><span class="mr-2 text-[#C8C2B4] dark:text-[#5A5A5A]">18</span><span class="text-[#57564F] dark:text-[#D4D4D4]">}</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+  </div>
+</div>
+
+  <div class="px-1">
+    <div class="text-[15px] font-semibold text-foreground">Cursor</div>
+    <a href="https://docs.semilattice.ai/mcp/connect" target="_blank" rel="noopener" class="inline-block mt-2 text-sm font-medium text-accent-hover hover:underline">Connect →</a>
+  </div>
+</div>
+    </div>
+
+    <div id="api" class="mt-20 border-t border-border pt-16 grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:items-center">
+      <div class="min-w-0">
+        <div class="text-xs font-medium uppercase tracking-[0.08em] text-accent mb-3">API</div>
+        <h2 class="font-semibold text-foreground text-balance" style="font-size:clamp(1.8rem,4vw,2.5rem)">Build marketing and product tools with users in the loop.</h2>
+        <p class="mt-4 text-marketing-sub" style="font-size:1.1rem;line-height:1.6">
+          Create simulations from your own services, jobs and pipelines, and test ad copy, emails,
+          landing pages and onboarding flows with simulated users automatically.
+        </p>
+        <div class="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm font-medium">
+          <a href="https://pypi.org/project/semilattice/" target="_blank" rel="noopener" class="inline-flex items-center gap-0.5 text-accent-hover hover:underline">Python SDK 
+<span class="h-3.5 w-3.5" style="display: inline-flex; align-items: center; vertical-align: middle; flex-shrink: 0;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-full w-full">
+  <path d="M7 7h10v10" />
+  <path d="M7 17 17 7" />
+</svg></span>
+</a>
+          <a href="https://www.npmjs.com/package/semilattice" target="_blank" rel="noopener" class="inline-flex items-center gap-0.5 text-accent-hover hover:underline">TypeScript SDK 
+<span class="h-3.5 w-3.5" style="display: inline-flex; align-items: center; vertical-align: middle; flex-shrink: 0;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-full w-full">
+  <path d="M7 7h10v10" />
+  <path d="M7 17 17 7" />
+</svg></span>
+</a>
+          <a href="https://docs.semilattice.ai/api-reference/introduction" target="_blank" rel="noopener" class="inline-flex items-center gap-0.5 text-accent-hover hover:underline">API reference 
+<span class="h-3.5 w-3.5" style="display: inline-flex; align-items: center; vertical-align: middle; flex-shrink: 0;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-full w-full">
+  <path d="M7 7h10v10" />
+  <path d="M7 17 17 7" />
+</svg></span>
+</a>
+        </div>
+      </div>
+      
+<div class="min-w-0 rounded-xl overflow-hidden border border-white/10 bg-[#1F1E1B] shot">
+  <div class="flex items-center gap-2 px-4 py-2.5 border-b border-[#33312C] font-mono text-[11px] text-[#8A857C]">create_simulation.py</div>
+  <pre class="overflow-x-auto px-5 py-4 font-mono text-[12.5px] leading-relaxed text-[#D7D5CF]"><code><span class="text-[#C792EA]">from</span> semilattice <span class="text-[#C792EA]">import</span> Semilattice
+
+client = <span class="text-[#82AAFF]">Semilattice</span>()
+
+simulation = client.simulations.<span class="text-[#82AAFF]">create</span>(
+    mode=<span class="text-[#A8D08D]">"research"</span>,
+    goal=<span class="text-[#A8D08D]">"test_messaging"</span>,
+    inputs=ad_variants,
+    user_model_ids=[uk_consumer_finance],
+)</code></pre>
+</div>
+    </div>
+  </div>
+</section>
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<section id="getstarted" class="relative rails border-t border-border depth-dither">
+  <div class="marketing-container relative z-10 py-24">
+    <div class="text-[12px] font-semibold uppercase tracking-[0.14em] mb-8 text-accent">Pricing</div>
+    <div id="pricing-launch-notice">
+      
+
+
+
+
+
+
+<div class="flex items-start gap-2.5 rounded-lg border px-4 py-3 text-sm leading-snug mb-6"
+     style="border-color: var(--warning-border); background: var(--warning-light); color: var(--warning-light-foreground);">
+  
+  
+  <span class="flex-shrink-0 inline-flex items-center" style="height: 1.375em; color: var(--warning-light-foreground);">
+    
+<span class="h-4 w-4" style="display: inline-flex; align-items: center; vertical-align: middle; flex-shrink: 0;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-full w-full">
+  <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" />
+  <path d="M12 9v4" />
+  <path d="M12 17h.01" />
+</svg></span>
+
+  </span>
+  
+  <div class="min-w-0 flex-1">
+      You can’t run simulations until <a href="/#user-models" class="underline underline-offset-2">public Anacreon models</a> launch in November. <a href="/#user-models-waitlist-card" class="whitespace-nowrap font-semibold underline underline-offset-2">Get notified</a>
+      </div>
+</div>
+
+    </div>
+    <div class="grid lg:grid-cols-3 gap-6 items-stretch">
+
+      <div class="rounded-2xl border border-border bg-secondary p-7 md:p-8 flex flex-col">
+        
+<h3 class="font-semibold tracking-tight text-foreground" style="font-size:clamp(1.7rem,3.2vw,2.35rem)">Base</h3>
+<div class="mt-2 text-sm text-muted-foreground">For one person and their agents</div>
+<div class="mt-6 lg:min-h-[120px]">
+  <div class="h-4 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground"></div>
+  <div class="mt-1 text-[1.75rem] font-bold tabular-nums leading-tight text-accent">$139 <span class="text-base font-medium text-muted-foreground">/ month</span></div>
+  
+  <p class="mt-4 text-sm font-medium text-foreground">1-month free trial</p>
+  <p class="mt-0.5 text-xs text-muted-foreground">Starting when Anacreon user models launch</p>
+  
+</div>
+        <div class="mt-6 pt-6 border-t border-border flex flex-col gap-3">
+          
+<div class="flex gap-2.5 text-sm text-muted-foreground">
+  <span class="flex h-[1.25rem] w-2.5 shrink-0 items-center justify-center text-accent"><span class="h-1 w-1 rounded-full bg-current"></span></span><span>1 seat</span>
+</div>
+          
+<div class="flex gap-2.5 text-sm text-muted-foreground">
+  <span class="flex h-[1.25rem] w-2.5 shrink-0 items-center justify-center text-accent"><span class="h-1 w-1 rounded-full bg-current"></span></span><span>Unlimited simulations</span>
+</div>
+          
+<details class="plan-expand group">
+  <summary class="flex cursor-pointer list-none gap-2.5 text-sm text-muted-foreground">
+    <span class="flex h-[1.25rem] w-2.5 shrink-0 items-center justify-center text-accent"><span class="h-1 w-1 rounded-full bg-current"></span></span>
+    <span class="flex-1">4 Anacreon user models<span class="block text-xs text-marketing-mute-faint">Nov 2026</span></span>
+    <span class="plan-expand-toggle inline-flex shrink-0 items-center gap-0.5 text-xs font-medium text-accent-hover group-open:text-foreground"><span class="group-open:hidden">Show</span><span class="hidden group-open:inline">Hide</span>
+<span class="h-3.5 w-3.5 transition-transform group-open:rotate-180" style="display: inline-flex; align-items: center; vertical-align: middle; flex-shrink: 0;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-full w-full">
+  <path d="m6 9 6 6 6-6" />
+</svg></span>
+</span>
+  </summary>
+  <ul class="plan-expand-list mt-3 -mx-7 md:-mx-8 max-h-52 overflow-y-auto border-y border-border py-2.5 pl-[3rem] pr-7 md:pl-[3.25rem] md:pr-8 text-[13px] leading-relaxed text-muted-foreground">
+    <li>US Consumer Finance</li><li>US Online Shoppers</li><li>UK Consumer Finance</li><li>UK Online Shoppers</li>
+    
+  </ul>
+</details>
+          
+<div class="flex gap-2.5 text-sm text-muted-foreground">
+  <span class="flex h-[1.25rem] w-2.5 shrink-0 items-center justify-center text-accent"><span class="h-1 w-1 rounded-full bg-current"></span></span><span>50 more in 2027</span>
+</div>
+          
+<div class="flex gap-2.5 text-sm text-muted-foreground">
+  <span class="flex h-[1.25rem] w-2.5 shrink-0 items-center justify-center text-accent"><span class="h-1 w-1 rounded-full bg-current"></span></span><span>App, MCP, API</span>
+</div>
+        </div>
+        
+<div class="mt-auto pt-12 flex flex-col items-center gap-4">
+  <a href="/#user-models-waitlist-card" data-cta="pricing_waitlist" class="marketing-btn-md w-full inline-flex items-center justify-center whitespace-nowrap rounded-lg border border-black/10 bg-white font-medium text-[#181A44] shadow-sm transition-colors hover:bg-[#EEEFF8]">Join the waitlist</a>
+  <a href="https://docs.semilattice.ai/mcp/connect" target="_blank" rel="noopener" class="inline-flex items-center gap-1 text-sm text-marketing-sub hover:text-foreground">Or connect Semilattice MCP 
+<span class="h-3.5 w-3.5" style="display: inline-flex; align-items: center; vertical-align: middle; flex-shrink: 0;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-full w-full">
+  <path d="M7 7h10v10" />
+  <path d="M7 17 17 7" />
+</svg></span>
+</a>
+</div>
+      </div>
+
+      <div class="rounded-2xl border border-[#3B3E8A] p-7 md:p-8 flex flex-col" style="background:linear-gradient(160deg,#262968 0%,#1E2054 55%,#181A44 100%)">
+        
+<h3 class="font-semibold tracking-tight text-white" style="font-size:clamp(1.7rem,3.2vw,2.35rem)">Org</h3>
+<div class="mt-2 text-sm text-[#A2A4D8]">For teams working in one workspace</div>
+<div class="mt-6 lg:min-h-[120px]">
+  <div class="h-4 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#A2A4D8]"></div>
+  <div class="mt-1 text-[1.75rem] font-bold tabular-nums leading-tight text-[#B0B5FF]">$599 <span class="text-base font-medium text-[#A2A4D8]">/ month</span></div>
+  
+  <p class="mt-4 text-sm font-medium text-white">1-month free trial</p>
+  <p class="mt-0.5 text-xs text-[#A2A4D8]">Starting when Anacreon user models launch</p>
+  
+</div>
+        <div class="mt-6 pt-6 border-t border-[#3B3E8A] flex flex-col gap-3">
+          <div class="text-[13px] font-medium text-[#A2A4D8]"><span class="font-semibold text-white">Base</span> +</div>
+          
+<div class="flex gap-2.5 text-sm text-[#C6C8EE]">
+  <span class="flex h-[1.25rem] w-2.5 shrink-0 items-center justify-center text-signal"><span class="h-1 w-1 rounded-full bg-current"></span></span><span>Unlimited seats</span>
+</div>
+          
+<div class="flex gap-2.5 text-sm text-[#C6C8EE]">
+  <span class="flex h-[1.25rem] w-2.5 shrink-0 items-center justify-center text-signal"><span class="h-1 w-1 rounded-full bg-current"></span></span><span>Shared workspace</span>
+</div>
+        </div>
+        
+<div class="mt-auto pt-12 flex flex-col items-center gap-4">
+  <a href="/#user-models-waitlist-card" data-cta="pricing_waitlist" class="marketing-btn-md w-full inline-flex items-center justify-center whitespace-nowrap rounded-lg border border-black/10 bg-white font-medium text-[#181A44] shadow-sm transition-colors hover:bg-[#EEEFF8]">Join the waitlist</a>
+  <a href="https://docs.semilattice.ai/mcp/connect" target="_blank" rel="noopener" class="inline-flex items-center gap-1 text-sm text-[#B0B5FF] hover:text-white">Or connect Semilattice MCP 
+<span class="h-3.5 w-3.5" style="display: inline-flex; align-items: center; vertical-align: middle; flex-shrink: 0;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-full w-full">
+  <path d="M7 7h10v10" />
+  <path d="M7 17 17 7" />
+</svg></span>
+</a>
+</div>
+      </div>
+
+      <div class="rounded-2xl border border-border bg-secondary p-7 md:p-8 flex flex-col">
+        
+<h3 class="font-semibold tracking-tight text-foreground" style="font-size:clamp(1.7rem,3.2vw,2.35rem)">Custom</h3>
+<div class="mt-2 text-sm text-muted-foreground">A model of your exact audience</div>
+<div class="mt-6 lg:min-h-[120px]">
+  <div class="h-4 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">From</div>
+  <div class="mt-1 text-[1.75rem] font-bold tabular-nums leading-tight text-accent">$1,799 <span class="text-base font-medium text-muted-foreground">/ month</span></div>
+  
+</div>
+        <div class="mt-6 pt-6 border-t border-border flex flex-col gap-3">
+          <div class="text-[13px] font-medium text-muted-foreground"><span class="font-semibold text-foreground">Base</span> + <span class="font-semibold text-foreground">Org</span> +</div>
+          
+<div class="flex gap-2.5 text-sm text-muted-foreground">
+  <span class="flex h-[1.25rem] w-2.5 shrink-0 items-center justify-center text-accent"><span class="h-1 w-1 rounded-full bg-current"></span></span><span>Custom user model of your users</span>
+</div>
+          
+<div class="flex gap-2.5 text-sm text-muted-foreground">
+  <span class="flex h-[1.25rem] w-2.5 shrink-0 items-center justify-center text-accent"><span class="h-1 w-1 rounded-full bg-current"></span></span><span>Regular working sessions and support</span>
+</div>
+        </div>
+        <form
+          hx-post="/custom/contact"
+          hx-swap="none"
+          hx-on::before-request="document.getElementById('custom-calendar-modal').showModal()"
+          hx-on::after-request="this.reset()"
+          class="mt-auto pt-12 flex flex-col gap-2"
+        >
+          <input
+            type="email"
+            name="email"
+            required
+            placeholder="Work email"
+            class="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+          >
+          <button
+            type="submit"
+            class="marketing-btn-md w-full inline-flex items-center justify-center whitespace-nowrap rounded-lg border border-transparent bg-foreground font-medium text-background transition-opacity hover:opacity-85 dark:border-border dark:bg-card dark:text-foreground dark:hover:bg-muted dark:hover:opacity-100"
+          >Book a call</button>
+        </form>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<dialog id="custom-calendar-modal" class="marketing-modal rounded-xl border border-border bg-card shadow-lg p-0 w-[90vw] max-w-5xl">
+  <div class="flex items-center justify-between p-3 border-b border-border">
+    <h3 class="text-sm font-medium text-foreground">Book a call</h3>
+    <button
+      onclick="document.getElementById('custom-calendar-modal').close()"
+      class="text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
+      
+<span class="h-4 w-4" style="display: inline-flex; align-items: center; vertical-align: middle; flex-shrink: 0;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-full w-full">
+  <path d="M18 6 6 18" />
+  <path d="m6 6 12 12" />
+</svg></span>
+
+    </button>
+  </div>
+  <div class="p-2">
+    <iframe
+      src="https://calendar.google.com/calendar/appointments/schedules/AcZssZ0ygS9Tx_T7OndKitX7fRjAs17Mjvy32sfILe4Be1ZXIr5F6XYX5ocMgWczzfW2HAW4ZmVd3Bv7?gv=true"
+      style="border: 0; width: 100%; height: 80vh;"
+      loading="lazy"
+    ></iframe>
+  </div>
+</dialog>
+  
+<section class="marketing-band relative rails border-t border-border">
+  <div class="marketing-container relative z-10 py-14 md:py-16">
+    <div class="text-center text-[12px] font-semibold uppercase tracking-[0.14em] text-marketing-sub">As seen in</div>
+    <div class="mt-8 flex flex-wrap items-center justify-center gap-x-11 gap-y-8 md:gap-x-16">
+      <a href="https://www.newstatesman.com/politics/polling/2026/05/pollsters-dont-need-real-people-anymore" target="_blank" rel="noopener" class="flex h-6 aspect-[978/128] items-center justify-center text-marketing-mute-ink transition-colors hover:text-foreground md:h-7">
+        <svg class="h-full w-auto" viewBox="0 0 523.8303 80" fill="currentColor" role="img" aria-label="The New Statesman">
+  <path d="M200.1455,34.23c-6.497-6.594-13.0909-12.3152-13.0909-22.3031,0-6.8849,3.7818-9.9879,7.7575-9.9879,5.6243,0,9.0182,4.2667,13.3819,16.8727l.6788-.1939L208.097,2.9091A19.1684,19.1684,0,0,0,197.8182,0c-9.3091,0-17.4546,6.2061-17.4546,18.1333,0,10.0849,6.1092,17.6485,12.3152,23.9516,6.497,6.5939,12.994,12.8,12.994,23.1758,0,7.37-3.394,12.8-8.9213,12.8-5.3333,0-10.7636-4.6545-15.7091-17.4545l-.7757.2909.7757,15.903a32.9783,32.9783,0,0,0,13.9637,3.1031c10.4727,0,17.9394-7.0788,17.9394-20.3637C213.0424,47.8061,206.6425,40.5334,200.1455,34.23Z"/>
+  <path d="M376.4364,34.23c-6.497-6.594-13.0909-12.3152-13.0909-22.3031,0-6.8849,3.7818-9.9879,7.7575-9.9879,5.6243,0,9.0182,4.2667,13.2849,16.8727l.6788-.1939-.6788-15.7091A19.1682,19.1682,0,0,0,374.1091,0c-9.406,0-17.5515,6.2061-17.5515,18.1333.0969,10.0849,6.1091,17.6485,12.4122,24.0485,6.4969,6.594,12.9939,12.8,12.9939,23.1758,0,7.37-3.3939,12.8-8.9212,12.8-5.3333,0-10.7637-4.6545-15.7091-17.4545l-.7758.2909.7758,15.903A32.9774,32.9774,0,0,0,371.297,80c10.4727,0,17.9394-7.0788,17.9394-20.3636C389.2364,47.8061,382.9334,40.5334,376.4364,34.23Z"/>
+  <path d="M436.0727,20.0727c0-9.1151,1.5515-12.606,4.0728-18.3272V1.5516H428.0243l-12.5091,54.109L403.0061,1.5516H391.5637v.2908c2.4242,5.6243,3.103,9.0182,3.2,18.1334V58.8606c0,8.9212-.7758,12.5091-3.394,19.297v.1939h10.2788v-.1939C397.9637,71.37,396.8,67.6849,396.8,58.8606l-.1939-43.5393,14.1576,60.703h1.5515l14.0606-60.4121V60.0243c0,8.3393-.6788,11.9272-2.6182,18.1333v.097h15.03v-.194c-2.0364-6.206-2.7152-9.7939-2.7152-18.1333Z"/>
+  <path d="M462.0606.97h-2.6182l-13.0909,58.57c-1.9394,8.2424-3.6848,13.77-6.6909,18.6182v.1939h10.6667v-.1939c-1.6485-3.7818-3.5879-11.2485-.7757-23.1758l.4322-2.0363H463.93l1.331,6.206c2.0363,8.5333,1.5514,15.3212-.194,19.0061v.1939h16.3878v-.1939c-2.4242-4.0727-4.0726-9.0182-6.206-17.8424ZM450.3955,51.0061l6.5257-30.7394,6.5925,30.7394Z"/>
+  <path d="M513.8424,1.5516v.2908C517.43,8.63,518.303,12.3152,518.4,21.1394l.1939,33.9394L492.3152,1.5516h-9.697v.1939a31.2539,31.2539,0,0,1,3.2,12.897V58.8606c0,8.9212-.7758,12.5091-3.394,19.297v.1939h9.9879v-.1939c-3.5879-6.7879-4.4606-10.4728-4.5576-19.297l-.2909-44.703,31.6121,64.4849,1.2606-.291V21.0424c0-8.9212.7758-12.509,3.394-19.2969V1.5516Z"/>
+  <path d="M31.9031,53.43H29.8667v5.43c0,8.9212-.7758,12.5091-3.394,19.297v.1939h9.9879v-.1939C32.8728,71.37,32,67.6848,32,58.8606Z"/>
+  <path d="M57.8909,1.7455c3.5879,6.7879,4.4606,10.4727,4.4606,19.2969l.194,33.9394L36.2667,1.5516h-9.6v.1939a31.3634,31.3634,0,0,1,3.297,12.897v11.83H31.806l-.0969-12.3152L63.3212,78.5455h1.2607V21.0424c0-8.9212.7757-12.509,3.3939-19.2969V1.5516H57.8909Z"/>
+  <path d="M.194,28.994,0,34.0364H.2909c.97-2.1333,1.9394-4.3636,2.9091-4.3636H4.6545V45.77a13.7507,13.7507,0,0,1-.7757,5.2364H8.2424v-.097A13.2617,13.2617,0,0,1,7.4667,45.77v-16H9.0182c.97,0,1.9394,2.23,2.9091,4.3636l.2909-.0969-.1939-5.0424Z"/>
+  <path d="M21.9151,29.0909a13.26,13.26,0,0,1,.7758,5.14V39.37H17.1636V34.23a13.262,13.262,0,0,1,.7758-5.14V28.994H13.6727v.0969a13.26,13.26,0,0,1,.7758,5.14V45.6728a13.4722,13.4722,0,0,1-.7758,5.2363l4.2667.097v-.097a14.0336,14.0336,0,0,1-.7758-5.2363V40.0485h5.5273v5.6243a13.4722,13.4722,0,0,1-.7758,5.2363v.097h4.2667v-.097a14.0335,14.0335,0,0,1-.7757-5.2363V34.23a13.2619,13.2619,0,0,1,.7757-5.14V28.994H21.9151Z"/>
+  <path d="M34.7151,50.0364h-3.103V39.7576h1.4545c.97,0,2.0364,1.6485,2.5213,2.5212h.3878V36.5576h-.2909c-.5818.97-1.5515,2.5212-2.5212,2.5212H31.7091v-9.406h2.9091c1.0666,0,2.0363,2.6182,3.006,4.2666l.2909-.1939-.3878-4.8485H28.2182v.097a14.6382,14.6382,0,0,1,.7758,4.9454V45.9637a14.2728,14.2728,0,0,1-.7758,4.9454l10.0848-.1939.3879-5.43-.3879-.097C37.2364,47.2243,36.0727,50.0364,34.7151,50.0364Z"/>
+  <path d="M264.9212.97H262.303l-13.0909,58.57c-1.9394,8.2424-3.6848,13.77-6.6909,18.6182v.1939h10.7637v-.1939c-1.6485-3.7818-3.5879-11.2485-.7758-23.1758l.4323-2.0363h13.8644l1.3155,6.206c2.0363,8.5333,1.5515,15.3212-.194,19.0061v.1939h16.3879v-.1939c-2.4243-4.0727-4.0727-9.0182-6.2061-17.8424ZM253.3531,51.0061l6.5257-30.7394,6.5158,30.7394Z"/>
+  <path d="M94.4485,76.4122H83.3939V39.6606h5.0425c3.3939,0,7.2727,4.8485,8.8242,8.63h.7757V28.897h-.7757c-1.4546,3.394-5.43,8.7273-8.8242,8.7273H83.3939V3.5879H93.4788c3.2,0,7.8545,6.7879,11.3455,13.3818l.5818-.2909L103.8546,1.5516H71.1758v.2908a49.3222,49.3222,0,0,1,2.7151,17.1637V60.8a50.0467,50.0467,0,0,1-2.7151,17.3576v.194h35.6848l.8728-17.4546-.7758-.2909C103.1758,68.6546,99.7818,76.4122,94.4485,76.4122Z"/>
+  <path d="M159.1273,1.7455c2.4243,3.7818,3.8788,10.8606,1.4546,22.8848l-6.2061,33.4546-8.3394-37.3334c-2.0364-8.5333-2.5212-15.1272.0969-19.006V1.5516h-15.806v.1939c2.3272,4.0727,4.0727,9.3091,6.0121,17.8424l.3132,1.3887-8.0707,37.0113-7.7577-37.2364c-1.8424-8.4363-2.0363-15.1272.5819-19.006V1.5516h-16.194v.2908c2.5212,4.0728,4.17,9.3091,5.8182,17.8425L123.0546,79.03h2.5212l12-53.9582,12.1451,53.8613h2.5212l11.0546-57.794c1.8424-8.8242,3.2969-14.7394,6.206-19.3939V1.5516H159.1273Z"/>
+  <path d="M277.0424,1.6485l-.7757,16.97.6788.1939c3.3939-6.4969,7.0788-15.2242,10.6667-15.2242h3.7817V60.0243c0,8.3393-.5818,11.9272-2.7151,18.1333v.194h14.8364v-.194c-2.1334-6.2061-2.7152-9.794-2.7152-18.1333V3.5879h3.7818c3.5879,0,7.2727,8.7273,10.6667,15.2242l.6788-.1939-.7758-16.97Z"/>
+  <path d="M250.57,18.6182l-.7757-16.97H211.6849l-.7758,16.97.6788.1939c3.3939-6.4969,7.0788-15.2242,10.6667-15.2242h3.7818V60.0243c0,8.4363-.5819,11.9272-2.7152,18.1333v.194h14.8364v-.194c-2.1333-6.2061-2.7152-9.794-2.7152-18.1333V3.5879h3.7819c3.5878,0,7.2727,8.7273,10.6666,15.2242Z"/>
+  <path d="M341.2363,76.4122H330.1818V39.6606h5.0425c3.3939,0,7.37,4.8485,8.8242,8.63h.7757V28.897h-.7757c-1.4546,3.394-5.43,8.7273-8.8242,8.7273h-5.0425V3.5879H340.17c3.2,0,7.8545,6.7879,11.3455,13.3818l.6788-.2909L350.6424,1.5516H317.8667v.2908a49.3245,49.3245,0,0,1,2.7151,17.1637V60.8a50.049,50.049,0,0,1-2.7151,17.3576h.1939v.194h35.6848l.7758-17.4546-.7758-.2909C349.9636,68.6546,346.57,76.4122,341.2363,76.4122Z"/>
+</svg>
+      </a>
+      <a href="/press/times-radio-2026-08-15.mp3" target="_blank" rel="noopener" class="group relative flex h-6 aspect-[978/128] items-center justify-center text-marketing-mute-ink transition-colors hover:text-foreground md:h-7">
+        <svg class="h-full w-auto" viewBox="0 0 978 128" fill="currentColor" role="img" aria-label="Times Radio">
+  <path fill-rule="evenodd" clip-rule="evenodd" d="M89.4752 125.622H25.6554V123.996L43.4765 115.566V11.901H43.3379C43.3379 11.901 38.0812 11.8459 33.2495 13.104C30.9214 13.8845 28.2791 14.7293 24.6484 18.0627C20.9992 21.3961 2.05095 40.9097 2.05095 40.9097L0 40.1291L2.83623 6.35455H110.049L113.615 40.1016L111.564 40.8821C111.564 40.8821 92.5978 21.3685 88.967 18.0627C85.3455 14.7293 82.7033 13.8937 80.366 13.104C75.5342 11.8459 71.3492 11.9837 71.3492 11.9837V115.566L89.4474 123.859L89.5029 125.622H89.4752Z"/>
+  <path fill-rule="evenodd" clip-rule="evenodd" d="M132.416 115.759L117.69 123.969V125.594H174.543L174.488 123.831L159.928 115.539V16.3822L174.488 8.09011L174.543 6.327H117.69V7.95236L132.416 16.1894V115.768V115.759Z"/>
+  <path fill-rule="evenodd" clip-rule="evenodd" d="M448.66 92.1868L446.415 91.4614C446.415 91.4614 431.495 108.854 425.813 113.61C420.141 118.367 415.383 118.514 406.736 119.267C398.079 120.02 387.344 119.855 387.344 119.855L387.288 68.3848C387.288 68.3848 401.119 68.8072 406.311 68.7246C411.512 68.6419 413.11 70.9377 413.868 71.4152C414.625 71.8927 424.575 86.2822 424.575 86.2822H426.654V46.3184H424.575C424.575 46.3184 419.457 52.9852 416.233 56.7042C412.269 61.2681 411.142 61.2681 408.334 61.6354C406.255 61.8834 387.344 62.1956 387.344 62.1956L387.427 11.8184L405.414 12.3785C405.414 12.3785 410.671 12.3234 415.503 13.5815C417.831 14.362 420.473 15.2068 424.104 18.5402C427.725 21.8736 443.468 38.1456 443.468 38.1456L445.269 37.5304L443.108 6.36374H344.782V7.98911L359.508 16.3639V115.805L344.782 124.005V125.631H446.544"/>
+  <path fill-rule="evenodd" clip-rule="evenodd" d="M263.317 88.0086L299.772 6.35455H339.701L339.645 8.09012L325.085 16.3822V115.539L339.645 123.831L339.701 125.594H282.93V123.969L297.628 115.759V30.9463L254.632 123.969H249.431L203.571 29.0087V115.539L218.131 123.831L218.186 125.594H179.994V123.969L194.72 115.759V16.1894L179.994 7.95237V6.35455H223.184L263.317 88.0086Z"/>
+  <path fill-rule="evenodd" clip-rule="evenodd" d="M529.589 8.00747L531.834 37.4661L529.867 37.861C529.867 37.861 509.403 15.6568 507.047 13.811C505.92 12.9387 496.229 6.05151 485.854 13.2784C485.854 13.2784 475.766 20.1105 482.233 32.7369C488.7 45.3634 507.833 54.2983 512.692 57.1817C517.579 60.0651 542.034 71.911 538.967 96.1079C536.075 118.845 515.667 125.401 507.158 126.999C489.088 130.415 461.123 122.803 461.123 122.803L459.016 91.9113L461.409 91.6634C461.409 91.6634 481.872 115.998 489.91 118.992C497.975 122.013 509.043 123.078 515.649 114.648C522.254 106.246 516.748 94.3999 510.253 89.9187C501.005 83.6192 487.6 76.53 478.186 70.3408C467.617 63.371 460.984 53.3433 459.58 41.8096C457.612 25.7671 467.109 12.6264 479.36 7.75953C490.686 3.27829 499.934 4.20576 508.248 4.73836C516.85 5.29852 529.636 8.01665 529.636 8.01665"/>
+  <path d="M726.878 128C721.003 128 712.771 125.511 710.471 118.762C705.667 124.979 697.463 128 689.425 128C676.75 128 664.805 122.316 664.805 106.833C664.805 84.4273 693.527 80.1756 709.233 77.485V66.9798C709.233 56.8419 708.531 44.5736 696.225 44.5736C692.825 44.5736 688.557 45.4735 684.982 48.1274C691.753 49.8905 696.059 55.0696 696.059 62.1864C696.059 70.5336 689.453 75.3454 681.951 75.3454C673.378 75.3454 667.844 69.2939 667.844 61.2864C667.844 44.2339 688.889 37.9895 704.068 37.9895C726.019 37.9895 740.126 44.5736 740.126 71.2315V111.048C740.126 116.035 742.094 118.33 746.566 118.33C747.637 118.33 749.069 118.165 750.132 117.963L751.194 120.984C741.383 127.036 734.417 127.927 726.943 127.927L726.887 127.982L726.878 128ZM709.196 82.1315C700.622 85.52 695.116 91.3695 695.116 105.236C695.116 113.941 698.146 118.202 702.082 118.202C704.946 118.202 707.791 115.713 709.223 114.115V82.104L709.196 82.1315Z"/>
+  <path d="M800.842 118.927C796.204 124.979 789.432 128 781.395 128C760.146 128 748.201 113.941 748.201 86.2179C748.201 54.9411 763.176 38.0262 790.301 38.0262C793.34 38.0262 797.608 38.5588 799.937 39.2567V17.2179L790.467 11.5337V9.77055L830.793 2.12122V118.441L839.284 123.592V125.723H800.805L800.833 118.918L800.842 118.927ZM799.946 49.064C798.348 46.7408 796.01 43.9124 792.102 43.9124C783.196 43.9124 781.025 64.8861 781.025 84.7946C781.025 104.703 783.159 118.229 790.495 118.229C794.061 118.229 797.267 116.466 799.964 113.243V49.064H799.937H799.946Z"/>
+  <path d="M843.699 125.704V123.739L851.663 118.22V52.8107L842.221 47.1265V45.3634L882.547 37.7232V118.257L890.511 123.776V125.732H843.709V125.704H843.699ZM865.567 0C875.739 0 883.582 6.2168 883.582 15.6568C883.582 25.0968 875.739 30.9463 865.567 30.9463C856.097 30.9463 848.42 25.0692 848.42 15.6568C848.42 6.24435 856.088 0 865.567 0Z"/>
+  <path d="M890.539 83.0315C890.539 53.8851 908.184 38.063 934.265 38.063C960.345 38.063 977.991 53.8851 977.991 83.0315C977.991 112.178 960.345 128 934.265 128C908.184 128 890.539 112.178 890.539 83.0315ZM923.363 83.0315C923.363 106.861 924.962 122.683 934.237 122.683C943.513 122.683 945.111 106.861 945.111 83.0315C945.111 59.2019 943.513 43.3799 934.237 43.3799C924.962 43.3799 923.363 59.2019 923.363 83.0315Z"/>
+  <path d="M626.086 125.631L612.515 96.1171C606.611 83.3162 601.271 73.5456 591.469 71.9478V118.184L602.546 123.702V125.658H547.771V123.702L558.848 118.184V13.7927L547.771 8.27382V6.31787H600.237C630.022 6.31787 650.734 14.6651 650.734 36.8968C650.734 59.1285 628.423 66.5759 615.24 67.6411V68.339C628.082 69.9368 637.015 77.5769 643.787 90.9105L657.525 117.936L668.934 123.28V125.603H626.105L626.077 125.631H626.086ZM594.13 11.8276H591.46V64.1057H593.262C608.773 64.1057 618.612 53.9678 618.612 37.255C618.612 21.5982 611.304 11.8276 594.167 11.8276H594.139H594.13Z"/>
+</svg>
+        <span class="pointer-events-none absolute left-1/2 top-full mt-2 flex -translate-x-1/2 items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-marketing-sub opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
+<span class="h-3 w-3" style="display: inline-flex; align-items: center; vertical-align: middle; flex-shrink: 0;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-full w-full">
+  <path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z" />
+  <path d="M16 9a5 5 0 0 1 0 6" />
+  <path d="M19.364 18.364a9 9 0 0 0 0-12.728" />
+</svg></span>
+Audio</span>
+      </a>
+    </div>
+  </div>
+</section>
+  
+
+<section id="guide" class="marketing-accent-band relative rails border-t border-border overflow-hidden depth-dither">
+  <div class="marketing-container relative z-10 py-24">
+    <div class="text-[12px] font-semibold uppercase tracking-[0.14em] mb-8 text-accent">Learn more</div>
+
+    <div class="grid items-center gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-14">
+
+      <div>
+        <h2 class="font-semibold tracking-tight text-foreground" style="font-size:clamp(1.9rem,3.6vw,2.6rem);line-height:1.12">
+          A guide to user-in-the-loop marketing and product work.
+        </h2>
+        <p class="mt-5 text-marketing-sub" style="font-size:clamp(1rem,1.6vw,1.12rem);line-height:1.65">
+          Learn how to use simulated users to test and validate your work while it
+          is still in progress.
+        </p>
+
+        <div class="mt-8 flex flex-wrap items-center gap-3">
+          <a href="/user-in-the-loop" class="marketing-btn marketing-btn-md">Read the guide</a>
+        </div>
+      </div>
+
+      
+      <a href="/user-in-the-loop/introduction" class="guide-promo group">
+        
+        <span class="guide-promo-thumb">
+          <img src="https://i.ytimg.com/vi/lWYOlrx_rZE/maxresdefault.jpg" alt="" loading="lazy" aria-hidden="true">
+          <span class="guide-promo-play">
+<span class="h-5 w-5" style="display: inline-flex; align-items: center; vertical-align: middle; flex-shrink: 0;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-full w-full">
+  <path d="M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z" />
+</svg></span>
+</span>
+        </span>
+        
+        <span class="guide-promo-body">
+          <span class="guide-promo-meta">
+            <span class="guide-promo-badge">User in the loop</span>
+            <span class="guide-promo-duration">11 min</span>
+          </span>
+          <span class="guide-promo-title">Introduction to user-in-the-loop</span>
+          <span class="guide-promo-cta">Watch the walkthrough 
+<span class="h-4 w-4" style="display: inline-flex; align-items: center; vertical-align: middle; flex-shrink: 0;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-full w-full">
+  <path d="M5 12h14" />
+  <path d="m12 5 7 7-7 7" />
+</svg></span>
+</span>
+        </span>
+      </a>
+      
+
+    </div>
+  </div>
+</section>
+</main>
+
+<script>
+(function () {
+  var root = document.getElementById('marketing-home');
+  if (!root) return;
+  var buttons = Array.prototype.slice.call(root.querySelectorAll('[data-audience-choice]'));
+
+  function select(audience) {
+    root.dataset.audience = audience;
+    buttons.forEach(function (button) {
+      var active = button.dataset.audienceChoice === audience;
+      button.classList.toggle('is-active', active);
+      button.setAttribute('aria-pressed', active ? 'true' : 'false');
+    });
+  }
+
+  buttons.forEach(function (button) {
+    button.addEventListener('click', function () { select(button.dataset.audienceChoice); });
+  });
+})();
+</script>
+<script>
+(function () {
+  var NS = 'http://www.w3.org/2000/svg';
+
+  document.querySelectorAll('.anno-layout').forEach(function (container) {
+    var layout = function () { layoutAnnotations(container); };
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(layout);
+    new ResizeObserver(layout).observe(container);
+    layout();
+  });
+
+  function layoutAnnotations(container) {
+    if (!container.offsetWidth) return;
+    var column = container.querySelector('.hero-anno-col');
+    var scale = container.getBoundingClientRect().width / container.offsetWidth;
+    pinCardsBesideFragments(container, column, scale);
+    drawLinks(container, column, scale);
+  }
+
+  function pinCardsBesideFragments(container, column, scale) {
+    column.classList.add('is-pinned');
+    var columnTop = column.getBoundingClientRect().top;
+    var gap = parseFloat(getComputedStyle(column).fontSize) * 0.5;
+    var cards = Array.prototype.slice.call(column.querySelectorAll('.hero-anno[data-anno]'));
+    var anchor = Math.max(0, cards.findIndex(function (card) { return card.classList.contains('is-selected'); }));
+    var tops = cards.map(function (card) {
+      var line = lastLine(container, card);
+      return (line.top + line.height / 2 - columnTop) / scale - card.offsetHeight / 2;
+    });
+    for (var i = anchor + 1; i < cards.length; i++) {
+      tops[i] = Math.max(tops[i], tops[i - 1] + cards[i - 1].offsetHeight + gap);
+    }
+    for (var j = anchor - 1; j >= 0; j--) {
+      tops[j] = Math.min(tops[j], tops[j + 1] - cards[j].offsetHeight - gap);
+    }
+    cards.forEach(function (card, k) { card.style.top = tops[k] + 'px'; });
+  }
+
+  function drawLinks(container, column, scale) {
+    var svg = container.querySelector('.hero-links');
+    var doc = container.querySelector('[data-anno-doc]');
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+    var base = container.getBoundingClientRect();
+    var startX = (doc.getBoundingClientRect().right - base.left) / scale - parseFloat(getComputedStyle(doc).fontSize) * 0.9;
+    column.querySelectorAll('.hero-anno[data-anno]').forEach(function (card) {
+      var line = lastLine(container, card);
+      var box = card.getBoundingClientRect();
+      var y1 = (line.top + line.height / 2 - base.top) / scale;
+      var x2 = (box.left - base.left) / scale;
+      var y2 = (box.top - base.top + box.height / 2) / scale;
+      var bend = (x2 - startX) / 2;
+      appendShape(svg, 'path', card, 'hero-link', {
+        d: 'M' + startX + ' ' + y1 + ' C' + (startX + bend) + ' ' + y1 + ' ' + (x2 - bend) + ' ' + y2 + ' ' + x2 + ' ' + y2
+      });
+      appendShape(svg, 'circle', card, 'hero-link-dot', { cx: startX, cy: y1, r: 3 });
+    });
+  }
+
+  function lastLine(container, card) {
+    var fragment = container.querySelector('.hero-frag[data-anno="' + card.dataset.anno + '"]');
+    var rects = fragment.getClientRects();
+    return rects[rects.length - 1];
+  }
+
+  function appendShape(svg, tag, card, className, attributes) {
+    var shape = document.createElementNS(NS, tag);
+    Object.keys(attributes).forEach(function (name) { shape.setAttribute(name, attributes[name]); });
+    shape.setAttribute('class', card.className.replace('hero-anno', className));
+    svg.appendChild(shape);
+  }
+})();
+</script>
+
+    
+<footer class="border-t border-border">
+  <div class="marketing-container py-16 md:py-20">
+    <div class="flex flex-col gap-12 md:flex-row md:items-start md:justify-between">
+      <div class="flex flex-col gap-4">
+        <a href="/" class="flex items-center">
+          <img src="/static/marketing/logo_light.svg" alt="Semilattice" class="h-[26px] w-auto dark:hidden">
+          <img src="/static/marketing/logo_dark.svg" alt="Semilattice" class="h-[26px] w-auto hidden dark:block">
+        </a>
+      </div>
+      <div class="grid grid-cols-2 gap-x-16 gap-y-3 text-sm sm:gap-x-24">
+        <nav class="flex flex-col gap-3">
+          <a href="/blog" class="text-marketing-sub hover:text-foreground">Blog</a>
+          <a href="/about" class="text-marketing-sub hover:text-foreground">About</a>
+          <a href="https://docs.semilattice.ai" target="_blank" rel="noopener" class="inline-flex items-center gap-0.5 text-marketing-sub hover:text-foreground">Docs 
+<span class="h-3.5 w-3.5" style="display: inline-flex; align-items: center; vertical-align: middle; flex-shrink: 0;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-full w-full">
+  <path d="M7 7h10v10" />
+  <path d="M7 17 17 7" />
+</svg></span>
+</a>
+          <a href="https://www.linkedin.com/company/semilattice" target="_blank" rel="noopener" class="text-marketing-sub hover:text-foreground">LinkedIn</a>
+        </nav>
+        <nav class="flex flex-col gap-3">
+          <a href="/terms" class="text-marketing-sub hover:text-foreground">Terms</a>
+          <a href="/privacy" class="text-marketing-sub hover:text-foreground">Privacy</a>
+          <div class="mt-8 text-muted-foreground">© 2026 Semilattice</div>
+        </nav>
+      </div>
+    </div>
+  </div>
+</footer>
+    <div id="cookie-consent-banner" class="hidden fixed bottom-4 left-1/2 z-50 w-[380px] max-w-[calc(100vw-2rem)] -translate-x-1/2 rounded-xl border border-accent-secondary bg-accent p-3.5 shadow-lg" role="dialog" aria-label="Cookie consent">
+  <p class="text-sm leading-relaxed text-accent-foreground">
+    We use analytics and advertising cookies to improve the product.
+  </p>
+  <div class="mt-2.5 flex gap-2">
+    <button id="cookie-consent-decline" type="button" class="flex-1 rounded-lg bg-accent-secondary px-3 py-1.5 text-sm font-medium text-accent-foreground">No thanks</button>
+    <button id="cookie-consent-accept" type="button" class="flex-1 rounded-lg bg-accent-foreground px-3 py-1.5 text-sm font-medium text-accent">OK</button>
+  </div>
+</div>
+    
+<div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2"></div>
+<script>
+    document.body.addEventListener('htmx:beforeSwap', function(evt) {
+        if (evt.detail.xhr.getResponseHeader('HX-Error')) evt.detail.shouldSwap = true;
+    });
+</script>
+    <script>
+    (function () {
+        function isSemilatticeHost() {
+            return location.hostname.endsWith("semilattice.ai");
+        }
+
+        function readCookie(name) {
+            var match = document.cookie.match(new RegExp("(^| )" + name + "=([^;]+)"));
+            return match ? match[2] : null;
+        }
+
+        function captureClickId() {
+            var clickId = new URLSearchParams(location.search).get("rdt_cid");
+            if (!clickId) return;
+            document.cookie = "rdt_cid=" + encodeURIComponent(clickId) + ";max-age=2592000;path=/;samesite=lax";
+        }
+
+        function reportCtaClicks() {
+            document.addEventListener("click", function (event) {
+                var cta = event.target.closest("[data-cta]");
+                if (!cta || !navigator.sendBeacon) return;
+                var body = new FormData();
+                body.append("cta", cta.getAttribute("data-cta"));
+                navigator.sendBeacon("/e/cta", body);
+            });
+        }
+
+        function writeConsentCookie(value) {
+            var domain = isSemilatticeHost() ? ";domain=.semilattice.ai" : "";
+            document.cookie = "sl_cookie_consent=" + value + ";max-age=31536000;path=/;samesite=lax" + domain;
+        }
+
+        function hasAcceptedConsent() {
+            return readCookie("sl_cookie_consent") === "accepted";
+        }
+
+        function initCookieBanner() {
+            var banner = document.getElementById("cookie-consent-banner");
+            if (!banner || readCookie("sl_cookie_consent") !== null) return;
+
+            banner.classList.remove("hidden");
+
+            document.getElementById("cookie-consent-accept").addEventListener("click", function () {
+                writeConsentCookie("accepted");
+                banner.classList.add("hidden");
+                window.dispatchEvent(new CustomEvent("sl-consent-granted"));
+            });
+
+            document.getElementById("cookie-consent-decline").addEventListener("click", function () {
+                writeConsentCookie("rejected");
+                banner.classList.add("hidden");
+            });
+        }
+
+        captureClickId();
+        reportCtaClicks();
+        initCookieBanner();
+
+        
+        function loadRedditPixel() {
+            var rdt = function () {
+                if (rdt.sendEvent) {
+                    rdt.sendEvent.apply(rdt, arguments);
+                } else {
+                    rdt.callQueue.push(arguments);
+                }
+            };
+            rdt.callQueue = [];
+            window.rdt = rdt;
+
+            var script = document.createElement("script");
+            script.src = "https://www.redditstatic.com/ads/pixel.js";
+            script.async = true;
+            document.head.appendChild(script);
+
+            rdt("init", "a2_ikv4vq4j0w47");
+            rdt("track", "PageVisit");
+        }
+
+        if (hasAcceptedConsent()) {
+            loadRedditPixel();
+        } else {
+            window.addEventListener("sl-consent-granted", loadRedditPixel, { once: true });
+        }
+        
+    })();
+    </script>
+    
+</body>
+</html>

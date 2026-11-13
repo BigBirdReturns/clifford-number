@@ -1,0 +1,95 @@
+{
+  "lane": "capital-factory",
+  "tool": "tools/promote-intake-capital-factory.mjs",
+  "sources": {
+    "manifest": "data/ledger/staging/capital-factory/archived-receipts.jsonl",
+    "store": "receipts/capital-factory",
+    "attempted": 112,
+    "archived": 110,
+    "failed": [
+      {
+        "receipt_id": "aetc-2018-afwerx-austin-hub",
+        "source_url": "https://www.aetc.af.mil/News/Article-Display/Article/1662439/air-force-to-launch-new-innovation-and-collaboration-hub-in-austin/",
+        "reason": "http_429"
+      },
+      {
+        "receipt_id": "army-aal-entrepreneur-in-residence",
+        "source_url": "https://www.army.mil/article/268663/",
+        "reason": "http_429"
+      }
+    ]
+  },
+  "admission_rule": "A row is promoted only when its cited receipts satisfy the live receipt contract (public source URL, in-repo archived copy whose SHA-256 matches, limits); a named person is kept only with the receipts whose archived copy shows the name, at those receipts' evidence class. Hop basis: two or more named people on the same date at official evidence. Otherwise the row or participant goes to gaps.jsonl.",
+  "tables": {
+    "capital": {
+      "read": 1,
+      "promoted_rows": 1,
+      "refused": 0,
+      "dropped_participants": 0,
+      "refusal_reasons": {}
+    },
+    "events": {
+      "read": 6,
+      "promoted_rows": 6,
+      "refused": 0,
+      "dropped_participants": 0,
+      "refusal_reasons": {}
+    },
+    "form_d": {
+      "read": 79,
+      "promoted_rows": 79,
+      "refused": 0,
+      "dropped_participants": 0,
+      "refusal_reasons": {}
+    },
+    "government_presence": {
+      "read": 16,
+      "promoted_rows": 16,
+      "refused": 0,
+      "dropped_participants": 0,
+      "refusal_reasons": {}
+    },
+    "texas_entities": {
+      "read": 37,
+      "promoted_rows": 37,
+      "refused": 0,
+      "dropped_participants": 0,
+      "refusal_reasons": {}
+    },
+    "trajectory": {
+      "read": 4,
+      "promoted_rows": 4,
+      "refused": 0,
+      "dropped_participants": 0,
+      "refusal_reasons": {}
+    }
+  },
+  "staged": {
+    "surfaces": 143,
+    "participation": 584,
+    "receipts": 110,
+    "new_actors": 52,
+    "new_organizations": 113,
+    "gaps": 2,
+    "hop_eligible_surfaces": 16,
+    "funding_amount_usd_total": 232470605
+  },
+  "hop_bases": [
+    "sec-form-d-0001475481-09-000003",
+    "sec-form-d-0001592303-13-000001",
+    "sec-form-d-0001596160-14-000002",
+    "sec-form-d-0001592303-14-000001",
+    "diux-austin-outpost-at-capital-factory-2016-09-14",
+    "army-futures-command-activation-ceremony-2018-08-24",
+    "army-futures-command-wesley-baer-sxsw-startup-crawl-2019-03-08",
+    "sec-form-d-0001958842-22-000001",
+    "sec-form-d-0001958842-24-000001",
+    "diu-afwerx-navalx-joint-workspace-capital-factory-2024-03-08",
+    "sec-form-d-0002038739-24-000002",
+    "sec-form-d-0002050605-25-000001",
+    "sec-form-d-0002061337-25-000001",
+    "sec-form-d-0002061336-25-000001",
+    "sec-form-d-0002070415-25-000001",
+    "sec-form-d-0002092339-25-000001"
+  ]
+}

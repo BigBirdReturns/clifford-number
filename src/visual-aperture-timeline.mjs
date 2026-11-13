@@ -23,9 +23,12 @@ export const TIMELINE_MODEL_SCHEMA = 'clifford-timeline-model@1';
 // density_policy.max_hop_actor_count (19) + 1: the same threshold app.js uses
 // for standing refusals. Today it selects exactly the Dialog public directory.
 export const DENSE_ACTOR_ROWS = 20;
-// The 15 default People lanes plus three added before the oldest-first order
-// starts dropping defaults from the end (a cap of 12 silently demoted four
-// defaults, among them one of the five 2024-07-17 names, on the first add).
+// The cap on named lanes, pinned or default. Owner decision 2026-10-23: after
+// the intake promotion the "every multi-surface actor" default grew from 15 to
+// 117 lanes, so the default People, Organizations and Surface types views now
+// show the 18 entities with the most dated rows (ties by label) and put
+// everyone else in one "Other ... (N)" strip. (Before: 15 defaults plus three
+// added before the oldest-first order started dropping defaults.)
 export const TIMELINE_MAX_LANES = 18;
 export const TIMELINE_CLUSTER_SLOTS = 6;
 export const TIMELINE_DOMAIN_PADDING_DAYS = 30;
@@ -40,12 +43,21 @@ export const TIMELINE_DESKTOP_METRICS = Object.freeze({
 export const TIMELINE_PHONE_METRICS = Object.freeze({
   labelWidth: 72, laneHeight: 24, markHeight: 8, markWidth: 3, slotOffset: 3, clusterGap: 4, blockHeight: 28, padding: 4
 });
+// Default-view stage height budgets (SPEC (j)), the lane area inside the stage.
+// Raised 2026-10-23 (owner decision): desktop 574px (650 - 36 - 40) -> 640px,
+// phone 446px (510 - 30 - 34) -> 520px. The record now has two dense roster
+// blocks (Dialog and the Reagan National Defense Forum 2023 programme), each a
+// contained block lane, and that is correct; 18 entity lanes plus the strip and
+// two block lanes are 596px on desktop and 512px on phone.
+// Phone 520px -> 550px, raised 2026-11-12 by the supervising session with the UK ministerial meetings pass (measured 654 at 690 wide, 644 at 880, 540 on phone: Keir Starmer's lane stacks six marks and a DSIT return is drawn as a third roster block); this is not an owner decision and was flagged to the owner the same day. The desktop budget
+// for the default view stays 640px (628px with three block lanes).
+export const TIMELINE_STAGE_BUDGETS = Object.freeze({ desktop: 640, phone: 550 });
 
 const STRIP_LABELS = Object.freeze({
-  actor: ['People documented on one surface', 'Other people'],
-  organization: ['Organizations documented on one surface', 'Other organizations'],
-  type: ['Other surface types', 'Other surface types'],
-  surface: ['Other surfaces', 'Other surfaces']
+  actor: 'Other people',
+  organization: 'Other organizations',
+  type: 'Other surface types',
+  surface: 'Other surfaces'
 });
 
 const compareText = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
@@ -477,23 +489,33 @@ export function defaultTimelineLanes(model, by = 'actor', { laneIds = [], order 
   let named;
   if (pinned) {
     named = requested.map(id => laneMap.get(id)).filter(Boolean).slice(0, Math.max(1, maxLanes));
-  } else if (kind === 'type' || kind === 'surface') {
-    named = [...laneMap.values()].sort(laneComparator(order));
   } else {
-    named = [...laneMap.values()].filter(lane => lane.surface_count >= 2).sort(laneComparator(order));
+    // The default: the maxLanes entities with the most dated rows, ties by
+    // label; shown in the requested order. A dense-roster row is the block's,
+    // not the person's (rule 3), so it does not rank a person, and a name
+    // listed only on a roster never gets a lane.
+    const denseSurfaceIds = new Set(kind === 'actor' ? (model.dense ?? []).map(block => block.surface_id) : []);
+    const datedRows = lane => lane.rows.reduce((sum, row) => sum + (row.start_day == null || denseSurfaceIds.has(row.surface_id) ? 0 : 1), 0);
+    named = [...laneMap.values()]
+      .map(lane => ({ lane, dated: datedRows(lane) }))
+      .filter(entry => entry.dated > 0)
+      // Hop-bearing lanes rank first (2026-10-23, owner): the default view must show the
+      // people whose rows form hop columns before people documented only by role claims.
+      .sort((a, b) => (b.lane.hop_basis_count ?? 0) - (a.lane.hop_basis_count ?? 0) || (b.lane.hop_eligible_surface_count ?? 0) - (a.lane.hop_eligible_surface_count ?? 0) || b.dated - a.dated || compareText(a.lane.label, b.lane.label) || compareText(a.lane.id, b.lane.id))
+      .slice(0, Math.max(1, maxLanes))
+      .map(entry => entry.lane)
+      .sort(laneComparator(order));
   }
   const namedIds = new Set(named.map(lane => lane.id));
   const blocks = kind === 'actor' ? model.dense : [];
   const blockSurfaceIds = new Set(blocks.map(block => block.surface_id));
   const stripRows = [];
   const stripEntities = new Set();
-  const singleSurfaceOnly = !pinned;
   for (const lane of laneMap.values()) {
     if (namedIds.has(lane.id)) continue;
     for (const row of lane.rows) {
       // Dense rows belong to the block unless the entity has its own lane.
       if (kind === 'actor' && blockSurfaceIds.has(row.surface_id)) continue;
-      if (singleSurfaceOnly && kind !== 'type' && kind !== 'surface' && lane.surface_count !== 1) continue;
       stripRows.push(row);
       stripEntities.add(lane.id);
     }
@@ -506,8 +528,8 @@ export function defaultTimelineLanes(model, by = 'actor', { laneIds = [], order 
     strip: {
       id: `strip:${kind}`,
       kind: 'strip',
-      label: STRIP_LABELS[kind][singleSurfaceOnly ? 0 : 1],
-      single_surface_only: singleSurfaceOnly,
+      label: `${STRIP_LABELS[kind]} (${stripEntities.size})`,
+      single_surface_only: false,
       rows: stripRows,
       row_count: stripRows.length,
       entity_count: stripEntities.size,
@@ -627,7 +649,7 @@ export function layoutTimeline(model, options = {}) {
     includeStrip = true,
     includeBlocks = true,
     includeColumns = true,
-    maxSlots = TIMELINE_CLUSTER_SLOTS,
+    maxSlots: maxSlotsOption = null,
     overviewFrom = '',
     overviewTo = ''
   } = options;
@@ -636,6 +658,13 @@ export function layoutTimeline(model, options = {}) {
   const width = Math.max(1, Number(plotWidth) || 1);
   const grouping = defaultTimelineLanes(model, by, { laneIds, order, maxLanes });
   const kind = grouping.by;
+  // The default view holds up to TIMELINE_MAX_LANES lanes inside the stage
+  // budget, so its lanes never grow: a cluster stacks only as many marks as
+  // one lane height holds (two at both presets) and the rest fold into the +N
+  // aggregate. A pinned view keeps TIMELINE_CLUSTER_SLOTS.
+  const maxSlots = maxSlotsOption ?? (grouping.pinned
+    ? TIMELINE_CLUSTER_SLOTS
+    : Math.min(TIMELINE_CLUSTER_SLOTS, Math.max(2, Math.floor((laneHeight - 8) / markHeight))));
   const domain = resolveTimelineDomain(model, { from: domainFrom, to: domainTo, plotWidth: width });
   const timeWindow = resolveTimelineWindow({ from: windowFrom, to: windowTo });
   const plotLeft = labelWidth + padding;
@@ -716,7 +745,9 @@ export function layoutTimeline(model, options = {}) {
   const surfaceOffset = (day, surfaceId) => {
     const list = [...(surfacesByDay.get(day) ?? [])].sort(compareText);
     const index = list.indexOf(surfaceId);
-    return Math.max(0, index) * slotOffset;
+    // Many surfaces can share one day (a retrieval-dated intake); the offset
+    // never pushes a mark past the axis end. Columns use the same offset.
+    return Math.min(Math.max(0, index) * slotOffset, Math.max(0, x(domain.to_day) - x(day)));
   };
 
   // Pass 2: clusters, slots, lane heights, marks.
@@ -733,15 +764,52 @@ export function layoutTimeline(model, options = {}) {
     // Marks stack when they share a day or would otherwise sit closer than the
     // cluster gap once the same-day surface offset is applied (so a +5px second
     // surface never overlaps a tick a few days later at phone widths).
+    //
+    // Fixed 2026-10-23 (final repair round). Old behaviour: a row joined the
+    // current cluster when its drawn x sat within the cluster gap of that
+    // cluster's LAST x only. A same-day surface offset can draw an earlier day
+    // to the right of a later one, so a later row could join the current
+    // cluster while sitting 1.93px from a mark of the PREVIOUS cluster (two
+    // Capital Factory ticks in the Organizations view, 2026-05-08 at +5px and
+    // 2026-06-17). New behaviour: each cluster keeps its full drawn x extent
+    // [minX, maxX]; a row joins when it shares the cluster's last day or falls
+    // within the gap of that extent, and any two clusters whose extents come
+    // within the gap are folded into one (with every cluster between them, so
+    // the rows stay in day order). Marks within the fold threshold therefore
+    // always share one cluster: they stack, and past the slots fold into one +N.
     for (const row of sorted) {
       const drawnX = x(row.start_day) + surfaceOffset(row.start_day, row.surface_id);
       const current = laneClusters[laneClusters.length - 1];
-      if (current && (row.start_day === current.day_to || drawnX - current.lastX < clusterGap)) {
+      if (current && (row.start_day === current.day_to || (drawnX > current.minX - clusterGap && drawnX < current.maxX + clusterGap))) {
         current.rows.push(row);
         current.lastX = Math.max(current.lastX, drawnX);
+        current.minX = Math.min(current.minX, drawnX);
+        current.maxX = Math.max(current.maxX, drawnX);
         current.day_to = row.start_day;
       } else {
-        laneClusters.push({ rows: [row], firstX: drawnX, lastX: drawnX, day_from: row.start_day, day_to: row.start_day });
+        laneClusters.push({ rows: [row], firstX: drawnX, lastX: drawnX, minX: drawnX, maxX: drawnX, day_from: row.start_day, day_to: row.start_day });
+      }
+    }
+    for (let merged = true; merged;) {
+      merged = false;
+      outer: for (let i = 0; i < laneClusters.length; i += 1) {
+        for (let j = laneClusters.length - 1; j > i; j -= 1) {
+          const a = laneClusters[i], b = laneClusters[j];
+          if (b.minX < a.maxX + clusterGap && a.minX < b.maxX + clusterGap) {
+            const span = laneClusters.slice(i, j + 1);
+            laneClusters.splice(i, j - i + 1, {
+              rows: span.flatMap(cluster => cluster.rows),
+              firstX: a.firstX,
+              lastX: Math.max(...span.map(cluster => cluster.lastX)),
+              minX: Math.min(...span.map(cluster => cluster.minX)),
+              maxX: Math.max(...span.map(cluster => cluster.maxX)),
+              day_from: a.day_from,
+              day_to: span[span.length - 1].day_to
+            });
+            merged = true;
+            break outer;
+          }
+        }
       }
     }
     const stack = laneClusters.reduce((max, cluster) => Math.max(max, Math.min(cluster.rows.length, maxSlots)), 0);
@@ -782,13 +850,15 @@ export function layoutTimeline(model, options = {}) {
         let w = markWidth;
         let clippedEnd = false;
         if (row.kind === 'open') {
-          w = Math.max(markWidth, x(domain.to_day) - x(row.start_day));
+          // An open-ended ("Present") row ends at the axis end, never past it:
+          // the same-day surface offset is taken out of the width.
+          w = Math.max(markWidth, x(domain.to_day) - startX);
           clippedEnd = true;
         } else if (row.kind === 'span' || row.kind === 'year') {
           const endDay = row.end_day ?? row.start_day;
           const visibleEnd = Math.min(endDay, domain.to_day);
           clippedEnd = endDay > domain.to_day;
-          w = Math.max(markWidth, x(visibleEnd) - x(row.start_day));
+          w = Math.max(markWidth, clippedEnd ? x(visibleEnd) - startX : x(visibleEnd) - x(row.start_day));
         }
         const mark = {
           key: row.key,

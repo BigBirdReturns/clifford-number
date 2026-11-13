@@ -5,7 +5,11 @@ function renderCurrent() {
   // never loaded on arrival.
   if (state.mode !== 'map') deactivateApertureSocialField();
   if (state.mode !== 'timeline') deactivateTimelineStage();
+  // The ledger field (arrival) owns its own stage and renderer; leaving the
+  // mode hides the stage and pauses the renderer the same way.
+  if (state.mode !== 'field') deactivateFieldStage();
   if (state.mode === 'timeline') renderTimelineMode();
+  else if (state.mode === 'field') renderFieldMode();
   else if (state.mode === 'map') renderMapMode();
   else if (state.mode === 'route') renderRouteMode();
   else renderSurfaceMode();

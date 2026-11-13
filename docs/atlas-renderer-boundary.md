@@ -37,7 +37,7 @@ The GPU adapter owns Three.js geometry, arcs, picking, orbit controls and camera
 - A dense roster (20 or more actor rows) is one contained object with its count wherever a mode draws it: one block on the Timeline, one roster container in Roster mode, and in the Explore inspector a row that reads "drawn as one contained roster object, not as an arc". A member documented on other surfaces keeps its own lane or node, and its roster row is drawn as one mark there, counted once.
 - Undated rows are listed, never placed on an axis or time-sliced.
 - Evidence class and receipt ids stay attached to every mark, column and step.
-- No composite score drives a visual channel; counts name their denominator.
+- No hidden composite drives a visual channel; the one accumulation, heat, is printed with its formula (docs/explorer.md rule 6); counts name their denominator.
 - Changing zoom, depth, window or mode never changes a hop count or what a hop means. The aperture's route search was audited against the compiler's `shortest_paths` and against the route projections on 21-22 October 2026; the audit script is not in the repository, so its figures are not restated here. The committed fixture tests pin the evidence-floor and as-of filters.
 
 ## Standalone

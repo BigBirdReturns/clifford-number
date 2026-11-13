@@ -1,0 +1,1238 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+    <head  prefix="og: http://ogp.me/ns#">
+        
+        <script>if (navigator.canShare) document.documentElement.classList.add('-webshare')</script>
+        
+        <script>(function track() { var ratio = window.devicePixelRatio || 1; document.documentElement.style.setProperty('--dpr', ratio); matchMedia('(resolution: ' + ratio + 'dppx)').addEventListener('change', track, { once: true }) })()</script>
+        
+<script>
+    window.cookieConsent = function (key) {
+        const cookies = document.cookie.split(';')
+        for (const cookie of cookies) {
+            const [name, value] = cookie.trim().split('=')
+            if (name !== 'wtm' || typeof value !== 'string') {
+                continue;
+            }
+            if (value.includes(`${key}:true`)) {
+                return true;
+            }
+        }
+        return false
+    }
+    window.dataLayer = window.dataLayer || [];
+    window.gtag = window.gtag || function () { window.dataLayer.push(arguments); };
+    gtag('consent', 'default', {
+        'analytics_storage': 'denied',
+        'ad_storage': 'denied',
+        'ad_user_data': 'denied',
+        'ad_personalization': 'denied',
+        'wait_for_update': 500
+    });
+    gtag('set', 'ads_data_redaction', true);
+    if (cookieConsent('analytics')) {
+        gtag('consent', 'update', {
+            'analytics_storage': 'granted'
+        });
+    }
+    gtag('js', new Date());
+    gtag('config', 'G-B4NHP80LZY');
+
+    // Load the gtag.js library off the critical path (IV-1671). window.gtag is
+    // already defined above, so commands queue into dataLayer until the library
+    // loads and drains them — order (consent before config) is preserved.
+    // Gated behind DOMContentLoaded, not a bare requestIdleCallback and not
+    // the load event:
+    // - A bare requestIdleCallback can fire while the head's font preloads
+    //   and blocking CSS request are still in flight (~90ms in on this
+    //   page), competing with them for the network — that contention was
+    //   the original defect here.
+    // - Waiting for the load event instead is too late: it widens the
+    //   window in which the visitor can navigate on before gtag.js has
+    //   loaded, so the single automatic page_view ends up reporting the
+    //   second page rather than the landing page.
+    // - DOMContentLoaded is late enough that the head's own requests are no
+    //   longer in flight, and early enough to keep both problems above small.
+    var loadGtagLibrary = function () {
+        var s = document.createElement('script');
+        s.async = true;
+        s.src = 'https://www.googletagmanager.com/gtag/js?id=G-B4NHP80LZY';
+        document.head.appendChild(s);
+    };
+    var gaSchedule = function () {
+        if ('requestIdleCallback' in window) {
+            requestIdleCallback(loadGtagLibrary, { timeout: 10000 });
+        } else {
+            loadGtagLibrary();
+        }
+    };
+    if (document.readyState !== 'loading') {
+        gaSchedule();
+    } else {
+        document.addEventListener('DOMContentLoaded', gaSchedule);
+    }
+</script>
+
+
+        <script id="sentryConfig" type="application/json">{"dsn": "https://1af5357f326688356df096e32c2cd25e@www.supertreetrunk.com//21", "environment": "production", "release": "23117ae3d836af238d773cd52ca3cc7b933a7603"}</script>
+		
+			
+				
+	        	<script id="video_thumbnail_fallback_image" type="application/json">"https://www.indexventures.com/media/images/IV_Perspectives_Default.width-1600.format-webp.webp"</script>
+				<script>window.videoThumbnailFallbackImageUrl = JSON.parse(document.getElementById('video_thumbnail_fallback_image').textContent)</script>
+			
+		
+        <meta charset="utf-8" />
+        
+            
+
+
+    <link rel="canonical" href="https://www.indexventures.com/perspectives/inherent-designing-for-discovery/" />
+	<meta name="description" content="Index Ventures leads a $50m seed round in Inherent, a London AI lab building Faraday — a system for open-ended scientific discovery that combines human creativity with self-improving AI.">
+    
+    
+    
+        <title>Inherent: Designing for Discovery | Index Ventures</title>
+    
+    
+        <meta property="og:title" content="Inherent: Designing for Discovery | Index Ventures">
+        
+        <meta property="og:url" content="https://www.indexventures.com/perspectives/inherent-designing-for-discovery/">
+        <meta property="og:description" content="Index Ventures leads a $50m seed round in Inherent, a London AI lab building Faraday — a system for open-ended scientific discovery that combines human creativity with self-improving AI.">
+        
+        
+            <meta property="og:image" content="https://www.indexventures.com/media/images/Inherent_founders_-_Lo.52926a25.fill-1200x630.format-png.png">
+            <meta property="og:image:width" content="1200">
+            <meta property="og:image:height" content="630">
+            <meta property="og:image:alt" content="Index Ventures leads a $50m seed round in Inherent, a London AI lab building Faraday — a system for open-ended scientific discovery that combines human creativity with self-improving AI.">
+        
+        <meta property="og:type" content="Website">
+        
+        <meta property="og:site_name" content="Index Ventures">
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+    
+    
+        <meta name="twitter:domain" content="https://www.indexventures.com">
+        <meta name="twitter:card" content="summary_large_image">
+        
+        <meta name="twitter:title" content="Inherent: Designing for Discovery | Index Ventures">
+        
+        <meta name="twitter:url" content="https://www.indexventures.com/perspectives/inherent-designing-for-discovery/">
+        <meta name="twitter:description" content="Index Ventures leads a $50m seed round in Inherent, a London AI lab building Faraday — a system for open-ended scientific discovery that combines human creativity with self-improving AI.">
+        
+        <meta name="twitter:image" content="https://www.indexventures.com/media/images/Inherent_founders_-_Lo.52926a25.fill-1024x512.format-png.png">
+        <meta name="twitter:creator" content="@IndexVentures">
+        <meta name="twitter:site" content="@IndexVentures">
+        <meta name="twitter:site:id" content="19720395">
+        <meta name="twitter:image:alt" content="Index Ventures leads a $50m seed round in Inherent, a London AI lab building Faraday — a system for open-ended scientific discovery that combines human creativity with self-improving AI.">
+    
+
+
+
+        
+        <link rel="alternate" type="application/rss+xml" title="Perspectives | Index Ventures" href="https://www.indexventures.com/perspectives/feed/">
+
+
+        
+            <script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "WebPage", "@id": "https://www.indexventures.com/perspectives/inherent-designing-for-discovery/#webpage", "url": "https://www.indexventures.com/perspectives/inherent-designing-for-discovery/", "name": "Inherent: Designing for Discovery", "description": "Index Ventures leads a $50m seed round in Inherent, a London AI lab building Faraday — a system for open-ended scientific discovery that combines human creativity with self-improving AI.", "isPartOf": {"@type": "WebSite", "@id": "https://www.indexventures.com/#website"}}, {"@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Index Ventures", "item": "https://www.indexventures.com/"}, {"@type": "ListItem", "position": 2, "name": "Perspectives", "item": "https://www.indexventures.com/perspectives/"}, {"@type": "ListItem", "position": 3, "name": "Inherent: Designing for Discovery", "item": "https://www.indexventures.com/perspectives/inherent-designing-for-discovery/"}]}, {"@type": "NewsArticle", "@id": "https://www.indexventures.com/perspectives/inherent-designing-for-discovery/#article", "mainEntityOfPage": {"@id": "https://www.indexventures.com/perspectives/inherent-designing-for-discovery/#webpage"}, "headline": "Inherent: Designing for Discovery", "description": "Index Ventures leads a $50m seed round in Inherent, a London AI lab building Faraday — a system for open-ended scientific discovery that combines human creativity with self-improving AI.", "url": "https://www.indexventures.com/perspectives/inherent-designing-for-discovery/", "inLanguage": "en", "datePublished": "2026-05-31", "dateModified": "2026-05-28T21:35:47.891760+00:00", "author": [{"@type": "Person", "@id": "https://www.indexventures.com/team/georgia-stevenson/#person", "name": "Georgia Stevenson", "url": "https://www.indexventures.com/team/georgia-stevenson/", "worksFor": {"@type": "Organization", "@id": "https://www.indexventures.com/#organization", "name": "Index Ventures", "url": "https://www.indexventures.com/"}, "jobTitle": "Investor", "image": {"@type": "ImageObject", "url": "https://www.indexventures.com/media/images/GeorgiaWebsm.2e16d0ba.fill-400x400.webp", "width": 100, "height": 100}, "sameAs": ["https://www.linkedin.com/in/georgia-stevenson-94677982/"]}, {"@type": "Person", "@id": "https://www.indexventures.com/team/danny-rimer/#person", "name": "Danny Rimer", "url": "https://www.indexventures.com/team/danny-rimer/", "worksFor": {"@type": "Organization", "@id": "https://www.indexventures.com/#organization", "name": "Index Ventures", "url": "https://www.indexventures.com/"}, "jobTitle": "Investor", "image": {"@type": "ImageObject", "url": "https://www.indexventures.com/media/images/IV_TeamPage_Thumb_DannyRimer.2e16d0ba.fill-400x400.webp", "width": 100, "height": 100}, "sameAs": ["https://www.linkedin.com/in/dannyrimer/", "https://twitter.com/intent/user?screen_name=dannyrimer"]}], "publisher": {"@type": "Organization", "@id": "https://www.indexventures.com/#organization", "name": "Index Ventures", "url": "https://www.indexventures.com/"}, "image": {"@type": "ImageObject", "url": "https://www.indexventures.com/media/images/Inherent_founders_-_Louis_Kaloye.52926a25.fill-1200x630.webp", "width": 1200, "height": 630}, "articleSection": "News", "keywords": "AI/ML, Inherent", "about": [{"@type": "Organization", "@id": "https://www.indexventures.com/companies/inherent/#organization", "name": "Inherent", "url": "https://www.indexventures.com/companies/inherent/"}]}]}</script>
+        
+        <link rel="shortcut icon" href="https://www.indexventures.com/static/images/favicon.13cf3a9377aa.ico" type="image/x-icon"/>
+        <link rel="icon" href="https://www.indexventures.com/static/images/favicon.13cf3a9377aa.ico" type="image/x-icon"/>
+        <link rel="apple-touch-icon" sizes="180x180" href="https://www.indexventures.com/static/images/apple-touch-icon.334e2c0ca650.png"/>
+        <link rel="icon" type="image/png" sizes="32x32" href="https://www.indexventures.com/static/images/favicon-32x32.2b1079167528.png"/>
+        <link rel="icon" type="image/png" sizes="16x16" href="https://www.indexventures.com/static/images/favicon-16x16.dfffa4654b02.png"/>
+        <link rel="manifest" href="https://www.indexventures.com/static/images/site.27419fc6affa.webmanifest"/>
+        <link rel="mask-icon" href="https://www.indexventures.com/static/images/safari-pinned-tab.394df958a54e.svg" color="#e1251b"/>
+        <link rel="shortcut icon" href="https://www.indexventures.com/static/images/favicon.13cf3a9377aa.ico"/>
+
+        <meta name="msapplication-TileColor" content="#e1251b"/>
+        <meta name="msapplication-config" content="https://www.indexventures.com/static/images/browserconfig.ba5ae8f0ed89.xml"/>
+        <meta name="theme-color" content="#ffffff"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+
+        
+        
+        
+        
+        <link rel="preload" as="font" type="font/woff2" crossorigin
+              href="https://www.indexventures.com/static/fonts/glypha/GlyphaLTPro-Light.subset.efced7574599.woff2" />
+        <link rel="preload" as="font" type="font/woff2" crossorigin
+              href="https://www.indexventures.com/static/fonts/univers/UniversLTW02-45Light.subset.e14d7c1f7d3a.woff2" />
+        
+        
+        
+<link rel="preload" as="font" type="font/woff2" crossorigin
+      href="https://www.indexventures.com/static/fonts/bradford/BradfordLLWeb-Light.subset.7f1a9d52babf.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin
+      href="https://www.indexventures.com/static/fonts/bradford/BradfordLLWeb-LightItalic.subset.85ef1c0ca200.woff2" />
+
+
+        
+        <link type="text/css" href="https://www.indexventures.com/static/css/app.ee0aef0f017d.css" rel="stylesheet" />
+
+        
+        
+        
+        
+            <style>
+                @media (prefers-reduced-motion: no-preference) {
+                    @view-transition { navigation: auto; }
+                }
+            </style>
+        
+
+        
+            
+        
+        
+            <script id="FATHOM_ID" type="application/json">"ZRICNWPA"</script>
+            <!--    so we can turn it off in e.g. option plan, where we load it separately    -->
+            
+                <script>
+    // Load Fathom off the critical path (IV-1671). data-spa="auto" tracks the
+    // current page on init, so a late load still records the pageview.
+    // Gated behind DOMContentLoaded, not a bare requestIdleCallback and not
+    // the load event:
+    // - A bare requestIdleCallback can fire while the head's font preloads
+    //   and blocking CSS request are still in flight (~90ms in on this
+    //   page), competing with them for the network — that contention was
+    //   the original defect here.
+    // - Waiting for the load event instead regressed Fathom specifically:
+    //   it used to load at `defer` (~DOMContentLoaded) and was the only
+    //   analytics that kept working through the gtag outage this branch
+    //   fixes; pushing it to `load` loses pageviews from fast bouncers and
+    //   slow connections.
+    // - DOMContentLoaded is late enough that the head's own requests are no
+    //   longer in flight, and early enough to keep both problems above small.
+    var loadFathom = function () {
+        var s = document.createElement('script');
+        s.src = 'https://cdn.usefathom.com/script.js';
+        s.dataset.spa = 'auto';
+        s.dataset.site = 'ZRICNWPA';
+        document.head.appendChild(s);
+    };
+    var fathomSchedule = function () {
+        if ('requestIdleCallback' in window) {
+            requestIdleCallback(loadFathom, { timeout: 10000 });
+        } else {
+            loadFathom();
+        }
+    };
+    if (document.readyState !== 'loading') {
+        fathomSchedule();
+    } else {
+        document.addEventListener('DOMContentLoaded', fathomSchedule);
+    }
+</script>
+
+            
+		
+    </head>
+
+    <body class="template-article-post" style="">
+        <div id="media-cookies-overlay"></div>
+        <a href="#main-content" class="-visually-hidden skip-link js-skip-link">Skip to main content</a>
+        
+            
+
+<nav class="navigation js-navigation">
+    <div class="navigation__wrapper row row-xs--between row-xs--middle">
+        <div class="navigation__logo-wrapper">
+            <a href="/" class="navigation__logo-anchor js-header-logo" aria-label="Index Ventures Logo Home Link">
+                <svg class="navigation__icon main-nav-logo" width="40" height="33" viewBox="0 0 40 33" fill="#e42313" 
+    xmlns="http://www.w3.org/2000/svg">
+    <g clip-path="url(#header_logo)">
+        <path d="M18.185 0H0V3.63008H18.185V0Z"/>
+        <path d="M36.4044 7.26016H10.9247V10.8902H36.4044V7.26016Z"/>
+        <path d="M40.0345 14.5549H10.9247V18.185H40.0345V14.5549Z"/>
+        <path d="M36.4044 21.8151H10.9247V25.4451H36.4044V21.8151Z"/>
+        <path d="M29.1096 29.1097H10.9247V32.7398H29.1096V29.1097Z"/>
+    </g>
+    <defs>
+        <clipPath id="header_logo">
+            <rect width="40" height="32.7398"/>
+        </clipPath>
+    </defs>
+</svg>
+            </a>
+        </div>
+        <ul class="navigation__list js-navigation__list row row-xs--middle">
+            
+                
+                    <li data-navigation-link="Team" data-link="/team/" class="navigation__item js-navigation__item">
+                        
+                            <a href="/team/" class="navigation__anchor js-navigation__anchor">
+                                Team
+                            </a>
+                        
+                    </li>
+                
+                    <li data-navigation-link="Philosophy" data-link="/philosophy/" class="navigation__item js-navigation__item">
+                        
+                            <a href="/philosophy/" class="navigation__anchor js-navigation__anchor">
+                                Philosophy
+                            </a>
+                        
+                    </li>
+                
+                    <li data-navigation-link="Companies" data-link="/companies/" class="navigation__item js-navigation__item">
+                        
+                            <a href="/companies/" class="navigation__anchor js-navigation__anchor">
+                                Companies
+                            </a>
+                        
+                    </li>
+                
+                    <li data-navigation-link="Perspectives" data-link="/perspectives/" class="navigation__item js-navigation__item">
+                        
+                            <a href="/perspectives/" class="navigation__anchor js-navigation__anchor">
+                                Perspectives
+                            </a>
+                        
+                    </li>
+                
+                    <li data-navigation-link="Resources" data-link="/index-press/" class="navigation__item js-navigation__item">
+                        
+                            <a href="/index-press/" class="navigation__anchor js-navigation__anchor">
+                                Resources
+                            </a>
+                        
+                    </li>
+                
+            
+            <li data-navigation-link="Search" class="navigation__item">
+                <button type="button" class="js-search-icon" aria-label="Search">
+                    <span class="navigation__search-wrapper">
+                        <svg class="navigation__icon" width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M11.7306 11.6666L17.0639 17M13.4445 7.22232C13.4445 3.78591 10.6587 1 7.22232 1C3.78572 1 1 3.78591 1 7.22232C1 10.6587 3.78572 13.4445 7.22232 13.4445C10.6587 13.4445 13.4445 10.6587 13.4445 7.22232Z" />
+</svg>
+
+                    </span>
+                </button>
+            </li>
+            <li class="navigation__item-wrapper">
+                <button class="navigation__anchor js-nav-menu-link" aria-label="Open Menu" aria-expanded="false">
+                    <span class="navigation__menu-icon-wrapper">
+                        <i class="navigation__menu-icon"></i>
+                    </span>
+                </button>
+            </li>
+        </ul>
+    </div>
+
+    <div class="navigation__menu js-nav-menu" aria-hidden="true">
+        <div class="navigation__menu-primary-link-wrapper">
+            <ul>
+                
+                <li data-navigation-link="Team" class="navigation__menu-primary-link">
+                    
+                        <a href="/team/">
+                            Team
+                        </a>
+                    
+                </li>
+                
+                <li data-navigation-link="Philosophy" class="navigation__menu-primary-link">
+                    
+                        <a href="/philosophy/">
+                            Philosophy
+                        </a>
+                    
+                </li>
+                
+                <li data-navigation-link="Companies" class="navigation__menu-primary-link">
+                    
+                        <a href="/companies/">
+                            Companies
+                        </a>
+                    
+                </li>
+                
+                <li data-navigation-link="Perspectives" class="navigation__menu-primary-link">
+                    
+                        <a href="/perspectives/">
+                            Perspectives
+                        </a>
+                    
+                </li>
+                
+                <li data-navigation-link="Resources" class="navigation__menu-primary-link">
+                    
+                        <a href="/index-press/">
+                            Resources
+                        </a>
+                    
+                </li>
+                
+            </ul>
+        </div>
+    </div>
+
+</nav>
+
+    <div class="navigation__search js-search-wrapper">
+        
+
+<div class="search-page">
+    <div class="search-page__wrapper real-time-search__wrapper">
+        <div class="navigation__search-inner-wrapper">
+            <div class="search-page__header">
+                <div class="row row-xs--center">
+                    <div class="col-xs-20 col-md-18">
+                        <div class="js-search-form"><form class="search-form row row-xs--center" action="/" method="get" autocomplete="off">
+    <label class="search-form__input-wrapper col-xs-20 col-md-18" for="query">
+        <input class="search-form__input js-search-input" type="text" name="search" placeholder="Search" value="">
+        <span class="-visually-hidden">Search</span>
+    </label>
+    <button type="submit" class="search-form__button" aria-label="Submit">
+        <svg class="search-form__button__icon" width="45" height="22" viewBox="0 0 45 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+	<path d="M-1.13474e-07 11C11.0715 11 31.3451 11 42.4166 11M31 1L43 11L31 21" stroke="#181818" stroke-width="2" stroke-miterlimit="10"/>
+</svg>
+        <span class="-visually-hidden">Submit Search</span>
+    </button>
+</form></div>
+                        <div class="navigation__search__label" data-default="Find a team member, company, Perspectives piece or Index Press resource">
+                            Find a team member, company, Perspectives piece or Index Press resource
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="real-time-search">
+                <div class="search-title">
+                    <div class="row row-xs--center row-xs--grow">
+                        <div class="col-xs-20 col-md-18">
+                            <div class="search-title-inner">
+                                <div class="search-back-button">
+                                    <span class="search-back-icon"><svg width="9" height="16" viewBox="0 0 9 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M8 1L1 8L8 15" stroke="#181818"/>
+</svg>
+</span>
+                                    <span class="search-back-text">Back</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="search-in-progress">
+                    <div class="index-ventures-hand">
+                        <div><span></span></div>
+                        <div><span></span></div>
+                        <div><span></span></div>
+                        <div><span></span></div>
+                        <div><span></span></div>
+                    </div>
+                </div>
+
+                <div class="search-results">
+                    <div class="row row-xs--center">
+                        <div class="col-xs-20 col-md-18">
+                            <div class="content-type-sections">
+                                <div class="content-type-section" data-section="perspectives.AbstractPerspectivesDetailPage" data-search-title="@total Perspectives" data-section-name="Perspectives" data-show-all-text="See All @total Perspectives">
+                                    <div class="content-type-name">Perspectives</div>
+                                    <div class="content-type-results">
+                                        <ul class="simple-list"></ul>
+                                    </div>
+                                </div>
+                                <div class="content-type-section" data-section="companies.Company" data-search-title="@total Companies" data-section-name="Companies" data-show-all-text="See All @total Companies">
+                                    <div class="content-type-name">Companies</div>
+                                    <div class="content-type-results">
+                                        <ul class="simple-list"></ul>
+                                    </div>
+                                </div>
+                                <div class="content-type-section" data-section="press.PressDetailPage" data-search-title="@total Index Press" data-section-name="Index Press" data-show-all-text="See All @total Index Press">
+                                    <div class="content-type-name">Index Press</div>
+                                    <div class="content-type-results">
+                                        <ul class="simple-list"></ul>
+                                    </div>
+                                </div>
+                                <div class="content-type-section" data-section="team.TeamMember" data-search-title="@total Team Members" data-section-name="Team Members" data-show-all-text="See All @total Team Members">
+                                    <div class="content-type-name">Team</div>
+                                    <div class="content-type-results">
+                                        <ul class="simple-list"></ul>
+                                    </div>
+                                </div>
+                                <div class="content-type-section" data-section="startup_jobs.JobModel" data-search-title="@total Jobs" data-section-name="Jobs" data-show-all-text="See All @total Jobs">
+                                    <div class="content-type-name">Startup Jobs</div>
+                                    <div class="content-type-results">
+                                        <ul class="simple-list"></ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row row-xs--center">
+                    <div class="col-xs-20 col-md-18">
+                        <div id="real-time-search-pager" class="item-list">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+    </div>
+        
+        <div id="main-content" class="content-container close-during-search">
+            
+
+            <article role="main">
+            
+    <div class='article-detail' data-content-group-name="">
+        
+
+<header class="article-post-hero">
+    <div class="row row-xs--center">
+        <div class="col-xs-20">
+            <div class="article-post-hero__wrapper js-scroll-target">
+                
+                    
+
+<div class="breadcrumbs">
+    <a href="/perspectives/" class="breadcrumbs__breadcrumb"><span class="-visually-hidden">Navigate back to</span>
+            Perspectives
+        </a><img src="/static/svg/arrow_right.svg" class="svg breadcrumbs__arrow" width="8" height="14" alt="" role="presentation"/><span class="-visually-hidden">Navigate back to</span>
+            News
+</div>
+
+                
+                <h1 class="article-post-hero__headline">Inherent: Designing for Discovery</h1>
+                <div class="container">
+                    <div class="row">
+                        <div>
+                            
+                                <p class="article-post-hero__author">by
+                                    
+                                        <a href="/team/georgia-stevenson/" class="article-post-hero__author-anchor">Georgia Stevenson</a>, 
+                                    
+                                        <a href="/team/danny-rimer/" class="article-post-hero__author-anchor">Danny Rimer</a>
+                                    
+                                </p>
+                            
+                        </div>
+                        <div class="article-post-hero__social" data-title="Inherent: Designing for Discovery" data-url="https://www.indexventures.com/perspectives/inherent-designing-for-discovery/">
+                            <ul class="share__social-list">
+                                <li class="share__links-item">
+                                    <span>
+                                        <button type="button" class="share__links-link--social twitter" data-track-event-category="Social Share Click" data-track-event-action="Twitter">
+                                            <span class="share__links-link">X.com</span>
+                                            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="3" width="9" height="1" fill="currentColor"></rect>
+    <rect x="12" width="9" height="1" transform="rotate(90 12 0)" fill="currentColor"></rect>
+    <rect x="11.7422" y="0.960938" width="15.6047" height="1" transform="rotate(135 11.7422 0.960938)" fill="currentColor"></rect>
+</svg>
+                                        </button>
+                                    </span>
+                                </li>
+                                <li class="share__links-item">
+                                    <span>
+                                        <button type="button" class="share__links-link--social facebook" data-track-event-category="Social Share Click" data-track-event-action="Facebook">
+                                            <span class="share__links-link">Facebook</span>
+                                            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="3" width="9" height="1" fill="currentColor"></rect>
+    <rect x="12" width="9" height="1" transform="rotate(90 12 0)" fill="currentColor"></rect>
+    <rect x="11.7422" y="0.960938" width="15.6047" height="1" transform="rotate(135 11.7422 0.960938)" fill="currentColor"></rect>
+</svg>
+                                        </button>
+                                    </span>
+                                </li>
+                                <li class="share__links-item">
+                                    <span>
+                                        <button type="button" class="share__links-link--social linkedin" data-track-event-category="Social Share Click" data-track-event-action="LinkedIn">
+                                            <span class="share__links-link">Linkedin</span>
+                                            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="3" width="9" height="1" fill="currentColor"></rect>
+    <rect x="12" width="9" height="1" transform="rotate(90 12 0)" fill="currentColor"></rect>
+    <rect x="11.7422" y="0.960938" width="15.6047" height="1" transform="rotate(135 11.7422 0.960938)" fill="currentColor"></rect>
+</svg>
+                                        </button>
+                                    </span>
+                                </li>
+                                <li class="share__links-item share__links-item--webshare">
+                                    <span>
+                                        <button type="button" class="share__links-link--social webshare" data-track-event-category="Social Share Click" data-track-event-action="Webshare">
+                                            <span class="share__links-link">Share</span>
+                                            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="3" width="9" height="1" fill="currentColor"></rect>
+    <rect x="12" width="9" height="1" transform="rotate(90 12 0)" fill="currentColor"></rect>
+    <rect x="11.7422" y="0.960938" width="15.6047" height="1" transform="rotate(135 11.7422 0.960938)" fill="currentColor"></rect>
+</svg>
+                                        </button>
+                                    </span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+        
+            <div class="article-detail__image-section">
+                
+                    
+
+<div class="image-block js-scroll-target">
+    <div class="row row-xs--center">
+        <div class="col-xs-20">
+            <div class="row row-md--bottom row-md--between">
+                <div class="image-block__image-wrapper  col-md-16 ">
+                    
+
+
+    
+
+    
+        
+		
+			<img src="https://www.indexventures.com/media/images/Inherent_founders_-_Louis_Kaloyen_.original.format-webp.webp" srcset="https://www.indexventures.com/media/images/Inherent_founders_-_Louis_Kaloyen.width-320.format-webp.webp 320w, https://www.indexventures.com/media/images/Inherent_founders_-_Louis_Kaloyen.width-480.format-webp.webp 480w, https://www.indexventures.com/media/images/Inherent_founders_-_Louis_Kaloyen.width-768.format-webp.webp 768w, https://www.indexventures.com/media/images/Inherent_founders_-_Louis_Kaloye.width-1024.format-webp.webp 1024w, https://www.indexventures.com/media/images/Inherent_founders_-_Louis_Kaloye.width-1200.format-webp.webp 1200w, https://www.indexventures.com/media/images/Inherent_founders_-_Louis_Kaloye.width-1440.format-webp.webp 1440w, https://www.indexventures.com/media/images/Inherent_founders_-_Louis_Kaloye.width-1600.format-webp.webp 1600w, https://www.indexventures.com/media/images/Inherent_founders_-_Louis_Kaloye.width-1920.format-webp.webp 1920w, https://www.indexventures.com/media/images/Inherent_founders_-_Louis_Kaloye.width-2560.format-webp.webp 2560w, https://www.indexventures.com/media/images/Inherent_founders_-_Louis_Kaloye.width-2880.format-webp.webp 2880w, https://www.indexventures.com/media/images/Inherent_founders_-_Louis_Kaloye.width-3840.format-webp.webp 3840w, https://www.indexventures.com/media/images/Inherent_founders_-_Louis_Kaloyen_.original.format-webp.webp 8192w" sizes="100vw" style="" class="image-base styled styled image-block__image image-132255" height="5464" width="8192" alt="Inherent founders - Louis Kirsch, Kaloyan Aleksiev, Tantum Collins, and Edward Hughes" fetchpriority="high" />
+		
+    
+
+                    
+                </div>
+                
+                    <div class="image-block__caption col-xs-20  col-md-3 "><div class="rich-text"><p data-block-key="eihvj">Inherent co-founders Louis Kirsch, Kaloyan Aleksiev, Tantum Collins and Edward Hughes.</p></div></div>
+                
+            </div>
+        </div>
+    </div>
+</div>
+
+                
+            </div>
+        
+        
+        <div class="article-detail__body-content">
+            
+
+
+
+    
+        
+
+<div class="body-copy -bg-color-transparent">
+    <div class="row row-xs--center">
+        <div class="col-xs-20">
+            <div class="row-md--baseline row row-xs--center">
+            	
+                <div class="col-xs-20 col-md-14 ">
+                    <div class="rich-text"><p data-block-key="qpekz">In 1831, a former bookbinder’s apprentice, toiling in a candlelit basement at London’s Royal Institution, moved a magnet through a coil of copper wire and watched a needle twitch. Michael Faraday had never been to university and had almost no formal scientific training. But he was the first person to ask if a magnetic field could produce electricity, and to use his creativity and curiosity to pursue an answer. His discovery of electromagnetic induction would go on to power the Industrial Revolution, and the modern world that was to follow.</p><p data-block-key="ltbm">Most AIs flounder when faced with discovery. They’re trained to give good answers, not figure out which questions are worth asking, and they still can’t learn on the fly. They excel at convergent thinking in well-defined problem spaces. But they come up short when probing edge cases or stumbling into unknown-unknowns – the kind which produced the likes of penicillin, the microwave and the GPU.</p><p data-block-key="879dk">The motivating belief behind Inherent, the London-based AI lab now emerging from stealth, is that machines capable of open-ended exploration can catalyze a wave of new inventions. Their system in development, Faraday, aims to put this into practice by helping humans and self-improving AI work together on the thorniest scientific problems of our time.</p><p data-block-key="deapv">The founders bringing this vision to life are fantastic. Tantum Collins, Edward Hughes and Louis Kirsch are all technical DeepMind alumni, while Kaloyan Aleksiev brings infrastructure depth from Reka AI and Microsoft. They’re collectively obsessed with organizational design as a research problem in its own right. Inherent thinks that unlocking the potential of new technologies calls for genuinely new ways of working, while grafting AI onto the workflows of a prior era can only ever yield incremental gains. So how do you engineer for those productive collisions and creative chaos that fuel real discovery?</p><p data-block-key="f7fa1">We got hooked by two aspects of their answer. The first is the idea that AI-native science will look and feel totally different to the scientific method we’ve grown used to over the past 400 years: it will be messier, less legible, but capable of exceptional outcomes. If Inherent succeeds, their bet is that the lab of the future will be as alien to us today as a modern research facility would be to a medieval monk, accustomed to searching for astronomical data in the Bible.</p><p data-block-key="f7gnq">Much as a conductor channels the voices of a choir, doing science in the future may involve a sort of attuned orchestration, nudging human and non-human collaborators towards an emergent coherence. (As it happens, Edward has a parallel career as a professional choral conductor, which has informed his technical research into cultural evolution in AI systems.) The team intends to live this way themselves: the day-to-day choreography of how humans and AI agents work together at Inherent is itself part of their research, and will in turn inform the development of their platform.</p><p data-block-key="3slmt">The second thing that struck us was Inherent’s commitment to ethics and governance. The whole team thinks deeply about the second and third-order consequences of their work, and have chosen to set up the company as a public benefit corporation. Edward and Tantum first met while collaborating on frontier research in cooperative AI, and after DeepMind, Tantum handled AI policy issues at the Biden White House. Inherent’s early hires and angel investors include researchers and operators with expertise in technical safety and democratic applications of AI, and Matt Clifford CBE, who previously advised the Prime Minister on AI, is an advisor to the company.</p><p data-block-key="el4t2">The best companies build an internal culture that prefigures the world they want to manifest. Inherent is the most literal expression of that idea we’ve come across: a recursive company where the org design and the research feed one another in a continuous loop. We’re proud to stand with them to lead their $50m seed round, alongside Radical Ventures, as they design for the questions that no one has thought to ask yet.</p></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+    
+
+        </div>
+
+        <div class="row row-xs--center">
+            <div class="col-xs-20 col-md-14">
+                
+                    <p class="article-detail__tags">In this post:
+                        
+                            <a href="/companies/inherent/" class="article-detail__tags__tag">Inherent</a>,
+                        
+                            <a href="/team/georgia-stevenson/" class="article-detail__tags__tag">Georgia Stevenson</a>,
+                        
+                            <a href="/team/danny-rimer/" class="article-detail__tags__tag">Danny Rimer</a>
+                        
+                    </p>
+                
+                <p class="article-detail__published-date">
+                    Published — May 31, 2026
+                </p>
+            </div>
+        </div>
+
+        
+            
+
+<div class="featured-posts">
+    <div class="row row-xs--center">
+        <div class="col-xs-20 col-md-18">
+            <ul class="featured-posts__list row row-md--between row-md--top featured-posts__list--double js-scroll-target">
+                
+                    
+                        
+                        <li class="featured-posts__post">
+                            
+                                <a href="/perspectives/alta-fixing-the-pipes-behind-global-payments/" class="featured-posts__image-link">
+                                <span class="featured-posts__image-wrapper">
+                                    
+                                        
+
+
+    
+
+    
+        
+		
+			<img src="https://www.indexventures.com/media/images/Alta_Joint_Photo_1.original.format-webp.webp" srcset="https://www.indexventures.com/media/images/Alta_Joint_Photo_1.width-320.format-webp.webp 320w, https://www.indexventures.com/media/images/Alta_Joint_Photo_1.width-480.format-webp.webp 480w, https://www.indexventures.com/media/images/Alta_Joint_Photo_1.width-768.format-webp.webp 768w, https://www.indexventures.com/media/images/Alta_Joint_Photo_1.width-1024.format-webp.webp 1024w, https://www.indexventures.com/media/images/Alta_Joint_Photo_1.width-1200.format-webp.webp 1200w, https://www.indexventures.com/media/images/Alta_Joint_Photo_1.width-1440.format-webp.webp 1440w, https://www.indexventures.com/media/images/Alta_Joint_Photo_1.width-1600.format-webp.webp 1600w, https://www.indexventures.com/media/images/Alta_Joint_Photo_1.original.format-webp.webp 1640w" sizes="(max-width: 767px) 84vw, 34vw" style="" class="image-base styled styled featured-posts__image featured-posts__image-thumbnail image-138458" height="969" width="1640" alt="Loong Wang and Catherine Porter 2026" loading="lazy" decoding="async" />
+		
+    
+
+                                    
+                                    
+                                    <span class="-off-screen"> This link opens the post, &quot;Alta: Fixing the Pipes Behind Global Payments&quot;</span>
+                                </span>
+                                
+                                <span class="featured-posts__content-wrapper">
+                                    <span class="featured-posts__post-title">Alta: Fixing the Pipes Behind Global Payments</span>
+                                        
+                                        
+                                            <p class="featured-posts__post-author">by
+                                                
+                                                    Jan Hammer,
+                                                
+                                                    Julia Andre
+                                                
+                                            </p>
+                                        
+                                </span>
+                            </a>
+                        </li>
+                        
+                    
+                
+                    
+                        
+                        <li class="featured-posts__post">
+                            
+                                <a href="/perspectives/toward-more-efficient-ai-leading-flapping-airplanes-1b-series-a/" class="featured-posts__image-link">
+                                <span class="featured-posts__image-wrapper">
+                                    
+                                        
+
+
+    
+
+    
+        
+		
+			<img src="https://www.indexventures.com/media/images/62c446ca-309b-45d9-8a92-24a609de24.original.format-webp.webp" srcset="https://www.indexventures.com/media/images/62c446ca-309b-45d9-8a92-24a609de2.width-320.format-webp.webp 320w, https://www.indexventures.com/media/images/62c446ca-309b-45d9-8a92-24a609de2.width-480.format-webp.webp 480w, https://www.indexventures.com/media/images/62c446ca-309b-45d9-8a92-24a609de2.width-768.format-webp.webp 768w, https://www.indexventures.com/media/images/62c446ca-309b-45d9-8a92-24a609de.width-1024.format-webp.webp 1024w, https://www.indexventures.com/media/images/62c446ca-309b-45d9-8a92-24a609de.width-1200.format-webp.webp 1200w, https://www.indexventures.com/media/images/62c446ca-309b-45d9-8a92-24a609de.width-1440.format-webp.webp 1440w, https://www.indexventures.com/media/images/62c446ca-309b-45d9-8a92-24a609de.width-1600.format-webp.webp 1600w, https://www.indexventures.com/media/images/62c446ca-309b-45d9-8a92-24a609de.width-1920.format-webp.webp 1920w, https://www.indexventures.com/media/images/62c446ca-309b-45d9-8a92-24a609de.width-2560.format-webp.webp 2560w, https://www.indexventures.com/media/images/62c446ca-309b-45d9-8a92-24a609de.width-2880.format-webp.webp 2880w, https://www.indexventures.com/media/images/62c446ca-309b-45d9-8a92-24a609de.width-3840.format-webp.webp 3840w, https://www.indexventures.com/media/images/62c446ca-309b-45d9-8a92-24a609de24.original.format-webp.webp 5611w" sizes="(max-width: 767px) 84vw, 34vw" style="" class="image-base styled styled featured-posts__image featured-posts__image-thumbnail image-138219" height="3739" width="5611" alt="" loading="lazy" decoding="async" />
+		
+    
+
+                                    
+                                    
+                                    <span class="-off-screen"> This link opens the post, &quot;Toward More Efficient AI: Leading Flapping Airplanes’ $1B Series A&quot;</span>
+                                </span>
+                                
+                                <span class="featured-posts__content-wrapper">
+                                    <span class="featured-posts__post-title">Toward More Efficient AI: Leading Flapping Airplanes’ $1B Series A</span>
+                                        
+                                        
+                                            <p class="featured-posts__post-author">by
+                                                
+                                                    Mark Xu,
+                                                
+                                                    Shardul Shah
+                                                
+                                            </p>
+                                        
+                                </span>
+                            </a>
+                        </li>
+                        
+                    
+                
+            </ul>
+        </div>
+    </div>
+    
+
+    
+</div>
+        
+    </div>
+
+            </article>
+
+			
+				
+			
+
+            
+              
+
+
+<footer class="footer-container ">
+  <div class=" row row-xs--center">
+    <div class="col-xs-24">
+      <div class="footer ">
+        
+        <div class=" row row-xs--center">
+          <div class="col-xs-20 footer-wrapper">
+            <div class="footer__upper-wrapper">
+              <div class="footer__brand">
+                <svg class="footer__brand-icon footer-logo" width="40" height="33" viewBox="0 0 40 33" fill="#e42313" 
+    xmlns="http://www.w3.org/2000/svg">
+    <g clip-path="url(#footer_logo)">
+        <path d="M18.185 0H0V3.63008H18.185V0Z"/>
+        <path d="M36.4044 7.26016H10.9247V10.8902H36.4044V7.26016Z"/>
+        <path d="M40.0345 14.5549H10.9247V18.185H40.0345V14.5549Z"/>
+        <path d="M36.4044 21.8151H10.9247V25.4451H36.4044V21.8151Z"/>
+        <path d="M29.1096 29.1097H10.9247V32.7398H29.1096V29.1097Z"/>
+    </g>
+    <defs>
+        <clipPath id="footer_logo">
+            <rect width="40" height="32.7398"/>
+        </clipPath>
+    </defs>
+</svg>
+                <span
+                  class="footer__brand-text">Index Ventures</span>
+                <span
+                  class="footer__brand-tooltip footer__lower"><span>We chose the hand as our mark symbolizing the humility, care and effort of entrepreneurs building their businesses. It also stands for our commitment to them as partners in realizing their vision.</span></span>
+              </div>
+              
+              <a
+                class="footer__clocks-wrapper"
+                href="/contact-us/">
+                
+                <span class="footer__clock-item">
+                <span class="footer__clock-item-svg-wrapper">
+                <svg class="footer__clock-item-svg js-clock" data-timezone="America/Los_Angeles" viewBox="0 0 136 136" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <g stroke-width="1" fill="none" fill-rule="evenodd">
+        <g transform="translate(4.000000, 4.000000)" stroke-width="8">
+            <circle cx="64" cy="64" r="64"></circle>
+            <path class="hand" d="M64,64 L64,12" data-hand="minuteHand" stroke-linecap="square"></path>
+            <path class="hand" d="M64,64 L64,38" data-hand="hourHand" stroke-linecap="square"></path>
+        </g>
+    </g>
+</svg>
+
+                </span>
+                <span
+                  class="footer__clock-item-country-name"> San Francisco </span>
+                </span>
+                
+                <span class="footer__clock-item">
+                <span class="footer__clock-item-svg-wrapper">
+                <svg class="footer__clock-item-svg js-clock" data-timezone="America/New_York" viewBox="0 0 136 136" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <g stroke-width="1" fill="none" fill-rule="evenodd">
+        <g transform="translate(4.000000, 4.000000)" stroke-width="8">
+            <circle cx="64" cy="64" r="64"></circle>
+            <path class="hand" d="M64,64 L64,12" data-hand="minuteHand" stroke-linecap="square"></path>
+            <path class="hand" d="M64,64 L64,38" data-hand="hourHand" stroke-linecap="square"></path>
+        </g>
+    </g>
+</svg>
+
+                </span>
+                <span
+                  class="footer__clock-item-country-name"> New York </span>
+                </span>
+                
+                <span class="footer__clock-item">
+                <span class="footer__clock-item-svg-wrapper">
+                <svg class="footer__clock-item-svg js-clock" data-timezone="Europe/London" viewBox="0 0 136 136" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <g stroke-width="1" fill="none" fill-rule="evenodd">
+        <g transform="translate(4.000000, 4.000000)" stroke-width="8">
+            <circle cx="64" cy="64" r="64"></circle>
+            <path class="hand" d="M64,64 L64,12" data-hand="minuteHand" stroke-linecap="square"></path>
+            <path class="hand" d="M64,64 L64,38" data-hand="hourHand" stroke-linecap="square"></path>
+        </g>
+    </g>
+</svg>
+
+                </span>
+                <span
+                  class="footer__clock-item-country-name"> London </span>
+                </span>
+                
+              </a>
+              
+            </div>
+
+            <div class="footer__lower-wrapper">
+              <div class="footer__lower ">
+                <div class="footer__links">
+                  <ul class="footer__panels-list">
+                    
+                    <li>
+                      <p class="footer__panel-title">CONTACT</p>
+                      <ul class="footer__links-list">
+                        
+                        <li class="footer__links-item">
+                          <a
+                            class=""
+                            href="/contact-us/">Offices</a>
+                        </li>
+                        
+                        <li class="footer__links-item">
+                          <a
+                            class=""
+                            href="/team/">Team</a>
+                        </li>
+                        
+                        <li class="footer__links-item">
+                          <a
+                            class=""
+                            href="https://x.com/indexventures">X.com</a>
+                        </li>
+                        
+                        <li class="footer__links-item">
+                          <a
+                            class=""
+                            href="https://www.linkedin.com/company/index-ventures">LinkedIn</a>
+                        </li>
+                        
+                      </ul>
+                    </li>
+                    
+                    <li>
+                      <p class="footer__panel-title">RESOURCES</p>
+                      <ul class="footer__links-list">
+                        
+                        <li class="footer__links-item">
+                          <a
+                            class=""
+                            href="/startup-jobs/">Startup Jobs</a>
+                        </li>
+                        
+                        <li class="footer__links-item">
+                          <a
+                            class=""
+                            href="/index-press/rewarding-talent/">Stock Options</a>
+                        </li>
+                        
+                        <li class="footer__links-item">
+                          <a
+                            class=""
+                            href="/index-press/winning-in-the-us/">Winning in the US</a>
+                        </li>
+                        
+                        <li class="footer__links-item">
+                          <a
+                            class=""
+                            href="/index-press/scaling-through-chaos/">Scaling Through Chaos</a>
+                        </li>
+                        
+                        <li class="footer__links-item">
+                          <a
+                            class=""
+                            href="https://www.notoptional.eu">Not Optional</a>
+                        </li>
+                        
+                      </ul>
+                    </li>
+                    
+                    <li>
+                      <p class="footer__panel-title">LP</p>
+                      <ul class="footer__links-list">
+                        
+                        <li class="footer__links-item">
+                          <a
+                            class=""
+                            href="/lp-login/">Login</a>
+                        </li>
+                        
+                      </ul>
+                    </li>
+                    
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div class="footer__legal-links">
+              <ul class="footer__legal-links__list">
+                
+                <li class="footer__links-links__item">
+                  <a class=""
+                     href="/disclaimer/">Disclaimers &amp; Disclosures</a>
+                </li>
+                
+                <li class="footer__links-links__item">
+                  <a class=""
+                     href="/modern-slavery-act/">Modern Slavery Act</a>
+                </li>
+                
+                <li class="footer__links-links__item">
+                  <a class=""
+                     href="/tcfd-disclosure-statement/">TCFD Diclosure</a>
+                </li>
+                
+                <li class="footer__links-links__item">
+                  <a class=""
+                     href="/privacy-policy/">Privacy</a>
+                </li>
+                
+              </ul>
+            </div>
+            <div class="footer__copyright">
+              Copyright &copy;2026 Index Ventures
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>
+
+            
+        </div>
+        <div class="search-scrim js-search-scrim"></div>
+
+        
+
+
+<div class="wtm_cookie_bar_wrapper">
+    <div id="wtm_cookie_bar" class="cleanslate hidden">
+        <div class="inner col-xs-20">
+			<div class="icon-and-title">
+				<svg xmlns="http://www.w3.org/2000/svg"
+					 enable-background="new 0 0 24 24" height="24px"
+					 viewBox="0 0 24 24" width="24px" fill="#fff">
+					<rect fill="none" height="24" width="24"/>
+					<path d="M10.5,13H8v-3h2.5V7.5h3V10H16v3h-2.5v2.5h-3V13z M12,2L4,5v6.09c0,5.05,3.41,9.76,8,10.91c4.59-1.15,8-5.86,8-10.91V5L12,2 z M18,11.09c0,4-2.55,7.7-6,8.83c-3.45-1.13-6-4.82-6-8.83v-4.7l6-2.25l6,2.25V11.09z"/>
+				</svg>
+				<h2>This website uses cookies</h2>
+			</div>
+			<div class="inner-container">
+				<div class="content-container">
+					<p>
+						This website uses cookies and other tracking technologies for
+						functional and analytical purposes.
+						To improve your browsing experience on our site,
+						we would also like to place tracking cookies.
+					</p>
+					<p id="thumbnail-link-text" class="hidden" aria-hidden="true">
+						If you prefer to reject the cookies, please use this link to access the video:<br/>
+						<a id="thumbnail-video-link" href="https://www.indexventures.com" target="_blank" rel="noopener noreferrer">www.indexventures.com</a>
+					</p>
+				</div>
+            	<div class="action-container">
+                <button id="wtm_cookie_bar_manage" class="button button-label" aria-label="Manage cookies">
+                    <span>Manage cookies</span>
+                </button>
+                <div id="declaration-container-outer" class="hidden">
+                    <div id="declaration-container">
+                        <div class="accordion is-open">
+                            <div id="accordion-header-necessary" class="accordion-header">
+                                <svg class="accordion-arrow" xmlns="http://www.w3.org/2000/svg" height="24px"
+                                     viewBox="0 0 24 24" width="24px" fill="#FFFFFF">
+                                    <path d="M0 0h24v24H0V0z" fill="none"/>
+                                    <path d="M12 8l-6 6 1.41 1.41L12 10.83l4.59 4.58L18 14l-6-6z"/>
+                                </svg>
+                                <h3 class="accordion-title">Necessary</h3>
+                                <input type="checkbox" name="necessary" required="" disabled="" id="id_necessary"
+                                       checked="" aria-label="Necessary cookies">
+                            </div>
+
+                            <div class="accordion-content">
+                                <table id="necessary-table" class="declaration-table">
+                                    <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Domain</th>
+                                        <th>Purpose</th>
+                                        <th>Expiration</th>
+                                        <th>Security</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <tr>
+                                        <td data-label="Name">Homepage Popup</td>
+                                        <td data-label="Domain">indexventures.com</td>
+                                        <td data-label="Purpose">We set a cookie to prevent showing you the home screen
+                                            overlay more than once.
+                                        </td>
+                                        <td data-label="Expiration">1 year</td>
+                                        <td data-label="Security">HTTPS</td>
+                                    </tr>
+									<tr>
+										<td data-label="Name">Newsletter Popup</td>
+										<td data-label="Domain">indexventures.com</td>
+										<td data-label="Purpose">We set a cookie to prevent showing you the newsletter
+											popup more than once.
+										</td>
+										<td data-label="Expiration">1 year</td>
+										<td data-label="Security">HTTPS</td>
+									</tr>
+                                    <tr>
+                                        <td data-label="Name">Index</td>
+                                        <td data-label="Domain">indexventures.com</td>
+                                        <td data-label="Purpose">We store your cookie preferences.</td>
+                                        <td data-label="Expiration">1 year</td>
+                                        <td data-label="Security">HTTPS</td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="accordion">
+                            <div id="accordion-header-media" class="accordion-header">
+                                <svg class="accordion-arrow" xmlns="http://www.w3.org/2000/svg" height="24px"
+                                     viewBox="0 0 24 24" width="24px" fill="#FFFFFF">
+                                    <path d="M0 0h24v24H0V0z" fill="none"/>
+                                    <path d="M12 8l-6 6 1.41 1.41L12 10.83l4.59 4.58L18 14l-6-6z"/>
+                                </svg>
+                                <h3 class="accordion-title">Media</h3>
+                                <input type="checkbox" name="media" id="id_media" aria-label="Media cookies">
+                            </div>
+
+                            <div class="accordion-content">
+                                <table id="media-table" class="declaration-table">
+                                    <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Domain</th>
+                                        <th>Purpose</th>
+                                        <th>Expiration</th>
+                                        <th>Security</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <tr>
+                                        <td data-label="Name">LinkedIn</td>
+                                        <td data-label="Domain">linkedin.com</td>
+                                        <td data-label="Purpose">If enabled we will embed LinkedIn posts directly on the
+                                            site.
+                                        </td>
+                                        <td data-label="Expiration">1 year</td>
+                                        <td data-label="Security">HTTPS</td>
+                                    </tr>
+                                    <tr>
+                                        <td data-label="Name">X</td>
+                                        <td data-label="Domain">x.com</td>
+                                        <td data-label="Purpose">If enabled we will embed posts directly on the site.
+                                        </td>
+                                        <td data-label="Expiration">1 year</td>
+                                        <td data-label="Security">HTTPS</td>
+                                    </tr>
+                                    <tr>
+                                        <td data-label="Name">TypeForm</td>
+                                        <td data-label="Domain">typeform.com</td>
+                                        <td data-label="Purpose">If enabled we will embed TypeForm forms directly on the
+                                            site.
+                                        </td>
+                                        <td data-label="Expiration">1 year</td>
+                                        <td data-label="Security">HTTPS</td>
+                                    </tr>
+                                    <tr>
+                                        <td data-label="Name">Vimeo</td>
+                                        <td data-label="Domain">vimeo.com</td>
+                                        <td data-label="Purpose">If enabled we will embed Vimeo videos directly on the
+                                            site, if not we'll display a thumbnail. Vimeo sends data collected to a
+                                            server located in USA.
+                                        </td>
+                                        <td data-label="Expiration">1 year</td>
+                                        <td data-label="Security">HTTPS</td>
+                                    </tr>
+                                    <tr>
+                                        <td data-label="Name">Youtube</td>
+                                        <td data-label="Domain">youtube.com</td>
+                                        <td data-label="Purpose">If enabled we will embed youtube videos directly on the
+                                            site, if not we'll display a thumbnail.
+                                        </td>
+                                        <td data-label="Expiration">1 year</td>
+                                        <td data-label="Security">HTTPS</td>
+                                    </tr>
+                                    <tr>
+                                        <td data-label="Name">Simplecast</td>
+                                        <td data-label="Domain">simplecast.com</td>
+                                        <td data-label="Purpose">If enabled we will embed Simplecast player directly on the
+                                            site, if not we'll display a prompt.
+                                        </td>
+                                        <td data-label="Expiration">1 year</td>
+                                        <td data-label="Security">HTTPS</td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="accordion">
+                            <div id="accordion-header-analytics" class="accordion-header">
+                                <svg class="accordion-arrow" xmlns="http://www.w3.org/2000/svg" height="24px"
+                                     viewBox="0 0 24 24" width="24px" fill="#FFFFFF">
+                                    <path d="M0 0h24v24H0V0z" fill="none"></path>
+                                    <path d="M12 8l-6 6 1.41 1.41L12 10.83l4.59 4.58L18 14l-6-6z"></path>
+                                </svg>
+                                <h3 class="accordion-title">Analytics</h3>
+                                <input type="checkbox" name="analytics" id="id_analytics" aria-label="Analytics cookies">
+                            </div>
+
+                            <div class="accordion-content">
+                                <table id="analytics-table" class="declaration-table">
+                                    <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Domain</th>
+                                        <th>Purpose</th>
+                                        <th>Expiration</th>
+                                        <th>Security</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <tr>
+                                        <td data-label="Name">Google Analytics</td>
+                                        <td data-label="Domain">google.com</td>
+                                        <td data-label="Purpose">To help us provide the best quality content we monitor
+                                            the most popular pages on our site.
+                                        </td>
+                                        <td data-label="Expiration">1 year</td>
+                                        <td data-label="Security">HTTPS</td>
+                                    </tr>
+                                    <tr>
+                                        <td data-label="Name">Hubspot</td>
+                                        <td data-label="Domain">hubspot.com</td>
+                                        <td data-label="Purpose">We use hubspot for managing our newsletter</td>
+                                        <td data-label="Expiration">6 months</td>
+                                        <td data-label="Security">HTTPS</td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="buttons-right">
+                            <button id="wtm_cookie_bar_submit" class="button" aria-label="Save preferences">Save preferences</button>
+                        </div>
+                    </div>
+                </div>
+                <button id="wtm_cookie_bar_accept_all" class="button" aria-label="Accept all cookies">Accept all
+                    cookies
+                </button>
+            </div>
+			</div>
+        </div>
+    </div>
+    <div id="wtm_cookie_bar_open_button">
+        <svg xmlns="http://www.w3.org/2000/svg" enable-background="new 0 0 24 24" height="24px" viewBox="0 0 24 24"
+             width="24px" fill="#666">
+            <rect fill="none" height="24" width="24"/>
+            <path d="M10.5,13H8v-3h2.5V7.5h3V10H16v3h-2.5v2.5h-3V13z M12,2L4,5v6.09c0,5.05,3.41,9.76,8,10.91c4.59-1.15,8-5.86,8-10.91V5L12,2 z M18,11.09c0,4-2.55,7.7-6,8.83c-3.45-1.13-6-4.82-6-8.83v-4.7l6-2.25l6,2.25V11.09z"/>
+        </svg>
+    </div>
+</div>
+
+
+
+        
+        <script type="text/javascript" src="https://www.indexventures.com/static/js/app.bundle.5f507cbf7bf5.js" ></script>
+
+        <!-- Build: 23117ae3d836af238d773cd52ca3cc7b933a7603 -->
+    </body>
+</html>

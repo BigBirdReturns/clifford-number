@@ -69,6 +69,7 @@ const required = [
   'src/visual-aperture-state.mjs', 'src/visual-aperture-workspace.mjs',
   'src/visual-aperture-export.mjs', 'src/visual-aperture-timeline.mjs',
   'src/visual-aperture-timeline-runtime.js', 'src/visual-aperture-timeline.css',
+  'src/visual-aperture-field-runtime.js', 'src/visual-aperture-field.css',
   'src/visual-aperture-workspace-runtime.js', 'src/visual-aperture-export-runtime.js', 'src/visual-aperture.js',
   ...Array.from({ length: 11 }, (_, index) => `src/visual-aperture-part-${index + 1}.js`),
   'src/visual-aperture.css', 'src/visual-aperture-layout.css', 'src/visual-aperture-svg.css',
@@ -184,12 +185,14 @@ const apertureWorkspaceRuntime = fs.readFileSync(path.join(destination, 'src', '
 const apertureExportRuntime = fs.readFileSync(path.join(destination, 'src', 'visual-aperture-export-runtime.js'), 'utf8');
 const apertureTimelineModel = fs.readFileSync(path.join(destination, 'src', 'visual-aperture-timeline.mjs'), 'utf8');
 const apertureTimelineRuntime = fs.readFileSync(path.join(destination, 'src', 'visual-aperture-timeline-runtime.js'), 'utf8');
-// Loader order: workspace, export, parts 1-10, the timeline runtime, then part-11 (mount).
+const apertureFieldRuntime = fs.readFileSync(path.join(destination, 'src', 'visual-aperture-field-runtime.js'), 'utf8');
+// Loader order: workspace, export, parts 1-10, the timeline runtime, the field runtime, then part-11 (mount).
 const aperture = [
   apertureWorkspaceRuntime,
   apertureExportRuntime,
   ...Array.from({ length: 10 }, (_, index) => fs.readFileSync(path.join(destination, 'src', `visual-aperture-part-${index + 1}.js`), 'utf8')),
   apertureTimelineRuntime,
+  apertureFieldRuntime,
   fs.readFileSync(path.join(destination, 'src', 'visual-aperture-part-11.js'), 'utf8')
 ].join('\n');
 const standalone = fs.readFileSync(path.join(destination, 'Clifford-Number-standalone.html'), 'utf8');
@@ -369,6 +372,44 @@ if (!app.includes("from './src/visual-aperture-timeline.mjs'")
   || !app.includes('globalThis.__cliffordApertureOrigin')
   || app.includes('Structural context index') || app.includes('Factory Score') || app.includes('machine_score') || app.includes('factory_score')) {
   console.error('validate-pages failed: the explorer record pages do not read the ledger timeline model, or a score survives on them');
+  process.exit(1);
+}
+// The network field may carry one accumulation, heat, and only as printed:
+// the runtime shows the formula beside the field, the field module computes
+// that exact sum from ledger rows, and no hidden composite (machine, factory
+// or recurrence score, deniability, laundry score, the 1.3.0 "Structural
+// context index" or "Factory Score") reaches any field source. The word heat
+// is allowed; an unprinted heat is not.
+const HEAT_FORMULA_TEXT = 'heat = Σ touches weight(class) × 0.8^years; policy 1 · appointment 1 · procurement 2 · capital 2';
+const fieldSources = ['social-field.js', 'atlas-webgl.js', 'visual-aperture-social-field-runtime.js', 'visual-aperture-field-runtime.js']
+  .map(file => [file, fs.readFileSync(path.join(destination, 'src', file), 'utf8')]);
+const fieldSource = Object.fromEntries(fieldSources);
+const HIDDEN_COMPOSITE = /machine_score|factory_score|recurrence_score|deniability|laundry_score|Structural context index|Factory Score/;
+const compositeHits = fieldSources.filter(([, text]) => HIDDEN_COMPOSITE.test(text)).map(([file]) => file);
+if (!fieldSource['visual-aperture-social-field-runtime.js'].includes(HEAT_FORMULA_TEXT)
+  || !fieldSource['social-field.js'].includes(`HEAT_FORMULA = '${HEAT_FORMULA_TEXT}'`)
+  || !fieldSource['social-field.js'].includes('export function heat(rows, at)')
+  || !fieldSource['atlas-webgl.js'].includes('applyFieldHeat')
+  || compositeHits.length
+  || HIDDEN_COMPOSITE.test(apertureTimelineRuntime) || HIDDEN_COMPOSITE.test(apertureTimelineModel)) {
+  console.error(`validate-pages failed: the field heat is not printed and ledger-derived, or a hidden composite survives${compositeHits.length ? ` (${compositeHits.join(', ')})` : ''}`);
+  process.exit(1);
+}
+// The Field tab (docs/explorer.md "Field"): the whole ledger as nodes and
+// participation-row links on the same engine, its formula printed, its runtime
+// loaded by the entry and inlined by the standalone with the pure field module.
+if (!aperture.includes('data-ap-mode="field"')
+  || !apertureEntry.includes('visual-aperture-field-runtime.js')
+  || !apertureEntry.includes('globalThis.cliffordSocialField = social')
+  || !apertureFieldRuntime.includes('function renderFieldMode')
+  || !apertureFieldRuntime.includes('function dockFieldCallout')
+  || !apertureFieldRuntime.includes(HEAT_FORMULA_TEXT)
+  || !fieldSource['social-field.js'].includes('export function buildLedgerFieldModel')
+  || !fieldSource['atlas-webgl.js'].includes('export async function createGalaxyFieldRenderer')
+  || !explorerStandalone.includes('data-ap-mode="field"')
+  || !explorerStandalone.includes('globalThis.cliffordSocialField =')
+  || !explorerStandalone.includes('function renderFieldMode')) {
+  console.error('validate-pages failed: the ledger field (Field tab) is not wired into the explorer, or its heat formula is not printed');
   process.exit(1);
 }
 if (atlasProjection.scheme?.schema_version !== 'atlas-projection@1'

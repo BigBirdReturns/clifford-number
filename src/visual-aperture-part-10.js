@@ -1,5 +1,6 @@
 function handleAction(button) {
   if (handleTimelineAction(button)) return;
+  if (handleFieldAction(button)) return;
   if (handleExportAction(button)) return;
   if (handleWorkspaceAction(button)) return;
   const action = button.dataset.apAction;
@@ -94,6 +95,8 @@ function handleClick(event) {
   if (modeButton) { setMode(modeButton.dataset.apMode); return; }
   const action = target.closest('[data-ap-action]');
   if (action) { handleAction(action); return; }
+  const fieldNodeButton = target.closest('[data-ap-field-node]');
+  if (fieldNodeButton) { selectFieldNode(fieldNodeButton.dataset.apFieldNode, { focus: true }); return; }
   const cluster = target.closest('[data-ap-cluster]');
   if (cluster) { selectCluster(cluster.dataset.apCluster); return; }
   const type = target.closest('[data-ap-type]');
@@ -163,6 +166,7 @@ function openMapSearch(value) {
 function handleChange(event) {
   if (handleTimelineChange(event)) return;
   const target = event.target;
+  if (target.id === 'ap-field-search') { openFieldSearch(target.value); return; }
   if (target.id === 'ap-map-search') { openMapSearch(target.value); return; }
   if (target.id === 'ap-map-cluster') { selectCluster(target.value, { advance: false }); return; }
   if (target.id === 'ap-map-surface') { selectMapSurface(target.value, { advance: state.map.level === 'corpus' || state.map.level === 'machine' }); return; }
@@ -190,6 +194,11 @@ function handleKeydown(event) {
   if (target.id === 'ap-map-search' && event.key === 'Enter') {
     event.preventDefault();
     openMapSearch(target.value);
+    return;
+  }
+  if (target.id === 'ap-field-search' && event.key === 'Enter') {
+    event.preventDefault();
+    openFieldSearch(target.value);
     return;
   }
   if (target.id === 'ap-workspace-name' && event.key === 'Enter') {

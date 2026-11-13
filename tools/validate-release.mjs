@@ -522,10 +522,23 @@ for (const type of ['government_advisory_surface', 'employment_investment_surfac
 }
 assert(!hasSurface('ben-warner', 'electric-twin-newsuk-synthetic-audience'),
   'Ben Warner must not inherit an organization-only News UK deployment');
-assert(!hasSecondary('ben-warner', 'democratic_input_replacement'),
+// Narrowed 2026-10-23 five-lane merge. The rule is that Ben Warner never inherits democratic_input_replacement from
+// organization-only category context (the News UK / Electric Twin deployment). Until the merge he had no actor row on
+// any such surface, so 'no DIR secondary' and 'score === 0' were exact proxies for it. The synthetic-constituency lane
+// adds two actor rows of his own on DIR surfaces: co-author of the Electric Twin seven-panels comparison (2026-07-29,
+// primary_public) and named in the No 10 synthetic-voters column (2025-07-07, reported).
+// Old: !hasSecondary('ben-warner', 'democratic_input_replacement') and governance_replacement_score === 0.
+// New: every DIR surface he is scored on carries his own actor participation row, the score counts exactly those
+// actor-supported surfaces, and today's set is pinned, so organization-only context still cannot add one.
+const warnerActorRowSurfaces = new Set(data.participation
+  .filter(part => part.participant_type === 'actor' && part.actor_id === 'ben-warner').map(part => part.surface_id));
+const warnerReplacementSurfaces = (actorScore.get('ben-warner')?.surfaces ?? [])
+  .filter(sid => (surfaceById.get(sid)?.secondary_surface_types ?? []).includes('democratic_input_replacement')).sort();
+assert(warnerReplacementSurfaces.every(sid => warnerActorRowSurfaces.has(sid)) &&
+  JSON.stringify(warnerReplacementSurfaces) === JSON.stringify(['electric-twin-seven-panels-comparison-2026-07-29', 'no10-synthetic-voters-experiment-reported-2025-07-07']),
   'Ben Warner must not inherit democratic_input_replacement from organization-only category context');
-assert(actorScore.get('ben-warner')?.governance_replacement_score === 0,
-  'Ben Warner governance replacement score must remain zero without an actor-supported replacement surface');
+assert(actorScore.get('ben-warner')?.governance_replacement_score === warnerReplacementSurfaces.length,
+  'Ben Warner governance replacement score must count only actor-supported replacement surfaces');
 
 const newsUkDeployment = surfaceById.get('electric-twin-newsuk-synthetic-audience');
 assert(newsUkDeployment, 'source-native News UK / Electric Twin deployment must compile');

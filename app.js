@@ -472,7 +472,6 @@ async function openClaimDialog(id, origin = null) {
       <div><dt>Context</dt><dd>${esc(claim.event_label)}</dd></div>
     </dl>
     ${claim.qualification ? `<p class="evidence-note"><strong>Qualification.</strong> ${esc(claim.qualification)}</p>` : ''}
-    <p class="claim-boundary"><strong>What this establishes:</strong> only the exact assertion above, at its displayed evidence and review status. Sequence, proximity, or shared context does not establish intent, coordination, influence, benefit, wrongdoing, or causation.</p>
     <div class="claim-receipts"><h3>Supporting receipts</h3>${(claim.receipts ?? []).map(receipt => receiptInspector({ ...receipt, claim_ids: [id], case_ids: [claim.case_id] })).join('') || '<p class="evidence-note">No receipt record is available.</p>'}</div>
   </article>`;
   openEvidenceDialog(origin);
@@ -961,7 +960,7 @@ function onSearch(e) {
   const box = $('#results');
   box.innerHTML = state.searchResults.length
     ? state.searchResults.map((r, i) => `<button id="search-option-${i}" class="result" role="option" tabindex="-1" aria-selected="false" data-kind="${esc(r.kind)}" data-id="${esc(r.id)}"><span class="kind-glyph">${kindGlyph(r.kind)}</span><span class="result-label">${esc(r.label)}<small>${esc(searchKindLabel(r.kind))} · ${esc(r.context)}</small>${r.fact ? `<span class="result-fact">${esc(r.fact)}</span>` : ''}</span></button>`).join('')
-    : q.length >= 2 ? `<div class="meta" role="option" aria-disabled="true">No public record in this release matches “${esc(e.target.value.trim())}”. Absence here is not evidence of absence.</div>` : '';
+    : q.length >= 2 ? `<div class="meta" role="option" aria-disabled="true">No public record in this release matches “${esc(e.target.value.trim())}”.</div>` : '';
   $('#search').setAttribute('aria-expanded', String(q.length >= 2));
   $('#search').removeAttribute('aria-activedescendant');
   for (const btn of box.querySelectorAll('.result')) btn.addEventListener('click', () => activateResult(btn.dataset.kind, btn.dataset.id));
@@ -1193,7 +1192,7 @@ async function renderTrack(id) {
     </article>
     <div class="home-grid track-explainer">
       <section class="panel"><span class="panel-label">What is being examined</span><h3>The public-record sequence</h3><ol class="track-ladder">${ladder || '<li>No research stages are published.</li>'}</ol></section>
-      <section class="panel"><span class="panel-label">What the current evidence can say</span><h3>No finding has been admitted by this harness.</h3><p>The track defines a question, a bounded denominator, source surfaces, and visible coverage states. Those are research commitments—not proof of a relationship or outcome.</p><div class="claim-boundary"><strong>What it cannot say.</strong> ${esc(harness?.epistemic_contract?.forbidden_inference || 'No inference may be strengthened beyond the published evidence.')}</div></section>
+      <section class="panel"><span class="panel-label">What the current evidence can say</span><h3>No finding has been admitted by this harness.</h3><p>The track defines a question, a bounded denominator, source surfaces, and visible coverage states. Those are research commitments.</p></section>
     </div>
     <section class="panel coverage-panel"><span class="panel-label">Coverage gaps</span><h3>What remains unsearched or incomplete</h3><ul class="coverage-list">${gaps || '<li><span>No coverage gaps are declared.</span></li>'}</ul></section>
     ${caseLinks ? `<section class="panel"><span class="panel-label">Related compiled case</span><h3>Enter the receipted record</h3><p>This case is a separate public object with its own statuses, claims, and receipts. Opening it does not promote this track to a finding.</p><div class="results">${caseLinks}</div></section>` : ''}`;
@@ -1802,6 +1801,71 @@ function recordLedgerPanel({ title, kicker = 'Dated ledger', columns, rows, cell
   return `<section class="panel record-ledger"><span class="panel-label">${esc(kicker)}</span><h3>${esc(title)}</h3>${before}<div class="ledger-controls">${recordFloorControl(partition.floor)}<p class="ledger-status" id="record-ledger-status" role="status">${esc(recordStatusText(partition, total, noun))}</p></div>${recordTable(columns, rows, cellsFor, { rowAttributes: recordRowAttributes })}${after}<p class="meta record-boundary">${esc(RECORD_BOUNDARY)}</p></section>`;
 }
 
+// --- Trajectory: the first thing a record page shows. One compact step per
+// participation row in date order, coloured by what the surface is (policy,
+// appointment, procurement, capital), so the move from writing the rules to
+// holding the equity reads before any count does. Rows only; no inference.
+const TRAJECTORY_CLASSES = ['policy', 'appointment', 'procurement', 'capital'];
+const TRAJECTORY_CLASS_BY_TYPE = {
+  policy_document_surface: 'policy', government_advisory_surface: 'policy', campaign_surface: 'policy', model_governance_surface: 'policy', category_formation_surface: 'policy',
+  board_advisory_surface: 'appointment', directory_roster_surface: 'appointment',
+  procurement_contract_surface: 'procurement', customer_vendor_surface: 'procurement', defence_industrial_surface: 'procurement',
+  employment_investment_surface: 'capital', founder_officer_surface: 'capital', public_private_fund_surface: 'capital', laundering_chain_connector: 'capital'
+};
+function trajectoryClass(surfaceType) { return TRAJECTORY_CLASS_BY_TYPE[surfaceType] ?? 'policy'; }
+function trajectoryAmountText(gbp) {
+  const value = Number(gbp);
+  if (gbp == null || gbp === '' || !Number.isFinite(value)) return null;
+  return `£${Math.round(value).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
+}
+function trajectoryAsText(row) {
+  const value = row?.participation_type || row?.role || 'participant';
+  return String(value).replace(/_/g, ' ');
+}
+// The amount a row carries lives on the raw surface participant (the timeline
+// model does not copy it), so it is looked up from the loaded surfaces.
+function trajectoryAmountLookup(surfaceFor) {
+  return row => {
+    const participants = surfaceFor(row.surface_id)?.participants ?? [];
+    const idField = row.participant_type === 'actor' ? 'actor_id' : 'organization_id';
+    const matches = participants.filter(item => item.participant_type === row.participant_type && item[idField] === row.entity_id);
+    const exact = matches.find(item => (item.time_start ?? null) === (row.time_start ?? null)) ?? matches[0];
+    return exact?.funding_amount_gbp ?? null;
+  };
+}
+function recordTrajectoryModel(rows, { amountFor = () => null } = {}) {
+  const steps = recordRowsByDate(rows).map(row => {
+    const cls = trajectoryClass(row.surface_type);
+    return {
+      key: row.key, surface_id: row.surface_id, surface_label: row.surface_label, surface_type: row.surface_type ?? null,
+      dated: row.start_day != null && row.precision !== 'undated',
+      date_text: recordWindowText(row), time_start: row.time_start ?? null,
+      class: cls, role: row.role || trajectoryAsText(row), as_text: trajectoryAsText(row),
+      amount_gbp: amountFor(row) ?? null, amount_text: trajectoryAmountText(amountFor(row))
+    };
+  });
+  const dated = steps.filter(step => step.dated);
+  const undated = steps.filter(step => !step.dated);
+  const classes = recordUnique([...dated, ...undated].map(step => step.class));
+  let line;
+  if (!steps.length) line = 'No participation row in this release.';
+  else if (!dated.length) line = `No dated row; ${recordPlural(undated.length, 'undated row')}.`;
+  else if (dated.length === 1) line = `Documented once, ${dated[0].time_start} as ${dated[0].as_text}.`;
+  else line = `First documented ${dated[0].time_start} as ${dated[0].as_text}; latest ${dated.at(-1).time_start} as ${dated.at(-1).as_text}.`;
+  if (steps.length) line += ` Classes touched: ${classes.join(', ')}.`;
+  if (dated.length && undated.length) line += ` ${recordPlural(undated.length, 'undated row')} listed after.`;
+  return { steps, dated, undated, classes, line };
+}
+function trajectoryStepMarkup(step) {
+  return `<li class="trajectory-step trajectory-step--${esc(step.class)}">${step.dated ? `<button type="button" class="trajectory-date" data-record-mark="${esc(step.key)}" title="Show this row in the dated ledger">${esc(step.date_text)}</button>` : ''}<span class="trajectory-class"><span class="trajectory-dot" aria-hidden="true"></span>${esc(step.class)}</span><a class="trajectory-surface" href="#surface/${encodeURIComponent(step.surface_id)}">${esc(step.surface_label)}</a><span class="trajectory-role">${esc(step.role)}</span>${step.amount_text ? `<span class="trajectory-amount">${esc(step.amount_text)}</span>` : ''}</li>`;
+}
+function recordTrajectoryMarkup(trajectory) {
+  if (!trajectory?.steps.length) return '';
+  const datedList = trajectory.dated.length ? `<ol class="trajectory-steps" aria-label="Dated rows in date order">${trajectory.dated.map(trajectoryStepMarkup).join('')}</ol>` : '';
+  const undatedList = trajectory.undated.length ? `<h4 class="trajectory-undated-head">Undated</h4><ul class="trajectory-steps trajectory-steps--undated" aria-label="Undated rows">${trajectory.undated.map(trajectoryStepMarkup).join('')}</ul>` : '';
+  return `<section class="record-trajectory" id="record-trajectory" aria-labelledby="record-trajectory-title"><span class="panel-label" id="record-trajectory-title">Trajectory</span><p class="record-trajectory-line" id="record-trajectory-line">${esc(trajectory.line)}</p>${datedList}${undatedList}</section>`;
+}
+
 function renderActor(id) {
   const actor = state.actors.get(id);
   const legacyNode = state.legacyNodes.get(id);
@@ -1823,13 +1887,17 @@ function renderActor(id) {
   ].filter(Boolean).join('');
   const profile = actor?.plain;
   const profileHtml = profile
-    ? `<div class="profile-copy"><p><strong>Who this is.</strong> ${esc(profile.who)}</p><p><strong>Why they appear.</strong> ${esc(profile.why_here)}</p></div>${renderReceiptGrid(profile.receipt_ids, 'Profile receipts')}`
+    ? `<div class="profile-copy"><p><strong>Who this is.</strong> ${esc(profile.who)}</p><p><strong>Why they appear.</strong> ${esc(profile.why_here)}</p></div>`
     : record.rows.length
       ? `<div class="profile-copy"><p>${esc(record.machine_sentence)} <span class="record-machine-note">${esc(RECORD_MACHINE_NOTE)}</span></p></div>`
       : `<div class="profile-copy"><p><strong>No participation row in this release.</strong> ${canonical ? 'This canonical record has no row in the bounded-surface ledger yet, so it has no dated record, no receipts and no Clifford Number here.' : 'This name is search-visible from the research graph only; it has no canonical record and no ledger row.'}</p>${legacyNode?.description ? `<p>${esc(legacyNode.description)} <span class="record-machine-note">[legacy research-graph description, not a ledger fact]</span></p>` : ''}</div>`;
   const isHopEndpoint = (state.hopGraph.edges ?? []).some(edge => edge.actor_a === id || edge.actor_b === id);
   const actions = recordActions(record, { timelineToken: record.rows.length ? `actor:${id}` : null, desk: isHopEndpoint, copyLedger: record.rows.length > 0 });
-  const headPanel = `<header class="panel record-head">${recordHeading(label, actor ? entityReceiptIds('actor', id) : [], actions)}<div class="badge-row record-kind-line">${badges}</div>${profileHtml}${recordFacts(record.facts)}<aside class="profile-boundary"><strong>What this entry supports</strong><br>Documented participation on named public-role surfaces.<br><br><strong>What it does not support</strong><br>Claims about motive, agreement, influence, coordination, character, or wrongdoing.</aside></header>`;
+  // Trajectory first: the dated steps under the name, then who/why, then the
+  // stats block and the profile receipts.
+  const trajectory = recordTrajectoryModel(record.rows, { amountFor: trajectoryAmountLookup(surface) });
+  const profileReceipts = profile ? renderReceiptGrid(profile.receipt_ids, 'Profile receipts') : '';
+  const headPanel = `<header class="panel record-head">${recordHeading(label, actor ? entityReceiptIds('actor', id) : [], actions)}${recordTrajectoryMarkup(trajectory)}<div class="badge-row record-kind-line">${badges}</div>${profileHtml}${recordFacts(record.facts)}${profileReceipts}<aside class="profile-boundary"><strong>What this entry supports:</strong> documented participation on named public-role surfaces. <strong>What it does not support:</strong> claims about motive, agreement, influence, coordination, character, or wrongdoing.</aside></header>`;
 
   if (!record.rows.length) {
     // Still a record page: the article wrapper is what gives a receipt
@@ -1945,7 +2013,6 @@ function renderPath(path) {
         <div class="badge-row">${evidenceBadge(basis.evidence_class)}<span class="badge">${esc(humanLabel(basis.temporal_status))}</span></div>
         <p class="meta"><strong>${esc(labelActor(h.from))}</strong>: ${esc(pathRole(h, basis, h.from))}<br><strong>${esc(labelActor(h.to))}</strong>: ${esc(pathRole(h, basis, h.to))}<br>${esc(hopWindow(basis).replace(/^ \[|\]$/g, ''))}</p>
         ${renderReceiptGrid(basis.receipt_ids, 'Hop receipts')}
-        <div class="evidence-note">Supports documented shared context on this bounded surface. Does not establish contact, influence, coordination, agreement, or wrongdoing.</div>
       </div>`).join('')}</div></div>`).join('');
   return `<div class="path-timeline" role="list" aria-label="Text version of the route">${steps.join('')}</div>${hopCards}`;
 }
@@ -1983,7 +2050,8 @@ function renderOrg(id) {
   ].filter(Boolean).join('');
   const intro = `<div class="profile-copy"><p><strong>Organizations never create hops.</strong> Hops happen between people documented together on these surfaces.</p><p>${esc(record.machine_sentence)} <span class="record-machine-note">${esc(RECORD_MACHINE_NOTE)}</span></p>${org.notes ? `<p>${esc(org.notes)}</p>` : ''}${!canonical && org.description ? `<p>${esc(org.description)} <span class="record-machine-note">[legacy research-graph description, not a ledger fact]</span></p>` : ''}</div>`;
   const actions = recordActions(record, { timelineToken: record.rows.length ? `organization:${id}` : null, copyLedger: record.rows.length > 0 });
-  const headPanel = `<header class="panel record-head">${recordHeading(org.label, entityReceiptIds('organization', id), actions)}<div class="badge-row record-kind-line">${badges}</div>${intro}${recordFacts(record.facts)}</header>`;
+  const trajectory = recordTrajectoryModel(record.rows, { amountFor: trajectoryAmountLookup(surface) });
+  const headPanel = `<header class="panel record-head">${recordHeading(org.label, entityReceiptIds('organization', id), actions)}${recordTrajectoryMarkup(trajectory)}<div class="badge-row record-kind-line">${badges}</div>${intro}${recordFacts(record.facts)}</header>`;
   if (!record.rows.length) {
     $('#detail').innerHTML = `<article class="record record--organization" data-record-kind="organization" data-record-id="${esc(id)}">${headPanel}</article>`;
     bindRecordPage(record);
@@ -2071,7 +2139,7 @@ function renderSurface(id) {
   if (record.dense) {
     const roster = partitionParticipantRows(partition.shown, RECORD_PREVIEW_ROWS);
     rosterStatus = `<p class="ledger-status" role="status">${record.elsewhere_count} of ${record.participant_count} listed people appear on any other documented surface; ${record.nowhere_else_count} appear only here. Sorted by that count, then by name.</p>`;
-    participantsTable = `${recordTable(columns, roster.preview, cellsFor, { rowAttributes: recordRowAttributes })}${roster.remaining.length ? `<p class="meta">First ${roster.preview.length} of ${roster.total} participant records shown. This is a count of ledger rows, not a verdict about any person.</p><details class="participant-overflow"><summary>Show remaining ${recordPlural(roster.remaining.length, 'participant record')}</summary>${recordTable(columns, roster.remaining, (row, index) => cellsFor(row, index + roster.preview.length), { rowAttributes: (row, index) => recordRowAttributes(row, index + roster.preview.length) })}</details>` : ''}`;
+    participantsTable = `${recordTable(columns, roster.preview, cellsFor, { rowAttributes: recordRowAttributes })}${roster.remaining.length ? `<p class="meta">First ${roster.preview.length} of ${roster.total} participant records shown.</p><details class="participant-overflow"><summary>Show remaining ${recordPlural(roster.remaining.length, 'participant record')}</summary>${recordTable(columns, roster.remaining, (row, index) => cellsFor(row, index + roster.preview.length), { rowAttributes: (row, index) => recordRowAttributes(row, index + roster.preview.length) })}</details>` : ''}`;
   } else {
     participantsTable = recordTable(columns, partition.shown, cellsFor, { rowAttributes: recordRowAttributes });
   }
@@ -2377,7 +2445,6 @@ function renderProjectionStepCard(step) {
     <div class="badge-row">${evidenceBadge(step.evidenceClass)}<span class="badge">${receiptCount} receipt${receiptCount === 1 ? '' : 's'}</span></div>
     <p class="meta">${esc(labelActor(step.actorA))}: ${esc(step.roles?.a || 'named participant')}<br>${esc(labelActor(step.actorB))}: ${esc(step.roles?.b || 'named participant')}</p>
     ${renderReceiptGrid(step.receiptIds, 'Route receipts')}
-    <div class="evidence-note">Supports documented shared context on this bounded surface only. It does not establish contact, influence, coordination, agreement, or wrongdoing.</div>
   </div>`;
 }
 
@@ -2465,7 +2532,6 @@ function buildPrintableText(fromId, toId, asOf, path) {
   });
   lines.push('');
   lines.push(`Sourcing floor for this chain: ${EVIDENCE_LABEL[chainWeakest(path.hops)]}.`);
-  lines.push('This asserts documented shared context only. It is not a claim of influence, coordination, or wrongdoing.');
   return lines.join('\n');
 }
 
@@ -2477,7 +2543,6 @@ function renderDeskHop(h) {
       <div class="badge-row">${evidenceBadge(b.evidence_class)}${b.temporal_status !== 'dated' ? '<span class="badge">not time-sliceable</span>' : ''}</div>
       <p class="meta">${esc(labelActor(h.from))}: ${esc(roleOnBasis(b, h.edge, h.from) || 'named participant')}<br>${esc(labelActor(h.to))}: ${esc(roleOnBasis(b, h.edge, h.to) || 'named participant')}</p>
       ${renderReceiptGrid(b.receipt_ids, 'Connection receipts')}
-      <div class="evidence-note">Supports documented shared context on this bounded surface only. It does not establish contact, influence, coordination, agreement, or wrongdoing.</div>
     </div>`).join('');
   return `<div class="panel"><h3>${esc(labelActor(h.from))} ↔ ${esc(labelActor(h.to))}</h3><p class="meta">Both named in:</p><div class="surface-list">${bases}</div></div>`;
 }
@@ -2549,7 +2614,7 @@ function runDeskCheck({ updateHash }) {
   const problems = [];
   for (const [text, res] of [[fromText, fromRes], [toText, toRes]]) {
     if (res && res.ambiguous) problems.push(`"${esc(text)}" matches several people: ${res.ambiguous.map(a => esc(a.label)).join(', ')}. Use a full name.`);
-    else if (res === null || res === undefined) problems.push(`"${esc(text)}" is not in the map. Names only enter the map through receipted surfaces — absence here is absence of documentation, not a claim about the person.`);
+    else if (res === null || res === undefined) problems.push(`"${esc(text)}" is not in the map. Names enter the map through receipted surfaces.`);
   }
   if (asOfRaw && !validAsOf(asOfRaw)) problems.push(`"${esc(asOfRaw)}" is not a date. Use a year (2020), month (2020-03), or day (2020-03-14).`);
   if (problems.length) { out.innerHTML = deskVerdict('warn', 'Cannot check yet', problems.map(p => `<p>${p}</p>`).join('')); return; }
@@ -2586,7 +2651,7 @@ function runDeskCheck({ updateHash }) {
     parts.push(`<div class="panel"><div class="entity-heading"><h3>What you can print</h3><div class="entity-actions"><button id="desk-copy-btn" class="copy-link" onclick="copyDeskText('desk-copy-btn', this.dataset.text)" data-text="${esc(printable)}">Copy text</button>${citationActions()}</div></div><pre class="printable">${esc(printable)}</pre></div>`);
   } else if (asOf && allTime) {
     parts.push(deskVerdict('warn', `Not documented for ${asOf}`,
-      `<p>A documented all-time connection exists (${allTime.number} step${allTime.number === 1 ? '' : 's'}), but it cannot be placed at ${esc(asOf)}: either the documented windows do not overlap that period, or a link in the chain involves a stint with no documented dates — and this map never asserts co-presence it cannot date.</p>
+      `<p>A documented all-time connection exists (${allTime.number} step${allTime.number === 1 ? '' : 's'}), but it cannot be placed at ${esc(asOf)}: either the documented windows do not overlap that period, or a link in the chain involves a stint with no documented dates.</p>
        <p class="meta">You can report the connection without the date, or find a document that dates the undated stint. Clear the "as of" field to see the all-time chain.</p>`));
   } else {
     parts.push(deskVerdict('no', 'No documented connection',

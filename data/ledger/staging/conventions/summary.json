@@ -1,0 +1,85 @@
+{
+  "lane": "conventions",
+  "tool": "tools/promote-intake-conventions.mjs",
+  "admission_rule": "A row is staged only when its receipt has a public source URL and satisfies the live receipt contract (resolving archive reference plus limits), and the archived copy shows every listed name and the dating strings. New people are minted only from a session that also names an existing ledger person; organizations are never minted.",
+  "counts": {
+    "events": 9,
+    "sessions_read": 26,
+    "sessions_staged": 26,
+    "roster_entries_read": 172,
+    "roster_entries_staged": 89,
+    "roster_entries_counted_only": 68
+  },
+  "receipt_status": {
+    "conv-rndf-2023-agenda": "admissible",
+    "conv-rndf-2024-agenda": "admissible",
+    "conv-rndf-2025-agenda": "admissible",
+    "conv-rndf-2025-event-page": "admissible",
+    "conv-a16z-ad-summit-2024": "admissible",
+    "conv-a16z-ad-summit-2025": "admissible",
+    "conv-a16z-ad-summit-video-hub": "admissible",
+    "conv-gov-uk-ai-safety-summit-confirmed-attendees": "admissible",
+    "conv-gov-uk-ai-safety-summit-day-one": "admissible",
+    "conv-diu-sxsw-2024-programme": "admissible",
+    "conv-ltw-2026-human-technology-interaction": "admissible",
+    "conv-ltw-2026-science-out-lab-economy": "admissible"
+  },
+  "staged": {
+    "surfaces": 33,
+    "hop_eligible_surfaces": 26,
+    "dense_blocks": 7,
+    "participation": 250,
+    "receipts": 12,
+    "new_actors": 51,
+    "new_organizations": 0,
+    "gaps": 0
+  },
+  "hop_bases_between_existing_ledger_people": [
+    {
+      "a": "frank-kendall",
+      "b": "heidi-shyu",
+      "both_existing": true,
+      "surface_id": "rndf-2023-panel-2",
+      "date": "2023-12-02",
+      "date_precision": "day",
+      "evidence_class": "primary_public"
+    },
+    {
+      "a": "heidi-shyu",
+      "b": "joe-lonsdale",
+      "both_existing": true,
+      "surface_id": "rndf-2024-panel-4",
+      "date": "2024-12-07",
+      "date_precision": "day",
+      "evidence_class": "primary_public"
+    },
+    {
+      "a": "marc-andreessen",
+      "b": "tyler-cowen",
+      "both_existing": true,
+      "surface_id": "a16z-american-dynamism-summit-2024-techno-optimism",
+      "date": "2024-01-30",
+      "date_precision": "day",
+      "evidence_class": "primary_public"
+    },
+    {
+      "a": "christian-brose",
+      "b": "katherine-boyle",
+      "both_existing": true,
+      "surface_id": "a16z-american-dynamism-summit-2025-kill-chain-2025",
+      "date": "2025-03-18",
+      "date_precision": "day",
+      "evidence_class": "primary_public"
+    },
+    {
+      "a": "doug-beck",
+      "b": "joshua-baer",
+      "both_existing": true,
+      "surface_id": "diu-sxsw-2024-joint-innovation-space-ribbon-cutting",
+      "date": "2024-03-08",
+      "date_precision": "day",
+      "evidence_class": "official"
+    }
+  ],
+  "hop_bases_involving_new_actors": 134
+}

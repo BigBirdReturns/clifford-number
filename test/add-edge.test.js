@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -13,7 +14,8 @@ fs.writeFileSync(graphPath, JSON.stringify({
   edges: []
 }, null, 2));
 
-execFileSync('node', [
+// process.execPath and fileURLToPath: URL.pathname is '/S:/...' on Windows, which is not a usable cwd.
+execFileSync(process.execPath, [
   'tools/add-edge.mjs',
   graphPath,
   '--from', 'grantor',
@@ -25,7 +27,7 @@ execFileSync('node', [
   '--source', 's',
   '--evidence', 'primary_public',
   '--status', 'reported'
-], { cwd: new URL('..', import.meta.url).pathname });
+], { cwd: fileURLToPath(new URL('..', import.meta.url)) });
 
 const graph = JSON.parse(fs.readFileSync(graphPath, 'utf8'));
 assert.ok(graph.nodes.some((node) => node.id === 'recipient-org' && node.label === 'Recipient Org'));

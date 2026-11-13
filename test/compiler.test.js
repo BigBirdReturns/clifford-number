@@ -158,6 +158,9 @@ assert.deepEqual(
     .filter(surfaceId => surfaceId.startsWith('faculty-science-'))
     .sort(),
   [
+    // 2026-10-23 final re-pin: + the uk-public-money lane's official Companies House row (Saul Klein's Faculty
+    // Science director appointment terminated 12 March 2026, on the Accenture control-change surface).
+    'faculty-science-control-change-accenture-2026-03-12',
     'faculty-science-director-shareholder-overlap-2024-10-10',
     'faculty-science-officer-employee-overlap-2018-01-24',
   ],
@@ -417,8 +420,18 @@ assert.equal(receiptGraph.receipts.length, ledgerReceipts.length,
 
 assert.ok(!actor('ben-warner').surfaces.includes('electric-twin-newsuk-synthetic-audience'),
   'Ben Warner must not inherit the organization-only News UK deployment');
-assert.ok(!actor('ben-warner').secondary_surface_types.includes('democratic_input_replacement'),
-  'Ben Warner must not inherit a democratic-input classification from an organization-only category post');
+// Narrowed 2026-10-23 final re-pin, the same narrowing as tools/validate-release.mjs (decage-L, owner-flagged).
+// Old: Ben Warner carries no democratic_input_replacement secondary type at all. That was an exact proxy for the
+// rule only while he had no actor row on such a surface; the synthetic-constituency lane adds two of his own
+// (electric-twin-seven-panels-comparison-2026-07-29, primary_public; no10-synthetic-voters-experiment-reported-
+// 2025-07-07, reported). New: every DIR surface he carries has his own actor participation row, and the set is pinned.
+{
+  const warnerDirSurfaces = actor('ben-warner').surfaces
+    .filter(surfaceId => (surf(surfaceId)?.secondary_surface_types ?? []).includes('democratic_input_replacement')).sort();
+  assert.deepEqual(warnerDirSurfaces, ['electric-twin-seven-panels-comparison-2026-07-29', 'no10-synthetic-voters-experiment-reported-2025-07-07']);
+  assert.ok(warnerDirSurfaces.every(surfaceId => surf(surfaceId).participants.some(part => part.participant_type === 'actor' && part.actor_id === 'ben-warner')),
+    'Ben Warner must not inherit a democratic-input classification from an organization-only category post');
+}
 const newsUkDeployment = surf('electric-twin-newsuk-synthetic-audience');
 assert.ok(newsUkDeployment, 'the source-native News UK / Electric Twin deployment must compile');
 assert.equal(newsUkDeployment.hop_eligible, false);
@@ -1809,7 +1822,17 @@ const cliffordSummitAppointment = surf('ai-safety-summit-representative-appointm
 const andurilSummitRoundtable = surf('dsit-techuk-anduril-ai-safety-roundtable-2023-10-17');
 const cliffordInvestorRoundtable = surf('dsit-matt-clifford-ai-investor-roundtable-2023-10-25');
 const andurilTalosObservation = surf('anduril-talos-phase-3-contract-observation-2023-11-02');
-for (const surfaceRow of [cliffordSummitAppointment, andurilSummitRoundtable, cliffordInvestorRoundtable, andurilTalosObservation]) {
+// 2026-11-10 lens-hunt promotion (on the owner's go-ahead of that day): the summit appointment is now the two-person joint
+// appointment of Matt Clifford and Jonathan Black. It is hop-eligible, but its only basis is that pair:
+// it still names no Anduril person or organization, so the Clifford-Anduril boundary below is unchanged.
+assert.ok(cliffordSummitAppointment, 'the summit appointment surface must compile');
+assert.equal(cliffordSummitAppointment.hop_eligible, true);
+assert.equal(cliffordSummitAppointment.status, 'official_two_person_joint_appointment_announcement');
+assert.equal(cliffordSummitAppointment.roster_entry_count, 2);
+assert.deepEqual(cliffordSummitAppointment.participants.filter(p => p.participant_type === 'actor').map(p => p.actor_id).sort(), ['jonathan-black', 'matt-clifford']);
+assert.ok(!cliffordSummitAppointment.participants.some(p => p.organization_id === 'anduril-industries'));
+assert.deepEqual(hop.edges.filter(edge => edge.surfaces.some(basis => basis.surface_id === cliffordSummitAppointment.surface_id)).map(edge => [edge.actor_a, edge.actor_b].sort().join('|')), ['jonathan-black|matt-clifford']);
+for (const surfaceRow of [andurilSummitRoundtable, cliffordInvestorRoundtable, andurilTalosObservation]) {
   assert.ok(surfaceRow, 'every Clifford-Anduril boundary surface must compile');
   assert.equal(surfaceRow.hop_eligible, false, `${surfaceRow.surface_id} must remain graph inert`);
   assert.ok((hop.rejected_hop_surfaces ?? []).some(row => row.surface_id === surfaceRow.surface_id),
@@ -1817,7 +1840,7 @@ for (const surfaceRow of [cliffordSummitAppointment, andurilSummitRoundtable, cl
   assert.ok(!hop.edges.some(edge => edge.surfaces.some(basis => basis.surface_id === surfaceRow.surface_id)),
     `${surfaceRow.surface_id} must never create actor adjacency`);
 }
-assert.equal(cliffordSummitAppointment.hop_refusal_reason, 'single_actor_appointment_context');
+assert.equal(cliffordSummitAppointment.hop_refusal_reason, undefined);
 assert.equal(andurilSummitRoundtable.hop_refusal_reason, 'organization_only_multi_party_roundtable');
 assert.equal(andurilSummitRoundtable.time_start, '2023-10-17');
 assert.equal(andurilSummitRoundtable.time_end, '2023-10-17');

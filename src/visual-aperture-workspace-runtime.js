@@ -106,6 +106,10 @@ function workspaceSnapshotHealth(snapshot) {
     if (snapshot.mode === 'map') errors.push(message); else warnings.push(message);
   }
   if (snapshot.map?.actorId && !state.actors.has(snapshot.map.actorId)) warnings.push(`actor ${snapshot.map.actorId}`);
+  if (snapshot.field?.selectedId && typeof fieldNode === 'function' && !fieldNode(snapshot.field.selectedId)) {
+    const message = `field node ${snapshot.field.selectedId}`;
+    if (snapshot.mode === 'field') errors.push(message); else warnings.push(message);
+  }
 
   for (const [field, id] of [['route origin', snapshot.route?.fromId], ['route target', snapshot.route?.toId]]) {
     if (id && !routeIds.has(id)) {

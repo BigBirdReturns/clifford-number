@@ -1,0 +1,193 @@
+{
+  "lane": "defense-corridor",
+  "tool": "tools/promote-intake-defense-corridor.mjs",
+  "sources": {
+    "A": "data/intake/person-centered-defense-routers",
+    "B": "data/intake/austin-israel-defense-corridor",
+    "C": "data/intake/natsec100-pathways/chunk1"
+  },
+  "admission_rule": "A row is promoted only when at least one cited receipt has a public source URL, is not marked unavailable or unresolved, and satisfies the live receipt contract (resolving archive reference plus limits). Otherwise the row is written to gaps.jsonl with its would-be ledger rows.",
+  "tables": {
+    "A:actors": {
+      "read": 17,
+      "promoted_rows": 7,
+      "folded": 0,
+      "refused": 10,
+      "refusal_reasons": {
+        "receipt_not_in_intake_receipts": 10
+      }
+    },
+    "A:advisory-edges": {
+      "read": 10,
+      "promoted_rows": 10,
+      "folded": 0,
+      "refused": 0,
+      "refusal_reasons": {}
+    },
+    "A:co-investor-edges": {
+      "read": 11,
+      "promoted_rows": 1,
+      "folded": 0,
+      "refused": 10,
+      "refusal_reasons": {
+        "receipt_archive_unresolved": 10
+      }
+    },
+    "A:exits": {
+      "read": 6,
+      "promoted_rows": 6,
+      "folded": 0,
+      "refused": 0,
+      "refusal_reasons": {}
+    },
+    "A:funding-rounds": {
+      "read": 3,
+      "promoted_rows": 3,
+      "folded": 0,
+      "refused": 0,
+      "refusal_reasons": {}
+    },
+    "A:government-awards": {
+      "read": 17,
+      "promoted_rows": 16,
+      "folded": 0,
+      "refused": 1,
+      "refusal_reasons": {
+        "award_identity_held": 1
+      }
+    },
+    "A:portfolio-edges": {
+      "read": 61,
+      "promoted_rows": 56,
+      "folded": 0,
+      "refused": 5,
+      "refusal_reasons": {
+        "company_name_not_in_archived_copy": 5
+      }
+    },
+    "A:professional-roles": {
+      "read": 8,
+      "promoted_rows": 0,
+      "folded": 0,
+      "refused": 8,
+      "refusal_reasons": {
+        "undated_historical_role": 7,
+        "receipt_archive_unresolved": 1
+      }
+    },
+    "A:vehicles": {
+      "read": 13,
+      "promoted_rows": 7,
+      "folded": 0,
+      "refused": 6,
+      "refusal_reasons": {
+        "no_controller_named": 6
+      }
+    },
+    "B:actors": {
+      "read": 19,
+      "promoted_rows": 18,
+      "folded": 0,
+      "refused": 1,
+      "refusal_reasons": {
+        "receipt_unresolved_no_source_url": 1
+      }
+    },
+    "B:confirmed-joins": {
+      "read": 22,
+      "promoted_rows": 0,
+      "folded": 22,
+      "refused": 0,
+      "refusal_reasons": {}
+    },
+    "B:government-surfaces": {
+      "read": 5,
+      "promoted_rows": 4,
+      "folded": 0,
+      "refused": 1,
+      "refusal_reasons": {
+        "receipt_unresolved_no_source_url": 1
+      }
+    },
+    "B:motifs": {
+      "read": 7,
+      "promoted_rows": 0,
+      "folded": 0,
+      "refused": 0,
+      "refusal_reasons": {}
+    },
+    "B:organizations": {
+      "read": 22,
+      "promoted_rows": 14,
+      "folded": 0,
+      "refused": 8,
+      "refusal_reasons": {
+        "no_receipt_cited": 8
+      }
+    },
+    "B:portfolio-edges": {
+      "read": 847,
+      "promoted_rows": 835,
+      "folded": 0,
+      "refused": 12,
+      "refusal_reasons": {
+        "no_company_named": 1,
+        "company_name_not_in_archived_copy": 11
+      }
+    },
+    "B:professional-claims": {
+      "read": 19,
+      "promoted_rows": 18,
+      "folded": 0,
+      "refused": 1,
+      "refusal_reasons": {
+        "receipt_unresolved_no_source_url": 1
+      }
+    },
+    "C:actors": {
+      "read": 12,
+      "promoted_rows": 1,
+      "folded": 0,
+      "refused": 11,
+      "refusal_reasons": {
+        "role_summary_is_analysis_not_a_dated_participation_row": 11
+      }
+    },
+    "C:company_years": {
+      "read": 342,
+      "promoted_rows": 342,
+      "folded": 0,
+      "refused": 0,
+      "refusal_reasons": {}
+    },
+    "C:conversion_events": {
+      "read": 367,
+      "promoted_rows": 25,
+      "folded": 342,
+      "refused": 0,
+      "refusal_reasons": {}
+    },
+    "C:surfaces": {
+      "read": 4,
+      "promoted_rows": 4,
+      "folded": 0,
+      "refused": 0,
+      "refusal_reasons": {}
+    }
+  },
+  "intake_receipt_status": {
+    "admissible": 84,
+    "receipt_limits_missing": 6,
+    "receipt_archive_unresolved": 6,
+    "receipt_unresolved_no_source_url": 21
+  },
+  "staged": {
+    "surfaces": 85,
+    "participation": 1388,
+    "receipts": 50,
+    "new_actors": 21,
+    "new_organizations": 1102,
+    "gaps": 74,
+    "funding_amount_usd_total": 2318929483.79
+  }
+}

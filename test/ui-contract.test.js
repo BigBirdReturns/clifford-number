@@ -26,7 +26,7 @@ test('the homepage ships a durable, text-first evidence surface', () => {
   assert.match(html, /id="causal-map"/);
   assert.match(html, /id="causal-map-legend"/);
   assert.match(html, /aria-describedby="[^"]*causal-map-legend[^"]*causal-route-summary[^"]*"|aria-describedby="[^"]*causal-route-summary[^"]*causal-map-legend[^"]*"/);
-  assert.match(html, /Edge[^<]*allegation/);
+  assert.match(html, /documented public record with a receipt/);
 });
 
 test('the primary map is four stable face-on lanes', () => {

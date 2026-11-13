@@ -12,17 +12,22 @@ export const APERTURE_QUERY_KEYS = Object.freeze([
   'ap_map_scale', 'ap_map_level', 'ap_map_cluster', 'ap_map_type', 'ap_map_surface', 'ap_map_actor',
   'ap_route_from', 'ap_route_to', 'ap_route_asof', 'ap_route_evidence', 'ap_route_step', 'ap_route_window', 'ap_route_actor',
   'ap_surface_id', 'ap_surface_query', 'ap_surface_asof', 'ap_surface_evidence', 'ap_surface_budget', 'ap_surface_pins', 'ap_surface_actor',
+  'ap_field_sel',
+  'ap_field_lens',
+  'ap_field_heat',
   ...APERTURE_TIMELINE_QUERY_KEYS
 ]);
 
-const MODES = new Set(['timeline', 'map', 'route', 'surface']);
+const MODES = new Set(['field', 'timeline', 'map', 'route', 'surface']);
+const FIELD_LENSES = new Set(['all', 'decisions', 'hunt', 'inforce', 'queue']);
+const FIELD_HEATS = new Set(['all', 'decisions']);
 const MAP_LEVELS = new Set(['corpus', 'machine', 'surface', 'evidence']);
 const EVIDENCE_FLOORS = new Set(['open', 'reported', 'primary_public', 'official']);
 const OVERVIEW_PAGE_SIZES = new Set([25, 50, 100]);
 const TIME_BY = new Set(['actor', 'organization', 'type']);
 const HOP_FILTERS = new Set(['all', 'hop', 'context']);
 const MAX_PINS = 36;
-// Mirrors TIMELINE_MAX_LANES in visual-aperture-timeline.mjs (15 defaults + 3).
+// Mirrors TIMELINE_MAX_LANES in visual-aperture-timeline.mjs (the named-lane cap, default and pinned).
 const MAX_LANES = 18;
 const MAX_LANE_TOKEN = 200;
 const MAX_ROW_KEY = 400;
@@ -150,6 +155,11 @@ export function readApertureState(input = '') {
       pins: pins(params.get('ap_surface_pins')),
       actorId: token(params.get('ap_surface_actor'))
     },
+    field: {
+      selectedId: token(params.get('ap_field_sel')),
+      lens: enumValue(params.get('ap_field_lens'), FIELD_LENSES, 'all'),
+      heat: enumValue(params.get('ap_field_heat'), FIELD_HEATS, 'all')
+    },
     timeline: {
       by: enumValue(params.get('ap_time_by'), TIME_BY, 'actor'),
       from: isoDay(params.get('ap_time_from')),
@@ -173,6 +183,7 @@ export function writeApertureState(snapshot, input = '') {
   const route = snapshot?.route ?? {};
   const surface = snapshot?.surface ?? {};
   const timeline = snapshot?.timeline ?? {};
+  const field = snapshot?.field ?? {};
 
   set(params, 'ap_v', APERTURE_STATE_VERSION);
   set(params, 'ap_mode', mode);
@@ -200,6 +211,10 @@ export function writeApertureState(snapshot, input = '') {
   set(params, 'ap_surface_budget', Number.isFinite(Number(surface.budget)) ? Math.max(6, Math.min(36, Math.trunc(Number(surface.budget)))) : 18);
   set(params, 'ap_surface_pins', pins(Array.isArray(surface.pins) ? surface.pins.join(',') : surface.pins).join(','));
   set(params, 'ap_surface_actor', token(surface.actorId) ?? '');
+
+  set(params, 'ap_field_sel', token(field.selectedId) ?? '');
+  set(params, 'ap_field_lens', enumValue(field.lens, FIELD_LENSES, 'all'));
+  set(params, 'ap_field_heat', enumValue(field.heat, FIELD_HEATS, 'all'));
 
   setWhenNotDefault(params, 'ap_time_by', enumValue(timeline.by, TIME_BY, 'actor'), 'actor');
   setWhenNotDefault(params, 'ap_time_from', isoDay(timeline.from), '');

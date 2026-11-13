@@ -48,6 +48,7 @@ function apertureSnapshot() {
       pins: [...state.surface.pinned].sort(),
       actorId: state.surface.selectedActorId
     },
+    field: fieldSnapshot(),
     timeline: timelineSnapshot()
   };
 }
@@ -63,7 +64,7 @@ function normalizedSemanticLevel(scale, requested) {
 }
 
 function applyApertureSnapshot(snapshot) {
-  if (!snapshot || !['timeline', 'map', 'route', 'surface'].includes(snapshot.mode)) return false;
+  if (!snapshot || !['field', 'timeline', 'map', 'route', 'surface'].includes(snapshot.mode)) return false;
   const clusterIds = new Set(summarizeClusters(state.data.surfaceGraph).map(cluster => cluster.id));
   const routeIds = new Set(routeActorIds());
   const denseIds = new Set(denseSurfaces(state.data.surfaceGraph, { minimumActors: 2 }).map(item => item.surface.surface_id));
@@ -108,6 +109,7 @@ function applyApertureSnapshot(snapshot) {
   state.surface.selectedActorId = snapshot.surface?.actorId && participantIds.has(snapshot.surface.actorId) ? snapshot.surface.actorId : null;
 
   applyTimelineSnapshot(snapshot.timeline);
+  applyFieldSnapshot(snapshot.field);
 
   state.selectedActorId = state.mode === 'map'
     ? state.map.selectedActorId
@@ -122,7 +124,7 @@ function applyApertureSnapshot(snapshot) {
 
 function reflectApertureMode() {
   state.root.dataset.apertureMode = state.mode;
-  $('#network-title', state.root).textContent = { map: 'Network explorer', timeline: 'Activity over time', route: 'Trace a connection', surface: 'Explore a roster' }[state.mode];
+  $('#network-title', state.root).textContent = { field: 'The ledger field', map: 'Network explorer', timeline: 'Activity over time', route: 'Trace a connection', surface: 'Explore a roster' }[state.mode];
   for (const button of $$('[data-ap-mode]', state.root)) {
     const active = button.dataset.apMode === state.mode;
     button.classList.toggle('is-active', active);
@@ -301,6 +303,9 @@ async function mount() {
   initializeIndexes();
   initializeSelections();
   initializeTimelineDefaults();
+  // The field is the arrival mode wherever its renderer can run (see
+  // fieldArrivalAvailable); the defaults snapshot below records that choice.
+  initializeFieldDefaults();
   initializeOperatorWorkspace();
   restoreWorkspacePins(state.surface.surfaceId);
   state.address.defaults = apertureSnapshot();

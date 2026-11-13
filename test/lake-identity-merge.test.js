@@ -28,14 +28,30 @@ const BEFORE_RESEARCH_EDGES = Object.freeze({
   count: 392,
   sha256: 'e46a8132031fd2ae55ddab17b31d93fcd2f12fa3d9ebbbc2e8dd7714486de03e',
 });
+// Scope (narrowed 2026-10-23): BEFORE describes the merge base and still pins
+// it. The rule it protects is that the evidence-lake registry merge moved no
+// hop edge and no research-graph edge. Until 2026-10-23 "current graph ==
+// merge base" was an exact proxy for that; the 2026-10-23 promotion is a
+// deliberate admission that added edges, so the proxy no longer holds. The
+// rule is now checked directly: every merge-base edge survives byte-for-byte,
+// and no edge (old or new) touches a row the merge added (see the endpoint
+// check in section 3). The current edge set is pinned separately below.
+const CURRENT = Object.freeze({
+  edge_count: 314, // 2026-11-13 owner ruling on hop bases ("Yes, pick some", the pick delegated to the supervising session: Encode's team roster): 308 -> 314 (the six pairs among Sneha Revanur, Sunny Gandhi, Adam Billen and Nathan Calvin). 2026-11-12 owner ruling on hop bases ("Inherent and co-authorship"): 297 -> 308 (the ten pairs among Inherent's four co-founders and Matt Clifford, and Ben Buchanan-Tantum Collins). 2026-11-10 lens-hunt promotion: 280 -> 297 (Black-Clifford, Clark-Clifford, the 15 UKSA Challenge Panel pairs; SAGE 17 adds a basis to the existing Ben Warner-Marc Warner edge). 2026-10-23 final re-pin: 299 -> 280 (five year-only a16z American Dynamism 2022 session surfaces set hop_eligible false, reason year_precision_only; the Form D person-row merge removes duplicate bases, not edges). 2026-10-23 five-lane merge: 133 -> 299 (fund-portfolios, conventions, capital-factory, uk-public-money, synthetic-constituency). 2026-10-23 promotion: 93 -> 133 hop edges (Stratos, Traysar, Pallas team-page bases)
+  edge_id_sha256: '8d14dd050e0d76885a564c9015923f079f4a1c7720a287cb6132580fbf35ffa2', // 2026-11-13 owner ruling on hop bases ("Yes, pick some", the pick delegated to the supervising session: Encode's team roster) (was 12634502…). 2026-11-12 owner ruling on hop bases ("Inherent and co-authorship") (was 75d1b9f0…). 2026-11-10 lens-hunt promotion (was 94660c2d…). 2026-10-23 final re-pin (was bf7e8fa2…).  2026-10-23 five-lane merge (was 2626c63a… after the 2026-10-23 promotion)
+  edges_sha256: '6683acede76344f72926f5fb2c0aff9780d0070409465b7361c9a6e20de1ccb0', // 2026-11-13 owner ruling on hop bases ("Yes, pick some", the pick delegated to the supervising session: Encode's team roster) (was ff9a6d81…). 2026-11-12 owner ruling on hop bases ("Inherent and co-authorship") (was bd30fd4e…). 2026-11-10 lens-hunt promotion (was c428a4b3…). 2026-10-23 final re-pin (was 50589dd4…).  2026-10-23 five-lane merge (was 141b236b… after the 2026-10-23 promotion)
+  rejected_hop_surfaces: 3782, // 2026-11-13 owner ruling on hop bases ("Yes, pick some", the pick delegated to the supervising session: Encode's team roster): 3,783 -> 3,782 (the roster is a hop base). 2026-11-13 amplification chain: 3765 -> 3783 (the 18 surfaces of the lane, every one hop_eligible false; the edge count and both edge hashes are unchanged). 2026-11-12 UK meetings, second intake: 3694 -> 3765 (the 71 second-intake meeting surfaces, every one hop_eligible false; the edge count and both edge hashes are unchanged). 2026-11-12 owner ruling on hop bases ("Inherent and co-authorship"): 3696 -> 3694 (the two ruled surfaces are hop bases). 2026-11-12 UK contract awards: 2308 -> 3696 (the 1,388 award surfaces, every one hop_eligible false; the edge count and both edge hashes are unchanged). 2026-11-12 Bitter Struggle chain: 2277 -> 2308 (the 31 surfaces of the lane, every one hop_eligible false; the edge count and both edge hashes are unchanged). 2026-11-12 UK ministerial meetings: 2199 -> 2277 (the 78 meetings-register surfaces, every one hop_eligible false; the edge count and both edge hashes are unchanged). 2026-11-10 hand-judged Form D filings: 1683 -> 2199 (the 516 hand-judged Form D surfaces, every one hop_eligible false; the edge count and both edge hashes are unchanged). 2026-11-10 Form D data sets: 1245 -> 1683 (the 438 data-set Form D surfaces, every one hop_eligible false; the edge count and both edge hashes are unchanged). 2026-11-10 follow-up: 1244 -> 1245 (the Voyager signatories' surface, hop_eligible false). 2026-11-10 one-pass entry: 1097 -> 1244 (the 147 surfaces of the two lanes, every one hop_eligible false; the edge count and both edge hashes are unchanged). 2026-11-10 lens-hunt promotion: 1096 -> 1097 (four SAGE surfaces added, three single-actor; the summit and AI Growth Zones surfaces leave the refused set). 2026-10-23 final re-pin: 1091 -> 1096 (the five year-only a16z 2022 surfaces). 2026-10-23 five-lane merge: 836 -> 1091. 2026-10-23 promotion: 35 -> 836 (single-person LinkedIn role surfaces create no hop)
+  rejected_hop_pairs: 0,
+  research_edges: 11441, // 2026-11-13 amplification chain: 11397 -> 11441 (one research-graph edge per new participation row, 44 rows). 2026-11-12 UK meetings, second intake: 11069 -> 11397 (one research-graph edge per participant and surface: the 579 rows give 328, since repeat meetings with one entity on one return share an edge). 2026-11-12 UK contract awards: 8272 -> 11069 (one research-graph edge per new participation row, 2,797 rows). 2026-11-12 Bitter Struggle chain: 8141 -> 8272 (one research-graph edge per new participation row, 131 rows). 2026-11-12 UK ministerial meetings: 7319 -> 8141 (one research-graph edge per participant and surface: the 1,440 rows give 822, since repeat meetings with one entity on one return share an edge and the dense DSIT return for October to December 2025 is contained). 2026-11-10 hand-judged Form D filings: 6266 -> 7319 (one research-graph edge per new participation row, 1,053 rows). 2026-11-10 Form D data sets: 4970 -> 6266 (one research-graph edge per new participation row, 1,296 rows). 2026-11-10 follow-up: 4831 -> 4970 (139 more participation rows). 2026-11-10 one-pass entry: 4506 -> 4831 (one research-graph edge per new participation row, 325 rows). 2026-11-10 lens-hunt promotion: 4487 -> 4506. 2026-10-23 final re-pin: 4467 -> 4487 (the eight surfaces the privacy guard no longer holds back add topology edges). 2026-10-23 five-lane merge: 3216 -> 4467. 2026-10-23 promotion: 392 -> 3216 research-graph edges
+});
 
 const hopGraph = readJson('build/hop-graph.json');
 const after = hopEdgeFingerprint(hopGraph);
-assert.equal(after.edge_count, BEFORE.edge_count, 'registry growth must not change the hop edge count');
-assert.equal(after.edge_id_sha256, BEFORE.edge_id_sha256, 'registry growth must not change the sorted hop edge ids');
-assert.equal(after.edges_sha256, BEFORE.edges_sha256, 'registry growth must not change any hop basis, role, window or receipt');
-assert.equal(hopGraph.rejected_hop_surfaces.length, BEFORE.rejected_hop_surfaces);
-assert.equal(hopGraph.rejected_hop_pairs.length, BEFORE.rejected_hop_pairs);
+assert.equal(after.edge_count, CURRENT.edge_count, 'hop edge count must match the last deliberate admission');
+assert.equal(after.edge_id_sha256, CURRENT.edge_id_sha256, 'sorted hop edge ids must match the last deliberate admission');
+assert.equal(after.edges_sha256, CURRENT.edges_sha256, 'hop bases, roles, windows and receipts must match the last deliberate admission');
+assert.equal(hopGraph.rejected_hop_surfaces.length, CURRENT.rejected_hop_surfaces);
+assert.equal(hopGraph.rejected_hop_pairs.length, CURRENT.rejected_hop_pairs);
 
 // The constants above really are the base commit's edge set, when its object is
 // available (a shallow checkout may not carry it).
@@ -50,15 +66,62 @@ if (baseHopGraph) {
   assert.equal(before.edge_count, BEFORE.edge_count);
   assert.equal(before.edge_id_sha256, BEFORE.edge_id_sha256);
   assert.equal(before.edges_sha256, BEFORE.edges_sha256);
-  assert.deepEqual(after, before, 'hop edge set before and after the merge must be identical');
-  assert.deepEqual(hopGraph.edges.map(edge => `${edge.actor_a}||${edge.actor_b}`).sort(),
-    baseHopGraph.edges.map(edge => `${edge.actor_a}||${edge.actor_b}`).sort());
+  // Narrowed 2026-10-23: was assert.deepEqual(after, before) (current == base).
+  // Now: every merge-base hop edge survives with every one of its bases unchanged
+  // (same pair, bases, roles, windows, receipts); later admissions may only add
+  // edges or add bases to an edge. Narrowed again 2026-11-10: the SAGE 17
+  // attendee list adds a second basis to the merge-base Ben Warner-Marc Warner
+  // edge, which moves that edge's derived surface_count, evidence_weight and
+  // temporal envelope but removes or alters no merge-base basis.
+  const current = new Map(hopGraph.edges.map(edge => [`${edge.actor_a}||${edge.actor_b}`, edge]));
+  for (const edge of baseHopGraph.edges) {
+    const key = `${edge.actor_a}||${edge.actor_b}`;
+    assert.ok(current.has(key), `merge-base hop edge ${key} must survive`);
+    const now = current.get(key);
+    const nowBases = new Set(now.surfaces.map(basis => JSON.stringify(basis)));
+    for (const basis of edge.surfaces) assert.ok(nowBases.has(JSON.stringify(basis)), `merge-base hop edge ${key} basis ${basis.surface_id} must be unchanged`);
+    if (now.surfaces.length === edge.surfaces.length) assert.equal(JSON.stringify(now), JSON.stringify(edge), `merge-base hop edge ${key} must be unchanged`);
+  }
 }
 
 // The research graph gains overlay nodes for new registry rows but no edge.
+// Narrowed 2026-10-23: was research.edges.length === 392 with a fixed hash
+// (registry growth was the only change since the merge). Now: the 392
+// merge-era edges are all still present by id and unchanged,
+// and no research-graph edge touches a row the registry merge added.
 const research = readJson('graph.json');
-assert.equal(research.edges.length, BEFORE_RESEARCH_EDGES.count, 'registry growth must not add a research-graph edge');
-assert.equal(createHash('sha256').update(JSON.stringify(research.edges)).digest('hex'), BEFORE_RESEARCH_EDGES.sha256);
+assert.equal(research.edges.length, CURRENT.research_edges, 'research-graph edge count must match the last deliberate admission');
+{
+  const lakeAdded = (() => { const m = readJson('data/canonical/lake-identity-merge.json'); return new Set([...m.added.actors, ...m.added.organizations]); })();
+  assert.ok(research.edges.every(edge => !lakeAdded.has(edge.from) && !lakeAdded.has(edge.to)), 'registry growth must not add a research-graph edge');
+  let baseResearch = null;
+  try {
+    baseResearch = JSON.parse(execFileSync('git', ['show', `${BASE_COMMIT}:graph.json`], {
+      encoding: 'utf8', maxBuffer: 1 << 28, stdio: ['ignore', 'pipe', 'ignore'],
+    }));
+  } catch { /* base commit not present in this checkout */ }
+  if (baseResearch) {
+    assert.equal(baseResearch.edges.length, BEFORE_RESEARCH_EDGES.count);
+    assert.equal(createHash('sha256').update(JSON.stringify(baseResearch.edges)).digest('hex'), BEFORE_RESEARCH_EDGES.sha256);
+    const byId = new Map(research.edges.map(edge => [edge.id, edge]));
+    // 2026-11-10 lens-hunt promotion (on the owner's go-ahead of that day): the AI Safety Summit appointment surface was
+    // re-admitted as a two-person joint appointment, so its topology rows carry the new surface label in
+    // their derived claim and cite the archived GOV.UK page beside the original extract. On that surface
+    // only, the claim may change and source_ids may grow; every other field and every original receipt holds.
+    const READMITTED = new Set(['ai-safety-summit-representative-appointment-2023-08-10']);
+    for (const edge of baseResearch.edges) {
+      const now = byId.get(edge.id);
+      if (!READMITTED.has(edge.canonical_surface_id)) {
+        assert.equal(JSON.stringify(now), JSON.stringify(edge), `merge-base research edge ${edge.id} must survive unchanged`);
+        continue;
+      }
+      assert.ok(now, `merge-base research edge ${edge.id} must survive`);
+      const strip = ({ claim, source_ids, ...rest }) => JSON.stringify(rest);
+      assert.equal(strip(now), strip(edge), `merge-base research edge ${edge.id} may change only its claim and add receipts`);
+      for (const id of edge.source_ids) assert.ok(now.source_ids.includes(id), `merge-base research edge ${edge.id} must keep receipt ${id}`);
+    }
+  }
+}
 
 // ---------------------------------------------------------------------------
 // 2. The planner, on synthetic registries: main wins, nothing is lost, and the
@@ -315,4 +378,4 @@ assert.ok(errorsFor(s => { const index = s.archive.extensions.findIndex(row => r
 assert.ok(loadMain('.').legacyNodes.some(node => node.id === 'alex-karp'), 'main still bridges Alex Karp from the legacy graph');
 assert.ok(loadArchive('.').adjudications.length === 57);
 
-console.log('lake-identity-merge.test: OK (hop edge set unchanged: 93 edges, same ids and bases; main-wins planning; 15 resolution rows + 2 pending; 104 frontier mentions; tamper checks)');
+console.log(`lake-identity-merge.test: OK (all 93 merge-base hop edges keep their bases unchanged, ${CURRENT.edge_count} current; no edge touches a merged row; main-wins planning; 15 resolution rows + 2 pending; 104 frontier mentions; tamper checks)`);

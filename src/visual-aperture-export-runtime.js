@@ -180,7 +180,9 @@ function currentSurfaceExportView() {
 
 function buildCurrentPublicationPacket() {
   const exactViewUrl = buildApertureUrl(apertureSnapshot(), location.href);
-  const view = state.mode === 'timeline'
+  const view = state.mode === 'field'
+    ? currentFieldExportView()
+    : state.mode === 'timeline'
     ? currentTimelineExportView()
     : state.mode === 'map'
       ? currentMapExportView()

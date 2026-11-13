@@ -1,0 +1,189 @@
+{
+  "schema": "clifford/integrity-source-catalog@1",
+  "as_of": "2026-11-02",
+  "scope": "Public official records and licensed nonofficial corpora relevant to institutional accountability; not an ethics score or partner contract.",
+  "rule": "Source acquisition, custody, legal-entity resolution, evidence review, publication and third-party reuse are separate states.",
+  "sources": [
+    {
+      "id": "usaspending",
+      "role": "federal_awards_and_transactions",
+      "uri": "https://api.usaspending.gov/docs/endpoints",
+      "owner": "US Treasury",
+      "access": "public_no_key",
+      "adapter_state": "native_implemented",
+      "frequency": "per-execution_observation_only",
+      "returns": "Awards, spending, recipient identifiers, obligations or amounts only where endpoint defines them",
+      "limits": "Award Amount field is source-native, distinct from ceilings, actual payments, revenues or accepted systems.",
+      "license": "US government public records; API/software/data rights to be separately confirmed.",
+      "credential_state": "none_needed"
+    },
+    {
+      "id": "sam_awards",
+      "role": "authoritative_federal_contract_awards",
+      "uri": "https://open.gsa.gov/api/contract-awards/",
+      "owner": "GSA",
+      "access": "registered_sam_personal_or_system_key",
+      "adapter_state": "documented_credential_hold",
+      "frequency": "not_scheduled",
+      "returns": "Contract actions, purchase orders, IDVs and detailed contract structures",
+      "limits": "Revealed DoD data has a 90-day delay. Account/API key required. No restricted/unrevealed access.",
+      "license": "Official government API; terms and download limits require review.",
+      "credential_state": "key_not_provided"
+    },
+    {
+      "id": "sam_opportunities",
+      "role": "pre_award_public_solicitations",
+      "uri": "https://open.gsa.gov/api/get-opportunities-public-api/",
+      "owner": "GSA",
+      "access": "registered_public_api_key",
+      "adapter_state": "documented_credential_hold",
+      "frequency": "not_scheduled",
+      "returns": "Current and archived opportunity announcements",
+      "limits": "Opportunity is not a signed contract or an obligation; only latest active notice version in API.",
+      "license": "Official API terms",
+      "credential_state": "key_not_provided"
+    },
+    {
+      "id": "sec_edgar",
+      "role": "corporate_filings_private_offerings_public_company_control",
+      "uri": "https://www.sec.gov/search-filings/edgar-application-programming-interfaces",
+      "owner": "US SEC",
+      "access": "public_no_key_with_declared_user_agent",
+      "adapter_state": "existing_research_routes_not_newly_executed",
+      "frequency": "as_filing_updated",
+      "returns": "Submission history, XBRL, filed Form D where exact filer IDs resolved",
+      "limits": "A filing does not prove latest beneficial ownership, fund allocation or advisory/control rights. SEC fair-access limits apply.",
+      "license": "US government public filing data; third-party exhibits may have separate rights.",
+      "credential_state": "none_needed"
+    },
+    {
+      "id": "fec_openfec",
+      "role": "political_finance",
+      "uri": "https://api.open.fec.gov/developers/",
+      "owner": "US FEC",
+      "access": "api_key_or_demo_key",
+      "adapter_state": "existing_bulk_acquisition",
+      "frequency": "nightly_data_updates_official",
+      "returns": "Committees, disbursement itemizations, official filing images",
+      "limits": "FEC donor lists have restrictions on commercial solicitation; do not repurpose personal donor data into a people search.",
+      "license": "Official FEC data with explicit acceptable-use restrictions.",
+      "credential_state": "demo_available_own_key_optional"
+    },
+    {
+      "id": "sbir",
+      "role": "early_stage_government_research_funding",
+      "uri": "https://www.sbir.gov/data-resources",
+      "owner": "SBA SBIR.gov",
+      "access": "public_bulk_and_api",
+      "adapter_state": "candidate_not_executed",
+      "frequency": "not_scheduled",
+      "returns": "Award IDs, amount, agency, company UEI, program phases",
+      "limits": "Official API is under maintenance as of 2026-11-02; download has fuller fields. Awarded R&D is not operational field acceptance.",
+      "license": "Official data with source-specific terms.",
+      "credential_state": "none_known"
+    },
+    {
+      "id": "govinfo",
+      "role": "legislation_regulations_official_government_documents",
+      "uri": "https://www.govinfo.gov/developers",
+      "owner": "GPO GovInfo",
+      "access": "api_data_gov_key_or_public_bulk",
+      "adapter_state": "documented_credential_hold",
+      "frequency": "not_scheduled",
+      "returns": "Congressional, regulatory and governmental primary documents",
+      "limits": "Source text is context, not proof of influence or an individual decision.",
+      "license": "Government documents; individual referenced exhibits need rights checking.",
+      "credential_state": "key_not_provided"
+    },
+    {
+      "id": "irs_propublica",
+      "role": "nonprofit_funding_and_organizational_identity",
+      "uri": "https://projects.propublica.org/nonprofits/api",
+      "owner": "ProPublica; original IRS filings",
+      "access": "public_get_api",
+      "adapter_state": "candidate_not_executed",
+      "frequency": "not_scheduled",
+      "returns": "EIN-linked nonprofit filings and finance summaries",
+      "limits": "Small filers and religious organizations may lack Form 990; does not prove every source of funds.",
+      "license": "Data/source rights and ProPublica API terms to verify before public redistribution.",
+      "credential_state": "none_known"
+    },
+    {
+      "id": "icij_offshore",
+      "role": "historical_source_reported_offshore_relations",
+      "uri": "https://offshoreleaks.icij.org/pages/database",
+      "owner": "ICIJ",
+      "access": "bulk_download_with_attribution",
+      "adapter_state": "prior_panama_snapshot_retained",
+      "frequency": "source_versioned",
+      "returns": "Source-native offshore entities and typed relations",
+      "limits": "Names/relationships are source reported and frequently historical, not allegations or current beneficial ownership; source data not uniformly current.",
+      "license": "ODbL (database), CC BY-SA (contents); attribution and share-alike obligations.",
+      "credential_state": "none_needed"
+    },
+    {
+      "id": "opensanctions",
+      "role": "sanctions_pep_legal_entity_screening",
+      "uri": "https://www.opensanctions.org/docs/commercial/exemption/",
+      "owner": "OpenSanctions",
+      "access": "api_key_or_noncommercial_bulk",
+      "adapter_state": "license_hold_no_data_ingestion",
+      "frequency": "not_scheduled",
+      "returns": "Restricted and designated entity data; matching candidates",
+      "limits": "Commercial reuse of the compiled dataset requires license; entity matching candidates are not confirmed identities.",
+      "license": "Compiled database CC BY-NC 4.0, separate software licenses.",
+      "credential_state": "public_interest_key_possible_commercial_license_unresolved"
+    },
+    {
+      "id": "natsec100_2026",
+      "role": "external_comparator_roster",
+      "uri": "https://www.natsec100.org/ns-2026-data/who-are-the-companies",
+      "owner": "Silicon Valley Defense Group",
+      "access": "public_site",
+      "adapter_state": "discovery_only_not_admitted",
+      "frequency": "annual",
+      "returns": "2026 dated company roster and ranking context",
+      "limits": "A ranking is context and never a qualifying hop or proof of a procurement relationship.",
+      "license": "Publisher's content terms; keep limited source citations.",
+      "credential_state": "none_needed"
+    }
+  ],
+  "interchanges": [
+    {
+      "id": "ftm",
+      "name": "FollowTheMoney",
+      "uri": "https://followthemoney.tech/docs/",
+      "license": "MIT software",
+      "status": "source_scoped_contract_stub_exported",
+      "limits": "Data package and underlying source licenses remain separate. Stub emits no unverified ownership or amount semantics."
+    },
+    {
+      "id": "nomenklatura",
+      "name": "nomenklatura",
+      "uri": "https://github.com/opensanctions/nomenklatura",
+      "license": "MIT software",
+      "status": "candidate_for_identifiers_and_lineage",
+      "limits": "Only consider once source-native recipient ids and entity resolution have a validated path."
+    },
+    {
+      "id": "ocds",
+      "name": "Open Contracting Data Standard",
+      "uri": "https://standard.open-contracting.org/latest/en/",
+      "license": "Open standard",
+      "status": "crosswalk_candidate",
+      "limits": "Do not call an award-only projection a complete OCDS contract or payment record."
+    },
+    {
+      "id": "aleph",
+      "name": "Aleph",
+      "uri": "https://github.com/alephdata/aleph",
+      "license": "MIT software",
+      "status": "optional_existing_commodity_ui",
+      "limits": "Avoid copying an entire indexing stack until an actual reviewer requires more than Clifford's current index."
+    }
+  ],
+  "publication": {
+    "default": "blocked_candidate_review",
+    "not_included": "No new graph joins, sanctions flags, person scores, raw source distributions or confidential data."
+  }
+}

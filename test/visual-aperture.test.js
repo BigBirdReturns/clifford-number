@@ -1,6 +1,13 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync as readFileSyncRaw } from 'node:fs';
 import vm from 'node:vm';
+// Source-shape regexes below are written against LF. A Windows checkout with
+// core.autocrlf has CRLF in the working tree; read text as LF so the contract,
+// not the line ending, is what is tested.
+const readFileSync = (path, encoding) => {
+  const value = readFileSyncRaw(path, encoding);
+  return typeof value === 'string' ? value.replace(/\r\n/g, '\n') : value;
+};
 import {
   computeCorridors,
   dayIndex,
@@ -176,10 +183,30 @@ assert.match(timelineRuntime, /data-ap-time-column/);
 assert.match(timelineRuntime, /data-ap-time-block/);
 assert.doesNotMatch(timelineRuntime, /data-ap-time-pair/, 'the reserved pair selector is never written by the runtime');
 assert.doesNotMatch(timelineRuntime, /<line[^>]*(?:data-ap-time|data-lane|actor)/, 'no line element carries a row, lane or actor identity');
-assert.doesNotMatch(timelineRuntime, /machine_score|factory_score|deniability|laundry_score|recurrence_score|heat/, 'no composite score drives a visual channel');
+assert.doesNotMatch(timelineRuntime, /machine_score|factory_score|deniability|laundry_score|recurrence_score|Structural context index|Factory Score/, 'no composite score drives a visual channel');
 assert.match(readFileSync('src/visual-aperture-part-9.js', 'utf8'), /if \(state\.mode !== 'map'\) deactivateApertureSocialField\(\);[\s\S]*if \(state\.mode === 'timeline'\) renderTimelineMode\(\);/, 'the GPU field is deactivated in timeline mode');
-assert.match(readFileSync('src/visual-aperture-part-10.js', 'utf8'), /function handleAction\(button\) \{\n  if \(handleTimelineAction\(button\)\) return;/);
+assert.match(readFileSync('src/visual-aperture-part-10.js', 'utf8'), /function handleAction\(button\) \{\r?\n  if \(handleTimelineAction\(button\)\) return;/);
+// Heat is allowed only as the printed, ledger-derived accumulation: the field
+// runtime prints its formula, and the field module computes exactly that sum.
+const fieldRuntimeSource = readFileSync('src/visual-aperture-social-field-runtime.js', 'utf8');
+const fieldModuleSource = readFileSync('src/social-field.js', 'utf8');
+const printedHeatFormula = 'heat = Σ touches weight(class) × 0.8^years; policy 1 · appointment 1 · procurement 2 · capital 2';
+assert.ok(fieldRuntimeSource.includes(printedHeatFormula), 'the field runtime prints the heat formula beside the field');
+assert.ok(fieldModuleSource.includes(`HEAT_FORMULA = '${printedHeatFormula}'`), 'the field module carries the same formula it computes');
+for (const source of [fieldRuntimeSource, fieldModuleSource]) {
+  assert.doesNotMatch(source, /machine_score|factory_score|deniability|laundry_score|recurrence_score|Structural context index|Factory Score|reinforcement heat/, 'no hidden composite drives a field channel');
+}
 assert.match(readFileSync('src/visual-aperture-part-3.js', 'utf8'), /publishApertureOrigin\(label\)/, 'the origin hook publishes on every selection change');
+// The Field tab (arrival, docs/explorer.md "Field"): first tab, its runtime loads
+// after the social field and before the bounded runtime and the mount, it prints
+// the same heat formula, and no hidden composite reaches it.
+const fieldTabRuntime = readFileSync('src/visual-aperture-field-runtime.js', 'utf8');
+assert.match(ui, /data-ap-mode="field"[^>]*>Field<\/button>\s*<button[^>]*data-ap-mode="map"/, 'Field is the first tab');
+assert.ok(loaderIndex('field-runtime') > loaderIndex('social-field-runtime') && loaderIndex('field-runtime') < loaderIndex('bounded-runtime') && loaderIndex('field-runtime') < loaderIndex('part-11'), 'the field runtime loads after the social field and before the bounded runtime and the mount');
+assert.match(uiEntry, /globalThis\.cliffordSocialField = social/, 'the pure field module is exposed under one name');
+assert.ok(fieldTabRuntime.includes(printedHeatFormula), 'the field runtime prints the heat formula');
+assert.doesNotMatch(fieldTabRuntime, /machine_score|factory_score|deniability|laundry_score|recurrence_score|Structural context index|Factory Score|reinforcement heat|documented_degree/, 'no hidden composite drives a field channel');
+assert.match(readFileSync('src/visual-aperture-part-9.js', 'utf8'), /if \(state\.mode !== 'field'\) deactivateFieldStage\(\);[\s\S]*else if \(state\.mode === 'field'\) renderFieldMode\(\);/, 'the field stage is deactivated outside its mode');
 assert.match(readFileSync('src/visual-aperture-part-1.js', 'utf8'), /globalThis\.__cliffordPublicData/, 'readData uses the app.js handoff before fetching');
 
 // vm render of the runtime against the real artifacts: the SVG the page draws on
@@ -203,15 +230,15 @@ function renderTimelineStage(layout, phone) {
   const svg = context.__svg;
   const count = needle => (svg.match(new RegExp(needle, 'g')) ?? []).length;
   const lineClasses = count('<line class="aperture-time-(?:axis-year|axis-month|axis-base|lane-rule|grid|ov-row|ov-hop|ov-dense)"') + count('<line x1="0" y1="0" x2="0" y2="4"');
-  return { marks: count('data-ap-time-mark="'), columns: count('data-ap-time-column="'), segments: count('aperture-time-column-segment'), blocks: count('data-ap-time-block="'), aggregates: count('data-ap-time-aggregate="'), lanes: count('data-ap-time-lane="'), lines: count('<line'), lineClasses, pair: count('data-ap-time-pair'), tabStops: count('tabindex="0"'), noStops: count('tabindex="-1"'), svg };
+  return { marks: count('data-ap-time-mark="'), columns: count('data-ap-time-column="'), segments: count('aperture-time-column-segment'), blocks: count('data-ap-time-block="'), aggregates: count('data-ap-time-aggregate="'), lanes: count('data-ap-time-lane="'), lines: count('<line[\\s>]'), lineClasses, pair: count('data-ap-time-pair'), tabStops: count('tabindex="0"'), noStops: count('tabindex="-1"'), svg };
 }
 const desktopRender = renderTimelineStage(layoutTimeline(realModel, { plotWidth: 690 }), false);
-assert.equal(desktopRender.marks, 79, 'desktop default: 79 marks');
-assert.equal(desktopRender.blocks, 1, 'plus one roster block = 80 drawn objects');
-assert.equal(desktopRender.columns, 16);
-assert.equal(desktopRender.segments, 35, 'per-lane segments touch only involved lanes');
-assert.equal(desktopRender.aggregates, 0);
-assert.equal(desktopRender.lanes, 17);
+assert.equal(desktopRender.marks, 153, 'desktop default: 153 marks'); // 2026-11-12 UK contract awards: 154 -> 153 (the automatic domain opens on 2019-01-01; the same 18 default people). 2026-11-12 UK ministerial meetings: 161 -> 154 (the automatic domain opens on 2017-01-01; the same 18 default people, John Healey +5 meeting rows, Matt Clifford +2). 2026-11-10 hand-judged Form D filings: 148 -> 161 (the automatic domain opens on 2015-01-01; the same 18 default people, Steve Braverman +12 rows). 2026-11-10 Form D data sets: 113 -> 148 (the automatic domain opens on 2016-01-01 again, Steve Braverman takes Doron Landau's lane by the unchanged ranking, and the default people gain Form D rows). 2026-11-10 follow-up: 120 -> 113 (the automatic domain now opens on 2017-01-01: the new rows move the share threshold, so 2016 rows fall before the domain). 2026-11-10 one-pass entry: 115 -> 120 (the same 18 default people; Horacio Rozanski gains eight Form D rows, Joe Lonsdale four, Heidi Shyu one). 2026-11-10 lens-hunt promotion: 112 -> 115. 2026-10-23 final re-pin: 134 -> 112. 2026-10-23 five-lane merge: 44 -> 134 (the hop-first default now ranks the Capital Factory Form D people, Sean O'Brien and Stephen Brotman into the 18 lanes) // 2026-10-23: hop-bearing lanes rank first (was 147 with row-count ranking) // 2026-10-23 owner decision: the 18-lane default People view (2.1.0: 79 on 15 lanes)
+assert.equal(desktopRender.blocks, 3, 'plus three roster blocks'); // 2026-11-12 UK ministerial meetings: 2 -> 3 (the DSIT return for October to December 2025 is dense). 2026-10-23 five-lane merge: 1 -> 2 (the Reagan National Defense Forum 2023 programme roster is dense, beside Dialog)
+assert.equal(desktopRender.columns, 30, 'the default people share 30 drawn hop bases'); // 2026-11-12 owner ruling on hop bases ("Inherent and co-authorship"): 29 -> 30 (the Inherent seed round, 2026-05-31, is a hop column on Matt Clifford's lane). 2026-11-12 Bitter Struggle chain: 31 -> 29 (the automatic domain now ends 2026-12-10, so two hop columns fold into +N clusters). 2026-11-10 lens-hunt promotion: 28 -> 31. 2026-10-23 final re-pin: 35 -> 28. 2026-10-23 five-lane merge: 15 -> 35 // 2026-10-23 hop-first ranking; 2.1.0: 16
+assert.ok(desktopRender.segments > 0, 'hop columns draw segments'); // 2026-10-23 hop-first ranking; 2.1.0: 35
+assert.equal(desktopRender.aggregates, 16, 'the default view folds clusters past two marks into +N'); // 2026-11-12 UK contract awards: 19 -> 16. 2026-11-12 Bitter Struggle chain: 17 -> 19 (the automatic domain now ends 2026-12-10). 2026-11-12 UK ministerial meetings: 14 -> 17. 2026-11-10 hand-judged Form D filings: 17 -> 14. 2026-11-10 Form D data sets: 10 -> 17. 2026-11-10 lens-hunt promotion: 9 -> 10. 2026-10-23 final re-pin: 13 -> 9. 2026-10-23 five-lane merge: 2 -> 13 // 2.1.0: 0 // 2026-10-23 hop-first default lanes: 12 -> 2
+assert.equal(desktopRender.lanes, 22, '18 named + strip + three blocks'); // 2026-11-12 UK ministerial meetings: 21 -> 22 (third roster block). 2026-10-23 five-lane merge: 20 -> 21 (second roster block) // 2.1.0: 17
 assert.equal(desktopRender.pair, 0);
 // Roving focus: one Tab stop for the plot (the first mark), one for the lane
 // labels, two overview handles; every other mark, column, block and label is
@@ -221,12 +248,12 @@ assert.equal(desktopRender.noStops, desktopRender.marks + desktopRender.columns 
 assert.match(timelineRuntime, /function handleTimelineWheel\(event\) \{\n  if \(state\.mode !== 'timeline'\) return;\n(?:\s*\/\/.*\n)*\s*if \(!event\.ctrlKey && !event\.metaKey\) return;/, 'a plain wheel scrolls the page; only Ctrl/Cmd + wheel zooms the axis');
 assert.equal(desktopRender.lines, desktopRender.lineClasses, 'every line is an axis, grid, lane rule, overview tick or hatch stroke');
 assert.match(desktopRender.svg, /names listed/);
-assert.match(desktopRender.svg, /People documented on one surface/);
+assert.match(desktopRender.svg, /Other people \(422\)/); // 2026-11-13 amplification chain: 414 -> 422 (the 8 people minted for the chain). 2026-11-12 Bitter Struggle chain: 366 -> 414 (the 48 people minted for the chain). 2026-11-12 UK ministerial meetings: 358 -> 366 (seven people who were only on the Dialog roster and Jade Leung, who had no row, now hold meeting rows). 2026-11-10 hand-judged Form D filings: 346 -> 358 (twelve people who were only on the Dialog roster now hold hand-judged Form D rows elsewhere). 2026-11-10 Form D data sets: 331 -> 346 (fifteen people who were only on the Dialog roster now hold Form D rows elsewhere). 2026-11-10 follow-up: 322 -> 331 (the nine Voyager signatories). 2026-11-10 one-pass entry: 274 -> 322 (48 new people). 2026-11-10 lens-hunt promotion: 267 -> 274 (seven new people). 2026-10-23 five-lane merge: 153 -> 267 // 2026-10-23 owner decision: was "People documented on one surface"
 const phoneRender = renderTimelineStage(layoutTimeline(realModel, { plotWidth: 216, ...TIMELINE_PHONE_METRICS }), true);
-assert.equal(phoneRender.marks, 48, 'phone default: 48 marks');
-assert.equal(phoneRender.blocks, 1);
-assert.equal(phoneRender.columns, 10);
-assert.equal(phoneRender.segments, 20);
+assert.equal(phoneRender.marks, 104, 'phone default: 104 marks'); // 2026-11-12 UK contract awards: 94 -> 104 (the phone domain opens on 2023-01-01). 2026-11-12 Bitter Struggle chain: 93 -> 94. 2026-11-12 UK ministerial meetings: 92 -> 93 (the phone domain opens on 2022-01-01). 2026-11-10 Form D data sets: 77 -> 92 (the phone domain opens on 2021-01-01, a year earlier). 2026-11-10 one-pass entry: 76 -> 77. 2026-11-10 lens-hunt promotion: 75 -> 76. 2026-10-23 final re-pin: 92 -> 75. 2026-10-23 five-lane merge: 39 -> 92 // 2026-10-23 owner decision: 18-lane default (2.1.0: 48) // 2026-10-23 hop-first default lanes: 85 -> 39
+assert.equal(phoneRender.blocks, 3); // 2026-11-12 UK ministerial meetings: 2 -> 3. 2026-10-23 five-lane merge: 1 -> 2
+assert.equal(phoneRender.columns, 27); // 2026-11-12 owner ruling on hop bases ("Inherent and co-authorship"): 26 -> 27 (the Inherent seed round, 2026-05-31, is a hop column on Matt Clifford's lane). 2026-11-12 UK contract awards: 25 -> 26. 2026-11-12 Bitter Struggle chain: 26 -> 25 (the automatic domain now ends 2026-12-10). 2026-11-10 lens-hunt promotion: 23 -> 26. 2026-10-23 final re-pin: 29 -> 23. 2026-10-23 five-lane merge: 13 -> 29 // 2.1.0: 10 // 2026-10-23 hop-first default lanes: 0 -> 13
+assert.equal(phoneRender.segments, 32); // 2026-11-12 owner ruling on hop bases ("Inherent and co-authorship"): 31 -> 32. 2026-11-12 UK contract awards: 30 -> 31. 2026-11-12 Bitter Struggle chain: 31 -> 30 (the automatic domain now ends 2026-12-10). 2026-11-10 Form D data sets: 33 -> 31. 2026-11-10 lens-hunt promotion: 30 -> 33. 2026-10-23 final re-pin: 40 -> 30. 2026-10-23 five-lane merge: 28 -> 40 // 2.1.0: 20 // 2026-10-23 hop-first default lanes: 0 -> 28
 assert.equal(phoneRender.pair, 0);
 assert.equal(phoneRender.lines, phoneRender.lineClasses);
 console.log(`visual-aperture.test.js: timeline render desktop ${desktopRender.marks} marks + ${desktopRender.blocks} block, ${desktopRender.columns} columns (${desktopRender.segments} segments); phone ${phoneRender.marks} + ${phoneRender.blocks}, ${phoneRender.columns} columns (${phoneRender.segments} segments)`);
@@ -249,7 +276,7 @@ for (const breakpoint of ['860px', '760px', '430px', '340px']) assert.match(time
 assert.match(timelineCss, /@media print/);
 assert.match(timelineCss, /\.aperture-time-mark--hop \{ stroke: var\(--ap-amber\)/);
 assert.match(timelineCss, /\.aperture-time-column-segment/);
-assert.match(timelineCss, /repeat\(4, minmax\(0, 1fr\)\)/, 'four mode tabs fit a phone');
+assert.match(timelineCss, /repeat\(5, minmax\(0, 1fr\)\)/, 'five mode tabs fit a phone');
 assert.match(readFileSync('src/visual-aperture.css', 'utf8'), /visual-aperture-timeline\.css/);
 
 console.log('visual-aperture.test.js: OK');

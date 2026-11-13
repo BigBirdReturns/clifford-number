@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { computePayloadDigest, isSafePublicationPath, matchesHeldRule, validateArtifactPathSet, validatePublicationPolicy } from '../tools/lib/publication-allowlist.mjs';
+import os from 'node:os';
+import path from 'node:path';
+import { computeArtifactEntries, computePayloadDigest, isSafePublicationPath, matchesHeldRule, scanArtifactText, validateArtifactPathSet, validatePublicationPolicy } from '../tools/lib/publication-allowlist.mjs';
 
 const base = {
   schema_version: 'clifford-publication-allowlist@1',
@@ -45,4 +47,57 @@ for (const prefix of ['archive/', 'retrospective/']) {
   assert.equal(realPolicy.paths.some(candidate => candidate.startsWith(prefix)), false, `${prefix} must not be published`);
 }
 assert.doesNotThrow(() => validatePublicationPolicy(realPolicy));
-console.log('publication-allowlist.test: OK (safe paths, holds, exact set and deterministic digest)');
+// Owner decision 2026-10-23: one intake subtree is released from the data/intake/ hold; the rest stays held.
+const intakeRule = realPolicy.held_rules.find(candidate => candidate.kind === 'prefix' && candidate.value === 'data/intake/');
+assert.equal(intakeRule.except_prefixes, undefined, 'data/intake stays fully held (derived LinkedIn files moved under receipts/, 2026-10-23)');
+assert.equal(matchesHeldRule('receipts/linkedin-profile-captures/derived/linkedin-role-crossing-summary.json', intakeRule), false);
+assert.equal(matchesHeldRule('data/intake/linkedin-targeted-review/other.json', intakeRule), true);
+assert.equal(matchesHeldRule('data/intake/defense-corridor/x.json', intakeRule), true);
+assert.ok(realPolicy.policy_changes.every(change => change.date && change.decided_by && change.reason), 'every policy change says when, who and why');
+// Per-path budgets must name allowlisted paths; the explorer standalone and the endpoint carry their own.
+// 2026-10-23 final re-pin (owner decision, research digs): endpoint 10,000,000 -> 12,000,000, main standalone
+// 5,000,000 -> 8,000,000, max_files 3,200 -> 4,000. The budgets guard accidental growth, not the size of the record.
+// 2026-11-10 one-pass entry of official records (owner decision, "Yes, one pass"): endpoint 12,000,000 -> 14,000,000,
+// explorer standalone 16,000,000 -> 20,000,000, max_single_file_bytes 16,000,000 -> 20,000,000 (measured 12,255,884 and 17,128,704).
+// 2026-11-10 Form D data sets (owner answer "Yes, fetch them"): endpoint 14,000,000 -> 18,000,000, explorer standalone
+// and max_single_file_bytes 20,000,000 -> 24,000,000, main standalone 8,000,000 -> 11,000,000, max_files 4,000 -> 4,500,
+// max_total_bytes 400,000,000 -> 450,000,000 (measured 16,203,703, 21,359,240, 9,675,826, 4,054 files, 400,309,860 bytes).
+// 2026-11-10 hand-judged Form D filings (owner answer "All 527"): endpoint 18,000,000 -> 23,000,000, explorer standalone
+// and max_single_file_bytes 24,000,000 -> 28,000,000, main standalone 11,000,000 -> 13,000,000, max_files 4,500 -> 5,000
+// (measured 20,109,748, 25,449,761, 11,908,094 and 4,570 files; 431,501,726 bytes stays within max_total_bytes).
+// 2026-11-12 Bitter Struggle chain (owner words "Trace it"): explorer standalone and max_single_file_bytes 28,000,000 -> 30,000,000
+// (measured 28,332,476; the endpoint, 22,772,147, stays within its budget).
+// 2026-11-12 UK contract awards (owner answer "Yes, fetch them"): endpoint 23,000,000 -> 36,000,000, explorer standalone and
+// max_single_file_bytes 30,000,000 -> 42,000,000, main standalone 15,000,000 -> 22,000,000, max_files 5,000 -> 6,700,
+// max_total_bytes 500,000,000 -> 585,000,000 (measured 32,214,448, 37,923,416, 19,760,633, 6,090 files, 530,858,042 bytes).
+assert.deepEqual(realPolicy.performance_budgets.max_path_bytes, { 'Clifford-Number-endpoint.html': 36000000, 'Clifford-Number-explorer-standalone.html': 42000000 });
+assert.equal(realPolicy.performance_budgets.max_single_file_bytes, 42000000, 'the single-file budget (raised 2026-11-10 from 16,000,000, then from 20,000,000 and 24,000,000, 2026-11-12 from 28,000,000 and 30,000,000)');
+// 2026-11-12 UK ministerial meetings (owner answer "Yes, hunt them"): main standalone 13,000,000 -> 15,000,000 and max_total_bytes
+// 450,000,000 -> 500,000,000 (measured 13,275,026 and 454,064,931 bytes before finalization).
+assert.equal(realPolicy.performance_budgets.max_standalone_bytes, 22000000, 'the main standalone budget (raised 2026-10-23 from 5,000,000, 2026-11-10 from 8,000,000 and 11,000,000, 2026-11-12 from 13,000,000 and 15,000,000)');
+assert.equal(realPolicy.performance_budgets.max_files, 6700, 'the file-count budget (raised 2026-10-23 from 3,200, 2026-11-10 from 4,000 and 4,500, 2026-11-12 from 5,000)');
+assert.equal(realPolicy.performance_budgets.max_total_bytes, 585000000, 'the byte budget (raised 2026-11-10 from 400,000,000, 2026-11-12 from 450,000,000 and 500,000,000)');
+assert.throws(() => validatePublicationPolicy({ ...base, performance_budgets: { ...base.performance_budgets, max_path_bytes: { 'nope.html': 1 } } }), /unlisted path/u);
+// The forbidden-text scan covers every file within the single-file budget (2026-11-10 follow-up): the limit
+// is the policy's max_single_file_bytes, not a separate 16 MiB constant, so the explorer standalone, now
+// above 16 MiB and within the 20,000,000-byte budget, is still scanned. A file of 17 MiB that ends in key
+// material is refused under the real budget; the same bytes without it pass; nothing passes without a budget.
+{
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'publication-scan-'));
+  try {
+    const size = 17 * 1024 * 1024;
+    assert.ok(size > 16 * 1024 * 1024 && size <= realPolicy.performance_budgets.max_single_file_bytes, 'the probe sits between 16 MiB and the single-file budget');
+    const marker = Buffer.from('\n-----BEGIN ' + 'PRIVATE KEY-----\n');
+    const body = Buffer.alloc(size, 0x61);
+    marker.copy(body, size - marker.length);
+    fs.writeFileSync(path.join(dir, 'large.html'), body);
+    const entries = computeArtifactEntries(dir, ['large.html']);
+    assert.throws(() => scanArtifactText(dir, entries, realPolicy.performance_budgets.max_single_file_bytes), /private key material in large\.html/u);
+    fs.writeFileSync(path.join(dir, 'large.html'), Buffer.alloc(size, 0x61));
+    assert.doesNotThrow(() => scanArtifactText(dir, computeArtifactEntries(dir, ['large.html']), realPolicy.performance_budgets.max_single_file_bytes));
+    assert.throws(() => scanArtifactText(dir, entries), /single-file budget/u);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+}
+console.log('publication-allowlist.test: OK (safe paths, holds, exact set, deterministic digest, text scan up to the single-file budget)');

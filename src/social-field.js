@@ -16,14 +16,201 @@ const SURFACE_TYPES = new Set([
   'infrastructure-policy', 'government-program'
 ]);
 
-// Node fill names the ontology of the object (person, organization, bounded
-// surface). It is a category, never a score: no composite "heat" drives any
-// visual channel on the field.
+// Ontology fill: used where no ledger accumulation applies (an organization,
+// or any node drawn without a ledger). With a ledger, a person is filled by the
+// class mix of its residue and a surface by its own class (see heat below).
 export const ONTOLOGY_COLORS = Object.freeze({
   person: '#67b8ff',
   organization: '#b8c0cf',
   surface: '#f3bc4e'
 });
+
+// Heat: a printed, ledger-derived accumulation (docs/explorer.md rule 6).
+//   class(surface) is read from surface_type (HEAT_CLASS_BY_SURFACE_TYPE);
+//   weight(class): policy 1, appointment 1, procurement 2, capital 2;
+//   heat(surface, t) = Σ over the surface's dated participation rows with
+//     date ≤ t of weight(class) × (1 − 0.2)^(years from the row's date to t);
+//   residue(object, t) = the same sum over the object's own dated rows, kept
+//     per class. Undated rows contribute nothing and are listed as such.
+// The row's date is its documented start (a year or month row starts on the
+// first day of the period it names); years = days / 365.25. Nothing else (no
+// degree, clustering, machine or factory score) enters the sum.
+export const HEAT_CLASSES = Object.freeze(['policy', 'appointment', 'procurement', 'capital']);
+export const HEAT_WEIGHTS = Object.freeze({ policy: 1, appointment: 1, procurement: 2, capital: 2 });
+export const HEAT_DECAY_PER_YEAR = 0.2;
+export const HEAT_DAYS_PER_YEAR = 365.25;
+export const HEAT_CLASS_COLORS = Object.freeze({
+  policy: '#3987e5',
+  appointment: '#c98500',
+  procurement: '#d95926',
+  capital: '#199e70'
+});
+// A node whose rows give it no accumulation at t (all undated, or all later).
+export const HEAT_NONE_COLOR = '#5b6577';
+export const HEAT_FORMULA = 'heat = Σ touches weight(class) × 0.8^years; policy 1 · appointment 1 · procurement 2 · capital 2';
+// Decision heat, beside heat (on the owner's go-ahead of 10 November 2026;
+// docs/explorer.md rule 6). The same accumulation, counted only over the rows
+// on a surface whose recorded status begins official_ (the Decisions lens).
+// Weights, decay and t are unchanged; every other row adds 0 and stays listed.
+// It is a second printed sum, not a correction of the first.
+export const DECISION_HEAT_VERSION = 'decision-heat@1';
+export const DECISION_HEAT_FORMULA = 'decision heat = the same sum over the rows on surfaces whose recorded status begins official_; every other row adds 0';
+export const HEAT_BASES = Object.freeze(['all', 'decisions']);
+export function isDecisionRow(row) {
+  return /^official_/.test(String(row?.surface_status ?? ''));
+}
+// The rows a basis counts: every row, or the decision rows alone.
+export function heatBasisRows(rows, basis = 'all') {
+  return basis === 'decisions' ? (rows ?? []).filter(isDecisionRow) : (rows ?? []);
+}
+export const HEAT_CLASS_BY_SURFACE_TYPE = Object.freeze({
+  policy_document_surface: 'policy',
+  government_advisory_surface: 'policy',
+  campaign_surface: 'policy',
+  model_governance_surface: 'policy',
+  category_formation_surface: 'policy',
+  board_advisory_surface: 'appointment',
+  directory_roster_surface: 'appointment',
+  procurement_contract_surface: 'procurement',
+  customer_vendor_surface: 'procurement',
+  defence_industrial_surface: 'procurement',
+  employment_investment_surface: 'capital',
+  founder_officer_surface: 'capital',
+  public_private_fund_surface: 'capital',
+  laundering_chain_connector: 'capital'
+});
+
+export function heatClassForSurfaceType(surfaceType) {
+  return HEAT_CLASS_BY_SURFACE_TYPE[surfaceType] ?? 'policy';
+}
+
+const ISO_DAY = /^(\d{4})(?:-(\d{2})(?:-(\d{2}))?)?$/;
+function heatRowDay(row) {
+  if (Number.isFinite(row?.start_day)) return row.start_day;
+  const match = ISO_DAY.exec(String(row?.time_start || '').trim());
+  if (!match) return null;
+  return Math.floor(Date.UTC(Number(match[1]), match[2] ? Number(match[2]) - 1 : 0, match[3] ? Number(match[3]) : 1) / 86_400_000);
+}
+function heatAtDay(at) {
+  if (Number.isFinite(at)) return at;
+  if (at instanceof Date) return Math.floor(at.getTime() / 86_400_000);
+  const match = ISO_DAY.exec(String(at || '').trim());
+  if (!match) return null;
+  return Math.floor(Date.UTC(Number(match[1]), match[2] ? Number(match[2]) - 1 : 0, match[3] ? Number(match[3]) : 1) / 86_400_000);
+}
+
+// heat(rows, t): the one accumulation. rows are ledger rows (surface_type,
+// start_day or time_start); t is a UTC day integer, an ISO date or a Date.
+// Returns the total, the per-class split, every counted touch with its own
+// arithmetic, the undated rows (contribute nothing) and the rows dated after t.
+export function heat(rows, at) {
+  const atDay = heatAtDay(at);
+  const byClass = Object.fromEntries(HEAT_CLASSES.map(name => [name, 0]));
+  const touches = [], undated = [], later = [];
+  let total = 0;
+  for (const row of rows ?? []) {
+    const day = heatRowDay(row);
+    if (day == null) { undated.push(row); continue; }
+    if (atDay == null || day > atDay) { later.push(row); continue; }
+    const heatClass = heatClassForSurfaceType(row.surface_type);
+    const weight = HEAT_WEIGHTS[heatClass];
+    const years = (atDay - day) / HEAT_DAYS_PER_YEAR;
+    const decay = (1 - HEAT_DECAY_PER_YEAR) ** years;
+    const contribution = weight * decay;
+    byClass[heatClass] += contribution;
+    total += contribution;
+    touches.push({ row, row_id: row.row_id ?? null, date: dayIso(day), heat_class: heatClass, weight, years, decay, contribution });
+  }
+  touches.sort((a, b) => b.contribution - a.contribution || String(a.date).localeCompare(String(b.date)));
+  return { at_day: atDay, at_date: dayIso(atDay), total, by_class: byClass, touches, undated, later };
+}
+
+function hexToRgb(hex) {
+  const value = parseInt(String(hex).replace('#', ''), 16);
+  return [(value >> 16) & 255, (value >> 8) & 255, value & 255];
+}
+// A residue's colour: the four class colours blended by their share of the
+// total. No accumulation, no mix: HEAT_NONE_COLOR.
+export function heatMixColor(byClass) {
+  const total = HEAT_CLASSES.reduce((sum, name) => sum + (byClass?.[name] || 0), 0);
+  if (!(total > 0)) return HEAT_NONE_COLOR;
+  const rgb = [0, 0, 0];
+  for (const name of HEAT_CLASSES) {
+    const share = (byClass[name] || 0) / total;
+    const [r, g, b] = hexToRgb(HEAT_CLASS_COLORS[name]);
+    rgb[0] += r * share; rgb[1] += g * share; rgb[2] += b * share;
+  }
+  return `#${rgb.map(channel => Math.round(channel).toString(16).padStart(2, '0')).join('')}`;
+}
+
+const heatNumber = value => (Math.round(value * 100) / 100).toFixed(2).replace(/\.?0+$/, '') || '0';
+// The printed denominator: "heat 4.2 = 3 touches at 2026-08-12: capital 2 ×
+// 0.8^0.87 = 1.65 (2025-09-27) + …". Every term is a documented row.
+export function heatBreakdownText(result, { noun = 'heat', limit = 12 } = {}) {
+  const count = result?.touches?.length ?? 0;
+  const head = `${noun} ${heatNumber(result?.total ?? 0)} = ${count} touch${count === 1 ? '' : 'es'}${result?.at_date ? ` at ${result.at_date}` : ''}`;
+  const terms = (result?.touches ?? []).slice(0, limit)
+    .map(touch => `${touch.heat_class} ${touch.weight} × 0.8^${touch.years.toFixed(2)} = ${heatNumber(touch.contribution)} (${touch.date})`);
+  const more = count > limit ? ` + ${count - limit} more` : '';
+  const notes = [];
+  if (result?.undated?.length) notes.push(`${result.undated.length} undated row${result.undated.length === 1 ? ' contributes' : 's contribute'} nothing`);
+  if (result?.later?.length) notes.push(`${result.later.length} row${result.later.length === 1 ? '' : 's'} dated after t not yet counted`);
+  return `${head}${terms.length ? `: ${terms.join(' + ')}${more}` : ''}${notes.length ? ` · ${notes.join(' · ')}` : ''}`;
+}
+
+// The field's t: the end of the time window, or the end of the record when no
+// window is set.
+export function heatTimeForWindow(range, window = null) {
+  const end = window?.endDay;
+  if (!window?.unbounded && Number.isFinite(end)) return Math.round(end);
+  return Number.isFinite(range?.last_day) ? range.last_day : null;
+}
+
+// Writes the accumulation channels onto the field's nodes at t. A canonical
+// surface node carries heat (its own participation rows); every other node
+// with ledger rows carries residue (its own rows), split per class. Nodes with
+// no ledger row carry neither and keep their ontology fill. basis 'decisions'
+// counts the decision rows alone (heatBasisRows): a node whose rows are all
+// outside it carries a sum of 0 and the no-accumulation colour.
+export function applyFieldHeat(field, ledger, at, basis = 'all') {
+  if (!field?.nodes || !ledger?.rowsByNode) return field;
+  const atDay = heatAtDay(at) ?? ledger.range?.last_day ?? null;
+  const decisions = basis === 'decisions';
+  for (const node of field.nodes) {
+    const surfaceNode = String(node.id).startsWith('surface-');
+    const rows = surfaceNode ? (ledger.rowsBySurfaceNode.get(node.id) ?? []) : (ledger.rowsByNode.get(node.id) ?? []);
+    if (!rows.length) {
+      node.heat = null;
+      node.heat_kind = null;
+      node.heat_value = 0;
+      node.color = ONTOLOGY_COLORS[node.ontology];
+      continue;
+    }
+    const counted = decisions ? heatBasisRows(rows, basis) : rows;
+    const result = heat(counted, atDay);
+    node.heat = result;
+    node.heat_kind = `${decisions ? 'decision ' : ''}${surfaceNode ? 'heat' : 'residue'}`;
+    node.heat_value = result.total;
+    if (surfaceNode) {
+      node.heat_class = heatClassForSurfaceType(rows[0].surface_type);
+      node.color = decisions && !counted.length ? HEAT_NONE_COLOR : HEAT_CLASS_COLORS[node.heat_class];
+    } else if (node.ontology === 'person') {
+      node.color = heatMixColor(result.by_class);
+    } else {
+      node.color = ONTOLOGY_COLORS[node.ontology];
+    }
+  }
+  field.heat_at_day = atDay;
+  field.heat_basis = decisions ? 'decisions' : 'all';
+  field.metrics.max_heat_value = Math.max(0, ...field.nodes.map(node => node.heat_value || 0));
+  return field;
+}
+
+// The tooltip's accumulation line, worded as the inspector words it.
+export function nodeHeatLabel(node) {
+  if (!node?.heat) return '';
+  return `${node.heat_kind} ${heatNumber(node.heat.total)} from ${node.heat.touches.length} dated touch${node.heat.touches.length === 1 ? '' : 'es'}`;
+}
 
 const CLUSTER_ANCHORS = Object.freeze({
   dialog: [0.94, 0.12, 0.32],
@@ -98,14 +285,17 @@ function buildSurfaceMemberships(model) {
 // Documented recurrence counts. memberCount is the number of distinct surfaces
 // a node is a documented member of; pairCount is a count of shared named
 // surfaces per pair. Pair counts are never drawn as a line: they feed only the
-// per-node strongest_repeat count, which is displayed as a number.
-function buildReinforcement(model) {
+// per-node strongest_repeat count, which is displayed as a number. The ledger
+// field (buildLedgerFieldModel) passes pairs=false: a roster of 800 names
+// would otherwise build 320,000 pair keys that no channel of that view reads.
+function buildReinforcement(model, { pairs = true } = {}) {
   const membersBySurface = buildSurfaceMemberships(model);
   const pairCount = new Map();
   const memberCount = new Map();
   for (const members of membersBySurface.values()) {
     const unique = [...new Set(members)].sort();
     for (const id of unique) memberCount.set(id, (memberCount.get(id) ?? 0) + 1);
+    if (!pairs) continue;
     for (let i = 0; i < unique.length; i += 1) {
       for (let j = i + 1; j < unique.length; j += 1) {
         const key = `${unique[i]}||${unique[j]}`;
@@ -164,10 +354,10 @@ export function nodeCountLabel(node) {
   return `${count} documented ${kind}${count === 1 ? '' : 's'}${noRows ? ' · research context · no ledger rows' : ''}`;
 }
 
-export function buildSocialFieldModel(model, { radius = SOCIAL_FIELD_RADIUS, ledger = null } = {}) {
+export function buildSocialFieldModel(model, { radius = SOCIAL_FIELD_RADIUS, ledger = null, atDay = null, reinforcement: withPairs = true } = {}) {
   if (!model?.nodes || !model?.edges || !model?.nodeById) throw new TypeError('social field requires a network model');
   const adjacency = buildAdjacency(model);
-  const reinforcement = buildReinforcement(model);
+  const reinforcement = buildReinforcement(model, { pairs: withPairs });
 
   const nodes = model.nodes.map(node => {
     const position = seededPoint(node, radius);
@@ -218,13 +408,14 @@ export function buildSocialFieldModel(model, { radius = SOCIAL_FIELD_RADIUS, led
     };
   });
 
-  return {
+  const field = {
     schema_version: SOCIAL_FIELD_SCHEMA,
     mode: model.mode,
     radius,
     nodes,
     nodeById,
     links,
+    heat_formula: HEAT_FORMULA,
     metrics: {
       node_count: nodes.length,
       link_count: links.length,
@@ -234,6 +425,9 @@ export function buildSocialFieldModel(model, { radius = SOCIAL_FIELD_RADIUS, led
       max_size_count: Math.max(0, ...nodes.map(node => node.size_count))
     }
   };
+  // Heat exists only with a ledger: it is a sum of ledger rows and nothing else.
+  if (ledger) applyFieldHeat(field, ledger, atDay ?? ledger.range?.last_day ?? null);
+  return field;
 }
 
 export function socialFieldNeighbors(field, nodeId) {
@@ -260,6 +454,103 @@ export function socialFieldClusterForNode(node) {
   if (text.includes('capital') || text.includes('fund') || text.includes('venture') || text.includes('invest')) return 'capital';
   if (text.includes('company') || text.includes('technology') || text.includes('frontier-ai') || text.includes('data')) return 'technology';
   return 'other';
+}
+
+// The ledger field (the explorer's Field tab, docs/explorer.md "Field").
+// Every actor, organization and bounded surface of build/surface-graph.json
+// is a node, and every participation row is one edge from its participant to
+// its surface: one mark per ledger row (rule 1). No edge joins two people or
+// two organizations (rule 2); a roster's rows are its spokes to the one
+// roster node, so no line joins two of its names (rule 3). graph.json plays
+// no part in this model, and the model carries no score of any kind.
+export const LEDGER_FIELD_SCHEMA = 'clifford-ledger-field@1';
+export function buildLedgerFieldModel(surfaceGraph) {
+  if (!surfaceGraph?.surfaces) throw new TypeError('ledger field requires a surface graph');
+  const nodes = [];
+  const nodeById = new Map();
+  const add = node => {
+    if (nodeById.has(node.id)) return nodeById.get(node.id);
+    nodeById.set(node.id, node);
+    nodes.push(node);
+    return node;
+  };
+  for (const actor of surfaceGraph.actors ?? []) {
+    add({ id: actor.id, label: actor.label || actor.id, type: 'person', kind: actor.kind || 'person', ledger_kind: 'actor', anchor: actor.anchor === true, listed: true });
+  }
+  for (const organization of surfaceGraph.organizations ?? []) {
+    add({ id: organization.id, label: organization.label || organization.id, type: 'organization', kind: organization.kind || 'organization', ledger_kind: 'organization', listed: true });
+  }
+  for (const surface of surfaceGraph.surfaces) {
+    add({
+      id: `surface-${surface.surface_id}`,
+      label: surface.surface_label || surface.surface_id,
+      type: 'surface',
+      kind: surface.surface_type || 'surface',
+      ledger_kind: 'surface',
+      surface_id: surface.surface_id,
+      surface_type: surface.surface_type || null,
+      hop_eligible: surface.hop_eligible === true,
+      participant_count: (surface.participants ?? []).length,
+      listed: true
+    });
+  }
+  const edges = [];
+  const counts = {
+    actors: (surfaceGraph.actors ?? []).length,
+    organizations: (surfaceGraph.organizations ?? []).length,
+    surfaces: surfaceGraph.surfaces.length,
+    rows: 0,
+    actor_rows: 0,
+    organization_rows: 0,
+    // A row whose participant is not in the actors or organizations list still
+    // gets a node (labelled by its id and flagged unlisted) so the row is drawn.
+    unlisted_participants: 0,
+    rows_without_participant: 0
+  };
+  // The ordinal counts every participant row in artifact order, the same
+  // order buildFieldLedgerIndex uses for its row_id suffix, so edge row-N is
+  // ledger row ::N.
+  let ordinal = 0;
+  for (const surface of surfaceGraph.surfaces) {
+    const surfaceNodeId = `surface-${surface.surface_id}`;
+    for (const participant of surface.participants ?? []) {
+      const rowOrdinal = ordinal;
+      ordinal += 1;
+      counts.rows += 1;
+      const participantId = participant.actor_id || participant.organization_id || null;
+      if (!participantId) { counts.rows_without_participant += 1; continue; }
+      const participantType = participant.participant_type || (participant.actor_id ? 'actor' : 'organization');
+      if (!nodeById.has(participantId)) {
+        counts.unlisted_participants += 1;
+        add({ id: participantId, label: participantId, type: participantType === 'actor' ? 'person' : 'organization', kind: participantType === 'actor' ? 'person' : 'organization', ledger_kind: participantType, listed: false });
+      }
+      if (participantType === 'actor') counts.actor_rows += 1; else counts.organization_rows += 1;
+      edges.push({
+        id: `row-${rowOrdinal}`,
+        from: participantId,
+        to: surfaceNodeId,
+        type: 'topology',
+        topology: true,
+        projection_layer: 'ledger_participation',
+        evidence_class: participant.evidence_class || surface.evidence_class || 'open',
+        participant_type: participantType,
+        surface_id: surface.surface_id,
+        row_ordinal: rowOrdinal
+      });
+    }
+  }
+  return {
+    schema_version: LEDGER_FIELD_SCHEMA,
+    mode: 'ledger',
+    derived: true,
+    visualization_only: true,
+    graph_effect: 'none',
+    nodes,
+    edges,
+    nodeById,
+    defaultNode: null,
+    counts
+  };
 }
 
 export function buildResearchNetworkModel(graph) {
@@ -515,6 +806,7 @@ export function buildFieldLedgerIndex(surfaceGraph, networkModel) {
         surface_id: surface.surface_id,
         surface_label: surface.surface_label,
         surface_type: surface.surface_type,
+        surface_status: surface.status ?? null,
         hop_eligible: !!surface.hop_eligible,
         surface_node_id: surfaceNodeId,
         participant_type: participantType,
