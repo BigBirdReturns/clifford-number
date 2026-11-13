@@ -26,7 +26,7 @@ assert.deepEqual(actual.errors, []);
 // 198 / 62 / 135 after the archived defense-corridor A/B receipts (2026-10-23): 21 actors entered,
 // and three primary_public team pages (Stratos 9 people, Traysar 3, Pallas 2) add 40 bases.
 // The anchor components and the zero reported-basis count are unchanged.
-assert.equal(actual.global.canonical_actor_count, 516); // 2026-11-12 Bitter Struggle chain: 468 -> 516 (48 people minted by the bitter-struggle-chain lane; every new surface is hop_eligible false, so the hop figures below are unchanged). 2026-11-10 follow-up: 459 -> 468. 2026-11-10 one-pass entry: 411 -> 459 (48 actors minted by the lens-hunt-official lane; every new surface is hop_eligible false, so the hop figures below are unchanged). 2026-11-10 lens-hunt promotion: 404 -> 411 (Jonathan Black, Feryal Clark and five UKSA Challenge Panel members).  2026-10-23 final re-pin: 293 -> 404 (the five 2026-10-23 research-dig lanes; this test was last re-pinned before them because DUPLICATE_BASIS_KEY stopped it).  2026-10-23 promotion: 198 -> 293 actors (LinkedIn role-crossing people); hop figures below unchanged
+assert.equal(actual.global.canonical_actor_count, 524); // 2026-11-13 amplification chain: 516 -> 524 (8 people minted by the amplification-chain lane; every new surface is hop_eligible false, so the hop figures below are unchanged). 2026-11-12 Bitter Struggle chain: 468 -> 516 (48 people minted by the bitter-struggle-chain lane; every new surface is hop_eligible false, so the hop figures below are unchanged). 2026-11-10 follow-up: 459 -> 468. 2026-11-10 one-pass entry: 411 -> 459 (48 actors minted by the lens-hunt-official lane; every new surface is hop_eligible false, so the hop figures below are unchanged). 2026-11-10 lens-hunt promotion: 404 -> 411 (Jonathan Black, Feryal Clark and five UKSA Challenge Panel members).  2026-10-23 final re-pin: 293 -> 404 (the five 2026-10-23 research-dig lanes; this test was last re-pinned before them because DUPLICATE_BASIS_KEY stopped it).  2026-10-23 promotion: 198 -> 293 actors (LinkedIn role-crossing people); hop figures below unchanged
 assert.equal(actual.global.accepted_edge_actor_count, 146); // 2026-11-12 owner ruling on hop bases ("Inherent and co-authorship"): 141 -> 146 (Tantum Collins, Edward Hughes, Louis Kirsch, Kaloyan Aleksiev and Ben Buchanan). 2026-11-10 lens-hunt promotion: 134 -> 141.  2026-10-23 final re-pin: 62 -> 134
 assert.equal(actual.global.basis_count, 329); // 2026-11-12 owner ruling on hop bases ("Inherent and co-authorship"): 318 -> 329 (ten Inherent pairs and the co-authorship pair). 2026-11-10 lens-hunt promotion: 300 -> 318 (summit and AI Growth Zones pairs, SAGE 17, the 15 UKSA panel pairs).  2026-10-23 final re-pin: 135 -> 300 (after the Form D person-row merge and the year-only a16z 2022 sessions leaving the hop set)
 assert.deepEqual(actual.global.evidence_counts, { official: 141, primary_public: 188 }); // 2026-11-12 owner ruling on hop bases ("Inherent and co-authorship"): primary_public 177 -> 188 (both ruled surfaces are first-party). 2026-11-10 lens-hunt promotion: official 123 -> 141.  2026-10-23 final re-pin: { official: 75, primary_public: 60 } -> this
@@ -47,14 +47,15 @@ assert.equal(actual.anchor_components.reported_basis_count, 0);
 // reported surfaces as before, and the LinkedIn role surfaces are pinned by count and shape.
 const isLinkedInRoleSurface = id => /-linkedin-\d{4}-(\d{4}|present)$/.test(id);
 const LINKEDIN_ROLE_SURFACES = 719; // 2026-10-23 promotion
-assert.equal(actual.reported_ledger_boundary.reported_participation_rows, 1622); // 2026-11-12 Bitter Struggle chain: 1,615 -> 1,622 (the rows of the three reported surfaces from The Stack and TNW). 2026-10-23 final re-pin: 1,483 -> 1615.  2026-10-23 promotion: 39 -> 1,483
-assert.equal(actual.reported_ledger_boundary.reported_surface_rows, 771); // 2026-11-12 Bitter Struggle chain: 768 -> 771 (the three reported surfaces from The Stack and TNW, all non-hop). 2026-10-23 final re-pin: 736 -> 768.  2026-10-23 promotion: 17 -> 736
+assert.equal(actual.reported_ledger_boundary.reported_participation_rows, 1624); // 2026-11-13 amplification chain: 1,622 -> 1,624 (the two rows of the Washington Post report via the Anchorage Daily News). 2026-11-12 Bitter Struggle chain: 1,615 -> 1,622 (the rows of the three reported surfaces from The Stack and TNW). 2026-10-23 final re-pin: 1,483 -> 1615.  2026-10-23 promotion: 39 -> 1,483
+assert.equal(actual.reported_ledger_boundary.reported_surface_rows, 772); // 2026-11-13 amplification chain: 771 -> 772 (the Washington Post report via the Anchorage Daily News, non-hop). 2026-11-12 Bitter Struggle chain: 768 -> 771 (the three reported surfaces from The Stack and TNW, all non-hop). 2026-10-23 final re-pin: 736 -> 768.  2026-10-23 promotion: 17 -> 736
 for (const key of ['non_hop_surface_ids', 'reported_surface_ids', 'reported_evidence_surface_ids']) {
   assert.equal(actual.reported_ledger_boundary[key].filter(isLinkedInRoleSurface).length, LINKEDIN_ROLE_SURFACES, `${key}: LinkedIn role surfaces`);
 }
 assert.deepEqual(actual.reported_ledger_boundary.accepted_reported_surface_ids, [], 'no reported surface is accepted as a hop basis');
 // 2026-10-23 final re-pin: 18 -> 50 non-LinkedIn reported surfaces (+32 from the research-dig lanes). Every one stays non-hop.
 // 2026-11-12 Bitter Struggle chain: + the three reported surfaces from The Stack and TNW (Matt Clifford's reported Anthropic appointment and ARIA exit, and ARIA's reported licence with Anthropic). Every one stays non-hop.
+// 2026-11-13 amplification chain: + the Washington Post report via the Anchorage Daily News (Jacob Coxon's group chat). It stays non-hop.
 assert.deepEqual(actual.reported_ledger_boundary.non_hop_surface_ids.filter(id => !isLinkedInRoleSurface(id)), [
   'afwerx-austin-hub-at-capital-factory-2018-06-27',
   'argentina-capital-humano-social-digital-twin-announcement-2026-05-27',
@@ -82,6 +83,7 @@ assert.deepEqual(actual.reported_ledger_boundary.non_hop_surface_ids.filter(id =
   'gartner-synthetic-population-vendor-race-self-report-qloo-2026-09-15',
   'gartner-synthetic-population-vendor-race-self-report-stravito-2026-04-30',
   'gartner-synthetic-population-vendor-race-self-report-verve-2026-10-23',
+  'jacob-coxon-group-chat-retweets-reported-2026-09-11',
   'joshua-baer-death-2026-06-16',
   'matt-clifford-anthropic-managing-director-international-affairs-reported-2026-09-02',
   'matt-clifford-aria-chair-exit-announced-reported-2026-09-07',
@@ -112,6 +114,7 @@ assert.deepEqual(actual.reported_ledger_boundary.non_hop_surface_ids.filter(id =
 ]);
 // 2026-10-23 final re-pin: 17 -> 49 non-LinkedIn reported surfaces (+32 from the research-dig lanes). Every one stays non-hop.
 // 2026-11-12 Bitter Struggle chain: + the same three reported surfaces. Every one stays non-hop.
+// 2026-11-13 amplification chain: + the same Washington Post report. It stays non-hop.
 assert.deepEqual(actual.reported_ledger_boundary.reported_surface_ids.filter(id => !isLinkedInRoleSurface(id)), [
   'afwerx-austin-hub-at-capital-factory-2018-06-27',
   'argentina-capital-humano-social-digital-twin-announcement-2026-05-27',
@@ -138,6 +141,7 @@ assert.deepEqual(actual.reported_ledger_boundary.reported_surface_ids.filter(id 
   'gartner-synthetic-population-vendor-race-self-report-qloo-2026-09-15',
   'gartner-synthetic-population-vendor-race-self-report-stravito-2026-04-30',
   'gartner-synthetic-population-vendor-race-self-report-verve-2026-10-23',
+  'jacob-coxon-group-chat-retweets-reported-2026-09-11',
   'joshua-baer-death-2026-06-16',
   'matt-clifford-anthropic-managing-director-international-affairs-reported-2026-09-02',
   'matt-clifford-aria-chair-exit-announced-reported-2026-09-07',
