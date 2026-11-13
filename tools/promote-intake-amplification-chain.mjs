@@ -45,8 +45,9 @@
 // the ledger first; any other unresolved organisation stops the run. Every minted person carries a
 // short plain.who / plain.why_here (PLAIN) drawn only from that person's surfaces, in the sources' own
 // words. Labels that resolve to an existing record are listed in summary.json for a reader to confirm.
-// Every new surface is hop_eligible false (entered_2026_11_13_pending_hop_review): there is no
-// hop-bases ruling for this lane, so none is required or read.
+// Every new surface is hop_eligible false (entered_2026_11_13_pending_hop_review) except the hop bases of
+// the owner's ruling of 13 November 2026 (the intake's rulings.hop_bases), which delegated the pick to
+// the supervising session; those are hop_eligible true.
 import fs from 'node:fs';
 import path from 'node:path';
 import { root, readJson, readJsonl, writeJson, writeJsonl, slug } from './lib/ledger.mjs';
@@ -134,6 +135,16 @@ const PLAIN = {
 
 const intake = readJson(INTAKE);
 const pages = intake.pages.filter(p => (p.surfaces ?? []).length);
+// The owner's ruling on hop bases, whose pick he delegated to the supervising session: exactly the
+// surfaces it names are hop_eligible true.
+const HOP_BASES = intake.rulings.hop_bases;
+if (HOP_BASES?.decided_by !== 'owner' || HOP_BASES.delegated_pick !== 'supervising session' || !/^\d{4}-\d{2}-\d{2}$/.test(HOP_BASES.date ?? '') || !(HOP_BASES.surface_ids ?? []).length) throw new Error('rulings.hop_bases must be a dated owner ruling, its pick delegated to the supervising session, naming its surfaces');
+const hopBaseIds = new Set(HOP_BASES.surface_ids);
+const intakeSurfaceIds = new Set(pages.flatMap(p => p.surfaces.map(s => s.surface_id)));
+for (const id of hopBaseIds) if (!intakeSurfaceIds.has(id)) throw new Error(`rulings.hop_bases names ${id}, which is not a surface of this intake`);
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const HOP_BASES_DATE = (([y, m, d]) => `${Number(d)} ${MONTHS[Number(m) - 1]} ${y}`)(HOP_BASES.date.split('-'));
+const HOP_BASE_SENTENCE = `It is a hop base by the owner's ruling of ${HOP_BASES_DATE}, which delegated the pick to the supervising session.`;
 const ledgerReceiptsAll = readJsonl('data/ledger/receipts.jsonl');
 const heldCopies = heldPageCopies(ledgerReceiptsAll, LANE);
 
@@ -433,8 +444,8 @@ for (const page of pages) {
       surface_label: s.label,
       surface_type: s.surface_type,
       secondary_surface_types: [],
-      hop_eligible: false,
-      hop_refusal_reason: HOP_REFUSAL,
+      hop_eligible: hopBaseIds.has(s.surface_id),
+      ...(hopBaseIds.has(s.surface_id) ? {} : { hop_refusal_reason: HOP_REFUSAL }),
       scorable: true,
       status: s.status,
       bounded_by: s.bounded_by,
@@ -442,7 +453,7 @@ for (const page of pages) {
       time_end: surfaceEnd,
       evidence_class: s.evidence_class,
       receipt_ids: used,
-      notes: [s.notes.trim(), DRAFTED_SENTENCE].join(' '),
+      notes: [s.notes.trim(), DRAFTED_SENTENCE, ...(hopBaseIds.has(s.surface_id) ? [HOP_BASE_SENTENCE] : [])].join(' '),
       date_basis: s.date_basis,
       limits: s.limits,
       intake_source: LANE,
@@ -475,8 +486,10 @@ const actorsOut = [...newActors.values()].filter(a => usedActorIds.has(a.id)).so
 });
 const { errors: contractErrors } = checkReceiptContract(receipts, { root });
 if (contractErrors.length) throw new Error(`staged receipts fail the receipt contract: ${contractErrors.map(e => `${e.receipt_id} ${e.message}`).join('; ')}`);
-// There is no hop-bases ruling for this lane: every surface is hop_eligible false pending hop review.
-if (surfaces.some(s => s.hop_eligible !== false || s.hop_refusal_reason !== HOP_REFUSAL)) throw new Error('every surface of this lane must be hop_eligible false pending hop review');
+// Exactly the surfaces of the owner's ruling are entered and hop_eligible true; every other is false.
+const missingBases = [...hopBaseIds].filter(id => !surfaces.some(s => s.surface_id === id));
+if (missingBases.length) throw new Error(`the ruled hop bases ${missingBases.join(', ')} were not entered`);
+if (surfaces.some(s => s.hop_eligible !== hopBaseIds.has(s.surface_id))) throw new Error("only the surfaces of the owner's ruling may be hop_eligible true, and each of them must be");
 for (const src of sources.values()) {
   for (const id of sourceReceiptIds.get(src.key)) {
     if (!usedReceiptIds.has(id) && !gaps.some(g => g.receipts?.includes(id) || g.receipt_failures?.some(f => f.receipt_id === id))) {
@@ -511,7 +524,7 @@ writeJson(`${OUT}/summary.json`, {
     failed: [...manifest.values()].filter(r => r.status === 'failed').map(r => ({ receipt_id: r.receipt_id, source_url: r.source_url, reason: r.reason })),
     not_archived: [...manifest.values()].filter(r => r.status === 'not_archived').map(r => ({ receipt_id: r.receipt_id, source_url: r.source_url, reason: r.reason })),
   },
-  admission_rule: 'A participant is admitted only when the archived copy of its page shows its shown words (text compared with markup stripped, entities decoded, whitespace collapsed and curly quotes folded, ignoring letter case, as whole words); a surface only when the intake gives it a date (a page that states none where its date is to be taken is gapped, not guessed), its receipt satisfies the live receipt contract, at least one participant is admitted and it is not a second copy of an event the ledger already holds (every admitted person already on one ledger surface with the same dates). A participation row carries the dates the source states for the person\'s role when the intake gives them, otherwise the surface dates. There is no hop-bases ruling for this lane: every surface is hop_eligible false pending hop review. Everything refused goes to gaps.jsonl.',
+  admission_rule: 'A participant is admitted only when the archived copy of its page shows its shown words (text compared with markup stripped, entities decoded, whitespace collapsed and curly quotes folded, ignoring letter case, as whole words); a surface only when the intake gives it a date (a page that states none where its date is to be taken is gapped, not guessed), its receipt satisfies the live receipt contract, at least one participant is admitted and it is not a second copy of an event the ledger already holds (every admitted person already on one ledger surface with the same dates). A participation row carries the dates the source states for the person\'s role when the intake gives them, otherwise the surface dates. The surfaces of the owner\'s ruling on hop bases of ' + HOP_BASES_DATE + ', which delegated the pick to the supervising session (the intake\'s rulings.hop_bases), are hop_eligible true; every other surface is hop_eligible false pending hop review. Everything refused goes to gaps.jsonl.',
   counts,
   gap_reasons: Object.fromEntries(Object.entries(reasons).sort(([a], [b]) => a.localeCompare(b))),
   resolved_to_existing_records: resolvedOut,

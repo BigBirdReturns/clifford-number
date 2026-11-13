@@ -81,3 +81,4 @@ Under the current hop rule, no admitted line becomes a hop: reposts, a group cha
   * NIK's 509-account file is unpublished, so the other starred first-hour accounts can't be checked one by one.
   * The reply threads under both posts can't be read through the mirror.
   * A post of Calvin's on 12 Nov says "I'm hiring" for a Senior AI Fellow role at Cal OES, while his bio still says Encode. His current role is unresolved.
+* **Hop base (2026-11-13):** asked "Make any of the 18 new surfaces a hop base?", the owner answered "Yes, pick some" and delegated the pick to the supervising session, which picked one: Encode's team roster (`encode-ai-team-roster-2026-11-13`), the only bounded, dated set of named people in one documented relationship; the quote-posts and reposts are one-sided acts and stay pending hop review.
