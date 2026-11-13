@@ -6,7 +6,7 @@ Generated: 2026-09-12T03:00:00.000Z
 
 Broad-institution reviews: 9
 
-Findings: 1025
+Findings: 1072
 
 ## finding-001: Electric Twin behaves as a surface factory
 
@@ -88,13 +88,13 @@ Refs: `ben-warner-no10-digital-data-role-observation-2020-2021`, `ben-warner-cum
 
 **Observed**
 
-Cabinet Office appears across 20 surface(s): simon-case-cabinet-secretary-2020-2024, cf-award-cabinet-office-faculty-2019-10-14-8e4b2d57, cabinet-office-consultation-culture-press-release-2026-03-26, uksa-independent-review-challenge-panel-2023-06-09, uk-ministerial-meetings-rt-hon-boris-johnson-mp-meetings-october-to-december-2021-62458d43, uk-ministerial-meetings-cabinet-office-ministerial-meetings-july-to-september-2023-6578881e, uk-ministerial-meetings-rt-hon-rishi-sunak-mp-meetings-april-to-june-2024-66f66969, uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-rt-hon-rishi-sunak-mp-meetings-july-679b77de, uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-october-to-december-2024-67e56857, uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-january-to-march-2025-685d5305, uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-april-to-june-2025-68d54fb8, uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-july-to-september-2025-69958c31, uk-ministerial-meetings-cabinet-office-ministerial-meetings-july-to-september-2025-6a219df9, uk-ministerial-meetings-cabinet-office-ministers-meetings-october-to-december-2025-69c29a18, uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-october-to-december-2025-69c299db, uk-ministerial-meetings-cabinet-office-ministerial-meetings-january-to-march-2026-6a3e3663, uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-january-to-march-2026-6a3e3656, uk-ministerial-meetings-cabinet-office-ministerial-meetings-april-to-june-2026-6ab540e5, uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-ministerial-meetings-april-to-june-2-6ab5213d, gov-uk-chat-anthropic-model-transparency-record-2025-10-07. Secondary types: governance_continuity_surface, government_advisory_surface.
+Cabinet Office appears across 71 surface(s): simon-case-cabinet-secretary-2020-2024, cf-award-cabinet-office-faculty-2019-10-14-8e4b2d57, cabinet-office-consultation-culture-press-release-2026-03-26, uksa-independent-review-challenge-panel-2023-06-09, uk-ministerial-meetings-rt-hon-boris-johnson-mp-meetings-october-to-december-2021-62458d43, uk-ministerial-meetings-cabinet-office-ministerial-meetings-july-to-september-2023-6578881e, uk-ministerial-meetings-rt-hon-rishi-sunak-mp-meetings-april-to-june-2024-66f66969, uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-rt-hon-rishi-sunak-mp-meetings-july-679b77de, uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-october-to-december-2024-67e56857, uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-january-to-march-2025-685d5305, uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-april-to-june-2025-68d54fb8, uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-july-to-september-2025-69958c31, uk-ministerial-meetings-cabinet-office-ministerial-meetings-july-to-september-2025-6a219df9, uk-ministerial-meetings-cabinet-office-ministers-meetings-october-to-december-2025-69c29a18, uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-october-to-december-2025-69c299db, uk-ministerial-meetings-cabinet-office-ministerial-meetings-january-to-march-2026-6a3e3663, uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-january-to-march-2026-6a3e3656, uk-ministerial-meetings-cabinet-office-ministerial-meetings-april-to-june-2026-6ab540e5, uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-ministerial-meetings-april-to-june-2-6ab5213d, gov-uk-chat-anthropic-model-transparency-record-2025-10-07, cf-award-cabinet-office-mills-reeve-2020-04-06-ccc91b00, cf-award-cabinet-office-kpmg-2020-10-02-2eb78c56, cf-award-cabinet-office-civica-2023-02-21-6eb5261d, cf-award-cabinet-office-deloitte-2023-03-22-fffc5240, cf-award-cabinet-office-workday-2023-03-23-bb572323, cf-award-ukhsa-cabinet-office-2023-03-23-55b8a296, cf-award-nhs-england-cabinet-office-2023-04-14-0fe1592c, cf-award-cabinet-office-dataminr-2023-04-21-417c22c9, cf-award-cabinet-office-dla-piper-2023-06-16-254295db, cf-award-ukhsa-cabinet-office-2023-06-19-c16325de, cf-award-cabinet-office-accenture-2023-06-22-254ddf3e, cf-award-ukhsa-cabinet-office-2023-08-29-6d8bd1fb, cf-award-cabinet-office-gartner-2023-12-01-6b2b40b0, cf-award-cabinet-office-dla-piper-2023-12-31-afc2548a, cf-award-cabinet-office-capgemini-2024-03-11-afb30d07, cf-award-nhs-england-cabinet-office-2024-03-20-5e7bccad, cf-award-cabinet-office-kainos-2024-03-24-ebb6614c, cf-award-cabinet-office-gartner-2024-03-28-fa270136, cf-award-cabinet-office-experian-2024-03-31-c8954420, cf-award-cabinet-office-oracle-2024-04-30-db54af93, cf-award-cabinet-office-vodafone-2024-06-19-91248f0e, cf-award-cabinet-office-oracle-2024-06-24-1986eb38, cf-award-cabinet-office-microsoft-2024-06-28-2f23f6a2, cf-award-nhs-england-cabinet-office-2024-07-04-1fe2811f, cf-award-cabinet-office-kpmg-2024-07-26-b56b9b7b, cf-award-cabinet-office-microsoft-2024-09-29-a55e38a7, cf-award-cabinet-office-gartner-2024-09-30-df66c9e5, cf-award-cabinet-office-oracle-2025-02-06-d225caf3, cf-award-cabinet-office-oracle-2025-02-11-99e39732, cf-award-cabinet-office-quantexa-2025-02-28-9705cd41, cf-award-cabinet-office-gartner-2025-03-03-52c8f939, cf-award-cabinet-office-oracle-2025-03-08-83bb839b, cf-award-cabinet-office-oracle-2025-03-09-88519a47, cf-award-nhs-england-cabinet-office-2025-03-31-9c2d947b, cf-award-cabinet-office-databricks-2025-04-11-c6f8a470, cf-award-cabinet-office-experian-2025-06-02-025497d6, cf-award-cabinet-office-pinsent-masons-2025-07-01-e9b99faf, cf-award-cabinet-office-vodafone-2025-07-10-1459bb72, cf-award-cabinet-office-university-of-salford-2025-07-18-933d730f, cf-award-cabinet-office-accenture-2025-08-27-2077d523, cf-award-cabinet-office-amazon-web-services-aws-2025-09-01-4a090aca, cf-award-cabinet-office-michelin-2025-09-23-f27fed36, cf-award-cabinet-office-microsoft-2025-10-31-f49eab3c, cf-award-cabinet-office-experian-2025-11-01-e1a17f6c, cf-award-cabinet-office-experian-2025-11-03-5636d13c, cf-award-cabinet-office-accenture-2025-12-19-32be8363, cf-award-cabinet-office-oracle-2026-01-22-b25f696d, cf-award-cabinet-office-oracle-2026-02-18-0d4511f5, cf-award-cabinet-office-gartner-2026-03-30-a9776a57, cf-award-nhs-england-cabinet-office-2026-04-01-dccb474b, cf-award-cabinet-office-kpmg-2026-05-05-d318e48d. Secondary types: governance_continuity_surface, government_advisory_surface.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `simon-case-cabinet-secretary-2020-2024`, `cf-award-cabinet-office-faculty-2019-10-14-8e4b2d57`, `cabinet-office-consultation-culture-press-release-2026-03-26`, `uksa-independent-review-challenge-panel-2023-06-09`, `uk-ministerial-meetings-rt-hon-boris-johnson-mp-meetings-october-to-december-2021-62458d43`, `uk-ministerial-meetings-cabinet-office-ministerial-meetings-july-to-september-2023-6578881e`, `uk-ministerial-meetings-rt-hon-rishi-sunak-mp-meetings-april-to-june-2024-66f66969`, `uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-rt-hon-rishi-sunak-mp-meetings-july-679b77de`, `uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-october-to-december-2024-67e56857`, `uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-january-to-march-2025-685d5305`, `uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-april-to-june-2025-68d54fb8`, `uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-july-to-september-2025-69958c31`, `uk-ministerial-meetings-cabinet-office-ministerial-meetings-july-to-september-2025-6a219df9`, `uk-ministerial-meetings-cabinet-office-ministers-meetings-october-to-december-2025-69c29a18`, `uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-october-to-december-2025-69c299db`, `uk-ministerial-meetings-cabinet-office-ministerial-meetings-january-to-march-2026-6a3e3663`, `uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-january-to-march-2026-6a3e3656`, `uk-ministerial-meetings-cabinet-office-ministerial-meetings-april-to-june-2026-6ab540e5`, `uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-ministerial-meetings-april-to-june-2-6ab5213d`, `gov-uk-chat-anthropic-model-transparency-record-2025-10-07`
+Refs: `simon-case-cabinet-secretary-2020-2024`, `cf-award-cabinet-office-faculty-2019-10-14-8e4b2d57`, `cabinet-office-consultation-culture-press-release-2026-03-26`, `uksa-independent-review-challenge-panel-2023-06-09`, `uk-ministerial-meetings-rt-hon-boris-johnson-mp-meetings-october-to-december-2021-62458d43`, `uk-ministerial-meetings-cabinet-office-ministerial-meetings-july-to-september-2023-6578881e`, `uk-ministerial-meetings-rt-hon-rishi-sunak-mp-meetings-april-to-june-2024-66f66969`, `uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-rt-hon-rishi-sunak-mp-meetings-july-679b77de`, `uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-october-to-december-2024-67e56857`, `uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-january-to-march-2025-685d5305`, `uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-april-to-june-2025-68d54fb8`, `uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-july-to-september-2025-69958c31`, `uk-ministerial-meetings-cabinet-office-ministerial-meetings-july-to-september-2025-6a219df9`, `uk-ministerial-meetings-cabinet-office-ministers-meetings-october-to-december-2025-69c29a18`, `uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-october-to-december-2025-69c299db`, `uk-ministerial-meetings-cabinet-office-ministerial-meetings-january-to-march-2026-6a3e3663`, `uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-january-to-march-2026-6a3e3656`, `uk-ministerial-meetings-cabinet-office-ministerial-meetings-april-to-june-2026-6ab540e5`, `uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-ministerial-meetings-april-to-june-2-6ab5213d`, `gov-uk-chat-anthropic-model-transparency-record-2025-10-07`, `cf-award-cabinet-office-mills-reeve-2020-04-06-ccc91b00`, `cf-award-cabinet-office-kpmg-2020-10-02-2eb78c56`, `cf-award-cabinet-office-civica-2023-02-21-6eb5261d`, `cf-award-cabinet-office-deloitte-2023-03-22-fffc5240`, `cf-award-cabinet-office-workday-2023-03-23-bb572323`, `cf-award-ukhsa-cabinet-office-2023-03-23-55b8a296`, `cf-award-nhs-england-cabinet-office-2023-04-14-0fe1592c`, `cf-award-cabinet-office-dataminr-2023-04-21-417c22c9`, `cf-award-cabinet-office-dla-piper-2023-06-16-254295db`, `cf-award-ukhsa-cabinet-office-2023-06-19-c16325de`, `cf-award-cabinet-office-accenture-2023-06-22-254ddf3e`, `cf-award-ukhsa-cabinet-office-2023-08-29-6d8bd1fb`, `cf-award-cabinet-office-gartner-2023-12-01-6b2b40b0`, `cf-award-cabinet-office-dla-piper-2023-12-31-afc2548a`, `cf-award-cabinet-office-capgemini-2024-03-11-afb30d07`, `cf-award-nhs-england-cabinet-office-2024-03-20-5e7bccad`, `cf-award-cabinet-office-kainos-2024-03-24-ebb6614c`, `cf-award-cabinet-office-gartner-2024-03-28-fa270136`, `cf-award-cabinet-office-experian-2024-03-31-c8954420`, `cf-award-cabinet-office-oracle-2024-04-30-db54af93`, `cf-award-cabinet-office-vodafone-2024-06-19-91248f0e`, `cf-award-cabinet-office-oracle-2024-06-24-1986eb38`, `cf-award-cabinet-office-microsoft-2024-06-28-2f23f6a2`, `cf-award-nhs-england-cabinet-office-2024-07-04-1fe2811f`, `cf-award-cabinet-office-kpmg-2024-07-26-b56b9b7b`, `cf-award-cabinet-office-microsoft-2024-09-29-a55e38a7`, `cf-award-cabinet-office-gartner-2024-09-30-df66c9e5`, `cf-award-cabinet-office-oracle-2025-02-06-d225caf3`, `cf-award-cabinet-office-oracle-2025-02-11-99e39732`, `cf-award-cabinet-office-quantexa-2025-02-28-9705cd41`, `cf-award-cabinet-office-gartner-2025-03-03-52c8f939`, `cf-award-cabinet-office-oracle-2025-03-08-83bb839b`, `cf-award-cabinet-office-oracle-2025-03-09-88519a47`, `cf-award-nhs-england-cabinet-office-2025-03-31-9c2d947b`, `cf-award-cabinet-office-databricks-2025-04-11-c6f8a470`, `cf-award-cabinet-office-experian-2025-06-02-025497d6`, `cf-award-cabinet-office-pinsent-masons-2025-07-01-e9b99faf`, `cf-award-cabinet-office-vodafone-2025-07-10-1459bb72`, `cf-award-cabinet-office-university-of-salford-2025-07-18-933d730f`, `cf-award-cabinet-office-accenture-2025-08-27-2077d523`, `cf-award-cabinet-office-amazon-web-services-aws-2025-09-01-4a090aca`, `cf-award-cabinet-office-michelin-2025-09-23-f27fed36`, `cf-award-cabinet-office-microsoft-2025-10-31-f49eab3c`, `cf-award-cabinet-office-experian-2025-11-01-e1a17f6c`, `cf-award-cabinet-office-experian-2025-11-03-5636d13c`, `cf-award-cabinet-office-accenture-2025-12-19-32be8363`, `cf-award-cabinet-office-oracle-2026-01-22-b25f696d`, `cf-award-cabinet-office-oracle-2026-02-18-0d4511f5`, `cf-award-cabinet-office-gartner-2026-03-30-a9776a57`, `cf-award-nhs-england-cabinet-office-2026-04-01-dccb474b`, `cf-award-cabinet-office-kpmg-2026-05-05-d318e48d`
 
 ---
 
@@ -106,13 +106,13 @@ Refs: `simon-case-cabinet-secretary-2020-2024`, `cf-award-cabinet-office-faculty
 
 **Observed**
 
-Department for Science, Innovation and Technology (DSIT) appears across 51 surface(s): ai-opportunities-action-plan-development-2024-2025, ai-opportunities-action-plan-2025, ai-safety-summit-representative-appointment-2023-08-10, dsit-techuk-anduril-ai-safety-roundtable-2023-10-17, dsit-matt-clifford-ai-investor-roundtable-2023-10-25, frontier-ai-taskforce-external-advisory-board-appointments-2023-09-07, cf-award-dsit-faculty-2024-02-20-3a57f9fd, dsit-payments-faculty-science-2024-02, dsit-payments-faculty-science-2024-03, dsit-payments-faculty-science-2024-04, dsit-payments-faculty-science-2024-05, dsit-payments-faculty-science-2024-10, cf-award-dsit-faculty-2024-10-16-d7f72045, dsit-payments-faculty-science-2024-12, clifford-ai-opportunities-adviser-appointment-2025-01-13, dsit-payments-faculty-science-2025-01, ai-growth-zones-bidding-opens-2025-02-10, dsit-payments-faculty-science-2025-03, dsit-payments-faculty-science-2025-04, ai-energy-council-first-meeting-2025-04-08, ai-growth-zones-qualifying-process-2025-04-30, national-supercomputer-edinburgh-750m-2025-06-11, dsit-payments-faculty-science-2025-06, uk-compute-roadmap-sovereign-ai-unit-2025-07-17, dsit-payments-faculty-science-2025-07, dsit-payments-faculty-science-2025-09, north-east-ai-growth-zone-designation-2025-09-24, dsit-payments-faculty-science-2025-10, ai-growth-zones-north-wales-delivery-package-2025-11-13, dsit-payments-faculty-science-2025-12, ai-opportunities-action-plan-one-year-on-2026-01-29, lanarkshire-ai-growth-zone-designation-2026-01-29, sovereign-ai-unit-first-backing-2026-04-16, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2025-6936dac1, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5, matt-clifford-lead-reviewer-ai-opportunities-action-plan-term-2024-07-22, uk-anthropic-memorandum-of-understanding-ai-opportunities-2025-02-13, dsit-business-appointment-daisy-mcgregor-to-anthropic-2025-03-18, gov-uk-chat-anthropic-model-transparency-record-2025-10-07, dsit-business-appointment-james-lowe-to-anthropic-2025-12-02, dsit-selects-anthropic-gov-uk-assistant-2026-01-27. Secondary types: governance_continuity_surface, government_advisory_surface, model_governance_surface, policy_to_procurement_surface, public_private_ai_infrastructure.
+Department for Science, Innovation and Technology (DSIT) appears across 94 surface(s): ai-opportunities-action-plan-development-2024-2025, ai-opportunities-action-plan-2025, ai-safety-summit-representative-appointment-2023-08-10, dsit-techuk-anduril-ai-safety-roundtable-2023-10-17, dsit-matt-clifford-ai-investor-roundtable-2023-10-25, frontier-ai-taskforce-external-advisory-board-appointments-2023-09-07, cf-award-dsit-faculty-2024-02-20-3a57f9fd, dsit-payments-faculty-science-2024-02, dsit-payments-faculty-science-2024-03, dsit-payments-faculty-science-2024-04, dsit-payments-faculty-science-2024-05, dsit-payments-faculty-science-2024-10, cf-award-dsit-faculty-2024-10-16-d7f72045, dsit-payments-faculty-science-2024-12, clifford-ai-opportunities-adviser-appointment-2025-01-13, dsit-payments-faculty-science-2025-01, ai-growth-zones-bidding-opens-2025-02-10, dsit-payments-faculty-science-2025-03, dsit-payments-faculty-science-2025-04, ai-energy-council-first-meeting-2025-04-08, ai-growth-zones-qualifying-process-2025-04-30, national-supercomputer-edinburgh-750m-2025-06-11, dsit-payments-faculty-science-2025-06, uk-compute-roadmap-sovereign-ai-unit-2025-07-17, dsit-payments-faculty-science-2025-07, dsit-payments-faculty-science-2025-09, north-east-ai-growth-zone-designation-2025-09-24, dsit-payments-faculty-science-2025-10, ai-growth-zones-north-wales-delivery-package-2025-11-13, dsit-payments-faculty-science-2025-12, ai-opportunities-action-plan-one-year-on-2026-01-29, lanarkshire-ai-growth-zone-designation-2026-01-29, sovereign-ai-unit-first-backing-2026-04-16, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2025-6936dac1, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5, matt-clifford-lead-reviewer-ai-opportunities-action-plan-term-2024-07-22, uk-anthropic-memorandum-of-understanding-ai-opportunities-2025-02-13, dsit-business-appointment-daisy-mcgregor-to-anthropic-2025-03-18, gov-uk-chat-anthropic-model-transparency-record-2025-10-07, dsit-business-appointment-james-lowe-to-anthropic-2025-12-02, dsit-selects-anthropic-gov-uk-assistant-2026-01-27, cf-award-dsit-university-of-birmingham-2024-01-01-5e18108e, cf-award-dsit-gartner-2024-01-31-e9e7ef1b, cf-award-dsit-kpmg-2024-02-09-6fd9747e, cf-award-dsit-kpmg-2024-02-09-c0cc9d9e, cf-award-dsit-capgemini-2024-02-19-bb3f7eda, cf-award-dsit-capgemini-2024-04-05-375a12de, cf-award-dsit-accenture-2024-05-09-1f0bb970, cf-award-dsit-accenture-2024-05-09-b44b64b7, cf-award-dsit-kpmg-2024-05-17-897470b2, cf-award-dsit-capgemini-2024-06-15-1ec54708, cf-award-dsit-workday-2024-09-04-c2820e8e, cf-award-dsit-scale-ai-2024-10-07-f389111e, cf-award-dsit-dla-piper-2024-10-15-1cabc16c, cf-award-dsit-dla-piper-2024-11-06-24469cc7, cf-award-dsit-capgemini-2024-12-02-ff1774ec, cf-award-dsit-deloitte-2024-12-06-28514d3f, cf-award-dsit-capgemini-2024-12-19-e0b3024b, cf-award-dsit-kpmg-2025-01-13-60b4d973, cf-award-dsit-mckinsey-and-company-2025-01-27-0abb0b87, cf-award-dsit-kpmg-2025-02-03-6ae52de4, cf-award-dsit-dla-piper-2025-02-05-db4a84c4, cf-award-dsit-pwc-2025-02-07-cb460d15, cf-award-dsit-deloitte-2025-03-13-def80c1c, cf-award-dsit-atkinsrealis-2025-03-31-ab581983, cf-award-dsit-capgemini-2025-04-01-b6ca2c5e, cf-award-dsit-pinsent-masons-2025-04-04-a415b225, cf-award-dsit-plexal-2025-09-22-a7a22813, cf-award-dsit-plexal-2025-09-29-723d69f0, cf-award-dsit-deloitte-2025-10-08-20ced53d, cf-award-dsit-pwc-2025-11-17-85af4b9e, cf-award-dsit-gartner-2025-12-24-dedfdb86, cf-award-dsit-pinsent-masons-2026-01-19-0af7e536, cf-award-dsit-capgemini-2026-02-05-d8d73ed7, cf-award-dsit-kainos-2026-02-25-84e9b31e, cf-award-dsit-ncc-group-2026-04-02-2b828d25, cf-award-dsit-dla-piper-2026-06-04-a37b35aa, cf-award-dsit-accenture-2026-06-15-df0df041, cf-award-dsit-mills-reeve-2026-06-16-44d41c2c, cf-award-dsit-google-2026-06-19-2f99cb6d, cf-award-dsit-gartner-2026-06-30-aae4ce57, cf-award-dsit-amazon-web-services-aws-2026-07-22-499414cd, cf-award-dsit-bae-systems-2026-09-02-ed4315bd, cf-award-dsit-kpmg-2026-09-03-711b5f63. Secondary types: governance_continuity_surface, government_advisory_surface, model_governance_surface, policy_to_procurement_surface, public_private_ai_infrastructure.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `ai-opportunities-action-plan-development-2024-2025`, `ai-opportunities-action-plan-2025`, `ai-safety-summit-representative-appointment-2023-08-10`, `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17`, `dsit-matt-clifford-ai-investor-roundtable-2023-10-25`, `frontier-ai-taskforce-external-advisory-board-appointments-2023-09-07`, `cf-award-dsit-faculty-2024-02-20-3a57f9fd`, `dsit-payments-faculty-science-2024-02`, `dsit-payments-faculty-science-2024-03`, `dsit-payments-faculty-science-2024-04`, `dsit-payments-faculty-science-2024-05`, `dsit-payments-faculty-science-2024-10`, `cf-award-dsit-faculty-2024-10-16-d7f72045`, `dsit-payments-faculty-science-2024-12`, `clifford-ai-opportunities-adviser-appointment-2025-01-13`, `dsit-payments-faculty-science-2025-01`, `ai-growth-zones-bidding-opens-2025-02-10`, `dsit-payments-faculty-science-2025-03`, `dsit-payments-faculty-science-2025-04`, `ai-energy-council-first-meeting-2025-04-08`, `ai-growth-zones-qualifying-process-2025-04-30`, `national-supercomputer-edinburgh-750m-2025-06-11`, `dsit-payments-faculty-science-2025-06`, `uk-compute-roadmap-sovereign-ai-unit-2025-07-17`, `dsit-payments-faculty-science-2025-07`, `dsit-payments-faculty-science-2025-09`, `north-east-ai-growth-zone-designation-2025-09-24`, `dsit-payments-faculty-science-2025-10`, `ai-growth-zones-north-wales-delivery-package-2025-11-13`, `dsit-payments-faculty-science-2025-12`, `ai-opportunities-action-plan-one-year-on-2026-01-29`, `lanarkshire-ai-growth-zone-designation-2026-01-29`, `sovereign-ai-unit-first-backing-2026-04-16`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2025-6936dac1`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5`, `matt-clifford-lead-reviewer-ai-opportunities-action-plan-term-2024-07-22`, `uk-anthropic-memorandum-of-understanding-ai-opportunities-2025-02-13`, `dsit-business-appointment-daisy-mcgregor-to-anthropic-2025-03-18`, `gov-uk-chat-anthropic-model-transparency-record-2025-10-07`, `dsit-business-appointment-james-lowe-to-anthropic-2025-12-02`, `dsit-selects-anthropic-gov-uk-assistant-2026-01-27`
+Refs: `ai-opportunities-action-plan-development-2024-2025`, `ai-opportunities-action-plan-2025`, `ai-safety-summit-representative-appointment-2023-08-10`, `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17`, `dsit-matt-clifford-ai-investor-roundtable-2023-10-25`, `frontier-ai-taskforce-external-advisory-board-appointments-2023-09-07`, `cf-award-dsit-faculty-2024-02-20-3a57f9fd`, `dsit-payments-faculty-science-2024-02`, `dsit-payments-faculty-science-2024-03`, `dsit-payments-faculty-science-2024-04`, `dsit-payments-faculty-science-2024-05`, `dsit-payments-faculty-science-2024-10`, `cf-award-dsit-faculty-2024-10-16-d7f72045`, `dsit-payments-faculty-science-2024-12`, `clifford-ai-opportunities-adviser-appointment-2025-01-13`, `dsit-payments-faculty-science-2025-01`, `ai-growth-zones-bidding-opens-2025-02-10`, `dsit-payments-faculty-science-2025-03`, `dsit-payments-faculty-science-2025-04`, `ai-energy-council-first-meeting-2025-04-08`, `ai-growth-zones-qualifying-process-2025-04-30`, `national-supercomputer-edinburgh-750m-2025-06-11`, `dsit-payments-faculty-science-2025-06`, `uk-compute-roadmap-sovereign-ai-unit-2025-07-17`, `dsit-payments-faculty-science-2025-07`, `dsit-payments-faculty-science-2025-09`, `north-east-ai-growth-zone-designation-2025-09-24`, `dsit-payments-faculty-science-2025-10`, `ai-growth-zones-north-wales-delivery-package-2025-11-13`, `dsit-payments-faculty-science-2025-12`, `ai-opportunities-action-plan-one-year-on-2026-01-29`, `lanarkshire-ai-growth-zone-designation-2026-01-29`, `sovereign-ai-unit-first-backing-2026-04-16`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2025-6936dac1`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5`, `matt-clifford-lead-reviewer-ai-opportunities-action-plan-term-2024-07-22`, `uk-anthropic-memorandum-of-understanding-ai-opportunities-2025-02-13`, `dsit-business-appointment-daisy-mcgregor-to-anthropic-2025-03-18`, `gov-uk-chat-anthropic-model-transparency-record-2025-10-07`, `dsit-business-appointment-james-lowe-to-anthropic-2025-12-02`, `dsit-selects-anthropic-gov-uk-assistant-2026-01-27`, `cf-award-dsit-university-of-birmingham-2024-01-01-5e18108e`, `cf-award-dsit-gartner-2024-01-31-e9e7ef1b`, `cf-award-dsit-kpmg-2024-02-09-6fd9747e`, `cf-award-dsit-kpmg-2024-02-09-c0cc9d9e`, `cf-award-dsit-capgemini-2024-02-19-bb3f7eda`, `cf-award-dsit-capgemini-2024-04-05-375a12de`, `cf-award-dsit-accenture-2024-05-09-1f0bb970`, `cf-award-dsit-accenture-2024-05-09-b44b64b7`, `cf-award-dsit-kpmg-2024-05-17-897470b2`, `cf-award-dsit-capgemini-2024-06-15-1ec54708`, `cf-award-dsit-workday-2024-09-04-c2820e8e`, `cf-award-dsit-scale-ai-2024-10-07-f389111e`, `cf-award-dsit-dla-piper-2024-10-15-1cabc16c`, `cf-award-dsit-dla-piper-2024-11-06-24469cc7`, `cf-award-dsit-capgemini-2024-12-02-ff1774ec`, `cf-award-dsit-deloitte-2024-12-06-28514d3f`, `cf-award-dsit-capgemini-2024-12-19-e0b3024b`, `cf-award-dsit-kpmg-2025-01-13-60b4d973`, `cf-award-dsit-mckinsey-and-company-2025-01-27-0abb0b87`, `cf-award-dsit-kpmg-2025-02-03-6ae52de4`, `cf-award-dsit-dla-piper-2025-02-05-db4a84c4`, `cf-award-dsit-pwc-2025-02-07-cb460d15`, `cf-award-dsit-deloitte-2025-03-13-def80c1c`, `cf-award-dsit-atkinsrealis-2025-03-31-ab581983`, `cf-award-dsit-capgemini-2025-04-01-b6ca2c5e`, `cf-award-dsit-pinsent-masons-2025-04-04-a415b225`, `cf-award-dsit-plexal-2025-09-22-a7a22813`, `cf-award-dsit-plexal-2025-09-29-723d69f0`, `cf-award-dsit-deloitte-2025-10-08-20ced53d`, `cf-award-dsit-pwc-2025-11-17-85af4b9e`, `cf-award-dsit-gartner-2025-12-24-dedfdb86`, `cf-award-dsit-pinsent-masons-2026-01-19-0af7e536`, `cf-award-dsit-capgemini-2026-02-05-d8d73ed7`, `cf-award-dsit-kainos-2026-02-25-84e9b31e`, `cf-award-dsit-ncc-group-2026-04-02-2b828d25`, `cf-award-dsit-dla-piper-2026-06-04-a37b35aa`, `cf-award-dsit-accenture-2026-06-15-df0df041`, `cf-award-dsit-mills-reeve-2026-06-16-44d41c2c`, `cf-award-dsit-google-2026-06-19-2f99cb6d`, `cf-award-dsit-gartner-2026-06-30-aae4ce57`, `cf-award-dsit-amazon-web-services-aws-2026-07-22-499414cd`, `cf-award-dsit-bae-systems-2026-09-02-ed4315bd`, `cf-award-dsit-kpmg-2026-09-03-711b5f63`
 
 ---
 
@@ -160,13 +160,13 @@ Refs: `frontier-ai-taskforce-external-advisory-board-appointments-2023-09-07`, `
 
 **Observed**
 
-Gartner appears across 7 surface(s): gartner-synthetic-population-category-2026, gartner-synthetic-population-vendor-race-self-report-stravito-2026-04-30, gartner-synthetic-population-vendor-race-self-report-bluepill-2026-05-12, gartner-synthetic-population-vendor-race-self-report-arima-2026-05-29, gartner-synthetic-population-vendor-race-self-report-qloo-2026-09-15, gartner-synthetic-population-vendor-race-self-report-verve-2026-10-23, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe. Secondary types: democratic_input_replacement.
+Gartner appears across 75 surface(s): gartner-synthetic-population-category-2026, gartner-synthetic-population-vendor-race-self-report-stravito-2026-04-30, gartner-synthetic-population-vendor-race-self-report-bluepill-2026-05-12, gartner-synthetic-population-vendor-race-self-report-arima-2026-05-29, gartner-synthetic-population-vendor-race-self-report-qloo-2026-09-15, gartner-synthetic-population-vendor-race-self-report-verve-2026-10-23, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe, cf-award-mod-gartner-2022-11-25-720794a0, cf-award-nhs-england-gartner-2022-12-01-ddd4ae4d, cf-award-british-business-bank-gartner-2022-12-21-bf6e5f3c, cf-award-home-office-border-force-gartner-2023-02-01-9160ee60, cf-award-university-of-birmingham-gartner-2023-03-20-6b7a140a, cf-award-mod-gartner-2023-03-31-cf9b7942, cf-award-dfe-gartner-2023-04-28-d805a67b, cf-award-dfe-gartner-2023-04-30-f2103645, cf-award-dfe-gartner-2023-05-31-f7a8aef5, cf-award-nhs-england-gartner-2023-06-21-a37aa085, cf-award-british-business-bank-gartner-2023-06-29-2600e8c5, cf-award-defra-gartner-2023-07-31-bfd6fd71, cf-award-mod-gartner-2023-10-27-9ba5f44b, cf-award-cabinet-office-gartner-2023-12-01-6b2b40b0, cf-award-nhs-south-central-and-west-c-gartner-2023-12-22-d77fa111, cf-award-mod-gartner-2023-12-26-64acb751, cf-award-care-quality-commission-gartner-2023-12-27-8316bfbd, cf-award-mod-gartner-2024-01-29-7d2f78e0, cf-award-dsit-gartner-2024-01-31-e9e7ef1b, cf-award-defra-gartner-2024-02-23-5710007c, cf-award-british-business-bank-gartner-2024-03-27-304ef791, cf-award-cabinet-office-gartner-2024-03-28-fa270136, cf-award-mod-gartner-2024-04-24-7ec6b670, cf-award-mod-gartner-2024-05-20-af80dabf, cf-award-mod-gartner-2024-07-17-4d952dae, cf-award-mod-gartner-2024-07-26-2811a50c, cf-award-care-quality-commission-gartner-2024-07-31-4832d2d8, cf-award-city-of-london-gartner-2024-08-29-476c64f0, cf-award-hm-treasury-gartner-2024-09-24-c20ed1ae, cf-award-nhs-england-gartner-2024-09-27-087de2bb, cf-award-cabinet-office-gartner-2024-09-30-df66c9e5, cf-award-home-office-border-force-gartner-2024-09-30-8aeaf000, cf-award-mod-gartner-2024-11-08-7f0a0aa3, cf-award-mod-gartner-2024-11-30-6880e596, cf-award-mod-gartner-2024-12-09-4d9a1cca, cf-award-mod-gartner-2025-02-28-d6bcfe78, cf-award-cabinet-office-gartner-2025-03-03-52c8f939, cf-award-peabody-trust-gartner-2025-03-10-9a170c10, cf-award-dfe-gartner-2025-04-29-4b54e98f, cf-award-ukhsa-gartner-2025-05-07-03bf0f4e, cf-award-nhs-england-gartner-2025-06-05-5e419f43, cf-award-ons-gartner-2025-06-23-2e5acd7e, cf-award-mod-gartner-2025-07-01-29f1716c, cf-award-mod-gartner-2025-07-01-bd50b8aa, cf-award-nhs-england-gartner-2025-08-19-9f06f583, cf-award-mod-gartner-2025-08-21-c04aa56d, cf-award-mod-gartner-2025-09-09-35bdb62c, cf-award-mod-gartner-2025-10-01-7b521c95, cf-award-hm-treasury-gartner-2025-10-30-79b639ef, cf-award-defra-gartner-2025-11-21-54d5ea39, cf-award-mod-gartner-2025-12-01-d4f8ff41, cf-award-dsit-gartner-2025-12-24-dedfdb86, cf-award-mod-gartner-2026-01-19-085a96a0, cf-award-ons-gartner-2026-02-11-ba871c85, cf-award-mod-gartner-2026-03-13-a8bb054d, cf-award-mod-gartner-2026-03-23-db35ea75, cf-award-cabinet-office-gartner-2026-03-30-a9776a57, cf-award-mod-gartner-2026-03-30-93c6f8bc, cf-award-dfe-gartner-2026-04-02-c53e8c97, cf-award-hm-treasury-gartner-2026-05-02-d803ead0, cf-award-hm-treasury-gartner-2026-05-13-10eaf8b8, cf-award-dsit-gartner-2026-06-30-aae4ce57, cf-award-peabody-trust-gartner-2026-08-28-189a4e85, cf-award-mod-gartner-2026-09-01-0faa27a8, cf-award-ukhsa-gartner-2026-09-15-a7edc5dc, cf-award-ukhsa-gartner-2026-09-18-c410b12e, cf-award-dhsc-gartner-2026-09-29-c6ddba3e, cf-award-mod-gartner-2026-10-28-f28d03b9. Secondary types: democratic_input_replacement.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `gartner-synthetic-population-category-2026`, `gartner-synthetic-population-vendor-race-self-report-stravito-2026-04-30`, `gartner-synthetic-population-vendor-race-self-report-bluepill-2026-05-12`, `gartner-synthetic-population-vendor-race-self-report-arima-2026-05-29`, `gartner-synthetic-population-vendor-race-self-report-qloo-2026-09-15`, `gartner-synthetic-population-vendor-race-self-report-verve-2026-10-23`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe`
+Refs: `gartner-synthetic-population-category-2026`, `gartner-synthetic-population-vendor-race-self-report-stravito-2026-04-30`, `gartner-synthetic-population-vendor-race-self-report-bluepill-2026-05-12`, `gartner-synthetic-population-vendor-race-self-report-arima-2026-05-29`, `gartner-synthetic-population-vendor-race-self-report-qloo-2026-09-15`, `gartner-synthetic-population-vendor-race-self-report-verve-2026-10-23`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe`, `cf-award-mod-gartner-2022-11-25-720794a0`, `cf-award-nhs-england-gartner-2022-12-01-ddd4ae4d`, `cf-award-british-business-bank-gartner-2022-12-21-bf6e5f3c`, `cf-award-home-office-border-force-gartner-2023-02-01-9160ee60`, `cf-award-university-of-birmingham-gartner-2023-03-20-6b7a140a`, `cf-award-mod-gartner-2023-03-31-cf9b7942`, `cf-award-dfe-gartner-2023-04-28-d805a67b`, `cf-award-dfe-gartner-2023-04-30-f2103645`, `cf-award-dfe-gartner-2023-05-31-f7a8aef5`, `cf-award-nhs-england-gartner-2023-06-21-a37aa085`, `cf-award-british-business-bank-gartner-2023-06-29-2600e8c5`, `cf-award-defra-gartner-2023-07-31-bfd6fd71`, `cf-award-mod-gartner-2023-10-27-9ba5f44b`, `cf-award-cabinet-office-gartner-2023-12-01-6b2b40b0`, `cf-award-nhs-south-central-and-west-c-gartner-2023-12-22-d77fa111`, `cf-award-mod-gartner-2023-12-26-64acb751`, `cf-award-care-quality-commission-gartner-2023-12-27-8316bfbd`, `cf-award-mod-gartner-2024-01-29-7d2f78e0`, `cf-award-dsit-gartner-2024-01-31-e9e7ef1b`, `cf-award-defra-gartner-2024-02-23-5710007c`, `cf-award-british-business-bank-gartner-2024-03-27-304ef791`, `cf-award-cabinet-office-gartner-2024-03-28-fa270136`, `cf-award-mod-gartner-2024-04-24-7ec6b670`, `cf-award-mod-gartner-2024-05-20-af80dabf`, `cf-award-mod-gartner-2024-07-17-4d952dae`, `cf-award-mod-gartner-2024-07-26-2811a50c`, `cf-award-care-quality-commission-gartner-2024-07-31-4832d2d8`, `cf-award-city-of-london-gartner-2024-08-29-476c64f0`, `cf-award-hm-treasury-gartner-2024-09-24-c20ed1ae`, `cf-award-nhs-england-gartner-2024-09-27-087de2bb`, `cf-award-cabinet-office-gartner-2024-09-30-df66c9e5`, `cf-award-home-office-border-force-gartner-2024-09-30-8aeaf000`, `cf-award-mod-gartner-2024-11-08-7f0a0aa3`, `cf-award-mod-gartner-2024-11-30-6880e596`, `cf-award-mod-gartner-2024-12-09-4d9a1cca`, `cf-award-mod-gartner-2025-02-28-d6bcfe78`, `cf-award-cabinet-office-gartner-2025-03-03-52c8f939`, `cf-award-peabody-trust-gartner-2025-03-10-9a170c10`, `cf-award-dfe-gartner-2025-04-29-4b54e98f`, `cf-award-ukhsa-gartner-2025-05-07-03bf0f4e`, `cf-award-nhs-england-gartner-2025-06-05-5e419f43`, `cf-award-ons-gartner-2025-06-23-2e5acd7e`, `cf-award-mod-gartner-2025-07-01-29f1716c`, `cf-award-mod-gartner-2025-07-01-bd50b8aa`, `cf-award-nhs-england-gartner-2025-08-19-9f06f583`, `cf-award-mod-gartner-2025-08-21-c04aa56d`, `cf-award-mod-gartner-2025-09-09-35bdb62c`, `cf-award-mod-gartner-2025-10-01-7b521c95`, `cf-award-hm-treasury-gartner-2025-10-30-79b639ef`, `cf-award-defra-gartner-2025-11-21-54d5ea39`, `cf-award-mod-gartner-2025-12-01-d4f8ff41`, `cf-award-dsit-gartner-2025-12-24-dedfdb86`, `cf-award-mod-gartner-2026-01-19-085a96a0`, `cf-award-ons-gartner-2026-02-11-ba871c85`, `cf-award-mod-gartner-2026-03-13-a8bb054d`, `cf-award-mod-gartner-2026-03-23-db35ea75`, `cf-award-cabinet-office-gartner-2026-03-30-a9776a57`, `cf-award-mod-gartner-2026-03-30-93c6f8bc`, `cf-award-dfe-gartner-2026-04-02-c53e8c97`, `cf-award-hm-treasury-gartner-2026-05-02-d803ead0`, `cf-award-hm-treasury-gartner-2026-05-13-10eaf8b8`, `cf-award-dsit-gartner-2026-06-30-aae4ce57`, `cf-award-peabody-trust-gartner-2026-08-28-189a4e85`, `cf-award-mod-gartner-2026-09-01-0faa27a8`, `cf-award-ukhsa-gartner-2026-09-15-a7edc5dc`, `cf-award-ukhsa-gartner-2026-09-18-c410b12e`, `cf-award-dhsc-gartner-2026-09-29-c6ddba3e`, `cf-award-mod-gartner-2026-10-28-f28d03b9`
 
 ---
 
@@ -232,13 +232,13 @@ Refs: `fund-portfolio-page-a16z-american-dynamism-2026-10-23`, `a16z-american-dy
 
 **Observed**
 
-BAE Systems appears across 29 surface(s): team-barrow-public-private-fund-2026, atlantic-bastion-launch-publication-2025-12-08, atlantic-bastion-industry-program-context-2025-12-08, dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, uk-ministerial-meetings-mod-s-ministerial-meetings-january-to-march-2021-60eed151, uk-ministerial-meetings-home-office-s-ministerial-meetings-october-to-december-2022-641c84e6, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef, uk-ministerial-meetings-hmt-ministerial-meetings-july-to-september-2024-679b464d, uk-ministerial-meetings-hmt-ministerial-meetings-july-to-september-2024-679b464d, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145, uk-ministerial-meetings-mod-s-ministerial-meetings-october-to-december-2024-67e162ff, uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-january-to-march-2025-685d5305, uk-ministerial-meetings-hmts-ministerial-meetings-january-to-march-2025-68bae311, uk-ministerial-meetings-hmts-ministerial-meetings-january-to-march-2025-68bae311, uk-ministerial-meetings-hmts-ministerial-meetings-april-to-june-2025-68d50fe0, uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-april-to-june-2025-68d54fb8, uk-ministerial-meetings-hmts-ministerial-meetings-july-to-september-2025-69414470, uk-ministerial-meetings-hmts-ministerial-meetings-july-to-september-2025-69414470, uk-ministerial-meetings-mod-s-ministerial-meetings-july-to-september-2025-693ff9ec, uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-ministerial-meetings-april-to-june-2-6ab5213d. Secondary types: defence_industrial_surface, governance_continuity_surface, government_advisory_surface, policy_to_procurement_surface.
+BAE Systems appears across 109 surface(s): team-barrow-public-private-fund-2026, atlantic-bastion-launch-publication-2025-12-08, atlantic-bastion-industry-program-context-2025-12-08, dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, uk-ministerial-meetings-mod-s-ministerial-meetings-january-to-march-2021-60eed151, uk-ministerial-meetings-home-office-s-ministerial-meetings-october-to-december-2022-641c84e6, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef, uk-ministerial-meetings-hmt-ministerial-meetings-july-to-september-2024-679b464d, uk-ministerial-meetings-hmt-ministerial-meetings-july-to-september-2024-679b464d, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145, uk-ministerial-meetings-mod-s-ministerial-meetings-october-to-december-2024-67e162ff, uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-january-to-march-2025-685d5305, uk-ministerial-meetings-hmts-ministerial-meetings-january-to-march-2025-68bae311, uk-ministerial-meetings-hmts-ministerial-meetings-january-to-march-2025-68bae311, uk-ministerial-meetings-hmts-ministerial-meetings-april-to-june-2025-68d50fe0, uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-april-to-june-2025-68d54fb8, uk-ministerial-meetings-hmts-ministerial-meetings-july-to-september-2025-69414470, uk-ministerial-meetings-hmts-ministerial-meetings-july-to-september-2025-69414470, uk-ministerial-meetings-mod-s-ministerial-meetings-july-to-september-2025-693ff9ec, uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-ministerial-meetings-april-to-june-2-6ab5213d, cf-award-mod-bae-systems-2022-06-30-de6e37a0, cf-award-ukhsa-bae-systems-2022-07-05-51c8e67f, cf-award-mod-bae-systems-2022-08-25-c67d5416, cf-award-mod-bae-systems-2022-08-25-eebce14d, cf-award-mod-bae-systems-2022-09-02-2f1aefe5, cf-award-home-office-border-force-bae-systems-2022-09-30-c5b5d5a6, cf-award-mod-bae-systems-2022-12-19-46a8b584, cf-award-dfe-bae-systems-2023-01-16-1cdafc4f, cf-award-mod-bae-systems-2023-01-30-140ae68e, cf-award-home-office-border-force-bae-systems-2023-02-06-ca1f0896, cf-award-mod-bae-systems-2023-02-17-dc561e3e, cf-award-mod-bae-systems-2023-02-21-a78962d5, cf-award-mod-bae-systems-2023-03-07-54c08380, cf-award-mod-bae-systems-2023-03-30-0db36095, cf-award-mod-bae-systems-2023-04-01-78e84551, cf-award-home-office-border-force-bae-systems-2023-05-01-fce0f08e, cf-award-mod-bae-systems-2023-05-02-955ff713, cf-award-mod-bae-systems-2023-05-03-061f5179, cf-award-home-office-border-force-bae-systems-2023-05-12-b4e6095d, cf-award-mod-bae-systems-2023-05-12-eb8f6fda, cf-award-mod-bae-systems-2023-07-24-873d7b4c, cf-award-mod-bae-systems-2023-07-28-38fb1795, cf-award-mod-bae-systems-2023-09-04-02a08ef8, cf-award-mod-bae-systems-2023-09-07-6a1ae844, cf-award-mod-bae-systems-2023-09-18-13436ef9, cf-award-mod-bae-systems-2023-10-16-ea0a5347, cf-award-mod-bae-systems-2023-10-18-e2a17b75, cf-award-mod-bae-systems-2023-10-23-9f6e263b, cf-award-mod-atkinsrealis-2023-11-17-b92822ac, cf-award-mod-bae-systems-2023-11-20-32ec03be, cf-award-mod-bae-systems-2024-01-16-00963408, cf-award-mod-bae-systems-2024-03-01-8f14dcf6, cf-award-mod-bae-systems-2024-03-19-2a78c4cd, cf-award-mod-bae-systems-2024-03-21-008d0f55, cf-award-mod-bae-systems-2024-03-21-cdc94678, cf-award-mod-bae-systems-2024-03-25-3d6fea79, cf-award-mod-bae-systems-2024-03-25-df605208, cf-award-mod-bae-systems-2024-03-28-221ad571, cf-award-mod-bae-systems-2024-03-30-0d31fec2, cf-award-mod-bae-systems-2024-04-10-4ddb0efc, cf-award-government-digital-service-bae-systems-2024-04-15-fb3f24f3, cf-award-mod-bae-systems-2024-04-26-3ac6d407, cf-award-home-office-border-force-bae-systems-2024-06-03-84db6a7b, cf-award-mod-bae-systems-2024-06-28-24a860cd, cf-award-mod-bae-systems-2024-07-01-83367cfc, cf-award-mod-bae-systems-2024-08-15-c929e185, cf-award-mod-bae-systems-2024-09-05-c23ee868, cf-award-mod-bae-systems-2024-09-06-95eb4ac0, cf-award-mod-bae-systems-2024-09-12-ad715519, cf-award-mod-bae-systems-2024-09-23-a045822d, cf-award-mod-bae-systems-2024-09-25-1bebb074, cf-award-mod-bae-systems-2025-02-12-0b83cb1b, cf-award-mod-bae-systems-2025-02-18-6c5f6198, cf-award-mod-bae-systems-2025-03-06-10bcda82, cf-award-mod-bae-systems-2025-03-25-88de97f0, cf-award-mod-bae-systems-2025-05-06-b4b2db7d, cf-award-mod-bae-systems-2025-05-08-3a812ad8, cf-award-mod-bae-systems-2025-06-11-c9025fc9, cf-award-mod-bae-systems-2025-07-02-945299a2, cf-award-mod-bae-systems-2025-07-28-692cf575, cf-award-home-office-border-force-bae-systems-2025-08-01-9113b114, cf-award-mod-bae-systems-2025-08-05-9b50205e, cf-award-mod-bae-systems-2025-09-05-41c0b031, cf-award-mod-bae-systems-2025-09-25-3cf29511, cf-award-mod-bae-systems-2025-09-29-115f967b, cf-award-mod-bae-systems-2025-10-28-89dee72b, cf-award-mod-bae-systems-2025-10-31-835353e7, cf-award-mod-bae-systems-2025-10-31-950cc498, cf-award-mod-bae-systems-2025-11-13-655ee5dd, cf-award-mod-bae-systems-2025-11-18-dc82e8c2, cf-award-home-office-border-force-bae-systems-2025-11-27-b22cf368, cf-award-home-office-border-force-bae-systems-2026-01-30-7f3f2480, cf-award-mod-bae-systems-2026-02-26-170347a2, cf-award-home-office-border-force-bae-systems-2026-05-27-8671dc76, cf-award-home-office-border-force-bae-systems-2026-06-05-44a3221d, cf-award-mod-bae-systems-2026-07-01-0f2d61cb, cf-award-mod-bae-systems-2026-07-22-812dc189, cf-award-mod-bae-systems-2026-08-06-a25f283c, cf-award-dsit-bae-systems-2026-09-02-ed4315bd, cf-award-home-office-border-force-bae-systems-2026-09-11-fda33f5e. Secondary types: defence_industrial_surface, governance_continuity_surface, government_advisory_surface, policy_to_procurement_surface.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `team-barrow-public-private-fund-2026`, `atlantic-bastion-launch-publication-2025-12-08`, `atlantic-bastion-industry-program-context-2025-12-08`, `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-ministerial-meetings-mod-s-ministerial-meetings-january-to-march-2021-60eed151`, `uk-ministerial-meetings-home-office-s-ministerial-meetings-october-to-december-2022-641c84e6`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef`, `uk-ministerial-meetings-hmt-ministerial-meetings-july-to-september-2024-679b464d`, `uk-ministerial-meetings-hmt-ministerial-meetings-july-to-september-2024-679b464d`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145`, `uk-ministerial-meetings-mod-s-ministerial-meetings-october-to-december-2024-67e162ff`, `uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-january-to-march-2025-685d5305`, `uk-ministerial-meetings-hmts-ministerial-meetings-january-to-march-2025-68bae311`, `uk-ministerial-meetings-hmts-ministerial-meetings-january-to-march-2025-68bae311`, `uk-ministerial-meetings-hmts-ministerial-meetings-april-to-june-2025-68d50fe0`, `uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-april-to-june-2025-68d54fb8`, `uk-ministerial-meetings-hmts-ministerial-meetings-july-to-september-2025-69414470`, `uk-ministerial-meetings-hmts-ministerial-meetings-july-to-september-2025-69414470`, `uk-ministerial-meetings-mod-s-ministerial-meetings-july-to-september-2025-693ff9ec`, `uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-ministerial-meetings-april-to-june-2-6ab5213d`
+Refs: `team-barrow-public-private-fund-2026`, `atlantic-bastion-launch-publication-2025-12-08`, `atlantic-bastion-industry-program-context-2025-12-08`, `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-ministerial-meetings-mod-s-ministerial-meetings-january-to-march-2021-60eed151`, `uk-ministerial-meetings-home-office-s-ministerial-meetings-october-to-december-2022-641c84e6`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef`, `uk-ministerial-meetings-hmt-ministerial-meetings-july-to-september-2024-679b464d`, `uk-ministerial-meetings-hmt-ministerial-meetings-july-to-september-2024-679b464d`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145`, `uk-ministerial-meetings-mod-s-ministerial-meetings-october-to-december-2024-67e162ff`, `uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-january-to-march-2025-685d5305`, `uk-ministerial-meetings-hmts-ministerial-meetings-january-to-march-2025-68bae311`, `uk-ministerial-meetings-hmts-ministerial-meetings-january-to-march-2025-68bae311`, `uk-ministerial-meetings-hmts-ministerial-meetings-april-to-june-2025-68d50fe0`, `uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-april-to-june-2025-68d54fb8`, `uk-ministerial-meetings-hmts-ministerial-meetings-july-to-september-2025-69414470`, `uk-ministerial-meetings-hmts-ministerial-meetings-july-to-september-2025-69414470`, `uk-ministerial-meetings-mod-s-ministerial-meetings-july-to-september-2025-693ff9ec`, `uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-ministerial-meetings-april-to-june-2-6ab5213d`, `cf-award-mod-bae-systems-2022-06-30-de6e37a0`, `cf-award-ukhsa-bae-systems-2022-07-05-51c8e67f`, `cf-award-mod-bae-systems-2022-08-25-c67d5416`, `cf-award-mod-bae-systems-2022-08-25-eebce14d`, `cf-award-mod-bae-systems-2022-09-02-2f1aefe5`, `cf-award-home-office-border-force-bae-systems-2022-09-30-c5b5d5a6`, `cf-award-mod-bae-systems-2022-12-19-46a8b584`, `cf-award-dfe-bae-systems-2023-01-16-1cdafc4f`, `cf-award-mod-bae-systems-2023-01-30-140ae68e`, `cf-award-home-office-border-force-bae-systems-2023-02-06-ca1f0896`, `cf-award-mod-bae-systems-2023-02-17-dc561e3e`, `cf-award-mod-bae-systems-2023-02-21-a78962d5`, `cf-award-mod-bae-systems-2023-03-07-54c08380`, `cf-award-mod-bae-systems-2023-03-30-0db36095`, `cf-award-mod-bae-systems-2023-04-01-78e84551`, `cf-award-home-office-border-force-bae-systems-2023-05-01-fce0f08e`, `cf-award-mod-bae-systems-2023-05-02-955ff713`, `cf-award-mod-bae-systems-2023-05-03-061f5179`, `cf-award-home-office-border-force-bae-systems-2023-05-12-b4e6095d`, `cf-award-mod-bae-systems-2023-05-12-eb8f6fda`, `cf-award-mod-bae-systems-2023-07-24-873d7b4c`, `cf-award-mod-bae-systems-2023-07-28-38fb1795`, `cf-award-mod-bae-systems-2023-09-04-02a08ef8`, `cf-award-mod-bae-systems-2023-09-07-6a1ae844`, `cf-award-mod-bae-systems-2023-09-18-13436ef9`, `cf-award-mod-bae-systems-2023-10-16-ea0a5347`, `cf-award-mod-bae-systems-2023-10-18-e2a17b75`, `cf-award-mod-bae-systems-2023-10-23-9f6e263b`, `cf-award-mod-atkinsrealis-2023-11-17-b92822ac`, `cf-award-mod-bae-systems-2023-11-20-32ec03be`, `cf-award-mod-bae-systems-2024-01-16-00963408`, `cf-award-mod-bae-systems-2024-03-01-8f14dcf6`, `cf-award-mod-bae-systems-2024-03-19-2a78c4cd`, `cf-award-mod-bae-systems-2024-03-21-008d0f55`, `cf-award-mod-bae-systems-2024-03-21-cdc94678`, `cf-award-mod-bae-systems-2024-03-25-3d6fea79`, `cf-award-mod-bae-systems-2024-03-25-df605208`, `cf-award-mod-bae-systems-2024-03-28-221ad571`, `cf-award-mod-bae-systems-2024-03-30-0d31fec2`, `cf-award-mod-bae-systems-2024-04-10-4ddb0efc`, `cf-award-government-digital-service-bae-systems-2024-04-15-fb3f24f3`, `cf-award-mod-bae-systems-2024-04-26-3ac6d407`, `cf-award-home-office-border-force-bae-systems-2024-06-03-84db6a7b`, `cf-award-mod-bae-systems-2024-06-28-24a860cd`, `cf-award-mod-bae-systems-2024-07-01-83367cfc`, `cf-award-mod-bae-systems-2024-08-15-c929e185`, `cf-award-mod-bae-systems-2024-09-05-c23ee868`, `cf-award-mod-bae-systems-2024-09-06-95eb4ac0`, `cf-award-mod-bae-systems-2024-09-12-ad715519`, `cf-award-mod-bae-systems-2024-09-23-a045822d`, `cf-award-mod-bae-systems-2024-09-25-1bebb074`, `cf-award-mod-bae-systems-2025-02-12-0b83cb1b`, `cf-award-mod-bae-systems-2025-02-18-6c5f6198`, `cf-award-mod-bae-systems-2025-03-06-10bcda82`, `cf-award-mod-bae-systems-2025-03-25-88de97f0`, `cf-award-mod-bae-systems-2025-05-06-b4b2db7d`, `cf-award-mod-bae-systems-2025-05-08-3a812ad8`, `cf-award-mod-bae-systems-2025-06-11-c9025fc9`, `cf-award-mod-bae-systems-2025-07-02-945299a2`, `cf-award-mod-bae-systems-2025-07-28-692cf575`, `cf-award-home-office-border-force-bae-systems-2025-08-01-9113b114`, `cf-award-mod-bae-systems-2025-08-05-9b50205e`, `cf-award-mod-bae-systems-2025-09-05-41c0b031`, `cf-award-mod-bae-systems-2025-09-25-3cf29511`, `cf-award-mod-bae-systems-2025-09-29-115f967b`, `cf-award-mod-bae-systems-2025-10-28-89dee72b`, `cf-award-mod-bae-systems-2025-10-31-835353e7`, `cf-award-mod-bae-systems-2025-10-31-950cc498`, `cf-award-mod-bae-systems-2025-11-13-655ee5dd`, `cf-award-mod-bae-systems-2025-11-18-dc82e8c2`, `cf-award-home-office-border-force-bae-systems-2025-11-27-b22cf368`, `cf-award-home-office-border-force-bae-systems-2026-01-30-7f3f2480`, `cf-award-mod-bae-systems-2026-02-26-170347a2`, `cf-award-home-office-border-force-bae-systems-2026-05-27-8671dc76`, `cf-award-home-office-border-force-bae-systems-2026-06-05-44a3221d`, `cf-award-mod-bae-systems-2026-07-01-0f2d61cb`, `cf-award-mod-bae-systems-2026-07-22-812dc189`, `cf-award-mod-bae-systems-2026-08-06-a25f283c`, `cf-award-dsit-bae-systems-2026-09-02-ed4315bd`, `cf-award-home-office-border-force-bae-systems-2026-09-11-fda33f5e`
 
 ---
 
@@ -322,13 +322,13 @@ Refs: `detachment-201-program-context-2025`, `detachment-201-commissioning-2025`
 
 **Observed**
 
-Palantir Technologies appears across 38 surface(s): greg-little-palantir-technologies-senior-counselor-linkedin-2023-present, trae-stephens-palantir-technologies-forward-deployed-engineer-linkedin-2008-2013, fund-portfolio-page-8vc-2026-10-23, fund-portfolio-page-founders-fund-2026-10-23, fund-portfolio-page-in-q-tel-2026-10-23, fund-portfolio-page-washington-harbour-partners-2026-10-23, rndf-2023-programme-roster, rndf-2024-programme-roster, rndf-2025-programme-roster, a16z-american-dynamism-summit-2025-mobilizing-industrial-base, a16z-american-dynamism-summit-2025-programme-roster, uk-ai-safety-summit-2023-confirmed-attendees-programme-roster, dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, sec-form-d-0001321655-10-000001, sec-form-d-0001321655-13-000004, sec-form-d-0001321655-13-000005, sec-form-d-0001321655-14-000001, sec-form-d-0001321655-14-000002, sec-form-d-0001321655-14-000003, sec-form-d-0001321655-15-000002, sec-form-d-0001321655-15-000003, sec-form-d-0001321655-15-000004, sec-form-d-0001321655-09-000003, sec-form-d-0001321655-09-000004, sec-form-d-0001321655-09-000005, sec-form-d-0001321655-11-000002, sec-form-d-0001321655-11-000003, sec-form-d-0001321655-12-000002, sec-form-d-0001321655-13-000001, sec-form-d-0001321655-13-000002, sec-form-d-0001321655-13-000003, sec-form-d-0001321655-14-000004, sec-form-d-0001321655-14-000005, sec-form-d-0001321655-15-000001, sec-form-d-0001321655-16-000005, sec-form-d-0001321655-20-000001, uk-ministerial-meetings-hmts-ministerial-meetings-january-to-march-2025-68bae311, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94. Secondary types: defence_industrial_surface, employment_investment_surface, government_advisory_surface, surface_factory_capital_layer.
+Palantir Technologies appears across 43 surface(s): greg-little-palantir-technologies-senior-counselor-linkedin-2023-present, trae-stephens-palantir-technologies-forward-deployed-engineer-linkedin-2008-2013, fund-portfolio-page-8vc-2026-10-23, fund-portfolio-page-founders-fund-2026-10-23, fund-portfolio-page-in-q-tel-2026-10-23, fund-portfolio-page-washington-harbour-partners-2026-10-23, rndf-2023-programme-roster, rndf-2024-programme-roster, rndf-2025-programme-roster, a16z-american-dynamism-summit-2025-mobilizing-industrial-base, a16z-american-dynamism-summit-2025-programme-roster, uk-ai-safety-summit-2023-confirmed-attendees-programme-roster, dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, sec-form-d-0001321655-10-000001, sec-form-d-0001321655-13-000004, sec-form-d-0001321655-13-000005, sec-form-d-0001321655-14-000001, sec-form-d-0001321655-14-000002, sec-form-d-0001321655-14-000003, sec-form-d-0001321655-15-000002, sec-form-d-0001321655-15-000003, sec-form-d-0001321655-15-000004, sec-form-d-0001321655-09-000003, sec-form-d-0001321655-09-000004, sec-form-d-0001321655-09-000005, sec-form-d-0001321655-11-000002, sec-form-d-0001321655-11-000003, sec-form-d-0001321655-12-000002, sec-form-d-0001321655-13-000001, sec-form-d-0001321655-13-000002, sec-form-d-0001321655-13-000003, sec-form-d-0001321655-14-000004, sec-form-d-0001321655-14-000005, sec-form-d-0001321655-15-000001, sec-form-d-0001321655-16-000005, sec-form-d-0001321655-20-000001, uk-ministerial-meetings-hmts-ministerial-meetings-january-to-march-2025-68bae311, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, cf-award-nhs-england-palantir-2022-08-25-2cf9dde2, cf-award-mod-palantir-2022-11-25-ac82a048, cf-award-nhs-england-palantir-2023-06-09-d1df0a11, cf-award-defra-palantir-2023-09-13-d5cf0f8e, cf-award-nhs-england-palantir-2023-11-22-0f8a65b5. Secondary types: defence_industrial_surface, employment_investment_surface, government_advisory_surface, surface_factory_capital_layer.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `greg-little-palantir-technologies-senior-counselor-linkedin-2023-present`, `trae-stephens-palantir-technologies-forward-deployed-engineer-linkedin-2008-2013`, `fund-portfolio-page-8vc-2026-10-23`, `fund-portfolio-page-founders-fund-2026-10-23`, `fund-portfolio-page-in-q-tel-2026-10-23`, `fund-portfolio-page-washington-harbour-partners-2026-10-23`, `rndf-2023-programme-roster`, `rndf-2024-programme-roster`, `rndf-2025-programme-roster`, `a16z-american-dynamism-summit-2025-mobilizing-industrial-base`, `a16z-american-dynamism-summit-2025-programme-roster`, `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `sec-form-d-0001321655-10-000001`, `sec-form-d-0001321655-13-000004`, `sec-form-d-0001321655-13-000005`, `sec-form-d-0001321655-14-000001`, `sec-form-d-0001321655-14-000002`, `sec-form-d-0001321655-14-000003`, `sec-form-d-0001321655-15-000002`, `sec-form-d-0001321655-15-000003`, `sec-form-d-0001321655-15-000004`, `sec-form-d-0001321655-09-000003`, `sec-form-d-0001321655-09-000004`, `sec-form-d-0001321655-09-000005`, `sec-form-d-0001321655-11-000002`, `sec-form-d-0001321655-11-000003`, `sec-form-d-0001321655-12-000002`, `sec-form-d-0001321655-13-000001`, `sec-form-d-0001321655-13-000002`, `sec-form-d-0001321655-13-000003`, `sec-form-d-0001321655-14-000004`, `sec-form-d-0001321655-14-000005`, `sec-form-d-0001321655-15-000001`, `sec-form-d-0001321655-16-000005`, `sec-form-d-0001321655-20-000001`, `uk-ministerial-meetings-hmts-ministerial-meetings-january-to-march-2025-68bae311`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`
+Refs: `greg-little-palantir-technologies-senior-counselor-linkedin-2023-present`, `trae-stephens-palantir-technologies-forward-deployed-engineer-linkedin-2008-2013`, `fund-portfolio-page-8vc-2026-10-23`, `fund-portfolio-page-founders-fund-2026-10-23`, `fund-portfolio-page-in-q-tel-2026-10-23`, `fund-portfolio-page-washington-harbour-partners-2026-10-23`, `rndf-2023-programme-roster`, `rndf-2024-programme-roster`, `rndf-2025-programme-roster`, `a16z-american-dynamism-summit-2025-mobilizing-industrial-base`, `a16z-american-dynamism-summit-2025-programme-roster`, `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `sec-form-d-0001321655-10-000001`, `sec-form-d-0001321655-13-000004`, `sec-form-d-0001321655-13-000005`, `sec-form-d-0001321655-14-000001`, `sec-form-d-0001321655-14-000002`, `sec-form-d-0001321655-14-000003`, `sec-form-d-0001321655-15-000002`, `sec-form-d-0001321655-15-000003`, `sec-form-d-0001321655-15-000004`, `sec-form-d-0001321655-09-000003`, `sec-form-d-0001321655-09-000004`, `sec-form-d-0001321655-09-000005`, `sec-form-d-0001321655-11-000002`, `sec-form-d-0001321655-11-000003`, `sec-form-d-0001321655-12-000002`, `sec-form-d-0001321655-13-000001`, `sec-form-d-0001321655-13-000002`, `sec-form-d-0001321655-13-000003`, `sec-form-d-0001321655-14-000004`, `sec-form-d-0001321655-14-000005`, `sec-form-d-0001321655-15-000001`, `sec-form-d-0001321655-16-000005`, `sec-form-d-0001321655-20-000001`, `uk-ministerial-meetings-hmts-ministerial-meetings-january-to-march-2025-68bae311`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `cf-award-nhs-england-palantir-2022-08-25-2cf9dde2`, `cf-award-mod-palantir-2022-11-25-ac82a048`, `cf-award-nhs-england-palantir-2023-06-09-d1df0a11`, `cf-award-defra-palantir-2023-09-13-d5cf0f8e`, `cf-award-nhs-england-palantir-2023-11-22-0f8a65b5`
 
 ---
 
@@ -358,13 +358,13 @@ Refs: `natsec100-2026-list`, `jon-bal-openai-account-director-linkedin-2026-pres
 
 **Observed**
 
-Ministry of Defence (MoD) appears across 19 surface(s): strategic-defence-review-development-2024-2025, strategic-defence-review-2024-2025, anduril-talos-phase-3-contract-observation-2023-11-02, anduril-talos-phase-3-named-principals-2023-11-02, anduril-ukraine-drone-deal-named-principals-2025-03-06, anduril-ai-fight-tonight-award-2021-07-31, anduril-talos-phase-2-award-2021-08-02, anduril-project-entrelezar-award-2023-10-09, anduril-ddad-framework-2026-01-09, anduril-project-nyx-seven-supplier-shortlist-2026-01-24, anduril-project-nyx-four-supplier-downselect-2026-05-15, atlantic-bastion-launch-publication-2025-12-08, atlantic-bastion-industry-program-context-2025-12-08, cf-award-mod-faculty-2026-01-09-7aafc1b3, uk-ministerial-meetings-mod-s-ministerial-meetings-january-to-march-2021-60eed151, uk-ministerial-meetings-mod-s-ministerial-meetings-october-to-december-2024-67e162ff, uk-ministerial-meetings-mod-s-ministerial-meetings-january-to-march-2025-68308e02, uk-ministerial-meetings-mod-s-ministerial-meetings-july-to-september-2025-693ff9ec, uk-ministerial-meetings-mod-s-ministerial-meetings-october-to-december-2025-69bd62ea. Secondary types: defence_industrial_surface, government_advisory_surface, model_governance_surface, policy_to_procurement_surface.
+Ministry of Defence (MoD) appears across 369 surface(s): strategic-defence-review-development-2024-2025, strategic-defence-review-2024-2025, anduril-talos-phase-3-contract-observation-2023-11-02, anduril-talos-phase-3-named-principals-2023-11-02, anduril-ukraine-drone-deal-named-principals-2025-03-06, anduril-ai-fight-tonight-award-2021-07-31, anduril-talos-phase-2-award-2021-08-02, anduril-project-entrelezar-award-2023-10-09, anduril-ddad-framework-2026-01-09, anduril-project-nyx-seven-supplier-shortlist-2026-01-24, anduril-project-nyx-four-supplier-downselect-2026-05-15, atlantic-bastion-launch-publication-2025-12-08, atlantic-bastion-industry-program-context-2025-12-08, cf-award-mod-faculty-2026-01-09-7aafc1b3, uk-ministerial-meetings-mod-s-ministerial-meetings-january-to-march-2021-60eed151, uk-ministerial-meetings-mod-s-ministerial-meetings-october-to-december-2024-67e162ff, uk-ministerial-meetings-mod-s-ministerial-meetings-january-to-march-2025-68308e02, uk-ministerial-meetings-mod-s-ministerial-meetings-july-to-september-2025-693ff9ec, uk-ministerial-meetings-mod-s-ministerial-meetings-october-to-december-2025-69bd62ea, cf-award-mod-workday-2022-01-01-cf785913, cf-award-mod-civica-2022-03-23-97ff8d8b, cf-award-mod-vodafone-2022-03-28-ed6dec96, cf-award-mod-kpmg-2022-05-02-ec344181, cf-award-mod-workday-2022-05-24-9b2304a9, cf-award-mod-bae-systems-2022-06-30-de6e37a0, cf-award-mod-bae-systems-2022-08-25-c67d5416, cf-award-mod-bae-systems-2022-08-25-eebce14d, cf-award-mod-vodafone-2022-09-01-0fb287c6, cf-award-mod-vodafone-2022-09-01-8ac4512f, cf-award-mod-bae-systems-2022-09-02-2f1aefe5, cf-award-mod-capgemini-2022-09-21-1d8e4f5b, cf-award-mod-deloitte-2022-09-30-b6ef3cdc, cf-award-mod-capgemini-2022-10-01-9f358897, cf-award-mod-raytheon-2022-10-01-2cbb5f6f, cf-award-mod-deloitte-2022-10-10-738114f9, cf-award-mod-sierra-nevada-corporation-2022-10-17-3cb74a97, cf-award-mod-accenture-2022-10-19-db06f394, cf-award-mod-kpmg-2022-11-10-9187f3cb, cf-award-mod-kpmg-2022-11-14-07fc2c7c, cf-award-mod-kpmg-2022-11-17-772378e3, cf-award-mod-university-of-birmingham-2022-11-17-2e6172e7, cf-award-mod-civica-2022-11-20-236cf1de, cf-award-mod-workday-2022-11-22-06844f60, cf-award-mod-gartner-2022-11-25-720794a0, cf-award-mod-palantir-2022-11-25-ac82a048, cf-award-mod-deloitte-2022-12-02-04486bd4, cf-award-mod-lockheed-martin-corporation-2022-12-07-31679623, cf-award-mod-lockheed-martin-corporation-2022-12-12-f9aea817, cf-award-mod-mckinsey-and-company-2022-12-14-71846fee, cf-award-mod-kpmg-2022-12-16-76756dac, cf-award-mod-bae-systems-2022-12-19-46a8b584, cf-award-mod-deloitte-2022-12-20-0cd309a8, cf-award-mod-deloitte-2022-12-21-e786d6f2, cf-award-mod-deloitte-2022-12-23-e5e1115f, cf-award-mod-lockheed-martin-corporation-2023-01-04-dbdf12a1, cf-award-mod-university-of-birmingham-2023-01-12-a5fbdc4b, cf-award-mod-deloitte-2023-01-18-536aa953, cf-award-mod-mills-reeve-2023-01-23-40043d5c, cf-award-mod-sopra-steria-2023-01-23-143512c8, cf-award-mod-bae-systems-2023-01-30-140ae68e, cf-award-mod-microsoft-2023-02-07-0bb19f42, cf-award-mod-deloitte-2023-02-13-1a1f950f, cf-award-mod-bae-systems-2023-02-17-dc561e3e, cf-award-mod-deloitte-2023-02-17-886aa65b, cf-award-mod-interos-2023-02-17-cf0f1e75, cf-award-mod-bae-systems-2023-02-21-a78962d5, cf-award-mod-general-dynamics-2023-02-21-2af37a37, cf-award-mod-deloitte-2023-02-24-87bce342, cf-award-mod-deloitte-2023-02-27-0f64ad4f, cf-award-mod-kpmg-2023-02-27-cfe5ef8c, cf-award-mod-bae-systems-2023-03-07-54c08380, cf-award-mod-accenture-2023-03-10-954e325e, cf-award-ukri-mod-2023-03-13-e2ecd1b2, cf-award-mod-microsoft-2023-03-14-d3cbb404, cf-award-ukri-mod-2023-03-14-1d4d8ad5, cf-award-mod-capgemini-2023-03-17-b8ac0ce1, cf-award-mod-capgemini-2023-03-22-48a2440c, cf-award-mod-pwc-2023-03-23-31a51c52, cf-award-mod-deloitte-2023-03-27-ce95dd13, cf-award-mod-leidos-2023-03-28-a01b2d84, cf-award-mod-sopra-steria-2023-03-29-4d61c553, cf-award-mod-sopra-steria-2023-03-29-f76862b9, cf-award-mod-bae-systems-2023-03-30-0db36095, cf-award-mod-deloitte-2023-03-31-3489ba23, cf-award-mod-gartner-2023-03-31-cf9b7942, cf-award-mod-bae-systems-2023-04-01-78e84551, cf-award-mod-deloitte-2023-04-03-8e7a505b, cf-award-mod-kpmg-2023-04-03-9a164415, cf-award-mod-deloitte-2023-04-28-cf55e9a0, cf-award-mod-bae-systems-2023-05-02-955ff713, cf-award-mod-deloitte-2023-05-02-c449ba89, cf-award-mod-bae-systems-2023-05-03-061f5179, cf-award-mod-sopra-steria-2023-05-05-960e9227, cf-award-mod-bae-systems-2023-05-12-eb8f6fda, cf-award-mod-capgemini-2023-05-17-0fdde29d, cf-award-mod-royal-united-services-institute-2023-05-18-92ba29cf, cf-award-mod-workday-2023-05-18-a367c64b, cf-award-mod-capgemini-2023-05-19-3d63d44e, cf-award-mod-capgemini-2023-05-19-6f283385, cf-award-mod-dell-2023-06-06-3dd308ab, cf-award-mod-mills-reeve-2023-06-08-a327a260, cf-award-mod-vodafone-2023-06-08-29b05eed, cf-award-mod-lockheed-martin-corporation-2023-06-13-88ae31c9, cf-award-mod-kpmg-2023-06-16-02896725, cf-award-mod-mills-reeve-2023-06-16-f525a761, cf-award-mod-university-of-edinburgh-2023-06-20-553cf235, cf-award-mod-deloitte-2023-06-28-413579eb, cf-award-mod-mills-reeve-2023-06-28-3e15122d, cf-award-mod-mills-reeve-2023-06-28-6c722548, cf-award-mod-mills-reeve-2023-06-28-c01f2b09, cf-award-mod-mills-reeve-2023-06-28-c910f7e6, cf-award-mod-capgemini-2023-06-29-67c8c52f, cf-award-mod-deloitte-2023-07-06-a63dbdbd, cf-award-mod-kpmg-2023-07-06-59c9a9d0, cf-award-mod-royal-united-services-institute-2023-07-06-2c91ea78, cf-award-mod-sopra-steria-2023-07-10-a3ae1a7e, cf-award-mod-mills-reeve-2023-07-17-587cdedd, cf-award-mod-deloitte-2023-07-19-70e56879, cf-award-mod-bae-systems-2023-07-24-873d7b4c, cf-award-mod-deloitte-2023-07-24-1666f403, cf-award-mod-bae-systems-2023-07-28-38fb1795, cf-award-mod-deloitte-2023-08-01-3afee71e, cf-award-mod-kpmg-2023-08-01-a0b2ee0b, cf-award-mod-workday-2023-08-01-f77fe79d, cf-award-mod-amazon-web-services-aws-2023-08-02-61162713, cf-award-mod-kpmg-2023-08-03-2ac65335, cf-award-mod-deloitte-2023-08-08-5e1744f1, cf-award-mod-accenture-2023-08-09-4ba830d7, cf-award-mod-lockheed-martin-corporation-2023-08-30-c21d4069, cf-award-mod-bae-systems-2023-09-04-02a08ef8, cf-award-mod-civica-2023-09-04-384467e1, cf-award-mod-bae-systems-2023-09-07-6a1ae844, cf-award-mod-sopra-steria-2023-09-11-bb180d81, cf-award-mod-bae-systems-2023-09-18-13436ef9, cf-award-mod-university-of-oxford-2023-09-19-80367f63, cf-award-mod-accenture-2023-09-20-f5aebe7c, cf-award-mod-capgemini-2023-09-29-e93ef140, cf-award-mod-deloitte-2023-09-29-4431a85f, cf-award-mod-university-of-birmingham-2023-09-29-ec80758b, cf-award-mod-bae-systems-2023-10-16-ea0a5347, cf-award-mod-general-atomics-aeronautical-sys-2023-10-16-b4e662c3, cf-award-ukri-mod-2023-10-17-f0d82d2e, cf-award-mod-bae-systems-2023-10-18-e2a17b75, cf-award-mod-kpmg-2023-10-18-24c4bc5f, cf-award-mod-bae-systems-2023-10-23-9f6e263b, cf-award-mod-gartner-2023-10-27-9ba5f44b, cf-award-mod-booz-allen-hamilton-2023-11-01-f84261a9, cf-award-mod-kyndryl-2023-11-01-7b2ff61d, cf-award-mod-mills-reeve-2023-11-01-4eec8ad2, cf-award-mod-unisys-2023-11-15-452d729e, cf-award-mod-mills-reeve-2023-11-16-9ff14b4b, cf-award-mod-atkinsrealis-2023-11-17-b92822ac, cf-award-mod-bae-systems-2023-11-20-32ec03be, cf-award-mod-deloitte-2023-11-20-8d56744a, cf-award-mod-mckinsey-and-company-2023-11-23-1c2c6c9a, cf-award-nhs-england-mod-2023-11-23-ac3f8098, cf-award-mod-university-of-birmingham-2023-11-29-e5125b1b, cf-award-mod-deloitte-2023-12-01-3bae0a3e, cf-award-mod-deloitte-2023-12-12-2b16aaf3, cf-award-mod-deloitte-2023-12-12-e8642a95, cf-award-mod-kpmg-2023-12-12-605d98f4, cf-award-mod-kpmg-2023-12-12-e4c73a39, cf-award-mod-general-dynamics-2023-12-15-947e325d, cf-award-mod-kpmg-2023-12-21-474b500c, cf-award-mod-sopra-steria-2023-12-21-95e6ddb0, cf-award-mod-deloitte-2023-12-22-fb7bc4a1, cf-award-mod-gartner-2023-12-26-64acb751, cf-award-mod-dla-piper-2023-12-27-ab150607, cf-award-mod-mills-reeve-2024-01-10-a6f93224, cf-award-mod-textron-systems-2024-01-11-9fc88ecf, cf-award-mod-bae-systems-2024-01-16-00963408, cf-award-mod-kpmg-2024-01-18-edc9d363, cf-award-mod-mills-reeve-2024-01-19-e8663c3b, cf-award-mod-capgemini-2024-01-29-34378f51, cf-award-mod-capgemini-2024-01-29-66db0011, cf-award-mod-gartner-2024-01-29-7d2f78e0, cf-award-mod-kainos-2024-01-29-920c50f1, cf-award-mod-capgemini-2024-02-05-868d2f90, cf-award-mod-capgemini-2024-02-08-30ae08de, cf-award-mod-capgemini-2024-02-08-b2f02eed, cf-award-mod-lockheed-martin-corporation-2024-02-13-295cdd19, cf-award-mod-mills-reeve-2024-02-15-a83f0008, cf-award-ukri-mod-2024-02-23-30aadc56, cf-award-mod-lockheed-martin-corporation-2024-02-27-6161d511, cf-award-mod-mills-reeve-2024-02-28-ec990f93, cf-award-mod-bae-systems-2024-03-01-8f14dcf6, cf-award-mod-kpmg-2024-03-07-cf8e752e, cf-award-mod-deloitte-2024-03-09-86f8299c, cf-award-mod-bae-systems-2024-03-19-2a78c4cd, cf-award-mod-bae-systems-2024-03-21-008d0f55, cf-award-mod-bae-systems-2024-03-21-cdc94678, cf-award-mod-bae-systems-2024-03-25-3d6fea79, cf-award-mod-bae-systems-2024-03-25-df605208, cf-award-mod-civica-2024-03-25-05390077, cf-award-mod-general-dynamics-2024-03-25-538ccdb4, cf-award-mod-atkinsrealis-2024-03-27-3ec8b11a, cf-award-mod-deloitte-2024-03-27-3791ffac, cf-award-mod-deloitte-2024-03-27-8aa07311, cf-award-mod-bae-systems-2024-03-28-221ad571, cf-award-mod-ibm-2024-03-28-0af1321a, cf-award-mod-bae-systems-2024-03-30-0d31fec2, cf-award-mod-sopra-steria-2024-03-31-acb46272, cf-award-mod-general-dynamics-2024-04-01-cfe803c8, cf-award-mod-deloitte-2024-04-02-52eec3e3, cf-award-mod-civica-2024-04-03-0b51faa2, cf-award-mod-mckinsey-and-company-2024-04-04-78b1b1d6, cf-award-mod-unisys-2024-04-08-35c55a3b, cf-award-mod-bae-systems-2024-04-10-4ddb0efc, cf-award-mod-dla-piper-2024-04-16-60599d2e, cf-award-mod-atkinsrealis-2024-04-19-357eb912, cf-award-mod-gartner-2024-04-24-7ec6b670, cf-award-mod-bae-systems-2024-04-26-3ac6d407, cf-award-mod-general-dynamics-2024-04-26-754d392c, cf-award-mod-accenture-2024-05-01-f3a04ab9, cf-award-mod-kpmg-2024-05-01-2dcd68e7, cf-award-mod-mills-reeve-2024-05-01-85d163de, cf-award-mod-accenture-2024-05-12-bca3dc63, cf-award-mod-capgemini-2024-05-14-18322122, cf-award-mod-gartner-2024-05-20-af80dabf, cf-award-mod-ncc-group-2024-05-22-1bc89a92, cf-award-mod-oracle-2024-05-29-38cc324e, cf-award-mod-workday-2024-06-13-1fbfd9ea, cf-award-mod-capgemini-2024-06-20-5843746a, cf-award-mod-bae-systems-2024-06-28-24a860cd, cf-award-mod-bae-systems-2024-07-01-83367cfc, cf-award-mod-kpmg-2024-07-01-196ad4d0, cf-award-mod-mills-reeve-2024-07-01-f6c22aeb, cf-award-mod-kpmg-2024-07-04-a3a4dae0, cf-award-ukri-mod-2024-07-09-9dd8fa35, cf-award-mod-mills-reeve-2024-07-14-5609c0a4, cf-award-mod-gartner-2024-07-17-4d952dae, cf-award-mod-mills-reeve-2024-07-18-bff22eeb, cf-award-mod-capgemini-2024-07-23-5613b902, cf-award-mod-gartner-2024-07-26-2811a50c, cf-award-mod-kpmg-2024-08-02-10f1f617, cf-award-mod-siemens-2024-08-05-bb63b708, cf-award-mod-deloitte-2024-08-07-8a67f718, cf-award-mod-mills-reeve-2024-08-13-a2e013e9, cf-award-mod-mills-reeve-2024-08-13-c35f32b3, cf-award-mod-bae-systems-2024-08-15-c929e185, cf-award-mod-university-of-birmingham-2024-08-27-4be6a7ad, cf-award-mod-general-dynamics-2024-08-31-b94ea2f3, cf-award-mod-bae-systems-2024-09-05-c23ee868, cf-award-mod-bae-systems-2024-09-06-95eb4ac0, cf-award-mod-general-dynamics-2024-09-09-83ae75b7, cf-award-mod-bae-systems-2024-09-12-ad715519, cf-award-mod-mills-reeve-2024-09-19-7e3703e0, cf-award-mod-bae-systems-2024-09-23-a045822d, cf-award-mod-bae-systems-2024-09-25-1bebb074, cf-award-mod-lockheed-martin-corporation-2024-10-01-92b96c34, cf-award-mod-altana-technologies-2024-10-31-6ea62f2e, cf-award-mod-accenture-2024-11-01-368118f1, cf-award-mod-dla-piper-2024-11-01-06948ebd, cf-award-mod-gartner-2024-11-08-7f0a0aa3, cf-award-mod-accenture-2024-11-12-2049b057, cf-award-mod-accenture-2024-11-15-c9a587ee, cf-award-mod-gartner-2024-11-30-6880e596, cf-award-mod-gartner-2024-12-09-4d9a1cca, cf-award-mod-kainos-2024-12-13-019cc5e2, cf-award-mod-kpmg-2024-12-13-6ee53170, cf-award-mod-civica-2024-12-18-8d6a7068, cf-award-mod-ibm-2024-12-18-fdd880e5, cf-award-mod-mills-reeve-2025-01-16-6e79b3cd, cf-award-mod-atkinsrealis-2025-01-24-fda55135, cf-award-mod-kainos-2025-01-25-e98367a9, cf-award-mod-dla-piper-2025-02-03-e041f502, cf-award-mod-kpmg-2025-02-10-82d992d6, cf-award-mod-bae-systems-2025-02-12-0b83cb1b, cf-award-mod-bae-systems-2025-02-18-6c5f6198, cf-award-mod-university-of-oxford-2025-02-25-ab4eb111, cf-award-mod-gartner-2025-02-28-d6bcfe78, cf-award-mod-accenture-2025-03-05-fbf37c0c, cf-award-mod-bae-systems-2025-03-06-10bcda82, cf-award-mod-ge-aerospace-2025-03-11-df08c767, cf-award-mod-lockheed-martin-corporation-2025-03-11-895a418a, cf-award-mod-university-of-birmingham-2025-03-13-ee9ef061, cf-award-mod-deloitte-2025-03-17-a8d17f5f, cf-award-mod-bae-systems-2025-03-25-88de97f0, cf-award-mod-sopra-steria-2025-03-25-0cc64709, cf-award-mod-atkinsrealis-2025-03-30-d03a74a5, cf-award-mod-accenture-2025-04-01-6db90b87, cf-award-mod-capgemini-2025-04-01-97660232, cf-award-mod-deloitte-2025-04-01-e2dab0b7, cf-award-mod-general-dynamics-2025-04-01-0c5988d1, cf-award-mod-northrop-grumman-2025-04-01-d9864415, cf-award-mod-atkinsrealis-2025-04-08-8c1b9508, cf-award-mod-atkinsrealis-2025-04-09-669046cf, cf-award-mod-royal-united-services-institute-2025-04-16-cdc9acd0, cf-award-mod-university-of-salford-2025-04-16-8ba8779c, cf-award-mod-ncc-group-2025-04-22-2d91e114, cf-award-mod-deloitte-2025-04-23-7414f907, cf-award-mod-capgemini-2025-04-30-61408d4c, cf-award-mod-bae-systems-2025-05-06-b4b2db7d, cf-award-mod-bae-systems-2025-05-08-3a812ad8, cf-award-mod-mills-reeve-2025-05-13-d5d93419, cf-award-mod-general-dynamics-2025-05-28-c194def3, cf-award-mod-microsoft-2025-05-29-a03f987e, cf-award-mod-kpmg-2025-06-08-18d44c24, cf-award-mod-lockheed-martin-corporation-2025-06-09-c093f2a6, cf-award-mod-lockheed-martin-corporation-2025-06-10-018715b4, cf-award-mod-bae-systems-2025-06-11-c9025fc9, cf-award-mod-deloitte-2025-06-11-55a2d1b1, cf-award-mod-kpmg-2025-06-11-cbae6f9e, cf-award-mod-kpmg-2025-06-17-15e37da4, cf-award-mod-strider-technologies-2025-06-17-e4d12e7a, cf-award-mod-accenture-2025-06-20-7f2ba021, cf-award-mod-kpmg-2025-06-23-5e32e049, cf-award-mod-gartner-2025-07-01-29f1716c, cf-award-mod-gartner-2025-07-01-bd50b8aa, cf-award-mod-bae-systems-2025-07-02-945299a2, cf-award-mod-rowden-tech-2025-07-14-eaac5254, cf-award-mod-bae-systems-2025-07-28-692cf575, cf-award-mod-yougov-2025-08-01-5f957da6, cf-award-mod-capgemini-2025-08-04-d568d4f0, cf-award-mod-carnegie-endowment-for-internati-2025-08-04-d875324f, cf-award-mod-deloitte-2025-08-04-8d98e236, cf-award-mod-bae-systems-2025-08-05-9b50205e, cf-award-mod-gartner-2025-08-21-c04aa56d, cf-award-mod-atkinsrealis-2025-08-30-728e6eb7, cf-award-mod-ncc-group-2025-09-01-c0f7086f, cf-award-mod-bae-systems-2025-09-05-41c0b031, cf-award-mod-gartner-2025-09-09-35bdb62c, cf-award-mod-atkinsrealis-2025-09-19-b0097d30, cf-award-mod-bae-systems-2025-09-25-3cf29511, cf-award-mod-bae-systems-2025-09-29-115f967b, cf-award-mod-gartner-2025-10-01-7b521c95, cf-award-mod-kpmg-2025-10-01-7856caad, cf-award-mod-atkinsrealis-2025-10-06-37fe5ffb, cf-award-mod-mills-reeve-2025-10-09-bbd1f682, cf-award-mod-atkinsrealis-2025-10-10-5c125b75, cf-award-mod-deloitte-2025-10-10-7288cb42, cf-award-mod-capgemini-2025-10-17-b10f1ec9, cf-award-mod-dla-piper-2025-10-17-301d367b, cf-award-mod-bae-systems-2025-10-28-89dee72b, cf-award-mod-bae-systems-2025-10-31-835353e7, cf-award-mod-bae-systems-2025-10-31-950cc498, cf-award-mod-kainos-2025-10-31-0d2bcd37, cf-award-mod-bae-systems-2025-11-13-655ee5dd, cf-award-mod-bae-systems-2025-11-18-dc82e8c2, cf-award-mod-kpmg-2025-11-21-d8965718, cf-award-mod-gartner-2025-12-01-d4f8ff41, cf-award-mod-mills-reeve-2025-12-19-a0859f2b, cf-award-mod-atkinsrealis-2026-01-02-2953d8b3, cf-award-mod-civica-2026-01-13-707d3a98, cf-award-mod-gartner-2026-01-19-085a96a0, cf-award-mod-university-of-birmingham-2026-01-28-9026f637, cf-award-mod-bae-systems-2026-02-26-170347a2, cf-award-mod-general-dynamics-2026-03-03-665c20aa, cf-award-mod-sierra-nevada-corporation-2026-03-11-2fba0134, cf-award-mod-gartner-2026-03-13-a8bb054d, cf-award-mod-gartner-2026-03-23-db35ea75, cf-award-mod-gartner-2026-03-30-93c6f8bc, cf-award-mod-deloitte-2026-03-31-c7fff834, cf-award-mod-sopra-steria-2026-03-31-fc46f9e6, cf-award-mod-atkinsrealis-2026-04-06-ced34a62, cf-award-mod-atkinsrealis-2026-05-19-1afde35a, cf-award-mod-capgemini-2026-05-22-256f8157, cf-award-mod-capgemini-2026-05-22-881a0d7b, cf-award-mod-mills-reeve-2026-05-31-3b2f7d74, cf-award-mod-accenture-2026-06-01-c101b4db, cf-award-mod-atkinsrealis-2026-06-07-076ced13, cf-award-mod-atkinsrealis-2026-06-26-c435de9e, cf-award-mod-bae-systems-2026-07-01-0f2d61cb, cf-award-mod-bae-systems-2026-07-22-812dc189, cf-award-mod-mills-reeve-2026-07-28-90bc1d7c, cf-award-mod-bae-systems-2026-08-06-a25f283c, cf-award-mod-gartner-2026-09-01-0faa27a8, cf-award-mod-deloitte-2026-10-22-42f286ce, cf-award-mod-gartner-2026-10-28-f28d03b9. Secondary types: defence_industrial_surface, government_advisory_surface, model_governance_surface, policy_to_procurement_surface.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `strategic-defence-review-development-2024-2025`, `strategic-defence-review-2024-2025`, `anduril-talos-phase-3-contract-observation-2023-11-02`, `anduril-talos-phase-3-named-principals-2023-11-02`, `anduril-ukraine-drone-deal-named-principals-2025-03-06`, `anduril-ai-fight-tonight-award-2021-07-31`, `anduril-talos-phase-2-award-2021-08-02`, `anduril-project-entrelezar-award-2023-10-09`, `anduril-ddad-framework-2026-01-09`, `anduril-project-nyx-seven-supplier-shortlist-2026-01-24`, `anduril-project-nyx-four-supplier-downselect-2026-05-15`, `atlantic-bastion-launch-publication-2025-12-08`, `atlantic-bastion-industry-program-context-2025-12-08`, `cf-award-mod-faculty-2026-01-09-7aafc1b3`, `uk-ministerial-meetings-mod-s-ministerial-meetings-january-to-march-2021-60eed151`, `uk-ministerial-meetings-mod-s-ministerial-meetings-october-to-december-2024-67e162ff`, `uk-ministerial-meetings-mod-s-ministerial-meetings-january-to-march-2025-68308e02`, `uk-ministerial-meetings-mod-s-ministerial-meetings-july-to-september-2025-693ff9ec`, `uk-ministerial-meetings-mod-s-ministerial-meetings-october-to-december-2025-69bd62ea`
+Refs: `strategic-defence-review-development-2024-2025`, `strategic-defence-review-2024-2025`, `anduril-talos-phase-3-contract-observation-2023-11-02`, `anduril-talos-phase-3-named-principals-2023-11-02`, `anduril-ukraine-drone-deal-named-principals-2025-03-06`, `anduril-ai-fight-tonight-award-2021-07-31`, `anduril-talos-phase-2-award-2021-08-02`, `anduril-project-entrelezar-award-2023-10-09`, `anduril-ddad-framework-2026-01-09`, `anduril-project-nyx-seven-supplier-shortlist-2026-01-24`, `anduril-project-nyx-four-supplier-downselect-2026-05-15`, `atlantic-bastion-launch-publication-2025-12-08`, `atlantic-bastion-industry-program-context-2025-12-08`, `cf-award-mod-faculty-2026-01-09-7aafc1b3`, `uk-ministerial-meetings-mod-s-ministerial-meetings-january-to-march-2021-60eed151`, `uk-ministerial-meetings-mod-s-ministerial-meetings-october-to-december-2024-67e162ff`, `uk-ministerial-meetings-mod-s-ministerial-meetings-january-to-march-2025-68308e02`, `uk-ministerial-meetings-mod-s-ministerial-meetings-july-to-september-2025-693ff9ec`, `uk-ministerial-meetings-mod-s-ministerial-meetings-october-to-december-2025-69bd62ea`, `cf-award-mod-workday-2022-01-01-cf785913`, `cf-award-mod-civica-2022-03-23-97ff8d8b`, `cf-award-mod-vodafone-2022-03-28-ed6dec96`, `cf-award-mod-kpmg-2022-05-02-ec344181`, `cf-award-mod-workday-2022-05-24-9b2304a9`, `cf-award-mod-bae-systems-2022-06-30-de6e37a0`, `cf-award-mod-bae-systems-2022-08-25-c67d5416`, `cf-award-mod-bae-systems-2022-08-25-eebce14d`, `cf-award-mod-vodafone-2022-09-01-0fb287c6`, `cf-award-mod-vodafone-2022-09-01-8ac4512f`, `cf-award-mod-bae-systems-2022-09-02-2f1aefe5`, `cf-award-mod-capgemini-2022-09-21-1d8e4f5b`, `cf-award-mod-deloitte-2022-09-30-b6ef3cdc`, `cf-award-mod-capgemini-2022-10-01-9f358897`, `cf-award-mod-raytheon-2022-10-01-2cbb5f6f`, `cf-award-mod-deloitte-2022-10-10-738114f9`, `cf-award-mod-sierra-nevada-corporation-2022-10-17-3cb74a97`, `cf-award-mod-accenture-2022-10-19-db06f394`, `cf-award-mod-kpmg-2022-11-10-9187f3cb`, `cf-award-mod-kpmg-2022-11-14-07fc2c7c`, `cf-award-mod-kpmg-2022-11-17-772378e3`, `cf-award-mod-university-of-birmingham-2022-11-17-2e6172e7`, `cf-award-mod-civica-2022-11-20-236cf1de`, `cf-award-mod-workday-2022-11-22-06844f60`, `cf-award-mod-gartner-2022-11-25-720794a0`, `cf-award-mod-palantir-2022-11-25-ac82a048`, `cf-award-mod-deloitte-2022-12-02-04486bd4`, `cf-award-mod-lockheed-martin-corporation-2022-12-07-31679623`, `cf-award-mod-lockheed-martin-corporation-2022-12-12-f9aea817`, `cf-award-mod-mckinsey-and-company-2022-12-14-71846fee`, `cf-award-mod-kpmg-2022-12-16-76756dac`, `cf-award-mod-bae-systems-2022-12-19-46a8b584`, `cf-award-mod-deloitte-2022-12-20-0cd309a8`, `cf-award-mod-deloitte-2022-12-21-e786d6f2`, `cf-award-mod-deloitte-2022-12-23-e5e1115f`, `cf-award-mod-lockheed-martin-corporation-2023-01-04-dbdf12a1`, `cf-award-mod-university-of-birmingham-2023-01-12-a5fbdc4b`, `cf-award-mod-deloitte-2023-01-18-536aa953`, `cf-award-mod-mills-reeve-2023-01-23-40043d5c`, `cf-award-mod-sopra-steria-2023-01-23-143512c8`, `cf-award-mod-bae-systems-2023-01-30-140ae68e`, `cf-award-mod-microsoft-2023-02-07-0bb19f42`, `cf-award-mod-deloitte-2023-02-13-1a1f950f`, `cf-award-mod-bae-systems-2023-02-17-dc561e3e`, `cf-award-mod-deloitte-2023-02-17-886aa65b`, `cf-award-mod-interos-2023-02-17-cf0f1e75`, `cf-award-mod-bae-systems-2023-02-21-a78962d5`, `cf-award-mod-general-dynamics-2023-02-21-2af37a37`, `cf-award-mod-deloitte-2023-02-24-87bce342`, `cf-award-mod-deloitte-2023-02-27-0f64ad4f`, `cf-award-mod-kpmg-2023-02-27-cfe5ef8c`, `cf-award-mod-bae-systems-2023-03-07-54c08380`, `cf-award-mod-accenture-2023-03-10-954e325e`, `cf-award-ukri-mod-2023-03-13-e2ecd1b2`, `cf-award-mod-microsoft-2023-03-14-d3cbb404`, `cf-award-ukri-mod-2023-03-14-1d4d8ad5`, `cf-award-mod-capgemini-2023-03-17-b8ac0ce1`, `cf-award-mod-capgemini-2023-03-22-48a2440c`, `cf-award-mod-pwc-2023-03-23-31a51c52`, `cf-award-mod-deloitte-2023-03-27-ce95dd13`, `cf-award-mod-leidos-2023-03-28-a01b2d84`, `cf-award-mod-sopra-steria-2023-03-29-4d61c553`, `cf-award-mod-sopra-steria-2023-03-29-f76862b9`, `cf-award-mod-bae-systems-2023-03-30-0db36095`, `cf-award-mod-deloitte-2023-03-31-3489ba23`, `cf-award-mod-gartner-2023-03-31-cf9b7942`, `cf-award-mod-bae-systems-2023-04-01-78e84551`, `cf-award-mod-deloitte-2023-04-03-8e7a505b`, `cf-award-mod-kpmg-2023-04-03-9a164415`, `cf-award-mod-deloitte-2023-04-28-cf55e9a0`, `cf-award-mod-bae-systems-2023-05-02-955ff713`, `cf-award-mod-deloitte-2023-05-02-c449ba89`, `cf-award-mod-bae-systems-2023-05-03-061f5179`, `cf-award-mod-sopra-steria-2023-05-05-960e9227`, `cf-award-mod-bae-systems-2023-05-12-eb8f6fda`, `cf-award-mod-capgemini-2023-05-17-0fdde29d`, `cf-award-mod-royal-united-services-institute-2023-05-18-92ba29cf`, `cf-award-mod-workday-2023-05-18-a367c64b`, `cf-award-mod-capgemini-2023-05-19-3d63d44e`, `cf-award-mod-capgemini-2023-05-19-6f283385`, `cf-award-mod-dell-2023-06-06-3dd308ab`, `cf-award-mod-mills-reeve-2023-06-08-a327a260`, `cf-award-mod-vodafone-2023-06-08-29b05eed`, `cf-award-mod-lockheed-martin-corporation-2023-06-13-88ae31c9`, `cf-award-mod-kpmg-2023-06-16-02896725`, `cf-award-mod-mills-reeve-2023-06-16-f525a761`, `cf-award-mod-university-of-edinburgh-2023-06-20-553cf235`, `cf-award-mod-deloitte-2023-06-28-413579eb`, `cf-award-mod-mills-reeve-2023-06-28-3e15122d`, `cf-award-mod-mills-reeve-2023-06-28-6c722548`, `cf-award-mod-mills-reeve-2023-06-28-c01f2b09`, `cf-award-mod-mills-reeve-2023-06-28-c910f7e6`, `cf-award-mod-capgemini-2023-06-29-67c8c52f`, `cf-award-mod-deloitte-2023-07-06-a63dbdbd`, `cf-award-mod-kpmg-2023-07-06-59c9a9d0`, `cf-award-mod-royal-united-services-institute-2023-07-06-2c91ea78`, `cf-award-mod-sopra-steria-2023-07-10-a3ae1a7e`, `cf-award-mod-mills-reeve-2023-07-17-587cdedd`, `cf-award-mod-deloitte-2023-07-19-70e56879`, `cf-award-mod-bae-systems-2023-07-24-873d7b4c`, `cf-award-mod-deloitte-2023-07-24-1666f403`, `cf-award-mod-bae-systems-2023-07-28-38fb1795`, `cf-award-mod-deloitte-2023-08-01-3afee71e`, `cf-award-mod-kpmg-2023-08-01-a0b2ee0b`, `cf-award-mod-workday-2023-08-01-f77fe79d`, `cf-award-mod-amazon-web-services-aws-2023-08-02-61162713`, `cf-award-mod-kpmg-2023-08-03-2ac65335`, `cf-award-mod-deloitte-2023-08-08-5e1744f1`, `cf-award-mod-accenture-2023-08-09-4ba830d7`, `cf-award-mod-lockheed-martin-corporation-2023-08-30-c21d4069`, `cf-award-mod-bae-systems-2023-09-04-02a08ef8`, `cf-award-mod-civica-2023-09-04-384467e1`, `cf-award-mod-bae-systems-2023-09-07-6a1ae844`, `cf-award-mod-sopra-steria-2023-09-11-bb180d81`, `cf-award-mod-bae-systems-2023-09-18-13436ef9`, `cf-award-mod-university-of-oxford-2023-09-19-80367f63`, `cf-award-mod-accenture-2023-09-20-f5aebe7c`, `cf-award-mod-capgemini-2023-09-29-e93ef140`, `cf-award-mod-deloitte-2023-09-29-4431a85f`, `cf-award-mod-university-of-birmingham-2023-09-29-ec80758b`, `cf-award-mod-bae-systems-2023-10-16-ea0a5347`, `cf-award-mod-general-atomics-aeronautical-sys-2023-10-16-b4e662c3`, `cf-award-ukri-mod-2023-10-17-f0d82d2e`, `cf-award-mod-bae-systems-2023-10-18-e2a17b75`, `cf-award-mod-kpmg-2023-10-18-24c4bc5f`, `cf-award-mod-bae-systems-2023-10-23-9f6e263b`, `cf-award-mod-gartner-2023-10-27-9ba5f44b`, `cf-award-mod-booz-allen-hamilton-2023-11-01-f84261a9`, `cf-award-mod-kyndryl-2023-11-01-7b2ff61d`, `cf-award-mod-mills-reeve-2023-11-01-4eec8ad2`, `cf-award-mod-unisys-2023-11-15-452d729e`, `cf-award-mod-mills-reeve-2023-11-16-9ff14b4b`, `cf-award-mod-atkinsrealis-2023-11-17-b92822ac`, `cf-award-mod-bae-systems-2023-11-20-32ec03be`, `cf-award-mod-deloitte-2023-11-20-8d56744a`, `cf-award-mod-mckinsey-and-company-2023-11-23-1c2c6c9a`, `cf-award-nhs-england-mod-2023-11-23-ac3f8098`, `cf-award-mod-university-of-birmingham-2023-11-29-e5125b1b`, `cf-award-mod-deloitte-2023-12-01-3bae0a3e`, `cf-award-mod-deloitte-2023-12-12-2b16aaf3`, `cf-award-mod-deloitte-2023-12-12-e8642a95`, `cf-award-mod-kpmg-2023-12-12-605d98f4`, `cf-award-mod-kpmg-2023-12-12-e4c73a39`, `cf-award-mod-general-dynamics-2023-12-15-947e325d`, `cf-award-mod-kpmg-2023-12-21-474b500c`, `cf-award-mod-sopra-steria-2023-12-21-95e6ddb0`, `cf-award-mod-deloitte-2023-12-22-fb7bc4a1`, `cf-award-mod-gartner-2023-12-26-64acb751`, `cf-award-mod-dla-piper-2023-12-27-ab150607`, `cf-award-mod-mills-reeve-2024-01-10-a6f93224`, `cf-award-mod-textron-systems-2024-01-11-9fc88ecf`, `cf-award-mod-bae-systems-2024-01-16-00963408`, `cf-award-mod-kpmg-2024-01-18-edc9d363`, `cf-award-mod-mills-reeve-2024-01-19-e8663c3b`, `cf-award-mod-capgemini-2024-01-29-34378f51`, `cf-award-mod-capgemini-2024-01-29-66db0011`, `cf-award-mod-gartner-2024-01-29-7d2f78e0`, `cf-award-mod-kainos-2024-01-29-920c50f1`, `cf-award-mod-capgemini-2024-02-05-868d2f90`, `cf-award-mod-capgemini-2024-02-08-30ae08de`, `cf-award-mod-capgemini-2024-02-08-b2f02eed`, `cf-award-mod-lockheed-martin-corporation-2024-02-13-295cdd19`, `cf-award-mod-mills-reeve-2024-02-15-a83f0008`, `cf-award-ukri-mod-2024-02-23-30aadc56`, `cf-award-mod-lockheed-martin-corporation-2024-02-27-6161d511`, `cf-award-mod-mills-reeve-2024-02-28-ec990f93`, `cf-award-mod-bae-systems-2024-03-01-8f14dcf6`, `cf-award-mod-kpmg-2024-03-07-cf8e752e`, `cf-award-mod-deloitte-2024-03-09-86f8299c`, `cf-award-mod-bae-systems-2024-03-19-2a78c4cd`, `cf-award-mod-bae-systems-2024-03-21-008d0f55`, `cf-award-mod-bae-systems-2024-03-21-cdc94678`, `cf-award-mod-bae-systems-2024-03-25-3d6fea79`, `cf-award-mod-bae-systems-2024-03-25-df605208`, `cf-award-mod-civica-2024-03-25-05390077`, `cf-award-mod-general-dynamics-2024-03-25-538ccdb4`, `cf-award-mod-atkinsrealis-2024-03-27-3ec8b11a`, `cf-award-mod-deloitte-2024-03-27-3791ffac`, `cf-award-mod-deloitte-2024-03-27-8aa07311`, `cf-award-mod-bae-systems-2024-03-28-221ad571`, `cf-award-mod-ibm-2024-03-28-0af1321a`, `cf-award-mod-bae-systems-2024-03-30-0d31fec2`, `cf-award-mod-sopra-steria-2024-03-31-acb46272`, `cf-award-mod-general-dynamics-2024-04-01-cfe803c8`, `cf-award-mod-deloitte-2024-04-02-52eec3e3`, `cf-award-mod-civica-2024-04-03-0b51faa2`, `cf-award-mod-mckinsey-and-company-2024-04-04-78b1b1d6`, `cf-award-mod-unisys-2024-04-08-35c55a3b`, `cf-award-mod-bae-systems-2024-04-10-4ddb0efc`, `cf-award-mod-dla-piper-2024-04-16-60599d2e`, `cf-award-mod-atkinsrealis-2024-04-19-357eb912`, `cf-award-mod-gartner-2024-04-24-7ec6b670`, `cf-award-mod-bae-systems-2024-04-26-3ac6d407`, `cf-award-mod-general-dynamics-2024-04-26-754d392c`, `cf-award-mod-accenture-2024-05-01-f3a04ab9`, `cf-award-mod-kpmg-2024-05-01-2dcd68e7`, `cf-award-mod-mills-reeve-2024-05-01-85d163de`, `cf-award-mod-accenture-2024-05-12-bca3dc63`, `cf-award-mod-capgemini-2024-05-14-18322122`, `cf-award-mod-gartner-2024-05-20-af80dabf`, `cf-award-mod-ncc-group-2024-05-22-1bc89a92`, `cf-award-mod-oracle-2024-05-29-38cc324e`, `cf-award-mod-workday-2024-06-13-1fbfd9ea`, `cf-award-mod-capgemini-2024-06-20-5843746a`, `cf-award-mod-bae-systems-2024-06-28-24a860cd`, `cf-award-mod-bae-systems-2024-07-01-83367cfc`, `cf-award-mod-kpmg-2024-07-01-196ad4d0`, `cf-award-mod-mills-reeve-2024-07-01-f6c22aeb`, `cf-award-mod-kpmg-2024-07-04-a3a4dae0`, `cf-award-ukri-mod-2024-07-09-9dd8fa35`, `cf-award-mod-mills-reeve-2024-07-14-5609c0a4`, `cf-award-mod-gartner-2024-07-17-4d952dae`, `cf-award-mod-mills-reeve-2024-07-18-bff22eeb`, `cf-award-mod-capgemini-2024-07-23-5613b902`, `cf-award-mod-gartner-2024-07-26-2811a50c`, `cf-award-mod-kpmg-2024-08-02-10f1f617`, `cf-award-mod-siemens-2024-08-05-bb63b708`, `cf-award-mod-deloitte-2024-08-07-8a67f718`, `cf-award-mod-mills-reeve-2024-08-13-a2e013e9`, `cf-award-mod-mills-reeve-2024-08-13-c35f32b3`, `cf-award-mod-bae-systems-2024-08-15-c929e185`, `cf-award-mod-university-of-birmingham-2024-08-27-4be6a7ad`, `cf-award-mod-general-dynamics-2024-08-31-b94ea2f3`, `cf-award-mod-bae-systems-2024-09-05-c23ee868`, `cf-award-mod-bae-systems-2024-09-06-95eb4ac0`, `cf-award-mod-general-dynamics-2024-09-09-83ae75b7`, `cf-award-mod-bae-systems-2024-09-12-ad715519`, `cf-award-mod-mills-reeve-2024-09-19-7e3703e0`, `cf-award-mod-bae-systems-2024-09-23-a045822d`, `cf-award-mod-bae-systems-2024-09-25-1bebb074`, `cf-award-mod-lockheed-martin-corporation-2024-10-01-92b96c34`, `cf-award-mod-altana-technologies-2024-10-31-6ea62f2e`, `cf-award-mod-accenture-2024-11-01-368118f1`, `cf-award-mod-dla-piper-2024-11-01-06948ebd`, `cf-award-mod-gartner-2024-11-08-7f0a0aa3`, `cf-award-mod-accenture-2024-11-12-2049b057`, `cf-award-mod-accenture-2024-11-15-c9a587ee`, `cf-award-mod-gartner-2024-11-30-6880e596`, `cf-award-mod-gartner-2024-12-09-4d9a1cca`, `cf-award-mod-kainos-2024-12-13-019cc5e2`, `cf-award-mod-kpmg-2024-12-13-6ee53170`, `cf-award-mod-civica-2024-12-18-8d6a7068`, `cf-award-mod-ibm-2024-12-18-fdd880e5`, `cf-award-mod-mills-reeve-2025-01-16-6e79b3cd`, `cf-award-mod-atkinsrealis-2025-01-24-fda55135`, `cf-award-mod-kainos-2025-01-25-e98367a9`, `cf-award-mod-dla-piper-2025-02-03-e041f502`, `cf-award-mod-kpmg-2025-02-10-82d992d6`, `cf-award-mod-bae-systems-2025-02-12-0b83cb1b`, `cf-award-mod-bae-systems-2025-02-18-6c5f6198`, `cf-award-mod-university-of-oxford-2025-02-25-ab4eb111`, `cf-award-mod-gartner-2025-02-28-d6bcfe78`, `cf-award-mod-accenture-2025-03-05-fbf37c0c`, `cf-award-mod-bae-systems-2025-03-06-10bcda82`, `cf-award-mod-ge-aerospace-2025-03-11-df08c767`, `cf-award-mod-lockheed-martin-corporation-2025-03-11-895a418a`, `cf-award-mod-university-of-birmingham-2025-03-13-ee9ef061`, `cf-award-mod-deloitte-2025-03-17-a8d17f5f`, `cf-award-mod-bae-systems-2025-03-25-88de97f0`, `cf-award-mod-sopra-steria-2025-03-25-0cc64709`, `cf-award-mod-atkinsrealis-2025-03-30-d03a74a5`, `cf-award-mod-accenture-2025-04-01-6db90b87`, `cf-award-mod-capgemini-2025-04-01-97660232`, `cf-award-mod-deloitte-2025-04-01-e2dab0b7`, `cf-award-mod-general-dynamics-2025-04-01-0c5988d1`, `cf-award-mod-northrop-grumman-2025-04-01-d9864415`, `cf-award-mod-atkinsrealis-2025-04-08-8c1b9508`, `cf-award-mod-atkinsrealis-2025-04-09-669046cf`, `cf-award-mod-royal-united-services-institute-2025-04-16-cdc9acd0`, `cf-award-mod-university-of-salford-2025-04-16-8ba8779c`, `cf-award-mod-ncc-group-2025-04-22-2d91e114`, `cf-award-mod-deloitte-2025-04-23-7414f907`, `cf-award-mod-capgemini-2025-04-30-61408d4c`, `cf-award-mod-bae-systems-2025-05-06-b4b2db7d`, `cf-award-mod-bae-systems-2025-05-08-3a812ad8`, `cf-award-mod-mills-reeve-2025-05-13-d5d93419`, `cf-award-mod-general-dynamics-2025-05-28-c194def3`, `cf-award-mod-microsoft-2025-05-29-a03f987e`, `cf-award-mod-kpmg-2025-06-08-18d44c24`, `cf-award-mod-lockheed-martin-corporation-2025-06-09-c093f2a6`, `cf-award-mod-lockheed-martin-corporation-2025-06-10-018715b4`, `cf-award-mod-bae-systems-2025-06-11-c9025fc9`, `cf-award-mod-deloitte-2025-06-11-55a2d1b1`, `cf-award-mod-kpmg-2025-06-11-cbae6f9e`, `cf-award-mod-kpmg-2025-06-17-15e37da4`, `cf-award-mod-strider-technologies-2025-06-17-e4d12e7a`, `cf-award-mod-accenture-2025-06-20-7f2ba021`, `cf-award-mod-kpmg-2025-06-23-5e32e049`, `cf-award-mod-gartner-2025-07-01-29f1716c`, `cf-award-mod-gartner-2025-07-01-bd50b8aa`, `cf-award-mod-bae-systems-2025-07-02-945299a2`, `cf-award-mod-rowden-tech-2025-07-14-eaac5254`, `cf-award-mod-bae-systems-2025-07-28-692cf575`, `cf-award-mod-yougov-2025-08-01-5f957da6`, `cf-award-mod-capgemini-2025-08-04-d568d4f0`, `cf-award-mod-carnegie-endowment-for-internati-2025-08-04-d875324f`, `cf-award-mod-deloitte-2025-08-04-8d98e236`, `cf-award-mod-bae-systems-2025-08-05-9b50205e`, `cf-award-mod-gartner-2025-08-21-c04aa56d`, `cf-award-mod-atkinsrealis-2025-08-30-728e6eb7`, `cf-award-mod-ncc-group-2025-09-01-c0f7086f`, `cf-award-mod-bae-systems-2025-09-05-41c0b031`, `cf-award-mod-gartner-2025-09-09-35bdb62c`, `cf-award-mod-atkinsrealis-2025-09-19-b0097d30`, `cf-award-mod-bae-systems-2025-09-25-3cf29511`, `cf-award-mod-bae-systems-2025-09-29-115f967b`, `cf-award-mod-gartner-2025-10-01-7b521c95`, `cf-award-mod-kpmg-2025-10-01-7856caad`, `cf-award-mod-atkinsrealis-2025-10-06-37fe5ffb`, `cf-award-mod-mills-reeve-2025-10-09-bbd1f682`, `cf-award-mod-atkinsrealis-2025-10-10-5c125b75`, `cf-award-mod-deloitte-2025-10-10-7288cb42`, `cf-award-mod-capgemini-2025-10-17-b10f1ec9`, `cf-award-mod-dla-piper-2025-10-17-301d367b`, `cf-award-mod-bae-systems-2025-10-28-89dee72b`, `cf-award-mod-bae-systems-2025-10-31-835353e7`, `cf-award-mod-bae-systems-2025-10-31-950cc498`, `cf-award-mod-kainos-2025-10-31-0d2bcd37`, `cf-award-mod-bae-systems-2025-11-13-655ee5dd`, `cf-award-mod-bae-systems-2025-11-18-dc82e8c2`, `cf-award-mod-kpmg-2025-11-21-d8965718`, `cf-award-mod-gartner-2025-12-01-d4f8ff41`, `cf-award-mod-mills-reeve-2025-12-19-a0859f2b`, `cf-award-mod-atkinsrealis-2026-01-02-2953d8b3`, `cf-award-mod-civica-2026-01-13-707d3a98`, `cf-award-mod-gartner-2026-01-19-085a96a0`, `cf-award-mod-university-of-birmingham-2026-01-28-9026f637`, `cf-award-mod-bae-systems-2026-02-26-170347a2`, `cf-award-mod-general-dynamics-2026-03-03-665c20aa`, `cf-award-mod-sierra-nevada-corporation-2026-03-11-2fba0134`, `cf-award-mod-gartner-2026-03-13-a8bb054d`, `cf-award-mod-gartner-2026-03-23-db35ea75`, `cf-award-mod-gartner-2026-03-30-93c6f8bc`, `cf-award-mod-deloitte-2026-03-31-c7fff834`, `cf-award-mod-sopra-steria-2026-03-31-fc46f9e6`, `cf-award-mod-atkinsrealis-2026-04-06-ced34a62`, `cf-award-mod-atkinsrealis-2026-05-19-1afde35a`, `cf-award-mod-capgemini-2026-05-22-256f8157`, `cf-award-mod-capgemini-2026-05-22-881a0d7b`, `cf-award-mod-mills-reeve-2026-05-31-3b2f7d74`, `cf-award-mod-accenture-2026-06-01-c101b4db`, `cf-award-mod-atkinsrealis-2026-06-07-076ced13`, `cf-award-mod-atkinsrealis-2026-06-26-c435de9e`, `cf-award-mod-bae-systems-2026-07-01-0f2d61cb`, `cf-award-mod-bae-systems-2026-07-22-812dc189`, `cf-award-mod-mills-reeve-2026-07-28-90bc1d7c`, `cf-award-mod-bae-systems-2026-08-06-a25f283c`, `cf-award-mod-gartner-2026-09-01-0faa27a8`, `cf-award-mod-deloitte-2026-10-22-42f286ce`, `cf-award-mod-gartner-2026-10-28-f28d03b9`
 
 ---
 
@@ -376,13 +376,13 @@ Refs: `strategic-defence-review-development-2024-2025`, `strategic-defence-revie
 
 **Observed**
 
-Anduril Industries appears across 59 surface(s): dsit-techuk-anduril-ai-safety-roundtable-2023-10-17, anduril-talos-phase-3-contract-observation-2023-11-02, anduril-talos-phase-3-named-principals-2023-11-02, anduril-ai-fight-tonight-award-2021-07-31, anduril-talos-phase-2-award-2021-08-02, anduril-project-entrelezar-award-2023-10-09, natsec100-2023-list, natsec100-2024-list, natsec100-2025-list, natsec100-2026-list, procurement-award-70b02c26f00000035, advisory-trae-stephens-anduril-industries, portfolio-as-represented-jackson-personal-investing-2026-07-14, alec-webster-anduril-industries-program-manager-linkedin-2025-present, andrew-nuss-anduril-industries-director-maritime-linkedin-2023-2025, andrew-nuss-anduril-industries-head-growth-and-strategy-maritime-division-linkedin-2025-present, bryan-claudio-anduril-industries-program-manager-linkedin-2023-2024, bryan-claudio-anduril-industries-simulation-and-training-warfighter-systems-mixed-linkedin-2025-present, bryan-claudio-anduril-industries-socom-air-defense-training-manager-linkedin-2024-2025, christian-brose-anduril-industries-chief-strategy-officer-linkedin-2018-2025, christian-brose-anduril-industries-president-and-chief-strategy-officer-linkedin-2025-present, colin-carroll-anduril-industries-strategy-and-growth-linkedin-2023-2025, emilio-menendez-baker-anduril-industries-emerging-capabilities-manager-air-defense-linkedin-2023-2025, emilio-menendez-baker-anduril-industries-senior-manager-air-defense-maneuver-linkedin-2025-present, james-sampson-anduril-industries-integration-technician-linkedin-2025-2026, james-sampson-anduril-industries-lead-integration-technician-linkedin-2026-present, jason-dickinson-anduril-industries-flight-operations-ghost-suas-linkedin-2019-2021, jason-dickinson-anduril-industries-general-manager-ghost-linkedin-2024-present, jason-dickinson-anduril-industries-growth-operations-lead-group-2-air-systems-linkedin-2021-2025, jon-bal-anduril-industries-director-linkedin-2025-2026, michael-maddry-anduril-industries-mission-operations-linkedin-2022-2025, quay-barnett-anduril-industries-general-manager-warfighter-systems-linkedin-2024-present, quay-barnett-anduril-industries-general-manager-warfighter-systems-linkedin-2024-present, randall-parkes-anduril-industries-mission-operations-lead-linkedin-2023-present, richard-wally-wannall-anduril-industries-mission-operations-engineer-linkedin-2025-present, sarah-english-anduril-industries-engineering-operations-lead-linkedin-2026-present, sofia-rose-haft-anduril-industries-director-of-communications-and-external-affairs-linkedin-2023-2025, sofia-rose-haft-anduril-industries-director-of-strategic-partnerships-linkedin-2025-present, trae-stephens-anduril-industries-co-founder-linkedin-2017-present, tyler-henry-anduril-industries-radar-software-engineer-linkedin-2025-present, fund-portfolio-page-silent-ventures-2026-10-23, fund-portfolio-page-8vc-2026-10-23, fund-portfolio-page-founders-fund-2026-10-23, fund-portfolio-page-a16z-american-dynamism-2026-10-23, fund-portfolio-page-lux-capital-2026-10-23, fund-portfolio-page-in-q-tel-2026-10-23, fund-portfolio-page-washington-harbour-partners-2026-10-23, fund-portfolio-page-valor-equity-partners-2026-10-23, fund-portfolio-page-general-catalyst-2026-10-23, rndf-2023-panel-2, rndf-2023-programme-roster, rndf-2024-programme-roster, rndf-2025-panel-10, rndf-2025-programme-roster, a16z-american-dynamism-summit-2024-programme-roster, a16z-american-dynamism-summit-2025-kill-chain-2025, a16z-american-dynamism-summit-2025-programme-roster, a16z-american-dynamism-summit-2022-programme-roster, uk-ministerial-meetings-hmts-ministerial-meetings-january-to-march-2025-68bae311. Secondary types: category_formation_surface, defence_industrial_surface, employment_investment_surface, government_advisory_surface, policy_to_procurement_surface, surface_factory_capital_layer.
+Anduril Industries appears across 60 surface(s): dsit-techuk-anduril-ai-safety-roundtable-2023-10-17, anduril-talos-phase-3-contract-observation-2023-11-02, anduril-talos-phase-3-named-principals-2023-11-02, anduril-ai-fight-tonight-award-2021-07-31, anduril-talos-phase-2-award-2021-08-02, anduril-project-entrelezar-award-2023-10-09, natsec100-2023-list, natsec100-2024-list, natsec100-2025-list, natsec100-2026-list, procurement-award-70b02c26f00000035, advisory-trae-stephens-anduril-industries, portfolio-as-represented-jackson-personal-investing-2026-07-14, alec-webster-anduril-industries-program-manager-linkedin-2025-present, andrew-nuss-anduril-industries-director-maritime-linkedin-2023-2025, andrew-nuss-anduril-industries-head-growth-and-strategy-maritime-division-linkedin-2025-present, bryan-claudio-anduril-industries-program-manager-linkedin-2023-2024, bryan-claudio-anduril-industries-simulation-and-training-warfighter-systems-mixed-linkedin-2025-present, bryan-claudio-anduril-industries-socom-air-defense-training-manager-linkedin-2024-2025, christian-brose-anduril-industries-chief-strategy-officer-linkedin-2018-2025, christian-brose-anduril-industries-president-and-chief-strategy-officer-linkedin-2025-present, colin-carroll-anduril-industries-strategy-and-growth-linkedin-2023-2025, emilio-menendez-baker-anduril-industries-emerging-capabilities-manager-air-defense-linkedin-2023-2025, emilio-menendez-baker-anduril-industries-senior-manager-air-defense-maneuver-linkedin-2025-present, james-sampson-anduril-industries-integration-technician-linkedin-2025-2026, james-sampson-anduril-industries-lead-integration-technician-linkedin-2026-present, jason-dickinson-anduril-industries-flight-operations-ghost-suas-linkedin-2019-2021, jason-dickinson-anduril-industries-general-manager-ghost-linkedin-2024-present, jason-dickinson-anduril-industries-growth-operations-lead-group-2-air-systems-linkedin-2021-2025, jon-bal-anduril-industries-director-linkedin-2025-2026, michael-maddry-anduril-industries-mission-operations-linkedin-2022-2025, quay-barnett-anduril-industries-general-manager-warfighter-systems-linkedin-2024-present, quay-barnett-anduril-industries-general-manager-warfighter-systems-linkedin-2024-present, randall-parkes-anduril-industries-mission-operations-lead-linkedin-2023-present, richard-wally-wannall-anduril-industries-mission-operations-engineer-linkedin-2025-present, sarah-english-anduril-industries-engineering-operations-lead-linkedin-2026-present, sofia-rose-haft-anduril-industries-director-of-communications-and-external-affairs-linkedin-2023-2025, sofia-rose-haft-anduril-industries-director-of-strategic-partnerships-linkedin-2025-present, trae-stephens-anduril-industries-co-founder-linkedin-2017-present, tyler-henry-anduril-industries-radar-software-engineer-linkedin-2025-present, fund-portfolio-page-silent-ventures-2026-10-23, fund-portfolio-page-8vc-2026-10-23, fund-portfolio-page-founders-fund-2026-10-23, fund-portfolio-page-a16z-american-dynamism-2026-10-23, fund-portfolio-page-lux-capital-2026-10-23, fund-portfolio-page-in-q-tel-2026-10-23, fund-portfolio-page-washington-harbour-partners-2026-10-23, fund-portfolio-page-valor-equity-partners-2026-10-23, fund-portfolio-page-general-catalyst-2026-10-23, rndf-2023-panel-2, rndf-2023-programme-roster, rndf-2024-programme-roster, rndf-2025-panel-10, rndf-2025-programme-roster, a16z-american-dynamism-summit-2024-programme-roster, a16z-american-dynamism-summit-2025-kill-chain-2025, a16z-american-dynamism-summit-2025-programme-roster, a16z-american-dynamism-summit-2022-programme-roster, uk-ministerial-meetings-hmts-ministerial-meetings-january-to-march-2025-68bae311, cf-award-mod-bae-systems-2023-05-12-eb8f6fda. Secondary types: category_formation_surface, defence_industrial_surface, employment_investment_surface, government_advisory_surface, policy_to_procurement_surface, surface_factory_capital_layer.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17`, `anduril-talos-phase-3-contract-observation-2023-11-02`, `anduril-talos-phase-3-named-principals-2023-11-02`, `anduril-ai-fight-tonight-award-2021-07-31`, `anduril-talos-phase-2-award-2021-08-02`, `anduril-project-entrelezar-award-2023-10-09`, `natsec100-2023-list`, `natsec100-2024-list`, `natsec100-2025-list`, `natsec100-2026-list`, `procurement-award-70b02c26f00000035`, `advisory-trae-stephens-anduril-industries`, `portfolio-as-represented-jackson-personal-investing-2026-07-14`, `alec-webster-anduril-industries-program-manager-linkedin-2025-present`, `andrew-nuss-anduril-industries-director-maritime-linkedin-2023-2025`, `andrew-nuss-anduril-industries-head-growth-and-strategy-maritime-division-linkedin-2025-present`, `bryan-claudio-anduril-industries-program-manager-linkedin-2023-2024`, `bryan-claudio-anduril-industries-simulation-and-training-warfighter-systems-mixed-linkedin-2025-present`, `bryan-claudio-anduril-industries-socom-air-defense-training-manager-linkedin-2024-2025`, `christian-brose-anduril-industries-chief-strategy-officer-linkedin-2018-2025`, `christian-brose-anduril-industries-president-and-chief-strategy-officer-linkedin-2025-present`, `colin-carroll-anduril-industries-strategy-and-growth-linkedin-2023-2025`, `emilio-menendez-baker-anduril-industries-emerging-capabilities-manager-air-defense-linkedin-2023-2025`, `emilio-menendez-baker-anduril-industries-senior-manager-air-defense-maneuver-linkedin-2025-present`, `james-sampson-anduril-industries-integration-technician-linkedin-2025-2026`, `james-sampson-anduril-industries-lead-integration-technician-linkedin-2026-present`, `jason-dickinson-anduril-industries-flight-operations-ghost-suas-linkedin-2019-2021`, `jason-dickinson-anduril-industries-general-manager-ghost-linkedin-2024-present`, `jason-dickinson-anduril-industries-growth-operations-lead-group-2-air-systems-linkedin-2021-2025`, `jon-bal-anduril-industries-director-linkedin-2025-2026`, `michael-maddry-anduril-industries-mission-operations-linkedin-2022-2025`, `quay-barnett-anduril-industries-general-manager-warfighter-systems-linkedin-2024-present`, `quay-barnett-anduril-industries-general-manager-warfighter-systems-linkedin-2024-present`, `randall-parkes-anduril-industries-mission-operations-lead-linkedin-2023-present`, `richard-wally-wannall-anduril-industries-mission-operations-engineer-linkedin-2025-present`, `sarah-english-anduril-industries-engineering-operations-lead-linkedin-2026-present`, `sofia-rose-haft-anduril-industries-director-of-communications-and-external-affairs-linkedin-2023-2025`, `sofia-rose-haft-anduril-industries-director-of-strategic-partnerships-linkedin-2025-present`, `trae-stephens-anduril-industries-co-founder-linkedin-2017-present`, `tyler-henry-anduril-industries-radar-software-engineer-linkedin-2025-present`, `fund-portfolio-page-silent-ventures-2026-10-23`, `fund-portfolio-page-8vc-2026-10-23`, `fund-portfolio-page-founders-fund-2026-10-23`, `fund-portfolio-page-a16z-american-dynamism-2026-10-23`, `fund-portfolio-page-lux-capital-2026-10-23`, `fund-portfolio-page-in-q-tel-2026-10-23`, `fund-portfolio-page-washington-harbour-partners-2026-10-23`, `fund-portfolio-page-valor-equity-partners-2026-10-23`, `fund-portfolio-page-general-catalyst-2026-10-23`, `rndf-2023-panel-2`, `rndf-2023-programme-roster`, `rndf-2024-programme-roster`, `rndf-2025-panel-10`, `rndf-2025-programme-roster`, `a16z-american-dynamism-summit-2024-programme-roster`, `a16z-american-dynamism-summit-2025-kill-chain-2025`, `a16z-american-dynamism-summit-2025-programme-roster`, `a16z-american-dynamism-summit-2022-programme-roster`, `uk-ministerial-meetings-hmts-ministerial-meetings-january-to-march-2025-68bae311`
+Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17`, `anduril-talos-phase-3-contract-observation-2023-11-02`, `anduril-talos-phase-3-named-principals-2023-11-02`, `anduril-ai-fight-tonight-award-2021-07-31`, `anduril-talos-phase-2-award-2021-08-02`, `anduril-project-entrelezar-award-2023-10-09`, `natsec100-2023-list`, `natsec100-2024-list`, `natsec100-2025-list`, `natsec100-2026-list`, `procurement-award-70b02c26f00000035`, `advisory-trae-stephens-anduril-industries`, `portfolio-as-represented-jackson-personal-investing-2026-07-14`, `alec-webster-anduril-industries-program-manager-linkedin-2025-present`, `andrew-nuss-anduril-industries-director-maritime-linkedin-2023-2025`, `andrew-nuss-anduril-industries-head-growth-and-strategy-maritime-division-linkedin-2025-present`, `bryan-claudio-anduril-industries-program-manager-linkedin-2023-2024`, `bryan-claudio-anduril-industries-simulation-and-training-warfighter-systems-mixed-linkedin-2025-present`, `bryan-claudio-anduril-industries-socom-air-defense-training-manager-linkedin-2024-2025`, `christian-brose-anduril-industries-chief-strategy-officer-linkedin-2018-2025`, `christian-brose-anduril-industries-president-and-chief-strategy-officer-linkedin-2025-present`, `colin-carroll-anduril-industries-strategy-and-growth-linkedin-2023-2025`, `emilio-menendez-baker-anduril-industries-emerging-capabilities-manager-air-defense-linkedin-2023-2025`, `emilio-menendez-baker-anduril-industries-senior-manager-air-defense-maneuver-linkedin-2025-present`, `james-sampson-anduril-industries-integration-technician-linkedin-2025-2026`, `james-sampson-anduril-industries-lead-integration-technician-linkedin-2026-present`, `jason-dickinson-anduril-industries-flight-operations-ghost-suas-linkedin-2019-2021`, `jason-dickinson-anduril-industries-general-manager-ghost-linkedin-2024-present`, `jason-dickinson-anduril-industries-growth-operations-lead-group-2-air-systems-linkedin-2021-2025`, `jon-bal-anduril-industries-director-linkedin-2025-2026`, `michael-maddry-anduril-industries-mission-operations-linkedin-2022-2025`, `quay-barnett-anduril-industries-general-manager-warfighter-systems-linkedin-2024-present`, `quay-barnett-anduril-industries-general-manager-warfighter-systems-linkedin-2024-present`, `randall-parkes-anduril-industries-mission-operations-lead-linkedin-2023-present`, `richard-wally-wannall-anduril-industries-mission-operations-engineer-linkedin-2025-present`, `sarah-english-anduril-industries-engineering-operations-lead-linkedin-2026-present`, `sofia-rose-haft-anduril-industries-director-of-communications-and-external-affairs-linkedin-2023-2025`, `sofia-rose-haft-anduril-industries-director-of-strategic-partnerships-linkedin-2025-present`, `trae-stephens-anduril-industries-co-founder-linkedin-2017-present`, `tyler-henry-anduril-industries-radar-software-engineer-linkedin-2025-present`, `fund-portfolio-page-silent-ventures-2026-10-23`, `fund-portfolio-page-8vc-2026-10-23`, `fund-portfolio-page-founders-fund-2026-10-23`, `fund-portfolio-page-a16z-american-dynamism-2026-10-23`, `fund-portfolio-page-lux-capital-2026-10-23`, `fund-portfolio-page-in-q-tel-2026-10-23`, `fund-portfolio-page-washington-harbour-partners-2026-10-23`, `fund-portfolio-page-valor-equity-partners-2026-10-23`, `fund-portfolio-page-general-catalyst-2026-10-23`, `rndf-2023-panel-2`, `rndf-2023-programme-roster`, `rndf-2024-programme-roster`, `rndf-2025-panel-10`, `rndf-2025-programme-roster`, `a16z-american-dynamism-summit-2024-programme-roster`, `a16z-american-dynamism-summit-2025-kill-chain-2025`, `a16z-american-dynamism-summit-2025-programme-roster`, `a16z-american-dynamism-summit-2022-programme-roster`, `uk-ministerial-meetings-hmts-ministerial-meetings-january-to-march-2025-68bae311`, `cf-award-mod-bae-systems-2023-05-12-eb8f6fda`
 
 ---
 
@@ -412,13 +412,13 @@ Refs: `anduril-uk-co-director-appointments-2024-07-31`, `anduril-ukraine-drone-d
 
 **Observed**
 
-Home Office / Border Force appears across 5 surface(s): anduril-copci-border-force-contract-2022-06-21, cf-award-home-office-border-force-faculty-2020-12-22-3296f318, cf-award-home-office-border-force-faculty-2025-09-01-3fd991c0, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b, uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-october-to-december-2024-67e56857. Secondary types: model_governance_surface.
+Home Office / Border Force appears across 141 surface(s): anduril-copci-border-force-contract-2022-06-21, cf-award-home-office-border-force-faculty-2020-12-22-3296f318, cf-award-home-office-border-force-faculty-2025-09-01-3fd991c0, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b, uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-october-to-december-2024-67e56857, cf-award-home-office-border-force-capgemini-2021-01-01-2fa2d280, cf-award-home-office-border-force-deloitte-2021-07-26-68e23030, cf-award-home-office-border-force-deloitte-2021-08-02-a3a65baf, cf-award-home-office-border-force-civica-2022-03-03-6e35086e, cf-award-home-office-border-force-capgemini-2022-04-01-a4ea1a37, cf-award-home-office-border-force-deloitte-2022-07-07-97e1e706, cf-award-home-office-border-force-deloitte-2022-09-01-3ce2a282, cf-award-home-office-border-force-bae-systems-2022-09-30-c5b5d5a6, cf-award-home-office-border-force-deloitte-2022-10-27-005ce258, cf-award-home-office-border-force-deloitte-2022-12-16-7b7f3daa, cf-award-home-office-border-force-capgemini-2022-12-21-7749b58a, cf-award-home-office-border-force-deloitte-2022-12-29-7d5bd680, cf-award-home-office-border-force-sopra-steria-2022-12-30-85c30c23, cf-award-home-office-border-force-deloitte-2023-01-01-b7401ce6, cf-award-home-office-border-force-deloitte-2023-01-06-1883eaeb, cf-award-home-office-border-force-ncc-group-2023-01-20-6bbdea49, cf-award-home-office-border-force-ncc-group-2023-01-20-c30f7b43, cf-award-home-office-border-force-deloitte-2023-02-01-c31339c6, cf-award-home-office-border-force-deloitte-2023-02-01-d57f0407, cf-award-home-office-border-force-gartner-2023-02-01-9160ee60, cf-award-home-office-border-force-bae-systems-2023-02-06-ca1f0896, cf-award-home-office-border-force-ncc-group-2023-02-06-9de5ac17, cf-award-home-office-border-force-kpmg-2023-02-08-e22cdaf2, cf-award-home-office-border-force-vodafone-2023-02-16-493748ba, cf-award-home-office-border-force-yoti-2023-02-21-5cf69fd6, cf-award-home-office-border-force-capgemini-2023-03-01-08dfa283, cf-award-home-office-border-force-deloitte-2023-03-01-ee213ed1, cf-award-home-office-border-force-vodafone-2023-03-28-1c540642, cf-award-home-office-border-force-microsoft-2023-03-31-247f7599, cf-award-home-office-border-force-qualtrics-2023-03-31-6c1cdd3f, cf-award-home-office-border-force-capgemini-2023-04-01-10d5b0ed, cf-award-home-office-border-force-capgemini-2023-04-03-b7abf2ad, cf-award-home-office-border-force-capgemini-2023-04-28-60bdc74e, cf-award-home-office-border-force-sopra-steria-2023-04-30-2b9e6af9, cf-award-home-office-border-force-bae-systems-2023-05-01-fce0f08e, cf-award-home-office-border-force-bae-systems-2023-05-12-b4e6095d, cf-award-home-office-border-force-dla-piper-2023-05-17-afb110f4, cf-award-home-office-border-force-kpmg-2023-06-08-3e02234f, cf-award-home-office-border-force-kpmg-2023-07-10-00e12b36, cf-award-home-office-border-force-capgemini-2023-08-22-ca624c1a, cf-award-home-office-border-force-deloitte-2023-08-22-6cc7e16a, cf-award-home-office-border-force-deloitte-2023-08-28-bf4e9e9a, cf-award-home-office-border-force-deloitte-2023-09-01-2cc9b684, cf-award-home-office-border-force-deloitte-2023-09-01-7e00dfb4, cf-award-home-office-border-force-kainos-2023-09-01-b9523c56, cf-award-home-office-border-force-experian-2023-09-05-a6532578, cf-award-home-office-border-force-police-digital-service-2023-09-20-c0c4e442, cf-award-home-office-border-force-vodafone-2023-10-01-5cc39916, cf-award-home-office-border-force-capgemini-2023-10-23-e5d14e6e, cf-award-home-office-border-force-capgemini-2023-10-26-12a65858, cf-award-home-office-border-force-capgemini-2023-10-26-7dc6244f, cf-award-home-office-border-force-pinsent-masons-2023-11-15-090cf7d0, cf-award-home-office-border-force-amazon-web-services-aws-2023-11-21-48741bae, cf-award-home-office-border-force-amazon-web-services-aws-2023-11-30-6c137032, cf-award-home-office-border-force-amazon-web-services-aws-2023-12-01-36b3f0e9, cf-award-home-office-border-force-accenture-2023-12-04-bc7f06cd, cf-award-home-office-border-force-deloitte-2023-12-04-9fbecdd4, cf-award-home-office-border-force-capgemini-2023-12-07-7db4ce41, cf-award-home-office-border-force-deloitte-2023-12-19-53887628, cf-award-home-office-border-force-deloitte-2023-12-19-86f258b1, cf-award-home-office-border-force-deloitte-2024-01-02-bee51a1d, cf-award-home-office-border-force-kpmg-2024-01-15-f97f3e80, cf-award-home-office-border-force-deloitte-2024-02-12-6f1dec40, cf-award-home-office-border-force-deloitte-2024-03-13-b4d899d5, cf-award-home-office-border-force-deloitte-2024-03-28-e7f24367, cf-award-home-office-border-force-google-2024-03-31-60c2b2e3, cf-award-home-office-border-force-capgemini-2024-04-01-14bb7108, cf-award-home-office-border-force-capgemini-2024-04-04-9a24dbc7, cf-award-home-office-border-force-deloitte-2024-04-07-acdd3498, cf-award-home-office-border-force-microsoft-2024-04-30-81eb4362, cf-award-home-office-border-force-deloitte-2024-05-07-867fbe29, cf-award-home-office-border-force-pwc-2024-05-13-a716870a, cf-award-home-office-border-force-deloitte-2024-05-23-19c29696, cf-award-home-office-border-force-deloitte-2024-05-24-0b0e27f5, cf-award-home-office-border-force-sopra-steria-2024-05-30-382642b4, cf-award-home-office-border-force-bae-systems-2024-06-03-84db6a7b, cf-award-home-office-border-force-civica-2024-06-07-55ead59c, cf-award-university-of-birmingham-home-office-border-force-2024-06-12-f31ce43b, cf-award-home-office-border-force-deloitte-2024-06-17-3a084b84, cf-award-home-office-border-force-deloitte-2024-06-20-a3fc962f, cf-award-home-office-border-force-capgemini-2024-07-01-e7cd400a, cf-award-home-office-border-force-vodafone-2024-07-01-97924a75, cf-award-home-office-border-force-vodafone-2024-07-01-fae1c6d4, cf-award-home-office-border-force-accenture-2024-08-01-63f3212b, cf-award-home-office-border-force-gartner-2024-09-30-8aeaf000, cf-award-home-office-border-force-civica-2024-11-29-a4ec4ad7, cf-award-home-office-border-force-sopra-steria-2024-12-20-f13871ad, cf-award-home-office-border-force-deloitte-2025-01-08-c87e295a, cf-award-home-office-border-force-vodafone-2025-01-22-52a78918, cf-award-home-office-border-force-deloitte-2025-02-10-1476a0fb, cf-award-home-office-border-force-civica-2025-03-01-d68fec0a, cf-award-home-office-border-force-ibm-2025-03-01-9e6e7ac2, cf-award-home-office-border-force-vodafone-2025-03-03-522797a1, cf-award-home-office-border-force-vodafone-2025-04-01-467e7790, cf-award-home-office-border-force-ncc-group-2025-04-02-dbb4c7d6, cf-award-home-office-border-force-vodafone-2025-05-15-69a46ac7, cf-award-home-office-border-force-accenture-2025-06-01-32233d82, cf-award-home-office-border-force-vodafone-2025-06-13-1c631bd2, cf-award-home-office-border-force-university-of-birmingham-2025-06-25-0ff9f1ca, cf-award-home-office-border-force-bae-systems-2025-08-01-9113b114, cf-award-home-office-border-force-kpmg-2025-08-01-b6afc9e5, cf-award-home-office-border-force-oracle-2025-08-27-5d2d08ce, cf-award-home-office-border-force-deloitte-2025-08-28-0fe43f4e, cf-award-home-office-border-force-capgemini-2025-11-01-1aa43e47, cf-award-home-office-border-force-capgemini-2025-11-05-985c9e95, cf-award-home-office-border-force-oracle-2025-11-21-f2407907, cf-award-home-office-border-force-bae-systems-2025-11-27-b22cf368, cf-award-home-office-border-force-kainos-2025-12-04-394b20d3, cf-award-home-office-border-force-deloitte-2025-12-05-48440995, cf-award-home-office-border-force-kainos-2025-12-12-5397861b, cf-award-home-office-border-force-vodafone-2025-12-17-70616040, cf-award-home-office-border-force-bae-systems-2026-01-30-7f3f2480, cf-award-home-office-border-force-vodafone-2026-01-30-20d46882, cf-award-home-office-border-force-vodafone-2026-01-30-ee4303b6, cf-award-home-office-border-force-oracle-2026-02-06-b2f4b1db, cf-award-home-office-border-force-oracle-2026-02-06-ec353636, cf-award-home-office-border-force-accenture-2026-02-26-4794a86d, cf-award-home-office-border-force-capgemini-2026-02-27-ff5bba27, cf-award-home-office-border-force-civica-2026-03-06-6c8f4da8, cf-award-home-office-border-force-civica-2026-03-09-73489070, cf-award-home-office-border-force-capgemini-2026-03-13-714950dc, cf-award-home-office-border-force-experian-2026-03-20-34b34a44, cf-award-home-office-border-force-capgemini-2026-03-25-9bc2fdd6, cf-award-home-office-border-force-sopra-steria-2026-03-31-2f99e464, cf-award-home-office-border-force-vodafone-2026-04-01-4a77123e, cf-award-home-office-border-force-experian-2026-04-24-4e4a9a81, cf-award-home-office-border-force-bae-systems-2026-05-27-8671dc76, cf-award-home-office-border-force-deloitte-2026-05-27-f0f815cc, cf-award-home-office-border-force-university-of-salford-2026-06-01-c807fa99, cf-award-home-office-border-force-deloitte-2026-06-02-c1542ce2, cf-award-home-office-border-force-bae-systems-2026-06-05-44a3221d, cf-award-home-office-border-force-vodafone-2026-06-11-a2f0d82d, cf-award-home-office-border-force-vodafone-2026-06-23-79a57008, cf-award-home-office-border-force-deloitte-2026-07-06-dad96e2d, cf-award-home-office-border-force-bae-systems-2026-09-11-fda33f5e, cf-award-home-office-border-force-capgemini-2026-09-15-d100ded2. Secondary types: model_governance_surface.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `anduril-copci-border-force-contract-2022-06-21`, `cf-award-home-office-border-force-faculty-2020-12-22-3296f318`, `cf-award-home-office-border-force-faculty-2025-09-01-3fd991c0`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b`, `uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-october-to-december-2024-67e56857`
+Refs: `anduril-copci-border-force-contract-2022-06-21`, `cf-award-home-office-border-force-faculty-2020-12-22-3296f318`, `cf-award-home-office-border-force-faculty-2025-09-01-3fd991c0`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b`, `uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-october-to-december-2024-67e56857`, `cf-award-home-office-border-force-capgemini-2021-01-01-2fa2d280`, `cf-award-home-office-border-force-deloitte-2021-07-26-68e23030`, `cf-award-home-office-border-force-deloitte-2021-08-02-a3a65baf`, `cf-award-home-office-border-force-civica-2022-03-03-6e35086e`, `cf-award-home-office-border-force-capgemini-2022-04-01-a4ea1a37`, `cf-award-home-office-border-force-deloitte-2022-07-07-97e1e706`, `cf-award-home-office-border-force-deloitte-2022-09-01-3ce2a282`, `cf-award-home-office-border-force-bae-systems-2022-09-30-c5b5d5a6`, `cf-award-home-office-border-force-deloitte-2022-10-27-005ce258`, `cf-award-home-office-border-force-deloitte-2022-12-16-7b7f3daa`, `cf-award-home-office-border-force-capgemini-2022-12-21-7749b58a`, `cf-award-home-office-border-force-deloitte-2022-12-29-7d5bd680`, `cf-award-home-office-border-force-sopra-steria-2022-12-30-85c30c23`, `cf-award-home-office-border-force-deloitte-2023-01-01-b7401ce6`, `cf-award-home-office-border-force-deloitte-2023-01-06-1883eaeb`, `cf-award-home-office-border-force-ncc-group-2023-01-20-6bbdea49`, `cf-award-home-office-border-force-ncc-group-2023-01-20-c30f7b43`, `cf-award-home-office-border-force-deloitte-2023-02-01-c31339c6`, `cf-award-home-office-border-force-deloitte-2023-02-01-d57f0407`, `cf-award-home-office-border-force-gartner-2023-02-01-9160ee60`, `cf-award-home-office-border-force-bae-systems-2023-02-06-ca1f0896`, `cf-award-home-office-border-force-ncc-group-2023-02-06-9de5ac17`, `cf-award-home-office-border-force-kpmg-2023-02-08-e22cdaf2`, `cf-award-home-office-border-force-vodafone-2023-02-16-493748ba`, `cf-award-home-office-border-force-yoti-2023-02-21-5cf69fd6`, `cf-award-home-office-border-force-capgemini-2023-03-01-08dfa283`, `cf-award-home-office-border-force-deloitte-2023-03-01-ee213ed1`, `cf-award-home-office-border-force-vodafone-2023-03-28-1c540642`, `cf-award-home-office-border-force-microsoft-2023-03-31-247f7599`, `cf-award-home-office-border-force-qualtrics-2023-03-31-6c1cdd3f`, `cf-award-home-office-border-force-capgemini-2023-04-01-10d5b0ed`, `cf-award-home-office-border-force-capgemini-2023-04-03-b7abf2ad`, `cf-award-home-office-border-force-capgemini-2023-04-28-60bdc74e`, `cf-award-home-office-border-force-sopra-steria-2023-04-30-2b9e6af9`, `cf-award-home-office-border-force-bae-systems-2023-05-01-fce0f08e`, `cf-award-home-office-border-force-bae-systems-2023-05-12-b4e6095d`, `cf-award-home-office-border-force-dla-piper-2023-05-17-afb110f4`, `cf-award-home-office-border-force-kpmg-2023-06-08-3e02234f`, `cf-award-home-office-border-force-kpmg-2023-07-10-00e12b36`, `cf-award-home-office-border-force-capgemini-2023-08-22-ca624c1a`, `cf-award-home-office-border-force-deloitte-2023-08-22-6cc7e16a`, `cf-award-home-office-border-force-deloitte-2023-08-28-bf4e9e9a`, `cf-award-home-office-border-force-deloitte-2023-09-01-2cc9b684`, `cf-award-home-office-border-force-deloitte-2023-09-01-7e00dfb4`, `cf-award-home-office-border-force-kainos-2023-09-01-b9523c56`, `cf-award-home-office-border-force-experian-2023-09-05-a6532578`, `cf-award-home-office-border-force-police-digital-service-2023-09-20-c0c4e442`, `cf-award-home-office-border-force-vodafone-2023-10-01-5cc39916`, `cf-award-home-office-border-force-capgemini-2023-10-23-e5d14e6e`, `cf-award-home-office-border-force-capgemini-2023-10-26-12a65858`, `cf-award-home-office-border-force-capgemini-2023-10-26-7dc6244f`, `cf-award-home-office-border-force-pinsent-masons-2023-11-15-090cf7d0`, `cf-award-home-office-border-force-amazon-web-services-aws-2023-11-21-48741bae`, `cf-award-home-office-border-force-amazon-web-services-aws-2023-11-30-6c137032`, `cf-award-home-office-border-force-amazon-web-services-aws-2023-12-01-36b3f0e9`, `cf-award-home-office-border-force-accenture-2023-12-04-bc7f06cd`, `cf-award-home-office-border-force-deloitte-2023-12-04-9fbecdd4`, `cf-award-home-office-border-force-capgemini-2023-12-07-7db4ce41`, `cf-award-home-office-border-force-deloitte-2023-12-19-53887628`, `cf-award-home-office-border-force-deloitte-2023-12-19-86f258b1`, `cf-award-home-office-border-force-deloitte-2024-01-02-bee51a1d`, `cf-award-home-office-border-force-kpmg-2024-01-15-f97f3e80`, `cf-award-home-office-border-force-deloitte-2024-02-12-6f1dec40`, `cf-award-home-office-border-force-deloitte-2024-03-13-b4d899d5`, `cf-award-home-office-border-force-deloitte-2024-03-28-e7f24367`, `cf-award-home-office-border-force-google-2024-03-31-60c2b2e3`, `cf-award-home-office-border-force-capgemini-2024-04-01-14bb7108`, `cf-award-home-office-border-force-capgemini-2024-04-04-9a24dbc7`, `cf-award-home-office-border-force-deloitte-2024-04-07-acdd3498`, `cf-award-home-office-border-force-microsoft-2024-04-30-81eb4362`, `cf-award-home-office-border-force-deloitte-2024-05-07-867fbe29`, `cf-award-home-office-border-force-pwc-2024-05-13-a716870a`, `cf-award-home-office-border-force-deloitte-2024-05-23-19c29696`, `cf-award-home-office-border-force-deloitte-2024-05-24-0b0e27f5`, `cf-award-home-office-border-force-sopra-steria-2024-05-30-382642b4`, `cf-award-home-office-border-force-bae-systems-2024-06-03-84db6a7b`, `cf-award-home-office-border-force-civica-2024-06-07-55ead59c`, `cf-award-university-of-birmingham-home-office-border-force-2024-06-12-f31ce43b`, `cf-award-home-office-border-force-deloitte-2024-06-17-3a084b84`, `cf-award-home-office-border-force-deloitte-2024-06-20-a3fc962f`, `cf-award-home-office-border-force-capgemini-2024-07-01-e7cd400a`, `cf-award-home-office-border-force-vodafone-2024-07-01-97924a75`, `cf-award-home-office-border-force-vodafone-2024-07-01-fae1c6d4`, `cf-award-home-office-border-force-accenture-2024-08-01-63f3212b`, `cf-award-home-office-border-force-gartner-2024-09-30-8aeaf000`, `cf-award-home-office-border-force-civica-2024-11-29-a4ec4ad7`, `cf-award-home-office-border-force-sopra-steria-2024-12-20-f13871ad`, `cf-award-home-office-border-force-deloitte-2025-01-08-c87e295a`, `cf-award-home-office-border-force-vodafone-2025-01-22-52a78918`, `cf-award-home-office-border-force-deloitte-2025-02-10-1476a0fb`, `cf-award-home-office-border-force-civica-2025-03-01-d68fec0a`, `cf-award-home-office-border-force-ibm-2025-03-01-9e6e7ac2`, `cf-award-home-office-border-force-vodafone-2025-03-03-522797a1`, `cf-award-home-office-border-force-vodafone-2025-04-01-467e7790`, `cf-award-home-office-border-force-ncc-group-2025-04-02-dbb4c7d6`, `cf-award-home-office-border-force-vodafone-2025-05-15-69a46ac7`, `cf-award-home-office-border-force-accenture-2025-06-01-32233d82`, `cf-award-home-office-border-force-vodafone-2025-06-13-1c631bd2`, `cf-award-home-office-border-force-university-of-birmingham-2025-06-25-0ff9f1ca`, `cf-award-home-office-border-force-bae-systems-2025-08-01-9113b114`, `cf-award-home-office-border-force-kpmg-2025-08-01-b6afc9e5`, `cf-award-home-office-border-force-oracle-2025-08-27-5d2d08ce`, `cf-award-home-office-border-force-deloitte-2025-08-28-0fe43f4e`, `cf-award-home-office-border-force-capgemini-2025-11-01-1aa43e47`, `cf-award-home-office-border-force-capgemini-2025-11-05-985c9e95`, `cf-award-home-office-border-force-oracle-2025-11-21-f2407907`, `cf-award-home-office-border-force-bae-systems-2025-11-27-b22cf368`, `cf-award-home-office-border-force-kainos-2025-12-04-394b20d3`, `cf-award-home-office-border-force-deloitte-2025-12-05-48440995`, `cf-award-home-office-border-force-kainos-2025-12-12-5397861b`, `cf-award-home-office-border-force-vodafone-2025-12-17-70616040`, `cf-award-home-office-border-force-bae-systems-2026-01-30-7f3f2480`, `cf-award-home-office-border-force-vodafone-2026-01-30-20d46882`, `cf-award-home-office-border-force-vodafone-2026-01-30-ee4303b6`, `cf-award-home-office-border-force-oracle-2026-02-06-b2f4b1db`, `cf-award-home-office-border-force-oracle-2026-02-06-ec353636`, `cf-award-home-office-border-force-accenture-2026-02-26-4794a86d`, `cf-award-home-office-border-force-capgemini-2026-02-27-ff5bba27`, `cf-award-home-office-border-force-civica-2026-03-06-6c8f4da8`, `cf-award-home-office-border-force-civica-2026-03-09-73489070`, `cf-award-home-office-border-force-capgemini-2026-03-13-714950dc`, `cf-award-home-office-border-force-experian-2026-03-20-34b34a44`, `cf-award-home-office-border-force-capgemini-2026-03-25-9bc2fdd6`, `cf-award-home-office-border-force-sopra-steria-2026-03-31-2f99e464`, `cf-award-home-office-border-force-vodafone-2026-04-01-4a77123e`, `cf-award-home-office-border-force-experian-2026-04-24-4e4a9a81`, `cf-award-home-office-border-force-bae-systems-2026-05-27-8671dc76`, `cf-award-home-office-border-force-deloitte-2026-05-27-f0f815cc`, `cf-award-home-office-border-force-university-of-salford-2026-06-01-c807fa99`, `cf-award-home-office-border-force-deloitte-2026-06-02-c1542ce2`, `cf-award-home-office-border-force-bae-systems-2026-06-05-44a3221d`, `cf-award-home-office-border-force-vodafone-2026-06-11-a2f0d82d`, `cf-award-home-office-border-force-vodafone-2026-06-23-79a57008`, `cf-award-home-office-border-force-deloitte-2026-07-06-dad96e2d`, `cf-award-home-office-border-force-bae-systems-2026-09-11-fda33f5e`, `cf-award-home-office-border-force-capgemini-2026-09-15-d100ded2`
 
 ---
 
@@ -484,13 +484,13 @@ Refs: `natsec100-2023-list`, `natsec100-2024-list`, `natsec100-2025-list`, `nats
 
 **Observed**
 
-Databricks appears across 30 surface(s): natsec100-2023-list, natsec100-2024-list, natsec100-2025-list, natsec100-2026-list, fund-portfolio-page-lux-capital-2026-10-23, fund-portfolio-page-dcvc-2026-10-23, fund-portfolio-page-in-q-tel-2026-10-23, fund-portfolio-page-washington-harbour-partners-2026-10-23, a16z-american-dynamism-summit-2025-programme-roster, uk-ai-safety-summit-2023-confirmed-attendees-programme-roster, sec-form-d-0001587468-14-000002, sec-form-d-0001587468-14-000003, sec-form-d-0001587468-23-000003, sec-form-d-0001587468-13-000001, sec-form-d-0001587468-14-000001, sec-form-d-0001587468-17-000003, sec-form-d-0001587468-19-000001, sec-form-d-0001587468-19-000002, sec-form-d-0001587468-21-000001, sec-form-d-0001587468-21-000002, sec-form-d-0001587468-23-000001, sec-form-d-0001587468-23-000002, sec-form-d-0001587468-25-000001, sec-form-d-0001587468-25-000002, sec-form-d-0001587468-25-000007, sec-form-d-0001587468-25-000008, sec-form-d-0001587468-25-000009, sec-form-d-0001587468-25-000010, sec-form-d-0001587468-26-000001, sec-form-d-0001587468-26-000002. Secondary types: category_formation_surface, defence_industrial_surface, employment_investment_surface, government_advisory_surface, surface_factory_capital_layer.
+Databricks appears across 32 surface(s): natsec100-2023-list, natsec100-2024-list, natsec100-2025-list, natsec100-2026-list, fund-portfolio-page-lux-capital-2026-10-23, fund-portfolio-page-dcvc-2026-10-23, fund-portfolio-page-in-q-tel-2026-10-23, fund-portfolio-page-washington-harbour-partners-2026-10-23, a16z-american-dynamism-summit-2025-programme-roster, uk-ai-safety-summit-2023-confirmed-attendees-programme-roster, sec-form-d-0001587468-14-000002, sec-form-d-0001587468-14-000003, sec-form-d-0001587468-23-000003, sec-form-d-0001587468-13-000001, sec-form-d-0001587468-14-000001, sec-form-d-0001587468-17-000003, sec-form-d-0001587468-19-000001, sec-form-d-0001587468-19-000002, sec-form-d-0001587468-21-000001, sec-form-d-0001587468-21-000002, sec-form-d-0001587468-23-000001, sec-form-d-0001587468-23-000002, sec-form-d-0001587468-25-000001, sec-form-d-0001587468-25-000002, sec-form-d-0001587468-25-000007, sec-form-d-0001587468-25-000008, sec-form-d-0001587468-25-000009, sec-form-d-0001587468-25-000010, sec-form-d-0001587468-26-000001, sec-form-d-0001587468-26-000002, cf-award-cabinet-office-databricks-2025-04-11-c6f8a470, cf-award-dhsc-databricks-2026-08-28-bb455a26. Secondary types: category_formation_surface, defence_industrial_surface, employment_investment_surface, government_advisory_surface, surface_factory_capital_layer.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `natsec100-2023-list`, `natsec100-2024-list`, `natsec100-2025-list`, `natsec100-2026-list`, `fund-portfolio-page-lux-capital-2026-10-23`, `fund-portfolio-page-dcvc-2026-10-23`, `fund-portfolio-page-in-q-tel-2026-10-23`, `fund-portfolio-page-washington-harbour-partners-2026-10-23`, `a16z-american-dynamism-summit-2025-programme-roster`, `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `sec-form-d-0001587468-14-000002`, `sec-form-d-0001587468-14-000003`, `sec-form-d-0001587468-23-000003`, `sec-form-d-0001587468-13-000001`, `sec-form-d-0001587468-14-000001`, `sec-form-d-0001587468-17-000003`, `sec-form-d-0001587468-19-000001`, `sec-form-d-0001587468-19-000002`, `sec-form-d-0001587468-21-000001`, `sec-form-d-0001587468-21-000002`, `sec-form-d-0001587468-23-000001`, `sec-form-d-0001587468-23-000002`, `sec-form-d-0001587468-25-000001`, `sec-form-d-0001587468-25-000002`, `sec-form-d-0001587468-25-000007`, `sec-form-d-0001587468-25-000008`, `sec-form-d-0001587468-25-000009`, `sec-form-d-0001587468-25-000010`, `sec-form-d-0001587468-26-000001`, `sec-form-d-0001587468-26-000002`
+Refs: `natsec100-2023-list`, `natsec100-2024-list`, `natsec100-2025-list`, `natsec100-2026-list`, `fund-portfolio-page-lux-capital-2026-10-23`, `fund-portfolio-page-dcvc-2026-10-23`, `fund-portfolio-page-in-q-tel-2026-10-23`, `fund-portfolio-page-washington-harbour-partners-2026-10-23`, `a16z-american-dynamism-summit-2025-programme-roster`, `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `sec-form-d-0001587468-14-000002`, `sec-form-d-0001587468-14-000003`, `sec-form-d-0001587468-23-000003`, `sec-form-d-0001587468-13-000001`, `sec-form-d-0001587468-14-000001`, `sec-form-d-0001587468-17-000003`, `sec-form-d-0001587468-19-000001`, `sec-form-d-0001587468-19-000002`, `sec-form-d-0001587468-21-000001`, `sec-form-d-0001587468-21-000002`, `sec-form-d-0001587468-23-000001`, `sec-form-d-0001587468-23-000002`, `sec-form-d-0001587468-25-000001`, `sec-form-d-0001587468-25-000002`, `sec-form-d-0001587468-25-000007`, `sec-form-d-0001587468-25-000008`, `sec-form-d-0001587468-25-000009`, `sec-form-d-0001587468-25-000010`, `sec-form-d-0001587468-26-000001`, `sec-form-d-0001587468-26-000002`, `cf-award-cabinet-office-databricks-2025-04-11-c6f8a470`, `cf-award-dhsc-databricks-2026-08-28-bb455a26`
 
 ---
 
@@ -520,13 +520,13 @@ Refs: `natsec100-2023-list`, `natsec100-2024-list`, `natsec100-2025-list`, `nats
 
 **Observed**
 
-Chainalysis appears across 4 surface(s): natsec100-2023-list, natsec100-2024-list, natsec100-2025-list, natsec100-2026-list. Secondary types: category_formation_surface, defence_industrial_surface.
+Chainalysis appears across 5 surface(s): natsec100-2023-list, natsec100-2024-list, natsec100-2025-list, natsec100-2026-list, cf-award-city-of-london-chainalysis-2023-07-01-de0864ac. Secondary types: category_formation_surface, defence_industrial_surface.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `natsec100-2023-list`, `natsec100-2024-list`, `natsec100-2025-list`, `natsec100-2026-list`
+Refs: `natsec100-2023-list`, `natsec100-2024-list`, `natsec100-2025-list`, `natsec100-2026-list`, `cf-award-city-of-london-chainalysis-2023-07-01-de0864ac`
 
 ---
 
@@ -628,13 +628,13 @@ Refs: `natsec100-2023-list`, `natsec100-2024-list`, `natsec100-2025-list`, `nats
 
 **Observed**
 
-Scale AI appears across 10 surface(s): natsec100-2023-list, natsec100-2024-list, natsec100-2025-list, natsec100-2026-list, christopher-kirchhoff-scale-ai-head-of-applied-ai-strategy-and-global-security-linkedin-2025-present, uk-ai-safety-summit-2023-confirmed-attendees-programme-roster, dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145, uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-january-to-march-2025-685d5305. Secondary types: category_formation_surface, defence_industrial_surface, government_advisory_surface.
+Scale AI appears across 11 surface(s): natsec100-2023-list, natsec100-2024-list, natsec100-2025-list, natsec100-2026-list, christopher-kirchhoff-scale-ai-head-of-applied-ai-strategy-and-global-security-linkedin-2025-present, uk-ai-safety-summit-2023-confirmed-attendees-programme-roster, dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145, uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-january-to-march-2025-685d5305, cf-award-dsit-scale-ai-2024-10-07-f389111e. Secondary types: category_formation_surface, defence_industrial_surface, government_advisory_surface.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `natsec100-2023-list`, `natsec100-2024-list`, `natsec100-2025-list`, `natsec100-2026-list`, `christopher-kirchhoff-scale-ai-head-of-applied-ai-strategy-and-global-security-linkedin-2025-present`, `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145`, `uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-january-to-march-2025-685d5305`
+Refs: `natsec100-2023-list`, `natsec100-2024-list`, `natsec100-2025-list`, `natsec100-2026-list`, `christopher-kirchhoff-scale-ai-head-of-applied-ai-strategy-and-global-security-linkedin-2025-present`, `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145`, `uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-january-to-march-2025-685d5305`, `cf-award-dsit-scale-ai-2024-10-07-f389111e`
 
 ---
 
@@ -1664,7 +1664,25 @@ Refs: `natsec100-2024-list`, `fund-portfolio-page-shield-capital-2026-10-23`, `f
 
 ---
 
-## finding-093: Firestorm behaves as a surface factory
+## finding-093: Altana Technologies behaves as a surface factory
+
+- Type: surface_factory
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+Altana Technologies appears across 3 surface(s): natsec100-2024-list, natsec100-2026-list, cf-award-mod-altana-technologies-2024-10-31-6ea62f2e. Secondary types: category_formation_surface, defence_industrial_surface.
+
+**Required action**
+
+Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
+
+Refs: `natsec100-2024-list`, `natsec100-2026-list`, `cf-award-mod-altana-technologies-2024-10-31-6ea62f2e`
+
+---
+
+## finding-094: Firestorm behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -1682,7 +1700,7 @@ Refs: `natsec100-2024-list`, `natsec100-2026-list`, `procurement-award-fa862926c
 
 ---
 
-## finding-094: Arris Composites behaves as a surface factory
+## finding-095: Arris Composites behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -1700,7 +1718,7 @@ Refs: `natsec100-2024-list`, `sec-form-d-0001764915-23-000003`, `sec-form-d-0001
 
 ---
 
-## finding-095: Nominal behaves as a surface factory
+## finding-096: Nominal behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -1718,7 +1736,7 @@ Refs: `natsec100-2024-list`, `natsec100-2026-list`, `fund-portfolio-page-founder
 
 ---
 
-## finding-096: Onebrief behaves as a surface factory
+## finding-097: Onebrief behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -1736,7 +1754,7 @@ Refs: `natsec100-2024-list`, `natsec100-2025-list`, `natsec100-2026-list`
 
 ---
 
-## finding-097: Tomorrow.io behaves as a surface factory
+## finding-098: Tomorrow.io behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -1754,7 +1772,7 @@ Refs: `natsec100-2024-list`, `natsec100-2025-list`, `natsec100-2026-list`
 
 ---
 
-## finding-098: Radiant behaves as a surface factory
+## finding-099: Radiant behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -1772,7 +1790,7 @@ Refs: `natsec100-2024-list`, `natsec100-2026-list`, `fund-portfolio-page-a16z-am
 
 ---
 
-## finding-099: Umbra behaves as a surface factory
+## finding-100: Umbra behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -1790,7 +1808,7 @@ Refs: `natsec100-2024-list`, `natsec100-2025-list`, `natsec100-2026-list`
 
 ---
 
-## finding-100: Cambium behaves as a surface factory
+## finding-101: Cambium behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -1808,7 +1826,7 @@ Refs: `natsec100-2024-list`, `portfolio-as-represented-jackson-personal-investin
 
 ---
 
-## finding-101: TRM Labs behaves as a surface factory
+## finding-102: TRM Labs behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -1816,17 +1834,17 @@ Refs: `natsec100-2024-list`, `portfolio-as-represented-jackson-personal-investin
 
 **Observed**
 
-TRM Labs appears across 3 surface(s): natsec100-2024-list, natsec100-2025-list, natsec100-2026-list. Secondary types: category_formation_surface, defence_industrial_surface.
+TRM Labs appears across 5 surface(s): natsec100-2024-list, natsec100-2025-list, natsec100-2026-list, cf-award-city-of-london-trm-labs-2024-03-18-85644bfc, cf-award-serious-fraud-office-trm-labs-2025-11-23-3de8c75f. Secondary types: category_formation_surface, defence_industrial_surface.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `natsec100-2024-list`, `natsec100-2025-list`, `natsec100-2026-list`
+Refs: `natsec100-2024-list`, `natsec100-2025-list`, `natsec100-2026-list`, `cf-award-city-of-london-trm-labs-2024-03-18-85644bfc`, `cf-award-serious-fraud-office-trm-labs-2025-11-23-3de8c75f`
 
 ---
 
-## finding-102: Kodiak Robotics behaves as a surface factory
+## finding-103: Kodiak Robotics behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -1844,7 +1862,7 @@ Refs: `natsec100-2024-list`, `natsec100-exit-kodiak-robotics-2025-09-25`, `kodia
 
 ---
 
-## finding-103: Castelion behaves as a surface factory
+## finding-104: Castelion behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -1862,7 +1880,7 @@ Refs: `natsec100-2025-list`, `natsec100-2026-list`, `us-air-force-fy2025-award-c
 
 ---
 
-## finding-104: Dataminr behaves as a surface factory
+## finding-105: Dataminr behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -1870,17 +1888,17 @@ Refs: `natsec100-2025-list`, `natsec100-2026-list`, `us-air-force-fy2025-award-c
 
 **Observed**
 
-Dataminr appears across 7 surface(s): natsec100-2025-list, natsec100-2026-list, us-air-force-fy2025-award-dataminr, fund-portfolio-page-valor-equity-partners-2026-10-23, sec-form-d-0001475357-13-000004, sec-form-d-0001475357-18-000002, uk-ministerial-meetings-home-office-s-ministerial-meetings-april-to-june-2023-652fdded. Secondary types: category_formation_surface, defence_industrial_surface, employment_investment_surface, surface_factory_capital_layer.
+Dataminr appears across 12 surface(s): natsec100-2025-list, natsec100-2026-list, us-air-force-fy2025-award-dataminr, fund-portfolio-page-valor-equity-partners-2026-10-23, sec-form-d-0001475357-13-000004, sec-form-d-0001475357-18-000002, uk-ministerial-meetings-home-office-s-ministerial-meetings-april-to-june-2023-652fdded, cf-award-beis-dataminr-2023-04-04-f7429f4e, cf-award-cabinet-office-dataminr-2023-04-21-417c22c9, cf-award-dhsc-dataminr-2023-08-23-5f27f760, cf-award-ukhsa-dataminr-2024-01-18-e17b6f71, cf-award-dhsc-dataminr-2024-09-25-a97d5ead. Secondary types: category_formation_surface, defence_industrial_surface, employment_investment_surface, surface_factory_capital_layer.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `natsec100-2025-list`, `natsec100-2026-list`, `us-air-force-fy2025-award-dataminr`, `fund-portfolio-page-valor-equity-partners-2026-10-23`, `sec-form-d-0001475357-13-000004`, `sec-form-d-0001475357-18-000002`, `uk-ministerial-meetings-home-office-s-ministerial-meetings-april-to-june-2023-652fdded`
+Refs: `natsec100-2025-list`, `natsec100-2026-list`, `us-air-force-fy2025-award-dataminr`, `fund-portfolio-page-valor-equity-partners-2026-10-23`, `sec-form-d-0001475357-13-000004`, `sec-form-d-0001475357-18-000002`, `uk-ministerial-meetings-home-office-s-ministerial-meetings-april-to-june-2023-652fdded`, `cf-award-beis-dataminr-2023-04-04-f7429f4e`, `cf-award-cabinet-office-dataminr-2023-04-21-417c22c9`, `cf-award-dhsc-dataminr-2023-08-23-5f27f760`, `cf-award-ukhsa-dataminr-2024-01-18-e17b6f71`, `cf-award-dhsc-dataminr-2024-09-25-a97d5ead`
 
 ---
 
-## finding-105: Govini behaves as a surface factory
+## finding-106: Govini behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -1898,7 +1916,7 @@ Refs: `natsec100-2025-list`, `natsec100-2026-list`, `rndf-2025-programme-roster`
 
 ---
 
-## finding-106: CHAOS Industries behaves as a surface factory
+## finding-107: CHAOS Industries behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -1916,7 +1934,7 @@ Refs: `natsec100-2025-list`, `natsec100-2026-list`, `procurement-award-140d0424c
 
 ---
 
-## finding-107: Zipline behaves as a surface factory
+## finding-108: Zipline behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -1934,7 +1952,7 @@ Refs: `natsec100-2026-list`, `fund-portfolio-page-a16z-american-dynamism-2026-10
 
 ---
 
-## finding-108: Defense Unicorns behaves as a surface factory
+## finding-109: Defense Unicorns behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -1952,7 +1970,7 @@ Refs: `natsec100-2026-list`, `fund-portfolio-page-valor-equity-partners-2026-10-
 
 ---
 
-## finding-109: Iceye behaves as a surface factory
+## finding-110: Iceye behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -1970,7 +1988,7 @@ Refs: `natsec100-2026-list`, `fund-portfolio-page-in-q-tel-2026-10-23`, `uk-mini
 
 ---
 
-## finding-110: Turion Space behaves as a surface factory
+## finding-111: Turion Space behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -1988,7 +2006,7 @@ Refs: `natsec100-2025-list`, `natsec100-2026-list`, `fund-portfolio-page-washing
 
 ---
 
-## finding-111: Starfish Space behaves as a surface factory
+## finding-112: Starfish Space behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2006,7 +2024,25 @@ Refs: `natsec100-2026-list`, `procurement-award-fa881126cb001`, `portfolio-as-re
 
 ---
 
-## finding-112: Raft behaves as a surface factory
+## finding-113: Anaconda behaves as a surface factory
+
+- Type: surface_factory
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+Anaconda appears across 3 surface(s): natsec100-2026-list, fund-portfolio-page-in-q-tel-2026-10-23, cf-award-ons-anaconda-2024-10-01-942e1983. Secondary types: category_formation_surface, defence_industrial_surface, employment_investment_surface, surface_factory_capital_layer.
+
+**Required action**
+
+Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
+
+Refs: `natsec100-2026-list`, `fund-portfolio-page-in-q-tel-2026-10-23`, `cf-award-ons-anaconda-2024-10-01-942e1983`
+
+---
+
+## finding-114: Raft behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2024,7 +2060,7 @@ Refs: `natsec100-2026-list`, `procurement-award-fa873021f0166`, `procurement-awa
 
 ---
 
-## finding-113: Overland AI behaves as a surface factory
+## finding-115: Overland AI behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2042,7 +2078,7 @@ Refs: `natsec100-2025-list`, `natsec100-2026-list`, `procurement-award-m6785425c
 
 ---
 
-## finding-114: Cape behaves as a surface factory
+## finding-116: Cape behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2060,7 +2096,7 @@ Refs: `natsec100-2026-list`, `fund-portfolio-page-a16z-american-dynamism-2026-10
 
 ---
 
-## finding-115: Strider Technologies behaves as a surface factory
+## finding-117: Strider Technologies behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2068,17 +2104,17 @@ Refs: `natsec100-2026-list`, `fund-portfolio-page-a16z-american-dynamism-2026-10
 
 **Observed**
 
-Strider Technologies appears across 5 surface(s): natsec100-2026-list, michael-a-brown-strider-technologies-board-member-linkedin-2022-present, fund-portfolio-page-valor-equity-partners-2026-10-23, sec-form-d-0001776892-20-000001, sec-form-d-0001705705-24-000002. Secondary types: category_formation_surface, defence_industrial_surface, employment_investment_surface, surface_factory_capital_layer.
+Strider Technologies appears across 6 surface(s): natsec100-2026-list, michael-a-brown-strider-technologies-board-member-linkedin-2022-present, fund-portfolio-page-valor-equity-partners-2026-10-23, sec-form-d-0001776892-20-000001, sec-form-d-0001705705-24-000002, cf-award-mod-strider-technologies-2025-06-17-e4d12e7a. Secondary types: category_formation_surface, defence_industrial_surface, employment_investment_surface, surface_factory_capital_layer.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `natsec100-2026-list`, `michael-a-brown-strider-technologies-board-member-linkedin-2022-present`, `fund-portfolio-page-valor-equity-partners-2026-10-23`, `sec-form-d-0001776892-20-000001`, `sec-form-d-0001705705-24-000002`
+Refs: `natsec100-2026-list`, `michael-a-brown-strider-technologies-board-member-linkedin-2022-present`, `fund-portfolio-page-valor-equity-partners-2026-10-23`, `sec-form-d-0001776892-20-000001`, `sec-form-d-0001705705-24-000002`, `cf-award-mod-strider-technologies-2025-06-17-e4d12e7a`
 
 ---
 
-## finding-116: X-Energy behaves as a surface factory
+## finding-118: X-Energy behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2096,7 +2132,7 @@ Refs: `natsec100-2025-list`, `natsec100-exit-x-energy-2026-04-24`, `sec-form-d-0
 
 ---
 
-## finding-117: ServiceNow behaves as a surface factory
+## finding-119: ServiceNow behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2104,17 +2140,17 @@ Refs: `natsec100-2025-list`, `natsec100-exit-x-energy-2026-04-24`, `sec-form-d-0
 
 **Observed**
 
-ServiceNow appears across 6 surface(s): natsec100-exit-armis-servicenow-2026-04-20, dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, uk-ministerial-meetings-hmt-ministerial-meetings-july-to-september-2024-679b464d, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94. Secondary types: defence_industrial_surface.
+ServiceNow appears across 10 surface(s): natsec100-exit-armis-servicenow-2026-04-20, dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, uk-ministerial-meetings-hmt-ministerial-meetings-july-to-september-2024-679b464d, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, cf-award-university-of-birmingham-servicenow-2022-11-01-ffda4566, cf-award-university-of-birmingham-servicenow-2023-11-24-f6f06298, cf-award-university-of-birmingham-servicenow-2023-12-15-8f01198e, cf-award-university-of-birmingham-servicenow-2024-09-02-fbfe1905. Secondary types: defence_industrial_surface.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `natsec100-exit-armis-servicenow-2026-04-20`, `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-ministerial-meetings-hmt-ministerial-meetings-july-to-september-2024-679b464d`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`
+Refs: `natsec100-exit-armis-servicenow-2026-04-20`, `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-ministerial-meetings-hmt-ministerial-meetings-july-to-september-2024-679b464d`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `cf-award-university-of-birmingham-servicenow-2022-11-01-ffda4566`, `cf-award-university-of-birmingham-servicenow-2023-11-24-f6f06298`, `cf-award-university-of-birmingham-servicenow-2023-12-15-8f01198e`, `cf-award-university-of-birmingham-servicenow-2024-09-02-fbfe1905`
 
 ---
 
-## finding-118: IonQ behaves as a surface factory
+## finding-120: IonQ behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2132,7 +2168,7 @@ Refs: `natsec100-exit-capella-space-ionq-2025-07-15`, `fund-portfolio-page-in-q-
 
 ---
 
-## finding-119: Nvidia behaves as a surface factory
+## finding-121: Nvidia behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2150,7 +2186,7 @@ Refs: `natsec100-exit-groq-nvidia-2025-12-24`, `uk-ai-safety-summit-2023-confirm
 
 ---
 
-## finding-120: U.S. Air Force behaves as a surface factory
+## finding-122: U.S. Air Force behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2168,7 +2204,7 @@ Refs: `us-air-force-fy2025-award-sierra-space`, `us-air-force-award-fa9300-25-c-
 
 ---
 
-## finding-121: NASA behaves as a surface factory
+## finding-123: NASA behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2186,7 +2222,7 @@ Refs: `procurement-award-80jsc023f0041`, `procurement-award-80jsc022fa103`, `dar
 
 ---
 
-## finding-122: DoD (Air Force) behaves as a surface factory
+## finding-124: DoD (Air Force) behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2204,7 +2240,7 @@ Refs: `procurement-award-fa930024c6022`, `procurement-award-fa861224cb010`, `pro
 
 ---
 
-## finding-123: USSOCOM behaves as a surface factory
+## finding-125: USSOCOM behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2222,7 +2258,7 @@ Refs: `procurement-award-ussocom-idiq-reported`, `a16z-american-dynamism-summit-
 
 ---
 
-## finding-124: 8VC behaves as a surface factory
+## finding-126: 8VC behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2240,7 +2276,7 @@ Refs: `funding-round-overland-ai-series-b`, `vehicle-control-8vc`, `fund-portfol
 
 ---
 
-## finding-125: Lux Capital behaves as a surface factory
+## finding-127: Lux Capital behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2258,7 +2294,7 @@ Refs: `cap-table-as-reported-traysar`, `fund-portfolio-page-lux-capital-2026-10-
 
 ---
 
-## finding-126: Silent Ventures behaves as a surface factory
+## finding-128: Silent Ventures behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2276,7 +2312,7 @@ Refs: `funding-round-traysar-seed`, `vehicle-control-silent-ventures`, `fund-por
 
 ---
 
-## finding-127: Traysar behaves as a surface factory
+## finding-129: Traysar behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2294,7 +2330,7 @@ Refs: `cap-table-as-reported-traysar`, `funding-round-traysar-seed`, `fund-portf
 
 ---
 
-## finding-128: Long Wall behaves as a surface factory
+## finding-130: Long Wall behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2312,7 +2348,7 @@ Refs: `advisory-jackson-moses-long-wall`, `portfolio-as-represented-jackson-pers
 
 ---
 
-## finding-129: Thor Dynamics behaves as a surface factory
+## finding-131: Thor Dynamics behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2330,7 +2366,7 @@ Refs: `advisory-jackson-moses-thor-dynamics`, `portfolio-as-represented-jackson-
 
 ---
 
-## finding-130: Apex Space behaves as a surface factory
+## finding-132: Apex Space behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2348,7 +2384,7 @@ Refs: `natsec100-2024-list`, `natsec100-2026-list`, `advisory-katherine-boyle-ap
 
 ---
 
-## finding-131: Flexport behaves as a surface factory
+## finding-133: Flexport behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2366,7 +2402,7 @@ Refs: `advisory-trae-stephens-flexport`, `fund-portfolio-page-8vc-2026-10-23`, `
 
 ---
 
-## finding-132: Silent Capital behaves as a surface factory
+## finding-134: Silent Capital behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2384,7 +2420,7 @@ Refs: `vehicle-control-silent-capital`, `sec-form-d-0001826915-21-000001`, `sec-
 
 ---
 
-## finding-133: STATION Austin behaves as a surface factory
+## finding-135: STATION Austin behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2402,7 +2438,7 @@ Refs: `vehicle-control-station-austin`, `texas-franchise-tax-32101276197`, `stat
 
 ---
 
-## finding-134: Terra Industries behaves as a surface factory
+## finding-136: Terra Industries behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2420,7 +2456,7 @@ Refs: `portfolio-as-represented-jackson-personal-investing-2026-07-14`, `fund-po
 
 ---
 
-## finding-135: Galadyne behaves as a surface factory
+## finding-137: Galadyne behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2438,7 +2474,7 @@ Refs: `portfolio-as-represented-jackson-personal-investing-2026-07-14`, `fund-po
 
 ---
 
-## finding-136: Erebor behaves as a surface factory
+## finding-138: Erebor behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2456,7 +2492,7 @@ Refs: `portfolio-as-represented-jackson-personal-investing-2026-07-14`, `fund-po
 
 ---
 
-## finding-137: Base Power behaves as a surface factory
+## finding-139: Base Power behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2474,7 +2510,7 @@ Refs: `portfolio-as-represented-jackson-personal-investing-2026-07-14`, `fund-po
 
 ---
 
-## finding-138: Allen Control Systems behaves as a surface factory
+## finding-140: Allen Control Systems behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2492,7 +2528,7 @@ Refs: `portfolio-as-represented-jackson-personal-investing-2026-07-14`, `capital
 
 ---
 
-## finding-139: Amca behaves as a surface factory
+## finding-141: Amca behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2510,7 +2546,7 @@ Refs: `portfolio-as-represented-jackson-personal-investing-2026-07-14`, `fund-po
 
 ---
 
-## finding-140: Gallatin AI behaves as a surface factory
+## finding-142: Gallatin AI behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2528,7 +2564,7 @@ Refs: `portfolio-as-represented-jackson-personal-investing-2026-07-14`, `fund-po
 
 ---
 
-## finding-141: Swan behaves as a surface factory
+## finding-143: Swan behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2546,7 +2582,7 @@ Refs: `portfolio-as-represented-jackson-personal-investing-2026-07-14`, `fund-po
 
 ---
 
-## finding-142: Proteus Space behaves as a surface factory
+## finding-144: Proteus Space behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2564,7 +2600,7 @@ Refs: `portfolio-as-represented-jackson-personal-investing-2026-07-14`, `capital
 
 ---
 
-## finding-143: Capital Factory behaves as a surface factory
+## finding-145: Capital Factory behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2582,7 +2618,7 @@ Refs: `capital-factory-portfolio-page-2026-10-23`, `diu-sxsw-2024-joint-innovati
 
 ---
 
-## finding-144: Arena Labs behaves as a surface factory
+## finding-146: Arena Labs behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2600,7 +2636,7 @@ Refs: `capital-factory-portfolio-page-2026-10-23`, `jason-schwab-arena-labs-chie
 
 ---
 
-## finding-145: Cart.com behaves as a surface factory
+## finding-147: Cart.com behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2618,7 +2654,7 @@ Refs: `capital-factory-portfolio-page-2026-10-23`, `sec-form-d-0001856459-22-000
 
 ---
 
-## finding-146: Cloud 9 behaves as a surface factory
+## finding-148: Cloud 9 behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2636,7 +2672,7 @@ Refs: `capital-factory-portfolio-page-2026-10-23`, `fund-portfolio-page-valor-eq
 
 ---
 
-## finding-147: Darkhive behaves as a surface factory
+## finding-149: Darkhive behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2654,7 +2690,7 @@ Refs: `capital-factory-portfolio-page-2026-10-23`, `john-goodson-darkhive-chief-
 
 ---
 
-## finding-148: Diligent Robotics behaves as a surface factory
+## finding-150: Diligent Robotics behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2672,7 +2708,7 @@ Refs: `capital-factory-portfolio-page-2026-10-23`, `sec-form-d-0001729559-24-000
 
 ---
 
-## finding-149: HiddenLayer behaves as a surface factory
+## finding-151: HiddenLayer behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2690,7 +2726,7 @@ Refs: `capital-factory-portfolio-page-2026-10-23`, `sec-form-d-0000947871-23-000
 
 ---
 
-## finding-150: LongFi Solutions behaves as a surface factory
+## finding-152: LongFi Solutions behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2708,7 +2744,7 @@ Refs: `capital-factory-portfolio-page-2026-10-23`, `sec-form-d-0001984072-23-000
 
 ---
 
-## finding-151: Odyssey behaves as a surface factory
+## finding-153: Odyssey behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2726,7 +2762,7 @@ Refs: `capital-factory-portfolio-page-2026-10-23`, `fund-portfolio-page-a16z-ame
 
 ---
 
-## finding-152: Paradromics Inc. behaves as a surface factory
+## finding-154: Paradromics Inc. behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2744,7 +2780,7 @@ Refs: `capital-factory-portfolio-page-2026-10-23`, `sec-form-d-0001668302-21-000
 
 ---
 
-## finding-153: Renu Robotics behaves as a surface factory
+## finding-155: Renu Robotics behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2762,7 +2798,7 @@ Refs: `capital-factory-portfolio-page-2026-10-23`, `sec-form-d-0001791223-19-000
 
 ---
 
-## finding-154: Saronic Technologies behaves as a surface factory
+## finding-156: Saronic Technologies behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2780,7 +2816,7 @@ Refs: `natsec100-2024-list`, `natsec100-2025-list`, `natsec100-2026-list`, `proc
 
 ---
 
-## finding-155: Senseye behaves as a surface factory
+## finding-157: Senseye behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2798,7 +2834,7 @@ Refs: `capital-factory-portfolio-page-2026-10-23`, `sec-form-d-0002075875-25-000
 
 ---
 
-## finding-156: Voyager Space Holdings behaves as a surface factory
+## finding-158: Voyager Space Holdings behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2816,7 +2852,7 @@ Refs: `capital-factory-portfolio-page-2026-10-23`, `sec-form-d-0001235110-22-000
 
 ---
 
-## finding-157: Wander.com behaves as a surface factory
+## finding-159: Wander.com behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2834,7 +2870,7 @@ Refs: `capital-factory-portfolio-page-2026-10-23`, `sec-form-d-0001874698-21-000
 
 ---
 
-## finding-158: Stratos Ventures behaves as a surface factory
+## finding-160: Stratos Ventures behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2852,7 +2888,7 @@ Refs: `stratos-ventures-portfolio-page-2026-10-23`, `partnership-claim-stratos-v
 
 ---
 
-## finding-159: Air Force Scientific Advisory Board behaves as a surface factory
+## finding-161: Air Force Scientific Advisory Board behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2870,7 +2906,7 @@ Refs: `heidi-shyu-air-force-scientific-advisory-board-board-member-linkedin-2000
 
 ---
 
-## finding-160: Air Force Special Operations Command behaves as a surface factory
+## finding-162: Air Force Special Operations Command behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2888,7 +2924,7 @@ Refs: `alex-frew-air-force-special-operations-command-airfield-operations-specia
 
 ---
 
-## finding-161: Amazon Web Services (AWS) behaves as a surface factory
+## finding-163: Amazon Web Services (AWS) behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2896,17 +2932,17 @@ Refs: `alex-frew-air-force-special-operations-command-airfield-operations-specia
 
 **Observed**
 
-Amazon Web Services (AWS) appears across 23 surface(s): mitchell-chahalis-amazon-web-services-aws-manager-of-operations-linkedin-2021-2024, uk-ai-safety-summit-2023-confirmed-attendees-programme-roster, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625, uk-ministerial-meetings-hmt-ministerial-meetings-july-to-september-2024-679b464d, uk-ministerial-meetings-hmt-ministerial-meetings-july-to-september-2024-679b464d, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-cabinet-office-ministers-meetings-october-to-december-2025-69c29a18, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5, gov-uk-chat-anthropic-model-transparency-record-2025-10-07. Secondary types: government_advisory_surface.
+Amazon Web Services (AWS) appears across 41 surface(s): mitchell-chahalis-amazon-web-services-aws-manager-of-operations-linkedin-2021-2024, uk-ai-safety-summit-2023-confirmed-attendees-programme-roster, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625, uk-ministerial-meetings-hmt-ministerial-meetings-july-to-september-2024-679b464d, uk-ministerial-meetings-hmt-ministerial-meetings-july-to-september-2024-679b464d, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-cabinet-office-ministers-meetings-october-to-december-2025-69c29a18, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5, gov-uk-chat-anthropic-model-transparency-record-2025-10-07, cf-award-ukhsa-amazon-web-services-aws-2020-03-23-d04bc492, cf-award-defra-amazon-web-services-aws-2022-12-23-59e881d1, cf-award-nhs-england-amazon-web-services-aws-2023-01-23-9a280fe4, cf-award-ukhsa-amazon-web-services-aws-2023-06-09-4b2faa05, cf-award-mod-amazon-web-services-aws-2023-08-02-61162713, cf-award-home-office-border-force-amazon-web-services-aws-2023-11-21-48741bae, cf-award-home-office-border-force-amazon-web-services-aws-2023-11-30-6c137032, cf-award-home-office-border-force-amazon-web-services-aws-2023-12-01-36b3f0e9, cf-award-nhs-south-central-and-west-c-amazon-web-services-aws-2024-04-29-cc88fb2f, cf-award-ukhsa-amazon-web-services-aws-2024-08-13-b0207bdc, cf-award-ukhsa-amazon-web-services-aws-2024-11-20-66f47b4a, cf-award-nhs-south-central-and-west-c-amazon-web-services-aws-2025-04-29-c963cc0a, cf-award-ukhsa-amazon-web-services-aws-2025-06-08-c2aefbcc, cf-award-cabinet-office-amazon-web-services-aws-2025-09-01-4a090aca, cf-award-centre-for-process-innovatio-amazon-web-services-aws-2025-10-09-bbce41d0, cf-award-defra-amazon-web-services-aws-2025-12-19-7556ca1d, cf-award-nhs-south-central-and-west-c-amazon-web-services-aws-2026-02-27-9518c69b, cf-award-dsit-amazon-web-services-aws-2026-07-22-499414cd. Secondary types: government_advisory_surface.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `mitchell-chahalis-amazon-web-services-aws-manager-of-operations-linkedin-2021-2024`, `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625`, `uk-ministerial-meetings-hmt-ministerial-meetings-july-to-september-2024-679b464d`, `uk-ministerial-meetings-hmt-ministerial-meetings-july-to-september-2024-679b464d`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-cabinet-office-ministers-meetings-october-to-december-2025-69c29a18`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5`, `gov-uk-chat-anthropic-model-transparency-record-2025-10-07`
+Refs: `mitchell-chahalis-amazon-web-services-aws-manager-of-operations-linkedin-2021-2024`, `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625`, `uk-ministerial-meetings-hmt-ministerial-meetings-july-to-september-2024-679b464d`, `uk-ministerial-meetings-hmt-ministerial-meetings-july-to-september-2024-679b464d`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-cabinet-office-ministers-meetings-october-to-december-2025-69c29a18`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5`, `gov-uk-chat-anthropic-model-transparency-record-2025-10-07`, `cf-award-ukhsa-amazon-web-services-aws-2020-03-23-d04bc492`, `cf-award-defra-amazon-web-services-aws-2022-12-23-59e881d1`, `cf-award-nhs-england-amazon-web-services-aws-2023-01-23-9a280fe4`, `cf-award-ukhsa-amazon-web-services-aws-2023-06-09-4b2faa05`, `cf-award-mod-amazon-web-services-aws-2023-08-02-61162713`, `cf-award-home-office-border-force-amazon-web-services-aws-2023-11-21-48741bae`, `cf-award-home-office-border-force-amazon-web-services-aws-2023-11-30-6c137032`, `cf-award-home-office-border-force-amazon-web-services-aws-2023-12-01-36b3f0e9`, `cf-award-nhs-south-central-and-west-c-amazon-web-services-aws-2024-04-29-cc88fb2f`, `cf-award-ukhsa-amazon-web-services-aws-2024-08-13-b0207bdc`, `cf-award-ukhsa-amazon-web-services-aws-2024-11-20-66f47b4a`, `cf-award-nhs-south-central-and-west-c-amazon-web-services-aws-2025-04-29-c963cc0a`, `cf-award-ukhsa-amazon-web-services-aws-2025-06-08-c2aefbcc`, `cf-award-cabinet-office-amazon-web-services-aws-2025-09-01-4a090aca`, `cf-award-centre-for-process-innovatio-amazon-web-services-aws-2025-10-09-bbce41d0`, `cf-award-defra-amazon-web-services-aws-2025-12-19-7556ca1d`, `cf-award-nhs-south-central-and-west-c-amazon-web-services-aws-2026-02-27-9518c69b`, `cf-award-dsit-amazon-web-services-aws-2026-07-22-499414cd`
 
 ---
 
-## finding-162: Anthropic behaves as a surface factory
+## finding-164: Anthropic behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2924,7 +2960,7 @@ Refs: `christopher-kirchhoff-anthropic-special-projects-policy-residency-linkedi
 
 ---
 
-## finding-163: Apple behaves as a surface factory
+## finding-165: Apple behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2942,7 +2978,7 @@ Refs: `doug-beck-apple-vice-president-americas-and-northeast-asia-linkedin-2015-
 
 ---
 
-## finding-164: Arm behaves as a surface factory
+## finding-166: Arm behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2960,7 +2996,7 @@ Refs: `brandon-boesch-arm-iot-applications-engineer-intern-linkedin-2017-2017`, 
 
 ---
 
-## finding-165: ASIMILY behaves as a surface factory
+## finding-167: ASIMILY behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2978,7 +3014,7 @@ Refs: `michael-a-brown-asimily-board-member-and-investor-linkedin-2017-present`,
 
 ---
 
-## finding-166: AV behaves as a surface factory
+## finding-168: AV behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -2996,7 +3032,7 @@ Refs: `blake-souter-av-vice-president-head-of-washington-operations-linkedin-202
 
 ---
 
-## finding-167: Blackstone behaves as a surface factory
+## finding-169: Blackstone behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3014,7 +3050,7 @@ Refs: `alex-bilay-blackstone-summer-associate-linkedin-2025-2025`, `north-east-a
 
 ---
 
-## finding-168: Booz Allen Hamilton behaves as a surface factory
+## finding-170: Booz Allen Hamilton behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3022,17 +3058,17 @@ Refs: `alex-bilay-blackstone-summer-associate-linkedin-2025-2025`, `north-east-a
 
 **Observed**
 
-Booz Allen Hamilton appears across 19 surface(s): andrew-koch-booz-allen-hamilton-senior-consultant-linkedin-2006-2010, joanna-guy-booz-allen-hamilton-marketing-and-growth-lead-linkedin-2023-2025, joanna-guy-booz-allen-hamilton-marketing-lead-linkedin-2020-2023, joanna-guy-booz-allen-hamilton-senior-partnerships-and-brand-lead-linkedin-2025-present, jon-bal-booz-allen-hamilton-principal-linkedin-2024-2025, jon-bal-booz-allen-hamilton-senior-technical-program-manager-linkedin-2019-2020, rndf-2023-panel-9, rndf-2023-programme-roster, rndf-2024-programme-roster, rndf-2025-panel-2, rndf-2025-programme-roster, sec-form-d-0001181431-09-027391, sec-form-d-0001181431-10-028931, sec-form-d-0001181431-10-028932, sec-form-d-0001181431-10-028935, sec-form-d-0001181431-10-029664, sec-form-d-0001181431-11-032776, sec-form-d-0001181431-12-032628, sec-form-d-0001181431-13-030872. Secondary types: defence_industrial_surface, surface_factory_capital_layer.
+Booz Allen Hamilton appears across 20 surface(s): andrew-koch-booz-allen-hamilton-senior-consultant-linkedin-2006-2010, joanna-guy-booz-allen-hamilton-marketing-and-growth-lead-linkedin-2023-2025, joanna-guy-booz-allen-hamilton-marketing-lead-linkedin-2020-2023, joanna-guy-booz-allen-hamilton-senior-partnerships-and-brand-lead-linkedin-2025-present, jon-bal-booz-allen-hamilton-principal-linkedin-2024-2025, jon-bal-booz-allen-hamilton-senior-technical-program-manager-linkedin-2019-2020, rndf-2023-panel-9, rndf-2023-programme-roster, rndf-2024-programme-roster, rndf-2025-panel-2, rndf-2025-programme-roster, sec-form-d-0001181431-09-027391, sec-form-d-0001181431-10-028931, sec-form-d-0001181431-10-028932, sec-form-d-0001181431-10-028935, sec-form-d-0001181431-10-029664, sec-form-d-0001181431-11-032776, sec-form-d-0001181431-12-032628, sec-form-d-0001181431-13-030872, cf-award-mod-booz-allen-hamilton-2023-11-01-f84261a9. Secondary types: defence_industrial_surface, surface_factory_capital_layer.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `andrew-koch-booz-allen-hamilton-senior-consultant-linkedin-2006-2010`, `joanna-guy-booz-allen-hamilton-marketing-and-growth-lead-linkedin-2023-2025`, `joanna-guy-booz-allen-hamilton-marketing-lead-linkedin-2020-2023`, `joanna-guy-booz-allen-hamilton-senior-partnerships-and-brand-lead-linkedin-2025-present`, `jon-bal-booz-allen-hamilton-principal-linkedin-2024-2025`, `jon-bal-booz-allen-hamilton-senior-technical-program-manager-linkedin-2019-2020`, `rndf-2023-panel-9`, `rndf-2023-programme-roster`, `rndf-2024-programme-roster`, `rndf-2025-panel-2`, `rndf-2025-programme-roster`, `sec-form-d-0001181431-09-027391`, `sec-form-d-0001181431-10-028931`, `sec-form-d-0001181431-10-028932`, `sec-form-d-0001181431-10-028935`, `sec-form-d-0001181431-10-029664`, `sec-form-d-0001181431-11-032776`, `sec-form-d-0001181431-12-032628`, `sec-form-d-0001181431-13-030872`
+Refs: `andrew-koch-booz-allen-hamilton-senior-consultant-linkedin-2006-2010`, `joanna-guy-booz-allen-hamilton-marketing-and-growth-lead-linkedin-2023-2025`, `joanna-guy-booz-allen-hamilton-marketing-lead-linkedin-2020-2023`, `joanna-guy-booz-allen-hamilton-senior-partnerships-and-brand-lead-linkedin-2025-present`, `jon-bal-booz-allen-hamilton-principal-linkedin-2024-2025`, `jon-bal-booz-allen-hamilton-senior-technical-program-manager-linkedin-2019-2020`, `rndf-2023-panel-9`, `rndf-2023-programme-roster`, `rndf-2024-programme-roster`, `rndf-2025-panel-2`, `rndf-2025-programme-roster`, `sec-form-d-0001181431-09-027391`, `sec-form-d-0001181431-10-028931`, `sec-form-d-0001181431-10-028932`, `sec-form-d-0001181431-10-028935`, `sec-form-d-0001181431-10-029664`, `sec-form-d-0001181431-11-032776`, `sec-form-d-0001181431-12-032628`, `sec-form-d-0001181431-13-030872`, `cf-award-mod-booz-allen-hamilton-2023-11-01-f84261a9`
 
 ---
 
-## finding-169: Capgemini behaves as a surface factory
+## finding-171: Capgemini behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3040,17 +3076,17 @@ Refs: `andrew-koch-booz-allen-hamilton-senior-consultant-linkedin-2006-2010`, `j
 
 **Observed**
 
-Capgemini appears across 4 surface(s): simon-price-capgemini-data-scientist-linkedin-2017-2018, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145. Secondary types: none.
+Capgemini appears across 74 surface(s): simon-price-capgemini-data-scientist-linkedin-2017-2018, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145, cf-award-home-office-border-force-capgemini-2021-01-01-2fa2d280, cf-award-home-office-border-force-capgemini-2022-04-01-a4ea1a37, cf-award-mod-capgemini-2022-09-21-1d8e4f5b, cf-award-mod-capgemini-2022-10-01-9f358897, cf-award-home-office-border-force-capgemini-2022-12-21-7749b58a, cf-award-defra-capgemini-2022-12-22-8e859f0f, cf-award-home-office-border-force-capgemini-2023-03-01-08dfa283, cf-award-mod-capgemini-2023-03-17-b8ac0ce1, cf-award-mod-capgemini-2023-03-22-48a2440c, cf-award-home-office-border-force-capgemini-2023-04-01-10d5b0ed, cf-award-home-office-border-force-capgemini-2023-04-03-b7abf2ad, cf-award-home-office-border-force-capgemini-2023-04-28-60bdc74e, cf-award-mod-capgemini-2023-05-17-0fdde29d, cf-award-mod-capgemini-2023-05-19-3d63d44e, cf-award-mod-capgemini-2023-05-19-6f283385, cf-award-mod-capgemini-2023-06-29-67c8c52f, cf-award-government-digital-service-capgemini-2023-08-04-76873ee4, cf-award-home-office-border-force-capgemini-2023-08-22-ca624c1a, cf-award-defra-capgemini-2023-08-24-d6f8cec1, cf-award-mod-capgemini-2023-09-29-e93ef140, cf-award-home-office-border-force-capgemini-2023-10-23-e5d14e6e, cf-award-home-office-border-force-capgemini-2023-10-26-12a65858, cf-award-home-office-border-force-capgemini-2023-10-26-7dc6244f, cf-award-mod-atkinsrealis-2023-11-17-b92822ac, cf-award-beis-capgemini-2023-12-01-fd83b1bc, cf-award-home-office-border-force-capgemini-2023-12-07-7db4ce41, cf-award-dfe-capgemini-2024-01-08-cbbba436, cf-award-defra-capgemini-2024-01-19-52fbc10d, cf-award-mod-capgemini-2024-01-29-34378f51, cf-award-mod-capgemini-2024-01-29-66db0011, cf-award-nhs-england-capgemini-2024-02-02-c52adf8f, cf-award-mod-capgemini-2024-02-05-868d2f90, cf-award-mod-capgemini-2024-02-08-30ae08de, cf-award-mod-capgemini-2024-02-08-b2f02eed, cf-award-dsit-capgemini-2024-02-19-bb3f7eda, cf-award-cabinet-office-capgemini-2024-03-11-afb30d07, cf-award-defra-capgemini-2024-03-18-3132cbdb, cf-award-defra-capgemini-2024-03-18-ceeda701, cf-award-home-office-border-force-capgemini-2024-04-01-14bb7108, cf-award-home-office-border-force-capgemini-2024-04-04-9a24dbc7, cf-award-dsit-capgemini-2024-04-05-375a12de, cf-award-desnz-capgemini-2024-04-23-abe9bce3, cf-award-mod-capgemini-2024-05-14-18322122, cf-award-dsit-capgemini-2024-06-15-1ec54708, cf-award-mod-capgemini-2024-06-20-5843746a, cf-award-home-office-border-force-capgemini-2024-07-01-e7cd400a, cf-award-mod-capgemini-2024-07-23-5613b902, cf-award-dsit-capgemini-2024-12-02-ff1774ec, cf-award-desnz-accenture-2024-12-09-e43ccf35, cf-award-defra-capgemini-2024-12-10-b6dfe935, cf-award-dsit-capgemini-2024-12-19-e0b3024b, cf-award-defra-capgemini-2025-01-20-3042f3cc, cf-award-dsit-capgemini-2025-04-01-b6ca2c5e, cf-award-mod-capgemini-2025-04-01-97660232, cf-award-mod-capgemini-2025-04-30-61408d4c, cf-award-mod-capgemini-2025-08-04-d568d4f0, cf-award-mod-capgemini-2025-10-17-b10f1ec9, cf-award-defra-capgemini-2025-11-01-823b44a9, cf-award-home-office-border-force-capgemini-2025-11-01-1aa43e47, cf-award-home-office-border-force-capgemini-2025-11-05-985c9e95, cf-award-defra-capgemini-2026-02-01-6cbebcc9, cf-award-dsit-capgemini-2026-02-05-d8d73ed7, cf-award-defra-capgemini-2026-02-06-f26abf02, cf-award-home-office-border-force-capgemini-2026-02-27-ff5bba27, cf-award-defra-capgemini-2026-03-01-8e05f31c, cf-award-home-office-border-force-capgemini-2026-03-13-714950dc, cf-award-home-office-border-force-capgemini-2026-03-25-9bc2fdd6, cf-award-mod-capgemini-2026-05-22-256f8157, cf-award-mod-capgemini-2026-05-22-881a0d7b, cf-award-home-office-border-force-capgemini-2026-09-15-d100ded2. Secondary types: none.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `simon-price-capgemini-data-scientist-linkedin-2017-2018`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145`
+Refs: `simon-price-capgemini-data-scientist-linkedin-2017-2018`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145`, `cf-award-home-office-border-force-capgemini-2021-01-01-2fa2d280`, `cf-award-home-office-border-force-capgemini-2022-04-01-a4ea1a37`, `cf-award-mod-capgemini-2022-09-21-1d8e4f5b`, `cf-award-mod-capgemini-2022-10-01-9f358897`, `cf-award-home-office-border-force-capgemini-2022-12-21-7749b58a`, `cf-award-defra-capgemini-2022-12-22-8e859f0f`, `cf-award-home-office-border-force-capgemini-2023-03-01-08dfa283`, `cf-award-mod-capgemini-2023-03-17-b8ac0ce1`, `cf-award-mod-capgemini-2023-03-22-48a2440c`, `cf-award-home-office-border-force-capgemini-2023-04-01-10d5b0ed`, `cf-award-home-office-border-force-capgemini-2023-04-03-b7abf2ad`, `cf-award-home-office-border-force-capgemini-2023-04-28-60bdc74e`, `cf-award-mod-capgemini-2023-05-17-0fdde29d`, `cf-award-mod-capgemini-2023-05-19-3d63d44e`, `cf-award-mod-capgemini-2023-05-19-6f283385`, `cf-award-mod-capgemini-2023-06-29-67c8c52f`, `cf-award-government-digital-service-capgemini-2023-08-04-76873ee4`, `cf-award-home-office-border-force-capgemini-2023-08-22-ca624c1a`, `cf-award-defra-capgemini-2023-08-24-d6f8cec1`, `cf-award-mod-capgemini-2023-09-29-e93ef140`, `cf-award-home-office-border-force-capgemini-2023-10-23-e5d14e6e`, `cf-award-home-office-border-force-capgemini-2023-10-26-12a65858`, `cf-award-home-office-border-force-capgemini-2023-10-26-7dc6244f`, `cf-award-mod-atkinsrealis-2023-11-17-b92822ac`, `cf-award-beis-capgemini-2023-12-01-fd83b1bc`, `cf-award-home-office-border-force-capgemini-2023-12-07-7db4ce41`, `cf-award-dfe-capgemini-2024-01-08-cbbba436`, `cf-award-defra-capgemini-2024-01-19-52fbc10d`, `cf-award-mod-capgemini-2024-01-29-34378f51`, `cf-award-mod-capgemini-2024-01-29-66db0011`, `cf-award-nhs-england-capgemini-2024-02-02-c52adf8f`, `cf-award-mod-capgemini-2024-02-05-868d2f90`, `cf-award-mod-capgemini-2024-02-08-30ae08de`, `cf-award-mod-capgemini-2024-02-08-b2f02eed`, `cf-award-dsit-capgemini-2024-02-19-bb3f7eda`, `cf-award-cabinet-office-capgemini-2024-03-11-afb30d07`, `cf-award-defra-capgemini-2024-03-18-3132cbdb`, `cf-award-defra-capgemini-2024-03-18-ceeda701`, `cf-award-home-office-border-force-capgemini-2024-04-01-14bb7108`, `cf-award-home-office-border-force-capgemini-2024-04-04-9a24dbc7`, `cf-award-dsit-capgemini-2024-04-05-375a12de`, `cf-award-desnz-capgemini-2024-04-23-abe9bce3`, `cf-award-mod-capgemini-2024-05-14-18322122`, `cf-award-dsit-capgemini-2024-06-15-1ec54708`, `cf-award-mod-capgemini-2024-06-20-5843746a`, `cf-award-home-office-border-force-capgemini-2024-07-01-e7cd400a`, `cf-award-mod-capgemini-2024-07-23-5613b902`, `cf-award-dsit-capgemini-2024-12-02-ff1774ec`, `cf-award-desnz-accenture-2024-12-09-e43ccf35`, `cf-award-defra-capgemini-2024-12-10-b6dfe935`, `cf-award-dsit-capgemini-2024-12-19-e0b3024b`, `cf-award-defra-capgemini-2025-01-20-3042f3cc`, `cf-award-dsit-capgemini-2025-04-01-b6ca2c5e`, `cf-award-mod-capgemini-2025-04-01-97660232`, `cf-award-mod-capgemini-2025-04-30-61408d4c`, `cf-award-mod-capgemini-2025-08-04-d568d4f0`, `cf-award-mod-capgemini-2025-10-17-b10f1ec9`, `cf-award-defra-capgemini-2025-11-01-823b44a9`, `cf-award-home-office-border-force-capgemini-2025-11-01-1aa43e47`, `cf-award-home-office-border-force-capgemini-2025-11-05-985c9e95`, `cf-award-defra-capgemini-2026-02-01-6cbebcc9`, `cf-award-dsit-capgemini-2026-02-05-d8d73ed7`, `cf-award-defra-capgemini-2026-02-06-f26abf02`, `cf-award-home-office-border-force-capgemini-2026-02-27-ff5bba27`, `cf-award-defra-capgemini-2026-03-01-8e05f31c`, `cf-award-home-office-border-force-capgemini-2026-03-13-714950dc`, `cf-award-home-office-border-force-capgemini-2026-03-25-9bc2fdd6`, `cf-award-mod-capgemini-2026-05-22-256f8157`, `cf-award-mod-capgemini-2026-05-22-881a0d7b`, `cf-award-home-office-border-force-capgemini-2026-09-15-d100ded2`
 
 ---
 
-## finding-170: Carnegie Endowment for International Peace behaves as a surface factory
+## finding-172: Carnegie Endowment for International Peace behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3058,17 +3094,17 @@ Refs: `simon-price-capgemini-data-scientist-linkedin-2017-2018`, `uk-ministerial
 
 **Observed**
 
-Carnegie Endowment for International Peace appears across 4 surface(s): christian-brose-carnegie-endowment-for-international-peace-senior-fellow-linkedin-2019-2020, uk-ai-safety-summit-2023-confirmed-attendees-programme-roster, anthropic-ltbt-appoints-mariano-florentino-cuellar-2026-01-21, anthropic-chief-global-affairs-officer-mariano-florentino-cuellar-2026-08-04. Secondary types: government_advisory_surface.
+Carnegie Endowment for International Peace appears across 5 surface(s): christian-brose-carnegie-endowment-for-international-peace-senior-fellow-linkedin-2019-2020, uk-ai-safety-summit-2023-confirmed-attendees-programme-roster, anthropic-ltbt-appoints-mariano-florentino-cuellar-2026-01-21, anthropic-chief-global-affairs-officer-mariano-florentino-cuellar-2026-08-04, cf-award-mod-carnegie-endowment-for-internati-2025-08-04-d875324f. Secondary types: government_advisory_surface.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `christian-brose-carnegie-endowment-for-international-peace-senior-fellow-linkedin-2019-2020`, `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `anthropic-ltbt-appoints-mariano-florentino-cuellar-2026-01-21`, `anthropic-chief-global-affairs-officer-mariano-florentino-cuellar-2026-08-04`
+Refs: `christian-brose-carnegie-endowment-for-international-peace-senior-fellow-linkedin-2019-2020`, `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `anthropic-ltbt-appoints-mariano-florentino-cuellar-2026-01-21`, `anthropic-chief-global-affairs-officer-mariano-florentino-cuellar-2026-08-04`, `cf-award-mod-carnegie-endowment-for-internati-2025-08-04-d875324f`
 
 ---
 
-## finding-171: Center for a New American Security (CNAS) behaves as a surface factory
+## finding-173: Center for a New American Security (CNAS) behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3086,7 +3122,7 @@ Refs: `doug-beck-center-for-a-new-american-security-cnas-board-member-linkedin-2
 
 ---
 
-## finding-172: Charles Schwab behaves as a surface factory
+## finding-174: Charles Schwab behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3104,7 +3140,7 @@ Refs: `doug-beck-charles-schwab-svp-and-chief-strategy-officer-linkedin-2008-200
 
 ---
 
-## finding-173: Cisco behaves as a surface factory
+## finding-175: Cisco behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3122,7 +3158,7 @@ Refs: `kevin-weil-cisco-board-member-linkedin-2025-present`, `dsit-techuk-anduri
 
 ---
 
-## finding-174: Council on Foreign Relations behaves as a surface factory
+## finding-176: Council on Foreign Relations behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3140,7 +3176,25 @@ Refs: `christian-brose-council-on-foreign-relations-term-member-linkedin-2011-20
 
 ---
 
-## finding-175: DARPA behaves as a surface factory
+## finding-177: Cushman & Wakefield behaves as a surface factory
+
+- Type: surface_factory
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+Cushman & Wakefield appears across 3 surface(s): thomas-j-kehoe-jr-cushman-and-wakefield-senior-director-linkedin-2026-present, cf-award-ukhsa-cushman-and-wakefield-2023-03-10-e6ebf7e2, cf-award-university-of-birmingham-cushman-and-wakefield-2024-03-22-93e93e44. Secondary types: none.
+
+**Required action**
+
+Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
+
+Refs: `thomas-j-kehoe-jr-cushman-and-wakefield-senior-director-linkedin-2026-present`, `cf-award-ukhsa-cushman-and-wakefield-2023-03-10-e6ebf7e2`, `cf-award-university-of-birmingham-cushman-and-wakefield-2024-03-22-93e93e44`
+
+---
+
+## finding-178: DARPA behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3158,7 +3212,7 @@ Refs: `andrew-nuss-darpa-program-manager-linkedin-2017-2023`, `christopher-kirch
 
 ---
 
-## finding-176: Deloitte behaves as a surface factory
+## finding-179: Deloitte behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3166,17 +3220,17 @@ Refs: `andrew-nuss-darpa-program-manager-linkedin-2017-2023`, `christopher-kirch
 
 **Observed**
 
-Deloitte appears across 17 surface(s): jon-bal-deloitte-operations-transformation-consultant-linkedin-2020-2020, dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, uk-ministerial-meetings-home-office-s-ministerial-meetings-january-to-march-2023-64b7d11a, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef, uk-ministerial-meetings-dwp-s-ministerial-meetings-january-to-march-2025-685d1b9d, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-april-to-june-2025-68d54fb8, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2025-6936dac1, uk-ministerial-meetings-cabinet-office-ministers-meetings-october-to-december-2025-69c29a18, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5. Secondary types: none.
+Deloitte appears across 198 surface(s): jon-bal-deloitte-operations-transformation-consultant-linkedin-2020-2020, dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, uk-ministerial-meetings-home-office-s-ministerial-meetings-january-to-march-2023-64b7d11a, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef, uk-ministerial-meetings-dwp-s-ministerial-meetings-january-to-march-2025-685d1b9d, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-april-to-june-2025-68d54fb8, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2025-6936dac1, uk-ministerial-meetings-cabinet-office-ministers-meetings-october-to-december-2025-69c29a18, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5, cf-award-dhsc-deloitte-2020-11-19-7c67add2, cf-award-dhsc-deloitte-2021-06-28-dbdd80ec, cf-award-dhsc-deloitte-2021-07-15-413761f0, cf-award-home-office-border-force-deloitte-2021-07-26-68e23030, cf-award-home-office-border-force-deloitte-2021-08-02-a3a65baf, cf-award-dhsc-deloitte-2021-09-28-caa0bfb6, cf-award-home-office-border-force-deloitte-2022-07-07-97e1e706, cf-award-home-office-border-force-deloitte-2022-09-01-3ce2a282, cf-award-mod-deloitte-2022-09-30-b6ef3cdc, cf-award-government-digital-service-deloitte-2022-10-10-87c203e7, cf-award-mod-deloitte-2022-10-10-738114f9, cf-award-home-office-border-force-deloitte-2022-10-27-005ce258, cf-award-defra-deloitte-2022-11-10-371f9f56, cf-award-defra-deloitte-2022-11-10-922cf301, cf-award-government-digital-service-deloitte-2022-12-02-8de09716, cf-award-mod-deloitte-2022-12-02-04486bd4, cf-award-home-office-border-force-deloitte-2022-12-16-7b7f3daa, cf-award-mod-deloitte-2022-12-20-0cd309a8, cf-award-mod-deloitte-2022-12-21-e786d6f2, cf-award-mod-deloitte-2022-12-23-e5e1115f, cf-award-home-office-border-force-deloitte-2022-12-29-7d5bd680, cf-award-home-office-border-force-deloitte-2023-01-01-b7401ce6, cf-award-home-office-border-force-deloitte-2023-01-06-1883eaeb, cf-award-mod-deloitte-2023-01-18-536aa953, cf-award-defra-deloitte-2023-01-19-21b92919, cf-award-dfe-deloitte-2023-01-19-2523b6a0, cf-award-defra-deloitte-2023-01-20-6a78ef9c, cf-award-nhs-england-deloitte-2023-01-23-d12d31ff, cf-award-home-office-border-force-deloitte-2023-02-01-c31339c6, cf-award-home-office-border-force-deloitte-2023-02-01-d57f0407, cf-award-beis-deloitte-2023-02-02-81bb8e6a, cf-award-defra-deloitte-2023-02-02-07d37855, cf-award-defra-deloitte-2023-02-07-b771c4b5, cf-award-mod-deloitte-2023-02-13-1a1f950f, cf-award-mod-deloitte-2023-02-17-886aa65b, cf-award-defra-deloitte-2023-02-20-da53f014, cf-award-nhs-england-deloitte-2023-02-20-35ecda2a, cf-award-mod-deloitte-2023-02-24-87bce342, cf-award-nhs-england-deloitte-2023-02-24-78545f00, cf-award-mod-deloitte-2023-02-27-0f64ad4f, cf-award-beis-deloitte-2023-02-28-eee57da5, cf-award-home-office-border-force-deloitte-2023-03-01-ee213ed1, cf-award-cabinet-office-deloitte-2023-03-22-fffc5240, cf-award-mod-deloitte-2023-03-27-ce95dd13, cf-award-beis-deloitte-2023-03-29-9e004643, cf-award-mod-deloitte-2023-03-31-3489ba23, cf-award-mod-deloitte-2023-04-03-8e7a505b, cf-award-nhs-england-deloitte-2023-04-25-b0fcb13d, cf-award-mod-deloitte-2023-04-28-cf55e9a0, cf-award-mod-deloitte-2023-05-02-c449ba89, cf-award-beis-deloitte-2023-05-17-1452afef, cf-award-beis-deloitte-2023-05-18-77ad8509, cf-award-dhsc-deloitte-2023-06-13-d41018aa, cf-award-defra-deloitte-2023-06-16-6cf66609, cf-award-beis-deloitte-2023-06-19-b1747476, cf-award-mod-deloitte-2023-06-28-413579eb, cf-award-mod-capgemini-2023-06-29-67c8c52f, cf-award-nhs-supply-chain-deloitte-2023-07-05-2d3b6532, cf-award-mod-deloitte-2023-07-06-a63dbdbd, cf-award-mod-deloitte-2023-07-19-70e56879, cf-award-defra-deloitte-2023-07-21-3096e5da, cf-award-government-digital-service-deloitte-2023-07-21-94b787aa, cf-award-mod-deloitte-2023-07-24-1666f403, cf-award-dcms-deloitte-2023-07-26-ef9a6663, cf-award-beis-deloitte-2023-07-27-ca105523, cf-award-mod-deloitte-2023-08-01-3afee71e, cf-award-mod-deloitte-2023-08-08-5e1744f1, cf-award-beis-deloitte-2023-08-18-6e192e19, cf-award-defra-deloitte-2023-08-21-22ed6e1c, cf-award-home-office-border-force-deloitte-2023-08-22-6cc7e16a, cf-award-home-office-border-force-deloitte-2023-08-28-bf4e9e9a, cf-award-home-office-border-force-deloitte-2023-09-01-2cc9b684, cf-award-home-office-border-force-deloitte-2023-09-01-7e00dfb4, cf-award-ons-deloitte-2023-09-01-b4984159, cf-award-beis-deloitte-2023-09-07-70446ded, cf-award-mod-deloitte-2023-09-29-4431a85f, cf-award-defra-deloitte-2023-10-10-cc01b6ac, cf-award-dhsc-deloitte-2023-11-01-ce1f3429, cf-award-mod-atkinsrealis-2023-11-17-b92822ac, cf-award-mod-deloitte-2023-11-20-8d56744a, cf-award-beis-teneo-2023-11-23-f2a76643, cf-award-mod-deloitte-2023-12-01-3bae0a3e, cf-award-nhs-england-deloitte-2023-12-01-55703b4a, cf-award-home-office-border-force-deloitte-2023-12-04-9fbecdd4, cf-award-mod-deloitte-2023-12-12-2b16aaf3, cf-award-mod-deloitte-2023-12-12-e8642a95, cf-award-mod-kpmg-2023-12-12-605d98f4, cf-award-home-office-border-force-deloitte-2023-12-19-53887628, cf-award-home-office-border-force-deloitte-2023-12-19-86f258b1, cf-award-mod-deloitte-2023-12-22-fb7bc4a1, cf-award-home-office-border-force-deloitte-2024-01-02-bee51a1d, cf-award-defra-deloitte-2024-01-18-8faab7f2, cf-award-defra-deloitte-2024-01-26-0328d8ac, cf-award-desnz-deloitte-2024-02-02-0afecac7, cf-award-desnz-deloitte-2024-02-04-17482010, cf-award-defra-deloitte-2024-02-08-0f44bcf9, cf-award-dhsc-deloitte-2024-02-08-0e6820ef, cf-award-city-of-london-deloitte-2024-02-12-243381bf, cf-award-home-office-border-force-deloitte-2024-02-12-6f1dec40, cf-award-mod-deloitte-2024-03-09-86f8299c, cf-award-home-office-border-force-deloitte-2024-03-13-b4d899d5, cf-award-nhs-england-deloitte-2024-03-25-12b5bfb2, cf-award-mod-deloitte-2024-03-27-3791ffac, cf-award-mod-deloitte-2024-03-27-8aa07311, cf-award-home-office-border-force-deloitte-2024-03-28-e7f24367, cf-award-mod-deloitte-2024-04-02-52eec3e3, cf-award-home-office-border-force-deloitte-2024-04-07-acdd3498, cf-award-nhs-england-deloitte-2024-04-24-5aaf15d9, cf-award-nhs-south-central-and-west-c-deloitte-2024-04-25-b8addadb, cf-award-defra-deloitte-2024-04-30-bb2cac80, cf-award-home-office-border-force-deloitte-2024-05-07-867fbe29, cf-award-desnz-deloitte-2024-05-19-6341552c, cf-award-home-office-border-force-deloitte-2024-05-23-19c29696, cf-award-home-office-border-force-deloitte-2024-05-24-0b0e27f5, cf-award-nhs-england-deloitte-2024-06-05-ea5f85c2, cf-award-care-quality-commission-deloitte-2024-06-14-79f692ce, cf-award-home-office-border-force-deloitte-2024-06-17-3a084b84, cf-award-home-office-border-force-deloitte-2024-06-20-a3fc962f, cf-award-university-of-birmingham-deloitte-2024-06-27-89d32dad, cf-award-defra-deloitte-2024-07-05-e49b647d, cf-award-defra-deloitte-2024-07-15-8b0f4b2b, cf-award-government-digital-service-deloitte-2024-07-22-a34defe5, cf-award-government-digital-service-deloitte-2024-08-01-308c0f0c, cf-award-mod-deloitte-2024-08-07-8a67f718, cf-award-defra-deloitte-2024-08-12-33b49524, cf-award-defra-deloitte-2024-08-19-894f63c4, cf-award-nhs-england-deloitte-2024-09-06-4f2dde3f, cf-award-nhs-england-deloitte-2024-09-06-d7914462, cf-award-mhclg-deloitte-2024-09-27-49a60d8a, cf-award-defra-deloitte-2024-11-08-9ca2b001, cf-award-mhclg-deloitte-2024-11-20-85d3ec11, cf-award-dsit-deloitte-2024-12-06-28514d3f, cf-award-desnz-accenture-2024-12-09-e43ccf35, cf-award-home-office-border-force-deloitte-2025-01-08-c87e295a, cf-award-dhsc-deloitte-2025-01-29-977ffcc7, cf-award-defra-deloitte-2025-02-03-927b9913, cf-award-defra-deloitte-2025-02-10-c9ed9bb6, cf-award-home-office-border-force-deloitte-2025-02-10-1476a0fb, cf-award-desnz-deloitte-2025-02-14-6af77593, cf-award-dhsc-deloitte-2025-03-05-76d10564, cf-award-dsit-deloitte-2025-03-13-def80c1c, cf-award-mhclg-deloitte-2025-03-13-06a4d790, cf-award-mod-deloitte-2025-03-17-a8d17f5f, cf-award-mod-deloitte-2025-04-01-e2dab0b7, cf-award-dfe-deloitte-2025-04-14-b2ad4285, cf-award-mod-deloitte-2025-04-23-7414f907, cf-award-dfe-deloitte-2025-06-06-045d86a4, cf-award-mod-deloitte-2025-06-11-55a2d1b1, cf-award-desnz-deloitte-2025-06-25-0ab2fb9b, cf-award-dhsc-deloitte-2025-07-01-df9bd99a, cf-award-mod-deloitte-2025-08-04-8d98e236, cf-award-home-office-border-force-deloitte-2025-08-28-0fe43f4e, cf-award-dsit-deloitte-2025-10-08-20ced53d, cf-award-mod-deloitte-2025-10-10-7288cb42, cf-award-defra-deloitte-2025-10-14-928a428b, cf-award-defra-deloitte-2025-10-29-4cfb0549, cf-award-home-office-border-force-deloitte-2025-12-05-48440995, cf-award-defra-deloitte-2026-01-05-4f658991, cf-award-defra-deloitte-2026-01-28-c7aff23f, cf-award-defra-deloitte-2026-01-30-eca03b86, cf-award-british-business-bank-deloitte-2026-02-05-a97be180, cf-award-british-business-bank-deloitte-2026-02-20-1708ecae, cf-award-police-digital-service-deloitte-2026-02-26-ee5394e8, cf-award-nhs-england-deloitte-2026-03-18-29690250, cf-award-defra-deloitte-2026-03-30-6f9c9059, cf-award-mod-deloitte-2026-03-31-c7fff834, cf-award-dhsc-deloitte-2026-04-22-9d9bbfd0, cf-award-desnz-deloitte-2026-05-27-f0c8b826, cf-award-home-office-border-force-deloitte-2026-05-27-f0f815cc, cf-award-home-office-border-force-deloitte-2026-06-02-c1542ce2, cf-award-defra-deloitte-2026-07-01-4fc40524, cf-award-home-office-border-force-deloitte-2026-07-06-dad96e2d, cf-award-british-business-bank-deloitte-2026-07-27-cd45d79e, cf-award-defra-deloitte-2026-08-12-2ebbc983, cf-award-defra-deloitte-2026-08-17-ac0cf8c1, cf-award-nhs-england-deloitte-2026-08-17-efd0eb33, cf-award-defra-deloitte-2026-09-16-e2f9bfcd, cf-award-defra-deloitte-2026-09-30-b3c8cc6b, cf-award-mod-deloitte-2026-10-22-42f286ce, cf-award-defra-deloitte-2026-10-30-55f3267b, cf-award-defra-deloitte-2026-11-06-5b3ddff9. Secondary types: none.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `jon-bal-deloitte-operations-transformation-consultant-linkedin-2020-2020`, `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-ministerial-meetings-home-office-s-ministerial-meetings-january-to-march-2023-64b7d11a`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef`, `uk-ministerial-meetings-dwp-s-ministerial-meetings-january-to-march-2025-685d1b9d`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-april-to-june-2025-68d54fb8`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2025-6936dac1`, `uk-ministerial-meetings-cabinet-office-ministers-meetings-october-to-december-2025-69c29a18`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5`
+Refs: `jon-bal-deloitte-operations-transformation-consultant-linkedin-2020-2020`, `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-ministerial-meetings-home-office-s-ministerial-meetings-january-to-march-2023-64b7d11a`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef`, `uk-ministerial-meetings-dwp-s-ministerial-meetings-january-to-march-2025-685d1b9d`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-april-to-june-2025-68d54fb8`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2025-6936dac1`, `uk-ministerial-meetings-cabinet-office-ministers-meetings-october-to-december-2025-69c29a18`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5`, `cf-award-dhsc-deloitte-2020-11-19-7c67add2`, `cf-award-dhsc-deloitte-2021-06-28-dbdd80ec`, `cf-award-dhsc-deloitte-2021-07-15-413761f0`, `cf-award-home-office-border-force-deloitte-2021-07-26-68e23030`, `cf-award-home-office-border-force-deloitte-2021-08-02-a3a65baf`, `cf-award-dhsc-deloitte-2021-09-28-caa0bfb6`, `cf-award-home-office-border-force-deloitte-2022-07-07-97e1e706`, `cf-award-home-office-border-force-deloitte-2022-09-01-3ce2a282`, `cf-award-mod-deloitte-2022-09-30-b6ef3cdc`, `cf-award-government-digital-service-deloitte-2022-10-10-87c203e7`, `cf-award-mod-deloitte-2022-10-10-738114f9`, `cf-award-home-office-border-force-deloitte-2022-10-27-005ce258`, `cf-award-defra-deloitte-2022-11-10-371f9f56`, `cf-award-defra-deloitte-2022-11-10-922cf301`, `cf-award-government-digital-service-deloitte-2022-12-02-8de09716`, `cf-award-mod-deloitte-2022-12-02-04486bd4`, `cf-award-home-office-border-force-deloitte-2022-12-16-7b7f3daa`, `cf-award-mod-deloitte-2022-12-20-0cd309a8`, `cf-award-mod-deloitte-2022-12-21-e786d6f2`, `cf-award-mod-deloitte-2022-12-23-e5e1115f`, `cf-award-home-office-border-force-deloitte-2022-12-29-7d5bd680`, `cf-award-home-office-border-force-deloitte-2023-01-01-b7401ce6`, `cf-award-home-office-border-force-deloitte-2023-01-06-1883eaeb`, `cf-award-mod-deloitte-2023-01-18-536aa953`, `cf-award-defra-deloitte-2023-01-19-21b92919`, `cf-award-dfe-deloitte-2023-01-19-2523b6a0`, `cf-award-defra-deloitte-2023-01-20-6a78ef9c`, `cf-award-nhs-england-deloitte-2023-01-23-d12d31ff`, `cf-award-home-office-border-force-deloitte-2023-02-01-c31339c6`, `cf-award-home-office-border-force-deloitte-2023-02-01-d57f0407`, `cf-award-beis-deloitte-2023-02-02-81bb8e6a`, `cf-award-defra-deloitte-2023-02-02-07d37855`, `cf-award-defra-deloitte-2023-02-07-b771c4b5`, `cf-award-mod-deloitte-2023-02-13-1a1f950f`, `cf-award-mod-deloitte-2023-02-17-886aa65b`, `cf-award-defra-deloitte-2023-02-20-da53f014`, `cf-award-nhs-england-deloitte-2023-02-20-35ecda2a`, `cf-award-mod-deloitte-2023-02-24-87bce342`, `cf-award-nhs-england-deloitte-2023-02-24-78545f00`, `cf-award-mod-deloitte-2023-02-27-0f64ad4f`, `cf-award-beis-deloitte-2023-02-28-eee57da5`, `cf-award-home-office-border-force-deloitte-2023-03-01-ee213ed1`, `cf-award-cabinet-office-deloitte-2023-03-22-fffc5240`, `cf-award-mod-deloitte-2023-03-27-ce95dd13`, `cf-award-beis-deloitte-2023-03-29-9e004643`, `cf-award-mod-deloitte-2023-03-31-3489ba23`, `cf-award-mod-deloitte-2023-04-03-8e7a505b`, `cf-award-nhs-england-deloitte-2023-04-25-b0fcb13d`, `cf-award-mod-deloitte-2023-04-28-cf55e9a0`, `cf-award-mod-deloitte-2023-05-02-c449ba89`, `cf-award-beis-deloitte-2023-05-17-1452afef`, `cf-award-beis-deloitte-2023-05-18-77ad8509`, `cf-award-dhsc-deloitte-2023-06-13-d41018aa`, `cf-award-defra-deloitte-2023-06-16-6cf66609`, `cf-award-beis-deloitte-2023-06-19-b1747476`, `cf-award-mod-deloitte-2023-06-28-413579eb`, `cf-award-mod-capgemini-2023-06-29-67c8c52f`, `cf-award-nhs-supply-chain-deloitte-2023-07-05-2d3b6532`, `cf-award-mod-deloitte-2023-07-06-a63dbdbd`, `cf-award-mod-deloitte-2023-07-19-70e56879`, `cf-award-defra-deloitte-2023-07-21-3096e5da`, `cf-award-government-digital-service-deloitte-2023-07-21-94b787aa`, `cf-award-mod-deloitte-2023-07-24-1666f403`, `cf-award-dcms-deloitte-2023-07-26-ef9a6663`, `cf-award-beis-deloitte-2023-07-27-ca105523`, `cf-award-mod-deloitte-2023-08-01-3afee71e`, `cf-award-mod-deloitte-2023-08-08-5e1744f1`, `cf-award-beis-deloitte-2023-08-18-6e192e19`, `cf-award-defra-deloitte-2023-08-21-22ed6e1c`, `cf-award-home-office-border-force-deloitte-2023-08-22-6cc7e16a`, `cf-award-home-office-border-force-deloitte-2023-08-28-bf4e9e9a`, `cf-award-home-office-border-force-deloitte-2023-09-01-2cc9b684`, `cf-award-home-office-border-force-deloitte-2023-09-01-7e00dfb4`, `cf-award-ons-deloitte-2023-09-01-b4984159`, `cf-award-beis-deloitte-2023-09-07-70446ded`, `cf-award-mod-deloitte-2023-09-29-4431a85f`, `cf-award-defra-deloitte-2023-10-10-cc01b6ac`, `cf-award-dhsc-deloitte-2023-11-01-ce1f3429`, `cf-award-mod-atkinsrealis-2023-11-17-b92822ac`, `cf-award-mod-deloitte-2023-11-20-8d56744a`, `cf-award-beis-teneo-2023-11-23-f2a76643`, `cf-award-mod-deloitte-2023-12-01-3bae0a3e`, `cf-award-nhs-england-deloitte-2023-12-01-55703b4a`, `cf-award-home-office-border-force-deloitte-2023-12-04-9fbecdd4`, `cf-award-mod-deloitte-2023-12-12-2b16aaf3`, `cf-award-mod-deloitte-2023-12-12-e8642a95`, `cf-award-mod-kpmg-2023-12-12-605d98f4`, `cf-award-home-office-border-force-deloitte-2023-12-19-53887628`, `cf-award-home-office-border-force-deloitte-2023-12-19-86f258b1`, `cf-award-mod-deloitte-2023-12-22-fb7bc4a1`, `cf-award-home-office-border-force-deloitte-2024-01-02-bee51a1d`, `cf-award-defra-deloitte-2024-01-18-8faab7f2`, `cf-award-defra-deloitte-2024-01-26-0328d8ac`, `cf-award-desnz-deloitte-2024-02-02-0afecac7`, `cf-award-desnz-deloitte-2024-02-04-17482010`, `cf-award-defra-deloitte-2024-02-08-0f44bcf9`, `cf-award-dhsc-deloitte-2024-02-08-0e6820ef`, `cf-award-city-of-london-deloitte-2024-02-12-243381bf`, `cf-award-home-office-border-force-deloitte-2024-02-12-6f1dec40`, `cf-award-mod-deloitte-2024-03-09-86f8299c`, `cf-award-home-office-border-force-deloitte-2024-03-13-b4d899d5`, `cf-award-nhs-england-deloitte-2024-03-25-12b5bfb2`, `cf-award-mod-deloitte-2024-03-27-3791ffac`, `cf-award-mod-deloitte-2024-03-27-8aa07311`, `cf-award-home-office-border-force-deloitte-2024-03-28-e7f24367`, `cf-award-mod-deloitte-2024-04-02-52eec3e3`, `cf-award-home-office-border-force-deloitte-2024-04-07-acdd3498`, `cf-award-nhs-england-deloitte-2024-04-24-5aaf15d9`, `cf-award-nhs-south-central-and-west-c-deloitte-2024-04-25-b8addadb`, `cf-award-defra-deloitte-2024-04-30-bb2cac80`, `cf-award-home-office-border-force-deloitte-2024-05-07-867fbe29`, `cf-award-desnz-deloitte-2024-05-19-6341552c`, `cf-award-home-office-border-force-deloitte-2024-05-23-19c29696`, `cf-award-home-office-border-force-deloitte-2024-05-24-0b0e27f5`, `cf-award-nhs-england-deloitte-2024-06-05-ea5f85c2`, `cf-award-care-quality-commission-deloitte-2024-06-14-79f692ce`, `cf-award-home-office-border-force-deloitte-2024-06-17-3a084b84`, `cf-award-home-office-border-force-deloitte-2024-06-20-a3fc962f`, `cf-award-university-of-birmingham-deloitte-2024-06-27-89d32dad`, `cf-award-defra-deloitte-2024-07-05-e49b647d`, `cf-award-defra-deloitte-2024-07-15-8b0f4b2b`, `cf-award-government-digital-service-deloitte-2024-07-22-a34defe5`, `cf-award-government-digital-service-deloitte-2024-08-01-308c0f0c`, `cf-award-mod-deloitte-2024-08-07-8a67f718`, `cf-award-defra-deloitte-2024-08-12-33b49524`, `cf-award-defra-deloitte-2024-08-19-894f63c4`, `cf-award-nhs-england-deloitte-2024-09-06-4f2dde3f`, `cf-award-nhs-england-deloitte-2024-09-06-d7914462`, `cf-award-mhclg-deloitte-2024-09-27-49a60d8a`, `cf-award-defra-deloitte-2024-11-08-9ca2b001`, `cf-award-mhclg-deloitte-2024-11-20-85d3ec11`, `cf-award-dsit-deloitte-2024-12-06-28514d3f`, `cf-award-desnz-accenture-2024-12-09-e43ccf35`, `cf-award-home-office-border-force-deloitte-2025-01-08-c87e295a`, `cf-award-dhsc-deloitte-2025-01-29-977ffcc7`, `cf-award-defra-deloitte-2025-02-03-927b9913`, `cf-award-defra-deloitte-2025-02-10-c9ed9bb6`, `cf-award-home-office-border-force-deloitte-2025-02-10-1476a0fb`, `cf-award-desnz-deloitte-2025-02-14-6af77593`, `cf-award-dhsc-deloitte-2025-03-05-76d10564`, `cf-award-dsit-deloitte-2025-03-13-def80c1c`, `cf-award-mhclg-deloitte-2025-03-13-06a4d790`, `cf-award-mod-deloitte-2025-03-17-a8d17f5f`, `cf-award-mod-deloitte-2025-04-01-e2dab0b7`, `cf-award-dfe-deloitte-2025-04-14-b2ad4285`, `cf-award-mod-deloitte-2025-04-23-7414f907`, `cf-award-dfe-deloitte-2025-06-06-045d86a4`, `cf-award-mod-deloitte-2025-06-11-55a2d1b1`, `cf-award-desnz-deloitte-2025-06-25-0ab2fb9b`, `cf-award-dhsc-deloitte-2025-07-01-df9bd99a`, `cf-award-mod-deloitte-2025-08-04-8d98e236`, `cf-award-home-office-border-force-deloitte-2025-08-28-0fe43f4e`, `cf-award-dsit-deloitte-2025-10-08-20ced53d`, `cf-award-mod-deloitte-2025-10-10-7288cb42`, `cf-award-defra-deloitte-2025-10-14-928a428b`, `cf-award-defra-deloitte-2025-10-29-4cfb0549`, `cf-award-home-office-border-force-deloitte-2025-12-05-48440995`, `cf-award-defra-deloitte-2026-01-05-4f658991`, `cf-award-defra-deloitte-2026-01-28-c7aff23f`, `cf-award-defra-deloitte-2026-01-30-eca03b86`, `cf-award-british-business-bank-deloitte-2026-02-05-a97be180`, `cf-award-british-business-bank-deloitte-2026-02-20-1708ecae`, `cf-award-police-digital-service-deloitte-2026-02-26-ee5394e8`, `cf-award-nhs-england-deloitte-2026-03-18-29690250`, `cf-award-defra-deloitte-2026-03-30-6f9c9059`, `cf-award-mod-deloitte-2026-03-31-c7fff834`, `cf-award-dhsc-deloitte-2026-04-22-9d9bbfd0`, `cf-award-desnz-deloitte-2026-05-27-f0c8b826`, `cf-award-home-office-border-force-deloitte-2026-05-27-f0f815cc`, `cf-award-home-office-border-force-deloitte-2026-06-02-c1542ce2`, `cf-award-defra-deloitte-2026-07-01-4fc40524`, `cf-award-home-office-border-force-deloitte-2026-07-06-dad96e2d`, `cf-award-british-business-bank-deloitte-2026-07-27-cd45d79e`, `cf-award-defra-deloitte-2026-08-12-2ebbc983`, `cf-award-defra-deloitte-2026-08-17-ac0cf8c1`, `cf-award-nhs-england-deloitte-2026-08-17-efd0eb33`, `cf-award-defra-deloitte-2026-09-16-e2f9bfcd`, `cf-award-defra-deloitte-2026-09-30-b3c8cc6b`, `cf-award-mod-deloitte-2026-10-22-42f286ce`, `cf-award-defra-deloitte-2026-10-30-55f3267b`, `cf-award-defra-deloitte-2026-11-06-5b3ddff9`
 
 ---
 
-## finding-177: Founders Fund behaves as a surface factory
+## finding-180: Founders Fund behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3194,7 +3248,7 @@ Refs: `trae-stephens-founders-fund-partner-linkedin-2014-present`, `fund-portfol
 
 ---
 
-## finding-178: GE Aerospace behaves as a surface factory
+## finding-181: GE Aerospace behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3202,17 +3256,17 @@ Refs: `trae-stephens-founders-fund-partner-linkedin-2014-present`, `fund-portfol
 
 **Observed**
 
-GE Aerospace appears across 5 surface(s): darin-ditommaso-ge-aerospace-vice-president-of-engineering-ge-aerospace-defen-linkedin-2023-present, rndf-2023-programme-roster, rndf-2024-programme-roster, uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-rt-hon-rishi-sunak-mp-meetings-july-679b77de, uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-rt-hon-rishi-sunak-mp-meetings-july-679b77de. Secondary types: defence_industrial_surface.
+GE Aerospace appears across 6 surface(s): darin-ditommaso-ge-aerospace-vice-president-of-engineering-ge-aerospace-defen-linkedin-2023-present, rndf-2023-programme-roster, rndf-2024-programme-roster, uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-rt-hon-rishi-sunak-mp-meetings-july-679b77de, uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-rt-hon-rishi-sunak-mp-meetings-july-679b77de, cf-award-mod-ge-aerospace-2025-03-11-df08c767. Secondary types: defence_industrial_surface.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `darin-ditommaso-ge-aerospace-vice-president-of-engineering-ge-aerospace-defen-linkedin-2023-present`, `rndf-2023-programme-roster`, `rndf-2024-programme-roster`, `uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-rt-hon-rishi-sunak-mp-meetings-july-679b77de`, `uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-rt-hon-rishi-sunak-mp-meetings-july-679b77de`
+Refs: `darin-ditommaso-ge-aerospace-vice-president-of-engineering-ge-aerospace-defen-linkedin-2023-present`, `rndf-2023-programme-roster`, `rndf-2024-programme-roster`, `uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-rt-hon-rishi-sunak-mp-meetings-july-679b77de`, `uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-rt-hon-rishi-sunak-mp-meetings-july-679b77de`, `cf-award-mod-ge-aerospace-2025-03-11-df08c767`
 
 ---
 
-## finding-179: GE Aviation behaves as a surface factory
+## finding-182: GE Aviation behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3230,7 +3284,7 @@ Refs: `darin-ditommaso-ge-aviation-engineering-leader-linkedin-1988-2005`, `dari
 
 ---
 
-## finding-180: General Atomics Aeronautical Systems behaves as a surface factory
+## finding-183: General Atomics Aeronautical Systems behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3238,17 +3292,35 @@ Refs: `darin-ditommaso-ge-aviation-engineering-leader-linkedin-1988-2005`, `dari
 
 **Observed**
 
-General Atomics Aeronautical Systems appears across 3 surface(s): barry-walkenbach-general-atomics-aeronautical-systems-senior-program-manager-advanced-sensors-and-payl-linkedin-2020-2020, barry-walkenbach-general-atomics-aeronautical-systems-senior-program-manager-radar-systems-linkedin-2021-2023, lily-hinz-general-atomics-aeronautical-systems-communications-specialist-linkedin-2020-2021. Secondary types: none.
+General Atomics Aeronautical Systems appears across 4 surface(s): barry-walkenbach-general-atomics-aeronautical-systems-senior-program-manager-advanced-sensors-and-payl-linkedin-2020-2020, barry-walkenbach-general-atomics-aeronautical-systems-senior-program-manager-radar-systems-linkedin-2021-2023, lily-hinz-general-atomics-aeronautical-systems-communications-specialist-linkedin-2020-2021, cf-award-mod-general-atomics-aeronautical-sys-2023-10-16-b4e662c3. Secondary types: none.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `barry-walkenbach-general-atomics-aeronautical-systems-senior-program-manager-advanced-sensors-and-payl-linkedin-2020-2020`, `barry-walkenbach-general-atomics-aeronautical-systems-senior-program-manager-radar-systems-linkedin-2021-2023`, `lily-hinz-general-atomics-aeronautical-systems-communications-specialist-linkedin-2020-2021`
+Refs: `barry-walkenbach-general-atomics-aeronautical-systems-senior-program-manager-advanced-sensors-and-payl-linkedin-2020-2020`, `barry-walkenbach-general-atomics-aeronautical-systems-senior-program-manager-radar-systems-linkedin-2021-2023`, `lily-hinz-general-atomics-aeronautical-systems-communications-specialist-linkedin-2020-2021`, `cf-award-mod-general-atomics-aeronautical-sys-2023-10-16-b4e662c3`
 
 ---
 
-## finding-181: Goldman Sachs behaves as a surface factory
+## finding-184: General Dynamics behaves as a surface factory
+
+- Type: surface_factory
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+General Dynamics appears across 11 surface(s): richard-clarke-general-dynamics-independent-director-linkedin-2023-present, cf-award-mod-general-dynamics-2023-02-21-2af37a37, cf-award-mod-general-dynamics-2023-12-15-947e325d, cf-award-mod-general-dynamics-2024-03-25-538ccdb4, cf-award-mod-general-dynamics-2024-04-01-cfe803c8, cf-award-mod-general-dynamics-2024-04-26-754d392c, cf-award-mod-general-dynamics-2024-08-31-b94ea2f3, cf-award-mod-general-dynamics-2024-09-09-83ae75b7, cf-award-mod-general-dynamics-2025-04-01-0c5988d1, cf-award-mod-general-dynamics-2025-05-28-c194def3, cf-award-mod-general-dynamics-2026-03-03-665c20aa. Secondary types: none.
+
+**Required action**
+
+Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
+
+Refs: `richard-clarke-general-dynamics-independent-director-linkedin-2023-present`, `cf-award-mod-general-dynamics-2023-02-21-2af37a37`, `cf-award-mod-general-dynamics-2023-12-15-947e325d`, `cf-award-mod-general-dynamics-2024-03-25-538ccdb4`, `cf-award-mod-general-dynamics-2024-04-01-cfe803c8`, `cf-award-mod-general-dynamics-2024-04-26-754d392c`, `cf-award-mod-general-dynamics-2024-08-31-b94ea2f3`, `cf-award-mod-general-dynamics-2024-09-09-83ae75b7`, `cf-award-mod-general-dynamics-2025-04-01-0c5988d1`, `cf-award-mod-general-dynamics-2025-05-28-c194def3`, `cf-award-mod-general-dynamics-2026-03-03-665c20aa`
+
+---
+
+## finding-185: Goldman Sachs behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3266,7 +3338,7 @@ Refs: `jason-schwab-goldman-sachs-investment-management-linkedin-2015-2018`, `th
 
 ---
 
-## finding-182: IBM behaves as a surface factory
+## finding-186: Granicus behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3274,17 +3346,35 @@ Refs: `jason-schwab-goldman-sachs-investment-management-linkedin-2015-2018`, `th
 
 **Observed**
 
-IBM appears across 19 surface(s): greg-little-ibm-consultant-linkedin-2007-2009, uk-ai-safety-summit-2023-confirmed-attendees-programme-roster, capital-factory-fed-supernova-2022-09-27, dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2025-6936dac1, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5. Secondary types: defence_industrial_surface, government_advisory_surface.
+Granicus appears across 11 surface(s): mike-wilson-granicus-director-business-development-and-alliances-linkedin-2018-2021, cf-award-care-quality-commission-granicus-2022-03-24-8d1d4ec7, cf-award-arts-council-england-granicus-2023-04-06-46581e3e, cf-award-nhs-england-granicus-2023-07-26-e4b8458f, cf-award-dfe-granicus-2023-11-22-e527e607, cf-award-ukhsa-granicus-2024-03-19-9c3d23a1, cf-award-care-quality-commission-granicus-2025-05-22-b8670dde, cf-award-nhs-south-central-and-west-c-granicus-2025-12-29-e5df605f, cf-award-ons-granicus-2026-02-25-63d96241, cf-award-ukhsa-granicus-2026-03-30-04896a89, cf-award-nhs-south-central-and-west-c-granicus-2026-04-16-64235eb5. Secondary types: none.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `greg-little-ibm-consultant-linkedin-2007-2009`, `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `capital-factory-fed-supernova-2022-09-27`, `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2025-6936dac1`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5`
+Refs: `mike-wilson-granicus-director-business-development-and-alliances-linkedin-2018-2021`, `cf-award-care-quality-commission-granicus-2022-03-24-8d1d4ec7`, `cf-award-arts-council-england-granicus-2023-04-06-46581e3e`, `cf-award-nhs-england-granicus-2023-07-26-e4b8458f`, `cf-award-dfe-granicus-2023-11-22-e527e607`, `cf-award-ukhsa-granicus-2024-03-19-9c3d23a1`, `cf-award-care-quality-commission-granicus-2025-05-22-b8670dde`, `cf-award-nhs-south-central-and-west-c-granicus-2025-12-29-e5df605f`, `cf-award-ons-granicus-2026-02-25-63d96241`, `cf-award-ukhsa-granicus-2026-03-30-04896a89`, `cf-award-nhs-south-central-and-west-c-granicus-2026-04-16-64235eb5`
 
 ---
 
-## finding-183: Insitu Inc. behaves as a surface factory
+## finding-187: IBM behaves as a surface factory
+
+- Type: surface_factory
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+IBM appears across 26 surface(s): greg-little-ibm-consultant-linkedin-2007-2009, uk-ai-safety-summit-2023-confirmed-attendees-programme-roster, capital-factory-fed-supernova-2022-09-27, dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2025-6936dac1, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5, cf-award-genomics-england-limited-ibm-2023-03-27-2afd9a2a, cf-award-ukri-ibm-2023-05-03-aec80d06, cf-award-genomics-england-limited-ibm-2023-07-17-f935d59c, cf-award-mod-ibm-2024-03-28-0af1321a, cf-award-genomics-england-limited-ibm-2024-09-11-a05887bd, cf-award-mod-ibm-2024-12-18-fdd880e5, cf-award-home-office-border-force-ibm-2025-03-01-9e6e7ac2. Secondary types: defence_industrial_surface, government_advisory_surface.
+
+**Required action**
+
+Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
+
+Refs: `greg-little-ibm-consultant-linkedin-2007-2009`, `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `capital-factory-fed-supernova-2022-09-27`, `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2025-6936dac1`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5`, `cf-award-genomics-england-limited-ibm-2023-03-27-2afd9a2a`, `cf-award-ukri-ibm-2023-05-03-aec80d06`, `cf-award-genomics-england-limited-ibm-2023-07-17-f935d59c`, `cf-award-mod-ibm-2024-03-28-0af1321a`, `cf-award-genomics-england-limited-ibm-2024-09-11-a05887bd`, `cf-award-mod-ibm-2024-12-18-fdd880e5`, `cf-award-home-office-border-force-ibm-2025-03-01-9e6e7ac2`
+
+---
+
+## finding-188: Insitu Inc. behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3302,7 +3392,7 @@ Refs: `jonathan-jacobs-insitu-inc-uas-pilot-instructor-rq-21a-scaneagle-linkedin
 
 ---
 
-## finding-184: Intel Corporation behaves as a surface factory
+## finding-189: Intel Corporation behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3320,7 +3410,7 @@ Refs: `brandon-boesch-intel-corporation-physical-design-engineer-linkedin-2021-p
 
 ---
 
-## finding-185: Istari behaves as a surface factory
+## finding-190: Istari behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3338,7 +3428,7 @@ Refs: `will-roper-istari-chief-executive-officer-linkedin-2022-present`, `sec-fo
 
 ---
 
-## finding-186: Knowledge Point behaves as a surface factory
+## finding-191: Knowledge Point behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3356,7 +3446,7 @@ Refs: `michael-maddry-knowledge-point-director-course-design-land-forces-institu
 
 ---
 
-## finding-187: Kyndryl behaves as a surface factory
+## finding-192: Kyndryl behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3364,17 +3454,17 @@ Refs: `michael-maddry-knowledge-point-director-course-design-land-forces-institu
 
 **Observed**
 
-Kyndryl appears across 4 surface(s): mike-wilson-kyndryl-business-development-us-alliances-linkedin-2022-2025, dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5. Secondary types: none.
+Kyndryl appears across 7 surface(s): mike-wilson-kyndryl-business-development-us-alliances-linkedin-2022-2025, dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5, cf-award-defra-kyndryl-2023-01-30-4b89e56f, cf-award-mod-kyndryl-2023-11-01-7b2ff61d, cf-award-defra-kyndryl-2025-07-25-8dc7765f. Secondary types: none.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `mike-wilson-kyndryl-business-development-us-alliances-linkedin-2022-2025`, `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5`
+Refs: `mike-wilson-kyndryl-business-development-us-alliances-linkedin-2022-2025`, `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5`, `cf-award-defra-kyndryl-2023-01-30-4b89e56f`, `cf-award-mod-kyndryl-2023-11-01-7b2ff61d`, `cf-award-defra-kyndryl-2025-07-25-8dc7765f`
 
 ---
 
-## finding-188: Lockheed Martin Corporation behaves as a surface factory
+## finding-193: Leidos behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3382,17 +3472,35 @@ Refs: `mike-wilson-kyndryl-business-development-us-alliances-linkedin-2022-2025`
 
 **Observed**
 
-Lockheed Martin Corporation appears across 15 surface(s): bill-greenwalt-lockheed-martin-corporation-director-federal-acquisition-policy-linkedin-2009-2011, rndf-2023-programme-roster, rndf-2024-programme-roster, uk-ministerial-meetings-mod-s-ministerial-meetings-january-to-march-2021-60eed151, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef, uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-rt-hon-rishi-sunak-mp-meetings-july-679b77de, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c. Secondary types: defence_industrial_surface.
+Leidos appears across 3 surface(s): frank-kendall-leidos-board-member-linkedin-2017-2021, uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-rt-hon-rishi-sunak-mp-meetings-july-679b77de, cf-award-mod-leidos-2023-03-28-a01b2d84. Secondary types: none.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `bill-greenwalt-lockheed-martin-corporation-director-federal-acquisition-policy-linkedin-2009-2011`, `rndf-2023-programme-roster`, `rndf-2024-programme-roster`, `uk-ministerial-meetings-mod-s-ministerial-meetings-january-to-march-2021-60eed151`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef`, `uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-rt-hon-rishi-sunak-mp-meetings-july-679b77de`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`
+Refs: `frank-kendall-leidos-board-member-linkedin-2017-2021`, `uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-rt-hon-rishi-sunak-mp-meetings-july-679b77de`, `cf-award-mod-leidos-2023-03-28-a01b2d84`
 
 ---
 
-## finding-189: Massachusetts Institute of Technology (MIT) behaves as a surface factory
+## finding-194: Lockheed Martin Corporation behaves as a surface factory
+
+- Type: surface_factory
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+Lockheed Martin Corporation appears across 27 surface(s): bill-greenwalt-lockheed-martin-corporation-director-federal-acquisition-policy-linkedin-2009-2011, rndf-2023-programme-roster, rndf-2024-programme-roster, uk-ministerial-meetings-mod-s-ministerial-meetings-january-to-march-2021-60eed151, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef, uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-rt-hon-rishi-sunak-mp-meetings-july-679b77de, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, cf-award-mod-lockheed-martin-corporation-2022-12-07-31679623, cf-award-mod-lockheed-martin-corporation-2022-12-12-f9aea817, cf-award-mod-lockheed-martin-corporation-2023-01-04-dbdf12a1, cf-award-mod-bae-systems-2023-05-12-eb8f6fda, cf-award-mod-lockheed-martin-corporation-2023-06-13-88ae31c9, cf-award-mod-lockheed-martin-corporation-2023-08-30-c21d4069, cf-award-mod-lockheed-martin-corporation-2024-02-13-295cdd19, cf-award-mod-lockheed-martin-corporation-2024-02-27-6161d511, cf-award-mod-lockheed-martin-corporation-2024-10-01-92b96c34, cf-award-mod-lockheed-martin-corporation-2025-03-11-895a418a, cf-award-mod-lockheed-martin-corporation-2025-06-09-c093f2a6, cf-award-mod-lockheed-martin-corporation-2025-06-10-018715b4. Secondary types: defence_industrial_surface.
+
+**Required action**
+
+Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
+
+Refs: `bill-greenwalt-lockheed-martin-corporation-director-federal-acquisition-policy-linkedin-2009-2011`, `rndf-2023-programme-roster`, `rndf-2024-programme-roster`, `uk-ministerial-meetings-mod-s-ministerial-meetings-january-to-march-2021-60eed151`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef`, `uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-rt-hon-rishi-sunak-mp-meetings-july-679b77de`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `cf-award-mod-lockheed-martin-corporation-2022-12-07-31679623`, `cf-award-mod-lockheed-martin-corporation-2022-12-12-f9aea817`, `cf-award-mod-lockheed-martin-corporation-2023-01-04-dbdf12a1`, `cf-award-mod-bae-systems-2023-05-12-eb8f6fda`, `cf-award-mod-lockheed-martin-corporation-2023-06-13-88ae31c9`, `cf-award-mod-lockheed-martin-corporation-2023-08-30-c21d4069`, `cf-award-mod-lockheed-martin-corporation-2024-02-13-295cdd19`, `cf-award-mod-lockheed-martin-corporation-2024-02-27-6161d511`, `cf-award-mod-lockheed-martin-corporation-2024-10-01-92b96c34`, `cf-award-mod-lockheed-martin-corporation-2025-03-11-895a418a`, `cf-award-mod-lockheed-martin-corporation-2025-06-09-c093f2a6`, `cf-award-mod-lockheed-martin-corporation-2025-06-10-018715b4`
+
+---
+
+## finding-195: Massachusetts Institute of Technology (MIT) behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3410,7 +3518,7 @@ Refs: `rick-mullen-massachusetts-institute-of-technology-mit-lgo-fellow-linkedin
 
 ---
 
-## finding-190: Maxar Technologies behaves as a surface factory
+## finding-196: Maxar Technologies behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3428,7 +3536,7 @@ Refs: `collin-weeks-maxar-technologies-program-manager-linkedin-2019-2022`, `dyl
 
 ---
 
-## finding-191: McKinsey & Company behaves as a surface factory
+## finding-197: McKinsey & Company behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3436,17 +3544,17 @@ Refs: `collin-weeks-maxar-technologies-program-manager-linkedin-2019-2022`, `dyl
 
 **Observed**
 
-McKinsey & Company appears across 10 surface(s): doug-beck-mckinsey-and-company-partner-linkedin-1994-2005, doug-beck-mckinsey-and-company-senior-advisor-and-member-geopolitics-advisory-c-linkedin-2026-present, eric-chewning-mckinsey-and-company-partner-linkedin-2020-2023, gabe-camarillo-mckinsey-and-company-senior-advisor-linkedin-2017-2017, jim-carlson-mckinsey-and-company-summer-associate-linkedin-2016-2016, will-roper-mckinsey-and-company-senior-advisor-linkedin-2021-2023, zack-hoyt-mckinsey-and-company-senior-associate-linkedin-2020-2022, zack-hoyt-mckinsey-and-company-summer-associate-implementation-linkedin-2019-2019, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94. Secondary types: none.
+McKinsey & Company appears across 30 surface(s): doug-beck-mckinsey-and-company-partner-linkedin-1994-2005, doug-beck-mckinsey-and-company-senior-advisor-and-member-geopolitics-advisory-c-linkedin-2026-present, eric-chewning-mckinsey-and-company-partner-linkedin-2020-2023, gabe-camarillo-mckinsey-and-company-senior-advisor-linkedin-2017-2017, jim-carlson-mckinsey-and-company-summer-associate-linkedin-2016-2016, will-roper-mckinsey-and-company-senior-advisor-linkedin-2021-2023, zack-hoyt-mckinsey-and-company-senior-associate-linkedin-2020-2022, zack-hoyt-mckinsey-and-company-summer-associate-implementation-linkedin-2019-2019, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, cf-award-dhsc-mckinsey-and-company-2020-05-29-c31396a9, cf-award-nhs-england-mckinsey-and-company-2022-01-31-f7b38d9f, cf-award-nhs-england-mckinsey-and-company-2022-02-08-166c3c0e, cf-award-nhs-england-mckinsey-and-company-2022-03-15-3bae3e32, cf-award-dhsc-mckinsey-and-company-2022-05-12-61803d4d, cf-award-mod-mckinsey-and-company-2022-12-14-71846fee, cf-award-nhs-england-mckinsey-and-company-2022-12-30-469af073, cf-award-desnz-mckinsey-and-company-2023-03-08-85ce4427, cf-award-defra-mckinsey-and-company-2023-04-21-dbe33d6a, cf-award-defra-mckinsey-and-company-2023-05-23-d09ba618, cf-award-defra-mckinsey-and-company-2023-10-13-ebe7a1e5, cf-award-mod-mckinsey-and-company-2023-11-23-1c2c6c9a, cf-award-nhs-england-mckinsey-and-company-2024-03-22-3c20892e, cf-award-mod-mckinsey-and-company-2024-04-04-78b1b1d6, cf-award-mhclg-mckinsey-and-company-2024-12-23-95f9cf86, cf-award-dsit-mckinsey-and-company-2025-01-27-0abb0b87, cf-award-defra-mckinsey-and-company-2025-12-12-09df45d2, cf-award-defra-mckinsey-and-company-2026-02-09-3fea6e6e, cf-award-dhsc-mckinsey-and-company-2026-05-05-a0633135, cf-award-dhsc-mckinsey-and-company-2026-10-01-77e722d6. Secondary types: none.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `doug-beck-mckinsey-and-company-partner-linkedin-1994-2005`, `doug-beck-mckinsey-and-company-senior-advisor-and-member-geopolitics-advisory-c-linkedin-2026-present`, `eric-chewning-mckinsey-and-company-partner-linkedin-2020-2023`, `gabe-camarillo-mckinsey-and-company-senior-advisor-linkedin-2017-2017`, `jim-carlson-mckinsey-and-company-summer-associate-linkedin-2016-2016`, `will-roper-mckinsey-and-company-senior-advisor-linkedin-2021-2023`, `zack-hoyt-mckinsey-and-company-senior-associate-linkedin-2020-2022`, `zack-hoyt-mckinsey-and-company-summer-associate-implementation-linkedin-2019-2019`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`
+Refs: `doug-beck-mckinsey-and-company-partner-linkedin-1994-2005`, `doug-beck-mckinsey-and-company-senior-advisor-and-member-geopolitics-advisory-c-linkedin-2026-present`, `eric-chewning-mckinsey-and-company-partner-linkedin-2020-2023`, `gabe-camarillo-mckinsey-and-company-senior-advisor-linkedin-2017-2017`, `jim-carlson-mckinsey-and-company-summer-associate-linkedin-2016-2016`, `will-roper-mckinsey-and-company-senior-advisor-linkedin-2021-2023`, `zack-hoyt-mckinsey-and-company-senior-associate-linkedin-2020-2022`, `zack-hoyt-mckinsey-and-company-summer-associate-implementation-linkedin-2019-2019`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `cf-award-dhsc-mckinsey-and-company-2020-05-29-c31396a9`, `cf-award-nhs-england-mckinsey-and-company-2022-01-31-f7b38d9f`, `cf-award-nhs-england-mckinsey-and-company-2022-02-08-166c3c0e`, `cf-award-nhs-england-mckinsey-and-company-2022-03-15-3bae3e32`, `cf-award-dhsc-mckinsey-and-company-2022-05-12-61803d4d`, `cf-award-mod-mckinsey-and-company-2022-12-14-71846fee`, `cf-award-nhs-england-mckinsey-and-company-2022-12-30-469af073`, `cf-award-desnz-mckinsey-and-company-2023-03-08-85ce4427`, `cf-award-defra-mckinsey-and-company-2023-04-21-dbe33d6a`, `cf-award-defra-mckinsey-and-company-2023-05-23-d09ba618`, `cf-award-defra-mckinsey-and-company-2023-10-13-ebe7a1e5`, `cf-award-mod-mckinsey-and-company-2023-11-23-1c2c6c9a`, `cf-award-nhs-england-mckinsey-and-company-2024-03-22-3c20892e`, `cf-award-mod-mckinsey-and-company-2024-04-04-78b1b1d6`, `cf-award-mhclg-mckinsey-and-company-2024-12-23-95f9cf86`, `cf-award-dsit-mckinsey-and-company-2025-01-27-0abb0b87`, `cf-award-defra-mckinsey-and-company-2025-12-12-09df45d2`, `cf-award-defra-mckinsey-and-company-2026-02-09-3fea6e6e`, `cf-award-dhsc-mckinsey-and-company-2026-05-05-a0633135`, `cf-award-dhsc-mckinsey-and-company-2026-10-01-77e722d6`
 
 ---
 
-## finding-192: Meta behaves as a surface factory
+## finding-198: Meta behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3464,7 +3572,7 @@ Refs: `kevin-weil-meta-vp-of-product-novi-co-creator-diem-fka-libra-linkedin-201
 
 ---
 
-## finding-193: Microsoft behaves as a surface factory
+## finding-199: Microsoft behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3472,17 +3580,17 @@ Refs: `kevin-weil-meta-vp-of-product-novi-co-creator-diem-fka-libra-linkedin-201
 
 **Observed**
 
-Microsoft appears across 53 surface(s): janel-timoney-brown-microsoft-director-joint-dod-account-executive-linkedin-2022-2025, janel-timoney-brown-microsoft-director-microsoft-federal-consulting-services-linkedin-2021-2022, rndf-2023-panel-2, rndf-2023-programme-roster, rndf-2024-programme-roster, uk-ai-safety-summit-2023-confirmed-attendees-programme-roster, dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, sec-form-d-0001209191-18-057851, sec-form-d-0001137638-20-000002, uk-ministerial-meetings-dcms-ministerial-meetings-january-to-march-2019-667bce7f, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-home-office-s-ministerial-meetings-april-to-june-2023-652fdded, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625, uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-rt-hon-rishi-sunak-mp-meetings-july-679b77de, uk-ministerial-meetings-hmt-ministerial-meetings-july-to-september-2024-679b464d, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145, uk-ministerial-meetings-hmts-ministerial-meetings-october-to-december-2024-685a87ad, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2025-6936dac1, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2025-6936dac1, uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-july-to-september-2025-69958c31, uk-ministerial-meetings-cabinet-office-ministerial-meetings-july-to-september-2025-6a219df9, uk-ministerial-meetings-cabinet-office-ministers-meetings-october-to-december-2025-69c29a18, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5, uk-ministerial-meetings-hmts-ministerial-meetings-october-to-december-2025-69bd3123, uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-october-to-december-2025-69c299db, white-house-meeting-ai-ceos-2023-05-04, white-house-voluntary-ai-commitments-seven-companies-2023-07-21. Secondary types: defence_industrial_surface, government_advisory_surface, surface_factory_capital_layer.
+Microsoft appears across 91 surface(s): janel-timoney-brown-microsoft-director-joint-dod-account-executive-linkedin-2022-2025, janel-timoney-brown-microsoft-director-microsoft-federal-consulting-services-linkedin-2021-2022, rndf-2023-panel-2, rndf-2023-programme-roster, rndf-2024-programme-roster, uk-ai-safety-summit-2023-confirmed-attendees-programme-roster, dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, sec-form-d-0001209191-18-057851, sec-form-d-0001137638-20-000002, uk-ministerial-meetings-dcms-ministerial-meetings-january-to-march-2019-667bce7f, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-home-office-s-ministerial-meetings-april-to-june-2023-652fdded, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625, uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-rt-hon-rishi-sunak-mp-meetings-july-679b77de, uk-ministerial-meetings-hmt-ministerial-meetings-july-to-september-2024-679b464d, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145, uk-ministerial-meetings-hmts-ministerial-meetings-october-to-december-2024-685a87ad, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2025-6936dac1, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2025-6936dac1, uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-july-to-september-2025-69958c31, uk-ministerial-meetings-cabinet-office-ministerial-meetings-july-to-september-2025-6a219df9, uk-ministerial-meetings-cabinet-office-ministers-meetings-october-to-december-2025-69c29a18, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5, uk-ministerial-meetings-hmts-ministerial-meetings-october-to-december-2025-69bd3123, uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-october-to-december-2025-69c299db, white-house-meeting-ai-ceos-2023-05-04, white-house-voluntary-ai-commitments-seven-companies-2023-07-21, cf-award-dhsc-microsoft-2020-07-09-2dbd1aa3, cf-award-nhs-england-microsoft-2021-12-14-7c333a4d, cf-award-hm-treasury-microsoft-2022-03-16-32c38543, cf-award-mod-microsoft-2023-02-07-0bb19f42, cf-award-nhs-south-central-and-west-c-microsoft-2023-02-27-14ce332f, cf-award-mod-microsoft-2023-03-14-d3cbb404, cf-award-hm-treasury-microsoft-2023-03-16-277ca641, cf-award-dfe-microsoft-2023-03-29-ccf07807, cf-award-home-office-border-force-microsoft-2023-03-31-247f7599, cf-award-defra-microsoft-2023-05-16-676fa8f5, cf-award-nhs-england-microsoft-2023-05-26-75a33b2f, cf-award-ukhsa-microsoft-2023-06-05-669c80e0, cf-award-defra-microsoft-2023-06-06-515e4c7c, cf-award-defra-microsoft-2023-08-10-e1c9a63d, cf-award-beis-microsoft-2023-09-29-fa6a25fd, cf-award-nhs-south-central-and-west-c-microsoft-2024-02-23-cc77a86e, cf-award-hm-treasury-microsoft-2024-03-14-d992ed4d, cf-award-dfe-microsoft-2024-04-03-1282f38f, cf-award-dhsc-microsoft-2024-04-30-b54f0a59, cf-award-home-office-border-force-microsoft-2024-04-30-81eb4362, cf-award-centre-for-process-innovatio-microsoft-2024-06-21-5fc16218, cf-award-cabinet-office-microsoft-2024-06-28-2f23f6a2, cf-award-university-of-birmingham-microsoft-2024-06-28-1fda0d44, cf-award-cabinet-office-microsoft-2024-09-29-a55e38a7, cf-award-nhs-south-central-and-west-c-microsoft-2025-02-26-514faded, cf-award-ukhsa-microsoft-2025-03-21-1cf53d4a, cf-award-hm-treasury-microsoft-2025-03-28-7b17f461, cf-award-desnz-microsoft-2025-03-31-6da1f3e0, cf-award-dfe-microsoft-2025-04-05-401ae757, cf-award-nhs-england-microsoft-2025-05-23-0604890c, cf-award-mod-microsoft-2025-05-29-a03f987e, cf-award-police-digital-service-microsoft-2025-06-24-7495277e, cf-award-cabinet-office-microsoft-2025-10-31-f49eab3c, cf-award-nhs-south-central-and-west-c-microsoft-2026-02-18-9ca6445d, cf-award-hm-treasury-microsoft-2026-03-26-50d38a8d, cf-award-ons-microsoft-2026-05-20-026140b8, cf-award-police-digital-service-microsoft-2026-05-20-1d9c4ba5, cf-award-defra-microsoft-2026-09-29-44116dd3. Secondary types: defence_industrial_surface, government_advisory_surface, surface_factory_capital_layer.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `janel-timoney-brown-microsoft-director-joint-dod-account-executive-linkedin-2022-2025`, `janel-timoney-brown-microsoft-director-microsoft-federal-consulting-services-linkedin-2021-2022`, `rndf-2023-panel-2`, `rndf-2023-programme-roster`, `rndf-2024-programme-roster`, `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `sec-form-d-0001209191-18-057851`, `sec-form-d-0001137638-20-000002`, `uk-ministerial-meetings-dcms-ministerial-meetings-january-to-march-2019-667bce7f`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-home-office-s-ministerial-meetings-april-to-june-2023-652fdded`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625`, `uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-rt-hon-rishi-sunak-mp-meetings-july-679b77de`, `uk-ministerial-meetings-hmt-ministerial-meetings-july-to-september-2024-679b464d`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145`, `uk-ministerial-meetings-hmts-ministerial-meetings-october-to-december-2024-685a87ad`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2025-6936dac1`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2025-6936dac1`, `uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-july-to-september-2025-69958c31`, `uk-ministerial-meetings-cabinet-office-ministerial-meetings-july-to-september-2025-6a219df9`, `uk-ministerial-meetings-cabinet-office-ministers-meetings-october-to-december-2025-69c29a18`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5`, `uk-ministerial-meetings-hmts-ministerial-meetings-october-to-december-2025-69bd3123`, `uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-october-to-december-2025-69c299db`, `white-house-meeting-ai-ceos-2023-05-04`, `white-house-voluntary-ai-commitments-seven-companies-2023-07-21`
+Refs: `janel-timoney-brown-microsoft-director-joint-dod-account-executive-linkedin-2022-2025`, `janel-timoney-brown-microsoft-director-microsoft-federal-consulting-services-linkedin-2021-2022`, `rndf-2023-panel-2`, `rndf-2023-programme-roster`, `rndf-2024-programme-roster`, `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `sec-form-d-0001209191-18-057851`, `sec-form-d-0001137638-20-000002`, `uk-ministerial-meetings-dcms-ministerial-meetings-january-to-march-2019-667bce7f`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-home-office-s-ministerial-meetings-april-to-june-2023-652fdded`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625`, `uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-rt-hon-rishi-sunak-mp-meetings-july-679b77de`, `uk-ministerial-meetings-hmt-ministerial-meetings-july-to-september-2024-679b464d`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145`, `uk-ministerial-meetings-hmts-ministerial-meetings-october-to-december-2024-685a87ad`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2025-6936dac1`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2025-6936dac1`, `uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-july-to-september-2025-69958c31`, `uk-ministerial-meetings-cabinet-office-ministerial-meetings-july-to-september-2025-6a219df9`, `uk-ministerial-meetings-cabinet-office-ministers-meetings-october-to-december-2025-69c29a18`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5`, `uk-ministerial-meetings-hmts-ministerial-meetings-october-to-december-2025-69bd3123`, `uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-october-to-december-2025-69c299db`, `white-house-meeting-ai-ceos-2023-05-04`, `white-house-voluntary-ai-commitments-seven-companies-2023-07-21`, `cf-award-dhsc-microsoft-2020-07-09-2dbd1aa3`, `cf-award-nhs-england-microsoft-2021-12-14-7c333a4d`, `cf-award-hm-treasury-microsoft-2022-03-16-32c38543`, `cf-award-mod-microsoft-2023-02-07-0bb19f42`, `cf-award-nhs-south-central-and-west-c-microsoft-2023-02-27-14ce332f`, `cf-award-mod-microsoft-2023-03-14-d3cbb404`, `cf-award-hm-treasury-microsoft-2023-03-16-277ca641`, `cf-award-dfe-microsoft-2023-03-29-ccf07807`, `cf-award-home-office-border-force-microsoft-2023-03-31-247f7599`, `cf-award-defra-microsoft-2023-05-16-676fa8f5`, `cf-award-nhs-england-microsoft-2023-05-26-75a33b2f`, `cf-award-ukhsa-microsoft-2023-06-05-669c80e0`, `cf-award-defra-microsoft-2023-06-06-515e4c7c`, `cf-award-defra-microsoft-2023-08-10-e1c9a63d`, `cf-award-beis-microsoft-2023-09-29-fa6a25fd`, `cf-award-nhs-south-central-and-west-c-microsoft-2024-02-23-cc77a86e`, `cf-award-hm-treasury-microsoft-2024-03-14-d992ed4d`, `cf-award-dfe-microsoft-2024-04-03-1282f38f`, `cf-award-dhsc-microsoft-2024-04-30-b54f0a59`, `cf-award-home-office-border-force-microsoft-2024-04-30-81eb4362`, `cf-award-centre-for-process-innovatio-microsoft-2024-06-21-5fc16218`, `cf-award-cabinet-office-microsoft-2024-06-28-2f23f6a2`, `cf-award-university-of-birmingham-microsoft-2024-06-28-1fda0d44`, `cf-award-cabinet-office-microsoft-2024-09-29-a55e38a7`, `cf-award-nhs-south-central-and-west-c-microsoft-2025-02-26-514faded`, `cf-award-ukhsa-microsoft-2025-03-21-1cf53d4a`, `cf-award-hm-treasury-microsoft-2025-03-28-7b17f461`, `cf-award-desnz-microsoft-2025-03-31-6da1f3e0`, `cf-award-dfe-microsoft-2025-04-05-401ae757`, `cf-award-nhs-england-microsoft-2025-05-23-0604890c`, `cf-award-mod-microsoft-2025-05-29-a03f987e`, `cf-award-police-digital-service-microsoft-2025-06-24-7495277e`, `cf-award-cabinet-office-microsoft-2025-10-31-f49eab3c`, `cf-award-nhs-south-central-and-west-c-microsoft-2026-02-18-9ca6445d`, `cf-award-hm-treasury-microsoft-2026-03-26-50d38a8d`, `cf-award-ons-microsoft-2026-05-20-026140b8`, `cf-award-police-digital-service-microsoft-2026-05-20-1d9c4ba5`, `cf-award-defra-microsoft-2026-09-29-44116dd3`
 
 ---
 
-## finding-194: Morgan Stanley behaves as a surface factory
+## finding-200: Morgan Stanley behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3500,7 +3608,7 @@ Refs: `eric-chewning-morgan-stanley-investment-banking-analyst-linkedin-2000-200
 
 ---
 
-## finding-195: Northrop Grumman behaves as a surface factory
+## finding-201: National Instruments behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3508,17 +3616,35 @@ Refs: `eric-chewning-morgan-stanley-investment-banking-analyst-linkedin-2000-200
 
 **Observed**
 
-Northrop Grumman appears across 3 surface(s): james-storer-northrop-grumman-director-socom-and-global-sof-customer-relations-linkedin-2025-present, james-storer-northrop-grumman-senior-business-development-manager-linkedin-2023-2025, rndf-2025-programme-roster. Secondary types: defence_industrial_surface.
+National Instruments appears across 3 surface(s): brandon-boesch-national-instruments-digital-hardware-engineer-intern-linkedin-2013-2015, cf-award-university-of-birmingham-national-instruments-2023-03-23-b1216943, cf-award-university-of-birmingham-national-instruments-2023-06-26-bfb6d8ed. Secondary types: none.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `james-storer-northrop-grumman-director-socom-and-global-sof-customer-relations-linkedin-2025-present`, `james-storer-northrop-grumman-senior-business-development-manager-linkedin-2023-2025`, `rndf-2025-programme-roster`
+Refs: `brandon-boesch-national-instruments-digital-hardware-engineer-intern-linkedin-2013-2015`, `cf-award-university-of-birmingham-national-instruments-2023-03-23-b1216943`, `cf-award-university-of-birmingham-national-instruments-2023-06-26-bfb6d8ed`
 
 ---
 
-## finding-196: Office of the Secretary of Defense behaves as a surface factory
+## finding-202: Northrop Grumman behaves as a surface factory
+
+- Type: surface_factory
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+Northrop Grumman appears across 4 surface(s): james-storer-northrop-grumman-director-socom-and-global-sof-customer-relations-linkedin-2025-present, james-storer-northrop-grumman-senior-business-development-manager-linkedin-2023-2025, rndf-2025-programme-roster, cf-award-mod-northrop-grumman-2025-04-01-d9864415. Secondary types: defence_industrial_surface.
+
+**Required action**
+
+Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
+
+Refs: `james-storer-northrop-grumman-director-socom-and-global-sof-customer-relations-linkedin-2025-present`, `james-storer-northrop-grumman-senior-business-development-manager-linkedin-2023-2025`, `rndf-2025-programme-roster`, `cf-award-mod-northrop-grumman-2025-04-01-d9864415`
+
+---
+
+## finding-203: Office of the Secretary of Defense behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3536,7 +3662,7 @@ Refs: `jim-caggy-office-of-the-secretary-of-defense-advisor-strategic-capabiliti
 
 ---
 
-## finding-197: Optum behaves as a surface factory
+## finding-204: Optum behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3554,7 +3680,7 @@ Refs: `jason-schwab-optum-director-of-product-linkedin-2023-2024`, `zack-hoyt-op
 
 ---
 
-## finding-198: Planet behaves as a surface factory
+## finding-205: Planet behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3562,17 +3688,35 @@ Refs: `jason-schwab-optum-director-of-product-linkedin-2023-2024`, `zack-hoyt-op
 
 **Observed**
 
-Planet appears across 3 surface(s): kevin-weil-planet-board-member-planet-federal-linkedin-2024-2025, kevin-weil-planet-president-product-and-business-linkedin-2021-2024, fund-portfolio-page-dcvc-2026-10-23. Secondary types: employment_investment_surface, surface_factory_capital_layer.
+Planet appears across 4 surface(s): kevin-weil-planet-board-member-planet-federal-linkedin-2024-2025, kevin-weil-planet-president-product-and-business-linkedin-2021-2024, fund-portfolio-page-dcvc-2026-10-23, cf-award-defra-planet-2024-07-31-0ef2888a. Secondary types: employment_investment_surface, surface_factory_capital_layer.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `kevin-weil-planet-board-member-planet-federal-linkedin-2024-2025`, `kevin-weil-planet-president-product-and-business-linkedin-2021-2024`, `fund-portfolio-page-dcvc-2026-10-23`
+Refs: `kevin-weil-planet-board-member-planet-federal-linkedin-2024-2025`, `kevin-weil-planet-president-product-and-business-linkedin-2021-2024`, `fund-portfolio-page-dcvc-2026-10-23`, `cf-award-defra-planet-2024-07-31-0ef2888a`
 
 ---
 
-## finding-199: Quantum Corporation behaves as a surface factory
+## finding-206: Qualtrics behaves as a surface factory
+
+- Type: surface_factory
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+Qualtrics appears across 7 surface(s): mike-wilson-qualtrics-sr-partner-ecosystem-manager-linkedin-2021-2022, cf-award-dfe-qualtrics-2021-09-30-b3c7f4c1, cf-award-home-office-border-force-qualtrics-2023-03-31-6c1cdd3f, cf-award-ukhsa-qualtrics-2023-08-07-5a259ee9, cf-award-nhs-england-qualtrics-2023-10-31-19d8174c, cf-award-government-digital-service-qualtrics-2024-05-24-2790b90f, cf-award-university-of-birmingham-qualtrics-2024-06-26-070cf07b. Secondary types: none.
+
+**Required action**
+
+Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
+
+Refs: `mike-wilson-qualtrics-sr-partner-ecosystem-manager-linkedin-2021-2022`, `cf-award-dfe-qualtrics-2021-09-30-b3c7f4c1`, `cf-award-home-office-border-force-qualtrics-2023-03-31-6c1cdd3f`, `cf-award-ukhsa-qualtrics-2023-08-07-5a259ee9`, `cf-award-nhs-england-qualtrics-2023-10-31-19d8174c`, `cf-award-government-digital-service-qualtrics-2024-05-24-2790b90f`, `cf-award-university-of-birmingham-qualtrics-2024-06-26-070cf07b`
+
+---
+
+## finding-207: Quantum Corporation behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3590,7 +3734,7 @@ Refs: `michael-a-brown-quantum-corporation-ceo-and-chairman-of-the-board-linkedi
 
 ---
 
-## finding-200: Raytheon behaves as a surface factory
+## finding-208: Raytheon behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3598,17 +3742,17 @@ Refs: `michael-a-brown-quantum-corporation-ceo-and-chairman-of-the-board-linkedi
 
 **Observed**
 
-Raytheon appears across 4 surface(s): heidi-shyu-raytheon-vice-president-of-technology-strategy-space-and-linkedin-2009-2010, heidi-shyu-raytheon-vp-of-unmanned-and-reconnaissance-systems-linkedin-2002-2003, kevin-holland-raytheon-business-development-manager-linkedin-2008-2009, uk-ministerial-meetings-mod-s-ministerial-meetings-january-to-march-2021-60eed151. Secondary types: none.
+Raytheon appears across 8 surface(s): heidi-shyu-raytheon-vice-president-of-technology-strategy-space-and-linkedin-2009-2010, heidi-shyu-raytheon-vp-of-unmanned-and-reconnaissance-systems-linkedin-2002-2003, kevin-holland-raytheon-business-development-manager-linkedin-2008-2009, uk-ministerial-meetings-mod-s-ministerial-meetings-january-to-march-2021-60eed151, cf-award-mod-raytheon-2022-10-01-2cbb5f6f, cf-award-mod-lockheed-martin-corporation-2023-01-04-dbdf12a1, cf-award-ukri-raytheon-2023-10-02-af07afad, cf-award-mod-atkinsrealis-2023-11-17-b92822ac. Secondary types: none.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `heidi-shyu-raytheon-vice-president-of-technology-strategy-space-and-linkedin-2009-2010`, `heidi-shyu-raytheon-vp-of-unmanned-and-reconnaissance-systems-linkedin-2002-2003`, `kevin-holland-raytheon-business-development-manager-linkedin-2008-2009`, `uk-ministerial-meetings-mod-s-ministerial-meetings-january-to-march-2021-60eed151`
+Refs: `heidi-shyu-raytheon-vice-president-of-technology-strategy-space-and-linkedin-2009-2010`, `heidi-shyu-raytheon-vp-of-unmanned-and-reconnaissance-systems-linkedin-2002-2003`, `kevin-holland-raytheon-business-development-manager-linkedin-2008-2009`, `uk-ministerial-meetings-mod-s-ministerial-meetings-january-to-march-2021-60eed151`, `cf-award-mod-raytheon-2022-10-01-2cbb5f6f`, `cf-award-mod-lockheed-martin-corporation-2023-01-04-dbdf12a1`, `cf-award-ukri-raytheon-2023-10-02-af07afad`, `cf-award-mod-atkinsrealis-2023-11-17-b92822ac`
 
 ---
 
-## finding-201: Royal United Services Institute behaves as a surface factory
+## finding-209: Royal United Services Institute behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3616,17 +3760,17 @@ Refs: `heidi-shyu-raytheon-vice-president-of-technology-strategy-space-and-linke
 
 **Observed**
 
-Royal United Services Institute appears across 3 surface(s): jamie-morin-royal-united-services-institute-research-assistant-linkedin-1997-1998, uk-ministerial-meetings-mod-s-ministerial-meetings-january-to-march-2021-60eed151, uk-ministerial-meetings-mod-s-ministerial-meetings-january-to-march-2025-68308e02. Secondary types: none.
+Royal United Services Institute appears across 7 surface(s): jamie-morin-royal-united-services-institute-research-assistant-linkedin-1997-1998, uk-ministerial-meetings-mod-s-ministerial-meetings-january-to-march-2021-60eed151, uk-ministerial-meetings-mod-s-ministerial-meetings-january-to-march-2025-68308e02, cf-award-mod-royal-united-services-institute-2023-05-18-92ba29cf, cf-award-mod-royal-united-services-institute-2023-07-06-2c91ea78, cf-award-beis-royal-united-services-institute-2024-01-09-7d95db41, cf-award-mod-royal-united-services-institute-2025-04-16-cdc9acd0. Secondary types: none.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `jamie-morin-royal-united-services-institute-research-assistant-linkedin-1997-1998`, `uk-ministerial-meetings-mod-s-ministerial-meetings-january-to-march-2021-60eed151`, `uk-ministerial-meetings-mod-s-ministerial-meetings-january-to-march-2025-68308e02`
+Refs: `jamie-morin-royal-united-services-institute-research-assistant-linkedin-1997-1998`, `uk-ministerial-meetings-mod-s-ministerial-meetings-january-to-march-2021-60eed151`, `uk-ministerial-meetings-mod-s-ministerial-meetings-january-to-march-2025-68308e02`, `cf-award-mod-royal-united-services-institute-2023-05-18-92ba29cf`, `cf-award-mod-royal-united-services-institute-2023-07-06-2c91ea78`, `cf-award-beis-royal-united-services-institute-2024-01-09-7d95db41`, `cf-award-mod-royal-united-services-institute-2025-04-16-cdc9acd0`
 
 ---
 
-## finding-202: SAIC behaves as a surface factory
+## finding-210: SAIC behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3644,7 +3788,7 @@ Refs: `gabe-camarillo-saic-senior-vice-president-army-business-unit-linkedin-202
 
 ---
 
-## finding-203: Schmidt Futures behaves as a surface factory
+## finding-211: Schmidt Futures behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3662,7 +3806,25 @@ Refs: `christopher-kirchhoff-schmidt-futures-senior-director-and-senior-fellow-l
 
 ---
 
-## finding-204: Snap Inc. behaves as a surface factory
+## finding-212: Sierra Nevada Corporation behaves as a surface factory
+
+- Type: surface_factory
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+Sierra Nevada Corporation appears across 4 surface(s): christopher-brooks-sierra-nevada-corporation-field-services-engineer-airborne-sensor-operator-linkedin-2010-2011, church-hutton-sierra-nevada-corporation-vp-legislative-affairs-linkedin-2017-2021, cf-award-mod-sierra-nevada-corporation-2022-10-17-3cb74a97, cf-award-mod-sierra-nevada-corporation-2026-03-11-2fba0134. Secondary types: none.
+
+**Required action**
+
+Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
+
+Refs: `christopher-brooks-sierra-nevada-corporation-field-services-engineer-airborne-sensor-operator-linkedin-2010-2011`, `church-hutton-sierra-nevada-corporation-vp-legislative-affairs-linkedin-2017-2021`, `cf-award-mod-sierra-nevada-corporation-2022-10-17-3cb74a97`, `cf-award-mod-sierra-nevada-corporation-2026-03-11-2fba0134`
+
+---
+
+## finding-213: Snap Inc. behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3680,7 +3842,7 @@ Refs: `sofia-rose-haft-snap-inc-head-of-policy-partnerships-linkedin-2021-2022`,
 
 ---
 
-## finding-205: Striveworks behaves as a surface factory
+## finding-214: Striveworks behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3698,7 +3860,7 @@ Refs: `quay-barnett-striveworks-chief-revenue-officer-cro-linkedin-2023-2024`, `
 
 ---
 
-## finding-206: Symantec behaves as a surface factory
+## finding-215: Symantec behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3716,7 +3878,25 @@ Refs: `michael-a-brown-symantec-board-member-linkedin-2011-2014`, `michael-a-bro
 
 ---
 
-## finding-207: The Honor Foundation behaves as a surface factory
+## finding-216: Textron Systems behaves as a surface factory
+
+- Type: surface_factory
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+Textron Systems appears across 3 surface(s): ellen-lord-textron-systems-vice-president-integration-management-linkedin-2005-2008, ellen-lord-textron-systems-vice-president-of-strategic-planning-linkedin-2004-2005, cf-award-mod-textron-systems-2024-01-11-9fc88ecf. Secondary types: none.
+
+**Required action**
+
+Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
+
+Refs: `ellen-lord-textron-systems-vice-president-integration-management-linkedin-2005-2008`, `ellen-lord-textron-systems-vice-president-of-strategic-planning-linkedin-2004-2005`, `cf-award-mod-textron-systems-2024-01-11-9fc88ecf`
+
+---
+
+## finding-217: The Honor Foundation behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3734,7 +3914,7 @@ Refs: `bryan-claudio-the-honor-foundation-fellow-linkedin-2020-2020`, `eric-ball
 
 ---
 
-## finding-208: The White House behaves as a surface factory
+## finding-218: The White House behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3752,7 +3932,7 @@ Refs: `christopher-kirchhoff-the-white-house-senior-advisor-to-the-counselor-to-
 
 ---
 
-## finding-209: Unisys behaves as a surface factory
+## finding-219: Unisys behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3760,17 +3940,17 @@ Refs: `christopher-kirchhoff-the-white-house-senior-advisor-to-the-counselor-to-
 
 **Observed**
 
-Unisys appears across 4 surface(s): simon-price-unisys-head-of-advanced-analytics-linkedin-2021-2021, simon-price-unisys-principal-data-scientist-linkedin-2019-2021, simon-price-unisys-senior-director-artificial-intelligence-linkedin-2021-2022, simon-price-unisys-senior-director-data-and-ai-linkedin-2022-2025. Secondary types: none.
+Unisys appears across 6 surface(s): simon-price-unisys-head-of-advanced-analytics-linkedin-2021-2021, simon-price-unisys-principal-data-scientist-linkedin-2019-2021, simon-price-unisys-senior-director-artificial-intelligence-linkedin-2021-2022, simon-price-unisys-senior-director-data-and-ai-linkedin-2022-2025, cf-award-mod-unisys-2023-11-15-452d729e, cf-award-mod-unisys-2024-04-08-35c55a3b. Secondary types: none.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `simon-price-unisys-head-of-advanced-analytics-linkedin-2021-2021`, `simon-price-unisys-principal-data-scientist-linkedin-2019-2021`, `simon-price-unisys-senior-director-artificial-intelligence-linkedin-2021-2022`, `simon-price-unisys-senior-director-data-and-ai-linkedin-2022-2025`
+Refs: `simon-price-unisys-head-of-advanced-analytics-linkedin-2021-2021`, `simon-price-unisys-principal-data-scientist-linkedin-2019-2021`, `simon-price-unisys-senior-director-artificial-intelligence-linkedin-2021-2022`, `simon-price-unisys-senior-director-data-and-ai-linkedin-2022-2025`, `cf-award-mod-unisys-2023-11-15-452d729e`, `cf-award-mod-unisys-2024-04-08-35c55a3b`
 
 ---
 
-## finding-210: United States Air Force behaves as a surface factory
+## finding-220: United States Air Force behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3788,7 +3968,7 @@ Refs: `barry-walkenbach-united-states-air-force-e-3b-c-senior-surveillance-techn
 
 ---
 
-## finding-211: United States Army behaves as a surface factory
+## finding-221: United States Army behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3806,7 +3986,7 @@ Refs: `alan-t-dugger-united-states-army-assistant-professor-of-military-science-
 
 ---
 
-## finding-212: United States Army Reserve behaves as a surface factory
+## finding-222: United States Army Reserve behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3824,7 +4004,7 @@ Refs: `church-hutton-united-states-army-reserve-engineer-officer-linkedin-1998-2
 
 ---
 
-## finding-213: United States Army Special Operations Command behaves as a surface factory
+## finding-223: United States Army Special Operations Command behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3842,7 +4022,7 @@ Refs: `quay-barnett-united-states-army-special-operations-command-apex-director-
 
 ---
 
-## finding-214: United States Coast Guard behaves as a surface factory
+## finding-224: United States Coast Guard behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3860,7 +4040,7 @@ Refs: `tom-huntley-united-states-coast-guard-deployable-team-leader-msst-miami-l
 
 ---
 
-## finding-215: United States Marine Corps behaves as a surface factory
+## finding-225: United States Marine Corps behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3878,7 +4058,7 @@ Refs: `bryan-claudio-united-states-marine-corps-recruit-training-series-commande
 
 ---
 
-## finding-216: United States Navy behaves as a surface factory
+## finding-226: United States Navy behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3896,7 +4076,7 @@ Refs: `alec-webster-united-states-navy-aviation-rescue-swimmer-linkedin-2018-202
 
 ---
 
-## finding-217: United States Senate behaves as a surface factory
+## finding-227: United States Senate behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3914,7 +4094,7 @@ Refs: `blake-souter-united-states-senate-defense-military-legislative-intern-lin
 
 ---
 
-## finding-218: US Department of Defense behaves as a surface factory
+## finding-228: US Department of Defense behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3932,7 +4112,7 @@ Refs: `andrew-hunter-us-department-of-defense-director-joint-rapid-acquisition-c
 
 ---
 
-## finding-219: US Department of State behaves as a surface factory
+## finding-229: US Department of State behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3950,7 +4130,7 @@ Refs: `andrew-koch-us-department-of-state-us-consulate-hong-kong-linkedin-2020-2
 
 ---
 
-## finding-220: US Department of the Navy behaves as a surface factory
+## finding-230: US Department of the Navy behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3968,7 +4148,7 @@ Refs: `james-day-us-department-of-the-navy-portfolio-acquisition-executive-for-m
 
 ---
 
-## finding-221: U.S. House of Representatives behaves as a surface factory
+## finding-231: U.S. House of Representatives behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -3986,7 +4166,7 @@ Refs: `jim-himes-us-house-of-representatives-representative-linkedin-2009-presen
 
 ---
 
-## finding-222: U.S. Marine Corps Forces Special Operations Command (MARSOC) behaves as a surface factory
+## finding-232: U.S. Marine Corps Forces Special Operations Command (MARSOC) behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -4004,7 +4184,7 @@ Refs: `bryan-claudio-us-marine-corps-forces-special-operations-command-marsoc-sp
 
 ---
 
-## finding-223: US Senate Committee on Armed Services behaves as a surface factory
+## finding-233: US Senate Committee on Armed Services behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -4022,7 +4202,7 @@ Refs: `bill-greenwalt-us-senate-armed-services-committee-professional-staff-memb
 
 ---
 
-## finding-224: War on the Rocks behaves as a surface factory
+## finding-234: War on the Rocks behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -4040,7 +4220,7 @@ Refs: `ryan-evans-war-on-the-rocks-founder-linkedin-2013-present`, `sec-form-d-0
 
 ---
 
-## finding-225: General Catalyst behaves as a surface factory
+## finding-235: General Catalyst behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -4058,7 +4238,7 @@ Refs: `dsit-matt-clifford-ai-investor-roundtable-2023-10-25`, `fund-portfolio-pa
 
 ---
 
-## finding-226: AFWERX behaves as a surface factory
+## finding-236: AFWERX behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -4076,7 +4256,7 @@ Refs: `afwerx-austin-hub-at-capital-factory-2018-06-27`, `army-news-afc-hq-capit
 
 ---
 
-## finding-227: Alpha Partners Management LLC behaves as a surface factory
+## finding-237: Alpha Partners Management LLC behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -4094,7 +4274,7 @@ Refs: `sec-form-d-0002038739-24-000002`, `sec-form-d-0002050605-25-000001`, `sec
 
 ---
 
-## finding-228: Army Applications Laboratory behaves as a surface factory
+## finding-238: Army Applications Laboratory behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -4112,7 +4292,7 @@ Refs: `army-futures-command-murray-at-capital-factory-2018-09-30`, `army-news-af
 
 ---
 
-## finding-229: U.S. Army Futures Command behaves as a surface factory
+## finding-239: U.S. Army Futures Command behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -4130,7 +4310,7 @@ Refs: `army-futures-command-austin-selection-2018-07-12`, `army-futures-command-
 
 ---
 
-## finding-230: Belltower Fund Group, Ltd. behaves as a surface factory
+## finding-240: Belltower Fund Group, Ltd. behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -4148,7 +4328,7 @@ Refs: `sec-form-d-0001842238-21-000002`, `sec-form-d-0001860355-21-000002`, `sec
 
 ---
 
-## finding-231: Capital Factory Fellowship Fund, L.P. behaves as a surface factory
+## finding-241: Capital Factory Fellowship Fund, L.P. behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -4166,7 +4346,7 @@ Refs: `sec-form-d-0001958842-22-000001`, `texas-franchise-tax-32095561356`, `sec
 
 ---
 
-## finding-232: Capital Factory Fellowship Management, L.P behaves as a surface factory
+## finding-242: Capital Factory Fellowship Management, L.P behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -4184,7 +4364,7 @@ Refs: `sec-form-d-0001958842-22-000001`, `texas-franchise-tax-32087998590`, `sec
 
 ---
 
-## finding-233: Capital Factory IV, L.P. behaves as a surface factory
+## finding-243: Capital Factory IV, L.P. behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -4202,7 +4382,7 @@ Refs: `sec-form-d-0001592303-13-000001`, `sec-form-d-0001592303-14-000001`, `tex
 
 ---
 
-## finding-234: Capital Factory Management IV, LLC behaves as a surface factory
+## finding-244: Capital Factory Management IV, LLC behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -4220,7 +4400,7 @@ Refs: `sec-form-d-0001592303-13-000001`, `sec-form-d-0001592303-14-000001`, `tex
 
 ---
 
-## finding-235: Capital Factory Management, L.L.C. behaves as a surface factory
+## finding-245: Capital Factory Management, L.L.C. behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -4238,7 +4418,7 @@ Refs: `sec-form-d-0001703914-17-000001`, `texas-franchise-tax-32072787610`, `sec
 
 ---
 
-## finding-236: Capital Factory Management SPV 1, LLC behaves as a surface factory
+## finding-246: Capital Factory Management SPV 1, LLC behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -4256,7 +4436,7 @@ Refs: `texas-franchise-tax-32101787649`, `sec-form-d-0002120654-26-000001`, `sec
 
 ---
 
-## finding-237: Capital Factory UGP, LLC behaves as a surface factory
+## finding-247: Capital Factory UGP, LLC behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -4274,7 +4454,7 @@ Refs: `sec-form-d-0001958842-22-000001`, `texas-franchise-tax-32087998616`, `sec
 
 ---
 
-## finding-238: Capital Factory Ventures Management, LLC behaves as a surface factory
+## finding-248: Capital Factory Ventures Management, LLC behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -4292,7 +4472,7 @@ Refs: `texas-franchise-tax-32079378694`, `sec-form-d-0002038739-24-000002`, `sec
 
 ---
 
-## finding-239: Defense Innovation Unit behaves as a surface factory
+## finding-249: Defense Innovation Unit behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -4310,7 +4490,7 @@ Refs: `diux-austin-outpost-at-capital-factory-2016-09-14`, `diux-austin-roll-out
 
 ---
 
-## finding-240: Fed Supernova behaves as a surface factory
+## finding-250: Fed Supernova behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -4328,7 +4508,7 @@ Refs: `capital-factory-fed-supernova-2021-09-28`, `capital-factory-fed-supernova
 
 ---
 
-## finding-241: Fund GP, LLC behaves as a surface factory
+## finding-251: Fund GP, LLC behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -4346,7 +4526,7 @@ Refs: `sec-form-d-0001842238-21-000002`, `sec-form-d-0001860355-21-000002`, `sec
 
 ---
 
-## finding-242: NightDragon behaves as a surface factory
+## finding-252: NightDragon behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -4364,7 +4544,7 @@ Refs: `nightdragon-capital-factory-partnership-2025-08-18`, `sec-form-d-00019337
 
 ---
 
-## finding-243: Pingboard, Inc. behaves as a surface factory
+## finding-253: Pingboard, Inc. behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -4382,7 +4562,7 @@ Refs: `sec-form-d-0001596160-14-000002`, `sec-form-d-0001596160-14-000001`, `sec
 
 ---
 
-## finding-244: Accenture plc behaves as a surface factory
+## finding-254: Accenture plc behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -4390,17 +4570,17 @@ Refs: `sec-form-d-0001596160-14-000002`, `sec-form-d-0001596160-14-000001`, `sec
 
 **Observed**
 
-Accenture plc appears across 11 surface(s): faculty-science-control-change-accenture-2026-03-12, dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625, uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-rt-hon-rishi-sunak-mp-meetings-july-679b77de, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5. Secondary types: founder_officer_surface, surface_factory_capital_layer.
+Accenture plc appears across 54 surface(s): faculty-science-control-change-accenture-2026-03-12, dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625, uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-rt-hon-rishi-sunak-mp-meetings-july-679b77de, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5, cf-award-nhs-england-accenture-2019-08-05-c52c63eb, cf-award-dhsc-accenture-2021-02-02-247ddc95, cf-award-dhsc-accenture-2021-04-19-579fe96d, cf-award-dhsc-accenture-2021-09-10-8ab16564, cf-award-beis-accenture-2022-09-09-3577a2f7, cf-award-mod-accenture-2022-10-19-db06f394, cf-award-defra-accenture-2023-02-01-85c1dc76, cf-award-mod-accenture-2023-03-10-954e325e, cf-award-ukhsa-accenture-2023-04-21-d396bd9b, cf-award-nhs-england-accenture-2023-06-21-f79504f6, cf-award-cabinet-office-accenture-2023-06-22-254ddf3e, cf-award-mod-accenture-2023-08-09-4ba830d7, cf-award-mod-accenture-2023-09-20-f5aebe7c, cf-award-nhs-england-accenture-2023-09-29-f91e7e56, cf-award-home-office-border-force-accenture-2023-12-04-bc7f06cd, cf-award-ukhsa-accenture-2023-12-22-93db9254, cf-award-mod-accenture-2024-05-01-f3a04ab9, cf-award-dsit-accenture-2024-05-09-1f0bb970, cf-award-dsit-accenture-2024-05-09-b44b64b7, cf-award-mod-accenture-2024-05-12-bca3dc63, cf-award-dhsc-accenture-2024-07-29-4c8af7e8, cf-award-home-office-border-force-accenture-2024-08-01-63f3212b, cf-award-nhs-england-accenture-2024-08-14-205cca48, cf-award-nhs-england-accenture-2024-08-16-1832fbb3, cf-award-defra-accenture-2024-10-14-93e5d45b, cf-award-mod-accenture-2024-11-01-368118f1, cf-award-mod-accenture-2024-11-12-2049b057, cf-award-mod-accenture-2024-11-15-c9a587ee, cf-award-desnz-accenture-2024-12-09-e43ccf35, cf-award-defra-accenture-2025-01-29-afa5ca2e, cf-award-nhs-england-accenture-2025-01-29-74d58a5c, cf-award-dfe-accenture-2025-02-28-808d8ead, cf-award-government-digital-service-accenture-2025-03-01-44f3155e, cf-award-mod-accenture-2025-03-05-fbf37c0c, cf-award-mod-accenture-2025-04-01-6db90b87, cf-award-home-office-border-force-accenture-2025-06-01-32233d82, cf-award-mod-accenture-2025-06-20-7f2ba021, cf-award-cabinet-office-accenture-2025-08-27-2077d523, cf-award-mhclg-accenture-2025-08-29-369d20c5, cf-award-cabinet-office-accenture-2025-12-19-32be8363, cf-award-home-office-border-force-accenture-2026-02-26-4794a86d, cf-award-mod-accenture-2026-06-01-c101b4db, cf-award-dsit-accenture-2026-06-15-df0df041. Secondary types: founder_officer_surface, surface_factory_capital_layer.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `faculty-science-control-change-accenture-2026-03-12`, `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625`, `uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-rt-hon-rishi-sunak-mp-meetings-july-679b77de`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5`
+Refs: `faculty-science-control-change-accenture-2026-03-12`, `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625`, `uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-rt-hon-rishi-sunak-mp-meetings-july-679b77de`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5`, `cf-award-nhs-england-accenture-2019-08-05-c52c63eb`, `cf-award-dhsc-accenture-2021-02-02-247ddc95`, `cf-award-dhsc-accenture-2021-04-19-579fe96d`, `cf-award-dhsc-accenture-2021-09-10-8ab16564`, `cf-award-beis-accenture-2022-09-09-3577a2f7`, `cf-award-mod-accenture-2022-10-19-db06f394`, `cf-award-defra-accenture-2023-02-01-85c1dc76`, `cf-award-mod-accenture-2023-03-10-954e325e`, `cf-award-ukhsa-accenture-2023-04-21-d396bd9b`, `cf-award-nhs-england-accenture-2023-06-21-f79504f6`, `cf-award-cabinet-office-accenture-2023-06-22-254ddf3e`, `cf-award-mod-accenture-2023-08-09-4ba830d7`, `cf-award-mod-accenture-2023-09-20-f5aebe7c`, `cf-award-nhs-england-accenture-2023-09-29-f91e7e56`, `cf-award-home-office-border-force-accenture-2023-12-04-bc7f06cd`, `cf-award-ukhsa-accenture-2023-12-22-93db9254`, `cf-award-mod-accenture-2024-05-01-f3a04ab9`, `cf-award-dsit-accenture-2024-05-09-1f0bb970`, `cf-award-dsit-accenture-2024-05-09-b44b64b7`, `cf-award-mod-accenture-2024-05-12-bca3dc63`, `cf-award-dhsc-accenture-2024-07-29-4c8af7e8`, `cf-award-home-office-border-force-accenture-2024-08-01-63f3212b`, `cf-award-nhs-england-accenture-2024-08-14-205cca48`, `cf-award-nhs-england-accenture-2024-08-16-1832fbb3`, `cf-award-defra-accenture-2024-10-14-93e5d45b`, `cf-award-mod-accenture-2024-11-01-368118f1`, `cf-award-mod-accenture-2024-11-12-2049b057`, `cf-award-mod-accenture-2024-11-15-c9a587ee`, `cf-award-desnz-accenture-2024-12-09-e43ccf35`, `cf-award-defra-accenture-2025-01-29-afa5ca2e`, `cf-award-nhs-england-accenture-2025-01-29-74d58a5c`, `cf-award-dfe-accenture-2025-02-28-808d8ead`, `cf-award-government-digital-service-accenture-2025-03-01-44f3155e`, `cf-award-mod-accenture-2025-03-05-fbf37c0c`, `cf-award-mod-accenture-2025-04-01-6db90b87`, `cf-award-home-office-border-force-accenture-2025-06-01-32233d82`, `cf-award-mod-accenture-2025-06-20-7f2ba021`, `cf-award-cabinet-office-accenture-2025-08-27-2077d523`, `cf-award-mhclg-accenture-2025-08-29-369d20c5`, `cf-award-cabinet-office-accenture-2025-12-19-32be8363`, `cf-award-home-office-border-force-accenture-2026-02-26-4794a86d`, `cf-award-mod-accenture-2026-06-01-c101b4db`, `cf-award-dsit-accenture-2026-06-15-df0df041`
 
 ---
 
-## finding-245: Department for Business, Energy and Industrial Strategy (BEIS) behaves as a surface factory
+## finding-255: Arts Council England behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -4408,17 +4588,17 @@ Refs: `faculty-science-control-change-accenture-2026-03-12`, `dsit-techuk-anduri
 
 **Observed**
 
-Department for Business, Energy and Industrial Strategy (BEIS) appears across 7 surface(s): cf-award-beis-faculty-2020-03-20-268e82ad, cf-award-beis-faculty-2020-06-23-e316c7b2, cf-award-beis-faculty-2024-01-01-a887ffd6, uk-ministerial-meetings-beis-ministerial-meetings-october-to-december-2020-6092a4d4, uk-ministerial-meetings-beis-ministerial-meetings-january-to-march-2021-60eec2c6, uk-ministerial-meetings-beis-ministerial-meetings-april-to-june-2022-633463b5, uk-ministerial-meetings-beis-ministerial-meetings-january-to-march-2023-64c28f63. Secondary types: none.
+Arts Council England appears across 4 surface(s): cf-award-arts-council-england-faculty-2024-09-24-70584733, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, cf-award-arts-council-england-granicus-2023-04-06-46581e3e, cf-award-arts-council-england-dla-piper-2023-09-28-b5e8dcf2. Secondary types: none.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `cf-award-beis-faculty-2020-03-20-268e82ad`, `cf-award-beis-faculty-2020-06-23-e316c7b2`, `cf-award-beis-faculty-2024-01-01-a887ffd6`, `uk-ministerial-meetings-beis-ministerial-meetings-october-to-december-2020-6092a4d4`, `uk-ministerial-meetings-beis-ministerial-meetings-january-to-march-2021-60eec2c6`, `uk-ministerial-meetings-beis-ministerial-meetings-april-to-june-2022-633463b5`, `uk-ministerial-meetings-beis-ministerial-meetings-january-to-march-2023-64c28f63`
+Refs: `cf-award-arts-council-england-faculty-2024-09-24-70584733`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `cf-award-arts-council-england-granicus-2023-04-06-46581e3e`, `cf-award-arts-council-england-dla-piper-2023-09-28-b5e8dcf2`
 
 ---
 
-## finding-246: British Business Bank behaves as a surface factory
+## finding-256: Department for Business, Energy and Industrial Strategy (BEIS) behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -4426,17 +4606,17 @@ Refs: `cf-award-beis-faculty-2020-03-20-268e82ad`, `cf-award-beis-faculty-2020-0
 
 **Observed**
 
-British Business Bank appears across 5 surface(s): cf-award-british-business-bank-faculty-2021-02-26-fc9da582, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-hmts-ministerial-meetings-october-to-december-2024-685a87ad. Secondary types: none.
+Department for Business, Energy and Industrial Strategy (BEIS) appears across 46 surface(s): cf-award-beis-faculty-2020-03-20-268e82ad, cf-award-beis-faculty-2020-06-23-e316c7b2, cf-award-beis-faculty-2024-01-01-a887ffd6, uk-ministerial-meetings-beis-ministerial-meetings-october-to-december-2020-6092a4d4, uk-ministerial-meetings-beis-ministerial-meetings-january-to-march-2021-60eec2c6, uk-ministerial-meetings-beis-ministerial-meetings-april-to-june-2022-633463b5, uk-ministerial-meetings-beis-ministerial-meetings-january-to-march-2023-64c28f63, cf-award-beis-accenture-2022-09-09-3577a2f7, cf-award-beis-civica-2022-11-23-b866041a, cf-award-beis-mills-reeve-2022-12-16-f493d750, cf-award-beis-mills-reeve-2022-12-29-c5422a17, cf-award-beis-deloitte-2023-02-02-81bb8e6a, cf-award-beis-samsung-electronics-2023-02-13-dbfc5dbe, cf-award-beis-deloitte-2023-02-28-eee57da5, cf-award-beis-dla-piper-2023-02-28-43fef9df, cf-award-beis-vmware-2023-02-28-76f8c2bf, cf-award-beis-deloitte-2023-03-29-9e004643, cf-award-beis-dataminr-2023-04-04-f7429f4e, cf-award-beis-trilateral-research-2023-04-17-e31e470d, cf-award-beis-pinsent-masons-2023-04-25-efdf6548, cf-award-beis-kpmg-2023-04-27-32dfb735, cf-award-beis-teneo-2023-05-12-c2be51c8, cf-award-beis-deloitte-2023-05-17-1452afef, cf-award-beis-deloitte-2023-05-18-77ad8509, cf-award-beis-yougov-2023-05-26-b553f087, cf-award-beis-tata-consultancy-services-2023-06-05-5886679d, cf-award-beis-deloitte-2023-06-19-b1747476, cf-award-beis-university-of-birmingham-2023-06-26-4727254a, cf-award-beis-trail-of-bits-2023-07-24-f5ef5269, cf-award-beis-vmware-2023-07-24-3bca3f0e, cf-award-beis-deloitte-2023-07-27-ca105523, cf-award-beis-dell-2023-08-01-54286cb3, cf-award-beis-deloitte-2023-08-18-6e192e19, cf-award-beis-trail-of-bits-2023-09-04-9f0423a3, cf-award-beis-deloitte-2023-09-07-70446ded, cf-award-beis-trail-of-bits-2023-09-18-7cb95184, cf-award-beis-microsoft-2023-09-29-fa6a25fd, cf-award-beis-kpmg-2023-10-17-0dbe8470, cf-award-beis-kpmg-2023-10-23-45fd3fc6, cf-award-beis-google-2023-10-31-5bb1dd85, cf-award-beis-ncc-group-2023-11-16-8fd923b8, cf-award-beis-teneo-2023-11-23-f2a76643, cf-award-beis-capgemini-2023-12-01-fd83b1bc, cf-award-beis-trail-of-bits-2024-01-01-a8b06024, cf-award-beis-royal-united-services-institute-2024-01-09-7d95db41, cf-award-beis-yougov-2024-01-12-be81dc68. Secondary types: none.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `cf-award-british-business-bank-faculty-2021-02-26-fc9da582`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-hmts-ministerial-meetings-october-to-december-2024-685a87ad`
+Refs: `cf-award-beis-faculty-2020-03-20-268e82ad`, `cf-award-beis-faculty-2020-06-23-e316c7b2`, `cf-award-beis-faculty-2024-01-01-a887ffd6`, `uk-ministerial-meetings-beis-ministerial-meetings-october-to-december-2020-6092a4d4`, `uk-ministerial-meetings-beis-ministerial-meetings-january-to-march-2021-60eec2c6`, `uk-ministerial-meetings-beis-ministerial-meetings-april-to-june-2022-633463b5`, `uk-ministerial-meetings-beis-ministerial-meetings-january-to-march-2023-64c28f63`, `cf-award-beis-accenture-2022-09-09-3577a2f7`, `cf-award-beis-civica-2022-11-23-b866041a`, `cf-award-beis-mills-reeve-2022-12-16-f493d750`, `cf-award-beis-mills-reeve-2022-12-29-c5422a17`, `cf-award-beis-deloitte-2023-02-02-81bb8e6a`, `cf-award-beis-samsung-electronics-2023-02-13-dbfc5dbe`, `cf-award-beis-deloitte-2023-02-28-eee57da5`, `cf-award-beis-dla-piper-2023-02-28-43fef9df`, `cf-award-beis-vmware-2023-02-28-76f8c2bf`, `cf-award-beis-deloitte-2023-03-29-9e004643`, `cf-award-beis-dataminr-2023-04-04-f7429f4e`, `cf-award-beis-trilateral-research-2023-04-17-e31e470d`, `cf-award-beis-pinsent-masons-2023-04-25-efdf6548`, `cf-award-beis-kpmg-2023-04-27-32dfb735`, `cf-award-beis-teneo-2023-05-12-c2be51c8`, `cf-award-beis-deloitte-2023-05-17-1452afef`, `cf-award-beis-deloitte-2023-05-18-77ad8509`, `cf-award-beis-yougov-2023-05-26-b553f087`, `cf-award-beis-tata-consultancy-services-2023-06-05-5886679d`, `cf-award-beis-deloitte-2023-06-19-b1747476`, `cf-award-beis-university-of-birmingham-2023-06-26-4727254a`, `cf-award-beis-trail-of-bits-2023-07-24-f5ef5269`, `cf-award-beis-vmware-2023-07-24-3bca3f0e`, `cf-award-beis-deloitte-2023-07-27-ca105523`, `cf-award-beis-dell-2023-08-01-54286cb3`, `cf-award-beis-deloitte-2023-08-18-6e192e19`, `cf-award-beis-trail-of-bits-2023-09-04-9f0423a3`, `cf-award-beis-deloitte-2023-09-07-70446ded`, `cf-award-beis-trail-of-bits-2023-09-18-7cb95184`, `cf-award-beis-microsoft-2023-09-29-fa6a25fd`, `cf-award-beis-kpmg-2023-10-17-0dbe8470`, `cf-award-beis-kpmg-2023-10-23-45fd3fc6`, `cf-award-beis-google-2023-10-31-5bb1dd85`, `cf-award-beis-ncc-group-2023-11-16-8fd923b8`, `cf-award-beis-teneo-2023-11-23-f2a76643`, `cf-award-beis-capgemini-2023-12-01-fd83b1bc`, `cf-award-beis-trail-of-bits-2024-01-01-a8b06024`, `cf-award-beis-royal-united-services-institute-2024-01-09-7d95db41`, `cf-award-beis-yougov-2024-01-12-be81dc68`
 
 ---
 
-## finding-247: Centre For Process Innovation Limited behaves as a surface factory
+## finding-257: British Business Bank behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -4444,17 +4624,17 @@ Refs: `cf-award-british-business-bank-faculty-2021-02-26-fc9da582`, `uk-minister
 
 **Observed**
 
-Centre For Process Innovation Limited appears across 4 surface(s): cf-award-centre-for-process-innovation-limited-faculty-2023-03-03-34736f47, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625. Secondary types: none.
+British Business Bank appears across 23 surface(s): cf-award-british-business-bank-faculty-2021-02-26-fc9da582, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-hmts-ministerial-meetings-october-to-december-2024-685a87ad, cf-award-british-business-bank-gartner-2022-12-21-bf6e5f3c, cf-award-british-business-bank-gartner-2023-06-29-2600e8c5, cf-award-british-business-bank-kpmg-2023-08-25-f387b35c, cf-award-british-business-bank-kpmg-2023-12-15-81ddae55, cf-award-british-business-bank-baker-mckenzie-2024-03-22-5e1f05c5, cf-award-british-business-bank-gartner-2024-03-27-304ef791, cf-award-british-business-bank-experian-2025-12-18-2f7a5576, cf-award-british-business-bank-deloitte-2026-02-05-a97be180, cf-award-british-business-bank-deloitte-2026-02-20-1708ecae, cf-award-british-business-bank-experian-2026-02-26-c65053d9, cf-award-british-business-bank-salesforce-2026-04-28-963c04f7, cf-award-british-business-bank-vodafone-2026-06-08-170a3b9f, cf-award-british-business-bank-deloitte-2026-07-27-cd45d79e, cf-award-british-business-bank-dla-piper-2026-08-24-ee18310a, cf-award-british-business-bank-workday-2026-09-01-0d84aaec, cf-award-british-business-bank-experian-2026-09-25-28972836, cf-award-british-business-bank-experian-2026-09-29-1038893f, cf-award-british-business-bank-experian-2026-09-29-9bf748de. Secondary types: none.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `cf-award-centre-for-process-innovation-limited-faculty-2023-03-03-34736f47`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625`
+Refs: `cf-award-british-business-bank-faculty-2021-02-26-fc9da582`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-hmts-ministerial-meetings-october-to-december-2024-685a87ad`, `cf-award-british-business-bank-gartner-2022-12-21-bf6e5f3c`, `cf-award-british-business-bank-gartner-2023-06-29-2600e8c5`, `cf-award-british-business-bank-kpmg-2023-08-25-f387b35c`, `cf-award-british-business-bank-kpmg-2023-12-15-81ddae55`, `cf-award-british-business-bank-baker-mckenzie-2024-03-22-5e1f05c5`, `cf-award-british-business-bank-gartner-2024-03-27-304ef791`, `cf-award-british-business-bank-experian-2025-12-18-2f7a5576`, `cf-award-british-business-bank-deloitte-2026-02-05-a97be180`, `cf-award-british-business-bank-deloitte-2026-02-20-1708ecae`, `cf-award-british-business-bank-experian-2026-02-26-c65053d9`, `cf-award-british-business-bank-salesforce-2026-04-28-963c04f7`, `cf-award-british-business-bank-vodafone-2026-06-08-170a3b9f`, `cf-award-british-business-bank-deloitte-2026-07-27-cd45d79e`, `cf-award-british-business-bank-dla-piper-2026-08-24-ee18310a`, `cf-award-british-business-bank-workday-2026-09-01-0d84aaec`, `cf-award-british-business-bank-experian-2026-09-25-28972836`, `cf-award-british-business-bank-experian-2026-09-29-1038893f`, `cf-award-british-business-bank-experian-2026-09-29-9bf748de`
 
 ---
 
-## finding-248: Department for Digital, Culture, Media and Sport (DCMS) behaves as a surface factory
+## finding-258: Care Quality Commission behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -4462,17 +4642,17 @@ Refs: `cf-award-centre-for-process-innovation-limited-faculty-2023-03-03-34736f4
 
 **Observed**
 
-Department for Digital, Culture, Media and Sport (DCMS) appears across 8 surface(s): cf-award-dcms-faculty-2020-03-19-fcb1f692, cf-award-dcms-faculty-2021-01-11-8bf773ad, cf-award-dcms-faculty-2022-01-13-6b9e5a87, cf-award-dcms-faculty-2022-06-14-5dea9926, uk-ministerial-meetings-dcms-ministerial-meetings-october-to-december-2018-667bd05b, uk-ministerial-meetings-dcms-ministerial-meetings-january-to-march-2019-667bce7f, uk-ministerial-meetings-dcms-ministerial-meetings-january-to-march-2020-667bc60e, uk-ministerial-meetings-dcms-ministerial-meetings-january-to-march-2022-667af360. Secondary types: none.
+Care Quality Commission appears across 20 surface(s): cf-award-care-quality-commission-faculty-2024-07-12-4b46d0ee, cf-award-care-quality-commission-granicus-2022-03-24-8d1d4ec7, cf-award-care-quality-commission-kpmg-2022-07-18-978abcf9, cf-award-care-quality-commission-vodafone-2023-05-18-06b1d3a3, cf-award-care-quality-commission-kpmg-2023-05-25-da1b7e52, cf-award-care-quality-commission-oracle-2023-08-25-ec2f053c, cf-award-care-quality-commission-infosys-2023-10-31-b103575b, cf-award-care-quality-commission-gartner-2023-12-27-8316bfbd, cf-award-care-quality-commission-oracle-2024-02-29-0c251731, cf-award-care-quality-commission-kpmg-2024-05-15-4b911e9e, cf-award-care-quality-commission-deloitte-2024-06-14-79f692ce, cf-award-care-quality-commission-gartner-2024-07-31-4832d2d8, cf-award-care-quality-commission-oracle-2024-10-01-ae793499, cf-award-care-quality-commission-kpmg-2024-11-25-b584b026, cf-award-care-quality-commission-oracle-2024-12-02-2b27b0d4, cf-award-care-quality-commission-kainos-2024-12-17-fbed4d8b, cf-award-care-quality-commission-liverpool-john-moores-university-2025-04-29-f93672bd, cf-award-care-quality-commission-granicus-2025-05-22-b8670dde, cf-award-care-quality-commission-vodafone-2025-06-20-2f5baa5d, cf-award-care-quality-commission-infosys-2025-12-01-027f77ab. Secondary types: none.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `cf-award-dcms-faculty-2020-03-19-fcb1f692`, `cf-award-dcms-faculty-2021-01-11-8bf773ad`, `cf-award-dcms-faculty-2022-01-13-6b9e5a87`, `cf-award-dcms-faculty-2022-06-14-5dea9926`, `uk-ministerial-meetings-dcms-ministerial-meetings-october-to-december-2018-667bd05b`, `uk-ministerial-meetings-dcms-ministerial-meetings-january-to-march-2019-667bce7f`, `uk-ministerial-meetings-dcms-ministerial-meetings-january-to-march-2020-667bc60e`, `uk-ministerial-meetings-dcms-ministerial-meetings-january-to-march-2022-667af360`
+Refs: `cf-award-care-quality-commission-faculty-2024-07-12-4b46d0ee`, `cf-award-care-quality-commission-granicus-2022-03-24-8d1d4ec7`, `cf-award-care-quality-commission-kpmg-2022-07-18-978abcf9`, `cf-award-care-quality-commission-vodafone-2023-05-18-06b1d3a3`, `cf-award-care-quality-commission-kpmg-2023-05-25-da1b7e52`, `cf-award-care-quality-commission-oracle-2023-08-25-ec2f053c`, `cf-award-care-quality-commission-infosys-2023-10-31-b103575b`, `cf-award-care-quality-commission-gartner-2023-12-27-8316bfbd`, `cf-award-care-quality-commission-oracle-2024-02-29-0c251731`, `cf-award-care-quality-commission-kpmg-2024-05-15-4b911e9e`, `cf-award-care-quality-commission-deloitte-2024-06-14-79f692ce`, `cf-award-care-quality-commission-gartner-2024-07-31-4832d2d8`, `cf-award-care-quality-commission-oracle-2024-10-01-ae793499`, `cf-award-care-quality-commission-kpmg-2024-11-25-b584b026`, `cf-award-care-quality-commission-oracle-2024-12-02-2b27b0d4`, `cf-award-care-quality-commission-kainos-2024-12-17-fbed4d8b`, `cf-award-care-quality-commission-liverpool-john-moores-university-2025-04-29-f93672bd`, `cf-award-care-quality-commission-granicus-2025-05-22-b8670dde`, `cf-award-care-quality-commission-vodafone-2025-06-20-2f5baa5d`, `cf-award-care-quality-commission-infosys-2025-12-01-027f77ab`
 
 ---
 
-## finding-249: Department for Education (DfE) behaves as a surface factory
+## finding-259: Centre For Process Innovation Limited behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -4480,17 +4660,17 @@ Refs: `cf-award-dcms-faculty-2020-03-19-fcb1f692`, `cf-award-dcms-faculty-2021-0
 
 **Observed**
 
-Department for Education (DfE) appears across 8 surface(s): cf-award-dfe-faculty-2022-07-07-a51ed249, cf-award-dfe-faculty-2023-05-19-03470d3c, cf-award-dfe-faculty-2023-09-07-5b269dd1, dfe-ai-hackathon-faculty-2023-10-09, cf-award-dfe-faculty-2024-08-09-836909a1, uk-ministerial-meetings-dfe-ministerial-meetings-october-to-december-2018-5c94a965, uk-ministerial-meetings-dfe-ministerial-meetings-april-to-june-2019-5e381e4f, uk-ministerial-meetings-dfe-ministerial-meetings-january-to-march-2026-6a3cfe55. Secondary types: public_private_ai_infrastructure.
+Centre For Process Innovation Limited appears across 12 surface(s): cf-award-centre-for-process-innovation-limited-faculty-2023-03-03-34736f47, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625, cf-award-centre-for-process-innovatio-oracle-2022-12-15-e7e261e4, cf-award-centre-for-process-innovatio-google-2023-03-30-d96e2300, cf-award-centre-for-process-innovatio-siemens-2023-07-07-0d6665da, cf-award-centre-for-process-innovatio-siemens-2024-02-15-7ab56e5d, cf-award-centre-for-process-innovatio-microsoft-2024-06-21-5fc16218, cf-award-centre-for-process-innovatio-bsi-2024-12-18-df18fe21, cf-award-centre-for-process-innovatio-siemens-2025-02-17-c19b6f42, cf-award-centre-for-process-innovatio-amazon-web-services-aws-2025-10-09-bbce41d0. Secondary types: none.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `cf-award-dfe-faculty-2022-07-07-a51ed249`, `cf-award-dfe-faculty-2023-05-19-03470d3c`, `cf-award-dfe-faculty-2023-09-07-5b269dd1`, `dfe-ai-hackathon-faculty-2023-10-09`, `cf-award-dfe-faculty-2024-08-09-836909a1`, `uk-ministerial-meetings-dfe-ministerial-meetings-october-to-december-2018-5c94a965`, `uk-ministerial-meetings-dfe-ministerial-meetings-april-to-june-2019-5e381e4f`, `uk-ministerial-meetings-dfe-ministerial-meetings-january-to-march-2026-6a3cfe55`
+Refs: `cf-award-centre-for-process-innovation-limited-faculty-2023-03-03-34736f47`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625`, `cf-award-centre-for-process-innovatio-oracle-2022-12-15-e7e261e4`, `cf-award-centre-for-process-innovatio-google-2023-03-30-d96e2300`, `cf-award-centre-for-process-innovatio-siemens-2023-07-07-0d6665da`, `cf-award-centre-for-process-innovatio-siemens-2024-02-15-7ab56e5d`, `cf-award-centre-for-process-innovatio-microsoft-2024-06-21-5fc16218`, `cf-award-centre-for-process-innovatio-bsi-2024-12-18-df18fe21`, `cf-award-centre-for-process-innovatio-siemens-2025-02-17-c19b6f42`, `cf-award-centre-for-process-innovatio-amazon-web-services-aws-2025-10-09-bbce41d0`
 
 ---
 
-## finding-250: Department of Health and Social Care (DHSC) behaves as a surface factory
+## finding-260: Department for Digital, Culture, Media and Sport (DCMS) behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -4498,17 +4678,17 @@ Refs: `cf-award-dfe-faculty-2022-07-07-a51ed249`, `cf-award-dfe-faculty-2023-05-
 
 **Observed**
 
-Department of Health and Social Care (DHSC) appears across 9 surface(s): cf-award-dhsc-faculty-2020-02-13-13bd9795, cf-award-dhsc-faculty-2020-04-01-bf42fc5f, cf-award-dhsc-faculty-2021-03-01-64bce243, cf-award-dhsc-faculty-2024-03-26-05ac339b, uk-ministerial-meetings-dhsc-ministerial-meetings-april-to-june-2018-5bc603ac, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dcms-ministerial-meetings-october-to-december-2023-667ae72d, uk-ministerial-meetings-dhsc-ministerial-meetings-october-to-december-2024-67e19aad, uk-ministerial-meetings-dhsc-ministerial-meetings-october-to-december-2025-69c23ee2. Secondary types: none.
+Department for Digital, Culture, Media and Sport (DCMS) appears across 17 surface(s): cf-award-dcms-faculty-2020-03-19-fcb1f692, cf-award-dcms-faculty-2021-01-11-8bf773ad, cf-award-dcms-faculty-2022-01-13-6b9e5a87, cf-award-dcms-faculty-2022-06-14-5dea9926, uk-ministerial-meetings-dcms-ministerial-meetings-october-to-december-2018-667bd05b, uk-ministerial-meetings-dcms-ministerial-meetings-january-to-march-2019-667bce7f, uk-ministerial-meetings-dcms-ministerial-meetings-january-to-march-2020-667bc60e, uk-ministerial-meetings-dcms-ministerial-meetings-january-to-march-2022-667af360, cf-award-dcms-vodafone-2021-05-21-5d62a524, cf-award-dcms-mills-reeve-2023-02-14-8bb5a558, cf-award-dcms-plexal-2023-02-14-7d4ab81b, cf-award-dcms-royal-society-2023-03-20-66715af7, cf-award-dcms-dla-piper-2023-03-22-a95b8b39, cf-award-dcms-dla-piper-2023-03-31-30f8e166, cf-award-dcms-kpmg-2023-04-05-69d702b0, cf-award-dcms-plexal-2023-06-01-aafbb537, cf-award-dcms-deloitte-2023-07-26-ef9a6663. Secondary types: none.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `cf-award-dhsc-faculty-2020-02-13-13bd9795`, `cf-award-dhsc-faculty-2020-04-01-bf42fc5f`, `cf-award-dhsc-faculty-2021-03-01-64bce243`, `cf-award-dhsc-faculty-2024-03-26-05ac339b`, `uk-ministerial-meetings-dhsc-ministerial-meetings-april-to-june-2018-5bc603ac`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dcms-ministerial-meetings-october-to-december-2023-667ae72d`, `uk-ministerial-meetings-dhsc-ministerial-meetings-october-to-december-2024-67e19aad`, `uk-ministerial-meetings-dhsc-ministerial-meetings-october-to-december-2025-69c23ee2`
+Refs: `cf-award-dcms-faculty-2020-03-19-fcb1f692`, `cf-award-dcms-faculty-2021-01-11-8bf773ad`, `cf-award-dcms-faculty-2022-01-13-6b9e5a87`, `cf-award-dcms-faculty-2022-06-14-5dea9926`, `uk-ministerial-meetings-dcms-ministerial-meetings-october-to-december-2018-667bd05b`, `uk-ministerial-meetings-dcms-ministerial-meetings-january-to-march-2019-667bce7f`, `uk-ministerial-meetings-dcms-ministerial-meetings-january-to-march-2020-667bc60e`, `uk-ministerial-meetings-dcms-ministerial-meetings-january-to-march-2022-667af360`, `cf-award-dcms-vodafone-2021-05-21-5d62a524`, `cf-award-dcms-mills-reeve-2023-02-14-8bb5a558`, `cf-award-dcms-plexal-2023-02-14-7d4ab81b`, `cf-award-dcms-royal-society-2023-03-20-66715af7`, `cf-award-dcms-dla-piper-2023-03-22-a95b8b39`, `cf-award-dcms-dla-piper-2023-03-31-30f8e166`, `cf-award-dcms-kpmg-2023-04-05-69d702b0`, `cf-award-dcms-plexal-2023-06-01-aafbb537`, `cf-award-dcms-deloitte-2023-07-26-ef9a6663`
 
 ---
 
-## finding-251: Government Digital Service (GDS) behaves as a surface factory
+## finding-261: Department for Environment, Food and Rural Affairs (Defra) behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -4516,17 +4696,17 @@ Refs: `cf-award-dhsc-faculty-2020-02-13-13bd9795`, `cf-award-dhsc-faculty-2020-0
 
 **Observed**
 
-Government Digital Service (GDS) appears across 3 surface(s): cf-award-government-digital-service-faculty-2019-08-23-48673633, cf-award-government-digital-service-faculty-2019-10-04-7af67d25, gov-uk-chat-anthropic-model-transparency-record-2025-10-07. Secondary types: none.
+Department for Environment, Food and Rural Affairs (Defra) appears across 166 surface(s): cf-award-defra-faculty-2020-03-04-4c1c07fa, cf-award-defra-faculty-2025-08-11-7d04374b, cf-award-defra-dla-piper-2022-10-11-2605c4c3, cf-award-defra-deloitte-2022-11-10-371f9f56, cf-award-defra-deloitte-2022-11-10-922cf301, cf-award-defra-kpmg-2022-11-23-73cdef00, cf-award-defra-capgemini-2022-12-22-8e859f0f, cf-award-defra-amazon-web-services-aws-2022-12-23-59e881d1, cf-award-defra-dla-piper-2022-12-31-96576a77, cf-award-defra-sopra-steria-2023-01-04-7b2c962a, cf-award-defra-deloitte-2023-01-19-21b92919, cf-award-defra-deloitte-2023-01-20-6a78ef9c, cf-award-defra-kyndryl-2023-01-30-4b89e56f, cf-award-defra-accenture-2023-02-01-85c1dc76, cf-award-defra-deloitte-2023-02-02-07d37855, cf-award-defra-deloitte-2023-02-07-b771c4b5, cf-award-defra-deloitte-2023-02-20-da53f014, cf-award-defra-kpmg-2023-02-27-3e112312, cf-award-defra-kpmg-2023-03-20-51b05c3d, cf-award-defra-civica-2023-03-28-d3885552, cf-award-defra-mckinsey-and-company-2023-04-21-dbe33d6a, cf-award-defra-kpmg-2023-05-04-78d12ed7, cf-award-defra-microsoft-2023-05-16-676fa8f5, cf-award-defra-mckinsey-and-company-2023-05-23-d09ba618, cf-award-defra-kpmg-2023-06-05-dcca9bcc, cf-award-defra-microsoft-2023-06-06-515e4c7c, cf-award-defra-deloitte-2023-06-16-6cf66609, cf-award-defra-civica-2023-06-30-bbdb78c4, cf-award-defra-kpmg-2023-07-07-3fbbd50d, cf-award-defra-civica-2023-07-12-89af330e, cf-award-defra-kpmg-2023-07-17-e3af2180, cf-award-defra-yougov-2023-07-18-7f74d1cb, cf-award-defra-deloitte-2023-07-21-3096e5da, cf-award-defra-gartner-2023-07-31-bfd6fd71, cf-award-defra-sopra-steria-2023-08-01-5248efde, cf-award-defra-microsoft-2023-08-10-e1c9a63d, cf-award-defra-atkinsrealis-2023-08-21-3cf6aed4, cf-award-defra-deloitte-2023-08-21-22ed6e1c, cf-award-defra-capgemini-2023-08-24-d6f8cec1, cf-award-defra-liverpool-john-moores-university-2023-08-28-a1b89170, cf-award-defra-palantir-2023-09-13-d5cf0f8e, cf-award-defra-civica-2023-09-27-904ba2ff, cf-award-defra-ncc-group-2023-09-29-37b68d4c, cf-award-defra-dla-piper-2023-10-02-cde8d6fd, cf-award-defra-civica-2023-10-10-127466c7, cf-award-defra-deloitte-2023-10-10-cc01b6ac, cf-award-defra-mckinsey-and-company-2023-10-13-ebe7a1e5, cf-award-defra-kpmg-2023-10-23-9e23bfcc, cf-award-defra-kpmg-2023-10-23-d05ffcb4, cf-award-defra-dla-piper-2023-10-24-772d5f3c, cf-award-defra-atkinsrealis-2023-10-25-a2a0e513, cf-award-defra-kpmg-2023-10-25-c6775599, cf-award-defra-kpmg-2023-10-25-eef0f5d2, cf-award-defra-mills-reeve-2023-12-01-782d5852, cf-award-defra-deloitte-2024-01-18-8faab7f2, cf-award-defra-capgemini-2024-01-19-52fbc10d, cf-award-defra-deloitte-2024-01-26-0328d8ac, cf-award-defra-deloitte-2024-02-08-0f44bcf9, cf-award-defra-atkinsrealis-2024-02-09-158287ac, cf-award-defra-gartner-2024-02-23-5710007c, cf-award-defra-oracle-2024-03-06-00e81c7d, cf-award-defra-atkinsrealis-2024-03-07-a0ad27e7, cf-award-defra-kpmg-2024-03-07-c6be4b71, cf-award-defra-capgemini-2024-03-18-3132cbdb, cf-award-defra-capgemini-2024-03-18-ceeda701, cf-award-defra-civica-2024-04-01-713a7d1d, cf-award-defra-vodafone-2024-04-01-bff8e4b6, cf-award-defra-oracle-2024-04-05-001dcbfd, cf-award-defra-kpmg-2024-04-12-aaece739, cf-award-defra-kpmg-2024-04-25-e491edcc, cf-award-defra-deloitte-2024-04-30-bb2cac80, cf-award-defra-kpmg-2024-05-07-96c8cf7e, cf-award-defra-atkinsrealis-2024-05-21-39376862, cf-award-defra-university-of-birmingham-2024-07-03-a8b43a43, cf-award-defra-deloitte-2024-07-05-e49b647d, cf-award-defra-kpmg-2024-07-08-cb216044, cf-award-defra-deloitte-2024-07-15-8b0f4b2b, cf-award-defra-kpmg-2024-07-15-ed33c9dd, cf-award-defra-planet-2024-07-31-0ef2888a, cf-award-defra-deloitte-2024-08-12-33b49524, cf-award-defra-deloitte-2024-08-19-894f63c4, cf-award-defra-kpmg-2024-08-19-01bf7f57, cf-award-defra-oracle-2024-08-20-c06f45d0, cf-award-defra-kpmg-2024-08-25-e1bab572, cf-award-defra-kpmg-2024-08-28-10fe1b11, cf-award-defra-atkinsrealis-2024-10-07-cb5d895e, cf-award-defra-accenture-2024-10-14-93e5d45b, cf-award-defra-university-of-oxford-2024-11-07-53c0cf3d, cf-award-defra-civica-2024-11-08-fa496f74, cf-award-defra-deloitte-2024-11-08-9ca2b001, cf-award-defra-vodafone-2024-12-04-4aaa4805, cf-award-defra-capgemini-2024-12-10-b6dfe935, cf-award-defra-sopra-steria-2024-12-19-407a1708, cf-award-defra-capgemini-2025-01-20-3042f3cc, cf-award-defra-accenture-2025-01-29-afa5ca2e, cf-award-defra-deloitte-2025-02-03-927b9913, cf-award-defra-deloitte-2025-02-10-c9ed9bb6, cf-award-defra-oracle-2025-02-28-ac63eb2a, cf-award-defra-atkinsrealis-2025-03-11-1b9ea1ec, cf-award-defra-kpmg-2025-04-28-ff698751, cf-award-defra-kpmg-2025-05-16-84908d75, cf-award-defra-atkinsrealis-2025-07-21-449089fa, cf-award-defra-kyndryl-2025-07-25-8dc7765f, cf-award-defra-dla-piper-2025-08-07-5ac97246, cf-award-defra-atkinsrealis-2025-08-20-30d52535, cf-award-defra-dla-piper-2025-08-27-fd65ead1, cf-award-defra-atkinsrealis-2025-09-01-58f73dca, cf-award-defra-civica-2025-09-01-a338c2ca, cf-award-defra-oracle-2025-09-12-b6a2eb5b, cf-award-defra-kpmg-2025-09-18-ce026493, cf-award-defra-university-of-oxford-2025-09-25-186ae54a, cf-award-defra-atkinsrealis-2025-10-08-a19a1aa2, cf-award-defra-deloitte-2025-10-14-928a428b, cf-award-defra-deloitte-2025-10-29-4cfb0549, cf-award-defra-capgemini-2025-11-01-823b44a9, cf-award-defra-kpmg-2025-11-07-f8ac2744, cf-award-defra-atkinsrealis-2025-11-19-c3435d07, cf-award-defra-mills-reeve-2025-11-19-f35f41e6, cf-award-defra-oracle-2025-11-19-851d7a23, cf-award-defra-gartner-2025-11-21-54d5ea39, cf-award-defra-mckinsey-and-company-2025-12-12-09df45d2, cf-award-defra-civica-2025-12-17-c8de8141, cf-award-defra-amazon-web-services-aws-2025-12-19-7556ca1d, cf-award-defra-deloitte-2026-01-05-4f658991, cf-award-defra-liverpool-john-moores-university-2026-01-07-f91b3f6b, cf-award-defra-kpmg-2026-01-09-77dabcf0, cf-award-defra-atkinsrealis-2026-01-19-e7ccb5b1, cf-award-defra-deloitte-2026-01-28-c7aff23f, cf-award-defra-deloitte-2026-01-30-eca03b86, cf-award-defra-vodafone-2026-01-31-d5c8b682, cf-award-defra-capgemini-2026-02-01-6cbebcc9, cf-award-defra-capgemini-2026-02-06-f26abf02, cf-award-defra-mckinsey-and-company-2026-02-09-3fea6e6e, cf-award-defra-capgemini-2026-03-01-8e05f31c, cf-award-defra-atkinsrealis-2026-03-02-df8cd7e5, cf-award-defra-kpmg-2026-03-03-a4adb6ab, cf-award-defra-atkinsrealis-2026-03-05-7e7c312f, cf-award-defra-kpmg-2026-03-09-5d62a53c, cf-award-defra-kpmg-2026-03-13-b21a2801, cf-award-defra-atkinsrealis-2026-03-17-faf040f0, cf-award-defra-oracle-2026-03-18-99073bd7, cf-award-defra-atkinsrealis-2026-03-27-300b2345, cf-award-defra-atkinsrealis-2026-03-27-4989a114, cf-award-defra-deloitte-2026-03-30-6f9c9059, cf-award-defra-dla-piper-2026-03-31-720ec5a8, cf-award-defra-experian-2026-04-01-1262469f, cf-award-defra-kainos-2026-05-21-86b60f2d, cf-award-defra-kpmg-2026-06-12-5664ecc2, cf-award-defra-deloitte-2026-07-01-4fc40524, cf-award-defra-salesforce-2026-07-09-0e64fb94, cf-award-defra-dla-piper-2026-07-13-8e0f8a01, cf-award-defra-kpmg-2026-07-21-8057f636, cf-award-defra-deloitte-2026-08-12-2ebbc983, cf-award-defra-deloitte-2026-08-17-ac0cf8c1, cf-award-defra-kpmg-2026-09-14-9ddc2f31, cf-award-defra-kpmg-2026-09-14-9e364005, cf-award-defra-deloitte-2026-09-16-e2f9bfcd, cf-award-defra-dla-piper-2026-09-25-eb0ed060, cf-award-defra-kpmg-2026-09-25-180169e0, cf-award-defra-microsoft-2026-09-29-44116dd3, cf-award-defra-deloitte-2026-09-30-b3c8cc6b, cf-award-defra-civica-2026-10-01-c34678f7, cf-award-defra-kpmg-2026-10-02-a19b6b94, cf-award-defra-dla-piper-2026-10-05-ea666420, cf-award-defra-deloitte-2026-10-30-55f3267b, cf-award-defra-deloitte-2026-11-06-5b3ddff9. Secondary types: none.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `cf-award-government-digital-service-faculty-2019-08-23-48673633`, `cf-award-government-digital-service-faculty-2019-10-04-7af67d25`, `gov-uk-chat-anthropic-model-transparency-record-2025-10-07`
+Refs: `cf-award-defra-faculty-2020-03-04-4c1c07fa`, `cf-award-defra-faculty-2025-08-11-7d04374b`, `cf-award-defra-dla-piper-2022-10-11-2605c4c3`, `cf-award-defra-deloitte-2022-11-10-371f9f56`, `cf-award-defra-deloitte-2022-11-10-922cf301`, `cf-award-defra-kpmg-2022-11-23-73cdef00`, `cf-award-defra-capgemini-2022-12-22-8e859f0f`, `cf-award-defra-amazon-web-services-aws-2022-12-23-59e881d1`, `cf-award-defra-dla-piper-2022-12-31-96576a77`, `cf-award-defra-sopra-steria-2023-01-04-7b2c962a`, `cf-award-defra-deloitte-2023-01-19-21b92919`, `cf-award-defra-deloitte-2023-01-20-6a78ef9c`, `cf-award-defra-kyndryl-2023-01-30-4b89e56f`, `cf-award-defra-accenture-2023-02-01-85c1dc76`, `cf-award-defra-deloitte-2023-02-02-07d37855`, `cf-award-defra-deloitte-2023-02-07-b771c4b5`, `cf-award-defra-deloitte-2023-02-20-da53f014`, `cf-award-defra-kpmg-2023-02-27-3e112312`, `cf-award-defra-kpmg-2023-03-20-51b05c3d`, `cf-award-defra-civica-2023-03-28-d3885552`, `cf-award-defra-mckinsey-and-company-2023-04-21-dbe33d6a`, `cf-award-defra-kpmg-2023-05-04-78d12ed7`, `cf-award-defra-microsoft-2023-05-16-676fa8f5`, `cf-award-defra-mckinsey-and-company-2023-05-23-d09ba618`, `cf-award-defra-kpmg-2023-06-05-dcca9bcc`, `cf-award-defra-microsoft-2023-06-06-515e4c7c`, `cf-award-defra-deloitte-2023-06-16-6cf66609`, `cf-award-defra-civica-2023-06-30-bbdb78c4`, `cf-award-defra-kpmg-2023-07-07-3fbbd50d`, `cf-award-defra-civica-2023-07-12-89af330e`, `cf-award-defra-kpmg-2023-07-17-e3af2180`, `cf-award-defra-yougov-2023-07-18-7f74d1cb`, `cf-award-defra-deloitte-2023-07-21-3096e5da`, `cf-award-defra-gartner-2023-07-31-bfd6fd71`, `cf-award-defra-sopra-steria-2023-08-01-5248efde`, `cf-award-defra-microsoft-2023-08-10-e1c9a63d`, `cf-award-defra-atkinsrealis-2023-08-21-3cf6aed4`, `cf-award-defra-deloitte-2023-08-21-22ed6e1c`, `cf-award-defra-capgemini-2023-08-24-d6f8cec1`, `cf-award-defra-liverpool-john-moores-university-2023-08-28-a1b89170`, `cf-award-defra-palantir-2023-09-13-d5cf0f8e`, `cf-award-defra-civica-2023-09-27-904ba2ff`, `cf-award-defra-ncc-group-2023-09-29-37b68d4c`, `cf-award-defra-dla-piper-2023-10-02-cde8d6fd`, `cf-award-defra-civica-2023-10-10-127466c7`, `cf-award-defra-deloitte-2023-10-10-cc01b6ac`, `cf-award-defra-mckinsey-and-company-2023-10-13-ebe7a1e5`, `cf-award-defra-kpmg-2023-10-23-9e23bfcc`, `cf-award-defra-kpmg-2023-10-23-d05ffcb4`, `cf-award-defra-dla-piper-2023-10-24-772d5f3c`, `cf-award-defra-atkinsrealis-2023-10-25-a2a0e513`, `cf-award-defra-kpmg-2023-10-25-c6775599`, `cf-award-defra-kpmg-2023-10-25-eef0f5d2`, `cf-award-defra-mills-reeve-2023-12-01-782d5852`, `cf-award-defra-deloitte-2024-01-18-8faab7f2`, `cf-award-defra-capgemini-2024-01-19-52fbc10d`, `cf-award-defra-deloitte-2024-01-26-0328d8ac`, `cf-award-defra-deloitte-2024-02-08-0f44bcf9`, `cf-award-defra-atkinsrealis-2024-02-09-158287ac`, `cf-award-defra-gartner-2024-02-23-5710007c`, `cf-award-defra-oracle-2024-03-06-00e81c7d`, `cf-award-defra-atkinsrealis-2024-03-07-a0ad27e7`, `cf-award-defra-kpmg-2024-03-07-c6be4b71`, `cf-award-defra-capgemini-2024-03-18-3132cbdb`, `cf-award-defra-capgemini-2024-03-18-ceeda701`, `cf-award-defra-civica-2024-04-01-713a7d1d`, `cf-award-defra-vodafone-2024-04-01-bff8e4b6`, `cf-award-defra-oracle-2024-04-05-001dcbfd`, `cf-award-defra-kpmg-2024-04-12-aaece739`, `cf-award-defra-kpmg-2024-04-25-e491edcc`, `cf-award-defra-deloitte-2024-04-30-bb2cac80`, `cf-award-defra-kpmg-2024-05-07-96c8cf7e`, `cf-award-defra-atkinsrealis-2024-05-21-39376862`, `cf-award-defra-university-of-birmingham-2024-07-03-a8b43a43`, `cf-award-defra-deloitte-2024-07-05-e49b647d`, `cf-award-defra-kpmg-2024-07-08-cb216044`, `cf-award-defra-deloitte-2024-07-15-8b0f4b2b`, `cf-award-defra-kpmg-2024-07-15-ed33c9dd`, `cf-award-defra-planet-2024-07-31-0ef2888a`, `cf-award-defra-deloitte-2024-08-12-33b49524`, `cf-award-defra-deloitte-2024-08-19-894f63c4`, `cf-award-defra-kpmg-2024-08-19-01bf7f57`, `cf-award-defra-oracle-2024-08-20-c06f45d0`, `cf-award-defra-kpmg-2024-08-25-e1bab572`, `cf-award-defra-kpmg-2024-08-28-10fe1b11`, `cf-award-defra-atkinsrealis-2024-10-07-cb5d895e`, `cf-award-defra-accenture-2024-10-14-93e5d45b`, `cf-award-defra-university-of-oxford-2024-11-07-53c0cf3d`, `cf-award-defra-civica-2024-11-08-fa496f74`, `cf-award-defra-deloitte-2024-11-08-9ca2b001`, `cf-award-defra-vodafone-2024-12-04-4aaa4805`, `cf-award-defra-capgemini-2024-12-10-b6dfe935`, `cf-award-defra-sopra-steria-2024-12-19-407a1708`, `cf-award-defra-capgemini-2025-01-20-3042f3cc`, `cf-award-defra-accenture-2025-01-29-afa5ca2e`, `cf-award-defra-deloitte-2025-02-03-927b9913`, `cf-award-defra-deloitte-2025-02-10-c9ed9bb6`, `cf-award-defra-oracle-2025-02-28-ac63eb2a`, `cf-award-defra-atkinsrealis-2025-03-11-1b9ea1ec`, `cf-award-defra-kpmg-2025-04-28-ff698751`, `cf-award-defra-kpmg-2025-05-16-84908d75`, `cf-award-defra-atkinsrealis-2025-07-21-449089fa`, `cf-award-defra-kyndryl-2025-07-25-8dc7765f`, `cf-award-defra-dla-piper-2025-08-07-5ac97246`, `cf-award-defra-atkinsrealis-2025-08-20-30d52535`, `cf-award-defra-dla-piper-2025-08-27-fd65ead1`, `cf-award-defra-atkinsrealis-2025-09-01-58f73dca`, `cf-award-defra-civica-2025-09-01-a338c2ca`, `cf-award-defra-oracle-2025-09-12-b6a2eb5b`, `cf-award-defra-kpmg-2025-09-18-ce026493`, `cf-award-defra-university-of-oxford-2025-09-25-186ae54a`, `cf-award-defra-atkinsrealis-2025-10-08-a19a1aa2`, `cf-award-defra-deloitte-2025-10-14-928a428b`, `cf-award-defra-deloitte-2025-10-29-4cfb0549`, `cf-award-defra-capgemini-2025-11-01-823b44a9`, `cf-award-defra-kpmg-2025-11-07-f8ac2744`, `cf-award-defra-atkinsrealis-2025-11-19-c3435d07`, `cf-award-defra-mills-reeve-2025-11-19-f35f41e6`, `cf-award-defra-oracle-2025-11-19-851d7a23`, `cf-award-defra-gartner-2025-11-21-54d5ea39`, `cf-award-defra-mckinsey-and-company-2025-12-12-09df45d2`, `cf-award-defra-civica-2025-12-17-c8de8141`, `cf-award-defra-amazon-web-services-aws-2025-12-19-7556ca1d`, `cf-award-defra-deloitte-2026-01-05-4f658991`, `cf-award-defra-liverpool-john-moores-university-2026-01-07-f91b3f6b`, `cf-award-defra-kpmg-2026-01-09-77dabcf0`, `cf-award-defra-atkinsrealis-2026-01-19-e7ccb5b1`, `cf-award-defra-deloitte-2026-01-28-c7aff23f`, `cf-award-defra-deloitte-2026-01-30-eca03b86`, `cf-award-defra-vodafone-2026-01-31-d5c8b682`, `cf-award-defra-capgemini-2026-02-01-6cbebcc9`, `cf-award-defra-capgemini-2026-02-06-f26abf02`, `cf-award-defra-mckinsey-and-company-2026-02-09-3fea6e6e`, `cf-award-defra-capgemini-2026-03-01-8e05f31c`, `cf-award-defra-atkinsrealis-2026-03-02-df8cd7e5`, `cf-award-defra-kpmg-2026-03-03-a4adb6ab`, `cf-award-defra-atkinsrealis-2026-03-05-7e7c312f`, `cf-award-defra-kpmg-2026-03-09-5d62a53c`, `cf-award-defra-kpmg-2026-03-13-b21a2801`, `cf-award-defra-atkinsrealis-2026-03-17-faf040f0`, `cf-award-defra-oracle-2026-03-18-99073bd7`, `cf-award-defra-atkinsrealis-2026-03-27-300b2345`, `cf-award-defra-atkinsrealis-2026-03-27-4989a114`, `cf-award-defra-deloitte-2026-03-30-6f9c9059`, `cf-award-defra-dla-piper-2026-03-31-720ec5a8`, `cf-award-defra-experian-2026-04-01-1262469f`, `cf-award-defra-kainos-2026-05-21-86b60f2d`, `cf-award-defra-kpmg-2026-06-12-5664ecc2`, `cf-award-defra-deloitte-2026-07-01-4fc40524`, `cf-award-defra-salesforce-2026-07-09-0e64fb94`, `cf-award-defra-dla-piper-2026-07-13-8e0f8a01`, `cf-award-defra-kpmg-2026-07-21-8057f636`, `cf-award-defra-deloitte-2026-08-12-2ebbc983`, `cf-award-defra-deloitte-2026-08-17-ac0cf8c1`, `cf-award-defra-kpmg-2026-09-14-9ddc2f31`, `cf-award-defra-kpmg-2026-09-14-9e364005`, `cf-award-defra-deloitte-2026-09-16-e2f9bfcd`, `cf-award-defra-dla-piper-2026-09-25-eb0ed060`, `cf-award-defra-kpmg-2026-09-25-180169e0`, `cf-award-defra-microsoft-2026-09-29-44116dd3`, `cf-award-defra-deloitte-2026-09-30-b3c8cc6b`, `cf-award-defra-civica-2026-10-01-c34678f7`, `cf-award-defra-kpmg-2026-10-02-a19b6b94`, `cf-award-defra-dla-piper-2026-10-05-ea666420`, `cf-award-defra-deloitte-2026-10-30-55f3267b`, `cf-award-defra-deloitte-2026-11-06-5b3ddff9`
 
 ---
 
-## finding-252: HM Treasury behaves as a surface factory
+## finding-262: Department for Energy Security and Net Zero (DESNZ) behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -4534,17 +4714,17 @@ Refs: `cf-award-government-digital-service-faculty-2019-08-23-48673633`, `cf-awa
 
 **Observed**
 
-HM Treasury appears across 12 surface(s): national-supercomputer-edinburgh-750m-2025-06-11, uk-compute-roadmap-sovereign-ai-unit-2025-07-17, uk-ministerial-meetings-hmt-ministers-meetings-1-july-to-30-september-2019-5e3d8700, uk-ministerial-meetings-hmt-ministers-meetings-july-to-september-2022-64882625, uk-ministerial-meetings-hmt-ministers-meetings-january-to-march-2023-64b12e18, uk-ministerial-meetings-hmt-ministers-meetings-66cf4772, uk-ministerial-meetings-hmt-ministerial-meetings-july-to-september-2024-679b464d, uk-ministerial-meetings-hmts-ministerial-meetings-october-to-december-2024-685a87ad, uk-ministerial-meetings-hmts-ministerial-meetings-january-to-march-2025-68bae311, uk-ministerial-meetings-hmts-ministerial-meetings-april-to-june-2025-68d50fe0, uk-ministerial-meetings-hmts-ministerial-meetings-july-to-september-2025-69414470, uk-ministerial-meetings-hmts-ministerial-meetings-october-to-december-2025-69bd3123. Secondary types: policy_to_procurement_surface, public_private_ai_infrastructure.
+Department for Energy Security and Net Zero (DESNZ) appears across 21 surface(s): ai-energy-council-first-meeting-2025-04-08, cf-award-desnz-mckinsey-and-company-2023-03-08-85ce4427, cf-award-desnz-fcdo-services-2023-03-31-5628fb46, cf-award-desnz-atkinsrealis-2023-04-24-7a6efc92, cf-award-desnz-yougov-2024-01-15-bc7b9006, cf-award-desnz-ncc-group-2024-01-23-3651b081, cf-award-desnz-deloitte-2024-02-02-0afecac7, cf-award-desnz-deloitte-2024-02-04-17482010, cf-award-desnz-capgemini-2024-04-23-abe9bce3, cf-award-desnz-gemserv-2024-04-26-2112b0e8, cf-award-desnz-deloitte-2024-05-19-6341552c, cf-award-desnz-ukri-2024-08-15-1698debb, cf-award-desnz-accenture-2024-12-09-e43ccf35, cf-award-desnz-mills-reeve-2024-12-30-586cdaee, cf-award-desnz-gemserv-2025-01-16-8aa9a92f, cf-award-desnz-dla-piper-2025-01-17-3d14c546, cf-award-desnz-kpmg-2025-01-21-536e98c3, cf-award-desnz-deloitte-2025-02-14-6af77593, cf-award-desnz-microsoft-2025-03-31-6da1f3e0, cf-award-desnz-deloitte-2025-06-25-0ab2fb9b, cf-award-desnz-deloitte-2026-05-27-f0c8b826. Secondary types: public_private_ai_infrastructure.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `national-supercomputer-edinburgh-750m-2025-06-11`, `uk-compute-roadmap-sovereign-ai-unit-2025-07-17`, `uk-ministerial-meetings-hmt-ministers-meetings-1-july-to-30-september-2019-5e3d8700`, `uk-ministerial-meetings-hmt-ministers-meetings-july-to-september-2022-64882625`, `uk-ministerial-meetings-hmt-ministers-meetings-january-to-march-2023-64b12e18`, `uk-ministerial-meetings-hmt-ministers-meetings-66cf4772`, `uk-ministerial-meetings-hmt-ministerial-meetings-july-to-september-2024-679b464d`, `uk-ministerial-meetings-hmts-ministerial-meetings-october-to-december-2024-685a87ad`, `uk-ministerial-meetings-hmts-ministerial-meetings-january-to-march-2025-68bae311`, `uk-ministerial-meetings-hmts-ministerial-meetings-april-to-june-2025-68d50fe0`, `uk-ministerial-meetings-hmts-ministerial-meetings-july-to-september-2025-69414470`, `uk-ministerial-meetings-hmts-ministerial-meetings-october-to-december-2025-69bd3123`
+Refs: `ai-energy-council-first-meeting-2025-04-08`, `cf-award-desnz-mckinsey-and-company-2023-03-08-85ce4427`, `cf-award-desnz-fcdo-services-2023-03-31-5628fb46`, `cf-award-desnz-atkinsrealis-2023-04-24-7a6efc92`, `cf-award-desnz-yougov-2024-01-15-bc7b9006`, `cf-award-desnz-ncc-group-2024-01-23-3651b081`, `cf-award-desnz-deloitte-2024-02-02-0afecac7`, `cf-award-desnz-deloitte-2024-02-04-17482010`, `cf-award-desnz-capgemini-2024-04-23-abe9bce3`, `cf-award-desnz-gemserv-2024-04-26-2112b0e8`, `cf-award-desnz-deloitte-2024-05-19-6341552c`, `cf-award-desnz-ukri-2024-08-15-1698debb`, `cf-award-desnz-accenture-2024-12-09-e43ccf35`, `cf-award-desnz-mills-reeve-2024-12-30-586cdaee`, `cf-award-desnz-gemserv-2025-01-16-8aa9a92f`, `cf-award-desnz-dla-piper-2025-01-17-3d14c546`, `cf-award-desnz-kpmg-2025-01-21-536e98c3`, `cf-award-desnz-deloitte-2025-02-14-6af77593`, `cf-award-desnz-microsoft-2025-03-31-6da1f3e0`, `cf-award-desnz-deloitte-2025-06-25-0ab2fb9b`, `cf-award-desnz-deloitte-2026-05-27-f0c8b826`
 
 ---
 
-## finding-253: UK Research and Innovation (UKRI) behaves as a surface factory
+## finding-263: Department for Education (DfE) behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -4552,17 +4732,17 @@ Refs: `national-supercomputer-edinburgh-750m-2025-06-11`, `uk-compute-roadmap-so
 
 **Observed**
 
-UK Research and Innovation (UKRI) appears across 11 surface(s): cf-award-ukri-faculty-2023-07-07-87b2eade, uk-compute-roadmap-sovereign-ai-unit-2025-07-17, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5. Secondary types: policy_to_procurement_surface, public_private_ai_infrastructure.
+Department for Education (DfE) appears across 57 surface(s): cf-award-dfe-faculty-2022-07-07-a51ed249, cf-award-dfe-faculty-2023-05-19-03470d3c, cf-award-dfe-faculty-2023-09-07-5b269dd1, dfe-ai-hackathon-faculty-2023-10-09, cf-award-dfe-faculty-2024-08-09-836909a1, uk-ministerial-meetings-dfe-ministerial-meetings-october-to-december-2018-5c94a965, uk-ministerial-meetings-dfe-ministerial-meetings-april-to-june-2019-5e381e4f, uk-ministerial-meetings-dfe-ministerial-meetings-january-to-march-2026-6a3cfe55, cf-award-dfe-city-of-london-2021-01-29-5c82141e, cf-award-dfe-university-of-birmingham-2021-09-13-1695579d, cf-award-dfe-qualtrics-2021-09-30-b3c7f4c1, cf-award-dfe-vodafone-2022-06-01-d3031a3d, cf-award-dfe-mills-reeve-2022-07-21-d85765af, cf-award-dfe-kpmg-2022-07-29-720925d9, cf-award-dfe-mills-reeve-2022-10-03-69ad78bf, cf-award-dfe-ncc-group-2022-12-16-818dc33d, cf-award-dfe-bae-systems-2023-01-16-1cdafc4f, cf-award-dfe-vodafone-2023-01-18-2bbe49a9, cf-award-dfe-deloitte-2023-01-19-2523b6a0, cf-award-dfe-workday-2023-02-03-2c2f020b, cf-award-dfe-university-of-edinburgh-2023-02-17-e1f56cf0, cf-award-dfe-kpmg-2023-03-07-d1a09c2e, cf-award-dfe-kainos-2023-03-21-39498740, cf-award-dfe-microsoft-2023-03-29-ccf07807, cf-award-dfe-yougov-2023-04-21-906634eb, cf-award-dfe-gartner-2023-04-28-d805a67b, cf-award-dfe-gartner-2023-04-30-f2103645, cf-award-dfe-tata-consultancy-services-2023-05-28-67661fae, cf-award-dfe-gartner-2023-05-31-f7a8aef5, cf-award-dfe-teneo-2023-08-09-76b9c352, cf-award-dfe-mills-reeve-2023-08-10-3898f679, cf-award-dfe-pinsent-masons-2023-08-10-1fa9e216, cf-award-dfe-kpmg-2023-08-15-31f748e1, cf-award-dfe-school-of-code-2023-09-01-d36006cb, cf-award-ukri-dfe-2023-09-19-db6a8757, cf-award-dfe-university-of-birmingham-2023-09-30-74a79958, cf-award-dfe-granicus-2023-11-22-e527e607, cf-award-dfe-capgemini-2024-01-08-cbbba436, cf-award-dfe-microsoft-2024-04-03-1282f38f, cf-award-dfe-dla-piper-2024-09-30-df549765, cf-award-dfe-kainos-2024-12-01-128013b2, cf-award-dfe-university-of-birmingham-2024-12-08-a004c647, cf-award-dfe-kpmg-2025-01-31-513e64cd, cf-award-dfe-accenture-2025-02-28-808d8ead, cf-award-dfe-microsoft-2025-04-05-401ae757, cf-award-dfe-kpmg-2025-04-10-e642afe0, cf-award-dfe-deloitte-2025-04-14-b2ad4285, cf-award-dfe-gartner-2025-04-29-4b54e98f, cf-award-dfe-deloitte-2025-06-06-045d86a4, cf-award-dfe-kpmg-2025-06-19-b1d6ed80, cf-award-dfe-kpmg-2025-06-25-6109d46b, cf-award-dfe-pwc-2025-07-30-01e09f05, cf-award-dfe-dentsu-2025-09-29-2cc03ede, cf-award-dfe-atkinsrealis-2026-02-16-6f29870b, cf-award-dfe-kainos-2026-02-20-5850f84a, cf-award-dfe-university-of-birmingham-2026-03-09-f44ea2da, cf-award-dfe-gartner-2026-04-02-c53e8c97. Secondary types: public_private_ai_infrastructure.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `cf-award-ukri-faculty-2023-07-07-87b2eade`, `uk-compute-roadmap-sovereign-ai-unit-2025-07-17`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5`
+Refs: `cf-award-dfe-faculty-2022-07-07-a51ed249`, `cf-award-dfe-faculty-2023-05-19-03470d3c`, `cf-award-dfe-faculty-2023-09-07-5b269dd1`, `dfe-ai-hackathon-faculty-2023-10-09`, `cf-award-dfe-faculty-2024-08-09-836909a1`, `uk-ministerial-meetings-dfe-ministerial-meetings-october-to-december-2018-5c94a965`, `uk-ministerial-meetings-dfe-ministerial-meetings-april-to-june-2019-5e381e4f`, `uk-ministerial-meetings-dfe-ministerial-meetings-january-to-march-2026-6a3cfe55`, `cf-award-dfe-city-of-london-2021-01-29-5c82141e`, `cf-award-dfe-university-of-birmingham-2021-09-13-1695579d`, `cf-award-dfe-qualtrics-2021-09-30-b3c7f4c1`, `cf-award-dfe-vodafone-2022-06-01-d3031a3d`, `cf-award-dfe-mills-reeve-2022-07-21-d85765af`, `cf-award-dfe-kpmg-2022-07-29-720925d9`, `cf-award-dfe-mills-reeve-2022-10-03-69ad78bf`, `cf-award-dfe-ncc-group-2022-12-16-818dc33d`, `cf-award-dfe-bae-systems-2023-01-16-1cdafc4f`, `cf-award-dfe-vodafone-2023-01-18-2bbe49a9`, `cf-award-dfe-deloitte-2023-01-19-2523b6a0`, `cf-award-dfe-workday-2023-02-03-2c2f020b`, `cf-award-dfe-university-of-edinburgh-2023-02-17-e1f56cf0`, `cf-award-dfe-kpmg-2023-03-07-d1a09c2e`, `cf-award-dfe-kainos-2023-03-21-39498740`, `cf-award-dfe-microsoft-2023-03-29-ccf07807`, `cf-award-dfe-yougov-2023-04-21-906634eb`, `cf-award-dfe-gartner-2023-04-28-d805a67b`, `cf-award-dfe-gartner-2023-04-30-f2103645`, `cf-award-dfe-tata-consultancy-services-2023-05-28-67661fae`, `cf-award-dfe-gartner-2023-05-31-f7a8aef5`, `cf-award-dfe-teneo-2023-08-09-76b9c352`, `cf-award-dfe-mills-reeve-2023-08-10-3898f679`, `cf-award-dfe-pinsent-masons-2023-08-10-1fa9e216`, `cf-award-dfe-kpmg-2023-08-15-31f748e1`, `cf-award-dfe-school-of-code-2023-09-01-d36006cb`, `cf-award-ukri-dfe-2023-09-19-db6a8757`, `cf-award-dfe-university-of-birmingham-2023-09-30-74a79958`, `cf-award-dfe-granicus-2023-11-22-e527e607`, `cf-award-dfe-capgemini-2024-01-08-cbbba436`, `cf-award-dfe-microsoft-2024-04-03-1282f38f`, `cf-award-dfe-dla-piper-2024-09-30-df549765`, `cf-award-dfe-kainos-2024-12-01-128013b2`, `cf-award-dfe-university-of-birmingham-2024-12-08-a004c647`, `cf-award-dfe-kpmg-2025-01-31-513e64cd`, `cf-award-dfe-accenture-2025-02-28-808d8ead`, `cf-award-dfe-microsoft-2025-04-05-401ae757`, `cf-award-dfe-kpmg-2025-04-10-e642afe0`, `cf-award-dfe-deloitte-2025-04-14-b2ad4285`, `cf-award-dfe-gartner-2025-04-29-4b54e98f`, `cf-award-dfe-deloitte-2025-06-06-045d86a4`, `cf-award-dfe-kpmg-2025-06-19-b1d6ed80`, `cf-award-dfe-kpmg-2025-06-25-6109d46b`, `cf-award-dfe-pwc-2025-07-30-01e09f05`, `cf-award-dfe-dentsu-2025-09-29-2cc03ede`, `cf-award-dfe-atkinsrealis-2026-02-16-6f29870b`, `cf-award-dfe-kainos-2026-02-20-5850f84a`, `cf-award-dfe-university-of-birmingham-2026-03-09-f44ea2da`, `cf-award-dfe-gartner-2026-04-02-c53e8c97`
 
 ---
 
-## finding-254: University of Edinburgh behaves as a surface factory
+## finding-264: Department of Health and Social Care (DHSC) behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -4570,17 +4750,269 @@ Refs: `cf-award-ukri-faculty-2023-07-07-87b2eade`, `uk-compute-roadmap-sovereign
 
 **Observed**
 
-University of Edinburgh appears across 15 surface(s): national-supercomputer-edinburgh-750m-2025-06-11, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-hmts-ministerial-meetings-july-to-september-2025-69414470. Secondary types: public_private_ai_infrastructure.
+Department of Health and Social Care (DHSC) appears across 68 surface(s): cf-award-dhsc-faculty-2020-02-13-13bd9795, cf-award-dhsc-faculty-2020-04-01-bf42fc5f, cf-award-dhsc-faculty-2021-03-01-64bce243, cf-award-dhsc-faculty-2024-03-26-05ac339b, uk-ministerial-meetings-dhsc-ministerial-meetings-april-to-june-2018-5bc603ac, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dcms-ministerial-meetings-october-to-december-2023-667ae72d, uk-ministerial-meetings-dhsc-ministerial-meetings-october-to-december-2024-67e19aad, uk-ministerial-meetings-dhsc-ministerial-meetings-october-to-december-2025-69c23ee2, cf-award-dhsc-mckinsey-and-company-2020-05-29-c31396a9, cf-award-dhsc-microsoft-2020-07-09-2dbd1aa3, cf-award-dhsc-mills-reeve-2020-10-20-a51a5921, cf-award-dhsc-dla-piper-2020-11-11-1fc10c63, cf-award-dhsc-deloitte-2020-11-19-7c67add2, cf-award-dhsc-accenture-2021-02-02-247ddc95, cf-award-dhsc-accenture-2021-04-19-579fe96d, cf-award-dhsc-kainos-2021-05-13-1e7da4b3, cf-award-dhsc-dla-piper-2021-05-27-0ee409e4, cf-award-dhsc-deloitte-2021-06-28-dbdd80ec, cf-award-dhsc-deloitte-2021-07-15-413761f0, cf-award-dhsc-ncc-group-2021-08-25-0b723cb5, cf-award-dhsc-accenture-2021-09-10-8ab16564, cf-award-dhsc-vodafone-2021-09-10-3c1306fe, cf-award-dhsc-deloitte-2021-09-28-caa0bfb6, cf-award-dhsc-ncc-group-2021-11-12-910c8f7e, cf-award-dhsc-mckinsey-and-company-2022-05-12-61803d4d, cf-award-nhs-england-dhsc-2023-02-08-a50f0c01, cf-award-dhsc-alan-turing-institute-2023-02-16-5f9d3ece, cf-award-dhsc-alan-turing-institute-2023-02-16-a9cd9326, cf-award-dhsc-alan-turing-institute-2023-03-15-948f2b07, cf-award-dhsc-university-of-oxford-2023-03-30-f59231c8, cf-award-dhsc-adobe-2023-03-31-0fa2a287, cf-award-dhsc-kainos-2023-05-21-04d018a1, cf-award-dhsc-deloitte-2023-06-13-d41018aa, cf-award-dhsc-mills-reeve-2023-07-28-eb4c8c25, cf-award-dhsc-dataminr-2023-08-23-5f27f760, cf-award-dhsc-mills-reeve-2023-10-09-e63bcdcf, cf-award-dhsc-university-of-birmingham-2023-10-09-ef19c340, cf-award-dhsc-deloitte-2023-11-01-ce1f3429, cf-award-dhsc-pinsent-masons-2023-11-13-ee4bd417, cf-award-dhsc-deloitte-2024-02-08-0e6820ef, cf-award-dhsc-yougov-2024-03-05-0c87052b, cf-award-dhsc-oracle-2024-03-07-e12d8877, cf-award-dhsc-kainos-2024-03-16-07530ce5, cf-award-dhsc-sopra-steria-2024-04-08-fd19556d, cf-award-dhsc-microsoft-2024-04-30-b54f0a59, cf-award-dhsc-mills-reeve-2024-06-18-8bd6a82a, cf-award-dhsc-accenture-2024-07-29-4c8af7e8, cf-award-dhsc-dla-piper-2024-08-05-3fce677e, cf-award-dhsc-dataminr-2024-09-25-a97d5ead, cf-award-dhsc-mills-reeve-2024-10-04-b51d2a49, cf-award-dhsc-university-of-birmingham-2024-12-16-f6d75e37, cf-award-dhsc-yougov-2025-01-14-2eddee19, cf-award-dhsc-deloitte-2025-01-29-977ffcc7, cf-award-dhsc-deloitte-2025-03-05-76d10564, cf-award-dhsc-mills-reeve-2025-06-16-c98a1114, cf-award-dhsc-deloitte-2025-07-01-df9bd99a, cf-award-dhsc-mills-reeve-2025-08-11-73ef9ee3, cf-award-dhsc-oracle-2026-01-29-49e38774, cf-award-dhsc-deloitte-2026-04-22-9d9bbfd0, cf-award-dhsc-mckinsey-and-company-2026-05-05-a0633135, cf-award-dhsc-dla-piper-2026-05-18-86c4e0ad, cf-award-dhsc-mills-reeve-2026-06-15-63ad5365, cf-award-dhsc-mills-reeve-2026-06-30-9b7ba1da, cf-award-dhsc-oracle-2026-08-20-6e4bcc54, cf-award-dhsc-databricks-2026-08-28-bb455a26, cf-award-dhsc-gartner-2026-09-29-c6ddba3e, cf-award-dhsc-mckinsey-and-company-2026-10-01-77e722d6. Secondary types: none.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `national-supercomputer-edinburgh-750m-2025-06-11`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-hmts-ministerial-meetings-july-to-september-2025-69414470`
+Refs: `cf-award-dhsc-faculty-2020-02-13-13bd9795`, `cf-award-dhsc-faculty-2020-04-01-bf42fc5f`, `cf-award-dhsc-faculty-2021-03-01-64bce243`, `cf-award-dhsc-faculty-2024-03-26-05ac339b`, `uk-ministerial-meetings-dhsc-ministerial-meetings-april-to-june-2018-5bc603ac`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dcms-ministerial-meetings-october-to-december-2023-667ae72d`, `uk-ministerial-meetings-dhsc-ministerial-meetings-october-to-december-2024-67e19aad`, `uk-ministerial-meetings-dhsc-ministerial-meetings-october-to-december-2025-69c23ee2`, `cf-award-dhsc-mckinsey-and-company-2020-05-29-c31396a9`, `cf-award-dhsc-microsoft-2020-07-09-2dbd1aa3`, `cf-award-dhsc-mills-reeve-2020-10-20-a51a5921`, `cf-award-dhsc-dla-piper-2020-11-11-1fc10c63`, `cf-award-dhsc-deloitte-2020-11-19-7c67add2`, `cf-award-dhsc-accenture-2021-02-02-247ddc95`, `cf-award-dhsc-accenture-2021-04-19-579fe96d`, `cf-award-dhsc-kainos-2021-05-13-1e7da4b3`, `cf-award-dhsc-dla-piper-2021-05-27-0ee409e4`, `cf-award-dhsc-deloitte-2021-06-28-dbdd80ec`, `cf-award-dhsc-deloitte-2021-07-15-413761f0`, `cf-award-dhsc-ncc-group-2021-08-25-0b723cb5`, `cf-award-dhsc-accenture-2021-09-10-8ab16564`, `cf-award-dhsc-vodafone-2021-09-10-3c1306fe`, `cf-award-dhsc-deloitte-2021-09-28-caa0bfb6`, `cf-award-dhsc-ncc-group-2021-11-12-910c8f7e`, `cf-award-dhsc-mckinsey-and-company-2022-05-12-61803d4d`, `cf-award-nhs-england-dhsc-2023-02-08-a50f0c01`, `cf-award-dhsc-alan-turing-institute-2023-02-16-5f9d3ece`, `cf-award-dhsc-alan-turing-institute-2023-02-16-a9cd9326`, `cf-award-dhsc-alan-turing-institute-2023-03-15-948f2b07`, `cf-award-dhsc-university-of-oxford-2023-03-30-f59231c8`, `cf-award-dhsc-adobe-2023-03-31-0fa2a287`, `cf-award-dhsc-kainos-2023-05-21-04d018a1`, `cf-award-dhsc-deloitte-2023-06-13-d41018aa`, `cf-award-dhsc-mills-reeve-2023-07-28-eb4c8c25`, `cf-award-dhsc-dataminr-2023-08-23-5f27f760`, `cf-award-dhsc-mills-reeve-2023-10-09-e63bcdcf`, `cf-award-dhsc-university-of-birmingham-2023-10-09-ef19c340`, `cf-award-dhsc-deloitte-2023-11-01-ce1f3429`, `cf-award-dhsc-pinsent-masons-2023-11-13-ee4bd417`, `cf-award-dhsc-deloitte-2024-02-08-0e6820ef`, `cf-award-dhsc-yougov-2024-03-05-0c87052b`, `cf-award-dhsc-oracle-2024-03-07-e12d8877`, `cf-award-dhsc-kainos-2024-03-16-07530ce5`, `cf-award-dhsc-sopra-steria-2024-04-08-fd19556d`, `cf-award-dhsc-microsoft-2024-04-30-b54f0a59`, `cf-award-dhsc-mills-reeve-2024-06-18-8bd6a82a`, `cf-award-dhsc-accenture-2024-07-29-4c8af7e8`, `cf-award-dhsc-dla-piper-2024-08-05-3fce677e`, `cf-award-dhsc-dataminr-2024-09-25-a97d5ead`, `cf-award-dhsc-mills-reeve-2024-10-04-b51d2a49`, `cf-award-dhsc-university-of-birmingham-2024-12-16-f6d75e37`, `cf-award-dhsc-yougov-2025-01-14-2eddee19`, `cf-award-dhsc-deloitte-2025-01-29-977ffcc7`, `cf-award-dhsc-deloitte-2025-03-05-76d10564`, `cf-award-dhsc-mills-reeve-2025-06-16-c98a1114`, `cf-award-dhsc-deloitte-2025-07-01-df9bd99a`, `cf-award-dhsc-mills-reeve-2025-08-11-73ef9ee3`, `cf-award-dhsc-oracle-2026-01-29-49e38774`, `cf-award-dhsc-deloitte-2026-04-22-9d9bbfd0`, `cf-award-dhsc-mckinsey-and-company-2026-05-05-a0633135`, `cf-award-dhsc-dla-piper-2026-05-18-86c4e0ad`, `cf-award-dhsc-mills-reeve-2026-06-15-63ad5365`, `cf-award-dhsc-mills-reeve-2026-06-30-9b7ba1da`, `cf-award-dhsc-oracle-2026-08-20-6e4bcc54`, `cf-award-dhsc-databricks-2026-08-28-bb455a26`, `cf-award-dhsc-gartner-2026-09-29-c6ddba3e`, `cf-award-dhsc-mckinsey-and-company-2026-10-01-77e722d6`
 
 ---
 
-## finding-255: Aaru behaves as a surface factory
+## finding-265: FCDO Services behaves as a surface factory
+
+- Type: surface_factory
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+FCDO Services appears across 46 surface(s): cf-award-fcdo-services-faculty-2022-06-29-0c5ae89d, cf-award-fcdo-services-faculty-2022-12-06-6a4708d9, cf-award-fcdo-services-kpmg-2022-12-13-27d958c6, cf-award-fcdo-services-kpmg-2022-12-13-b296f28c, cf-award-fcdo-services-vodafone-2023-01-03-7479eb3b, cf-award-fcdo-services-vodafone-2023-01-03-e1ff837f, cf-award-fcdo-services-kpmg-2023-01-22-90442b5d, cf-award-fcdo-services-kpmg-2023-02-01-066d18a1, cf-award-fcdo-services-vodafone-2023-03-06-4de92763, cf-award-fcdo-services-vodafone-2023-03-06-54f5bf87, cf-award-fcdo-services-vodafone-2023-03-06-cd89ea19, cf-award-fcdo-services-vodafone-2023-03-06-de074cc0, cf-award-fcdo-services-vodafone-2023-03-08-b8756530, cf-award-fcdo-services-kpmg-2023-03-14-50f5e73d, cf-award-fcdo-services-ncc-group-2023-03-23-96f46fad, cf-award-desnz-fcdo-services-2023-03-31-5628fb46, cf-award-fcdo-services-kpmg-2023-04-23-4b09c6a0, cf-award-fcdo-services-kpmg-2023-04-23-da753ac1, cf-award-fcdo-services-kpmg-2023-04-24-73238914, cf-award-fcdo-services-kpmg-2023-04-24-be5f139f, cf-award-fcdo-services-salesforce-2023-07-26-a4d1b959, cf-award-fcdo-services-kpmg-2023-08-02-891f2b43, cf-award-fcdo-services-kpmg-2023-09-24-e9f5f1ca, cf-award-fcdo-services-kpmg-2023-12-06-46bc00e5, cf-award-fcdo-services-kpmg-2023-12-21-3ae5898a, cf-award-fcdo-services-kpmg-2024-02-27-1a7a2549, cf-award-fcdo-services-kpmg-2024-02-27-ba785eca, cf-award-fcdo-services-kpmg-2024-03-19-a9871f0e, cf-award-fcdo-services-kpmg-2024-03-25-a290b5b9, cf-award-fcdo-services-ncc-group-2024-04-07-1fec3662, cf-award-fcdo-services-kpmg-2024-04-25-6aa25bee, cf-award-fcdo-services-kpmg-2024-06-10-bc38e3c9, cf-award-fcdo-services-kpmg-2024-07-07-aedcf7be, cf-award-fcdo-services-kpmg-2024-08-07-6964790f, cf-award-fcdo-services-kpmg-2024-08-28-d146e674, cf-award-fcdo-services-kpmg-2024-09-26-5d7f2f86, cf-award-fcdo-services-kpmg-2024-09-26-d8196a71, cf-award-fcdo-services-kpmg-2024-11-05-e9eba141, cf-award-fcdo-services-kpmg-2024-11-19-304ec62a, cf-award-fcdo-services-ncc-group-2025-02-06-418e25c4, cf-award-fcdo-services-kpmg-2025-03-09-37d0c8f0, cf-award-fcdo-services-vodafone-2025-03-30-6c703c8b, cf-award-fcdo-services-vodafone-2025-03-30-d2cad689, cf-award-fcdo-services-kpmg-2025-10-20-99a1b3be, cf-award-fcdo-services-kpmg-2025-11-18-f385bf03, cf-award-fcdo-services-kpmg-2025-11-27-72f86754. Secondary types: none.
+
+**Required action**
+
+Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
+
+Refs: `cf-award-fcdo-services-faculty-2022-06-29-0c5ae89d`, `cf-award-fcdo-services-faculty-2022-12-06-6a4708d9`, `cf-award-fcdo-services-kpmg-2022-12-13-27d958c6`, `cf-award-fcdo-services-kpmg-2022-12-13-b296f28c`, `cf-award-fcdo-services-vodafone-2023-01-03-7479eb3b`, `cf-award-fcdo-services-vodafone-2023-01-03-e1ff837f`, `cf-award-fcdo-services-kpmg-2023-01-22-90442b5d`, `cf-award-fcdo-services-kpmg-2023-02-01-066d18a1`, `cf-award-fcdo-services-vodafone-2023-03-06-4de92763`, `cf-award-fcdo-services-vodafone-2023-03-06-54f5bf87`, `cf-award-fcdo-services-vodafone-2023-03-06-cd89ea19`, `cf-award-fcdo-services-vodafone-2023-03-06-de074cc0`, `cf-award-fcdo-services-vodafone-2023-03-08-b8756530`, `cf-award-fcdo-services-kpmg-2023-03-14-50f5e73d`, `cf-award-fcdo-services-ncc-group-2023-03-23-96f46fad`, `cf-award-desnz-fcdo-services-2023-03-31-5628fb46`, `cf-award-fcdo-services-kpmg-2023-04-23-4b09c6a0`, `cf-award-fcdo-services-kpmg-2023-04-23-da753ac1`, `cf-award-fcdo-services-kpmg-2023-04-24-73238914`, `cf-award-fcdo-services-kpmg-2023-04-24-be5f139f`, `cf-award-fcdo-services-salesforce-2023-07-26-a4d1b959`, `cf-award-fcdo-services-kpmg-2023-08-02-891f2b43`, `cf-award-fcdo-services-kpmg-2023-09-24-e9f5f1ca`, `cf-award-fcdo-services-kpmg-2023-12-06-46bc00e5`, `cf-award-fcdo-services-kpmg-2023-12-21-3ae5898a`, `cf-award-fcdo-services-kpmg-2024-02-27-1a7a2549`, `cf-award-fcdo-services-kpmg-2024-02-27-ba785eca`, `cf-award-fcdo-services-kpmg-2024-03-19-a9871f0e`, `cf-award-fcdo-services-kpmg-2024-03-25-a290b5b9`, `cf-award-fcdo-services-ncc-group-2024-04-07-1fec3662`, `cf-award-fcdo-services-kpmg-2024-04-25-6aa25bee`, `cf-award-fcdo-services-kpmg-2024-06-10-bc38e3c9`, `cf-award-fcdo-services-kpmg-2024-07-07-aedcf7be`, `cf-award-fcdo-services-kpmg-2024-08-07-6964790f`, `cf-award-fcdo-services-kpmg-2024-08-28-d146e674`, `cf-award-fcdo-services-kpmg-2024-09-26-5d7f2f86`, `cf-award-fcdo-services-kpmg-2024-09-26-d8196a71`, `cf-award-fcdo-services-kpmg-2024-11-05-e9eba141`, `cf-award-fcdo-services-kpmg-2024-11-19-304ec62a`, `cf-award-fcdo-services-ncc-group-2025-02-06-418e25c4`, `cf-award-fcdo-services-kpmg-2025-03-09-37d0c8f0`, `cf-award-fcdo-services-vodafone-2025-03-30-6c703c8b`, `cf-award-fcdo-services-vodafone-2025-03-30-d2cad689`, `cf-award-fcdo-services-kpmg-2025-10-20-99a1b3be`, `cf-award-fcdo-services-kpmg-2025-11-18-f385bf03`, `cf-award-fcdo-services-kpmg-2025-11-27-72f86754`
+
+---
+
+## finding-266: Genomics England Limited behaves as a surface factory
+
+- Type: surface_factory
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+Genomics England Limited appears across 13 surface(s): cf-award-genomics-england-limited-faculty-2022-02-25-cfd9f98b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b, cf-award-genomics-england-limited-kainos-2023-01-15-ed3b94b6, cf-award-genomics-england-limited-kpmg-2023-02-26-3fb9751f, cf-award-genomics-england-limited-ibm-2023-03-27-2afd9a2a, cf-award-genomics-england-limited-adobe-2023-04-19-d3daf075, cf-award-genomics-england-limited-kainos-2023-05-30-35ee982b, cf-award-genomics-england-limited-kainos-2023-06-28-16f6e32d, cf-award-genomics-england-limited-ibm-2023-07-17-f935d59c, cf-award-genomics-england-limited-kainos-2023-10-20-02d6d28f, cf-award-genomics-england-limited-kainos-2024-03-18-1e4fd8a3, cf-award-genomics-england-limited-ibm-2024-09-11-a05887bd, cf-award-genomics-england-limited-kpmg-2024-09-23-a53643bd. Secondary types: none.
+
+**Required action**
+
+Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
+
+Refs: `cf-award-genomics-england-limited-faculty-2022-02-25-cfd9f98b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b`, `cf-award-genomics-england-limited-kainos-2023-01-15-ed3b94b6`, `cf-award-genomics-england-limited-kpmg-2023-02-26-3fb9751f`, `cf-award-genomics-england-limited-ibm-2023-03-27-2afd9a2a`, `cf-award-genomics-england-limited-adobe-2023-04-19-d3daf075`, `cf-award-genomics-england-limited-kainos-2023-05-30-35ee982b`, `cf-award-genomics-england-limited-kainos-2023-06-28-16f6e32d`, `cf-award-genomics-england-limited-ibm-2023-07-17-f935d59c`, `cf-award-genomics-england-limited-kainos-2023-10-20-02d6d28f`, `cf-award-genomics-england-limited-kainos-2024-03-18-1e4fd8a3`, `cf-award-genomics-england-limited-ibm-2024-09-11-a05887bd`, `cf-award-genomics-england-limited-kpmg-2024-09-23-a53643bd`
+
+---
+
+## finding-267: Government Digital Service (GDS) behaves as a surface factory
+
+- Type: surface_factory
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+Government Digital Service (GDS) appears across 23 surface(s): cf-award-government-digital-service-faculty-2019-08-23-48673633, cf-award-government-digital-service-faculty-2019-10-04-7af67d25, gov-uk-chat-anthropic-model-transparency-record-2025-10-07, cf-award-government-digital-service-experian-2022-07-21-1c4341d8, cf-award-government-digital-service-experian-2022-07-21-a3788774, cf-award-government-digital-service-experian-2022-08-19-b92d6c53, cf-award-government-digital-service-deloitte-2022-10-10-87c203e7, cf-award-government-digital-service-deloitte-2022-12-02-8de09716, cf-award-government-digital-service-thoughtworks-2023-01-17-c4acab29, cf-award-government-digital-service-salesforce-2023-03-20-32c83aba, cf-award-government-digital-service-deloitte-2023-07-21-94b787aa, cf-award-government-digital-service-capgemini-2023-08-04-76873ee4, cf-award-government-digital-service-adobe-2023-12-06-2a47929d, cf-award-government-digital-service-google-2024-01-12-61babe54, cf-award-government-digital-service-pinsent-masons-2024-01-22-7c161a58, cf-award-government-digital-service-bae-systems-2024-04-15-fb3f24f3, cf-award-government-digital-service-qualtrics-2024-05-24-2790b90f, cf-award-government-digital-service-deloitte-2024-07-22-a34defe5, cf-award-government-digital-service-deloitte-2024-08-01-308c0f0c, cf-award-government-digital-service-thoughtworks-2024-12-20-2d986381, cf-award-government-digital-service-accenture-2025-03-01-44f3155e, cf-award-government-digital-service-google-2025-10-15-fdb2aa9b, cf-award-government-digital-service-ncc-group-2026-02-11-d41da547. Secondary types: none.
+
+**Required action**
+
+Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
+
+Refs: `cf-award-government-digital-service-faculty-2019-08-23-48673633`, `cf-award-government-digital-service-faculty-2019-10-04-7af67d25`, `gov-uk-chat-anthropic-model-transparency-record-2025-10-07`, `cf-award-government-digital-service-experian-2022-07-21-1c4341d8`, `cf-award-government-digital-service-experian-2022-07-21-a3788774`, `cf-award-government-digital-service-experian-2022-08-19-b92d6c53`, `cf-award-government-digital-service-deloitte-2022-10-10-87c203e7`, `cf-award-government-digital-service-deloitte-2022-12-02-8de09716`, `cf-award-government-digital-service-thoughtworks-2023-01-17-c4acab29`, `cf-award-government-digital-service-salesforce-2023-03-20-32c83aba`, `cf-award-government-digital-service-deloitte-2023-07-21-94b787aa`, `cf-award-government-digital-service-capgemini-2023-08-04-76873ee4`, `cf-award-government-digital-service-adobe-2023-12-06-2a47929d`, `cf-award-government-digital-service-google-2024-01-12-61babe54`, `cf-award-government-digital-service-pinsent-masons-2024-01-22-7c161a58`, `cf-award-government-digital-service-bae-systems-2024-04-15-fb3f24f3`, `cf-award-government-digital-service-qualtrics-2024-05-24-2790b90f`, `cf-award-government-digital-service-deloitte-2024-07-22-a34defe5`, `cf-award-government-digital-service-deloitte-2024-08-01-308c0f0c`, `cf-award-government-digital-service-thoughtworks-2024-12-20-2d986381`, `cf-award-government-digital-service-accenture-2025-03-01-44f3155e`, `cf-award-government-digital-service-google-2025-10-15-fdb2aa9b`, `cf-award-government-digital-service-ncc-group-2026-02-11-d41da547`
+
+---
+
+## finding-268: HM Treasury behaves as a surface factory
+
+- Type: surface_factory
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+HM Treasury appears across 26 surface(s): national-supercomputer-edinburgh-750m-2025-06-11, uk-compute-roadmap-sovereign-ai-unit-2025-07-17, uk-ministerial-meetings-hmt-ministers-meetings-1-july-to-30-september-2019-5e3d8700, uk-ministerial-meetings-hmt-ministers-meetings-july-to-september-2022-64882625, uk-ministerial-meetings-hmt-ministers-meetings-january-to-march-2023-64b12e18, uk-ministerial-meetings-hmt-ministers-meetings-66cf4772, uk-ministerial-meetings-hmt-ministerial-meetings-july-to-september-2024-679b464d, uk-ministerial-meetings-hmts-ministerial-meetings-october-to-december-2024-685a87ad, uk-ministerial-meetings-hmts-ministerial-meetings-january-to-march-2025-68bae311, uk-ministerial-meetings-hmts-ministerial-meetings-april-to-june-2025-68d50fe0, uk-ministerial-meetings-hmts-ministerial-meetings-july-to-september-2025-69414470, uk-ministerial-meetings-hmts-ministerial-meetings-october-to-december-2025-69bd3123, cf-award-hm-treasury-microsoft-2022-03-16-32c38543, cf-award-hm-treasury-microsoft-2023-03-16-277ca641, cf-award-hm-treasury-kpmg-2023-10-23-5c31e1c7, cf-award-hm-treasury-microsoft-2024-03-14-d992ed4d, cf-award-hm-treasury-clifford-chance-2024-04-12-82baf82e, cf-award-hm-treasury-freshfields-2024-07-04-eecb283e, cf-award-hm-treasury-gartner-2024-09-24-c20ed1ae, cf-award-hm-treasury-civica-2024-11-15-f452a1b2, cf-award-hm-treasury-microsoft-2025-03-28-7b17f461, cf-award-hm-treasury-kpmg-2025-10-23-b9ca55c5, cf-award-hm-treasury-gartner-2025-10-30-79b639ef, cf-award-hm-treasury-microsoft-2026-03-26-50d38a8d, cf-award-hm-treasury-gartner-2026-05-02-d803ead0, cf-award-hm-treasury-gartner-2026-05-13-10eaf8b8. Secondary types: policy_to_procurement_surface, public_private_ai_infrastructure.
+
+**Required action**
+
+Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
+
+Refs: `national-supercomputer-edinburgh-750m-2025-06-11`, `uk-compute-roadmap-sovereign-ai-unit-2025-07-17`, `uk-ministerial-meetings-hmt-ministers-meetings-1-july-to-30-september-2019-5e3d8700`, `uk-ministerial-meetings-hmt-ministers-meetings-july-to-september-2022-64882625`, `uk-ministerial-meetings-hmt-ministers-meetings-january-to-march-2023-64b12e18`, `uk-ministerial-meetings-hmt-ministers-meetings-66cf4772`, `uk-ministerial-meetings-hmt-ministerial-meetings-july-to-september-2024-679b464d`, `uk-ministerial-meetings-hmts-ministerial-meetings-october-to-december-2024-685a87ad`, `uk-ministerial-meetings-hmts-ministerial-meetings-january-to-march-2025-68bae311`, `uk-ministerial-meetings-hmts-ministerial-meetings-april-to-june-2025-68d50fe0`, `uk-ministerial-meetings-hmts-ministerial-meetings-july-to-september-2025-69414470`, `uk-ministerial-meetings-hmts-ministerial-meetings-october-to-december-2025-69bd3123`, `cf-award-hm-treasury-microsoft-2022-03-16-32c38543`, `cf-award-hm-treasury-microsoft-2023-03-16-277ca641`, `cf-award-hm-treasury-kpmg-2023-10-23-5c31e1c7`, `cf-award-hm-treasury-microsoft-2024-03-14-d992ed4d`, `cf-award-hm-treasury-clifford-chance-2024-04-12-82baf82e`, `cf-award-hm-treasury-freshfields-2024-07-04-eecb283e`, `cf-award-hm-treasury-gartner-2024-09-24-c20ed1ae`, `cf-award-hm-treasury-civica-2024-11-15-f452a1b2`, `cf-award-hm-treasury-microsoft-2025-03-28-7b17f461`, `cf-award-hm-treasury-kpmg-2025-10-23-b9ca55c5`, `cf-award-hm-treasury-gartner-2025-10-30-79b639ef`, `cf-award-hm-treasury-microsoft-2026-03-26-50d38a8d`, `cf-award-hm-treasury-gartner-2026-05-02-d803ead0`, `cf-award-hm-treasury-gartner-2026-05-13-10eaf8b8`
+
+---
+
+## finding-269: Ministry of Housing, Communities and Local Government (MHCLG) behaves as a surface factory
+
+- Type: surface_factory
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+Ministry of Housing, Communities and Local Government (MHCLG) appears across 9 surface(s): cf-award-mhclg-faculty-2020-04-09-b7bbcaf0, cf-award-mhclg-faculty-2026-01-07-42988142, cf-award-mhclg-deloitte-2024-09-27-49a60d8a, cf-award-mhclg-deloitte-2024-11-20-85d3ec11, cf-award-mhclg-mckinsey-and-company-2024-12-23-95f9cf86, cf-award-mhclg-deloitte-2025-03-13-06a4d790, cf-award-mhclg-accenture-2025-08-29-369d20c5, cf-award-mhclg-kpmg-2025-08-29-a257e855, cf-award-mhclg-ncc-group-2026-01-29-cdb5c524. Secondary types: none.
+
+**Required action**
+
+Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
+
+Refs: `cf-award-mhclg-faculty-2020-04-09-b7bbcaf0`, `cf-award-mhclg-faculty-2026-01-07-42988142`, `cf-award-mhclg-deloitte-2024-09-27-49a60d8a`, `cf-award-mhclg-deloitte-2024-11-20-85d3ec11`, `cf-award-mhclg-mckinsey-and-company-2024-12-23-95f9cf86`, `cf-award-mhclg-deloitte-2025-03-13-06a4d790`, `cf-award-mhclg-accenture-2025-08-29-369d20c5`, `cf-award-mhclg-kpmg-2025-08-29-a257e855`, `cf-award-mhclg-ncc-group-2026-01-29-cdb5c524`
+
+---
+
+## finding-270: NHS England behaves as a surface factory
+
+- Type: surface_factory
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+NHS England appears across 122 surface(s): cf-award-nhs-england-faculty-2023-01-19-49f7b032, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145, cf-award-nhs-england-accenture-2019-08-05-c52c63eb, cf-award-nhs-england-ukhsa-2021-09-29-58c6f951, cf-award-nhs-england-university-of-birmingham-2021-09-29-15288114, cf-award-nhs-england-microsoft-2021-12-14-7c333a4d, cf-award-nhs-england-mckinsey-and-company-2022-01-31-f7b38d9f, cf-award-nhs-england-vodafone-2022-02-04-916b498d, cf-award-nhs-england-mckinsey-and-company-2022-02-08-166c3c0e, cf-award-nhs-england-kainos-2022-02-22-b4c974f2, cf-award-nhs-england-mckinsey-and-company-2022-03-15-3bae3e32, cf-award-nhs-england-pwc-2022-04-28-cffdd06a, cf-award-nhs-england-palantir-2022-08-25-2cf9dde2, cf-award-nhs-england-nhs-south-central-and-west-commi-2022-11-20-9a541e9e, cf-award-nhs-england-gartner-2022-12-01-ddd4ae4d, cf-award-nhs-england-kpmg-2022-12-22-e597df0c, cf-award-nhs-england-mckinsey-and-company-2022-12-30-469af073, cf-award-nhs-england-amazon-web-services-aws-2023-01-23-9a280fe4, cf-award-nhs-england-deloitte-2023-01-23-d12d31ff, cf-award-nhs-england-dhsc-2023-02-08-a50f0c01, cf-award-nhs-england-university-of-birmingham-2023-02-16-983a07e1, cf-award-nhs-england-yougov-2023-02-17-b721a498, cf-award-nhs-england-deloitte-2023-02-20-35ecda2a, cf-award-nhs-england-deloitte-2023-02-24-78545f00, cf-award-nhs-england-university-of-salford-2023-02-27-1201c51e, cf-award-nhs-england-university-of-salford-2023-02-27-b82042ca, cf-award-nhs-england-kpmg-2023-03-14-dda25018, cf-award-nhs-england-university-of-birmingham-2023-04-03-81bcfd17, cf-award-nhs-england-cabinet-office-2023-04-14-0fe1592c, cf-award-nhs-england-deloitte-2023-04-25-b0fcb13d, cf-award-nhs-england-university-of-birmingham-2023-05-02-70e47359, cf-award-nhs-england-ukhsa-2023-05-23-e5d4e588, cf-award-nhs-england-microsoft-2023-05-26-75a33b2f, cf-award-nhs-england-kainos-2023-06-01-91791a76, cf-award-nhs-england-palantir-2023-06-09-d1df0a11, cf-award-nhs-england-accenture-2023-06-21-f79504f6, cf-award-nhs-england-gartner-2023-06-21-a37aa085, cf-award-nhs-england-ncc-group-2023-07-03-5c2a4593, cf-award-nhs-england-granicus-2023-07-26-e4b8458f, cf-award-nhs-england-nhs-south-central-and-west-commi-2023-08-04-221cd44e, cf-award-nhs-england-ons-2023-08-04-735b84ba, cf-award-nhs-england-nhs-south-central-and-west-commi-2023-09-20-c110375a, cf-award-nhs-england-accenture-2023-09-29-f91e7e56, cf-award-nhs-england-nhs-south-central-and-west-commi-2023-10-03-9ecddb9d, cf-award-nhs-england-nhs-south-central-and-west-commi-2023-10-30-ce02d199, cf-award-nhs-england-qualtrics-2023-10-31-19d8174c, cf-award-nhs-england-kpmg-2023-11-14-2c4d7235, cf-award-nhs-england-palantir-2023-11-22-0f8a65b5, cf-award-nhs-england-mod-2023-11-23-ac3f8098, cf-award-nhs-england-deloitte-2023-12-01-55703b4a, cf-award-nhs-england-kpmg-2023-12-07-ec4e38f9, cf-award-nhs-england-university-of-birmingham-2023-12-12-808dfbf0, cf-award-nhs-england-samsung-2024-01-05-4b76c79e, cf-award-nhs-england-dla-piper-2024-01-10-d2ab65b7, cf-award-nhs-england-kpmg-2024-01-19-4fcbd2b3, cf-award-nhs-england-capgemini-2024-02-02-c52adf8f, cf-award-nhs-england-experian-2024-02-02-4561c4dc, cf-award-nhs-england-nhs-south-central-and-west-commi-2024-02-02-c1ce7ff4, cf-award-nhs-england-yougov-2024-02-02-0f7169f0, cf-award-nhs-england-kpmg-2024-02-09-424b2891, cf-award-nhs-england-cabinet-office-2024-03-20-5e7bccad, cf-award-nhs-england-mckinsey-and-company-2024-03-22-3c20892e, cf-award-nhs-england-civica-2024-03-24-4d24e9cd, cf-award-nhs-england-deloitte-2024-03-25-12b5bfb2, cf-award-nhs-england-liverpool-john-moores-university-2024-03-26-1c5d3498, cf-award-nhs-england-nhs-south-central-and-west-commi-2024-03-27-6645979f, cf-award-nhs-england-yoti-2024-03-28-28d20a06, cf-award-nhs-england-ukhsa-2024-03-31-5fcb2cf4, cf-award-nhs-england-deloitte-2024-04-24-5aaf15d9, cf-award-nhs-england-deloitte-2024-06-05-ea5f85c2, cf-award-nhs-england-kpmg-2024-06-05-7dbe0c6c, cf-award-nhs-england-university-of-oxford-2024-06-20-c35edc32, cf-award-nhs-england-cabinet-office-2024-07-04-1fe2811f, cf-award-nhs-england-thoughtworks-2024-07-29-5d8de433, cf-award-nhs-england-accenture-2024-08-14-205cca48, cf-award-nhs-england-kainos-2024-08-14-395dbc02, cf-award-nhs-england-university-of-birmingham-2024-08-15-fe09a6c5, cf-award-nhs-england-accenture-2024-08-16-1832fbb3, cf-award-nhs-england-kpmg-2024-08-27-1ab5a269, cf-award-nhs-england-civica-2024-08-30-6fa7eeda, cf-award-nhs-england-columbia-university-2024-09-03-d429a01d, cf-award-nhs-england-university-of-birmingham-2024-09-03-8b44dede, cf-award-nhs-england-university-of-birmingham-2024-09-03-95a73247, cf-award-nhs-england-deloitte-2024-09-06-4f2dde3f, cf-award-nhs-england-deloitte-2024-09-06-d7914462, cf-award-nhs-england-kainos-2024-09-16-b0a580db, cf-award-nhs-england-university-of-birmingham-2024-09-20-8fb1cefb, cf-award-nhs-england-university-of-salford-2024-09-25-d07e3896, cf-award-nhs-england-gartner-2024-09-27-087de2bb, cf-award-nhs-england-university-of-oxford-2024-11-01-f8edda20, cf-award-nhs-england-kpmg-2025-01-22-5e38ab49, cf-award-nhs-england-yougov-2025-01-28-e3f75696, cf-award-nhs-england-accenture-2025-01-29-74d58a5c, cf-award-nhs-england-ukhsa-2025-01-29-2b59dacf, cf-award-nhs-england-kpmg-2025-02-25-506d167c, cf-award-nhs-england-liverpool-john-moores-university-2025-03-04-b1d77681, cf-award-nhs-england-nhs-south-central-and-west-commi-2025-03-04-048f18d9, cf-award-nhs-england-university-of-salford-2025-03-04-39823c7a, cf-award-nhs-england-cabinet-office-2025-03-31-9c2d947b, cf-award-nhs-england-kainos-2025-03-31-0c4a1902, cf-award-nhs-england-kpmg-2025-04-28-31321523, cf-award-nhs-england-kpmg-2025-05-09-3623ce5e, cf-award-nhs-england-microsoft-2025-05-23-0604890c, cf-award-nhs-england-gartner-2025-06-05-5e419f43, cf-award-nhs-england-samsung-2025-07-01-cc644418, cf-award-nhs-england-kpmg-2025-07-16-53210b27, cf-award-nhs-england-university-of-birmingham-2025-07-24-a363b671, cf-award-nhs-england-gartner-2025-08-19-9f06f583, cf-award-nhs-england-university-of-oxford-2025-09-02-4e025abc, cf-award-nhs-england-kainos-2025-09-03-ec7b7106, cf-award-nhs-england-kainos-2025-09-05-25f655e0, cf-award-nhs-england-university-of-birmingham-2025-10-01-0c41181f, cf-award-nhs-england-kpmg-2025-10-16-de99b32d, cf-award-nhs-england-kpmg-2026-01-23-5d2b4a0f, cf-award-nhs-england-mills-reeve-2026-02-17-6afb2f67, cf-award-nhs-england-deloitte-2026-03-18-29690250, cf-award-nhs-england-cabinet-office-2026-04-01-dccb474b, cf-award-nhs-england-kpmg-2026-06-05-7b964d22, cf-award-nhs-england-oracle-2026-07-24-56099033, cf-award-nhs-england-kpmg-2026-08-04-2d3c2646, cf-award-nhs-england-deloitte-2026-08-17-efd0eb33, cf-award-nhs-england-kainos-2026-09-24-08a214f5. Secondary types: none.
+
+**Required action**
+
+Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
+
+Refs: `cf-award-nhs-england-faculty-2023-01-19-49f7b032`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145`, `cf-award-nhs-england-accenture-2019-08-05-c52c63eb`, `cf-award-nhs-england-ukhsa-2021-09-29-58c6f951`, `cf-award-nhs-england-university-of-birmingham-2021-09-29-15288114`, `cf-award-nhs-england-microsoft-2021-12-14-7c333a4d`, `cf-award-nhs-england-mckinsey-and-company-2022-01-31-f7b38d9f`, `cf-award-nhs-england-vodafone-2022-02-04-916b498d`, `cf-award-nhs-england-mckinsey-and-company-2022-02-08-166c3c0e`, `cf-award-nhs-england-kainos-2022-02-22-b4c974f2`, `cf-award-nhs-england-mckinsey-and-company-2022-03-15-3bae3e32`, `cf-award-nhs-england-pwc-2022-04-28-cffdd06a`, `cf-award-nhs-england-palantir-2022-08-25-2cf9dde2`, `cf-award-nhs-england-nhs-south-central-and-west-commi-2022-11-20-9a541e9e`, `cf-award-nhs-england-gartner-2022-12-01-ddd4ae4d`, `cf-award-nhs-england-kpmg-2022-12-22-e597df0c`, `cf-award-nhs-england-mckinsey-and-company-2022-12-30-469af073`, `cf-award-nhs-england-amazon-web-services-aws-2023-01-23-9a280fe4`, `cf-award-nhs-england-deloitte-2023-01-23-d12d31ff`, `cf-award-nhs-england-dhsc-2023-02-08-a50f0c01`, `cf-award-nhs-england-university-of-birmingham-2023-02-16-983a07e1`, `cf-award-nhs-england-yougov-2023-02-17-b721a498`, `cf-award-nhs-england-deloitte-2023-02-20-35ecda2a`, `cf-award-nhs-england-deloitte-2023-02-24-78545f00`, `cf-award-nhs-england-university-of-salford-2023-02-27-1201c51e`, `cf-award-nhs-england-university-of-salford-2023-02-27-b82042ca`, `cf-award-nhs-england-kpmg-2023-03-14-dda25018`, `cf-award-nhs-england-university-of-birmingham-2023-04-03-81bcfd17`, `cf-award-nhs-england-cabinet-office-2023-04-14-0fe1592c`, `cf-award-nhs-england-deloitte-2023-04-25-b0fcb13d`, `cf-award-nhs-england-university-of-birmingham-2023-05-02-70e47359`, `cf-award-nhs-england-ukhsa-2023-05-23-e5d4e588`, `cf-award-nhs-england-microsoft-2023-05-26-75a33b2f`, `cf-award-nhs-england-kainos-2023-06-01-91791a76`, `cf-award-nhs-england-palantir-2023-06-09-d1df0a11`, `cf-award-nhs-england-accenture-2023-06-21-f79504f6`, `cf-award-nhs-england-gartner-2023-06-21-a37aa085`, `cf-award-nhs-england-ncc-group-2023-07-03-5c2a4593`, `cf-award-nhs-england-granicus-2023-07-26-e4b8458f`, `cf-award-nhs-england-nhs-south-central-and-west-commi-2023-08-04-221cd44e`, `cf-award-nhs-england-ons-2023-08-04-735b84ba`, `cf-award-nhs-england-nhs-south-central-and-west-commi-2023-09-20-c110375a`, `cf-award-nhs-england-accenture-2023-09-29-f91e7e56`, `cf-award-nhs-england-nhs-south-central-and-west-commi-2023-10-03-9ecddb9d`, `cf-award-nhs-england-nhs-south-central-and-west-commi-2023-10-30-ce02d199`, `cf-award-nhs-england-qualtrics-2023-10-31-19d8174c`, `cf-award-nhs-england-kpmg-2023-11-14-2c4d7235`, `cf-award-nhs-england-palantir-2023-11-22-0f8a65b5`, `cf-award-nhs-england-mod-2023-11-23-ac3f8098`, `cf-award-nhs-england-deloitte-2023-12-01-55703b4a`, `cf-award-nhs-england-kpmg-2023-12-07-ec4e38f9`, `cf-award-nhs-england-university-of-birmingham-2023-12-12-808dfbf0`, `cf-award-nhs-england-samsung-2024-01-05-4b76c79e`, `cf-award-nhs-england-dla-piper-2024-01-10-d2ab65b7`, `cf-award-nhs-england-kpmg-2024-01-19-4fcbd2b3`, `cf-award-nhs-england-capgemini-2024-02-02-c52adf8f`, `cf-award-nhs-england-experian-2024-02-02-4561c4dc`, `cf-award-nhs-england-nhs-south-central-and-west-commi-2024-02-02-c1ce7ff4`, `cf-award-nhs-england-yougov-2024-02-02-0f7169f0`, `cf-award-nhs-england-kpmg-2024-02-09-424b2891`, `cf-award-nhs-england-cabinet-office-2024-03-20-5e7bccad`, `cf-award-nhs-england-mckinsey-and-company-2024-03-22-3c20892e`, `cf-award-nhs-england-civica-2024-03-24-4d24e9cd`, `cf-award-nhs-england-deloitte-2024-03-25-12b5bfb2`, `cf-award-nhs-england-liverpool-john-moores-university-2024-03-26-1c5d3498`, `cf-award-nhs-england-nhs-south-central-and-west-commi-2024-03-27-6645979f`, `cf-award-nhs-england-yoti-2024-03-28-28d20a06`, `cf-award-nhs-england-ukhsa-2024-03-31-5fcb2cf4`, `cf-award-nhs-england-deloitte-2024-04-24-5aaf15d9`, `cf-award-nhs-england-deloitte-2024-06-05-ea5f85c2`, `cf-award-nhs-england-kpmg-2024-06-05-7dbe0c6c`, `cf-award-nhs-england-university-of-oxford-2024-06-20-c35edc32`, `cf-award-nhs-england-cabinet-office-2024-07-04-1fe2811f`, `cf-award-nhs-england-thoughtworks-2024-07-29-5d8de433`, `cf-award-nhs-england-accenture-2024-08-14-205cca48`, `cf-award-nhs-england-kainos-2024-08-14-395dbc02`, `cf-award-nhs-england-university-of-birmingham-2024-08-15-fe09a6c5`, `cf-award-nhs-england-accenture-2024-08-16-1832fbb3`, `cf-award-nhs-england-kpmg-2024-08-27-1ab5a269`, `cf-award-nhs-england-civica-2024-08-30-6fa7eeda`, `cf-award-nhs-england-columbia-university-2024-09-03-d429a01d`, `cf-award-nhs-england-university-of-birmingham-2024-09-03-8b44dede`, `cf-award-nhs-england-university-of-birmingham-2024-09-03-95a73247`, `cf-award-nhs-england-deloitte-2024-09-06-4f2dde3f`, `cf-award-nhs-england-deloitte-2024-09-06-d7914462`, `cf-award-nhs-england-kainos-2024-09-16-b0a580db`, `cf-award-nhs-england-university-of-birmingham-2024-09-20-8fb1cefb`, `cf-award-nhs-england-university-of-salford-2024-09-25-d07e3896`, `cf-award-nhs-england-gartner-2024-09-27-087de2bb`, `cf-award-nhs-england-university-of-oxford-2024-11-01-f8edda20`, `cf-award-nhs-england-kpmg-2025-01-22-5e38ab49`, `cf-award-nhs-england-yougov-2025-01-28-e3f75696`, `cf-award-nhs-england-accenture-2025-01-29-74d58a5c`, `cf-award-nhs-england-ukhsa-2025-01-29-2b59dacf`, `cf-award-nhs-england-kpmg-2025-02-25-506d167c`, `cf-award-nhs-england-liverpool-john-moores-university-2025-03-04-b1d77681`, `cf-award-nhs-england-nhs-south-central-and-west-commi-2025-03-04-048f18d9`, `cf-award-nhs-england-university-of-salford-2025-03-04-39823c7a`, `cf-award-nhs-england-cabinet-office-2025-03-31-9c2d947b`, `cf-award-nhs-england-kainos-2025-03-31-0c4a1902`, `cf-award-nhs-england-kpmg-2025-04-28-31321523`, `cf-award-nhs-england-kpmg-2025-05-09-3623ce5e`, `cf-award-nhs-england-microsoft-2025-05-23-0604890c`, `cf-award-nhs-england-gartner-2025-06-05-5e419f43`, `cf-award-nhs-england-samsung-2025-07-01-cc644418`, `cf-award-nhs-england-kpmg-2025-07-16-53210b27`, `cf-award-nhs-england-university-of-birmingham-2025-07-24-a363b671`, `cf-award-nhs-england-gartner-2025-08-19-9f06f583`, `cf-award-nhs-england-university-of-oxford-2025-09-02-4e025abc`, `cf-award-nhs-england-kainos-2025-09-03-ec7b7106`, `cf-award-nhs-england-kainos-2025-09-05-25f655e0`, `cf-award-nhs-england-university-of-birmingham-2025-10-01-0c41181f`, `cf-award-nhs-england-kpmg-2025-10-16-de99b32d`, `cf-award-nhs-england-kpmg-2026-01-23-5d2b4a0f`, `cf-award-nhs-england-mills-reeve-2026-02-17-6afb2f67`, `cf-award-nhs-england-deloitte-2026-03-18-29690250`, `cf-award-nhs-england-cabinet-office-2026-04-01-dccb474b`, `cf-award-nhs-england-kpmg-2026-06-05-7b964d22`, `cf-award-nhs-england-oracle-2026-07-24-56099033`, `cf-award-nhs-england-kpmg-2026-08-04-2d3c2646`, `cf-award-nhs-england-deloitte-2026-08-17-efd0eb33`, `cf-award-nhs-england-kainos-2026-09-24-08a214f5`
+
+---
+
+## finding-271: NHS South, Central And West Commissioning Support Unit behaves as a surface factory
+
+- Type: surface_factory
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+NHS South, Central And West Commissioning Support Unit appears across 30 surface(s): cf-award-nhs-south-central-and-west-commissioning-support-unit-faculty-2023-03-01-2e2da92d, cf-award-nhs-south-central-and-west-c-kpmg-2022-05-16-7c74c3cd, cf-award-nhs-england-nhs-south-central-and-west-commi-2022-11-20-9a541e9e, cf-award-nhs-south-central-and-west-c-microsoft-2023-02-27-14ce332f, cf-award-nhs-south-central-and-west-c-vodafone-2023-03-15-add99742, cf-award-nhs-south-central-and-west-c-civica-2023-03-31-0c4a02fd, cf-award-nhs-south-central-and-west-c-kpmg-2023-05-25-93314b45, cf-award-nhs-south-central-and-west-c-kpmg-2023-07-11-04632d5d, cf-award-nhs-england-nhs-south-central-and-west-commi-2023-08-04-221cd44e, cf-award-nhs-england-nhs-south-central-and-west-commi-2023-09-20-c110375a, cf-award-nhs-england-nhs-south-central-and-west-commi-2023-10-03-9ecddb9d, cf-award-nhs-england-nhs-south-central-and-west-commi-2023-10-30-ce02d199, cf-award-nhs-south-central-and-west-c-dell-2023-11-03-19e75439, cf-award-nhs-south-central-and-west-c-gartner-2023-12-22-d77fa111, cf-award-nhs-england-nhs-south-central-and-west-commi-2024-02-02-c1ce7ff4, cf-award-nhs-south-central-and-west-c-microsoft-2024-02-23-cc77a86e, cf-award-nhs-england-nhs-south-central-and-west-commi-2024-03-27-6645979f, cf-award-nhs-south-central-and-west-c-deloitte-2024-04-25-b8addadb, cf-award-nhs-south-central-and-west-c-amazon-web-services-aws-2024-04-29-cc88fb2f, cf-award-nhs-south-central-and-west-c-vodafone-2024-05-30-d92cfc37, cf-award-nhs-south-central-and-west-c-civica-2024-09-26-407d9213, cf-award-nhs-south-central-and-west-c-microsoft-2025-02-26-514faded, cf-award-nhs-england-nhs-south-central-and-west-commi-2025-03-04-048f18d9, cf-award-nhs-south-central-and-west-c-civica-2025-03-28-44ef8b46, cf-award-nhs-south-central-and-west-c-amazon-web-services-aws-2025-04-29-c963cc0a, cf-award-nhs-south-central-and-west-c-vodafone-2025-11-14-90ca4607, cf-award-nhs-south-central-and-west-c-granicus-2025-12-29-e5df605f, cf-award-nhs-south-central-and-west-c-microsoft-2026-02-18-9ca6445d, cf-award-nhs-south-central-and-west-c-amazon-web-services-aws-2026-02-27-9518c69b, cf-award-nhs-south-central-and-west-c-granicus-2026-04-16-64235eb5. Secondary types: none.
+
+**Required action**
+
+Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
+
+Refs: `cf-award-nhs-south-central-and-west-commissioning-support-unit-faculty-2023-03-01-2e2da92d`, `cf-award-nhs-south-central-and-west-c-kpmg-2022-05-16-7c74c3cd`, `cf-award-nhs-england-nhs-south-central-and-west-commi-2022-11-20-9a541e9e`, `cf-award-nhs-south-central-and-west-c-microsoft-2023-02-27-14ce332f`, `cf-award-nhs-south-central-and-west-c-vodafone-2023-03-15-add99742`, `cf-award-nhs-south-central-and-west-c-civica-2023-03-31-0c4a02fd`, `cf-award-nhs-south-central-and-west-c-kpmg-2023-05-25-93314b45`, `cf-award-nhs-south-central-and-west-c-kpmg-2023-07-11-04632d5d`, `cf-award-nhs-england-nhs-south-central-and-west-commi-2023-08-04-221cd44e`, `cf-award-nhs-england-nhs-south-central-and-west-commi-2023-09-20-c110375a`, `cf-award-nhs-england-nhs-south-central-and-west-commi-2023-10-03-9ecddb9d`, `cf-award-nhs-england-nhs-south-central-and-west-commi-2023-10-30-ce02d199`, `cf-award-nhs-south-central-and-west-c-dell-2023-11-03-19e75439`, `cf-award-nhs-south-central-and-west-c-gartner-2023-12-22-d77fa111`, `cf-award-nhs-england-nhs-south-central-and-west-commi-2024-02-02-c1ce7ff4`, `cf-award-nhs-south-central-and-west-c-microsoft-2024-02-23-cc77a86e`, `cf-award-nhs-england-nhs-south-central-and-west-commi-2024-03-27-6645979f`, `cf-award-nhs-south-central-and-west-c-deloitte-2024-04-25-b8addadb`, `cf-award-nhs-south-central-and-west-c-amazon-web-services-aws-2024-04-29-cc88fb2f`, `cf-award-nhs-south-central-and-west-c-vodafone-2024-05-30-d92cfc37`, `cf-award-nhs-south-central-and-west-c-civica-2024-09-26-407d9213`, `cf-award-nhs-south-central-and-west-c-microsoft-2025-02-26-514faded`, `cf-award-nhs-england-nhs-south-central-and-west-commi-2025-03-04-048f18d9`, `cf-award-nhs-south-central-and-west-c-civica-2025-03-28-44ef8b46`, `cf-award-nhs-south-central-and-west-c-amazon-web-services-aws-2025-04-29-c963cc0a`, `cf-award-nhs-south-central-and-west-c-vodafone-2025-11-14-90ca4607`, `cf-award-nhs-south-central-and-west-c-granicus-2025-12-29-e5df605f`, `cf-award-nhs-south-central-and-west-c-microsoft-2026-02-18-9ca6445d`, `cf-award-nhs-south-central-and-west-c-amazon-web-services-aws-2026-02-27-9518c69b`, `cf-award-nhs-south-central-and-west-c-granicus-2026-04-16-64235eb5`
+
+---
+
+## finding-272: Office for National Statistics (ONS) behaves as a surface factory
+
+- Type: surface_factory
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+Office for National Statistics (ONS) appears across 16 surface(s): cf-award-ons-faculty-2024-09-20-c3886a91, cf-award-ons-faculty-2025-02-14-120e97d1, cf-award-nhs-england-ons-2023-08-04-735b84ba, cf-award-ons-deloitte-2023-09-01-b4984159, cf-award-ons-ncc-group-2023-09-27-5ddce520, cf-award-ons-vmware-2024-07-16-d672455f, cf-award-ons-anaconda-2024-10-01-942e1983, cf-award-ons-vodafone-2024-12-16-bd246488, cf-award-ons-google-2024-12-23-f9028378, cf-award-ons-gartner-2025-06-23-2e5acd7e, cf-award-ons-google-2025-10-13-e2012566, cf-award-ons-atkinsrealis-2025-12-15-01f94516, cf-award-ons-google-2026-01-12-27f6ecfa, cf-award-ons-gartner-2026-02-11-ba871c85, cf-award-ons-granicus-2026-02-25-63d96241, cf-award-ons-microsoft-2026-05-20-026140b8. Secondary types: none.
+
+**Required action**
+
+Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
+
+Refs: `cf-award-ons-faculty-2024-09-20-c3886a91`, `cf-award-ons-faculty-2025-02-14-120e97d1`, `cf-award-nhs-england-ons-2023-08-04-735b84ba`, `cf-award-ons-deloitte-2023-09-01-b4984159`, `cf-award-ons-ncc-group-2023-09-27-5ddce520`, `cf-award-ons-vmware-2024-07-16-d672455f`, `cf-award-ons-anaconda-2024-10-01-942e1983`, `cf-award-ons-vodafone-2024-12-16-bd246488`, `cf-award-ons-google-2024-12-23-f9028378`, `cf-award-ons-gartner-2025-06-23-2e5acd7e`, `cf-award-ons-google-2025-10-13-e2012566`, `cf-award-ons-atkinsrealis-2025-12-15-01f94516`, `cf-award-ons-google-2026-01-12-27f6ecfa`, `cf-award-ons-gartner-2026-02-11-ba871c85`, `cf-award-ons-granicus-2026-02-25-63d96241`, `cf-award-ons-microsoft-2026-05-20-026140b8`
+
+---
+
+## finding-273: Peabody Trust behaves as a surface factory
+
+- Type: surface_factory
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+Peabody Trust appears across 6 surface(s): cf-award-peabody-trust-faculty-2026-07-14-0780dcb4, cf-award-peabody-trust-kpmg-2024-10-17-8e39b685, cf-award-peabody-trust-vodafone-2024-12-10-c30e597f, cf-award-peabody-trust-gartner-2025-03-10-9a170c10, cf-award-peabody-trust-endava-2025-04-01-8caa0874, cf-award-peabody-trust-gartner-2026-08-28-189a4e85. Secondary types: none.
+
+**Required action**
+
+Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
+
+Refs: `cf-award-peabody-trust-faculty-2026-07-14-0780dcb4`, `cf-award-peabody-trust-kpmg-2024-10-17-8e39b685`, `cf-award-peabody-trust-vodafone-2024-12-10-c30e597f`, `cf-award-peabody-trust-gartner-2025-03-10-9a170c10`, `cf-award-peabody-trust-endava-2025-04-01-8caa0874`, `cf-award-peabody-trust-gartner-2026-08-28-189a4e85`
+
+---
+
+## finding-274: Police Digital Service behaves as a surface factory
+
+- Type: surface_factory
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+Police Digital Service appears across 8 surface(s): cf-award-police-digital-service-faculty-2025-07-27-681e30e7, cf-award-police-digital-service-faculty-2026-07-10-c04981cd, cf-award-home-office-border-force-police-digital-service-2023-09-20-c0c4e442, cf-award-police-digital-service-sopra-steria-2023-09-29-609e4d26, cf-award-police-digital-service-microsoft-2025-06-24-7495277e, cf-award-police-digital-service-deloitte-2026-02-26-ee5394e8, cf-award-police-digital-service-microsoft-2026-05-20-1d9c4ba5, cf-award-police-digital-service-vodafone-2026-10-20-6934d8b6. Secondary types: none.
+
+**Required action**
+
+Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
+
+Refs: `cf-award-police-digital-service-faculty-2025-07-27-681e30e7`, `cf-award-police-digital-service-faculty-2026-07-10-c04981cd`, `cf-award-home-office-border-force-police-digital-service-2023-09-20-c0c4e442`, `cf-award-police-digital-service-sopra-steria-2023-09-29-609e4d26`, `cf-award-police-digital-service-microsoft-2025-06-24-7495277e`, `cf-award-police-digital-service-deloitte-2026-02-26-ee5394e8`, `cf-award-police-digital-service-microsoft-2026-05-20-1d9c4ba5`, `cf-award-police-digital-service-vodafone-2026-10-20-6934d8b6`
+
+---
+
+## finding-275: Serious Fraud Office behaves as a surface factory
+
+- Type: surface_factory
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+Serious Fraud Office appears across 7 surface(s): cf-award-serious-fraud-office-faculty-2021-08-31-98fa8bef, cf-award-serious-fraud-office-oracle-2023-04-30-362038e4, cf-award-serious-fraud-office-oracle-2023-05-18-060bcdc9, cf-award-serious-fraud-office-vodafone-2023-06-25-8cb4b991, cf-award-serious-fraud-office-experian-2024-05-30-960c7bad, cf-award-serious-fraud-office-trm-labs-2025-11-23-3de8c75f, cf-award-serious-fraud-office-vodafone-2026-01-13-d205d027. Secondary types: none.
+
+**Required action**
+
+Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
+
+Refs: `cf-award-serious-fraud-office-faculty-2021-08-31-98fa8bef`, `cf-award-serious-fraud-office-oracle-2023-04-30-362038e4`, `cf-award-serious-fraud-office-oracle-2023-05-18-060bcdc9`, `cf-award-serious-fraud-office-vodafone-2023-06-25-8cb4b991`, `cf-award-serious-fraud-office-experian-2024-05-30-960c7bad`, `cf-award-serious-fraud-office-trm-labs-2025-11-23-3de8c75f`, `cf-award-serious-fraud-office-vodafone-2026-01-13-d205d027`
+
+---
+
+## finding-276: UK Health Security Agency (UKHSA) behaves as a surface factory
+
+- Type: surface_factory
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+UK Health Security Agency (UKHSA) appears across 72 surface(s): cf-award-ukhsa-faculty-2023-02-09-f632716f, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, cf-award-ukhsa-amazon-web-services-aws-2020-03-23-d04bc492, cf-award-nhs-england-ukhsa-2021-09-29-58c6f951, cf-award-ukhsa-ncc-group-2021-10-29-2927c5bd, cf-award-ukhsa-civica-2022-04-11-f194fb6a, cf-award-ukhsa-ncc-group-2022-05-31-7ffeb423, cf-award-ukhsa-vmware-2022-06-24-db9927af, cf-award-ukhsa-bae-systems-2022-07-05-51c8e67f, cf-award-ukhsa-kpmg-2022-12-14-4912610c, cf-award-ukhsa-kpmg-2023-01-25-0a4a7942, cf-award-ukhsa-kpmg-2023-02-06-2028e2ab, cf-award-ukhsa-cushman-and-wakefield-2023-03-10-e6ebf7e2, cf-award-ukhsa-kpmg-2023-03-10-10a0d7fe, cf-award-ukhsa-cabinet-office-2023-03-23-55b8a296, cf-award-ukhsa-zurich-insurance-2023-03-31-cf33cd5d, cf-award-ukhsa-accenture-2023-04-21-d396bd9b, cf-award-ukhsa-ncc-group-2023-05-19-ea234ebe, cf-award-nhs-england-ukhsa-2023-05-23-e5d4e588, cf-award-ukhsa-microsoft-2023-06-05-669c80e0, cf-award-ukhsa-amazon-web-services-aws-2023-06-09-4b2faa05, cf-award-ukhsa-cabinet-office-2023-06-19-c16325de, cf-award-ukhsa-qualtrics-2023-08-07-5a259ee9, cf-award-ukhsa-oracle-2023-08-25-cde0f89f, cf-award-ukhsa-cabinet-office-2023-08-29-6d8bd1fb, cf-award-ukhsa-kpmg-2023-10-26-54a9b279, cf-award-ukhsa-kpmg-2023-11-02-38fc7722, cf-award-ukhsa-kpmg-2023-12-01-b2fc9d5c, cf-award-ukhsa-atkinsrealis-2023-12-07-01d8b68d, cf-award-ukhsa-accenture-2023-12-22-93db9254, cf-award-ukhsa-dataminr-2024-01-18-e17b6f71, cf-award-ukri-ukhsa-2024-01-18-b291a570, cf-award-ukhsa-kpmg-2024-02-06-e2bb0524, cf-award-ukri-ukhsa-2024-02-26-684dbc2e, cf-award-ukhsa-darktrace-2024-03-08-ad2c6e0c, cf-award-ukhsa-granicus-2024-03-19-9c3d23a1, cf-award-nhs-england-ukhsa-2024-03-31-5fcb2cf4, cf-award-ukhsa-mills-reeve-2024-04-10-f7cbbbac, cf-award-ukhsa-kpmg-2024-05-31-73ec8015, cf-award-ukhsa-kpmg-2024-06-05-ebcf28ca, cf-award-ukhsa-amazon-2024-06-20-a7879422, cf-award-ukhsa-amazon-2024-06-20-be9d6f6e, cf-award-ukhsa-amazon-web-services-aws-2024-08-13-b0207bdc, cf-award-university-of-birmingham-ukhsa-2024-08-13-7230f9c4, cf-award-ukhsa-kainos-2024-09-18-78f6d69f, cf-award-ukhsa-amazon-web-services-aws-2024-11-20-66f47b4a, cf-award-ukhsa-siemens-2024-12-20-5bc5887c, cf-award-nhs-england-ukhsa-2025-01-29-2b59dacf, cf-award-ukri-ukhsa-2025-02-07-236d3c79, cf-award-ukhsa-mills-reeve-2025-03-10-0fa55561, cf-award-ukhsa-pinsent-masons-2025-03-10-a09949d2, cf-award-ukhsa-microsoft-2025-03-21-1cf53d4a, cf-award-ukhsa-civica-2025-03-27-855417e2, cf-award-ukhsa-kpmg-2025-04-17-ad73fa60, cf-award-ukhsa-kpmg-2025-05-06-37d78515, cf-award-ukhsa-gartner-2025-05-07-03bf0f4e, cf-award-ukhsa-ncc-group-2025-05-13-1a15c0ac, cf-award-ukhsa-ncc-group-2025-05-13-c8de8f48, cf-award-ukhsa-amazon-web-services-aws-2025-06-08-c2aefbcc, cf-award-ukhsa-ncc-group-2025-09-30-88d0082e, cf-award-ukhsa-kpmg-2025-11-27-14d7160b, cf-award-ukhsa-kpmg-2025-12-15-768785b0, cf-award-ukhsa-kainos-2026-01-14-c1ba0015, cf-award-ukhsa-kainos-2026-01-26-0f9f510c, cf-award-ukhsa-granicus-2026-03-30-04896a89, cf-award-ukhsa-vodafone-2026-05-01-469f4386, cf-award-ukhsa-ncc-group-2026-05-18-38e1c0bb, cf-award-ukhsa-oracle-2026-08-27-8805f2d8, cf-award-ukhsa-gartner-2026-09-15-a7edc5dc, cf-award-ukhsa-gartner-2026-09-18-c410b12e, cf-award-ukhsa-kpmg-2026-10-02-5bd25dd4, cf-award-ukhsa-kpmg-2026-10-30-dd5a6b2e. Secondary types: none.
+
+**Required action**
+
+Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
+
+Refs: `cf-award-ukhsa-faculty-2023-02-09-f632716f`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `cf-award-ukhsa-amazon-web-services-aws-2020-03-23-d04bc492`, `cf-award-nhs-england-ukhsa-2021-09-29-58c6f951`, `cf-award-ukhsa-ncc-group-2021-10-29-2927c5bd`, `cf-award-ukhsa-civica-2022-04-11-f194fb6a`, `cf-award-ukhsa-ncc-group-2022-05-31-7ffeb423`, `cf-award-ukhsa-vmware-2022-06-24-db9927af`, `cf-award-ukhsa-bae-systems-2022-07-05-51c8e67f`, `cf-award-ukhsa-kpmg-2022-12-14-4912610c`, `cf-award-ukhsa-kpmg-2023-01-25-0a4a7942`, `cf-award-ukhsa-kpmg-2023-02-06-2028e2ab`, `cf-award-ukhsa-cushman-and-wakefield-2023-03-10-e6ebf7e2`, `cf-award-ukhsa-kpmg-2023-03-10-10a0d7fe`, `cf-award-ukhsa-cabinet-office-2023-03-23-55b8a296`, `cf-award-ukhsa-zurich-insurance-2023-03-31-cf33cd5d`, `cf-award-ukhsa-accenture-2023-04-21-d396bd9b`, `cf-award-ukhsa-ncc-group-2023-05-19-ea234ebe`, `cf-award-nhs-england-ukhsa-2023-05-23-e5d4e588`, `cf-award-ukhsa-microsoft-2023-06-05-669c80e0`, `cf-award-ukhsa-amazon-web-services-aws-2023-06-09-4b2faa05`, `cf-award-ukhsa-cabinet-office-2023-06-19-c16325de`, `cf-award-ukhsa-qualtrics-2023-08-07-5a259ee9`, `cf-award-ukhsa-oracle-2023-08-25-cde0f89f`, `cf-award-ukhsa-cabinet-office-2023-08-29-6d8bd1fb`, `cf-award-ukhsa-kpmg-2023-10-26-54a9b279`, `cf-award-ukhsa-kpmg-2023-11-02-38fc7722`, `cf-award-ukhsa-kpmg-2023-12-01-b2fc9d5c`, `cf-award-ukhsa-atkinsrealis-2023-12-07-01d8b68d`, `cf-award-ukhsa-accenture-2023-12-22-93db9254`, `cf-award-ukhsa-dataminr-2024-01-18-e17b6f71`, `cf-award-ukri-ukhsa-2024-01-18-b291a570`, `cf-award-ukhsa-kpmg-2024-02-06-e2bb0524`, `cf-award-ukri-ukhsa-2024-02-26-684dbc2e`, `cf-award-ukhsa-darktrace-2024-03-08-ad2c6e0c`, `cf-award-ukhsa-granicus-2024-03-19-9c3d23a1`, `cf-award-nhs-england-ukhsa-2024-03-31-5fcb2cf4`, `cf-award-ukhsa-mills-reeve-2024-04-10-f7cbbbac`, `cf-award-ukhsa-kpmg-2024-05-31-73ec8015`, `cf-award-ukhsa-kpmg-2024-06-05-ebcf28ca`, `cf-award-ukhsa-amazon-2024-06-20-a7879422`, `cf-award-ukhsa-amazon-2024-06-20-be9d6f6e`, `cf-award-ukhsa-amazon-web-services-aws-2024-08-13-b0207bdc`, `cf-award-university-of-birmingham-ukhsa-2024-08-13-7230f9c4`, `cf-award-ukhsa-kainos-2024-09-18-78f6d69f`, `cf-award-ukhsa-amazon-web-services-aws-2024-11-20-66f47b4a`, `cf-award-ukhsa-siemens-2024-12-20-5bc5887c`, `cf-award-nhs-england-ukhsa-2025-01-29-2b59dacf`, `cf-award-ukri-ukhsa-2025-02-07-236d3c79`, `cf-award-ukhsa-mills-reeve-2025-03-10-0fa55561`, `cf-award-ukhsa-pinsent-masons-2025-03-10-a09949d2`, `cf-award-ukhsa-microsoft-2025-03-21-1cf53d4a`, `cf-award-ukhsa-civica-2025-03-27-855417e2`, `cf-award-ukhsa-kpmg-2025-04-17-ad73fa60`, `cf-award-ukhsa-kpmg-2025-05-06-37d78515`, `cf-award-ukhsa-gartner-2025-05-07-03bf0f4e`, `cf-award-ukhsa-ncc-group-2025-05-13-1a15c0ac`, `cf-award-ukhsa-ncc-group-2025-05-13-c8de8f48`, `cf-award-ukhsa-amazon-web-services-aws-2025-06-08-c2aefbcc`, `cf-award-ukhsa-ncc-group-2025-09-30-88d0082e`, `cf-award-ukhsa-kpmg-2025-11-27-14d7160b`, `cf-award-ukhsa-kpmg-2025-12-15-768785b0`, `cf-award-ukhsa-kainos-2026-01-14-c1ba0015`, `cf-award-ukhsa-kainos-2026-01-26-0f9f510c`, `cf-award-ukhsa-granicus-2026-03-30-04896a89`, `cf-award-ukhsa-vodafone-2026-05-01-469f4386`, `cf-award-ukhsa-ncc-group-2026-05-18-38e1c0bb`, `cf-award-ukhsa-oracle-2026-08-27-8805f2d8`, `cf-award-ukhsa-gartner-2026-09-15-a7edc5dc`, `cf-award-ukhsa-gartner-2026-09-18-c410b12e`, `cf-award-ukhsa-kpmg-2026-10-02-5bd25dd4`, `cf-award-ukhsa-kpmg-2026-10-30-dd5a6b2e`
+
+---
+
+## finding-277: UK Research and Innovation (UKRI) behaves as a surface factory
+
+- Type: surface_factory
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+UK Research and Innovation (UKRI) appears across 60 surface(s): cf-award-ukri-faculty-2023-07-07-87b2eade, uk-compute-roadmap-sovereign-ai-unit-2025-07-17, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5, cf-award-ukri-hexagon-2023-01-10-9a455ebb, cf-award-ukri-kainos-2023-01-20-16fb50c4, cf-award-ukri-mod-2023-03-13-e2ecd1b2, cf-award-ukri-mod-2023-03-14-1d4d8ad5, cf-award-ukri-bsi-2023-03-17-6d0f6b6e, cf-award-ukri-siemens-2023-03-23-af72df5e, cf-award-ukri-ibm-2023-05-03-aec80d06, cf-award-ukri-sap-2023-05-16-9dae1d6a, cf-award-ukri-dfe-2023-09-19-db6a8757, cf-award-ukri-raytheon-2023-10-02-af07afad, cf-award-ukri-mod-2023-10-17-f0d82d2e, cf-award-ukri-atkinsrealis-2023-11-27-af04c430, cf-award-ukri-siemens-2023-12-19-03128423, cf-award-ukri-university-of-oxford-2023-12-20-8d01b3c8, cf-award-ukri-hexagon-2023-12-21-89587a7b, cf-award-ukri-ukhsa-2024-01-18-b291a570, cf-award-ukri-civica-2024-01-26-8610b576, cf-award-ukri-atkinsrealis-2024-01-30-635d2e9d, cf-award-ukri-university-of-oxford-2024-02-05-96091564, cf-award-ukri-dell-2024-02-12-4c42d70b, cf-award-ukri-oracle-2024-02-21-775e30b6, cf-award-ukri-mod-2024-02-23-30aadc56, cf-award-ukri-ukhsa-2024-02-26-684dbc2e, cf-award-ukri-oracle-2024-03-01-d1fe8964, cf-award-ukri-dla-piper-2024-03-11-9c5e9176, cf-award-ukri-mod-2024-07-09-9dd8fa35, cf-award-desnz-ukri-2024-08-15-1698debb, cf-award-ukri-siemens-2024-08-22-4d1ee1d1, cf-award-ukri-atkinsrealis-2024-09-23-cb7e9666, cf-award-ukri-dell-2024-12-19-c1c1198e, cf-award-ukri-ukhsa-2025-02-07-236d3c79, cf-award-ukri-dell-2025-02-10-2a35a789, cf-award-ukri-oracle-2025-02-12-9e7bfeaa, cf-award-ukri-oracle-2025-02-12-e7a9488f, cf-award-ukri-atkinsrealis-2025-03-06-4f655e4a, cf-award-ukri-dla-piper-2025-05-06-c0fd8084, cf-award-ukri-dla-piper-2025-05-07-9eabee7c, cf-award-ukri-siemens-2025-09-19-92df7e0b, cf-award-ukri-oracle-2025-10-20-54894653, cf-award-ukri-atkinsrealis-2026-02-04-0dc7674b, cf-award-ukri-sap-2026-03-30-f6b27ac9, cf-award-ukri-ncc-group-2026-07-08-f0c50993, cf-award-ukri-siemens-2026-07-17-5b7105b8, cf-award-ukri-atkinsrealis-2026-07-31-e85f7fd2, cf-award-ukri-atkinsrealis-2026-07-31-ed17b1f1, cf-award-ukri-atkinsrealis-2026-08-07-8a795ae0, cf-award-ukri-atkinsrealis-2026-09-15-e7d524ff, cf-award-ukri-atkinsrealis-2026-10-05-1040aad9, cf-award-ukri-atkinsrealis-2026-11-02-39c11dd5. Secondary types: policy_to_procurement_surface, public_private_ai_infrastructure.
+
+**Required action**
+
+Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
+
+Refs: `cf-award-ukri-faculty-2023-07-07-87b2eade`, `uk-compute-roadmap-sovereign-ai-unit-2025-07-17`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5`, `cf-award-ukri-hexagon-2023-01-10-9a455ebb`, `cf-award-ukri-kainos-2023-01-20-16fb50c4`, `cf-award-ukri-mod-2023-03-13-e2ecd1b2`, `cf-award-ukri-mod-2023-03-14-1d4d8ad5`, `cf-award-ukri-bsi-2023-03-17-6d0f6b6e`, `cf-award-ukri-siemens-2023-03-23-af72df5e`, `cf-award-ukri-ibm-2023-05-03-aec80d06`, `cf-award-ukri-sap-2023-05-16-9dae1d6a`, `cf-award-ukri-dfe-2023-09-19-db6a8757`, `cf-award-ukri-raytheon-2023-10-02-af07afad`, `cf-award-ukri-mod-2023-10-17-f0d82d2e`, `cf-award-ukri-atkinsrealis-2023-11-27-af04c430`, `cf-award-ukri-siemens-2023-12-19-03128423`, `cf-award-ukri-university-of-oxford-2023-12-20-8d01b3c8`, `cf-award-ukri-hexagon-2023-12-21-89587a7b`, `cf-award-ukri-ukhsa-2024-01-18-b291a570`, `cf-award-ukri-civica-2024-01-26-8610b576`, `cf-award-ukri-atkinsrealis-2024-01-30-635d2e9d`, `cf-award-ukri-university-of-oxford-2024-02-05-96091564`, `cf-award-ukri-dell-2024-02-12-4c42d70b`, `cf-award-ukri-oracle-2024-02-21-775e30b6`, `cf-award-ukri-mod-2024-02-23-30aadc56`, `cf-award-ukri-ukhsa-2024-02-26-684dbc2e`, `cf-award-ukri-oracle-2024-03-01-d1fe8964`, `cf-award-ukri-dla-piper-2024-03-11-9c5e9176`, `cf-award-ukri-mod-2024-07-09-9dd8fa35`, `cf-award-desnz-ukri-2024-08-15-1698debb`, `cf-award-ukri-siemens-2024-08-22-4d1ee1d1`, `cf-award-ukri-atkinsrealis-2024-09-23-cb7e9666`, `cf-award-ukri-dell-2024-12-19-c1c1198e`, `cf-award-ukri-ukhsa-2025-02-07-236d3c79`, `cf-award-ukri-dell-2025-02-10-2a35a789`, `cf-award-ukri-oracle-2025-02-12-9e7bfeaa`, `cf-award-ukri-oracle-2025-02-12-e7a9488f`, `cf-award-ukri-atkinsrealis-2025-03-06-4f655e4a`, `cf-award-ukri-dla-piper-2025-05-06-c0fd8084`, `cf-award-ukri-dla-piper-2025-05-07-9eabee7c`, `cf-award-ukri-siemens-2025-09-19-92df7e0b`, `cf-award-ukri-oracle-2025-10-20-54894653`, `cf-award-ukri-atkinsrealis-2026-02-04-0dc7674b`, `cf-award-ukri-sap-2026-03-30-f6b27ac9`, `cf-award-ukri-ncc-group-2026-07-08-f0c50993`, `cf-award-ukri-siemens-2026-07-17-5b7105b8`, `cf-award-ukri-atkinsrealis-2026-07-31-e85f7fd2`, `cf-award-ukri-atkinsrealis-2026-07-31-ed17b1f1`, `cf-award-ukri-atkinsrealis-2026-08-07-8a795ae0`, `cf-award-ukri-atkinsrealis-2026-09-15-e7d524ff`, `cf-award-ukri-atkinsrealis-2026-10-05-1040aad9`, `cf-award-ukri-atkinsrealis-2026-11-02-39c11dd5`
+
+---
+
+## finding-278: University of Edinburgh behaves as a surface factory
+
+- Type: surface_factory
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+University of Edinburgh appears across 17 surface(s): national-supercomputer-edinburgh-750m-2025-06-11, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-hmts-ministerial-meetings-july-to-september-2025-69414470, cf-award-dfe-university-of-edinburgh-2023-02-17-e1f56cf0, cf-award-mod-university-of-edinburgh-2023-06-20-553cf235. Secondary types: public_private_ai_infrastructure.
+
+**Required action**
+
+Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
+
+Refs: `national-supercomputer-edinburgh-750m-2025-06-11`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-hmts-ministerial-meetings-july-to-september-2025-69414470`, `cf-award-dfe-university-of-edinburgh-2023-02-17-e1f56cf0`, `cf-award-mod-university-of-edinburgh-2023-06-20-553cf235`
+
+---
+
+## finding-279: Aaru behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -4598,7 +5030,25 @@ Refs: `synthetic-population-vendor-claim-aaru-2026-10-23`, `aaru-ey-global-wealt
 
 ---
 
-## finding-256: EY behaves as a surface factory
+## finding-280: Teneo behaves as a surface factory
+
+- Type: surface_factory
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+Teneo appears across 5 surface(s): synthetic-population-vendor-claim-artificial-societies-2026-10-23, cf-award-beis-teneo-2023-05-12-c2be51c8, cf-award-dfe-teneo-2023-08-09-76b9c352, cf-award-beis-teneo-2023-11-23-f2a76643, cf-award-care-quality-commission-deloitte-2024-06-14-79f692ce. Secondary types: category_formation_surface.
+
+**Required action**
+
+Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
+
+Refs: `synthetic-population-vendor-claim-artificial-societies-2026-10-23`, `cf-award-beis-teneo-2023-05-12-c2be51c8`, `cf-award-dfe-teneo-2023-08-09-76b9c352`, `cf-award-beis-teneo-2023-11-23-f2a76643`, `cf-award-care-quality-commission-deloitte-2024-06-14-79f692ce`
+
+---
+
+## finding-281: EY behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -4616,7 +5066,7 @@ Refs: `aaru-ey-global-wealth-study-blinded-simulation-2025-10-07`, `ey-aaru-beha
 
 ---
 
-## finding-257: Match Group behaves as a surface factory
+## finding-282: Match Group behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -4634,7 +5084,7 @@ Refs: `qloo-vendor-reported-clients-2026-09-15`, `uk-ministerial-meetings-dsit-m
 
 ---
 
-## finding-258: Netflix behaves as a surface factory
+## finding-283: Netflix behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -4652,7 +5102,25 @@ Refs: `qloo-vendor-reported-clients-2026-09-15`, `uk-ministerial-meetings-dsit-m
 
 ---
 
-## finding-259: Axios behaves as a surface factory
+## finding-284: YouGov behaves as a surface factory
+
+- Type: surface_factory
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+YouGov appears across 14 surface(s): yougov-acquires-yabble-2024-09-26, uk-ministerial-meetings-scotland-office-ministerial-meetings-october-december-2024-67e52201, cf-award-nhs-england-yougov-2023-02-17-b721a498, cf-award-dfe-yougov-2023-04-21-906634eb, cf-award-beis-yougov-2023-05-26-b553f087, cf-award-defra-yougov-2023-07-18-7f74d1cb, cf-award-beis-yougov-2024-01-12-be81dc68, cf-award-desnz-yougov-2024-01-15-bc7b9006, cf-award-nhs-england-yougov-2024-02-02-0f7169f0, cf-award-dhsc-yougov-2024-03-05-0c87052b, cf-award-university-of-birmingham-yougov-2024-04-17-8acb25dd, cf-award-dhsc-yougov-2025-01-14-2eddee19, cf-award-nhs-england-yougov-2025-01-28-e3f75696, cf-award-mod-yougov-2025-08-01-5f957da6. Secondary types: category_formation_surface, democratic_input_replacement.
+
+**Required action**
+
+Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
+
+Refs: `yougov-acquires-yabble-2024-09-26`, `uk-ministerial-meetings-scotland-office-ministerial-meetings-october-december-2024-67e52201`, `cf-award-nhs-england-yougov-2023-02-17-b721a498`, `cf-award-dfe-yougov-2023-04-21-906634eb`, `cf-award-beis-yougov-2023-05-26-b553f087`, `cf-award-defra-yougov-2023-07-18-7f74d1cb`, `cf-award-beis-yougov-2024-01-12-be81dc68`, `cf-award-desnz-yougov-2024-01-15-bc7b9006`, `cf-award-nhs-england-yougov-2024-02-02-0f7169f0`, `cf-award-dhsc-yougov-2024-03-05-0c87052b`, `cf-award-university-of-birmingham-yougov-2024-04-17-8acb25dd`, `cf-award-dhsc-yougov-2025-01-14-2eddee19`, `cf-award-nhs-england-yougov-2025-01-28-e3f75696`, `cf-award-mod-yougov-2025-08-01-5f957da6`
+
+---
+
+## finding-285: Axios behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -4670,7 +5138,43 @@ Refs: `axios-published-aaru-simulated-statistic-reported-2026-05-05`, `sec-form-
 
 ---
 
-## finding-260: Scientific Advisory Group for Emergencies (SAGE) behaves as a surface factory
+## finding-286: University of Salford behaves as a surface factory
+
+- Type: surface_factory
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+University of Salford appears across 10 surface(s): salford-makerfield-synthetic-electorate-experiment-2026-06-19, cf-award-nhs-england-university-of-salford-2023-02-27-1201c51e, cf-award-nhs-england-university-of-salford-2023-02-27-b82042ca, cf-award-university-of-salford-pwc-2024-03-15-cf330315, cf-award-nhs-england-university-of-salford-2024-09-25-d07e3896, cf-award-nhs-england-university-of-salford-2025-03-04-39823c7a, cf-award-mod-university-of-salford-2025-04-16-8ba8779c, cf-award-university-of-salford-kpmg-2025-07-09-467a4dd6, cf-award-cabinet-office-university-of-salford-2025-07-18-933d730f, cf-award-home-office-border-force-university-of-salford-2026-06-01-c807fa99. Secondary types: none.
+
+**Required action**
+
+Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
+
+Refs: `salford-makerfield-synthetic-electorate-experiment-2026-06-19`, `cf-award-nhs-england-university-of-salford-2023-02-27-1201c51e`, `cf-award-nhs-england-university-of-salford-2023-02-27-b82042ca`, `cf-award-university-of-salford-pwc-2024-03-15-cf330315`, `cf-award-nhs-england-university-of-salford-2024-09-25-d07e3896`, `cf-award-nhs-england-university-of-salford-2025-03-04-39823c7a`, `cf-award-mod-university-of-salford-2025-04-16-8ba8779c`, `cf-award-university-of-salford-kpmg-2025-07-09-467a4dd6`, `cf-award-cabinet-office-university-of-salford-2025-07-18-933d730f`, `cf-award-home-office-border-force-university-of-salford-2026-06-01-c807fa99`
+
+---
+
+## finding-287: Dentsu behaves as a surface factory
+
+- Type: surface_factory
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+Dentsu appears across 3 surface(s): venturebeat-synthetic-audience-vendors-named-2026-04-26, dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, cf-award-dfe-dentsu-2025-09-29-2cc03ede. Secondary types: democratic_input_replacement.
+
+**Required action**
+
+Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
+
+Refs: `venturebeat-synthetic-audience-vendors-named-2026-04-26`, `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `cf-award-dfe-dentsu-2025-09-29-2cc03ede`
+
+---
+
+## finding-288: Scientific Advisory Group for Emergencies (SAGE) behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -4688,7 +5192,7 @@ Refs: `sage-17-ben-warner-marc-warner-attendees-2020-03-18`, `sage-63-ben-warner
 
 ---
 
-## finding-261: Ada Lovelace Institute behaves as a surface factory
+## finding-289: Ada Lovelace Institute behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -4706,7 +5210,7 @@ Refs: `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `uk-minis
 
 ---
 
-## finding-262: Alan Turing Institute behaves as a surface factory
+## finding-290: Alan Turing Institute behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -4714,17 +5218,17 @@ Refs: `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `uk-minis
 
 **Observed**
 
-Alan Turing Institute appears across 19 surface(s): uk-ai-safety-summit-2023-confirmed-attendees-programme-roster, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5. Secondary types: government_advisory_surface.
+Alan Turing Institute appears across 22 surface(s): uk-ai-safety-summit-2023-confirmed-attendees-programme-roster, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5, cf-award-dhsc-alan-turing-institute-2023-02-16-5f9d3ece, cf-award-dhsc-alan-turing-institute-2023-02-16-a9cd9326, cf-award-dhsc-alan-turing-institute-2023-03-15-948f2b07. Secondary types: government_advisory_surface.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5`
+Refs: `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5`, `cf-award-dhsc-alan-turing-institute-2023-02-16-5f9d3ece`, `cf-award-dhsc-alan-turing-institute-2023-02-16-a9cd9326`, `cf-award-dhsc-alan-turing-institute-2023-03-15-948f2b07`
 
 ---
 
-## finding-263: Apollo Research behaves as a surface factory
+## finding-291: Apollo Research behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -4742,7 +5246,7 @@ Refs: `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `dsit-tec
 
 ---
 
-## finding-264: British Academy behaves as a surface factory
+## finding-292: British Academy behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -4760,7 +5264,7 @@ Refs: `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `uk-minis
 
 ---
 
-## finding-265: Centre for Long-Term Resilience behaves as a surface factory
+## finding-293: Centre for Long-Term Resilience behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -4778,7 +5282,7 @@ Refs: `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `uk-minis
 
 ---
 
-## finding-266: Centre for the Governance of AI behaves as a surface factory
+## finding-294: Centre for the Governance of AI behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -4796,7 +5300,7 @@ Refs: `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `uk-minis
 
 ---
 
-## finding-267: Cohere behaves as a surface factory
+## finding-295: Cohere behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -4814,7 +5318,25 @@ Refs: `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `dsit-tec
 
 ---
 
-## finding-268: CoreWeave behaves as a surface factory
+## finding-296: Columbia University behaves as a surface factory
+
+- Type: surface_factory
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+Columbia University appears across 3 surface(s): uk-ai-safety-summit-2023-confirmed-attendees-programme-roster, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, cf-award-nhs-england-columbia-university-2024-09-03-d429a01d. Secondary types: government_advisory_surface.
+
+**Required action**
+
+Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
+
+Refs: `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `cf-award-nhs-england-columbia-university-2024-09-03-d429a01d`
+
+---
+
+## finding-297: CoreWeave behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -4832,7 +5354,7 @@ Refs: `lanarkshire-ai-growth-zone-designation-2026-01-29-further-names`, `uk-min
 
 ---
 
-## finding-269: Darktrace behaves as a surface factory
+## finding-298: Darktrace behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -4840,17 +5362,17 @@ Refs: `lanarkshire-ai-growth-zone-designation-2026-01-29-further-names`, `uk-min
 
 **Observed**
 
-Darktrace appears across 13 surface(s): uk-ai-safety-summit-2023-confirmed-attendees-programme-roster, dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94. Secondary types: government_advisory_surface.
+Darktrace appears across 14 surface(s): uk-ai-safety-summit-2023-confirmed-attendees-programme-roster, dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, cf-award-ukhsa-darktrace-2024-03-08-ad2c6e0c. Secondary types: government_advisory_surface.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`
+Refs: `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `cf-award-ukhsa-darktrace-2024-03-08-ad2c6e0c`
 
 ---
 
-## finding-270: European Commission behaves as a surface factory
+## finding-299: European Commission behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -4868,7 +5390,7 @@ Refs: `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `uk-minis
 
 ---
 
-## finding-271: Google behaves as a surface factory
+## finding-300: Google behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -4876,17 +5398,17 @@ Refs: `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `uk-minis
 
 **Observed**
 
-Google appears across 3 surface(s): uk-ai-safety-summit-2023-confirmed-attendees-programme-roster, white-house-meeting-ai-ceos-2023-05-04, white-house-voluntary-ai-commitments-seven-companies-2023-07-21. Secondary types: government_advisory_surface.
+Google appears across 12 surface(s): uk-ai-safety-summit-2023-confirmed-attendees-programme-roster, white-house-meeting-ai-ceos-2023-05-04, white-house-voluntary-ai-commitments-seven-companies-2023-07-21, cf-award-centre-for-process-innovatio-google-2023-03-30-d96e2300, cf-award-beis-google-2023-10-31-5bb1dd85, cf-award-government-digital-service-google-2024-01-12-61babe54, cf-award-home-office-border-force-google-2024-03-31-60c2b2e3, cf-award-ons-google-2024-12-23-f9028378, cf-award-ons-google-2025-10-13-e2012566, cf-award-government-digital-service-google-2025-10-15-fdb2aa9b, cf-award-ons-google-2026-01-12-27f6ecfa, cf-award-dsit-google-2026-06-19-2f99cb6d. Secondary types: government_advisory_surface.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `white-house-meeting-ai-ceos-2023-05-04`, `white-house-voluntary-ai-commitments-seven-companies-2023-07-21`
+Refs: `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `white-house-meeting-ai-ceos-2023-05-04`, `white-house-voluntary-ai-commitments-seven-companies-2023-07-21`, `cf-award-centre-for-process-innovatio-google-2023-03-30-d96e2300`, `cf-award-beis-google-2023-10-31-5bb1dd85`, `cf-award-government-digital-service-google-2024-01-12-61babe54`, `cf-award-home-office-border-force-google-2024-03-31-60c2b2e3`, `cf-award-ons-google-2024-12-23-f9028378`, `cf-award-ons-google-2025-10-13-e2012566`, `cf-award-government-digital-service-google-2025-10-15-fdb2aa9b`, `cf-award-ons-google-2026-01-12-27f6ecfa`, `cf-award-dsit-google-2026-06-19-2f99cb6d`
 
 ---
 
-## finding-272: Graphcore behaves as a surface factory
+## finding-301: Graphcore behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -4904,7 +5426,7 @@ Refs: `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `uk-minis
 
 ---
 
-## finding-273: Hugging Face behaves as a surface factory
+## finding-302: Hugging Face behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -4922,7 +5444,7 @@ Refs: `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `uk-minis
 
 ---
 
-## finding-274: International Telecommunication Union (ITU) behaves as a surface factory
+## finding-303: International Telecommunication Union (ITU) behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -4940,7 +5462,7 @@ Refs: `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `uk-minis
 
 ---
 
-## finding-275: Lakestar behaves as a surface factory
+## finding-304: Lakestar behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -4958,7 +5480,25 @@ Refs: `dsit-matt-clifford-ai-investor-roundtable-2023-10-25`, `uk-ministerial-me
 
 ---
 
-## finding-276: Mistral behaves as a surface factory
+## finding-305: Liverpool John Moores University behaves as a surface factory
+
+- Type: surface_factory
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+Liverpool John Moores University appears across 8 surface(s): uk-ai-safety-summit-2023-confirmed-attendees-programme-roster, cf-award-dfe-university-of-edinburgh-2023-02-17-e1f56cf0, cf-award-defra-liverpool-john-moores-university-2023-08-28-a1b89170, cf-award-liverpool-john-moores-univer-mills-reeve-2024-02-27-09b2068e, cf-award-nhs-england-liverpool-john-moores-university-2024-03-26-1c5d3498, cf-award-nhs-england-liverpool-john-moores-university-2025-03-04-b1d77681, cf-award-care-quality-commission-liverpool-john-moores-university-2025-04-29-f93672bd, cf-award-defra-liverpool-john-moores-university-2026-01-07-f91b3f6b. Secondary types: government_advisory_surface.
+
+**Required action**
+
+Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
+
+Refs: `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `cf-award-dfe-university-of-edinburgh-2023-02-17-e1f56cf0`, `cf-award-defra-liverpool-john-moores-university-2023-08-28-a1b89170`, `cf-award-liverpool-john-moores-univer-mills-reeve-2024-02-27-09b2068e`, `cf-award-nhs-england-liverpool-john-moores-university-2024-03-26-1c5d3498`, `cf-award-nhs-england-liverpool-john-moores-university-2025-03-04-b1d77681`, `cf-award-care-quality-commission-liverpool-john-moores-university-2025-04-29-f93672bd`, `cf-award-defra-liverpool-john-moores-university-2026-01-07-f91b3f6b`
+
+---
+
+## finding-306: Mistral behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -4976,7 +5516,7 @@ Refs: `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `uk-minis
 
 ---
 
-## finding-277: Organisation for Economic Co-operation and Development (OECD) behaves as a surface factory
+## finding-307: Organisation for Economic Co-operation and Development (OECD) behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -4994,7 +5534,7 @@ Refs: `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `uk-minis
 
 ---
 
-## finding-278: Oxford Internet Institute behaves as a surface factory
+## finding-308: Oxford Internet Institute behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -5012,7 +5552,7 @@ Refs: `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `uk-minis
 
 ---
 
-## finding-279: Radical Ventures behaves as a surface factory
+## finding-309: Radical Ventures behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -5030,7 +5570,7 @@ Refs: `dsit-matt-clifford-ai-investor-roundtable-2023-10-25`, `uk-ministerial-me
 
 ---
 
-## finding-280: Responsible AI UK behaves as a surface factory
+## finding-310: Responsible AI UK behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -5048,7 +5588,7 @@ Refs: `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `uk-minis
 
 ---
 
-## finding-281: Royal Society behaves as a surface factory
+## finding-311: Royal Society behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -5056,17 +5596,17 @@ Refs: `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `uk-minis
 
 **Observed**
 
-Royal Society appears across 30 surface(s): uk-ai-safety-summit-2023-confirmed-attendees-programme-roster, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2025-6936dac1, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2025-6936dac1, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5. Secondary types: government_advisory_surface.
+Royal Society appears across 31 surface(s): uk-ai-safety-summit-2023-confirmed-attendees-programme-roster, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2025-6936dac1, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2025-6936dac1, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5, cf-award-dcms-royal-society-2023-03-20-66715af7. Secondary types: government_advisory_surface.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2025-6936dac1`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2025-6936dac1`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5`
+Refs: `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2025-6936dac1`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2025-6936dac1`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5`, `cf-award-dcms-royal-society-2023-03-20-66715af7`
 
 ---
 
-## finding-282: Salesforce behaves as a surface factory
+## finding-312: Salesforce behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -5074,17 +5614,17 @@ Refs: `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `uk-minis
 
 **Observed**
 
-Salesforce appears across 10 surface(s): uk-ai-safety-summit-2023-confirmed-attendees-programme-roster, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-ministerial-meetings-april-to-june-2-6ab5213d. Secondary types: government_advisory_surface.
+Salesforce appears across 14 surface(s): uk-ai-safety-summit-2023-confirmed-attendees-programme-roster, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-ministerial-meetings-april-to-june-2-6ab5213d, cf-award-government-digital-service-salesforce-2023-03-20-32c83aba, cf-award-fcdo-services-salesforce-2023-07-26-a4d1b959, cf-award-british-business-bank-salesforce-2026-04-28-963c04f7, cf-award-defra-salesforce-2026-07-09-0e64fb94. Secondary types: government_advisory_surface.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-ministerial-meetings-april-to-june-2-6ab5213d`
+Refs: `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-ministerial-meetings-april-to-june-2-6ab5213d`, `cf-award-government-digital-service-salesforce-2023-03-20-32c83aba`, `cf-award-fcdo-services-salesforce-2023-07-26-a4d1b959`, `cf-award-british-business-bank-salesforce-2026-04-28-963c04f7`, `cf-award-defra-salesforce-2026-07-09-0e64fb94`
 
 ---
 
-## finding-283: SeedCamp behaves as a surface factory
+## finding-313: SeedCamp behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -5102,7 +5642,7 @@ Refs: `dsit-matt-clifford-ai-investor-roundtable-2023-10-25`, `uk-ministerial-me
 
 ---
 
-## finding-284: Stability AI behaves as a surface factory
+## finding-314: Stability AI behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -5120,7 +5660,7 @@ Refs: `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `dsit-tec
 
 ---
 
-## finding-285: Stanford University behaves as a surface factory
+## finding-315: Stanford University behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -5138,7 +5678,7 @@ Refs: `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `uk-minis
 
 ---
 
-## finding-286: techUK behaves as a surface factory
+## finding-316: techUK behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -5156,7 +5696,7 @@ Refs: `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `dsit-tec
 
 ---
 
-## finding-287: University of Birmingham behaves as a surface factory
+## finding-317: Trail of Bits behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -5164,17 +5704,35 @@ Refs: `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `dsit-tec
 
 **Observed**
 
-University of Birmingham appears across 9 surface(s): uk-ai-safety-summit-2023-confirmed-attendees-programme-roster, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-january-to-march-2026-6a3e3656. Secondary types: government_advisory_surface.
+Trail of Bits appears across 5 surface(s): uk-ai-safety-summit-2023-confirmed-attendees-programme-roster, cf-award-beis-trail-of-bits-2023-07-24-f5ef5269, cf-award-beis-trail-of-bits-2023-09-04-9f0423a3, cf-award-beis-trail-of-bits-2023-09-18-7cb95184, cf-award-beis-trail-of-bits-2024-01-01-a8b06024. Secondary types: government_advisory_surface.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-january-to-march-2026-6a3e3656`
+Refs: `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `cf-award-beis-trail-of-bits-2023-07-24-f5ef5269`, `cf-award-beis-trail-of-bits-2023-09-04-9f0423a3`, `cf-award-beis-trail-of-bits-2023-09-18-7cb95184`, `cf-award-beis-trail-of-bits-2024-01-01-a8b06024`
 
 ---
 
-## finding-288: University of California, Berkeley behaves as a surface factory
+## finding-318: University of Birmingham behaves as a surface factory
+
+- Type: surface_factory
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+University of Birmingham appears across 77 surface(s): uk-ai-safety-summit-2023-confirmed-attendees-programme-roster, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-january-to-march-2026-6a3e3656, cf-award-dfe-university-of-birmingham-2021-09-13-1695579d, cf-award-nhs-england-university-of-birmingham-2021-09-29-15288114, cf-award-university-of-birmingham-servicenow-2022-11-01-ffda4566, cf-award-mod-university-of-birmingham-2022-11-17-2e6172e7, cf-award-university-of-birmingham-oracle-2022-12-15-dc046ab7, cf-award-university-of-birmingham-university-of-oxford-2023-01-11-469b1f11, cf-award-mod-university-of-birmingham-2023-01-12-a5fbdc4b, cf-award-university-of-birmingham-dell-2023-01-16-6f199f57, cf-award-nhs-england-university-of-birmingham-2023-02-16-983a07e1, cf-award-dfe-university-of-edinburgh-2023-02-17-e1f56cf0, cf-award-university-of-birmingham-gartner-2023-03-20-6b7a140a, cf-award-university-of-birmingham-oracle-2023-03-20-a87a8c19, cf-award-university-of-birmingham-national-instruments-2023-03-23-b1216943, cf-award-nhs-england-university-of-birmingham-2023-04-03-81bcfd17, cf-award-nhs-england-university-of-birmingham-2023-05-02-70e47359, cf-award-beis-university-of-birmingham-2023-06-26-4727254a, cf-award-university-of-birmingham-national-instruments-2023-06-26-bfb6d8ed, cf-award-university-of-birmingham-atkinsrealis-2023-07-20-6a2a062b, cf-award-mod-university-of-birmingham-2023-09-29-ec80758b, cf-award-dfe-university-of-birmingham-2023-09-30-74a79958, cf-award-dhsc-university-of-birmingham-2023-10-09-ef19c340, cf-award-university-of-birmingham-servicenow-2023-11-24-f6f06298, cf-award-mod-university-of-birmingham-2023-11-29-e5125b1b, cf-award-nhs-england-university-of-birmingham-2023-12-12-808dfbf0, cf-award-university-of-birmingham-servicenow-2023-12-15-8f01198e, cf-award-dsit-university-of-birmingham-2024-01-01-5e18108e, cf-award-university-of-birmingham-wp-engine-2024-02-14-8a0eb434, cf-award-university-of-birmingham-mills-reeve-2024-03-20-8bdb3f2f, cf-award-university-of-birmingham-cushman-and-wakefield-2024-03-22-93e93e44, cf-award-university-of-birmingham-jcdecaux-2024-03-24-4e5670ee, cf-award-university-of-birmingham-mills-reeve-2024-04-04-2ff5874f, cf-award-university-of-birmingham-atkinsrealis-2024-04-10-55c67dc7, cf-award-university-of-birmingham-yougov-2024-04-17-8acb25dd, cf-award-university-of-birmingham-siemens-2024-04-30-c53f5aa8, cf-award-university-of-birmingham-kpmg-2024-05-02-ca540619, cf-award-university-of-birmingham-ncc-group-2024-05-15-0a73b940, cf-award-university-of-birmingham-ncc-group-2024-05-15-a8e49369, cf-award-university-of-birmingham-ncc-group-2024-05-21-12a2a36b, cf-award-university-of-birmingham-ncc-group-2024-05-21-ed1c3a98, cf-award-university-of-birmingham-pinsent-masons-2024-05-23-12bbc5f7, cf-award-university-of-birmingham-home-office-border-force-2024-06-12-f31ce43b, cf-award-university-of-birmingham-qualtrics-2024-06-26-070cf07b, cf-award-university-of-birmingham-deloitte-2024-06-27-89d32dad, cf-award-university-of-birmingham-microsoft-2024-06-28-1fda0d44, cf-award-defra-university-of-birmingham-2024-07-03-a8b43a43, cf-award-university-of-birmingham-alibaba-2024-07-16-dab581b3, cf-award-university-of-birmingham-oracle-2024-07-18-80721ab9, cf-award-university-of-birmingham-oracle-2024-07-19-2b05f1b7, cf-award-university-of-birmingham-siemens-2024-07-31-ed4c9101, cf-award-university-of-birmingham-ukhsa-2024-08-13-7230f9c4, cf-award-nhs-england-university-of-birmingham-2024-08-15-fe09a6c5, cf-award-mod-university-of-birmingham-2024-08-27-4be6a7ad, cf-award-university-of-birmingham-servicenow-2024-09-02-fbfe1905, cf-award-nhs-england-university-of-birmingham-2024-09-03-8b44dede, cf-award-nhs-england-university-of-birmingham-2024-09-03-95a73247, cf-award-nhs-england-university-of-birmingham-2024-09-20-8fb1cefb, cf-award-university-of-birmingham-kpmg-2024-09-24-e47f3c06, cf-award-university-of-birmingham-ncc-group-2024-10-24-af337916, cf-award-university-of-birmingham-mills-reeve-2024-12-05-122552d2, cf-award-dfe-university-of-birmingham-2024-12-08-a004c647, cf-award-dhsc-university-of-birmingham-2024-12-16-f6d75e37, cf-award-university-of-birmingham-atkinsrealis-2025-01-27-03c55a64, cf-award-mod-university-of-birmingham-2025-03-13-ee9ef061, cf-award-home-office-border-force-university-of-birmingham-2025-06-25-0ff9f1ca, cf-award-nhs-england-university-of-birmingham-2025-07-24-a363b671, cf-award-nhs-england-university-of-birmingham-2025-10-01-0c41181f, cf-award-mod-university-of-birmingham-2026-01-28-9026f637, cf-award-dfe-university-of-birmingham-2026-03-09-f44ea2da. Secondary types: government_advisory_surface.
+
+**Required action**
+
+Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
+
+Refs: `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-january-to-march-2026-6a3e3656`, `cf-award-dfe-university-of-birmingham-2021-09-13-1695579d`, `cf-award-nhs-england-university-of-birmingham-2021-09-29-15288114`, `cf-award-university-of-birmingham-servicenow-2022-11-01-ffda4566`, `cf-award-mod-university-of-birmingham-2022-11-17-2e6172e7`, `cf-award-university-of-birmingham-oracle-2022-12-15-dc046ab7`, `cf-award-university-of-birmingham-university-of-oxford-2023-01-11-469b1f11`, `cf-award-mod-university-of-birmingham-2023-01-12-a5fbdc4b`, `cf-award-university-of-birmingham-dell-2023-01-16-6f199f57`, `cf-award-nhs-england-university-of-birmingham-2023-02-16-983a07e1`, `cf-award-dfe-university-of-edinburgh-2023-02-17-e1f56cf0`, `cf-award-university-of-birmingham-gartner-2023-03-20-6b7a140a`, `cf-award-university-of-birmingham-oracle-2023-03-20-a87a8c19`, `cf-award-university-of-birmingham-national-instruments-2023-03-23-b1216943`, `cf-award-nhs-england-university-of-birmingham-2023-04-03-81bcfd17`, `cf-award-nhs-england-university-of-birmingham-2023-05-02-70e47359`, `cf-award-beis-university-of-birmingham-2023-06-26-4727254a`, `cf-award-university-of-birmingham-national-instruments-2023-06-26-bfb6d8ed`, `cf-award-university-of-birmingham-atkinsrealis-2023-07-20-6a2a062b`, `cf-award-mod-university-of-birmingham-2023-09-29-ec80758b`, `cf-award-dfe-university-of-birmingham-2023-09-30-74a79958`, `cf-award-dhsc-university-of-birmingham-2023-10-09-ef19c340`, `cf-award-university-of-birmingham-servicenow-2023-11-24-f6f06298`, `cf-award-mod-university-of-birmingham-2023-11-29-e5125b1b`, `cf-award-nhs-england-university-of-birmingham-2023-12-12-808dfbf0`, `cf-award-university-of-birmingham-servicenow-2023-12-15-8f01198e`, `cf-award-dsit-university-of-birmingham-2024-01-01-5e18108e`, `cf-award-university-of-birmingham-wp-engine-2024-02-14-8a0eb434`, `cf-award-university-of-birmingham-mills-reeve-2024-03-20-8bdb3f2f`, `cf-award-university-of-birmingham-cushman-and-wakefield-2024-03-22-93e93e44`, `cf-award-university-of-birmingham-jcdecaux-2024-03-24-4e5670ee`, `cf-award-university-of-birmingham-mills-reeve-2024-04-04-2ff5874f`, `cf-award-university-of-birmingham-atkinsrealis-2024-04-10-55c67dc7`, `cf-award-university-of-birmingham-yougov-2024-04-17-8acb25dd`, `cf-award-university-of-birmingham-siemens-2024-04-30-c53f5aa8`, `cf-award-university-of-birmingham-kpmg-2024-05-02-ca540619`, `cf-award-university-of-birmingham-ncc-group-2024-05-15-0a73b940`, `cf-award-university-of-birmingham-ncc-group-2024-05-15-a8e49369`, `cf-award-university-of-birmingham-ncc-group-2024-05-21-12a2a36b`, `cf-award-university-of-birmingham-ncc-group-2024-05-21-ed1c3a98`, `cf-award-university-of-birmingham-pinsent-masons-2024-05-23-12bbc5f7`, `cf-award-university-of-birmingham-home-office-border-force-2024-06-12-f31ce43b`, `cf-award-university-of-birmingham-qualtrics-2024-06-26-070cf07b`, `cf-award-university-of-birmingham-deloitte-2024-06-27-89d32dad`, `cf-award-university-of-birmingham-microsoft-2024-06-28-1fda0d44`, `cf-award-defra-university-of-birmingham-2024-07-03-a8b43a43`, `cf-award-university-of-birmingham-alibaba-2024-07-16-dab581b3`, `cf-award-university-of-birmingham-oracle-2024-07-18-80721ab9`, `cf-award-university-of-birmingham-oracle-2024-07-19-2b05f1b7`, `cf-award-university-of-birmingham-siemens-2024-07-31-ed4c9101`, `cf-award-university-of-birmingham-ukhsa-2024-08-13-7230f9c4`, `cf-award-nhs-england-university-of-birmingham-2024-08-15-fe09a6c5`, `cf-award-mod-university-of-birmingham-2024-08-27-4be6a7ad`, `cf-award-university-of-birmingham-servicenow-2024-09-02-fbfe1905`, `cf-award-nhs-england-university-of-birmingham-2024-09-03-8b44dede`, `cf-award-nhs-england-university-of-birmingham-2024-09-03-95a73247`, `cf-award-nhs-england-university-of-birmingham-2024-09-20-8fb1cefb`, `cf-award-university-of-birmingham-kpmg-2024-09-24-e47f3c06`, `cf-award-university-of-birmingham-ncc-group-2024-10-24-af337916`, `cf-award-university-of-birmingham-mills-reeve-2024-12-05-122552d2`, `cf-award-dfe-university-of-birmingham-2024-12-08-a004c647`, `cf-award-dhsc-university-of-birmingham-2024-12-16-f6d75e37`, `cf-award-university-of-birmingham-atkinsrealis-2025-01-27-03c55a64`, `cf-award-mod-university-of-birmingham-2025-03-13-ee9ef061`, `cf-award-home-office-border-force-university-of-birmingham-2025-06-25-0ff9f1ca`, `cf-award-nhs-england-university-of-birmingham-2025-07-24-a363b671`, `cf-award-nhs-england-university-of-birmingham-2025-10-01-0c41181f`, `cf-award-mod-university-of-birmingham-2026-01-28-9026f637`, `cf-award-dfe-university-of-birmingham-2026-03-09-f44ea2da`
+
+---
+
+## finding-319: University of California, Berkeley behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -5192,7 +5750,7 @@ Refs: `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `uk-minis
 
 ---
 
-## finding-289: University of Oxford behaves as a surface factory
+## finding-320: University of Oxford behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -5200,17 +5758,17 @@ Refs: `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `uk-minis
 
 **Observed**
 
-University of Oxford appears across 25 surface(s): uk-ai-safety-summit-2023-confirmed-attendees-programme-roster, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2025-6936dac1, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2025-6936dac1, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2025-6936dac1, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5. Secondary types: government_advisory_surface.
+University of Oxford appears across 36 surface(s): uk-ai-safety-summit-2023-confirmed-attendees-programme-roster, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2025-6936dac1, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2025-6936dac1, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2025-6936dac1, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5, cf-award-university-of-birmingham-university-of-oxford-2023-01-11-469b1f11, cf-award-dhsc-university-of-oxford-2023-03-30-f59231c8, cf-award-mod-university-of-oxford-2023-09-19-80367f63, cf-award-ukri-university-of-oxford-2023-12-20-8d01b3c8, cf-award-ukri-university-of-oxford-2024-02-05-96091564, cf-award-nhs-england-university-of-oxford-2024-06-20-c35edc32, cf-award-nhs-england-university-of-oxford-2024-11-01-f8edda20, cf-award-defra-university-of-oxford-2024-11-07-53c0cf3d, cf-award-mod-university-of-oxford-2025-02-25-ab4eb111, cf-award-nhs-england-university-of-oxford-2025-09-02-4e025abc, cf-award-defra-university-of-oxford-2025-09-25-186ae54a. Secondary types: government_advisory_surface.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2025-6936dac1`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2025-6936dac1`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2025-6936dac1`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5`
+Refs: `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2025-6936dac1`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2025-6936dac1`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2025-6936dac1`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5`, `cf-award-university-of-birmingham-university-of-oxford-2023-01-11-469b1f11`, `cf-award-dhsc-university-of-oxford-2023-03-30-f59231c8`, `cf-award-mod-university-of-oxford-2023-09-19-80367f63`, `cf-award-ukri-university-of-oxford-2023-12-20-8d01b3c8`, `cf-award-ukri-university-of-oxford-2024-02-05-96091564`, `cf-award-nhs-england-university-of-oxford-2024-06-20-c35edc32`, `cf-award-nhs-england-university-of-oxford-2024-11-01-f8edda20`, `cf-award-defra-university-of-oxford-2024-11-07-53c0cf3d`, `cf-award-mod-university-of-oxford-2025-02-25-ab4eb111`, `cf-award-nhs-england-university-of-oxford-2025-09-02-4e025abc`, `cf-award-defra-university-of-oxford-2025-09-25-186ae54a`
 
 ---
 
-## finding-290: XAI behaves as a surface factory
+## finding-321: XAI behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -5228,7 +5786,7 @@ Refs: `uk-ai-safety-summit-2023-confirmed-attendees-programme-roster`, `sec-form
 
 ---
 
-## finding-291: 8VC Opportunities Fund II, L.P. behaves as a surface factory
+## finding-322: 8VC Opportunities Fund II, L.P. behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -5246,7 +5804,7 @@ Refs: `sec-form-d-0001866725-21-000002`, `sec-form-d-0001866725-21-000001`, `sec
 
 ---
 
-## finding-292: Booz Allen Hamilton Holding Corp behaves as a surface factory
+## finding-323: Booz Allen Hamilton Holding Corp behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -5264,7 +5822,7 @@ Refs: `sec-form-d-0001181431-10-028931`, `sec-form-d-0001181431-10-028932`, `sec
 
 ---
 
-## finding-293: NightDragon Growth II, L.P. behaves as a surface factory
+## finding-324: NightDragon Growth II, L.P. behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -5282,7 +5840,7 @@ Refs: `sec-form-d-0001933753-23-000001`, `sec-form-d-0001933753-24-000001`, `sec
 
 ---
 
-## finding-294: Adobe behaves as a surface factory
+## finding-325: Adobe behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -5290,17 +5848,17 @@ Refs: `sec-form-d-0001933753-23-000001`, `sec-form-d-0001933753-24-000001`, `sec
 
 **Observed**
 
-Adobe appears across 7 surface(s): dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2025-6936dac1. Secondary types: none.
+Adobe appears across 10 surface(s): dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2025-6936dac1, cf-award-dhsc-adobe-2023-03-31-0fa2a287, cf-award-genomics-england-limited-adobe-2023-04-19-d3daf075, cf-award-government-digital-service-adobe-2023-12-06-2a47929d. Secondary types: none.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2025-6936dac1`
+Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2025-6936dac1`, `cf-award-dhsc-adobe-2023-03-31-0fa2a287`, `cf-award-genomics-england-limited-adobe-2023-04-19-d3daf075`, `cf-award-government-digital-service-adobe-2023-12-06-2a47929d`
 
 ---
 
-## finding-295: Amazon behaves as a surface factory
+## finding-326: Amazon behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -5308,17 +5866,35 @@ Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-m
 
 **Observed**
 
-Amazon appears across 27 surface(s): dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625, uk-ministerial-meetings-hmt-ministerial-meetings-july-to-september-2024-679b464d, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-hmts-ministerial-meetings-april-to-june-2025-68d50fe0, uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-april-to-june-2025-68d54fb8, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2025-6936dac1, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2025-6936dac1, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5, white-house-voluntary-ai-commitments-seven-companies-2023-07-21. Secondary types: none.
+Amazon appears across 29 surface(s): dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625, uk-ministerial-meetings-hmt-ministerial-meetings-july-to-september-2024-679b464d, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-hmts-ministerial-meetings-april-to-june-2025-68d50fe0, uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-april-to-june-2025-68d54fb8, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2025-6936dac1, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2025-6936dac1, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5, white-house-voluntary-ai-commitments-seven-companies-2023-07-21, cf-award-ukhsa-amazon-2024-06-20-a7879422, cf-award-ukhsa-amazon-2024-06-20-be9d6f6e. Secondary types: none.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625`, `uk-ministerial-meetings-hmt-ministerial-meetings-july-to-september-2024-679b464d`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-hmts-ministerial-meetings-april-to-june-2025-68d50fe0`, `uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-april-to-june-2025-68d54fb8`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2025-6936dac1`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2025-6936dac1`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5`, `white-house-voluntary-ai-commitments-seven-companies-2023-07-21`
+Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625`, `uk-ministerial-meetings-hmt-ministerial-meetings-july-to-september-2024-679b464d`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-hmts-ministerial-meetings-april-to-june-2025-68d50fe0`, `uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-april-to-june-2025-68d54fb8`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2025-6936dac1`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2025-6936dac1`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5`, `white-house-voluntary-ai-commitments-seven-companies-2023-07-21`, `cf-award-ukhsa-amazon-2024-06-20-a7879422`, `cf-award-ukhsa-amazon-2024-06-20-be9d6f6e`
 
 ---
 
-## finding-296: Bosch behaves as a surface factory
+## finding-327: AtkinsRéalis behaves as a surface factory
+
+- Type: surface_factory
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+AtkinsRéalis appears across 56 surface(s): dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, uk-ministerial-meetings-hmt-ministerial-meetings-july-to-september-2024-679b464d, cf-award-desnz-atkinsrealis-2023-04-24-7a6efc92, cf-award-university-of-birmingham-atkinsrealis-2023-07-20-6a2a062b, cf-award-defra-atkinsrealis-2023-08-21-3cf6aed4, cf-award-defra-atkinsrealis-2023-10-25-a2a0e513, cf-award-mod-atkinsrealis-2023-11-17-b92822ac, cf-award-ukri-atkinsrealis-2023-11-27-af04c430, cf-award-ukhsa-atkinsrealis-2023-12-07-01d8b68d, cf-award-city-of-london-atkinsrealis-2024-01-13-83f3ca2b, cf-award-ukri-atkinsrealis-2024-01-30-635d2e9d, cf-award-defra-atkinsrealis-2024-02-09-158287ac, cf-award-defra-atkinsrealis-2024-03-07-a0ad27e7, cf-award-mod-atkinsrealis-2024-03-27-3ec8b11a, cf-award-university-of-birmingham-atkinsrealis-2024-04-10-55c67dc7, cf-award-mod-atkinsrealis-2024-04-19-357eb912, cf-award-defra-atkinsrealis-2024-05-21-39376862, cf-award-ukri-atkinsrealis-2024-09-23-cb7e9666, cf-award-defra-atkinsrealis-2024-10-07-cb5d895e, cf-award-mod-atkinsrealis-2025-01-24-fda55135, cf-award-university-of-birmingham-atkinsrealis-2025-01-27-03c55a64, cf-award-ukri-atkinsrealis-2025-03-06-4f655e4a, cf-award-defra-atkinsrealis-2025-03-11-1b9ea1ec, cf-award-mod-atkinsrealis-2025-03-30-d03a74a5, cf-award-dsit-atkinsrealis-2025-03-31-ab581983, cf-award-mod-atkinsrealis-2025-04-08-8c1b9508, cf-award-mod-atkinsrealis-2025-04-09-669046cf, cf-award-defra-atkinsrealis-2025-07-21-449089fa, cf-award-defra-atkinsrealis-2025-08-20-30d52535, cf-award-mod-atkinsrealis-2025-08-30-728e6eb7, cf-award-defra-atkinsrealis-2025-09-01-58f73dca, cf-award-mod-atkinsrealis-2025-09-19-b0097d30, cf-award-mod-atkinsrealis-2025-10-06-37fe5ffb, cf-award-defra-atkinsrealis-2025-10-08-a19a1aa2, cf-award-mod-atkinsrealis-2025-10-10-5c125b75, cf-award-defra-atkinsrealis-2025-11-19-c3435d07, cf-award-ons-atkinsrealis-2025-12-15-01f94516, cf-award-mod-atkinsrealis-2026-01-02-2953d8b3, cf-award-defra-atkinsrealis-2026-01-19-e7ccb5b1, cf-award-ukri-atkinsrealis-2026-02-04-0dc7674b, cf-award-dfe-atkinsrealis-2026-02-16-6f29870b, cf-award-defra-atkinsrealis-2026-03-02-df8cd7e5, cf-award-defra-atkinsrealis-2026-03-05-7e7c312f, cf-award-defra-atkinsrealis-2026-03-17-faf040f0, cf-award-defra-atkinsrealis-2026-03-27-300b2345, cf-award-defra-atkinsrealis-2026-03-27-4989a114, cf-award-mod-atkinsrealis-2026-04-06-ced34a62, cf-award-mod-atkinsrealis-2026-05-19-1afde35a, cf-award-mod-atkinsrealis-2026-06-07-076ced13, cf-award-mod-atkinsrealis-2026-06-26-c435de9e, cf-award-ukri-atkinsrealis-2026-07-31-e85f7fd2, cf-award-ukri-atkinsrealis-2026-07-31-ed17b1f1, cf-award-ukri-atkinsrealis-2026-08-07-8a795ae0, cf-award-ukri-atkinsrealis-2026-09-15-e7d524ff, cf-award-ukri-atkinsrealis-2026-10-05-1040aad9, cf-award-ukri-atkinsrealis-2026-11-02-39c11dd5. Secondary types: none.
+
+**Required action**
+
+Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
+
+Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-ministerial-meetings-hmt-ministerial-meetings-july-to-september-2024-679b464d`, `cf-award-desnz-atkinsrealis-2023-04-24-7a6efc92`, `cf-award-university-of-birmingham-atkinsrealis-2023-07-20-6a2a062b`, `cf-award-defra-atkinsrealis-2023-08-21-3cf6aed4`, `cf-award-defra-atkinsrealis-2023-10-25-a2a0e513`, `cf-award-mod-atkinsrealis-2023-11-17-b92822ac`, `cf-award-ukri-atkinsrealis-2023-11-27-af04c430`, `cf-award-ukhsa-atkinsrealis-2023-12-07-01d8b68d`, `cf-award-city-of-london-atkinsrealis-2024-01-13-83f3ca2b`, `cf-award-ukri-atkinsrealis-2024-01-30-635d2e9d`, `cf-award-defra-atkinsrealis-2024-02-09-158287ac`, `cf-award-defra-atkinsrealis-2024-03-07-a0ad27e7`, `cf-award-mod-atkinsrealis-2024-03-27-3ec8b11a`, `cf-award-university-of-birmingham-atkinsrealis-2024-04-10-55c67dc7`, `cf-award-mod-atkinsrealis-2024-04-19-357eb912`, `cf-award-defra-atkinsrealis-2024-05-21-39376862`, `cf-award-ukri-atkinsrealis-2024-09-23-cb7e9666`, `cf-award-defra-atkinsrealis-2024-10-07-cb5d895e`, `cf-award-mod-atkinsrealis-2025-01-24-fda55135`, `cf-award-university-of-birmingham-atkinsrealis-2025-01-27-03c55a64`, `cf-award-ukri-atkinsrealis-2025-03-06-4f655e4a`, `cf-award-defra-atkinsrealis-2025-03-11-1b9ea1ec`, `cf-award-mod-atkinsrealis-2025-03-30-d03a74a5`, `cf-award-dsit-atkinsrealis-2025-03-31-ab581983`, `cf-award-mod-atkinsrealis-2025-04-08-8c1b9508`, `cf-award-mod-atkinsrealis-2025-04-09-669046cf`, `cf-award-defra-atkinsrealis-2025-07-21-449089fa`, `cf-award-defra-atkinsrealis-2025-08-20-30d52535`, `cf-award-mod-atkinsrealis-2025-08-30-728e6eb7`, `cf-award-defra-atkinsrealis-2025-09-01-58f73dca`, `cf-award-mod-atkinsrealis-2025-09-19-b0097d30`, `cf-award-mod-atkinsrealis-2025-10-06-37fe5ffb`, `cf-award-defra-atkinsrealis-2025-10-08-a19a1aa2`, `cf-award-mod-atkinsrealis-2025-10-10-5c125b75`, `cf-award-defra-atkinsrealis-2025-11-19-c3435d07`, `cf-award-ons-atkinsrealis-2025-12-15-01f94516`, `cf-award-mod-atkinsrealis-2026-01-02-2953d8b3`, `cf-award-defra-atkinsrealis-2026-01-19-e7ccb5b1`, `cf-award-ukri-atkinsrealis-2026-02-04-0dc7674b`, `cf-award-dfe-atkinsrealis-2026-02-16-6f29870b`, `cf-award-defra-atkinsrealis-2026-03-02-df8cd7e5`, `cf-award-defra-atkinsrealis-2026-03-05-7e7c312f`, `cf-award-defra-atkinsrealis-2026-03-17-faf040f0`, `cf-award-defra-atkinsrealis-2026-03-27-300b2345`, `cf-award-defra-atkinsrealis-2026-03-27-4989a114`, `cf-award-mod-atkinsrealis-2026-04-06-ced34a62`, `cf-award-mod-atkinsrealis-2026-05-19-1afde35a`, `cf-award-mod-atkinsrealis-2026-06-07-076ced13`, `cf-award-mod-atkinsrealis-2026-06-26-c435de9e`, `cf-award-ukri-atkinsrealis-2026-07-31-e85f7fd2`, `cf-award-ukri-atkinsrealis-2026-07-31-ed17b1f1`, `cf-award-ukri-atkinsrealis-2026-08-07-8a795ae0`, `cf-award-ukri-atkinsrealis-2026-09-15-e7d524ff`, `cf-award-ukri-atkinsrealis-2026-10-05-1040aad9`, `cf-award-ukri-atkinsrealis-2026-11-02-39c11dd5`
+
+---
+
+## finding-328: Bosch behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -5336,7 +5912,7 @@ Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-m
 
 ---
 
-## finding-297: City of London behaves as a surface factory
+## finding-329: BSI behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -5344,17 +5920,17 @@ Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-m
 
 **Observed**
 
-City of London appears across 3 surface(s): dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625. Secondary types: none.
+BSI appears across 3 surface(s): dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, cf-award-ukri-bsi-2023-03-17-6d0f6b6e, cf-award-centre-for-process-innovatio-bsi-2024-12-18-df18fe21. Secondary types: none.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625`
+Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `cf-award-ukri-bsi-2023-03-17-6d0f6b6e`, `cf-award-centre-for-process-innovatio-bsi-2024-12-18-df18fe21`
 
 ---
 
-## finding-298: Dell behaves as a surface factory
+## finding-330: City of London behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -5362,17 +5938,125 @@ Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-m
 
 **Observed**
 
-Dell appears across 4 surface(s): dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94. Secondary types: none.
+City of London appears across 24 surface(s): dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625, cf-award-dfe-city-of-london-2021-01-29-5c82141e, cf-award-city-of-london-clifford-chance-2022-07-27-a56105ea, cf-award-city-of-london-chainalysis-2023-07-01-de0864ac, cf-award-city-of-london-dell-2023-07-06-9bfb23d3, cf-award-city-of-london-dell-2023-07-17-4e6ed278, cf-award-city-of-london-civica-2023-08-15-da87773d, cf-award-city-of-london-dell-2023-09-06-8aa1103d, cf-award-city-of-london-civica-2023-10-01-c10e60f8, cf-award-city-of-london-oracle-2023-11-02-9729eff7, cf-award-city-of-london-atkinsrealis-2024-01-13-83f3ca2b, cf-award-city-of-london-pwc-2024-01-18-add14c37, cf-award-city-of-london-deloitte-2024-02-12-243381bf, cf-award-city-of-london-oracle-2024-03-06-792c21df, cf-award-city-of-london-trm-labs-2024-03-18-85644bfc, cf-award-city-of-london-sap-2024-03-28-a6045718, cf-award-city-of-london-oracle-2024-04-01-5506b729, cf-award-city-of-london-lloyds-2024-05-23-2a44e363, cf-award-city-of-london-dell-2024-07-15-57cac0f2, cf-award-city-of-london-dell-2024-07-17-000858d0, cf-award-city-of-london-gartner-2024-08-29-476c64f0, cf-award-city-of-london-ncc-group-2024-09-17-dacf7966. Secondary types: none.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`
+Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625`, `cf-award-dfe-city-of-london-2021-01-29-5c82141e`, `cf-award-city-of-london-clifford-chance-2022-07-27-a56105ea`, `cf-award-city-of-london-chainalysis-2023-07-01-de0864ac`, `cf-award-city-of-london-dell-2023-07-06-9bfb23d3`, `cf-award-city-of-london-dell-2023-07-17-4e6ed278`, `cf-award-city-of-london-civica-2023-08-15-da87773d`, `cf-award-city-of-london-dell-2023-09-06-8aa1103d`, `cf-award-city-of-london-civica-2023-10-01-c10e60f8`, `cf-award-city-of-london-oracle-2023-11-02-9729eff7`, `cf-award-city-of-london-atkinsrealis-2024-01-13-83f3ca2b`, `cf-award-city-of-london-pwc-2024-01-18-add14c37`, `cf-award-city-of-london-deloitte-2024-02-12-243381bf`, `cf-award-city-of-london-oracle-2024-03-06-792c21df`, `cf-award-city-of-london-trm-labs-2024-03-18-85644bfc`, `cf-award-city-of-london-sap-2024-03-28-a6045718`, `cf-award-city-of-london-oracle-2024-04-01-5506b729`, `cf-award-city-of-london-lloyds-2024-05-23-2a44e363`, `cf-award-city-of-london-dell-2024-07-15-57cac0f2`, `cf-award-city-of-london-dell-2024-07-17-000858d0`, `cf-award-city-of-london-gartner-2024-08-29-476c64f0`, `cf-award-city-of-london-ncc-group-2024-09-17-dacf7966`
 
 ---
 
-## finding-299: GSK behaves as a surface factory
+## finding-331: Civica behaves as a surface factory
+
+- Type: surface_factory
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+Civica appears across 37 surface(s): dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, cf-award-home-office-border-force-civica-2022-03-03-6e35086e, cf-award-mod-civica-2022-03-23-97ff8d8b, cf-award-ukhsa-civica-2022-04-11-f194fb6a, cf-award-mod-civica-2022-11-20-236cf1de, cf-award-beis-civica-2022-11-23-b866041a, cf-award-cabinet-office-civica-2023-02-21-6eb5261d, cf-award-defra-civica-2023-03-28-d3885552, cf-award-nhs-south-central-and-west-c-civica-2023-03-31-0c4a02fd, cf-award-defra-civica-2023-06-30-bbdb78c4, cf-award-defra-civica-2023-07-12-89af330e, cf-award-city-of-london-civica-2023-08-15-da87773d, cf-award-mod-civica-2023-09-04-384467e1, cf-award-defra-civica-2023-09-27-904ba2ff, cf-award-city-of-london-civica-2023-10-01-c10e60f8, cf-award-defra-civica-2023-10-10-127466c7, cf-award-ukri-civica-2024-01-26-8610b576, cf-award-nhs-england-civica-2024-03-24-4d24e9cd, cf-award-mod-civica-2024-03-25-05390077, cf-award-defra-civica-2024-04-01-713a7d1d, cf-award-mod-civica-2024-04-03-0b51faa2, cf-award-home-office-border-force-civica-2024-06-07-55ead59c, cf-award-nhs-england-civica-2024-08-30-6fa7eeda, cf-award-nhs-south-central-and-west-c-civica-2024-09-26-407d9213, cf-award-defra-civica-2024-11-08-fa496f74, cf-award-hm-treasury-civica-2024-11-15-f452a1b2, cf-award-home-office-border-force-civica-2024-11-29-a4ec4ad7, cf-award-mod-civica-2024-12-18-8d6a7068, cf-award-home-office-border-force-civica-2025-03-01-d68fec0a, cf-award-ukhsa-civica-2025-03-27-855417e2, cf-award-nhs-south-central-and-west-c-civica-2025-03-28-44ef8b46, cf-award-defra-civica-2025-09-01-a338c2ca, cf-award-defra-civica-2025-12-17-c8de8141, cf-award-mod-civica-2026-01-13-707d3a98, cf-award-home-office-border-force-civica-2026-03-06-6c8f4da8, cf-award-home-office-border-force-civica-2026-03-09-73489070, cf-award-defra-civica-2026-10-01-c34678f7. Secondary types: none.
+
+**Required action**
+
+Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
+
+Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `cf-award-home-office-border-force-civica-2022-03-03-6e35086e`, `cf-award-mod-civica-2022-03-23-97ff8d8b`, `cf-award-ukhsa-civica-2022-04-11-f194fb6a`, `cf-award-mod-civica-2022-11-20-236cf1de`, `cf-award-beis-civica-2022-11-23-b866041a`, `cf-award-cabinet-office-civica-2023-02-21-6eb5261d`, `cf-award-defra-civica-2023-03-28-d3885552`, `cf-award-nhs-south-central-and-west-c-civica-2023-03-31-0c4a02fd`, `cf-award-defra-civica-2023-06-30-bbdb78c4`, `cf-award-defra-civica-2023-07-12-89af330e`, `cf-award-city-of-london-civica-2023-08-15-da87773d`, `cf-award-mod-civica-2023-09-04-384467e1`, `cf-award-defra-civica-2023-09-27-904ba2ff`, `cf-award-city-of-london-civica-2023-10-01-c10e60f8`, `cf-award-defra-civica-2023-10-10-127466c7`, `cf-award-ukri-civica-2024-01-26-8610b576`, `cf-award-nhs-england-civica-2024-03-24-4d24e9cd`, `cf-award-mod-civica-2024-03-25-05390077`, `cf-award-defra-civica-2024-04-01-713a7d1d`, `cf-award-mod-civica-2024-04-03-0b51faa2`, `cf-award-home-office-border-force-civica-2024-06-07-55ead59c`, `cf-award-nhs-england-civica-2024-08-30-6fa7eeda`, `cf-award-nhs-south-central-and-west-c-civica-2024-09-26-407d9213`, `cf-award-defra-civica-2024-11-08-fa496f74`, `cf-award-hm-treasury-civica-2024-11-15-f452a1b2`, `cf-award-home-office-border-force-civica-2024-11-29-a4ec4ad7`, `cf-award-mod-civica-2024-12-18-8d6a7068`, `cf-award-home-office-border-force-civica-2025-03-01-d68fec0a`, `cf-award-ukhsa-civica-2025-03-27-855417e2`, `cf-award-nhs-south-central-and-west-c-civica-2025-03-28-44ef8b46`, `cf-award-defra-civica-2025-09-01-a338c2ca`, `cf-award-defra-civica-2025-12-17-c8de8141`, `cf-award-mod-civica-2026-01-13-707d3a98`, `cf-award-home-office-border-force-civica-2026-03-06-6c8f4da8`, `cf-award-home-office-border-force-civica-2026-03-09-73489070`, `cf-award-defra-civica-2026-10-01-c34678f7`
+
+---
+
+## finding-332: Clifford Chance behaves as a surface factory
+
+- Type: surface_factory
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+Clifford Chance appears across 4 surface(s): dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, cf-award-city-of-london-clifford-chance-2022-07-27-a56105ea, cf-award-british-business-bank-baker-mckenzie-2024-03-22-5e1f05c5, cf-award-hm-treasury-clifford-chance-2024-04-12-82baf82e. Secondary types: none.
+
+**Required action**
+
+Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
+
+Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `cf-award-city-of-london-clifford-chance-2022-07-27-a56105ea`, `cf-award-british-business-bank-baker-mckenzie-2024-03-22-5e1f05c5`, `cf-award-hm-treasury-clifford-chance-2024-04-12-82baf82e`
+
+---
+
+## finding-333: Dell behaves as a surface factory
+
+- Type: surface_factory
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+Dell appears across 16 surface(s): dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, cf-award-university-of-birmingham-dell-2023-01-16-6f199f57, cf-award-mod-dell-2023-06-06-3dd308ab, cf-award-city-of-london-dell-2023-07-06-9bfb23d3, cf-award-city-of-london-dell-2023-07-17-4e6ed278, cf-award-beis-dell-2023-08-01-54286cb3, cf-award-city-of-london-dell-2023-09-06-8aa1103d, cf-award-nhs-south-central-and-west-c-dell-2023-11-03-19e75439, cf-award-ukri-dell-2024-02-12-4c42d70b, cf-award-city-of-london-dell-2024-07-15-57cac0f2, cf-award-city-of-london-dell-2024-07-17-000858d0, cf-award-ukri-dell-2024-12-19-c1c1198e, cf-award-ukri-dell-2025-02-10-2a35a789. Secondary types: none.
+
+**Required action**
+
+Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
+
+Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `cf-award-university-of-birmingham-dell-2023-01-16-6f199f57`, `cf-award-mod-dell-2023-06-06-3dd308ab`, `cf-award-city-of-london-dell-2023-07-06-9bfb23d3`, `cf-award-city-of-london-dell-2023-07-17-4e6ed278`, `cf-award-beis-dell-2023-08-01-54286cb3`, `cf-award-city-of-london-dell-2023-09-06-8aa1103d`, `cf-award-nhs-south-central-and-west-c-dell-2023-11-03-19e75439`, `cf-award-ukri-dell-2024-02-12-4c42d70b`, `cf-award-city-of-london-dell-2024-07-15-57cac0f2`, `cf-award-city-of-london-dell-2024-07-17-000858d0`, `cf-award-ukri-dell-2024-12-19-c1c1198e`, `cf-award-ukri-dell-2025-02-10-2a35a789`
+
+---
+
+## finding-334: DLA Piper behaves as a surface factory
+
+- Type: surface_factory
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+DLA Piper appears across 39 surface(s): dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f, cf-award-dhsc-dla-piper-2020-11-11-1fc10c63, cf-award-dhsc-dla-piper-2021-05-27-0ee409e4, cf-award-defra-dla-piper-2022-10-11-2605c4c3, cf-award-defra-dla-piper-2022-12-31-96576a77, cf-award-beis-dla-piper-2023-02-28-43fef9df, cf-award-dcms-dla-piper-2023-03-22-a95b8b39, cf-award-dcms-dla-piper-2023-03-31-30f8e166, cf-award-home-office-border-force-dla-piper-2023-05-17-afb110f4, cf-award-cabinet-office-dla-piper-2023-06-16-254295db, cf-award-arts-council-england-dla-piper-2023-09-28-b5e8dcf2, cf-award-defra-dla-piper-2023-10-02-cde8d6fd, cf-award-defra-dla-piper-2023-10-24-772d5f3c, cf-award-mod-dla-piper-2023-12-27-ab150607, cf-award-cabinet-office-dla-piper-2023-12-31-afc2548a, cf-award-nhs-england-dla-piper-2024-01-10-d2ab65b7, cf-award-ukri-dla-piper-2024-03-11-9c5e9176, cf-award-mod-dla-piper-2024-04-16-60599d2e, cf-award-dhsc-dla-piper-2024-08-05-3fce677e, cf-award-dfe-dla-piper-2024-09-30-df549765, cf-award-dsit-dla-piper-2024-10-15-1cabc16c, cf-award-mod-dla-piper-2024-11-01-06948ebd, cf-award-dsit-dla-piper-2024-11-06-24469cc7, cf-award-desnz-dla-piper-2025-01-17-3d14c546, cf-award-mod-dla-piper-2025-02-03-e041f502, cf-award-dsit-dla-piper-2025-02-05-db4a84c4, cf-award-ukri-dla-piper-2025-05-06-c0fd8084, cf-award-ukri-dla-piper-2025-05-07-9eabee7c, cf-award-defra-dla-piper-2025-08-07-5ac97246, cf-award-defra-dla-piper-2025-08-27-fd65ead1, cf-award-mod-dla-piper-2025-10-17-301d367b, cf-award-defra-dla-piper-2026-03-31-720ec5a8, cf-award-dhsc-dla-piper-2026-05-18-86c4e0ad, cf-award-dsit-dla-piper-2026-06-04-a37b35aa, cf-award-defra-dla-piper-2026-07-13-8e0f8a01, cf-award-british-business-bank-dla-piper-2026-08-24-ee18310a, cf-award-defra-dla-piper-2026-09-25-eb0ed060, cf-award-defra-dla-piper-2026-10-05-ea666420. Secondary types: none.
+
+**Required action**
+
+Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
+
+Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f`, `cf-award-dhsc-dla-piper-2020-11-11-1fc10c63`, `cf-award-dhsc-dla-piper-2021-05-27-0ee409e4`, `cf-award-defra-dla-piper-2022-10-11-2605c4c3`, `cf-award-defra-dla-piper-2022-12-31-96576a77`, `cf-award-beis-dla-piper-2023-02-28-43fef9df`, `cf-award-dcms-dla-piper-2023-03-22-a95b8b39`, `cf-award-dcms-dla-piper-2023-03-31-30f8e166`, `cf-award-home-office-border-force-dla-piper-2023-05-17-afb110f4`, `cf-award-cabinet-office-dla-piper-2023-06-16-254295db`, `cf-award-arts-council-england-dla-piper-2023-09-28-b5e8dcf2`, `cf-award-defra-dla-piper-2023-10-02-cde8d6fd`, `cf-award-defra-dla-piper-2023-10-24-772d5f3c`, `cf-award-mod-dla-piper-2023-12-27-ab150607`, `cf-award-cabinet-office-dla-piper-2023-12-31-afc2548a`, `cf-award-nhs-england-dla-piper-2024-01-10-d2ab65b7`, `cf-award-ukri-dla-piper-2024-03-11-9c5e9176`, `cf-award-mod-dla-piper-2024-04-16-60599d2e`, `cf-award-dhsc-dla-piper-2024-08-05-3fce677e`, `cf-award-dfe-dla-piper-2024-09-30-df549765`, `cf-award-dsit-dla-piper-2024-10-15-1cabc16c`, `cf-award-mod-dla-piper-2024-11-01-06948ebd`, `cf-award-dsit-dla-piper-2024-11-06-24469cc7`, `cf-award-desnz-dla-piper-2025-01-17-3d14c546`, `cf-award-mod-dla-piper-2025-02-03-e041f502`, `cf-award-dsit-dla-piper-2025-02-05-db4a84c4`, `cf-award-ukri-dla-piper-2025-05-06-c0fd8084`, `cf-award-ukri-dla-piper-2025-05-07-9eabee7c`, `cf-award-defra-dla-piper-2025-08-07-5ac97246`, `cf-award-defra-dla-piper-2025-08-27-fd65ead1`, `cf-award-mod-dla-piper-2025-10-17-301d367b`, `cf-award-defra-dla-piper-2026-03-31-720ec5a8`, `cf-award-dhsc-dla-piper-2026-05-18-86c4e0ad`, `cf-award-dsit-dla-piper-2026-06-04-a37b35aa`, `cf-award-defra-dla-piper-2026-07-13-8e0f8a01`, `cf-award-british-business-bank-dla-piper-2026-08-24-ee18310a`, `cf-award-defra-dla-piper-2026-09-25-eb0ed060`, `cf-award-defra-dla-piper-2026-10-05-ea666420`
+
+---
+
+## finding-335: Experian behaves as a surface factory
+
+- Type: surface_factory
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+Experian appears across 20 surface(s): dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, uk-ministerial-meetings-cabinet-office-ministers-meetings-october-to-december-2025-69c29a18, cf-award-government-digital-service-experian-2022-07-21-1c4341d8, cf-award-government-digital-service-experian-2022-07-21-a3788774, cf-award-government-digital-service-experian-2022-08-19-b92d6c53, cf-award-home-office-border-force-experian-2023-09-05-a6532578, cf-award-nhs-england-experian-2024-02-02-4561c4dc, cf-award-cabinet-office-experian-2024-03-31-c8954420, cf-award-serious-fraud-office-experian-2024-05-30-960c7bad, cf-award-cabinet-office-experian-2025-06-02-025497d6, cf-award-cabinet-office-experian-2025-11-01-e1a17f6c, cf-award-cabinet-office-experian-2025-11-03-5636d13c, cf-award-british-business-bank-experian-2025-12-18-2f7a5576, cf-award-british-business-bank-experian-2026-02-26-c65053d9, cf-award-home-office-border-force-experian-2026-03-20-34b34a44, cf-award-defra-experian-2026-04-01-1262469f, cf-award-home-office-border-force-experian-2026-04-24-4e4a9a81, cf-award-british-business-bank-experian-2026-09-25-28972836, cf-award-british-business-bank-experian-2026-09-29-1038893f, cf-award-british-business-bank-experian-2026-09-29-9bf748de. Secondary types: none.
+
+**Required action**
+
+Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
+
+Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-ministerial-meetings-cabinet-office-ministers-meetings-october-to-december-2025-69c29a18`, `cf-award-government-digital-service-experian-2022-07-21-1c4341d8`, `cf-award-government-digital-service-experian-2022-07-21-a3788774`, `cf-award-government-digital-service-experian-2022-08-19-b92d6c53`, `cf-award-home-office-border-force-experian-2023-09-05-a6532578`, `cf-award-nhs-england-experian-2024-02-02-4561c4dc`, `cf-award-cabinet-office-experian-2024-03-31-c8954420`, `cf-award-serious-fraud-office-experian-2024-05-30-960c7bad`, `cf-award-cabinet-office-experian-2025-06-02-025497d6`, `cf-award-cabinet-office-experian-2025-11-01-e1a17f6c`, `cf-award-cabinet-office-experian-2025-11-03-5636d13c`, `cf-award-british-business-bank-experian-2025-12-18-2f7a5576`, `cf-award-british-business-bank-experian-2026-02-26-c65053d9`, `cf-award-home-office-border-force-experian-2026-03-20-34b34a44`, `cf-award-defra-experian-2026-04-01-1262469f`, `cf-award-home-office-border-force-experian-2026-04-24-4e4a9a81`, `cf-award-british-business-bank-experian-2026-09-25-28972836`, `cf-award-british-business-bank-experian-2026-09-29-1038893f`, `cf-award-british-business-bank-experian-2026-09-29-9bf748de`
+
+---
+
+## finding-336: Gemserv behaves as a surface factory
+
+- Type: surface_factory
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+Gemserv appears across 3 surface(s): dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, cf-award-desnz-gemserv-2024-04-26-2112b0e8, cf-award-desnz-gemserv-2025-01-16-8aa9a92f. Secondary types: none.
+
+**Required action**
+
+Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
+
+Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `cf-award-desnz-gemserv-2024-04-26-2112b0e8`, `cf-award-desnz-gemserv-2025-01-16-8aa9a92f`
+
+---
+
+## finding-337: GSK behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -5390,7 +6074,7 @@ Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-m
 
 ---
 
-## finding-300: Infosys behaves as a surface factory
+## finding-338: Hexagon behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -5398,17 +6082,35 @@ Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-m
 
 **Observed**
 
-Infosys appears across 5 surface(s): dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe, uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-october-to-december-2025-69c299db. Secondary types: none.
+Hexagon appears across 3 surface(s): dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, cf-award-ukri-hexagon-2023-01-10-9a455ebb, cf-award-ukri-hexagon-2023-12-21-89587a7b. Secondary types: none.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe`, `uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-october-to-december-2025-69c299db`
+Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `cf-award-ukri-hexagon-2023-01-10-9a455ebb`, `cf-award-ukri-hexagon-2023-12-21-89587a7b`
 
 ---
 
-## finding-301: Institute of Directors behaves as a surface factory
+## finding-339: Infosys behaves as a surface factory
+
+- Type: surface_factory
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+Infosys appears across 7 surface(s): dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe, uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-october-to-december-2025-69c299db, cf-award-care-quality-commission-infosys-2023-10-31-b103575b, cf-award-care-quality-commission-infosys-2025-12-01-027f77ab. Secondary types: none.
+
+**Required action**
+
+Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
+
+Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe`, `uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-october-to-december-2025-69c299db`, `cf-award-care-quality-commission-infosys-2023-10-31-b103575b`, `cf-award-care-quality-commission-infosys-2025-12-01-027f77ab`
+
+---
+
+## finding-340: Institute of Directors behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -5426,7 +6128,7 @@ Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-m
 
 ---
 
-## finding-302: KPMG behaves as a surface factory
+## finding-341: Kainos behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -5434,17 +6136,17 @@ Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-m
 
 **Observed**
 
-KPMG appears across 8 surface(s): dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef, uk-ministerial-meetings-hmt-ministerial-meetings-july-to-september-2024-679b464d, uk-ministerial-meetings-hmts-ministerial-meetings-april-to-june-2025-68d50fe0. Secondary types: none.
+Kainos appears across 37 surface(s): dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b, cf-award-dhsc-kainos-2021-05-13-1e7da4b3, cf-award-nhs-england-kainos-2022-02-22-b4c974f2, cf-award-genomics-england-limited-kainos-2023-01-15-ed3b94b6, cf-award-ukri-kainos-2023-01-20-16fb50c4, cf-award-dfe-kainos-2023-03-21-39498740, cf-award-dhsc-kainos-2023-05-21-04d018a1, cf-award-genomics-england-limited-kainos-2023-05-30-35ee982b, cf-award-nhs-england-kainos-2023-06-01-91791a76, cf-award-genomics-england-limited-kainos-2023-06-28-16f6e32d, cf-award-home-office-border-force-kainos-2023-09-01-b9523c56, cf-award-genomics-england-limited-kainos-2023-10-20-02d6d28f, cf-award-mod-atkinsrealis-2023-11-17-b92822ac, cf-award-mod-kainos-2024-01-29-920c50f1, cf-award-dhsc-kainos-2024-03-16-07530ce5, cf-award-genomics-england-limited-kainos-2024-03-18-1e4fd8a3, cf-award-cabinet-office-kainos-2024-03-24-ebb6614c, cf-award-nhs-england-kainos-2024-08-14-395dbc02, cf-award-nhs-england-kainos-2024-09-16-b0a580db, cf-award-ukhsa-kainos-2024-09-18-78f6d69f, cf-award-dfe-kainos-2024-12-01-128013b2, cf-award-mod-kainos-2024-12-13-019cc5e2, cf-award-care-quality-commission-kainos-2024-12-17-fbed4d8b, cf-award-mod-kainos-2025-01-25-e98367a9, cf-award-nhs-england-kainos-2025-03-31-0c4a1902, cf-award-nhs-england-kainos-2025-09-03-ec7b7106, cf-award-nhs-england-kainos-2025-09-05-25f655e0, cf-award-mod-kainos-2025-10-31-0d2bcd37, cf-award-home-office-border-force-kainos-2025-12-04-394b20d3, cf-award-home-office-border-force-kainos-2025-12-12-5397861b, cf-award-ukhsa-kainos-2026-01-14-c1ba0015, cf-award-ukhsa-kainos-2026-01-26-0f9f510c, cf-award-dfe-kainos-2026-02-20-5850f84a, cf-award-dsit-kainos-2026-02-25-84e9b31e, cf-award-defra-kainos-2026-05-21-86b60f2d, cf-award-nhs-england-kainos-2026-09-24-08a214f5. Secondary types: none.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef`, `uk-ministerial-meetings-hmt-ministerial-meetings-july-to-september-2024-679b464d`, `uk-ministerial-meetings-hmts-ministerial-meetings-april-to-june-2025-68d50fe0`
+Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b`, `cf-award-dhsc-kainos-2021-05-13-1e7da4b3`, `cf-award-nhs-england-kainos-2022-02-22-b4c974f2`, `cf-award-genomics-england-limited-kainos-2023-01-15-ed3b94b6`, `cf-award-ukri-kainos-2023-01-20-16fb50c4`, `cf-award-dfe-kainos-2023-03-21-39498740`, `cf-award-dhsc-kainos-2023-05-21-04d018a1`, `cf-award-genomics-england-limited-kainos-2023-05-30-35ee982b`, `cf-award-nhs-england-kainos-2023-06-01-91791a76`, `cf-award-genomics-england-limited-kainos-2023-06-28-16f6e32d`, `cf-award-home-office-border-force-kainos-2023-09-01-b9523c56`, `cf-award-genomics-england-limited-kainos-2023-10-20-02d6d28f`, `cf-award-mod-atkinsrealis-2023-11-17-b92822ac`, `cf-award-mod-kainos-2024-01-29-920c50f1`, `cf-award-dhsc-kainos-2024-03-16-07530ce5`, `cf-award-genomics-england-limited-kainos-2024-03-18-1e4fd8a3`, `cf-award-cabinet-office-kainos-2024-03-24-ebb6614c`, `cf-award-nhs-england-kainos-2024-08-14-395dbc02`, `cf-award-nhs-england-kainos-2024-09-16-b0a580db`, `cf-award-ukhsa-kainos-2024-09-18-78f6d69f`, `cf-award-dfe-kainos-2024-12-01-128013b2`, `cf-award-mod-kainos-2024-12-13-019cc5e2`, `cf-award-care-quality-commission-kainos-2024-12-17-fbed4d8b`, `cf-award-mod-kainos-2025-01-25-e98367a9`, `cf-award-nhs-england-kainos-2025-03-31-0c4a1902`, `cf-award-nhs-england-kainos-2025-09-03-ec7b7106`, `cf-award-nhs-england-kainos-2025-09-05-25f655e0`, `cf-award-mod-kainos-2025-10-31-0d2bcd37`, `cf-award-home-office-border-force-kainos-2025-12-04-394b20d3`, `cf-award-home-office-border-force-kainos-2025-12-12-5397861b`, `cf-award-ukhsa-kainos-2026-01-14-c1ba0015`, `cf-award-ukhsa-kainos-2026-01-26-0f9f510c`, `cf-award-dfe-kainos-2026-02-20-5850f84a`, `cf-award-dsit-kainos-2026-02-25-84e9b31e`, `cf-award-defra-kainos-2026-05-21-86b60f2d`, `cf-award-nhs-england-kainos-2026-09-24-08a214f5`
 
 ---
 
-## finding-303: Lloyds behaves as a surface factory
+## finding-342: KPMG behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -5452,17 +6154,35 @@ Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-m
 
 **Observed**
 
-Lloyds appears across 28 surface(s): dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625, uk-ministerial-meetings-hmt-ministerial-meetings-july-to-september-2024-679b464d, uk-ministerial-meetings-hmt-ministerial-meetings-july-to-september-2024-679b464d, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145, uk-ministerial-meetings-hmts-ministerial-meetings-october-to-december-2024-685a87ad, uk-ministerial-meetings-hmts-ministerial-meetings-october-to-december-2024-685a87ad, uk-ministerial-meetings-hmts-ministerial-meetings-october-to-december-2024-685a87ad, uk-ministerial-meetings-hmts-ministerial-meetings-october-to-december-2024-685a87ad, uk-ministerial-meetings-hmts-ministerial-meetings-october-to-december-2024-685a87ad, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-january-to-march-2025-685d5305, uk-ministerial-meetings-hmts-ministerial-meetings-january-to-march-2025-68bae311, uk-ministerial-meetings-hmts-ministerial-meetings-january-to-march-2025-68bae311, uk-ministerial-meetings-hmts-ministerial-meetings-january-to-march-2025-68bae311, uk-ministerial-meetings-hmts-ministerial-meetings-april-to-june-2025-68d50fe0, uk-ministerial-meetings-hmts-ministerial-meetings-april-to-june-2025-68d50fe0, uk-ministerial-meetings-hmts-ministerial-meetings-july-to-september-2025-69414470, uk-ministerial-meetings-hmts-ministerial-meetings-july-to-september-2025-69414470, uk-ministerial-meetings-hmts-ministerial-meetings-july-to-september-2025-69414470, uk-ministerial-meetings-hmts-ministerial-meetings-july-to-september-2025-69414470, uk-ministerial-meetings-cabinet-office-ministers-meetings-october-to-december-2025-69c29a18, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5, uk-ministerial-meetings-hmts-ministerial-meetings-october-to-december-2025-69bd3123. Secondary types: none.
+KPMG appears across 181 surface(s): dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef, uk-ministerial-meetings-hmt-ministerial-meetings-july-to-september-2024-679b464d, uk-ministerial-meetings-hmts-ministerial-meetings-april-to-june-2025-68d50fe0, cf-award-cabinet-office-kpmg-2020-10-02-2eb78c56, cf-award-mod-kpmg-2022-05-02-ec344181, cf-award-nhs-south-central-and-west-c-kpmg-2022-05-16-7c74c3cd, cf-award-care-quality-commission-kpmg-2022-07-18-978abcf9, cf-award-dfe-kpmg-2022-07-29-720925d9, cf-award-mod-kpmg-2022-11-10-9187f3cb, cf-award-mod-kpmg-2022-11-14-07fc2c7c, cf-award-mod-kpmg-2022-11-17-772378e3, cf-award-defra-kpmg-2022-11-23-73cdef00, cf-award-fcdo-services-kpmg-2022-12-13-27d958c6, cf-award-fcdo-services-kpmg-2022-12-13-b296f28c, cf-award-ukhsa-kpmg-2022-12-14-4912610c, cf-award-mod-kpmg-2022-12-16-76756dac, cf-award-nhs-england-kpmg-2022-12-22-e597df0c, cf-award-fcdo-services-kpmg-2023-01-22-90442b5d, cf-award-ukhsa-kpmg-2023-01-25-0a4a7942, cf-award-fcdo-services-kpmg-2023-02-01-066d18a1, cf-award-ukhsa-kpmg-2023-02-06-2028e2ab, cf-award-home-office-border-force-kpmg-2023-02-08-e22cdaf2, cf-award-genomics-england-limited-kpmg-2023-02-26-3fb9751f, cf-award-defra-kpmg-2023-02-27-3e112312, cf-award-mod-kpmg-2023-02-27-cfe5ef8c, cf-award-dfe-kpmg-2023-03-07-d1a09c2e, cf-award-ukhsa-kpmg-2023-03-10-10a0d7fe, cf-award-fcdo-services-kpmg-2023-03-14-50f5e73d, cf-award-nhs-england-kpmg-2023-03-14-dda25018, cf-award-defra-kpmg-2023-03-20-51b05c3d, cf-award-mod-kpmg-2023-04-03-9a164415, cf-award-dcms-kpmg-2023-04-05-69d702b0, cf-award-fcdo-services-kpmg-2023-04-23-4b09c6a0, cf-award-fcdo-services-kpmg-2023-04-23-da753ac1, cf-award-fcdo-services-kpmg-2023-04-24-73238914, cf-award-fcdo-services-kpmg-2023-04-24-be5f139f, cf-award-beis-kpmg-2023-04-27-32dfb735, cf-award-defra-kpmg-2023-05-04-78d12ed7, cf-award-care-quality-commission-kpmg-2023-05-25-da1b7e52, cf-award-nhs-south-central-and-west-c-kpmg-2023-05-25-93314b45, cf-award-defra-kpmg-2023-06-05-dcca9bcc, cf-award-home-office-border-force-kpmg-2023-06-08-3e02234f, cf-award-mod-kpmg-2023-06-16-02896725, cf-award-mod-kpmg-2023-07-06-59c9a9d0, cf-award-defra-kpmg-2023-07-07-3fbbd50d, cf-award-home-office-border-force-kpmg-2023-07-10-00e12b36, cf-award-nhs-south-central-and-west-c-kpmg-2023-07-11-04632d5d, cf-award-defra-kpmg-2023-07-17-e3af2180, cf-award-mod-kpmg-2023-08-01-a0b2ee0b, cf-award-fcdo-services-kpmg-2023-08-02-891f2b43, cf-award-mod-kpmg-2023-08-03-2ac65335, cf-award-dfe-kpmg-2023-08-15-31f748e1, cf-award-british-business-bank-kpmg-2023-08-25-f387b35c, cf-award-fcdo-services-kpmg-2023-09-24-e9f5f1ca, cf-award-beis-kpmg-2023-10-17-0dbe8470, cf-award-mod-kpmg-2023-10-18-24c4bc5f, cf-award-beis-kpmg-2023-10-23-45fd3fc6, cf-award-defra-kpmg-2023-10-23-9e23bfcc, cf-award-defra-kpmg-2023-10-23-d05ffcb4, cf-award-hm-treasury-kpmg-2023-10-23-5c31e1c7, cf-award-defra-kpmg-2023-10-25-c6775599, cf-award-defra-kpmg-2023-10-25-eef0f5d2, cf-award-ukhsa-kpmg-2023-10-26-54a9b279, cf-award-ukhsa-kpmg-2023-11-02-38fc7722, cf-award-nhs-england-kpmg-2023-11-14-2c4d7235, cf-award-mod-atkinsrealis-2023-11-17-b92822ac, cf-award-ukhsa-kpmg-2023-12-01-b2fc9d5c, cf-award-fcdo-services-kpmg-2023-12-06-46bc00e5, cf-award-nhs-england-kpmg-2023-12-07-ec4e38f9, cf-award-mod-deloitte-2023-12-12-2b16aaf3, cf-award-mod-deloitte-2023-12-12-e8642a95, cf-award-mod-kpmg-2023-12-12-605d98f4, cf-award-mod-kpmg-2023-12-12-e4c73a39, cf-award-british-business-bank-kpmg-2023-12-15-81ddae55, cf-award-fcdo-services-kpmg-2023-12-21-3ae5898a, cf-award-mod-kpmg-2023-12-21-474b500c, cf-award-home-office-border-force-kpmg-2024-01-15-f97f3e80, cf-award-mod-kpmg-2024-01-18-edc9d363, cf-award-nhs-england-kpmg-2024-01-19-4fcbd2b3, cf-award-ukhsa-kpmg-2024-02-06-e2bb0524, cf-award-dsit-kpmg-2024-02-09-6fd9747e, cf-award-dsit-kpmg-2024-02-09-c0cc9d9e, cf-award-nhs-england-kpmg-2024-02-09-424b2891, cf-award-fcdo-services-kpmg-2024-02-27-1a7a2549, cf-award-fcdo-services-kpmg-2024-02-27-ba785eca, cf-award-defra-kpmg-2024-03-07-c6be4b71, cf-award-mod-kpmg-2024-03-07-cf8e752e, cf-award-fcdo-services-kpmg-2024-03-19-a9871f0e, cf-award-fcdo-services-kpmg-2024-03-25-a290b5b9, cf-award-defra-kpmg-2024-04-12-aaece739, cf-award-defra-kpmg-2024-04-25-e491edcc, cf-award-fcdo-services-kpmg-2024-04-25-6aa25bee, cf-award-mod-kpmg-2024-05-01-2dcd68e7, cf-award-university-of-birmingham-kpmg-2024-05-02-ca540619, cf-award-defra-kpmg-2024-05-07-96c8cf7e, cf-award-care-quality-commission-kpmg-2024-05-15-4b911e9e, cf-award-dsit-kpmg-2024-05-17-897470b2, cf-award-ukhsa-kpmg-2024-05-31-73ec8015, cf-award-nhs-england-kpmg-2024-06-05-7dbe0c6c, cf-award-ukhsa-kpmg-2024-06-05-ebcf28ca, cf-award-fcdo-services-kpmg-2024-06-10-bc38e3c9, cf-award-mod-kpmg-2024-07-01-196ad4d0, cf-award-mod-kpmg-2024-07-04-a3a4dae0, cf-award-fcdo-services-kpmg-2024-07-07-aedcf7be, cf-award-defra-kpmg-2024-07-08-cb216044, cf-award-defra-kpmg-2024-07-15-ed33c9dd, cf-award-cabinet-office-kpmg-2024-07-26-b56b9b7b, cf-award-mod-kpmg-2024-08-02-10f1f617, cf-award-fcdo-services-kpmg-2024-08-07-6964790f, cf-award-defra-kpmg-2024-08-19-01bf7f57, cf-award-defra-kpmg-2024-08-25-e1bab572, cf-award-nhs-england-kpmg-2024-08-27-1ab5a269, cf-award-defra-kpmg-2024-08-28-10fe1b11, cf-award-fcdo-services-kpmg-2024-08-28-d146e674, cf-award-genomics-england-limited-kpmg-2024-09-23-a53643bd, cf-award-university-of-birmingham-kpmg-2024-09-24-e47f3c06, cf-award-fcdo-services-kpmg-2024-09-26-5d7f2f86, cf-award-fcdo-services-kpmg-2024-09-26-d8196a71, cf-award-peabody-trust-kpmg-2024-10-17-8e39b685, cf-award-fcdo-services-kpmg-2024-11-05-e9eba141, cf-award-fcdo-services-kpmg-2024-11-19-304ec62a, cf-award-care-quality-commission-kpmg-2024-11-25-b584b026, cf-award-mod-kpmg-2024-12-13-6ee53170, cf-award-dsit-kpmg-2025-01-13-60b4d973, cf-award-desnz-kpmg-2025-01-21-536e98c3, cf-award-nhs-england-kpmg-2025-01-22-5e38ab49, cf-award-dfe-kpmg-2025-01-31-513e64cd, cf-award-dsit-kpmg-2025-02-03-6ae52de4, cf-award-mod-kpmg-2025-02-10-82d992d6, cf-award-nhs-england-kpmg-2025-02-25-506d167c, cf-award-fcdo-services-kpmg-2025-03-09-37d0c8f0, cf-award-dfe-kpmg-2025-04-10-e642afe0, cf-award-ukhsa-kpmg-2025-04-17-ad73fa60, cf-award-defra-kpmg-2025-04-28-ff698751, cf-award-nhs-england-kpmg-2025-04-28-31321523, cf-award-ukhsa-kpmg-2025-05-06-37d78515, cf-award-nhs-england-kpmg-2025-05-09-3623ce5e, cf-award-defra-kpmg-2025-05-16-84908d75, cf-award-mod-kpmg-2025-06-08-18d44c24, cf-award-mod-kpmg-2025-06-11-cbae6f9e, cf-award-mod-kpmg-2025-06-17-15e37da4, cf-award-dfe-kpmg-2025-06-19-b1d6ed80, cf-award-mod-kpmg-2025-06-23-5e32e049, cf-award-dfe-kpmg-2025-06-25-6109d46b, cf-award-university-of-salford-kpmg-2025-07-09-467a4dd6, cf-award-nhs-england-kpmg-2025-07-16-53210b27, cf-award-home-office-border-force-kpmg-2025-08-01-b6afc9e5, cf-award-mhclg-kpmg-2025-08-29-a257e855, cf-award-defra-kpmg-2025-09-18-ce026493, cf-award-mod-kpmg-2025-10-01-7856caad, cf-award-nhs-england-kpmg-2025-10-16-de99b32d, cf-award-fcdo-services-kpmg-2025-10-20-99a1b3be, cf-award-hm-treasury-kpmg-2025-10-23-b9ca55c5, cf-award-defra-kpmg-2025-11-07-f8ac2744, cf-award-fcdo-services-kpmg-2025-11-18-f385bf03, cf-award-mod-kpmg-2025-11-21-d8965718, cf-award-fcdo-services-kpmg-2025-11-27-72f86754, cf-award-ukhsa-kpmg-2025-11-27-14d7160b, cf-award-ukhsa-kpmg-2025-12-15-768785b0, cf-award-defra-kpmg-2026-01-09-77dabcf0, cf-award-nhs-england-kpmg-2026-01-23-5d2b4a0f, cf-award-defra-kpmg-2026-03-03-a4adb6ab, cf-award-defra-kpmg-2026-03-09-5d62a53c, cf-award-defra-kpmg-2026-03-13-b21a2801, cf-award-cabinet-office-kpmg-2026-05-05-d318e48d, cf-award-nhs-england-kpmg-2026-06-05-7b964d22, cf-award-defra-kpmg-2026-06-12-5664ecc2, cf-award-defra-kpmg-2026-07-21-8057f636, cf-award-nhs-england-kpmg-2026-08-04-2d3c2646, cf-award-dsit-kpmg-2026-09-03-711b5f63, cf-award-defra-kpmg-2026-09-14-9ddc2f31, cf-award-defra-kpmg-2026-09-14-9e364005, cf-award-defra-kpmg-2026-09-25-180169e0, cf-award-defra-kpmg-2026-10-02-a19b6b94, cf-award-ukhsa-kpmg-2026-10-02-5bd25dd4, cf-award-ukhsa-kpmg-2026-10-30-dd5a6b2e. Secondary types: none.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625`, `uk-ministerial-meetings-hmt-ministerial-meetings-july-to-september-2024-679b464d`, `uk-ministerial-meetings-hmt-ministerial-meetings-july-to-september-2024-679b464d`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145`, `uk-ministerial-meetings-hmts-ministerial-meetings-october-to-december-2024-685a87ad`, `uk-ministerial-meetings-hmts-ministerial-meetings-october-to-december-2024-685a87ad`, `uk-ministerial-meetings-hmts-ministerial-meetings-october-to-december-2024-685a87ad`, `uk-ministerial-meetings-hmts-ministerial-meetings-october-to-december-2024-685a87ad`, `uk-ministerial-meetings-hmts-ministerial-meetings-october-to-december-2024-685a87ad`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-january-to-march-2025-685d5305`, `uk-ministerial-meetings-hmts-ministerial-meetings-january-to-march-2025-68bae311`, `uk-ministerial-meetings-hmts-ministerial-meetings-january-to-march-2025-68bae311`, `uk-ministerial-meetings-hmts-ministerial-meetings-january-to-march-2025-68bae311`, `uk-ministerial-meetings-hmts-ministerial-meetings-april-to-june-2025-68d50fe0`, `uk-ministerial-meetings-hmts-ministerial-meetings-april-to-june-2025-68d50fe0`, `uk-ministerial-meetings-hmts-ministerial-meetings-july-to-september-2025-69414470`, `uk-ministerial-meetings-hmts-ministerial-meetings-july-to-september-2025-69414470`, `uk-ministerial-meetings-hmts-ministerial-meetings-july-to-september-2025-69414470`, `uk-ministerial-meetings-hmts-ministerial-meetings-july-to-september-2025-69414470`, `uk-ministerial-meetings-cabinet-office-ministers-meetings-october-to-december-2025-69c29a18`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5`, `uk-ministerial-meetings-hmts-ministerial-meetings-october-to-december-2025-69bd3123`
+Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef`, `uk-ministerial-meetings-hmt-ministerial-meetings-july-to-september-2024-679b464d`, `uk-ministerial-meetings-hmts-ministerial-meetings-april-to-june-2025-68d50fe0`, `cf-award-cabinet-office-kpmg-2020-10-02-2eb78c56`, `cf-award-mod-kpmg-2022-05-02-ec344181`, `cf-award-nhs-south-central-and-west-c-kpmg-2022-05-16-7c74c3cd`, `cf-award-care-quality-commission-kpmg-2022-07-18-978abcf9`, `cf-award-dfe-kpmg-2022-07-29-720925d9`, `cf-award-mod-kpmg-2022-11-10-9187f3cb`, `cf-award-mod-kpmg-2022-11-14-07fc2c7c`, `cf-award-mod-kpmg-2022-11-17-772378e3`, `cf-award-defra-kpmg-2022-11-23-73cdef00`, `cf-award-fcdo-services-kpmg-2022-12-13-27d958c6`, `cf-award-fcdo-services-kpmg-2022-12-13-b296f28c`, `cf-award-ukhsa-kpmg-2022-12-14-4912610c`, `cf-award-mod-kpmg-2022-12-16-76756dac`, `cf-award-nhs-england-kpmg-2022-12-22-e597df0c`, `cf-award-fcdo-services-kpmg-2023-01-22-90442b5d`, `cf-award-ukhsa-kpmg-2023-01-25-0a4a7942`, `cf-award-fcdo-services-kpmg-2023-02-01-066d18a1`, `cf-award-ukhsa-kpmg-2023-02-06-2028e2ab`, `cf-award-home-office-border-force-kpmg-2023-02-08-e22cdaf2`, `cf-award-genomics-england-limited-kpmg-2023-02-26-3fb9751f`, `cf-award-defra-kpmg-2023-02-27-3e112312`, `cf-award-mod-kpmg-2023-02-27-cfe5ef8c`, `cf-award-dfe-kpmg-2023-03-07-d1a09c2e`, `cf-award-ukhsa-kpmg-2023-03-10-10a0d7fe`, `cf-award-fcdo-services-kpmg-2023-03-14-50f5e73d`, `cf-award-nhs-england-kpmg-2023-03-14-dda25018`, `cf-award-defra-kpmg-2023-03-20-51b05c3d`, `cf-award-mod-kpmg-2023-04-03-9a164415`, `cf-award-dcms-kpmg-2023-04-05-69d702b0`, `cf-award-fcdo-services-kpmg-2023-04-23-4b09c6a0`, `cf-award-fcdo-services-kpmg-2023-04-23-da753ac1`, `cf-award-fcdo-services-kpmg-2023-04-24-73238914`, `cf-award-fcdo-services-kpmg-2023-04-24-be5f139f`, `cf-award-beis-kpmg-2023-04-27-32dfb735`, `cf-award-defra-kpmg-2023-05-04-78d12ed7`, `cf-award-care-quality-commission-kpmg-2023-05-25-da1b7e52`, `cf-award-nhs-south-central-and-west-c-kpmg-2023-05-25-93314b45`, `cf-award-defra-kpmg-2023-06-05-dcca9bcc`, `cf-award-home-office-border-force-kpmg-2023-06-08-3e02234f`, `cf-award-mod-kpmg-2023-06-16-02896725`, `cf-award-mod-kpmg-2023-07-06-59c9a9d0`, `cf-award-defra-kpmg-2023-07-07-3fbbd50d`, `cf-award-home-office-border-force-kpmg-2023-07-10-00e12b36`, `cf-award-nhs-south-central-and-west-c-kpmg-2023-07-11-04632d5d`, `cf-award-defra-kpmg-2023-07-17-e3af2180`, `cf-award-mod-kpmg-2023-08-01-a0b2ee0b`, `cf-award-fcdo-services-kpmg-2023-08-02-891f2b43`, `cf-award-mod-kpmg-2023-08-03-2ac65335`, `cf-award-dfe-kpmg-2023-08-15-31f748e1`, `cf-award-british-business-bank-kpmg-2023-08-25-f387b35c`, `cf-award-fcdo-services-kpmg-2023-09-24-e9f5f1ca`, `cf-award-beis-kpmg-2023-10-17-0dbe8470`, `cf-award-mod-kpmg-2023-10-18-24c4bc5f`, `cf-award-beis-kpmg-2023-10-23-45fd3fc6`, `cf-award-defra-kpmg-2023-10-23-9e23bfcc`, `cf-award-defra-kpmg-2023-10-23-d05ffcb4`, `cf-award-hm-treasury-kpmg-2023-10-23-5c31e1c7`, `cf-award-defra-kpmg-2023-10-25-c6775599`, `cf-award-defra-kpmg-2023-10-25-eef0f5d2`, `cf-award-ukhsa-kpmg-2023-10-26-54a9b279`, `cf-award-ukhsa-kpmg-2023-11-02-38fc7722`, `cf-award-nhs-england-kpmg-2023-11-14-2c4d7235`, `cf-award-mod-atkinsrealis-2023-11-17-b92822ac`, `cf-award-ukhsa-kpmg-2023-12-01-b2fc9d5c`, `cf-award-fcdo-services-kpmg-2023-12-06-46bc00e5`, `cf-award-nhs-england-kpmg-2023-12-07-ec4e38f9`, `cf-award-mod-deloitte-2023-12-12-2b16aaf3`, `cf-award-mod-deloitte-2023-12-12-e8642a95`, `cf-award-mod-kpmg-2023-12-12-605d98f4`, `cf-award-mod-kpmg-2023-12-12-e4c73a39`, `cf-award-british-business-bank-kpmg-2023-12-15-81ddae55`, `cf-award-fcdo-services-kpmg-2023-12-21-3ae5898a`, `cf-award-mod-kpmg-2023-12-21-474b500c`, `cf-award-home-office-border-force-kpmg-2024-01-15-f97f3e80`, `cf-award-mod-kpmg-2024-01-18-edc9d363`, `cf-award-nhs-england-kpmg-2024-01-19-4fcbd2b3`, `cf-award-ukhsa-kpmg-2024-02-06-e2bb0524`, `cf-award-dsit-kpmg-2024-02-09-6fd9747e`, `cf-award-dsit-kpmg-2024-02-09-c0cc9d9e`, `cf-award-nhs-england-kpmg-2024-02-09-424b2891`, `cf-award-fcdo-services-kpmg-2024-02-27-1a7a2549`, `cf-award-fcdo-services-kpmg-2024-02-27-ba785eca`, `cf-award-defra-kpmg-2024-03-07-c6be4b71`, `cf-award-mod-kpmg-2024-03-07-cf8e752e`, `cf-award-fcdo-services-kpmg-2024-03-19-a9871f0e`, `cf-award-fcdo-services-kpmg-2024-03-25-a290b5b9`, `cf-award-defra-kpmg-2024-04-12-aaece739`, `cf-award-defra-kpmg-2024-04-25-e491edcc`, `cf-award-fcdo-services-kpmg-2024-04-25-6aa25bee`, `cf-award-mod-kpmg-2024-05-01-2dcd68e7`, `cf-award-university-of-birmingham-kpmg-2024-05-02-ca540619`, `cf-award-defra-kpmg-2024-05-07-96c8cf7e`, `cf-award-care-quality-commission-kpmg-2024-05-15-4b911e9e`, `cf-award-dsit-kpmg-2024-05-17-897470b2`, `cf-award-ukhsa-kpmg-2024-05-31-73ec8015`, `cf-award-nhs-england-kpmg-2024-06-05-7dbe0c6c`, `cf-award-ukhsa-kpmg-2024-06-05-ebcf28ca`, `cf-award-fcdo-services-kpmg-2024-06-10-bc38e3c9`, `cf-award-mod-kpmg-2024-07-01-196ad4d0`, `cf-award-mod-kpmg-2024-07-04-a3a4dae0`, `cf-award-fcdo-services-kpmg-2024-07-07-aedcf7be`, `cf-award-defra-kpmg-2024-07-08-cb216044`, `cf-award-defra-kpmg-2024-07-15-ed33c9dd`, `cf-award-cabinet-office-kpmg-2024-07-26-b56b9b7b`, `cf-award-mod-kpmg-2024-08-02-10f1f617`, `cf-award-fcdo-services-kpmg-2024-08-07-6964790f`, `cf-award-defra-kpmg-2024-08-19-01bf7f57`, `cf-award-defra-kpmg-2024-08-25-e1bab572`, `cf-award-nhs-england-kpmg-2024-08-27-1ab5a269`, `cf-award-defra-kpmg-2024-08-28-10fe1b11`, `cf-award-fcdo-services-kpmg-2024-08-28-d146e674`, `cf-award-genomics-england-limited-kpmg-2024-09-23-a53643bd`, `cf-award-university-of-birmingham-kpmg-2024-09-24-e47f3c06`, `cf-award-fcdo-services-kpmg-2024-09-26-5d7f2f86`, `cf-award-fcdo-services-kpmg-2024-09-26-d8196a71`, `cf-award-peabody-trust-kpmg-2024-10-17-8e39b685`, `cf-award-fcdo-services-kpmg-2024-11-05-e9eba141`, `cf-award-fcdo-services-kpmg-2024-11-19-304ec62a`, `cf-award-care-quality-commission-kpmg-2024-11-25-b584b026`, `cf-award-mod-kpmg-2024-12-13-6ee53170`, `cf-award-dsit-kpmg-2025-01-13-60b4d973`, `cf-award-desnz-kpmg-2025-01-21-536e98c3`, `cf-award-nhs-england-kpmg-2025-01-22-5e38ab49`, `cf-award-dfe-kpmg-2025-01-31-513e64cd`, `cf-award-dsit-kpmg-2025-02-03-6ae52de4`, `cf-award-mod-kpmg-2025-02-10-82d992d6`, `cf-award-nhs-england-kpmg-2025-02-25-506d167c`, `cf-award-fcdo-services-kpmg-2025-03-09-37d0c8f0`, `cf-award-dfe-kpmg-2025-04-10-e642afe0`, `cf-award-ukhsa-kpmg-2025-04-17-ad73fa60`, `cf-award-defra-kpmg-2025-04-28-ff698751`, `cf-award-nhs-england-kpmg-2025-04-28-31321523`, `cf-award-ukhsa-kpmg-2025-05-06-37d78515`, `cf-award-nhs-england-kpmg-2025-05-09-3623ce5e`, `cf-award-defra-kpmg-2025-05-16-84908d75`, `cf-award-mod-kpmg-2025-06-08-18d44c24`, `cf-award-mod-kpmg-2025-06-11-cbae6f9e`, `cf-award-mod-kpmg-2025-06-17-15e37da4`, `cf-award-dfe-kpmg-2025-06-19-b1d6ed80`, `cf-award-mod-kpmg-2025-06-23-5e32e049`, `cf-award-dfe-kpmg-2025-06-25-6109d46b`, `cf-award-university-of-salford-kpmg-2025-07-09-467a4dd6`, `cf-award-nhs-england-kpmg-2025-07-16-53210b27`, `cf-award-home-office-border-force-kpmg-2025-08-01-b6afc9e5`, `cf-award-mhclg-kpmg-2025-08-29-a257e855`, `cf-award-defra-kpmg-2025-09-18-ce026493`, `cf-award-mod-kpmg-2025-10-01-7856caad`, `cf-award-nhs-england-kpmg-2025-10-16-de99b32d`, `cf-award-fcdo-services-kpmg-2025-10-20-99a1b3be`, `cf-award-hm-treasury-kpmg-2025-10-23-b9ca55c5`, `cf-award-defra-kpmg-2025-11-07-f8ac2744`, `cf-award-fcdo-services-kpmg-2025-11-18-f385bf03`, `cf-award-mod-kpmg-2025-11-21-d8965718`, `cf-award-fcdo-services-kpmg-2025-11-27-72f86754`, `cf-award-ukhsa-kpmg-2025-11-27-14d7160b`, `cf-award-ukhsa-kpmg-2025-12-15-768785b0`, `cf-award-defra-kpmg-2026-01-09-77dabcf0`, `cf-award-nhs-england-kpmg-2026-01-23-5d2b4a0f`, `cf-award-defra-kpmg-2026-03-03-a4adb6ab`, `cf-award-defra-kpmg-2026-03-09-5d62a53c`, `cf-award-defra-kpmg-2026-03-13-b21a2801`, `cf-award-cabinet-office-kpmg-2026-05-05-d318e48d`, `cf-award-nhs-england-kpmg-2026-06-05-7b964d22`, `cf-award-defra-kpmg-2026-06-12-5664ecc2`, `cf-award-defra-kpmg-2026-07-21-8057f636`, `cf-award-nhs-england-kpmg-2026-08-04-2d3c2646`, `cf-award-dsit-kpmg-2026-09-03-711b5f63`, `cf-award-defra-kpmg-2026-09-14-9ddc2f31`, `cf-award-defra-kpmg-2026-09-14-9e364005`, `cf-award-defra-kpmg-2026-09-25-180169e0`, `cf-award-defra-kpmg-2026-10-02-a19b6b94`, `cf-award-ukhsa-kpmg-2026-10-02-5bd25dd4`, `cf-award-ukhsa-kpmg-2026-10-30-dd5a6b2e`
 
 ---
 
-## finding-304: Logically behaves as a surface factory
+## finding-343: Lloyds behaves as a surface factory
+
+- Type: surface_factory
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+Lloyds appears across 29 surface(s): dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625, uk-ministerial-meetings-hmt-ministerial-meetings-july-to-september-2024-679b464d, uk-ministerial-meetings-hmt-ministerial-meetings-july-to-september-2024-679b464d, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145, uk-ministerial-meetings-hmts-ministerial-meetings-october-to-december-2024-685a87ad, uk-ministerial-meetings-hmts-ministerial-meetings-october-to-december-2024-685a87ad, uk-ministerial-meetings-hmts-ministerial-meetings-october-to-december-2024-685a87ad, uk-ministerial-meetings-hmts-ministerial-meetings-october-to-december-2024-685a87ad, uk-ministerial-meetings-hmts-ministerial-meetings-october-to-december-2024-685a87ad, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-january-to-march-2025-685d5305, uk-ministerial-meetings-hmts-ministerial-meetings-january-to-march-2025-68bae311, uk-ministerial-meetings-hmts-ministerial-meetings-january-to-march-2025-68bae311, uk-ministerial-meetings-hmts-ministerial-meetings-january-to-march-2025-68bae311, uk-ministerial-meetings-hmts-ministerial-meetings-april-to-june-2025-68d50fe0, uk-ministerial-meetings-hmts-ministerial-meetings-april-to-june-2025-68d50fe0, uk-ministerial-meetings-hmts-ministerial-meetings-july-to-september-2025-69414470, uk-ministerial-meetings-hmts-ministerial-meetings-july-to-september-2025-69414470, uk-ministerial-meetings-hmts-ministerial-meetings-july-to-september-2025-69414470, uk-ministerial-meetings-hmts-ministerial-meetings-july-to-september-2025-69414470, uk-ministerial-meetings-cabinet-office-ministers-meetings-october-to-december-2025-69c29a18, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5, uk-ministerial-meetings-hmts-ministerial-meetings-october-to-december-2025-69bd3123, cf-award-city-of-london-lloyds-2024-05-23-2a44e363. Secondary types: none.
+
+**Required action**
+
+Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
+
+Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625`, `uk-ministerial-meetings-hmt-ministerial-meetings-july-to-september-2024-679b464d`, `uk-ministerial-meetings-hmt-ministerial-meetings-july-to-september-2024-679b464d`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145`, `uk-ministerial-meetings-hmts-ministerial-meetings-october-to-december-2024-685a87ad`, `uk-ministerial-meetings-hmts-ministerial-meetings-october-to-december-2024-685a87ad`, `uk-ministerial-meetings-hmts-ministerial-meetings-october-to-december-2024-685a87ad`, `uk-ministerial-meetings-hmts-ministerial-meetings-october-to-december-2024-685a87ad`, `uk-ministerial-meetings-hmts-ministerial-meetings-october-to-december-2024-685a87ad`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-january-to-march-2025-685d5305`, `uk-ministerial-meetings-hmts-ministerial-meetings-january-to-march-2025-68bae311`, `uk-ministerial-meetings-hmts-ministerial-meetings-january-to-march-2025-68bae311`, `uk-ministerial-meetings-hmts-ministerial-meetings-january-to-march-2025-68bae311`, `uk-ministerial-meetings-hmts-ministerial-meetings-april-to-june-2025-68d50fe0`, `uk-ministerial-meetings-hmts-ministerial-meetings-april-to-june-2025-68d50fe0`, `uk-ministerial-meetings-hmts-ministerial-meetings-july-to-september-2025-69414470`, `uk-ministerial-meetings-hmts-ministerial-meetings-july-to-september-2025-69414470`, `uk-ministerial-meetings-hmts-ministerial-meetings-july-to-september-2025-69414470`, `uk-ministerial-meetings-hmts-ministerial-meetings-july-to-september-2025-69414470`, `uk-ministerial-meetings-cabinet-office-ministers-meetings-october-to-december-2025-69c29a18`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5`, `uk-ministerial-meetings-hmts-ministerial-meetings-october-to-december-2025-69bd3123`, `cf-award-city-of-london-lloyds-2024-05-23-2a44e363`
+
+---
+
+## finding-344: Logically behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -5480,7 +6200,25 @@ Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-m
 
 ---
 
-## finding-305: Mozilla behaves as a surface factory
+## finding-345: Mills & Reeve behaves as a surface factory
+
+- Type: surface_factory
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+Mills & Reeve appears across 55 surface(s): dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, cf-award-cabinet-office-mills-reeve-2020-04-06-ccc91b00, cf-award-dhsc-mills-reeve-2020-10-20-a51a5921, cf-award-dfe-mills-reeve-2022-07-21-d85765af, cf-award-dfe-mills-reeve-2022-10-03-69ad78bf, cf-award-beis-mills-reeve-2022-12-16-f493d750, cf-award-beis-mills-reeve-2022-12-29-c5422a17, cf-award-mod-mills-reeve-2023-01-23-40043d5c, cf-award-dcms-mills-reeve-2023-02-14-8bb5a558, cf-award-mod-mills-reeve-2023-06-08-a327a260, cf-award-mod-mills-reeve-2023-06-16-f525a761, cf-award-mod-mills-reeve-2023-06-28-3e15122d, cf-award-mod-mills-reeve-2023-06-28-6c722548, cf-award-mod-mills-reeve-2023-06-28-c01f2b09, cf-award-mod-mills-reeve-2023-06-28-c910f7e6, cf-award-mod-mills-reeve-2023-07-17-587cdedd, cf-award-dhsc-mills-reeve-2023-07-28-eb4c8c25, cf-award-dfe-mills-reeve-2023-08-10-3898f679, cf-award-dhsc-mills-reeve-2023-10-09-e63bcdcf, cf-award-mod-mills-reeve-2023-11-01-4eec8ad2, cf-award-mod-mills-reeve-2023-11-16-9ff14b4b, cf-award-defra-mills-reeve-2023-12-01-782d5852, cf-award-mod-mills-reeve-2024-01-10-a6f93224, cf-award-mod-mills-reeve-2024-01-19-e8663c3b, cf-award-mod-mills-reeve-2024-02-15-a83f0008, cf-award-liverpool-john-moores-univer-mills-reeve-2024-02-27-09b2068e, cf-award-mod-mills-reeve-2024-02-28-ec990f93, cf-award-university-of-birmingham-mills-reeve-2024-03-20-8bdb3f2f, cf-award-university-of-birmingham-mills-reeve-2024-04-04-2ff5874f, cf-award-ukhsa-mills-reeve-2024-04-10-f7cbbbac, cf-award-mod-mills-reeve-2024-05-01-85d163de, cf-award-dhsc-mills-reeve-2024-06-18-8bd6a82a, cf-award-mod-mills-reeve-2024-07-01-f6c22aeb, cf-award-mod-mills-reeve-2024-07-14-5609c0a4, cf-award-mod-mills-reeve-2024-07-18-bff22eeb, cf-award-mod-mills-reeve-2024-08-13-a2e013e9, cf-award-mod-mills-reeve-2024-08-13-c35f32b3, cf-award-mod-mills-reeve-2024-09-19-7e3703e0, cf-award-dhsc-mills-reeve-2024-10-04-b51d2a49, cf-award-university-of-birmingham-mills-reeve-2024-12-05-122552d2, cf-award-desnz-mills-reeve-2024-12-30-586cdaee, cf-award-mod-mills-reeve-2025-01-16-6e79b3cd, cf-award-ukhsa-mills-reeve-2025-03-10-0fa55561, cf-award-mod-mills-reeve-2025-05-13-d5d93419, cf-award-dhsc-mills-reeve-2025-06-16-c98a1114, cf-award-dhsc-mills-reeve-2025-08-11-73ef9ee3, cf-award-mod-mills-reeve-2025-10-09-bbd1f682, cf-award-defra-mills-reeve-2025-11-19-f35f41e6, cf-award-mod-mills-reeve-2025-12-19-a0859f2b, cf-award-nhs-england-mills-reeve-2026-02-17-6afb2f67, cf-award-mod-mills-reeve-2026-05-31-3b2f7d74, cf-award-dhsc-mills-reeve-2026-06-15-63ad5365, cf-award-dsit-mills-reeve-2026-06-16-44d41c2c, cf-award-dhsc-mills-reeve-2026-06-30-9b7ba1da, cf-award-mod-mills-reeve-2026-07-28-90bc1d7c. Secondary types: none.
+
+**Required action**
+
+Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
+
+Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `cf-award-cabinet-office-mills-reeve-2020-04-06-ccc91b00`, `cf-award-dhsc-mills-reeve-2020-10-20-a51a5921`, `cf-award-dfe-mills-reeve-2022-07-21-d85765af`, `cf-award-dfe-mills-reeve-2022-10-03-69ad78bf`, `cf-award-beis-mills-reeve-2022-12-16-f493d750`, `cf-award-beis-mills-reeve-2022-12-29-c5422a17`, `cf-award-mod-mills-reeve-2023-01-23-40043d5c`, `cf-award-dcms-mills-reeve-2023-02-14-8bb5a558`, `cf-award-mod-mills-reeve-2023-06-08-a327a260`, `cf-award-mod-mills-reeve-2023-06-16-f525a761`, `cf-award-mod-mills-reeve-2023-06-28-3e15122d`, `cf-award-mod-mills-reeve-2023-06-28-6c722548`, `cf-award-mod-mills-reeve-2023-06-28-c01f2b09`, `cf-award-mod-mills-reeve-2023-06-28-c910f7e6`, `cf-award-mod-mills-reeve-2023-07-17-587cdedd`, `cf-award-dhsc-mills-reeve-2023-07-28-eb4c8c25`, `cf-award-dfe-mills-reeve-2023-08-10-3898f679`, `cf-award-dhsc-mills-reeve-2023-10-09-e63bcdcf`, `cf-award-mod-mills-reeve-2023-11-01-4eec8ad2`, `cf-award-mod-mills-reeve-2023-11-16-9ff14b4b`, `cf-award-defra-mills-reeve-2023-12-01-782d5852`, `cf-award-mod-mills-reeve-2024-01-10-a6f93224`, `cf-award-mod-mills-reeve-2024-01-19-e8663c3b`, `cf-award-mod-mills-reeve-2024-02-15-a83f0008`, `cf-award-liverpool-john-moores-univer-mills-reeve-2024-02-27-09b2068e`, `cf-award-mod-mills-reeve-2024-02-28-ec990f93`, `cf-award-university-of-birmingham-mills-reeve-2024-03-20-8bdb3f2f`, `cf-award-university-of-birmingham-mills-reeve-2024-04-04-2ff5874f`, `cf-award-ukhsa-mills-reeve-2024-04-10-f7cbbbac`, `cf-award-mod-mills-reeve-2024-05-01-85d163de`, `cf-award-dhsc-mills-reeve-2024-06-18-8bd6a82a`, `cf-award-mod-mills-reeve-2024-07-01-f6c22aeb`, `cf-award-mod-mills-reeve-2024-07-14-5609c0a4`, `cf-award-mod-mills-reeve-2024-07-18-bff22eeb`, `cf-award-mod-mills-reeve-2024-08-13-a2e013e9`, `cf-award-mod-mills-reeve-2024-08-13-c35f32b3`, `cf-award-mod-mills-reeve-2024-09-19-7e3703e0`, `cf-award-dhsc-mills-reeve-2024-10-04-b51d2a49`, `cf-award-university-of-birmingham-mills-reeve-2024-12-05-122552d2`, `cf-award-desnz-mills-reeve-2024-12-30-586cdaee`, `cf-award-mod-mills-reeve-2025-01-16-6e79b3cd`, `cf-award-ukhsa-mills-reeve-2025-03-10-0fa55561`, `cf-award-mod-mills-reeve-2025-05-13-d5d93419`, `cf-award-dhsc-mills-reeve-2025-06-16-c98a1114`, `cf-award-dhsc-mills-reeve-2025-08-11-73ef9ee3`, `cf-award-mod-mills-reeve-2025-10-09-bbd1f682`, `cf-award-defra-mills-reeve-2025-11-19-f35f41e6`, `cf-award-mod-mills-reeve-2025-12-19-a0859f2b`, `cf-award-nhs-england-mills-reeve-2026-02-17-6afb2f67`, `cf-award-mod-mills-reeve-2026-05-31-3b2f7d74`, `cf-award-dhsc-mills-reeve-2026-06-15-63ad5365`, `cf-award-dsit-mills-reeve-2026-06-16-44d41c2c`, `cf-award-dhsc-mills-reeve-2026-06-30-9b7ba1da`, `cf-award-mod-mills-reeve-2026-07-28-90bc1d7c`
+
+---
+
+## finding-346: Mozilla behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -5498,7 +6236,7 @@ Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-m
 
 ---
 
-## finding-306: NCC Group behaves as a surface factory
+## finding-347: NCC Group behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -5506,17 +6244,17 @@ Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-m
 
 **Observed**
 
-NCC Group appears across 5 surface(s): dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94. Secondary types: none.
+NCC Group appears across 41 surface(s): dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, cf-award-dhsc-ncc-group-2021-08-25-0b723cb5, cf-award-ukhsa-ncc-group-2021-10-29-2927c5bd, cf-award-dhsc-ncc-group-2021-11-12-910c8f7e, cf-award-ukhsa-ncc-group-2022-05-31-7ffeb423, cf-award-dfe-ncc-group-2022-12-16-818dc33d, cf-award-home-office-border-force-ncc-group-2023-01-20-6bbdea49, cf-award-home-office-border-force-ncc-group-2023-01-20-c30f7b43, cf-award-home-office-border-force-ncc-group-2023-02-06-9de5ac17, cf-award-fcdo-services-ncc-group-2023-03-23-96f46fad, cf-award-ukhsa-ncc-group-2023-05-19-ea234ebe, cf-award-nhs-england-ncc-group-2023-07-03-5c2a4593, cf-award-ons-ncc-group-2023-09-27-5ddce520, cf-award-defra-ncc-group-2023-09-29-37b68d4c, cf-award-nhs-england-kpmg-2023-11-14-2c4d7235, cf-award-beis-ncc-group-2023-11-16-8fd923b8, cf-award-desnz-ncc-group-2024-01-23-3651b081, cf-award-fcdo-services-ncc-group-2024-04-07-1fec3662, cf-award-university-of-birmingham-ncc-group-2024-05-15-0a73b940, cf-award-university-of-birmingham-ncc-group-2024-05-15-a8e49369, cf-award-university-of-birmingham-ncc-group-2024-05-21-12a2a36b, cf-award-university-of-birmingham-ncc-group-2024-05-21-ed1c3a98, cf-award-mod-ncc-group-2024-05-22-1bc89a92, cf-award-city-of-london-ncc-group-2024-09-17-dacf7966, cf-award-university-of-birmingham-ncc-group-2024-10-24-af337916, cf-award-fcdo-services-ncc-group-2025-02-06-418e25c4, cf-award-home-office-border-force-ncc-group-2025-04-02-dbb4c7d6, cf-award-mod-ncc-group-2025-04-22-2d91e114, cf-award-ukhsa-ncc-group-2025-05-13-1a15c0ac, cf-award-ukhsa-ncc-group-2025-05-13-c8de8f48, cf-award-mod-ncc-group-2025-09-01-c0f7086f, cf-award-ukhsa-ncc-group-2025-09-30-88d0082e, cf-award-mhclg-ncc-group-2026-01-29-cdb5c524, cf-award-government-digital-service-ncc-group-2026-02-11-d41da547, cf-award-dsit-ncc-group-2026-04-02-2b828d25, cf-award-ukhsa-ncc-group-2026-05-18-38e1c0bb, cf-award-ukri-ncc-group-2026-07-08-f0c50993. Secondary types: none.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`
+Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `cf-award-dhsc-ncc-group-2021-08-25-0b723cb5`, `cf-award-ukhsa-ncc-group-2021-10-29-2927c5bd`, `cf-award-dhsc-ncc-group-2021-11-12-910c8f7e`, `cf-award-ukhsa-ncc-group-2022-05-31-7ffeb423`, `cf-award-dfe-ncc-group-2022-12-16-818dc33d`, `cf-award-home-office-border-force-ncc-group-2023-01-20-6bbdea49`, `cf-award-home-office-border-force-ncc-group-2023-01-20-c30f7b43`, `cf-award-home-office-border-force-ncc-group-2023-02-06-9de5ac17`, `cf-award-fcdo-services-ncc-group-2023-03-23-96f46fad`, `cf-award-ukhsa-ncc-group-2023-05-19-ea234ebe`, `cf-award-nhs-england-ncc-group-2023-07-03-5c2a4593`, `cf-award-ons-ncc-group-2023-09-27-5ddce520`, `cf-award-defra-ncc-group-2023-09-29-37b68d4c`, `cf-award-nhs-england-kpmg-2023-11-14-2c4d7235`, `cf-award-beis-ncc-group-2023-11-16-8fd923b8`, `cf-award-desnz-ncc-group-2024-01-23-3651b081`, `cf-award-fcdo-services-ncc-group-2024-04-07-1fec3662`, `cf-award-university-of-birmingham-ncc-group-2024-05-15-0a73b940`, `cf-award-university-of-birmingham-ncc-group-2024-05-15-a8e49369`, `cf-award-university-of-birmingham-ncc-group-2024-05-21-12a2a36b`, `cf-award-university-of-birmingham-ncc-group-2024-05-21-ed1c3a98`, `cf-award-mod-ncc-group-2024-05-22-1bc89a92`, `cf-award-city-of-london-ncc-group-2024-09-17-dacf7966`, `cf-award-university-of-birmingham-ncc-group-2024-10-24-af337916`, `cf-award-fcdo-services-ncc-group-2025-02-06-418e25c4`, `cf-award-home-office-border-force-ncc-group-2025-04-02-dbb4c7d6`, `cf-award-mod-ncc-group-2025-04-22-2d91e114`, `cf-award-ukhsa-ncc-group-2025-05-13-1a15c0ac`, `cf-award-ukhsa-ncc-group-2025-05-13-c8de8f48`, `cf-award-mod-ncc-group-2025-09-01-c0f7086f`, `cf-award-ukhsa-ncc-group-2025-09-30-88d0082e`, `cf-award-mhclg-ncc-group-2026-01-29-cdb5c524`, `cf-award-government-digital-service-ncc-group-2026-02-11-d41da547`, `cf-award-dsit-ncc-group-2026-04-02-2b828d25`, `cf-award-ukhsa-ncc-group-2026-05-18-38e1c0bb`, `cf-award-ukri-ncc-group-2026-07-08-f0c50993`
 
 ---
 
-## finding-307: Oracle behaves as a surface factory
+## finding-348: Oracle behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -5524,17 +6262,17 @@ Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-m
 
 **Observed**
 
-Oracle appears across 6 surface(s): dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-hmts-ministerial-meetings-april-to-june-2025-68d50fe0. Secondary types: none.
+Oracle appears across 51 surface(s): dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-hmts-ministerial-meetings-april-to-june-2025-68d50fe0, cf-award-centre-for-process-innovatio-oracle-2022-12-15-e7e261e4, cf-award-university-of-birmingham-oracle-2022-12-15-dc046ab7, cf-award-university-of-birmingham-oracle-2023-03-20-a87a8c19, cf-award-serious-fraud-office-oracle-2023-04-30-362038e4, cf-award-serious-fraud-office-oracle-2023-05-18-060bcdc9, cf-award-care-quality-commission-oracle-2023-08-25-ec2f053c, cf-award-ukhsa-oracle-2023-08-25-cde0f89f, cf-award-city-of-london-oracle-2023-11-02-9729eff7, cf-award-ukri-oracle-2024-02-21-775e30b6, cf-award-care-quality-commission-oracle-2024-02-29-0c251731, cf-award-ukri-oracle-2024-03-01-d1fe8964, cf-award-city-of-london-oracle-2024-03-06-792c21df, cf-award-defra-oracle-2024-03-06-00e81c7d, cf-award-dhsc-oracle-2024-03-07-e12d8877, cf-award-city-of-london-oracle-2024-04-01-5506b729, cf-award-defra-oracle-2024-04-05-001dcbfd, cf-award-cabinet-office-oracle-2024-04-30-db54af93, cf-award-mod-oracle-2024-05-29-38cc324e, cf-award-cabinet-office-oracle-2024-06-24-1986eb38, cf-award-university-of-birmingham-oracle-2024-07-18-80721ab9, cf-award-university-of-birmingham-oracle-2024-07-19-2b05f1b7, cf-award-defra-oracle-2024-08-20-c06f45d0, cf-award-care-quality-commission-oracle-2024-10-01-ae793499, cf-award-care-quality-commission-oracle-2024-12-02-2b27b0d4, cf-award-cabinet-office-oracle-2025-02-06-d225caf3, cf-award-cabinet-office-oracle-2025-02-11-99e39732, cf-award-ukri-oracle-2025-02-12-9e7bfeaa, cf-award-ukri-oracle-2025-02-12-e7a9488f, cf-award-defra-oracle-2025-02-28-ac63eb2a, cf-award-cabinet-office-oracle-2025-03-08-83bb839b, cf-award-cabinet-office-oracle-2025-03-09-88519a47, cf-award-home-office-border-force-oracle-2025-08-27-5d2d08ce, cf-award-defra-oracle-2025-09-12-b6a2eb5b, cf-award-ukri-oracle-2025-10-20-54894653, cf-award-defra-oracle-2025-11-19-851d7a23, cf-award-home-office-border-force-oracle-2025-11-21-f2407907, cf-award-cabinet-office-oracle-2026-01-22-b25f696d, cf-award-dhsc-oracle-2026-01-29-49e38774, cf-award-home-office-border-force-oracle-2026-02-06-b2f4b1db, cf-award-home-office-border-force-oracle-2026-02-06-ec353636, cf-award-cabinet-office-oracle-2026-02-18-0d4511f5, cf-award-defra-oracle-2026-03-18-99073bd7, cf-award-nhs-england-oracle-2026-07-24-56099033, cf-award-dhsc-oracle-2026-08-20-6e4bcc54, cf-award-ukhsa-oracle-2026-08-27-8805f2d8. Secondary types: none.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-hmts-ministerial-meetings-april-to-june-2025-68d50fe0`
+Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-hmts-ministerial-meetings-april-to-june-2025-68d50fe0`, `cf-award-centre-for-process-innovatio-oracle-2022-12-15-e7e261e4`, `cf-award-university-of-birmingham-oracle-2022-12-15-dc046ab7`, `cf-award-university-of-birmingham-oracle-2023-03-20-a87a8c19`, `cf-award-serious-fraud-office-oracle-2023-04-30-362038e4`, `cf-award-serious-fraud-office-oracle-2023-05-18-060bcdc9`, `cf-award-care-quality-commission-oracle-2023-08-25-ec2f053c`, `cf-award-ukhsa-oracle-2023-08-25-cde0f89f`, `cf-award-city-of-london-oracle-2023-11-02-9729eff7`, `cf-award-ukri-oracle-2024-02-21-775e30b6`, `cf-award-care-quality-commission-oracle-2024-02-29-0c251731`, `cf-award-ukri-oracle-2024-03-01-d1fe8964`, `cf-award-city-of-london-oracle-2024-03-06-792c21df`, `cf-award-defra-oracle-2024-03-06-00e81c7d`, `cf-award-dhsc-oracle-2024-03-07-e12d8877`, `cf-award-city-of-london-oracle-2024-04-01-5506b729`, `cf-award-defra-oracle-2024-04-05-001dcbfd`, `cf-award-cabinet-office-oracle-2024-04-30-db54af93`, `cf-award-mod-oracle-2024-05-29-38cc324e`, `cf-award-cabinet-office-oracle-2024-06-24-1986eb38`, `cf-award-university-of-birmingham-oracle-2024-07-18-80721ab9`, `cf-award-university-of-birmingham-oracle-2024-07-19-2b05f1b7`, `cf-award-defra-oracle-2024-08-20-c06f45d0`, `cf-award-care-quality-commission-oracle-2024-10-01-ae793499`, `cf-award-care-quality-commission-oracle-2024-12-02-2b27b0d4`, `cf-award-cabinet-office-oracle-2025-02-06-d225caf3`, `cf-award-cabinet-office-oracle-2025-02-11-99e39732`, `cf-award-ukri-oracle-2025-02-12-9e7bfeaa`, `cf-award-ukri-oracle-2025-02-12-e7a9488f`, `cf-award-defra-oracle-2025-02-28-ac63eb2a`, `cf-award-cabinet-office-oracle-2025-03-08-83bb839b`, `cf-award-cabinet-office-oracle-2025-03-09-88519a47`, `cf-award-home-office-border-force-oracle-2025-08-27-5d2d08ce`, `cf-award-defra-oracle-2025-09-12-b6a2eb5b`, `cf-award-ukri-oracle-2025-10-20-54894653`, `cf-award-defra-oracle-2025-11-19-851d7a23`, `cf-award-home-office-border-force-oracle-2025-11-21-f2407907`, `cf-award-cabinet-office-oracle-2026-01-22-b25f696d`, `cf-award-dhsc-oracle-2026-01-29-49e38774`, `cf-award-home-office-border-force-oracle-2026-02-06-b2f4b1db`, `cf-award-home-office-border-force-oracle-2026-02-06-ec353636`, `cf-award-cabinet-office-oracle-2026-02-18-0d4511f5`, `cf-award-defra-oracle-2026-03-18-99073bd7`, `cf-award-nhs-england-oracle-2026-07-24-56099033`, `cf-award-dhsc-oracle-2026-08-20-6e4bcc54`, `cf-award-ukhsa-oracle-2026-08-27-8805f2d8`
 
 ---
 
-## finding-308: Oxa behaves as a surface factory
+## finding-349: Oxa behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -5552,7 +6290,7 @@ Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-m
 
 ---
 
-## finding-309: Palo Alto Networks behaves as a surface factory
+## finding-350: Palo Alto Networks behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -5570,7 +6308,7 @@ Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-m
 
 ---
 
-## finding-310: Panintelligence behaves as a surface factory
+## finding-351: Panintelligence behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -5588,7 +6326,7 @@ Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-m
 
 ---
 
-## finding-311: Phoenix Court behaves as a surface factory
+## finding-352: Phoenix Court behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -5606,7 +6344,7 @@ Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-m
 
 ---
 
-## finding-312: Plexal behaves as a surface factory
+## finding-353: Pinsent Masons behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -5614,17 +6352,17 @@ Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-m
 
 **Observed**
 
-Plexal appears across 8 surface(s): dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94. Secondary types: none.
+Pinsent Masons appears across 11 surface(s): dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, cf-award-beis-pinsent-masons-2023-04-25-efdf6548, cf-award-dfe-pinsent-masons-2023-08-10-1fa9e216, cf-award-dhsc-pinsent-masons-2023-11-13-ee4bd417, cf-award-home-office-border-force-pinsent-masons-2023-11-15-090cf7d0, cf-award-government-digital-service-pinsent-masons-2024-01-22-7c161a58, cf-award-university-of-birmingham-pinsent-masons-2024-05-23-12bbc5f7, cf-award-ukhsa-pinsent-masons-2025-03-10-a09949d2, cf-award-dsit-pinsent-masons-2025-04-04-a415b225, cf-award-cabinet-office-pinsent-masons-2025-07-01-e9b99faf, cf-award-dsit-pinsent-masons-2026-01-19-0af7e536. Secondary types: none.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`
+Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `cf-award-beis-pinsent-masons-2023-04-25-efdf6548`, `cf-award-dfe-pinsent-masons-2023-08-10-1fa9e216`, `cf-award-dhsc-pinsent-masons-2023-11-13-ee4bd417`, `cf-award-home-office-border-force-pinsent-masons-2023-11-15-090cf7d0`, `cf-award-government-digital-service-pinsent-masons-2024-01-22-7c161a58`, `cf-award-university-of-birmingham-pinsent-masons-2024-05-23-12bbc5f7`, `cf-award-ukhsa-pinsent-masons-2025-03-10-a09949d2`, `cf-award-dsit-pinsent-masons-2025-04-04-a415b225`, `cf-award-cabinet-office-pinsent-masons-2025-07-01-e9b99faf`, `cf-award-dsit-pinsent-masons-2026-01-19-0af7e536`
 
 ---
 
-## finding-313: PwC behaves as a surface factory
+## finding-354: Plexal behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -5632,17 +6370,35 @@ Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-m
 
 **Observed**
 
-PwC appears across 4 surface(s): dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-hmts-ministerial-meetings-january-to-march-2025-68bae311, uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-january-to-march-2026-6a3e3656. Secondary types: none.
+Plexal appears across 12 surface(s): dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, cf-award-dcms-plexal-2023-02-14-7d4ab81b, cf-award-dcms-plexal-2023-06-01-aafbb537, cf-award-dsit-plexal-2025-09-22-a7a22813, cf-award-dsit-plexal-2025-09-29-723d69f0. Secondary types: none.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-hmts-ministerial-meetings-january-to-march-2025-68bae311`, `uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-january-to-march-2026-6a3e3656`
+Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `cf-award-dcms-plexal-2023-02-14-7d4ab81b`, `cf-award-dcms-plexal-2023-06-01-aafbb537`, `cf-award-dsit-plexal-2025-09-22-a7a22813`, `cf-award-dsit-plexal-2025-09-29-723d69f0`
 
 ---
 
-## finding-314: Qualcomm behaves as a surface factory
+## finding-355: PwC behaves as a surface factory
+
+- Type: surface_factory
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+PwC appears across 12 surface(s): dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-hmts-ministerial-meetings-january-to-march-2025-68bae311, uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-january-to-march-2026-6a3e3656, cf-award-nhs-england-pwc-2022-04-28-cffdd06a, cf-award-mod-pwc-2023-03-23-31a51c52, cf-award-city-of-london-pwc-2024-01-18-add14c37, cf-award-university-of-salford-pwc-2024-03-15-cf330315, cf-award-home-office-border-force-pwc-2024-05-13-a716870a, cf-award-dsit-pwc-2025-02-07-cb460d15, cf-award-dfe-pwc-2025-07-30-01e09f05, cf-award-dsit-pwc-2025-11-17-85af4b9e. Secondary types: none.
+
+**Required action**
+
+Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
+
+Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-hmts-ministerial-meetings-january-to-march-2025-68bae311`, `uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-january-to-march-2026-6a3e3656`, `cf-award-nhs-england-pwc-2022-04-28-cffdd06a`, `cf-award-mod-pwc-2023-03-23-31a51c52`, `cf-award-city-of-london-pwc-2024-01-18-add14c37`, `cf-award-university-of-salford-pwc-2024-03-15-cf330315`, `cf-award-home-office-border-force-pwc-2024-05-13-a716870a`, `cf-award-dsit-pwc-2025-02-07-cb460d15`, `cf-award-dfe-pwc-2025-07-30-01e09f05`, `cf-award-dsit-pwc-2025-11-17-85af4b9e`
+
+---
+
+## finding-356: Qualcomm behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -5660,7 +6416,7 @@ Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-m
 
 ---
 
-## finding-315: Quantexa behaves as a surface factory
+## finding-357: Quantexa behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -5668,17 +6424,17 @@ Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-m
 
 **Observed**
 
-Quantexa appears across 13 surface(s): dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-hmts-ministerial-meetings-april-to-june-2025-68d50fe0, uk-ministerial-meetings-hmts-ministerial-meetings-april-to-june-2025-68d50fe0, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5, uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-ministerial-meetings-april-to-june-2-6ab5213d. Secondary types: none.
+Quantexa appears across 14 surface(s): dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-hmts-ministerial-meetings-april-to-june-2025-68d50fe0, uk-ministerial-meetings-hmts-ministerial-meetings-april-to-june-2025-68d50fe0, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5, uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-ministerial-meetings-april-to-june-2-6ab5213d, cf-award-cabinet-office-quantexa-2025-02-28-9705cd41. Secondary types: none.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-hmts-ministerial-meetings-april-to-june-2025-68d50fe0`, `uk-ministerial-meetings-hmts-ministerial-meetings-april-to-june-2025-68d50fe0`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5`, `uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-ministerial-meetings-april-to-june-2-6ab5213d`
+Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-hmts-ministerial-meetings-april-to-june-2025-68d50fe0`, `uk-ministerial-meetings-hmts-ministerial-meetings-april-to-june-2025-68d50fe0`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2025-6a0cb7c5`, `uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-ministerial-meetings-april-to-june-2-6ab5213d`, `cf-award-cabinet-office-quantexa-2025-02-28-9705cd41`
 
 ---
 
-## finding-316: RELX behaves as a surface factory
+## finding-358: RELX behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -5696,7 +6452,7 @@ Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-m
 
 ---
 
-## finding-317: Samsung behaves as a surface factory
+## finding-359: Samsung behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -5704,17 +6460,17 @@ Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-m
 
 **Observed**
 
-Samsung appears across 6 surface(s): dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145. Secondary types: none.
+Samsung appears across 8 surface(s): dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145, cf-award-nhs-england-samsung-2024-01-05-4b76c79e, cf-award-nhs-england-samsung-2025-07-01-cc644418. Secondary types: none.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145`
+Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145`, `cf-award-nhs-england-samsung-2024-01-05-4b76c79e`, `cf-award-nhs-england-samsung-2025-07-01-cc644418`
 
 ---
 
-## finding-318: Siemens behaves as a surface factory
+## finding-360: SAP behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -5722,17 +6478,53 @@ Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-m
 
 **Observed**
 
-Siemens appears across 5 surface(s): dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94. Secondary types: none.
+SAP appears across 4 surface(s): dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, cf-award-ukri-sap-2023-05-16-9dae1d6a, cf-award-city-of-london-sap-2024-03-28-a6045718, cf-award-ukri-sap-2026-03-30-f6b27ac9. Secondary types: none.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`
+Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `cf-award-ukri-sap-2023-05-16-9dae1d6a`, `cf-award-city-of-london-sap-2024-03-28-a6045718`, `cf-award-ukri-sap-2026-03-30-f6b27ac9`
 
 ---
 
-## finding-319: Splunk behaves as a surface factory
+## finding-361: Siemens behaves as a surface factory
+
+- Type: surface_factory
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+Siemens appears across 17 surface(s): dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, cf-award-ukri-siemens-2023-03-23-af72df5e, cf-award-centre-for-process-innovatio-siemens-2023-07-07-0d6665da, cf-award-ukri-siemens-2023-12-19-03128423, cf-award-centre-for-process-innovatio-siemens-2024-02-15-7ab56e5d, cf-award-university-of-birmingham-siemens-2024-04-30-c53f5aa8, cf-award-university-of-birmingham-siemens-2024-07-31-ed4c9101, cf-award-mod-siemens-2024-08-05-bb63b708, cf-award-ukri-siemens-2024-08-22-4d1ee1d1, cf-award-ukhsa-siemens-2024-12-20-5bc5887c, cf-award-centre-for-process-innovatio-siemens-2025-02-17-c19b6f42, cf-award-ukri-siemens-2025-09-19-92df7e0b, cf-award-ukri-siemens-2026-07-17-5b7105b8. Secondary types: none.
+
+**Required action**
+
+Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
+
+Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `cf-award-ukri-siemens-2023-03-23-af72df5e`, `cf-award-centre-for-process-innovatio-siemens-2023-07-07-0d6665da`, `cf-award-ukri-siemens-2023-12-19-03128423`, `cf-award-centre-for-process-innovatio-siemens-2024-02-15-7ab56e5d`, `cf-award-university-of-birmingham-siemens-2024-04-30-c53f5aa8`, `cf-award-university-of-birmingham-siemens-2024-07-31-ed4c9101`, `cf-award-mod-siemens-2024-08-05-bb63b708`, `cf-award-ukri-siemens-2024-08-22-4d1ee1d1`, `cf-award-ukhsa-siemens-2024-12-20-5bc5887c`, `cf-award-centre-for-process-innovatio-siemens-2025-02-17-c19b6f42`, `cf-award-ukri-siemens-2025-09-19-92df7e0b`, `cf-award-ukri-siemens-2026-07-17-5b7105b8`
+
+---
+
+## finding-362: Sopra Steria behaves as a surface factory
+
+- Type: surface_factory
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+Sopra Steria appears across 21 surface(s): dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, cf-award-home-office-border-force-sopra-steria-2022-12-30-85c30c23, cf-award-defra-sopra-steria-2023-01-04-7b2c962a, cf-award-mod-sopra-steria-2023-01-23-143512c8, cf-award-mod-sopra-steria-2023-03-29-4d61c553, cf-award-mod-sopra-steria-2023-03-29-f76862b9, cf-award-home-office-border-force-sopra-steria-2023-04-30-2b9e6af9, cf-award-mod-sopra-steria-2023-05-05-960e9227, cf-award-mod-sopra-steria-2023-07-10-a3ae1a7e, cf-award-defra-sopra-steria-2023-08-01-5248efde, cf-award-mod-sopra-steria-2023-09-11-bb180d81, cf-award-police-digital-service-sopra-steria-2023-09-29-609e4d26, cf-award-mod-sopra-steria-2023-12-21-95e6ddb0, cf-award-mod-sopra-steria-2024-03-31-acb46272, cf-award-dhsc-sopra-steria-2024-04-08-fd19556d, cf-award-home-office-border-force-sopra-steria-2024-05-30-382642b4, cf-award-defra-sopra-steria-2024-12-19-407a1708, cf-award-home-office-border-force-sopra-steria-2024-12-20-f13871ad, cf-award-mod-sopra-steria-2025-03-25-0cc64709, cf-award-home-office-border-force-sopra-steria-2026-03-31-2f99e464, cf-award-mod-sopra-steria-2026-03-31-fc46f9e6. Secondary types: none.
+
+**Required action**
+
+Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
+
+Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `cf-award-home-office-border-force-sopra-steria-2022-12-30-85c30c23`, `cf-award-defra-sopra-steria-2023-01-04-7b2c962a`, `cf-award-mod-sopra-steria-2023-01-23-143512c8`, `cf-award-mod-sopra-steria-2023-03-29-4d61c553`, `cf-award-mod-sopra-steria-2023-03-29-f76862b9`, `cf-award-home-office-border-force-sopra-steria-2023-04-30-2b9e6af9`, `cf-award-mod-sopra-steria-2023-05-05-960e9227`, `cf-award-mod-sopra-steria-2023-07-10-a3ae1a7e`, `cf-award-defra-sopra-steria-2023-08-01-5248efde`, `cf-award-mod-sopra-steria-2023-09-11-bb180d81`, `cf-award-police-digital-service-sopra-steria-2023-09-29-609e4d26`, `cf-award-mod-sopra-steria-2023-12-21-95e6ddb0`, `cf-award-mod-sopra-steria-2024-03-31-acb46272`, `cf-award-dhsc-sopra-steria-2024-04-08-fd19556d`, `cf-award-home-office-border-force-sopra-steria-2024-05-30-382642b4`, `cf-award-defra-sopra-steria-2024-12-19-407a1708`, `cf-award-home-office-border-force-sopra-steria-2024-12-20-f13871ad`, `cf-award-mod-sopra-steria-2025-03-25-0cc64709`, `cf-award-home-office-border-force-sopra-steria-2026-03-31-2f99e464`, `cf-award-mod-sopra-steria-2026-03-31-fc46f9e6`
+
+---
+
+## finding-363: Splunk behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -5750,7 +6542,7 @@ Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-m
 
 ---
 
-## finding-320: Spotify behaves as a surface factory
+## finding-364: Spotify behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -5768,7 +6560,7 @@ Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-m
 
 ---
 
-## finding-321: Tata Consultancy Services behaves as a surface factory
+## finding-365: Tata Consultancy Services behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -5776,17 +6568,17 @@ Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-m
 
 **Observed**
 
-Tata Consultancy Services appears across 3 surface(s): dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe. Secondary types: none.
+Tata Consultancy Services appears across 5 surface(s): dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe, cf-award-dfe-tata-consultancy-services-2023-05-28-67661fae, cf-award-beis-tata-consultancy-services-2023-06-05-5886679d. Secondary types: none.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe`
+Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-65a7a23f`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe`, `cf-award-dfe-tata-consultancy-services-2023-05-28-67661fae`, `cf-award-beis-tata-consultancy-services-2023-06-05-5886679d`
 
 ---
 
-## finding-322: Vodafone behaves as a surface factory
+## finding-366: ThoughtWorks behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -5794,17 +6586,53 @@ Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-m
 
 **Observed**
 
-Vodafone appears across 21 surface(s): dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-home-office-s-ministerial-meetings-april-to-june-2023-652fdded, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145, uk-ministerial-meetings-hmts-ministerial-meetings-october-to-december-2024-685a87ad, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-january-to-march-2025-685d5305, uk-ministerial-meetings-hmts-ministerial-meetings-january-to-march-2025-68bae311, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-cabinet-office-ministerial-meetings-april-to-june-2026-6ab540e5. Secondary types: none.
+ThoughtWorks appears across 4 surface(s): dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, cf-award-government-digital-service-thoughtworks-2023-01-17-c4acab29, cf-award-nhs-england-thoughtworks-2024-07-29-5d8de433, cf-award-government-digital-service-thoughtworks-2024-12-20-2d986381. Secondary types: none.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-home-office-s-ministerial-meetings-april-to-june-2023-652fdded`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145`, `uk-ministerial-meetings-hmts-ministerial-meetings-october-to-december-2024-685a87ad`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-january-to-march-2025-685d5305`, `uk-ministerial-meetings-hmts-ministerial-meetings-january-to-march-2025-68bae311`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-cabinet-office-ministerial-meetings-april-to-june-2026-6ab540e5`
+Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `cf-award-government-digital-service-thoughtworks-2023-01-17-c4acab29`, `cf-award-nhs-england-thoughtworks-2024-07-29-5d8de433`, `cf-award-government-digital-service-thoughtworks-2024-12-20-2d986381`
 
 ---
 
-## finding-323: Wayve behaves as a surface factory
+## finding-367: VMware behaves as a surface factory
+
+- Type: surface_factory
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+VMware appears across 5 surface(s): dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, cf-award-ukhsa-vmware-2022-06-24-db9927af, cf-award-beis-vmware-2023-02-28-76f8c2bf, cf-award-beis-vmware-2023-07-24-3bca3f0e, cf-award-ons-vmware-2024-07-16-d672455f. Secondary types: none.
+
+**Required action**
+
+Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
+
+Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `cf-award-ukhsa-vmware-2022-06-24-db9927af`, `cf-award-beis-vmware-2023-02-28-76f8c2bf`, `cf-award-beis-vmware-2023-07-24-3bca3f0e`, `cf-award-ons-vmware-2024-07-16-d672455f`
+
+---
+
+## finding-368: Vodafone behaves as a surface factory
+
+- Type: surface_factory
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+Vodafone appears across 72 surface(s): dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d, uk-ministerial-meetings-home-office-s-ministerial-meetings-april-to-june-2023-652fdded, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625, uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145, uk-ministerial-meetings-hmts-ministerial-meetings-october-to-december-2024-685a87ad, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c, uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-january-to-march-2025-685d5305, uk-ministerial-meetings-hmts-ministerial-meetings-january-to-march-2025-68bae311, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94, uk-ministerial-meetings-cabinet-office-ministerial-meetings-april-to-june-2026-6ab540e5, cf-award-dcms-vodafone-2021-05-21-5d62a524, cf-award-dhsc-vodafone-2021-09-10-3c1306fe, cf-award-nhs-england-vodafone-2022-02-04-916b498d, cf-award-mod-vodafone-2022-03-28-ed6dec96, cf-award-dfe-vodafone-2022-06-01-d3031a3d, cf-award-mod-vodafone-2022-09-01-0fb287c6, cf-award-mod-vodafone-2022-09-01-8ac4512f, cf-award-fcdo-services-vodafone-2023-01-03-7479eb3b, cf-award-fcdo-services-vodafone-2023-01-03-e1ff837f, cf-award-dfe-vodafone-2023-01-18-2bbe49a9, cf-award-home-office-border-force-vodafone-2023-02-16-493748ba, cf-award-fcdo-services-vodafone-2023-03-06-4de92763, cf-award-fcdo-services-vodafone-2023-03-06-54f5bf87, cf-award-fcdo-services-vodafone-2023-03-06-cd89ea19, cf-award-fcdo-services-vodafone-2023-03-06-de074cc0, cf-award-fcdo-services-vodafone-2023-03-08-b8756530, cf-award-nhs-south-central-and-west-c-vodafone-2023-03-15-add99742, cf-award-home-office-border-force-vodafone-2023-03-28-1c540642, cf-award-care-quality-commission-vodafone-2023-05-18-06b1d3a3, cf-award-mod-vodafone-2023-06-08-29b05eed, cf-award-serious-fraud-office-vodafone-2023-06-25-8cb4b991, cf-award-home-office-border-force-vodafone-2023-10-01-5cc39916, cf-award-defra-vodafone-2024-04-01-bff8e4b6, cf-award-nhs-south-central-and-west-c-vodafone-2024-05-30-d92cfc37, cf-award-cabinet-office-vodafone-2024-06-19-91248f0e, cf-award-home-office-border-force-vodafone-2024-07-01-97924a75, cf-award-home-office-border-force-vodafone-2024-07-01-fae1c6d4, cf-award-defra-vodafone-2024-12-04-4aaa4805, cf-award-peabody-trust-vodafone-2024-12-10-c30e597f, cf-award-ons-vodafone-2024-12-16-bd246488, cf-award-home-office-border-force-vodafone-2025-01-22-52a78918, cf-award-home-office-border-force-vodafone-2025-03-03-522797a1, cf-award-fcdo-services-vodafone-2025-03-30-6c703c8b, cf-award-fcdo-services-vodafone-2025-03-30-d2cad689, cf-award-home-office-border-force-vodafone-2025-04-01-467e7790, cf-award-home-office-border-force-vodafone-2025-05-15-69a46ac7, cf-award-home-office-border-force-vodafone-2025-06-13-1c631bd2, cf-award-care-quality-commission-vodafone-2025-06-20-2f5baa5d, cf-award-cabinet-office-vodafone-2025-07-10-1459bb72, cf-award-nhs-south-central-and-west-c-vodafone-2025-11-14-90ca4607, cf-award-home-office-border-force-vodafone-2025-12-17-70616040, cf-award-serious-fraud-office-vodafone-2026-01-13-d205d027, cf-award-home-office-border-force-vodafone-2026-01-30-20d46882, cf-award-home-office-border-force-vodafone-2026-01-30-ee4303b6, cf-award-defra-vodafone-2026-01-31-d5c8b682, cf-award-home-office-border-force-vodafone-2026-04-01-4a77123e, cf-award-ukhsa-vodafone-2026-05-01-469f4386, cf-award-british-business-bank-vodafone-2026-06-08-170a3b9f, cf-award-home-office-border-force-vodafone-2026-06-11-a2f0d82d, cf-award-home-office-border-force-vodafone-2026-06-23-79a57008, cf-award-police-digital-service-vodafone-2026-10-20-6934d8b6. Secondary types: none.
+
+**Required action**
+
+Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
+
+Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2023-655cac7d`, `uk-ministerial-meetings-home-office-s-ministerial-meetings-april-to-june-2023-652fdded`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2026-6a3e3cbe`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625`, `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2024-679b6625`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145`, `uk-ministerial-meetings-hmts-ministerial-meetings-october-to-december-2024-685a87ad`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2025-688c722c`, `uk-ministerial-meetings-rt-hon-sir-keir-starmer-kcb-kc-mp-meetings-january-to-march-2025-685d5305`, `uk-ministerial-meetings-hmts-ministerial-meetings-january-to-march-2025-68bae311`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2025-68cd4c94`, `uk-ministerial-meetings-cabinet-office-ministerial-meetings-april-to-june-2026-6ab540e5`, `cf-award-dcms-vodafone-2021-05-21-5d62a524`, `cf-award-dhsc-vodafone-2021-09-10-3c1306fe`, `cf-award-nhs-england-vodafone-2022-02-04-916b498d`, `cf-award-mod-vodafone-2022-03-28-ed6dec96`, `cf-award-dfe-vodafone-2022-06-01-d3031a3d`, `cf-award-mod-vodafone-2022-09-01-0fb287c6`, `cf-award-mod-vodafone-2022-09-01-8ac4512f`, `cf-award-fcdo-services-vodafone-2023-01-03-7479eb3b`, `cf-award-fcdo-services-vodafone-2023-01-03-e1ff837f`, `cf-award-dfe-vodafone-2023-01-18-2bbe49a9`, `cf-award-home-office-border-force-vodafone-2023-02-16-493748ba`, `cf-award-fcdo-services-vodafone-2023-03-06-4de92763`, `cf-award-fcdo-services-vodafone-2023-03-06-54f5bf87`, `cf-award-fcdo-services-vodafone-2023-03-06-cd89ea19`, `cf-award-fcdo-services-vodafone-2023-03-06-de074cc0`, `cf-award-fcdo-services-vodafone-2023-03-08-b8756530`, `cf-award-nhs-south-central-and-west-c-vodafone-2023-03-15-add99742`, `cf-award-home-office-border-force-vodafone-2023-03-28-1c540642`, `cf-award-care-quality-commission-vodafone-2023-05-18-06b1d3a3`, `cf-award-mod-vodafone-2023-06-08-29b05eed`, `cf-award-serious-fraud-office-vodafone-2023-06-25-8cb4b991`, `cf-award-home-office-border-force-vodafone-2023-10-01-5cc39916`, `cf-award-defra-vodafone-2024-04-01-bff8e4b6`, `cf-award-nhs-south-central-and-west-c-vodafone-2024-05-30-d92cfc37`, `cf-award-cabinet-office-vodafone-2024-06-19-91248f0e`, `cf-award-home-office-border-force-vodafone-2024-07-01-97924a75`, `cf-award-home-office-border-force-vodafone-2024-07-01-fae1c6d4`, `cf-award-defra-vodafone-2024-12-04-4aaa4805`, `cf-award-peabody-trust-vodafone-2024-12-10-c30e597f`, `cf-award-ons-vodafone-2024-12-16-bd246488`, `cf-award-home-office-border-force-vodafone-2025-01-22-52a78918`, `cf-award-home-office-border-force-vodafone-2025-03-03-522797a1`, `cf-award-fcdo-services-vodafone-2025-03-30-6c703c8b`, `cf-award-fcdo-services-vodafone-2025-03-30-d2cad689`, `cf-award-home-office-border-force-vodafone-2025-04-01-467e7790`, `cf-award-home-office-border-force-vodafone-2025-05-15-69a46ac7`, `cf-award-home-office-border-force-vodafone-2025-06-13-1c631bd2`, `cf-award-care-quality-commission-vodafone-2025-06-20-2f5baa5d`, `cf-award-cabinet-office-vodafone-2025-07-10-1459bb72`, `cf-award-nhs-south-central-and-west-c-vodafone-2025-11-14-90ca4607`, `cf-award-home-office-border-force-vodafone-2025-12-17-70616040`, `cf-award-serious-fraud-office-vodafone-2026-01-13-d205d027`, `cf-award-home-office-border-force-vodafone-2026-01-30-20d46882`, `cf-award-home-office-border-force-vodafone-2026-01-30-ee4303b6`, `cf-award-defra-vodafone-2026-01-31-d5c8b682`, `cf-award-home-office-border-force-vodafone-2026-04-01-4a77123e`, `cf-award-ukhsa-vodafone-2026-05-01-469f4386`, `cf-award-british-business-bank-vodafone-2026-06-08-170a3b9f`, `cf-award-home-office-border-force-vodafone-2026-06-11-a2f0d82d`, `cf-award-home-office-border-force-vodafone-2026-06-23-79a57008`, `cf-award-police-digital-service-vodafone-2026-10-20-6934d8b6`
+
+---
+
+## finding-369: Wayve behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -5822,7 +6650,7 @@ Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-m
 
 ---
 
-## finding-324: Workday behaves as a surface factory
+## finding-370: Workday behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -5830,17 +6658,17 @@ Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-m
 
 **Observed**
 
-Workday appears across 3 surface(s): dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145. Secondary types: none.
+Workday appears across 13 surface(s): dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145, cf-award-mod-workday-2022-01-01-cf785913, cf-award-mod-workday-2022-05-24-9b2304a9, cf-award-mod-workday-2022-11-22-06844f60, cf-award-dfe-workday-2023-02-03-2c2f020b, cf-award-cabinet-office-workday-2023-03-23-bb572323, cf-award-mod-workday-2023-05-18-a367c64b, cf-award-mod-workday-2023-08-01-f77fe79d, cf-award-mod-workday-2024-06-13-1fbfd9ea, cf-award-dsit-workday-2024-09-04-c2820e8e, cf-award-british-business-bank-workday-2026-09-01-0d84aaec. Secondary types: none.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145`
+Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2023-65e7227b`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145`, `cf-award-mod-workday-2022-01-01-cf785913`, `cf-award-mod-workday-2022-05-24-9b2304a9`, `cf-award-mod-workday-2022-11-22-06844f60`, `cf-award-dfe-workday-2023-02-03-2c2f020b`, `cf-award-cabinet-office-workday-2023-03-23-bb572323`, `cf-award-mod-workday-2023-05-18-a367c64b`, `cf-award-mod-workday-2023-08-01-f77fe79d`, `cf-award-mod-workday-2024-06-13-1fbfd9ea`, `cf-award-dsit-workday-2024-09-04-c2820e8e`, `cf-award-british-business-bank-workday-2026-09-01-0d84aaec`
 
 ---
 
-## finding-325: Yoti behaves as a surface factory
+## finding-371: Yoti behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -5848,17 +6676,35 @@ Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-m
 
 **Observed**
 
-Yoti appears across 5 surface(s): dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145, uk-ministerial-meetings-cabinet-office-ministers-meetings-october-to-december-2025-69c29a18. Secondary types: none.
+Yoti appears across 7 surface(s): dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b, uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef, uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145, uk-ministerial-meetings-cabinet-office-ministers-meetings-october-to-december-2025-69c29a18, cf-award-home-office-border-force-yoti-2023-02-21-5cf69fd6, cf-award-nhs-england-yoti-2024-03-28-28d20a06. Secondary types: none.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145`, `uk-ministerial-meetings-cabinet-office-ministers-meetings-october-to-december-2025-69c29a18`
+Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-ministerial-meetings-dsit-ministerial-meetings-january-to-march-2024-6696693b`, `uk-ministerial-meetings-dsit-ministerial-meetings-april-to-june-2024-672397ef`, `uk-ministerial-meetings-dsit-ministerial-meetings-october-to-december-2024-67e54145`, `uk-ministerial-meetings-cabinet-office-ministers-meetings-october-to-december-2025-69c29a18`, `cf-award-home-office-border-force-yoti-2023-02-21-5cf69fd6`, `cf-award-nhs-england-yoti-2024-03-28-28d20a06`
 
 ---
 
-## finding-326: Asana, Inc. behaves as a surface factory
+## finding-372: Zurich Insurance behaves as a surface factory
+
+- Type: surface_factory
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+Zurich Insurance appears across 3 surface(s): dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names, uk-ministerial-meetings-hmts-ministerial-meetings-october-to-december-2025-69bd3123, cf-award-ukhsa-zurich-insurance-2023-03-31-cf33cd5d. Secondary types: none.
+
+**Required action**
+
+Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
+
+Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-ministerial-meetings-hmts-ministerial-meetings-october-to-december-2025-69bd3123`, `cf-award-ukhsa-zurich-insurance-2023-03-31-cf33cd5d`
+
+---
+
+## finding-373: Asana, Inc. behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -5876,7 +6722,7 @@ Refs: `sec-form-d-0001477720-09-000001`, `sec-form-d-0001477720-12-000001`, `sec
 
 ---
 
-## finding-327: Blue Planet Training Inc behaves as a surface factory
+## finding-374: Blue Planet Training Inc behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -5894,7 +6740,7 @@ Refs: `sec-form-d-0001674474-21-000003`, `sec-form-d-0001674474-23-000001`, `sec
 
 ---
 
-## finding-328: Captricity, Inc. behaves as a surface factory
+## finding-375: Captricity, Inc. behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -5912,7 +6758,7 @@ Refs: `sec-form-d-0001578182-13-000001`, `sec-form-d-0001578182-14-000002`, `sec
 
 ---
 
-## finding-329: CreationsVC SPV 5, LLC behaves as a surface factory
+## finding-376: CreationsVC SPV 5, LLC behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -5930,7 +6776,7 @@ Refs: `sec-form-d-0001393725-24-000030`, `sec-form-d-0001393725-25-000016`, `sec
 
 ---
 
-## finding-330: FireEye Inc behaves as a surface factory
+## finding-377: FireEye Inc behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -5948,7 +6794,7 @@ Refs: `sec-form-d-0001370880-13-000003`, `sec-form-d-0001181431-13-048985`, `sec
 
 ---
 
-## finding-331: Mulberry Health Inc. behaves as a surface factory
+## finding-378: Mulberry Health Inc. behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -5966,7 +6812,7 @@ Refs: `sec-form-d-0001568651-13-000002`, `sec-form-d-0001568651-14-000001`, `sec
 
 ---
 
-## finding-332: NUMBER HOLDINGS, INC. behaves as a surface factory
+## finding-379: NUMBER HOLDINGS, INC. behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -5984,7 +6830,7 @@ Refs: `sec-form-d-0001104659-19-042678`, `sec-form-d-0001104659-20-000324`, `sec
 
 ---
 
-## finding-333: Nutanix, Inc. behaves as a surface factory
+## finding-380: Nutanix, Inc. behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -6002,7 +6848,7 @@ Refs: `sec-form-d-0001618732-14-000001`, `sec-form-d-0001618732-16-000002`, `sec
 
 ---
 
-## finding-334: ROBOTEX INC behaves as a surface factory
+## finding-381: ROBOTEX INC behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -6020,7 +6866,7 @@ Refs: `sec-form-d-0001444133-10-000004`, `sec-form-d-0001444133-10-000005`, `sec
 
 ---
 
-## finding-335: TESLA MOTORS INC behaves as a surface factory
+## finding-382: TESLA MOTORS INC behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -6038,7 +6884,7 @@ Refs: `sec-form-d-0001318605-09-000004`, `sec-form-d-0001318605-09-000005`, `sec
 
 ---
 
-## finding-336: All Weather@12, LLC behaves as a surface factory
+## finding-383: All Weather@12, LLC behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -6056,7 +6902,7 @@ Refs: `sec-form-d-0001536979-23-000002`, `sec-form-d-0001536979-24-000002`, `sec
 
 ---
 
-## finding-337: All Weather@12, Ltd. behaves as a surface factory
+## finding-384: All Weather@12, Ltd. behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -6074,7 +6920,7 @@ Refs: `sec-form-d-0001536979-23-000003`, `sec-form-d-0001536979-24-000001`, `sec
 
 ---
 
-## finding-338: All Weather Portfolio, LLC behaves as a surface factory
+## finding-385: All Weather Portfolio, LLC behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -6092,7 +6938,7 @@ Refs: `sec-form-d-0001536979-23-000005`, `sec-form-d-0001348327-24-000001`, `sec
 
 ---
 
-## finding-339: All Weather Portfolio Ltd behaves as a surface factory
+## finding-386: All Weather Portfolio Ltd behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -6110,7 +6956,7 @@ Refs: `sec-form-d-0001536979-23-000006`, `sec-form-d-0001536978-24-000001`, `sec
 
 ---
 
-## finding-340: BridgeEdU, Inc. behaves as a surface factory
+## finding-387: BridgeEdU, Inc. behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -6128,7 +6974,7 @@ Refs: `sec-form-d-0001615866-14-000002`, `sec-form-d-0001615866-16-000001`, `sec
 
 ---
 
-## finding-341: Bridgewater AIA Labs Macro Fund (CIC) II, LP behaves as a surface factory
+## finding-388: Bridgewater AIA Labs Macro Fund (CIC) II, LP behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -6146,7 +6992,7 @@ Refs: `sec-form-d-0002022810-24-000003`, `sec-form-d-0000905148-25-001949`, `sec
 
 ---
 
-## finding-342: Bridgewater AIA Labs Macro Fund (CIC), LP behaves as a surface factory
+## finding-389: Bridgewater AIA Labs Macro Fund (CIC), LP behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -6164,7 +7010,7 @@ Refs: `sec-form-d-0002019328-24-000003`, `sec-form-d-0000905148-25-001945`, `sec
 
 ---
 
-## finding-343: Bridgewater AIA Labs Macro Fund (CIP) II, LP behaves as a surface factory
+## finding-390: Bridgewater AIA Labs Macro Fund (CIP) II, LP behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -6182,7 +7028,7 @@ Refs: `sec-form-d-0002022810-24-000001`, `sec-form-d-0000905148-25-001948`, `sec
 
 ---
 
-## finding-344: Bridgewater AIA Labs Macro Fund (CIP), LP behaves as a surface factory
+## finding-391: Bridgewater AIA Labs Macro Fund (CIP), LP behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -6200,7 +7046,7 @@ Refs: `sec-form-d-0002019328-24-000002`, `sec-form-d-0000905148-25-001950`, `sec
 
 ---
 
-## finding-345: Bridgewater AIA Labs Macro Fund (DE) II, LP behaves as a surface factory
+## finding-392: Bridgewater AIA Labs Macro Fund (DE) II, LP behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -6218,7 +7064,7 @@ Refs: `sec-form-d-0002022810-24-000002`, `sec-form-d-0000905148-25-001947`, `sec
 
 ---
 
-## finding-346: Bridgewater AIA Labs Macro Fund (DE), LP behaves as a surface factory
+## finding-393: Bridgewater AIA Labs Macro Fund (DE), LP behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -6236,7 +7082,7 @@ Refs: `sec-form-d-0002019328-24-000001`, `sec-form-d-0000905148-25-001946`, `sec
 
 ---
 
-## finding-347: Bridgewater All Weather China, Ltd. behaves as a surface factory
+## finding-394: Bridgewater All Weather China, Ltd. behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -6254,7 +7100,7 @@ Refs: `sec-form-d-0001536979-23-000007`, `sec-form-d-0001719799-24-000001`, `sec
 
 ---
 
-## finding-348: Bridgewater All Weather Portfolio II@15, LLC behaves as a surface factory
+## finding-395: Bridgewater All Weather Portfolio II@15, LLC behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -6272,7 +7118,7 @@ Refs: `sec-form-d-0001536979-23-000010`, `sec-form-d-0001787194-24-000001`, `sec
 
 ---
 
-## finding-349: Bridgewater All Weather Portfolio II, LLC behaves as a surface factory
+## finding-396: Bridgewater All Weather Portfolio II, LLC behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -6290,7 +7136,7 @@ Refs: `sec-form-d-0001536979-23-000008`, `sec-form-d-0001543117-24-000001`, `sec
 
 ---
 
-## finding-350: Bridgewater All Weather Portfolio II, Ltd. behaves as a surface factory
+## finding-397: Bridgewater All Weather Portfolio II, Ltd. behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -6308,7 +7154,7 @@ Refs: `sec-form-d-0001536979-23-000009`, `sec-form-d-0001536981-24-000001`, `sec
 
 ---
 
-## finding-351: Bridgewater All Weather Portfolio III, Ltd. behaves as a surface factory
+## finding-398: Bridgewater All Weather Portfolio III, Ltd. behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -6326,7 +7172,7 @@ Refs: `sec-form-d-0001536979-23-000011`, `sec-form-d-0001536998-24-000001`, `sec
 
 ---
 
-## finding-352: Bridgewater Asia Total Return Fund I, Ltd. behaves as a surface factory
+## finding-399: Bridgewater Asia Total Return Fund I, Ltd. behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -6344,7 +7190,7 @@ Refs: `sec-form-d-0001868503-23-000010`, `sec-form-d-0001990468-24-000001`, `sec
 
 ---
 
-## finding-353: Bridgewater Defensive Alpha Fund, LLC behaves as a surface factory
+## finding-400: Bridgewater Defensive Alpha Fund, LLC behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -6362,7 +7208,7 @@ Refs: `sec-form-d-0001536982-23-000006`, `sec-form-d-0001935895-24-000001`, `sec
 
 ---
 
-## finding-354: Bridgewater Defensive Alpha Fund, Ltd. behaves as a surface factory
+## finding-401: Bridgewater Defensive Alpha Fund, Ltd. behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -6380,7 +7226,7 @@ Refs: `sec-form-d-0001536982-23-000005`, `sec-form-d-0001936225-24-000001`, `sec
 
 ---
 
-## finding-355: Bridgewater Dynamic Global Assets Fund (CIC), LP behaves as a surface factory
+## finding-402: Bridgewater Dynamic Global Assets Fund (CIC), LP behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -6398,7 +7244,7 @@ Refs: `sec-form-d-0002051597-25-000003`, `sec-form-d-0000905148-26-000238`, `sec
 
 ---
 
-## finding-356: Bridgewater Implementation Fund III, Ltd. behaves as a surface factory
+## finding-403: Bridgewater Implementation Fund III, Ltd. behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -6416,7 +7262,7 @@ Refs: `sec-form-d-0001536979-23-000012`, `sec-form-d-0001756019-24-000001`, `sec
 
 ---
 
-## finding-357: Bridgewater Pure Alpha Fund II, LLC behaves as a surface factory
+## finding-404: Bridgewater Pure Alpha Fund II, LLC behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -6434,7 +7280,7 @@ Refs: `sec-form-d-0001536982-23-000002`, `sec-form-d-0001536982-24-000001`, `sec
 
 ---
 
-## finding-358: Bridgewater Pure Alpha Fund II, Ltd. behaves as a surface factory
+## finding-405: Bridgewater Pure Alpha Fund II, Ltd. behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -6452,7 +7298,7 @@ Refs: `sec-form-d-0001536982-23-000007`, `sec-form-d-0001536983-24-000001`, `sec
 
 ---
 
-## finding-359: Bridgewater Pure Alpha Fund IV (DE), LP behaves as a surface factory
+## finding-406: Bridgewater Pure Alpha Fund IV (DE), LP behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -6470,7 +7316,7 @@ Refs: `sec-form-d-0002058151-25-000001`, `sec-form-d-0000905148-26-000233`, `sec
 
 ---
 
-## finding-360: Bridgewater Pure Alpha Funds Ltd. behaves as a surface factory
+## finding-407: Bridgewater Pure Alpha Funds Ltd. behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -6488,7 +7334,7 @@ Refs: `sec-form-d-0001536982-23-000008`, `sec-form-d-0001536984-24-000001`, `sec
 
 ---
 
-## finding-361: Bridgewater Pure Alpha Trading Company, Ltd. behaves as a surface factory
+## finding-408: Bridgewater Pure Alpha Trading Company, Ltd. behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -6506,7 +7352,7 @@ Refs: `sec-form-d-0001868503-23-000008`, `sec-form-d-0001536986-24-000001`, `sec
 
 ---
 
-## finding-362: BW-M PA 24, Ltd. behaves as a surface factory
+## finding-409: BW-M PA 24, Ltd. behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -6524,7 +7370,7 @@ Refs: `sec-form-d-0001868503-23-000009`, `sec-form-d-0001882981-24-000001`, `sec
 
 ---
 
-## finding-363: Clarium Capital Fund Ltd. behaves as a surface factory
+## finding-410: Clarium Capital Fund Ltd. behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -6542,7 +7388,7 @@ Refs: `sec-form-d-0001496613-10-000001`, `sec-form-d-0001496613-11-000001`, `sec
 
 ---
 
-## finding-364: CLARIUM CAPITAL LLC behaves as a surface factory
+## finding-411: CLARIUM CAPITAL LLC behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -6560,7 +7406,7 @@ Refs: `sec-form-d-0001448746-10-000004`, `sec-form-d-0001448746-11-000001`, `sec
 
 ---
 
-## finding-365: Deepgram, Inc. behaves as a surface factory
+## finding-412: Deepgram, Inc. behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -6578,7 +7424,7 @@ Refs: `sec-form-d-0001790777-21-000001`, `sec-form-d-0001790777-21-000002`, `sec
 
 ---
 
-## finding-366: Duolingo, Inc. behaves as a surface factory
+## finding-413: Duolingo, Inc. behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -6596,7 +7442,7 @@ Refs: `sec-form-d-0001562088-12-000001`, `sec-form-d-0001140361-17-035174`, `sec
 
 ---
 
-## finding-367: FOUNDERS FUND III LP behaves as a surface factory
+## finding-414: FOUNDERS FUND III LP behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -6614,7 +7460,7 @@ Refs: `sec-form-d-0001288320-10-000004`, `sec-form-d-0001288320-10-000005`, `sec
 
 ---
 
-## finding-368: Galaxy Bitcoin Fund LP behaves as a surface factory
+## finding-415: Galaxy Bitcoin Fund LP behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -6632,7 +7478,7 @@ Refs: `sec-form-d-0000950103-19-016237`, `sec-form-d-0000950103-20-022695`, `sec
 
 ---
 
-## finding-369: Galaxy Bitcoin Liquidity Fund, Ltd. behaves as a surface factory
+## finding-416: Galaxy Bitcoin Liquidity Fund, Ltd. behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -6650,7 +7496,7 @@ Refs: `sec-form-d-0001872935-21-000002`, `sec-form-d-0001873519-22-000002`, `sec
 
 ---
 
-## finding-370: Galaxy Crypto Index Fund, L.P. behaves as a surface factory
+## finding-417: Galaxy Crypto Index Fund, L.P. behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -6668,7 +7514,7 @@ Refs: `sec-form-d-0000950103-20-014823`, `sec-form-d-0001746733-21-000004`, `sec
 
 ---
 
-## finding-371: Galaxy Crypto Index Offshore Fund, Ltd. behaves as a surface factory
+## finding-418: Galaxy Crypto Index Offshore Fund, Ltd. behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -6686,7 +7532,7 @@ Refs: `sec-form-d-0000950103-20-017608`, `sec-form-d-0001749818-21-000004`, `sec
 
 ---
 
-## finding-372: Galaxy Digital Holdings Ltd. behaves as a surface factory
+## finding-419: Galaxy Digital Holdings Ltd. behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -6704,7 +7550,7 @@ Refs: `sec-form-d-0001405064-20-000004`, `sec-form-d-0001405064-20-000005`, `sec
 
 ---
 
-## finding-373: Galaxy Ethereum Liquidity Fund, Ltd. behaves as a surface factory
+## finding-420: Galaxy Ethereum Liquidity Fund, Ltd. behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -6722,7 +7568,7 @@ Refs: `sec-form-d-0001872935-21-000004`, `sec-form-d-0001872896-22-000002`, `sec
 
 ---
 
-## finding-374: Galaxy Institutional Bitcoin Fund LP behaves as a surface factory
+## finding-421: Galaxy Institutional Bitcoin Fund LP behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -6740,7 +7586,7 @@ Refs: `sec-form-d-0000950103-19-016233`, `sec-form-d-0000950103-20-023003`, `sec
 
 ---
 
-## finding-375: Galaxy Institutional Bitcoin Fund, Ltd. behaves as a surface factory
+## finding-422: Galaxy Institutional Bitcoin Fund, Ltd. behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -6758,7 +7604,7 @@ Refs: `sec-form-d-0000950103-19-016234`, `sec-form-d-0000950103-20-022983`, `sec
 
 ---
 
-## finding-376: Galaxy Institutional Ethereum Fund, LP behaves as a surface factory
+## finding-423: Galaxy Institutional Ethereum Fund, LP behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -6776,7 +7622,7 @@ Refs: `sec-form-d-0001848662-21-000001`, `sec-form-d-0001848662-22-000002`, `sec
 
 ---
 
-## finding-377: Galaxy Institutional Ethereum Fund, LTD behaves as a surface factory
+## finding-424: Galaxy Institutional Ethereum Fund, LTD behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -6794,7 +7640,7 @@ Refs: `sec-form-d-0001848660-21-000001`, `sec-form-d-0001848660-22-000002`, `sec
 
 ---
 
-## finding-378: Galaxy Liquid Crypto Fund LP behaves as a surface factory
+## finding-425: Galaxy Liquid Crypto Fund LP behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -6812,7 +7658,7 @@ Refs: `sec-form-d-0001848662-24-000003`, `sec-form-d-0001938194-24-000002`, `sec
 
 ---
 
-## finding-379: Galaxy Liquid Crypto Fund, Ltd behaves as a surface factory
+## finding-426: Galaxy Liquid Crypto Fund, Ltd behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -6830,7 +7676,7 @@ Refs: `sec-form-d-0001848662-24-000004`, `sec-form-d-0001942253-24-000002`, `sec
 
 ---
 
-## finding-380: INTUIT INC behaves as a surface factory
+## finding-427: INTUIT INC behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -6848,7 +7694,7 @@ Refs: `sec-form-d-0000896878-11-000001`, `uk-ministerial-meetings-dsit-ministeri
 
 ---
 
-## finding-381: Key Square Partners II LP behaves as a surface factory
+## finding-428: Key Square Partners II LP behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -6866,7 +7712,7 @@ Refs: `sec-form-d-0000950142-16-003716`, `sec-form-d-0000950142-17-001023`, `sec
 
 ---
 
-## finding-382: Key Square Partners LP behaves as a surface factory
+## finding-429: Key Square Partners LP behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -6884,7 +7730,7 @@ Refs: `sec-form-d-0000950142-16-003200`, `sec-form-d-0000950142-17-000444`, `sec
 
 ---
 
-## finding-383: KKR Asian Fund II ESC L.P. behaves as a surface factory
+## finding-430: KKR Asian Fund II ESC L.P. behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -6902,7 +7748,7 @@ Refs: `sec-form-d-0001580285-13-000001`, `sec-form-d-0001580285-14-000001`, `sec
 
 ---
 
-## finding-384: KKR Asian Fund II L.P. behaves as a surface factory
+## finding-431: KKR Asian Fund II L.P. behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -6920,7 +7766,7 @@ Refs: `sec-form-d-0001552900-12-000001`, `sec-form-d-0001552900-12-000003`, `sec
 
 ---
 
-## finding-385: KKR Asian Fund II SBS L.P. behaves as a surface factory
+## finding-432: KKR Asian Fund II SBS L.P. behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -6938,7 +7784,7 @@ Refs: `sec-form-d-0001580285-13-000002`, `sec-form-d-0001580288-14-000001`, `sec
 
 ---
 
-## finding-386: Lightspeed Opportunity Fund III, L.P. behaves as a surface factory
+## finding-433: Lightspeed Opportunity Fund III, L.P. behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -6956,7 +7802,7 @@ Refs: `sec-form-d-0000950103-24-017668`, `sec-form-d-0000950103-25-011587`, `sec
 
 ---
 
-## finding-387: LIGHTSPEED VENTURE PARTNERS SELECT III, L.P. behaves as a surface factory
+## finding-434: LIGHTSPEED VENTURE PARTNERS SELECT III, L.P. behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -6974,7 +7820,7 @@ Refs: `sec-form-d-0001735240-18-000001`, `sec-form-d-0001735253-18-000001`, `sec
 
 ---
 
-## finding-388: Lightspeed Venture Partners Select VI, L.P. behaves as a surface factory
+## finding-435: Lightspeed Venture Partners Select VI, L.P. behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -6992,7 +7838,7 @@ Refs: `sec-form-d-0000950103-24-017669`, `sec-form-d-0000950103-25-011589`, `sec
 
 ---
 
-## finding-389: Lightspeed Venture Partners XV-A (Inception), L.P. behaves as a surface factory
+## finding-436: Lightspeed Venture Partners XV-A (Inception), L.P. behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -7010,7 +7856,7 @@ Refs: `sec-form-d-0000950103-24-017664`, `sec-form-d-0000950103-25-011586`, `sec
 
 ---
 
-## finding-390: Lightspeed Venture Partners XV-B (Ignite), L.P. behaves as a surface factory
+## finding-437: Lightspeed Venture Partners XV-B (Ignite), L.P. behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -7028,7 +7874,7 @@ Refs: `sec-form-d-0000950103-24-017666`, `sec-form-d-0000950103-25-011588`, `sec
 
 ---
 
-## finding-391: Mercury Technologies, Inc. behaves as a surface factory
+## finding-438: Mercury Technologies, Inc. behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -7046,7 +7892,7 @@ Refs: `sec-form-d-0001719932-17-000001`, `sec-form-d-0001719932-19-000002`, `sec
 
 ---
 
-## finding-392: Neuralink Corp. behaves as a surface factory
+## finding-439: Neuralink Corp. behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -7064,7 +7910,7 @@ Refs: `sec-form-d-0001708503-21-000002`, `sec-form-d-0001708503-23-000001`, `sec
 
 ---
 
-## finding-393: Saltbox CRA Fund, L.P. behaves as a surface factory
+## finding-440: Saltbox CRA Fund, L.P. behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -7082,7 +7928,7 @@ Refs: `sec-form-d-0000898432-17-001293`, `sec-form-d-0001748316-18-000010`, `sec
 
 ---
 
-## finding-394: SALTBOX PARTNERS FUND LP behaves as a surface factory
+## finding-441: SALTBOX PARTNERS FUND LP behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -7100,7 +7946,7 @@ Refs: `sec-form-d-0001625257-16-000229`, `sec-form-d-0000898432-17-001284`, `sec
 
 ---
 
-## finding-395: TEACHERS INSURANCE & ANNUITY ASSOCIATION OF AMERICA behaves as a surface factory
+## finding-442: TEACHERS INSURANCE & ANNUITY ASSOCIATION OF AMERICA behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -7118,7 +7964,7 @@ Refs: `sec-form-d-0000930413-22-000115`, `sec-form-d-0000930413-23-000173`, `sec
 
 ---
 
-## finding-396: Uber Technologies, Inc behaves as a surface factory
+## finding-443: Uber Technologies, Inc behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -7136,7 +7982,7 @@ Refs: `sec-form-d-0001543151-14-000001`, `sec-form-d-0001543151-15-000001`, `sec
 
 ---
 
-## finding-397: We Co. behaves as a surface factory
+## finding-444: We Co. behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -7154,7 +8000,7 @@ Refs: `sec-form-d-0000950172-19-000098`, `sec-form-d-0000950172-19-000099`, `sec
 
 ---
 
-## finding-398: WeWork Companies Inc. behaves as a surface factory
+## finding-445: WeWork Companies Inc. behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -7172,7 +8018,7 @@ Refs: `sec-form-d-0001533523-15-000003`, `sec-form-d-0000950172-18-000061`, `sec
 
 ---
 
-## finding-399: Anthropic Long-Term Benefit Trust behaves as a surface factory
+## finding-446: Anthropic Long-Term Benefit Trust behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -7190,7 +8036,7 @@ Refs: `anthropic-long-term-benefit-trust-initial-trustees-2023-09-19`, `anthropi
 
 ---
 
-## finding-400: Inherent Laboratories Ltd behaves as a surface factory
+## finding-447: Inherent Laboratories Ltd behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -7208,7 +8054,7 @@ Refs: `inherent-laboratories-ltd-director-tantum-collins-2026-01-16`, `inherent-
 
 ---
 
-## finding-401: Matt Clifford shows recurring surface logic
+## finding-448: Matt Clifford shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -7226,7 +8072,7 @@ Refs: `faculty-science-director-shareholder-overlap-2024-10-10`, `ai-opportuniti
 
 ---
 
-## finding-402: Dr. Ben Warner shows recurring surface logic
+## finding-449: Dr. Ben Warner shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: high
@@ -7244,7 +8090,7 @@ Refs: `ben-warner-no10-digital-data-role-observation-2020-2021`, `faculty-scienc
 
 ---
 
-## finding-403: Dr. Marc Warner shows recurring surface logic
+## finding-450: Dr. Marc Warner shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -7262,7 +8108,7 @@ Refs: `faculty-science-officer-employee-overlap-2018-01-24`, `faculty-science-di
 
 ---
 
-## finding-404: Alex Cooper shows recurring surface logic
+## finding-451: Alex Cooper shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -7280,7 +8126,7 @@ Refs: `electric-twin-incorporation-2023-09-28`, `electric-twin-alex-cooper-direc
 
 ---
 
-## finding-405: Sir Simon Case / Lord Case shows recurring surface logic
+## finding-452: Sir Simon Case / Lord Case shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -7298,7 +8144,7 @@ Refs: `electric-twin-ethics-board-2026`, `simon-case-cabinet-secretary-2020-2024
 
 ---
 
-## finding-406: Dominic Cummings shows recurring surface logic
+## finding-453: Dominic Cummings shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -7316,7 +8162,7 @@ Refs: `vote-leave-data-science-2016`, `ben-warner-cummings-shafi-contain-delay-e
 
 ---
 
-## finding-407: Saul Klein shows recurring surface logic
+## finding-454: Saul Klein shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -7334,7 +8180,7 @@ Refs: `faculty-science-officer-employee-overlap-2018-01-24`, `faculty-science-di
 
 ---
 
-## finding-408: Ian Hogarth shows recurring surface logic
+## finding-455: Ian Hogarth shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -7352,7 +8198,7 @@ Refs: `frontier-ai-taskforce-faculty-contract-2023-10-18`, `sec-form-d-000141952
 
 ---
 
-## finding-409: Marc Andreessen shows recurring surface logic
+## finding-456: Marc Andreessen shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -7370,7 +8216,7 @@ Refs: `electric-twin-seed-round-2026-02-11`, `a16z-american-dynamism-summit-2024
 
 ---
 
-## finding-410: Tom Shinner shows recurring surface logic
+## finding-457: Tom Shinner shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -7388,7 +8234,7 @@ Refs: `electric-twin-seed-round-2026-02-11`, `sec-form-d-0000929638-26-000755`, 
 
 ---
 
-## finding-411: Peter Thiel shows recurring surface logic
+## finding-458: Peter Thiel shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -7406,7 +8252,7 @@ Refs: `dialog-leadership-role-observations-2026-06-16`, `sec-form-d-0001321655-1
 
 ---
 
-## finding-412: Joe Lonsdale shows recurring surface logic
+## finding-459: Joe Lonsdale shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -7424,7 +8270,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `vehicle-control-8vc`, `veh
 
 ---
 
-## finding-413: Scott Bessent shows recurring surface logic
+## finding-460: Scott Bessent shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -7442,7 +8288,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `sec-form-d-0000950142-16-0
 
 ---
 
-## finding-414: Elon Musk shows recurring surface logic
+## finding-461: Elon Musk shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -7460,7 +8306,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `sec-form-d-0001181412-09-0
 
 ---
 
-## finding-415: Reid Hoffman shows recurring surface logic
+## finding-462: Reid Hoffman shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -7478,7 +8324,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `sec-form-d-0001209191-18-0
 
 ---
 
-## finding-416: Wes Moore shows recurring surface logic
+## finding-463: Wes Moore shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -7496,7 +8342,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `a16z-american-dynamism-sum
 
 ---
 
-## finding-417: Shivon Zilis shows recurring surface logic
+## finding-464: Shivon Zilis shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -7514,7 +8360,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `sec-form-d-0001675769-23-0
 
 ---
 
-## finding-418: Jonathan Ross shows recurring surface logic
+## finding-465: Jonathan Ross shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -7532,7 +8378,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `sec-form-d-0001686725-16-0
 
 ---
 
-## finding-419: Scott Stephenson shows recurring surface logic
+## finding-466: Scott Stephenson shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -7550,7 +8396,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `sec-form-d-0001790777-21-0
 
 ---
 
-## finding-420: Adam D'Angelo shows recurring surface logic
+## finding-467: Adam D'Angelo shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -7568,7 +8414,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `sec-form-d-0001477720-12-0
 
 ---
 
-## finding-421: Severin Hacker shows recurring surface logic
+## finding-468: Severin Hacker shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -7586,7 +8432,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `sec-form-d-0001562088-12-0
 
 ---
 
-## finding-422: Wences Casares shows recurring surface logic
+## finding-469: Wences Casares shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -7604,7 +8450,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `sec-form-d-0001564989-12-0
 
 ---
 
-## finding-423: Immad Akhund shows recurring surface logic
+## finding-470: Immad Akhund shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -7622,7 +8468,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `sec-form-d-0001719932-17-0
 
 ---
 
-## finding-424: Henry Kravis shows recurring surface logic
+## finding-471: Henry Kravis shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -7640,7 +8486,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `sec-form-d-0001504576-10-0
 
 ---
 
-## finding-425: Karen Karniol-Tambour shows recurring surface logic
+## finding-472: Karen Karniol-Tambour shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -7658,7 +8504,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `sec-form-d-0001536979-23-0
 
 ---
 
-## finding-426: Mike Novogratz shows recurring surface logic
+## finding-473: Mike Novogratz shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -7676,7 +8522,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `sec-form-d-0000950103-18-0
 
 ---
 
-## finding-427: Chamath Palihapitiya shows recurring surface logic
+## finding-474: Chamath Palihapitiya shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -7694,7 +8540,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `sec-form-d-0001686725-16-0
 
 ---
 
-## finding-428: Tyler Cowen shows recurring surface logic
+## finding-475: Tyler Cowen shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -7712,7 +8558,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `a16z-american-dynamism-sum
 
 ---
 
-## finding-429: Adam Grant shows recurring surface logic
+## finding-476: Adam Grant shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -7730,7 +8576,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `sec-form-d-0001674474-21-0
 
 ---
 
-## finding-430: Cesar Carvalho shows recurring surface logic
+## finding-477: Cesar Carvalho shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -7748,7 +8594,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `sec-form-d-0001897755-21-0
 
 ---
 
-## finding-431: Matt Cohler shows recurring surface logic
+## finding-478: Matt Cohler shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -7766,7 +8612,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `sec-form-d-0001477720-09-0
 
 ---
 
-## finding-432: Mario Schlosser shows recurring surface logic
+## finding-479: Mario Schlosser shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -7784,7 +8630,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `sec-form-d-0001568651-13-0
 
 ---
 
-## finding-433: Strauss Zelnick shows recurring surface logic
+## finding-480: Strauss Zelnick shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -7802,7 +8648,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `sec-form-d-0001897755-21-0
 
 ---
 
-## finding-434: Thasunda Brown Duckett shows recurring surface logic
+## finding-481: Thasunda Brown Duckett shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -7820,7 +8666,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `sec-form-d-0000930413-22-0
 
 ---
 
-## finding-435: John Healey shows recurring surface logic
+## finding-482: John Healey shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -7838,7 +8684,7 @@ Refs: `strategic-defence-review-development-2024-2025`, `strategic-defence-revie
 
 ---
 
-## finding-436: George Robertson shows recurring surface logic
+## finding-483: George Robertson shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -7856,7 +8702,7 @@ Refs: `strategic-defence-review-development-2024-2025`, `strategic-defence-revie
 
 ---
 
-## finding-437: Richard Barrons shows recurring surface logic
+## finding-484: Richard Barrons shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -7874,7 +8720,7 @@ Refs: `strategic-defence-review-development-2024-2025`, `strategic-defence-revie
 
 ---
 
-## finding-438: Dr Fiona Hill shows recurring surface logic
+## finding-485: Dr Fiona Hill shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -7892,7 +8738,7 @@ Refs: `strategic-defence-review-development-2024-2025`, `strategic-defence-revie
 
 ---
 
-## finding-439: Dr. Michael Muthukrishna shows recurring surface logic
+## finding-486: Dr. Michael Muthukrishna shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -7910,7 +8756,7 @@ Refs: `centre-human-progress-director-appointments-2025-08-05`, `electric-twin-m
 
 ---
 
-## finding-440: Shyam Sankar shows recurring surface logic
+## finding-487: Shyam Sankar shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -7928,7 +8774,7 @@ Refs: `detachment-201-commissioning-2025`, `a16z-american-dynamism-summit-2025-m
 
 ---
 
-## finding-441: Dr Rich Drake shows recurring surface logic
+## finding-488: Dr Rich Drake shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -7946,7 +8792,7 @@ Refs: `anduril-uk-co-director-appointments-2024-07-31`, `anduril-ukraine-drone-d
 
 ---
 
-## finding-442: Alice Bentinck shows recurring surface logic
+## finding-489: Alice Bentinck shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -7964,7 +8810,7 @@ Refs: `entrepreneur-first-cofounder-observation-2018-07-05`, `sec-form-d-0001684
 
 ---
 
-## finding-443: Jackson Moses shows recurring surface logic
+## finding-490: Jackson Moses shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -7982,7 +8828,7 @@ Refs: `advisory-jackson-moses-castelion`, `advisory-jackson-moses-privateer`, `a
 
 ---
 
-## finding-444: Katherine Boyle shows recurring surface logic
+## finding-491: Katherine Boyle shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -8000,7 +8846,7 @@ Refs: `advisory-katherine-boyle-apex-space`, `advisory-katherine-boyle-hadrian`,
 
 ---
 
-## finding-445: Trae Stephens shows recurring surface logic
+## finding-492: Trae Stephens shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -8018,7 +8864,7 @@ Refs: `advisory-trae-stephens-anduril-industries`, `advisory-trae-stephens-flexp
 
 ---
 
-## finding-446: Joshua Baer shows recurring surface logic
+## finding-493: Joshua Baer shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -8036,7 +8882,7 @@ Refs: `vehicle-control-capital-factory`, `vehicle-control-station-austin`, `capi
 
 ---
 
-## finding-447: Steve Braverman shows recurring surface logic
+## finding-494: Steve Braverman shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -8054,7 +8900,7 @@ Refs: `stratos-ventures-team-page-2026-10-23`, `sec-form-d-0001393725-24-000030`
 
 ---
 
-## finding-448: David Braverman shows recurring surface logic
+## finding-495: David Braverman shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -8072,7 +8918,7 @@ Refs: `stratos-ventures-team-page-2026-10-23`, `sec-form-d-0001393725-24-000030`
 
 ---
 
-## finding-449: Lorne Abony shows recurring surface logic
+## finding-496: Lorne Abony shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -8090,7 +8936,7 @@ Refs: `texas-venture-partners-team-page-2026-04-06`, `sec-form-d-0002039625-24-0
 
 ---
 
-## finding-450: Brandon Tseng shows recurring surface logic
+## finding-497: Brandon Tseng shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -8108,7 +8954,7 @@ Refs: `brandon-tseng-shield-ai-co-founder-linkedin-2015-present`, `brandon-tseng
 
 ---
 
-## finding-451: Christian Brose shows recurring surface logic
+## finding-498: Christian Brose shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -8126,7 +8972,7 @@ Refs: `christian-brose-anduril-industries-chief-strategy-officer-linkedin-2018-2
 
 ---
 
-## finding-452: Doug Beck shows recurring surface logic
+## finding-499: Doug Beck shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -8144,7 +8990,7 @@ Refs: `doug-beck-apple-vice-president-americas-and-northeast-asia-linkedin-2015-
 
 ---
 
-## finding-453: Frank Kendall shows recurring surface logic
+## finding-500: Frank Kendall shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -8162,7 +9008,7 @@ Refs: `frank-kendall-amnesty-international-usa-member-board-of-directors-linkedi
 
 ---
 
-## finding-454: Gabe Camarillo shows recurring surface logic
+## finding-501: Gabe Camarillo shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -8180,7 +9026,7 @@ Refs: `gabe-camarillo-akin-gump-strauss-hauer-and-feld-llp-litigation-associate-
 
 ---
 
-## finding-455: Heidi Shyu shows recurring surface logic
+## finding-502: Heidi Shyu shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -8198,7 +9044,7 @@ Refs: `heidi-shyu-2i-ventures-strategic-advisory-board-linkedin-2025-present`, `
 
 ---
 
-## finding-456: John Goodson shows recurring surface logic
+## finding-503: John Goodson shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -8216,7 +9062,7 @@ Refs: `john-goodson-cti-director-of-business-linkedin-2017-2021`, `john-goodson-
 
 ---
 
-## finding-457: Michael A. Brown shows recurring surface logic
+## finding-504: Michael A. Brown shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -8234,7 +9080,7 @@ Refs: `michael-a-brown-asimily-board-member-and-investor-linkedin-2017-present`,
 
 ---
 
-## finding-458: Ryan Evans shows recurring surface logic
+## finding-505: Ryan Evans shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -8252,7 +9098,7 @@ Refs: `ryan-evans-bedrock-knowledge-inc-chief-executive-officer-linkedin-2022-pr
 
 ---
 
-## finding-459: Tim Sheehy shows recurring surface logic
+## finding-506: Tim Sheehy shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -8270,7 +9116,7 @@ Refs: `tim-sheehy-ascent-vision-technologies-avt-ceo-and-founder-linkedin-2015-2
 
 ---
 
-## finding-460: Will Roper shows recurring surface logic
+## finding-507: Will Roper shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -8288,7 +9134,7 @@ Refs: `will-roper-beta-technologies-board-member-linkedin-2021-2024`, `will-rope
 
 ---
 
-## finding-461: Mike Gallagher shows recurring surface logic
+## finding-508: Mike Gallagher shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -8306,7 +9152,7 @@ Refs: `rndf-2023-panel-2`, `rndf-2023-programme-roster`, `a16z-american-dynamism
 
 ---
 
-## finding-462: Brian Schimpf shows recurring surface logic
+## finding-509: Brian Schimpf shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -8324,7 +9170,7 @@ Refs: `rndf-2023-panel-2`, `rndf-2023-programme-roster`, `a16z-american-dynamism
 
 ---
 
-## finding-463: Jason Zander shows recurring surface logic
+## finding-510: Jason Zander shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -8342,7 +9188,7 @@ Refs: `rndf-2023-panel-2`, `rndf-2023-programme-roster`
 
 ---
 
-## finding-464: Missy Ryan shows recurring surface logic
+## finding-511: Missy Ryan shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -8360,7 +9206,7 @@ Refs: `rndf-2023-panel-2`, `rndf-2023-programme-roster`
 
 ---
 
-## finding-465: Paul M. Nakasone shows recurring surface logic
+## finding-512: Paul M. Nakasone shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -8378,7 +9224,7 @@ Refs: `rndf-2023-panel-3`, `rndf-2023-programme-roster`
 
 ---
 
-## finding-466: Laura J. Richardson shows recurring surface logic
+## finding-513: Laura J. Richardson shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -8396,7 +9242,7 @@ Refs: `rndf-2023-panel-3`, `rndf-2023-programme-roster`
 
 ---
 
-## finding-467: Mike Waltz shows recurring surface logic
+## finding-514: Mike Waltz shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -8414,7 +9260,7 @@ Refs: `rndf-2023-panel-3`, `rndf-2023-programme-roster`
 
 ---
 
-## finding-468: Courtney Kube shows recurring surface logic
+## finding-515: Courtney Kube shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -8432,7 +9278,7 @@ Refs: `rndf-2023-panel-3`, `rndf-2023-programme-roster`
 
 ---
 
-## finding-469: Kevin Cramer shows recurring surface logic
+## finding-516: Kevin Cramer shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -8450,7 +9296,7 @@ Refs: `rndf-2023-panel-7`, `rndf-2023-programme-roster`
 
 ---
 
-## finding-470: Daniel R. Hokanson shows recurring surface logic
+## finding-517: Daniel R. Hokanson shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -8468,7 +9314,7 @@ Refs: `rndf-2023-panel-7`, `rndf-2023-programme-roster`
 
 ---
 
-## finding-471: Karl Rove shows recurring surface logic
+## finding-518: Karl Rove shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -8486,7 +9332,7 @@ Refs: `rndf-2023-panel-7`, `rndf-2023-programme-roster`
 
 ---
 
-## finding-472: Ben Kesling shows recurring surface logic
+## finding-519: Ben Kesling shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -8504,7 +9350,7 @@ Refs: `rndf-2023-panel-7`, `rndf-2023-programme-roster`
 
 ---
 
-## finding-473: John C. Aquilino shows recurring surface logic
+## finding-520: John C. Aquilino shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -8522,7 +9368,7 @@ Refs: `rndf-2023-panel-9`, `rndf-2023-programme-roster`
 
 ---
 
-## finding-474: Christopher J. Mahoney shows recurring surface logic
+## finding-521: Christopher J. Mahoney shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -8540,7 +9386,7 @@ Refs: `rndf-2023-panel-9`, `rndf-2023-programme-roster`
 
 ---
 
-## finding-475: Mike Rounds shows recurring surface logic
+## finding-522: Mike Rounds shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -8558,7 +9404,7 @@ Refs: `rndf-2023-panel-9`, `rndf-2023-programme-roster`
 
 ---
 
-## finding-476: Horacio Rozanski shows recurring surface logic
+## finding-523: Horacio Rozanski shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -8576,7 +9422,7 @@ Refs: `rndf-2023-panel-9`, `rndf-2023-programme-roster`, `rndf-2025-panel-2`, `r
 
 ---
 
-## finding-477: Jennifer Griffin shows recurring surface logic
+## finding-524: Jennifer Griffin shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -8594,7 +9440,7 @@ Refs: `rndf-2023-panel-9`, `rndf-2023-programme-roster`, `rndf-2025-panel-10`, `
 
 ---
 
-## finding-478: David W. Allvin shows recurring surface logic
+## finding-525: David W. Allvin shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -8612,7 +9458,7 @@ Refs: `rndf-2024-panel-4`, `rndf-2024-programme-roster`
 
 ---
 
-## finding-479: Toni Townes-Whitley shows recurring surface logic
+## finding-526: Toni Townes-Whitley shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -8630,7 +9476,7 @@ Refs: `rndf-2024-panel-4`, `rndf-2024-programme-roster`
 
 ---
 
-## finding-480: Todd Young shows recurring surface logic
+## finding-527: Todd Young shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -8648,7 +9494,7 @@ Refs: `rndf-2024-panel-4`, `rndf-2024-programme-roster`
 
 ---
 
-## finding-481: Sharon Weinberger shows recurring surface logic
+## finding-528: Sharon Weinberger shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -8666,7 +9512,7 @@ Refs: `rndf-2024-panel-4`, `rndf-2024-programme-roster`
 
 ---
 
-## finding-482: Chris Calio shows recurring surface logic
+## finding-529: Chris Calio shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -8684,7 +9530,7 @@ Refs: `rndf-2024-panel-9`, `rndf-2024-programme-roster`
 
 ---
 
-## finding-483: Randy A. George shows recurring surface logic
+## finding-530: Randy A. George shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -8702,7 +9548,7 @@ Refs: `rndf-2024-panel-9`, `rndf-2024-programme-roster`
 
 ---
 
-## finding-484: Dan Jablonsky shows recurring surface logic
+## finding-531: Dan Jablonsky shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -8720,7 +9566,7 @@ Refs: `rndf-2024-panel-9`, `rndf-2024-programme-roster`
 
 ---
 
-## finding-485: Angus King shows recurring surface logic
+## finding-532: Angus King shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -8738,7 +9584,7 @@ Refs: `rndf-2024-panel-9`, `rndf-2024-programme-roster`
 
 ---
 
-## finding-486: Aaron Mehta shows recurring surface logic
+## finding-533: Aaron Mehta shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -8756,7 +9602,7 @@ Refs: `rndf-2024-panel-9`, `rndf-2024-programme-roster`
 
 ---
 
-## finding-487: Stephen Ehikian shows recurring surface logic
+## finding-534: Stephen Ehikian shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -8774,7 +9620,7 @@ Refs: `rndf-2025-panel-2`, `rndf-2025-programme-roster`
 
 ---
 
-## finding-488: Emil Michael shows recurring surface logic
+## finding-535: Emil Michael shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -8792,7 +9638,7 @@ Refs: `rndf-2025-panel-2`, `rndf-2025-programme-roster`, `sec-form-d-0001543151-
 
 ---
 
-## finding-489: Samuel Paparo shows recurring surface logic
+## finding-536: Samuel Paparo shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -8810,7 +9656,7 @@ Refs: `rndf-2025-panel-2`, `rndf-2025-programme-roster`
 
 ---
 
-## finding-490: Gordon Lubold shows recurring surface logic
+## finding-537: Gordon Lubold shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -8828,7 +9674,7 @@ Refs: `rndf-2025-panel-2`, `rndf-2025-programme-roster`
 
 ---
 
-## finding-491: Ken Calvert shows recurring surface logic
+## finding-538: Ken Calvert shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -8846,7 +9692,7 @@ Refs: `rndf-2025-panel-10`, `rndf-2025-programme-roster`
 
 ---
 
-## finding-492: Pat Ryan shows recurring surface logic
+## finding-539: Pat Ryan shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -8864,7 +9710,7 @@ Refs: `rndf-2025-panel-10`, `rndf-2025-programme-roster`
 
 ---
 
-## finding-493: David Ulevitch shows recurring surface logic
+## finding-540: David Ulevitch shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -8882,7 +9728,7 @@ Refs: `a16z-american-dynamism-summit-2024-welcome`, `a16z-american-dynamism-summ
 
 ---
 
-## finding-494: Jake Auchincloss shows recurring surface logic
+## finding-541: Jake Auchincloss shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -8900,7 +9746,7 @@ Refs: `a16z-american-dynamism-summit-2024-china-threat`, `a16z-american-dynamism
 
 ---
 
-## finding-495: Jan Sramek shows recurring surface logic
+## finding-542: Jan Sramek shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -8918,7 +9764,7 @@ Refs: `a16z-american-dynamism-summit-2024-california-dream`, `a16z-american-dyna
 
 ---
 
-## finding-496: Ben Horowitz shows recurring surface logic
+## finding-543: Ben Horowitz shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -8936,7 +9782,7 @@ Refs: `a16z-american-dynamism-summit-2024-next-generation-leadership`, `a16z-ame
 
 ---
 
-## finding-497: JD Vance shows recurring surface logic
+## finding-544: JD Vance shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -8954,7 +9800,7 @@ Refs: `a16z-american-dynamism-summit-2025-opening-keynote`, `a16z-american-dynam
 
 ---
 
-## finding-498: Gwynne Shotwell shows recurring surface logic
+## finding-545: Gwynne Shotwell shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -8972,7 +9818,7 @@ Refs: `a16z-american-dynamism-summit-2025-mars-but-first-dc`, `a16z-american-dyn
 
 ---
 
-## finding-499: Bryan P. Fenton shows recurring surface logic
+## finding-546: Bryan P. Fenton shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -8990,7 +9836,7 @@ Refs: `a16z-american-dynamism-summit-2025-science-fiction-or-socom`, `a16z-ameri
 
 ---
 
-## finding-500: David Ignatius shows recurring surface logic
+## finding-547: David Ignatius shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -9008,7 +9854,7 @@ Refs: `a16z-american-dynamism-summit-2025-mobilizing-industrial-base`, `a16z-ame
 
 ---
 
-## finding-501: Adam Bry shows recurring surface logic
+## finding-548: Adam Bry shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -9026,7 +9872,7 @@ Refs: `a16z-american-dynamism-summit-2022-ai-future-of-modern-warfare`, `a16z-am
 
 ---
 
-## finding-502: Roger Zakheim shows recurring surface logic
+## finding-549: Roger Zakheim shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -9044,7 +9890,7 @@ Refs: `a16z-american-dynamism-summit-2022-ai-future-of-modern-warfare`, `a16z-am
 
 ---
 
-## finding-503: Jacob Helberg shows recurring surface logic
+## finding-550: Jacob Helberg shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -9062,7 +9908,7 @@ Refs: `a16z-american-dynamism-summit-2022-autonomy-defense-policy`, `a16z-americ
 
 ---
 
-## finding-504: Bari Weiss shows recurring surface logic
+## finding-551: Bari Weiss shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -9080,7 +9926,7 @@ Refs: `a16z-american-dynamism-summit-2022-fourth-estate`, `a16z-american-dynamis
 
 ---
 
-## finding-505: Chris Best shows recurring surface logic
+## finding-552: Chris Best shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -9098,7 +9944,7 @@ Refs: `a16z-american-dynamism-summit-2022-fourth-estate`, `a16z-american-dynamis
 
 ---
 
-## finding-506: Jim VandeHei shows recurring surface logic
+## finding-553: Jim VandeHei shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -9116,7 +9962,7 @@ Refs: `a16z-american-dynamism-summit-2022-fourth-estate`, `a16z-american-dynamis
 
 ---
 
-## finding-507: Adena Hefets shows recurring surface logic
+## finding-554: Adena Hefets shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -9134,7 +9980,7 @@ Refs: `a16z-american-dynamism-summit-2022-housing-crisis`, `a16z-american-dynami
 
 ---
 
-## finding-508: Adam Neumann shows recurring surface logic
+## finding-555: Adam Neumann shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -9152,7 +9998,7 @@ Refs: `a16z-american-dynamism-summit-2022-largest-asset-class`, `a16z-american-d
 
 ---
 
-## finding-509: Abraham Wilson shows recurring surface logic
+## finding-556: Abraham Wilson shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -9170,7 +10016,7 @@ Refs: `sec-form-d-0001981844-23-000003`, `sec-form-d-0001992181-23-000002`, `sec
 
 ---
 
-## finding-510: Andrew Busey shows recurring surface logic
+## finding-557: Andrew Busey shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -9188,7 +10034,7 @@ Refs: `sec-form-d-0001592303-13-000001`, `sec-form-d-0001592303-14-000001`
 
 ---
 
-## finding-511: Ash Carter shows recurring surface logic
+## finding-558: Ash Carter shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -9206,7 +10052,7 @@ Refs: `diux-austin-outpost-at-capital-factory-2016-09-14`, `diux-austin-roll-out
 
 ---
 
-## finding-512: Brian Spross shows recurring surface logic
+## finding-559: Brian Spross shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -9224,7 +10070,7 @@ Refs: `sec-form-d-0001475481-09-000003`, `sec-form-d-0001475481-09-000001`
 
 ---
 
-## finding-513: Cathy Bui shows recurring surface logic
+## finding-560: Cathy Bui shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -9242,7 +10088,7 @@ Refs: `sec-form-d-0001929925-22-000002`, `sec-form-d-0001935512-22-000002`, `sec
 
 ---
 
-## finding-514: Dave DeWalt shows recurring surface logic
+## finding-561: Dave DeWalt shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -9260,7 +10106,7 @@ Refs: `nightdragon-capital-factory-partnership-2025-08-18`, `sec-form-d-00019337
 
 ---
 
-## finding-515: Eric Wesley shows recurring surface logic
+## finding-562: Eric Wesley shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -9278,7 +10124,7 @@ Refs: `army-futures-command-hq-news-conference-2018-07-13`, `army-futures-comman
 
 ---
 
-## finding-516: Gordon Daugherty shows recurring surface logic
+## finding-563: Gordon Daugherty shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -9296,7 +10142,7 @@ Refs: `sec-form-d-0001592303-13-000001`, `sec-form-d-0001592303-14-000001`, `cap
 
 ---
 
-## finding-517: Greg Abbott shows recurring surface logic
+## finding-564: Greg Abbott shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -9314,7 +10160,7 @@ Refs: `diux-austin-outpost-at-capital-factory-2016-09-14`, `army-futures-command
 
 ---
 
-## finding-518: James Chance shows recurring surface logic
+## finding-565: James Chance shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -9332,7 +10178,7 @@ Refs: `sec-form-d-0001797630-19-000001`, `sec-form-d-0001797630-21-000001`
 
 ---
 
-## finding-519: Jamie Serio shows recurring surface logic
+## finding-566: Jamie Serio shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -9350,7 +10196,7 @@ Refs: `sec-form-d-0002045139-24-000002`, `sec-form-d-0002088504-25-000001`, `sec
 
 ---
 
-## finding-520: John Murray shows recurring surface logic
+## finding-567: John Murray shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -9368,7 +10214,7 @@ Refs: `army-futures-command-murray-at-capital-factory-2018-09-30`, `army-news-af
 
 ---
 
-## finding-521: Kip McClanahan shows recurring surface logic
+## finding-568: Kip McClanahan shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -9386,7 +10232,7 @@ Refs: `sec-form-d-0001596160-14-000002`, `sec-form-d-0001596160-18-000002`
 
 ---
 
-## finding-522: Lawton Cummings shows recurring surface logic
+## finding-569: Lawton Cummings shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -9404,7 +10250,7 @@ Refs: `sec-form-d-0001958842-22-000001`, `sec-form-d-0001958842-24-000001`
 
 ---
 
-## finding-523: Melinda Price shows recurring surface logic
+## finding-570: Melinda Price shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -9422,7 +10268,7 @@ Refs: `sec-form-d-0001592303-13-000001`, `sec-form-d-0001592303-14-000001`
 
 ---
 
-## finding-524: Michael Trafton shows recurring surface logic
+## finding-571: Michael Trafton shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -9440,7 +10286,7 @@ Refs: `sec-form-d-0001592303-13-000001`, `sec-form-d-0001592303-14-000001`
 
 ---
 
-## finding-525: Olayiwola Ali-Ajibode shows recurring surface logic
+## finding-572: Olayiwola Ali-Ajibode shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -9458,7 +10304,7 @@ Refs: `sec-form-d-0001860355-21-000002`, `sec-form-d-0001873643-21-000002`, `sec
 
 ---
 
-## finding-526: Patrick Vogt shows recurring surface logic
+## finding-573: Patrick Vogt shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -9476,7 +10322,7 @@ Refs: `sec-form-d-0001475481-09-000003`, `sec-form-d-0001475481-09-000001`, `sec
 
 ---
 
-## finding-527: Sean O'Brien shows recurring surface logic
+## finding-574: Sean O'Brien shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -9494,7 +10340,7 @@ Refs: `sec-form-d-0002038739-24-000002`, `sec-form-d-0002050605-25-000001`, `sec
 
 ---
 
-## finding-528: Stephen Brotman shows recurring surface logic
+## finding-575: Stephen Brotman shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -9512,7 +10358,7 @@ Refs: `sec-form-d-0002038739-24-000002`, `sec-form-d-0002050605-25-000001`, `sec
 
 ---
 
-## finding-529: William Boebel shows recurring surface logic
+## finding-576: William Boebel shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -9530,7 +10376,7 @@ Refs: `sec-form-d-0001596160-14-000002`, `sec-form-d-0001596160-14-000001`, `sec
 
 ---
 
-## finding-530: Tracy Yaverbaun shows recurring surface logic
+## finding-577: Tracy Yaverbaun shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -9548,7 +10394,7 @@ Refs: `news-uk-times-podcast-name-synthetic-panel-decision-2025-11-04`
 
 ---
 
-## finding-531: F. LeRon Shults shows recurring surface logic
+## finding-578: F. LeRon Shults shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -9566,7 +10412,7 @@ Refs: `undp-culturepulse-israel-palestine-simulation-contract-2023-08`
 
 ---
 
-## finding-532: Justin Lane shows recurring surface logic
+## finding-579: Justin Lane shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -9584,7 +10430,7 @@ Refs: `undp-culturepulse-israel-palestine-simulation-contract-2023-08`
 
 ---
 
-## finding-533: Kanishka Narayan shows recurring surface logic
+## finding-580: Kanishka Narayan shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -9602,7 +10448,7 @@ Refs: `uk-politicians-synthetic-focus-groups-reported-2026-10-22`, `uk-ministeri
 
 ---
 
-## finding-534: Darren Jones shows recurring surface logic
+## finding-581: Darren Jones shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -9620,7 +10466,7 @@ Refs: `uk-politicians-synthetic-focus-groups-reported-2026-10-22`, `uk-ministeri
 
 ---
 
-## finding-535: Morgan McSweeney shows recurring surface logic
+## finding-582: Morgan McSweeney shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -9638,7 +10484,7 @@ Refs: `no10-synthetic-voters-experiment-reported-2025-07-07`
 
 ---
 
-## finding-536: Allyson Satin shows recurring surface logic
+## finding-583: Allyson Satin shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -9656,7 +10502,7 @@ Refs: `x-energy-ipo-registration-statement-2026-04-23`, `sec-form-d-0001012975-1
 
 ---
 
-## finding-537: Asheem Chandna shows recurring surface logic
+## finding-584: Asheem Chandna shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -9674,7 +10520,7 @@ Refs: `rubrik-ipo-prospectus-2024-04-24`, `sec-form-d-0001435043-10-000004`, `se
 
 ---
 
-## finding-538: Bipul Sinha shows recurring surface logic
+## finding-585: Bipul Sinha shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -9692,7 +10538,7 @@ Refs: `rubrik-ipo-prospectus-2024-04-24`, `sec-form-d-0001618732-14-000001`, `se
 
 ---
 
-## finding-539: Brian Dunkiel shows recurring surface logic
+## finding-586: Brian Dunkiel shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -9710,7 +10556,7 @@ Refs: `beta-technologies-ipo-closing-2025-11-05`, `sec-form-d-0001676800-25-0000
 
 ---
 
-## finding-540: David B. Kaplan shows recurring surface logic
+## finding-587: David B. Kaplan shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -9728,7 +10574,7 @@ Refs: `x-energy-ipo-registration-statement-2026-04-23`, `sec-form-d-0001104659-1
 
 ---
 
-## finding-541: Enrique Salem shows recurring surface logic
+## finding-588: Enrique Salem shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -9746,7 +10592,7 @@ Refs: `rubrik-ipo-prospectus-2024-04-24`, `sec-form-d-0001181431-13-048985`, `se
 
 ---
 
-## finding-542: Herman Cueto shows recurring surface logic
+## finding-589: Herman Cueto shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -9764,7 +10610,7 @@ Refs: `beta-technologies-ipo-closing-2025-11-05`, `sec-form-d-0001676800-25-0000
 
 ---
 
-## finding-543: Jason Kim shows recurring surface logic
+## finding-590: Jason Kim shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -9782,7 +10628,7 @@ Refs: `firefly-aerospace-ipo-closing-form-8-k-2025-08-08`, `sec-form-d-000186016
 
 ---
 
-## finding-544: John Serafini shows recurring surface logic
+## finding-591: John Serafini shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -9800,7 +10646,7 @@ Refs: `hawkeye-360-ipo-closing-8-k-2026-05-08`, `sec-form-d-0001750704-18-000001
 
 ---
 
-## finding-545: John W. Thompson shows recurring surface logic
+## finding-592: John W. Thompson shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -9818,7 +10664,7 @@ Refs: `rubrik-ipo-prospectus-2024-04-24`, `sec-form-d-0001209191-18-057851`, `se
 
 ---
 
-## finding-546: Kyle Clark shows recurring surface logic
+## finding-593: Kyle Clark shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -9836,7 +10682,7 @@ Refs: `beta-technologies-ipo-closing-2025-11-05`, `sec-form-d-0001784570-21-0000
 
 ---
 
-## finding-547: Pamela Braden shows recurring surface logic
+## finding-594: Pamela Braden shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -9854,7 +10700,7 @@ Refs: `firefly-aerospace-ipo-closing-form-8-k-2025-08-08`, `sec-form-d-000186016
 
 ---
 
-## finding-548: Ravi Mhatre shows recurring surface logic
+## finding-595: Ravi Mhatre shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -9872,7 +10718,7 @@ Refs: `rubrik-ipo-prospectus-2024-04-24`, `sec-form-d-0001435043-10-000004`, `se
 
 ---
 
-## finding-549: Sean Donovan shows recurring surface logic
+## finding-596: Sean Donovan shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -9890,7 +10736,7 @@ Refs: `beta-technologies-ipo-closing-2025-11-05`, `sec-form-d-0001676800-25-0000
 
 ---
 
-## finding-550: Alan Stern shows recurring surface logic
+## finding-597: Alan Stern shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -9908,7 +10754,7 @@ Refs: `sec-form-d-0001235110-22-000001`, `sec-form-d-0001567619-23-001345`, `voy
 
 ---
 
-## finding-551: Cheryl Shavers shows recurring surface logic
+## finding-598: Cheryl Shavers shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -9926,7 +10772,7 @@ Refs: `sec-form-d-0001235110-22-000001`, `sec-form-d-0001567619-23-001345`, `voy
 
 ---
 
-## finding-552: Dylan Taylor shows recurring surface logic
+## finding-599: Dylan Taylor shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -9944,7 +10790,7 @@ Refs: `sec-form-d-0001235110-22-000001`, `sec-form-d-0001567619-23-001345`, `voy
 
 ---
 
-## finding-553: Gabe Finke shows recurring surface logic
+## finding-600: Gabe Finke shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -9962,7 +10808,7 @@ Refs: `sec-form-d-0001235110-22-000001`, `sec-form-d-0001567619-23-001345`, `voy
 
 ---
 
-## finding-554: Marian Joh shows recurring surface logic
+## finding-601: Marian Joh shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -9980,7 +10826,7 @@ Refs: `sec-form-d-0001235110-22-000001`, `sec-form-d-0001567619-23-001345`, `voy
 
 ---
 
-## finding-555: Matthew Kuta shows recurring surface logic
+## finding-602: Matthew Kuta shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -9998,7 +10844,7 @@ Refs: `sec-form-d-0001235110-22-000001`, `sec-form-d-0001567619-23-001345`, `voy
 
 ---
 
-## finding-556: William Shelton shows recurring surface logic
+## finding-603: William Shelton shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -10016,7 +10862,7 @@ Refs: `sec-form-d-0001235110-22-000001`, `sec-form-d-0001567619-23-001345`, `voy
 
 ---
 
-## finding-557: Sir Simon Case / Lord Case has surfaces but no Clifford path
+## finding-604: Sir Simon Case / Lord Case has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10034,7 +10880,7 @@ Refs: `electric-twin-ethics-board-2026`, `simon-case-cabinet-secretary-2020-2024
 
 ---
 
-## finding-558: Ian Hogarth has surfaces but no Clifford path
+## finding-605: Ian Hogarth has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10052,7 +10898,7 @@ Refs: `frontier-ai-taskforce-faculty-contract-2023-10-18`, `sec-form-d-000141952
 
 ---
 
-## finding-559: Jade Leung has surfaces but no Clifford path
+## finding-606: Jade Leung has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10070,7 +10916,7 @@ Refs: `uk-ministerial-meetings-dsit-ministerial-meetings-july-to-september-2023-
 
 ---
 
-## finding-560: Louis Mosley has surfaces but no Clifford path
+## finding-607: Louis Mosley has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10088,7 +10934,7 @@ Refs: `electric-twin-seed-round-2026-02-11`
 
 ---
 
-## finding-561: Marc Andreessen has surfaces but no Clifford path
+## finding-608: Marc Andreessen has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10106,7 +10952,7 @@ Refs: `electric-twin-seed-round-2026-02-11`, `a16z-american-dynamism-summit-2024
 
 ---
 
-## finding-562: Cal Henderson has surfaces but no Clifford path
+## finding-609: Cal Henderson has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10124,7 +10970,7 @@ Refs: `electric-twin-seed-round-2026-02-11`
 
 ---
 
-## finding-563: Tom Shinner has surfaces but no Clifford path
+## finding-610: Tom Shinner has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10142,7 +10988,7 @@ Refs: `electric-twin-seed-round-2026-02-11`, `sec-form-d-0000929638-26-000755`, 
 
 ---
 
-## finding-564: Peter Thiel has surfaces but no Clifford path
+## finding-611: Peter Thiel has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10160,7 +11006,7 @@ Refs: `dialog-leadership-role-observations-2026-06-16`, `sec-form-d-0001321655-1
 
 ---
 
-## finding-565: Auren Hoffman has surfaces but no Clifford path
+## finding-612: Auren Hoffman has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10178,7 +11024,7 @@ Refs: `dialog-leadership-role-observations-2026-06-16`
 
 ---
 
-## finding-566: Raffi Grinberg has surfaces but no Clifford path
+## finding-613: Raffi Grinberg has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10196,7 +11042,7 @@ Refs: `dialog-leadership-role-observations-2026-06-16`
 
 ---
 
-## finding-567: Joe Lonsdale has surfaces but no Clifford path
+## finding-614: Joe Lonsdale has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10214,7 +11060,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `vehicle-control-8vc`, `veh
 
 ---
 
-## finding-568: Ted Cruz has surfaces but no Clifford path
+## finding-615: Ted Cruz has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10232,7 +11078,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-569: Jim Himes has surfaces but no Clifford path
+## finding-616: Jim Himes has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10250,7 +11096,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `jim-himes-enterprise-commu
 
 ---
 
-## finding-570: Dan Driscoll has surfaces but no Clifford path
+## finding-617: Dan Driscoll has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10268,7 +11114,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `detachment-201-second-coho
 
 ---
 
-## finding-571: Alexus Grynkewich has surfaces but no Clifford path
+## finding-618: Alexus Grynkewich has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10286,7 +11132,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-572: Randy Kroszner has surfaces but no Clifford path
+## finding-619: Randy Kroszner has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10304,7 +11150,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-573: Scott Bessent has surfaces but no Clifford path
+## finding-620: Scott Bessent has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10322,7 +11168,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `sec-form-d-0000950142-16-0
 
 ---
 
-## finding-574: Cory Booker has surfaces but no Clifford path
+## finding-621: Cory Booker has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10340,7 +11186,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-575: Elon Musk has surfaces but no Clifford path
+## finding-622: Elon Musk has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10358,7 +11204,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `sec-form-d-0001181412-09-0
 
 ---
 
-## finding-576: Joseph Gordon-Levitt has surfaces but no Clifford path
+## finding-623: Joseph Gordon-Levitt has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10376,7 +11222,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `sec-form-d-0001754902-20-0
 
 ---
 
-## finding-577: Sophia Bush has surfaces but no Clifford path
+## finding-624: Sophia Bush has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10394,7 +11240,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-578: Ezra Klein has surfaces but no Clifford path
+## finding-625: Ezra Klein has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10412,7 +11258,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-579: Jonathan Levin has surfaces but no Clifford path
+## finding-626: Jonathan Levin has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10430,7 +11276,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-580: Sam Harris has surfaces but no Clifford path
+## finding-627: Sam Harris has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10448,7 +11294,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-581: Bryan Johnson has surfaces but no Clifford path
+## finding-628: Bryan Johnson has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10466,7 +11312,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-582: Sarah Bond has surfaces but no Clifford path
+## finding-629: Sarah Bond has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10484,7 +11330,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-583: Scott Cook has surfaces but no Clifford path
+## finding-630: Scott Cook has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10502,7 +11348,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `sec-form-d-0000896878-11-0
 
 ---
 
-## finding-584: Lisa Gevelber has surfaces but no Clifford path
+## finding-631: Lisa Gevelber has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10520,7 +11366,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-585: Shmuel Abramzon has surfaces but no Clifford path
+## finding-632: Shmuel Abramzon has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10538,7 +11384,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-586: Josh Brolin has surfaces but no Clifford path
+## finding-633: Josh Brolin has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10556,7 +11402,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-587: Reid Hoffman has surfaces but no Clifford path
+## finding-634: Reid Hoffman has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10574,7 +11420,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `sec-form-d-0001209191-18-0
 
 ---
 
-## finding-588: Wes Moore has surfaces but no Clifford path
+## finding-635: Wes Moore has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10592,7 +11438,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `a16z-american-dynamism-sum
 
 ---
 
-## finding-589: Jared Polis has surfaces but no Clifford path
+## finding-636: Jared Polis has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10610,7 +11456,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-590: Lisa Monaco has surfaces but no Clifford path
+## finding-637: Lisa Monaco has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10628,7 +11474,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-591: Robert Hur has surfaces but no Clifford path
+## finding-638: Robert Hur has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10646,7 +11492,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-592: Preet Bharara has surfaces but no Clifford path
+## finding-639: Preet Bharara has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10664,7 +11510,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-593: Rachel Brand has surfaces but no Clifford path
+## finding-640: Rachel Brand has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10682,7 +11528,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-594: Mitch Daniels has surfaces but no Clifford path
+## finding-641: Mitch Daniels has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10700,7 +11546,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-595: Julian Castro has surfaces but no Clifford path
+## finding-642: Julian Castro has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10718,7 +11564,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-596: Peggy Hamburg has surfaces but no Clifford path
+## finding-643: Peggy Hamburg has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10736,7 +11582,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-597: Reema Al-Saud has surfaces but no Clifford path
+## finding-644: Reema Al-Saud has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10754,7 +11600,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-598: Turki Al Faisal Al Saud has surfaces but no Clifford path
+## finding-645: Turki Al Faisal Al Saud has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10772,7 +11618,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-599: Sheikh Nawaf Saud Nasir Al-Sabah has surfaces but no Clifford path
+## finding-646: Sheikh Nawaf Saud Nasir Al-Sabah has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10790,7 +11636,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-600: Kaja Kallas has surfaces but no Clifford path
+## finding-647: Kaja Kallas has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10808,7 +11654,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-601: Tarō Kōno has surfaces but no Clifford path
+## finding-648: Tarō Kōno has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10826,7 +11672,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-602: Jens Spahn has surfaces but no Clifford path
+## finding-649: Jens Spahn has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10844,7 +11690,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `uk-ministerial-meetings-dl
 
 ---
 
-## finding-603: Tom Tugendhat has surfaces but no Clifford path
+## finding-650: Tom Tugendhat has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10862,7 +11708,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `uk-ministerial-meetings-ho
 
 ---
 
-## finding-604: Shahid Khaqan Abbasi has surfaces but no Clifford path
+## finding-651: Shahid Khaqan Abbasi has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10880,7 +11726,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-605: Ali Jehangir Siddiqui has surfaces but no Clifford path
+## finding-652: Ali Jehangir Siddiqui has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10898,7 +11744,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-606: Shivon Zilis has surfaces but no Clifford path
+## finding-653: Shivon Zilis has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10916,7 +11762,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `sec-form-d-0001675769-23-0
 
 ---
 
-## finding-607: Stan McChrystal has surfaces but no Clifford path
+## finding-654: Stan McChrystal has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10934,7 +11780,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `uk-ministerial-meetings-dh
 
 ---
 
-## finding-608: Jonathan Ross has surfaces but no Clifford path
+## finding-655: Jonathan Ross has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10952,7 +11798,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `sec-form-d-0001686725-16-0
 
 ---
 
-## finding-609: Pete Shadbolt has surfaces but no Clifford path
+## finding-656: Pete Shadbolt has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10970,7 +11816,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `sec-form-d-0001996366-25-0
 
 ---
 
-## finding-610: Scott Stephenson has surfaces but no Clifford path
+## finding-657: Scott Stephenson has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -10988,7 +11834,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `sec-form-d-0001790777-21-0
 
 ---
 
-## finding-611: Barry Silbert has surfaces but no Clifford path
+## finding-658: Barry Silbert has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11006,7 +11852,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-612: Charlie Songhurst has surfaces but no Clifford path
+## finding-659: Charlie Songhurst has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11024,7 +11870,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-613: Tom Lue has surfaces but no Clifford path
+## finding-660: Tom Lue has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11042,7 +11888,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-614: Fatima Kardar has surfaces but no Clifford path
+## finding-661: Fatima Kardar has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11060,7 +11906,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-615: Neal Mohan has surfaces but no Clifford path
+## finding-662: Neal Mohan has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11078,7 +11924,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-616: Greg Brockman has surfaces but no Clifford path
+## finding-663: Greg Brockman has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11096,7 +11942,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-617: Jason Kwon has surfaces but no Clifford path
+## finding-664: Jason Kwon has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11114,7 +11960,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-618: Adam D'Angelo has surfaces but no Clifford path
+## finding-665: Adam D'Angelo has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11132,7 +11978,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `sec-form-d-0001477720-12-0
 
 ---
 
-## finding-619: Manuel Bronstein has surfaces but no Clifford path
+## finding-666: Manuel Bronstein has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11150,7 +11996,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-620: Severin Hacker has surfaces but no Clifford path
+## finding-667: Severin Hacker has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11168,7 +12014,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `sec-form-d-0001562088-12-0
 
 ---
 
-## finding-621: Wences Casares has surfaces but no Clifford path
+## finding-668: Wences Casares has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11186,7 +12032,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `sec-form-d-0001564989-12-0
 
 ---
 
-## finding-622: Immad Akhund has surfaces but no Clifford path
+## finding-669: Immad Akhund has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11204,7 +12050,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `sec-form-d-0001719932-17-0
 
 ---
 
-## finding-623: Henry Kravis has surfaces but no Clifford path
+## finding-670: Henry Kravis has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11222,7 +12068,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `sec-form-d-0001504576-10-0
 
 ---
 
-## finding-624: Pete Briger has surfaces but no Clifford path
+## finding-671: Pete Briger has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11240,7 +12086,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-625: Peter Brown has surfaces but no Clifford path
+## finding-672: Peter Brown has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11258,7 +12104,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-626: Karen Karniol-Tambour has surfaces but no Clifford path
+## finding-673: Karen Karniol-Tambour has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11276,7 +12122,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `sec-form-d-0001536979-23-0
 
 ---
 
-## finding-627: Mike Novogratz has surfaces but no Clifford path
+## finding-674: Mike Novogratz has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11294,7 +12140,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `sec-form-d-0000950103-18-0
 
 ---
 
-## finding-628: Bob Jain has surfaces but no Clifford path
+## finding-675: Bob Jain has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11312,7 +12158,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-629: Gaurva Kapadia has surfaces but no Clifford path
+## finding-676: Gaurva Kapadia has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11330,7 +12176,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-630: Micky Malka has surfaces but no Clifford path
+## finding-677: Micky Malka has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11348,7 +12194,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-631: Chamath Palihapitiya has surfaces but no Clifford path
+## finding-678: Chamath Palihapitiya has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11366,7 +12212,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `sec-form-d-0001686725-16-0
 
 ---
 
-## finding-632: Jared Kushner has surfaces but no Clifford path
+## finding-679: Jared Kushner has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11384,7 +12230,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `sec-form-d-0001612778-15-0
 
 ---
 
-## finding-633: John Arnold has surfaces but no Clifford path
+## finding-680: John Arnold has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11402,7 +12248,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-634: Robert Rubin has surfaces but no Clifford path
+## finding-681: Robert Rubin has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11420,7 +12266,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-635: Lawrence Summers has surfaces but no Clifford path
+## finding-682: Lawrence Summers has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11438,7 +12284,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `sec-form-d-0001653395-15-0
 
 ---
 
-## finding-636: Eric Schmidt has surfaces but no Clifford path
+## finding-683: Eric Schmidt has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11456,7 +12302,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `uk-ministerial-meetings-rt
 
 ---
 
-## finding-637: Susan Athey has surfaces but no Clifford path
+## finding-684: Susan Athey has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11474,7 +12320,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-638: Steven Pinker has surfaces but no Clifford path
+## finding-685: Steven Pinker has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11492,7 +12338,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-639: Tyler Cowen has surfaces but no Clifford path
+## finding-686: Tyler Cowen has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11510,7 +12356,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `a16z-american-dynamism-sum
 
 ---
 
-## finding-640: Adam Grant has surfaces but no Clifford path
+## finding-687: Adam Grant has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11528,7 +12374,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `sec-form-d-0001674474-21-0
 
 ---
 
-## finding-641: Jonathan Haidt has surfaces but no Clifford path
+## finding-688: Jonathan Haidt has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11546,7 +12392,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `uk-ministerial-meetings-ds
 
 ---
 
-## finding-642: Anne-Marie Slaughter has surfaces but no Clifford path
+## finding-689: Anne-Marie Slaughter has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11564,7 +12410,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-643: Leonard Leo has surfaces but no Clifford path
+## finding-690: Leonard Leo has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11582,7 +12428,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-644: Grover Norquist has surfaces but no Clifford path
+## finding-691: Grover Norquist has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11600,7 +12446,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-645: Nick Thompson has surfaces but no Clifford path
+## finding-692: Nick Thompson has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11618,7 +12464,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-646: Bret Stephens has surfaces but no Clifford path
+## finding-693: Bret Stephens has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11636,7 +12482,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-647: Tim Ferriss has surfaces but no Clifford path
+## finding-694: Tim Ferriss has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11654,7 +12500,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-648: Mike Cannon-Brookes has surfaces but no Clifford path
+## finding-695: Mike Cannon-Brookes has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11672,7 +12518,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-649: Marcos Galperin has surfaces but no Clifford path
+## finding-696: Marcos Galperin has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11690,7 +12536,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-650: Demet Mutlu has surfaces but no Clifford path
+## finding-697: Demet Mutlu has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11708,7 +12554,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-651: Cesar Carvalho has surfaces but no Clifford path
+## finding-698: Cesar Carvalho has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11726,7 +12572,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `sec-form-d-0001897755-21-0
 
 ---
 
-## finding-652: Howie Liu has surfaces but no Clifford path
+## finding-699: Howie Liu has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11744,7 +12590,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-653: Scott Belsky has surfaces but no Clifford path
+## finding-700: Scott Belsky has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11762,7 +12608,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `sec-form-d-0001140361-12-0
 
 ---
 
-## finding-654: Steve Ells has surfaces but no Clifford path
+## finding-701: Steve Ells has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11780,7 +12626,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-655: Nicolas Berggruen has surfaces but no Clifford path
+## finding-702: Nicolas Berggruen has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11798,7 +12644,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-656: Matt Cohler has surfaces but no Clifford path
+## finding-703: Matt Cohler has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11816,7 +12662,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `sec-form-d-0001477720-09-0
 
 ---
 
-## finding-657: Will Scharf has surfaces but no Clifford path
+## finding-704: Will Scharf has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11834,7 +12680,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-658: Mario Schlosser has surfaces but no Clifford path
+## finding-705: Mario Schlosser has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11852,7 +12698,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `sec-form-d-0001568651-13-0
 
 ---
 
-## finding-659: Astro Teller has surfaces but no Clifford path
+## finding-706: Astro Teller has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11870,7 +12716,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-660: Strauss Zelnick has surfaces but no Clifford path
+## finding-707: Strauss Zelnick has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11888,7 +12734,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `sec-form-d-0001897755-21-0
 
 ---
 
-## finding-661: Benj Pasek has surfaces but no Clifford path
+## finding-708: Benj Pasek has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11906,7 +12752,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-662: Drew Scott has surfaces but no Clifford path
+## finding-709: Drew Scott has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11924,7 +12770,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-663: Kim Scott has surfaces but no Clifford path
+## finding-710: Kim Scott has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11942,7 +12788,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `sec-form-d-0001674474-21-0
 
 ---
 
-## finding-664: Rick Warren has surfaces but no Clifford path
+## finding-711: Rick Warren has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11960,7 +12806,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-665: Gretchen Rubin has surfaces but no Clifford path
+## finding-712: Gretchen Rubin has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11978,7 +12824,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-666: Charles Duhigg has surfaces but no Clifford path
+## finding-713: Charles Duhigg has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -11996,7 +12842,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-667: Daniel Pink has surfaces but no Clifford path
+## finding-714: Daniel Pink has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12014,7 +12860,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-668: Tom Goldstein has surfaces but no Clifford path
+## finding-715: Tom Goldstein has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12032,7 +12878,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-669: Neal Katyal has surfaces but no Clifford path
+## finding-716: Neal Katyal has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12050,7 +12896,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-670: Garry Kasparov has surfaces but no Clifford path
+## finding-717: Garry Kasparov has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12068,7 +12914,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `uk-ministerial-meetings-fc
 
 ---
 
-## finding-671: Atul Gawande has surfaces but no Clifford path
+## finding-718: Atul Gawande has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12086,7 +12932,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `uk-ministerial-meetings-fc
 
 ---
 
-## finding-672: Bob Cialdini has surfaces but no Clifford path
+## finding-719: Bob Cialdini has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12104,7 +12950,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-673: John Townsend has surfaces but no Clifford path
+## finding-720: John Townsend has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12122,7 +12968,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-674: Tim Urban has surfaces but no Clifford path
+## finding-721: Tim Urban has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12140,7 +12986,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-675: Thasunda Brown Duckett has surfaces but no Clifford path
+## finding-722: Thasunda Brown Duckett has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12158,7 +13004,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`, `sec-form-d-0000930413-22-0
 
 ---
 
-## finding-676: Vas Narasimhan has surfaces but no Clifford path
+## finding-723: Vas Narasimhan has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12176,7 +13022,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-677: Elizabeth Blackburn has surfaces but no Clifford path
+## finding-724: Elizabeth Blackburn has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12194,7 +13040,7 @@ Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
-## finding-678: Eric Salama has surfaces but no Clifford path
+## finding-725: Eric Salama has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12212,7 +13058,7 @@ Refs: `electric-twin-seed-round-2026-02-11`
 
 ---
 
-## finding-679: Ben Blume has surfaces but no Clifford path
+## finding-726: Ben Blume has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12230,7 +13076,7 @@ Refs: `electric-twin-ben-blume-director-appointment-2025-09-12`
 
 ---
 
-## finding-680: Shyam Sankar has surfaces but no Clifford path
+## finding-727: Shyam Sankar has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12248,7 +13094,7 @@ Refs: `detachment-201-commissioning-2025`, `a16z-american-dynamism-summit-2025-m
 
 ---
 
-## finding-681: Andrew “Boz” Bosworth has surfaces but no Clifford path
+## finding-728: Andrew “Boz” Bosworth has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12266,7 +13112,7 @@ Refs: `detachment-201-commissioning-2025`
 
 ---
 
-## finding-682: Kevin Weil has surfaces but no Clifford path
+## finding-729: Kevin Weil has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12284,7 +13130,7 @@ Refs: `detachment-201-commissioning-2025`, `kevin-weil-black-product-managers-ne
 
 ---
 
-## finding-683: Bob McGrew has surfaces but no Clifford path
+## finding-730: Bob McGrew has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12302,7 +13148,7 @@ Refs: `detachment-201-commissioning-2025`
 
 ---
 
-## finding-684: Lieutenant Colonel Dan Sawyers has surfaces but no Clifford path
+## finding-731: Lieutenant Colonel Dan Sawyers has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12320,7 +13166,7 @@ Refs: `anduril-talos-phase-3-named-principals-2023-11-02`
 
 ---
 
-## finding-685: Greg Kausner has surfaces but no Clifford path
+## finding-732: Greg Kausner has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12338,7 +13184,7 @@ Refs: `anduril-talos-phase-3-named-principals-2023-11-02`
 
 ---
 
-## finding-686: Dane Knecht has surfaces but no Clifford path
+## finding-733: Dane Knecht has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12356,7 +13202,7 @@ Refs: `detachment-201-second-cohort-commissioning-2026-06-10`
 
 ---
 
-## finding-687: Sam Pullara has surfaces but no Clifford path
+## finding-734: Sam Pullara has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12374,7 +13220,7 @@ Refs: `detachment-201-second-cohort-commissioning-2026-06-10`
 
 ---
 
-## finding-688: Serkan Piantino has surfaces but no Clifford path
+## finding-735: Serkan Piantino has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12392,7 +13238,7 @@ Refs: `detachment-201-second-cohort-commissioning-2026-06-10`, `sec-form-d-00017
 
 ---
 
-## finding-689: Jackson Moses has surfaces but no Clifford path
+## finding-736: Jackson Moses has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12410,7 +13256,7 @@ Refs: `advisory-jackson-moses-castelion`, `advisory-jackson-moses-privateer`, `a
 
 ---
 
-## finding-690: Katherine Boyle has surfaces but no Clifford path
+## finding-737: Katherine Boyle has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12428,7 +13274,7 @@ Refs: `advisory-katherine-boyle-apex-space`, `advisory-katherine-boyle-hadrian`,
 
 ---
 
-## finding-691: Trae Stephens has surfaces but no Clifford path
+## finding-738: Trae Stephens has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12446,7 +13292,7 @@ Refs: `advisory-trae-stephens-anduril-industries`, `advisory-trae-stephens-flexp
 
 ---
 
-## finding-692: Joshua Baer has surfaces but no Clifford path
+## finding-739: Joshua Baer has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12464,7 +13310,7 @@ Refs: `vehicle-control-capital-factory`, `vehicle-control-station-austin`, `capi
 
 ---
 
-## finding-693: Sally Donnelly has surfaces but no Clifford path
+## finding-740: Sally Donnelly has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12482,7 +13328,7 @@ Refs: `pallas-advisors-team-page-2026-10-23`, `sec-form-d-0001846949-21-000002`
 
 ---
 
-## finding-694: Tony DeMartino has surfaces but no Clifford path
+## finding-741: Tony DeMartino has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12500,7 +13346,7 @@ Refs: `pallas-advisors-team-page-2026-10-23`, `sec-form-d-0001846949-21-000002`
 
 ---
 
-## finding-695: Tal Shmueli has surfaces but no Clifford path
+## finding-742: Tal Shmueli has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12518,7 +13364,7 @@ Refs: `texas-venture-partners-team-page-2026-04-06`
 
 ---
 
-## finding-696: Rotem (Yehuda) Kakon has surfaces but no Clifford path
+## finding-743: Rotem (Yehuda) Kakon has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12536,7 +13382,7 @@ Refs: `stratos-ventures-team-page-2026-10-23`
 
 ---
 
-## finding-697: Aviad Grinfeld has surfaces but no Clifford path
+## finding-744: Aviad Grinfeld has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12554,7 +13400,7 @@ Refs: `stratos-ventures-team-page-2026-10-23`
 
 ---
 
-## finding-698: Daniel Fouzailov has surfaces but no Clifford path
+## finding-745: Daniel Fouzailov has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12572,7 +13418,7 @@ Refs: `stratos-ventures-team-page-2026-10-23`
 
 ---
 
-## finding-699: LTG (Ret.) Michael Barbero has surfaces but no Clifford path
+## finding-746: LTG (Ret.) Michael Barbero has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12590,7 +13436,7 @@ Refs: `stratos-ventures-team-page-2026-10-23`
 
 ---
 
-## finding-700: Steve Braverman has surfaces but no Clifford path
+## finding-747: Steve Braverman has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12608,7 +13454,7 @@ Refs: `stratos-ventures-team-page-2026-10-23`, `sec-form-d-0001393725-24-000030`
 
 ---
 
-## finding-701: David Braverman has surfaces but no Clifford path
+## finding-748: David Braverman has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12626,7 +13472,7 @@ Refs: `stratos-ventures-team-page-2026-10-23`, `sec-form-d-0001393725-24-000030`
 
 ---
 
-## finding-702: Theo Williams has surfaces but no Clifford path
+## finding-749: Theo Williams has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12644,7 +13490,7 @@ Refs: `stratos-ventures-team-page-2026-10-23`
 
 ---
 
-## finding-703: Israel Biran has surfaces but no Clifford path
+## finding-750: Israel Biran has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12662,7 +13508,7 @@ Refs: `stratos-ventures-team-page-2026-10-23`
 
 ---
 
-## finding-704: Doron Landau has surfaces but no Clifford path
+## finding-751: Doron Landau has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12680,7 +13526,7 @@ Refs: `stratos-ventures-team-page-2026-10-23`
 
 ---
 
-## finding-705: Richard Spencer has surfaces but no Clifford path
+## finding-752: Richard Spencer has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12698,7 +13544,7 @@ Refs: `pallas-ventures-team-page-2026-10-23`, `sec-form-d-0001846949-21-000002`
 
 ---
 
-## finding-706: Lorne Abony has surfaces but no Clifford path
+## finding-753: Lorne Abony has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12716,7 +13562,7 @@ Refs: `texas-venture-partners-team-page-2026-04-06`, `sec-form-d-0002039625-24-0
 
 ---
 
-## finding-707: Yadin Soffer has surfaces but no Clifford path
+## finding-754: Yadin Soffer has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12734,7 +13580,7 @@ Refs: `traysar-team-page-2026-10-23`
 
 ---
 
-## finding-708: Asher Katz has surfaces but no Clifford path
+## finding-755: Asher Katz has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12752,7 +13598,7 @@ Refs: `traysar-team-page-2026-10-23`
 
 ---
 
-## finding-709: Gilad Adin has surfaces but no Clifford path
+## finding-756: Gilad Adin has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12770,7 +13616,7 @@ Refs: `traysar-team-page-2026-10-23`
 
 ---
 
-## finding-710: Alan T. Dugger has surfaces but no Clifford path
+## finding-757: Alan T. Dugger has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12788,7 +13634,7 @@ Refs: `alan-t-dugger-astrobiticacom-publisher-linkedin-2024-present`, `alan-t-du
 
 ---
 
-## finding-711: Alec Webster has surfaces but no Clifford path
+## finding-758: Alec Webster has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12806,7 +13652,7 @@ Refs: `alec-webster-anduril-industries-program-manager-linkedin-2025-present`, `
 
 ---
 
-## finding-712: Alex Bilay has surfaces but no Clifford path
+## finding-759: Alex Bilay has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12824,7 +13670,7 @@ Refs: `alex-bilay-blackstone-summer-associate-linkedin-2025-2025`, `alex-bilay-l
 
 ---
 
-## finding-713: Alex Frew has surfaces but no Clifford path
+## finding-760: Alex Frew has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12842,7 +13688,7 @@ Refs: `alex-frew-air-force-special-operations-command-airfield-operations-specia
 
 ---
 
-## finding-714: Allen Collinsworth has surfaces but no Clifford path
+## finding-761: Allen Collinsworth has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12860,7 +13706,7 @@ Refs: `allen-collinsworth-corridor39-anchor-and-founder-linkedin-2010-2011`, `al
 
 ---
 
-## finding-715: Andrew Hunter has surfaces but no Clifford path
+## finding-762: Andrew Hunter has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12878,7 +13724,7 @@ Refs: `andrew-hunter-pax-per-consortia-strategies-llc-founder-and-principal-link
 
 ---
 
-## finding-716: Andrew Koch has surfaces but no Clifford path
+## finding-763: Andrew Koch has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12896,7 +13742,7 @@ Refs: `andrew-koch-booz-allen-hamilton-senior-consultant-linkedin-2006-2010`, `a
 
 ---
 
-## finding-717: Andrew Nuss has surfaces but no Clifford path
+## finding-764: Andrew Nuss has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12914,7 +13760,7 @@ Refs: `andrew-nuss-anduril-industries-director-maritime-linkedin-2023-2025`, `an
 
 ---
 
-## finding-718: Barry Walkenbach has surfaces but no Clifford path
+## finding-765: Barry Walkenbach has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12932,7 +13778,7 @@ Refs: `barry-walkenbach-general-atomics-aeronautical-systems-senior-program-mana
 
 ---
 
-## finding-719: Bill Greenwalt has surfaces but no Clifford path
+## finding-766: Bill Greenwalt has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12950,7 +13796,7 @@ Refs: `bill-greenwalt-aerospace-industries-association-vice-president-acquisitio
 
 ---
 
-## finding-720: Blake Souter has surfaces but no Clifford path
+## finding-767: Blake Souter has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12968,7 +13814,7 @@ Refs: `blake-souter-av-vice-president-head-of-washington-operations-linkedin-202
 
 ---
 
-## finding-721: Brandon Boesch has surfaces but no Clifford path
+## finding-768: Brandon Boesch has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -12986,7 +13832,7 @@ Refs: `brandon-boesch-arm-iot-applications-engineer-intern-linkedin-2017-2017`, 
 
 ---
 
-## finding-722: Brandon Tseng has surfaces but no Clifford path
+## finding-769: Brandon Tseng has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -13004,7 +13850,7 @@ Refs: `brandon-tseng-shield-ai-co-founder-linkedin-2015-present`, `brandon-tseng
 
 ---
 
-## finding-723: Bryan Claudio has surfaces but no Clifford path
+## finding-770: Bryan Claudio has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -13022,7 +13868,7 @@ Refs: `bryan-claudio-action-behavior-centers-aba-therapy-for-autism-operations-p
 
 ---
 
-## finding-724: Christian Brose has surfaces but no Clifford path
+## finding-771: Christian Brose has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -13040,7 +13886,7 @@ Refs: `christian-brose-anduril-industries-chief-strategy-officer-linkedin-2018-2
 
 ---
 
-## finding-725: Christopher Brooks has surfaces but no Clifford path
+## finding-772: Christopher Brooks has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -13058,7 +13904,7 @@ Refs: `christopher-brooks-crew-training-international-capture-manager-socom-fell
 
 ---
 
-## finding-726: Christopher Kirchhoff has surfaces but no Clifford path
+## finding-773: Christopher Kirchhoff has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -13076,7 +13922,7 @@ Refs: `christopher-kirchhoff-aeolus-labs-advisor-linkedin-2025-present`, `christ
 
 ---
 
-## finding-727: Christopher Knapp has surfaces but no Clifford path
+## finding-774: Christopher Knapp has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -13094,7 +13940,7 @@ Refs: `christopher-knapp-air-force-special-operations-command-isr-operations-dir
 
 ---
 
-## finding-728: Church Hutton has surfaces but no Clifford path
+## finding-775: Church Hutton has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -13112,7 +13958,7 @@ Refs: `church-hutton-av-chief-growth-officer-linkedin-2025-present`, `church-hut
 
 ---
 
-## finding-729: Colin Carroll has surfaces but no Clifford path
+## finding-776: Colin Carroll has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -13130,7 +13976,7 @@ Refs: `colin-carroll-anduril-industries-strategy-and-growth-linkedin-2023-2025`,
 
 ---
 
-## finding-730: Collin Weeks has surfaces but no Clifford path
+## finding-777: Collin Weeks has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -13148,7 +13994,7 @@ Refs: `collin-weeks-digitalglobe-product-manager-linkedin-2017-2018`, `collin-we
 
 ---
 
-## finding-731: Dan "Animal" Javorsek has surfaces but no Clifford path
+## finding-778: Dan "Animal" Javorsek has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -13166,7 +14012,7 @@ Refs: `dan-animal-javorsek-aces-and-eights-foundation-president-linkedin-2022-pr
 
 ---
 
-## finding-732: Darin DiTommaso has surfaces but no Clifford path
+## finding-779: Darin DiTommaso has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -13184,7 +14030,7 @@ Refs: `darin-ditommaso-ge-aerospace-vice-president-of-engineering-ge-aerospace-d
 
 ---
 
-## finding-733: David Norquist has surfaces but no Clifford path
+## finding-780: David Norquist has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -13202,7 +14048,7 @@ Refs: `david-norquist-kearney-and-company-partner-linkedin-2008-2017`, `david-no
 
 ---
 
-## finding-734: Devan Plantamura has surfaces but no Clifford path
+## finding-781: Devan Plantamura has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -13220,7 +14066,7 @@ Refs: `devan-plantamura-ares-industries-advisor-linkedin-2025-2025`, `devan-plan
 
 ---
 
-## finding-735: Doug Beck has surfaces but no Clifford path
+## finding-782: Doug Beck has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -13238,7 +14084,7 @@ Refs: `doug-beck-apple-vice-president-americas-and-northeast-asia-linkedin-2015-
 
 ---
 
-## finding-736: Dylan Morelle has surfaces but no Clifford path
+## finding-783: Dylan Morelle has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -13256,7 +14102,7 @@ Refs: `dylan-morelle-aechelon-technology-inc-director-of-isr-sales-linkedin-2025
 
 ---
 
-## finding-737: Eddie Ybarra has surfaces but no Clifford path
+## finding-784: Eddie Ybarra has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -13274,7 +14120,7 @@ Refs: `eddie-ybarra-air-force-special-operations-command-organizational-manager-
 
 ---
 
-## finding-738: Ellen Lord has surfaces but no Clifford path
+## finding-785: Ellen Lord has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -13292,7 +14138,7 @@ Refs: `ellen-lord-aai-corporation-senior-vice-president-and-general-manager-link
 
 ---
 
-## finding-739: Emilio Menendez Baker has surfaces but no Clifford path
+## finding-786: Emilio Menendez Baker has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -13310,7 +14156,7 @@ Refs: `emilio-menendez-baker-anduril-industries-emerging-capabilities-manager-ai
 
 ---
 
-## finding-740: Eric Ballester has surfaces but no Clifford path
+## finding-787: Eric Ballester has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -13328,7 +14174,7 @@ Refs: `eric-ballester-shields-and-stripes-director-of-public-relations-linkedin-
 
 ---
 
-## finding-741: Eric Chewning has surfaces but no Clifford path
+## finding-788: Eric Chewning has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -13346,7 +14192,7 @@ Refs: `eric-chewning-booz-and-company-principal-linkedin-2012-2013`, `eric-chewn
 
 ---
 
-## finding-742: Ernesto Cortez has surfaces but no Clifford path
+## finding-789: Ernesto Cortez has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -13364,7 +14210,7 @@ Refs: `ernesto-cortez-aevex-aerospace-vice-president-of-business-development-lin
 
 ---
 
-## finding-743: Frank Kendall has surfaces but no Clifford path
+## finding-790: Frank Kendall has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -13382,7 +14228,7 @@ Refs: `frank-kendall-amnesty-international-usa-member-board-of-directors-linkedi
 
 ---
 
-## finding-744: Gabe Arrington has surfaces but no Clifford path
+## finding-791: Gabe Arrington has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -13400,7 +14246,7 @@ Refs: `gabe-arrington-baker-institute-center-for-energy-studies-ces-non-resident
 
 ---
 
-## finding-745: Gabe Camarillo has surfaces but no Clifford path
+## finding-792: Gabe Camarillo has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -13418,7 +14264,7 @@ Refs: `gabe-camarillo-akin-gump-strauss-hauer-and-feld-llp-litigation-associate-
 
 ---
 
-## finding-746: Greg Little has surfaces but no Clifford path
+## finding-793: Greg Little has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -13436,7 +14282,7 @@ Refs: `greg-little-ibm-consultant-linkedin-2007-2009`, `greg-little-palantir-tec
 
 ---
 
-## finding-747: Heidi Shyu has surfaces but no Clifford path
+## finding-794: Heidi Shyu has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -13454,7 +14300,7 @@ Refs: `heidi-shyu-2i-ventures-strategic-advisory-board-linkedin-2025-present`, `
 
 ---
 
-## finding-748: James Day has surfaces but no Clifford path
+## finding-795: James Day has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -13472,7 +14318,7 @@ Refs: `james-day-acquisition-ship-programs-director-for-above-water-sensors-ew-a
 
 ---
 
-## finding-749: James Ratliff has surfaces but no Clifford path
+## finding-796: James Ratliff has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -13490,7 +14336,7 @@ Refs: `james-ratliff-bravura-information-technology-systems-inc-bits-project-man
 
 ---
 
-## finding-750: James Sampson has surfaces but no Clifford path
+## finding-797: James Sampson has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -13508,7 +14354,7 @@ Refs: `james-sampson-anduril-industries-integration-technician-linkedin-2025-202
 
 ---
 
-## finding-751: James Storer has surfaces but no Clifford path
+## finding-798: James Storer has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -13526,7 +14372,7 @@ Refs: `james-storer-a-t-solutions-team-lead-master-instructor-linkedin-2011-2015
 
 ---
 
-## finding-752: Jamie Morin has surfaces but no Clifford path
+## finding-799: Jamie Morin has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -13544,7 +14390,7 @@ Refs: `jamie-morin-center-for-strategic-and-budgetary-assessments-visiting-fello
 
 ---
 
-## finding-753: Janel Timoney Brown has surfaces but no Clifford path
+## finding-800: Janel Timoney Brown has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -13562,7 +14408,7 @@ Refs: `janel-timoney-brown-maxar-technologies-director-dod-account-executive-lin
 
 ---
 
-## finding-754: Jason Dickinson has surfaces but no Clifford path
+## finding-801: Jason Dickinson has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -13580,7 +14426,7 @@ Refs: `jason-dickinson-5th-special-forces-group-airborne-us-army-special-forces-
 
 ---
 
-## finding-755: Jason Metcalfe has surfaces but no Clifford path
+## finding-802: Jason Metcalfe has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -13598,7 +14444,7 @@ Refs: `jason-metcalfe-dcs-corporation-applied-researcher-and-systems-scientist-l
 
 ---
 
-## finding-756: Jason Schwab has surfaces but no Clifford path
+## finding-803: Jason Schwab has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -13616,7 +14462,7 @@ Refs: `jason-schwab-arena-labs-chief-growth-officer-linkedin-2024-2025`, `jason-
 
 ---
 
-## finding-757: Jeff Wright has surfaces but no Clifford path
+## finding-804: Jeff Wright has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -13634,7 +14480,7 @@ Refs: `jeff-wright-ameritel-llc-it-technician-linkedin-1997-2002`, `jeff-wright-
 
 ---
 
-## finding-758: Jeremy Flint has surfaces but no Clifford path
+## finding-805: Jeremy Flint has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -13652,7 +14498,7 @@ Refs: `jeremy-flint-investorplace-investment-insights-writer-linkedin-2023-2024`
 
 ---
 
-## finding-759: Jim Caggy has surfaces but no Clifford path
+## finding-806: Jim Caggy has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -13670,7 +14516,7 @@ Refs: `jim-caggy-office-of-the-secretary-of-defense-advisor-strategic-capabiliti
 
 ---
 
-## finding-760: Jim Carlson has surfaces but no Clifford path
+## finding-807: Jim Carlson has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -13688,7 +14534,7 @@ Refs: `jim-carlson-bitrip-product-linkedin-2020-2020`, `jim-carlson-cyberbranch-
 
 ---
 
-## finding-761: Joanna Guy has surfaces but no Clifford path
+## finding-808: Joanna Guy has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -13706,7 +14552,7 @@ Refs: `joanna-guy-booz-allen-hamilton-marketing-and-growth-lead-linkedin-2023-20
 
 ---
 
-## finding-762: John Goodson has surfaces but no Clifford path
+## finding-809: John Goodson has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -13724,7 +14570,7 @@ Refs: `john-goodson-cti-director-of-business-linkedin-2017-2021`, `john-goodson-
 
 ---
 
-## finding-763: Jon Bal has surfaces but no Clifford path
+## finding-810: Jon Bal has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -13742,7 +14588,7 @@ Refs: `jon-bal-air-force-special-operations-command-senior-program-manager-linke
 
 ---
 
-## finding-764: Jonathan Bowler has surfaces but no Clifford path
+## finding-811: Jonathan Bowler has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -13760,7 +14606,7 @@ Refs: `jonathan-bowler-negative-split-event-timing-head-timer-linkedin-2022-2025
 
 ---
 
-## finding-765: Jonathan Jacobs has surfaces but no Clifford path
+## finding-812: Jonathan Jacobs has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -13778,7 +14624,7 @@ Refs: `jonathan-jacobs-clear-channel-broadcasting-promotions-coordinator-linkedi
 
 ---
 
-## finding-766: Justin Fanelli has surfaces but no Clifford path
+## finding-813: Justin Fanelli has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -13796,7 +14642,7 @@ Refs: `justin-fanelli-ai-in-gov-board-member-linkedin-2024-present`, `justin-fan
 
 ---
 
-## finding-767: Juzar Ghadyali has surfaces but no Clifford path
+## finding-814: Juzar Ghadyali has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -13814,7 +14660,7 @@ Refs: `juzar-ghadyali-naval-sea-systems-command-navsea-contracts-negotiator-link
 
 ---
 
-## finding-768: Kevin Holland has surfaces but no Clifford path
+## finding-815: Kevin Holland has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -13832,7 +14678,7 @@ Refs: `kevin-holland-dcs-corporation-senior-acquisition-specialist-linkedin-2006
 
 ---
 
-## finding-769: Kyle Briggs has surfaces but no Clifford path
+## finding-816: Kyle Briggs has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -13850,7 +14696,7 @@ Refs: `kyle-briggs-defense-tech-signals-founder-linkedin-2025-present`, `kyle-br
 
 ---
 
-## finding-770: Lauren Knausenberger has surfaces but no Clifford path
+## finding-817: Lauren Knausenberger has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -13868,7 +14714,7 @@ Refs: `lauren-knausenberger-accellint-inc-president-and-ceo-linkedin-2014-2018`,
 
 ---
 
-## finding-771: Lee Washburn has surfaces but no Clifford path
+## finding-818: Lee Washburn has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -13886,7 +14732,7 @@ Refs: `lee-washburn-harris-boats-district-business-manager-linkedin-2022-2023`, 
 
 ---
 
-## finding-772: Lily Hinz has surfaces but no Clifford path
+## finding-819: Lily Hinz has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -13904,7 +14750,7 @@ Refs: `lily-hinz-general-atomics-aeronautical-systems-communications-specialist-
 
 ---
 
-## finding-773: Mark Daniel has surfaces but no Clifford path
+## finding-820: Mark Daniel has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -13922,7 +14768,7 @@ Refs: `mark-daniel-draper-program-manager-strategic-systems-linkedin-2015-2019`,
 
 ---
 
-## finding-774: Matt Mande has surfaces but no Clifford path
+## finding-821: Matt Mande has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -13940,7 +14786,7 @@ Refs: `matt-mande-center-for-strategic-and-international-studies-csis-research-a
 
 ---
 
-## finding-775: Matt Way has surfaces but no Clifford path
+## finding-822: Matt Way has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -13958,7 +14804,7 @@ Refs: `matt-way-prism-pointe-technologies-program-manager-linkedin-2007-2008`, `
 
 ---
 
-## finding-776: Michael A. Brown has surfaces but no Clifford path
+## finding-823: Michael A. Brown has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -13976,7 +14822,7 @@ Refs: `michael-a-brown-asimily-board-member-and-investor-linkedin-2017-present`,
 
 ---
 
-## finding-777: Michael Maddry has surfaces but no Clifford path
+## finding-824: Michael Maddry has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -13994,7 +14840,7 @@ Refs: `michael-maddry-anduril-industries-mission-operations-linkedin-2022-2025`,
 
 ---
 
-## finding-778: Mike Smith has surfaces but no Clifford path
+## finding-825: Mike Smith has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -14012,7 +14858,7 @@ Refs: `mike-smith-black-rifle-coffee-company-media-producer-skillbridge-internsh
 
 ---
 
-## finding-779: Mike Wilson has surfaces but no Clifford path
+## finding-826: Mike Wilson has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -14030,7 +14876,7 @@ Refs: `mike-wilson-granicus-director-business-development-and-alliances-linkedin
 
 ---
 
-## finding-780: Mitchell Chahalis has surfaces but no Clifford path
+## finding-827: Mitchell Chahalis has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -14048,7 +14894,7 @@ Refs: `mitchell-chahalis-101st-airborne-divison-us-army-intelligence-team-leader
 
 ---
 
-## finding-781: Quay Barnett has surfaces but no Clifford path
+## finding-828: Quay Barnett has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -14066,7 +14912,7 @@ Refs: `quay-barnett-anduril-industries-general-manager-warfighter-systems-linked
 
 ---
 
-## finding-782: R Dana Thompson has surfaces but no Clifford path
+## finding-829: R Dana Thompson has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -14084,7 +14930,7 @@ Refs: `r-dana-thompson-aviation-service-company-asco-amt-a-and-p-mechanic-assist
 
 ---
 
-## finding-783: Randall Parkes has surfaces but no Clifford path
+## finding-830: Randall Parkes has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -14102,7 +14948,7 @@ Refs: `randall-parkes-anduril-industries-mission-operations-lead-linkedin-2023-p
 
 ---
 
-## finding-784: Richard Clarke has surfaces but no Clifford path
+## finding-831: Richard Clarke has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -14120,7 +14966,7 @@ Refs: `richard-clarke-general-dynamics-independent-director-linkedin-2023-presen
 
 ---
 
-## finding-785: Richard "Wally" Wannall has surfaces but no Clifford path
+## finding-832: Richard "Wally" Wannall has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -14138,7 +14984,7 @@ Refs: `richard-wally-wannall-anduril-industries-mission-operations-engineer-link
 
 ---
 
-## finding-786: Rick Mullen has surfaces but no Clifford path
+## finding-833: Rick Mullen has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -14156,7 +15002,7 @@ Refs: `rick-mullen-bell-flight-military-development-program-project-manager-link
 
 ---
 
-## finding-787: Ryan Eskandary has surfaces but no Clifford path
+## finding-834: Ryan Eskandary has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -14174,7 +15020,7 @@ Refs: `ryan-eskandary-camo-llc-pm-sof-lethality-lno-requirements-analyst-linkedi
 
 ---
 
-## finding-788: Ryan Evans has surfaces but no Clifford path
+## finding-835: Ryan Evans has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -14192,7 +15038,7 @@ Refs: `ryan-evans-bedrock-knowledge-inc-chief-executive-officer-linkedin-2022-pr
 
 ---
 
-## finding-789: Sarah English has surfaces but no Clifford path
+## finding-836: Sarah English has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -14210,7 +15056,7 @@ Refs: `sarah-english-allergan-aesthetics-an-abbvie-company-program-manager-linke
 
 ---
 
-## finding-790: Scott Shilvock has surfaces but no Clifford path
+## finding-837: Scott Shilvock has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -14228,7 +15074,7 @@ Refs: `scott-shilvock-edge-autonomy-training-manager-linkedin-2023-present`, `sc
 
 ---
 
-## finding-791: Sean Warren has surfaces but no Clifford path
+## finding-838: Sean Warren has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -14246,7 +15092,7 @@ Refs: `sean-warren-charter-communications-residential-connectivity-sales-special
 
 ---
 
-## finding-792: Seth Price has surfaces but no Clifford path
+## finding-839: Seth Price has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -14264,7 +15110,7 @@ Refs: `seth-price-d-lux-productions-full-time-hacker-linkedin-2006-2007`, `seth-
 
 ---
 
-## finding-793: Simon Price has surfaces but no Clifford path
+## finding-840: Simon Price has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -14282,7 +15128,7 @@ Refs: `simon-price-capgemini-data-scientist-linkedin-2017-2018`, `simon-price-ju
 
 ---
 
-## finding-794: Sofia Rose Haft has surfaces but no Clifford path
+## finding-841: Sofia Rose Haft has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -14300,7 +15146,7 @@ Refs: `sofia-rose-haft-anduril-industries-director-of-communications-and-externa
 
 ---
 
-## finding-795: Stephen Fujiwara has surfaces but no Clifford path
+## finding-842: Stephen Fujiwara has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -14318,7 +15164,7 @@ Refs: `stephen-fujiwara-advanced-navigation-senior-director-of-business-developm
 
 ---
 
-## finding-796: Steven Hertzberg has surfaces but no Clifford path
+## finding-843: Steven Hertzberg has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -14336,7 +15182,7 @@ Refs: `steven-hertzberg-amniventure-llc-founder-linkedin-1999-2001`, `steven-her
 
 ---
 
-## finding-797: Thomas J. Kehoe, Jr. has surfaces but no Clifford path
+## finding-844: Thomas J. Kehoe, Jr. has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -14354,7 +15200,7 @@ Refs: `thomas-j-kehoe-jr-caseys-krunch-co-founder-linkedin-2016-2020`, `thomas-j
 
 ---
 
-## finding-798: Tim ‘Beef’ Curry has surfaces but no Clifford path
+## finding-845: Tim ‘Beef’ Curry has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -14372,7 +15218,7 @@ Refs: `tim-beef-curry-auterion-vice-president-linkedin-2024-2024`, `tim-beef-cur
 
 ---
 
-## finding-799: Tim Sheehy has surfaces but no Clifford path
+## finding-846: Tim Sheehy has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -14390,7 +15236,7 @@ Refs: `tim-sheehy-ascent-vision-technologies-avt-ceo-and-founder-linkedin-2015-2
 
 ---
 
-## finding-800: Tom Huntley has surfaces but no Clifford path
+## finding-847: Tom Huntley has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -14408,7 +15254,7 @@ Refs: `tom-huntley-presidential-leadership-scholars-presidential-leadership-scho
 
 ---
 
-## finding-801: T.S. Allen has surfaces but no Clifford path
+## finding-848: T.S. Allen has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -14426,7 +15272,7 @@ Refs: `ts-allen-openai-strategic-delivery-lead-openai-for-government-linkedin-20
 
 ---
 
-## finding-802: Tyler Henry has surfaces but no Clifford path
+## finding-849: Tyler Henry has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -14444,7 +15290,7 @@ Refs: `tyler-henry-anduril-industries-radar-software-engineer-linkedin-2025-pres
 
 ---
 
-## finding-803: Will Roper has surfaces but no Clifford path
+## finding-850: Will Roper has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -14462,7 +15308,7 @@ Refs: `will-roper-beta-technologies-board-member-linkedin-2021-2024`, `will-rope
 
 ---
 
-## finding-804: Zack Hoyt has surfaces but no Clifford path
+## finding-851: Zack Hoyt has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -14480,7 +15326,7 @@ Refs: `zack-hoyt-acquisitioncom-managing-director-portfolio-operations-linkedin-
 
 ---
 
-## finding-805: Mike Gallagher has surfaces but no Clifford path
+## finding-852: Mike Gallagher has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -14498,7 +15344,7 @@ Refs: `rndf-2023-panel-2`, `rndf-2023-programme-roster`, `a16z-american-dynamism
 
 ---
 
-## finding-806: Brian Schimpf has surfaces but no Clifford path
+## finding-853: Brian Schimpf has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -14516,7 +15362,7 @@ Refs: `rndf-2023-panel-2`, `rndf-2023-programme-roster`, `a16z-american-dynamism
 
 ---
 
-## finding-807: Jason Zander has surfaces but no Clifford path
+## finding-854: Jason Zander has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -14534,7 +15380,7 @@ Refs: `rndf-2023-panel-2`, `rndf-2023-programme-roster`
 
 ---
 
-## finding-808: Missy Ryan has surfaces but no Clifford path
+## finding-855: Missy Ryan has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -14552,7 +15398,7 @@ Refs: `rndf-2023-panel-2`, `rndf-2023-programme-roster`
 
 ---
 
-## finding-809: Paul M. Nakasone has surfaces but no Clifford path
+## finding-856: Paul M. Nakasone has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -14570,7 +15416,7 @@ Refs: `rndf-2023-panel-3`, `rndf-2023-programme-roster`
 
 ---
 
-## finding-810: Laura J. Richardson has surfaces but no Clifford path
+## finding-857: Laura J. Richardson has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -14588,7 +15434,7 @@ Refs: `rndf-2023-panel-3`, `rndf-2023-programme-roster`
 
 ---
 
-## finding-811: Mike Waltz has surfaces but no Clifford path
+## finding-858: Mike Waltz has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -14606,7 +15452,7 @@ Refs: `rndf-2023-panel-3`, `rndf-2023-programme-roster`
 
 ---
 
-## finding-812: Courtney Kube has surfaces but no Clifford path
+## finding-859: Courtney Kube has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -14624,7 +15470,7 @@ Refs: `rndf-2023-panel-3`, `rndf-2023-programme-roster`
 
 ---
 
-## finding-813: Kevin Cramer has surfaces but no Clifford path
+## finding-860: Kevin Cramer has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -14642,7 +15488,7 @@ Refs: `rndf-2023-panel-7`, `rndf-2023-programme-roster`
 
 ---
 
-## finding-814: Daniel R. Hokanson has surfaces but no Clifford path
+## finding-861: Daniel R. Hokanson has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -14660,7 +15506,7 @@ Refs: `rndf-2023-panel-7`, `rndf-2023-programme-roster`
 
 ---
 
-## finding-815: Karl Rove has surfaces but no Clifford path
+## finding-862: Karl Rove has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -14678,7 +15524,7 @@ Refs: `rndf-2023-panel-7`, `rndf-2023-programme-roster`
 
 ---
 
-## finding-816: Ben Kesling has surfaces but no Clifford path
+## finding-863: Ben Kesling has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -14696,7 +15542,7 @@ Refs: `rndf-2023-panel-7`, `rndf-2023-programme-roster`
 
 ---
 
-## finding-817: John C. Aquilino has surfaces but no Clifford path
+## finding-864: John C. Aquilino has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -14714,7 +15560,7 @@ Refs: `rndf-2023-panel-9`, `rndf-2023-programme-roster`
 
 ---
 
-## finding-818: Christopher J. Mahoney has surfaces but no Clifford path
+## finding-865: Christopher J. Mahoney has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -14732,7 +15578,7 @@ Refs: `rndf-2023-panel-9`, `rndf-2023-programme-roster`
 
 ---
 
-## finding-819: Mike Rounds has surfaces but no Clifford path
+## finding-866: Mike Rounds has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -14750,7 +15596,7 @@ Refs: `rndf-2023-panel-9`, `rndf-2023-programme-roster`
 
 ---
 
-## finding-820: Horacio Rozanski has surfaces but no Clifford path
+## finding-867: Horacio Rozanski has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -14768,7 +15614,7 @@ Refs: `rndf-2023-panel-9`, `rndf-2023-programme-roster`, `rndf-2025-panel-2`, `r
 
 ---
 
-## finding-821: Jennifer Griffin has surfaces but no Clifford path
+## finding-868: Jennifer Griffin has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -14786,7 +15632,7 @@ Refs: `rndf-2023-panel-9`, `rndf-2023-programme-roster`, `rndf-2025-panel-10`, `
 
 ---
 
-## finding-822: David W. Allvin has surfaces but no Clifford path
+## finding-869: David W. Allvin has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -14804,7 +15650,7 @@ Refs: `rndf-2024-panel-4`, `rndf-2024-programme-roster`
 
 ---
 
-## finding-823: Toni Townes-Whitley has surfaces but no Clifford path
+## finding-870: Toni Townes-Whitley has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -14822,7 +15668,7 @@ Refs: `rndf-2024-panel-4`, `rndf-2024-programme-roster`
 
 ---
 
-## finding-824: Todd Young has surfaces but no Clifford path
+## finding-871: Todd Young has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -14840,7 +15686,7 @@ Refs: `rndf-2024-panel-4`, `rndf-2024-programme-roster`
 
 ---
 
-## finding-825: Sharon Weinberger has surfaces but no Clifford path
+## finding-872: Sharon Weinberger has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -14858,7 +15704,7 @@ Refs: `rndf-2024-panel-4`, `rndf-2024-programme-roster`
 
 ---
 
-## finding-826: Chris Calio has surfaces but no Clifford path
+## finding-873: Chris Calio has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -14876,7 +15722,7 @@ Refs: `rndf-2024-panel-9`, `rndf-2024-programme-roster`
 
 ---
 
-## finding-827: Randy A. George has surfaces but no Clifford path
+## finding-874: Randy A. George has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -14894,7 +15740,7 @@ Refs: `rndf-2024-panel-9`, `rndf-2024-programme-roster`
 
 ---
 
-## finding-828: Dan Jablonsky has surfaces but no Clifford path
+## finding-875: Dan Jablonsky has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -14912,7 +15758,7 @@ Refs: `rndf-2024-panel-9`, `rndf-2024-programme-roster`
 
 ---
 
-## finding-829: Angus King has surfaces but no Clifford path
+## finding-876: Angus King has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -14930,7 +15776,7 @@ Refs: `rndf-2024-panel-9`, `rndf-2024-programme-roster`
 
 ---
 
-## finding-830: Aaron Mehta has surfaces but no Clifford path
+## finding-877: Aaron Mehta has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -14948,7 +15794,7 @@ Refs: `rndf-2024-panel-9`, `rndf-2024-programme-roster`
 
 ---
 
-## finding-831: Stephen Ehikian has surfaces but no Clifford path
+## finding-878: Stephen Ehikian has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -14966,7 +15812,7 @@ Refs: `rndf-2025-panel-2`, `rndf-2025-programme-roster`
 
 ---
 
-## finding-832: Emil Michael has surfaces but no Clifford path
+## finding-879: Emil Michael has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -14984,7 +15830,7 @@ Refs: `rndf-2025-panel-2`, `rndf-2025-programme-roster`, `sec-form-d-0001543151-
 
 ---
 
-## finding-833: Samuel Paparo has surfaces but no Clifford path
+## finding-880: Samuel Paparo has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -15002,7 +15848,7 @@ Refs: `rndf-2025-panel-2`, `rndf-2025-programme-roster`
 
 ---
 
-## finding-834: Gordon Lubold has surfaces but no Clifford path
+## finding-881: Gordon Lubold has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -15020,7 +15866,7 @@ Refs: `rndf-2025-panel-2`, `rndf-2025-programme-roster`
 
 ---
 
-## finding-835: Ken Calvert has surfaces but no Clifford path
+## finding-882: Ken Calvert has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -15038,7 +15884,7 @@ Refs: `rndf-2025-panel-10`, `rndf-2025-programme-roster`
 
 ---
 
-## finding-836: Pat Ryan has surfaces but no Clifford path
+## finding-883: Pat Ryan has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -15056,7 +15902,7 @@ Refs: `rndf-2025-panel-10`, `rndf-2025-programme-roster`
 
 ---
 
-## finding-837: David Ulevitch has surfaces but no Clifford path
+## finding-884: David Ulevitch has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -15074,7 +15920,7 @@ Refs: `a16z-american-dynamism-summit-2024-welcome`, `a16z-american-dynamism-summ
 
 ---
 
-## finding-838: Jake Auchincloss has surfaces but no Clifford path
+## finding-885: Jake Auchincloss has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -15092,7 +15938,7 @@ Refs: `a16z-american-dynamism-summit-2024-china-threat`, `a16z-american-dynamism
 
 ---
 
-## finding-839: Jan Sramek has surfaces but no Clifford path
+## finding-886: Jan Sramek has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -15110,7 +15956,7 @@ Refs: `a16z-american-dynamism-summit-2024-california-dream`, `a16z-american-dyna
 
 ---
 
-## finding-840: Ben Horowitz has surfaces but no Clifford path
+## finding-887: Ben Horowitz has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -15128,7 +15974,7 @@ Refs: `a16z-american-dynamism-summit-2024-next-generation-leadership`, `a16z-ame
 
 ---
 
-## finding-841: JD Vance has surfaces but no Clifford path
+## finding-888: JD Vance has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -15146,7 +15992,7 @@ Refs: `a16z-american-dynamism-summit-2025-opening-keynote`, `a16z-american-dynam
 
 ---
 
-## finding-842: Gwynne Shotwell has surfaces but no Clifford path
+## finding-889: Gwynne Shotwell has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -15164,7 +16010,7 @@ Refs: `a16z-american-dynamism-summit-2025-mars-but-first-dc`, `a16z-american-dyn
 
 ---
 
-## finding-843: Bryan P. Fenton has surfaces but no Clifford path
+## finding-890: Bryan P. Fenton has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -15182,7 +16028,7 @@ Refs: `a16z-american-dynamism-summit-2025-science-fiction-or-socom`, `a16z-ameri
 
 ---
 
-## finding-844: David Ignatius has surfaces but no Clifford path
+## finding-891: David Ignatius has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -15200,7 +16046,7 @@ Refs: `a16z-american-dynamism-summit-2025-mobilizing-industrial-base`, `a16z-ame
 
 ---
 
-## finding-845: Adam Bry has surfaces but no Clifford path
+## finding-892: Adam Bry has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -15218,7 +16064,7 @@ Refs: `a16z-american-dynamism-summit-2022-ai-future-of-modern-warfare`, `a16z-am
 
 ---
 
-## finding-846: Roger Zakheim has surfaces but no Clifford path
+## finding-893: Roger Zakheim has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -15236,7 +16082,7 @@ Refs: `a16z-american-dynamism-summit-2022-ai-future-of-modern-warfare`, `a16z-am
 
 ---
 
-## finding-847: Jacob Helberg has surfaces but no Clifford path
+## finding-894: Jacob Helberg has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -15254,7 +16100,7 @@ Refs: `a16z-american-dynamism-summit-2022-autonomy-defense-policy`, `a16z-americ
 
 ---
 
-## finding-848: Bari Weiss has surfaces but no Clifford path
+## finding-895: Bari Weiss has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -15272,7 +16118,7 @@ Refs: `a16z-american-dynamism-summit-2022-fourth-estate`, `a16z-american-dynamis
 
 ---
 
-## finding-849: Chris Best has surfaces but no Clifford path
+## finding-896: Chris Best has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -15290,7 +16136,7 @@ Refs: `a16z-american-dynamism-summit-2022-fourth-estate`, `a16z-american-dynamis
 
 ---
 
-## finding-850: Jim VandeHei has surfaces but no Clifford path
+## finding-897: Jim VandeHei has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -15308,7 +16154,7 @@ Refs: `a16z-american-dynamism-summit-2022-fourth-estate`, `a16z-american-dynamis
 
 ---
 
-## finding-851: Adena Hefets has surfaces but no Clifford path
+## finding-898: Adena Hefets has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -15326,7 +16172,7 @@ Refs: `a16z-american-dynamism-summit-2022-housing-crisis`, `a16z-american-dynami
 
 ---
 
-## finding-852: Adam Neumann has surfaces but no Clifford path
+## finding-899: Adam Neumann has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -15344,7 +16190,7 @@ Refs: `a16z-american-dynamism-summit-2022-largest-asset-class`, `a16z-american-d
 
 ---
 
-## finding-853: Elliott J. Leigh has surfaces but no Clifford path
+## finding-900: Elliott J. Leigh has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -15362,7 +16208,7 @@ Refs: `diu-sxsw-2024-joint-innovation-space-ribbon-cutting`
 
 ---
 
-## finding-854: Aaron Swain has surfaces but no Clifford path
+## finding-901: Aaron Swain has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -15380,7 +16226,7 @@ Refs: `capital-factory-fed-supernova-2021-09-28`
 
 ---
 
-## finding-855: Abraham Wilson has surfaces but no Clifford path
+## finding-902: Abraham Wilson has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -15398,7 +16244,7 @@ Refs: `sec-form-d-0001981844-23-000003`, `sec-form-d-0001992181-23-000002`, `sec
 
 ---
 
-## finding-856: Alice Treviño has surfaces but no Clifford path
+## finding-903: Alice Treviño has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -15416,7 +16262,7 @@ Refs: `capital-factory-fed-supernova-2022-09-27`
 
 ---
 
-## finding-857: Andrew Busey has surfaces but no Clifford path
+## finding-904: Andrew Busey has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -15434,7 +16280,7 @@ Refs: `sec-form-d-0001592303-13-000001`, `sec-form-d-0001592303-14-000001`
 
 ---
 
-## finding-858: Ash Carter has surfaces but no Clifford path
+## finding-905: Ash Carter has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -15452,7 +16298,7 @@ Refs: `diux-austin-outpost-at-capital-factory-2016-09-14`, `diux-austin-roll-out
 
 ---
 
-## finding-859: Brian Spross has surfaces but no Clifford path
+## finding-906: Brian Spross has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -15470,7 +16316,7 @@ Refs: `sec-form-d-0001475481-09-000003`, `sec-form-d-0001475481-09-000001`
 
 ---
 
-## finding-860: Bryan Chambers has surfaces but no Clifford path
+## finding-907: Bryan Chambers has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -15488,7 +16334,7 @@ Refs: `station-texas-founding-executive-director-2025-05-20`, `capital-factory-l
 
 ---
 
-## finding-861: Cathy Bui has surfaces but no Clifford path
+## finding-908: Cathy Bui has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -15506,7 +16352,7 @@ Refs: `sec-form-d-0001929925-22-000002`, `sec-form-d-0001935512-22-000002`, `sec
 
 ---
 
-## finding-862: Charisse Bodisch has surfaces but no Clifford path
+## finding-909: Charisse Bodisch has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -15524,7 +16370,7 @@ Refs: `army-futures-command-hq-news-conference-2018-07-13`
 
 ---
 
-## finding-863: Christine Abizaid has surfaces but no Clifford path
+## finding-910: Christine Abizaid has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -15542,7 +16388,7 @@ Refs: `diux-austin-roll-out-press-2016-09-14`
 
 ---
 
-## finding-864: Dave DeWalt has surfaces but no Clifford path
+## finding-911: Dave DeWalt has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -15560,7 +16406,7 @@ Refs: `nightdragon-capital-factory-partnership-2025-08-18`, `sec-form-d-00019337
 
 ---
 
-## finding-865: Elliott Leigh has surfaces but no Clifford path
+## finding-912: Elliott Leigh has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -15578,7 +16424,7 @@ Refs: `diu-afwerx-navalx-joint-workspace-capital-factory-2024-03-08`
 
 ---
 
-## finding-866: Eric Wesley has surfaces but no Clifford path
+## finding-913: Eric Wesley has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -15596,7 +16442,7 @@ Refs: `army-futures-command-hq-news-conference-2018-07-13`, `army-futures-comman
 
 ---
 
-## finding-867: Gordon Daugherty has surfaces but no Clifford path
+## finding-914: Gordon Daugherty has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -15614,7 +16460,7 @@ Refs: `sec-form-d-0001592303-13-000001`, `sec-form-d-0001592303-14-000001`, `cap
 
 ---
 
-## finding-868: Greg Abbott has surfaces but no Clifford path
+## finding-915: Greg Abbott has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -15632,7 +16478,7 @@ Refs: `diux-austin-outpost-at-capital-factory-2016-09-14`, `army-futures-command
 
 ---
 
-## finding-869: Heather Wilson has surfaces but no Clifford path
+## finding-916: Heather Wilson has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -15650,7 +16496,7 @@ Refs: `afwerx-austin-hub-at-capital-factory-2018-06-27`
 
 ---
 
-## finding-870: Isaiah Deporto-Plick has surfaces but no Clifford path
+## finding-917: Isaiah Deporto-Plick has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -15668,7 +16514,7 @@ Refs: `sec-form-d-0001842238-21-000002`
 
 ---
 
-## finding-871: James Chance has surfaces but no Clifford path
+## finding-918: James Chance has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -15686,7 +16532,7 @@ Refs: `sec-form-d-0001797630-19-000001`, `sec-form-d-0001797630-21-000001`
 
 ---
 
-## finding-872: Jamie Serio has surfaces but no Clifford path
+## finding-919: Jamie Serio has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -15704,7 +16550,7 @@ Refs: `sec-form-d-0002045139-24-000002`, `sec-form-d-0002088504-25-000001`, `sec
 
 ---
 
-## finding-873: Jan Ryan has surfaces but no Clifford path
+## finding-920: Jan Ryan has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -15722,7 +16568,7 @@ Refs: `capital-factory-leadership-as-reported-2026-06-17`
 
 ---
 
-## finding-874: John Murray has surfaces but no Clifford path
+## finding-921: John Murray has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -15740,7 +16586,7 @@ Refs: `army-futures-command-murray-at-capital-factory-2018-09-30`, `army-news-af
 
 ---
 
-## finding-875: Kip McClanahan has surfaces but no Clifford path
+## finding-922: Kip McClanahan has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -15758,7 +16604,7 @@ Refs: `sec-form-d-0001596160-14-000002`, `sec-form-d-0001596160-18-000002`
 
 ---
 
-## finding-876: Kirk Watson has surfaces but no Clifford path
+## finding-923: Kirk Watson has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -15776,7 +16622,7 @@ Refs: `station-austin-launch-2026-03-10`, `diux-austin-welcome-event-ut-system-r
 
 ---
 
-## finding-877: Lawton Cummings has surfaces but no Clifford path
+## finding-924: Lawton Cummings has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -15794,7 +16640,7 @@ Refs: `sec-form-d-0001958842-22-000001`, `sec-form-d-0001958842-24-000001`
 
 ---
 
-## finding-878: Luis Martinez has surfaces but no Clifford path
+## finding-925: Luis Martinez has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -15812,7 +16658,7 @@ Refs: `capital-factory-team-page-2026-10-23`
 
 ---
 
-## finding-879: Mark Esper has surfaces but no Clifford path
+## finding-926: Mark Esper has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -15830,7 +16676,7 @@ Refs: `army-futures-command-ribbon-cutting-press-2018-08-24`
 
 ---
 
-## finding-880: Mark Milley has surfaces but no Clifford path
+## finding-927: Mark Milley has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -15848,7 +16694,7 @@ Refs: `army-futures-command-activation-ceremony-2018-08-24`
 
 ---
 
-## finding-881: Martin Salinas has surfaces but no Clifford path
+## finding-928: Martin Salinas has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -15866,7 +16712,7 @@ Refs: `capital-factory-fed-supernova-2022-09-27`
 
 ---
 
-## finding-882: Melinda Price has surfaces but no Clifford path
+## finding-929: Melinda Price has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -15884,7 +16730,7 @@ Refs: `sec-form-d-0001592303-13-000001`, `sec-form-d-0001592303-14-000001`
 
 ---
 
-## finding-883: Michael Crosby has surfaces but no Clifford path
+## finding-930: Michael Crosby has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -15902,7 +16748,7 @@ Refs: `army-futures-command-activation-ceremony-2018-08-24`
 
 ---
 
-## finding-884: Michael Trafton has surfaces but no Clifford path
+## finding-931: Michael Trafton has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -15920,7 +16766,7 @@ Refs: `sec-form-d-0001592303-13-000001`, `sec-form-d-0001592303-14-000001`
 
 ---
 
-## finding-885: Morgan Odell has surfaces but no Clifford path
+## finding-932: Morgan Odell has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -15938,7 +16784,7 @@ Refs: `capital-factory-team-page-2026-10-23`
 
 ---
 
-## finding-886: Nick Spiller has surfaces but no Clifford path
+## finding-933: Nick Spiller has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -15956,7 +16802,7 @@ Refs: `capital-factory-team-page-2026-10-23`
 
 ---
 
-## finding-887: Nina Shelat has surfaces but no Clifford path
+## finding-934: Nina Shelat has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -15974,7 +16820,7 @@ Refs: `capital-factory-team-page-2026-10-23`
 
 ---
 
-## finding-888: Olayiwola Ali-Ajibode has surfaces but no Clifford path
+## finding-935: Olayiwola Ali-Ajibode has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -15992,7 +16838,7 @@ Refs: `sec-form-d-0001860355-21-000002`, `sec-form-d-0001873643-21-000002`, `sec
 
 ---
 
-## finding-889: Patrick Vogt has surfaces but no Clifford path
+## finding-936: Patrick Vogt has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -16010,7 +16856,7 @@ Refs: `sec-form-d-0001475481-09-000003`, `sec-form-d-0001475481-09-000001`, `sec
 
 ---
 
-## finding-890: Richard Benson has surfaces but no Clifford path
+## finding-937: Richard Benson has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -16028,7 +16874,7 @@ Refs: `capital-factory-fed-supernova-2021-09-28`
 
 ---
 
-## finding-891: Riffat Manasia has surfaces but no Clifford path
+## finding-938: Riffat Manasia has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -16046,7 +16892,7 @@ Refs: `station-texas-founding-executive-director-2025-05-20`
 
 ---
 
-## finding-892: Ryan McCarthy has surfaces but no Clifford path
+## finding-939: Ryan McCarthy has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -16064,7 +16910,7 @@ Refs: `army-futures-command-ribbon-cutting-press-2018-08-24`
 
 ---
 
-## finding-893: Samantha Snabes has surfaces but no Clifford path
+## finding-940: Samantha Snabes has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -16082,7 +16928,7 @@ Refs: `diux-austin-roll-out-press-2016-09-14`
 
 ---
 
-## finding-894: Sean O'Brien has surfaces but no Clifford path
+## finding-941: Sean O'Brien has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -16100,7 +16946,7 @@ Refs: `sec-form-d-0002038739-24-000002`, `sec-form-d-0002050605-25-000001`, `sec
 
 ---
 
-## finding-895: ShaChelle Manning has surfaces but no Clifford path
+## finding-942: ShaChelle Manning has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -16118,7 +16964,7 @@ Refs: `capital-factory-fed-supernova-2022-09-27`
 
 ---
 
-## finding-896: Stephanie Ahern has surfaces but no Clifford path
+## finding-943: Stephanie Ahern has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -16136,7 +16982,7 @@ Refs: `capital-factory-fed-supernova-2021-09-28`
 
 ---
 
-## finding-897: Stephen Brotman has surfaces but no Clifford path
+## finding-944: Stephen Brotman has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -16154,7 +17000,7 @@ Refs: `sec-form-d-0002038739-24-000002`, `sec-form-d-0002050605-25-000001`, `sec
 
 ---
 
-## finding-898: Stephen Plew has surfaces but no Clifford path
+## finding-945: Stephen Plew has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -16172,7 +17018,7 @@ Refs: `diu-afwerx-navalx-joint-workspace-capital-factory-2024-03-08`
 
 ---
 
-## finding-899: Steven Butow has surfaces but no Clifford path
+## finding-946: Steven Butow has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -16190,7 +17036,7 @@ Refs: `capital-factory-fed-supernova-2022-09-27`
 
 ---
 
-## finding-900: Thomas Todd has surfaces but no Clifford path
+## finding-947: Thomas Todd has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -16208,7 +17054,7 @@ Refs: `capital-factory-fed-supernova-2022-09-27`
 
 ---
 
-## finding-901: Tom Walton has surfaces but no Clifford path
+## finding-948: Tom Walton has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -16226,7 +17072,7 @@ Refs: `station-nwa-walton-family-foundation-grant-2026-01-13`
 
 ---
 
-## finding-902: William Boebel has surfaces but no Clifford path
+## finding-949: William Boebel has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -16244,7 +17090,7 @@ Refs: `sec-form-d-0001596160-14-000002`, `sec-form-d-0001596160-14-000001`, `sec
 
 ---
 
-## finding-903: William McRaven has surfaces but no Clifford path
+## finding-950: William McRaven has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -16262,7 +17108,7 @@ Refs: `diux-austin-outpost-at-capital-factory-2016-09-14`
 
 ---
 
-## finding-904: William Roth has surfaces but no Clifford path
+## finding-951: William Roth has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -16280,7 +17126,7 @@ Refs: `army-futures-command-demonstration-at-capital-factory-2019-04-11`
 
 ---
 
-## finding-905: Young Bang has surfaces but no Clifford path
+## finding-952: Young Bang has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -16298,7 +17144,7 @@ Refs: `capital-factory-fed-supernova-2022-09-27`
 
 ---
 
-## finding-906: Tracy Yaverbaun has surfaces but no Clifford path
+## finding-953: Tracy Yaverbaun has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -16316,7 +17162,7 @@ Refs: `news-uk-times-podcast-name-synthetic-panel-decision-2025-11-04`
 
 ---
 
-## finding-907: F. LeRon Shults has surfaces but no Clifford path
+## finding-954: F. LeRon Shults has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -16334,7 +17180,7 @@ Refs: `undp-culturepulse-israel-palestine-simulation-contract-2023-08`
 
 ---
 
-## finding-908: Justin Lane has surfaces but no Clifford path
+## finding-955: Justin Lane has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -16352,7 +17198,7 @@ Refs: `undp-culturepulse-israel-palestine-simulation-contract-2023-08`
 
 ---
 
-## finding-909: Kanishka Narayan has surfaces but no Clifford path
+## finding-956: Kanishka Narayan has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -16370,7 +17216,7 @@ Refs: `uk-politicians-synthetic-focus-groups-reported-2026-10-22`, `uk-ministeri
 
 ---
 
-## finding-910: Darren Jones has surfaces but no Clifford path
+## finding-957: Darren Jones has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -16388,7 +17234,7 @@ Refs: `uk-politicians-synthetic-focus-groups-reported-2026-10-22`, `uk-ministeri
 
 ---
 
-## finding-911: Morgan McSweeney has surfaces but no Clifford path
+## finding-958: Morgan McSweeney has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -16406,7 +17252,7 @@ Refs: `no10-synthetic-voters-experiment-reported-2025-07-07`
 
 ---
 
-## finding-912: Richard Whittle has surfaces but no Clifford path
+## finding-959: Richard Whittle has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -16424,7 +17270,7 @@ Refs: `salford-makerfield-synthetic-electorate-experiment-2026-06-19`
 
 ---
 
-## finding-913: James Ransom has surfaces but no Clifford path
+## finding-960: James Ransom has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -16442,7 +17288,7 @@ Refs: `salford-makerfield-synthetic-electorate-experiment-2026-06-19`
 
 ---
 
-## finding-914: Aidan Joseph Cowhig has surfaces but no Clifford path
+## finding-961: Aidan Joseph Cowhig has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -16460,7 +17306,7 @@ Refs: `faculty-science-control-change-accenture-2026-03-12-further-names`
 
 ---
 
-## finding-915: Allyson Satin has surfaces but no Clifford path
+## finding-962: Allyson Satin has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -16478,7 +17324,7 @@ Refs: `x-energy-ipo-registration-statement-2026-04-23`, `sec-form-d-0001012975-1
 
 ---
 
-## finding-916: Andrew Sterland Brookes has surfaces but no Clifford path
+## finding-963: Andrew Sterland Brookes has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -16496,7 +17342,7 @@ Refs: `faculty-science-control-change-accenture-2026-03-12-further-names`
 
 ---
 
-## finding-917: Arvind Nithrakashyap has surfaces but no Clifford path
+## finding-964: Arvind Nithrakashyap has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -16514,7 +17360,7 @@ Refs: `rubrik-ipo-prospectus-2024-04-24`
 
 ---
 
-## finding-918: Asheem Chandna has surfaces but no Clifford path
+## finding-965: Asheem Chandna has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -16532,7 +17378,7 @@ Refs: `rubrik-ipo-prospectus-2024-04-24`, `sec-form-d-0001435043-10-000004`, `se
 
 ---
 
-## finding-919: Bipul Sinha has surfaces but no Clifford path
+## finding-966: Bipul Sinha has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -16550,7 +17396,7 @@ Refs: `rubrik-ipo-prospectus-2024-04-24`, `sec-form-d-0001618732-14-000001`, `se
 
 ---
 
-## finding-920: Brian Dunkiel has surfaces but no Clifford path
+## finding-967: Brian Dunkiel has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -16568,7 +17414,7 @@ Refs: `beta-technologies-ipo-closing-2025-11-05`, `sec-form-d-0001676800-25-0000
 
 ---
 
-## finding-921: Brian McCarthy has surfaces but no Clifford path
+## finding-968: Brian McCarthy has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -16586,7 +17432,7 @@ Refs: `rubrik-ipo-prospectus-2024-04-24`
 
 ---
 
-## finding-922: Christopher F. Ginther has surfaces but no Clifford path
+## finding-969: Christopher F. Ginther has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -16604,7 +17450,7 @@ Refs: `x-energy-ipo-registration-statement-2026-04-23`
 
 ---
 
-## finding-923: Daniel Gross has surfaces but no Clifford path
+## finding-970: Daniel Gross has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -16622,7 +17468,7 @@ Refs: `x-energy-ipo-registration-statement-2026-04-23`, `sec-form-d-0001123292-2
 
 ---
 
-## finding-924: David B. Kaplan has surfaces but no Clifford path
+## finding-971: David B. Kaplan has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -16640,7 +17486,7 @@ Refs: `x-energy-ipo-registration-statement-2026-04-23`, `sec-form-d-0001104659-1
 
 ---
 
-## finding-925: Derek Tournear has surfaces but no Clifford path
+## finding-972: Derek Tournear has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -16658,7 +17504,7 @@ Refs: `sierra-space-tranche-2-tracking-award-announcement-2024-01-16`
 
 ---
 
-## finding-926: Edward Sonnenschein has surfaces but no Clifford path
+## finding-973: Edward Sonnenschein has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -16676,7 +17522,7 @@ Refs: `x-energy-ipo-registration-statement-2026-04-23`, `sec-form-d-0001123292-2
 
 ---
 
-## finding-927: Enrique Salem has surfaces but no Clifford path
+## finding-974: Enrique Salem has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -16694,7 +17540,7 @@ Refs: `rubrik-ipo-prospectus-2024-04-24`, `sec-form-d-0001181431-13-048985`, `se
 
 ---
 
-## finding-928: Greg Fenves has surfaces but no Clifford path
+## finding-975: Greg Fenves has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -16712,7 +17558,7 @@ Refs: `diux-austin-welcome-event-ut-system-remarks-2016-09-14`
 
 ---
 
-## finding-929: Gregory Goff has surfaces but no Clifford path
+## finding-976: Gregory Goff has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -16730,7 +17576,7 @@ Refs: `x-energy-ipo-registration-statement-2026-04-23`, `sec-form-d-0001123292-2
 
 ---
 
-## finding-930: Herman Cueto has surfaces but no Clifford path
+## finding-977: Herman Cueto has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -16748,7 +17594,7 @@ Refs: `beta-technologies-ipo-closing-2025-11-05`, `sec-form-d-0001676800-25-0000
 
 ---
 
-## finding-931: Ilan Hart has surfaces but no Clifford path
+## finding-978: Ilan Hart has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -16766,7 +17612,7 @@ Refs: `infleqtion-business-combination-closing-form-8-k-2026-02-13`, `sec-form-d
 
 ---
 
-## finding-932: J. Clay Sell has surfaces but no Clifford path
+## finding-979: J. Clay Sell has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -16784,7 +17630,7 @@ Refs: `x-energy-ipo-registration-statement-2026-04-23`, `sec-form-d-0001123292-2
 
 ---
 
-## finding-933: Jason Kim has surfaces but no Clifford path
+## finding-980: Jason Kim has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -16802,7 +17648,7 @@ Refs: `firefly-aerospace-ipo-closing-form-8-k-2025-08-08`, `sec-form-d-000186016
 
 ---
 
-## finding-934: Jay Taragin has surfaces but no Clifford path
+## finding-981: Jay Taragin has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -16820,7 +17666,7 @@ Refs: `infleqtion-business-combination-closing-form-8-k-2026-02-13`
 
 ---
 
-## finding-935: John Serafini has surfaces but no Clifford path
+## finding-982: John Serafini has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -16838,7 +17684,7 @@ Refs: `hawkeye-360-ipo-closing-8-k-2026-05-08`, `sec-form-d-0001750704-18-000001
 
 ---
 
-## finding-936: John W. Thompson has surfaces but no Clifford path
+## finding-983: John W. Thompson has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -16856,7 +17702,7 @@ Refs: `rubrik-ipo-prospectus-2024-04-24`, `sec-form-d-0001209191-18-057851`, `se
 
 ---
 
-## finding-937: Jon Lusczakoski has surfaces but no Clifford path
+## finding-984: Jon Lusczakoski has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -16874,7 +17720,7 @@ Refs: `firefly-aerospace-ipo-closing-form-8-k-2025-08-08`, `sec-form-d-000119312
 
 ---
 
-## finding-938: Jonathan Berry has surfaces but no Clifford path
+## finding-985: Jonathan Berry has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -16892,7 +17738,7 @@ Refs: `dsit-techuk-anduril-ai-safety-roundtable-2023-10-17-further-names`, `uk-m
 
 ---
 
-## finding-939: Kamal Ghaffarian has surfaces but no Clifford path
+## finding-986: Kamal Ghaffarian has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -16910,7 +17756,7 @@ Refs: `x-energy-ipo-registration-statement-2026-04-23`, `sec-form-d-0001123292-2
 
 ---
 
-## finding-940: Kathleen W. Hyle has surfaces but no Clifford path
+## finding-987: Kathleen W. Hyle has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -16928,7 +17774,7 @@ Refs: `x-energy-ipo-registration-statement-2026-04-23`
 
 ---
 
-## finding-941: Kevin McAllister has surfaces but no Clifford path
+## finding-988: Kevin McAllister has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -16946,7 +17792,7 @@ Refs: `firefly-aerospace-ipo-closing-form-8-k-2025-08-08`, `sec-form-d-000119312
 
 ---
 
-## finding-942: Kiran Choudary has surfaces but no Clifford path
+## finding-989: Kiran Choudary has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -16964,7 +17810,7 @@ Refs: `rubrik-ipo-prospectus-2024-04-24`
 
 ---
 
-## finding-943: Kirsty McNeill has surfaces but no Clifford path
+## finding-990: Kirsty McNeill has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -16982,7 +17828,7 @@ Refs: `lanarkshire-ai-growth-zone-designation-2026-01-29-further-names`, `uk-min
 
 ---
 
-## finding-944: Kyle Clark has surfaces but no Clifford path
+## finding-991: Kyle Clark has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -17000,7 +17846,7 @@ Refs: `beta-technologies-ipo-closing-2025-11-05`, `sec-form-d-0001784570-21-0000
 
 ---
 
-## finding-945: Laura Garcia has surfaces but no Clifford path
+## finding-992: Laura Garcia has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -17018,7 +17864,7 @@ Refs: `x-energy-ipo-registration-statement-2026-04-23`, `sec-form-d-0001123292-2
 
 ---
 
-## finding-946: Liz Kendall has surfaces but no Clifford path
+## finding-993: Liz Kendall has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -17036,7 +17882,7 @@ Refs: `lanarkshire-ai-growth-zone-designation-2026-01-29-further-names`, `uk-min
 
 ---
 
-## finding-947: Mark D. McLaughlin has surfaces but no Clifford path
+## finding-994: Mark D. McLaughlin has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -17054,7 +17900,7 @@ Refs: `rubrik-ipo-prospectus-2024-04-24`
 
 ---
 
-## finding-948: Mark John Selwyn Beith has surfaces but no Clifford path
+## finding-995: Mark John Selwyn Beith has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -17072,7 +17918,7 @@ Refs: `faculty-science-control-change-accenture-2026-03-12-further-names`
 
 ---
 
-## finding-949: Matt George has surfaces but no Clifford path
+## finding-996: Matt George has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -17090,7 +17936,7 @@ Refs: `merlin-labs-business-combination-filing-2026-03-20`
 
 ---
 
-## finding-950: Michael J. Wallace has surfaces but no Clifford path
+## finding-997: Michael J. Wallace has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -17108,7 +17954,7 @@ Refs: `x-energy-ipo-registration-statement-2026-04-23`
 
 ---
 
-## finding-951: Michael Klein has surfaces but no Clifford path
+## finding-998: Michael Klein has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -17126,7 +17972,7 @@ Refs: `infleqtion-business-combination-closing-form-8-k-2026-02-13`
 
 ---
 
-## finding-952: Pamela Braden has surfaces but no Clifford path
+## finding-999: Pamela Braden has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -17144,7 +17990,7 @@ Refs: `firefly-aerospace-ipo-closing-form-8-k-2025-08-08`, `sec-form-d-000186016
 
 ---
 
-## finding-953: Patrick Brian Francis Rowe has surfaces but no Clifford path
+## finding-1000: Patrick Brian Francis Rowe has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -17162,7 +18008,7 @@ Refs: `faculty-science-control-change-accenture-2026-03-12-further-names`
 
 ---
 
-## finding-954: R. Scott Herren has surfaces but no Clifford path
+## finding-1001: R. Scott Herren has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -17180,7 +18026,7 @@ Refs: `rubrik-ipo-prospectus-2024-04-24`
 
 ---
 
-## finding-955: Rachel Reeves has surfaces but no Clifford path
+## finding-1002: Rachel Reeves has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -17198,7 +18044,7 @@ Refs: `lanarkshire-ai-growth-zone-designation-2026-01-29-further-names`, `uk-min
 
 ---
 
-## finding-956: Ravi Mhatre has surfaces but no Clifford path
+## finding-1003: Ravi Mhatre has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -17216,7 +18062,7 @@ Refs: `rubrik-ipo-prospectus-2024-04-24`, `sec-form-d-0001435043-10-000004`, `se
 
 ---
 
-## finding-957: Ryan Boland has surfaces but no Clifford path
+## finding-1004: Ryan Boland has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -17234,7 +18080,7 @@ Refs: `firefly-aerospace-ipo-closing-form-8-k-2025-08-08`, `sec-form-d-000119312
 
 ---
 
-## finding-958: Se Miao Angie Ma has surfaces but no Clifford path
+## finding-1005: Se Miao Angie Ma has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -17252,7 +18098,7 @@ Refs: `faculty-science-control-change-accenture-2026-03-12-further-names`
 
 ---
 
-## finding-959: Sean Donovan has surfaces but no Clifford path
+## finding-1006: Sean Donovan has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -17270,7 +18116,7 @@ Refs: `beta-technologies-ipo-closing-2025-11-05`, `sec-form-d-0001676800-25-0000
 
 ---
 
-## finding-960: Thomas Kramer has surfaces but no Clifford path
+## finding-1007: Thomas Kramer has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -17288,7 +18134,7 @@ Refs: `capella-space-ionq-acquisition-completed-2025-07-11`
 
 ---
 
-## finding-961: Yvonne Wassenaar has surfaces but no Clifford path
+## finding-1008: Yvonne Wassenaar has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -17306,7 +18152,7 @@ Refs: `rubrik-ipo-prospectus-2024-04-24`
 
 ---
 
-## finding-962: Alan Stern has surfaces but no Clifford path
+## finding-1009: Alan Stern has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -17324,7 +18170,7 @@ Refs: `sec-form-d-0001235110-22-000001`, `sec-form-d-0001567619-23-001345`, `voy
 
 ---
 
-## finding-963: Cheryl Shavers has surfaces but no Clifford path
+## finding-1010: Cheryl Shavers has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -17342,7 +18188,7 @@ Refs: `sec-form-d-0001235110-22-000001`, `sec-form-d-0001567619-23-001345`, `voy
 
 ---
 
-## finding-964: Dylan Taylor has surfaces but no Clifford path
+## finding-1011: Dylan Taylor has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -17360,7 +18206,7 @@ Refs: `sec-form-d-0001235110-22-000001`, `sec-form-d-0001567619-23-001345`, `voy
 
 ---
 
-## finding-965: Filipe De Sousa has surfaces but no Clifford path
+## finding-1012: Filipe De Sousa has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -17378,7 +18224,7 @@ Refs: `voyager-technologies-ipo-registration-signatories-2025-06-10`
 
 ---
 
-## finding-966: Gabe Finke has surfaces but no Clifford path
+## finding-1013: Gabe Finke has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -17396,7 +18242,7 @@ Refs: `sec-form-d-0001235110-22-000001`, `sec-form-d-0001567619-23-001345`, `voy
 
 ---
 
-## finding-967: Lance Weber has surfaces but no Clifford path
+## finding-1014: Lance Weber has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -17414,7 +18260,7 @@ Refs: `voyager-technologies-ipo-registration-signatories-2025-06-10`
 
 ---
 
-## finding-968: Marian Joh has surfaces but no Clifford path
+## finding-1015: Marian Joh has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -17432,7 +18278,7 @@ Refs: `sec-form-d-0001235110-22-000001`, `sec-form-d-0001567619-23-001345`, `voy
 
 ---
 
-## finding-969: Matthew Kuta has surfaces but no Clifford path
+## finding-1016: Matthew Kuta has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -17450,7 +18296,7 @@ Refs: `sec-form-d-0001235110-22-000001`, `sec-form-d-0001567619-23-001345`, `voy
 
 ---
 
-## finding-970: William Shelton has surfaces but no Clifford path
+## finding-1017: William Shelton has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -17468,7 +18314,7 @@ Refs: `sec-form-d-0001235110-22-000001`, `sec-form-d-0001567619-23-001345`, `voy
 
 ---
 
-## finding-971: Arati Prabhakar has surfaces but no Clifford path
+## finding-1018: Arati Prabhakar has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -17486,7 +18332,7 @@ Refs: `white-house-meeting-ai-ceos-2023-05-04`
 
 ---
 
-## finding-972: Ben Bernanke has surfaces but no Clifford path
+## finding-1019: Ben Bernanke has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -17504,7 +18350,7 @@ Refs: `anthropic-ltbt-appoints-ben-bernanke-2026-07-09`
 
 ---
 
-## finding-973: Ben Buchanan has surfaces but no Clifford path
+## finding-1020: Ben Buchanan has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -17522,7 +18368,7 @@ Refs: `ostp-staff-list-ben-buchanan-2023-10-02`, `ben-buchanan-anthropic-advisor
 
 ---
 
-## finding-974: Ben Rhodes has surfaces but no Clifford path
+## finding-1021: Ben Rhodes has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -17540,7 +18386,7 @@ Refs: `bitter-struggle-printed-endorsements-2026-11-10`
 
 ---
 
-## finding-975: Bruce Reed has surfaces but no Clifford path
+## finding-1022: Bruce Reed has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -17558,7 +18404,7 @@ Refs: `white-house-meeting-ai-ceos-2023-05-04`
 
 ---
 
-## finding-976: Chris Liddell has surfaces but no Clifford path
+## finding-1023: Chris Liddell has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -17576,7 +18422,7 @@ Refs: `anthropic-board-chris-liddell-2026-02-13`
 
 ---
 
-## finding-977: Chris Miller has surfaces but no Clifford path
+## finding-1024: Chris Miller has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -17594,7 +18440,7 @@ Refs: `bitter-struggle-printed-endorsements-2026-11-10`
 
 ---
 
-## finding-978: Christopher Fonzone has surfaces but no Clifford path
+## finding-1025: Christopher Fonzone has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -17612,7 +18458,7 @@ Refs: `anthropic-national-security-public-sector-advisory-council-2025-08-27`
 
 ---
 
-## finding-979: Daisy McGregor has surfaces but no Clifford path
+## finding-1026: Daisy McGregor has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -17630,7 +18476,7 @@ Refs: `dsit-business-appointment-daisy-mcgregor-to-anthropic-2025-03-18`
 
 ---
 
-## finding-980: Dario Amodei has surfaces but no Clifford path
+## finding-1027: Dario Amodei has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -17648,7 +18494,7 @@ Refs: `white-house-meeting-ai-ceos-2023-05-04`, `uk-anthropic-memorandum-of-unde
 
 ---
 
-## finding-981: Dave Luber has surfaces but no Clifford path
+## finding-1028: Dave Luber has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -17666,7 +18512,7 @@ Refs: `anthropic-national-security-public-sector-advisory-council-2025-08-27`
 
 ---
 
-## finding-982: David S. Cohen has surfaces but no Clifford path
+## finding-1029: David S. Cohen has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -17684,7 +18530,7 @@ Refs: `anthropic-national-security-public-sector-advisory-council-2025-08-27`
 
 ---
 
-## finding-983: Edward Hughes has surfaces but no Clifford path
+## finding-1030: Edward Hughes has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -17702,7 +18548,7 @@ Refs: `inherent-seed-round-founders-and-advisor-index-ventures-2026-05-31`
 
 ---
 
-## finding-984: Elizabeth Kelly has surfaces but no Clifford path
+## finding-1031: Elizabeth Kelly has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -17720,7 +18566,7 @@ Refs: `us-aisi-memoranda-anthropic-openai-2024-08-29`
 
 ---
 
-## finding-985: Gina Raimondo has surfaces but no Clifford path
+## finding-1032: Gina Raimondo has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -17738,7 +18584,7 @@ Refs: `white-house-meeting-ai-ceos-2023-05-04`
 
 ---
 
-## finding-986: Graham Allison has surfaces but no Clifford path
+## finding-1033: Graham Allison has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -17756,7 +18602,7 @@ Refs: `bitter-struggle-printed-endorsements-2026-11-10`
 
 ---
 
-## finding-987: Jake Sullivan has surfaces but no Clifford path
+## finding-1034: Jake Sullivan has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -17774,7 +18620,7 @@ Refs: `white-house-meeting-ai-ceos-2023-05-04`, `bitter-struggle-printed-endorse
 
 ---
 
-## finding-988: James Lowe has surfaces but no Clifford path
+## finding-1035: James Lowe has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -17792,7 +18638,7 @@ Refs: `dsit-business-appointment-james-lowe-to-anthropic-2025-12-02`
 
 ---
 
-## finding-989: Jason Matheny has surfaces but no Clifford path
+## finding-1036: Jason Matheny has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -17810,7 +18656,7 @@ Refs: `anthropic-long-term-benefit-trust-initial-trustees-2023-09-19`
 
 ---
 
-## finding-990: Jeff Zients has surfaces but no Clifford path
+## finding-1037: Jeff Zients has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -17828,7 +18674,7 @@ Refs: `white-house-meeting-ai-ceos-2023-05-04`
 
 ---
 
-## finding-991: Jill M. Hruby has surfaces but no Clifford path
+## finding-1038: Jill M. Hruby has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -17846,7 +18692,7 @@ Refs: `anthropic-national-security-public-sector-advisory-council-2025-08-27`
 
 ---
 
-## finding-992: Jon Tester has surfaces but no Clifford path
+## finding-1039: Jon Tester has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -17864,7 +18710,7 @@ Refs: `anthropic-national-security-public-sector-advisory-council-2025-08-27`
 
 ---
 
-## finding-993: Josh Hodges has surfaces but no Clifford path
+## finding-1040: Josh Hodges has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -17882,7 +18728,7 @@ Refs: `anthropic-national-security-public-sector-advisory-council-2025-08-27`
 
 ---
 
-## finding-994: Kaloyan Aleksiev has surfaces but no Clifford path
+## finding-1041: Kaloyan Aleksiev has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -17900,7 +18746,7 @@ Refs: `inherent-seed-round-founders-and-advisor-index-ventures-2026-05-31`
 
 ---
 
-## finding-995: Kamala Harris has surfaces but no Clifford path
+## finding-1042: Kamala Harris has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -17918,7 +18764,7 @@ Refs: `white-house-meeting-ai-ceos-2023-05-04`
 
 ---
 
-## finding-996: Kanika Bahl has surfaces but no Clifford path
+## finding-1043: Kanika Bahl has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -17936,7 +18782,7 @@ Refs: `anthropic-long-term-benefit-trust-initial-trustees-2023-09-19`
 
 ---
 
-## finding-997: Lael Brainard has surfaces but no Clifford path
+## finding-1044: Lael Brainard has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -17954,7 +18800,7 @@ Refs: `white-house-meeting-ai-ceos-2023-05-04`
 
 ---
 
-## finding-998: Liam Booth-Smith has surfaces but no Clifford path
+## finding-1045: Liam Booth-Smith has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -17972,7 +18818,7 @@ Refs: `acoba-advice-liam-booth-smith-anthropic-external-affairs-2025-06-24`
 
 ---
 
-## finding-999: Lisa E. Gordon-Hagerty has surfaces but no Clifford path
+## finding-1046: Lisa E. Gordon-Hagerty has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -17990,7 +18836,7 @@ Refs: `anthropic-national-security-public-sector-advisory-council-2025-08-27`
 
 ---
 
-## finding-1000: Louis Kirsch has surfaces but no Clifford path
+## finding-1047: Louis Kirsch has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -18008,7 +18854,7 @@ Refs: `inherent-seed-round-founders-and-advisor-index-ventures-2026-05-31`
 
 ---
 
-## finding-1001: Mariano-Florentino Cuellar has surfaces but no Clifford path
+## finding-1048: Mariano-Florentino Cuellar has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -18026,7 +18872,7 @@ Refs: `anthropic-ltbt-appoints-mariano-florentino-cuellar-2026-01-21`, `anthropi
 
 ---
 
-## finding-1002: Mike Donilon has surfaces but no Clifford path
+## finding-1049: Mike Donilon has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -18044,7 +18890,7 @@ Refs: `white-house-meeting-ai-ceos-2023-05-04`
 
 ---
 
-## finding-1003: Mike Kuiken has surfaces but no Clifford path
+## finding-1050: Mike Kuiken has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -18062,7 +18908,7 @@ Refs: `anthropic-national-security-public-sector-advisory-council-2025-08-27`
 
 ---
 
-## finding-1004: Neil Buddy Shah has surfaces but no Clifford path
+## finding-1051: Neil Buddy Shah has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -18080,7 +18926,7 @@ Refs: `anthropic-long-term-benefit-trust-initial-trustees-2023-09-19`, `anthropi
 
 ---
 
-## finding-1005: Patrick M. Shanahan has surfaces but no Clifford path
+## finding-1052: Patrick M. Shanahan has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -18098,7 +18944,7 @@ Refs: `anthropic-national-security-public-sector-advisory-council-2025-08-27`
 
 ---
 
-## finding-1006: Peter Kyle has surfaces but no Clifford path
+## finding-1053: Peter Kyle has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -18116,7 +18962,7 @@ Refs: `uk-anthropic-memorandum-of-understanding-ai-opportunities-2025-02-13`
 
 ---
 
-## finding-1007: Pip White has surfaces but no Clifford path
+## finding-1054: Pip White has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -18134,7 +18980,7 @@ Refs: `dsit-selects-anthropic-gov-uk-assistant-2026-01-27`
 
 ---
 
-## finding-1008: Richard Fontaine has surfaces but no Clifford path
+## finding-1055: Richard Fontaine has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -18152,7 +18998,7 @@ Refs: `anthropic-national-security-public-sector-advisory-council-2025-08-27`
 
 ---
 
-## finding-1009: Rishi Sunak has surfaces but no Clifford path
+## finding-1056: Rishi Sunak has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -18170,7 +19016,7 @@ Refs: `acoba-advice-rishi-sunak-anthropic-senior-advisor-2025-10-09`
 
 ---
 
-## finding-1010: Roy Blunt has surfaces but no Clifford path
+## finding-1057: Roy Blunt has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -18188,7 +19034,7 @@ Refs: `anthropic-national-security-public-sector-advisory-council-2025-08-27`
 
 ---
 
-## finding-1011: Sam Altman has surfaces but no Clifford path
+## finding-1058: Sam Altman has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -18206,7 +19052,7 @@ Refs: `white-house-meeting-ai-ceos-2023-05-04`
 
 ---
 
-## finding-1012: Satya Nadella has surfaces but no Clifford path
+## finding-1059: Satya Nadella has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -18224,7 +19070,7 @@ Refs: `white-house-meeting-ai-ceos-2023-05-04`
 
 ---
 
-## finding-1013: Stuart Delery has surfaces but no Clifford path
+## finding-1060: Stuart Delery has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -18242,7 +19088,7 @@ Refs: `white-house-meeting-ai-ceos-2023-05-04`
 
 ---
 
-## finding-1014: Sundar Pichai has surfaces but no Clifford path
+## finding-1061: Sundar Pichai has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -18260,7 +19106,7 @@ Refs: `white-house-meeting-ai-ceos-2023-05-04`
 
 ---
 
-## finding-1015: Susan Rice has surfaces but no Clifford path
+## finding-1062: Susan Rice has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -18278,7 +19124,7 @@ Refs: `white-house-meeting-ai-ceos-2023-05-04`, `bitter-struggle-printed-endorse
 
 ---
 
-## finding-1016: Tantum Collins has surfaces but no Clifford path
+## finding-1063: Tantum Collins has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -18296,7 +19142,7 @@ Refs: `inherent-laboratories-ltd-director-tantum-collins-2026-01-16`, `inherent-
 
 ---
 
-## finding-1017: Tristan Harris has surfaces but no Clifford path
+## finding-1064: Tristan Harris has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -18314,7 +19160,7 @@ Refs: `bitter-struggle-printed-endorsements-2026-11-10`
 
 ---
 
-## finding-1018: Zach Robinson has surfaces but no Clifford path
+## finding-1065: Zach Robinson has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -18332,7 +19178,7 @@ Refs: `anthropic-long-term-benefit-trust-initial-trustees-2023-09-19`
 
 ---
 
-## finding-1019: Matt Clifford and Jonathan Black joint AI Safety Summit representative appointment, 10 August 2023 contains broad institution context
+## finding-1066: Matt Clifford and Jonathan Black joint AI Safety Summit representative appointment, 10 August 2023 contains broad institution context
 
 - Type: broad_institution_guard
 - Priority: high
@@ -18350,7 +19196,7 @@ Refs: `ai-safety-summit-representative-appointment-2023-08-10`
 
 ---
 
-## finding-1020: London Tech Week 2026: The Future of Human-Technology Interaction (AI Arena), 2026-06-08 contains broad institution context
+## finding-1067: London Tech Week 2026: The Future of Human-Technology Interaction (AI Arena), 2026-06-08 contains broad institution context
 
 - Type: broad_institution_guard
 - Priority: high
@@ -18368,7 +19214,7 @@ Refs: `london-tech-week-2026-future-human-technology-interaction`
 
 ---
 
-## finding-1021: London Tech Week 2026: Discovery that delivers: Turning Britain's scientific edge into real-world impact (Deep Tech Stage), 2026-06-09 contains broad institution context
+## finding-1068: London Tech Week 2026: Discovery that delivers: Turning Britain's scientific edge into real-world impact (Deep Tech Stage), 2026-06-09 contains broad institution context
 
 - Type: broad_institution_guard
 - Priority: high
@@ -18386,7 +19232,7 @@ Refs: `london-tech-week-2026-science-out-lab-economy`
 
 ---
 
-## finding-1022: AI Growth Zones formal qualifying process launch, engagements led by Feryal Clark and Matt Clifford, 30 April 2025 contains broad institution context
+## finding-1069: AI Growth Zones formal qualifying process launch, engagements led by Feryal Clark and Matt Clifford, 30 April 2025 contains broad institution context
 
 - Type: broad_institution_guard
 - Priority: high
@@ -18404,7 +19250,7 @@ Refs: `ai-growth-zones-qualifying-process-2025-04-30`
 
 ---
 
-## finding-1023: Independent Review of the UK Statistics Authority Challenge Panel, announced 9 June 2023 contains broad institution context
+## finding-1070: Independent Review of the UK Statistics Authority Challenge Panel, announced 9 June 2023 contains broad institution context
 
 - Type: broad_institution_guard
 - Priority: high
@@ -18422,7 +19268,7 @@ Refs: `uksa-independent-review-challenge-panel-2023-06-09`
 
 ---
 
-## finding-1024: Policy creation → military advisory integration → personnel continuity → commercial deployment is a scored laundering chain with no Clifford hop
+## finding-1071: Policy creation → military advisory integration → personnel continuity → commercial deployment is a scored laundering chain with no Clifford hop
 
 - Type: laundering_chain
 - Priority: high
@@ -18440,7 +19286,7 @@ Refs: `ai-opportunities-action-plan-2025`, `detachment-201-program-context-2025`
 
 ---
 
-## finding-1025: Full master doc has been classified, not blindly migrated
+## finding-1072: Full master doc has been classified, not blindly migrated
 
 - Type: migration_queue
 - Priority: high
