@@ -129,7 +129,7 @@ const PLAIN = {
     who: 'Former UK Prime Minister, now a paid, part-time Senior Advisor to Anthropic PBC.',
     why_here: 'ACOBA\'s advice of 9 October 2025 records the appointment and its conditions for two years from his last day in office; it records one meeting with Anthropic in office, a May 2023 roundtable that included Dario Amodei.' },
   'Liam Booth-Smith': { on: ['acoba-advice-liam-booth-smith-anthropic-external-affairs-2025-06-24'],
-    who: 'Former Chief of Staff at No.10 Downing Street (Lord Booth-Smith), now in a paid, full-time External Affairs role at Anthropic PBC.',
+    who: 'Former Chief of Staff to the Prime Minister (No.10), Lord Booth-Smith, now in a paid, full-time External Affairs role at Anthropic PBC.',
     why_here: 'ACOBA\'s advice of 24 June 2025 records the role and its conditions; it records that he observed the then Prime Minister\'s May 2023 meeting with the chief executives of OpenAI, DeepMind and Anthropic.' },
   'Peter Kyle': { on: ['uk-anthropic-memorandum-of-understanding-ai-opportunities-2025-02-13'],
     who: 'Secretary of State for Science, Innovation and Technology, who signed the UK\'s memorandum of understanding with Anthropic for DSIT.',
