@@ -28,7 +28,8 @@
 // stay out of the repository. Retrieval days are the operator's local calendar day.
 //
 // Promote mode is offline and deterministic:
-//   - one surface per notice, as drafted, dated by the drafted date and date_end;
+//   - one surface per notice, as drafted, dated by the drafted date and date_end; a label that repeats
+//     another gets its notice id, since labels derive the AXM entity id;
 //   - one participation row per participant entry, dated by that entry's own date, with the drafted role
 //     and participation type, evidence class official, citing the notice's receipt; a drafted amount goes
 //     on the row with the note that a contract value is not an outlay;
@@ -190,6 +191,13 @@ const gap = (table, rowKey, reason, detail = {}) => gaps.push({ lane: LANE, tabl
 const surfaces = [];
 const participation = [];
 const cited = new Map();
+// Surface labels derive the AXM entity id, so they must be unique: a drafted label that repeats another in
+// this lane or the ledger (an issuer can publish two notices of the same title on the same day) gets the
+// notice id, as the SEC Form D lane does with accessions.
+const labelCount = new Map();
+for (const n of notices) labelCount.set(n.surfaces[0].label.toLowerCase(), (labelCount.get(n.surfaces[0].label.toLowerCase()) ?? 0) + 1);
+const takenLabels = new Set(ledgerSurfaces.map(s => String(s.surface_label).toLowerCase()));
+const labelOf = s => (labelCount.get(s.label.toLowerCase()) > 1 || takenLabels.has(s.label.toLowerCase()) ? `${s.label} (notice ${s.contracts_finder_notice_id})` : s.label);
 // Field order as tools/promote-intake-uk-public-money.mjs writes its award rows.
 const P = (sid, day, ids, rest) => ({ surface_id: sid, ...rest, time_start: day, time_end: day, evidence_class: 'official', receipt_ids: ids });
 
@@ -259,7 +267,7 @@ for (const src of sources) {
   // Field order as tools/promote-intake-uk-public-money.mjs writes its award surfaces.
   surfaces.push({
     surface_id: sid,
-    surface_label: s.label,
+    surface_label: labelOf(s),
     surface_type: s.surface_type,
     secondary_surface_types: [],
     hop_eligible: false,
