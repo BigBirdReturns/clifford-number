@@ -617,6 +617,12 @@ function timelineInspector(selection, layout) {
 }
 
 function timelineWindowText(row, { long = false } = {}) {
+  if (row.temporal_semantics === 'observation') {
+    const observed = row.observed_on || [row.observation_start, row.observation_end].filter(Boolean).join(' to ');
+    return observed ? `observed ${observed}; event or tenure dates unknown` : 'observation date and event or tenure dates unknown';
+  }
+  if (row.temporal_semantics === 'unknown_event') return row.related_post_on
+    ? `event date unknown; related original post ${row.related_post_on}` : 'event date unknown';
   if (row.precision === 'undated' || row.start_day == null) return long ? 'no documented date' : 'not dated';
   if (row.kind === 'open') return `${row.time_start} → no documented end`;
   if (row.precision === 'year') return long ? `year precision: ${row.time_start}` : `${row.time_start} (year)`;
