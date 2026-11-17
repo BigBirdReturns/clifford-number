@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import { periodStart, periodEnd, windowOf, intersect, intersectAll, overlapsPeriod, formatWindow, UNBOUNDED } from '../tools/lib/temporal.mjs';
 
 // Period parsing widens to the full named period.
@@ -59,5 +60,27 @@ assert.equal(formatWindow(w('2019-12-01', '2021-05-31')), '2019-12-01 → 2021-0
 assert.equal(formatWindow(w('2023-09-01', null)), '2023-09-01 → ongoing');
 assert.equal(formatWindow(UNBOUNDED), 'date unknown', 'undated is not the same as ongoing');
 assert.equal(formatWindow(null), 'no overlap');
+
+// The fifteen government awards whose archived USAspending record states a signature date are dated by it,
+// surface and rows alike (owner's answer of 2026-11-16, "Yes, restore them", to "Restore the 15 awards with
+// their real dates before you publish?"). The reported USSOCOM award has no archived record and keeps the
+// day its page was read, which the timeline labels as an observation date.
+{
+  const readJsonl = f => fs.readFileSync(f, 'utf8').split(/\r?\n/).filter(Boolean).map(line => JSON.parse(line));
+  const receipts = new Map(readJsonl('data/ledger/receipts.jsonl').map(r => [r.receipt_id, r]));
+  const parts = readJsonl('data/ledger/participation.jsonl');
+  const awards = readJsonl('data/ledger/surfaces.jsonl').filter(s => s.surface_type === 'procurement_contract_surface' && String(s.intake_source).endsWith('person-centered-defense-routers'));
+  const signed = awards.filter(s => s.date_basis === 'award_signature_date_in_archived_usaspending_record');
+  assert.equal(signed.length, 15);
+  for (const s of signed) {
+    const record = s.receipt_ids.map(id => receipts.get(id)?.path).find(p => /\/r-usaspending-[^/]+\.json$/.test(p ?? ''));
+    const day = JSON.parse(fs.readFileSync(record, 'utf8')).date_signed;
+    assert.deepEqual([s.time_start, s.time_end], [day, day], `${s.surface_id}: dated by its signature date`);
+    const rows = parts.filter(p => p.surface_id === s.surface_id);
+    assert.equal(rows.length, 2, `${s.surface_id}: buyer and supplier`);
+    assert.ok(rows.every(p => p.time_start === day && p.time_end === day), `${s.surface_id}: rows dated by the signature date`);
+  }
+  assert.deepEqual(awards.filter(s => s.date_basis === 'record_retrieval_date').map(s => s.surface_id), ['procurement-award-ussocom-idiq-reported']);
+}
 
 console.log('temporal.test: OK');

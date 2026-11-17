@@ -11,7 +11,7 @@ const recorded=buildTimelineModel(sg,hg);
 const event=buildTimelineModel(sg,hg,{timeBasis:'occurrence'});
 assert.equal(recorded.rows.length,12234);assert.equal(event.rows.length,recorded.rows.length);
 assert.deepEqual(recorded.counts.kinds,{day:10495,span:1423,year:2,open:314,undated:0});
-assert.deepEqual(event.counts.kinds,{day:9280,span:1416,year:9,open:314,undated:1215});
+assert.deepEqual(event.counts.kinds,{day:9310,span:1416,year:9,open:314,undated:1185}); // 2026-11-16 awards re-dated (owner: "Yes, restore them"): day 9280 -> 9310, undated 1215 -> 1185 (the 30 rows of the fifteen awards dated by their USAspending signature date are recorded dates, not retrieval-day observations).
 assert.equal(JSON.stringify({sg,hg}),snapshot,'source graphs are immutable');
 let obs=0,unknown=0,years=0;const scopes={};
 for(const r of recorded.rows){const e=event.rowsByKey.get(r.key);assert.ok(e);assert.deepEqual(r.receipt_ids,e.receipt_ids);assert.equal(r.surface_hop_eligible,e.surface_hop_eligible);assert.equal(r.role,e.role);assert.equal(r.evidence_class,e.evidence_class);assert.equal(r.date_basis,e.date_basis);assert.equal(r.date_limits,e.date_limits);
