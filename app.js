@@ -830,13 +830,13 @@ function recordFactLine(kind, id, extra = null) {
     if (!summary) return state.actorScores.has(id) ? `no documented surface in this release · ${cn}` : 'legacy research node · no canonical record';
     const years = recordRowYears(summary.rows);
     const rosterOnly = summary.surface_count === 1 && summary.dense_memberships.length ? ' · listed on one contained roster only' : '';
-    return `${recordPlural(summary.surface_count, 'surface')} · ${recordPlural(Object.keys(summary.type_counts).length, 'type')} · ${years[0]}${years.length > 1 ? ` → ${years.at(-1)}` : ''}${rosterOnly} · ${cn}`;
+    return `${recordPlural(summary.surface_count, 'surface')} · ${recordPlural(Object.keys(summary.type_counts).length, 'type')} · ${recordYearsText(years)}${rosterOnly} · ${cn}`;
   }
   if (kind === 'organization') {
     const summary = entityTimelineSummary(model, 'organization', id);
     if (!summary) return state.orgScores.has(id) ? 'no documented surface in this release' : 'legacy research node · no canonical record';
     const years = recordRowYears(summary.rows);
-    return `${recordPlural(summary.surface_count, 'surface')} · ${recordPlural(Object.keys(summary.type_counts).length, 'type')} · ${years[0]}${years.length > 1 ? ` → ${years.at(-1)}` : ''}${summary.hop_eligible_surface_count ? ` · ${summary.hop_eligible_surface_count} hop-eligible` : ' · context only'}`;
+    return `${recordPlural(summary.surface_count, 'surface')} · ${recordPlural(Object.keys(summary.type_counts).length, 'type')} · ${recordYearsText(years)}${summary.hop_eligible_surface_count ? ` · ${summary.hop_eligible_surface_count} hop-eligible` : ' · context only'}`;
   }
   if (kind === 'surface') {
     const mark = model.surfaceMarks.find(item => item.surface_id === id);
@@ -1315,6 +1315,8 @@ function recordCountEntries(counts, labelFor) {
 }
 // The date cell: precision and open ends are spelled out, never rounded away.
 function recordWindowText(row) {
+  if (row?.temporal_semantics === 'observation' && row.start_day == null) return row.observed_on ? `observed ${row.observed_on}; date unknown` : 'observed; date unknown';
+  if (row?.temporal_semantics === 'unknown_event' && row.start_day == null) return row.related_post_on ? `date unknown; original post ${row.related_post_on}` : 'date unknown';
   if (!row || row.precision === 'undated' || row.start_day == null) return 'not dated';
   if (row.kind === 'open') return `${row.time_start} → end not recorded`;
   if (row.precision === 'year') return `${row.time_start} · year precision`;
@@ -1326,6 +1328,10 @@ function recordSpanText(summary) {
   if (!summary?.first_day) return 'no dated row';
   const last = summary.has_open_end ? 'end not recorded' : summary.last_day;
   return summary.first_day === last ? summary.first_day : `${summary.first_day} → ${last}`;
+}
+// The years a record's dated rows fall in, as one span; a record with no dated row says so.
+function recordYearsText(years) {
+  return years.length ? `${years[0]}${years.length > 1 ? ` → ${years.at(-1)}` : ''}` : 'no stated date';
 }
 function recordRowYears(rows) {
   return [...new Set((rows ?? []).filter(row => row.start_day != null).map(row => String(row.time_start).slice(0, 4)))].sort();
@@ -1412,7 +1418,7 @@ function actorRecordModel(model, hopGraph, score, id, labels = {}) {
   }
   facts.push({ key: 'cn', text: cliffordNumber == null ? 'Clifford Number N/A' : `Clifford Number ${cliffordNumber}` });
   const machineSentence = rows.length
-    ? `Documented on ${recordPlural(surfaceCount, 'surface')} of ${recordPlural(typeCounts.length, 'type')} ${summary.first_day === (summary.has_open_end ? null : summary.last_day) ? `on ${summary.first_day}` : `between ${summary.first_day} and ${summary.has_open_end ? 'an end not recorded' : summary.last_day}`}, beside ${recordPlural(organizationCounts.length, 'organization')}.`
+    ? `Documented on ${recordPlural(surfaceCount, 'surface')} of ${recordPlural(typeCounts.length, 'type')} ${!summary.first_day ? 'with no stated date' : summary.first_day === (summary.has_open_end ? null : summary.last_day) ? `on ${summary.first_day}` : `between ${summary.first_day} and ${summary.has_open_end ? 'an end not recorded' : summary.last_day}`}, beside ${recordPlural(organizationCounts.length, 'organization')}.`
     : 'No participation row in this release.';
   return {
     kind: 'actor', id, label: label.actor(id), summary, rows,
@@ -1460,7 +1466,7 @@ function organizationRecordModel(model, organization, id, labels = {}) {
     facts.push({ key: 'receipts', text: `${recordPlural(summary.receipt_ids.length, 'receipt')} on ${recordPlural(rows.length, 'row')}: ${recordEvidenceMix(summary.evidence_counts)}` });
   }
   const machineSentence = rows.length
-    ? `Documented on ${recordPlural(surfaceCount, 'surface')} of ${recordPlural(typeCounts.length, 'type')} between ${summary.first_day} and ${summary.has_open_end ? 'an end not recorded' : summary.last_day}, beside ${recordPlural(people.length, 'person', 'people')}${denseLines.length ? ` and ${denseLines.map(line => `${line.listed_count} roster names`).join(', ')}` : ''}.`
+    ? `Documented on ${recordPlural(surfaceCount, 'surface')} of ${recordPlural(typeCounts.length, 'type')} ${summary.first_day ? `between ${summary.first_day} and ${summary.has_open_end ? 'an end not recorded' : summary.last_day}` : 'with no stated date'}, beside ${recordPlural(people.length, 'person', 'people')}${denseLines.length ? ` and ${denseLines.map(line => `${line.listed_count} roster names`).join(', ')}` : ''}.`
     : 'No participation row in this release.';
   return {
     kind: 'organization', id, label: label.organization(id), summary, rows,

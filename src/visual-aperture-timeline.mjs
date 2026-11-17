@@ -238,7 +238,11 @@ function finishLane(lane, hopEligibleSurfaces) {
   return lane;
 }
 
-export function buildTimelineModel(surfaceGraph, hopGraph, { timeBasis = 'recorded' } = {}) {
+// The reader's timeline places a row on the date its source states (occurrence time): a row dated only by
+// the day its page was read, or a repost with no time of its own, is not placed on the axis and is listed as
+// not placed in time with its observation date (owner's answer of 16 November 2026, "Yes, make it default").
+// The recorded-date view stays available as { timeBasis: 'recorded' }.
+export function buildTimelineModel(surfaceGraph, hopGraph, { timeBasis = 'occurrence' } = {}) {
   if (!['recorded', 'occurrence'].includes(timeBasis)) throw new TypeError('timeBasis must be recorded or occurrence');
   const surfaces = surfaceGraph?.surfaces ?? [];
   const actorLabels = new Map((surfaceGraph?.actors ?? []).map(actor => [actor.id, actor.label || actor.id]));
@@ -910,6 +914,8 @@ export function layoutTimeline(model, options = {}) {
       height,
       stack,
       row_count: spec.rows.length,
+      // Rows of this lane its sources give no date for: listed as not placed in time, never on the axis.
+      undated_count: spec.rows.filter(row => row.start_day == null).length,
       drawn_count: 0,
       surface_ids: spec.entity ? [...spec.entity.surface_ids].sort(compareText) : uniqueList(placed.map(row => row.surface_id)).sort(compareText),
       entity_count: spec.strip?.entity_count ?? (spec.entity ? 1 : 0),
