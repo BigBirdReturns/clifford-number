@@ -557,6 +557,8 @@ const vehicleOrg = vid => {
   const v = aVehicles.get(vid);
   return ensureOrg(v?.label ?? vid.replace(/^vehicle:/, ''), v?.kind === 'venture_fund' ? 'fund' : (v?.kind ?? 'fund'));
 };
+const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
+const AWARD_SIGNED_BASIS = 'award_signature_date_in_archived_usaspending_record';
 const obsNote = date => `Observation dated by the receipt's retrieval date (${date}); the underlying event date is not established by the source.`;
 
 for (const g of readJsonl(`${A}/government-awards.jsonl`)) {
@@ -584,17 +586,27 @@ for (const g of readJsonl(`${A}/government-awards.jsonl`)) {
         ? ` Intake figures (as recorded by the intake: ceiling ${usd(g.contract_ceiling_usd)}; obligated ${usd(g.obligated_usd)}; outlay ${usd(g.outlay_usd) ?? 'not reported'}) differ from the archived record and are superseded by it.`
         : '';
       const money = `ceiling ${usd(fig.ceiling)}; obligated ${usd(fig.obligated)}; outlay ${usd(fig.outlay) ?? 'not reported'}${rec ? ' (archived USAspending award record)' : ''}`;
+      // An award is dated by the signature date its archived USAspending record states, a single day as
+      // the Air Force awards are dated by their action date (owner's answer of 16 November 2026, "Yes,
+      // restore them", to "Restore the 15 awards with their real dates before you publish?"). An award
+      // with no archived record keeps the day its page was read, labelled as such.
+      const signed = ISO_DAY.test(rec?.date_signed ?? '') ? rec.date_signed : null;
+      const when = signed ?? date;
+      const pop = rec?.period_of_performance;
+      const dated = signed
+        ? `Dated by the award's signature date in the archived USAspending record (${signed})${ISO_DAY.test(pop?.start_date ?? '') && ISO_DAY.test(pop?.end_date ?? '') ? `; its period of performance there runs ${pop.start_date} to ${pop.end_date}` : ''}.`
+        : obsNote(date);
       return emit(dryRun, {
         surface_id: sid, surface_label: `${g.awarding_agency} award ${g.award_id} to ${g.org}`,
         surface_type: 'procurement_contract_surface', secondary_surface_types: ['defence_industrial_surface'],
         hop_eligible: false, hop_refusal_reason: 'organization_only_procurement_instrument', scorable: true,
-        status: 'official_award_record', bounded_by: ['USAspending award record'], time_start: date, time_end: date,
-        date_basis: 'record_retrieval_date', evidence_class: ec, receipt_ids: ids, intake_source: A,
+        status: 'official_award_record', bounded_by: ['USAspending award record'], time_start: when, time_end: when,
+        date_basis: signed ? AWARD_SIGNED_BASIS : 'record_retrieval_date', evidence_class: ec, receipt_ids: ids, intake_source: A,
         funding_amount_usd: fig.obligated, contract_ceiling_usd: fig.ceiling, outlay_usd: fig.outlay,
-        notes: `${g.program_or_vehicle}. ${money}.${drift} ${g.note} ${obsNote(date)}`,
+        notes: `${g.program_or_vehicle}. ${money}.${drift} ${g.note} ${dated}`,
       }, [
-        { surface_id: sid, participant_type: 'organization', organization_id: agency, role: 'buyer (awarding agency)', participation_type: 'buyer', time_start: date, time_end: date, evidence_class: ec, receipt_ids: ids },
-        { surface_id: sid, participant_type: 'organization', organization_id: supplier, role: `supplier (${g.recipient_type})`, participation_type: 'supplier', time_start: date, time_end: date, evidence_class: ec, receipt_ids: ids, funding_amount_usd: fig.obligated, notes: money },
+        { surface_id: sid, participant_type: 'organization', organization_id: agency, role: 'buyer (awarding agency)', participation_type: 'buyer', time_start: when, time_end: when, evidence_class: ec, receipt_ids: ids },
+        { surface_id: sid, participant_type: 'organization', organization_id: supplier, role: `supplier (${g.recipient_type})`, participation_type: 'supplier', time_start: when, time_end: when, evidence_class: ec, receipt_ids: ids, funding_amount_usd: fig.obligated, notes: money },
       ]);
     },
   });

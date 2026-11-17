@@ -1,0 +1,9 @@
+# Temporal evidence contract
+
+A retrieval date is valid observation time. It does not establish the beginning or end of an employment relationship, or the occurrence of an undated repost. Source records remain immutable.
+
+The default timeline is the occurrence-time view (owner's answer of 16 November 2026, "Yes, make it default", to "Make the occurrence-time view the app's default timeline?"): `buildTimelineModel(surfaceGraph, hopGraph)` places a row only on the date its source states. That projection keeps the same rows, receipts, evidence classes and hop decisions, but leaves unsupported event times unplaced and retains year-only precision. It does not manufacture a retrieval time, endpoint, identity link or approved hop. A row it cannot place stays on the page: the table under the timeline lists it as not placed in time, its date column reads "observed 2026-11-13; event or tenure dates unknown" (or "event date unknown" for a repost), its lane says how many of its rows are not placed, and a record page gives the observation date in place of a span. The recorded-date view, which places an observation on the day it was made and labels it as such, stays available as `buildTimelineModel(surfaceGraph, hopGraph, {timeBasis: "recorded"})`.
+
+Every derived row retains original source times and separate occurrence times, whichever view is built. Unknown occurrence time remains unknown; absence from a dated interval is not proof of nonparticipation. An interactive axis selector is not part of this change.
+
+`node test/temporal-placement.test.js` exercises the helper's finite conventions. `node test/temporal-evidence-boundary.test.js` exercises both projections against the retained graph and verifies that the source graph is unchanged. The full existing timeline suite remains in force. This private branch has not been publicly deployed.

@@ -19,6 +19,77 @@
 // One-line import on purpose: tools/build-standalone.mjs strips import lines with a single-line regex.
 import { dayIndex, humanLabel, isoFromDayIndex, meetsEvidenceFloor, normalizeEvidence } from './visual-aperture-core.mjs';
 
+// Temporal placement helper for Clifford Number evidence timeline rows.
+// Pure function: no I/O, no clock access, no mutation of inputs.
+
+function temporalDateValue(value) {
+  return typeof value === 'string' && value.trim() !== '' ? value : null;
+}
+
+function temporalYearValue(value) {
+  const s = temporalDateValue(value);
+  if (s === null) return null;
+  const m = /^(\d{4})(?:-(\d{2})(?:-(\d{2}))?)?$/.exec(s);
+  if (m === null) return null;
+  if (m[2] !== undefined) {
+    const month = Number(m[2]);
+    if (month < 1 || month > 12) return null;
+  }
+  if (m[3] !== undefined) {
+    const day = Number(m[3]);
+    if (day < 1 || day > 31) return null;
+  }
+  return m[1];
+}
+
+export function resolveTemporalPlacement(base = {}, timeStart = null, timeEnd = null) {
+  const src = base !== null && typeof base === 'object' ? base : {};
+  const basisRaw = typeof src.date_basis === 'string' ? src.date_basis : null;
+  const key = basisRaw === null ? '' : basisRaw.toLowerCase().replace(/[\s-]/g, '_');
+  const has = (token) => key.includes(token);
+
+  const start = temporalDateValue(timeStart);
+  const end = temporalDateValue(timeEnd);
+
+  const out = {
+    time_start: start,
+    time_end: end,
+    source_time_start: start,
+    source_time_end: end,
+    date_basis: basisRaw,
+    temporal_semantics: null,
+    observed_on: null,
+    observation_start: null,
+    observation_end: null,
+    related_post_on: null
+  };
+
+  if (has('year_only') || has('year_precision')) {
+    out.temporal_semantics = 'year_precision';
+    out.time_start = temporalYearValue(timeStart);
+    out.time_end = temporalYearValue(timeEnd);
+  } else if (has('repost') && (has('unknown') || has('not_public'))) {
+    out.temporal_semantics = 'unknown_event';
+    out.time_start = null;
+    out.time_end = null;
+    if (has('quoted_post') || has('original_post')) {
+      out.related_post_on = start;
+    }
+  } else if (has('retrieval') || has('retrieved')) {
+    out.temporal_semantics = 'observation';
+    out.time_start = null;
+    out.time_end = null;
+    out.observation_start = start;
+    out.observation_end = end;
+    out.observed_on = start !== null && start === end ? start : null;
+  } else {
+    out.temporal_semantics = 'recorded';
+  }
+
+  return out;
+}
+
+
 export const TIMELINE_MODEL_SCHEMA = 'clifford-timeline-model@1';
 // density_policy.max_hop_actor_count (19) + 1: the same threshold app.js uses
 // for standing refusals. Today it selects exactly the Dialog public directory.
@@ -95,13 +166,21 @@ function rowKind(precision, startDay, endDay) {
 }
 
 // Shared shape for every placeable object (participation row or surface row).
-function placeRow(base, timeStart, timeEnd) {
+function placeRow(base, timeStart, timeEnd, timeBasis = 'recorded') {
+  const temporal = resolveTemporalPlacement(base, timeStart, timeEnd);
+  const occurrenceStart = temporal.time_start;
+  const occurrenceEnd = temporal.time_end;
+  if (timeBasis === 'occurrence') { timeStart = occurrenceStart; timeEnd = occurrenceEnd; }
   const precision = rowPrecision(timeStart, timeEnd);
   const startDay = precision === 'undated' ? null : dayIndex(timeStart);
   let endDay = precision === 'open' || precision === 'undated' ? null : dayIndex(timeEnd, true);
   if (endDay != null && startDay != null && endDay < startDay) endDay = startDay;
   return {
     ...base,
+    ...temporal,
+    time_basis: timeBasis,
+    occurrence_time_start: occurrenceStart,
+    occurrence_time_end: occurrenceEnd,
     time_start: timeStart ?? null,
     time_end: timeEnd ?? null,
     precision,
@@ -159,7 +238,12 @@ function finishLane(lane, hopEligibleSurfaces) {
   return lane;
 }
 
-export function buildTimelineModel(surfaceGraph, hopGraph) {
+// The reader's timeline places a row on the date its source states (occurrence time): a row dated only by
+// the day its page was read, or a repost with no time of its own, is not placed on the axis and is listed as
+// not placed in time with its observation date (owner's answer of 16 November 2026, "Yes, make it default").
+// The recorded-date view stays available as { timeBasis: 'recorded' }.
+export function buildTimelineModel(surfaceGraph, hopGraph, { timeBasis = 'occurrence' } = {}) {
+  if (!['recorded', 'occurrence'].includes(timeBasis)) throw new TypeError('timeBasis must be recorded or occurrence');
   const surfaces = surfaceGraph?.surfaces ?? [];
   const actorLabels = new Map((surfaceGraph?.actors ?? []).map(actor => [actor.id, actor.label || actor.id]));
   const organizationLabels = new Map((surfaceGraph?.organizations ?? []).map(org => [org.id, org.label || org.id]));
@@ -295,8 +379,10 @@ export function buildTimelineModel(surfaceGraph, hopGraph) {
         co_actor_ids: actorIds.filter(id => !(participantType === 'actor' && id === entityId)),
         co_organization_ids: organizationIds.filter(id => !(participantType === 'organization' && id === entityId)),
         dense: denseSurfaceIds.has(surface.surface_id),
+        date_basis: participant.date_basis ?? surface.date_basis ?? null,
+        date_limits: participant.limits ?? surface.limits ?? null,
         notes: participant.notes ?? null
-      }, participant.time_start, participant.time_end);
+      }, participant.time_start, participant.time_end, timeBasis);
       const bases = participantType === 'actor'
         ? (hopBasesBySurface.get(surface.surface_id) ?? []).filter(basis => (basis.actor_a === entityId || basis.actor_b === entityId)
           && (basis.day == null || row.start_day == null || (basis.day >= row.start_day && basis.day <= (row.end_day ?? Infinity))))
@@ -376,8 +462,10 @@ export function buildTimelineModel(surfaceGraph, hopGraph) {
       dense: denseSurfaceIds.has(surface.surface_id),
       hop_basis_count: (hopBasesBySurface.get(surface.surface_id) ?? []).length,
       hop_partner_ids: [],
+      date_basis: surface.date_basis ?? null,
+      date_limits: surface.limits ?? null,
       notes: surface.notes ?? null
-    }, surface.time_start, surface.time_end);
+    }, surface.time_start, surface.time_end, timeBasis);
     surfaceMarks.push(mark);
     const lane = laneFor('type', mark.entity_id, mark.entity_label);
     lane.rows.push(mark);
@@ -405,7 +493,7 @@ export function buildTimelineModel(surfaceGraph, hopGraph) {
       .map(row => ({ actor_id: row.entity_id, actor_label: row.entity_label, other_surface_count: (lanes.actor.get(row.entity_id)?.surface_count ?? 1) - 1 }))
       .filter(entry => entry.other_surface_count > 0)
       .sort((a, b) => b.other_surface_count - a.other_surface_count || compareText(a.actor_label, b.actor_label));
-    const placed = placeRow({}, surface.time_start, surface.time_end);
+    const placed = placeRow({ date_basis: surface.date_basis ?? null, date_limits: surface.limits ?? null }, surface.time_start, surface.time_end, timeBasis);
     dense.push({
       key: `dense::${surfaceId}`,
       surface_id: surfaceId,
@@ -826,6 +914,8 @@ export function layoutTimeline(model, options = {}) {
       height,
       stack,
       row_count: spec.rows.length,
+      // Rows of this lane its sources give no date for: listed as not placed in time, never on the axis.
+      undated_count: spec.rows.filter(row => row.start_day == null).length,
       drawn_count: 0,
       surface_ids: spec.entity ? [...spec.entity.surface_ids].sort(compareText) : uniqueList(placed.map(row => row.surface_id)).sort(compareText),
       entity_count: spec.strip?.entity_count ?? (spec.entity ? 1 : 0),
@@ -879,6 +969,16 @@ export function layoutTimeline(model, options = {}) {
           iso_end: row.end_day == null ? null : isoFromDayIndex(row.end_day),
           time_start: row.time_start,
           time_end: row.time_end,
+          date_basis: row.date_basis,
+          date_limits: row.date_limits,
+          temporal_semantics: row.temporal_semantics,
+          time_basis: row.time_basis,
+          occurrence_time_start: row.occurrence_time_start,
+          occurrence_time_end: row.occurrence_time_end,
+          observed_on: row.observed_on,
+          observation_start: row.observation_start,
+          observation_end: row.observation_end,
+          related_post_on: row.related_post_on,
           clipped_end: clippedEnd,
           participant_type: row.participant_type,
           entity_id: row.entity_id,

@@ -516,10 +516,12 @@ function timelineBlockMarkup(block, layout) {
 }
 
 function timelineLaneMeta(lane, layout) {
-  if (lane.kind === 'entity') return `${lane.row_count} record${lane.row_count === 1 ? '' : 's'} · ${lane.hop_eligible_surface_count} hop-eligible`;
+  // A lane says how many of its rows have no stated date, so an empty-looking lane is not read as empty.
+  const undated = lane.undated_count ? ` · ${lane.undated_count} undated` : '';
+  if (lane.kind === 'entity') return `${lane.row_count} record${lane.row_count === 1 ? '' : 's'} · ${lane.hop_eligible_surface_count} hop-eligible${undated}`;
   if (lane.kind === 'strip') {
     const noun = layout.by === 'actor' ? 'people' : layout.by === 'organization' ? 'organizations' : 'surfaces';
-    return `${lane.entity_count} ${noun} · ${lane.row_count} row${lane.row_count === 1 ? '' : 's'}`;
+    return `${lane.entity_count} ${noun} · ${lane.row_count} row${lane.row_count === 1 ? '' : 's'}${undated}`;
   }
   return `${lane.entity_count} names · ${lane.row_count} rows · one contained roster`;
 }
@@ -617,6 +619,12 @@ function timelineInspector(selection, layout) {
 }
 
 function timelineWindowText(row, { long = false } = {}) {
+  if (row.temporal_semantics === 'observation') {
+    const observed = row.observed_on || [row.observation_start, row.observation_end].filter(Boolean).join(' to ');
+    return observed ? `observed ${observed}; event or tenure dates unknown` : 'observation date and event or tenure dates unknown';
+  }
+  if (row.temporal_semantics === 'unknown_event') return row.related_post_on
+    ? `event date unknown; related original post ${row.related_post_on}` : 'event date unknown';
   if (row.precision === 'undated' || row.start_day == null) return long ? 'no documented date' : 'not dated';
   if (row.kind === 'open') return `${row.time_start} → no documented end`;
   if (row.precision === 'year') return long ? `year precision: ${row.time_start}` : `${row.time_start} (year)`;
@@ -678,7 +686,11 @@ function timelineRowCard(row, mark, drawn, layout) {
     ? unique(bases.map(basis => isoFromDayIndex(basis.day))).map(iso => ({ iso, key: `column::${iso}::${row.surface_id}` })).filter(item => layout.columns.some(column => column.key === item.key))
     : [];
   const columnJumpMarkup = columnJumps.length ? `<p class="aperture-time-column-jump">${columnJumps.map(item => timelineSelectButton(item.key, `Select the ${item.iso} column`)).join(' ')}</p>` : '';
-  const notDrawn =!drawn ? `<p class="aperture-muted">This row is outside the current axis or filters, so it is not drawn. ${row.start_day != null ? `<button type="button" class="aperture-inline-button" data-ap-action="timeline-show-row" data-key="${esc(row.key)}">Show its year</button>` : 'It has no documented date and is never placed on the axis.'}</p>` : '';
+  // A row its source gives no date for is not placed on the axis at all; it is listed in the table under the
+  // timeline as not placed in time, with the day it was observed where there is one.
+  const notDrawn = !drawn ? (row.start_day != null
+    ? `<p class="aperture-muted">This row is outside the current axis or filters, so it is not drawn. <button type="button" class="aperture-inline-button" data-ap-action="timeline-show-row" data-key="${esc(row.key)}">Show its year</button></p>`
+    : `<p class="aperture-muted">Its source states no date for it, so it is not placed on the axis: ${esc(timelineWindowText(row, { long: true }))}. It is listed at the end of the table under the timeline as not placed in time. ${timelineSelectButton(row.key, 'Show it in the table')}</p>`) : '';
   const windowNote = mark && layout.window.active && !mark.in_window ? '<p class="aperture-muted">Outside the marked window: dimmed, not removed.</p>' : '';
   const alsoOn = dense
     ? `<p>${dense.listed_count} listed names on this roster, one contained object. ${timelineSelectButton(dense.key, 'Open the roster card')}.</p>`
@@ -845,7 +857,7 @@ function timelineStatusText(layout) {
   if (c.filtered) parts.push(`${c.filtered} hidden by filters`);
   if (c.pre_domain) parts.push(`${c.pre_domain} before the axis start${c.pre_domain_overlapping ? ` (${c.pre_domain_overlapping} still running)` : ''}`);
   if (c.post_domain) parts.push(`${c.post_domain} after the axis end`);
-  if (c.undated) parts.push(`${c.undated} cannot be placed in time`);
+  if (c.undated) parts.push(`${c.undated} have no stated date and are listed at the end of this table, not placed in time`);
   if (c.aggregated_rows) parts.push(`${c.aggregated_rows} folded into +N marks`);
   if (layout.pinned && state.timeline.lanes.length >= TIMELINE_MAX_LANES) parts.push(`${TIMELINE_MAX_LANES} named lanes is the cap; other rows sit in the strip`);
   return `${parts.join(' · ')}.`;
